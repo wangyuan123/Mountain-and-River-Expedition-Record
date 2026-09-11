@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="swSky" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#9aa8a0"/>
+      <stop offset="100%" stop-color="#c8d4cc"/>
+    </linearGradient>
+    <linearGradient id="swWater" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#5a6048"/>
+      <stop offset="100%" stop-color="#2a3020"/>
+    </linearGradient>
+    <linearGradient id="swLily" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#7a8a4a"/>
+      <stop offset="100%" stop-color="#3a4a20"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="128" height="128" fill="url(#swSky)" rx="8"/>
+  <!-- Distant trees/mist -->
+  <ellipse cx="20" cy="40" rx="14" ry="6" fill="#7a8a7a" opacity="0.5"/>
+  <ellipse cx="108" cy="42" rx="16" ry="7" fill="#7a8a7a" opacity="0.5"/>
+  <ellipse cx="64" cy="38" rx="20" ry="6" fill="#8a9a8a" opacity="0.4"/>
+  <!-- Water surface -->
+  <ellipse cx="64" cy="92" rx="60" ry="20" fill="url(#swWater)"/>
+  <ellipse cx="64" cy="88" rx="55" ry="16" fill="#3a4030"/>
+  <!-- Water ripples -->
+  <ellipse cx="40" cy="90" rx="12" ry="2" fill="#7a8a4a" opacity="0.4"/>
+  <ellipse cx="80" cy="94" rx="14" ry="2" fill="#7a8a4a" opacity="0.4"/>
+  <ellipse cx="64" cy="100" rx="20" ry="2.5" fill="#8a9a5a" opacity="0.3"/>
+  <!-- Lily pads -->
+  <ellipse cx="38" cy="86" rx="10" ry="3" fill="url(#swLily)" stroke="#3a4a20" stroke-width="0.5"/>
+  <ellipse cx="84" cy="92" rx="11" ry="3" fill="url(#swLily)" stroke="#3a4a20" stroke-width="0.5"/>
+  <ellipse cx="60" cy="98" rx="9" ry="2.5" fill="url(#swLily)" stroke="#3a4a20" stroke-width="0.5"/>
+  <!-- Lily pad notches -->
+  <path d="M 38,86 L 41,86 L 39,84 Z" fill="#3a4a20"/>
+  <path d="M 84,92 L 87,92 L 85,90 Z" fill="#3a4a20"/>
+  <!-- Cattails (reed) -->
+  <rect x="22" y="50" width="2" height="40" fill="#5a4a2a"/>
+  <ellipse cx="23" cy="48" rx="3" ry="6" fill="#6a3a1a"/>
+  <rect x="100" y="52" width="2" height="38" fill="#5a4a2a"/>
+  <ellipse cx="101" cy="50" rx="3" ry="6" fill="#6a3a1a"/>
+  <!-- Cattail leaves -->
+  <path d="M 18,90 Q 16,70 22,52" fill="none" stroke="#3a4a20" stroke-width="2"/>
+  <path d="M 106,90 Q 108,72 102,54" fill="none" stroke="#3a4a20" stroke-width="2"/>
+  <!-- Fog/mist -->
+  <ellipse cx="64" cy="78" rx="55" ry="3" fill="#ffffff" opacity="0.25"/>
+  <ellipse cx="64" cy="84" rx="50" ry="2" fill="#ffffff" opacity="0.18"/>
+  <!-- Bubbles -->
+  <circle cx="48" cy="80" r="1.2" fill="#ffffff" opacity="0.6"/>
+  <circle cx="76" cy="78" r="1" fill="#ffffff" opacity="0.5"/>
+  <circle cx="92" cy="82" r="0.8" fill="#ffffff" opacity="0.4"/>
+</svg>

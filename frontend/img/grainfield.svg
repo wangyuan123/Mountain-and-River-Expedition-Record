@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="gfSky" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#a0c8e0"/>
+      <stop offset="100%" stop-color="#d8e8d0"/>
+    </linearGradient>
+    <linearGradient id="wheat" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f5d878"/>
+      <stop offset="100%" stop-color="#a87a20"/>
+    </linearGradient>
+    <linearGradient id="wheatLight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffe89a"/>
+      <stop offset="100%" stop-color="#c89a40"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="128" height="128" fill="url(#gfSky)" rx="8"/>
+  <!-- Distant hills -->
+  <path d="M 0,55 Q 30,45 64,50 Q 100,45 128,55 L 128,70 L 0,70 Z" fill="#8aa070" opacity="0.5"/>
+  <!-- Field rows (perspective) -->
+  <path d="M 0,75 Q 64,68 128,75 L 128,82 Q 64,76 0,82 Z" fill="#7a6a3a" opacity="0.5"/>
+  <path d="M 0,90 Q 64,84 128,90 L 128,98 Q 64,93 0,98 Z" fill="#7a6a3a" opacity="0.6"/>
+  <path d="M 0,108 Q 64,104 128,108 L 128,116 Q 64,113 0,116 Z" fill="#6a5a2a" opacity="0.7"/>
+  <!-- Foreground soil -->
+  <path d="M 0,120 Q 64,116 128,120 L 128,128 L 0,128 Z" fill="#5a4a20"/>
+  <!-- Wheat stalks - background -->
+  <g stroke="#8a6a20" stroke-width="0.6" fill="url(#wheat)">
+    <ellipse cx="20" cy="60" rx="2" ry="3"/>
+    <rect x="19" y="63" width="2" height="14" fill="#7a8a30"/>
+    <ellipse cx="35" cy="58" rx="2" ry="3"/>
+    <rect x="34" y="61" width="2" height="16" fill="#7a8a30"/>
+    <ellipse cx="95" cy="58" rx="2" ry="3"/>
+    <rect x="94" y="61" width="2" height="16" fill="#7a8a30"/>
+    <ellipse cx="110" cy="60" rx="2" ry="3"/>
+    <rect x="109" y="63" width="2" height="14" fill="#7a8a30"/>
+  </g>
+  <!-- Wheat stalks - middle -->
+  <g stroke="#a88030" stroke-width="0.7" fill="url(#wheatLight)">
+    <ellipse cx="42" cy="72" rx="2.5" ry="4"/>
+    <rect x="40.5" y="76" width="3" height="20" fill="#6a8a20"/>
+    <ellipse cx="62" cy="70" rx="2.5" ry="4"/>
+    <rect x="60.5" y="74" width="3" height="22" fill="#6a8a20"/>
+    <ellipse cx="86" cy="72" rx="2.5" ry="4"/>
+    <rect x="84.5" y="76" width="3" height="20" fill="#6a8a20"/>
+  </g>
+  <!-- Wheat stalks - foreground (largest) -->
+  <g stroke="#b89040" stroke-width="0.8" fill="url(#wheat)">
+    <ellipse cx="28" cy="92" rx="3.5" ry="6"/>
+    <rect x="25.5" y="98" width="5" height="28" fill="#5a7a18"/>
+    <path d="M 25,100 L 22,108" stroke="#5a7a18" stroke-width="1.2" fill="none"/>
+    <ellipse cx="64" cy="88" rx="4" ry="7"/>
+    <rect x="60" y="95" width="8" height="32" fill="#5a7a18"/>
+    <path d="M 60,98 L 56,108" stroke="#5a7a18" stroke-width="1.2" fill="none"/>
+    <path d="M 68,98 L 72,108" stroke="#5a7a18" stroke-width="1.2" fill="none"/>
+    <ellipse cx="100" cy="92" rx="3.5" ry="6"/>
+    <rect x="97.5" y="98" width="5" height="28" fill="#5a7a18"/>
+    <path d="M 100,100 L 104,108" stroke="#5a7a18" stroke-width="1.2" fill="none"/>
+  </g>
+  <!-- Sun rays -->
+  <circle cx="100" cy="22" r="12" fill="#fff4b8" opacity="0.4"/>
+  <circle cx="100" cy="22" r="6" fill="#ffe680" opacity="0.7"/>
+</svg>

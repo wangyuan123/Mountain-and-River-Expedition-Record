@@ -1,0 +1,148 @@
+package com.wargame.config;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+import org.springframework.web.socket.CloseStatus;
+import org.springframework.web.socket.TextMessage;
+import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.socket.handler.TextWebSocketHandler;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * 游戏 WebSocket 处理器。
+ * <p>
+ * 维护 playerId -> sessions 的映射，支持同一玩家多标签页连接。
+ * 处理客户端心跳（ping/pong）。
+ */
+@Component
+public class GameWebSocketHandler extends TextWebSocketHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GameWebSocketHandler.class);
+
+    /** playerId -> 该玩家的所有活跃 WebSocket 会话 */
+    private final Map<Long, Set<WebSocketSession>> playerSessions = new ConcurrentHashMap<>();
+
+    @Override
+    public void afterConnectionEstablished(WebSocketSession session) {
+        Long playerId = getPlayerId(session);
+        if (playerId == null) {
+            try {
+                session.close(CloseStatus.POLICY_VIOLATION);
+            } catch (IOException e) {
+                log.warn("关闭无 playerId 的 WebSocket 会话失败", e);
+            }
+            return;
+        }
+
+        playerSessions
+                .computeIfAbsent(playerId, k -> Collections.newSetFromMap(new ConcurrentHashMap<>()))
+                .add(session);
+
+        log.info("WebSocket 连接建立: playerId={}, sessionId={}, 当前在线会话数={}",
+                playerId, session.getId(), getSessionCount(playerId));
+    }
+
+    @Override
+    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
+        Long playerId = getPlayerId(session);
+        if (playerId == null) return;
+
+        Set<WebSocketSession> sessions = playerSessions.get(playerId);
+        if (sessions != null) {
+            sessions.remove(session);
+            if (sessions.isEmpty()) {
+                playerSessions.remove(playerId);
+            }
+        }
+
+        log.info("WebSocket 连接关闭: playerId={}, sessionId={}, status={}",
+                playerId, session.getId(), status);
+    }
+
+    @Override
+    protected void handleTextMessage(WebSocketSession session, TextMessage message) {
+        String payload = message.getPayload();
+
+        // 心跳: 客户端发送 "ping"，服务端回复 "pong"
+        if ("ping".equalsIgnoreCase(payload.trim())) {
+            try {
+                session.sendMessage(new TextMessage("pong"));
+            } catch (IOException e) {
+                log.warn("发送 pong 失败: sessionId={}", session.getId(), e);
+            }
+        }
+        // 其他消息暂不处理
+    }
+
+    /**
+     * 获取指定玩家所有的活跃会话。
+     */
+    public Set<WebSocketSession> getSessions(Long playerId) {
+        Set<WebSocketSession> sessions = playerSessions.get(playerId);
+        return sessions != null ? sessions : Collections.emptySet();
+    }
+
+    /**
+     * 向指定玩家发送文本消息。
+     * 如果玩家有多个会话（多标签页），全部推送。
+     */
+    public void broadcast(String message) {
+        TextMessage textMessage = new TextMessage(message);
+        for (Set<WebSocketSession> sessions : playerSessions.values()) {
+            for (WebSocketSession session : sessions) {
+                send(session, textMessage);
+            }
+        }
+    }
+
+    public void sendToPlayer(Long playerId, String message) {
+        Set<WebSocketSession> sessions = getSessions(playerId);
+        if (sessions.isEmpty()) return;
+
+        TextMessage textMessage = new TextMessage(message);
+        for (WebSocketSession session : sessions) {
+            send(session, textMessage);
+        }
+    }
+
+    private void send(WebSocketSession session, TextMessage message) {
+        if (!session.isOpen()) return;
+        try {
+            synchronized (session) {
+                session.sendMessage(message);
+            }
+        } catch (IOException e) {
+            log.warn("推送消息失败: sessionId={}", session.getId(), e);
+        }
+    }
+
+    /**
+     * 判断玩家是否在线（至少有一个活跃会话）。
+     */
+    public boolean isPlayerOnline(Long playerId) {
+        Set<WebSocketSession> sessions = playerSessions.get(playerId);
+        return sessions != null && !sessions.isEmpty();
+    }
+
+    /**
+     * 获取指定玩家的会话数量。
+     */
+    public int getSessionCount(Long playerId) {
+        Set<WebSocketSession> sessions = playerSessions.get(playerId);
+        return sessions != null ? sessions.size() : 0;
+    }
+
+    /**
+     * 从会话属性中获取 playerId。
+     */
+    private Long getPlayerId(WebSocketSession session) {
+        Object playerId = session.getAttributes().get("playerId");
+        return playerId instanceof Long ? (Long) playerId : null;
+    }
+}

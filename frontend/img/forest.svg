@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="sky1" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#a8d8f0"/>
+      <stop offset="100%" stop-color="#e8f4d8"/>
+    </linearGradient>
+    <linearGradient id="trunk1" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#6b4423"/>
+      <stop offset="100%" stop-color="#3d2817"/>
+    </linearGradient>
+    <linearGradient id="leaf1A" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#5cb85c"/>
+      <stop offset="100%" stop-color="#2d7a2d"/>
+    </linearGradient>
+    <linearGradient id="leaf1B" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#7dd87d"/>
+      <stop offset="100%" stop-color="#3d9a3d"/>
+    </linearGradient>
+  </defs>
+  <!-- Sky background -->
+  <rect x="0" y="0" width="128" height="128" fill="url(#sky1)" rx="8"/>
+  <!-- Ground -->
+  <path d="M 0,100 Q 64,92 128,100 L 128,128 L 0,128 Z" fill="#8b6f3f"/>
+  <path d="M 0,105 Q 64,100 128,105 L 128,128 L 0,128 Z" fill="#6b5328" opacity="0.6"/>
+  <!-- Grass tufts -->
+  <path d="M 12,98 L 14,92 L 16,98" fill="#4a7a2d"/>
+  <path d="M 30,99 L 32,93 L 34,99" fill="#4a7a2d"/>
+  <path d="M 100,98 L 102,92 L 104,98" fill="#4a7a2d"/>
+  <!-- Background tree (smaller) -->
+  <rect x="22" y="58" width="6" height="32" fill="url(#trunk1)"/>
+  <ellipse cx="25" cy="52" rx="14" ry="18" fill="url(#leaf1A)"/>
+  <ellipse cx="25" cy="50" rx="9" ry="11" fill="url(#leaf1B)" opacity="0.6"/>
+  <!-- Middle tree -->
+  <rect x="60" y="48" width="8" height="40" fill="url(#trunk1)"/>
+  <ellipse cx="64" cy="40" rx="20" ry="24" fill="url(#leaf1A)"/>
+  <ellipse cx="60" cy="34" rx="11" ry="13" fill="url(#leaf1B)" opacity="0.5"/>
+  <ellipse cx="70" cy="44" rx="9" ry="11" fill="url(#leaf1B)" opacity="0.4"/>
+  <!-- Right tree -->
+  <rect x="96" y="62" width="6" height="32" fill="url(#trunk1)"/>
+  <ellipse cx="99" cy="56" rx="13" ry="16" fill="url(#leaf1A)"/>
+  <ellipse cx="99" cy="54" rx="7" ry="9" fill="url(#leaf1B)" opacity="0.5"/>
+  <!-- Highlights -->
+  <ellipse cx="60" cy="32" rx="3" ry="4" fill="#a0e0a0" opacity="0.5"/>
+  <ellipse cx="22" cy="48" rx="2" ry="3" fill="#a0e0a0" opacity="0.5"/>
+</svg>

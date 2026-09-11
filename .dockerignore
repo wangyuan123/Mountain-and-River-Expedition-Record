@@ -1,0 +1,5 @@
+node_modules
+.git
+.trae
+*.md
+backend/target

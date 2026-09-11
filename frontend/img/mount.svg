@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="sky2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#cfe4f0"/>
+      <stop offset="100%" stop-color="#e8e8e8"/>
+    </linearGradient>
+    <linearGradient id="rock1" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#8a8a8a"/>
+      <stop offset="50%" stop-color="#5a5a5a"/>
+      <stop offset="100%" stop-color="#3a3a3a"/>
+    </linearGradient>
+    <linearGradient id="rock2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#a8a8a8"/>
+      <stop offset="100%" stop-color="#4a4a4a"/>
+    </linearGradient>
+    <linearGradient id="rock3" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#7a7a7a"/>
+      <stop offset="100%" stop-color="#2a2a2a"/>
+    </linearGradient>
+    <linearGradient id="snow1" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#c8d8e8"/>
+    </linearGradient>
+  </defs>
+  <!-- Sky -->
+  <rect x="0" y="0" width="128" height="128" fill="url(#sky2)" rx="8"/>
+  <!-- Back mountain (lightest) -->
+  <path d="M 0,90 L 30,50 L 55,75 L 80,40 L 110,72 L 128,55 L 128,128 L 0,128 Z"
+        fill="url(#rock2)" opacity="0.85"/>
+  <!-- Back mountain snow caps -->
+  <path d="M 30,50 L 22,58 L 38,58 Z" fill="url(#snow1)"/>
+  <path d="M 80,40 L 70,50 L 90,50 Z" fill="url(#snow1)"/>
+  <!-- Middle mountain -->
+  <path d="M 0,105 L 25,70 L 50,95 L 75,55 L 100,90 L 128,75 L 128,128 L 0,128 Z"
+        fill="url(#rock1)"/>
+  <!-- Middle snow caps -->
+  <path d="M 25,70 L 16,80 L 34,80 Z" fill="url(#snow1)"/>
+  <path d="M 75,55 L 65,68 L 85,68 Z" fill="url(#snow1)"/>
+  <!-- Front mountain (darkest, most prominent) -->
+  <path d="M 10,128 L 10,95 L 50,40 L 90,95 L 90,128 Z" fill="url(#rock3)"/>
+  <!-- Front snow cap -->
+  <path d="M 50,40 L 35,65 L 65,65 Z" fill="url(#snow1)"/>
+  <!-- Front mountain ridges -->
+  <path d="M 50,40 L 30,80 L 50,80 Z" fill="#2a2a2a" opacity="0.5"/>
+  <path d="M 50,40 L 70,80 L 50,80 Z" fill="#1a1a1a" opacity="0.4"/>
+  <!-- Highlights -->
+  <path d="M 50,40 L 45,55" fill="none" stroke="#ffffff" stroke-width="1" opacity="0.7"/>
+  <!-- Side mountain shadows -->
+  <path d="M 75,55 L 80,90 L 90,80 Z" fill="#1a1a1a" opacity="0.4"/>
+</svg>

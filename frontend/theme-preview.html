@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>山河远征 - 界面风格重构方案展示</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #eaedf2;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      color: #333;
+      padding: 16px;
+    }
+
+    .preview-header {
+      max-width: 980px;
+      margin: 0 auto 16px;
+      background: #fff;
+      padding: 18px 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    .preview-header h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 6px;
+    }
+    .preview-header p {
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.6;
+    }
+
+    /* Style Switcher Bar */
+    .style-switcher {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid #e2e8f0;
+    }
+    .style-btn {
+      flex: 1 1 calc(25% - 8px);
+      min-width: 170px;
+      padding: 10px 12px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      background: #f8fafc;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s ease;
+    }
+    .style-btn:hover {
+      border-color: #94a3b8;
+      background: #fff;
+    }
+    .style-btn.active {
+      border-color: #2563eb;
+      background: #eff6ff;
+      box-shadow: 0 3px 8px rgba(37,99,235,0.12);
+    }
+    .style-btn .name {
+      font-weight: 700;
+      font-size: 13px;
+      color: #1e293b;
+      margin-bottom: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .style-btn.active .name { color: #1d4ed8; }
+    .style-btn .tag {
+      font-size: 11px;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: #e2e8f0;
+      color: #475569;
+      font-weight: normal;
+    }
+    .style-btn.active .tag { background: #dbeafe; color: #1e40af; font-weight: 600; }
+    .style-btn .desc {
+      font-size: 11px;
+      color: #64748b;
+      line-height: 1.4;
+    }
+
+    /* Layout */
+    .main-layout {
+      max-width: 980px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+    @media (max-width: 820px) {
+      .main-layout { grid-template-columns: 1fr; }
+    }
+
+    /* Phone Simulator Frame */
+    .phone-simulator {
+      background: #1e293b;
+      padding: 10px;
+      border-radius: 28px;
+      box-shadow: 0 16px 36px rgba(0,0,0,0.22);
+      border: 3px solid #334155;
+    }
+    .screen-wrapper {
+      border-radius: 20px;
+      overflow: hidden;
+      min-height: 600px;
+      position: relative;
+    }
+
+    /* Explanation Panel */
+    .explanation-panel {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    .explanation-panel h2 {
+      font-size: 17px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 8px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .explanation-panel h3 {
+      font-size: 13px;
+      color: #334155;
+      margin: 14px 0 6px;
+      font-weight: 700;
+    }
+    .explanation-panel p, .explanation-panel li {
+      font-size: 13px;
+      color: #475569;
+      line-height: 1.6;
+    }
+    .explanation-panel ul { padding-left: 18px; margin-bottom: 10px; }
+    .color-swatches {
+      display: flex;
+      gap: 6px;
+      margin: 8px 0 12px;
+    }
+    .swatch {
+      flex: 1;
+      height: 34px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 600;
+      border: 1px solid rgba(0,0,0,0.08);
+      text-align: center;
+      padding: 0 2px;
+    }
+
+    /* View Switcher inside Simulator */
+    .view-subtabs {
+      display: flex;
+      background: #f1f5f9;
+      padding: 3px;
+      gap: 3px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+    .view-tab-btn {
+      flex: 1;
+      border: none;
+      padding: 5px 2px;
+      font-size: 11px;
+      border-radius: 4px;
+      cursor: pointer;
+      background: transparent;
+      color: #64748b;
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+    .view-tab-btn.active {
+      background: #fff;
+      color: #1e293b;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+
+    /* ================================================================ */
+    /* THEME 1: 3GQQ 经典 WAP 蓝白文字风 (截图 1:1 精准复刻)            */
+    /* ================================================================ */
+    .theme-3gqq {
+      background: #ffffff;
+      color: #222222;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .theme-3gqq a { color: #004499; text-decoration: none; cursor: pointer; }
+    .theme-3gqq a:hover { text-decoration: underline; }
+    
+    /* 3GQQ 经典天蓝顶栏与九宫格导航 (与截图一模一样) */
+    .theme-3gqq .wap-header {
+      background: #4a7bb5;
+      padding: 8px 8px;
+      color: #fff;
+    }
+    .theme-3gqq .wap-grid-nav {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px 2px;
+      text-align: center;
+    }
+    .theme-3gqq .wap-grid-nav a {
+      color: #ffffff;
+      font-size: 13px;
+      text-decoration: none;
+      display: block;
+      padding: 3px 0;
+      border-radius: 2px;
+    }
+    .theme-3gqq .wap-grid-nav a:hover,
+    .theme-3gqq .wap-grid-nav a.active {
+      background: rgba(255, 255, 255, 0.28);
+      font-weight: bold;
+    }
+
+    /* 3GQQ 快捷操作/搜索条 (仿截图 [图] [输入框] [搜索]) */
+    .theme-3gqq .wap-search-bar {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 8px;
+      background: #f0f4f9;
+      border-bottom: 1px solid #dce4ee;
+      font-size: 12px;
+    }
+    .theme-3gqq .wap-search-tag {
+      background: #3b6ea8;
+      color: #fff;
+      font-size: 10px;
+      padding: 1px 3px;
+      border-radius: 2px;
+    }
+    .theme-3gqq .wap-input {
+      border: 1px solid #9bb5d4;
+      padding: 2px 5px;
+      font-size: 11px;
+      flex: 1;
+      background: #fff;
+      outline: none;
+    }
+    .theme-3gqq .wap-btn {
+      background: #4a7bb5;
+      color: #fff;
+      border: 1px solid #36659c;
+      padding: 2px 6px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    /* 3GQQ 资源快捷行 (高密度数据) */
+    .theme-3gqq .wap-res-bar {
+      padding: 5px 8px;
+      background: #e9f0f8;
+      border-bottom: 1px solid #d0ddec;
+      font-size: 11px;
+      color: #334455;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px 8px;
+    }
+    .theme-3gqq .wap-res-bar span { white-space: nowrap; }
+    .theme-3gqq .wap-res-bar b { color: #004499; }
+
+    /* 3GQQ 分区标题与竖线导航 (仿截图【社区广场】爱宠国 | 魔法花园 | QQ农场) */
+    .theme-3gqq .wap-section-bar {
+      background: #eef3f9;
+      border-top: 1px solid #d8e2ed;
+      border-bottom: 1px solid #d8e2ed;
+      padding: 4px 8px;
+      font-size: 12px;
+      margin: 6px 0 2px;
+    }
+    .theme-3gqq .wap-sec-tag {
+      font-weight: bold;
+      color: #004499;
+    }
+    .theme-3gqq .wap-sec-links {
+      color: #667788;
+      margin-left: 2px;
+    }
+    .theme-3gqq .wap-sec-links a { margin: 0 1px; }
+
+    /* 3GQQ 列表条目与星星 (仿截图 ☆ be mine (15阅/11回)) */
+    .theme-3gqq .wap-list {
+      padding: 2px 8px 10px;
+    }
+    .theme-3gqq .wap-item {
+      padding: 5px 0;
+      border-bottom: 1px dashed #e8ecf1;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .theme-3gqq .wap-item .star {
+      color: #4a7bb5;
+      margin-right: 3px;
+      font-size: 12px;
+    }
+    .theme-3gqq .wap-item .title-link {
+      color: #004499;
+      font-weight: 500;
+    }
+    .theme-3gqq .wap-item .meta {
+      color: #778899;
+      font-size: 11px;
+      margin-left: 3px;
+    }
+    .theme-3gqq .wap-item .action-group {
+      margin-left: 6px;
+      font-size: 11px;
+    }
+    .theme-3gqq .wap-item .desc {
+      color: #666;
+      font-size: 11px;
+      padding-left: 14px;
+      margin-top: 2px;
+    }
+    .theme-3gqq .wap-footer {
+      background: #f0f4f9;
+      border-top: 1px solid #d8e2ed;
+      padding: 8px;
+      text-align: center;
+      font-size: 11px;
+      color: #667788;
+    }
+
+    /* ================================================================ */
+    /* THEME 2: 现代战术纸质 · 极简沙盘公文风 (Paper Tactical)          */
+    /* ================================================================ */
+    .theme-paper {
+      background: #f6f5f0;
+      color: #1a1e21;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .theme-paper .paper-header {
+      background: #273136;
+      color: #eceee9;
+      padding: 8px 10px;
+      border-bottom: 2px solid #3f5e4d;
+    }
+    .theme-paper .paper-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+    }
+    .theme-paper .paper-res-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-top: 6px;
+      background: #1c2327;
+      padding: 4px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      color: #cbd5cb;
+    }
+    .theme-paper .paper-res-grid b { color: #a4d29f; }
+    .theme-paper .paper-nav {
+      display: flex;
+      background: #ebe7df;
+      border-bottom: 1px solid #ded9cd;
+      overflow-x: auto;
+    }
+    .theme-paper .paper-nav-item {
+      padding: 6px 10px;
+      font-size: 12px;
+      color: #495057;
+      text-decoration: none;
+      white-space: nowrap;
+      border-right: 1px solid #ded9cd;
+      cursor: pointer;
+    }
+    .theme-paper .paper-nav-item.active {
+      background: #f6f5f0;
+      color: #2b5435;
+      font-weight: 700;
+      border-bottom: 2px solid #2b5435;
+    }
+    .theme-paper .paper-card {
+      background: #ffffff;
+      border: 1px solid #e2ded5;
+      border-radius: 3px;
+      margin: 8px 10px;
+      padding: 8px 10px;
+    }
+    .theme-paper .paper-card-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #273136;
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid #f0ede6;
+      padding-bottom: 4px;
+      margin-bottom: 6px;
+    }
+    .theme-paper .paper-item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
+      border-bottom: 1px solid #f8f6f0;
+      font-size: 12px;
+    }
+    .theme-paper .paper-btn {
+      background: #3f5e4d;
+      color: #fff;
+      border: none;
+      padding: 3px 8px;
+      border-radius: 2px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    /* ================================================================ */
+    /* THEME 3: 新时代极简 · 现代灵动扁平风 (Modern Clean Minimal)     */
+    /* ================================================================ */
+    .theme-modern {
+      background: #f8fafc;
+      color: #0f172a;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .theme-modern .modern-header {
+      background: #ffffff;
+      padding: 10px 12px 6px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .theme-modern .modern-user-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .theme-modern .modern-chips {
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+      margin-top: 8px;
+      padding-bottom: 2px;
+    }
+    .theme-modern .chip {
+      background: #f1f5f9;
+      padding: 3px 8px;
+      border-radius: 99px;
+      font-size: 11px;
+      color: #334155;
+      white-space: nowrap;
+    }
+    .theme-modern .modern-nav {
+      display: flex;
+      background: #ffffff;
+      padding: 4px 8px;
+      border-bottom: 1px solid #e2e8f0;
+      gap: 4px;
+    }
+    .theme-modern .modern-nav-btn {
+      flex: 1;
+      text-align: center;
+      padding: 5px 0;
+      font-size: 11px;
+      border-radius: 4px;
+      color: #64748b;
+      cursor: pointer;
+    }
+    .theme-modern .modern-nav-btn.active {
+      background: #eff6ff;
+      color: #2563eb;
+      font-weight: 600;
+    }
+    .theme-modern .modern-list {
+      padding: 8px 10px;
+    }
+    .theme-modern .modern-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 6px;
+    }
+    .theme-modern .modern-action-btn {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    /* ================================================================ */
+    /* THEME 4: 战术夜航终端 · 极简冷黑微光风 (Tactical Night Terminal) */
+    /* ================================================================ */
+    .theme-dark {
+      background: #0b0f17;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .theme-dark .dark-header {
+      background: #111724;
+      padding: 8px 10px;
+      border-bottom: 1px solid #1e293b;
+    }
+    .theme-dark .dark-user-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: #38bdf8;
+    }
+    .theme-dark .dark-res-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #94a3b8;
+      margin-top: 6px;
+      padding-top: 4px;
+      border-top: 1px solid #1e293b;
+    }
+    .theme-dark .dark-res-row b { color: #f1f5f9; }
+    .theme-dark .dark-nav {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      background: #0f1420;
+      border-bottom: 1px solid #1e293b;
+      text-align: center;
+    }
+    .theme-dark .dark-nav-item {
+      padding: 6px 0;
+      font-size: 11px;
+      color: #64748b;
+      border-right: 1px solid #1e293b;
+      cursor: pointer;
+    }
+    .theme-dark .dark-nav-item.active {
+      color: #38bdf8;
+      background: #162032;
+      font-weight: 600;
+    }
+    .theme-dark .dark-list {
+      padding: 8px 10px;
+    }
+    .theme-dark .dark-item {
+      background: #111827;
+      border: 1px solid #1f293d;
+      border-left: 3px solid #38bdf8;
+      padding: 8px 10px;
+      margin-bottom: 6px;
+      border-radius: 3px;
+    }
+    .theme-dark .dark-btn {
+      background: #0284c7;
+      color: #fff;
+      border: none;
+      padding: 3px 8px;
+      border-radius: 3px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="preview-header">
+    <h1>🎨 山河远征 · 界面精简清爽化重构方案</h1>
+    <p>针对“当前风格不够简洁清爽”的问题，提供 4 组针对性设计方案。其中 <b>方案 A</b> 按照您提供的截图，精准还原了经典 3GQQ 纯正 WAP 蓝白文字风，去除全部臃肿沉重杂色！</p>
+    
+    <!-- 方案选择切换条 -->
+    <div class="style-switcher">
+      <button class="style-btn active" id="btn-3gqq" onclick="switchTheme('3gqq')">
+        <div class="name">🌟 方案 A：3GQQ 怀旧家园风 <span class="tag">截图同款</span></div>
+        <div class="desc">经典天蓝九宫格顶栏 + 纯白极简文字流 + 竖线操作符，纯粹怀旧低噪点</div>
+      </button>
+
+      <button class="style-btn" id="btn-paper" onclick="switchTheme('paper')">
+        <div class="name">📜 方案 B：战术公文沙盘风 <span class="tag">军工纸质</span></div>
+        <div class="desc">米白档案底 + 极细战术黑线 + 沉稳军绿与印章朱红，护眼耐看</div>
+      </button>
+
+      <button class="style-btn" id="btn-modern" onclick="switchTheme('modern')">
+        <div class="name">⚡ 方案 C：新时代极简扁平风 <span class="tag">现代清爽</span></div>
+        <div class="desc">冷灰白底 + 钴蓝交互 + 极轻量卡片与胶囊徽章，现代移动端极致交互</div>
+      </button>
+
+      <button class="style-btn" id="btn-dark" onclick="switchTheme('dark')">
+        <div class="name">🌙 方案 D：战术夜航终端风 <span class="tag">极简冷黑</span></div>
+        <div class="desc">纯净深冷墨黑 + 雷达天青微光 + 彻底抛弃原版脏蓝，高对比沉浸</div>
+      </button>
+    </div>
+  </div>
+
+  <div class="main-layout">
+    
+    <!-- 左侧：实时手机端模拟器 -->
+    <div>
+      <div class="phone-simulator">
+        <div class="screen-wrapper" id="simScreen">
+          <!-- 动态渲染区 -->
+          <div id="themeContainer" class="theme-3gqq"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右侧：设计说明与参数解析 -->
+    <div class="explanation-panel">
+      <div id="themeExplanation">
+        <!-- 动态更新内容 -->
+      </div>
+
+      <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid #e2e8f0;">
+        <h3>💡 页面场景交互切换预览</h3>
+        <p style="margin-bottom: 8px;">点击下方标签，可预览当前风格在不同游戏场景下的实际表现：</p>
+        <div class="view-subtabs">
+          <button class="view-tab-btn active" id="vbtn-city" onclick="switchView('city')">🏛️ 基地内政</button>
+          <button class="view-tab-btn" id="vbtn-army" onclick="switchView('army')">⚔️ 军事整备</button>
+          <button class="view-tab-btn" id="vbtn-officer" onclick="switchView('officer')">🎖️ 参谋将领</button>
+          <button class="view-tab-btn" id="vbtn-alerts" onclick="switchView('alerts')">🚨 军情战报</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    var currentTheme = '3gqq';
+    var currentView = 'city';
+
+    var themeInfo = {
+      '3gqq': {
+        title: '方案 A：【经典 3GQQ 家园 · 纯正 WAP 蓝白文字风】(截图 1:1 复刻)',
+        tags: '怀旧复古 · 极致轻量 · 极高信息密度 · 零视觉噪点',
+        colors: [
+          { bg: '#4a7bb5', color: '#fff', label: '顶栏经典蓝 #4a7bb5' },
+          { bg: '#ffffff', color: '#000', label: '纯净底白 #ffffff' },
+          { bg: '#004499', color: '#fff', label: '超链深蓝 #004499' },
+          { bg: '#eef3f9', color: '#333', label: '栏目浅蓝 #eef3f9' }
+        ],
+        desc: '完全契合您发送的 3GQQ 截图风格！彻底剔除厚重渐变阴影，还原 2008-2012 年掌上文字网游时代的极度简洁与清爽。',
+        features: [
+          '<b>顶部 4 列九宫格导航条</b>：天蓝底色加纯白字，将主要页面一目了然列出，如【司令部 | 资源区 | 军事区 | 世界】。',
+          '<b>经典操作符号与排版</b>：标志性的【方括号】大分类，配合竖线 <code>|</code> 分隔的极简文字操作链接（如：<code>升级 | 详情 | 委任</code>）。',
+          '<b>轻巧的星星与括号数据</b>：条目前缀用 <code>☆</code> 或 <code>★</code>，数值与耗时直接紧凑放入小括号 <code>(产出:+1200/时)</code>，完全不占多余面积。',
+          '<b>超低疲劳度</b>：去掉了所有刺眼的暗紫渐变和杂色，字体排版自然舒展，长时间游玩眼睛不累。'
+        ]
+      },
+      'paper': {
+        title: '方案 B：【现代战术公文 · 极简沙盘纸质风 (Paper Tactical)】',
+        tags: '司令部档案 · 护眼米白 · 极细线框 · 严谨沉稳',
+        colors: [
+          { bg: '#f6f5f0', color: '#222', label: '档案米白 #f6f5f0' },
+          { bg: '#273136', color: '#fff', label: '墨水黑 #273136' },
+          { bg: '#3f5e4d', color: '#fff', label: '战备橄榄绿 #3f5e4d' },
+          { bg: '#b93826', color: '#fff', label: '印章朱红 #b93826' }
+        ],
+        desc: '灵感源自二战司令部战地机密公文与作战沙盘图纸，兼具现代平面设计的清爽高级感。',
+        features: [
+          '<b>温润护眼底色</b>：采用漫反射低饱和米白底色，消除纯白对眼睛的直射刺激，长时间阅读作战报告极度舒适。',
+          '<b>极细战术墨线</b>：没有复杂的卡片外阴影，所有功能区仅用 1px 细线整齐划分，像打字机刚打印出的作战指令。',
+          '<b>军规色彩标识</b>：绿色代表安全与丰收，朱红色代表军情警报，黄铜色代表军阶功勋，主次逻辑分明。'
+        ]
+      },
+      'modern': {
+        title: '方案 C：【新时代极简 · 现代灵动扁平风 (Modern Clean Minimal)】',
+        tags: '灵动通透 · 现代移动端规范 · 极致呼吸感',
+        colors: [
+          { bg: '#f8fafc', color: '#1e293b', label: '冷雾浅灰 #f8fafc' },
+          { bg: '#2563eb', color: '#fff', label: '科技钴蓝 #2563eb' },
+          { bg: '#dbeafe', color: '#1e40af', label: '浅蓝气泡 #dbeafe' },
+          { bg: '#0f172a', color: '#fff', label: '石板深黑 #0f172a' }
+        ],
+        desc: '借鉴当前国际一线生产力与战略应用（如 Linear / Notion / Apple UI）的极简美学。',
+        features: [
+          '<b>胶囊标签与分段控制</b>：将复杂的操作简化为轻盈微胶囊，层次丰富但不显丝毫杂乱。',
+          '<b>留白克制呼吸感</b>：模块之间通过精准间距实现自然区分，减少线条数量，视觉更清爽。',
+          '<b>轻微触觉反馈感</b>：按键与开关轻盈灵动，给玩家带来最现代顺滑的操作手感。'
+        ]
+      },
+      'dark': {
+        title: '方案 D：【战术夜航终端 · 极简冷黑微光风 (Tactical Night Terminal)】',
+        tags: '深冷墨黑 · 纯粹无杂质 · 战术雷达青 · 夜间护眼',
+        colors: [
+          { bg: '#0b0f17', color: '#e2e8f0', label: '深冷黑 #0b0f17' },
+          { bg: '#111724', color: '#38bdf8', label: '雷达蓝黑 #111724' },
+          { bg: '#38bdf8', color: '#000', label: '荧光天青 #38bdf8' },
+          { bg: '#4ade80', color: '#000', label: '战备青绿 #4ade80' }
+        ],
+        desc: '针对深色模式爱好者的重构方案，彻底剔除原本浑浊的深蓝紫杂色，采用高纯度的军用雷达极简黑。',
+        features: [
+          '<b>高纯度黑底抗干扰</b>：黑度纯净，无油腻反光，有效降低功耗，夜间玩不刺眼。',
+          '<b>极窄微光边框</b>：以低对比石板细线和天青色边沿指示焦点，文字清晰锐利，一扫原本糊成一片的压抑感。'
+        ]
+      }
+    };
+
+    function renderExplanation() {
+      var info = themeInfo[currentTheme];
+      var colorHtml = '';
+      info.colors.forEach(function(c) {
+        colorHtml += '<div class="swatch" style="background:' + c.bg + ';color:' + c.color + '">' + c.label + '</div>';
+      });
+
+      var featHtml = '';
+      info.features.forEach(function(f) {
+        featHtml += '<li>' + f + '</li>';
+      });
+
+      var html = '<h2>' + info.title + '</h2>'
+        + '<div style="font-size:12px;color:#2563eb;font-weight:600;margin-bottom:6px;">' + info.tags + '</div>'
+        + '<p>' + info.desc + '</p>'
+        + '<div class="color-swatches">' + colorHtml + '</div>'
+        + '<h3>核心设计特征：</h3>'
+        + '<ul>' + featHtml + '</ul>';
+      document.getElementById('themeExplanation').innerHTML = html;
+    }
+
+    function renderScreen() {
+      var c = document.getElementById('themeContainer');
+      c.className = 'theme-' + currentTheme;
+
+      if (currentTheme === '3gqq') {
+        render3GQQ(c);
+      } else if (currentTheme === 'paper') {
+        renderPaper(c);
+      } else if (currentTheme === 'modern') {
+        renderModern(c);
+      } else if (currentTheme === 'dark') {
+        renderDark(c);
+      }
+    }
+
+    /* ------------------------------------------------------------- */
+    /* 3GQQ 页面渲染模板                                              */
+    /* ------------------------------------------------------------- */
+    function render3GQQ(container) {
+      var navActive = { city: '', army: '', officer: '', alerts: '' };
+      navActive[currentView] = 'class="active"';
+
+      var html = '';
+      // 1. 顶部经典 3GQQ 蓝色多列九宫格导航栏 (截图同款)
+      html += '<div class="wap-header">'
+            + '  <div class="wap-grid-nav">'
+            + '    <a ' + navActive.city + ' onclick="switchView(\'city\')">🏛️ 基地</a>'
+            + '    <a ' + navActive.army + ' onclick="switchView(\'army\')">⚔️ 军事</a>'
+            + '    <a ' + navActive.officer + ' onclick="switchView(\'officer\')">🎖️ 军官</a>'
+            + '    <a ' + navActive.alerts + ' onclick="switchView(\'alerts\')">🚨 军情</a>'
+            + '    <a href="javascript:void(0)">🌾 农田</a>'
+            + '    <a href="javascript:void(0)">🗺️ 世界</a>'
+            + '    <a href="javascript:void(0)">✉️ 邮件(2)</a>'
+            + '    <a href="javascript:void(0)">💎 商城</a>'
+            + '  </div>'
+            + '</div>';
+
+      // 2. 搜索 / 快速坐标跳转条 (仿截图 [图] [输入框] [搜索])
+      html += '<div class="wap-search-bar">'
+            + '  <span class="wap-search-tag">坐标</span>'
+            + '  <input class="wap-input" value="[X: 142 , Y: 088]" readonly />'
+            + '  <button class="wap-btn">侦察</button>'
+            + '</div>';
+
+      // 3. 资源状态栏 (经典深蓝高亮)
+      html += '<div class="wap-res-bar">'
+            + '  <span>粮:<b>84,200</b>(+3.2k)</span>'
+            + '  <span>钢:<b>65,100</b>(+2.8k)</span>'
+            + '  <span>油:<b>42,000</b>(+1.5k)</span>'
+            + '  <span>稀:<b>18,500</b>(+600)</span>'
+            + '  <span>金:<b>45,200</b></span>'
+            + '</div>';
+
+      // 4. 内容视图
+      if (currentView === 'city') {
+        html += '<div class="wap-section-bar">'
+              + '  <span class="wap-sec-tag">【基地内政】</span>'
+              + '  <span class="wap-sec-links">'
+              + '    <a href="javascript:void(0)">生产加速</a> |'
+              + '    <a href="javascript:void(0)">民情政务</a> |'
+              + '    <a href="javascript:void(0)">仓库保护</a>'
+              + '  </span>'
+              + '</div>'
+              + '<div class="wap-list">'
+              + '  <div class="wap-item">'
+              + '    <span class="star">☆</span><a class="title-link" href="javascript:void(0)">市政厅 [Lv.8]</a>'
+              + '    <span class="meta">(主城核心/民心:92)</span>'
+              + '    <span class="action-group"><a href="javascript:void(0)">[升级]</a> <a href="javascript:void(0)">[详情]</a></span>'
+              + '    <div class="desc">控制全城建筑等级上限，升9级需要钢:24,000 粮:12,000</div>'
+              + '  </div>'
+              + '  <div class="wap-item">'
+              + '    <span class="star">☆</span><a class="title-link" href="javascript:void(0)">大型炼钢厂 [Lv.7]</a>'
+              + '    <span class="meta">(产出:+2800/时)</span>'
+              + '    <span class="action-group"><a href="javascript:void(0)">[升级]</a> <a href="javascript:void(0)">[委任]</a></span>'
+              + '    <div class="desc">高效运转中，升级耗时 01:24:10</div>'
+              + '  </div>'
+              + '  <div class="wap-item">'
+              + '    <span class="star">☆</span><a class="title-link" href="javascript:void(0)">重工业石油基地 [Lv.6]</a>'
+              + '    <span class="meta">(产出:+1500/时)</span>'
+              + '    <span class="action-group"><a href="javascript:void(0)">[升级]</a></span>'
+              + '    <div class="desc">战备燃料储备平稳，储量已达上限 78%</div>'
+              + '  </div>'
+              + '  <div class="wap-item">'
+              + '    <span class="star">☆</span><a class="title-link" href="javascript:void(0)">科研实验室 [Lv.5]</a>'
+              + '    <span class="meta">(研究中: 装甲强化Lv.4)</span>'
+              + '    <span class="action-group"><a href="javascript:void(0)">[加速]</a> <a href="javascript:void(0)">[进入]</a></span>'
+              + '    <div class="desc">剩余研发时间 00:32:15，提升重坦防御+5%</div>'
+              + '  </div>'
+              + '</div>';
+      } else if (currentView === 'army') {
+        html += '<div class="wap-section-bar">'
+              + '  <span class="wap-sec-tag">【全军战备】</span>'
+              + '  <span class="wap-sec-links">'
+              + '    <a href="javascript:void(0)">一键征兵</a> |'
+              + '    <a href="javascript:void(0)">兵力调配</a> |'
+              + '    <a href="javascript:void(0)">城防工事</a>'
+              + '  </span>'
+              + '</div>'
+              + '<div class="wap-list">'
+              + '  <div class="wap-item">'
+              + '    <span class="star">★</span><a class="title-link" href="javascript:void(0)">重型坦克 (在编: 45辆)</a>'
+              + '    <span class="meta">(攻:50/防:40/粮耗:8)</span>'
+              + '    <span class="action-group"><a href="javascript:void(0)">[招募]</a> <a href="javascript:void(0)">[解散]</a></span>'
+              + '    <div class="desc">陆战核心突击力量，克制轻坦与防线工事</div>'
+              + '  </div>'
+              + '  <div class="wap-item">'
+              + '    <span class="star">★</span><a class="title-link" href="javascript:void(0)">战斗机 (在编: 18架)</a>'
+              + '    <span class="meta">(攻:35/防:22/速:12)</span>'
+              + '    <span class="action-group"><a href="javascript:void(0)">[制造]</a> <a href="javascript:void(0)">[巡逻]</a></span>'
+              + '    <div class="desc">防空制空利刃，克制敌方轰炸机编队</div>'
+              + '  </div>'
+              + '  <div class="wap-item">'
+              + '    <span class="star">★</span><a class="title-link" href="javascript:void(0)">摩托化步兵 (在编: 320人)</a>'
+              + '    <span class="meta">(攻:10/防:4/速:7)</span>'
+              + '    <span class="action-group"><a href="javascript:void(0)">[征召]</a></span>'
+              + '    <div class="desc">高速轻装部队，擅长奔袭侦察与占领据点</div>'
+              + '  </div>'
+              + '</div>';
+      } else if (currentView === 'officer') {
+        html += '<div class="wap-section-bar">'
+              + '  <span class="wap-sec-tag">【军官参谋部】</span>'
+              + '  <span class="wap-sec-links">'
+              + '    <a href="javascript:void(0)">军校招募</a> |'
+              + '    <a href="javascript:void(0)">将领洗礼</a> |'
+              + '    <a href="javascript:void(0)">军饷发放</a>'
+              + '  </span>'
+              + '</div>'
+              + '<div class="wap-list">'
+              + '  <div class="wap-item">'
+              + '    <span class="star">🎖️</span><a class="title-link" href="javascript:void(0)">朱可夫上将 [★★★★★]</a>'
+              + '    <span class="meta">(总司令官/Lv.15)</span>'
+              + '    <span class="action-group"><a href="javascript:void(0)">[任命]</a> <a href="javascript:void(0)">[配兵]</a></span>'
+              + '    <div class="desc">统帅:96 军事:92 后勤:88 · 技能: [钢铁洪流] 重坦攻击+15%</div>'
+              + '  </div>'
+              + '  <div class="wap-item">'
+              + '    <span class="star">🎖️</span><a class="title-link" href="javascript:void(0)">巴顿将军 [★★★★☆]</a>'
+              + '    <span class="meta">(前线突击/Lv.12)</span>'
+              + '    <span class="action-group"><a href="javascript:void(0)">[升星]</a> <a href="javascript:void(0)">[卸任]</a></span>'
+              + '    <div class="desc">统帅:88 军事:95 后勤:74 · 技能: [闪电穿插] 行军速度+20%</div>'
+              + '  </div>'
+              + '</div>';
+      } else if (currentView === 'alerts') {
+        html += '<div class="wap-section-bar">'
+              + '  <span class="wap-sec-tag">【前线战报与警报】</span>'
+              + '  <span class="wap-sec-links">'
+              + '    <a href="javascript:void(0)">清空已读</a> |'
+              + '    <a href="javascript:void(0)">防空备战</a>'
+              + '  </span>'
+              + '</div>'
+              + '<div class="wap-list">'
+              + '  <div class="wap-item">'
+              + '    <span class="star" style="color:#c00">🚨</span><a class="title-link" href="javascript:void(0)" style="color:#c00">【敌军来袭】神秘突击部队正向分基地行军！</a>'
+              + '    <span class="meta">(倒计时: 08分24秒)</span>'
+              + '    <span class="action-group"><a href="javascript:void(0)">[回防]</a> <a href="javascript:void(0)">[战备]</a></span>'
+              + '    <div class="desc">目标坐标: [X: 142 , Y: 088]，雷达预警敌重坦约 30 辆</div>'
+              + '  </div>'
+              + '  <div class="wap-item">'
+              + '    <span class="star">☆</span><a class="title-link" href="javascript:void(0)">【战报胜利】第2装甲军团扫荡7级油田成功</a>'
+              + '    <span class="meta">(15分前)</span>'
+              + '    <span class="action-group"><a href="javascript:void(0)">[回放]</a> <a href="javascript:void(0)">[驻扎]</a></span>'
+              + '    <div class="desc">缴获石油+45,000，钢铁+20,000，我军轻伤3辆</div>'
+              + '  </div>'
+              + '</div>';
+      }
+
+      html += '<div class="wap-footer">'
+            + '  <a href="javascript:void(0)">返回主城</a> | <a href="javascript:void(0)">一键存盘</a> | <a href="javascript:void(0)">刷新</a><br>'
+            + '  山河远征 · 经典文字版'
+            + '</div>';
+
+      container.innerHTML = html;
+    }
+
+    /* ------------------------------------------------------------- */
+    /* 方案 B：战术公文沙盘风                                        */
+    /* ------------------------------------------------------------- */
+    function renderPaper(container) {
+      var html = '<div class="paper-header">'
+               + '  <div class="paper-top-row">'
+               + '    <span><b>第07战区司令部</b> · 艾森豪威尔</span>'
+               + '    <span>★ 声望: 18,920 · 💎 680</span>'
+               + '  </div>'
+               + '  <div class="paper-res-grid">'
+               + '    <div>🌾 粮 <b>84.2k</b></div>'
+               + '    <div>🔩 钢 <b>65.1k</b></div>'
+               + '    <div>🛢️ 油 <b>42.0k</b></div>'
+               + '    <div>🪙 金 <b>45.2k</b></div>'
+               + '  </div>'
+               + '</div>'
+               + '<div class="paper-nav">'
+               + '  <a class="paper-nav-item ' + (currentView === 'city' ? 'active' : '') + '" onclick="switchView(\'city\')">公文内政</a>'
+               + '  <a class="paper-nav-item ' + (currentView === 'army' ? 'active' : '') + '" onclick="switchView(\'army\')">战备编制</a>'
+               + '  <a class="paper-nav-item ' + (currentView === 'officer' ? 'active' : '') + '" onclick="switchView(\'officer\')">将领档案</a>'
+               + '  <a class="paper-nav-item ' + (currentView === 'alerts' ? 'active' : '') + '" onclick="switchView(\'alerts\')">前线密电</a>'
+               + '</div>';
+
+      if (currentView === 'city') {
+        html += '<div class="paper-card">'
+              + '  <div class="paper-card-title"><span>市政厅 (行政中枢)</span><span>等级 8</span></div>'
+              + '  <div class="paper-item-row"><span>治安民心指数: 92%</span><button class="paper-btn">委任市长</button></div>'
+              + '  <div class="paper-item-row"><span>升级耗资: 钢 24k / 粮 12k</span><button class="paper-btn">签批扩建</button></div>'
+              + '</div>'
+              + '<div class="paper-card">'
+              + '  <div class="paper-card-title"><span>战备重工冶炼厂</span><span>等级 7</span></div>'
+              + '  <div class="paper-item-row"><span>钢铁生产速率: +2,800/时</span><button class="paper-btn">技术调度</button></div>'
+              + '</div>';
+      } else {
+        html += '<div class="paper-card">'
+              + '  <div class="paper-card-title"><span>编制检阅</span><span>就绪</span></div>'
+              + '  <div class="paper-item-row"><span>重型坦克集群: 45 辆</span><button class="paper-btn">调度编制</button></div>'
+              + '  <div class="paper-item-row"><span>制空战机大队: 18 架</span><button class="paper-btn">起飞巡航</button></div>'
+              + '</div>';
+      }
+      container.innerHTML = html;
+    }
+
+    /* ------------------------------------------------------------- */
+    /* 方案 C：新时代极简扁平风                                      */
+    /* ------------------------------------------------------------- */
+    function renderModern(container) {
+      var html = '<div class="modern-header">'
+               + '  <div class="modern-user-row">'
+               + '    <span>艾森豪威尔上将</span>'
+               + '    <span style="color:#2563eb;font-size:11px;">声望 18,920</span>'
+               + '  </div>'
+               + '  <div class="modern-chips">'
+               + '    <span class="chip">🌾 84.2k</span>'
+               + '    <span class="chip">🔩 65.1k</span>'
+               + '    <span class="chip">🛢️ 42.0k</span>'
+               + '    <span class="chip">🪙 45.2k</span>'
+               + '  </div>'
+               + '</div>'
+               + '<div class="modern-nav">'
+               + '  <a class="modern-nav-btn ' + (currentView === 'city' ? 'active' : '') + '" onclick="switchView(\'city\')">城市基建</a>'
+               + '  <a class="modern-nav-btn ' + (currentView === 'army' ? 'active' : '') + '" onclick="switchView(\'army\')">陆空战备</a>'
+               + '  <a class="modern-nav-btn ' + (currentView === 'officer' ? 'active' : '') + '" onclick="switchView(\'officer\')">将领池</a>'
+               + '  <a class="modern-nav-btn ' + (currentView === 'alerts' ? 'active' : '') + '" onclick="switchView(\'alerts\')">雷达预警</a>'
+               + '</div>'
+               + '<div class="modern-list">'
+               + '  <div class="modern-card">'
+               + '    <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-weight:600">市政厅</span><span style="font-size:11px;background:#dbeafe;color:#1e40af;padding:1px 6px;border-radius:99px;">Lv.8</span></div>'
+               + '    <div style="font-size:11px;color:#64748b;margin-bottom:6px;">决定全体建筑等级上限与税赋征收</div>'
+               + '    <div style="display:flex;justify-content:flex-end;"><button class="modern-action-btn">升级建筑</button></div>'
+               + '  </div>'
+               + '  <div class="modern-card">'
+               + '    <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-weight:600">重装兵工厂</span><span style="font-size:11px;background:#dbeafe;color:#1e40af;padding:1px 6px;border-radius:99px;">Lv.6</span></div>'
+               + '    <div style="font-size:11px;color:#64748b;margin-bottom:6px;">可建造重装坦克、火箭车及突击炮</div>'
+               + '    <div style="display:flex;justify-content:flex-end;"><button class="modern-action-btn">征兵排产</button></div>'
+               + '  </div>'
+               + '</div>';
+      container.innerHTML = html;
+    }
+
+    /* ------------------------------------------------------------- */
+    /* 方案 D：战术夜航终端风                                        */
+    /* ------------------------------------------------------------- */
+    function renderDark(container) {
+      var html = '<div class="dark-header">'
+               + '  <div class="dark-user-row">'
+               + '    <span>[TAC-OPS] 指挥官: 艾森豪威尔</span>'
+               + '    <span>DEFCON: 2</span>'
+               + '  </div>'
+               + '  <div class="dark-res-row">'
+               + '    <span>粮: <b>84.2k</b></span>'
+               + '    <span>钢: <b>65.1k</b></span>'
+               + '    <span>油: <b>42.0k</b></span>'
+               + '    <span>金: <b>45.2k</b></span>'
+               + '  </div>'
+               + '</div>'
+               + '<div class="dark-nav">'
+               + '  <a class="dark-nav-item ' + (currentView === 'city' ? 'active' : '') + '" onclick="switchView(\'city\')">核心中枢</a>'
+               + '  <a class="dark-nav-item ' + (currentView === 'army' ? 'active' : '') + '" onclick="switchView(\'army\')">装甲防线</a>'
+               + '  <a class="dark-nav-item ' + (currentView === 'officer' ? 'active' : '') + '" onclick="switchView(\'officer\')">指挥官</a>'
+               + '  <a class="dark-nav-item ' + (currentView === 'alerts' ? 'active' : '') + '" onclick="switchView(\'alerts\')">雷达预警</a>'
+               + '</div>'
+               + '<div class="dark-list">'
+               + '  <div class="dark-item">'
+               + '    <div style="display:flex;justify-content:space-between;font-weight:600"><span>[CMD] 市政核心枢纽</span><span style="color:#38bdf8">LV.08</span></div>'
+               + '    <div style="font-size:11px;color:#94a3b8;margin-top:3px;">城防工事完好度 100% · 雷达信标在线</div>'
+               + '    <div style="margin-top:6px;text-align:right;"><button class="dark-btn">执行升级</button></div>'
+               + '  </div>'
+               + '  <div class="dark-item">'
+               + '    <div style="display:flex;justify-content:space-between;font-weight:600"><span>[ARM] 重坦第3突击连</span><span style="color:#4ade80">45 辆在编</span></div>'
+               + '    <div style="font-size:11px;color:#94a3b8;margin-top:3px;">火力配置: 88mm 穿甲主炮 · 准备出征</div>'
+               + '    <div style="margin-top:6px;text-align:right;"><button class="dark-btn">战术部署</button></div>'
+               + '  </div>'
+               + '</div>';
+      container.innerHTML = html;
+    }
+
+    function switchTheme(theme) {
+      currentTheme = theme;
+      var buttons = document.querySelectorAll('.style-btn');
+      buttons.forEach(function(b) {
+        b.classList.remove('active');
+      });
+      var activeBtn = document.getElementById('btn-' + theme);
+      if (activeBtn) activeBtn.classList.add('active');
+      renderExplanation();
+      renderScreen();
+    }
+
+    function switchView(view) {
+      currentView = view;
+      var viewBtns = document.querySelectorAll('.view-tab-btn');
+      viewBtns.forEach(function(btn) {
+        btn.classList.remove('active');
+      });
+      var activeVBtn = document.getElementById('vbtn-' + view);
+      if (activeVBtn) activeVBtn.classList.add('active');
+      renderScreen();
+    }
+
+    // 初始化渲染
+    renderExplanation();
+    renderScreen();
+  </script>
+</body>
+</html>

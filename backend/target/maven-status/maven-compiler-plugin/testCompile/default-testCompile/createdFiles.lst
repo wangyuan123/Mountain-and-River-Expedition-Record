@@ -1,0 +1,8 @@
+com/wargame/BaseServiceTest.class
+com/wargame/MarchServiceTest.class
+com/wargame/MailServiceTest.class
+com/wargame/TickServiceTest.class
+com/wargame/ShopControllerTest.class
+com/wargame/OfficerLevelUpTest.class
+com/wargame/BattleServiceTest.class
+com/wargame/BuildServiceTest.class

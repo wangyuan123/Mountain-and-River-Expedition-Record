@@ -1,0 +1,9 @@
+.guild-list { display: grid; gap: 8px; margin: 8px 0; }
+.guild-card, .guild-overview, .guild-member { border: 1px solid #8aa4bf; border-radius: 6px; background: #f7fbff; color: #1d3550; padding: 9px; }
+.guild-card-head { display: flex; justify-content: space-between; gap: 8px; font-size: 16px; color: #123f6d; }
+.guild-card-head span { color: #9a6513; white-space: nowrap; }
+.guild-muted { margin-top: 3px; color: #617487; font-size: 12px; }
+.guild-notice { margin: 7px 0; color: #2d4963; white-space: pre-wrap; word-break: break-word; }
+.guild-member { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.guild-role { display: inline-block; margin-left: 5px; padding: 0 4px; border-radius: 3px; background: #d6e7f7; color: #245a8d; font-size: 11px; }
+.guild-create { margin-bottom: 10px; }

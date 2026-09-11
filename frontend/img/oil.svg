@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="barrelGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1a1a1a"/>
+      <stop offset="30%" stop-color="#3a3a3a"/>
+      <stop offset="50%" stop-color="#2a2a2a"/>
+      <stop offset="75%" stop-color="#1a1a1a"/>
+      <stop offset="100%" stop-color="#0a0a0a"/>
+    </linearGradient>
+    <linearGradient id="barrelShine" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.25"/>
+      <stop offset="40%" stop-color="#ffffff" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="oilGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#3a2818"/>
+      <stop offset="100%" stop-color="#0a0606"/>
+    </linearGradient>
+    <linearGradient id="diamondGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffe680"/>
+      <stop offset="50%" stop-color="#ffc107"/>
+      <stop offset="100%" stop-color="#b8860b"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Oil pool on ground -->
+  <ellipse cx="78" cy="108" rx="32" ry="5" fill="url(#oilGrad)" opacity="0.95"/>
+  <ellipse cx="78" cy="107" rx="26" ry="3" fill="#000" opacity="0.4"/>
+  <!-- Oil pool highlight -->
+  <ellipse cx="72" cy="106" rx="8" ry="1.2" fill="#5a3a20" opacity="0.6"/>
+
+  <!-- Oil stream from spout -->
+  <path d="M 92,58 Q 96,76 92,92 Q 88,100 78,104"
+        fill="none" stroke="url(#oilGrad)" stroke-width="5" stroke-linecap="round"/>
+  <path d="M 92,58 Q 96,76 92,92 Q 88,100 78,104"
+        fill="none" stroke="#5a3a20" stroke-width="1.2" stroke-linecap="round" opacity="0.6"/>
+
+  <!-- Tilted barrel (rotated -25deg, positioned upper-left) -->
+  <g transform="translate(56,46) rotate(-22)">
+    <!-- Main barrel body (ellipse for perspective) -->
+    <ellipse cx="0" cy="0" rx="42" ry="22" fill="url(#barrelGrad)" stroke="#000" stroke-width="1.5"/>
+
+    <!-- Barrel rim (right side) -->
+    <ellipse cx="38" cy="0" rx="6" ry="20" fill="#0a0a0a" stroke="#000" stroke-width="1"/>
+
+    <!-- Barrel rim (left side) -->
+    <ellipse cx="-42" cy="0" rx="5" ry="19" fill="#1a1a1a" stroke="#000" stroke-width="1"/>
+
+    <!-- Top horizontal band (rim) -->
+    <path d="M -40,-3 Q 0,3 38,-2 L 38,2 Q 0,7 -40,2 Z" fill="#444" stroke="#000" stroke-width="0.5"/>
+
+    <!-- Middle horizontal band -->
+    <path d="M -41,-2 L 38,-1 L 38,1 L -41,0 Z" fill="#2a2a2a" opacity="0.6"/>
+
+    <!-- Bottom horizontal band -->
+    <path d="M -40,2 Q 0,7 38,2 L 38,6 Q 0,11 -40,6 Z" fill="#3a3a3a" stroke="#000" stroke-width="0.5"/>
+
+    <!-- Yellow diamond logo -->
+    <g transform="translate(-4,0)">
+      <path d="M 0,-8 L 7,0 L 0,8 L -7,0 Z" fill="url(#diamondGrad)" stroke="#6b4f0a" stroke-width="1"/>
+      <path d="M 0,-6 L 5,0 L 0,6 L -5,0 Z" fill="none" stroke="#fff4b8" stroke-width="0.6" opacity="0.7"/>
+      <!-- Oil drop in center -->
+      <path d="M 0,-3 Q 2,0 0,3 Q -2,0 0,-3 Z" fill="#1a0f08"/>
+    </g>
+
+    <!-- Top highlight -->
+    <ellipse cx="-4" cy="-12" rx="22" ry="5" fill="url(#barrelShine)"/>
+
+    <!-- Side vertical highlight -->
+    <path d="M -28,-10 Q -30,0 -26,10" fill="none" stroke="#fff" stroke-width="1.2" opacity="0.18"/>
+  </g>
+
+  <!-- Spout opening (oil source) -->
+  <ellipse cx="94" cy="58" rx="3" ry="2" fill="#000"/>
+  <ellipse cx="94" cy="58" rx="2" ry="1" fill="#2a1808"/>
+
+  <!-- Small oil splatter drops -->
+  <ellipse cx="100" cy="100" rx="1.5" ry="1" fill="#0a0606"/>
+  <ellipse cx="58" cy="103" rx="1" ry="0.6" fill="#1a0f08"/>
+  <ellipse cx="86" cy="102" rx="0.8" ry="0.5" fill="#2a1808"/>
+</svg>

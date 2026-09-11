@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22">
+  <defs>
+    <linearGradient id="ring" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a5a8c"/>
+      <stop offset="1" stop-color="#15244a"/>
+    </linearGradient>
+    <linearGradient id="nNeedle" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff6b6b"/>
+      <stop offset="1" stop-color="#9a2828"/>
+    </linearGradient>
+    <linearGradient id="sNeedle" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff4c2"/>
+      <stop offset="1" stop-color="#a8882c"/>
+    </linearGradient>
+    <radialGradient id="hub" cx="0.35" cy="0.35" r="0.7">
+      <stop offset="0" stop-color="#fff4c2"/>
+      <stop offset="0.55" stop-color="#c9a64a"/>
+      <stop offset="1" stop-color="#6e4a14"/>
+    </radialGradient>
+  </defs>
+  <!-- 外圈 -->
+  <circle cx="12" cy="12" r="11" fill="url(#ring)" stroke="#0a1430" stroke-width="0.9"/>
+  <!-- 内金圈 -->
+  <circle cx="12" cy="12" r="9" fill="none" stroke="#c9a64a" stroke-width="0.5" opacity="0.7"/>
+  <!-- 北指针 (红, 较长) -->
+  <path d="M 12 3.4 L 13.7 12 L 12 11 L 10.3 12 Z" fill="url(#nNeedle)" stroke="#3a0808" stroke-width="0.3" stroke-linejoin="round"/>
+  <!-- 南指针 (金) -->
+  <path d="M 12 20.6 L 10.3 12 L 12 13 L 13.7 12 Z" fill="url(#sNeedle)" stroke="#3a2808" stroke-width="0.3" stroke-linejoin="round"/>
+  <!-- 东指针 (金) -->
+  <path d="M 20.6 12 L 12 10.3 L 13 12 L 12 13.7 Z" fill="url(#sNeedle)" stroke="#3a2808" stroke-width="0.3" stroke-linejoin="round"/>
+  <!-- 西指针 (金) -->
+  <path d="M 3.4 12 L 12 13.7 L 11 12 L 12 10.3 Z" fill="url(#sNeedle)" stroke="#3a2808" stroke-width="0.3" stroke-linejoin="round"/>
+  <!-- 中心枢纽 -->
+  <circle cx="12" cy="12" r="1.5" fill="url(#hub)" stroke="#1a2a4c" stroke-width="0.5"/>
+  <circle cx="11.5" cy="11.4" r="0.45" fill="#ffffff" opacity="0.85"/>
+</svg>
