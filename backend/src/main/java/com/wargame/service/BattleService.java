@@ -544,11 +544,13 @@ public class BattleService {
             foeArmy.put(target, beforeKill - kills);
 
             report.append(sidePrefix).append(u.name()).append("(").append(count).append(")")
-                    .append(firstTarget ? verb(unitId) : "继续攻击")
+                    .append(firstTarget ? verb(unitId) : "余伤攻击")
                     .append(side == Side.MINE ? "敌" : "我").append(tU.name())
                     .append("(").append(beforeKill).append(")");
             if (firstTarget && bonusTag.length() > 0) report.append(" [").append(bonusTag.toString().trim()).append("]");
+            if (firstTarget) report.append(" 本次总伤害").append(Math.round(dmg));
             report.append(" 伤害").append(Math.round(appliedDamage)).append(" 击毁").append(kills);
+            report.append(" 剩余伤害").append(Math.round(remainingDamage));
             report.append("\n");
 
             firstTarget = false;

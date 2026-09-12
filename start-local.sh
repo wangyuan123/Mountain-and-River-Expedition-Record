@@ -194,6 +194,12 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
+ensure_git_hooks() {
+  if [[ -f "$PROJECT_DIR/scripts/install-hooks.sh" ]]; then
+    bash "$PROJECT_DIR/scripts/install-hooks.sh" >/dev/null 2>&1 || true
+  fi
+}
+
 main() {
   [[ -f "$BACKEND_DIR/pom.xml" ]] || fail "未找到 backend/pom.xml。"
   [[ -f "$FRONTEND_DIR/index.html" ]] || fail "未找到 frontend/index.html。"
@@ -203,6 +209,7 @@ main() {
   ensure_maven
   ensure_mysql
   ensure_database
+  ensure_git_hooks
 
   stop_port_process "$BACKEND_PORT"
   stop_port_process "$FRONTEND_PORT"

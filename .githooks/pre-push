@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Git pre-push hook: 推送前完整验证测试
+
+set -Eeuo pipefail
+
+ROOT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+
+# 终端颜色
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+echo -e "${BLUE}${BOLD}==> [Git Hook: pre-push] 正在执行全量回归验证...${NC}"
+
+if [[ -f "$ROOT_DIR/scripts/verify.sh" ]]; then
+  bash "$ROOT_DIR/scripts/verify.sh"
+fi
+
+echo -e "${GREEN}${BOLD}==> [Git Hook: pre-push] 全量测试验证通过，允许推送！✓${NC}"
+exit 0

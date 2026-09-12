@@ -60,6 +60,23 @@ mvn -f backend/pom.xml -Dtest=MySqlMigrationTest test
 
 必须预先创建独立、可丢弃的测试数据库，不能指向游戏库。测试先建立 V26 结构并写入样例余额，再执行新迁移，并由 Hibernate 验证结构。CI 使用 MySQL 8.4 自动执行前后端测试与迁移验证。
 
+一键全量验证脚本（对标 CI）：
+
+```sh
+./scripts/verify.sh
+```
+
+## 代码提交校验 (Git Hooks)
+
+工程已集成 Git Hooks 提交校验机制，防止语法错误或测试失败的代码被意外提交：
+
+- **自动生效**：运行 `./start-local.sh` 或 `./scripts/install-hooks.sh` 会自动启用 Git 钩子（`core.hooksPath = .githooks`）。
+- **提交前校验 (pre-commit)**：
+  - 后端代码变更：自动执行 `test-compile` 编译与类型/注解校验，并执行单元测试。
+  - 前端代码变更：自动执行 `frontend/tests/*.test.cjs` 回归测试。
+  - 快速提交：若仅需执行快速编译校验跳过耗时单元测试，可使用 `FAST_COMMIT=1 git commit -m "..."`。
+- **推送前校验 (pre-push)**：自动执行前后端全量测试，确保与 CI 保持一致。
+
 ## 主要入口
 
 | 职责 | 文件 |
