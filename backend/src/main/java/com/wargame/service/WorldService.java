@@ -210,7 +210,7 @@ public class WorldService {
             }
         }
 
-        PlayerCity playerCity = playerCityRepository.findByWorldId(worldId).stream()
+        PlayerCity playerCity = playerCityRepository.findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(worldId, x, x, y, y).stream()
                 .filter(city -> x == city.getX() && y == city.getY())
                 .findFirst().orElse(null);
         if (playerCity != null) {
@@ -232,7 +232,7 @@ public class WorldService {
             return result;
         }
 
-        NpcCity npcCity = npcCityRepository.findByWorldId(worldId).stream()
+        NpcCity npcCity = npcCityRepository.findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(worldId, x, x, y, y).stream()
                 .filter(city -> x == city.getX() && y == city.getY())
                 .findFirst().orElse(null);
         if (npcCity != null) {
@@ -246,7 +246,7 @@ public class WorldService {
             return result;
         }
 
-        WildTile wildTile = wildTileRepository.findByWorldId(worldId).stream()
+        WildTile wildTile = wildTileRepository.findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(worldId, x, x, y, y).stream()
                 .filter(tile -> x == tile.getX() && y == tile.getY())
                 .findFirst().orElse(null);
         if (wildTile != null) {
@@ -288,7 +288,9 @@ public class WorldService {
 
         // NPC cities (JS: s.world.npcCities.forEach)
         List<Map<String, Object>> npcCities = new ArrayList<>();
-        List<NpcCity> npcAll = npcCityRepository.findByWorldId(worldId);
+        List<NpcCity> npcAll = npcCityRepository.findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(worldId,
+                Math.max(0, px - scanR), Math.min(WorldConfig.SIZE - 1, px + scanR),
+                Math.max(0, py - scanR), Math.min(WorldConfig.SIZE - 1, py + scanR));
         for (int i = 0; i < npcAll.size(); i++) {
             NpcCity nc = npcAll.get(i);
             if (manhattanDist(px, py, nc.getX(), nc.getY()) <= scanR) {
@@ -309,7 +311,22 @@ public class WorldService {
         // Player cities and ownerless legacy cities, which are simulated NPCs.
         List<Map<String, Object>> playerCities = new ArrayList<>();
         List<Map<String, Object>> simulatedNpcCities = new ArrayList<>();
-        List<PlayerCity> pcAll = playerCityRepository.findByWorldId(worldId);
+        List<PlayerCity> pcAll = playerCityRepository.findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(worldId,
+                Math.max(0, px - scanR), Math.min(WorldConfig.SIZE - 1, px + scanR),
+                Math.max(0, py - scanR), Math.min(WorldConfig.SIZE - 1, py + scanR));
+        Map<String, Player> byCoordinates = new HashMap<>();
+        Map<Long, Player> byId = new HashMap<>();
+        playerRepository.findByCityPosXBetweenAndCityPosYBetween(
+                Math.max(0, px - scanR), Math.min(WorldConfig.SIZE - 1, px + scanR),
+                Math.max(0, py - scanR), Math.min(WorldConfig.SIZE - 1, py + scanR))
+                .forEach(owner -> {
+                    byCoordinates.put(owner.getCityPosX() + "," + owner.getCityPosY(), owner);
+                    byId.put(owner.getId(), owner);
+                });
+        Set<Long> ownerIds = new HashSet<>();
+        pcAll.stream().map(PlayerCity::getOwnerId).filter(Objects::nonNull)
+                .filter(id -> !byId.containsKey(id)).forEach(ownerIds::add);
+        if (!ownerIds.isEmpty()) playerRepository.findAllById(ownerIds).forEach(owner -> byId.put(owner.getId(), owner));
         for (int i = 0; i < pcAll.size(); i++) {
             PlayerCity pc = pcAll.get(i);
             if (manhattanDist(px, py, pc.getX(), pc.getY()) <= scanR) {
@@ -322,11 +339,11 @@ public class WorldService {
                 m.put("y", pc.getY());
                 m.put("prestige", pc.getPrestige());
                 Long ownerId = pc.getOwnerId();
-                Player coordinateOwner = playerRepository.findByCityPosXAndCityPosY(pc.getX(), pc.getY()).orElse(null);
+                Player coordinateOwner = byCoordinates.get(pc.getX() + "," + pc.getY());
                 if (coordinateOwner != null) {
                     ownerId = coordinateOwner.getId();
                 }
-                Player owner = ownerId != null ? playerRepository.findById(ownerId).orElse(null) : null;
+                Player owner = ownerId != null ? byId.get(ownerId) : null;
                 if (owner == null) {
                     m.put("simulatedNpc", true);
                     m.put("distance", manhattanDist(px, py, pc.getX(), pc.getY()));
@@ -348,7 +365,9 @@ public class WorldService {
 
         // Wild tiles (JS: s.world.wildTiles.forEach)
         List<Map<String, Object>> wildTiles = new ArrayList<>();
-        List<WildTile> wtAll = wildTileRepository.findByWorldId(worldId);
+        List<WildTile> wtAll = wildTileRepository.findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(worldId,
+                Math.max(0, px - scanR), Math.min(WorldConfig.SIZE - 1, px + scanR),
+                Math.max(0, py - scanR), Math.min(WorldConfig.SIZE - 1, py + scanR));
         for (int i = 0; i < wtAll.size(); i++) {
             WildTile wt = wtAll.get(i);
             if (manhattanDist(px, py, wt.getX(), wt.getY()) <= scanR) {
@@ -372,7 +391,9 @@ public class WorldService {
         // Bandits (JS: s.world.bandits.forEach - not explicitly in renderView nearby,
         //  but included for completeness)
         List<Map<String, Object>> bandits = new ArrayList<>();
-        List<Bandit> bAll = banditRepository.findByWorldId(worldId);
+        List<Bandit> bAll = banditRepository.findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(worldId,
+                Math.max(0, px - scanR), Math.min(WorldConfig.SIZE - 1, px + scanR),
+                Math.max(0, py - scanR), Math.min(WorldConfig.SIZE - 1, py + scanR));
         for (int i = 0; i < bAll.size(); i++) {
             Bandit b = bAll.get(i);
             if (manhattanDist(px, py, b.getX(), b.getY()) <= scanR) {

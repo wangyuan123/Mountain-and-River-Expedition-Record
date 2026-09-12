@@ -1,6 +1,8 @@
 package com.wargame.service;
 
+import com.wargame.model.constants.GameConstants;
 import com.wargame.model.constants.GameData;
+import com.wargame.model.constants.MilitaryRankDef;
 import com.wargame.model.constants.UnitDef;
 import com.wargame.model.constants.BuildingDef;
 import com.wargame.model.entity.*;
@@ -462,13 +464,19 @@ public class ArmyService {
 
     // ================================================================
     //  armyCap - 对应 JS Core.armyCap
-    //  base = 500 + playerLevel * 100
-    //  return floor(base * (1 + staffLv * 0.05) * (1 + cmdLv * 0.02))
+    //  base = rankBase (军衔基础: 1,000~20,000) + commandLv * 1,000 (市政厅: 1,000~10,000)
+    //  满级基础 = 20,000 + 10,000 = 30,000
+    //  return floor(base * (1 + staffLv * 0.10) * (1 + cmdLv * 0.025))
+    //  满级 (上将 + 市政厅10 + 参谋部10 + 指挥官100): 30,000 * 2.0 * 3.5 = 210,000
     // ================================================================
 
     public int armyCap(Long playerId) {
         Player player = playerRepository.findById(playerId).orElse(null);
-        int playerLevel = player != null && player.getLevel() != null ? player.getLevel() : 1;
+        int rankTier = (player != null && player.getMilitaryRank() != null) ? player.getMilitaryRank() : 1;
+        int rankBase = MilitaryRankDef.getRankBase(rankTier);
+
+        int commandLv = buildingLevel(playerId, "command");
+        if (commandLv < 1) commandLv = 1;
         int staffLv = buildingLevel(playerId, "staff");
 
         // Commander level
@@ -478,8 +486,8 @@ public class ArmyService {
             cmdLv = commanders.get(0).getLevel() != null ? commanders.get(0).getLevel() : 1;
         }
 
-        int base = 500 + playerLevel * 100;
-        return (int) Math.floor(base * (1 + staffLv * 0.05) * (1 + cmdLv * 0.02));
+        int base = rankBase + commandLv * 1000;
+        return (int) Math.floor(base * (1 + staffLv * 0.10) * (1 + cmdLv * 0.025));
     }
 
     // ================================================================
@@ -489,7 +497,7 @@ public class ArmyService {
     public int popMax(Long playerId) {
         int houseLv = buildingLevel(playerId, "house");
         BuildingDef houseDef = GameData.BUILDINGS.get("house");
-        int popPer = houseDef != null && houseDef.popPer() != null ? houseDef.popPer() : 100;
+        int popPer = houseDef != null && houseDef.popPer() != null ? houseDef.popPer() : 1200;
         return houseLv * popPer;
     }
 

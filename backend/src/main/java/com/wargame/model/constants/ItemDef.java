@@ -26,8 +26,9 @@ public record ItemDef(
 
     public static final Map<String, ItemDef> ITEMS = Map.ofEntries(
             // —— 军官道具 ——
-            Map.entry("expBook",    new ItemDef("expBook",    "经验书",      "📘", CAT_OFFICER, "军官使用,获得500经验", 0)),
-            Map.entry("expBookAdv", new ItemDef("expBookAdv", "高级经验书",  "📕", CAT_OFFICER, "军官使用,获得3000经验", 0)),
+            Map.entry("expBook",    new ItemDef("expBook",    "经验书",      "📘", CAT_OFFICER, "军官使用,获得10000经验", 0)),
+            Map.entry("expBookAdv", new ItemDef("expBookAdv", "高级经验书",  "📕", CAT_OFFICER, "军官使用,获得100000经验", 0)),
+            Map.entry("expBookMax", new ItemDef("expBookMax", "满级经验书",  "📙", CAT_OFFICER, "军官使用,直接升至满级(Lv.100)", 0)),
             Map.entry("skillBook",  new ItemDef("skillBook",  "技能书",      "📗", CAT_OFFICER, "为军官学习新技能", 0)),
             Map.entry("loyaltyBox", new ItemDef("loyaltyBox", "忠诚宝箱",    "🎁", CAT_OFFICER, "军官忠诚度+20", 0)),
             Map.entry("renameCard", new ItemDef("renameCard", "改名卡",      "🏷️", CAT_OFFICER, "为军官更换新名字", 0)),

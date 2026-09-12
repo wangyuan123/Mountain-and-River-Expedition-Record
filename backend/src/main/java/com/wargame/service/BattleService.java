@@ -16,16 +16,18 @@ import java.util.concurrent.ThreadLocalRandom;
  * 战斗公式 (来自 JS simAct):
  * <pre>
  *   dmg = (atk * atk * count * cm * closeMul) / (def * 10)
- *   kills = min(foeArmy[target], floor(dmg / hpPer))
- *   if (kills < 1 && dmg > 0) kills = 1
+ *   remainingDamage = dmg  // 单次行动只计算一次总伤害
+ *   appliedDamage = min(remainingDamage, targetCount * hpPer)
+ *   remainingDamage -= appliedDamage
+ *   // 当前目标全灭且仍有余伤时，继续攻击下一个目标；不足一单位的伤害按概率结算。
  * </pre>
  * 其中:
  * <ul>
  *   <li>atk = effAtk(unitId) - 有效攻击力</li>
  *   <li>count = 攻击方该兵种数量</li>
- *   <li>cm = counterMul - 相克倍率 (strongVs 时 1.5, 否则 1.0)</li>
+ *   <li>cm = counterMul - 首个目标的相克倍率 (strongVs 时 1.5, 否则 1.0)</li>
  *   <li>closeMul = 贴脸倍率 (距离 0 时 2.0, 否则 1.0)</li>
- *   <li>def = effDef(target) - 有效防御力 (被破甲技能削减, 最低 1)</li>
+ *   <li>def = effDef(target) - 首个目标的有效防御力 (被破甲技能削减, 最低 1)</li>
  *   <li>hpPer = effHp(target) - 每单位有效生命值</li>
  * </ul>
  */
@@ -33,6 +35,11 @@ import java.util.concurrent.ThreadLocalRandom;
 public class BattleService {
 
     private static final int MAX_ROUND = 30;
+
+    /** NPC/野地战斗初始固定距离 */
+    public static final int DISTANCE_NPC = 2200;
+    /** 玩家之间战斗初始固定距离 */
+    public static final int DISTANCE_PLAYER = 3000;
 
     /** 军官技能每级加成比率 - 对应 JS Core.skillBonus 中的 rates */
     private static final Map<String, Double> SKILL_RATES = Map.of(
@@ -62,7 +69,7 @@ public class BattleService {
         if (u != null) {
             return new UnitStats(u.key(), u.name(), u.cat(),
                     u.atk(), u.def(), u.hp(), u.spd(), u.range(),
-                    u.strongVs(), u.autoAdvance() != null && u.autoAdvance());
+                    u.strongVs(), u.autoAdvance() == null || u.autoAdvance());
         }
         FortDef f = GameData.FORTS.get(id);
         if (f != null) {
@@ -93,23 +100,31 @@ public class BattleService {
         Map<String, Integer> myStart = snapshot(myArmy);
         Map<String, Integer> foeStart = snapshot(foeArmy);
 
-        int maxRange = maxRangeOf(myArmy);
-        int foeMaxRange = maxRangeOf(foeArmy);
-        if (foeMaxRange > maxRange) maxRange = foeMaxRange;
-        int dist = maxRange + 2000;
+        int initialDist = DISTANCE_NPC;
+        Map<String, Integer> minePos = new LinkedHashMap<>();
+        Map<String, Integer> enemyPos = new LinkedHashMap<>();
+        for (String k : myArmy.keySet()) minePos.put(k, 0);
+        for (String k : foeArmy.keySet()) enemyPos.put(k, initialDist);
 
         StringBuilder report = new StringBuilder();
 
-        for (int round = 0; round < MAX_ROUND; round++) {
+        for (int round = 1; round <= MAX_ROUND; round++) {
             List<ActionEntry> order = buildOrder(myArmy, foeArmy, null, null);
+            boolean moved = false;
             for (ActionEntry a : order) {
                 Map<String, Integer> myA = a.side == Side.MINE ? myArmy : foeArmy;
                 Map<String, Integer> foe = a.side == Side.MINE ? foeArmy : myArmy;
                 if (myA.getOrDefault(a.id, 0) <= 0) continue;
                 if (allDead(foe)) break;
-                dist = simAct(a.id, myA, foe, dist, report, a.side,
+                boolean actionMoved = simAct(a.id, myA, foe, minePos, enemyPos, initialDist, report, a.side,
                         null, null, 0, false);
+                if (actionMoved) moved = true;
             }
+
+
+
+
+
             if (allDead(foeArmy)) {
                 return buildWildResult(true, myArmy, foeArmy, myStart, foeStart, report);
             }
@@ -127,30 +142,6 @@ public class BattleService {
 
     /**
      * 解析世界出征战斗 - 对应 JS G.Battle.startWorldDispatch + resolveRound + finish。
-     * <p>
-     * 完整模拟 30 回合战斗, 每回合:
-     * <ol>
-     *   <li>判断军官是否生效 (每 3 回合生效一次)</li>
-     *   <li>按射程降序、速度降序构建行动序列</li>
-     *   <li>每个单位依次行动: 射程外前进, 射程内攻击</li>
-     * </ol>
-     * 战斗结束后计算掠夺资源、经验、幸存单位。
-     *
-     * @param attackerArmy            攻方军队
-     * @param defenderArmy            守方军队
-     * @param defenderForts           守方城防 (fortType -> count)
-     * @param attackerTech            攻方科技 (techKey -> level)
-     * @param defenderTech            守方科技
-     * @param attackerSkills          攻方军官技能 (skillId -> level)
-     * @param defenderSkills          守方军官技能
-     * @param attackerCommanderMil    攻方指挥官军事值
-     * @param defenderCommanderMil    守方指挥官军事值
-     * @param attackerWallLevel       攻方围墙等级 (守城时防御加成)
-     * @param defenderWallLevel       守方围墙等级
-     * @param action                  行动类型: "conquer" 或 "plunder"
-     * @param defenderResources       守方资源 (food/steel/oil/rare/gold -> amount)
-     * @param defenderWarehouseLevel  守方仓库等级 (资源保护)
-     * @return 战斗结果
      */
     public BattleResult startWorldDispatch(
             Map<String, Integer> attackerArmy,
@@ -167,6 +158,34 @@ public class BattleService {
             String action,
             Map<String, Integer> defenderResources,
             long defenderWarehouseLevel) {
+        return startWorldDispatch(attackerArmy, defenderArmy, defenderForts,
+                attackerTech, defenderTech, attackerSkills, defenderSkills,
+                attackerCommanderMil, defenderCommanderMil,
+                attackerWallLevel, defenderWallLevel,
+                action, defenderResources, defenderWarehouseLevel, false);
+    }
+
+    /**
+     * 解析世界出征战斗 (支持区分 NPC 战斗与玩家对战)。
+     *
+     * @param isPlayerBattle 是否为玩家对战 (true: 初始距离 3000, false: 初始距离 2200)
+     */
+    public BattleResult startWorldDispatch(
+            Map<String, Integer> attackerArmy,
+            Map<String, Integer> defenderArmy,
+            Map<String, Integer> defenderForts,
+            Map<String, Integer> attackerTech,
+            Map<String, Integer> defenderTech,
+            Map<String, Integer> attackerSkills,
+            Map<String, Integer> defenderSkills,
+            int attackerCommanderMil,
+            int defenderCommanderMil,
+            int attackerWallLevel,
+            int defenderWallLevel,
+            String action,
+            Map<String, Integer> defenderResources,
+            long defenderWarehouseLevel,
+            boolean isPlayerBattle) {
 
         // 克隆军队 (不修改原始 map)
         Map<String, Integer> mine = snapshot(attackerArmy);
@@ -191,19 +210,12 @@ public class BattleService {
         Map<String, Integer> mineStart = snapshot(mine);
         Map<String, Integer> enemyStart = snapshot(enemy);
 
-        // 计算战场初始距离
-        // 历史 BUG: 这里硬编码了 maxRange + 2000 作为开战距离,
-        // 导致侦察兵(高 spd、低 hp) 几乎无法在 30 回合内接敌,被白嫖至死。
-        // 修正: 初始距离 = 双方最大射程 + 1 个回合的行军距离(双方中较慢者 * 行军步长)
-        // 这样两军都能在第 1 回合发起第一次攻击,符合 "maxRange = 跨射距离" 的设计意图。
-        int maxRange = maxRangeOf(mine);
-        int foeMaxRange = maxRangeOf(enemy);
-        if (foeMaxRange > maxRange) maxRange = foeMaxRange;
-        int minSpd = Math.min(minSpdOf(mine), minSpdOf(enemy));
-        if (minSpd <= 0 || minSpd == Integer.MAX_VALUE) minSpd = 1;
-        // MOVE_PER_ACTION = spd * 50 (见 simAct 实现)
-        int initialDist = maxRange + minSpd * 50;
-        int dist = initialDist;
+        // 战场初始距离: NPC战斗固定2200, 玩家对战固定3000
+        int initialDist = isPlayerBattle ? DISTANCE_PLAYER : DISTANCE_NPC;
+        Map<String, Integer> minePos = new LinkedHashMap<>();
+        Map<String, Integer> enemyPos = new LinkedHashMap<>();
+        for (String k : mine.keySet()) minePos.put(k, 0);
+        for (String k : enemy.keySet()) enemyPos.put(k, initialDist);
 
         StringBuilder report = new StringBuilder();
 
@@ -220,8 +232,10 @@ public class BattleService {
 
             TechCtx attackerCtx = new TechCtx(aTech, aSkills, attackerCommanderMil);
             TechCtx defenderCtx = new TechCtx(dTech, dSkills, defenderCommanderMil);
-            report.append(buildCommanderBonusLog("我方", attackerCtx, officerActive, true)).append("\n");
-            report.append(buildCommanderBonusLog("敌方", defenderCtx, officerActive, false)).append("\n");
+            String mineBonusLog = buildCommanderBonusLog("我方", attackerCtx, officerActive, true);
+            String foeBonusLog = buildCommanderBonusLog("敌方", defenderCtx, officerActive, false);
+            if (!mineBonusLog.isEmpty()) report.append(mineBonusLog).append("\n");
+            if (!foeBonusLog.isEmpty()) report.append(foeBonusLog).append("\n");
 
             // 构建行动序列 - 对应 JS buildOrder
             List<ActionEntry> order = buildOrder(mine, enemy, attackerCtx, defenderCtx);
@@ -233,7 +247,6 @@ public class BattleService {
                 if (myA.getOrDefault(a.id, 0) <= 0) continue;
                 if (allDead(foe)) break;
 
-                int before = dist;
                 // 行动方科技上下文
                 TechCtx actCtx = a.side == Side.MINE
                         ? new TechCtx(aTech, aSkills, attackerCommanderMil)
@@ -244,14 +257,16 @@ public class BattleService {
                         : new TechCtx(aTech, aSkills, attackerCommanderMil);
                 int foeWallLevel = a.side == Side.MINE ? defenderWallLevel : attackerWallLevel;
 
-                dist = simAct(a.id, myA, foe, dist, report, a.side,
+                boolean actionMoved = simAct(a.id, myA, foe, minePos, enemyPos, initialDist, report, a.side,
                         actCtx, foeCtx, foeWallLevel, officerActive);
-                if (dist != before) moved = true;
+                if (actionMoved) moved = true;
             }
 
-            if (!moved && !anyInRange(mine, enemy, dist)) {
-                report.append("双方仍在接近中... 当前距离 ").append(dist).append("\n");
-            }
+
+
+
+
+
 
             // 胜负判定 - 对应 JS resolveRound 中的判定
             if (allDead(enemy)) {
@@ -367,7 +382,10 @@ public class BattleService {
 
         report.append("获得经验: ").append(expGained).append("\n");
 
+        Map<String, Integer> initialAttacker = filterPositive(mineStart);
+        Map<String, Integer> initialDefender = filterPositive(enemyStart);
         return new BattleResult(win, survivorAttacker, survivorDefender,
+                initialAttacker, initialDefender,
                 plunderedResources, expGained, report.toString(), cityConquered);
     }
 
@@ -376,32 +394,27 @@ public class BattleService {
     // ========================================================================
 
     /**
-     * 模拟一个单位的行动: 移动或攻击。
+     * 模拟一个单位的行动: 移动或攻击 (各兵种独立计算坐标与距离)。
      *
-     * @param unitId        行动单位 ID
-     * @param myArmy        行动方军队 (会被修改)
-     * @param foeArmy       敌方军队 (会被修改)
-     * @param dist          当前战场距离
-     * @param report        战斗报告
-     * @param side          哪一方
-     * @param actCtx        行动方科技/技能上下文
-     * @param foeCtx        防守方科技/技能上下文
-     * @param foeWallLevel  防守方围墙等级
-     * @param officerActive 军官是否生效
-     * @return 新的战场距离
+     * @return 该单位是否产生位移前进
      */
-    private int simAct(String unitId,
-                       Map<String, Integer> myArmy,
-                       Map<String, Integer> foeArmy,
-                       int dist,
-                       StringBuilder report,
-                       Side side,
-                       TechCtx actCtx,
-                       TechCtx foeCtx,
-                       int foeWallLevel,
-                       boolean officerActive) {
+    private boolean simAct(String unitId,
+                           Map<String, Integer> myArmy,
+                           Map<String, Integer> foeArmy,
+                           Map<String, Integer> minePos,
+                           Map<String, Integer> enemyPos,
+                           int initialDist,
+                           StringBuilder report,
+                           Side side,
+                           TechCtx actCtx,
+                           TechCtx foeCtx,
+                           int foeWallLevel,
+                           boolean officerActive) {
         UnitStats u = getStats(unitId);
-        if (u == null) return dist;
+        if (u == null) return false;
+
+        int count = myArmy.getOrDefault(unitId, 0);
+        if (count <= 0) return false;
 
         // 速度计算 - 对应 JS simAct 中 spd 的取值
         double spd;
@@ -411,28 +424,45 @@ public class BattleService {
             spd = u.spd(); // resolveWild 场景: 基础速度
         }
 
-        // 射程外: 移动阶段 - 对应 JS simAct 中 u.range < dist 分支
-        if (u.range() < dist) {
-            int step = Math.min((int) (spd * 50), dist);
-            int newDist = dist - step;
-            String sidePrefix = side == Side.MINE ? "我方" : "敌方";
+        String sidePrefix = side == Side.MINE ? "我方" : "敌方";
+
+        // 寻找射程内的攻击目标
+        String target = pickTargetInRange(unitId, side, foeArmy, minePos, enemyPos, initialDist);
+
+        // 射程外: 移动阶段
+        if (target == null) {
+            int minDist = minDistanceToLivingFoe(side, unitId, foeArmy, minePos, enemyPos, initialDist);
+            if (!u.autoAdvance()) {
+                // 不主动前进的单位(如卡车、运输机、城防设施等)在射程外待命，不主动冲锋
+                report.append(sidePrefix).append(u.name())
+                        .append("(").append(count).append(")")
+                        .append(" 待命 距离").append(minDist).append("\n");
+                return false;
+            }
+
+            int step = Math.min((int) (spd * 50), minDist);
+            if (step <= 0) return false;
+
+            if (side == Side.MINE) {
+                int curPos = minePos.getOrDefault(unitId, 0);
+                minePos.put(unitId, curPos + step);
+            } else {
+                int curPos = enemyPos.getOrDefault(unitId, initialDist);
+                enemyPos.put(unitId, curPos - step);
+            }
+            int newDist = minDist - step;
             report.append(sidePrefix).append(u.name())
-                    .append("(").append(myArmy.getOrDefault(unitId, 0)).append(")")
+                    .append("(").append(count).append(")")
                     .append(" 前进 ").append(step).append(" 距离->").append(newDist).append("\n");
-            return newDist;
+            return true;
         }
 
-        // 射程内: 攻击阶段
-        String sidePrefix = side == Side.MINE ? "我方" : "敌方";
+        // 射程内: 攻击阶段 (前进0)
+        int targetDist = getUnitDistToFoe(side, unitId, target, minePos, enemyPos, initialDist);
         report.append(sidePrefix).append(u.name())
-                .append("(").append(myArmy.getOrDefault(unitId, 0)).append(")")
-                .append(" 前进0(射程内) 距离").append(dist).append("\n");
+                .append("(").append(count).append(")")
+                .append(" 前进0(射程内) 距离").append(targetDist).append("\n");
 
-        // 选择目标 - 对应 JS pickTarget
-        String target = pickTarget(unitId, foeArmy);
-        if (target == null) return dist;
-
-        int count = myArmy.getOrDefault(unitId, 0);
         int baseAtk = u.atk();
 
         // 有效攻击力 - 对应 JS effAtk
@@ -466,8 +496,8 @@ public class BattleService {
         // 相克倍率 - 对应 JS counterMul
         double cm = counterMul(unitId, target);
 
-        // 贴脸倍率 - 对应 JS closeMul (距离 0 时 ×2)
-        double closeMul = dist == 0 ? 2 : 1;
+        // 贴脸倍率 - 对应 JS closeMul (与目标距离 0 时 ×2)
+        double closeMul = (targetDist == 0) ? 2.0 : 1.0;
 
         // 伤害公式 - 对应 JS dmg = (atk * atk * count * cm * closeMul) / (def * 10)
         double dmg = (atk * atk * count * cm * closeMul) / (def * 10);
@@ -480,27 +510,6 @@ public class BattleService {
         boolean comboHit = comboRate > 0 && ThreadLocalRandom.current().nextDouble() < comboRate;
         if (comboHit) dmg *= 2;
 
-        // 有效生命值 - 对应 JS effHp (始终生效, 不依赖 officerActive)
-        double hpPer;
-        if (foeCtx != null) {
-            hpPer = effHp(target, foeCtx.tech);
-        } else {
-            UnitStats tStats = getStats(target);
-            hpPer = tStats != null ? tStats.hp() : 1;
-        }
-
-        // 击杀数 - 对应 JS kills = min(foeArmy[target], floor(dmg / hpPer))
-        int kills = Math.min(foeArmy.getOrDefault(target, 0), (int) Math.floor(dmg / hpPer));
-        // 最少击杀 1 (只要有伤害) - 对应 JS if (kills < 1 && dmg > 0) kills = 1
-        if (kills < 1 && dmg > 0) kills = 1;
-
-        // 应用击杀
-        int beforeKill = foeArmy.getOrDefault(target, 0);
-        foeArmy.put(target, Math.max(0, beforeKill - kills));
-
-        // 记录战斗日志
-        UnitStats tU = getStats(target);
-        String targetName = side == Side.MINE ? "敌" : "我";
         StringBuilder bonusTag = new StringBuilder();
         if (side == Side.MINE && baseAtk > 0 && atk / baseAtk > 1.01) {
             bonusTag.append(" 军官加成×").append(String.format("%.2f", atk / baseAtk));
@@ -510,15 +519,71 @@ public class BattleService {
         if (cm > 1) bonusTag.append(" 相克");
         if (closeMul > 1) bonusTag.append(" 贴脸");
 
-        report.append(sidePrefix).append(u.name()).append("(").append(count).append(")")
-                .append(verb(unitId))
-                .append(targetName).append(tU != null ? tU.name() : target)
-                .append("(").append(beforeKill).append(")")
-                .append(bonusTag.length() > 0 ? " [" + bonusTag.toString().trim() + "]" : "")
-                .append(" 伤害").append(dmg >= 10000 ? Math.round(dmg) : String.format("%.0f", dmg))
-                .append(" 击毁").append(kills).append("\n");
+        // 一次行动共用固定伤害池。余伤仅攻击仍在自身射程内的敌方存活目标。
+        double remainingDamage = dmg;
+        boolean firstTarget = true;
+        while (target != null && remainingDamage > 0) {
+            UnitStats tU = getStats(target);
+            double hpPer = foeCtx != null ? effHp(target, foeCtx.tech) : tU.hp();
+            hpPer = Math.max(1, hpPer);
+            int beforeKill = foeArmy.getOrDefault(target, 0);
+            double targetHp = hpPer * beforeKill;
+            double appliedDamage = Math.min(remainingDamage, targetHp);
 
-        return dist;
+            int kills;
+            if (remainingDamage >= targetHp) {
+                kills = beforeKill;
+                remainingDamage -= targetHp;
+            } else {
+                // 不足以全灭时沿用概率击杀；本次余伤全部消耗在当前目标上。
+                kills = (int) Math.floor(appliedDamage / hpPer);
+                double fraction = (appliedDamage % hpPer) / hpPer;
+                if (fraction > 0 && ThreadLocalRandom.current().nextDouble() < fraction) kills++;
+                remainingDamage = 0;
+            }
+            foeArmy.put(target, beforeKill - kills);
+
+            report.append(sidePrefix).append(u.name()).append("(").append(count).append(")")
+                    .append(firstTarget ? verb(unitId) : "继续攻击")
+                    .append(side == Side.MINE ? "敌" : "我").append(tU.name())
+                    .append("(").append(beforeKill).append(")");
+            if (firstTarget && bonusTag.length() > 0) report.append(" [").append(bonusTag.toString().trim()).append("]");
+            report.append(" 伤害").append(Math.round(appliedDamage)).append(" 击毁").append(kills);
+            report.append("\n");
+
+            firstTarget = false;
+            target = remainingDamage > 0 ? pickTargetInRange(unitId, side, foeArmy, minePos, enemyPos, initialDist) : null;
+        }
+
+        return false;
+    }
+
+    /**
+     * 兼容重载: 单个距离参数版本的 simAct (用于单元测试直接反射调用等)。
+     */
+    private int simAct(String unitId,
+                       Map<String, Integer> myArmy,
+                       Map<String, Integer> foeArmy,
+                       int dist,
+                       StringBuilder report,
+                       Side side,
+                       TechCtx actCtx,
+                       TechCtx foeCtx,
+                       int foeWallLevel,
+                       boolean officerActive) {
+        Map<String, Integer> minePos = new LinkedHashMap<>();
+        Map<String, Integer> enemyPos = new LinkedHashMap<>();
+        int initialDist = dist;
+        for (String k : myArmy.keySet()) {
+            if (side == Side.MINE) minePos.put(k, 0);
+            else enemyPos.put(k, initialDist);
+        }
+        for (String k : foeArmy.keySet()) {
+            if (side == Side.MINE) enemyPos.put(k, initialDist);
+            else minePos.put(k, 0);
+        }
+        simAct(unitId, myArmy, foeArmy, minePos, enemyPos, initialDist, report, side, actCtx, foeCtx, foeWallLevel, officerActive);
+        return minDistanceToLivingFoe(side, unitId, foeArmy, minePos, enemyPos, initialDist);
     }
 
     // ========================================================================
@@ -594,29 +659,24 @@ public class BattleService {
     /**
      * 攻击倍率 - 对应 JS Core.atkMul(cat)
      * <p>
-     * (1 + 0.05*cmd_attack) * (1 + 0.05*cat_attack) * (1 + cmdMil/100)
+     * (1 + 0.05*attack_tech) * (1 + cmdMil/100)
      */
     private double atkMul(String cat, Map<String, Integer> tech, int commanderMil) {
-        int cmdAttack = tech.getOrDefault("cmd_attack", 0);
-        String catKey = catAtkKey(cat);
-        int catAttack = catKey != null ? tech.getOrDefault(catKey, 0) : 0;
+        int cmdAttack = tech.getOrDefault("attack_tech", 0);
         double allMul = 1 + 0.05 * cmdAttack;
-        double catMul = 1 + 0.05 * catAttack;
-        return allMul * catMul * (1 + commanderMil / 100.0);
+        return allMul * (1 + commanderMil / 100.0);
     }
 
     /**
      * 防御倍率 - 对应 JS Core.defMul(cat, isMine)
      * <p>
-     * (1 + 0.05*cmd_defense) * (1 + 0.05*cat_defense) * wallMul
+     * (1 + 0.05*defense_tech) * wallMul
      * wallMul = (isMine && cat != 'air') ? (1 + 0.05*wall) : 1
      */
     private double defMul(String cat, Map<String, Integer> tech, int wallLevel, boolean isMine) {
-        int cmdDefense = tech.getOrDefault("cmd_defense", 0);
-        String catKey = catDefKey(cat);
-        int catDefense = catKey != null ? tech.getOrDefault(catKey, 0) : 0;
+        int cmdDefense = tech.getOrDefault("defense_tech", 0);
         double allMul = 1 + 0.05 * cmdDefense;
-        double catMul = 1 + 0.05 * catDefense;
+        double catMul = 1;
         double wallMul = (isMine && !"air".equals(cat)) ? (1 + 0.05 * wallLevel) : 1;
         return allMul * catMul * wallMul;
     }
@@ -651,26 +711,10 @@ public class BattleService {
     }
 
     /** cat -> 攻击科技 key */
-    private String catAtkKey(String cat) {
-        return switch (cat) {
-            case "inf" -> "inf_attack";
-            case "arm" -> "arm_attack";
-            case "air" -> "air_attack";
-            case "nav" -> "nav_attack";
-            default -> null;
-        };
-    }
+    private String catAtkKey(String cat) { return "attack_tech"; }
 
     /** cat -> 防御科技 key */
-    private String catDefKey(String cat) {
-        return switch (cat) {
-            case "inf" -> "inf_defense";
-            case "arm" -> "arm_defense";
-            case "air" -> "air_defense";
-            case "nav" -> "nav_defense";
-            default -> null;
-        };
-    }
+    private String catDefKey(String cat) { return "defense_tech"; }
 
     // ========================================================================
     // 技能加成 (对应 JS Core.skillBonus)
@@ -704,12 +748,7 @@ public class BattleService {
             return sideName + "将领加成：" + (bonuses.isEmpty() ? "本回合无将领属性或技能加成生效" : String.join("；", bonuses));
         }
 
-        StringBuilder message = new StringBuilder("军事属性及攻防技能本回合未生效");
-        double blitz = skillBonus(ctx.skills, "blitz");
-        if (blitz > 0) {
-            message.append("；闪电战 +").append(percent(blitz)).append("%速度（持续生效）");
-        }
-        return sideName + "将领加成：" + message;
+        return "";
     }
 
     private void appendSkillBonus(List<String> bonuses, Map<String, Integer> skills, String skillId,
@@ -880,6 +919,97 @@ public class BattleService {
     }
 
     /**
+     * 计算攻守双方指定单位之间的物理距离。
+     * 攻方坐标从 0 开始向右推进，守方坐标从 initialDist 开始向左推进。
+     */
+    private int getUnitDistToFoe(Side side, String myUnitId, String foeUnitId,
+                                Map<String, Integer> minePos, Map<String, Integer> enemyPos, int initialDist) {
+        int mineX = (side == Side.MINE) ? minePos.getOrDefault(myUnitId, 0) : minePos.getOrDefault(foeUnitId, 0);
+        int enemyX = (side == Side.MINE) ? enemyPos.getOrDefault(foeUnitId, initialDist) : enemyPos.getOrDefault(myUnitId, initialDist);
+        return Math.max(0, enemyX - mineX);
+    }
+
+    /**
+     * 计算指定单位到敌方当前所有存活单位的最近距离。
+     */
+    private int minDistanceToLivingFoe(Side side, String myUnitId, Map<String, Integer> foeArmy,
+                                       Map<String, Integer> minePos, Map<String, Integer> enemyPos, int initialDist) {
+        int minDist = Integer.MAX_VALUE;
+        for (Map.Entry<String, Integer> e : foeArmy.entrySet()) {
+            if (e.getValue() == null || e.getValue() <= 0) continue;
+            int d = getUnitDistToFoe(side, myUnitId, e.getKey(), minePos, enemyPos, initialDist);
+            if (d < minDist) minDist = d;
+        }
+        return minDist == Integer.MAX_VALUE ? 0 : minDist;
+    }
+
+    /**
+     * 在射程内选择攻击目标:
+     * 1. 优先选择相克目标 (strongVs, 且必须在射程内且存活)
+     * 2. 否则在射程内的敌方存活单位中选择 HP 最低的单位 (HP 相同选距离最近的)
+     * 3. 若射程内无任何敌军，返回 null
+     */
+    private String pickTargetInRange(String attackerId, Side side, Map<String, Integer> foeArmy,
+                                     Map<String, Integer> minePos, Map<String, Integer> enemyPos, int initialDist) {
+        UnitStats u = getStats(attackerId);
+        if (u == null) return null;
+        int range = u.range();
+
+        if (u.strongVs() != null && foeArmy.getOrDefault(u.strongVs(), 0) > 0) {
+            int d = getUnitDistToFoe(side, attackerId, u.strongVs(), minePos, enemyPos, initialDist);
+            if (d <= range) {
+                return u.strongVs();
+            }
+        }
+
+        String best = null;
+        int bestHp = Integer.MAX_VALUE;
+        int bestDist = Integer.MAX_VALUE;
+        for (Map.Entry<String, Integer> e : foeArmy.entrySet()) {
+            if (e.getValue() == null || e.getValue() <= 0) continue;
+            int d = getUnitDistToFoe(side, attackerId, e.getKey(), minePos, enemyPos, initialDist);
+            if (d <= range) {
+                UnitStats fu = getStats(e.getKey());
+                if (fu == null) continue;
+                if (fu.hp() < bestHp || (fu.hp() == bestHp && d < bestDist)) {
+                    best = e.getKey();
+                    bestHp = fu.hp();
+                    bestDist = d;
+                }
+            }
+        }
+        return best;
+    }
+
+    /**
+     * 是否有任何单位能够攻击到敌方存活单位 (独立坐标版本)
+     */
+    private boolean anyInRange(Map<String, Integer> mine, Map<String, Integer> enemy,
+                              Map<String, Integer> minePos, Map<String, Integer> enemyPos, int initialDist) {
+        for (Map.Entry<String, Integer> e : mine.entrySet()) {
+            if (e.getValue() == null || e.getValue() <= 0) continue;
+            UnitStats u = getStats(e.getKey());
+            if (u == null) continue;
+            for (Map.Entry<String, Integer> fe : enemy.entrySet()) {
+                if (fe.getValue() == null || fe.getValue() <= 0) continue;
+                int d = getUnitDistToFoe(Side.MINE, e.getKey(), fe.getKey(), minePos, enemyPos, initialDist);
+                if (u.range() >= d) return true;
+            }
+        }
+        for (Map.Entry<String, Integer> e : enemy.entrySet()) {
+            if (e.getValue() == null || e.getValue() <= 0) continue;
+            UnitStats u = getStats(e.getKey());
+            if (u == null) continue;
+            for (Map.Entry<String, Integer> fe : mine.entrySet()) {
+                if (fe.getValue() == null || fe.getValue() <= 0) continue;
+                int d = getUnitDistToFoe(Side.ENEMY, e.getKey(), fe.getKey(), minePos, enemyPos, initialDist);
+                if (u.range() >= d) return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * 是否有单位在射程内 - 对应 JS anyInRange
      */
     private boolean anyInRange(Map<String, Integer> mine, Map<String, Integer> enemy, int dist) {
@@ -977,7 +1107,10 @@ public class BattleService {
         // 败战经验减为 30% - 对应 JS finish 中 _officerExpGain
         if (!win) exp = (int) Math.floor(exp * 0.3);
 
+        Map<String, Integer> initialAttacker = filterPositive(myStart);
+        Map<String, Integer> initialDefender = filterPositive(foeStart);
         return new BattleResult(win, survivorAttacker, survivorDefender,
+                initialAttacker, initialDefender,
                 emptyPlunder, exp, report.toString(), false);
     }
 

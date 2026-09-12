@@ -49,6 +49,10 @@ class BuildServiceTest extends BaseServiceTest {
         // Verify resources were deducted (steel: 5000 - 80 = 4920)
         Resources res = getResources(playerId);
         assertEquals(4920, res.getSteel(), "升级农田应扣除80钢铁");
+
+        // Verify prestige is NOT granted prematurely on upgrade start
+        Player player = playerRepository.findById(playerId).orElseThrow();
+        assertEquals(0, player.getPrestige(), "开始升级时不应提前发放声望");
     }
 
     @Test
@@ -128,10 +132,14 @@ class BuildServiceTest extends BaseServiceTest {
         // Verify construction was deleted
         List<Construction> constructions = constructionRepository.findByPlayerId(playerId);
         assertEquals(0, constructions.size(), "取消后施工记录应被删除");
+
+        // Verify prestige is still 0 (no prestige leak or exploit from canceling)
+        Player player = playerRepository.findById(playerId).orElseThrow();
+        assertEquals(0, player.getPrestige(), "取消升级时不应产生声望变动");
     }
 
     @Test
-    @DisplayName("完成施工: 施工完成后建筑等级应提升")
+    @DisplayName("完成施工: 施工完成后建筑等级应提升并结算发放声望")
     void testCompleteConstruction() {
         // Create a command building at level 0 (or no building)
         // Use single-slot building "command"
@@ -142,6 +150,9 @@ class BuildServiceTest extends BaseServiceTest {
         // Before completion: no command building exists
         List<Building> before = buildingRepository.findByPlayerIdAndType(playerId, "command");
         assertEquals(0, before.size(), "施工完成前不应有市政厅建筑");
+
+        Player playerBefore = playerRepository.findById(playerId).orElseThrow();
+        assertEquals(0, playerBefore.getPrestige(), "竣工前声望应为0");
 
         // Complete the construction
         buildService.completeUpgrade(playerId, now);
@@ -154,5 +165,9 @@ class BuildServiceTest extends BaseServiceTest {
         // Verify construction was deleted
         List<Construction> constructions = constructionRepository.findByPlayerId(playerId);
         assertEquals(0, constructions.size(), "完成后施工记录应被删除");
+
+        // Verify prestige is granted upon completion
+        Player playerAfter = playerRepository.findById(playerId).orElseThrow();
+        assertTrue(playerAfter.getPrestige() > 0, "施工完成后应结算发放声望");
     }
 }

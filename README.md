@@ -1,128 +1,74 @@
 # 山河远征 - 初步框架实现
 
-## 项目架构
+二战题材文字策略网页游戏。当前已接入多人账号、共享世界、军团、邮件和实时结算；核心游戏状态由后端和 MySQL 管理。
 
-```
-游戏/
-├── backend/          # Java Spring Boot 后端 (端口 8080)
-│   ├── src/main/java/com/wargame/
-│   │   ├── controller/    # REST API 控制器
-│   │   ├── service/        # 业务逻辑服务
-│   │   ├── model/          # 实体、DTO、常量定义
-│   │   ├── repository/     # JPA 数据访问层
-│   │   ├── config/         # Spring Security、WebSocket、CORS 配置
-│   │   └── util/           # JWT、JSON 工具类
-│   ├── src/main/resources/
-│   │   ├── application.yml       # 默认配置 (localhost MySQL)
-│   │   ├── application-prod.yml   # 生产配置 (环境变量 MySQL)
-│   │   └── db/migration/         # Flyway 数据库迁移脚本
-│   ├── Dockerfile
-│   └── pom.xml
-├── frontend/         # 前端静态资源 (端口 8081)
-│   ├── index.html
-│   ├── css/style.css
-│   └── js/
-│       ├── api-client.js   # HTTP/WebSocket 客户端
-│       ├── api.js          # API 接口封装
-│       ├── core.js         # 游戏核心引擎
-│       ├── main.js         # 主界面 (建筑/资源/军情)
-│       ├── world.js        # 世界地图 (侦查/出征/野地)
-│       ├── build.js        # 建筑升级
-│       ├── army.js         # 征兵/解散
-│       ├── tech.js         # 科技升级
-│       ├── officer.js      # 军官招募/管理
-│       ├── battle.js       # 战斗系统
-│       ├── fort.js         # 城防工事
-│       ├── depot.js        # 仓库系统
-│       ├── map.js          # 地图解锁
-│       ├── data.js         # 静态数据定义
-│       ├── save.js         # 本地存档
-│       ├── ws-client.js    # WebSocket 客户端
-│       └── ws-handlers.js  # WebSocket 消息处理
-├── docker-compose.yml    # Docker 编排 (MySQL + 后端 + Nginx)
-├── nginx.conf            # Nginx 反向代理配置
-├── start-local.sh        # 一键本地启动脚本
-└── docs/                 # 设计文档
-```
+## 技术与模块
 
-## 技术栈
+- 后端：Java 17、Spring Boot 3.2.5、Spring Security/JWT、JPA、Flyway。
+- 前端：原生 HTML/CSS/JavaScript，按功能使用 `Game` 命名空间组织，无打包依赖。
+- 数据库：MySQL 8+；`backend/src/main/resources/db/migration` 是数据库版本的唯一依据。
+- 通信：HTTP API + WebSocket；部署使用 Docker Compose + Nginx。
+- 玩法：城建、资源与税收、征兵、科技、军官与装备、行军战斗、野地、军团、任务、邮件、排行榜、商城。
+- 模拟充值仍对登录玩家开放，当前没有接入实际支付。
 
-- **后端**: Java 17 + Spring Boot 3.2 + Spring Security + JPA + Flyway
-- **数据库**: MySQL 8+
-- **前端**: 原生 HTML/CSS/JavaScript (无框架)
-- **实时通信**: WebSocket (部队行军、战斗报告、资源产出)
-- **部署**: Docker + Docker Compose + Nginx
+## 本地启动
 
-## 服务启动方式
+安装 JDK 17、Maven、MySQL 和 Python 3。默认数据库地址为 `localhost:3306/wargame`，用户 `root`，密码为空；可通过 `.env.example` 列出的环境变量覆盖。手动启动前需将变量导出到进程环境，Spring 不会自动读取根目录 `.env`。
 
-### 方式一: 一键本地启动 (推荐开发)
-
-```bash
-./start-local.sh
-```
-
-脚本自动完成:
-- 检测并安装 JDK 17、Maven、MySQL
-- 创建 `wargame` 数据库
-- 启动后端 (端口 8080)
-- 启动前端 (端口 8081)
-
-启动后访问 http://localhost:8081
-
-按 `Ctrl+C` 停止所有服务。
-
-### 方式二: 手动启动
-
-#### 1. 启动 MySQL 数据库
-
-```bash
-# 确保 MySQL 已运行
+```sh
 mysql -u root -e "CREATE DATABASE IF NOT EXISTS wargame DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+mvn -f backend/pom.xml spring-boot:run
 ```
 
-数据库连接配置见 `backend/src/main/resources/application.yml`:
-- 地址: `localhost:3306`
-- 用户: `root`
-- 密码: 空
-- 数据库名: `wargame`
+另开终端启动前端：
 
-#### 2. 启动后端服务
-
-```bash
-cd backend
-mvn spring-boot:run
+```sh
+python3 -m http.server 8081 --directory frontend
 ```
 
-- 端口: 8080
-- Flyway 自动执行数据库迁移 (建表)
-- 新玩家注册时自动初始化资源: 粮10000/钢8000/油3000/稀1000/金1000
+访问 <http://localhost:8081>，后端端口为 8080。`.mvn/jvm.config` 指定 UTF-8，避免中文项目路径在不同终端编码下导致 Maven 读取旧构建记录失败。
 
-#### 3. 启动前端服务
+`./start-local.sh` 可自动准备本机依赖并启动服务；该脚本会安装缺失依赖，并结束占用 8080/8081 的旧进程，适合专用开发环境。
 
-```bash
-cd frontend
-python3 -m http.server 8081
-```
+## Docker 启动
 
-- 端口: 8081
-- 前端通过 `api-client.js` 自动将 API 请求代理到 `localhost:8080`
+复制 `.env.example` 为 `.env`，填写数据库密码和随机 JWT 密钥后：
 
-访问 http://localhost:8081 开始游戏。
-
-### 方式三: Docker Compose 部署 (推荐生产)
-
-```bash
+```sh
 docker compose up -d --build
 ```
 
-启动三个容器:
+Compose 已启用 `prod` 配置，访问 <http://localhost>。公网部署应按实际环境配置 HTTPS 和端口开放范围。
 
-| 服务 | 镜像 | 端口 | 说明 |
-|------|------|------|------|
-| MySQL | mysql:8 | 3306 | 数据库 |
-| Backend | 自建 | 8080 | Java 后端 |
-| Nginx | nginx:alpine | 80 | 前端 + API 反向代理 |
+## 验证
 
-访问 http://localhost 即可。
+建议使用 Node.js 22；前端测试无需安装 npm 包。
 
-> 注意: Docker 部署前需在 `docker-compose.yml` 的 backend 服务中添加 `SPRING_PROFILES_ACTIVE: prod` 环境变量，否则后端会连接 `localhost` 而非 `db` 容器。
+```sh
+node --test frontend/tests/*.test.cjs
+mvn -f backend/pom.xml test
+```
+
+普通后端测试使用 H2，并关闭后台调度。MySQL 迁移测试只在显式设置测试库地址时运行：
+
+```sh
+WARGAME_TEST_MYSQL_URL='jdbc:mysql://127.0.0.1:3306/wargame_ci?useSSL=false&allowPublicKeyRetrieval=true' \
+WARGAME_TEST_MYSQL_USER=root \
+WARGAME_TEST_MYSQL_PASSWORD=test-password \
+mvn -f backend/pom.xml -Dtest=MySqlMigrationTest test
+```
+
+必须预先创建独立、可丢弃的测试数据库，不能指向游戏库。测试先建立 V26 结构并写入样例余额，再执行新迁移，并由 Hibernate 验证结构。CI 使用 MySQL 8.4 自动执行前后端测试与迁移验证。
+
+## 主要入口
+
+| 职责 | 文件 |
+|---|---|
+| 定时调度 / 单玩家结算 | `TickScheduler.java` / `TickService.java` |
+| 状态聚合 / 地图视野 | `GameStateService.java` / `WorldViewService.java` |
+| 行军生命周期 / 目标数据 | `MarchService.java` / `MarchTargetService.java` |
+| 首页展示 / 资料操作 / 启动登录 | `main-view.js` / `player-profile.js` / `main.js` |
+| 地图请求与过期响应处理 | `world-view.js` |
+| 请求鉴权、重试与错误提示 | `api-client.js` |
+
+项目设计见 [docs/DESIGN.md](docs/DESIGN.md)，维护约定见 [HANDOVER.md](HANDOVER.md)。

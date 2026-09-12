@@ -14,10 +14,10 @@ window.Game = window.Game || {};
     },
 
     resources: {
-      food:  { name: '粮食', icon: '🌾', baseCap: 2000, capGrowth: 1.0 },
-      steel: { name: '钢铁', icon: '🔩', baseCap: 2000, capGrowth: 1.0 },
-      oil:   { name: '石油', icon: '🛢️', baseCap: 1500, capGrowth: 0.9 },
-      rare:  { name: '稀矿', icon: '💠', baseCap: 800,  capGrowth: 0.7 },
+      food:  { name: '粮食', icon: 'img/res-food.svg', baseCap: 2000, capGrowth: 1.0 },
+      steel: { name: '钢铁', icon: 'img/res-steel.svg', baseCap: 2000, capGrowth: 1.0 },
+      oil:   { name: '石油', icon: 'img/res-oil.svg', baseCap: 1500, capGrowth: 0.9 },
+      rare:  { name: '稀矿', icon: 'img/res-rare.svg', baseCap: 800,  capGrowth: 0.7 },
       gold:  { name: '黄金', icon: 'img/gold.svg', baseCap: 0,    capGrowth: 0 },
       diamond:{ name: '钻石', icon: '💎', baseCap: 0,   capGrowth: 0 }
     },
@@ -34,14 +34,14 @@ window.Game = window.Game || {};
     },
     buildings: {
       command:      { name: '市政厅',   desc: '主城,决定其他建筑等级上限', baseCost: { steel: 400, food: 200 },            growth: 1.6, cat: 'core', slots: 1 },
-      house:        { name: '民居',     desc: '提供人口上限,每级+100人口', baseCost: { steel: 120, food: 60 },             growth: 1.5, cat: 'core', popPer: 100, slots: 20 },
+      house:        { name: '民居',     desc: '提供人口上限,每级+1200人口', baseCost: { steel: 120, food: 60 },             growth: 1.5, cat: 'core', popPer: 1200, slots: 20 },
       factory:      { name: '军工厂',   desc: '生产步兵、装甲车辆与战机',   baseCost: { steel: 240, oil: 100 },             growth: 1.6, cat: 'army', slots: 10 },
       lightfactory: { name: '轻工厂',   desc: '生产轻型坦克',              baseCost: { steel: 260, oil: 110, rare: 10 },   growth: 1.6, cat: 'army', slots: 1 },
       heavyfactory: { name: '重工厂',   desc: '生产重型坦克/突击炮/火箭',  baseCost: { steel: 320, oil: 140, rare: 30 },   growth: 1.6, cat: 'army', slots: 1 },
       airport:      { name: '机场',     desc: '生产空军',                  baseCost: { steel: 280, oil: 120, rare: 30 },   growth: 1.6, cat: 'army', slots: 1 },
       port:         { name: '港口',     desc: '生产海军',                  baseCost: { steel: 360, oil: 160, rare: 50 },   growth: 1.7, cat: 'army', slots: 1 },
       academy:      { name: '军校',     desc: '招募军官',                  baseCost: { steel: 200, food: 120, gold: 200 }, growth: 1.6, cat: 'core', slots: 1 },
-      staff:        { name: '参谋部',   desc: '军官槽位与野地上限',        baseCost: { steel: 220, food: 100 },            growth: 1.6, cat: 'core', slots: 1 },
+      staff:        { name: '参谋部',   desc: '军官槽位与野地上限,带兵上限 +10%/级', baseCost: { steel: 220, food: 100 },            growth: 1.6, cat: 'core', slots: 1 },
       farm:         { name: '农田',     desc: '每小时产出粮食',            baseCost: { steel: 80 },                        growth: 1.5, cat: 'res', produces: 'food',  baseProduce: 40, slots: 10 },
       refinery:     { name: '炼钢厂',   desc: '每小时产出钢铁',            baseCost: { steel: 80 },                        growth: 1.5, cat: 'res', produces: 'steel', baseProduce: 40, slots: 10 },
       oilfield:     { name: '石油基地', desc: '每小时产出石油',            baseCost: { steel: 80 },                        growth: 1.5, cat: 'res', produces: 'oil',   baseProduce: 25, slots: 36 },
@@ -84,38 +84,24 @@ window.Game = window.Game || {};
     },
 
     techs: {
-      cmd_attack:    { name: '攻击指挥',   branch: '指挥', desc: '全军攻击 +5%/级',         max: 10, labReq: 1, baseCost: { steel: 240, food: 120 },            growth: 1.7, affect: 'atk_all' },
-      cmd_defense:   { name: '防御指挥',   branch: '指挥', desc: '全军防御 +5%/级',         max: 10, labReq: 2, baseCost: { steel: 240, food: 120 },            growth: 1.7, affect: 'def_all' },
-      cmd_hp:        { name: '集结战术',   branch: '指挥', desc: '全军生命 +5%/级',         max: 10, labReq: 3, baseCost: { steel: 300, food: 160, rare: 30 },   growth: 1.8, affect: 'hp_all' },
-
-      inf_attack:    { name: '步兵攻击',   branch: '步兵', desc: '步兵系攻击 +5%/级',       max: 10, labReq: 1, baseCost: { steel: 180, food: 90 },             growth: 1.7, affect: 'atk_inf' },
-      inf_defense:   { name: '步兵防御',   branch: '步兵', desc: '步兵系防御 +5%/级',       max: 10, labReq: 1, baseCost: { steel: 180, food: 90 },             growth: 1.7, affect: 'def_inf' },
-      inf_load:      { name: '步兵负重',   branch: '步兵', desc: '步兵负重 +20%/级(掠夺)',  max: 5,  labReq: 2, baseCost: { steel: 200, food: 100 },            growth: 1.6, affect: 'load' },
-
-      arm_attack:    { name: '装甲攻击',   branch: '装甲', desc: '装甲系攻击 +5%/级',       max: 10, labReq: 2, baseCost: { steel: 260, food: 130, rare: 20 },   growth: 1.8, affect: 'atk_arm' },
-      arm_defense:   { name: '装甲防御',   branch: '装甲', desc: '装甲系防御 +5%/级',       max: 10, labReq: 2, baseCost: { steel: 260, food: 130, rare: 20 },   growth: 1.8, affect: 'def_arm' },
-      arm_engine:    { name: '燃烧引擎',   branch: '装甲', desc: '装甲系移动 +5%/级',       max: 10, labReq: 3, baseCost: { steel: 320, oil: 120, rare: 40 },   growth: 1.8, affect: 'spd_arm' },
-
-      air_attack:    { name: '航空攻击',   branch: '航空', desc: '空军攻击 +5%/级',         max: 10, labReq: 3, baseCost: { steel: 300, food: 150, rare: 50 },   growth: 1.8, affect: 'atk_air' },
-      air_defense:   { name: '航空防御',   branch: '航空', desc: '空军防御 +5%/级',         max: 10, labReq: 3, baseCost: { steel: 300, food: 150, rare: 50 },   growth: 1.8, affect: 'def_air' },
-      air_engine:    { name: '喷气推进',   branch: '航空', desc: '空军移动 +5%/级',         max: 10, labReq: 4, baseCost: { steel: 360, oil: 160, rare: 70 },   growth: 1.9, affect: 'spd_air' },
-
-      nav_attack:    { name: '航海攻击',   branch: '航海', desc: '海军攻击 +5%/级',         max: 10, labReq: 4, baseCost: { steel: 340, food: 180, rare: 70 },   growth: 1.9, affect: 'atk_nav' },
-      nav_defense:   { name: '航海防御',   branch: '航海', desc: '海军防御 +5%/级',         max: 10, labReq: 4, baseCost: { steel: 340, food: 180, rare: 70 },   growth: 1.9, affect: 'def_nav' },
-      nav_engine:    { name: '舰船动力',   branch: '航海', desc: '海军移动 +5%/级',         max: 10, labReq: 5, baseCost: { steel: 400, oil: 200, rare: 100 },  growth: 2.0, affect: 'spd_nav' },
-
-      log_production:{ name: '资源采集',   branch: '后勤', desc: '资源产出 +5%/级',         max: 10, labReq: 1, baseCost: { steel: 320, food: 160 },            growth: 1.8, affect: 'res' },
-      log_warehouse: { name: '仓储技术',   branch: '后勤', desc: '资源上限 +10%/级',        max: 5,  labReq: 2, baseCost: { steel: 280, food: 140 },            growth: 1.7, affect: 'cap' },
-      log_food:      { name: '军需补给',   branch: '后勤', desc: '养兵耗粮 -5%/级',         max: 10, labReq: 3, baseCost: { steel: 360, food: 200 },            growth: 1.8, affect: 'food_save' },
-      log_train:     { name: '训练加速',   branch: '后勤', desc: '征召批量 +10%/级',        max: 10, labReq: 2, baseCost: { steel: 300, food: 180, gold: 100 }, growth: 1.8, affect: 'train' },
+      attack_tech:   { name: '攻击科技',   branch: '军事', desc: '全军攻击 +5%/级',       max: 10, labReq: 1, baseCost: { steel: 240, food: 120 }, growth: 1.7, affect: 'atk_all' },
+      defense_tech:  { name: '防御科技',   branch: '军事', desc: '全军防御 +5%/级',       max: 10, labReq: 1, baseCost: { steel: 240, food: 120 }, growth: 1.7, affect: 'def_all' },
+      weapon_range:  { name: '武器射程',   branch: '军事', desc: '全军武器射程 +5%/级',   max: 10, labReq: 2, baseCost: { steel: 280, food: 140, rare: 20 }, growth: 1.8, affect: 'range_all' },
+      cmd_hp:        { name: '军队生命',   branch: '军事', desc: '军队生命 +5%/级',       max: 10, labReq: 3, baseCost: { steel: 300, food: 160, rare: 30 }, growth: 1.8, affect: 'hp_all' },
+      inf_load:      { name: '步兵负重',   branch: '后勤', desc: '步兵负重 +20%/级(掠夺)', max: 5, labReq: 2, baseCost: { steel: 200, food: 100 }, growth: 1.6, affect: 'load' },
+      arm_engine:    { name: '燃烧引擎',   branch: '机动', desc: '装甲系移动 +5%/级',     max: 10, labReq: 3, baseCost: { steel: 320, oil: 120, rare: 40 }, growth: 1.8, affect: 'spd_arm' },
+      air_engine:    { name: '喷气推进',   branch: '机动', desc: '空军移动 +5%/级',         max: 10, labReq: 4, baseCost: { steel: 360, oil: 160, rare: 70 }, growth: 1.9, affect: 'spd_air' },
+      nav_engine:    { name: '舰船动力',   branch: '机动', desc: '海军移动 +5%/级',         max: 10, labReq: 5, baseCost: { steel: 400, oil: 200, rare: 100 }, growth: 2.0, affect: 'spd_nav' },
+      log_production:{ name: '资源采集',   branch: '后勤', desc: '资源产出 +5%/级',         max: 10, labReq: 1, baseCost: { steel: 320, food: 160 }, growth: 1.8, affect: 'res' },
+      log_warehouse: { name: '仓储技术',   branch: '后勤', desc: '资源上限 +10%/级',        max: 5, labReq: 2, baseCost: { steel: 280, food: 140 }, growth: 1.7, affect: 'cap' },
+      log_food:      { name: '军需补给',   branch: '后勤', desc: '养兵耗粮 -5%/级',         max: 10, labReq: 3, baseCost: { steel: 360, food: 200 }, growth: 1.8, affect: 'food_save' },
+      log_train:     { name: '训练加速',   branch: '后勤', desc: '征召批量 +10%/级',         max: 10, labReq: 2, baseCost: { steel: 300, food: 180, gold: 100 }, growth: 1.8, affect: 'train' },
       log_build:     { name: '建筑加速',   branch: '后勤', desc: '建筑升级资源 -5%/级',     max: 10, labReq: 2, baseCost: { steel: 340, food: 160, gold: 120 }, growth: 1.8, affect: 'build' },
       log_medical:   { name: '医疗技术',   branch: '后勤', desc: '败战部队存活率 +5%/级',   max: 10, labReq: 3, baseCost: { steel: 320, food: 220, gold: 150 }, growth: 1.8, affect: 'medical' },
-
-      recon_level:   { name: '侦察技术',   branch: '侦察', desc: '侦察野地等级 +1/级',      max: 5,  labReq: 1, baseCost: { steel: 180, oil: 60 },             growth: 1.6, affect: 'recon' },
-      recon_radar:   { name: '雷达预警',   branch: '侦察', desc: '提前发现敌方 +1 回合',    max: 3,  labReq: 2, baseCost: { steel: 240, oil: 100, rare: 20 },   growth: 1.7, affect: 'radar' },
-      recon_stealth: { name: '反侦察',     branch: '侦察', desc: '降低被侦察成功率',        max: 5,  labReq: 3, baseCost: { steel: 220, oil: 80, rare: 30 },    growth: 1.7, affect: 'stealth' }
+      recon_level:   { name: '侦察技术',   branch: '侦察', desc: '侦察情报深度 +1 阶/级，逐级探明城防、守军、建筑、科技与将领', max: 5, labReq: 1, baseCost: { steel: 180, oil: 60 }, growth: 1.6, affect: 'recon' },
+      recon_radar:   { name: '雷达预警',   branch: '侦察', desc: '提前发现敌方 +1 回合',    max: 3, labReq: 2, baseCost: { steel: 240, oil: 100, rare: 20 }, growth: 1.7, affect: 'radar' },
+      recon_stealth: { name: '反侦察',     branch: '侦察', desc: '降低被侦察成功率',        max: 5, labReq: 3, baseCost: { steel: 220, oil: 80, rare: 30 }, growth: 1.7, affect: 'stealth' }
     },
-
     officerNames: [
       '隆美尔', '朱可夫', '巴顿', '蒙哥马利', '古德里安', '曼施坦因', '麦克阿瑟', '尼米兹',
       '山本五十六', '邓尼茨', '崔可夫', '艾森豪威尔', '布雷德利', '莫德尔', '龙德施泰特', '华西列夫斯基',
@@ -214,8 +200,9 @@ window.Game = window.Game || {};
       combo:    { name: '连击',   desc: '8%/级概率额外攻击一次',       max: 5, cat: 'combo' }
     },
     items: {
-      expBook:   { name: '经验书',   icon: '📘', desc: '军官使用,获得500经验',           cat: 'officer' },
-      expBookAdv:{ name: '高级经验书',icon: '📕', desc: '军官使用,获得3000经验',          cat: 'officer' },
+      expBook:   { name: '经验书',   icon: '📘', desc: '军官使用,获得10000经验',          cat: 'officer' },
+      expBookAdv:{ name: '高级经验书',icon: '📕', desc: '军官使用,获得100000经验',         cat: 'officer' },
+      expBookMax:{ name: '满级经验书',icon: '📙', desc: '军官使用,直接升至满级(Lv.100)',    cat: 'officer' },
       skillBook: { name: '技能书',   icon: '📗', desc: '军官学习新技能',                 cat: 'officer' },
       loyaltyBox:{ name: '忠诚宝箱', icon: '🎁', desc: '军官使用,忠诚度+20',              cat: 'officer' },
       renameCard:{ name: '改名卡',   icon: '🏷️', desc: '为军官更换新名字',                cat: 'officer' },
@@ -247,7 +234,18 @@ window.Game = window.Game || {};
       marchOrd:  { name: '行军令',   icon: '🚩', desc: '行军速度+50%,持续1小时',           cat: 'util' },
       cloak:     { name: '反侦察符', icon: '🕶️', desc: '降低被敌方侦察成功率,持续6小时',    cat: 'util' },
       populationOrder: { name: '人口动员令', icon: '👥', desc: '使用后立即增加500空闲人口,不超过人口上限', cat: 'util' },
-      annivPack: { name: '周年庆大礼', icon: '🎉', desc: '周年庆礼包',                         cat: 'gift' }
+      annivPack: { name: '周年庆大礼', icon: '🎉', desc: '周年庆礼包',                         cat: 'gift' },
+
+      // —— 晋升珠宝（9 种珠宝，野地采集产出，用于军衔任务晋升）——
+      gem_pearl:      { name: '珍珠',   icon: '⚪', desc: '稀有天然珍珠，野地采集获得，用于晋升军衔', cat: 'jewelry' },
+      gem_coral:      { name: '珊瑚',   icon: '🪸', desc: '红润天然珊瑚，野地采集获得，用于晋升军衔', cat: 'jewelry' },
+      gem_glaze:      { name: '琉璃',   icon: '🔮', desc: '晶莹剔透琉璃，野地采集获得，用于晋升军衔', cat: 'jewelry' },
+      gem_amber:      { name: '琥珀',   icon: '🍯', desc: '温润千年琥珀，野地采集获得，用于晋升军衔', cat: 'jewelry' },
+      gem_agate:      { name: '玛瑙',   icon: '🟤', desc: '珍贵斑斓玛瑙，野地采集获得，用于晋升军衔', cat: 'jewelry' },
+      gem_crystal:    { name: '水晶',   icon: '💎', desc: '璀璨高纯水晶，野地采集获得，用于晋升军衔', cat: 'jewelry' },
+      gem_jadeite:    { name: '翡翠',   icon: '🟢', desc: '翠绿极品翡翠，野地采集获得，用于晋升军衔', cat: 'jewelry' },
+      gem_jade:       { name: '玉石',   icon: '🪨', desc: '温润无瑕美玉，野地采集获得，用于晋升军衔', cat: 'jewelry' },
+      gem_nightpearl: { name: '夜明珠', icon: '🌟', desc: '绝世璀璨夜明珠，高级野地采集获得，用于晋升将官军衔', cat: 'jewelry' }
     },
     historicalOfficers: [
       { name: '隆美尔', fullName: '埃尔温·隆美尔', birth: 1891, death: 1944, nation: '德国', rank: '陆军元帅', bio: '绰号"沙漠之狐"。二战期间率领非洲军团在北非战场屡创英军，以机动战术闻名于世。后因卷入刺杀希特勒事件被迫服毒自尽。' },
@@ -265,6 +263,62 @@ window.Game = window.Game || {};
       { name: '尼米兹', fullName: '切斯特·尼米兹', birth: 1885, death: 1966, nation: '美国', rank: '五星上将', bio: '美国太平洋舰队总司令。中途岛海战中以少胜多击沉四艘日军航母，扭转太平洋战局。潜艇出身的他被誉为"海上骑士"。' },
       { name: '华西列夫斯基', fullName: '亚历山大·华西列夫斯基', birth: 1895, death: 1977, nation: '苏联', rank: '苏联元帅', bio: '苏军总参谋长。参与策划莫斯科反攻、斯大林格勒合围和库尔斯克会战等重大战役，是苏军最高统帅部的核心智囊。' },
       { name: '隆美尔', fullName: '埃尔温·隆美尔', birth: 1891, death: 1944, nation: '德国', rank: '陆军元帅', bio: '绰号"沙漠之狐"。二战期间率领非洲军团在北非战场屡创英军，以机动战术闻名于世。后因卷入刺杀希特勒事件被迫服毒自尽。' }
+    ],
+
+    militaryRanks: [
+      { tier: 1,  name: '列兵',   prestige: 0,       baseCap: 1000,  reqGems: {} },
+      { tier: 2,  name: '上等兵', prestige: 200,     baseCap: 1500,  reqGems: { gem_pearl: 3 } },
+      { tier: 3,  name: '下士',   prestige: 500,     baseCap: 2000,  reqGems: { gem_pearl: 5, gem_coral: 2 } },
+      { tier: 4,  name: '中士',   prestige: 1000,    baseCap: 2600,  reqGems: { gem_pearl: 8, gem_coral: 4, gem_glaze: 2 } },
+      { tier: 5,  name: '上士',   prestige: 2000,    baseCap: 3300,  reqGems: { gem_coral: 6, gem_glaze: 4, gem_amber: 2 } },
+      { tier: 6,  name: '军士长', prestige: 3500,    baseCap: 4100,  reqGems: { gem_glaze: 8, gem_amber: 5, gem_agate: 2 } },
+      { tier: 7,  name: '准尉',   prestige: 5500,    baseCap: 5000,  reqGems: { gem_amber: 8, gem_agate: 5, gem_crystal: 2 } },
+      { tier: 8,  name: '少尉',   prestige: 8000,    baseCap: 6000,  reqGems: { gem_agate: 8, gem_crystal: 5, gem_jadeite: 2 } },
+      { tier: 9,  name: '中尉',   prestige: 15000,   baseCap: 7200,  reqGems: { gem_crystal: 8, gem_jadeite: 5, gem_jade: 2 } },
+      { tier: 10, name: '上尉',   prestige: 25000,   baseCap: 8600,  reqGems: { gem_jadeite: 8, gem_jade: 5, gem_nightpearl: 1 } },
+      { tier: 11, name: '少校',   prestige: 45000,   baseCap: 10200, reqGems: { gem_jade: 8, gem_nightpearl: 2, gem_pearl: 15 } },
+      { tier: 12, name: '中校',   prestige: 80000,   baseCap: 12000, reqGems: { gem_nightpearl: 4, gem_coral: 15, gem_glaze: 12 } },
+      { tier: 13, name: '上校',   prestige: 150000,  baseCap: 14000, reqGems: { gem_amber: 15, gem_agate: 12, gem_crystal: 10 } },
+      { tier: 14, name: '大校',   prestige: 300000,  baseCap: 16200, reqGems: { gem_crystal: 15, gem_jadeite: 12, gem_jade: 10 } },
+      { tier: 15, name: '少将',   prestige: 600000,  baseCap: 17500, reqGems: { gem_jadeite: 18, gem_jade: 15, gem_nightpearl: 6 } },
+      { tier: 16, name: '中将',   prestige: 1200000, baseCap: 18800, reqGems: { gem_jade: 20, gem_nightpearl: 10, gem_crystal: 15, gem_pearl: 20 } },
+      { tier: 17, name: '上将',   prestige: 2500000, baseCap: 20000, reqGems: { gem_nightpearl: 15, gem_jade: 25, gem_jadeite: 25, gem_agate: 20 } }
     ]
+  };
+
+  G.getMilitaryRankTierInfo = function (tier) {
+    var ranks = G.DATA.militaryRanks;
+    var idx = Math.max(1, Math.min(ranks.length, parseInt(tier, 10) || 1)) - 1;
+    var cur = ranks[idx];
+    var next = idx < ranks.length - 1 ? ranks[idx + 1] : null;
+    return {
+      tier: cur.tier,
+      name: cur.name,
+      baseCap: cur.baseCap,
+      minPrestige: cur.prestige,
+      nextTier: next ? next.tier : null,
+      nextName: next ? next.name : '',
+      nextBaseCap: next ? next.baseCap : null,
+      nextPrestige: next ? next.prestige : null,
+      reqGems: next ? next.reqGems : {},
+      isMax: !next
+    };
+  };
+
+  G.getMilitaryRankInfo = function (tierOrPrestige) {
+    var ranks = G.DATA.militaryRanks;
+    if (typeof tierOrPrestige === 'number' && tierOrPrestige >= 1 && tierOrPrestige <= ranks.length && Number.isInteger(tierOrPrestige)) {
+      return G.getMilitaryRankTierInfo(tierOrPrestige);
+    }
+    // Fallback if given prestige
+    var pts = tierOrPrestige || 0;
+    var curIdx = 0;
+    for (var i = ranks.length - 1; i >= 0; i--) {
+      if (pts >= ranks[i].prestige) {
+        curIdx = i;
+        break;
+      }
+    }
+    return G.getMilitaryRankTierInfo(curIdx + 1);
   };
 })(window.Game);

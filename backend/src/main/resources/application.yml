@@ -33,6 +33,10 @@ jwt:
 
 game:
   tick-interval: 5000
+  tick-batch-size: 100
+  tick-max-batches: 20
+  scheduling:
+    enabled: true
   max-offline-hours: 8
   # 注册/登录限流（防止暴力枚举与刷号）
   auth:

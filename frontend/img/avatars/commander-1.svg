@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <linearGradient id="c1bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b5998"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="c1skin" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fde047"/>
+      <stop offset="20%" stop-color="#fed7aa"/>
+      <stop offset="100%" stop-color="#fba16c"/>
+    </linearGradient>
+    <linearGradient id="c1suit" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#475569"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="c1gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="50%" stop-color="#eab308"/>
+      <stop offset="100%" stop-color="#a16207"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="100" height="100" rx="20" fill="url(#c1bg)"/>
+  <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+  <!-- Body / Uniform -->
+  <path d="M22 92 C22 75 32 68 50 68 C68 68 78 75 78 92 Z" fill="url(#c1suit)"/>
+  <!-- Shirt & Tie -->
+  <polygon points="46,68 54,68 50,78" fill="#ffffff"/>
+  <polygon points="48,74 52,74 53,88 47,88" fill="#0f172a"/>
+  <!-- Collar & Lapels -->
+  <polygon points="32,70 45,86 42,68" fill="#334155"/>
+  <polygon points="68,70 55,86 58,68" fill="#334155"/>
+  <!-- Gold Epaulets / Stars -->
+  <circle cx="28" cy="74" r="2.5" fill="url(#c1gold)"/>
+  <circle cx="72" cy="74" r="2.5" fill="url(#c1gold)"/>
+  <!-- Head & Ears -->
+  <circle cx="34" cy="48" r="4" fill="#fba16c"/>
+  <circle cx="66" cy="48" r="4" fill="#fba16c"/>
+  <path d="M36 42 C36 28 64 28 64 42 C64 56 58 64 50 64 C42 64 36 56 36 42 Z" fill="url(#c1skin)"/>
+  <!-- Eyes & Eyebrows -->
+  <path d="M41 38 Q45 36 47 38" stroke="#334155" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M59 38 Q55 36 53 38" stroke="#334155" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <circle cx="44" cy="43" r="2" fill="#0f172a"/>
+  <circle cx="56" cy="43" r="2" fill="#0f172a"/>
+  <!-- Nose & Mouth -->
+  <path d="M50 43 L48 49 L52 49" stroke="#ea580c" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+  <path d="M46 54 Q50 56 54 54" stroke="#c2410c" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+  <!-- Commander Officer Peaked Cap -->
+  <path d="M28 32 C28 20 72 20 72 32 Z" fill="#1e293b"/>
+  <!-- Cap Crown -->
+  <path d="M30 30 C30 14 70 14 70 30 Z" fill="#334155"/>
+  <!-- Gold Eagle / Wreath Badge -->
+  <path d="M45 23 L50 18 L55 23 L50 25 Z" fill="url(#c1gold)"/>
+  <!-- Cap Band -->
+  <rect x="29" y="28" width="42" height="4" fill="#0f172a"/>
+  <!-- Gold Cord Strap -->
+  <line x1="30" y1="31" x2="70" y2="31" stroke="url(#c1gold)" stroke-width="1.5"/>
+  <!-- Cap Visor -->
+  <path d="M26 32 C30 38 70 38 74 32 C74 34 71 39 50 40 C29 39 26 34 26 32 Z" fill="#090d16"/>
+  <path d="M32 34 C42 37 58 37 68 34" stroke="rgba(255,255,255,0.4)" stroke-width="1" fill="none"/>
+</svg>

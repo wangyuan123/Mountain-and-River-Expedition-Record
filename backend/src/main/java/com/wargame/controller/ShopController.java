@@ -65,7 +65,7 @@ public class ShopController {
 
         int current = res.getDiamond() != null ? res.getDiamond() : 0;
         res.setDiamond(current + diamonds);
-        resourcesRepository.save(res);
+        resourcesRepository.saveAndFlush(res);
 
         result.put("success", true);
         result.put("message", "模拟充值成功，钻石已到账");
@@ -116,7 +116,8 @@ public class ShopController {
 
         // 扣钻石
         res.setDiamond(diamond - price);
-        resourcesRepository.save(res);
+        // Detect a stale balance before inserting an item (which may have a unique key).
+        resourcesRepository.saveAndFlush(res);
 
         // 道具入仓
         String itemName = ShopItemPrices.getItemName(itemId);
@@ -174,6 +175,7 @@ public class ShopController {
             // 军官道具
             Map.entry("expBook", 30),
             Map.entry("expBookAdv", 150),
+            Map.entry("expBookMax", 1000),
             Map.entry("skillBook", 80),
             Map.entry("loyaltyBox", 50),
             Map.entry("renameCard", 60),
@@ -248,6 +250,7 @@ public class ShopController {
         private static final Map<String, String> NAMES = Map.ofEntries(
             Map.entry("expBook", "经验书"),
             Map.entry("expBookAdv", "高级经验书"),
+            Map.entry("expBookMax", "满级经验书"),
             Map.entry("skillBook", "技能书"),
             Map.entry("loyaltyBox", "忠诚宝箱"),
             Map.entry("renameCard", "改名卡"),

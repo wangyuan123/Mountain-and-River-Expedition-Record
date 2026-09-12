@@ -116,7 +116,7 @@ window.Game = window.Game || {};
       });
     }
 
-    var html = '<div class="zone-head"><span class="zone-title">📋 代办事项</span><span class="zone-sub">' + items.length + ' 项待处理</span></div>';
+    var html = '<div class="zone-head"><span class="zone-title">📋 待办事项</span><span class="zone-sub">' + items.length + ' 项待处理</span></div>';
     if (items.length === 0) {
       html += '<div class="empty-hint">暂无待办,世界太平 ✨</div>';
     } else {

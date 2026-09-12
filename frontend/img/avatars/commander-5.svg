@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <linearGradient id="c5bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#064e3b"/>
+    </linearGradient>
+    <linearGradient id="c5skin" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffedd5"/>
+      <stop offset="100%" stop-color="#fed7aa"/>
+    </linearGradient>
+    <linearGradient id="c5hair" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="100%" stop-color="#ca8a04"/>
+    </linearGradient>
+    <linearGradient id="c5gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="100%" stop-color="#eab308"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="100" height="100" rx="20" fill="url(#c5bg)"/>
+  <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+  <!-- Hair (Back) -->
+  <path d="M30 40 C28 58 28 68 32 76 C35 68 36 50 36 44 Z" fill="url(#c5hair)"/>
+  <path d="M70 40 C72 58 72 68 68 76 C65 68 64 50 64 44 Z" fill="url(#c5hair)"/>
+  <!-- Uniform -->
+  <path d="M26 92 C26 76 34 70 50 70 C66 70 74 76 74 92 Z" fill="#1e293b"/>
+  <!-- Tie & Shirt -->
+  <polygon points="46,70 54,70 50,78" fill="#ffffff"/>
+  <polygon points="48,76 52,76 53,88 47,88" fill="#047857"/>
+  <!-- Head & Neck -->
+  <path d="M38 44 C38 32 62 32 62 44 C62 58 56 65 50 65 C44 65 38 58 38 44 Z" fill="url(#c5skin)"/>
+  <!-- Hair (Bangs & Sides) -->
+  <path d="M36 34 C36 46 32 54 32 54 C38 46 42 40 44 34 Z" fill="url(#c5hair)"/>
+  <path d="M64 34 C64 46 68 54 68 54 C62 46 58 40 56 34 Z" fill="url(#c5hair)"/>
+  <!-- Eyes with eyelashes -->
+  <path d="M41 43 Q44 41 47 43" stroke="#0f172a" stroke-width="1.8" fill="none"/>
+  <circle cx="44" cy="45" r="2.2" fill="#0284c7"/>
+  <circle cx="45" cy="44" r="0.8" fill="#ffffff"/>
+  <path d="M59 43 Q56 41 53 43" stroke="#0f172a" stroke-width="1.8" fill="none"/>
+  <circle cx="56" cy="45" r="2.2" fill="#0284c7"/>
+  <circle cx="57" cy="44" r="0.8" fill="#ffffff"/>
+  <!-- Lip gloss -->
+  <path d="M47 56 Q50 58 53 56" stroke="#f43f5e" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+  <!-- Garrison Cap / Side Cap -->
+  <path d="M32 30 C34 16 66 16 68 30 C64 26 36 26 32 30 Z" fill="#064e3b"/>
+  <path d="M34 26 C44 20 56 20 66 26" stroke="url(#c5gold)" stroke-width="1.5" fill="none"/>
+  <circle cx="38" cy="24" r="2" fill="url(#c5gold)"/>
+</svg>

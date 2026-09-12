@@ -10,18 +10,31 @@ import com.wargame.security.RateLimiter;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 @Service
 public class ChatService {
 
-    private static final int MAX_LENGTH = 80;
-    private static final long RATE_WINDOW_MS = 3000L;
+    public static final int MAX_LENGTH = 80;
+    public static final long COOLDOWN_MS = 5000L; // 5 秒单次发言冷却
+    public static final long BURST_WINDOW_MS = 60000L; // 1 分钟滑动窗口
+    public static final int BURST_MAX_COUNT = 5; // 1 分钟内最多发言 5 次
+    public static final long DAILY_WINDOW_MS = 86400000L; // 24 小时
+    public static final int DAILY_MAX_COUNT = 100; // 每天最多发言 100 次
+    private static final long REPEAT_BLOCK_MS = 60000L; // 60 秒内禁止连续发送相同内容
+
     private static final List<String> SENSITIVE_WORDS = List.of("傻逼", "操你", "草你", "fuck", "shit", "管理员", "gm");
+
+    private record LastMessage(String content, long timestamp) {}
+    private final ConcurrentMap<Long, LastMessage> lastMessages = new ConcurrentHashMap<>();
 
     private final ChatMessageRepository chatMessageRepository;
     private final PlayerRepository playerRepository;
@@ -49,15 +62,45 @@ public class ChatService {
     public ChatDtos.MessageResponse send(Long playerId, String rawContent) {
         String content = normalize(rawContent);
         if (content.isEmpty()) throw new IllegalArgumentException("消息不能为空");
-        if (content.length() > MAX_LENGTH) throw new IllegalArgumentException("消息不能超过 80 字");
-        if (!rateLimiter.allow("CHAT:" + playerId, 1, RATE_WINDOW_MS)) {
-            throw new IllegalArgumentException("发言过于频繁，请 3 秒后再试");
+        if (content.length() > MAX_LENGTH) throw new IllegalArgumentException("消息不能超过 " + MAX_LENGTH + " 字");
+
+        long now = System.currentTimeMillis();
+
+        // 1. 防重复内容刷屏（60 秒内禁止发送完全相同的内容）
+        LastMessage last = lastMessages.get(playerId);
+        if (last != null && content.equalsIgnoreCase(last.content()) && (now - last.timestamp() < REPEAT_BLOCK_MS)) {
+            throw new IllegalArgumentException("请勿连续发送相同内容刷屏");
         }
+
+        // 2. 每日发言次数限制（防止挂机脚本刷屏）
+        String dailyKey = "CHAT_DAILY:" + playerId + ":" + LocalDate.now(ZoneId.of("Asia/Shanghai"));
+        if (!rateLimiter.allow(dailyKey, DAILY_MAX_COUNT, DAILY_WINDOW_MS)) {
+            throw new IllegalArgumentException("今日世界频道发言已达上限（" + DAILY_MAX_COUNT + "次），请明日再试");
+        }
+
+        // 3. 频次次数限制（1 分钟内最多发言 5 次）
+        String burstKey = "CHAT_BURST:" + playerId;
+        if (!rateLimiter.allow(burstKey, BURST_MAX_COUNT, BURST_WINDOW_MS)) {
+            long waitSec = rateLimiter.retryAfterSeconds(burstKey, BURST_WINDOW_MS);
+            throw new IllegalArgumentException("发言过于频繁，1分钟内最多发送 " + BURST_MAX_COUNT + " 次，请 " + waitSec + " 秒后再试");
+        }
+
+        // 4. 单次发言冷却时间（5 秒 CD）
+        String cdKey = "CHAT_CD:" + playerId;
+        if (!rateLimiter.allow(cdKey, 1, COOLDOWN_MS)) {
+            long waitSec = rateLimiter.retryAfterSeconds(cdKey, COOLDOWN_MS);
+            throw new IllegalArgumentException("发言过于频繁，请 " + waitSec + " 秒后再试");
+        }
+
         content = filterSensitiveWords(content);
         Player player = playerRepository.findById(playerId)
                 .orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
-        ChatMessage message = new ChatMessage(null, playerId, player.getUsername(), content, System.currentTimeMillis());
+        ChatMessage message = new ChatMessage(null, playerId, player.getUsername(), content, now);
         ChatDtos.MessageResponse response = toDto(chatMessageRepository.save(message));
+
+        // 记录最后发送内容与时间戳
+        lastMessages.put(playerId, new LastMessage(content, now));
+
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("id", response.id());
         data.put("playerId", response.playerId());

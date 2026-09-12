@@ -208,17 +208,10 @@ public class BuildService {
         // 11. 扣除资源
         deductCosts(playerId, cost);
 
-        // 12. 增加声望（JS: Core.addPrestige(cost) -> prestigeFromCost）
+        // 12. 计算预计可获得声望（竣工时结算发放，开始升级时不提前发放）
         int totalCost = 0;
         for (int v : cost.values()) totalCost += v;
         int prestigeGain = totalCost > 0 ? Math.max(1, totalCost / 100) : 0;
-        if (prestigeGain > 0) {
-            Player player = playerRepository.findById(playerId).orElse(null);
-            if (player != null) {
-                player.setPrestige((player.getPrestige() != null ? player.getPrestige() : 0) + prestigeGain);
-                playerRepository.save(player);
-            }
-        }
 
         // 13. 创建施工记录
         long now = System.currentTimeMillis();
@@ -234,7 +227,7 @@ public class BuildService {
         // 14. 返回结果
         String label = b.name() + (multi ? " #" + (slot + 1) : "");
         result.put("success", true);
-        result.put("message", label + " 开始升级，声望 +" + prestigeGain + "，预计 " + duration + "秒 完成");
+        result.put("message", label + " 开始升级，预计 " + duration + " 秒完成 (竣工获得 +" + prestigeGain + " 声望)");
         result.put("buildingType", buildingType);
         result.put("slot", multi ? slot : null);
         result.put("targetLevel", curLv + 1);
@@ -479,6 +472,17 @@ public class BuildService {
             constructionRepository.delete(construction);
             completedTypes.add(buildingType);
 
+            // 竣工结算：建筑升级成功后正式发放声望
+            int fromLevel = Math.max(0, targetLevel - 1);
+            int prestigeGain = calculatePrestigeGain(playerId, buildingType, fromLevel);
+            if (prestigeGain > 0) {
+                Player player = playerRepository.findById(playerId).orElse(null);
+                if (player != null) {
+                    player.setPrestige((player.getPrestige() != null ? player.getPrestige() : 0) + prestigeGain);
+                    playerRepository.save(player);
+                }
+            }
+
             // 主线任务进度钩子
             try {
                 questService.onEvent(playerId, "BUILD_UPGRADE_DONE", buildingType, 1);
@@ -487,6 +491,17 @@ public class BuildService {
             } catch (Exception ignored) { /* 任务系统不可用不能阻塞建造 */ }
         }
         return completedTypes;
+    }
+
+    public int calculatePrestigeGain(Long playerId, String buildingType, int fromLevel) {
+        BuildingDef b = GameData.BUILDINGS.get(buildingType);
+        if (b == null) return 0;
+        double costMul = Math.pow(b.growth(), Math.max(0, fromLevel)) * buildMul(playerId);
+        int totalCost = 0;
+        for (Map.Entry<String, Integer> entry : b.baseCost().entrySet()) {
+            totalCost += (int) Math.floor(entry.getValue() * costMul);
+        }
+        return totalCost > 0 ? Math.max(1, totalCost / 100) : 0;
     }
 
     // ================================================================

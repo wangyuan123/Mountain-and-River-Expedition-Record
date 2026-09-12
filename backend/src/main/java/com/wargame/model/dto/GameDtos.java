@@ -14,6 +14,7 @@ public class GameDtos {
     public record ResetRequest(Boolean confirm) {}
 
     public record CityNameRequest(String cityName) {}
+    public record AvatarRequest(String avatar) {}
 
     public record GuildSettingsRequest(String name, String icon) {}
 

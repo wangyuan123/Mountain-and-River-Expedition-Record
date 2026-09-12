@@ -150,4 +150,52 @@ class BattleServiceTest {
         assertEquals(5000, plunderNoWarehouse.get("food"), "无仓库时粮食应全额掠夺");
         assertEquals(500, plunderNoWarehouse.get("gold"), "黄金始终全额掠夺");
     }
+
+    @Test
+    @DisplayName("概率击杀: 单个步兵对重型坦克的微量伤害不应强制击毁")
+    void testMicroDamageDoesNotGuaranteeKill() {
+        // 守方: 10辆重型坦克 (def=40, hp=220)
+        Map<String, Integer> garrison = Map.of("htank", 10);
+        // 攻方: 1个步兵 (atk=6)
+        Map<String, Integer> attacker = Map.of("infantry", 1);
+
+        BattleResult result = battleService.resolveWild(garrison, attacker);
+
+        // 步兵对重坦单次伤害 dmg = (6*6*1)/(40*10) = 0.09
+        // 0.09 / 220 约 0.0004 概率，绝大多数情况下坦克无损
+        assertFalse(result.isWin(), "1个步兵无法击败10辆重型坦克");
+        int survivingTanks = result.getSurvivorDefender().getOrDefault("htank", 0);
+        assertEquals(10, survivingTanks, "微量伤害不应强制击毁重型坦克");
+    }
+
+    @Test
+    @DisplayName("非战斗单位不冲锋: 卡车有 autoAdvance=false, 不应在射程外盲目冲锋")
+    void testTruckDoesNotAutoAdvanceOutOfRange() {
+        // 攻方携带卡车出征: 10辆重型坦克 + 5辆卡车
+        Map<String, Integer> attacker = Map.of("htank", 10, "truck", 5);
+        // 守方: 20个步兵
+        Map<String, Integer> defender = Map.of("infantry", 20);
+
+        BattleResult result = battleService.resolveWild(defender, attacker);
+
+        assertTrue(result.isWin(), "重型坦克掩护下应获胜");
+        // 战斗日志中，卡车(range=0)在射程外不应有前进日志，直到距离进入0或战斗结束
+        String report = result.getReport();
+        assertFalse(report.contains("我方卡车(5) 前进"), "卡车不应主动冲锋前进");
+    }
+
+    @Test
+    @DisplayName("野地初始交战距离: 修复+2000硬编码后应基于双方航速合理进入射程")
+    void testWildBattleDistanceNoLegacy2000() {
+        // 双方均为步兵 (range 100, spd 3)
+        Map<String, Integer> attacker = Map.of("infantry", 10);
+        Map<String, Integer> defender = Map.of("infantry", 10);
+
+        BattleResult result = battleService.resolveWild(defender, attacker);
+        String report = result.getReport();
+
+        // 原先加了2000，初始距离2100，步兵每回合走150需要14回合才接敌
+        // 修复后初始距离为 100 + 3 * 50 = 250，步兵走150后距离100，第1-2回合即可开火
+        assertFalse(report.contains("距离->1950"), "野地战斗不应有遗留的+2000超大距离");
+    }
 }

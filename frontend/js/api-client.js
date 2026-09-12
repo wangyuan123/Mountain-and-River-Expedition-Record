@@ -120,7 +120,11 @@ window.Game = window.Game || {};
     // options: { silent: 不显示 loading, retry: 网络错误重试次数, noCache: 忽略 state 缓存 }
     request(method, path, body, options) {
       options = options || {};
-      var retry = (typeof options.retry === 'number') ? options.retry : NETWORK_RETRY;
+      method = method.toUpperCase();
+      // A lost response does not mean a write failed. Never replay a mutation.
+      var safeToRetry = method === 'GET' || method === 'HEAD';
+      var retry = safeToRetry ? ((typeof options.retry === 'number') ? options.retry : NETWORK_RETRY) : 0;
+      if (!safeToRetry) this.invalidateStateCache();
       var showLoad = !options.silent;
       var self = this;
 
@@ -180,8 +184,11 @@ window.Game = window.Game || {};
           if (typeof self.onNetworkError === 'function') {
             self.onNetworkError(err, method, path, body);
           }
-          if (G.toast) G.toast('网络错误，请检查连接');
-          throw new Error('网络错误，请检查网络连接');
+          var message = (method === 'GET' || method === 'HEAD')
+            ? '网络错误，请检查网络连接'
+            : '连接中断，操作结果尚未确认，请刷新查看后再操作';
+          if (G.toast) G.toast(message);
+          throw new Error(message);
         }
         throw err;
       });

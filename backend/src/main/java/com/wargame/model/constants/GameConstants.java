@@ -29,6 +29,46 @@ public final class GameConstants {
             "列兵", "上士", "少尉", "中尉", "上尉", "少校", "中校", "上校", "准将", "少将", "中将", "上将"
     );
 
+    /** 统帅军衔体系（基于声望晋升，玩家不设等级划分） */
+    public static final List<String> MILITARY_RANKS = List.of(
+            "列兵", "上等兵", "下士", "中士", "上士", "军士长",
+            "准尉", "少尉", "中尉", "上尉", "少校", "中校",
+            "上校", "大校", "少将", "中将", "上将", "元帅"
+    );
+
+    /** 统帅军衔对应的声望门槛 */
+    public static final int[] PRESTIGE_LEVEL_THRESHOLDS = {
+            0,        // 列兵
+            200,      // 上等兵
+            500,      // 下士
+            1000,     // 中士
+            2000,     // 上士
+            3500,     // 军士长
+            5500,     // 准尉
+            8000,     // 少尉
+            15000,    // 中尉
+            25000,    // 上尉
+            45000,    // 少校
+            80000,    // 中校
+            150000,   // 上校
+            300000,   // 大校
+            600000,   // 少将
+            1200000,  // 中将
+            2500000,  // 上将
+            5000000   // 元帅 (满级军衔)
+    };
+
+    /** 根据声望获取军衔名称（玩家不设等级） */
+    public static String getRankTitleByPrestige(int prestige) {
+        if (prestige <= 0) return MILITARY_RANKS.get(0);
+        for (int i = PRESTIGE_LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
+            if (prestige >= PRESTIGE_LEVEL_THRESHOLDS[i]) {
+                return MILITARY_RANKS.get(i);
+            }
+        }
+        return MILITARY_RANKS.get(0);
+    }
+
     // ===== 子常量引用 =====
 
     public static final Map<String, ResourceDef> RESOURCES = ResourceDef.RESOURCES;

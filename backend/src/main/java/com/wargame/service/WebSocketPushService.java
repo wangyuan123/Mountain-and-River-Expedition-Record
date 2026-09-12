@@ -5,6 +5,8 @@ import com.wargame.config.GameWebSocketHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -59,13 +61,29 @@ public class WebSocketPushService {
         message.put("timestamp", System.currentTimeMillis());
         try {
             String json = objectMapper.writeValueAsString(message);
-            if (playerId == null) {
-                handler.broadcast(json);
+            // Freeze the payload now, but never announce a rolled-back battle or purchase.
+            if (TransactionSynchronizationManager.isActualTransactionActive()
+                    && TransactionSynchronizationManager.isSynchronizationActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        deliver(playerId, json);
+                    }
+                });
             } else {
-                handler.sendToPlayer(playerId, json);
+                deliver(playerId, json);
             }
         } catch (Exception e) {
             log.warn("推送消息失败: playerId={}, type={}", playerId, type, e);
+        }
+    }
+
+    private void deliver(Long playerId, String json) {
+        try {
+            if (playerId == null) handler.broadcast(json);
+            else handler.sendToPlayer(playerId, json);
+        } catch (Exception e) {
+            log.warn("提交后推送失败: playerId={}", playerId, e);
         }
     }
 

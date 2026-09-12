@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <!-- Barrel body gradient: metallic dark olive / industrial steel -->
+    <linearGradient id="drumGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="35%" stop-color="#475569"/>
+      <stop offset="65%" stop-color="#334155"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="drumTop" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#64748b"/>
+      <stop offset="100%" stop-color="#334155"/>
+    </linearGradient>
+    <linearGradient id="oilDrop" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Barrel Main Body (Cylinder) -->
+  <path d="M7 6.5 L7 25.5 C7 27.5 11 29 16 29 C21 29 25 27.5 25 25.5 L25 6.5 Z" 
+        fill="url(#drumGrad)" stroke="#0f172a" stroke-width="0.8"/>
+
+  <!-- Top Rim & Lid -->
+  <ellipse cx="16" cy="6.5" rx="9" ry="3.5" fill="url(#drumTop)" stroke="#0f172a" stroke-width="0.8"/>
+  <ellipse cx="16" cy="6.5" rx="7.5" ry="2.7" fill="#1e293b" stroke="#475569" stroke-width="0.5"/>
+
+  <!-- Cap / Bung hole on lid -->
+  <circle cx="12" cy="6" r="1.3" fill="#cbd5e1" stroke="#0f172a" stroke-width="0.5"/>
+  <circle cx="19.5" cy="7" r="0.9" fill="#94a3b8" stroke="#0f172a" stroke-width="0.4"/>
+
+  <!-- Horizontal Rolling Hoops / Ribs (Characteristic 55-gal drum ridges) -->
+  <!-- Top rib -->
+  <path d="M7 12 C7 13.5 11 14.8 16 14.8 C21 14.8 25 13.5 25 12" fill="none" stroke="#0f172a" stroke-width="1.2"/>
+  <path d="M7 11.6 C7 13.1 11 14.4 16 14.4 C21 14.4 25 13.1 25 11.6" fill="none" stroke="#94a3b8" stroke-width="0.6" opacity="0.75"/>
+
+  <!-- Bottom rib -->
+  <path d="M7 20 C7 21.5 11 22.8 16 22.8 C21 22.8 25 21.5 25 20" fill="none" stroke="#0f172a" stroke-width="1.2"/>
+  <path d="M7 19.6 C7 21.1 11 22.4 16 22.4 C21 22.4 25 21.1 25 19.6" fill="none" stroke="#94a3b8" stroke-width="0.6" opacity="0.75"/>
+
+  <!-- Bottom base contour -->
+  <path d="M7 25.5 C7 27.5 11 29 16 29 C21 29 25 27.5 25 25.5" fill="none" stroke="#0f172a" stroke-width="0.8"/>
+
+  <!-- Center Warning Diamond / Oil Drop Symbol -->
+  <path d="M16 13.5 L19.2 16.7 L16 19.9 L12.8 16.7 Z" fill="#b91c1c" stroke="#7f1d1d" stroke-width="0.6"/>
+  <!-- Gold Oil Drop inside diamond -->
+  <path d="M16 15 C16 15 17.5 17 17.5 17.8 C17.5 18.6 16.8 19.2 16 19.2 C15.2 19.2 14.5 18.6 14.5 17.8 C14.5 17 16 15 16 15 Z" 
+        fill="url(#oilDrop)"/>
+
+  <!-- Vertical Specular Light Stripe -->
+  <path d="M10 8 L10 25.5" stroke="#ffffff" stroke-width="0.7" opacity="0.25" stroke-linecap="round"/>
+</svg>

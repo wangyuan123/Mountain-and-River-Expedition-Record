@@ -34,7 +34,8 @@ public class RateLimiter {
         Counter c = counters.get(key);
         if (c == null) return 0;
         long elapsed = System.currentTimeMillis() - c.windowStart;
-        return Math.max(1, (windowMs - elapsed) / 1000);
+        if (elapsed >= windowMs) return 0;
+        return Math.max(1, (windowMs - elapsed + 999) / 1000);
     }
 
     private static class Counter {

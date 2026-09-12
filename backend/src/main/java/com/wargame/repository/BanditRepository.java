@@ -9,6 +9,8 @@ import java.util.List;
 @Repository
 public interface BanditRepository extends JpaRepository<Bandit, Long> {
 
+    List<Bandit> findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(Long worldId, int minX, int maxX, int minY, int maxY);
+
     List<Bandit> findByWorldId(Long worldId);
 
     List<Bandit> findByWorldIdAndDefeatedFalse(Long worldId);

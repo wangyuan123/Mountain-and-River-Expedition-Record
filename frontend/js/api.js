@@ -25,6 +25,10 @@ window.Game = window.Game || {};
         state.player.name = state.player.username;
       }
       var oldState = G.state || (G.Core && G.Core.state) || null;
+      // 战报列表按需加载；同一账号的普通状态刷新不能清掉刚收到的战报。
+      if (oldState && oldState.player && state.player && oldState.player.id === state.player.id) {
+        if (!Array.isArray(state.reports) && Array.isArray(oldState.reports)) state.reports = oldState.reports;
+      }
       if (oldState) {
         // 保留前端挂在 state 顶层上的临时 UI 状态（如 _detailOfficerId, _depotSelectOfficer, _expandedBuildings 等），
         // 避免后端返回的全新 state 对象把 _xxx 临时字段覆盖丢失
@@ -143,6 +147,11 @@ window.Game = window.Game || {};
 
     // ==================== 游戏状态 ====================
 
+    getWorldView: function (x, y, radius) {
+      return client.get('/game/world/view?x=' + encodeURIComponent(x)
+        + '&y=' + encodeURIComponent(y) + '&radius=' + encodeURIComponent(radius), { silent: true });
+    },
+
     getGameState: function (force) {
       if (!force) {
         var cached = client.getCachedState();
@@ -155,11 +164,15 @@ window.Game = window.Game || {};
         });
     },
 
-    // 战报列表 (侦查报告持久化在 scout_reports 表, 战斗报告走 WebSocket 累积)
+    // 战报列表（侦查和战斗报告均由后端持久化）
     // 注意: client.get 第二个参数是 options 不是 params, query string 必须手拼
     getReports: function (limit) {
       var n = Math.max(1, Math.min(200, parseInt(limit, 10) || 50));
       return client.get('/game/reports?limit=' + n);
+    },
+
+    getUnreadReports: function () {
+      return client.get('/game/reports/unread');
     },
 
     /** 标记单条战报已读。返回后端最新未读数。 */
@@ -196,6 +209,11 @@ window.Game = window.Game || {};
 
     setCityName: function (cityName) {
       return client.post('/game/settings/city-name', { cityName: cityName })
+        .then(extractState).then(applyState);
+    },
+
+    setAvatar: function (avatar) {
+      return client.post('/game/settings/avatar', { avatar: avatar })
         .then(extractState).then(applyState);
     },
 
@@ -469,7 +487,19 @@ window.Game = window.Game || {};
         .then(extractState).then(applyState);
     },
 
-    // ==================== 主线任务 + 新手引导 ====================
+    // ==================== 主线任务 + 新手引导 + 军衔任务 ====================
+
+    getRankInfo: function () {
+      return client.get('/game/rank/info');
+    },
+
+    promoteRank: function () {
+      return client.post('/game/rank/promote', {})
+        .then(function (data) {
+          if (data && data.state) applyState(data.state);
+          return data;
+        });
+    },
 
     getQuestList: function () {
       return client.get('/game/quest/list');

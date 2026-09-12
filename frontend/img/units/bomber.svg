@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="bomberBody" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#94a3b8"/>
+      <stop offset="50%" stop-color="#475569"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Large Wingspan -->
+  <polygon points="12,14 18,2 24,3 17,15" fill="url(#bomberBody)" stroke="#0f172a" stroke-width="0.6"/>
+  <polygon points="10,16 18,30 24,29 15,17" fill="url(#bomberBody)" stroke="#0f172a" stroke-width="0.6"/>
+
+  <!-- 4 Engine Nacelles on Wings -->
+  <rect x="14" y="6" width="3.5" height="1.8" rx="0.5" fill="#334155" stroke="#000" stroke-width="0.4"/>
+  <rect x="17" y="10" width="3.5" height="1.8" rx="0.5" fill="#334155" stroke="#000" stroke-width="0.4"/>
+  <rect x="14" y="24" width="3.5" height="1.8" rx="0.5" fill="#334155" stroke="#000" stroke-width="0.4"/>
+  <rect x="17" y="20" width="3.5" height="1.8" rx="0.5" fill="#334155" stroke="#000" stroke-width="0.4"/>
+
+  <!-- Heavy Fuselage -->
+  <path d="M2 15 C2 12.5 7 12 22 13 C27 13.5 30 14.8 31 16 C30 17.2 27 18.5 22 19 C7 20 2 19.5 2 17 Z" fill="url(#bomberBody)" stroke="#0f172a" stroke-width="0.7"/>
+
+  <!-- Glass Greenhouse Nose & Cockpit -->
+  <path d="M2 15 C2 13 4 13 6 13 L6 19 C4 19 2 19 2 17 Z" fill="#38bdf8" stroke="#0284c7" stroke-width="0.4"/>
+
+  <!-- Tail Fin -->
+  <polygon points="26,14 31,6 32,7 29,17" fill="url(#bomberBody)" stroke="#0f172a" stroke-width="0.5"/>
+</svg>

@@ -516,7 +516,7 @@ public class OfficerService {
 
         if (count <= 0) count = 1;
 
-        // 如果未指定 itemId，智能判断：优先 expBook，若无则尝试 expBookAdv
+        // 如果未指定 itemId，智能判断：优先 expBook，若无则尝试 expBookAdv，再尝试 expBookMax
         if (itemId == null || itemId.isBlank()) {
             int cntNormal = playerItemRepository.findByPlayerIdAndItemKey(playerId, "expBook")
                     .map(it -> it.getCount() != null ? it.getCount() : 0).orElse(0);
@@ -528,14 +528,45 @@ public class OfficerService {
                 if (cntAdv >= count) {
                     itemId = "expBookAdv";
                 } else {
-                    itemId = "expBook";
+                    int cntMax = playerItemRepository.findByPlayerIdAndItemKey(playerId, "expBookMax")
+                            .map(it -> it.getCount() != null ? it.getCount() : 0).orElse(0);
+                    if (cntMax >= 1) {
+                        itemId = "expBookMax";
+                    } else {
+                        itemId = "expBook";
+                    }
                 }
             }
         }
 
+        if ("expBookMax".equals(itemId)) {
+            int consumed = playerItemRepository.tryConsume(playerId, "expBookMax", 1, System.currentTimeMillis());
+            if (consumed == 0) {
+                result.put("success", false);
+                result.put("message", "满级经验书不足");
+                return result;
+            }
+
+            int upgraded = 100 - level;
+            int pointsGained = upgraded * 4;
+            officer.setLevel(100);
+            officer.setExp(0L);
+            officer.setAttrPoints((officer.getAttrPoints() != null ? officer.getAttrPoints() : 0) + pointsGained);
+            officerRepository.save(officer);
+
+            result.put("success", true);
+            result.put("message", "⚡ " + officer.getName() + " 使用满级经验书直升满级 Lv.100！获得 " + pointsGained + " 点可分配属性！");
+            result.put("exp", 0L);
+            result.put("level", 100);
+            result.put("gain", 0);
+            result.put("count", 1);
+            result.put("itemId", itemId);
+            return result;
+        }
+
         boolean isAdv = "expBookAdv".equals(itemId);
         String bookName = isAdv ? "高级经验书" : "经验书";
-        int singleGain = isAdv ? 3000 : 500;
+        int singleGain = isAdv ? 100000 : 10000;
 
         int consumed = playerItemRepository.tryConsume(playerId, itemId, count, System.currentTimeMillis());
         if (consumed == 0) {

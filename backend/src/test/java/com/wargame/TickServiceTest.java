@@ -98,22 +98,29 @@ class TickServiceTest extends BaseServiceTest {
         player.setCivilianPopulation(100);
         playerRepository.save(player);
 
-        // Create house level 1 (popPer=100, so pop=100)
+        // 当前民居每级容量 1200：100 平民一小时自然增长 36 人。
         createBuilding(playerId, "house", 1);
-
-        // No mayor, so mayorKnow = 0
-        // No officers, so no salary
         giveResources(playerId, 0, 0, 0, 0, 0);
-
         tickService.tick(playerId);
 
-        Resources res = getResources(playerId);
-        assertNotNull(res);
+        assertEquals(136, playerRepository.findById(playerId).orElseThrow().getCivilianPopulation());
+        assertEquals(82, getResources(playerId).getGold(),
+                "先结算人口增长，再以136人口、30%税率计算该结算周期税收，四舍五入为82");
+    }
 
-        // goldRate = pop * (tax/100) * (1 + mayorKnow/100) * 2
-        // = 100 * (30/100) * (1 + 0) * 2 = 60
-        // gold = 0 + 60 * 1 hour = 60
-        assertEquals(60, res.getGold(), "100人口*30%税率*2倍率*1小时应产出60黄金");
+    @Test
+    @DisplayName("人口满额时停止增长，税收以实际平民而非容量为准")
+    void testGoldIncomeAtPopulationCapacity() {
+        Player player = playerRepository.findById(playerId).orElseThrow();
+        player.setLastTick(System.currentTimeMillis() - 3600_000L);
+        player.setTax(30);
+        player.setCivilianPopulation(1200);
+        playerRepository.save(player);
+        createBuilding(playerId, "house", 1);
+        giveResources(playerId, 0, 0, 0, 0, 0);
+        tickService.tick(playerId);
+        assertEquals(1200, playerRepository.findById(playerId).orElseThrow().getCivilianPopulation());
+        assertEquals(720, getResources(playerId).getGold());
     }
 
     @Test

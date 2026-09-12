@@ -226,7 +226,8 @@ window.Game = window.Game || {};
       var items = s.items || {};
       var bNormal = items.expBook || 0;
       var bAdv = items.expBookAdv || 0;
-      var totalBooks = bNormal + bAdv;
+      var bMax = items.expBookMax || 0;
+      var totalBooks = bNormal + bAdv + bMax;
 
       var mask = document.createElement('div');
       mask.className = 'modal-mask';
@@ -241,7 +242,7 @@ window.Game = window.Game || {};
           + '<div class="panel" style="text-align:center;padding:20px 10px">'
           + '<div style="font-size:32px;margin-bottom:8px">📚</div>'
           + '<div style="font-size:14px;font-weight:bold;margin-bottom:4px">背包中暂无经验书</div>'
-          + '<div class="d" style="color:var(--muted);font-size:12px">可在商城中购买【初级经验书】或【高级经验书】</div>'
+          + '<div class="d" style="color:var(--muted);font-size:12px">可在商城中购买【经验书】、【高级经验书】或【满级经验书】</div>'
           + '</div>'
           + '<div class="btn-row" style="margin-top:14px;justify-content:center;gap:10px">'
           + '<button class="btn sm ok" onclick="Game.Officer.closeExpBookModal();Game.go(\'shop\')">前往商城</button>'
@@ -255,13 +256,16 @@ window.Game = window.Game || {};
       }
 
       var bookList = [
-        { id: 'expBook', name: '初级经验书', icon: '📘', exp: 500, cnt: bNormal },
-        { id: 'expBookAdv', name: '高级经验书', icon: '📕', exp: 3000, cnt: bAdv }
+        { id: 'expBook', name: '经验书', icon: '📘', exp: 10000, cnt: bNormal },
+        { id: 'expBookAdv', name: '高级经验书', icon: '📕', exp: 100000, cnt: bAdv },
+        { id: 'expBookMax', name: '满级经验书', icon: '📙', exp: 0, isMax: true, cnt: bMax }
       ];
 
-      var selectedId = (defaultItemId && (items[defaultItemId] || 0) > 0) ? defaultItemId : (bAdv > 0 && bNormal === 0 ? 'expBookAdv' : (bNormal > 0 ? 'expBook' : 'expBookAdv'));
+      var selectedId = (defaultItemId && (items[defaultItemId] || 0) > 0)
+        ? defaultItemId
+        : (bNormal > 0 ? 'expBook' : (bAdv > 0 ? 'expBookAdv' : (bMax > 0 ? 'expBookMax' : 'expBook')));
       var selectedBook = bookList.find(function (b) { return b.id === selectedId; }) || bookList[0];
-      var maxCount = selectedBook.cnt;
+      var maxCount = selectedBook.isMax ? Math.min(1, selectedBook.cnt) : selectedBook.cnt;
       var curQty = Math.max(1, Math.min(1, maxCount));
 
       var html = '<div class="modal-card" style="max-width:420px;width:92%">'
@@ -271,7 +275,7 @@ window.Game = window.Game || {};
         + '</div>'
         + '<div class="d" style="margin-bottom:10px">目标军官: <b style="color:' + (D.starColor[o.star] || '#333') + '">' + G.escapeHtml(o.name) + '</b> (Lv.' + o.level + ' · 当前经验 ' + (o.exp || 0) + '/' + G.expNeeded(o.level) + ')</div>'
         + '<div style="display:flex;gap:10px;margin-bottom:12px" id="expBookCards"></div>'
-        + '<div class="expbook-slider-row">'
+        + '<div class="expbook-slider-row" id="expBookSliderRow">'
         + '<button class="btn sm" id="expBookBtnDec" style="min-width:32px;padding:2px 8px;font-weight:bold">-</button>'
         + '<input class="qty" id="expBookQtyInput" type="number" min="1" max="' + maxCount + '" value="' + curQty + '" style="width:54px;text-align:center;padding:3px 2px" />'
         + '<button class="btn sm" id="expBookBtnInc" style="min-width:32px;padding:2px 8px;font-weight:bold">+</button>'
@@ -302,7 +306,7 @@ window.Game = window.Game || {};
           ch += '<div class="expbook-card' + (isAct ? ' active' : '') + '" data-bid="' + b.id + '" style="' + (isDis ? 'opacity:0.45;cursor:not-allowed;' : '') + '">'
             + '<div style="font-size:24px;margin-bottom:4px">' + b.icon + '</div>'
             + '<div style="font-weight:bold;font-size:13px">' + b.name + '</div>'
-            + '<div style="font-size:12px;color:var(--accent);margin:2px 0">+' + b.exp + ' 经验/本</div>'
+            + '<div style="font-size:12px;color:var(--accent);margin:2px 0">' + (b.isMax ? '直升满级(Lv.100)' : ('+' + b.exp + ' 经验/本')) + '</div>'
             + '<div style="font-size:12px;color:' + (b.cnt > 0 ? '#b3832f' : 'var(--muted)') + ';font-weight:600">拥有: ' + b.cnt + ' 本</div>'
             + '</div>';
         });
@@ -314,7 +318,7 @@ window.Game = window.Game || {};
             if (!book || book.cnt <= 0) return;
             selectedId = bid;
             selectedBook = book;
-            maxCount = book.cnt;
+            maxCount = book.isMax ? Math.min(1, book.cnt) : book.cnt;
             if (curQty > maxCount) curQty = maxCount;
             if (curQty < 1) curQty = 1;
             renderCards();
@@ -324,10 +328,34 @@ window.Game = window.Game || {};
       }
 
       function updateSliderAndSummary() {
+        var sliderRow = mask.querySelector('#expBookSliderRow');
         var slider = mask.querySelector('#expBookSlider');
         var input = mask.querySelector('#expBookQtyInput');
         var summary = mask.querySelector('#expBookSummary');
         var confirmBtn = mask.querySelector('#expBookConfirmBtn');
+
+        if (selectedBook.isMax) {
+          curQty = 1;
+          if (sliderRow) sliderRow.style.display = 'none';
+          var upgraded = G.OFFICER_MAX_LEVEL - (o.level || 1);
+          var points = upgraded * 4;
+          var levelChangeHtml = '<span style="color:#2e7d32;font-weight:bold">Lv.' + o.level + ' → Lv.' + G.OFFICER_MAX_LEVEL + ' (直升满级 +' + upgraded + ' 级)</span>'
+            + '<br><span style="color:var(--accent);font-size:12px">立即获得 +' + points + ' 点可分配属性，经验归 0</span>';
+
+          if (summary) {
+            summary.innerHTML = '<div style="display:flex;justify-content:space-between;margin-bottom:4px">'
+              + '<span>使用道具: <b>' + selectedBook.icon + ' ' + selectedBook.name + ' × 1</b></span>'
+              + '<span style="color:var(--accent);font-weight:bold">直升满级</span>'
+              + '</div>'
+              + '<div>升级预测: ' + levelChangeHtml + '</div>';
+          }
+          if (confirmBtn) {
+            confirmBtn.textContent = '确认使用 (1本)';
+          }
+          return;
+        }
+
+        if (sliderRow) sliderRow.style.display = 'flex';
 
         if (slider) {
           slider.max = maxCount;
@@ -582,7 +610,7 @@ window.Game = window.Game || {};
       h += '<br/>新建军校后才能招募军官。</div>';
 
       if (academyLv <= 0) {
-        h += '<div class="panel"><div class="d">尚未建造军校,无法招募军官。请到 <b>军事区</b> 建造 <b>军校</b> 后再来。</div></div>';
+        h += '<div class="panel"><div class="d">尚未建造军校,无法招募军官。请到 <b>军事</b> 建造 <b>军校</b> 后再来。</div></div>';
       } else {
         var mins = s.academy.refreshAt > now ? Math.ceil((s.academy.refreshAt - now) / 60000) : 0;
         h += '<div class="menu-item ok" onclick="Game.Officer.refreshAcademy(' + (s.academy.refreshAt > now) + ')">';
@@ -613,7 +641,7 @@ window.Game = window.Game || {};
         }
       }
 
-      h += '<div class="menu-item back" onclick="Game.go(\'buildArmy\')">[0] 返回军事区</div>';
+      h += '<div class="menu-item back" onclick="Game.go(\'buildArmy\')">[0] 返回军事</div>';
       v.innerHTML = h;
     },
 
@@ -638,7 +666,7 @@ window.Game = window.Game || {};
       h += '<div class="zone-head">=== 我的军官 ===</div>';
       h += '<div class="menu">';
       if (!s.officers.length) {
-        h += '<div class="desc">暂无军官。请到 <b>军事区</b> → <b>军校</b> 招募。</div>';
+        h += '<div class="desc">暂无军官。请到 <b>军事</b> → <b>军校</b> 招募。</div>';
       } else {
         s.officers.forEach(function (o) {
           var need = G.expNeeded(o.level);
@@ -673,7 +701,7 @@ window.Game = window.Game || {};
         });
       }
       h += '</div>';
-      h += '<div class="menu-item back" onclick="Game.go(\'buildArmy\')">[0] 返回军事区</div>';
+      h += '<div class="menu-item back" onclick="Game.go(\'buildArmy\')">[0] 返回军事</div>';
       v.innerHTML = h;
     },
 
@@ -794,9 +822,11 @@ window.Game = window.Game || {};
 
       var bNormal = (s.items && s.items.expBook) || 0;
       var bAdv = (s.items && s.items.expBookAdv) || 0;
+      var bMax = (s.items && s.items.expBookMax) || 0;
       var bookDescParts = [];
-      if (bNormal > 0 || bAdv === 0) bookDescParts.push('初级: ' + bNormal + '本');
+      if (bNormal > 0 || (bAdv === 0 && bMax === 0)) bookDescParts.push('初级: ' + bNormal + '本');
       if (bAdv > 0) bookDescParts.push('高级: ' + bAdv + '本');
+      if (bMax > 0) bookDescParts.push('满级: ' + bMax + '本');
       h += '<div class="zone-head">经验 <span class="d">' + bookDescParts.join(' | ') + '</span></div>';
       h += '<div class="panel">';
       if (o.level < G.OFFICER_MAX_LEVEL) {
@@ -821,7 +851,7 @@ window.Game = window.Game || {};
         } else {
           h += '<button class="btn sm" disabled title="经验不足以升至下一级">⚡ 升级</button>';
         }
-        var totalBooks = bNormal + bAdv;
+        var totalBooks = bNormal + bAdv + bMax;
         h += '<button class="btn sm' + (totalBooks > 0 ? ' ok' : '') + '" onclick="Game.Officer.openExpBookModal(\'' + o.id + '\')">📖 使用经验书' + (totalBooks > 0 ? ' (余' + totalBooks + '本)' : '(无)') + '</button>';
         h += '</div>';
       } else {

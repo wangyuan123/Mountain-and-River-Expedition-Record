@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="armBody" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#647558"/>
+      <stop offset="60%" stop-color="#4c5b41"/>
+      <stop offset="100%" stop-color="#323e2a"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Machine Gun Barrel on Turret -->
+  <line x1="2" y1="9.5" x2="11" y2="9.5" stroke="#0f172a" stroke-width="1.2" stroke-linecap="round"/>
+
+  <!-- Small Machine Gun Turret -->
+  <path d="M10 12 C10 8.5 13 7.5 16 7.5 C19 7.5 21 8.5 21 12 Z" fill="url(#armBody)" stroke="#1a2214" stroke-width="0.7"/>
+
+  <!-- Sloped Armored Hull -->
+  <polygon points="4,17 7,12 24,12 28,15 29,20 2,20" fill="url(#armBody)" stroke="#1a2214" stroke-width="0.8"/>
+  <!-- Armored Vision Slit / Visor -->
+  <rect x="7.5" y="14" width="3.5" height="1" fill="#bae6fd" stroke="#0f172a" stroke-width="0.3"/>
+
+  <!-- 4 Large Off-Road Wheels -->
+  <circle cx="7.5" cy="22.5" r="3.8" fill="#1e293b" stroke="#000" stroke-width="0.7"/>
+  <circle cx="7.5" cy="22.5" r="1.8" fill="#475569"/>
+
+  <circle cx="15.5" cy="22.5" r="3.8" fill="#1e293b" stroke="#000" stroke-width="0.7"/>
+  <circle cx="15.5" cy="22.5" r="1.8" fill="#475569"/>
+
+  <circle cx="23.5" cy="22.5" r="3.8" fill="#1e293b" stroke="#000" stroke-width="0.7"/>
+  <circle cx="23.5" cy="22.5" r="1.8" fill="#475569"/>
+</svg>

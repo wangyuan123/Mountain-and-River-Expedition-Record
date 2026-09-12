@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: com.wargame.TickServiceTest
--------------------------------------------------------------------------------
-Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.726 s -- in com.wargame.TickServiceTest

@@ -98,7 +98,7 @@ public class DepotService {
         // 征募令
         if ("recruitOrd".equals(itemId)) return useRecruitOrd(playerId);
         // 军官类
-        if ("expBook".equals(itemId) || "expBookAdv".equals(itemId)) {
+        if ("expBook".equals(itemId) || "expBookAdv".equals(itemId) || "expBookMax".equals(itemId)) {
             return useExpBook(playerId, itemId, officerId);
         }
         if ("skillBook".equals(itemId)) {
@@ -331,22 +331,44 @@ public class DepotService {
     private Map<String, Object> useExpBook(Long playerId, String itemId, Long officerId) {
         Officer officer = requireOfficer(playerId, officerId);
         if (officer == null) return error("请先选择军官");
+
+        int level = officer.getLevel() != null ? officer.getLevel() : 1;
+        if (level >= 100) return error("军官已达最高等级 (Lv.100)");
+
+        if ("expBookMax".equals(itemId)) {
+            int consumed = playerItemRepository.tryConsume(playerId, itemId, 1, System.currentTimeMillis());
+            if (consumed == 0) return error("满级经验书不足");
+
+            int upgraded = 100 - level;
+            int pointsGained = upgraded * 4;
+            officer.setLevel(100);
+            officer.setExp(0L);
+            officer.setAttrPoints((officer.getAttrPoints() != null ? officer.getAttrPoints() : 0) + pointsGained);
+            officerRepository.save(officer);
+
+            Map<String, Object> result = new LinkedHashMap<>();
+            result.put("success", true);
+            result.put("message", "⚡ " + officer.getName() + " 使用满级经验书直升满级 Lv.100！获得 " + pointsGained + " 点可分配属性！");
+            result.put("exp", 0L);
+            result.put("level", 100);
+            return result;
+        }
+
         int consumed = playerItemRepository.tryConsume(playerId, itemId, 1, System.currentTimeMillis());
         if (consumed == 0) return error("经验书不足");
 
-        // 与 JS depot.js 行为保持一致：expBook +500 / expBookAdv +3000
-        int gain = "expBookAdv".equals(itemId) ? 3000 : 500;
+        // 经验书 +10000 / 高级经验书 +100000
+        int gain = "expBookAdv".equals(itemId) ? 100000 : 10000;
         long exp = (officer.getExp() != null ? officer.getExp() : 0L) + gain;
         officer.setExp(exp);
 
         // 升级循环：每级需要 level*200 经验
-        int level = officer.getLevel() != null ? officer.getLevel() : 1;
         while (level < 100 && exp >= (long) level * 200) {
             exp -= (long) level * 200;
             level += 1;
             officer.setAttrPoints((officer.getAttrPoints() != null ? officer.getAttrPoints() : 0) + 4);
         }
-        if (level >= 100) exp = 0;
+        if (level >= 100) exp = 0L;
         officer.setLevel(level);
         officer.setExp(exp);
         officerRepository.save(officer);

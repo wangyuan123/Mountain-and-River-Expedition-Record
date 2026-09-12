@@ -9,6 +9,8 @@ import java.util.List;
 @Repository
 public interface WildTileRepository extends JpaRepository<WildTile, Long> {
 
+    List<WildTile> findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(Long worldId, int minX, int maxX, int minY, int maxY);
+
     List<WildTile> findByWorldId(Long worldId);
 
     List<WildTile> findByWorldIdAndOccupiedTrue(Long worldId);

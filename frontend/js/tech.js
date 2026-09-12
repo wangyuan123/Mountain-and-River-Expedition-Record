@@ -26,7 +26,7 @@ window.Game = window.Game || {};
     return arr.join(' ');
   }
 
-  var branchOrder = ['指挥', '步兵', '装甲', '航空', '航海', '后勤', '侦察'];
+  var branchOrder = ['军事', '机动', '后勤', '侦察'];
 
   var Tech = {
     research: function (id) {
@@ -43,7 +43,7 @@ window.Game = window.Game || {};
       var labLv = s.buildings.lab || 0;
       var h = '';
       h += '<div class="title">- 科研中心 -</div>';
-      h += '<div class="desc">科研中心 Lv.' + labLv + '。科技分7大分支共21项,高级科技需更高科研中心。研究瞬时完成。</div>';
+      h += '<div class="desc">科研中心 Lv.' + labLv + '。科技分4大分支共18项,高级科技需更高科研中心。研究瞬时完成。</div>';
 
       var idx = 0;
       h += '<div class="menu">';
@@ -63,7 +63,7 @@ window.Game = window.Game || {};
           h += '<span class="num">[' + idx + ']</span> ';
           h += '<span class="n">' + t.name + '</span> ';
           h += '<span class="lv">Lv.' + lv + '/' + t.max + '</span>';
-          var pctMap = { cap: 10, load: 20, food_save: -5, train: 10, build: -5, medical: 5 };
+          var pctMap = { cap: 10, load: 20, food_save: -5, train: 10, build: -5, medical: 5, range_all: 5 };
           var pct = pctMap[t.affect] !== undefined ? pctMap[t.affect] : 5;
           var cur = lv * pct;
           h += '<div class="d">' + t.desc + ' (当前 ' + (cur > 0 ? '+' : '') + cur + (t.affect === 'recon' || t.affect === 'radar' ? ' 级' : '%') + ')</div>';

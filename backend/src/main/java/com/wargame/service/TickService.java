@@ -9,7 +9,6 @@ import com.wargame.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,15 +39,16 @@ public class TickService {
     private final MarchService marchService;
     private final ArmyService armyService;
     private final BuildService buildService;
-    private final TickService self;
     private final MarchRepository marchRepository;
     private final ConstructionRepository constructionRepository;
     private final WebSocketPushService pushService;
 
-    private final Set<Long> activeTicks = ConcurrentHashMap.newKeySet();
 
     /** Per-player consecutive tick count at gold floor; resets when player earns gold. */
     private final ConcurrentHashMap<Long, AtomicLong> bankruptTicks = new ConcurrentHashMap<>();
+
+    @org.springframework.beans.factory.annotation.Value("${game.max-offline-hours:8}")
+    private int maxOfflineHours = 8;
 
     private static final List<String> RES_KEYS = List.of("food", "steel", "oil", "rare");
 
@@ -63,7 +63,6 @@ public class TickService {
                        @Lazy MarchService marchService,
                        @Lazy ArmyService armyService,
                        @Lazy BuildService buildService,
-                       @Lazy TickService self,
                        MarchRepository marchRepository,
                        ConstructionRepository constructionRepository,
                        @Lazy WebSocketPushService pushService) {
@@ -78,33 +77,9 @@ public class TickService {
         this.marchService = marchService;
         this.armyService = armyService;
         this.buildService = buildService;
-        this.self = self;
         this.marchRepository = marchRepository;
         this.constructionRepository = constructionRepository;
         this.pushService = pushService;
-    }
-
-    // ================================================================
-    // tickAll - Scheduled method, runs every 5 seconds
-    // ================================================================
-
-    @Scheduled(fixedRate = 5000)
-    public void tickAll() {
-        List<Player> players = playerRepository.findAll();
-        for (Player player : players) {
-            Long playerId = player.getId();
-            if (playerId == null) continue;
-            if (!activeTicks.add(playerId)) continue;
-            try {
-                self.tick(playerId);
-            } catch (Exception e) {
-                // Log with full context so ops can actually see failures.
-                // We don't let one player's error stop others, but no longer silent.
-                log.error("tick failed for player {}", playerId, e);
-            } finally {
-                activeTicks.remove(playerId);
-            }
-        }
     }
 
     // ================================================================
@@ -120,7 +95,7 @@ public class TickService {
         long lastTick = player.getLastTick() != null ? player.getLastTick() : now;
         double dt = (now - lastTick) / 1000.0;
         if (dt <= 0) return;
-        dt = Math.min(dt, 8 * 3600);
+        dt = Math.min(dt, Math.max(1, maxOfflineHours) * 3600.0);
         double hours = dt / 3600.0;
 
         // Get mayor
@@ -486,7 +461,7 @@ public class TickService {
     public int popMax(Long playerId) {
         int houseLevel = buildingLevel(playerId, "house");
         BuildingDef houseDef = GameData.BUILDINGS.get("house");
-        int popPer = houseDef != null && houseDef.popPer() != null ? houseDef.popPer() : 100;
+        int popPer = houseDef != null && houseDef.popPer() != null ? houseDef.popPer() : 1200;
         return houseLevel * popPer;
     }
 

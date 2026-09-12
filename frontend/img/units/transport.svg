@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="transBody" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#94a3b8"/>
+      <stop offset="100%" stop-color="#475569"/>
+    </linearGradient>
+  </defs>
+  <!-- Wings -->
+  <polygon points="12,14 17,4 22,5 17,15" fill="url(#transBody)" stroke="#1e293b" stroke-width="0.6"/>
+  <polygon points="11,16 17,28 22,27 15,17" fill="url(#transBody)" stroke="#1e293b" stroke-width="0.6"/>
+  <!-- 2 Twin Engines -->
+  <rect x="15" y="8" width="4" height="2" rx="0.5" fill="#334155"/>
+  <rect x="15" y="22" width="4" height="2" rx="0.5" fill="#334155"/>
+  <!-- Fuselage -->
+  <path d="M3 15 C3 13 8 12.5 22 13 C26 13.5 29 15 30 16 C29 17 26 18.5 22 19 C8 19.5 3 19 3 17 Z" fill="url(#transBody)" stroke="#0f172a" stroke-width="0.7"/>
+  <!-- Cockpit -->
+  <path d="M5 14 C6 13 8 13 9 14 Z" fill="#bae6fd"/>
+  <!-- Parachute/Cargo Door Marking -->
+  <rect x="20" y="14" width="2" height="4" fill="#334155"/>
+</svg>

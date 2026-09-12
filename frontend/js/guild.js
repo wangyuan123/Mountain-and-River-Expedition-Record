@@ -147,7 +147,7 @@ window.Game = window.Game || {};
       for (var i = 0; i < members.length; i++) {
         var m = members[i];
         var role = m.role === 'leader' ? '团长' : (m.role === 'admin' ? '管理员' : '成员');
-        h += '<div class="guild-member"><div><b>' + esc(m.name) + '</b> <span class="guild-role">' + role + '</span><div class="guild-muted">' + esc(m.cityName || '新城市') + ' · Lv.' + (m.level || 1) + ' · ★' + G.fmt(m.prestige || 0) + '</div></div>';
+        h += '<div class="guild-member"><div><b>' + esc(m.name) + '</b> <span class="guild-role">' + role + '</span><div class="guild-muted">' + esc(m.cityName || '新城市') + ' · ★' + G.fmt(m.prestige || 0) + '</div></div>';
         if (g.isLeader && m.role !== 'leader') h += '<button class="tcard-btn tcard-btn-ok" onclick="Game.Guild.updateRole(' + m.playerId + ',\'' + (m.role === 'admin' ? 'member' : 'admin') + '\')">' + (m.role === 'admin' ? '取消管理员' : '任命管理员') + '</button>';
         if ((g.isLeader || g.role === 'admin') && m.role !== 'leader') h += ' <button class="tcard-btn tcard-btn-warn" onclick="Game.Guild.remove(' + m.playerId + ')">移出</button>';
         h += '</div>';
@@ -157,7 +157,7 @@ window.Game = window.Game || {};
         h += '<div class="zone-head">=== 入团申请 ===</div><div class="guild-list">';
         for (var j = 0; j < g.applications.length; j++) {
           var a = g.applications[j];
-          h += '<div class="guild-member"><div><b>' + esc(a.name) + '</b><div class="guild-muted">Lv.' + (a.level || 1) + ' · ★' + G.fmt(a.prestige || 0) + '</div></div>';
+          h += '<div class="guild-member"><div><b>' + esc(a.name) + '</b><div class="guild-muted">★' + G.fmt(a.prestige || 0) + '</div></div>';
           h += '<div><button class="tcard-btn tcard-btn-ok" onclick="Game.Guild.review(' + a.id + ',true)">同意</button> <button class="tcard-btn" onclick="Game.Guild.review(' + a.id + ',false)">拒绝</button></div></div>';
         }
         h += '</div>';

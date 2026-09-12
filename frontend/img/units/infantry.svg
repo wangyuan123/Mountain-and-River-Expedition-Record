@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="infHelmet" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#647452"/>
+      <stop offset="60%" stop-color="#4a593c"/>
+      <stop offset="100%" stop-color="#323c28"/>
+    </linearGradient>
+    <linearGradient id="infUniform" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#556346"/>
+      <stop offset="100%" stop-color="#2d3524"/>
+    </linearGradient>
+    <linearGradient id="infSkin" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffedd5"/>
+      <stop offset="100%" stop-color="#fdba74"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Soldier Body & Combat Tunic -->
+  <path d="M7 29 C7 21.5 10 18.5 16 18.5 C22 18.5 25 21.5 25 29 Z" fill="url(#infUniform)" stroke="#1a2016" stroke-width="0.8"/>
+  <!-- Crossed Webbing Harness & Ammo Pouches -->
+  <path d="M11 19 L21 29 M21 19 L11 29" stroke="#3f4a33" stroke-width="1.6"/>
+  <rect x="9" y="24" width="3" height="4" rx="0.5" fill="#78350f" stroke="#451a03" stroke-width="0.4"/>
+  <rect x="20" y="24" width="3" height="4" rx="0.5" fill="#78350f" stroke="#451a03" stroke-width="0.4"/>
+
+  <!-- Face / Jawline -->
+  <circle cx="16" cy="13.5" r="4.8" fill="url(#infSkin)" stroke="#9a3412" stroke-width="0.7"/>
+
+  <!-- M1 Steel Combat Helmet (Classic Bowl Shape with Brim) -->
+  <path d="M8.5 12 C8.5 5.5 23.5 5.5 23.5 12 L24.5 13.5 L7.5 13.5 Z" fill="url(#infHelmet)" stroke="#1a2016" stroke-width="0.8"/>
+  <ellipse cx="16" cy="13.5" rx="8.5" ry="1.2" fill="#323c28" stroke="#1a2016" stroke-width="0.5"/>
+  <!-- Helmet Chinstrap -->
+  <path d="M10.5 13.5 Q16 19 21.5 13.5" fill="none" stroke="#78350f" stroke-width="0.8"/>
+
+  <!-- M1 Garand Rifle Silhouette (Slung diagonally over shoulder) -->
+  <polygon points="4,28 6,29 27,8 26,6 24,7" fill="#78350f" stroke="#451a03" stroke-width="0.4"/>
+  <rect x="25.5" y="4" width="1.4" height="6" transform="rotate(42 26 7)" fill="#334155" stroke="#0f172a" stroke-width="0.3"/>
+</svg>

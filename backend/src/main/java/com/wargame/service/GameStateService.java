@@ -1,5 +1,7 @@
 package com.wargame.service;
 
+import com.wargame.model.constants.GameConstants;
+import com.wargame.model.constants.MilitaryRankDef;
 import com.wargame.model.constants.WorldConfig;
 import com.wargame.model.constants.WildTypeDef;
 import com.wargame.model.constants.FortDef;
@@ -17,6 +19,7 @@ import java.util.concurrent.ThreadLocalRandom;
 @Service
 public class GameStateService {
 
+    private final WorldViewService worldViewService;
     private final PlayerRepository playerRepository;
     private final ResourcesRepository resourcesRepository;
     private final BuildingRepository buildingRepository;
@@ -47,7 +50,7 @@ public class GameStateService {
             "house", "farm", "refinery", "oilfield", "raremine", "factory", "depot"
     );
 
-    public GameStateService(PlayerRepository playerRepository,
+    public GameStateService(WorldViewService worldViewService, PlayerRepository playerRepository,
                             ResourcesRepository resourcesRepository,
                             BuildingRepository buildingRepository,
                             ArmyUnitRepository armyUnitRepository,
@@ -71,6 +74,7 @@ public class GameStateService {
                             GuildMemberRepository guildMemberRepository,
                             GuildRepository guildRepository,
                             MailService mailService) {
+        this.worldViewService = worldViewService;
         this.playerRepository = playerRepository;
         this.resourcesRepository = resourcesRepository;
         this.buildingRepository = buildingRepository;
@@ -111,10 +115,19 @@ public class GameStateService {
                 });
     }
 
+    @Transactional
+    public void setAvatar(Long playerId, String avatar) {
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
+        player.setAvatar(avatar == null ? "" : avatar.trim());
+        playerRepository.save(player);
+    }
+
     // ================================================================
     // getGameState
     // ================================================================
 
+    @Transactional(readOnly = true)
     public Map<String, Object> getGameState(Long playerId) {
         if (playerId == null) {
             throw new IllegalArgumentException("Invalid player ID: null");
@@ -130,7 +143,10 @@ public class GameStateService {
         playerInfo.put("username", player.getUsername());
         playerInfo.put("faction", player.getFaction());
         playerInfo.put("cityName", player.getCityName());
-        playerInfo.put("level", player.getLevel() != null ? player.getLevel() : 1);
+        playerInfo.put("avatar", player.getAvatar() != null ? player.getAvatar() : "");
+        int rankTier = player.getMilitaryRank() != null ? player.getMilitaryRank() : 1;
+        playerInfo.put("militaryRank", rankTier);
+        playerInfo.put("militaryRankName", MilitaryRankDef.getRankName(rankTier));
         playerInfo.put("vipLevel", player.getVipLevel() != null ? player.getVipLevel() : 0);
         playerInfo.put("tutorialDismissed", Boolean.TRUE.equals(player.getTutorialDismissed()));
         guildMemberRepository.findByPlayerId(playerId).ifPresent(member -> guildRepository.findById(member.getGuildId()).ifPresent(guild -> {
@@ -142,6 +158,7 @@ public class GameStateService {
             playerInfo.put("guild", guildInfo);
         }));
         state.put("player", playerInfo);
+        state.put("unreadReportCount", scoutReportRepository.countUnreadByPlayerId(playerId));
 
         // --- resources ---
         Resources resources = resourcesRepository.findByPlayerId(playerId).orElse(null);
@@ -279,7 +296,9 @@ public class GameStateService {
         state.put("academy", academyMap);
 
         // --- world ---
-        state.put("world", buildWorldMap(player));
+        state.put("world", worldViewService.getWorld(player,
+                player.getPosX() == null ? 0 : player.getPosX(),
+                player.getPosY() == null ? 0 : player.getPosY(), WorldConfig.VIEW_RADIUS));
 
         // --- cityState ---
         CityState cityState = cityStateRepository.findByPlayerId(playerId).orElse(null);
@@ -445,7 +464,7 @@ public class GameStateService {
         city.setName(player.getCityName() == null || player.getCityName().isBlank()
                 ? "新城市" : player.getCityName());
         city.setOwnerId(player.getId());
-        city.setLevel(player.getLevel() == null ? 1 : player.getLevel());
+        city.setLevel(1);
         city.setX(player.getCityPosX());
         city.setY(player.getCityPosY());
         city.setArmy("{}");
@@ -772,201 +791,6 @@ public class GameStateService {
             }
         }
         return map;
-    }
-
-    private Map<String, Object> buildWorldMap(Player player) {
-        Map<String, Object> world = new LinkedHashMap<>();
-
-        // Position
-        Map<String, Object> pos = new LinkedHashMap<>();
-        pos.put("x", player.getPosX() != null ? player.getPosX() : 0);
-        pos.put("y", player.getPosY() != null ? player.getPosY() : 0);
-        world.put("pos", pos);
-
-        Map<String, Object> cityPos = new LinkedHashMap<>();
-        cityPos.put("x", player.getCityPosX() != null ? player.getCityPosX() : 0);
-        cityPos.put("y", player.getCityPosY() != null ? player.getCityPosY() : 0);
-        world.put("cityPos", cityPos);
-
-        // Find world
-        WorldMap worldMap = worldMapRepository.findFirstByOrderByIdAsc().orElse(null);
-        Long worldId = worldMap != null ? worldMap.getId() : null;
-
-        // NPC cities
-        List<Map<String, Object>> npcCities = new ArrayList<>();
-        if (worldId != null) {
-            List<NpcCity> entities = npcCityRepository.findByWorldId(worldId);
-            for (int i = 0; i < entities.size(); i++) {
-                NpcCity nc = entities.get(i);
-                Map<String, Object> ncMap = new LinkedHashMap<>();
-                ncMap.put("id", nc.getId());
-                ncMap.put("name", nc.getName());
-                ncMap.put("x", nc.getX());
-                ncMap.put("y", nc.getY());
-                ncMap.put("level", nc.getLevel());
-                ncMap.put("army", JsonUtil.parseObjMap(nc.getArmy()));
-                ncMap.put("forts", JsonUtil.parseObjMap(nc.getForts()));
-                ncMap.put("reward", JsonUtil.parseObjMap(nc.getResources()));
-                ncMap.put("defeated", nc.getDefeated() != null && nc.getDefeated());
-                npcCities.add(ncMap);
-            }
-        }
-        world.put("npcCities", npcCities);
-
-        // Player cities and legacy ownerless cities, which are handled as simulated NPCs.
-        List<Map<String, Object>> playerCities = new ArrayList<>();
-        List<Map<String, Object>> simulatedNpcCities = new ArrayList<>();
-        if (worldId != null) {
-            List<PlayerCity> entities = playerCityRepository.findByWorldId(worldId);
-            for (int i = 0; i < entities.size(); i++) {
-                PlayerCity pc = entities.get(i);
-                Map<String, Object> pcMap = new LinkedHashMap<>();
-                pcMap.put("id", pc.getId());
-                pcMap.put("name", pc.getName());
-                pcMap.put("x", pc.getX());
-                pcMap.put("y", pc.getY());
-                pcMap.put("level", pc.getLevel());
-                pcMap.put("army", JsonUtil.parseObjMap(pc.getArmy()));
-                pcMap.put("forts", JsonUtil.parseObjMap(pc.getForts()));
-                pcMap.put("reward", JsonUtil.parseObjMap(pc.getResources()));
-                pcMap.put("defeated", false);
-                pcMap.put("prestige", pc.getPrestige() != null ? pc.getPrestige() : 0);
-
-                // 坐标上的真实玩家优先于历史 owner_id；无真实 owner 的 PlayerCity 视为模拟 NPC。
-                Long cityOwner = pc.getOwnerId();
-                Player coordinateOwner = playerRepository.findByCityPosXAndCityPosY(pc.getX(), pc.getY()).orElse(null);
-                if (coordinateOwner != null) {
-                    cityOwner = coordinateOwner.getId();
-                }
-                Player owner = cityOwner != null ? playerRepository.findById(cityOwner).orElse(null) : null;
-                if (owner == null) {
-                    cityOwner = null;
-                    pcMap.put("simulatedNpc", true);
-                    simulatedNpcCities.add(pcMap);
-                    continue;
-                }
-                boolean selfCity = cityOwner.equals(player.getId());
-                pcMap.put("ownerId", cityOwner);
-                long pcWarAt = 0L, pcWarEnd = 0L;
-                if (!selfCity && owner != null && player.getId().equals(owner.getWarAgainstId())) {
-                    pcWarAt = owner.getWarAt() != null ? owner.getWarAt() : 0L;
-                    pcWarEnd = owner.getWarEndAt() != null ? owner.getWarEndAt() : 0L;
-                }
-                pcMap.put("selfCity", selfCity);
-                pcMap.put("warAt", pcWarAt);
-                pcMap.put("warEndAt", pcWarEnd);
-                // coolAt 表示战后保护期 (仅当未处于战争状态时), 战争窗口用 warAt/warEndAt 表达
-                pcMap.put("coolAt", pcWarAt == 0 ? pcWarEnd : 0L);
-                playerCities.add(pcMap);
-            }
-        }
-        world.put("playerCities", playerCities);
-        world.put("simulatedNpcCities", simulatedNpcCities);
-
-        // Bandits
-        List<Map<String, Object>> bandits = new ArrayList<>();
-        if (worldId != null) {
-            List<Bandit> entities = banditRepository.findByWorldId(worldId);
-            for (int i = 0; i < entities.size(); i++) {
-                Bandit b = entities.get(i);
-                Map<String, Object> bMap = new LinkedHashMap<>();
-                bMap.put("id", b.getId());
-                bMap.put("name", b.getName());
-                bMap.put("x", b.getX());
-                bMap.put("y", b.getY());
-                bMap.put("level", b.getLevel());
-                bMap.put("army", JsonUtil.parseObjMap(b.getArmy()));
-                bMap.put("defeated", b.getDefeated() != null && b.getDefeated());
-                bandits.add(bMap);
-            }
-        }
-        world.put("bandits", bandits);
-
-        // Wild tiles
-        List<Map<String, Object>> wildTiles = new ArrayList<>();
-        if (worldId != null) {
-            List<WildTile> entities = wildTileRepository.findByWorldId(worldId);
-            for (int i = 0; i < entities.size(); i++) {
-                WildTile wt = entities.get(i);
-                Map<String, Object> wtMap = new LinkedHashMap<>();
-                wtMap.put("id", wt.getId());
-                wtMap.put("type", wt.getType());
-                wtMap.put("x", wt.getX());
-                wtMap.put("y", wt.getY());
-                wtMap.put("level", wt.getLevel());
-                wtMap.put("garrison", JsonUtil.parseObjMap(wt.getGarrison()));
-                wtMap.put("scouted", wt.getScouted() != null && wt.getScouted());
-                wtMap.put("occupied", wt.getOccupied() != null && wt.getOccupied());
-                wtMap.put("totalRes", wt.getTotalRes() != null ? wt.getTotalRes() : 0);
-                wtMap.put("mined", wt.getMined() != null ? wt.getMined() : 0);
-                wildTiles.add(wtMap);
-            }
-        }
-        world.put("wildTiles", wildTiles);
-
-        // Marches
-        List<Map<String, Object>> marches = new ArrayList<>();
-        Long playerId = player.getId();
-        if (playerId != null) {
-            List<March> entities = marchRepository.findByPlayerId(playerId);
-            for (March m : entities) {
-                Map<String, Object> mMap = new LinkedHashMap<>();
-                mMap.put("id", m.getId());
-                mMap.put("targetKind", m.getTargetKind());
-                mMap.put("targetIdx", m.getTargetIdx());
-                mMap.put("targetId", m.getTargetId());
-                mMap.put("targetName", m.getTargetName());
-                mMap.put("targetX", m.getTargetX());
-                mMap.put("targetY", m.getTargetY());
-                mMap.put("fromX", m.getFromX());
-                mMap.put("fromY", m.getFromY());
-                mMap.put("distance", m.getDistance());
-                mMap.put("action", m.getAction());
-                mMap.put("army", JsonUtil.parseObjMap(m.getArmy()));
-                mMap.put("commanderId", m.getCommanderId());
-                mMap.put("carryRes", JsonUtil.parseObjMap(m.getCarryRes()));
-                mMap.put("startAt", m.getStartAt());
-                mMap.put("arriveAt", m.getArriveAt());
-                mMap.put("returning", m.getReturning() != null && m.getReturning());
-                mMap.put("gathering", m.getGathering() != null && m.getGathering());
-                mMap.put("gatherEndAt", m.getGatherEndAt());
-                mMap.put("gatherAmount", m.getGatherAmount());
-                mMap.put("gatherRes", m.getGatherRes());
-                mMap.put("originName", m.getOriginName());
-                mMap.put("originX", m.getOriginX());
-                mMap.put("originY", m.getOriginY());
-                marches.add(mMap);
-            }
-        }
-        world.put("marches", marches);
-
-        // Incoming
-        List<Map<String, Object>> incoming = new ArrayList<>();
-        if (playerId != null) {
-            List<IncomingMarch> entities = incomingMarchRepository.findByTargetPlayerId(playerId);
-            for (IncomingMarch im : entities) {
-                Map<String, Object> imMap = new LinkedHashMap<>();
-                imMap.put("id", im.getId());
-                imMap.put("fromName", im.getFromName());
-                imMap.put("fromX", im.getFromX());
-                imMap.put("fromY", im.getFromY());
-                // 前端军情卡使用这组展示字段；来袭记录本身只有来源信息。
-                imMap.put("attackerName", im.getFromName());
-                imMap.put("sourcePlayer", im.getFromName());
-                imMap.put("targetX", player.getCityPosX() != null ? player.getCityPosX() : 0);
-                imMap.put("targetY", player.getCityPosY() != null ? player.getCityPosY() : 0);
-                imMap.put("targetName", player.getCityName() != null && !player.getCityName().isEmpty()
-                        ? player.getCityName() : "新城市");
-                imMap.put("army", JsonUtil.parseObjMap(im.getArmy()));
-                imMap.put("arriveAt", im.getArriveAt());
-                imMap.put("action", im.getAction());
-                imMap.put("arrived", false);
-                incoming.add(imMap);
-            }
-        }
-        world.put("incoming", incoming);
-
-        return world;
     }
 
     // ================================================================

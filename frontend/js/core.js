@@ -95,15 +95,15 @@ window.Game = window.Game || {};
       if (status === 'shield') {
         var safeUntil = Math.max(cs.shieldUntil || 0, cs.peaceUntil || 0);
         var min = Math.ceil((safeUntil - now) / 60000);
-        return { text: '免战状态', color: 'var(--accent)', detail: '剩余' + min + '分钟' };
+        return { status: 'shield', text: '免战状态', color: 'var(--accent)', detail: '剩余' + min + '分钟' };
       }
       if (status === 'war') {
         var warMin = cs.warUntil && cs.warUntil > now
           ? Math.ceil((cs.warUntil - now) / 60000)
           : 0;
-        return { text: '战争', color: 'var(--danger)', detail: warMin ? '剩余' + warMin + '分钟' : '有敌军来袭' };
+        return { status: 'war', text: '战争', color: 'var(--danger)', detail: warMin ? '剩余' + warMin + '分钟' : '有敌军来袭' };
       }
-      return { text: '和平', color: 'var(--accent)', detail: '正常发展' };
+      return { status: 'peace', text: '和平', color: 'var(--accent)', detail: '正常发展' };
     },
 
     enterWarState: function (durationHours) {
@@ -290,20 +290,19 @@ window.Game = window.Game || {};
       var s = this.state;
       var cmd = this.getOfficerByRole('commander');
       var cmdMil = cmd ? cmd.military : 0;
-      var allMul = 1 + 0.05 * (s.tech.cmd_attack || 0);
-      var catKey = { inf: 'inf_attack', arm: 'arm_attack', air: 'air_attack', nav: 'nav_attack' }[cat];
-      var catMul = 1 + 0.05 * (s.tech[catKey] || 0);
-      return allMul * catMul * (1 + cmdMil / 100);
+      var allMul = 1 + 0.05 * (s.tech.attack_tech || 0);
+      return allMul * (1 + cmdMil / 100);
     },
 
     defMul: function (cat, isMine) {
       var s = this.state;
-      var allMul = 1 + 0.05 * (s.tech.cmd_defense || 0);
-      var catKey = { inf: 'inf_defense', arm: 'arm_defense', air: 'air_defense', nav: 'nav_defense' }[cat];
-      var catMul = 1 + 0.05 * (s.tech[catKey] || 0);
+      var allMul = 1 + 0.05 * (s.tech.defense_tech || 0);
+      var catMul = 1;
       var wallMul = (isMine && cat !== 'air') ? (1 + 0.05 * (s.buildings.wall || 0)) : 1;
       return allMul * catMul * wallMul;
     },
+
+    rangeMul: function () { return 1 + 0.05 * (this.state.tech.weapon_range || 0); },
 
     hpMul: function (cat) {
       var s = this.state;
@@ -332,27 +331,21 @@ window.Game = window.Game || {};
     },
 
     armyCap: function () {
-      var s = this.state;
+      var s = this.state || {};
+      var p = s.player || {};
+      var rankTier = p.militaryRank || 1;
+      var rankInfo = G.getMilitaryRankTierInfo ? G.getMilitaryRankTierInfo(rankTier) : { baseCap: 1000 };
+      var rankBase = rankInfo.baseCap || 1000;
+
       var cmd = this.getOfficerByRole('commander');
       var cmdLv = cmd ? (cmd.level || 1) : 1;
+      var commandLv = Math.max(1, this.buildingLevel('command'));
       var staffLv = this.buildingLevel('staff');
-      var base = 500 + s.player.level * 100;
-      return Math.floor(base * (1 + staffLv * 0.05) * (1 + cmdLv * 0.02));
+      var base = rankBase + commandLv * 1000;
+      return Math.floor(base * (1 + staffLv * 0.10) * (1 + cmdLv * 0.025));
     },
 
-    addExp: function (n) {
-      var p = this.state.player;
-      p.exp += n;
-      var titles = D.officerTitles;
-      while (p.exp >= p.level * 200) {
-        p.exp -= p.level * 200;
-        p.level += 1;
-        this.state.resources.gold += 100;
-        var ti = Math.min(p.level, titles.length - 1);
-        p.title = titles[ti];
-        G.toast('晋升! Lv.' + p.level + ' ' + p.title + '  +100金');
-      }
-    },
+    addExp: function () {},
 
     addOfficerExp: function (officerId, n) {
       var s = this.state;
@@ -480,33 +473,35 @@ window.Game = window.Game || {};
       var s = this.state;
       var p = s.player || {};
       var r = s.resources || {};
-      var gameLv = p.level || 1;
-      var vipLv = p.vipLevel != null ? p.vipLevel : (p.vip != null ? p.vip : 0);
       var diamond = r.diamond != null ? r.diamond : 0;
-      var prestige = s.prestige != null ? s.prestige : (p.prestige != null ? p.prestige : 0);
-      var avatarSvg = '<svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">' +
-        '<defs><linearGradient id="avG" x1="0" y1="0" x2="0" y2="1">' +
-        '<stop offset="0%" stop-color="#7ec8ff"/><stop offset="100%" stop-color="#3a6fb5"/>' +
-        '</linearGradient></defs>' +
-        '<circle cx="16" cy="16" r="15" fill="url(#avG)" stroke="#1a3a66" stroke-width="1.5"/>' +
-        '<circle cx="16" cy="12" r="5" fill="#fff" opacity="0.92"/>' +
-        '<path d="M5 28 C 7 20, 25 20, 27 28 Z" fill="#fff" opacity="0.92"/>' +
-        '</svg>';
-      var tooltipHtml = '<div class="avatar-tip">' +
-        '<div class="tip-row"><span class="tip-k">游戏等级</span><span class="tip-v">Lv.' + gameLv + '</span></div>' +
-        '<div class="tip-row"><span class="tip-k">VIP 等级</span><span class="tip-v">Lv.' + vipLv + '</span></div>' +
-        '</div>';
+      var uname = p.username || '';
+      var localAvatar = '';
+      try {
+        if (uname) localAvatar = localStorage.getItem('wargame_avatar_' + uname) || '';
+        if (!localAvatar) localAvatar = localStorage.getItem('wargame_avatar_default') || '';
+      } catch (e) {}
+      var avatarUrl = p.avatar || localAvatar || 'img/avatars/commander-8.svg';
+      var nameStr = escapeHtml(p.name || p.username || '指挥官');
+
       var html = '';
       html += '<div class="top-row">' +
-        '<div class="player-bar">' +
-        '<span class="avatar">' + avatarSvg + tooltipHtml + '</span>' +
-        '<span class="name">' + escapeHtml(p.name || p.username || '') + '</span>' +
-        '<span class="prestige-tag" title="声望"><span class="ps-icon">★</span>' + fmt(prestige) + '</span>' +
+        '<div class="topbar-player-entry" role="button" tabindex="0" onclick="if(Game.Main&&Game.Main.openPlayerDrawer)Game.Main.openPlayerDrawer();" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){if(Game.Main&&Game.Main.openPlayerDrawer)Game.Main.openPlayerDrawer();event.preventDefault();}" title="点击展开指挥官档案、主题与设置">' +
+        '<div class="topbar-avatar-wrap">' +
+        '<img class="topbar-avatar" src="' + avatarUrl + '" alt="头像" onerror="this.src=\'img/avatars/commander-8.svg\'"/>' +
+        '</div>' +
+        '<div class="topbar-player-meta">' +
+        '<div class="topbar-player-name">' + nameStr + '</div>' +
+        '<div class="topbar-online-status">' +
+        '<span class="online-dot"></span>' +
+        '<span class="online-text">在线 - 5G</span>' +
+        '</div>' +
+        '</div>' +
         '</div>' +
         '<div class="player-bar-right">' +
         '<span class="diamond" title="充值" onclick="Game.go(\'recharge\')">💎 ' + fmt(diamond) + '</span>' +
-        '<span class="shop-btn" title="商城" onclick="Game.go(\'shop\')">商</span>' +
-        '<span class="icon-btn" title="设置" onclick="Game.go(\'settings\')"><img class="icon-btn-img" src="img/settings.svg" alt="设置"/></span>' +
+        '<button class="icon-btn shop-btn topbar-shop-btn" title="商城" onclick="Game.go(\'shop\')">' +
+        '<img class="icon-btn-img" src="img/shop.svg" alt="商城"/>' +
+        '</button>' +
         '</div>' +
         '</div>';
       var marches = s.world.marches || [];
@@ -529,19 +524,111 @@ window.Game = window.Game || {};
       foot.innerHTML = this.footer();
     },
 
-    // Refresh only the top bar (resources, gold, etc.)
+    // Refresh top bar smoothly without destroying DOM tree or avatar
     refreshTop: function () {
-      this.renderTop();
+      var top = $('topbar');
+      if (!top) return;
+      if (!this.state) { top.innerHTML = ''; return; }
+      var diamondEl = top.querySelector('.diamond');
+      if (!diamondEl) {
+        this.renderTop();
+        return;
+      }
+      // In-place diamond text update
+      var s = this.state;
+      var r = s.resources || {};
+      var diamond = r.diamond != null ? r.diamond : 0;
+      var newDiaText = '💎 ' + fmt(diamond);
+      if (diamondEl.textContent !== newDiaText) {
+        diamondEl.textContent = newDiaText;
+      }
+      // In-place march/alert bar update
+      var marches = (s.world && s.world.marches) || [];
+      var incoming = (s.world && s.world.incoming) || [];
+      var alertCount = marches.length + incoming.length;
+      var marchBar = top.querySelector('.march-bar');
+      if (alertCount > 0) {
+        var alertText = '⚔ 军情 ' + alertCount + ' 起 (行军' + marches.length + '/来袭' + incoming.length + ') 点击查看';
+        if (marchBar) {
+          if (marchBar.textContent !== alertText) marchBar.textContent = alertText;
+        } else {
+          var barDiv = document.createElement('div');
+          barDiv.className = 'march-bar';
+          barDiv.setAttribute('onclick', "Game.go('alerts')");
+          barDiv.style.cursor = 'pointer';
+          barDiv.textContent = alertText;
+          top.appendChild(barDiv);
+        }
+      } else if (marchBar) {
+        marchBar.remove();
+      }
     },
 
-    // Refresh only the current view content (without re-rendering the entire page)
+    // Refresh current view content smoothly (WITHOUT v.innerHTML = '' to eliminate blank flash)
     refreshContent: function () {
       var v = $('view');
       if (v && this.route) {
         var fn = this.views[this.route] || this.views.home;
-        v.innerHTML = '';
+        var prevScroll = v.scrollTop;
         fn.call(this, v);
+        if (v.scrollTop !== prevScroll) {
+          v.scrollTop = prevScroll;
+        }
       }
+    },
+
+    // Silent background update for periodic ticks (Zero-Flash)
+    silentUpdate: function (tickData) {
+      if (!this.state) return;
+      var route = this.route || 'home';
+
+      // 1. Static / transactional pages: skip DOM updates completely.
+      // Data is already synced in G.state, topbar resources are updated by refreshTop.
+      var staticRoutes = {
+        shop: 1, depot: 1, depotUse: 1, depotRename: 1,
+        officer: 1, officerDetail: 1, academy: 1,
+        tech: 1, settings: 1,
+        reports: 1, reportDetail: 1, battle: 1, report: 1,
+        mail: 1, recharge: 1, login: 1,
+        guild: 1, map: 1, wild: 1, dispatch: 1
+      };
+      if (staticRoutes[route]) {
+        return;
+      }
+
+      // 2. City home page: precise in-place DOM patch
+      if (route === 'home') {
+        var homeUpdater = (G.Main && G.Main.silentUpdateHome) || (G.MainView && G.MainView.silentUpdateHome);
+        if (homeUpdater) {
+          homeUpdater(tickData);
+        } else {
+          this.refreshContent();
+        }
+        return;
+      }
+
+      // 3. Construction pages: update countdowns without destroying building cards
+      if (route === 'buildRes' || route === 'buildArmy') {
+        if (G.Build && G.Build.silentUpdateBuild) {
+          G.Build.silentUpdateBuild(tickData);
+        } else if (tickData && tickData.completedBuilds && tickData.completedBuilds.length > 0) {
+          this.refreshContent();
+        }
+        return;
+      }
+
+      // 4. Army production: handled by army.js own queue timer
+      if (route === 'army') {
+        return;
+      }
+
+      // 5. World map uses internal animations; alerts need periodic redraw for countdowns
+      if (route === 'world') {
+        return;
+      }
+
+      // Fallback for any other pages
+      this.refreshContent();
     },
 
     // Refresh only a specific section by ID

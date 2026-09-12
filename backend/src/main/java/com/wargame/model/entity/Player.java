@@ -7,12 +7,13 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+@lombok.EqualsAndHashCode(callSuper = false)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
 @Table(name = "players")
-public class Player {
+public class Player extends VersionedEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,6 +30,9 @@ public class Player {
 
     @Column(name = "city_name", length = 100)
     private String cityName = "";
+
+    @Column(name = "avatar", length = 255)
+    private String avatar = "";
 
     @Column(name = "pos_x")
     private Integer posX = 0;
@@ -59,6 +63,9 @@ public class Player {
 
     @Column(name = "level")
     private Integer level = 1;
+
+    @Column(name = "military_rank")
+    private Integer militaryRank = 1;
 
     @Column(name = "vip_level")
     private Integer vipLevel = 0;
@@ -101,4 +108,12 @@ public class Player {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    public Integer getMilitaryRank() {
+        return militaryRank != null ? militaryRank : 1;
+    }
+
+    public void setMilitaryRank(Integer militaryRank) {
+        this.militaryRank = militaryRank;
+    }
 }

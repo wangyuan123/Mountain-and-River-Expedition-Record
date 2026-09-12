@@ -83,7 +83,7 @@ public record UnitDef(
         m.put("transport", new UnitDef("transport", "运输机", "air",
                 2, 12, 120, 8, 0, 5, 2, "factory",
                 Map.of("steel", 240, "oil", 100, "rare", 30), null, "air",
-                true, 80, null));
+                true, 80, false));
         m.put("destroyer", new UnitDef("destroyer", "驱逐舰", "nav",
                 40, 28, 160, 6, 250, 7, 3, "port",
                 Map.of("steel", 300, "oil", 120, "rare", 60), "sub", "sea"));

@@ -627,10 +627,10 @@ window.Game = window.Game || {};
 
     /** 建筑类型 → 视觉图标（按 data.js 已有 emoji 风格统一） */
     BUILD_ICON: {
-      command: '🏛', house: '🏘', factory: '🏭', lightfactory: '🏗', heavyfactory: '🏭',
-      airport: '🛫', port: '⚓', academy: '🎓', staff: '🎖', lab: '🔬',
-      farm: '🌾', refinery: '🏭', oilfield: '🛢', raremine: '⛏', depot: '📦',
-      transit: '🚚', exchange: '🔁', radar: '📡', wall: '🧱', apron: '🛬', liaison: '🪢'
+      command: '🏛️', house: '🏠', factory: '🏭', lightfactory: '🔧', heavyfactory: '⚙️',
+      airport: '✈️', port: '⚓', academy: '🎓', staff: '🎖️', lab: '🔬',
+      farm: '🌾', refinery: '🏭', oilfield: '🛢️', raremine: '⛏️', depot: '🏬',
+      transit: '🚛', exchange: '🏦', radar: '📡', wall: '🧱', apron: '🛬', liaison: '📞'
     },
 
     /**
@@ -721,6 +721,7 @@ window.Game = window.Game || {};
       if (b.defBonus) stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🛡</span><span class="bcard-stat-name">守城防御</span><span class="bcard-stat-val">+' + ((s.buildings[id] || 0) * b.defBonus) + '%</span></div>';
       if (b.airCap) stats += '<div class="bcard-stat"><span class="bcard-stat-ico">✈</span><span class="bcard-stat-name">空军出击上限</span><span class="bcard-stat-val">' + ((s.buildings[id] || 0) * b.airCap) + '</span></div>';
       if (b.resBonus) stats += '<div class="bcard-stat"><span class="bcard-stat-ico">📈</span><span class="bcard-stat-name">全资源产出</span><span class="bcard-stat-val">+' + ((s.buildings[id] || 0) * b.resBonus) + '%</span></div>';
+      if (id === 'staff') stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🎖</span><span class="bcard-stat-name">带兵容量加成</span><span class="bcard-stat-val">+' + ((s.buildings[id] || 0) * 10) + '%</span></div>';
       if (id === 'liaison') stats += '<div class="bcard-stat"><span class="bcard-stat-ico">⭐</span><span class="bcard-stat-name">军官刷新</span><span class="bcard-stat-val">偏向高星 (Lv.' + (s.buildings[id] || 0) + ')</span></div>';
       if (stats) expand += '<div class="bcard-stats">' + stats + '</div>';
 
@@ -805,8 +806,8 @@ window.Game = window.Game || {};
     },
 
     GROUPS: {
-      res: { name: '资源区', order: ['house', 'farm', 'refinery', 'oilfield', 'raremine', 'depot', 'transit', 'exchange'] },
-      army: { name: '军事区', order: ['command', 'factory', 'lightfactory', 'heavyfactory', 'port', 'academy', 'staff', 'lab', 'radar', 'wall', 'apron', 'liaison'] }
+      res: { name: '资源', order: ['house', 'farm', 'refinery', 'oilfield', 'raremine', 'depot', 'transit', 'exchange'] },
+      army: { name: '军事', order: ['command', 'factory', 'lightfactory', 'heavyfactory', 'port', 'academy', 'staff', 'lab', 'radar', 'wall', 'apron', 'liaison'] }
     },
 
     renderGroup: function (v, groupKey) {
@@ -821,31 +822,7 @@ window.Game = window.Game || {};
       var groupUsed = Core.groupSlotsUsed(groupKey);
       var groupCap = Core.groupSlotsCap(groupKey);
       h += '<div class="desc">分组槽位: ' + groupUsed + '/' + groupCap + ' (基础10 + 市政厅' + (s.buildings.command || 0) + '×2) | 市政厅限制建筑等级上限' + (buildDisc > 0 ? ' | 建筑加速 -' + buildDisc.toFixed(0) + '%' : '') + '</div>';
-      if (jobs.length) {
-        for (var ji = 0; ji < jobs.length; ji++) {
-          var job = jobs[ji];
-          var jobDef = D.buildings[job.id];
-          var jobName = (jobDef && jobDef.name) || job.id || '未知建筑';
-          if (job.slot != null) jobName += ' #' + (job.slot + 1);
-          var targetLevel = job.targetLevel != null ? job.targetLevel : 0;
-          // 汇总所有加速符数量,只显示一个主按钮
-          var speedTotal = 0;
-          var speedOrder = ['speedUp10m','speedUp1h','speedUp5h','speedUp12h','speedUp24h','speedUp36h','speedUp48h','speedUp72h'];
-          for (var si = 0; si < speedOrder.length; si++) {
-            speedTotal += (s.items && s.items[speedOrder[si]]) || 0;
-          }
-          var speedBtn = speedTotal > 0
-            ? '<button class="btn sm ok" style="margin-left:6px;padding:2px 10px;font-size:13px" onclick="Game.Build.openSpeedUpPicker(' + ji + ')">⚡ 加速 (×' + speedTotal + ')</button>'
-            : '<button class="btn sm" disabled style="margin-left:6px;padding:2px 10px;font-size:13px" title="商城可购买加速符">⚡ 加速 (无)</button>';
-          h += '<div class="btimer' + (job.finishesAt - now <= 60000 ? ' urgent' : '') + '" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px">';
-          h += '<span>施工队 ' + (ji + 1) + '：' + jobName + ' Lv.' + targetLevel + '，剩余 ' + timeText((job.finishesAt - now) / 1000) + '</span>';
-          h += speedBtn;
-          h += '</div>';
-        }
-        if (jobs.length < 2) h += '<div class="bfield">施工队 ' + (jobs.length + 1) + ' 空闲：还可开始一项建筑升级</div>';
-      } else {
-        h += '<div class="bfield">两支施工队空闲：可同时升级两项建筑</div>';
-      }
+      h += '<div id="buildQueueBar">' + this.renderQueueHtml(jobs, s) + '</div>';
 
       var idx = 0;
       h += '<div class="menu">';
@@ -964,6 +941,55 @@ window.Game = window.Game || {};
       }).catch(function (err) {
         G.toast(err.message || '加速失败');
       });
+    },
+
+    renderQueueHtml: function (jobs, s) {
+      var now = Date.now();
+      var qh = '';
+      if (jobs && jobs.length) {
+        for (var ji = 0; ji < jobs.length; ji++) {
+          var job = jobs[ji];
+          var jobDef = D.buildings[job.id];
+          var jobName = (jobDef && jobDef.name) || job.id || '未知建筑';
+          if (job.slot != null) jobName += ' #' + (job.slot + 1);
+          var targetLevel = job.targetLevel != null ? job.targetLevel : 0;
+          // 汇总所有加速符数量,只显示一个主按钮
+          var speedTotal = 0;
+          var speedOrder = ['speedUp10m','speedUp1h','speedUp5h','speedUp12h','speedUp24h','speedUp36h','speedUp48h','speedUp72h'];
+          for (var si = 0; si < speedOrder.length; si++) {
+            speedTotal += (s.items && s.items[speedOrder[si]]) || 0;
+          }
+          var speedBtn = speedTotal > 0
+            ? '<button class="btn sm ok" style="margin-left:6px;padding:2px 10px;font-size:13px" onclick="Game.Build.openSpeedUpPicker(' + ji + ')">⚡ 加速 (×' + speedTotal + ')</button>'
+            : '<button class="btn sm" disabled style="margin-left:6px;padding:2px 10px;font-size:13px" title="商城可购买加速符">⚡ 加速 (无)</button>';
+          qh += '<div class="btimer' + (job.finishesAt - now <= 60000 ? ' urgent' : '') + '" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px">';
+          qh += '<span>施工队 ' + (ji + 1) + '：' + jobName + ' Lv.' + targetLevel + '，剩余 ' + timeText((job.finishesAt - now) / 1000) + '</span>';
+          qh += speedBtn;
+          qh += '</div>';
+        }
+        if (jobs.length < 2) qh += '<div class="bfield">施工队 ' + (jobs.length + 1) + ' 空闲：还可开始一项建筑升级</div>';
+      } else {
+        qh += '<div class="bfield">两支施工队空闲：可同时升级两项建筑</div>';
+      }
+      return qh;
+    },
+
+    silentUpdateBuild: function (tickData) {
+      // 建筑升级完成或队列变化时，平滑更新全列表
+      if (tickData && tickData.completedBuilds && tickData.completedBuilds.length > 0) {
+        Core.refreshContent();
+        return;
+      }
+      // 仅倒计时走动时，就地更新顶部施工队容器，不动建筑列表卡片
+      var qBar = document.getElementById('buildQueueBar');
+      if (qBar) {
+        var s = Core.state || {};
+        var jobs = this.getConstructions();
+        var newQHtml = this.renderQueueHtml(jobs, s);
+        if (qBar.innerHTML !== newQHtml) {
+          qBar.innerHTML = newQHtml;
+        }
+      }
     }
   };
 

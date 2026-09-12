@@ -179,7 +179,7 @@ public class GuildService {
             Player p = player(member.getPlayerId());
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("playerId", p.getId()); item.put("name", p.getUsername()); item.put("cityName", p.getCityName());
-            item.put("level", p.getLevel()); item.put("prestige", p.getPrestige()); item.put("role", member.getRole());
+            item.put("prestige", p.getPrestige()); item.put("role", member.getRole());
             members.add(item);
         }
         result.put("members", members);
@@ -187,7 +187,7 @@ public class GuildService {
             List<Map<String, Object>> applications = new ArrayList<>();
             for (GuildApplication app : guildApplicationRepository.findByGuildIdOrderByCreatedAtAsc(guildId)) {
                 Player p = player(app.getPlayerId());
-                applications.add(Map.of("id", app.getId(), "playerId", p.getId(), "name", p.getUsername(), "level", p.getLevel(), "prestige", p.getPrestige()));
+                applications.add(Map.of("id", app.getId(), "playerId", p.getId(), "name", p.getUsername(), "prestige", p.getPrestige()));
             }
             result.put("applications", applications);
         }

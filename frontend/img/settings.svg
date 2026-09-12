@@ -1,36 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22">
   <defs>
-    <linearGradient id="ring" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#3a5a8c"/>
-      <stop offset="1" stop-color="#15244a"/>
+    <linearGradient id="gearGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#475569"/>
+      <stop offset="100%" stop-color="#1e293b"/>
     </linearGradient>
-    <linearGradient id="nNeedle" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ff6b6b"/>
-      <stop offset="1" stop-color="#9a2828"/>
-    </linearGradient>
-    <linearGradient id="sNeedle" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#fff4c2"/>
-      <stop offset="1" stop-color="#a8882c"/>
-    </linearGradient>
-    <radialGradient id="hub" cx="0.35" cy="0.35" r="0.7">
-      <stop offset="0" stop-color="#fff4c2"/>
-      <stop offset="0.55" stop-color="#c9a64a"/>
-      <stop offset="1" stop-color="#6e4a14"/>
-    </radialGradient>
   </defs>
-  <!-- 外圈 -->
-  <circle cx="12" cy="12" r="11" fill="url(#ring)" stroke="#0a1430" stroke-width="0.9"/>
-  <!-- 内金圈 -->
-  <circle cx="12" cy="12" r="9" fill="none" stroke="#c9a64a" stroke-width="0.5" opacity="0.7"/>
-  <!-- 北指针 (红, 较长) -->
-  <path d="M 12 3.4 L 13.7 12 L 12 11 L 10.3 12 Z" fill="url(#nNeedle)" stroke="#3a0808" stroke-width="0.3" stroke-linejoin="round"/>
-  <!-- 南指针 (金) -->
-  <path d="M 12 20.6 L 10.3 12 L 12 13 L 13.7 12 Z" fill="url(#sNeedle)" stroke="#3a2808" stroke-width="0.3" stroke-linejoin="round"/>
-  <!-- 东指针 (金) -->
-  <path d="M 20.6 12 L 12 10.3 L 13 12 L 12 13.7 Z" fill="url(#sNeedle)" stroke="#3a2808" stroke-width="0.3" stroke-linejoin="round"/>
-  <!-- 西指针 (金) -->
-  <path d="M 3.4 12 L 12 13.7 L 11 12 L 12 10.3 Z" fill="url(#sNeedle)" stroke="#3a2808" stroke-width="0.3" stroke-linejoin="round"/>
-  <!-- 中心枢纽 -->
-  <circle cx="12" cy="12" r="1.5" fill="url(#hub)" stroke="#1a2a4c" stroke-width="0.5"/>
-  <circle cx="11.5" cy="11.4" r="0.45" fill="#ffffff" opacity="0.85"/>
+  <path fill="url(#gearGrad)" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c-.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
 </svg>

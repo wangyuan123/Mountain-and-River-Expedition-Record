@@ -1,0 +1,18 @@
+# Build output and local dependencies
+backend/target/
+node_modules/
+dist/
+coverage/
+*.class
+javac.*.args
+
+# Credentials and machine-specific settings
+.env
+.env.*
+!.env.example
+.DS_Store
+.idea/
+.vscode/
+.dbg/
+*.log
+

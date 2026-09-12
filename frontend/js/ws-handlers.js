@@ -84,11 +84,17 @@ window.Game = window.Game || {};
         G.Task.Quests.onEvent('BUILD_DONE', data.completedBuilds[bi]);
       }
     }
-    // Re-render affected areas using partial refresh for efficiency
+    // Re-render affected areas using silent/zero-flash update for seamless experience
     // Skip content refresh if user is editing (mail compose / reply / profile edit / focused input)
     if (G.Core) {
       G.Core.refreshTop();
-      if (!isUserEditing() && G.Core.route) G.Core.refreshContent();
+      if (!isUserEditing()) {
+        if (G.Core.silentUpdate) {
+          G.Core.silentUpdate(data);
+        } else if (G.Core.route) {
+          G.Core.refreshContent();
+        }
+      }
     }
   });
 
@@ -131,6 +137,7 @@ window.Game = window.Game || {};
       // 防止无限增长, 只保留最近 100 条
       if (G.state.reports.length > 100) G.state.reports.length = 100;
     }
+    if (G.Battle && G.Battle.syncUnread) G.Battle.syncUnread();
     // 如果当前正停在战报页, 局部刷新即可
     if (G.Core && G.Core.route === 'reports' && G.Battle && G.Battle.renderReportsList) {
       G.Battle.renderReportsList(document.getElementById('content'));
@@ -141,6 +148,7 @@ window.Game = window.Game || {};
 
   // battle handler - battle report
   G.WS.on('battle', function (data) {
+    if (!data) return;
     if (data.win) {
       G.toast('战斗胜利! 掠夺资源' + JSON.stringify(data.plunder || {}));
     } else {
@@ -164,6 +172,7 @@ window.Game = window.Game || {};
         if (G.state.reports.length > 100) G.state.reports.length = 100;
       }
     }
+    if (G.Battle && G.Battle.syncUnread) G.Battle.syncUnread();
     // 刷新战报页 / 红点
     if (G.Core && G.Core.route === 'reports' && G.Battle && G.Battle.renderReportsList) {
       G.Battle.renderReportsList(document.getElementById('content'));
@@ -204,6 +213,7 @@ window.Game = window.Game || {};
 
   // connected handler - WebSocket reconnected
   G.WS.on('connected', function () {
+    if (G.Battle) G.Battle._reportsHistoryLoaded = null;
     // Hide the disconnect banner and show a brief "reconnected" confirmation
     hideWsBanner();
     if (_reconnectToastTimer) clearTimeout(_reconnectToastTimer);

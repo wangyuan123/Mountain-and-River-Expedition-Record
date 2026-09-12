@@ -155,7 +155,7 @@ public class OfficerLevelUpTest extends BaseServiceTest {
     }
 
     @Test
-    public void testUseExpBookAdds500Exp() {
+    public void testUseExpBookAdds10000Exp() {
         Player player = createTestPlayer();
         Officer officer = createOfficer(player.getId(), "idle", 30, 30, 30);
         officer.setLevel(1);
@@ -171,15 +171,16 @@ public class OfficerLevelUpTest extends BaseServiceTest {
 
         Map<String, Object> res = officerService.useExpBook(player.getId(), officer.getId());
         assertTrue((Boolean) res.get("success"));
-        assertEquals(500L, res.get("exp"));
+        assertEquals(10000L, res.get("exp"));
+        assertEquals(10000, res.get("gain"));
 
         Officer updated = officerRepository.findById(officer.getId()).orElseThrow();
-        assertEquals(500L, updated.getExp());
+        assertEquals(10000L, updated.getExp());
         assertEquals(1, updated.getLevel());
     }
 
     @Test
-    public void testUseExpBookAdvAdds3000Exp() {
+    public void testUseExpBookAdvAdds100000Exp() {
         Player player = createTestPlayer();
         Officer officer = createOfficer(player.getId(), "idle", 30, 30, 30);
         officer.setLevel(1);
@@ -195,14 +196,44 @@ public class OfficerLevelUpTest extends BaseServiceTest {
 
         Map<String, Object> res = officerService.useExpBook(player.getId(), officer.getId(), "expBookAdv", 1);
         assertTrue((Boolean) res.get("success"));
-        assertEquals(3000L, res.get("exp"));
-        assertEquals(3000, res.get("gain"));
+        assertEquals(100000L, res.get("exp"));
+        assertEquals(100000, res.get("gain"));
 
         Officer updated = officerRepository.findById(officer.getId()).orElseThrow();
-        assertEquals(3000L, updated.getExp());
+        assertEquals(100000L, updated.getExp());
         assertEquals(1, updated.getLevel());
 
         PlayerItem itemUpdated = playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "expBookAdv").orElseThrow();
         assertEquals(39, itemUpdated.getCount());
+    }
+
+    @Test
+    public void testUseExpBookMaxInstantlyMaxLevel() {
+        Player player = createTestPlayer();
+        Officer officer = createOfficer(player.getId(), "idle", 30, 30, 30);
+        officer.setLevel(1);
+        officer.setExp(50L);
+        officer.setAttrPoints(0);
+        officerRepository.save(officer);
+
+        PlayerItem item = new PlayerItem();
+        item.setPlayerId(player.getId());
+        item.setItemKey("expBookMax");
+        item.setCount(2);
+        item.setUpdatedAt(System.currentTimeMillis());
+        playerItemRepository.save(item);
+
+        Map<String, Object> res = officerService.useExpBook(player.getId(), officer.getId(), "expBookMax", 1);
+        assertTrue((Boolean) res.get("success"));
+        assertEquals(100, res.get("level"));
+        assertEquals(0L, res.get("exp"));
+
+        Officer updated = officerRepository.findById(officer.getId()).orElseThrow();
+        assertEquals(100, updated.getLevel());
+        assertEquals(0L, updated.getExp());
+        assertEquals(99 * 4, updated.getAttrPoints()); // 1级到100级获得 99*4=396 属性点
+
+        PlayerItem itemUpdated = playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "expBookMax").orElseThrow();
+        assertEquals(1, itemUpdated.getCount()); // 消耗1本，剩余1本
     }
 }

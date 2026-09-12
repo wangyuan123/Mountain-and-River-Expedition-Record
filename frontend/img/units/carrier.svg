@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="carrierHull" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#94a3b8"/>
+      <stop offset="100%" stop-color="#334155"/>
+    </linearGradient>
+  </defs>
+  <!-- Waterline -->
+  <path d="M0 24 Q8 23 16 24 Q24 25 32 24 L32 28 L0 28 Z" fill="#0284c7" opacity="0.4"/>
+  <!-- Hull beneath flight deck -->
+  <polygon points="4,23 7,16 27,16 29,23" fill="url(#carrierHull)" stroke="#0f172a" stroke-width="0.7"/>
+  <!-- Flat Flight Deck (Long Horizontal Runway) -->
+  <polygon points="1,16 4,14 31,14 29,16" fill="#475569" stroke="#0f172a" stroke-width="0.8"/>
+  <!-- Runway Centerline Dashes -->
+  <line x1="5" y1="15" x2="9" y2="15" stroke="#f8fafc" stroke-width="0.8"/>
+  <line x1="13" y1="15" x2="17" y2="15" stroke="#f8fafc" stroke-width="0.8"/>
+  <line x1="21" y1="15" x2="25" y2="15" stroke="#f8fafc" stroke-width="0.8"/>
+  <!-- Island Superstructure & Radar Mast (Starboard / Right) -->
+  <rect x="22" y="9" width="4.5" height="5" rx="0.5" fill="#1e293b" stroke="#0f172a" stroke-width="0.5"/>
+  <line x1="24.2" y1="9" x2="24.2" y2="4.5" stroke="#0f172a" stroke-width="1"/>
+  <line x1="22" y1="6" x2="26.5" y2="6" stroke="#0f172a" stroke-width="0.8"/>
+</svg>

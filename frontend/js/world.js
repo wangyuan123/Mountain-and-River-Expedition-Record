@@ -89,7 +89,14 @@ window.Game = window.Game || {};
       this.jumpTo(cp.x, cp.y);
     },
 
-    locateClosest: function (kind) {
+    locateClosest: function (kind, loaded) {
+      if (!loaded) {
+        var pos = Core.state.world.pos;
+        G.WorldView.load(pos.x, pos.y, 0).then(function (applied) {
+          if (applied) World.locateClosest(kind, true);
+        }).catch(function (err) { G.toast(err.message || '目标查询失败'); });
+        return;
+      }
       var s = Core.state;
       var px = s.world.pos.x, py = s.world.pos.y;
       var target = null;
@@ -134,6 +141,7 @@ window.Game = window.Game || {};
     },
 
     refreshMapData: function () {
+      G.WorldView.invalidate();
       G.API.getGameState(true).then(function (state) {
         // 强制绕过本地缓存,用服务器最新状态替换当前地图数据。
         G.API.applyState(state);
@@ -240,7 +248,7 @@ window.Game = window.Game || {};
         }
       }
       if (!action) action = 'conquer';
-      s.world._dispatchTarget = { kind: kind, idx: idx, action: action };
+      s.world._dispatchTarget = { kind: kind, idx: idx, action: action, target: target };
       G.go('dispatch');
     },
 
@@ -262,7 +270,7 @@ window.Game = window.Game || {};
       if (!t) return;
       if (t.occupied) { G.toast('已占领'); return; }
       if (!action) action = 'conquer';
-      s.world._dispatchTarget = { kind: 'wild', idx: idx, action: action };
+      s.world._dispatchTarget = { kind: 'wild', idx: idx, action: action, target: t };
       G.go('dispatch');
     },
 
@@ -287,7 +295,7 @@ window.Game = window.Game || {};
       if (!wt || !wt.res) { G.toast('该野地无资源可采集'); return; }
       var remaining = (t.totalRes || 0) - (t.mined || 0);
       if (remaining <= 0) { G.toast('该野地资源已耗尽'); return; }
-      s.world._dispatchTarget = { kind: 'wild_gather', idx: idx, action: 'gather' };
+      s.world._dispatchTarget = { kind: 'wild_gather', idx: idx, action: 'gather', target: t };
       G.go('dispatch');
     },
 
@@ -334,7 +342,6 @@ window.Game = window.Game || {};
               '<div class="dw-target-row">' +
                 '<span class="dw-emoji">🏰</span>' +
                 '<span class="dw-name">' + esc(target.name) + '</span>' +
-                '<span class="dw-lv">Lv.' + (target.level || 0) + '</span>' +
               '</div>' +
               '<div class="dw-target-meta">' +
                 '<span class="dw-meta-item">⭐ ' + G.fmt(target.prestige || 0) + '</span>' +
@@ -508,12 +515,12 @@ window.Game = window.Game || {};
       var dt = s.world._dispatchTarget;
       if (!dt) { G.go('world'); return; }
       var target;
-      if (dt.kind === 'bandit') target = s.world.bandits[dt.idx];
-      else if (dt.kind === 'npc') target = s.world.npcCities[dt.idx];
-      else if (dt.kind === 'simulated_npc') target = s.world.simulatedNpcCities[dt.idx];
-      else if (dt.kind === 'player') target = s.world.playerCities[dt.idx];
+      if (dt.kind === 'bandit') target = dt.target || s.world.bandits[dt.idx];
+      else if (dt.kind === 'npc') target = dt.target || s.world.npcCities[dt.idx];
+      else if (dt.kind === 'simulated_npc') target = dt.target || s.world.simulatedNpcCities[dt.idx];
+      else if (dt.kind === 'player') target = dt.target || s.world.playerCities[dt.idx];
       else if (dt.kind === 'wild' || dt.kind === 'wild_gather') {
-        var wt = s.world.wildTiles[dt.idx];
+        var wt = dt.target || s.world.wildTiles[dt.idx];
         if (wt) {
           var wtd = G.DATA.wildTypes[wt.type];
           target = { id: wt.id, name: wtd.name + ' Lv.' + wt.level, x: wt.x, y: wt.y };
@@ -535,7 +542,11 @@ window.Game = window.Game || {};
       if (!hasUnits) { G.toast('请至少选择一种兵种出征'); return; }
 
       var commEl = document.querySelector('input[name="dpOfficer"]:checked');
-      var commanderId = commEl ? commEl.value : null;
+      var commanderId = null;
+      if (commEl && commEl.value && commEl.value !== 'none') {
+        commanderId = parseInt(commEl.value, 10);
+        if (isNaN(commanderId)) commanderId = null;
+      }
 
       var carryRes = {};
       var resKeys = ['food', 'steel', 'oil', 'rare'];
@@ -592,12 +603,12 @@ window.Game = window.Game || {};
       var dt = s.world._dispatchTarget;
       if (!dt) { G.go('world'); return; }
       var target;
-      if (dt.kind === 'bandit') target = s.world.bandits[dt.idx];
-      else if (dt.kind === 'npc') target = s.world.npcCities[dt.idx];
-      else if (dt.kind === 'simulated_npc') target = s.world.simulatedNpcCities[dt.idx];
-      else if (dt.kind === 'player') target = s.world.playerCities[dt.idx];
+      if (dt.kind === 'bandit') target = dt.target || s.world.bandits[dt.idx];
+      else if (dt.kind === 'npc') target = dt.target || s.world.npcCities[dt.idx];
+      else if (dt.kind === 'simulated_npc') target = dt.target || s.world.simulatedNpcCities[dt.idx];
+      else if (dt.kind === 'player') target = dt.target || s.world.playerCities[dt.idx];
       else if (dt.kind === 'wild' || dt.kind === 'wild_gather') {
-        var wtd = s.world.wildTiles[dt.idx];
+        var wtd = dt.target || s.world.wildTiles[dt.idx];
         if (wtd) {
           var wtdInfo = G.DATA.wildTypes[wtd.type];
           target = { id: wtd.id, name: wtdInfo.name, level: wtd.level, x: wtd.x, y: wtd.y, army: wtd.garrison, _wildRef: wtd, _wildType: wtdInfo };
@@ -627,7 +638,7 @@ window.Game = window.Game || {};
       h += '<div class="title">- ' + (isGather ? '采集派遣' : '出征准备') + ' -</div>';
       h += '<div class="panel">';
       h += '<div class="bfield">行动: <b style="color:var(--accent)">' + actionName + '</b> | 目标: <b>' + target.name + '</b>';
-      if (target.level) h += ' Lv.' + target.level;
+      if (dt.kind !== 'player' && target.level) h += ' Lv.' + target.level;
       h += ' (' + target.x + ',' + target.y + ')</div>';
       if (isWildConquer || isGather) {
         var wtRef = target._wildRef;
@@ -674,6 +685,9 @@ window.Game = window.Game || {};
       h += '<div class="panel">';
       var defaultLoad = this.calcDispatchLoad(s.army);
       var hasAny = false;
+      // 征服/掠夺时默认编入 1 架侦察机，作为前置侦察与吸收首轮火力的炮灰；
+      // 纯侦查行动仍只显示侦察机并默认 1 架，采集等行动保持全量配置。
+      var sacrificialScout = dt.action === 'conquer' || dt.action === 'plunder';
       for (var uid in D.units) {
         var have = s.army[uid] || 0;
         if (have <= 0) continue;
@@ -681,7 +695,7 @@ window.Game = window.Game || {};
         hasAny = true;
         var u = D.units[uid];
         var isLogi = u.logistic ? ' (辎重' + u.load + '/辆)' : '';
-        var initialVal = isScout ? Math.min(have, 1) : have;
+        var initialVal = (isScout || (sacrificialScout && uid === 'scout')) ? Math.min(have, 1) : have;
         var pct = have > 0 ? ((initialVal / have) * 100).toFixed(1) : 0;
         var sliderId = 'dslider_' + uid;
         h += '<div class="dispatch-unit-row">';
@@ -709,15 +723,25 @@ window.Game = window.Game || {};
         h += '<div class="zone-head">-- 指挥官选择 --</div>';
         h += '<div class="panel">';
         var officers = s.officers;
-        var foundC = false;
+        // 默认选择军事属性最高的指挥官；属性相同则选择列表中的第一位。
+        var bestOfficerIndex = -1;
+        var bestMilitary = -Infinity;
+        for (var bi = 0; bi < officers.length; bi++) {
+          if (officers[bi].role === 'mayor') continue;
+          var military = Number(officers[bi].military) || 0;
+          if (bestOfficerIndex < 0 || military > bestMilitary) {
+            bestOfficerIndex = bi;
+            bestMilitary = military;
+          }
+        }
+        var foundC = bestOfficerIndex >= 0;
         if (!officers.length) {
           h += '<div class="desc">无军官可用</div>';
         }
         for (var oi = 0; oi < officers.length; oi++) {
           var o = officers[oi];
           if (o.role === 'mayor') continue;
-          var checked = o.role === 'commander' ? ' checked' : '';
-          if (checked) foundC = true;
+          var checked = oi === bestOfficerIndex ? ' checked' : '';
           var starStr = '';
           for (var si = 0; si < o.star; si++) starStr += '★';
           // 采集任务时显示后勤加成提示
@@ -737,7 +761,13 @@ window.Game = window.Game || {};
           h += '</label>';
           h += '</div>';
         }
-        if (!foundC) h += '<div class="desc">(无指挥官,将不获得军官经验加成' + (isGather ? '，采集速度为基础' : '') + ')</div>';
+        h += '<div class="btn-row" style="margin-bottom:4px">';
+        h += '<label style="font-size:14px;cursor:pointer;color:#888">';
+        h += '<input type="radio" name="dpOfficer" value="none"' + (!foundC ? ' checked' : '') + ' /> ';
+        h += '不派遣将领 (无加成)';
+        h += '</label>';
+        h += '</div>';
+        if (!foundC) h += '<div class="desc">(当前未任命司令,建议招募或选择将领出征以获得战力与经验加成)</div>';
         h += '</div>';
 
         h += '<div class="zone-head">-- 携带资源 (货辎队负重内) --</div>';
@@ -746,11 +776,14 @@ window.Game = window.Game || {};
         var resOrder = ['food', 'steel', 'oil', 'rare'];
         for (var ri = 0; ri < resOrder.length; ri++) {
           var rk = resOrder[ri];
-          var rinfo = D.resources[rk];
+          var rinfo = D.resources[rk] || {};
           var haveR = s.resources[rk] || 0;
-          h += '<div class="btn-row" style="margin-bottom:4px">';
-          h += '<span style="min-width:50px;font-size:14px">' + rinfo.icon + rinfo.name + '</span>';
-          h += '<span style="font-size:12px;color:#888;min-width:60px">库存' + G.fmt(haveR) + '</span>';
+          var iconHtml = /\.svg$|\.png$|\.jpg$|\.gif$|\.webp$/i.test(rinfo.icon)
+            ? '<img class="res-icon-img" src="' + rinfo.icon + '" alt="' + (rinfo.name || '') + '" style="margin-right:4px;vertical-align:middle;display:inline-block;" />'
+            : (rinfo.icon ? '<span style="margin-right:4px;">' + rinfo.icon + '</span>' : '');
+          h += '<div class="btn-row" style="margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;">';
+          h += '<span style="display:inline-flex;align-items:center;min-width:70px;font-size:14px">' + iconHtml + (rinfo.name || rk) + '</span>';
+          h += '<span style="font-size:12px;color:#888;min-width:60px">库存 ' + G.fmt(haveR) + '</span>';
           h += '<input class="qty" id="dcarry_' + rk + '" type="number" min="0" max="' + haveR + '" value="0" style="width:80px" />';
           h += '</div>';
         }
@@ -788,6 +821,10 @@ window.Game = window.Game || {};
         s.world._scan = { r: initR, at: Date.now() };
       }
       var scanR = s.world._scan.r;
+      if (!G.WorldView.ensure(px, py, scanR)) {
+        v.innerHTML = '<div class="card">正在加载地图区域… <button class="btn" onclick="Game.World.refreshMapData()">刷新</button></div>';
+        return;
+      }
       var activeTab = s.world._activeTab || 'all';
       var sortMode = s.world._sortMode || 'distance';
 
@@ -817,7 +854,7 @@ window.Game = window.Game || {};
           d: dist(px, py, cityPos.x, cityPos.y),
           p: {
             id: 'self-city', name: (s.player && (s.player.cityName || s.player.name || s.player.username)) || '我的城市',
-            level: (s.player && s.player.level) || 1, x: cityPos.x, y: cityPos.y,
+            x: cityPos.x, y: cityPos.y,
             prestige: (s.player && s.player.prestige) || 0, _selfCity: true
           }
         });
@@ -965,10 +1002,10 @@ window.Game = window.Game || {};
         if (warActive && p.warEndAt) remStr = fmtMs(p.warEndAt - now);
         else if (preWar) remStr = fmtMs(p.warAt - now);
 
-        // 名称后的交战标识：红色表示可直接进攻，灰色表示尚不可进攻。
-        var combatIcon = warActive
+        // 名称后的交战标识：红色表示可直接进攻，灰色表示尚不可进攻。己方主城不显示。
+        var combatIcon = isSelfCity ? '' : (warActive
           ? '<span class="tcard-combat-icon tcard-combat-icon-active" title="交战中：可直接进攻" aria-label="交战中">⚔</span>'
-          : '<span class="tcard-combat-icon" title="' + (preWar ? '宣战中：等待开战' : '未宣战：需先宣战') + '" aria-label="' + (preWar ? '宣战中' : '未宣战') + '">⚔</span>';
+          : '<span class="tcard-combat-icon" title="' + (preWar ? '宣战中：等待开战' : '未宣战：需先宣战') + '" aria-label="' + (preWar ? '宣战中' : '未宣战') + '">⚔</span>');
 
         // ---- 紧凑头部 (单行) ----
         var miniBadge = '';
@@ -996,7 +1033,7 @@ window.Game = window.Game || {};
           '<div class="tcard-expand">' +
             '<div class="tcard-meta">城市 ' + esc(p.name || '未知城市') + '</div>' +
             '<div class="tcard-meta">状态 <b>' + (stateMap[p.cityState] || '和平') + '</b></div>' +
-            '<div class="tcard-meta">声望 ⭐' + G.fmt(p.prestige || 0) + ' · Lv.' + (p.level || 0) + '</div>' +
+            '<div class="tcard-meta">声望 ⭐' + G.fmt(p.prestige || 0) + '</div>' +
             (warActive ? '<div class="tcard-meta">剩余 ' + remStr + '</div>' : '') +
             (preWar ? '<div class="tcard-meta">宣战后 ' + remStr + ' 开战</div>' : '') +
             '<div class="tcard-actions">' + renderPlayerActions(it, p, cooling, warActive, preWar) + '</div>' +
@@ -1087,20 +1124,20 @@ window.Game = window.Game || {};
              '<button class="btn" onclick="Game.World.scan()">扫描</button>' +
              radSel +
            '</div>' +
-           '<div class="map-toolbar-quick">' +
-             '<button class="qt-btn" onclick="Game.World.locateClosest(\'wild\')" title="跳转最近未占领野地">🪨 最近野</button>' +
-             '<button class="qt-btn" onclick="Game.World.locateClosest(\'npc\')" title="跳转最近寇">⚔ 最近寇</button>' +
-             '<button class="qt-btn" onclick="Game.World.locateClosest(\'player\')" title="跳转最近玩家">🏰 最近玩家</button>' +
-             '<button class="qt-btn" onclick="Game.World.locateClosest(\'owned\')" title="跳转最近已占领野地">🚩 我占</button>' +
-           '</div>' +
-           '</div>';
+            '<div class="map-toolbar-quick">' +
+              '<button class="qt-btn" onclick="Game.World.locateClosest(\'wild\')" title="跳转最近未占领野地">🪨 最近野地</button>' +
+              '<button class="qt-btn" onclick="Game.World.locateClosest(\'npc\')" title="跳转最近流寇">⚔ 最近流寇</button>' +
+              '<button class="qt-btn" onclick="Game.World.locateClosest(\'player\')" title="跳转最近玩家">🏰 最近玩家</button>' +
+              '<button class="qt-btn" onclick="Game.World.locateClosest(\'owned\')" title="跳转最近已占领野地">🚩 我的领地</button>' +
+            '</div>' +
+            '</div>';
 
       // 3. Tabs
       var total = wildsNearby.length + npcsNearby.length + playersNearby.length;
       h += '<div class="map-tabs">' +
            '<div class="map-tab ' + (activeTab === 'all' ? 'active' : '') + '" onclick="Game.World.setTab(\'all\')">全部 <span class="mt-count">' + total + '</span></div>' +
-           '<div class="map-tab ' + (activeTab === 'wild' ? 'active' : '') + '" onclick="Game.World.setTab(\'wild\')">🪨 野地 <span class="mt-count">' + wildsNearby.length + '</span></div>' +
-           '<div class="map-tab ' + (activeTab === 'npc' ? 'active' : '') + '" onclick="Game.World.setTab(\'npc\')">寇 <span class="mt-count">' + npcsNearby.length + '</span></div>' +
+           '<div class="map-tab ' + (activeTab === 'wild' ? 'active' : '') + '" onclick="Game.World.setTab(\'wild\')">野地 <span class="mt-count">' + wildsNearby.length + '</span></div>' +
+           '<div class="map-tab ' + (activeTab === 'npc' ? 'active' : '') + '" onclick="Game.World.setTab(\'npc\')">流寇 <span class="mt-count">' + npcsNearby.length + '</span></div>' +
            '<div class="map-tab ' + (activeTab === 'player' ? 'active' : '') + '" onclick="Game.World.setTab(\'player\')">玩家 <span class="mt-count">' + playersNearby.length + '</span></div>' +
            '<div class="map-tab ' + (activeTab === 'owned' ? 'active' : '') + '" onclick="Game.World.setTab(\'owned\')">已占 <span class="mt-count">' + owned.length + '</span></div>' +
            '<div class="map-tabs-sort">' +
@@ -1131,7 +1168,7 @@ window.Game = window.Game || {};
 
       // 5. 底部固定方向栏
       h += '<div class="map-control-bar">' +
-           '<button class="mcb-side mcb-home" onclick="Game.World.jumpToMyCity()" title="回我城">🏠<br><span>我城</span></button>' +
+           '<button class="mcb-side mcb-home" onclick="Game.World.jumpToMyCity()" title="回我城">🏠 我城</button>' +
            '<div class="mcb-dpad">' +
              '<button class="mcb-up" onclick="Game.World.move(0,-1)" title="北">↑</button>' +
              '<div class="mcb-mid">' +
@@ -1141,7 +1178,7 @@ window.Game = window.Game || {};
              '</div>' +
              '<button class="mcb-down" onclick="Game.World.move(0,1)" title="南">↓</button>' +
            '</div>' +
-           '<button class="mcb-side mcb-back" onclick="Game.go(\'home\')" title="返回主菜单">↩<br><span>主菜单</span></button>' +
+           '<button class="mcb-side mcb-back" onclick="Game.go(\'home\')" title="返回主菜单">↩ 首页</button>' +
            '</div>';
 
       v.innerHTML = h;

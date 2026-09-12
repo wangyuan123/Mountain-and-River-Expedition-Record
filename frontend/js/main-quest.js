@@ -3,6 +3,7 @@
   'use strict';
 
   var Core = G.Core;
+  var D = G.DATA;
 
   // ====================================================================
   //  状态
@@ -516,13 +517,13 @@
 
   function getRouteLabel(route) {
     return ({
-      buildRes: '资源区',
-      buildArmy: '军事区',
+      buildRes: '资源',
+      buildArmy: '军事',
       world: '地图',
       home: '主城',
       officer: '军官',
       academy: '军校',
-      army: '兵种',
+      army: '军队',
       mainQuest: '主线任务'
     })[route] || route;
   }
@@ -667,10 +668,129 @@
     });
   }
 
+  function doPromoteRank() {
+    if (!G.API || !G.API.promoteRank) return;
+    G.API.promoteRank().then(function (res) {
+      if (res && res.message) {
+        G.toast(res.message);
+      } else {
+        G.toast('晋升成功！');
+      }
+      if (Core && Core.render) Core.render();
+    }).catch(function (err) {
+      G.toast(err.message || '晋升失败');
+    });
+  }
+
+  function renderRankQuestCard() {
+    var s = Core.state || {};
+    var p = s.player || {};
+    var rankTier = p.militaryRank || 1;
+    var rankInfo = G.getMilitaryRankTierInfo ? G.getMilitaryRankTierInfo(rankTier) : { name: '列兵', tier: 1, baseCap: 1000, isMax: false };
+    var prestige = s.prestige != null ? s.prestige : (p.prestige != null ? p.prestige : 0);
+    var items = s.items || {};
+
+    var h = '<div class="panel" style="margin-bottom:14px;border:1px solid rgba(212,163,89,0.35);background:linear-gradient(135deg, rgba(212,163,89,0.06), rgba(0,0,0,0.2));border-radius:8px;padding:12px 14px;">';
+    h += '<div class="quest-chapter-head" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
+    h += '  <div class="quest-chapter-name" style="font-size:15px;color:var(--accent);font-weight:bold;display:flex;align-items:center;gap:6px;">';
+    h += '    <span>🎖️</span> <span>统帅军衔 · 【' + escapeHtml(rankInfo.name) + '】</span>';
+    h += '    <span style="font-size:11px;padding:2px 6px;border-radius:4px;background:rgba(212,163,89,0.2);color:var(--ink);">第 ' + rankInfo.tier + ' / 17 阶</span>';
+    h += '  </div>';
+    h += '  <div style="font-size:12px;color:var(--muted);">基础出兵容量: <b style="color:var(--ink);">' + G.fmt(rankInfo.baseCap) + '</b></div>';
+    h += '</div>';
+
+    if (rankInfo.isMax) {
+      h += '<div style="font-size:13px;color:var(--ok);padding:10px;background:rgba(82,196,26,0.1);border-radius:6px;margin-top:6px;display:flex;align-items:center;justify-content:space-between;">';
+      h += '  <span>⭐ 已晋升至终极统帅军衔【上将】！基础出兵上限 20,000，享集团军出征极限！</span>';
+      h += '  <span class="quest-badge ok">顶峰</span>';
+      h += '</div>';
+      h += '</div>';
+      return h;
+    }
+
+    // 下一阶目标
+    var nextTier = rankInfo.nextTier;
+    var nextName = rankInfo.nextName;
+    var nextBaseCap = rankInfo.nextBaseCap;
+    var reqPrestige = rankInfo.nextPrestige || 0;
+    var reqGems = rankInfo.reqGems || {};
+
+    var prestigeEnough = prestige >= reqPrestige;
+    var allGemsEnough = true;
+
+    h += '<div style="font-size:12px;color:var(--muted);margin-bottom:10px;">';
+    h += '  下一阶晋升: <b style="color:var(--accent);">【' + escapeHtml(nextName) + '】</b>（基础带兵容量提升至 <b style="color:var(--ink);">' + G.fmt(nextBaseCap) + '</b>）';
+    h += '</div>';
+
+    // 1. 声望要求
+    var presPct = reqPrestige > 0 ? Math.min(100, Math.round(prestige / reqPrestige * 100)) : 100;
+    h += '<div style="background:rgba(255,255,255,0.03);border-radius:6px;padding:8px 10px;margin-bottom:8px;border:1px solid rgba(255,255,255,0.05);">';
+    h += '  <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-bottom:4px;">';
+    h += '    <span>👑 声望要求: <b>' + G.fmt(prestige) + '</b> / ' + G.fmt(reqPrestige) + '</span>';
+    h += '    <span style="color:' + (prestigeEnough ? 'var(--ok)' : 'var(--danger)') + ';font-weight:bold;">' + (prestigeEnough ? '✓ 已达成' : ('差 ' + G.fmt(reqPrestige - prestige))) + '</span>';
+    h += '  </div>';
+    h += '  <div class="quest-progress-bar" style="margin:0;height:5px;"><div class="quest-progress-fill" style="width:' + presPct + '%;background:' + (prestigeEnough ? 'var(--ok)' : 'var(--accent)') + '"></div></div>';
+    h += '</div>';
+
+    // 2. 珠宝要求
+    var gemKeys = Object.keys(reqGems);
+    if (gemKeys.length > 0) {
+      h += '<div style="font-size:12px;color:var(--ink);margin-bottom:6px;font-weight:bold;display:flex;justify-content:space-between;">';
+      h += '  <span>💎 所需晋升珠宝 (野地采集产出):</span>';
+      h += '  <span style="font-size:11px;color:var(--accent);cursor:pointer;" onclick="Game.go(\'world\')">前往野地采集 ›</span>';
+      h += '</div>';
+      h += '<div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(130px, 1fr));gap:6px;margin-bottom:10px;">';
+      for (var gi = 0; gi < gemKeys.length; gi++) {
+        var gk = gemKeys[gi];
+        var reqCnt = reqGems[gk];
+        var ownedCnt = items[gk] || 0;
+        var gDef = (D.items && D.items[gk]) || { name: gk, icon: '💎' };
+        var isEnough = ownedCnt >= reqCnt;
+        if (!isEnough) allGemsEnough = false;
+
+        h += '<div style="background:rgba(0,0,0,0.25);border:1px solid ' + (isEnough ? 'rgba(82,196,26,0.3)' : 'rgba(255,255,255,0.08)') + ';border-radius:6px;padding:6px 8px;display:flex;align-items:center;justify-content:space-between;">';
+        h += '  <div style="display:flex;align-items:center;gap:5px;font-size:12px;">';
+        h += '    <span>' + gDef.icon + '</span>';
+        h += '    <span>' + escapeHtml(gDef.name) + '</span>';
+        h += '  </div>';
+        h += '  <div style="font-size:12px;font-weight:bold;color:' + (isEnough ? 'var(--ok)' : 'var(--danger)') + '">';
+        h += '    ' + ownedCnt + '/' + reqCnt + (isEnough ? ' ✓' : '');
+        h += '  </div>';
+        h += '</div>';
+      }
+      h += '</div>';
+    }
+
+    // 3. 晋升操作按钮
+    var canPromote = prestigeEnough && allGemsEnough;
+    h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.06);">';
+    h += '  <div style="font-size:11px;color:var(--muted);">';
+    if (canPromote) {
+      h += '    <span style="color:var(--ok);">🎉 晋升条件已达成，可立即受衔！</span>';
+    } else if (!prestigeEnough) {
+      h += '    <span>声望尚不足，参加战役或击溃叛军可积累声望</span>';
+    } else {
+      h += '    <span>珠宝不足，派遣军队前往野地采集可获取各类珠宝</span>';
+    }
+    h += '  </div>';
+    if (canPromote) {
+      h += '  <button class="btn ok" style="padding:6px 18px;font-size:13px;font-weight:bold;" onclick="Game.MainQuest.doPromoteRank()">授衔晋升</button>';
+    } else {
+      h += '  <button class="btn" style="padding:6px 16px;font-size:13px;opacity:0.5;cursor:not-allowed;" disabled>条件不足</button>';
+    }
+    h += '</div>';
+
+    h += '</div>';
+    return h;
+  }
+
   function drawQuestView(v) {
     var h = '<div class="main-quest-view">';
-    h += '<div class="title">任务</div>';
-    h += '<div class="desc main-quest-summary">完成各章任务获得资源、道具、军官等丰厚奖励，助您快速成长。</div>';
+    h += '<div class="title">任务与军衔</div>';
+    h += '<div class="desc main-quest-summary">晋升军衔解锁更强战略出兵容量，完成各章任务获得丰厚战备资源。</div>';
+
+    // 军衔晋升专区
+    h += renderRankQuestCard();
 
     // 活动与任务（原首页"活动与任务"块迁到这里）
     h += (G.Task && G.Task.renderActivities) ? G.Task.renderActivities() : '';
@@ -843,6 +963,7 @@
     skipGuide: skipGuide,
     hasUnclaimed: hasUnclaimed,
     hasGuide: hasGuide,
+    doPromoteRank: doPromoteRank,
     state: state
   };
 })(window.Game);

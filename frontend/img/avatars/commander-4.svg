@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <linearGradient id="c4bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e3a8a"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="c4skin" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fed7aa"/>
+      <stop offset="100%" stop-color="#fba16c"/>
+    </linearGradient>
+    <linearGradient id="c4gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="50%" stop-color="#eab308"/>
+      <stop offset="100%" stop-color="#a16207"/>
+    </linearGradient>
+    <linearGradient id="c4navy" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#090d16"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="100" height="100" rx="20" fill="url(#c4bg)"/>
+  <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+  <!-- Navy Double-breasted Uniform -->
+  <path d="M22 92 C22 75 32 68 50 68 C68 68 78 75 78 92 Z" fill="url(#c4navy)"/>
+  <!-- Gold Double-breasted Buttons -->
+  <circle cx="46" cy="74" r="1.8" fill="url(#c4gold)"/>
+  <circle cx="54" cy="74" r="1.8" fill="url(#c4gold)"/>
+  <circle cx="46" cy="82" r="1.8" fill="url(#c4gold)"/>
+  <circle cx="54" cy="82" r="1.8" fill="url(#c4gold)"/>
+  <!-- Head -->
+  <circle cx="34" cy="48" r="4" fill="#fba16c"/>
+  <circle cx="66" cy="48" r="4" fill="#fba16c"/>
+  <path d="M36 42 C36 28 64 28 64 42 C64 56 58 64 50 64 C42 64 36 56 36 42 Z" fill="url(#c4skin)"/>
+  <!-- Eyes -->
+  <circle cx="44" cy="44" r="2" fill="#0f172a"/>
+  <circle cx="56" cy="44" r="2" fill="#0f172a"/>
+  <!-- White Navy Officer Peaked Cap Crown -->
+  <path d="M28 30 C28 14 72 14 72 30 Z" fill="#f8fafc"/>
+  <!-- Cap Black Band with Gold Oak Leaves -->
+  <rect x="29" y="28" width="42" height="5" fill="#0f172a"/>
+  <!-- Navy Gold Anchor Badge -->
+  <circle cx="50" cy="22" r="3.5" fill="url(#c4gold)"/>
+  <path d="M48 22 L52 22 M50 20 L50 25 M47 25 Q50 27 53 25" stroke="url(#c4gold)" stroke-width="1.2" fill="none"/>
+  <!-- Gold Chinstrap -->
+  <line x1="30" y1="32" x2="70" y2="32" stroke="url(#c4gold)" stroke-width="1.8"/>
+  <!-- Cap Visor -->
+  <path d="M26 33 C30 39 70 39 74 33 C74 35 71 40 50 41 C29 40 26 35 26 33 Z" fill="#090d16"/>
+  <!-- Golden Oak Leaves on Visor Edge -->
+  <path d="M34 36 Q42 38 50 38 Q58 38 66 36" stroke="url(#c4gold)" stroke-width="1.2" fill="none"/>
+</svg>

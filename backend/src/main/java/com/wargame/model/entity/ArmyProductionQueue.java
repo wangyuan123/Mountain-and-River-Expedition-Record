@@ -7,10 +7,11 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "army_production_queue")
+@lombok.EqualsAndHashCode(callSuper = false)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ArmyProductionQueue {
+public class ArmyProductionQueue extends VersionedEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

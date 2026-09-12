@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="subBody" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#475569"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+  </defs>
+  <!-- Water Waves -->
+  <path d="M0 21 Q8 19 16 21 Q24 23 32 21 L32 28 L0 28 Z" fill="#0369a1" opacity="0.5"/>
+  <!-- Submarine Hull -->
+  <path d="M1 20 C4 18 10 17 28 17 C30 17 31 19 31 21 C28 23 10 23 1 21 Z" fill="url(#subBody)" stroke="#020617" stroke-width="0.7"/>
+  <!-- Conning Tower / Sail -->
+  <polygon points="12,17 14,11 18,11 19,17" fill="url(#subBody)" stroke="#020617" stroke-width="0.6"/>
+  <!-- Periscope Mast -->
+  <line x1="16" y1="11" x2="16" y2="6" stroke="#94a3b8" stroke-width="1"/>
+  <!-- Deck Gun -->
+  <rect x="7" y="16" width="3" height="1.2" fill="#0f172a"/>
+  <!-- Stern Rudder -->
+  <polygon points="28,17 31,14 31,21" fill="#334155"/>
+</svg>

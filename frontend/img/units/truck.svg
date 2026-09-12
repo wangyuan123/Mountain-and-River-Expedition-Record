@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <!-- Army Green Cab & Chassis -->
+    <linearGradient id="truckCab" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#657e56"/>
+      <stop offset="60%" stop-color="#4a5f3e"/>
+      <stop offset="100%" stop-color="#34432c"/>
+    </linearGradient>
+    <!-- Canvas Canopy Cover (Cargo Bed) -->
+    <linearGradient id="truckCanvas" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#948d79"/>
+      <stop offset="50%" stop-color="#736d5c"/>
+      <stop offset="100%" stop-color="#544f43"/>
+    </linearGradient>
+    <!-- Tire Rubber -->
+    <linearGradient id="tireGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#334155"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Cargo Canvas Bed (Arched Canopy) -->
+  <path d="M12 9 C12 7.5 14 6 20 6 C26 6 29 7.5 29 9 L29 21 L12 21 Z" 
+        fill="url(#truckCanvas)" stroke="#3a372e" stroke-width="0.7"/>
+  <!-- Canopy Stiffening Ribs -->
+  <path d="M16 6.5 L16 21" stroke="#544f43" stroke-width="0.6"/>
+  <path d="M21 6 L21 21" stroke="#544f43" stroke-width="0.6"/>
+  <path d="M25.5 6.5 L25.5 21" stroke="#544f43" stroke-width="0.6"/>
+
+  <!-- Cargo Wooden Bed Frame -->
+  <rect x="11.5" y="19" width="18" height="2.5" fill="#3e382b" stroke="#252119" stroke-width="0.6"/>
+
+  <!-- Truck Cab -->
+  <!-- Hood / Engine Compartment -->
+  <path d="M2 17 L2 21 L12 21 L12 12.5 L6 13.5 C4.5 13.5 3 15 2 17 Z" 
+        fill="url(#truckCab)" stroke="#232d1e" stroke-width="0.7"/>
+  <!-- Cab Cabin & Roof -->
+  <path d="M6 13.5 L6.5 10 C6.8 9 7.5 8.5 9 8.5 L12 8.5 L12 15 Z" 
+        fill="url(#truckCab)" stroke="#232d1e" stroke-width="0.7"/>
+  <!-- Windshield -->
+  <polygon points="7.2,10 11.2,10 11.2,13 7.8,13.2" fill="#bae6fd" stroke="#232d1e" stroke-width="0.5"/>
+
+  <!-- Front Grille & Bumper -->
+  <rect x="1" y="17" width="1.5" height="4.5" rx="0.5" fill="#1e293b"/>
+  <rect x="0.5" y="21" width="3" height="1.5" rx="0.5" fill="#475569" stroke="#0f172a" stroke-width="0.4"/>
+  <!-- Round Headlight -->
+  <circle cx="2.6" cy="18" r="1" fill="#fef08a" stroke="#ca8a04" stroke-width="0.4"/>
+
+  <!-- White Allied Star on Door -->
+  <path d="M9 16 L9.4 17 L10.5 17.1 L9.6 17.8 L9.9 18.8 L9 18.2 L8.1 18.8 L8.4 17.8 L7.5 17.1 L8.6 17 Z" fill="#ffffff" opacity="0.9"/>
+
+  <!-- Chassis / Undercarriage -->
+  <rect x="4" y="21" width="24" height="2" fill="#1e293b"/>
+
+  <!-- Wheels (Front Wheel) -->
+  <circle cx="6.5" cy="23.5" r="3.8" fill="url(#tireGrad)" stroke="#000" stroke-width="0.7"/>
+  <circle cx="6.5" cy="23.5" r="1.8" fill="#64748b" stroke="#1e293b" stroke-width="0.5"/>
+  <circle cx="6.5" cy="23.5" r="0.6" fill="#0f172a"/>
+
+  <!-- Wheels (Rear Tandem Dual Wheels) -->
+  <circle cx="18" cy="23.5" r="3.8" fill="url(#tireGrad)" stroke="#000" stroke-width="0.7"/>
+  <circle cx="18" cy="23.5" r="1.8" fill="#64748b" stroke="#1e293b" stroke-width="0.5"/>
+
+  <circle cx="24.5" cy="23.5" r="3.8" fill="url(#tireGrad)" stroke="#000" stroke-width="0.7"/>
+  <circle cx="24.5" cy="23.5" r="1.8" fill="#64748b" stroke="#1e293b" stroke-width="0.5"/>
+</svg>

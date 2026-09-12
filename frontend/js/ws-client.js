@@ -120,6 +120,9 @@ window.Game = window.Game || {};
         case 'battle':
           this.emit('battle', msg.data);
           break;
+        case 'scoutReport':
+          this.emit('scoutReport', msg.data);
+          break;
         case 'incoming':
           this.emit('incoming', msg.data);
           break;

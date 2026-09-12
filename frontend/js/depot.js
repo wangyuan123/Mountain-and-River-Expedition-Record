@@ -99,6 +99,13 @@
   }
 
   var Depot = {
+    /** 切换仓库物品分类（保存在当前状态，刷新后仍保持本次选择） */
+    setTab: function (cat) {
+      var valid = ['jewelry', 'equipment', 'officer', 'resource', 'util'];
+      if (valid.indexOf(cat) < 0) cat = 'jewelry';
+      Core.state._depotTab = cat;
+      Core.render();
+    },
     _depotItem: null,    // 当前正在使用的 itemId（用于选军官/输入等二次确认）
     _pendingOfficer: null,
 
@@ -257,7 +264,7 @@
         return;
       }
 
-      if (itemId === 'expBook' || itemId === 'expBookAdv') {
+      if (itemId === 'expBook' || itemId === 'expBookAdv' || itemId === 'expBookMax') {
         if (Game.Officer && Game.Officer.openExpBookModal) {
           Game.Officer.openExpBookModal(officerId, itemId);
           return;
@@ -306,10 +313,18 @@
       }
       h += '</div>';
 
-      var cats = { equipment: '军官装备', officer: '军官道具', resource: '资源道具', util: '功能道具' };
-      var catOrder = ['equipment', 'officer', 'resource', 'util'];
+      var cats = { jewelry: '珠宝珍品', equipment: '军官装备', officer: '军官道具', resource: '资源道具', util: '功能道具' };
+      var catOrder = ['jewelry', 'equipment', 'officer', 'resource', 'util'];
+      var activeCat = catOrder.indexOf(s._depotTab) >= 0 ? s._depotTab : 'jewelry';
+      h += '<div class="depot-tabs" role="tablist" aria-label="仓库物品分类">';
+      for (var ti = 0; ti < catOrder.length; ti++) {
+        var tabCat = catOrder[ti];
+        h += '<button class="depot-tab' + (tabCat === activeCat ? ' active' : '') + '" role="tab" aria-selected="' + (tabCat === activeCat ? 'true' : 'false') + '" onclick="Game.Depot.setTab(\'' + tabCat + '\')">' + cats[tabCat] + '</button>';
+      }
+      h += '</div>';
       for (var ci = 0; ci < catOrder.length; ci++) {
         var cat = catOrder[ci];
+        if (cat !== activeCat) continue;
         h += '<div class="zone-head">=== ' + cats[cat] + ' ===</div>';
         h += '<div class="menu">';
         var hasInCat = false;
@@ -347,23 +362,29 @@
             var info = D.items[iid];
             if (info.cat !== cat) continue;
             var cnt = s.items[iid] || 0;
-            // 数量为0的装备箱不展示，避免空箱占用空间和误解
-            if ((info.isBox || iid.indexOf('box_') === 0) && cnt <= 0) continue;
+            // 数量为 0 的道具不展示，避免空道具占用列表空间。
+            if (cnt <= 0) continue;
             hasInCat = true;
             var cls = cnt > 0 ? 'menu-item ok' : 'menu-item lock';
             h += '<div class="' + cls + '">';
             h += '<span class="n">' + info.icon + ' ' + info.name + '</span> <span class="lv">×' + cnt + '</span>';
             h += '<div class="d">' + info.desc + '</div>';
             if (cnt > 0) {
-              var btnLabel = (info.isBox || iid.indexOf('box_') === 0) ? '开启宝箱' : (iid === 'expBook' || iid === 'expBookAdv' || iid === 'loyaltyBox' || iid === 'renameCard' || iid === 'skillBook' || iid === 'starUp') ? '选择军官使用' : '使用';
-              h += '<div class="btn-row"><button class="btn ok sm" onclick="Game.Depot.useItem(\'' + iid + '\')">' + btnLabel + '</button></div>';
+              if (info.cat === 'jewelry') {
+                h += '<div class="btn-row"><button class="btn ok sm" onclick="Game.go(\'mainQuest\')">前往晋升军衔</button></div>';
+              } else {
+                var btnLabel = (info.isBox || iid.indexOf('box_') === 0) ? '开启宝箱' : (iid === 'expBook' || iid === 'expBookAdv' || iid === 'expBookMax' || iid === 'loyaltyBox' || iid === 'renameCard' || iid === 'skillBook' || iid === 'starUp') ? '选择军官使用' : '使用';
+                h += '<div class="btn-row"><button class="btn ok sm" onclick="Game.Depot.useItem(\'' + iid + '\')">' + btnLabel + '</button></div>';
+              }
             }
             h += '</div>';
           }
         }
 
         if (!hasInCat) {
-          if (cat === 'equipment') {
+          if (cat === 'jewelry') {
+            h += '<div class="desc">暂无珠宝珍品，派遣部队前往野地采集可探得各类稀世珠宝</div>';
+          } else if (cat === 'equipment') {
             h += '<div class="desc">暂无军官装备，可在商城购买装备宝箱开启获得</div>';
           } else {
             h += '<div class="desc">暂无此类道具</div>';
@@ -391,7 +412,7 @@
       h += '</div>';
       h += '<div class="menu">';
       if (!s.officers || !s.officers.length) {
-        h += '<div class="desc">暂无军官,请前往【军事区】→【军校】招募</div>';
+        h += '<div class="desc">暂无军官,请前往【军事】→【军校】招募</div>';
       }
       for (var i = 0; i < (s.officers || []).length; i++) {
         var o = s.officers[i];

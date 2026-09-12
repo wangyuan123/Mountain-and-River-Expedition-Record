@@ -5,13 +5,14 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+@lombok.EqualsAndHashCode(callSuper = false)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
 @Table(name = "player_quests",
        uniqueConstraints = @UniqueConstraint(name = "uq_player_quest", columnNames = {"player_id", "quest_id"}))
-public class PlayerQuest {
+public class PlayerQuest extends VersionedEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

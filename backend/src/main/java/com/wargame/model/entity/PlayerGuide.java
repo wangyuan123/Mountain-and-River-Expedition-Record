@@ -8,13 +8,14 @@ import lombok.NoArgsConstructor;
 import java.io.Serializable;
 import java.util.Objects;
 
+@lombok.EqualsAndHashCode(callSuper = false)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
 @Table(name = "player_guide")
 @IdClass(PlayerGuide.PK.class)
-public class PlayerGuide {
+public class PlayerGuide extends VersionedEntity {
 
     @Id
     @Column(name = "player_id", nullable = false)

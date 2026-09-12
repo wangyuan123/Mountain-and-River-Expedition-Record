@@ -76,9 +76,13 @@ public class GameController {
         return ResponseEntity.ok(out);
     }
 
-    /**
-     * 标记单条战报已读。若已读过则 noop。
-     */
+    @GetMapping("/reports/unread")
+    public ResponseEntity<Map<String, Object>> unreadReports() {
+        Long playerId = authService.getCurrentPlayer().getId();
+        return ResponseEntity.ok(Map.of("unreadCount", scoutReportRepository.countUnreadByPlayerId(playerId)));
+    }
+
+    /** 标记单条战报已读。若已读过则 noop。 */
     @PostMapping("/reports/{id}/read")
     public ResponseEntity<Map<String, Object>> markReportRead(@org.springframework.web.bind.annotation.PathVariable("id") Long id) {
         Long playerId = authService.getCurrentPlayer().getId();
@@ -96,7 +100,7 @@ public class GameController {
         }
         result.put("success", true);
         result.put("readAt", r.getReadAt());
-        result.put("unreadCount", scoutReportRepository.countByPlayerIdAndReadAt(playerId, 0L));
+        result.put("unreadCount", scoutReportRepository.countUnreadByPlayerId(playerId));
         return ResponseEntity.ok(result);
     }
 
@@ -104,6 +108,7 @@ public class GameController {
      * 一键全部已读。把当前玩家所有未读战报置为已读。
      */
     @PostMapping("/reports/read-all")
+    @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<Map<String, Object>> markAllReportsRead() {
         Long playerId = authService.getCurrentPlayer().getId();
         long now = System.currentTimeMillis();
@@ -119,7 +124,7 @@ public class GameController {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("success", true);
         result.put("updated", updated);
-        result.put("unreadCount", 0L);
+        result.put("unreadCount", scoutReportRepository.countUnreadByPlayerId(playerId));
         return ResponseEntity.ok(result);
     }
 
@@ -160,6 +165,21 @@ public class GameController {
         gameStateService.setCityName(playerId, cityName);
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("success", true);
+        result.put("state", gameStateService.getGameState(playerId));
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/settings/avatar")
+    public ResponseEntity<Map<String, Object>> setAvatar(@RequestBody GameDtos.AvatarRequest request) {
+        String avatar = request.avatar() == null ? "" : request.avatar().trim();
+        if (avatar.length() > 500) {
+            throw new IllegalArgumentException("头像链接过长，限制在500字符以内");
+        }
+        Long playerId = authService.getCurrentPlayer().getId();
+        gameStateService.setAvatar(playerId, avatar);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("success", true);
+        result.put("avatar", avatar);
         result.put("state", gameStateService.getGameState(playerId));
         return ResponseEntity.ok(result);
     }

@@ -35,9 +35,9 @@ public record BuildingDef(
         Map<String, BuildingDef> m = new HashMap<>();
         m.put("command", new BuildingDef("command", "市政厅", "主城,决定其他建筑等级上限",
                 Map.of("steel", 400, "food", 200), 1.6, "core", 1));
-        m.put("house", new BuildingDef("house", "民居", "提供人口上限,每级+100人口",
+        m.put("house", new BuildingDef("house", "民居", "提供人口上限,每级+1200人口",
                 Map.of("steel", 120, "food", 60), 1.5, "core", 20,
-                100, null, null, null, null, null, null, null));
+                1200, null, null, null, null, null, null, null));
         m.put("factory", new BuildingDef("factory", "军工厂", "生产步兵/卡车/装甲车与战机",
                 Map.of("steel", 240, "oil", 100), 1.6, "army", 10));
         m.put("lightfactory", new BuildingDef("lightfactory", "轻工厂", "生产轻型坦克",
@@ -50,7 +50,7 @@ public record BuildingDef(
                 Map.of("steel", 360, "oil", 160, "rare", 50), 1.7, "army", 1));
         m.put("academy", new BuildingDef("academy", "军校", "招募军官",
                 Map.of("steel", 200, "food", 120, "gold", 200), 1.6, "core", 1));
-        m.put("staff", new BuildingDef("staff", "参谋部", "军官槽位与野地上限",
+        m.put("staff", new BuildingDef("staff", "参谋部", "军官槽位与野地上限,带兵上限 +10%/级",
                 Map.of("steel", 220, "food", 100), 1.6, "core", 1));
         m.put("farm", new BuildingDef("farm", "农田", "每小时产出粮食",
                 Map.of("steel", 80), 1.5, "res", 10,
