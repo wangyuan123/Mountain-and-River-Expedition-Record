@@ -2,7 +2,6 @@ package com.wargame;
 
 import com.wargame.model.entity.*;
 import com.wargame.service.CityService;
-import com.wargame.service.WorldTerrainService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;

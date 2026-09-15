@@ -1,7 +1,6 @@
 package com.wargame.service;
 
 import com.wargame.model.constants.GameData;
-import com.wargame.model.constants.WorldConfig;
 import com.wargame.model.entity.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
