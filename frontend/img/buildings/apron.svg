@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="apronTarmac" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#475569"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Perspective Tarmac Apron Octagon / Pad -->
+  <polygon points="9,4 23,4 29,10 29,24 23,30 9,30 3,24 3,10" fill="url(#apronTarmac)" stroke="#64748b" stroke-width="1"/>
+
+  <!-- Tarmac Expansion Joints / Seams -->
+  <line x1="3" y1="17" x2="29" y2="17" stroke="#334155" stroke-width="0.8"/>
+  <line x1="16" y1="4" x2="16" y2="30" stroke="#334155" stroke-width="0.8"/>
+
+  <!-- Outer Yellow Border Ring / Box -->
+  <circle cx="16" cy="17" r="10.5" fill="none" stroke="#eab308" stroke-width="1" stroke-dasharray="4,2"/>
+
+  <!-- Bold Landing "H" Mark with Tactical Stencil -->
+  <line x1="11.5" y1="12" x2="11.5" y2="22" stroke="#ffffff" stroke-width="2" stroke-linecap="square"/>
+  <line x1="20.5" y1="12" x2="20.5" y2="22" stroke="#ffffff" stroke-width="2" stroke-linecap="square"/>
+  <line x1="11.5" y1="17" x2="20.5" y2="17" stroke="#ffffff" stroke-width="2"/>
+
+  <!-- Fighter Aircraft Silhouette overlay (top right heading) -->
+  <!-- Tiny tactical fighter icon at upper quadrant -->
+  <path d="M16 8 L17 11 L20 12 L17 13 L17 14 L18.5 15 L16 14.5 L13.5 15 L15 14 L15 13 L12 12 L15 11 Z" fill="#38bdf8" opacity="0.9"/>
+
+  <!-- Perimeter Edge Marker Lights -->
+  <circle cx="9" cy="4" r="1.2" fill="#ef4444"/>
+  <circle cx="23" cy="4" r="1.2" fill="#ef4444"/>
+  <circle cx="29" cy="10" r="1.2" fill="#22c55e"/>
+  <circle cx="29" cy="24" r="1.2" fill="#22c55e"/>
+  <circle cx="23" cy="30" r="1.2" fill="#ef4444"/>
+  <circle cx="9" cy="30" r="1.2" fill="#ef4444"/>
+  <circle cx="3" cy="24" r="1.2" fill="#22c55e"/>
+  <circle cx="3" cy="10" r="1.2" fill="#22c55e"/>
+</svg>

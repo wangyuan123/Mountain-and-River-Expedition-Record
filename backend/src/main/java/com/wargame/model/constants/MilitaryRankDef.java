@@ -1,6 +1,5 @@
 package com.wargame.model.constants;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +52,19 @@ public final class MilitaryRankDef {
             new RankInfo(16, "中将",   1200000, 18800, Map.of("gem_jade", 20, "gem_nightpearl", 10, "gem_crystal", 15, "gem_pearl", 20)),
             new RankInfo(17, "上将",   2500000, 20000, Map.of("gem_nightpearl", 15, "gem_jade", 25, "gem_jadeite", 25, "gem_agate", 20))
     );
+
+    public static int getCityCap(int tier) {
+        if (tier < 4) return 1;
+        if (tier < 7) return 2;
+        if (tier < 10) return 3;
+        if (tier < 13) return 4;
+        if (tier < 15) return 5;
+        return Math.min(8, tier - 9);
+    }
+
+    public static RankInfo nextCityRank(int tier) {
+        return RANKS.stream().filter(r -> r.tier() > tier && getCityCap(r.tier()) > getCityCap(tier)).findFirst().orElse(null);
+    }
 
     public static RankInfo getRank(int tier) {
         if (tier < 1) tier = 1;

@@ -10,7 +10,7 @@ window.Game = window.Game || {};
   var ttl = 5000;
 
   function identity(x, y, radius) {
-    return G.API.getToken() + ':' + x + ':' + y + ':' + radius;
+    return G.API.getToken() + ':' + ((G.state && G.state.player && G.state.player.activeCityId) || '') + ':' + x + ':' + y + ':' + radius;
   }
 
   G.WorldView = {

@@ -23,6 +23,9 @@ import java.util.*;
 @Service
 public class FortService {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.service.CityScope cityScope;
+
     private final FortificationRepository fortificationRepository;
     private final ResourcesRepository resourcesRepository;
     private final BuildingRepository buildingRepository;
@@ -90,7 +93,7 @@ public class FortService {
         deductCosts(playerId, cost);
 
         // 7. 增加城防 (JS: s.forts[id] = (s.forts[id] || 0) + n)
-        List<Fortification> existing = fortificationRepository.findByPlayerIdAndType(playerId, fortType);
+        List<Fortification> existing = fortificationRepository.findByPlayerIdAndCitySlotAndType(playerId, cityScope.slot(playerId), fortType);
         if (existing != null && !existing.isEmpty()) {
             Fortification fort = existing.get(0);
             fort.setCount((fort.getCount() != null ? fort.getCount() : 0) + count);
@@ -98,6 +101,7 @@ public class FortService {
         } else {
             Fortification fort = new Fortification();
             fort.setPlayerId(playerId);
+            fort.setCitySlot(cityScope.slot(playerId));
             fort.setType(fortType);
             fort.setCount(count);
             fortificationRepository.save(fort);
@@ -126,7 +130,7 @@ public class FortService {
         }
 
         // JS: var have = s.forts[id] || 0; if (have <= 0)
-        List<Fortification> existing = fortificationRepository.findByPlayerIdAndType(playerId, fortType);
+        List<Fortification> existing = fortificationRepository.findByPlayerIdAndCitySlotAndType(playerId, cityScope.slot(playerId), fortType);
         int have = 0;
         Fortification fort = null;
         if (existing != null && !existing.isEmpty()) {
@@ -150,7 +154,7 @@ public class FortService {
         int steelCost = f.cost().getOrDefault("steel", 0);
         int back = (int) Math.floor(steelCost * n * DISMANTLE_REFUND_RATIO);
         if (back > 0) {
-            Resources res = resourcesRepository.findByPlayerId(playerId).orElse(null);
+            Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
             if (res != null) {
                 res.setSteel((res.getSteel() != null ? res.getSteel() : 0) + back);
                 resourcesRepository.save(res);
@@ -170,7 +174,7 @@ public class FortService {
 
     public Map<String, Integer> getForts(Long playerId) {
         Map<String, Integer> forts = new LinkedHashMap<>();
-        List<Fortification> list = fortificationRepository.findByPlayerId(playerId);
+        List<Fortification> list = fortificationRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         for (Fortification fort : list) {
             int count = fort.getCount() != null ? fort.getCount() : 0;
             if (count > 0) {
@@ -194,7 +198,7 @@ public class FortService {
 
     public int totalForts(Long playerId) {
         int sum = 0;
-        List<Fortification> list = fortificationRepository.findByPlayerId(playerId);
+        List<Fortification> list = fortificationRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         for (Fortification fort : list) {
             sum += fort.getCount() != null ? fort.getCount() : 0;
         }
@@ -206,7 +210,7 @@ public class FortService {
     // ================================================================
 
     private int buildingLevel(Long playerId, String buildingType) {
-        List<Building> buildings = buildingRepository.findByPlayerIdAndType(playerId, buildingType);
+        List<Building> buildings = buildingRepository.findByPlayerIdAndCitySlotAndType(playerId, cityScope.slot(playerId), buildingType);
         int sum = 0;
         for (Building b : buildings) {
             sum += b.getLevel() != null ? b.getLevel() : 0;
@@ -215,7 +219,7 @@ public class FortService {
     }
 
     private boolean costEnough(Long playerId, Map<String, Integer> costs) {
-        Resources r = resourcesRepository.findByPlayerId(playerId).orElse(null);
+        Resources r = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (r == null) return false;
         for (Map.Entry<String, Integer> entry : costs.entrySet()) {
             int have = getResource(r, entry.getKey());
@@ -225,7 +229,7 @@ public class FortService {
     }
 
     private void deductCosts(Long playerId, Map<String, Integer> costs) {
-        Resources r = resourcesRepository.findByPlayerId(playerId).orElse(null);
+        Resources r = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (r == null) return;
         for (Map.Entry<String, Integer> entry : costs.entrySet()) {
             int current = getResource(r, entry.getKey());

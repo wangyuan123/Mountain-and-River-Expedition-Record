@@ -13,6 +13,51 @@ window.Game = window.Game || {};
     loading: false,
     loaded: false,
     loadError: '',
+    presenceLoading: false,
+    presenceUpdatedAt: 0,
+
+    presenceHtml: function (online) {
+      var state = online === true ? 'online' : (online === false ? 'offline' : 'unknown');
+      return '<span class="member-presence ' + state + '">' + ({ online: '● 在线', offline: '○ 离线', unknown: '○ 状态未知' })[state] + '</span>';
+    },
+
+    refreshPresence: function () {
+      if (Core.route !== 'guild' || document.hidden || this.loading || this.presenceLoading || !this.mine || !this.mine.joined) return;
+      var guildId = this.mine.id;
+      this.presenceLoading = true;
+      this.presenceUpdatedAt = Date.now();
+      G.API.getMyGuild().then(function (data) {
+        if (!Guild.mine || Guild.mine.id !== guildId) return;
+        var current = data && data.joined && data.id === guildId;
+        var members = current ? data.members || [] : [];
+        (Guild.mine.members || []).forEach(function (m) {
+          var fresh = members.find(function (item) { return item.playerId === m.playerId; });
+          m.online = fresh ? fresh.online : null;
+        });
+        Guild.updatePresenceLabels();
+      }).catch(function () {
+        if (!Guild.mine || Guild.mine.id !== guildId) return;
+        (Guild.mine.members || []).forEach(function (m) { m.online = null; });
+        Guild.updatePresenceLabels();
+      }).then(function () { Guild.presenceLoading = false; });
+    },
+
+    updatePresenceLabels: function () {
+      if (Core.route !== 'guild') return;
+      (this.mine.members || []).forEach(function (m) {
+        var el = document.getElementById('guildPresence_' + m.playerId);
+        if (el) el.innerHTML = Guild.presenceHtml(m.online);
+      });
+    },
+
+    contact: function (playerId) {
+      var member = (this.mine.members || []).find(function (m) { return m.playerId === playerId; });
+      if (!member) return;
+      G.go('mail');
+      G.Mail.compose();
+      var recipient = document.getElementById('mailTo');
+      if (recipient) recipient.value = member.name;
+    },
 
     load: function (force) {
       if (this.loading || (this.loaded && !force)) return;
@@ -23,6 +68,7 @@ window.Game = window.Game || {};
         Guild.list = data[1] || [];
         Guild.loaded = true;
         Guild.loading = false;
+        Guild.presenceUpdatedAt = Date.now();
         Core.render();
       }).catch(function (err) {
         Guild.loaded = true;
@@ -114,6 +160,7 @@ window.Game = window.Game || {};
       h += this.mine && this.mine.joined ? this.renderMine() : this.renderRecruitment();
       h += '<div class="menu-item back" onclick="Game.go(\'home\')">[0] 返回主菜单</div>';
       v.innerHTML = h;
+      if (Date.now() - this.presenceUpdatedAt > 15000) this.refreshPresence();
     },
 
     renderRecruitment: function () {
@@ -142,12 +189,13 @@ window.Game = window.Game || {};
         h += '<div class="edit-row"><label>军团公告</label><input id="guildNotice" class="qty" maxlength="200" value="' + esc(g.notice || '') + '"></div>';
         h += '<div class="btn-row"><button class="btn ok sm" onclick="Game.Guild.saveSettings()">保存名称/图标</button><button class="btn ok sm" onclick="Game.Guild.saveNotice()">保存公告</button></div>';
       } else h += '<div class="guild-notice">' + esc(g.notice || '暂无公告') + '</div>';
-      h += '</div><div class="zone-head">=== 军团成员 ===</div><div class="guild-list">';
+      h += '</div><div class="zone-head">=== 军团成员 ===</div><div class="desc">在线状态自动更新；可通过写信联系成员或约定上线时间。</div><div class="guild-list">';
       var members = g.members || [];
       for (var i = 0; i < members.length; i++) {
         var m = members[i];
         var role = m.role === 'leader' ? '团长' : (m.role === 'admin' ? '管理员' : '成员');
-        h += '<div class="guild-member"><div><b>' + esc(m.name) + '</b> <span class="guild-role">' + role + '</span><div class="guild-muted">' + esc(m.cityName || '新城市') + ' · ★' + G.fmt(m.prestige || 0) + '</div></div>';
+        h += '<div class="guild-member guild-member-presence"><div class="guild-member-info"><b>' + esc(m.name) + '</b> <span class="guild-role">' + role + '</span> <span id="guildPresence_' + m.playerId + '">' + this.presenceHtml(m.online) + '</span><div class="guild-muted">' + esc(m.cityName || '新城市') + ' · ★' + G.fmt(m.prestige || 0) + '</div></div>';
+        h += '<button class="tcard-btn" onclick="Game.Guild.contact(' + m.playerId + ')">写信</button>';
         if (g.isLeader && m.role !== 'leader') h += '<button class="tcard-btn tcard-btn-ok" onclick="Game.Guild.updateRole(' + m.playerId + ',\'' + (m.role === 'admin' ? 'member' : 'admin') + '\')">' + (m.role === 'admin' ? '取消管理员' : '任命管理员') + '</button>';
         if ((g.isLeader || g.role === 'admin') && m.role !== 'leader') h += ' <button class="tcard-btn tcard-btn-warn" onclick="Game.Guild.remove(' + m.playerId + ')">移出</button>';
         h += '</div>';
@@ -169,4 +217,5 @@ window.Game = window.Game || {};
 
   G.Guild = Guild;
   Core.views.guild = function (v) { Guild.render(v); };
+  window.setInterval(function () { Guild.refreshPresence(); }, 15000);
 })(window.Game);

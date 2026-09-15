@@ -1,0 +1,52 @@
+[
+  {
+    "id": "npc-frontier",
+    "title": "NPC A · 边境驻军城",
+    "group": "npc"
+  },
+  {
+    "id": "npc-fortress",
+    "title": "NPC B · 重防要塞城",
+    "group": "npc"
+  },
+  {
+    "id": "npc-logistics",
+    "title": "NPC C · 军需铁路城",
+    "group": "npc"
+  },
+  {
+    "id": "wild-forest",
+    "title": "森林",
+    "group": "wild"
+  },
+  {
+    "id": "wild-hill",
+    "title": "丘陵",
+    "group": "wild"
+  },
+  {
+    "id": "wild-swamp",
+    "title": "沼泽",
+    "group": "wild"
+  },
+  {
+    "id": "wild-grainfield",
+    "title": "粮田",
+    "group": "wild"
+  },
+  {
+    "id": "wild-ironworks",
+    "title": "炼铁厂",
+    "group": "wild"
+  },
+  {
+    "id": "wild-oil",
+    "title": "油田",
+    "group": "wild"
+  },
+  {
+    "id": "wild-rarefactory",
+    "title": "稀矿厂",
+    "group": "wild"
+  }
+]

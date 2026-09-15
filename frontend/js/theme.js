@@ -8,10 +8,10 @@ window.Game = window.Game || {};
 
   var THEMES = [
     {
-      id: '3gqq',
-      name: '3GQQ 怀旧蓝白 (推荐)',
-      tag: '截图同款',
-      desc: '经典天蓝九宫格顶栏 + 纯白极简文字流 + 竖线操作符，纯粹怀旧低噪点'
+      id: 'blue-white',
+      name: '晴空蓝白 (推荐)',
+      tag: '清爽易读',
+      desc: '天蓝导航、白底文字与紧凑信息排布，便于查看资源和军情'
     },
     {
       id: 'paper',
@@ -33,13 +33,18 @@ window.Game = window.Game || {};
     get: function () {
       try {
         var saved = localStorage.getItem(STORAGE_KEY);
+        // 仅用于迁移旧版主题偏好，不向界面输出旧标识。
+        if (saved === '3gqq') {
+          saved = 'blue-white';
+          try { localStorage.setItem(STORAGE_KEY, saved); } catch (e) { /* ignore */ }
+        }
         if (saved) {
           for (var i = 0; i < THEMES.length; i++) {
             if (THEMES[i].id === saved) return saved;
           }
         }
       } catch (e) { /* ignore */ }
-      return '3gqq'; // 默认采用清爽的 3GQQ 蓝白风格
+      return 'blue-white'; // 默认采用晴空蓝白风格
     },
 
     set: function (themeId, quiet) {
@@ -49,7 +54,7 @@ window.Game = window.Game || {};
           if (THEMES[vi].id === themeId) { valid = true; break; }
         }
       }
-      if (!valid) themeId = '3gqq';
+      if (!valid) themeId = 'blue-white';
       try {
         localStorage.setItem(STORAGE_KEY, themeId);
       } catch (e) { /* ignore */ }

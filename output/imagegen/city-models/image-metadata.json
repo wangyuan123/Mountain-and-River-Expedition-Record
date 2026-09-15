@@ -1,0 +1,26 @@
+[
+  {
+    "file": "a-capital.png",
+    "width": 1254,
+    "height": 1254,
+    "format": "PNG"
+  },
+  {
+    "file": "b-fortress.png",
+    "width": 1254,
+    "height": 1254,
+    "format": "PNG"
+  },
+  {
+    "file": "c-industry.png",
+    "width": 1254,
+    "height": 1254,
+    "format": "PNG"
+  },
+  {
+    "file": "d-harbor.png",
+    "width": 1254,
+    "height": 1254,
+    "format": "PNG"
+  }
+]

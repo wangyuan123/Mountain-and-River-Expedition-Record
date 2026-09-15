@@ -54,6 +54,12 @@ public class WorldController {
         return ResponseEntity.ok(result);
     }
 
+    @PostMapping("/route")
+    public Map<String,Object> route(@RequestBody DispatchRequest request) {
+        if(request.targetKind()==null||request.targetId()==null)throw new IllegalArgumentException("请选择行军目标");
+        return marchService.previewRoute(authService.getCurrentPlayer().getId(),request);
+    }
+
     @PostMapping("/dispatch")
     public ResponseEntity<Map<String, Object>> dispatch(@RequestBody DispatchRequest request) {
         if (request.targetKind() == null || request.targetKind().isBlank()) {
@@ -80,7 +86,7 @@ public class WorldController {
         marchService.cancelMarch(playerId, request.marchId());
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("success", true);
-        result.put("message", "行军已取消");
+        result.put("message", "部队已撤回，正在返城");
         result.put("state", gameStateService.getGameState(playerId));
         return ResponseEntity.ok(result);
     }

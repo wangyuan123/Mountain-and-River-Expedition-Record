@@ -14,8 +14,10 @@ public final class GameConstants {
     public static final String SAVE_KEY = "ww2_wistone_v1";
 
     /** 编组槽位 - 对应 G.DATA.groupSlots */
-    public static final int GROUP_SLOTS_RES = 10;
-    public static final int GROUP_SLOTS_ARMY = 10;
+    public static final int GROUP_SLOTS_RES = 12;
+    public static final int GROUP_SLOTS_RES_MAX = 32;
+    public static final int GROUP_SLOTS_ARMY = 12;
+    public static final int GROUP_SLOTS_ARMY_MAX = 32;
 
     /** 军官名字池 - 对应 G.DATA.officerNames */
     public static final List<String> OFFICER_NAMES = List.of(

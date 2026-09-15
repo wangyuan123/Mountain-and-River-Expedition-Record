@@ -52,15 +52,13 @@ public record TechDef(
                 10, 2, Map.of("steel", 300, "food", 180, "gold", 100), 1.8, "train"));
         m.put("log_build", new TechDef("log_build", "建筑加速", "后勤", "建筑升级资源 -5%/级",
                 10, 2, Map.of("steel", 340, "food", 160, "gold", 120), 1.8, "build"));
-        m.put("log_medical", new TechDef("log_medical", "医疗技术", "后勤", "败战部队存活率 +5%/级",
+        m.put("log_medical", new TechDef("log_medical", "医疗技术", "后勤", "伤兵可回收 +5%/级，最高50%",
                 10, 3, Map.of("steel", 320, "food", 220, "gold", 150), 1.8, "medical"));
         // 侦察
         m.put("recon_level", new TechDef("recon_level", "侦察技术", "侦察", "侦察情报深度 +1 阶/级，逐级探明城防、守军、建筑、科技与将领",
                 5, 1, Map.of("steel", 180, "oil", 60), 1.6, "recon"));
         m.put("recon_radar", new TechDef("recon_radar", "雷达预警", "侦察", "提前发现敌方 +1 回合",
                 3, 2, Map.of("steel", 240, "oil", 100, "rare", 20), 1.7, "radar"));
-        m.put("recon_stealth", new TechDef("recon_stealth", "反侦察", "侦察", "降低被侦察成功率",
-                5, 3, Map.of("steel", 220, "oil", 80, "rare", 30), 1.7, "stealth"));
         TECHS = Collections.unmodifiableMap(m);
     }
 }

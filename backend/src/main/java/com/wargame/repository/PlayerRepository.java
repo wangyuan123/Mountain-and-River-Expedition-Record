@@ -27,4 +27,7 @@ public interface PlayerRepository extends JpaRepository<Player, Long> {
     List<Player> findByDisabledNotOrDisabledIsNull(Integer disabled);
 
     Optional<Player> findByCityPosXAndCityPosY(Integer cityPosX, Integer cityPosY);
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("select p from Player p where p.id = :id")
+    Optional<Player> lockById(@org.springframework.data.repository.query.Param("id") Long id);
 }

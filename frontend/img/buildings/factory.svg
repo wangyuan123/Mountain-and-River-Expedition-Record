@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="facWall" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#475569"/>
+      <stop offset="50%" stop-color="#334155"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="facBrick" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#dc2626"/>
+      <stop offset="100%" stop-color="#991b1b"/>
+    </linearGradient>
+    <linearGradient id="smokeG" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#cbd5e1" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#f8fafc" stop-opacity="0.25"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Industrial Smoke Plumes (Thicker & Visually Clearer) -->
+  <path d="M6 5 C4 2 7 0.5 9 1 C10.5 1.5 10 3.5 8.5 5 Z" fill="url(#smokeG)"/>
+  <path d="M12 4 C11 1 14 0 16 0.5 C18 1.5 16.5 3 15 4 Z" fill="url(#smokeG)"/>
+
+  <!-- Twin Heavy Brick Smokestacks -->
+  <polygon points="5,5 9.5,5 9,11 5.5,11" fill="url(#facBrick)" stroke="#450a0a" stroke-width="0.7"/>
+  <polygon points="12,4 16.5,4 16,11 12.5,11" fill="url(#facBrick)" stroke="#450a0a" stroke-width="0.7"/>
+  <rect x="4.5" y="4.5" width="5.5" height="1.2" fill="#1e293b"/>
+  <rect x="11.5" y="3.5" width="5.5" height="1.2" fill="#1e293b"/>
+
+  <!-- Sawtooth Factory Roof & Main Hall -->
+  <!-- Sawtooth points reaching up to y=7 and y=11 -->
+  <polygon points="2,11 10,7 10,11 19,7 19,11 29,7 29,28 2,28" fill="url(#facWall)" stroke="#0f172a" stroke-width="0.8"/>
+
+  <!-- Sawtooth Slanted Skylights (Sky reflection) -->
+  <polygon points="10,7 19,11 10,11" fill="#38bdf8" opacity="0.65"/>
+  <polygon points="19,7 29,11 19,11" fill="#38bdf8" opacity="0.65"/>
+
+  <!-- Concrete Foundation Base -->
+  <rect x="1.5" y="27" width="29" height="2" fill="#0f172a"/>
+
+  <!-- Crossed Munitions / Artillery Shells Emblem -->
+  <g transform="translate(16, 17)">
+    <line x1="-5.5" y1="-3.5" x2="5.5" y2="3.5" stroke="#f59e0b" stroke-width="1.6" stroke-linecap="round"/>
+    <line x1="-5.5" y1="3.5" x2="5.5" y2="-3.5" stroke="#f59e0b" stroke-width="1.6" stroke-linecap="round"/>
+    <circle cx="0" cy="0" r="2.8" fill="#78350f" stroke="#fbbf24" stroke-width="0.8"/>
+    <circle cx="0" cy="0" r="1.3" fill="#facc15"/>
+  </g>
+
+  <!-- Heavy Steel Blast Doors -->
+  <rect x="11.5" y="21.5" width="9" height="6.5" fill="#0f172a" stroke="#000" stroke-width="0.6"/>
+  <line x1="16" y1="21.5" x2="16" y2="28" stroke="#64748b" stroke-width="0.6"/>
+  <!-- Hazard Striping on Threshold -->
+  <rect x="11.5" y="27.2" width="9" height="0.8" fill="#eab308"/>
+
+  <!-- Lit Industrial Windows -->
+  <rect x="4.5" y="16" width="3.5" height="5" fill="#fef08a" stroke="#0f172a" stroke-width="0.5"/>
+  <line x1="4.5" y1="18.5" x2="8" y2="18.5" stroke="#0f172a" stroke-width="0.4"/>
+  <line x1="6.2" y1="16" x2="6.2" y2="21" stroke="#0f172a" stroke-width="0.4"/>
+
+  <rect x="23.5" y="16" width="3.5" height="5" fill="#fef08a" stroke="#0f172a" stroke-width="0.5"/>
+  <line x1="23.5" y1="18.5" x2="27" y2="18.5" stroke="#0f172a" stroke-width="0.4"/>
+  <line x1="25.2" y1="16" x2="25.2" y2="21" stroke="#0f172a" stroke-width="0.4"/>
+</svg>

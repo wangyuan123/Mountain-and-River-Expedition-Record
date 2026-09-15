@@ -11,7 +11,13 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Entity
 @Table(name = "marches")
-public class March extends VersionedEntity {
+public class March extends CityOwnedEntity {
+
+    @Column(name = "route_data", columnDefinition = "longtext")
+    private String routeData;
+
+    @Column(name = "route_mode", length = 30)
+    private String routeMode;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

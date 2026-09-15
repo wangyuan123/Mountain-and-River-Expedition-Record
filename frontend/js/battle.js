@@ -178,6 +178,36 @@ window.Game = window.Game || {};
       });
     },
 
+    reportTitle: function (r) {
+      var titles = { conquer: '征服报告', plunder: '掠夺报告', scout: '侦查报告' };
+      if (titles[r.action]) return titles[r.action];
+      // 历史战报未保存行动字段，只根据旧标题的行动前缀判断，避免误匹配玩家名。
+      if (r.cityConquered || r.wildConquered) return '征服报告';
+      var match = /^(征服|掠夺|占领野地|剿寇|攻城|战役|防守)/.exec(r.subject || '');
+      if (match) return match[1] === '占领野地' ? '征服报告' : match[1] + '报告';
+      return { bandit: '剿寇报告', npc: '攻城报告', campaign: '战役报告' }[r.targetType] || '战斗报告';
+    },
+
+    wildOccupation: function (r) {
+      var subject = r.subject || '';
+      var legacyWild = /^(占领野地|掠夺野地)/.test(subject);
+      var isWild = r.targetType ? r.targetType === 'wild' : (legacyWild || r.wildConquered === true);
+      if (!isWild) return null;
+      var action = r.action || (/^占领野地/.test(subject) || r.wildConquered === true ? 'conquer' : /^掠夺野地/.test(subject) ? 'plunder' : '');
+      if (action === 'plunder') return { text: '不占领（掠夺行动）', detail: '本次行动仅掠夺资源，不改变野地归属。', tone: '' };
+      if (action !== 'conquer') return null;
+      // Explicit settlement flags take precedence over victory and historical titles.
+      var occupied = typeof r.wildConquered === 'boolean' ? r.wildConquered
+        : typeof r.conquered === 'boolean' ? r.conquered
+        : /^占领野地胜利·已占领(?:\s|$)/.test(subject) ? true : null;
+      if (occupied === true) return { text: '占领成功', detail: '本次征服已成功占领该野地，结算时已纳入我方领地。', tone: 'w' };
+      if (occupied === false || r.win === false) return {
+        text: '未占领', tone: 'l',
+        detail: r.win === false ? '本次战斗未获胜，未能占领该野地。' : '本次战斗获胜，但结算记录为未占领；战报未记录具体原因。'
+      };
+      return { text: '占领结果未记录', detail: '该历史战报仅记录战斗胜负，无法确认当时是否占领；可前往野地查看当前归属。', tone: '' };
+    },
+
     renderReportCard: function (r) {
       var d = new Date(r.time);
       var ts = (d.getMonth() + 1) + '-' + String(d.getDate()).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
@@ -185,17 +215,14 @@ window.Game = window.Game || {};
       var h = '';
       h += '<div class="report-card ' + (r.win ? 'win' : 'lose') + (unread ? ' unread' : '') + '">';
       h += '<div class="rc-head" onclick="Game.Battle.toggleReport(\'' + r.id + '\')" style="cursor:pointer">';
-      h += '<span class="rc-subject">' + (unread ? '<span class="unread-dot"></span>' : '') + G.escapeHtml(r.subject || '战斗报告') + '</span>';
+      h += '<span class="rc-subject">' + (unread ? '<span class="unread-dot"></span>' : '') + this.reportTitle(r) + '</span>';
       h += '<span class="rc-time">' + ts + '</span>';
       h += '<span class="rc-result ' + (r.win ? 'w' : 'l') + '">' + (r.win ? '胜' : '败') + '</span>';
       h += '</div>';
       h += '<div class="rc-body" onclick="Game.Battle.toggleReport(\'' + r.id + '\')" style="cursor:pointer">';
-      h += '<div class="rc-line">' + G.escapeHtml(r.fromName || '我方') + ' → ' + G.escapeHtml(r.toName || '目标') + ' ' + G.escapeHtml(r.toCoord || '') + '</div>';
-      var act = { bandit: '剿寇', npc: '攻城', player: '征服/掠夺', wild: '野地', campaign: '战役' }[r.targetType] || '出征';
-      h += '<div class="rc-line rc-dim">' + act + ' · ' + (r.win ? '我方获胜' : '我方失败') + (r.cityConquered ? ' · 已征服' : '') + '</div>';
-      var pl = this._formatRes(r.plunder);
-      if (pl) h += '<div class="rc-line">掠夺: ' + pl + '</div>';
-      h += '<div class="rc-line">' + this._formatForce('我军', r.survivorAttacker) + ' / ' + this._formatForce('敌军', r.survivorDefender) + '</div>';
+      h += '<div class="rc-line">' + G.escapeHtml(r.attackerName || r.fromName || '我方') + ' → ' + G.escapeHtml(r.toName || '目标') + ' ' + G.escapeHtml(r.toCoord || '') + '</div>';
+      var occupation = this.wildOccupation(r);
+      if (occupation) h += '<div class="rc-line"><b>占领结果:</b> ' + occupation.text + '</div>';
       h += '</div>';
       h += '<div id="rdetail_' + r.id + '" class="rc-expand" style="display:none"></div>';
       h += '<div class="btn-row" style="margin-top:4px"><button class="btn sm" onclick="Game.Battle.viewReportDetail(\'' + r.id + '\')">查看完整战报</button></div>';
@@ -213,42 +240,24 @@ window.Game = window.Game || {};
       return parts.join(' ');
     },
 
-    _formatForce: function (label, map) {
-      if (!map) return label + ' -';
-      var parts = [];
-      for (var uid in map) {
-        if (map[uid] > 0) {
-          var u = U(uid);
-          parts.push((u ? u.name : uid) + 'x' + G.fmt(map[uid]));
-        }
-      }
-      return label + ' ' + (parts.length ? parts.join(' ') : '-');
-    },
-
     renderScoutReportCard: function (r) {
       var d = new Date(r.time);
       var ts = (d.getMonth() + 1) + '-' + String(d.getDate()).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
       var data = r.data || {};
-      var isWin = data.showCityInfo;
-      var isZeroEnemy = (data.enemyScouts === 0 || !data.enemyScouts);
-      var resultText = {
-        overwhelming_defeat: '惨败（敌军势大）',
-        close_match_loss: '失败（激战落败）',
-        close_match_win: '险胜（激战获胜）',
-        overwhelming_victory: (isZeroEnemy ? '大胜（无拦截）' : '大胜（碾压全歼）')
-      }[data.result] || (isWin ? (isZeroEnemy ? '大胜（无拦截）' : '大胜') : '失败');
+      var isDefense = data.perspective === 'defender';
+      var isWin = isDefense ? data.intercepted : data.showCityInfo;
+      var player = Core.state.player || {};
+      var attackerName = data.attackerName || (isDefense ? '未知敌军' : (player.name || player.username || '我方'));
       var unread = !r.readAt;
       var h = '';
       h += '<div class="report-card ' + (isWin ? 'win' : 'lose') + (unread ? ' unread' : '') + '">';
       h += '<div class="rc-head" onclick="Game.Battle.toggleReport(\'' + r.id + '\')" style="cursor:pointer">';
-      h += '<span class="rc-subject">' + (unread ? '<span class="unread-dot"></span>' : '') + '侦查 · ' + G.escapeHtml(data.targetName || '?') + '</span>';
+      h += '<span class="rc-subject">' + (unread ? '<span class="unread-dot"></span>' : '') + '侦查报告</span>';
       h += '<span class="rc-time">' + ts + '</span>';
-      h += '<span class="rc-result ' + (isWin ? 'w' : 'l') + '">' + (isWin ? '胜' : '败') + '</span>';
+      h += '<span class="rc-result ' + (isWin ? 'w' : 'l') + '">' + (isDefense ? (isWin ? '已拦截' : '被侦查') : (isWin ? '胜' : '败')) + '</span>';
       h += '</div>';
       h += '<div class="rc-body" onclick="Game.Battle.toggleReport(\'' + r.id + '\')" style="cursor:pointer">';
-      h += '<div class="rc-line">坐标: (' + (data.x || 0) + ',' + (data.y || 0) + ') · <span class="rc-dim">' + resultText + '</span></div>';
-      var enemyText = isZeroEnemy ? '敌方侦察机 0 (无拦截)' : ('敌方侦察机 ' + (data.enemyScouts || 0) + ' (歼' + (data.enemyLost || 0) + ')');
-      h += '<div class="rc-line">我方侦察机 ' + (data.myScouts || 0) + ' (损' + (data.myLost || 0) + ') / ' + enemyText + '</div>';
+      h += '<div class="rc-line">' + G.escapeHtml(attackerName) + ' → ' + G.escapeHtml(data.targetName || '目标') + ' (' + G.escapeHtml(String(data.x == null ? '?' : data.x)) + ',' + G.escapeHtml(String(data.y == null ? '?' : data.y)) + ')</div>';
       h += '</div>';
       h += '<div id="rdetail_' + r.id + '" class="rc-expand" style="display:none"></div>';
       h += '<div class="btn-row" style="margin-top:6px"><button class="btn sm" onclick="Game.Battle.viewReportDetail(\'' + r.id + '\')">查看完整战报</button></div>';
@@ -267,10 +276,26 @@ window.Game = window.Game || {};
       h += '<div class="rb-line"><b>出发地:</b> ' + esc(r.fromName || '我方') + ' ' + esc(r.fromCoord || '') + '</div>';
       h += '<div class="rb-line"><b>目的地:</b> ' + esc(r.toName || '目标') + ' ' + esc(r.toCoord || '') + '</div>';
       h += '<div class="rb-line"><b>时　间:</b> ' + ts + '</div>';
-      h += '<div class="rb-line"><b>结　果:</b> <span class="rb-res-badge ' + (r.win ? 'w' : 'l') + '">' + (r.win ? '战斗大捷' : '战斗失利') + '</span></div>';
+      var occupation = this.wildOccupation(r);
+
+      var resText = r.win ? '战斗大捷' : '战斗失利';
+      if (r.cityConquered) resText = '征服成功';
+
+      h += '<div class="rb-line"><b>' + (occupation ? '战斗结果' : '结　果') + ':</b> <span class="rb-res-badge ' + (r.win ? 'w' : 'l') + '">' + resText + '</span></div>';
+      if (occupation) {
+        h += '<div class="rb-line"><b>占领结果:</b> <span class="rb-res-badge ' + occupation.tone + '">' + occupation.text + '</span></div>';
+        h += '<div class="rb-line">' + occupation.detail + '</div>';
+      }
       h += '</div>';
       h += '<div class="rb-divider"></div>';
-      var narrative = '一支部队对 ' + esc(r.toName || '目标') + ' ' + esc(r.toCoord || '') + ' 进行了' + ({ bandit: '剿寇', npc: '攻城', player: '征服/掠夺', wild: '野地', campaign: '战役' }[r.targetType] || '出征') + '。';
+      var actName = ({
+        bandit: '剿寇',
+        npc: '攻城',
+        player: (r.action === 'plunder' ? '掠夺' : '征服'),
+        wild: (r.action === 'plunder' ? '野地掠夺' : '野地征服'),
+        campaign: '战役'
+      }[r.targetType] || '出征');
+      var narrative = '一支部队对 ' + esc(r.toName || '目标') + ' ' + esc(r.toCoord || '') + ' 进行了' + actName + '。';
       narrative += (r.win ? ' 我方攻势势如破竹，战役获得胜利！' : ' 我方遭受强烈阻击，战役未能获胜。');
       h += '<div class="rb-narrative">' + narrative + '</div>';
       if (r.cityConquered) h += '<div class="rb-line" style="color:#d97706;font-weight:600">★ 已成功征服该城市</div>';
@@ -459,7 +484,38 @@ window.Game = window.Game || {};
       return this.renderArmyUnits(side, null, map);
     },
 
+    renderScoutDefenseReportBoard: function (r) {
+      var data = r.data || {};
+      var esc = G.escapeHtml;
+      var intercepted = !!data.intercepted;
+      var when = new Date(r.time);
+      var timeText = (when.getMonth() + 1) + '-' + when.getDate() + ' ' +
+        [when.getHours(), when.getMinutes(), when.getSeconds()].map(function (n) { return String(n).padStart(2, '0'); }).join(':');
+      var resultText = intercepted ? '拦截成功，敌方未获取情报' : '敌方侦查成功，我方城市情报已被探查';
+      var h = '<div class="report-board ' + (intercepted ? 'win' : 'lose') + '">';
+      h += '<div class="rb-subject">【敌军侦查报告】' + esc(data.attackerName || '未知敌军') + '</div>';
+      h += '<div class="rb-meta-box">';
+      h += '<div class="rb-line"><b>来袭玩家:</b> ' + esc(data.attackerName || '未知敌军') + '</div>';
+      h += '<div class="rb-line"><b>出发坐标:</b> (' + (data.fromX == null ? '?' : data.fromX) + ',' + (data.fromY == null ? '?' : data.fromY) + ')</div>';
+      h += '<div class="rb-line"><b>被侦查城市:</b> ' + esc(data.targetName || '我方城市') + ' (' + data.x + ',' + data.y + ')</div>';
+      h += '<div class="rb-line"><b>发生时间:</b> ' + timeText + '</div>';
+      h += '<div class="rb-line"><b>拦截结果:</b> <span class="rb-res-badge ' + (intercepted ? 'w' : 'l') + '">' + resultText + '</span></div></div>';
+      h += '<div class="rb-divider"></div><div class="rb-side w">【我方驻防侦察机】</div>';
+      h += '<div class="rb-unit mine">驻守: ' + data.myScouts + ' 架 ➔ 幸存: ' + (data.myScouts - data.myLost) + ' 架（损失 ' + data.myLost + ' 架）</div>';
+      h += this.renderScoutWounded(data);
+      if (!data.myScouts) h += '<div class="rb-line rc-dim">我方未驻防侦察机，敌方未遭空中拦截。</div>';
+      h += '<div class="rb-divider"></div><div class="rb-side l">【敌方来袭侦察机】</div>';
+      h += '<div class="rb-unit enemy">出动: ' + data.enemyScouts + ' 架 ➔ 幸存: ' + (data.enemyScouts - data.enemyLost) + ' 架（击落 ' + data.enemyLost + ' 架）</div>';
+      return h + '</div>';
+    },
+
+    renderScoutWounded: function (data) {
+      if (!data.wounded || !data.wounded.scout) return '';
+      return '<div class="rb-line">我方伤兵入营：侦察机 ' + G.fmt(data.wounded.scout) + ' 架（7天内可付费治疗）</div>';
+    },
+
     renderScoutReportBoard: function (r) {
+      if (r.data && r.data.perspective === 'defender') return this.renderScoutDefenseReportBoard(r);
       var esc = G.escapeHtml;
       var d = new Date(r.time);
       var ts = (d.getMonth() + 1) + '-' + String(d.getDate()).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') + ':' + String(d.getSeconds()).padStart(2, '0');
@@ -473,9 +529,7 @@ window.Game = window.Game || {};
         overwhelming_victory: (isZeroEnemy ? '大胜（无敌机拦截）' : '大胜（碾压全歼）')
       }[data.result] || (isWin ? (isZeroEnemy ? '大胜（无敌机拦截）' : '大胜') : '侦查失败');
       var rLv = (data.reconLevel != null) ? data.reconLevel : 0;
-      var effLv = (data.effectiveReconLevel != null) ? data.effectiveReconLevel : rLv;
       var tierName = data.tierName || '常规侦查';
-      var stealthDesc = (data.defenderStealth > 0) ? ' <span class="rc-dim">(敌方反侦查 -' + data.defenderStealth + ')</span>' : '';
 
       var h = '';
       h += '<div class="report-board ' + (isWin ? 'win' : 'lose') + '">';
@@ -483,7 +537,8 @@ window.Game = window.Game || {};
       h += '<div class="rb-meta-box">';
       h += '<div class="rb-line"><b>侦查目标:</b> ' + esc(data.targetName || '?') + ' (' + (data.x || 0) + ',' + (data.y || 0) + ')</div>';
       h += '<div class="rb-line"><b>发生时间:</b> ' + ts + '</div>';
-      h += '<div class="rb-line"><b>侦查技术:</b> <span class="rb-tier-tag">Lv.' + rLv + ' ' + esc(tierName) + '</span>' + stealthDesc + '</div>';
+      h += '<div class="rb-line"><b>侦查技术:</b> <span class="rb-tier-tag">Lv.' + rLv + ' ' + esc(tierName) + '</span>' + '</div>';
+      h += this.renderScoutWounded(data);
       h += '<div class="rb-line"><b>侦查结果:</b> <span class="rb-res-badge ' + (isWin ? 'w' : 'l') + '">' + resultText + '</span></div>';
       h += '</div>';
       h += '<div class="rb-divider"></div>';
@@ -579,7 +634,7 @@ window.Game = window.Game || {};
         if (data.techs) {
           var tStr = '';
           for (var tid in data.techs) {
-            if (data.techs[tid] > 0) {
+            if (D.techs[tid] && data.techs[tid] > 0) {
               var tinfo = D.techs && D.techs[tid];
               tStr += (tinfo ? tinfo.name : tid) + 'Lv.' + data.techs[tid] + ' ';
             }
@@ -613,11 +668,11 @@ window.Game = window.Game || {};
         // 迷雾锁定提示 (仅对城市类目标展示)
         if (data.targetKind !== 'wild' && data.targetKind !== 'wild_gather') {
           var locks = [];
-          if (effLv < 1) locks.push('外围城防工事 (需 侦察技术 Lv.1)');
-          if (effLv < 2) locks.push('精确守军兵力与统帅 (需 侦察技术 Lv.2)');
-          if (effLv < 3) locks.push('主要城建建筑等级 (需 侦察技术 Lv.3)');
-          if (effLv < 4) locks.push('战略科技与可掠夺测算 (需 侦察技术 Lv.4)');
-          if (effLv < 5) locks.push('将领全维档案与综合战力 (需 侦察技术 Lv.5)');
+          if (rLv < 1) locks.push('外围城防工事 (需 侦察技术 Lv.1)');
+          if (rLv < 2) locks.push('精确守军兵力与统帅 (需 侦察技术 Lv.2)');
+          if (rLv < 3) locks.push('主要城建建筑等级 (需 侦察技术 Lv.3)');
+          if (rLv < 4) locks.push('战略科技与可掠夺测算 (需 侦察技术 Lv.4)');
+          if (rLv < 5) locks.push('将领全维档案与综合战力 (需 侦察技术 Lv.5)');
           if (locks.length) {
             h += '<div class="rb-fog-box">';
             h += '<div class="rb-line rc-dim" style="font-size:12px;"><b>🔒 侦测迷雾（未达标情报）:</b></div>';
@@ -741,6 +796,7 @@ window.Game = window.Game || {};
         h += this.renderScoutReportBoard(r);
         h += '<div class="btn-row report-detail-actions" style="margin-top:10px">';
         h += '<button class="btn" onclick="Game.go(\'reports\')">↩ 返回战报</button>';
+        h += '<button class="btn" onclick="Game.go(\'wounded\')">伤兵营</button>';
         h += '<button class="btn warn" onclick="Game.go(\'home\')">🏠 返回首页</button>';
         h += '</div>';
       } else {
@@ -764,6 +820,7 @@ window.Game = window.Game || {};
         h += '</div>';
         h += '<div class="btn-row report-detail-actions" style="margin-top:10px">';
         h += '<button class="btn" onclick="Game.go(\'reports\')">↩ 返回战报</button>';
+        h += '<button class="btn" onclick="Game.go(\'wounded\')">伤兵营</button>';
         h += '<button class="btn warn" onclick="Game.go(\'home\')">🏠 返回首页</button>';
         h += '</div>';
       }

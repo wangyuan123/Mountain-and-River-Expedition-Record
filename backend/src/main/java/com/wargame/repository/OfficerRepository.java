@@ -14,4 +14,7 @@ public interface OfficerRepository extends JpaRepository<Officer, Long> {
     List<Officer> findByPlayerIdAndRole(Long playerId, String role);
 
     void deleteByPlayerId(Long playerId);
+
+    List<Officer> findByPlayerIdAndCitySlot(Long playerId, Integer citySlot);
+    List<Officer> findByPlayerIdAndCitySlotAndRole(Long playerId, Integer citySlot, String role);
 }

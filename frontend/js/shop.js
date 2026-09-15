@@ -9,6 +9,7 @@ window.Game = window.Game || {};
   // 商城商品数据：基于游戏仓库道具 & 军事战争题材扩展
   var SHOP_CATS = [
     { id: 'all',     name: '全部' },
+    { id: 'jewelry', name: '珠宝' },
     { id: 'officer', name: '军官' },
     { id: 'resource',name: '资源' },
     { id: 'util',    name: '功能' },
@@ -16,6 +17,14 @@ window.Game = window.Game || {};
   ];
 
   var SHOP_ITEMS = [
+    // —— 军衔珠宝宝箱（开启直接获得晋升军衔所需各类珠宝）——
+    { id: 'box_gem',         cat: 'jewelry', name: '军衔珠宝宝箱', icon: '🗃️', desc: '开启获得晋升必备珠宝：珍珠×5、珊瑚×3、琉璃×3、琥珀×2、玛瑙×2', price: 200,  stock: null, tag: '热销' },
+    { id: 'box_gem_primary', cat: 'jewelry', name: '初级珠宝宝箱', icon: '🧰', desc: '开启获得士官晋升基础珠宝：珍珠×8、珊瑚×6、琉璃×5',             price: 150,  stock: null, tag: '士官晋升' },
+    { id: 'box_gem_medium',  cat: 'jewelry', name: '中级珠宝宝箱', icon: '🧰', desc: '开启获得尉官晋升进阶珠宝：琥珀×8、玛瑙×6、水晶×5、翡翠×2',      price: 400,  stock: null, tag: '尉官晋升' },
+    { id: 'box_gem_senior',  cat: 'jewelry', name: '高级珠宝宝箱', icon: '🎁', desc: '开启获得校官晋升精选珠宝：水晶×8、翡翠×8、玉石×6、夜明珠×3',      price: 1000, stock: null, tag: '校官晋升' },
+    { id: 'box_gem_supreme', cat: 'jewelry', name: '特级夜明珠宝箱', icon: '🌟', desc: '开启获得将官晋升极品珍宝：夜明珠×8、玉石×10、翡翠×10',         price: 1800, stock: null, tag: '将官极品' },
+    { id: 'box_gem_grand',   cat: 'jewelry', name: '璀璨珠宝全集箱', icon: '💎', desc: '开启获得全部9种晋升珠宝各5颗(共45颗珠宝)，助统帅连升数阶！',     price: 2500, stock: null, tag: '豪华全集' },
+
     // —— 军官道具 ——
     { id: 'expBook',    cat: 'officer',  name: '经验书',     icon: '📘', desc: '军官使用,获得10000经验',          price: 30,   stock: null, tag: '热销' },
     { id: 'expBookAdv', cat: 'officer',  name: '高级经验书', icon: '📕', desc: '军官使用,获得100000经验',         price: 150,  stock: null, tag: '推荐' },
@@ -55,7 +64,6 @@ window.Game = window.Game || {};
     { id: 'speedUp72h', cat: 'util', name: '72时加速符',icon: '⚡', desc: '立即缩短72小时建筑/造兵时间',    price: 3500, stock: null, tag: '限时' },
     { id: 'shield',    cat: 'util', name: '护盾',     icon: '🛡️', desc: '使用后8小时免受玩家攻击',         price: 200,  stock: null, tag: '' },
     { id: 'marchOrd',  cat: 'util', name: '行军令',   icon: '🚩', desc: '行军速度+50%,持续1小时',          price: 100,  stock: null, tag: '' },
-    { id: 'cloak',     cat: 'util', name: '反侦察符', icon: '🕶️', desc: '降低被敌方侦察成功率,持续6小时',  price: 80,   stock: null, tag: '' },
     { id: 'populationOrder', cat: 'util', name: '人口动员令', icon: '👥', desc: '使用后立即增加500空闲人口,不超过人口上限', price: 100, stock: null, tag: '推荐' },
 
     // —— 礼包 ——
@@ -144,7 +152,7 @@ window.Game = window.Game || {};
         var stockHtml = '';
         if (it.stock != null) {
           stockHtml = '<span class="shop-stock">限购 ' + it.stock + '</span>';
-        } else if (it.cat === 'gift' || it.cat === 'officer' || it.cat === 'res' || it.cat === 'util') {
+        } else if (it.cat === 'gift' || it.cat === 'officer' || it.cat === 'res' || it.cat === 'resource' || it.cat === 'util' || it.cat === 'jewelry') {
           stockHtml = '<span class="shop-stock">无限购</span>';
         }
         h += '<div class="shop-card">';

@@ -46,11 +46,21 @@ class MySqlMigrationTest {
 
     @Test
     void upgradesExistingDataAndValidatesTheRealMysqlSchema() {
-        var resource = jdbc.queryForMap("SELECT r.gold, r.diamond, r.version FROM resources r "
+        var resource = jdbc.queryForMap("SELECT r.gold, r.diamond, r.version, r.city_slot FROM resources r "
                 + "JOIN players p ON p.id=r.player_id WHERE p.username='migration-sentinel'");
         assertEquals(12345, ((Number) resource.get("gold")).intValue());
         assertEquals(678, ((Number) resource.get("diamond")).intValue());
         assertEquals(0L, ((Number) resource.get("version")).longValue());
+        assertEquals(0, ((Number) resource.get("city_slot")).intValue());
+        assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM flyway_schema_history WHERE version='32' AND success=1", Integer.class));
+        Long playerId = jdbc.queryForObject("SELECT id FROM players WHERE username='migration-sentinel'", Long.class);
+        try {
+            jdbc.update("INSERT INTO army_units(player_id,city_slot,type,count) VALUES(?,0,'truck',5)", playerId);
+            jdbc.update("INSERT INTO army_units(player_id,city_slot,type,count) VALUES(?,1,'truck',7)", playerId);
+            assertEquals(2, jdbc.queryForObject("SELECT COUNT(*) FROM army_units WHERE player_id=? AND type='truck'", Integer.class, playerId));
+            assertThrows(org.springframework.dao.DuplicateKeyException.class,
+                    () -> jdbc.update("INSERT INTO army_units(player_id,city_slot,type,count) VALUES(?,1,'truck',9)", playerId));
+        } finally { jdbc.update("DELETE FROM army_units WHERE player_id=? AND type='truck'", playerId); }
         assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM flyway_schema_history WHERE version='28' AND success=1", Integer.class));
         assertTrue(jdbc.queryForObject("SELECT COUNT(*) FROM information_schema.statistics "
                 + "WHERE table_schema=DATABASE() AND index_name='idx_wild_world_coordinates'", Integer.class) > 0);

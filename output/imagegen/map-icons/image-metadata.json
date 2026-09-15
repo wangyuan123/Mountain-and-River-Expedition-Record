@@ -1,0 +1,82 @@
+[
+  {
+    "id": "npc-frontier",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "bytes": 2546810
+  },
+  {
+    "id": "npc-fortress",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "bytes": 2589039
+  },
+  {
+    "id": "npc-logistics",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "bytes": 2648622
+  },
+  {
+    "id": "wild-forest",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "bytes": 2694683
+  },
+  {
+    "id": "wild-hill",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "bytes": 2534281
+  },
+  {
+    "id": "wild-swamp",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "bytes": 2594813
+  },
+  {
+    "id": "wild-grainfield",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "bytes": 2687901
+  },
+  {
+    "id": "wild-ironworks",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "bytes": 2373189
+  },
+  {
+    "id": "wild-oil",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "bytes": 2389682
+  },
+  {
+    "id": "wild-rarefactory",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "bytes": 2705996
+  }
+]

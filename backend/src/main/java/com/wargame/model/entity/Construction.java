@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Entity
 @Table(name = "constructions")
-public class Construction extends VersionedEntity {
+public class Construction extends CityOwnedEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

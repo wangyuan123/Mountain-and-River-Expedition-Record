@@ -94,8 +94,8 @@ class BattleServiceTest {
                 0, 0, 0, 0,
                 "conquer", Map.of(), 0);
 
-        // Scenario 2: With forts — bunkers add defense
-        Map<String, Integer> withForts = Map.of("bunker", 20);
+        // 使用能覆盖步兵射程的榴弹炮验证城防火力，避免依赖败战时额外扣除幸存者。
+        Map<String, Integer> withForts = Map.of("howitzer", 20);
 
         BattleResult resultWithForts = battleService.startWorldDispatch(
                 attackerArmy, defenderArmy, withForts,
@@ -112,8 +112,8 @@ class BattleServiceTest {
 
         // Also verify calcFortBonus returns correct value
         int fortBonus = battleService.calcFortBonus(withForts);
-        // bunker def=14, count=20 => 14*20 = 280
-        assertEquals(280, fortBonus, "20座碉堡(def=14)的防御加成应为280");
+        // howitzer def=6, count=20 => 6*20 = 120
+        assertEquals(120, fortBonus, "20座榴弹炮(def=6)的防御加成应为120");
     }
 
     @Test

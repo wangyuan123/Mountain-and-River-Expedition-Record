@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Entity
 @Table(name = "city_state")
-public class CityState extends VersionedEntity {
+public class CityState extends CityOwnedEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -41,6 +41,4 @@ public class CityState extends VersionedEntity {
     @Column(name = "march_boost_until")
     private Long marchBoostUntil;
 
-    @Column(name = "cloak_until")
-    private Long cloakUntil;
 }

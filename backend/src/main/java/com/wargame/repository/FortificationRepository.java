@@ -14,4 +14,7 @@ public interface FortificationRepository extends JpaRepository<Fortification, Lo
     List<Fortification> findByPlayerIdAndType(Long playerId, String type);
 
     void deleteByPlayerId(Long playerId);
+
+    List<Fortification> findByPlayerIdAndCitySlot(Long playerId, Integer citySlot);
+    List<Fortification> findByPlayerIdAndCitySlotAndType(Long playerId, Integer citySlot, String type);
 }

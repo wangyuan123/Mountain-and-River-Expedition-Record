@@ -105,14 +105,59 @@ window.Game = window.Game || {};
       });
     },
 
-    logout: function () {
-      if (!confirm('退出登录?')) return;
-      if (G.WS) G.WS.disconnect();
-      G.API.logout();
-      G.state = null;
-      Core.state = null;
-      Core.route = 'login';
-      Core.render();
+    logout: function (mode) {
+      if (document.getElementById('switchAccountModal')) return;
+      var isExit = mode === 'exit';
+      var title = isExit ? '退出登录' : '切换账号';
+      var trigger = document.activeElement;
+      var mask = document.createElement('div');
+      mask.id = 'switchAccountModal';
+      mask.className = 'modal-mask account-confirm-mask';
+      mask.innerHTML =
+        '<div class="modal-card account-confirm" role="dialog" aria-modal="true" aria-labelledby="accountConfirmTitle" aria-describedby="accountConfirmDesc">' +
+          '<div class="modal-title" id="accountConfirmTitle">' + title + '</div>' +
+          '<div class="modal-body">' +
+            '<div class="account-confirm-current"><span>当前账号</span><b id="accountConfirmName"></b></div>' +
+            '<p id="accountConfirmDesc">' + (isExit ? '退出后将返回登录页。' : '将退出当前账号，返回登录页选择其他账号。') + '</p>' +
+            '<p class="account-confirm-note">游戏进度保留在当前账号中。</p>' +
+          '</div>' +
+          '<div class="modal-foot">' +
+            '<button type="button" class="account-confirm-cancel">取消</button>' +
+            '<button type="button" class="account-confirm-submit">' + (isExit ? '确认退出' : '切换账号') + '</button>' +
+          '</div>' +
+        '</div>';
+      mask.querySelector('#accountConfirmName').textContent = G.API.getUsername() || '当前账号';
+      var cancel = mask.querySelector('.account-confirm-cancel');
+      var submit = mask.querySelector('.account-confirm-submit');
+      function close(restoreFocus) {
+        document.removeEventListener('keydown', onKey, true);
+        mask.remove();
+        if (restoreFocus && trigger && trigger.isConnected) trigger.focus();
+      }
+      function onKey(e) {
+        // 弹窗打开期间不触发游戏页面的数字键/返回快捷键。
+        e.stopPropagation();
+        if (e.key === 'Escape') { e.preventDefault(); close(true); }
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          (document.activeElement === cancel ? submit : cancel).focus();
+        }
+      }
+      cancel.onclick = function () { close(true); };
+      mask.onclick = function (e) { if (e.target === mask) close(true); };
+      submit.onclick = function () {
+        submit.disabled = true;
+        close(false);
+        if (G.WS) G.WS.disconnect();
+        G.API.logout();
+        G.state = null;
+        Core.state = null;
+        Core.route = 'login';
+        Core.render();
+      };
+      document.body.appendChild(mask);
+      document.addEventListener('keydown', onKey, true);
+      cancel.focus();
     },
 
     toggleEditCity: function () {
@@ -171,19 +216,6 @@ window.Game = window.Game || {};
       G.toast('城市简介已保存');
       document.getElementById('editDescBox').style.display = 'none';
       Core.render();
-    },
-
-    confirmReset: function () {
-      if (!confirm('确认重置存档?所有进度将丢失!')) return;
-      G.toast('正在重置...');
-      G.reset().then(function () {
-        Core.history = [];
-        Core.route = 'home';
-        G.toast('已重置');
-        Core.render();
-      }).catch(function (err) {
-        G.toast(err && err.message ? err.message : '重置失败');
-      });
     },
 
     // ============================================================
@@ -328,27 +360,42 @@ window.Game = window.Game || {};
       });
     },
 
-    cloudSync: function () {
-      if (!G.API || !G.API.isLoggedIn()) {
-        G.toast('请先登录账号');
-        return;
-      }
-      G.toast('正在同步...');
-      // 状态已由后端管理，"同步"即从后端重新拉取最新状态
-      G.API.getGameState(true).then(function (state) {
-        G.API.applyState(state);
-        if (G.Battle) G.Battle._reportsHistoryLoaded = null;
-        G.toast('同步成功');
-        if (G.Core) G.Core.render();
-      }).catch(function () {
-        G.toast('同步失败,请稍后重试');
-      });
-    },
-
     renderNavBar: function () {
       var bar = G.$('navbar');
       if (!bar) return;
-      bar.innerHTML = G.MainView.navBar();
+      var html = G.MainView.navBar();
+      var routeChanged = bar._navRoute !== Core.route;
+      var previous = bar.querySelector('.nav-viewport');
+      var page = previous && previous.clientWidth ? Math.round(previous.scrollLeft / previous.clientWidth) : 0;
+      // 普通 tick 不重建导航，避免打断手势或把玩家正在浏览的分页拉回首页。
+      if (bar._navHtml === html && !routeChanged) return;
+      bar.innerHTML = html;
+      bar._navHtml = html;
+      bar._navRoute = Core.route;
+      var viewport = bar.querySelector('.nav-viewport');
+      if (!viewport) return;
+      var pages = viewport.querySelectorAll('.nav-page');
+      var dots = bar.querySelectorAll('.nav-page-dot');
+      if (routeChanged) {
+        pages.forEach(function (el, index) {
+          if (el.querySelector('.navitem.active')) page = index;
+        });
+      }
+      function updateDots() {
+        var current = viewport.clientWidth ? Math.round(viewport.scrollLeft / viewport.clientWidth) : page;
+        dots.forEach(function (dot, index) {
+          dot.classList.toggle('active', index === current);
+          dot.setAttribute('aria-current', index === current ? 'true' : 'false');
+        });
+      }
+      viewport.scrollLeft = Math.min(page, pages.length - 1) * viewport.clientWidth;
+      viewport.addEventListener('scroll', updateDots, { passive: true });
+      dots.forEach(function (dot, index) {
+        dot.onclick = function () {
+          viewport.scrollTo({ left: index * viewport.clientWidth, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+        };
+      });
+      updateDots();
     },
 
     // ================================================================
@@ -370,7 +417,7 @@ window.Game = window.Game || {};
       modal.className = 'modal-mask';
       modal.innerHTML =
         '<div class="modal-card" style="max-width:520px">' +
-          '<div class="modal-title">欢迎来到山河远征</div>' +
+          '<div class="modal-title">欢迎来到烽原战策</div>' +
           '<div class="modal-body" style="line-height:1.7;font-size:14px">' +
             '<p>1. <b>资源</b>([1]): 升级农场/炼油厂/钢/稀矿,提升每小时产量。</p>' +
             '<p>2. <b>军事</b>([2]): 建造兵营、兵工厂、解锁高级兵种。</p>' +

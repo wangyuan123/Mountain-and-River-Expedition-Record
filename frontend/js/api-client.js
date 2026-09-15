@@ -31,6 +31,8 @@ window.Game = window.Game || {};
       this.userKey = 'wargame_user';
       this._loadingCount = 0;
       this._loadingTimer = null;
+      this.cityId = null;
+      this.cityRevision = 0;
       this._stateCache = null; // { data, expireAt }
       // 可被外部覆盖的回调
       this.onUnauthorized = null;
@@ -43,11 +45,13 @@ window.Game = window.Game || {};
     }
 
     setToken(token, username) {
+      this.cityId = null; this.invalidateCityRequests();
       localStorage.setItem(this.tokenKey, token);
       if (username) localStorage.setItem(this.userKey, username);
     }
 
     clearToken() {
+      this.cityId = null; this.invalidateCityRequests();
       localStorage.removeItem(this.tokenKey);
       localStorage.removeItem(this.userKey);
     }
@@ -87,6 +91,11 @@ window.Game = window.Game || {};
     }
 
     // ===== 游戏状态缓存（仅 GET /api/game/state）=====
+    invalidateCityRequests() {
+      this.cityRevision++;
+      this.invalidateStateCache();
+    }
+
     invalidateStateCache() {
       this._stateCache = null;
     }
@@ -130,31 +139,47 @@ window.Game = window.Game || {};
 
       if (showLoad) self.showLoading();
 
-      var promise = self._doFetch(method, path, body, retry);
+      if (G.Cities && G.Cities.switching && path !== '/game/cities/switch') {
+        if (showLoad) self.hideLoading();
+        return Promise.reject(new Error('正在切换城市，请稍候'));
+      }
+      var controller = options.timeout ? new AbortController() : null;
+      var timeoutId = controller ? setTimeout(function () { controller.abort(); }, options.timeout) : null;
+      var revision = self.cityRevision;
+      var promise = self._doFetch(method, path, body, retry, { cityId: self.cityId, token: self.getToken(), revision: revision, signal: controller ? controller.signal : undefined }).then(function (data) {
+        if (revision !== self.cityRevision) throw new Error('城市或账号已切换，已忽略旧页面响应');
+        return data;
+      });
 
       // 无论成功失败都关闭 loading
       return promise.then(function (data) {
+        if (timeoutId) clearTimeout(timeoutId);
         if (showLoad) self.hideLoading();
         return data;
       }, function (err) {
+        if (timeoutId) clearTimeout(timeoutId);
         if (showLoad) self.hideLoading();
+        if (err.name === 'AbortError') throw new Error('地图区域加载超时，请重试');
         throw err;
       });
     }
 
-    _doFetch(method, path, body, retryLeft) {
+    _doFetch(method, path, body, retryLeft, context) {
       var self = this;
       var url = this.baseURL + path;
       var headers = { 'Content-Type': 'application/json' };
-      var token = this.getToken();
+      var token = context.token;
       if (token) headers['Authorization'] = 'Bearer ' + token;
+      if (context.cityId && path.indexOf('/game/') === 0) headers['X-City-Id'] = String(context.cityId);
 
       var opts = { method: method, headers: headers };
+      if (context.signal) opts.signal = context.signal;
       if (body !== undefined && body !== null) opts.body = JSON.stringify(body);
 
       return fetch(url, opts).then(function (res) {
         // 始终尝试解析为 JSON（后端错误也是 JSON）
         return res.text().then(function (text) {
+          if (context.revision !== self.cityRevision) throw new Error('城市或账号已切换，已忽略旧页面响应');
           var data = null;
           if (text) {
             try { data = JSON.parse(text); } catch (e) { data = null; }
@@ -178,7 +203,7 @@ window.Game = window.Game || {};
             return new Promise(function (resolve) {
               setTimeout(resolve, 400);
             }).then(function () {
-              return self._doFetch(method, path, body, retryLeft - 1);
+              return self._doFetch(method, path, body, retryLeft - 1, context);
             });
           }
           if (typeof self.onNetworkError === 'function') {

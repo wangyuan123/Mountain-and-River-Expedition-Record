@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="acadGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="50%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+    <linearGradient id="acadWall" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#e2e8f0"/>
+      <stop offset="100%" stop-color="#94a3b8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Academy Classical Facade Background -->
+  <polygon points="16,4 3,11 29,11" fill="#334155" stroke="#0f172a" stroke-width="0.7"/>
+  <rect x="4" y="11" width="24" height="2" fill="#cbd5e1" stroke="#334155" stroke-width="0.5"/>
+  <rect x="5" y="13" width="22" height="13" fill="url(#acadWall)" stroke="#1e293b" stroke-width="0.6"/>
+  <!-- Steps -->
+  <rect x="3" y="26" width="26" height="2" fill="#64748b"/>
+  <rect x="2" y="28" width="28" height="2" fill="#334155"/>
+
+  <!-- Pillars (4) -->
+  <rect x="7" y="13" width="2.2" height="13" fill="#f8fafc" stroke="#64748b" stroke-width="0.4"/>
+  <rect x="11.5" y="13" width="2.2" height="13" fill="#f8fafc" stroke="#64748b" stroke-width="0.4"/>
+  <rect x="18.5" y="13" width="2.2" height="13" fill="#f8fafc" stroke="#64748b" stroke-width="0.4"/>
+  <rect x="23" y="13" width="2.2" height="13" fill="#f8fafc" stroke="#64748b" stroke-width="0.4"/>
+
+  <!-- Military Academy Officer Crest (Center Foreground Shield) -->
+  <g transform="translate(16, 18.5)">
+    <!-- Shield -->
+    <path d="M-6 -6 L6 -6 L6 0 C6 5 0 8 -0 8 C-0 8 -6 5 -6 0 Z" fill="#1e293b" stroke="url(#acadGold)" stroke-width="1"/>
+    <!-- Crossed Sabers / Swords -->
+    <line x1="-4.5" y1="-4.5" x2="4.5" y2="4.5" stroke="#e2e8f0" stroke-width="0.8"/>
+    <line x1="4.5" y1="-4.5" x2="-4.5" y2="4.5" stroke="#e2e8f0" stroke-width="0.8"/>
+    <!-- Golden 5-Point Star -->
+    <polygon points="0,-3.5 0.7,-1.5 2.8,-1.5 1.1,0 1.7,2.1 0,0.8 -1.7,2.1 -1.1,0 -2.8,-1.5 -0.7,-1.5" fill="url(#acadGold)"/>
+  </g>
+</svg>

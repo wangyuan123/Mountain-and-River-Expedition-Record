@@ -36,6 +36,9 @@ import java.util.*;
 @Service
 public class MailService {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.service.CityScope cityScope;
+
     private static final Logger log = LoggerFactory.getLogger(MailService.class);
 
     /** 允许的附件资源类型 - 与 Resources 字段对齐 */
@@ -335,10 +338,10 @@ public class MailService {
             normalized.add(Map.of("type", type, "qty", qty));
         }
         // 校验余额
-        Resources res = resourcesRepository.findByPlayerId(fromPlayerId)
+        Resources res = resourcesRepository.findByPlayerIdAndCitySlot(fromPlayerId, cityScope.slot(fromPlayerId))
                 .orElseThrow(() -> new IllegalArgumentException("发件人资源不存在"));
         for (Map.Entry<String, Integer> e : need.entrySet()) {
-            int have = getRes(res, e.getKey());
+            int have = getRes("diamond".equals(e.getKey()) ? cityScope.wallet(fromPlayerId) : res, e.getKey());
             if (have < e.getValue()) {
                 throw new IllegalArgumentException("资源不足: " + labelOf(e.getKey())
                         + " (需要 " + e.getValue() + ", 现有 " + have + ")");
@@ -351,12 +354,14 @@ public class MailService {
 
     private void applyResources(Long playerId, Map<String, Integer> delta, int sign) {
         if (delta == null || delta.isEmpty()) return;
-        Resources res = resourcesRepository.findByPlayerId(playerId)
+        Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId))
                 .orElseThrow(() -> new IllegalArgumentException("玩家资源不存在: " + playerId));
         for (Map.Entry<String, Integer> e : delta.entrySet()) {
             int v = e.getValue() * sign;
-            int cur = getRes(res, e.getKey());
-            setRes(res, e.getKey(), cur + v);
+            Resources balance = "diamond".equals(e.getKey()) ? cityScope.wallet(playerId) : res;
+            int cur = getRes(balance, e.getKey());
+            setRes(balance, e.getKey(), cur + v);
+            resourcesRepository.save(balance);
         }
         resourcesRepository.save(res);
     }
@@ -427,7 +432,9 @@ public class MailService {
     private Map<String, Object> toDto(Mail m) {
         Map<String, Object> d = new LinkedHashMap<>();
         d.put("id", m.getId());
-        d.put("from", m.getFromName());
+        // 兼容历史宣战通知，列表和详情统一使用新的系统发件人名称。
+        d.put("from", Boolean.TRUE.equals(m.getIsSystem()) && "战争指挥部".equals(m.getFromName())
+                ? "系统" : m.getFromName());
         d.put("to", m.getToName());
         d.put("type", m.getType());
         d.put("system", Boolean.TRUE.equals(m.getIsSystem()));

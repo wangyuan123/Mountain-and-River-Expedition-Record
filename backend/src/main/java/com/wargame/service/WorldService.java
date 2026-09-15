@@ -32,6 +32,9 @@ import java.util.*;
 @Service
 public class WorldService {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.service.CityScope cityScope;
+
     private final PlayerRepository playerRepository;
     private final WorldMapRepository worldMapRepository;
     private final NpcCityRepository npcCityRepository;
@@ -526,7 +529,7 @@ public class WorldService {
                     + "备战时间：6 小时\n"
                     + "交战时间：24 小时\n"
                     + "开战时间：" + startTime;
-            mailService.sendSystem(defenderId, "战争指挥部", "combat", subject, body, List.of());
+            mailService.sendSystem(defenderId, "系统", "combat", subject, body, List.of());
         }
 
         result.put("success", true);
@@ -694,7 +697,7 @@ public class WorldService {
         }
 
         // Get available scout units
-        List<ArmyUnit> scoutUnits = armyUnitRepository.findByPlayerIdAndType(playerId, "scout");
+        List<ArmyUnit> scoutUnits = armyUnitRepository.findByPlayerIdAndCitySlotAndType(playerId, cityScope.slot(playerId), "scout");
         int scoutCount = 0;
         if (scoutUnits != null && !scoutUnits.isEmpty()) {
             scoutCount = scoutUnits.get(0).getCount() != null ? scoutUnits.get(0).getCount() : 0;
@@ -713,8 +716,8 @@ public class WorldService {
         armyUnitRepository.save(scoutUnits.get(0));
 
         // Calculate march time (JS: marchSec = ceil(marchDist * secPerGrid / spd))
-        int px = player.getPosX() != null ? player.getPosX() : 0;
-        int py = player.getPosY() != null ? player.getPosY() : 0;
+        int px = cityScope.economy(playerId).getCityPosX();
+        int py = cityScope.economy(playerId).getCityPosY();
         int marchDist = manhattanDist(px, py, targetX, targetY);
         UnitDef scoutDef = GameData.UNITS.get("scout");
         int spd = scoutDef != null ? Math.max(1, scoutDef.spd()) : 1;
@@ -726,6 +729,7 @@ public class WorldService {
         // Create march (JS: s.world.marches.push(march))
         March march = new March();
         march.setPlayerId(playerId);
+        march.setCitySlot(cityScope.slot(playerId));
         march.setTargetKind(targetKind);
         march.setTargetIdx(targetIdx);
         march.setTargetId(targetId);
@@ -799,50 +803,6 @@ public class WorldService {
     }
 
     // ================================================================
-    //  scoutWild - 对应 JS world.js scoutWild(idx)
-    //  侦察野地: 标记 scouted=true, 返回野地信息
-    // ================================================================
-
-    @Transactional
-    public Map<String, Object> scoutWild(Long playerId, Long wildTileId) {
-        Map<String, Object> result = new LinkedHashMap<>();
-
-        int radarLv = buildingLevel(playerId, "radar");
-        if (radarLv <= 0) {
-            result.put("success", false);
-            result.put("message", "需建造雷达站才能侦察");
-            return result;
-        }
-
-        WildTile wt = wildTileRepository.findById(wildTileId).orElse(null);
-        if (wt == null) {
-            result.put("success", false);
-            result.put("message", "野地不存在");
-            return result;
-        }
-
-        wt.setScouted(true);
-        wildTileRepository.save(wt);
-
-        int remaining = (wt.getTotalRes() != null ? wt.getTotalRes() : 0)
-                - (wt.getMined() != null ? wt.getMined() : 0);
-
-        result.put("success", true);
-        result.put("message", "侦察完成");
-        result.put("id", wt.getId());
-        result.put("type", wt.getType());
-        result.put("level", wt.getLevel());
-        result.put("x", wt.getX());
-        result.put("y", wt.getY());
-        result.put("garrison", JsonUtil.parseObjMap(wt.getGarrison()));
-        result.put("totalRes", wt.getTotalRes() != null ? wt.getTotalRes() : 0);
-        result.put("mined", wt.getMined() != null ? wt.getMined() : 0);
-        result.put("remaining", remaining);
-        result.put("occupied", wt.getOccupied() != null && wt.getOccupied());
-        return result;
-    }
-
-    // ================================================================
     //  abandonWild - 对应 JS world.js abandonWild(idx)
     //  放弃野地: occupied=false, scouted=false, mined=0
     // ================================================================
@@ -885,7 +845,7 @@ public class WorldService {
     }
 
     private int buildingLevel(Long playerId, String buildingType) {
-        List<Building> buildings = buildingRepository.findByPlayerIdAndType(playerId, buildingType);
+        List<Building> buildings = buildingRepository.findByPlayerIdAndCitySlotAndType(playerId, cityScope.slot(playerId), buildingType);
         int sum = 0;
         for (Building b : buildings) {
             sum += b.getLevel() != null ? b.getLevel() : 0;

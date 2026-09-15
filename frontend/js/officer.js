@@ -15,7 +15,7 @@ window.Game = window.Game || {};
   }
 
   function roleText(r) {
-    return { mayor: '市长', commander: '指挥官', idle: '闲置' }[r] || '闲置';
+    return { mayor: '市长', commander: '指挥官', march: '行军中', idle: '闲置' }[r] || '闲置';
   }
 
   function equipmentName(itemId) {

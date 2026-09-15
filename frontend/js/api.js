@@ -29,7 +29,10 @@ window.Game = window.Game || {};
       if (oldState && oldState.player && state.player && oldState.player.id === state.player.id) {
         if (!Array.isArray(state.reports) && Array.isArray(oldState.reports)) state.reports = oldState.reports;
       }
-      if (oldState) {
+      var cityChanged = oldState && oldState.player && state.player &&
+        (oldState.player.id !== state.player.id || oldState.player.activeCityId !== state.player.activeCityId);
+      client.cityId = state.player && state.player.activeCityId || null;
+      if (oldState && !cityChanged) {
         // 保留前端挂在 state 顶层上的临时 UI 状态（如 _detailOfficerId, _depotSelectOfficer, _expandedBuildings 等），
         // 避免后端返回的全新 state 对象把 _xxx 临时字段覆盖丢失
         for (var sk in oldState) {
@@ -152,6 +155,14 @@ window.Game = window.Game || {};
         + '&y=' + encodeURIComponent(y) + '&radius=' + encodeURIComponent(radius), { silent: true });
     },
 
+    getMapChunk: function (cx, cy) {
+      return client.get('/game/world/map/chunk?cx=' + cx + '&cy=' + cy, { silent: true, noCache: true, retry: 0, timeout: 10000 });
+    },
+
+    getMapTarget: function (kind, id) {
+      return client.get('/game/world/map/target?kind=' + encodeURIComponent(kind) + '&id=' + encodeURIComponent(id), { silent: true, noCache: true, timeout: 10000 });
+    },
+
     getGameState: function (force) {
       if (!force) {
         var cached = client.getCachedState();
@@ -239,6 +250,14 @@ window.Game = window.Game || {};
         });
     },
 
+    buildDismantle: function (building, slot) {
+      return client.post('/game/build/dismantle', { building: building, slot: slot })
+        .then(function (data) {
+          if (data && data.state) applyState(data.state);
+          return data;
+        });
+    },
+
     buildCancel: function (building, slot) {
       return client.post('/game/build/cancel', { building: building, slot: slot })
         .then(function (data) {
@@ -272,6 +291,19 @@ window.Game = window.Game || {};
       return client.post('/game/army/dismiss', { unit: unit, count: count })
         .then(function (data) {
           if (data && data.state) applyState(data.state);
+          return data;
+        });
+    },
+
+    getWounded: function () {
+      return client.get('/game/army/wounded', { noCache: true });
+    },
+
+    healWounded: function (id, count, currency) {
+      var token = client.getToken();
+      return client.post('/game/army/wounded/' + id + '/heal', { count: count, currency: currency })
+        .then(function (data) {
+          if (client.getToken() === token && data && data.success && data.state) applyState(data.state);
           return data;
         });
     },

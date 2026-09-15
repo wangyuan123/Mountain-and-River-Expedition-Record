@@ -38,7 +38,14 @@ public class WildController {
             throw new IllegalArgumentException("野地ID不能为空");
         }
         Long playerId = authService.getCurrentPlayer().getId();
-        Map<String, Object> result = worldService.scoutWild(playerId, request.wildTileId());
+        // Compatibility endpoint: use the same timed march as the dispatch screen.
+        var march = marchService.createDispatch(playerId, new DispatchRequest(
+                "wild", request.wildTileId(), "scout", Map.of("scout", 1), null, null));
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("success", true);
+        result.put("message", "侦查部队已出征，抵达后生成情报报告");
+        result.put("marchId", march.getId());
+        result.put("arriveAt", march.getArriveAt());
         result.put("state", gameStateService.getGameState(playerId));
         return ResponseEntity.ok(result);
     }

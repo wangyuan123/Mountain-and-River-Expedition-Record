@@ -16,6 +16,9 @@ public class WorldMap {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "terrain_data", columnDefinition = "longtext")
+    private String terrainData;
+
     @Column(name = "size")
     private Integer size;
 

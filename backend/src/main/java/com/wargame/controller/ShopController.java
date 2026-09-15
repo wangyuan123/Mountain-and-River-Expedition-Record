@@ -26,6 +26,9 @@ import java.util.Optional;
 @RequestMapping("/api/game/shop")
 public class ShopController {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.service.CityScope cityScope;
+
     private final AuthService authService;
     private final ResourcesRepository resourcesRepository;
     private final PlayerItemRepository playerItemRepository;
@@ -56,7 +59,7 @@ public class ShopController {
             return ResponseEntity.ok(result);
         }
 
-        Resources res = resourcesRepository.findByPlayerId(playerId).orElse(null);
+        Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, 0).orElse(null);
         if (res == null) {
             result.put("success", false);
             result.put("message", "玩家资源数据不存在");
@@ -100,7 +103,7 @@ public class ShopController {
             return ResponseEntity.ok(result);
         }
 
-        Resources res = resourcesRepository.findByPlayerId(playerId).orElse(null);
+        Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, 0).orElse(null);
         if (res == null) {
             result.put("success", false);
             result.put("message", "玩家资源数据不存在");
@@ -238,8 +241,14 @@ public class ShopController {
             Map.entry("speedUp72h", 3500),
             Map.entry("shield", 200),
             Map.entry("marchOrd", 100),
-            Map.entry("cloak", 80),
             Map.entry("populationOrder", 100),
+            // 军衔珠宝宝箱
+            Map.entry("box_gem", 200),
+            Map.entry("box_gem_primary", 150),
+            Map.entry("box_gem_medium", 400),
+            Map.entry("box_gem_senior", 1000),
+            Map.entry("box_gem_supreme", 1800),
+            Map.entry("box_gem_grand", 2500),
             // 礼包
             Map.entry("newbiePack", 99),
             Map.entry("monthCard", 1500),
@@ -309,8 +318,14 @@ public class ShopController {
             Map.entry("speedUp72h", "72时加速符"),
             Map.entry("shield", "护盾"),
             Map.entry("marchOrd", "行军令"),
-            Map.entry("cloak", "反侦察符"),
             Map.entry("populationOrder", "人口动员令"),
+            // 军衔珠宝宝箱
+            Map.entry("box_gem", "军衔珠宝宝箱"),
+            Map.entry("box_gem_primary", "初级珠宝宝箱"),
+            Map.entry("box_gem_medium", "中级珠宝宝箱"),
+            Map.entry("box_gem_senior", "高级珠宝宝箱"),
+            Map.entry("box_gem_supreme", "特级夜明珠宝箱"),
+            Map.entry("box_gem_grand", "璀璨珠宝全集箱"),
             Map.entry("newbiePack", "新手礼包"),
             Map.entry("monthCard", "钻石月卡"),
             Map.entry("warChest", "战备月卡"),

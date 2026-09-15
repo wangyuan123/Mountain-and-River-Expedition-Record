@@ -114,6 +114,8 @@ window.Game = window.Game || {};
         var roleTag = '';
         if (o.role === 'mayor') {
           roleTag = '<span class="home-officer-role role-mayor">市长</span>';
+        } else if (o.role === 'march') {
+          roleTag = '<span class="home-officer-role">行军中</span>';
         } else if (o.role === 'commander') {
           roleTag = '<span class="home-officer-role role-commander">指挥官</span>';
         } else {
@@ -168,8 +170,8 @@ window.Game = window.Game || {};
 
   Core.views.login = function (v) {
     var h = '';
-    h += '<div class="title">- 山河远征 -</div>';
-    h += '<div class="desc">请登录或注册以同步存档到云端</div>';
+    h += '<div class="title">- 烽原战策 -</div>';
+    h += '<div class="desc">请登录或注册，游戏进度由服务器自动保存</div>';
     h += '<div class="panel">';
     h += '<div class="edit-row"><label>用户名</label><input id="loginUser" class="qty" style="width:100%" maxlength="32" placeholder="3-32位字符"></div>';
     h += '<div class="edit-row"><label>密码</label><input id="loginPass" class="qty" style="width:100%" type="password" maxlength="64" placeholder="6-64位"></div>';
@@ -200,15 +202,15 @@ window.Game = window.Game || {};
   function navBar() {
     var s = Core.state;
     if (!s || !s.world) return '';
-    var hasIncoming = s.world.incoming && s.world.incoming.length > 0 && !s.world.alertsViewed;
-    var h = '';
+    var hasIncoming = s.world.incoming && s.world.incoming.length > 0;
+    var items = [];
     var homeActive = Core.route === 'home' ? ' active' : '';
-    h += '<div class="navitem home-tab' + homeActive + '" data-route="home" onclick="Game.go(\'home\')"><span class="navlabel">首页</span></div>';
+    items.push('<div class="navitem home-tab' + homeActive + '" data-route="home" onclick="Game.go(\'home\')"><span class="navlabel">首页</span></div>');
+    if (G.Cities) items.push(G.Cities.nav());
     for (var i = 0; i < NAV_ITEMS.length; i++) {
       var it = NAV_ITEMS[i];
-      var action = it.route === '__save__' ? 'Game.save();Game.toast(\'已存档\')'
-        : 'Game.go(\'' + it.route + '\')';
-      var active = Core.route === it.route ? ' active' : '';
+      var action = 'Game.go(\'' + it.route + '\')';
+      var active = (Core.route === it.route || (Core.route === 'wounded' && it.route === 'army')) ? ' active' : '';
       var alertCls = (it.route === 'alerts' && hasIncoming) ? ' alert' : '';
       var mailUnread = (it.route === 'mail' && G.Mail && G.Mail.unread && G.Mail.unread() > 0) ? G.Mail.unread() : 0;
       var mailBadge = mailUnread ? '<span class="nav-badge">' + mailUnread + '</span>' : '';
@@ -219,9 +221,18 @@ window.Game = window.Game || {};
       if (it.route === 'mainQuest' && G.MainQuest && G.MainQuest.hasUnclaimed && G.MainQuest.hasUnclaimed()) {
         questBadge = '<span class="nav-badge alert-dot">!</span>';
       }
-      h += '<div class="navitem' + active + alertCls + '" data-route="' + it.route + '" onclick="' + action + '"><span class="navnum">[' + it.key + ']</span><span class="navlabel">' + (it.icon ? '<img class="nav-icon" src="' + it.icon + '" alt="' + it.label + '"/>' : it.label) + '</span>' + mailBadge + reportsBadge + questBadge + '</div>';
+      items.push('<div class="navitem' + active + alertCls + '" data-route="' + it.route + '" onclick="' + action + '"><span class="navnum">[' + it.key + ']</span><span class="navlabel">' + (it.icon ? '<img class="nav-icon" src="' + it.icon + '" alt="' + it.label + '"/>' : it.label) + '</span>' + mailBadge + reportsBadge + questBadge + '</div>');
     }
-    return h;
+    // 每页两排七列，超过十四个入口才分页。
+    var pageSize = 14;
+    var pages = [];
+    var dots = [];
+    for (var page = 0; page < Math.ceil(items.length / pageSize); page++) {
+      pages.push('<div class="nav-page" role="group" aria-label="第' + (page + 1) + '组导航">' + items.slice(page * pageSize, (page + 1) * pageSize).join('') + '</div>');
+      dots.push('<button type="button" class="nav-page-dot" data-nav-page="' + page + '" aria-label="切换到第' + (page + 1) + '组导航"></button>');
+    }
+    return '<div class="nav-viewport" aria-label="' + (pages.length > 1 ? '左右滑动查看更多导航' : '功能导航') + '">' + pages.join('') + '</div>' +
+      (pages.length > 1 ? '<div class="nav-pages" aria-label="导航分页">' + dots.join('') + '</div>' : '');
   }
 
   function showResourceDetail(key, name, icon, current, cap, rate, production, consumption) {
@@ -772,13 +783,12 @@ window.Game = window.Game || {};
   };
 
   Core.views.settings = function (v) {
-    var s = Core.state;
     var h = '';
     h += '<div class="title">- 设置 -</div>';
 
     h += '<div class="zone-head"><span class="zone-title">游戏设置</span></div>';
     h += '<div class="panel">';
-    var curTheme = (G.Theme && G.Theme.get) ? G.Theme.get() : '3gqq';
+    var curTheme = (G.Theme && G.Theme.get) ? G.Theme.get() : 'blue-white';
     h += '<div class="btn-row" style="margin-bottom:8px;align-items:center;">';
     h += '<span style="flex:1;font-size:14px">🎨 界面风格</span>';
     h += '<select id="themeSelector" style="padding:4px 8px;font-size:13px;border-radius:4px;" onchange="if(Game.Theme)Game.Theme.set(this.value)">';
@@ -789,23 +799,11 @@ window.Game = window.Game || {};
         h += '<option value="' + tObj.id + '"' + isSel + '>' + tObj.name + '</option>';
       }
     } else {
-      h += '<option value="3gqq">3GQQ 怀旧蓝白 (推荐)</option>';
+      h += '<option value="blue-white">晴空蓝白 (推荐)</option>';
       h += '<option value="paper">战术公文沙盘风</option>';
       h += '<option value="dark">战术夜航终端黑</option>';
     }
     h += '</select>';
-    h += '</div>';
-    h += '<div class="btn-row" style="margin-bottom:6px">';
-    h += '<span style="flex:1;font-size:14px">手动存档</span>';
-    h += '<button class="btn sm ok" onclick="Game.save();Game.toast(\'已存档\')">存档</button>';
-    h += '</div>';
-    h += '<div class="btn-row" style="margin-bottom:6px">';
-    h += '<span style="flex:1;font-size:14px">云同步</span>';
-    h += '<button class="btn sm" onclick="Game.Main.cloudSync()">上传云端</button>';
-    h += '</div>';
-    h += '<div class="btn-row">';
-    h += '<span style="flex:1;font-size:14px;color:var(--danger)">重置游戏</span>';
-    h += '<button class="btn sm warn" onclick="Game.Main.confirmReset()">重置</button>';
     h += '</div>';
     h += '</div>';
 
@@ -813,13 +811,13 @@ window.Game = window.Game || {};
     h += '<div class="panel">';
     if (G.API && G.API.isLoggedIn()) {
       h += '<div class="d">登录账号: <b>' + G.escapeHtml(G.API.getUsername() || '未知') + '</b></div>';
-      h += '<div class="d">同步状态: 已登录 (云端可同步)</div>';
+      h += '<div class="d">游戏进度由服务器自动保存</div>';
       h += '<div class="btn-row" style="margin-top:6px">';
       h += '<button class="btn sm" onclick="Game.Main.logout()">切换账号</button>';
       h += '</div>';
     } else if (G.Main && G.Main.guestMode) {
       h += '<div class="d">当前模式: <b style="color:var(--muted)">游客模式</b></div>';
-      h += '<div class="d">存档仅保存在本地,换设备将丢失</div>';
+      h += '<div class="d">请登录账号继续游戏</div>';
       h += '<div class="btn-row" style="margin-top:6px">';
       h += '<button class="btn sm ok" onclick="Game.go(\'login\')">登录/注册账号</button>';
       h += '</div>';
@@ -833,13 +831,13 @@ window.Game = window.Game || {};
 
     h += '<div class="zone-head"><span class="zone-title">关于</span></div>';
     h += '<div class="panel">';
-    h += '<div class="d">山河远征 - 策略战争游戏</div>';
+    h += '<div class="d">烽原战策 - 文字战争策略游戏</div>';
     h += '<div class="d">版本: 1.0.0</div>';
     h += '</div>';
 
     if (G.API && G.API.isLoggedIn()) {
       h += '<div style="margin-top:16px">';
-      h += '<button class="btn warn" style="width:100%;padding:12px;font-size:16px;color:#fff;background:var(--danger);border:0;border-radius:8px" onclick="Game.Main.logout()">退出登录</button>';
+      h += '<button class="btn warn" style="width:100%;padding:12px;font-size:16px;color:#fff;background:var(--danger);border:0;border-radius:8px" onclick="Game.Main.logout(\'exit\')">退出登录</button>';
       h += '</div>';
 
       h += '<div class="zone-head" style="margin-top:18px;color:var(--danger)"><span class="zone-title">危险操作</span></div>';
@@ -859,7 +857,7 @@ window.Game = window.Game || {};
   };
 
   var PRESET_AVATARS = [
-    { id: 'commander-8', name: '萌系指挥官', role: '休闲/致敬', src: 'img/avatars/commander-8.svg' },
+    { id: 'commander-8', name: '萌系指挥官', role: '休闲', src: 'img/avatars/commander-8.svg' },
     { id: 'commander-1', name: '陆军上将', role: '全军统帅', src: 'img/avatars/commander-1.svg' },
     { id: 'commander-2', name: '装甲指挥官', role: '装甲先锋', src: 'img/avatars/commander-2.svg' },
     { id: 'commander-3', name: '王牌飞行员', role: '空中制霸', src: 'img/avatars/commander-3.svg' },

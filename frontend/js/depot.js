@@ -70,14 +70,6 @@
     var until = Date.now() + hours * 3600 * 1000;
     s.world.marchBoostUntil = Math.max(s.world.marchBoostUntil || 0, until);
   }
-  function setCloak(hours) {
-    var s = Core.state;
-    s.world = s.world || {};
-    var until = Date.now() + hours * 3600 * 1000;
-    s.world.cloakUntil = Math.max(s.world.cloakUntil || 0, until);
-  }
-
-
   // 当前生效状态描述
   function statusText() {
     var s = Core.state;
@@ -90,10 +82,6 @@
     if (w.marchBoostUntil && w.marchBoostUntil > Date.now()) {
       var mh = Math.ceil((w.marchBoostUntil - Date.now()) / 3600000);
       parts.push('🚩 行军加速 ' + mh + 'h');
-    }
-    if (w.cloakUntil && w.cloakUntil > Date.now()) {
-      var ch = Math.ceil((w.cloakUntil - Date.now()) / 3600000);
-      parts.push('🕶️ 反侦察 ' + ch + 'h');
     }
     return parts;
   }
@@ -222,7 +210,7 @@
         });
         return;
       }
-      // 护盾 / 行军令 / 反侦察符：走 depot use 接口
+      // 护盾 / 行军令：走 depot use 接口
       Depot._callBackend(itemId, null, null);
     },
 
@@ -370,7 +358,7 @@
             h += '<span class="n">' + info.icon + ' ' + info.name + '</span> <span class="lv">×' + cnt + '</span>';
             h += '<div class="d">' + info.desc + '</div>';
             if (cnt > 0) {
-              if (info.cat === 'jewelry') {
+              if (info.cat === 'jewelry' && !info.isBox && iid.indexOf('box_') !== 0) {
                 h += '<div class="btn-row"><button class="btn ok sm" onclick="Game.go(\'mainQuest\')">前往晋升军衔</button></div>';
               } else {
                 var btnLabel = (info.isBox || iid.indexOf('box_') === 0) ? '开启宝箱' : (iid === 'expBook' || iid === 'expBookAdv' || iid === 'expBookMax' || iid === 'loyaltyBox' || iid === 'renameCard' || iid === 'skillBook' || iid === 'starUp') ? '选择军官使用' : '使用';

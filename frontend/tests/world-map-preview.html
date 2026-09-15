@@ -1,0 +1,56 @@
+<!doctype html><html lang="zh-CN" data-theme="3gqq"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><base href="../"><title>战略地图 · 交互验证</title><link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="css/themes.css"><link rel="stylesheet" href="css/world-map.css?v=4.0-hit-test"><style>body{margin:0}#fixture-head{padding:14px;background:#527cac;color:white;font:600 15px sans-serif}.fixture-tools{padding:6px 12px;font:11px sans-serif;background:#edf4fb;color:#426078}.fixture-tools button{margin:4px;padding:4px 8px}#fixture-log{white-space:pre-wrap;font:11px monospace;padding:8px;color:#375975}</style></head><body><div id="screen"><div id="fixture-head">战略地图 · 野地分布预览 <button id="scatter" style="float:right;padding:4px 10px;border:0;border-radius:4px;color:#375975;background:white;cursor:pointer">换一批分布</button></div><div class="fixture-tools"><button id="rerender">模拟页面刷新</button><button id="netfail">切换弱网失败</button><button id="pinch">验证双指缩放</button><button id="theme">切换主题</button><div id="fixture-metrics"></div></div><div style="padding:6px 14px;background:#edf4fb"><button id="snow-preview" class="btn">查看雪地渐变</button> <button id="north-preview" class="btn">北方雪带</button></div><div id="view"></div><div id="fixture-log"></div></div>
+<script src="js/data.js?v=4.4-snow-depth"></script><script src="js/core.js"></script>
+<script>
+// Emulate browsers without element fullscreen to verify the landscape fallback.
+if(new URLSearchParams(location.search).has('noFullscreen')){Element.prototype.requestFullscreen=undefined;Element.prototype.webkitRequestFullscreen=undefined;}
+var previewGeneration=0, sampleTargets=[], failed=false, requests=0, log=document.getElementById('fixture-log');
+sampleTargets.push({id:1,kind:'player',selfCity:true,x:100,y:100,name:'我的主城',ownerName:'指挥官',ownerId:1});
+sampleTargets.push({id:2,kind:'player',selfCity:false,x:103,y:102,name:'北境军团',ownerName:'远征军',ownerId:2,warAt:0,warEndAt:0});
+sampleTargets.push({id:3,kind:'npc',x:98,y:102,name:'烈焰营地',level:5,defeated:false});
+// Preview-only records use the real wild types and stable coordinate IDs.
+function scatterWilds(){
+  sampleTargets=sampleTargets.filter(function(t){return t.kind!=='wild';});
+  var cities=sampleTargets.slice(), types=Object.keys(Game.DATA.wildTypes), wilds=[];
+  function reserved(x,y){return cities.some(function(t){var span=t.kind==='player'?2:1;return x>=t.x-1&&x<t.x+span+1&&y>=t.y-1&&y<t.y+span+1;});}
+  for(var y=0;y<200;y+=2)for(var x=0;x<200;x+=2){
+    if(Math.random()>.55)continue;
+    var wx=x+Math.floor(Math.random()*2),wy=y+Math.floor(Math.random()*2);
+    if(reserved(wx,wy))continue;
+    wilds.push({id:wy*200+wx+1,kind:'wild',type:types[Math.floor(Math.random()*types.length)],x:wx,y:wy,level:1+Math.floor(Math.random()*8),occupied:false});
+  }
+  // Include every type; keep the two newest models visible near the home city.
+  var nearby=[[103,98],[99,97],[102,98],[104,100],[105,103],[102,104],[99,104],[97,100],[101,97],[99,98],[99,99]];
+  var shuffled=types.filter(function(type){return type!=='snow'&&type!=='rock';});
+  for(var i=shuffled.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),temp=shuffled[i];shuffled[i]=shuffled[j];shuffled[j]=temp;}
+  shuffled.push('snow','rock');
+  wilds=wilds.filter(function(t){return !nearby.some(function(p){return Math.abs(t.x-p[0])+Math.abs(t.y-p[1])<=1;});});
+  nearby.forEach(function(p,i){wilds.push({id:p[1]*200+p[0]+1,kind:'wild',type:shuffled[i],x:p[0],y:p[1],level:1+Math.floor(Math.random()*8),occupied:false});});
+  // Connected snowfield: its two outer rings provide medium/thin transitions.
+  wilds=wilds.filter(function(t){return !(t.x>=92&&t.x<=98&&t.y>=93&&t.y<=99);});
+  for(var sy=93;sy<=99;sy++)for(var sx=92;sx<=98;sx++){
+    wilds.push({id:sy*200+sx+1,kind:'wild',type:'snow',x:sx,y:sy,level:1,occupied:false});
+  }
+  wilds=wilds.filter(function(t){return !(t.x===100&&(t.y===18||t.y===42));});
+  [18,42].forEach(function(y){wilds.push({id:y*200+101,kind:'wild',type:'snow',x:100,y:y,level:1,occupied:false});});
+  sampleTargets=sampleTargets.concat(wilds);
+}
+scatterWilds();
+Game.state=Game.Core.state={player:{activeCityId:1},world:{cityPos:{x:100,y:100},pos:{x:100,y:100},marches:[{fromX:100,fromY:100,targetX:98,targetY:102,startAt:Date.now()-5000,arriveAt:Date.now()+120000}]} };
+Game.API={getToken:function(){return 'preview:'+previewGeneration;},getMapChunk:function(cx,cy){requests++;return new Promise(function(resolve,reject){setTimeout(function(){if(failed){reject(Error('演示弱网'));return;}resolve({cx:cx,cy:cy,targets:sampleTargets.filter(function(t){return Math.floor(t.x/16)===cx&&Math.floor(t.y/16)===cy;})});},140);});},getMapTarget:function(kind,id){return Promise.resolve(Object.assign({},sampleTargets.find(function(t){return t.kind===kind&&t.id===id;}),{totalRes:10000,mined:1000}));}};
+Game.Core.route='world';Game.Core.renderTop=function(){};Game.Core.footer=function(){return '';};Game.Core.render=function(){var v=document.getElementById('view');if(!Game.WorldMap.mounted(v))v.innerHTML='';if(Game.WorldMap.isMap())Game.WorldMap.render(v);else v.innerHTML='<button onclick="Game.WorldMap.setMode(\'map\')">返回大地图</button>';};
+Game.toast=function(t){log.textContent=t;};Game.go=function(r){log.textContent='进入：'+r;};Game.World={mapAction:function(t,action){log.textContent='目标 '+t.kind+':'+t.id+'，操作 '+action;}};
+window.addEventListener('error',function(e){log.textContent='ERROR: '+e.message;});
+</script><script src="js/map-camera.js"></script><script src="js/map-chunks.js"></script><script src="js/map-layout.js?v=4.0-hit-test"></script><script src="js/map-terrain.js?v=4.11-northern-snow"></script><script src="js/world-map.js?v=4.14-city-pitch"></script><script>
+if(new URLSearchParams(location.search).has('showcase')){document.querySelector('.fixture-tools').hidden=true;document.getElementById('fixture-log').hidden=true;}
+// A repeatable mixed meadow scene, with resource clearings across a chunk boundary.
+if(new URLSearchParams(location.search).has('meadow')){
+  sampleTargets=[['forest',100,86],['forest',103,89],['grassland',102,87],['grassland',105,88],['oil',103,84],['grainfield',99,91],['ironworks',108,88],['rarefactory',95,87]].map(function(p,i){return {kind:'wild',id:i+1,type:p[0],x:p[1],y:p[2],level:3,occupied:false};});
+  Game.Core.state.world.cityPos={x:101,y:87};Game.Core.state.world.pos={x:101,y:87};Game.Core.state.world.marches=[];
+}
+Game.Core.render();setInterval(function(){var m=Game.WorldMap.metrics();document.getElementById('fixture-metrics').textContent='镜头 '+(m.x||0).toFixed(2)+','+(m.y||0).toFixed(2)+' · 缩放 '+(m.scale||0).toFixed(1)+' · 缓存 '+m.chunks+' · 请求 '+requests+' · 图标 '+m.markers+' · 实际位置 '+Game.state.world.pos.x+','+Game.state.world.pos.y;},300);
+document.getElementById('north-preview').onclick=function(){var form=document.querySelector('.world-map-search');form.querySelector('input').value='100,18';form.requestSubmit();};
+document.getElementById('snow-preview').onclick=function(){var form=document.querySelector('.world-map-search');form.querySelector('input').value='95,96';form.requestSubmit();};
+document.getElementById('scatter').onclick=function(){scatterWilds();previewGeneration++;Game.WorldMap.unmount();Game.Core.render();};
+document.getElementById('rerender').onclick=function(){Game.Core.render();};document.getElementById('netfail').onclick=function(){failed=!failed;this.textContent=failed?'恢复网络':'切换弱网失败';};document.getElementById('theme').onclick=function(){document.documentElement.dataset.theme=document.documentElement.dataset.theme==='3gqq'?'dark':'3gqq';};
+document.getElementById('pinch').onclick=function(){var el=document.querySelector('canvas'),r=el.getBoundingClientRect();function e(type,id,x,y){el.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:'touch',clientX:r.left+x,clientY:r.top+y}));}var old=el.setPointerCapture;el.setPointerCapture=function(){};e('pointerdown',11,140,170);e('pointerdown',12,240,170);e('pointermove',11,100,170);e('pointermove',12,280,170);e('pointerup',11,100,170);e('pointerup',12,280,170);el.setPointerCapture=old;log.textContent='已模拟双指展开手势';};
+</script></body></html>

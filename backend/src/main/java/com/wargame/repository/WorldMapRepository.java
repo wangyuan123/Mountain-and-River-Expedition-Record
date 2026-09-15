@@ -10,4 +10,8 @@ import java.util.Optional;
 public interface WorldMapRepository extends JpaRepository<WorldMap, Long> {
 
     Optional<WorldMap> findFirstByOrderByIdAsc();
+
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("select w from WorldMap w where w.id = :id")
+    Optional<WorldMap> lockById(@org.springframework.data.repository.query.Param("id") Long id);
 }

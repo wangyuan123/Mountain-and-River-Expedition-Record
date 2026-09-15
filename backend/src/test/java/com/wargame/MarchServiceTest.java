@@ -6,6 +6,8 @@ import com.wargame.util.JsonUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.util.Map;
 
@@ -126,6 +128,13 @@ class MarchServiceTest extends BaseServiceTest {
         java.util.List<March> marches = marchRepository.findByPlayerId(playerId);
         boolean hasReturning = marches.stream().anyMatch(March::getReturning);
         assertTrue(hasReturning, "战斗胜利后行军应开始返程");
+
+        // 验证野地征服战报记录了野地占领结果
+        java.util.List<com.wargame.model.entity.ScoutReport> reports = scoutReportRepository.findByPlayerId(playerId);
+        assertFalse(reports.isEmpty(), "应生成战报");
+        com.wargame.model.entity.ScoutReport lastReport = reports.get(reports.size() - 1);
+        assertTrue(lastReport.getData().contains("\"wildConquered\":true"), "战报应包含 wildConquered=true");
+        assertTrue(lastReport.getData().contains("已占领"), "战报标题应包含已占领");
     }
 
     @Test
@@ -209,29 +218,56 @@ class MarchServiceTest extends BaseServiceTest {
         assertTrue(finalTile.getMined() >= 500, "野地已采集量应增加");
     }
 
-    @Test
-    @DisplayName("取消出征: 应归还部队和携带资源并删除行军")
-    void testCancelOutboundMarch() {
-        createArmyUnit(playerId, "infantry", 50);
+    @ParameterizedTest
+    @CsvSource({"wild,conquer,infantry", "player,scout,scout", "wild_gather,gather,truck", "player,transport,truck", "player,rebase,truck"})
+    @DisplayName("途中撤回: 保留返城行军，到达后部队资源和军官只归还一次")
+    void testCancelOutboundMarch(String kind, String action, String unit) {
+        createArmyUnit(playerId, unit, 50);
+        Officer commander = createOfficer(playerId, "march", 30, 20, 10);
         Resources before = getResources(playerId);
         before.setFood(900);
         resourcesRepository.save(before);
 
         long now = System.currentTimeMillis();
-        March march = createMarch(playerId, "wild", String.valueOf(wildTile.getId()),
+        long outboundStart = now - 20_000;
+        March march = createMarch(playerId, kind, String.valueOf(wildTile.getId()),
                 "森林 Lv.1", 10, 10, 15, 15,
-                Map.of("infantry", 50), "conquer", now, now + 60_000, false, false);
+                Map.of(unit, 50), action, outboundStart, now + 40_000, false, false);
+        march.setCommanderId(commander.getId());
         march.setCarryRes(JsonUtil.toJson(Map.of("food", 100, "steel", 0, "oil", 0, "rare", 0)));
         marchRepository.save(march);
-        ArmyUnit dispatched = armyUnitRepository.findByPlayerIdAndType(playerId, "infantry").get(0);
+        ArmyUnit dispatched = armyUnitRepository.findByPlayerIdAndType(playerId, unit).get(0);
         dispatched.setCount(0);
         armyUnitRepository.save(dispatched);
 
         marchService.cancelMarch(playerId, march.getId());
 
+        March returning = marchRepository.findById(march.getId()).orElseThrow();
+        assertTrue(returning.getReturning());
+        assertEquals(10, returning.getTargetX());
+        assertEquals(10, returning.getTargetY());
+        assertEquals(15, returning.getFromX());
+        assertEquals(15, returning.getFromY());
+        assertEquals(60_000L, returning.getArriveAt() - returning.getStartAt());
+        long recalledAt = (returning.getArriveAt() + outboundStart) / 2;
+        assertTrue(recalledAt >= now && recalledAt <= System.currentTimeMillis());
+        assertEquals(0, dispatched.getCount());
+        assertEquals(900, getResources(playerId).getFood());
+        assertEquals("march", commander.getRole());
+        assertThrows(IllegalArgumentException.class, () -> marchService.cancelMarch(playerId, march.getId()));
+
+        marchService.processMarches(playerId, returning.getArriveAt() - 1);
+        assertTrue(marchRepository.findById(march.getId()).isPresent());
+        assertEquals(0, dispatched.getCount());
+        assertTrue(scoutReportRepository.findByPlayerId(playerId).isEmpty());
+        long returnedAt = returning.getArriveAt();
+        marchService.processMarches(playerId, returnedAt);
+        marchService.processMarches(playerId, returnedAt + 1);
         assertTrue(marchRepository.findById(march.getId()).isEmpty());
-        assertEquals(50, armyUnitRepository.findByPlayerIdAndType(playerId, "infantry").get(0).getCount());
+        assertEquals(50, armyUnitRepository.findByPlayerIdAndType(playerId, unit).get(0).getCount());
         assertEquals(1000, getResources(playerId).getFood());
+        assertEquals("idle", officerRepository.findById(commander.getId()).orElseThrow().getRole());
+        assertTrue(scoutReportRepository.findByPlayerId(playerId).isEmpty());
     }
 
     @Test
@@ -276,6 +312,7 @@ class MarchServiceTest extends BaseServiceTest {
         assertFalse(reports.isEmpty());
         ScoutReport r = reports.get(0);
         Map<String, Object> data = JsonUtil.parseObjMap(r.getData());
+        assertEquals("marchplayer", data.get("attackerName"));
         assertEquals(0, data.get("myLost"));
         assertEquals(928, data.get("myScouts"));
         assertEquals(0, data.get("enemyScouts"));
@@ -358,7 +395,7 @@ class MarchServiceTest extends BaseServiceTest {
     }
 
     @Test
-    @DisplayName("征服玩家城后，攻守双方各收到一份未读战报")
+    @DisplayName("击败玩家城守军后保留城权，攻守双方各收到一份未读战报")
     void conquestReportBelongsToOriginalDefender() {
         Long defenderId = createTestPlayer("report-defender", 30).getId();
         createArmyUnit(defenderId, "infantry", 1);
@@ -373,11 +410,17 @@ class MarchServiceTest extends BaseServiceTest {
 
         marchService.processMarches(playerId, now);
 
-        assertEquals(playerId, playerCityRepository.findById(city.getId()).orElseThrow().getOwnerId());
+        assertEquals(defenderId, playerCityRepository.findById(city.getId()).orElseThrow().getOwnerId());
         assertEquals(1L, scoutReportRepository.countUnreadByPlayerId(playerId));
         assertEquals(1L, scoutReportRepository.countUnreadByPlayerId(defenderId));
         assertEquals(1L, gameStateService.getGameState(defenderId).get("unreadReportCount"));
         assertEquals("battle", scoutReportRepository.findByPlayerId(defenderId).get(0).getType());
+        for (Long recipient : java.util.List.of(playerId, defenderId)) {
+            Map<String, Object> report = JsonUtil.parseObjMap(scoutReportRepository.findByPlayerId(recipient).get(0).getData());
+            assertEquals("conquer", report.get("action"));
+            assertEquals("marchplayer", report.get("attackerName"));
+            assertEquals("20,20", report.get("toCoord"));
+        }
     }
 
     @Test
@@ -398,6 +441,7 @@ class MarchServiceTest extends BaseServiceTest {
 
         assertEquals(defenderId, city.getOwnerId());
         assertEquals(false, JsonUtil.parseObjMap(scoutReportRepository.findByPlayerId(playerId).get(0).getData()).get("win"));
+        assertEquals("plunder", JsonUtil.parseObjMap(scoutReportRepository.findByPlayerId(playerId).get(0).getData()).get("action"));
         assertEquals(1L, scoutReportRepository.countUnreadByPlayerId(playerId));
         assertEquals(1L, scoutReportRepository.countUnreadByPlayerId(defenderId));
     }
@@ -462,7 +506,6 @@ class MarchServiceTest extends BaseServiceTest {
         Map<String, Object> data = JsonUtil.parseObjMap(reports.get(0).getData());
 
         assertEquals(0, data.get("reconLevel"));
-        assertEquals(0, data.get("effectiveReconLevel"));
         assertEquals("目视粗探", data.get("tierName"));
         assertTrue((Boolean) data.get("showCityInfo"));
         assertNotNull(data.get("resources"), "基础资源应展示");
@@ -505,7 +548,6 @@ class MarchServiceTest extends BaseServiceTest {
         Map<String, Object> data = JsonUtil.parseObjMap(reports.get(0).getData());
 
         assertEquals(2, data.get("reconLevel"));
-        assertEquals(2, data.get("effectiveReconLevel"));
         assertEquals("战术全貌", data.get("tierName"));
         assertNotNull(data.get("resources"));
         assertNotNull(data.get("forts"), "Lv.2应解锁城防设施");
@@ -547,7 +589,6 @@ class MarchServiceTest extends BaseServiceTest {
         Map<String, Object> data = JsonUtil.parseObjMap(reports.get(0).getData());
 
         assertEquals(5, data.get("reconLevel"));
-        assertEquals(5, data.get("effectiveReconLevel"));
         assertEquals("全维绝密", data.get("tierName"));
         assertNotNull(data.get("resources"));
         assertNotNull(data.get("forts"));
@@ -562,8 +603,8 @@ class MarchServiceTest extends BaseServiceTest {
     }
 
     @Test
-    @DisplayName("分层侦查阶梯: 敌方反侦察科技(recon_stealth)对侦查深度造成压制")
-    void testScoutReportCounterStealth() {
+    @DisplayName("旧版防守科技不会降低侦察等级，情报按出征方等级开放")
+    void testScoutReportIgnoresRetiredDefenderTechnology() {
         createTechnology(playerId, "recon_level", 4);
 
         Long defPlayerId = createTestPlayer("defender_stealth", 30).getId();
@@ -574,8 +615,8 @@ class MarchServiceTest extends BaseServiceTest {
         playerCityRepository.save(defCity);
         createBuilding(defPlayerId, "command", 6);
         createTechnology(defPlayerId, "cmd_attack", 4);
-        // 敌方反侦查 Lv.2
-        createTechnology(defPlayerId, "recon_stealth", 2);
+        // 兼容尚未清理的旧版数据：满级旧科技也不能影响新侦查。
+        createTechnology(defPlayerId, "recon_stealth", 5);
 
         long now = System.currentTimeMillis();
         createMarch(playerId, "player", String.valueOf(defCity.getId()),
@@ -590,12 +631,15 @@ class MarchServiceTest extends BaseServiceTest {
         Map<String, Object> data = JsonUtil.parseObjMap(reports.get(0).getData());
 
         assertEquals(4, data.get("reconLevel"), "我方侦查科技应为4");
-        assertEquals(2, data.get("defenderStealth"), "敌方反侦查科技应为2");
-        assertEquals(2, data.get("effectiveReconLevel"), "实际有效侦查深度应为4-2=2");
-        assertEquals("战术全貌", data.get("tierName"));
+        assertFalse(data.containsKey("defenderStealth"));
+        assertFalse(data.containsKey("effectiveReconLevel"));
+        assertEquals("电磁与科研", data.get("tierName"));
         assertNotNull(data.get("forts"));
         assertNotNull(data.get("army"));
-        assertNull(data.get("buildings"), "被压制至Lv.2时不应泄露建筑");
-        assertNull(data.get("techs"), "被压制至Lv.2时不应泄露科技");
+        assertNotNull(data.get("buildings"), "Lv.4应显示建筑");
+        assertNotNull(data.get("techs"), "Lv.4应显示科技");
+        assertFalse(((Map<?, ?>) data.get("techs")).containsKey("recon_stealth"));
+        assertNotNull(data.get("plunderable"));
+        assertTrue((Boolean) data.get("showCityInfo"));
     }
 }

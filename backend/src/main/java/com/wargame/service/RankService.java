@@ -37,6 +37,11 @@ public class RankService {
         int curPrestige = player.getPrestige() != null ? player.getPrestige() : 0;
 
         Map<String, Object> res = new LinkedHashMap<>();
+        res.put("cityCap", MilitaryRankDef.getCityCap(curTier));
+        res.put("nextCityCap", MilitaryRankDef.getCityCap(Math.min(curTier + 1, MilitaryRankDef.MAX_RANK_TIER)));
+        var nextCityRank = MilitaryRankDef.nextCityRank(curTier);
+        res.put("nextCityRankName", nextCityRank == null ? null : nextCityRank.name());
+        res.put("nextExpansionCap", nextCityRank == null ? MilitaryRankDef.getCityCap(curTier) : MilitaryRankDef.getCityCap(nextCityRank.tier()));
         res.put("tier", curTier);
         res.put("name", curRank.name());
         res.put("baseCap", curRank.baseCap());
@@ -142,7 +147,8 @@ public class RankService {
         result.put("success", true);
         result.put("tier", nextTier);
         result.put("rankName", nextRank.name());
-        result.put("message", "恭喜您晋升为【" + nextRank.name() + "】！基础出兵上限大幅增加！");
+        result.put("cityCap", MilitaryRankDef.getCityCap(nextTier));
+        result.put("message", "恭喜您晋升为【" + nextRank.name() + "】！基础出兵上限增加，最多可拥有 " + MilitaryRankDef.getCityCap(nextTier) + " 座城市。");
 
         return result;
     }

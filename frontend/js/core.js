@@ -51,11 +51,8 @@ window.Game = window.Game || {};
         var k = e.key;
         if (/^[0-9]$/.test(k)) {
           G.Core.pressNumber(parseInt(k, 10));
-        } else if (k === '#') {
-          G.toast('已存档');
         } else if (k === '*') {
-          if (G.Core.route === 'home') G.Main.confirmReset();
-          else G.go('home');
+          if (G.Core.route !== 'home') G.go('home');
         } else if (k === 'Backspace') {
           G.back();
         }
@@ -179,13 +176,23 @@ window.Game = window.Game || {};
           if (arr[j] > 0) used++;
         }
       }
+      if (groupKey === 'res' || groupKey === 'army') {
+        var jobs = s.constructions || (s.construction ? [s.construction] : []);
+        jobs.forEach(function (job) {
+          if (order.indexOf(job.id) >= 0 && job.targetLevel === 1) {
+            var arr = Core.buildingLevels(job.id);
+            var curLv = (job.slot != null) ? (arr[job.slot] || 0) : (arr[0] || 0);
+            if (curLv === 0) used++;
+          }
+        });
+      }
       return used;
     },
 
     groupSlotsCap: function (groupKey) {
       var base = (D.groupSlots && D.groupSlots[groupKey]) || 10;
       var commandLv = this.buildingLevel('command');
-      return base + commandLv * 2;
+      return Math.min(32, base + Math.max(0, commandLv) * 2);
     },
 
     groupSlotsRemaining: function (groupKey) {
@@ -327,7 +334,7 @@ window.Game = window.Game || {};
 
     medicalMul: function () {
       var v = 0.05 * (this.state.tech.log_medical || 0);
-      return Math.min(0.9, v);
+      return Math.max(0, Math.min(0.5, v));
     },
 
     armyCap: function () {
@@ -408,7 +415,7 @@ window.Game = window.Game || {};
       if (lv <= 0) return 0;
       var rates = {
         frenzy: 0.10, bulwark: 0.10, blitz: 0.15, suppress: 0.08,
-        pierce: 0.12, supply: 0.20, medic: 0.15, combo: 0.08
+        pierce: 0.12, supply: 0.20, medic: 0.03, combo: 0.08
       };
       return (rates[skillId] || 0) * lv;
     },
@@ -452,9 +459,6 @@ window.Game = window.Game || {};
         }
         this.state.world._searchCoord = '';
       }
-      if (route === 'alerts' && this.state && this.state.world) {
-        this.state.world.alertsViewed = true;
-      }
       if (G.Main && G.Main.renderNavBar) G.Main.renderNavBar();
       this.render();
     },
@@ -492,8 +496,7 @@ window.Game = window.Game || {};
         '<div class="topbar-player-meta">' +
         '<div class="topbar-player-name">' + nameStr + '</div>' +
         '<div class="topbar-online-status">' +
-        '<span class="online-dot"></span>' +
-        '<span class="online-text">在线 - 5G</span>' +
+        G.WS.statusHtml() +
         '</div>' +
         '</div>' +
         '</div>' +
@@ -514,14 +517,35 @@ window.Game = window.Game || {};
     },
 
     render: function () {
+      if (G.WorldMap && (this.route !== 'world' || !G.WorldMap.isMap())) G.WorldMap.unmount();
+      if (this.route !== 'alerts' && G.World && G.World.stopAlertTimer) G.World.stopAlertTimer();
+      if (this.route !== 'wounded' && G.Wounded) G.Wounded.stop();
       this.renderTop();
       if (G.Main && G.Main.renderNavBar) G.Main.renderNavBar();
       var v = $('view');
       var fn = this.views[this.route] || this.views.home;
-      v.innerHTML = '';
+      if (!(this.route === 'world' && G.WorldMap && G.WorldMap.isMap() && G.WorldMap.mounted(v))) v.innerHTML = '';
       fn.call(this, v);
+      // 每个功能页提供一致的返回入口。按钮放在页面渲染完成后插入，
+      // 因此不会覆盖各模块自己的标题、筛选器或地图容器。
+      if (this.route !== 'home' && this.route !== 'login') this.renderBackButton(v);
       var foot = $('footbar');
       foot.innerHTML = this.footer();
+    },
+
+    renderBackButton: function (view) {
+      if (!view || view.querySelector('.page-backbar')) return;
+      var bar = document.createElement('div');
+      bar.className = 'page-backbar';
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'page-back-button';
+      button.setAttribute('aria-label', '返回上一步');
+      button.title = '返回上一步';
+      button.innerHTML = '<span aria-hidden="true">‹</span><span>返回上一步</span>';
+      button.addEventListener('click', function () { Core.back(); });
+      bar.appendChild(button);
+      view.insertBefore(bar, view.firstChild);
     },
 
     // Refresh top bar smoothly without destroying DOM tree or avatar
@@ -618,7 +642,7 @@ window.Game = window.Game || {};
       }
 
       // 4. Army production: handled by army.js own queue timer
-      if (route === 'army') {
+      if (route === 'army' || route === 'wounded') {
         return;
       }
 
@@ -644,7 +668,7 @@ window.Game = window.Game || {};
     footer: function () {
       var map = {
         login: '登录/注册 或 [0]游客模式',
-        home: '[1-9]导航 [*]重置',
+        home: '[1-9]导航',
         buildRes: '[1-9]升级 [0]返回',
         buildArmy: '[1-9]升级 [0]返回',
         fort: '修筑/拆除城防 [0]返回',
@@ -654,7 +678,7 @@ window.Game = window.Game || {};
         tech: '[1-6]研究 [0]返回',
         map: '点击挑战 [0]返回',
         wild: '点击占领/废弃 [0]返回',
-        world: '方向键移动 输入坐标定位 [0]返回',
+        world: '拖动浏览 · 双指缩放 · 点击目标查看详情',
         dispatch: '选配兵力/军官/辎重 [0]返回',
         alerts: '查看军情 [0]返回',
         reports: '点击展开 [0]返回',

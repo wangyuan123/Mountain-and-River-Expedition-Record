@@ -38,6 +38,18 @@ public class BuildController {
         return ResponseEntity.ok(result);
     }
 
+    @PostMapping("/dismantle")
+    public ResponseEntity<Map<String, Object>> dismantle(@RequestBody GameDtos.BuildRequest request) {
+        if (request.building() == null || request.building().isBlank()) {
+            throw new IllegalArgumentException("建筑类型不能为空");
+        }
+        Long playerId = authService.getCurrentPlayer().getId();
+        int slot = request.slot() != null ? request.slot() : 0;
+        Map<String, Object> result = buildService.dismantle(playerId, request.building(), slot);
+        result.put("state", gameStateService.getGameState(playerId));
+        return ResponseEntity.ok(result);
+    }
+
     @PostMapping("/cancel")
     public ResponseEntity<Map<String, Object>> cancel(@RequestBody GameDtos.BuildRequest request) {
         if (request.building() == null || request.building().isBlank()) {

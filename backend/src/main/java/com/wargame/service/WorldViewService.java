@@ -12,6 +12,9 @@ import java.util.*;
 @Service
 @Transactional(readOnly = true)
 public class WorldViewService {
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.service.CityScope cityScope;
     private final WorldMapRepository worldMapRepository;
     private final NpcCityRepository npcCityRepository;
     private final PlayerCityRepository playerCityRepository;
@@ -20,8 +23,9 @@ public class WorldViewService {
     private final PlayerRepository playerRepository;
     private final MarchRepository marchRepository;
     private final IncomingMarchRepository incomingMarchRepository;
+    private final ArmyUnitRepository armyUnitRepository;
 
-    public WorldViewService(WorldMapRepository worldMapRepository, NpcCityRepository npcCityRepository, PlayerCityRepository playerCityRepository, BanditRepository banditRepository, WildTileRepository wildTileRepository, PlayerRepository playerRepository, MarchRepository marchRepository, IncomingMarchRepository incomingMarchRepository) {
+    public WorldViewService(WorldMapRepository worldMapRepository, NpcCityRepository npcCityRepository, PlayerCityRepository playerCityRepository, BanditRepository banditRepository, WildTileRepository wildTileRepository, PlayerRepository playerRepository, MarchRepository marchRepository, IncomingMarchRepository incomingMarchRepository, ArmyUnitRepository armyUnitRepository) {
         this.worldMapRepository = worldMapRepository;
         this.npcCityRepository = npcCityRepository;
         this.playerCityRepository = playerCityRepository;
@@ -30,6 +34,13 @@ public class WorldViewService {
         this.playerRepository = playerRepository;
         this.marchRepository = marchRepository;
         this.incomingMarchRepository = incomingMarchRepository;
+        this.armyUnitRepository = armyUnitRepository;
+    }
+
+    private Map<String, Object> armyMapFor(Long playerId, int slot) {
+        Map<String, Object> out = new LinkedHashMap<>();
+        for (ArmyUnit unit : armyUnitRepository.findByPlayerIdAndCitySlot(playerId, slot)) out.put(unit.getType(), unit.getCount());
+        return out;
     }
 
     public Map<String, Object> getWorld(Long playerId, int x, int y, int radius) {
@@ -57,8 +68,8 @@ public class WorldViewService {
         world.put("pos", pos);
 
         Map<String, Object> cityPos = new LinkedHashMap<>();
-        cityPos.put("x", player.getCityPosX() != null ? player.getCityPosX() : 0);
-        cityPos.put("y", player.getCityPosY() != null ? player.getCityPosY() : 0);
+        cityPos.put("x", cityScope.economy(player.getId()).getCityPosX());
+        cityPos.put("y", cityScope.economy(player.getId()).getCityPosY());
         world.put("cityPos", cityPos);
 
         // Find world
@@ -107,11 +118,13 @@ public class WorldViewService {
                 PlayerCity pc = entities.get(i);
                 Map<String, Object> pcMap = new LinkedHashMap<>();
                 pcMap.put("id", pc.getId());
+                pcMap.put("readyAt", pc.getReadyAt());
+                pcMap.put("mainCity", Integer.valueOf(0).equals(pc.getCitySlot()));
                 pcMap.put("name", pc.getName());
                 pcMap.put("x", pc.getX());
                 pcMap.put("y", pc.getY());
                 pcMap.put("level", pc.getLevel());
-                pcMap.put("army", JsonUtil.parseObjMap(pc.getArmy()));
+                pcMap.put("army", pc.getOwnerId() != null ? armyMapFor(pc.getOwnerId(), java.util.Objects.requireNonNullElse(pc.getCitySlot(), 0)) : Collections.emptyMap());
                 pcMap.put("forts", JsonUtil.parseObjMap(pc.getForts()));
                 pcMap.put("reward", JsonUtil.parseObjMap(pc.getResources()));
                 pcMap.put("defeated", false);
@@ -200,39 +213,22 @@ public class WorldViewService {
         List<Map<String, Object>> marches = new ArrayList<>();
         Long playerId = player.getId();
         if (playerId != null) {
-            List<March> entities = marchRepository.findByPlayerId(playerId);
+            List<March> entities = marchRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
+            long now = System.currentTimeMillis();
             for (March m : entities) {
-                Map<String, Object> mMap = new LinkedHashMap<>();
-                mMap.put("id", m.getId());
-                mMap.put("targetKind", m.getTargetKind());
-                mMap.put("targetIdx", m.getTargetIdx());
-                mMap.put("targetId", m.getTargetId());
-                mMap.put("targetName", m.getTargetName());
-                mMap.put("targetX", m.getTargetX());
-                mMap.put("targetY", m.getTargetY());
-                mMap.put("fromX", m.getFromX());
-                mMap.put("fromY", m.getFromY());
-                mMap.put("distance", m.getDistance());
-                mMap.put("action", m.getAction());
-                mMap.put("army", JsonUtil.parseObjMap(m.getArmy()));
-                mMap.put("commanderId", m.getCommanderId());
-                mMap.put("carryRes", JsonUtil.parseObjMap(m.getCarryRes()));
-                mMap.put("startAt", m.getStartAt());
-                mMap.put("arriveAt", m.getArriveAt());
-                mMap.put("returning", m.getReturning() != null && m.getReturning());
-                mMap.put("gathering", m.getGathering() != null && m.getGathering());
-                mMap.put("gatherEndAt", m.getGatherEndAt());
-                mMap.put("gatherAmount", m.getGatherAmount());
-                mMap.put("gatherRes", m.getGatherRes());
-                mMap.put("originName", m.getOriginName());
-                mMap.put("originX", m.getOriginX());
-                mMap.put("originY", m.getOriginY());
-                marches.add(mMap);
+                marches.add(toMarchMap(m, now));
             }
         }
         world.put("marches", marches);
 
-        // Incoming
+        world.put("incoming", getIncoming(player));
+
+        return world;
+    }
+
+    /** 来袭情报直接关联实际行军，避免再创建一份会重复结算战斗的 IncomingMarch。 */
+    public List<Map<String, Object>> getIncoming(Player player) {
+        Long playerId = player.getId();
         List<Map<String, Object>> incoming = new ArrayList<>();
         if (playerId != null) {
             List<IncomingMarch> entities = incomingMarchRepository.findByTargetPlayerId(playerId);
@@ -256,9 +252,79 @@ public class WorldViewService {
                 incoming.add(imMap);
             }
         }
-        world.put("incoming", incoming);
 
-        return world;
+        List<PlayerCity> cities = playerCityRepository.findByOwnerId(playerId);
+        if (!cities.isEmpty()) {
+            List<String> cityIds = cities.stream().map(c -> String.valueOf(c.getId())).toList();
+            for (March march : marchRepository.findIncomingPlayerMarches(playerId, cityIds)) {
+                Player attacker = playerRepository.findById(march.getPlayerId()).orElse(null);
+                Map<String, Object> info = new LinkedHashMap<>();
+                // 与旧版 IncomingMarch 的数字 ID 分开，避免前端误去重。
+                info.put("id", "march-" + march.getId());
+                info.put("marchId", march.getId());
+                info.put("fromName", attacker != null ? attacker.getUsername() : "未知敌军");
+                info.put("attackerName", info.get("fromName"));
+                info.put("fromX", march.getFromX());
+                info.put("fromY", march.getFromY());
+                info.put("targetCityId", march.getTargetId());
+                info.put("targetName", march.getTargetName());
+                info.put("targetX", march.getTargetX());
+                info.put("targetY", march.getTargetY());
+                info.put("army", JsonUtil.parseObjMap(march.getArmy()));
+                info.put("arriveAt", march.getArriveAt());
+                info.put("action", march.getAction());
+                info.put("arrived", false);
+                incoming.add(info);
+            }
+        }
+        return incoming;
+    }
+
+    public Map<String, Object> toMarchMap(March m, long now) {
+        Map<String, Object> mMap = new LinkedHashMap<>();
+        mMap.put("id", m.getId());
+        mMap.put("targetKind", m.getTargetKind());
+        mMap.put("targetIdx", m.getTargetIdx());
+        mMap.put("targetId", m.getTargetId());
+        mMap.put("targetName", m.getTargetName());
+        mMap.put("targetX", m.getTargetX());
+        mMap.put("targetY", m.getTargetY());
+        mMap.put("fromX", m.getFromX());
+        mMap.put("fromY", m.getFromY());
+        mMap.put("distance", m.getDistance());
+        mMap.put("routeMode", m.getRouteMode());
+        mMap.put("route", JsonUtil.parseTree(m.getRouteData()));
+        mMap.put("action", m.getAction());
+        mMap.put("army", JsonUtil.parseObjMap(m.getArmy()));
+        mMap.put("commanderId", m.getCommanderId());
+        mMap.put("carryRes", JsonUtil.parseObjMap(m.getCarryRes()));
+        mMap.put("startAt", m.getStartAt());
+        mMap.put("arriveAt", m.getArriveAt());
+        mMap.put("returning", Boolean.TRUE.equals(m.getReturning()));
+        mMap.put("gathering", Boolean.TRUE.equals(m.getGathering()));
+        mMap.put("gatherEndAt", m.getGatherEndAt());
+        mMap.put("gatherAmount", m.getGatherAmount());
+        mMap.put("gatherRes", m.getGatherRes());
+        mMap.put("originName", m.getOriginName());
+        mMap.put("originX", m.getOriginX());
+        mMap.put("originY", m.getOriginY());
+
+        long start = m.getStartAt() != null ? m.getStartAt() : now;
+        long arrive = m.getArriveAt() != null ? m.getArriveAt() : now;
+        if (Boolean.TRUE.equals(m.getGathering())) {
+            long gatherEnd = m.getGatherEndAt() != null ? m.getGatherEndAt() : now;
+            mMap.put("progress", calcProgress(start, gatherEnd, now));
+        } else {
+            mMap.put("progress", calcProgress(start, arrive, now));
+        }
+        return mMap;
+    }
+
+    private int calcProgress(long start, long end, long now) {
+        if (end <= start) return 100;
+        if (now <= start) return 0;
+        if (now >= end) return 100;
+        return (int) Math.min(100, Math.max(0, (now - start) * 100 / (end - start)));
     }
 
 }

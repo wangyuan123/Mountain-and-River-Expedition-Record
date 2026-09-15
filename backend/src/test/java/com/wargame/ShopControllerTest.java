@@ -203,4 +203,87 @@ public class ShopControllerTest extends BaseServiceTest {
         PlayerItem newWeaponItem = playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "recruit_knowledge_weapon").orElseThrow();
         assertEquals(0, newWeaponItem.getCount(), "新武器应已被穿戴且背包数量为0");
     }
+
+    @Test
+    @DisplayName("购买军衔珠宝宝箱并开启：扣除200钻石、入仓、开箱后发放5种晋升珠宝")
+    void testBuyAndOpenJewelryBox() {
+        Resources res = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
+        res.setDiamond(500);
+        resourcesRepository.save(res);
+
+        // 1. 购买军衔珠宝宝箱 (200钻)
+        ResponseEntity<Map<String, Object>> buyResp = shopController.buy(new GameDtos.ShopBuyRequest("box_gem"));
+        assertNotNull(buyResp.getBody());
+        assertTrue((Boolean) buyResp.getBody().get("success"), "购买军衔珠宝宝箱应成功");
+        assertEquals("已购买 军衔珠宝宝箱", buyResp.getBody().get("message"));
+
+        Resources updatedRes = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
+        assertEquals(300, updatedRes.getDiamond(), "扣除200钻后应剩余300钻");
+
+        PlayerItem boxItem = playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "box_gem").orElseThrow();
+        assertEquals(1, boxItem.getCount(), "仓库中应有1个军衔珠宝宝箱");
+
+        // 2. 玩家在仓库中开启军衔珠宝宝箱
+        Map<String, Object> openResp = depotService.useItem(player.getId(), "box_gem", null, null);
+        assertNotNull(openResp);
+        assertTrue((Boolean) openResp.get("success"), "开启珠宝宝箱应成功: " + openResp.get("message"));
+        assertTrue(((String) openResp.get("message")).contains("开启【军衔珠宝宝箱】"));
+
+        // 3. 验证宝箱已被扣除
+        PlayerItem afterOpenBox = playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "box_gem").orElseThrow();
+        assertEquals(0, afterOpenBox.getCount(), "开箱后宝箱数量应为0");
+
+        // 4. 验证获得对应晋升珠宝：珍珠×5、珊瑚×3、琉璃×3、琥珀×2、玛瑙×2
+        assertEquals(5, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "gem_pearl").orElseThrow().getCount());
+        assertEquals(3, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "gem_coral").orElseThrow().getCount());
+        assertEquals(3, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "gem_glaze").orElseThrow().getCount());
+        assertEquals(2, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "gem_amber").orElseThrow().getCount());
+        assertEquals(2, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "gem_agate").orElseThrow().getCount());
+    }
+
+    @Test
+    @DisplayName("购买璀璨珠宝全集箱并开启：发放全部9种晋升珠宝各5颗")
+    void testBuyAndOpenGrandJewelryBox() {
+        Resources res = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
+        res.setDiamond(3000);
+        resourcesRepository.save(res);
+
+        // 1. 购买璀璨珠宝全集箱 (2500钻)
+        ResponseEntity<Map<String, Object>> buyResp = shopController.buy(new GameDtos.ShopBuyRequest("box_gem_grand"));
+        assertNotNull(buyResp.getBody());
+        assertTrue((Boolean) buyResp.getBody().get("success"), "购买璀璨珠宝全集箱应成功");
+
+        Resources updatedRes = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
+        assertEquals(500, updatedRes.getDiamond(), "扣除2500钻后应剩余500钻");
+
+        // 2. 开启宝箱
+        Map<String, Object> openResp = depotService.useItem(player.getId(), "box_gem_grand", null, null);
+        assertNotNull(openResp);
+        assertTrue((Boolean) openResp.get("success"), "开启宝箱应成功");
+
+        // 3. 验证全部9种珠宝各获得5颗
+        String[] allGems = {
+            "gem_pearl", "gem_coral", "gem_glaze", "gem_amber", "gem_agate",
+            "gem_crystal", "gem_jadeite", "gem_jade", "gem_nightpearl"
+        };
+        for (String gemKey : allGems) {
+            PlayerItem pi = playerItemRepository.findByPlayerIdAndItemKey(player.getId(), gemKey).orElseThrow();
+            assertEquals(5, pi.getCount(), "应获得珠宝 " + gemKey + " 各5颗");
+        }
+    }
+
+    @Test
+    @DisplayName("6种军衔珠宝宝箱均在ItemDef与价格表中正确注册")
+    void testAllJewelryBoxesRegistered() {
+        String[] boxKeys = {
+            "box_gem", "box_gem_primary", "box_gem_medium",
+            "box_gem_senior", "box_gem_supreme", "box_gem_grand"
+        };
+        for (String key : boxKeys) {
+            ItemDef def = ItemDef.ITEMS.get(key);
+            assertNotNull(def, "ItemDef 应注册 " + key);
+            assertEquals("jewelry", def.cat(), "宝箱分类应为 jewelry");
+            assertTrue(def.name().contains("宝箱") || def.name().contains("箱"), "名称应包含宝箱: " + def.name());
+        }
+    }
 }

@@ -1,6 +1,7 @@
 package com.wargame.service;
 
 import com.wargame.model.constants.WildTypeDef;
+import com.wargame.model.constants.GameData;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
 import com.wargame.util.JsonUtil;
@@ -10,6 +11,10 @@ import java.util.*;
 /** Target lookup and intelligence access, shared by dispatch and battle settlement. */
 @Service
 public class MarchTargetService {
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.service.CityScope cityScope;
+    @org.springframework.beans.factory.annotation.Autowired private ResourcesRepository resourcesRepository;
     private final WildTileRepository wildTileRepository;
     private final BanditRepository banditRepository;
     private final NpcCityRepository npcCityRepository;
@@ -89,13 +94,13 @@ public class MarchTargetService {
         if (target instanceof WildTile wt) return JsonUtil.parseIntMap(wt.getGarrison());
         if (target instanceof Bandit b) return JsonUtil.parseIntMap(b.getArmy());
         if (target instanceof NpcCity n) return JsonUtil.parseIntMap(n.getArmy());
-        if (target instanceof PlayerCity p) return JsonUtil.parseIntMap(p.getArmy());
+        if (target instanceof PlayerCity p && hasRealOwner(p)) { try (var ignored = cityScope.enter(p)) { return getArmyMap(p.getOwnerId()); } }
         return Collections.emptyMap();
     }
 
     public Map<String, Integer> getTargetForts(Object target) {
         if (target instanceof NpcCity n) return JsonUtil.parseIntMap(n.getForts());
-        if (target instanceof PlayerCity p) return JsonUtil.parseIntMap(p.getForts());
+        if (target instanceof PlayerCity p) { if (hasRealOwner(p)) { try (var ignored = cityScope.enter(p)) { return getFortsMap(p.getOwnerId()); } } return JsonUtil.parseIntMap(p.getForts()); }
         return Collections.emptyMap();
     }
 
@@ -108,7 +113,14 @@ public class MarchTargetService {
             return Map.of(wtDef.res(), remain);
         }
         if (target instanceof NpcCity n) return JsonUtil.parseIntMap(n.getResources());
-        if (target instanceof PlayerCity p) return JsonUtil.parseIntMap(p.getResources());
+        if (target instanceof PlayerCity p) {
+            if (hasRealOwner(p)) {
+                Resources r = resourcesRepository.findByPlayerIdAndCitySlot(p.getOwnerId(), Objects.requireNonNullElse(p.getCitySlot(), 0)).orElse(null);
+                if (r == null) return Collections.emptyMap();
+                return Map.of("food", Objects.requireNonNullElse(r.getFood(), 0), "steel", Objects.requireNonNullElse(r.getSteel(), 0), "oil", Objects.requireNonNullElse(r.getOil(), 0), "rare", Objects.requireNonNullElse(r.getRare(), 0), "gold", Objects.requireNonNullElse(r.getGold(), 0));
+            }
+            return JsonUtil.parseIntMap(p.getResources());
+        }
         return Collections.emptyMap();
     }
 
@@ -153,11 +165,12 @@ public class MarchTargetService {
             army.put("scout", scoutCount);
             wt.setGarrison(JsonUtil.toJson(army));
             wildTileRepository.save(wt);
-        } else if (target instanceof PlayerCity pc) {
-            Map<String, Integer> army = JsonUtil.parseIntMap(pc.getArmy());
-            army.put("scout", scoutCount);
-            pc.setArmy(JsonUtil.toJson(army));
-            playerCityRepository.save(pc);
+        } else if (target instanceof PlayerCity pc && pc.getOwnerId() != null) {
+            List<ArmyUnit> units = armyUnitRepository.findByPlayerIdAndCitySlotAndType(pc.getOwnerId(), Objects.requireNonNullElse(pc.getCitySlot(), 0), "scout");
+            ArmyUnit unit = units.isEmpty() ? new ArmyUnit(null, pc.getOwnerId(), "scout", 0) : units.get(0);
+            unit.setCitySlot(Objects.requireNonNullElse(pc.getCitySlot(), 0));
+            unit.setCount(Math.max(0, scoutCount));
+            armyUnitRepository.save(unit);
         } else if (target instanceof NpcCity nc) {
             Map<String, Integer> army = JsonUtil.parseIntMap(nc.getArmy());
             army.put("scout", scoutCount);
@@ -169,7 +182,7 @@ public class MarchTargetService {
     // ===== 玩家信息获取 =====
 
     public Map<String, Integer> getArmyMap(Long playerId) {
-        List<ArmyUnit> units = armyUnitRepository.findByPlayerId(playerId);
+        List<ArmyUnit> units = armyUnitRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         Map<String, Integer> map = new LinkedHashMap<>();
         for (ArmyUnit u : units) {
             int count = u.getCount() != null ? u.getCount() : 0;
@@ -179,7 +192,7 @@ public class MarchTargetService {
     }
 
     public Map<String, Integer> getFortsMap(Long playerId) {
-        List<Fortification> forts = fortificationRepository.findByPlayerId(playerId);
+        List<Fortification> forts = fortificationRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         Map<String, Integer> map = new LinkedHashMap<>();
         for (Fortification f : forts) {
             int count = f.getCount() != null ? f.getCount() : 0;
@@ -198,7 +211,7 @@ public class MarchTargetService {
     }
 
     public Officer getCommander(Long playerId) {
-        List<Officer> officers = officerRepository.findByPlayerIdAndRole(playerId, "commander");
+        List<Officer> officers = officerRepository.findByPlayerIdAndCitySlotAndRole(playerId, cityScope.slot(playerId), "commander");
         return (officers != null && !officers.isEmpty()) ? officers.get(0) : null;
     }
 
@@ -226,7 +239,7 @@ public class MarchTargetService {
     }
 
     public int buildingLevel(Long playerId, String type) {
-        List<Building> buildings = buildingRepository.findByPlayerIdAndType(playerId, type);
+        List<Building> buildings = buildingRepository.findByPlayerIdAndCitySlotAndType(playerId, cityScope.slot(playerId), type);
         int sum = 0;
         for (Building b : buildings) {
             sum += b.getLevel() != null ? b.getLevel() : 0;
@@ -267,7 +280,7 @@ public class MarchTargetService {
     public Map<String, Integer> getTargetBuildingsMap(Object target) {
         Map<String, Integer> bMap = new LinkedHashMap<>();
         if (target instanceof PlayerCity pc && hasRealOwner(pc)) {
-            List<Building> buildings = buildingRepository.findByPlayerId(pc.getOwnerId());
+            List<Building> buildings = buildingRepository.findByPlayerIdAndCitySlot(pc.getOwnerId(), Objects.requireNonNullElse(pc.getCitySlot(), 0));
             if (buildings != null) {
                 for (Building b : buildings) {
                     int lv = b.getLevel() != null ? b.getLevel() : 0;
@@ -288,7 +301,7 @@ public class MarchTargetService {
 
     public int getTargetOfficerCount(Object target) {
         if (target instanceof PlayerCity pc && hasRealOwner(pc)) {
-            List<Officer> officers = officerRepository.findByPlayerId(pc.getOwnerId());
+            List<Officer> officers = officerRepository.findByPlayerIdAndCitySlot(pc.getOwnerId(), Objects.requireNonNullElse(pc.getCitySlot(), 0));
             return officers != null ? officers.size() : 0;
         } else if (target instanceof NpcCity nc) {
             return Math.max(1, (nc.getLevel() != null ? nc.getLevel() : 1) / 2);
@@ -302,7 +315,7 @@ public class MarchTargetService {
             List<Technology> techs = technologyRepository.findByPlayerId(pc.getOwnerId());
             if (techs != null) {
                 for (Technology t : techs) {
-                    if (t.getLevel() != null && t.getLevel() > 0) {
+                    if (GameData.TECHS.containsKey(t.getType()) && t.getLevel() != null && t.getLevel() > 0) {
                         tMap.put(t.getType(), t.getLevel());
                     }
                 }
@@ -335,7 +348,7 @@ public class MarchTargetService {
     public List<Map<String, Object>> getTargetOfficerList(Object target) {
         List<Map<String, Object>> list = new ArrayList<>();
         if (target instanceof PlayerCity pc && hasRealOwner(pc)) {
-            List<Officer> officers = officerRepository.findByPlayerId(pc.getOwnerId());
+            List<Officer> officers = officerRepository.findByPlayerIdAndCitySlot(pc.getOwnerId(), Objects.requireNonNullElse(pc.getCitySlot(), 0));
             if (officers != null) {
                 for (Officer o : officers) {
                     Map<String, Object> oMap = new LinkedHashMap<>();

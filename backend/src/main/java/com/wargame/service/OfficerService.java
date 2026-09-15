@@ -32,6 +32,10 @@ import java.util.concurrent.ThreadLocalRandom;
 @Service
 public class OfficerService {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.service.CityScope cityScope;
+
+    @org.springframework.beans.factory.annotation.Autowired private com.wargame.repository.MarchRepository marches;
     private final OfficerRepository officerRepository;
     private final AcademyRepository academyRepository;
     private final ResourcesRepository resourcesRepository;
@@ -107,7 +111,7 @@ public class OfficerService {
         // JS: if (force) { cost = 50; check gold; deduct }
         int liaisonLv = buildingLevel(playerId, "liaison");
         // force=true (主动刷新需花费黄金)
-        Resources res = resourcesRepository.findByPlayerId(playerId).orElse(null);
+        Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (res == null || getGold(res) < ACADEMY_REFRESH_COST) {
             result.put("success", false);
             result.put("message", "黄金不足(需" + ACADEMY_REFRESH_COST + ")");
@@ -138,7 +142,7 @@ public class OfficerService {
     // ================================================================
 
     public List<Map<String, Object>> getAcademyList(Long playerId) {
-        Academy academy = academyRepository.findByPlayerId(playerId).orElse(null);
+        Academy academy = academyRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (academy == null || academy.getOfficers() == null || academy.getOfficers().isBlank()) {
             return Collections.emptyList();
         }
@@ -153,7 +157,7 @@ public class OfficerService {
     public Map<String, Object> recruit(Long playerId, int officerIdx) {
         Map<String, Object> result = new LinkedHashMap<>();
 
-        Academy academy = academyRepository.findByPlayerId(playerId).orElse(null);
+        Academy academy = academyRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (academy == null) {
             result.put("success", false);
             result.put("message", "军校未初始化");
@@ -172,7 +176,7 @@ public class OfficerService {
 
         // JS: var cost = o.star * 80
         int cost = star * RECRUIT_COST_PER_STAR;
-        Resources res = resourcesRepository.findByPlayerId(playerId).orElse(null);
+        Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (res == null || getGold(res) < cost) {
             result.put("success", false);
             result.put("message", "黄金不足(需" + cost + ")");
@@ -191,6 +195,7 @@ public class OfficerService {
         // 添加到军官列表 (JS: o.role = 'idle'; s.officers.push(o))
         Officer officer = new Officer();
         officer.setPlayerId(playerId);
+        officer.setCitySlot(cityScope.slot(playerId));
         officer.setName(o.get("name") != null ? o.get("name").toString() : "未知");
         officer.setStar(star);
         officer.setLevel(1);
@@ -228,7 +233,7 @@ public class OfficerService {
     public Map<String, Object> appoint(Long playerId, Long officerId, String role) {
         Map<String, Object> result = new LinkedHashMap<>();
 
-        List<Officer> officers = officerRepository.findByPlayerId(playerId);
+        List<Officer> officers = officerRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         Officer target = null;
         for (Officer o : officers) {
             if (o.getId().equals(officerId)) {
@@ -242,6 +247,7 @@ public class OfficerService {
             return result;
         }
 
+        if (marches.existsByPlayerIdAndCommanderId(playerId, officerId)) throw new IllegalArgumentException("军官正在行军，无法任命");
         String currentRole = target.getRole() != null ? target.getRole() : "idle";
 
         // JS: if (s.officers[i].role === role) { set to idle (取消任命) }
@@ -282,7 +288,7 @@ public class OfficerService {
     public Map<String, Object> dismiss(Long playerId, Long officerId) {
         Map<String, Object> result = new LinkedHashMap<>();
 
-        List<Officer> officers = officerRepository.findByPlayerId(playerId);
+        List<Officer> officers = officerRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         Officer target = null;
         for (Officer o : officers) {
             if (o.getId().equals(officerId)) {
@@ -296,10 +302,11 @@ public class OfficerService {
             return result;
         }
 
+        if (marches.existsByPlayerIdAndCommanderId(playerId, officerId)) throw new IllegalArgumentException("军官正在行军，无法解雇");
         // JS: s.resources.gold += o.star * 20
         int star = target.getStar() != null ? target.getStar() : 1;
         int refund = star * DISMISS_REFUND_PER_STAR;
-        Resources res = resourcesRepository.findByPlayerId(playerId).orElse(null);
+        Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (res != null) {
             setGold(res, getGold(res) + refund);
             resourcesRepository.save(res);
@@ -345,7 +352,7 @@ public class OfficerService {
         int level = officer.getLevel() != null ? officer.getLevel() : 1;
         int cost = star * 50 + level * 2;
 
-        Resources res = resourcesRepository.findByPlayerId(playerId).orElse(null);
+        Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (res == null || getGold(res) < cost) {
             result.put("success", false);
             result.put("message", "黄金不足(需" + cost + ")");
@@ -746,7 +753,7 @@ public class OfficerService {
         }
 
         int cost = 200;
-        Resources res = resourcesRepository.findByPlayerId(playerId).orElse(null);
+        Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (res == null || getGold(res) < cost) {
             result.put("success", false);
             result.put("message", "黄金不足(需 " + cost + " 黄金)");
@@ -940,7 +947,7 @@ public class OfficerService {
 
     // ================================================================
     //  genOfficer - 对应 JS G.genOfficer(liaisonLv)
-    //  精确复制 JS 生成逻辑
+    //  与前端 JS 保持一致的生成逻辑
     // ================================================================
 
     public Map<String, Object> genOfficer(int liaisonLv) {
@@ -1054,9 +1061,10 @@ public class OfficerService {
     // ================================================================
 
     private Academy getOrCreateAcademy(Long playerId) {
-        return academyRepository.findByPlayerId(playerId).orElseGet(() -> {
+        return academyRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElseGet(() -> {
             Academy a = new Academy();
             a.setPlayerId(playerId);
+            a.setCitySlot(cityScope.slot(playerId));
             a.setRefreshAt(0L);
             a.setOfficers("[]");
             return academyRepository.save(a);
@@ -1064,7 +1072,7 @@ public class OfficerService {
     }
 
     private Officer findOfficer(Long playerId, Long officerId) {
-        List<Officer> officers = officerRepository.findByPlayerId(playerId);
+        List<Officer> officers = officerRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         for (Officer o : officers) {
             if (o.getId().equals(officerId)) return o;
         }
@@ -1077,7 +1085,7 @@ public class OfficerService {
     }
 
     private int buildingLevel(Long playerId, String buildingType) {
-        List<Building> buildings = buildingRepository.findByPlayerIdAndType(playerId, buildingType);
+        List<Building> buildings = buildingRepository.findByPlayerIdAndCitySlotAndType(playerId, cityScope.slot(playerId), buildingType);
         int sum = 0;
         for (Building b : buildings) {
             sum += b.getLevel() != null ? b.getLevel() : 0;

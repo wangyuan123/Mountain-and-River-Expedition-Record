@@ -36,10 +36,10 @@ public record BuildingDef(
         m.put("command", new BuildingDef("command", "市政厅", "主城,决定其他建筑等级上限",
                 Map.of("steel", 400, "food", 200), 1.6, "core", 1));
         m.put("house", new BuildingDef("house", "民居", "提供人口上限,每级+1200人口",
-                Map.of("steel", 120, "food", 60), 1.5, "core", 20,
+                Map.of("steel", 120, "food", 60), 1.5, "core", GameConstants.GROUP_SLOTS_ARMY_MAX,
                 1200, null, null, null, null, null, null, null));
         m.put("factory", new BuildingDef("factory", "军工厂", "生产步兵/卡车/装甲车与战机",
-                Map.of("steel", 240, "oil", 100), 1.6, "army", 10));
+                Map.of("steel", 240, "oil", 100), 1.6, "army", GameConstants.GROUP_SLOTS_ARMY_MAX));
         m.put("lightfactory", new BuildingDef("lightfactory", "轻工厂", "生产轻型坦克",
                 Map.of("steel", 260, "oil", 110, "rare", 10), 1.6, "army", 1));
         m.put("heavyfactory", new BuildingDef("heavyfactory", "重工厂", "生产重型坦克/突击炮/火箭",
@@ -53,19 +53,19 @@ public record BuildingDef(
         m.put("staff", new BuildingDef("staff", "参谋部", "军官槽位与野地上限,带兵上限 +10%/级",
                 Map.of("steel", 220, "food", 100), 1.6, "core", 1));
         m.put("farm", new BuildingDef("farm", "农田", "每小时产出粮食",
-                Map.of("steel", 80), 1.5, "res", 10,
+                Map.of("steel", 80), 1.5, "res", GameConstants.GROUP_SLOTS_RES_MAX,
                 null, "food", 40, null, null, null, null, null));
         m.put("refinery", new BuildingDef("refinery", "炼钢厂", "每小时产出钢铁",
-                Map.of("steel", 80), 1.5, "res", 10,
+                Map.of("steel", 80), 1.5, "res", GameConstants.GROUP_SLOTS_RES_MAX,
                 null, "steel", 40, null, null, null, null, null));
         m.put("oilfield", new BuildingDef("oilfield", "石油基地", "每小时产出石油",
-                Map.of("steel", 80), 1.5, "res", 36,
+                Map.of("steel", 80), 1.5, "res", GameConstants.GROUP_SLOTS_RES_MAX,
                 null, "oil", 25, null, null, null, null, null));
         m.put("raremine", new BuildingDef("raremine", "稀矿厂", "每小时产出稀矿",
-                Map.of("steel", 120, "oil", 40), 1.6, "res", 10,
+                Map.of("steel", 120, "oil", 40), 1.6, "res", GameConstants.GROUP_SLOTS_RES_MAX,
                 null, "rare", 12, null, null, null, null, null));
         m.put("depot", new BuildingDef("depot", "仓库", "提升资源上限,被掠夺时保护资源",
-                Map.of("steel", 100), 1.5, "res", 10,
+                Map.of("steel", 100), 1.5, "res", GameConstants.GROUP_SLOTS_ARMY_MAX,
                 null, null, null, 1500, 1000, null, null, null));
         m.put("lab", new BuildingDef("lab", "科研中心", "解锁与加速科技研究",
                 Map.of("steel", 200, "food", 100, "rare", 20), 1.6, "core", 1));

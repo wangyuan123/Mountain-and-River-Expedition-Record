@@ -15,7 +15,7 @@
 
 | 顺序 | ID | 标题 | 跳转目标 |
 |------|-----|------|----------|
-| 0 | `g_welcome` | 欢迎来到山河远征 | - |
+| 0 | `g_welcome` | 欢迎来到烽原战策 | - |
 | 1 | `g_open_res` | 先看看资源区 | `buildRes` ([1]) |
 | 2 | `g_upgrade_farm` | 把农场升到 2 级 | `buildRes` |
 | 3 | `g_open_army` | 再去军事区看看 | `buildArmy` ([2]) |

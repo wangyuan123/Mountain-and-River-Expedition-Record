@@ -19,10 +19,11 @@ public class WorldBootstrap implements ApplicationRunner {
 
     private final WorldMapRepository worldMapRepository;
     private final GameStateService gameStateService;
+    private final com.wargame.service.WorldTerrainService terrain;
 
-    public WorldBootstrap(WorldMapRepository worldMapRepository, GameStateService gameStateService) {
+    public WorldBootstrap(WorldMapRepository worldMapRepository, GameStateService gameStateService, com.wargame.service.WorldTerrainService terrain) {
         this.worldMapRepository = worldMapRepository;
-        this.gameStateService = gameStateService;
+        this.gameStateService = gameStateService; this.terrain = terrain;
     }
 
     @Override
@@ -30,5 +31,6 @@ public class WorldBootstrap implements ApplicationRunner {
         if (worldMapRepository.count() == 0) {
             gameStateService.genWorld(null);
         }
+        terrain.ensure();
     }
 }

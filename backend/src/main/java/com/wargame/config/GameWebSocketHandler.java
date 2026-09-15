@@ -1,5 +1,6 @@
 package com.wargame.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -28,6 +29,10 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
     /** playerId -> 该玩家的所有活跃 WebSocket 会话 */
     private final Map<Long, Set<WebSocketSession>> playerSessions = new ConcurrentHashMap<>();
 
+    private final Map<String, Long> lastHeartbeats = new ConcurrentHashMap<>();
+    private static final long PRESENCE_TIMEOUT_MS = 90_000;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
         Long playerId = getPlayerId(session);
@@ -40,9 +45,12 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
-        playerSessions
-                .computeIfAbsent(playerId, k -> Collections.newSetFromMap(new ConcurrentHashMap<>()))
-                .add(session);
+        lastHeartbeats.put(session.getId(), System.currentTimeMillis());
+        playerSessions.compute(playerId, (id, sessions) -> {
+            if (sessions == null) sessions = Collections.newSetFromMap(new ConcurrentHashMap<>());
+            sessions.add(session);
+            return sessions;
+        });
 
         log.info("WebSocket 连接建立: playerId={}, sessionId={}, 当前在线会话数={}",
                 playerId, session.getId(), getSessionCount(playerId));
@@ -53,13 +61,11 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         Long playerId = getPlayerId(session);
         if (playerId == null) return;
 
-        Set<WebSocketSession> sessions = playerSessions.get(playerId);
-        if (sessions != null) {
+        lastHeartbeats.remove(session.getId());
+        playerSessions.computeIfPresent(playerId, (id, sessions) -> {
             sessions.remove(session);
-            if (sessions.isEmpty()) {
-                playerSessions.remove(playerId);
-            }
-        }
+            return sessions.isEmpty() ? null : sessions;
+        });
 
         log.info("WebSocket 连接关闭: playerId={}, sessionId={}, status={}",
                 playerId, session.getId(), status);
@@ -69,13 +75,18 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
     protected void handleTextMessage(WebSocketSession session, TextMessage message) {
         String payload = message.getPayload();
 
-        // 心跳: 客户端发送 "ping"，服务端回复 "pong"
-        if ("ping".equalsIgnoreCase(payload.trim())) {
+        // 兼容旧客户端纯文本心跳，当前客户端使用 JSON 消息。
+        boolean ping = "ping".equalsIgnoreCase(payload.trim());
+        if (!ping) {
             try {
-                session.sendMessage(new TextMessage("pong"));
+                ping = "ping".equals(objectMapper.readTree(payload).path("type").asText());
             } catch (IOException e) {
-                log.warn("发送 pong 失败: sessionId={}", session.getId(), e);
+                return;
             }
+        }
+        if (ping && getSessions(getPlayerId(session)).contains(session)) {
+            lastHeartbeats.put(session.getId(), System.currentTimeMillis());
+            send(session, new TextMessage("{\"type\":\"pong\"}"));
         }
         // 其他消息暂不处理
     }
@@ -127,7 +138,8 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
      */
     public boolean isPlayerOnline(Long playerId) {
         Set<WebSocketSession> sessions = playerSessions.get(playerId);
-        return sessions != null && !sessions.isEmpty();
+        return sessions != null && sessions.stream().anyMatch(session -> session.isOpen()
+                && System.currentTimeMillis() - lastHeartbeats.getOrDefault(session.getId(), 0L) < PRESENCE_TIMEOUT_MS);
     }
 
     /**

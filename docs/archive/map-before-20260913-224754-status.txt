@@ -1,0 +1,123 @@
+ M QUEST_SYSTEM.md
+ M README.md
+ M SECURITY_FIXES.md
+ M backend/src/main/java/com/wargame/config/GameWebSocketHandler.java
+ M backend/src/main/java/com/wargame/config/SecurityConfig.java
+ M backend/src/main/java/com/wargame/controller/BuildController.java
+ M backend/src/main/java/com/wargame/controller/GuildController.java
+ M backend/src/main/java/com/wargame/controller/ShopController.java
+ M backend/src/main/java/com/wargame/model/constants/BuildingDef.java
+ M backend/src/main/java/com/wargame/model/constants/GameConstants.java
+ M backend/src/main/java/com/wargame/model/constants/ItemDef.java
+ M backend/src/main/java/com/wargame/model/constants/MilitaryRankDef.java
+ M backend/src/main/java/com/wargame/model/constants/OfficerSkillDef.java
+ M backend/src/main/java/com/wargame/model/constants/TechDef.java
+ M backend/src/main/java/com/wargame/model/entity/Academy.java
+ M backend/src/main/java/com/wargame/model/entity/ArmyProductionQueue.java
+ M backend/src/main/java/com/wargame/model/entity/ArmyUnit.java
+ M backend/src/main/java/com/wargame/model/entity/Building.java
+ M backend/src/main/java/com/wargame/model/entity/CityState.java
+ M backend/src/main/java/com/wargame/model/entity/Construction.java
+ M backend/src/main/java/com/wargame/model/entity/Fortification.java
+ M backend/src/main/java/com/wargame/model/entity/March.java
+ M backend/src/main/java/com/wargame/model/entity/Officer.java
+ M backend/src/main/java/com/wargame/model/entity/Player.java
+ M backend/src/main/java/com/wargame/model/entity/PlayerCity.java
+ M backend/src/main/java/com/wargame/model/entity/Resources.java
+ M backend/src/main/java/com/wargame/repository/AcademyRepository.java
+ M backend/src/main/java/com/wargame/repository/ArmyProductionQueueRepository.java
+ M backend/src/main/java/com/wargame/repository/ArmyUnitRepository.java
+ M backend/src/main/java/com/wargame/repository/BuildingRepository.java
+ M backend/src/main/java/com/wargame/repository/CityStateRepository.java
+ M backend/src/main/java/com/wargame/repository/ConstructionRepository.java
+ M backend/src/main/java/com/wargame/repository/FortificationRepository.java
+ M backend/src/main/java/com/wargame/repository/MarchRepository.java
+ M backend/src/main/java/com/wargame/repository/OfficerRepository.java
+ M backend/src/main/java/com/wargame/repository/PlayerCityRepository.java
+ M backend/src/main/java/com/wargame/repository/PlayerRepository.java
+ M backend/src/main/java/com/wargame/repository/ResourcesRepository.java
+ M backend/src/main/java/com/wargame/repository/WildTileRepository.java
+ M backend/src/main/java/com/wargame/service/AccountService.java
+ M backend/src/main/java/com/wargame/service/ArmyService.java
+ M backend/src/main/java/com/wargame/service/BattleService.java
+ M backend/src/main/java/com/wargame/service/BuildService.java
+ M backend/src/main/java/com/wargame/service/ChatService.java
+ M backend/src/main/java/com/wargame/service/DepotService.java
+ M backend/src/main/java/com/wargame/service/FortService.java
+ M backend/src/main/java/com/wargame/service/GameStateService.java
+ M backend/src/main/java/com/wargame/service/GuildService.java
+ M backend/src/main/java/com/wargame/service/ImportService.java
+ M backend/src/main/java/com/wargame/service/MailService.java
+ M backend/src/main/java/com/wargame/service/MarchService.java
+ M backend/src/main/java/com/wargame/service/MarchTargetService.java
+ M backend/src/main/java/com/wargame/service/OfficerService.java
+ M backend/src/main/java/com/wargame/service/RankService.java
+ M backend/src/main/java/com/wargame/service/TechService.java
+ M backend/src/main/java/com/wargame/service/TickService.java
+ M backend/src/main/java/com/wargame/service/WebSocketPushService.java
+ M backend/src/main/java/com/wargame/service/WorldService.java
+ M backend/src/main/java/com/wargame/service/WorldViewService.java
+ M backend/src/main/java/com/wargame/service/quest/QuestCatalog.java
+ M backend/src/main/java/com/wargame/service/quest/QuestService.java
+ M backend/src/test/java/com/wargame/BattleServiceTest.java
+ M backend/src/test/java/com/wargame/BuildServiceTest.java
+ M backend/src/test/java/com/wargame/MarchServiceTest.java
+ M docs/DESIGN.md
+ M frontend/css/style.css
+ M frontend/css/themes.css
+ M frontend/index.html
+ M frontend/js/api-client.js
+ M frontend/js/api.js
+ M frontend/js/army.js
+ M frontend/js/battle.js
+ M frontend/js/build.js
+ M frontend/js/core.js
+ M frontend/js/data.js
+ M frontend/js/depot.js
+ M frontend/js/guild.js
+ M frontend/js/main-quest.js
+ M frontend/js/main-view.js
+ M frontend/js/main.js
+ M frontend/js/player-profile.js
+ M frontend/js/shop.js
+ M frontend/js/tech.js
+ M frontend/js/theme.js
+ M frontend/js/world-view.js
+ M frontend/js/world.js
+ M frontend/js/ws-client.js
+ M frontend/js/ws-handlers.js
+ M frontend/tests/client.test.cjs
+ M frontend/tests/reports.test.cjs
+ M frontend/theme-preview.html
+?? backend/src/main/java/com/wargame/config/CityContextConfig.java
+?? backend/src/main/java/com/wargame/controller/CityController.java
+?? backend/src/main/java/com/wargame/controller/WoundedController.java
+?? backend/src/main/java/com/wargame/model/entity/CityEconomy.java
+?? backend/src/main/java/com/wargame/model/entity/CityOwnedEntity.java
+?? backend/src/main/java/com/wargame/model/entity/WoundedUnit.java
+?? backend/src/main/java/com/wargame/repository/WoundedUnitRepository.java
+?? backend/src/main/java/com/wargame/service/CityScope.java
+?? backend/src/main/java/com/wargame/service/CityService.java
+?? backend/src/main/java/com/wargame/service/WoundedExpiryScheduler.java
+?? backend/src/main/java/com/wargame/service/WoundedService.java
+?? backend/src/main/resources/db/migration/V29__remove_counter_reconnaissance.sql
+?? backend/src/main/resources/db/migration/V30__remove_player_city_army.sql
+?? backend/src/main/resources/db/migration/V31__create_wounded_units.sql
+?? backend/src/main/resources/db/migration/V32__multiple_cities.sql
+?? backend/src/test/java/com/wargame/CounterReconRemovalTest.java
+?? backend/src/test/java/com/wargame/GuildPresenceTest.java
+?? backend/src/test/java/com/wargame/IncomingIntelligenceTest.java
+?? backend/src/test/java/com/wargame/MultiCityTest.java
+?? backend/src/test/java/com/wargame/WoundedControllerTest.java
+?? backend/src/test/java/com/wargame/WoundedMigrationTest.java
+?? backend/src/test/java/com/wargame/WoundedServiceTest.java
+?? backend/src/test/java/com/wargame/config/
+?? docs/BRAND_REVIEW.md
+?? docs/WOUNDED.md
+?? docs/archive/
+?? frontend/img/buildings/
+?? frontend/js/cities.js
+?? frontend/js/wounded.js
+?? frontend/tests/build.test.cjs
+?? frontend/tests/presence.test.cjs
+?? frontend/tests/wounded.test.cjs

@@ -1,6 +1,5 @@
 package com.wargame.service;
 
-import com.wargame.model.constants.GameConstants;
 import com.wargame.model.constants.GameData;
 import com.wargame.model.constants.MilitaryRankDef;
 import com.wargame.model.constants.UnitDef;
@@ -27,6 +26,9 @@ import java.util.*;
  */
 @Service
 public class ArmyService {
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.service.CityScope cityScope;
 
     private static final int MAX_QUEUE_CAPACITY = 500;
 
@@ -83,7 +85,7 @@ public class ArmyService {
         //      maxBatch_f = level_f × 10 × trainMul
         //      parallel_f = 1 + level_f / 5
         //      speed_f    = 1 + min(4, level_f × 0.05) + (trainMul - 1)
-        List<Building> factoryBuildings = buildingRepository.findByPlayerIdAndType(playerId, u.build());
+        List<Building> factoryBuildings = buildingRepository.findByPlayerIdAndCitySlotAndType(playerId, cityScope.slot(playerId), u.build());
         if (factoryBuildings.isEmpty()) {
             BuildingDef bDef = GameData.BUILDINGS.get(u.build());
             String bName = bDef != null ? bDef.name() : u.build();
@@ -119,8 +121,8 @@ public class ArmyService {
 
         // 3. 单次可征召数由当前平民与资源共同决定；生产队列按并行通道排期，不再用兵工厂等级限制数量。
         Player player = playerRepository.findById(playerId).orElse(null);
-        int civilians = player != null && player.getCivilianPopulation() != null ? player.getCivilianPopulation() : 0;
-        Resources resources = resourcesRepository.findByPlayerId(playerId).orElse(null);
+        int civilians = player != null && cityScope.economy(playerId).getCivilianPopulation() != null ? cityScope.economy(playerId).getCivilianPopulation() : 0;
+        Resources resources = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         int maxByPopulation = u.pop() > 0 ? civilians / u.pop() : Integer.MAX_VALUE;
         int maxByResources = maxAffordableByResources(resources, u.cost());
         int dynamicMaxBatch = Math.min(maxByPopulation, maxByResources);
@@ -174,11 +176,12 @@ public class ArmyService {
         for (int v : resCost.values()) totalCost += v;
         int prestigeGain = totalCost > 0 ? Math.max(1, totalCost / 100) : 0;
         if (player != null) {
-            player.setCivilianPopulation(civilians - popNeeded);
+            cityScope.economy(playerId).setCivilianPopulation(civilians - popNeeded);
             if (prestigeGain > 0) {
                 player.setPrestige((player.getPrestige() != null ? player.getPrestige() : 0) + prestigeGain);
             }
             playerRepository.save(player);
+        cityScope.saveEconomy(playerId);
         }
 
         long now = System.currentTimeMillis();
@@ -188,6 +191,7 @@ public class ArmyService {
         long startsAt = productionStartsAt(playerId, u.build(), parallel, now);
         ArmyProductionQueue queue = new ArmyProductionQueue();
         queue.setPlayerId(playerId);
+        queue.setCitySlot(cityScope.slot(playerId));
         queue.setUnitType(unitType);
         queue.setUnitCount(n);
         queue.setStartedAt(startsAt);
@@ -228,7 +232,7 @@ public class ArmyService {
         }
 
         // JS: var have = s.army[id] || 0; if (have <= 0)
-        List<ArmyUnit> existing = armyUnitRepository.findByPlayerIdAndType(playerId, unitType);
+        List<ArmyUnit> existing = armyUnitRepository.findByPlayerIdAndCitySlotAndType(playerId, cityScope.slot(playerId), unitType);
         int have = 0;
         ArmyUnit unit = null;
         if (existing != null && !existing.isEmpty()) {
@@ -250,16 +254,17 @@ public class ArmyService {
 
         Player player = playerRepository.findById(playerId).orElse(null);
         if (player != null) {
-            int civilians = player.getCivilianPopulation() != null ? player.getCivilianPopulation() : 0;
-            player.setCivilianPopulation(Math.min(popMax(playerId), civilians + u.pop() * n));
+            int civilians = cityScope.economy(playerId).getCivilianPopulation() != null ? cityScope.economy(playerId).getCivilianPopulation() : 0;
+            cityScope.economy(playerId).setCivilianPopulation(Math.min(popMax(playerId), civilians + u.pop() * n));
             playerRepository.save(player);
+        cityScope.saveEconomy(playerId);
         }
 
         // JS: s.resources.steel += Math.floor(D.units[id].cost.steel * n * 0.3)
         int steelCost = u.cost().getOrDefault("steel", 0);
         int refund = (int) Math.floor(steelCost * n * 0.3);
         if (refund > 0) {
-            Resources res = resourcesRepository.findByPlayerId(playerId).orElse(null);
+            Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
             if (res != null) {
                 res.setSteel((res.getSteel() != null ? res.getSteel() : 0) + refund);
                 resourcesRepository.save(res);
@@ -281,7 +286,7 @@ public class ArmyService {
     public List<Map<String, Object>> getProductionQueue(Long playerId) {
         completeProduction(playerId, System.currentTimeMillis());
         List<Map<String, Object>> result = new ArrayList<>();
-        for (ArmyProductionQueue q : armyProductionQueueRepository.findByPlayerIdOrderByStartedAtAscIdAsc(playerId)) {
+        for (ArmyProductionQueue q : armyProductionQueueRepository.findByPlayerIdAndCitySlotOrderByStartedAtAscIdAsc(playerId, cityScope.slot(playerId))) {
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("id", q.getId()); item.put("unitType", q.getUnitType()); item.put("count", q.getUnitCount());
             item.put("startedAt", q.getStartedAt()); item.put("finishesAt", q.getFinishesAt());
@@ -295,24 +300,26 @@ public class ArmyService {
     @Transactional
     public boolean cancelProduction(Long playerId, Long queueId) {
         ArmyProductionQueue q = armyProductionQueueRepository.findById(queueId).orElse(null);
-        if (q == null || !playerId.equals(q.getPlayerId())) return false;
+        if (q == null || !playerId.equals(q.getPlayerId()) || q.getCitySlot() != cityScope.slot(playerId)) return false;
         armyProductionQueueRepository.delete(q);
         refund(playerId, q.getCostFood(), q.getCostSteel(), q.getCostOil(), q.getCostRare());
         UnitDef unit = GameData.UNITS.get(q.getUnitType());
         Player player = playerRepository.findById(playerId).orElse(null);
         if (unit != null && player != null) {
-            int civilians = player.getCivilianPopulation() != null ? player.getCivilianPopulation() : 0;
-            player.setCivilianPopulation(Math.min(popMax(playerId), civilians + unit.pop() * q.getUnitCount()));
+            int civilians = cityScope.economy(playerId).getCivilianPopulation() != null ? cityScope.economy(playerId).getCivilianPopulation() : 0;
+            cityScope.economy(playerId).setCivilianPopulation(Math.min(popMax(playerId), civilians + unit.pop() * q.getUnitCount()));
             playerRepository.save(player);
+        cityScope.saveEconomy(playerId);
         }
         return true;
     }
 
     @Transactional
     public void completeProduction(Long playerId, long now) {
-        for (ArmyProductionQueue q : armyProductionQueueRepository.findByPlayerIdAndFinishesAtLessThanEqualOrderByFinishesAtAscIdAsc(playerId, now)) {
-            List<ArmyUnit> existing = armyUnitRepository.findByPlayerIdAndType(playerId, q.getUnitType());
+        for (ArmyProductionQueue q : armyProductionQueueRepository.findByPlayerIdAndCitySlotAndFinishesAtLessThanEqualOrderByFinishesAtAscIdAsc(playerId, cityScope.slot(playerId), now)) {
+            List<ArmyUnit> existing = armyUnitRepository.findByPlayerIdAndCitySlotAndType(playerId, cityScope.slot(playerId), q.getUnitType());
             ArmyUnit unit = existing.isEmpty() ? new ArmyUnit(null, playerId, q.getUnitType(), 0) : existing.get(0);
+            unit.setCitySlot(q.getCitySlot());
             unit.setCount((unit.getCount() == null ? 0 : unit.getCount()) + q.getUnitCount());
             armyUnitRepository.save(unit);
             armyProductionQueueRepository.delete(q);
@@ -344,7 +351,7 @@ public class ArmyService {
         ArmyProductionQueue target = null;
         if (queueId != null) {
             target = armyProductionQueueRepository.findById(queueId).orElse(null);
-            if (target == null || !playerId.equals(target.getPlayerId())) {
+            if (target == null || !playerId.equals(target.getPlayerId()) || target.getCitySlot() != cityScope.slot(playerId)) {
                 speedUpSupport.refund(playerId, itemId, count, now);
                 result.put("success", false);
                 result.put("message", "指定的生产任务不存在");
@@ -352,7 +359,7 @@ public class ArmyService {
             }
         } else {
             // 兼容旧版未传 queueId 时, 取最早一个未完成的订单
-            for (ArmyProductionQueue q : armyProductionQueueRepository.findByPlayerIdOrderByStartedAtAscIdAsc(playerId)) {
+            for (ArmyProductionQueue q : armyProductionQueueRepository.findByPlayerIdAndCitySlotOrderByStartedAtAscIdAsc(playerId, cityScope.slot(playerId))) {
                 if (q.getFinishesAt() != null && q.getFinishesAt() > now) { target = q; break; }
             }
         }
@@ -402,7 +409,7 @@ public class ArmyService {
     private long productionStartsAt(Long playerId, String buildingType, int parallel, long now) {
         List<Long> laneAvailableAt = new ArrayList<>();
         for (int i = 0; i < parallel; i++) laneAvailableAt.add(now);
-        for (ArmyProductionQueue q : armyProductionQueueRepository.findByPlayerIdOrderByStartedAtAscIdAsc(playerId)) {
+        for (ArmyProductionQueue q : armyProductionQueueRepository.findByPlayerIdAndCitySlotOrderByStartedAtAscIdAsc(playerId, cityScope.slot(playerId))) {
             UnitDef queuedUnit = GameData.UNITS.get(q.getUnitType());
             if (queuedUnit == null || !buildingType.equals(queuedUnit.build())) continue;
             int lane = 0;
@@ -413,16 +420,16 @@ public class ArmyService {
     }
 
     private int queuedArmy(Long playerId) {
-        return armyProductionQueueRepository.findByPlayerIdOrderByStartedAtAscIdAsc(playerId).stream().mapToInt(q -> q.getUnitCount() == null ? 0 : q.getUnitCount()).sum();
+        return armyProductionQueueRepository.findByPlayerIdAndCitySlotOrderByStartedAtAscIdAsc(playerId, cityScope.slot(playerId)).stream().mapToInt(q -> q.getUnitCount() == null ? 0 : q.getUnitCount()).sum();
     }
 
     private int queuedPopulation(Long playerId) {
-        return armyProductionQueueRepository.findByPlayerIdOrderByStartedAtAscIdAsc(playerId).stream()
+        return armyProductionQueueRepository.findByPlayerIdAndCitySlotOrderByStartedAtAscIdAsc(playerId, cityScope.slot(playerId)).stream()
                 .mapToInt(q -> { UnitDef unit = GameData.UNITS.get(q.getUnitType()); return unit == null ? 0 : unit.pop() * q.getUnitCount(); }).sum();
     }
 
     private void refund(Long playerId, int food, int steel, int oil, int rare) {
-        Resources r = resourcesRepository.findByPlayerId(playerId).orElse(null); if (r == null) return;
+        Resources r = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null); if (r == null) return;
         r.setFood((r.getFood() == null ? 0 : r.getFood()) + food); r.setSteel((r.getSteel() == null ? 0 : r.getSteel()) + steel);
         r.setOil((r.getOil() == null ? 0 : r.getOil()) + oil); r.setRare((r.getRare() == null ? 0 : r.getRare()) + rare); resourcesRepository.save(r);
     }
@@ -430,7 +437,7 @@ public class ArmyService {
     public Map<String, Integer> getArmy(Long playerId) {
         completeProduction(playerId, System.currentTimeMillis());
         Map<String, Integer> army = new LinkedHashMap<>();
-        List<ArmyUnit> units = armyUnitRepository.findByPlayerId(playerId);
+        List<ArmyUnit> units = armyUnitRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         for (ArmyUnit unit : units) {
             int count = unit.getCount() != null ? unit.getCount() : 0;
             if (count > 0) {
@@ -446,7 +453,7 @@ public class ArmyService {
 
     public int totalArmy(Long playerId) {
         int sum = 0;
-        List<ArmyUnit> units = armyUnitRepository.findByPlayerId(playerId);
+        List<ArmyUnit> units = armyUnitRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         for (ArmyUnit unit : units) {
             sum += unit.getCount() != null ? unit.getCount() : 0;
         }
@@ -481,7 +488,7 @@ public class ArmyService {
 
         // Commander level
         int cmdLv = 1;
-        List<Officer> commanders = officerRepository.findByPlayerIdAndRole(playerId, "commander");
+        List<Officer> commanders = officerRepository.findByPlayerIdAndCitySlotAndRole(playerId, cityScope.slot(playerId), "commander");
         if (commanders != null && !commanders.isEmpty()) {
             cmdLv = commanders.get(0).getLevel() != null ? commanders.get(0).getLevel() : 1;
         }
@@ -507,7 +514,7 @@ public class ArmyService {
 
     public int popUsed(Long playerId) {
         int sum = 0;
-        List<ArmyUnit> units = armyUnitRepository.findByPlayerId(playerId);
+        List<ArmyUnit> units = armyUnitRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         for (ArmyUnit unit : units) {
             UnitDef def = GameData.UNITS.get(unit.getType());
             if (def != null) {
@@ -531,7 +538,7 @@ public class ArmyService {
     // ================================================================
 
     private int buildingLevel(Long playerId, String buildingType) {
-        List<Building> buildings = buildingRepository.findByPlayerIdAndType(playerId, buildingType);
+        List<Building> buildings = buildingRepository.findByPlayerIdAndCitySlotAndType(playerId, cityScope.slot(playerId), buildingType);
         int sum = 0;
         for (Building b : buildings) {
             sum += b.getLevel() != null ? b.getLevel() : 0;
@@ -556,7 +563,7 @@ public class ArmyService {
     }
 
     private boolean costEnough(Long playerId, Map<String, Integer> costs) {
-        Resources r = resourcesRepository.findByPlayerId(playerId).orElse(null);
+        Resources r = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (r == null) return false;
         for (Map.Entry<String, Integer> entry : costs.entrySet()) {
             if ("pop".equals(entry.getKey())) continue;
@@ -567,7 +574,7 @@ public class ArmyService {
     }
 
     private void deductCosts(Long playerId, Map<String, Integer> costs) {
-        Resources r = resourcesRepository.findByPlayerId(playerId).orElse(null);
+        Resources r = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (r == null) return;
         for (Map.Entry<String, Integer> entry : costs.entrySet()) {
             int current = getResource(r, entry.getKey());

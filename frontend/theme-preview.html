@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>山河远征 - 界面风格重构方案展示</title>
+  <title>烽原战策 - 界面风格重构方案展示</title>
   <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -190,31 +190,31 @@
     }
 
     /* ================================================================ */
-    /* THEME 1: 3GQQ 经典 WAP 蓝白文字风 (截图 1:1 精准复刻)            */
+    /* THEME 1: 晴空蓝白文字风            */
     /* ================================================================ */
-    .theme-3gqq {
+    .theme-blue-white {
       background: #ffffff;
       color: #222222;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
       font-size: 13px;
       line-height: 1.5;
     }
-    .theme-3gqq a { color: #004499; text-decoration: none; cursor: pointer; }
-    .theme-3gqq a:hover { text-decoration: underline; }
+    .theme-blue-white a { color: #004499; text-decoration: none; cursor: pointer; }
+    .theme-blue-white a:hover { text-decoration: underline; }
     
-    /* 3GQQ 经典天蓝顶栏与九宫格导航 (与截图一模一样) */
-    .theme-3gqq .wap-header {
+    /* 晴空蓝白 经典天蓝顶栏与九宫格导航 */
+    .theme-blue-white .wap-header {
       background: #4a7bb5;
       padding: 8px 8px;
       color: #fff;
     }
-    .theme-3gqq .wap-grid-nav {
+    .theme-blue-white .wap-grid-nav {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 4px 2px;
       text-align: center;
     }
-    .theme-3gqq .wap-grid-nav a {
+    .theme-blue-white .wap-grid-nav a {
       color: #ffffff;
       font-size: 13px;
       text-decoration: none;
@@ -222,14 +222,14 @@
       padding: 3px 0;
       border-radius: 2px;
     }
-    .theme-3gqq .wap-grid-nav a:hover,
-    .theme-3gqq .wap-grid-nav a.active {
+    .theme-blue-white .wap-grid-nav a:hover,
+    .theme-blue-white .wap-grid-nav a.active {
       background: rgba(255, 255, 255, 0.28);
       font-weight: bold;
     }
 
-    /* 3GQQ 快捷操作/搜索条 (仿截图 [图] [输入框] [搜索]) */
-    .theme-3gqq .wap-search-bar {
+    /* 晴空蓝白 快捷操作/搜索条 */
+    .theme-blue-white .wap-search-bar {
       display: flex;
       align-items: center;
       gap: 4px;
@@ -238,14 +238,14 @@
       border-bottom: 1px solid #dce4ee;
       font-size: 12px;
     }
-    .theme-3gqq .wap-search-tag {
+    .theme-blue-white .wap-search-tag {
       background: #3b6ea8;
       color: #fff;
       font-size: 10px;
       padding: 1px 3px;
       border-radius: 2px;
     }
-    .theme-3gqq .wap-input {
+    .theme-blue-white .wap-input {
       border: 1px solid #9bb5d4;
       padding: 2px 5px;
       font-size: 11px;
@@ -253,7 +253,7 @@
       background: #fff;
       outline: none;
     }
-    .theme-3gqq .wap-btn {
+    .theme-blue-white .wap-btn {
       background: #4a7bb5;
       color: #fff;
       border: 1px solid #36659c;
@@ -262,8 +262,8 @@
       cursor: pointer;
     }
 
-    /* 3GQQ 资源快捷行 (高密度数据) */
-    .theme-3gqq .wap-res-bar {
+    /* 晴空蓝白 资源快捷行 (高密度数据) */
+    .theme-blue-white .wap-res-bar {
       padding: 5px 8px;
       background: #e9f0f8;
       border-bottom: 1px solid #d0ddec;
@@ -273,11 +273,11 @@
       flex-wrap: wrap;
       gap: 3px 8px;
     }
-    .theme-3gqq .wap-res-bar span { white-space: nowrap; }
-    .theme-3gqq .wap-res-bar b { color: #004499; }
+    .theme-blue-white .wap-res-bar span { white-space: nowrap; }
+    .theme-blue-white .wap-res-bar b { color: #004499; }
 
-    /* 3GQQ 分区标题与竖线导航 (仿截图【社区广场】爱宠国 | 魔法花园 | QQ农场) */
-    .theme-3gqq .wap-section-bar {
+    /* 晴空蓝白 分区标题与竖线导航 */
+    .theme-blue-white .wap-section-bar {
       background: #eef3f9;
       border-top: 1px solid #d8e2ed;
       border-bottom: 1px solid #d8e2ed;
@@ -285,51 +285,51 @@
       font-size: 12px;
       margin: 6px 0 2px;
     }
-    .theme-3gqq .wap-sec-tag {
+    .theme-blue-white .wap-sec-tag {
       font-weight: bold;
       color: #004499;
     }
-    .theme-3gqq .wap-sec-links {
+    .theme-blue-white .wap-sec-links {
       color: #667788;
       margin-left: 2px;
     }
-    .theme-3gqq .wap-sec-links a { margin: 0 1px; }
+    .theme-blue-white .wap-sec-links a { margin: 0 1px; }
 
-    /* 3GQQ 列表条目与星星 (仿截图 ☆ be mine (15阅/11回)) */
-    .theme-3gqq .wap-list {
+    /* 晴空蓝白 列表条目与星星 */
+    .theme-blue-white .wap-list {
       padding: 2px 8px 10px;
     }
-    .theme-3gqq .wap-item {
+    .theme-blue-white .wap-item {
       padding: 5px 0;
       border-bottom: 1px dashed #e8ecf1;
       font-size: 12px;
       line-height: 1.45;
     }
-    .theme-3gqq .wap-item .star {
+    .theme-blue-white .wap-item .star {
       color: #4a7bb5;
       margin-right: 3px;
       font-size: 12px;
     }
-    .theme-3gqq .wap-item .title-link {
+    .theme-blue-white .wap-item .title-link {
       color: #004499;
       font-weight: 500;
     }
-    .theme-3gqq .wap-item .meta {
+    .theme-blue-white .wap-item .meta {
       color: #778899;
       font-size: 11px;
       margin-left: 3px;
     }
-    .theme-3gqq .wap-item .action-group {
+    .theme-blue-white .wap-item .action-group {
       margin-left: 6px;
       font-size: 11px;
     }
-    .theme-3gqq .wap-item .desc {
+    .theme-blue-white .wap-item .desc {
       color: #666;
       font-size: 11px;
       padding-left: 14px;
       margin-top: 2px;
     }
-    .theme-3gqq .wap-footer {
+    .theme-blue-white .wap-footer {
       background: #f0f4f9;
       border-top: 1px solid #d8e2ed;
       padding: 8px;
@@ -583,14 +583,14 @@
 <body>
 
   <div class="preview-header">
-    <h1>🎨 山河远征 · 界面精简清爽化重构方案</h1>
-    <p>针对“当前风格不够简洁清爽”的问题，提供 4 组针对性设计方案。其中 <b>方案 A</b> 按照您提供的截图，精准还原了经典 3GQQ 纯正 WAP 蓝白文字风，去除全部臃肿沉重杂色！</p>
+    <h1>🎨 烽原战策 · 界面精简清爽化重构方案</h1>
+    <p>为烽原战策提供 4 组界面配色方案。<b>方案 A</b> 使用晴空蓝白配色，突出资源、城建与军情信息。</p>
     
     <!-- 方案选择切换条 -->
     <div class="style-switcher">
-      <button class="style-btn active" id="btn-3gqq" onclick="switchTheme('3gqq')">
-        <div class="name">🌟 方案 A：3GQQ 怀旧家园风 <span class="tag">截图同款</span></div>
-        <div class="desc">经典天蓝九宫格顶栏 + 纯白极简文字流 + 竖线操作符，纯粹怀旧低噪点</div>
+      <button class="style-btn active" id="btn-blue-white" onclick="switchTheme('blue-white')">
+        <div class="name">🌟 方案 A：晴空蓝白风 <span class="tag">清爽易读</span></div>
+        <div class="desc">天蓝导航 + 白底文字 + 紧凑信息分区，清爽易读</div>
       </button>
 
       <button class="style-btn" id="btn-paper" onclick="switchTheme('paper')">
@@ -605,7 +605,7 @@
 
       <button class="style-btn" id="btn-dark" onclick="switchTheme('dark')">
         <div class="name">🌙 方案 D：战术夜航终端风 <span class="tag">极简冷黑</span></div>
-        <div class="desc">纯净深冷墨黑 + 雷达天青微光 + 彻底抛弃原版脏蓝，高对比沉浸</div>
+        <div class="desc">纯净深冷墨黑 + 雷达天青微光 + 减少大面积杂色，高对比沉浸</div>
       </button>
     </div>
   </div>
@@ -617,7 +617,7 @@
       <div class="phone-simulator">
         <div class="screen-wrapper" id="simScreen">
           <!-- 动态渲染区 -->
-          <div id="themeContainer" class="theme-3gqq"></div>
+          <div id="themeContainer" class="theme-blue-white"></div>
         </div>
       </div>
     </div>
@@ -643,20 +643,20 @@
   </div>
 
   <script>
-    var currentTheme = '3gqq';
+    var currentTheme = 'blue-white';
     var currentView = 'city';
 
     var themeInfo = {
-      '3gqq': {
-        title: '方案 A：【经典 3GQQ 家园 · 纯正 WAP 蓝白文字风】(截图 1:1 复刻)',
-        tags: '怀旧复古 · 极致轻量 · 极高信息密度 · 零视觉噪点',
+      'blue-white': {
+        title: '方案 A：【晴空蓝白 · 紧凑文字界面】',
+        tags: '晴空蓝白 · 极致轻量 · 极高信息密度 · 零视觉噪点',
         colors: [
           { bg: '#4a7bb5', color: '#fff', label: '顶栏经典蓝 #4a7bb5' },
           { bg: '#ffffff', color: '#000', label: '纯净底白 #ffffff' },
           { bg: '#004499', color: '#fff', label: '超链深蓝 #004499' },
           { bg: '#eef3f9', color: '#333', label: '栏目浅蓝 #eef3f9' }
         ],
-        desc: '完全契合您发送的 3GQQ 截图风格！彻底剔除厚重渐变阴影，还原 2008-2012 年掌上文字网游时代的极度简洁与清爽。',
+        desc: '以天蓝导航、白底文字和紧凑信息分区呈现城建与军情，便于快速阅读和操作。',
         features: [
           '<b>顶部 4 列九宫格导航条</b>：天蓝底色加纯白字，将主要页面一目了然列出，如【司令部 | 资源 | 军事 | 世界】。',
           '<b>经典操作符号与排版</b>：标志性的【方括号】大分类，配合竖线 <code>|</code> 分隔的极简文字操作链接（如：<code>升级 | 详情 | 委任</code>）。',
@@ -738,8 +738,8 @@
       var c = document.getElementById('themeContainer');
       c.className = 'theme-' + currentTheme;
 
-      if (currentTheme === '3gqq') {
-        render3GQQ(c);
+      if (currentTheme === 'blue-white') {
+        renderBlueWhite(c);
       } else if (currentTheme === 'paper') {
         renderPaper(c);
       } else if (currentTheme === 'modern') {
@@ -750,14 +750,14 @@
     }
 
     /* ------------------------------------------------------------- */
-    /* 3GQQ 页面渲染模板                                              */
+    /* 晴空蓝白 页面渲染模板                                              */
     /* ------------------------------------------------------------- */
-    function render3GQQ(container) {
+    function renderBlueWhite(container) {
       var navActive = { city: '', army: '', officer: '', alerts: '' };
       navActive[currentView] = 'class="active"';
 
       var html = '';
-      // 1. 顶部经典 3GQQ 蓝色多列九宫格导航栏 (截图同款)
+      // 1. 顶部晴空蓝白多列导航栏
       html += '<div class="wap-header">'
             + '  <div class="wap-grid-nav">'
             + '    <a ' + navActive.city + ' onclick="switchView(\'city\')">🏛️ 基地</a>'
@@ -771,7 +771,7 @@
             + '  </div>'
             + '</div>';
 
-      // 2. 搜索 / 快速坐标跳转条 (仿截图 [图] [输入框] [搜索])
+      // 2. 搜索 / 快速坐标跳转条
       html += '<div class="wap-search-bar">'
             + '  <span class="wap-search-tag">坐标</span>'
             + '  <input class="wap-input" value="[X: 142 , Y: 088]" readonly />'
@@ -901,7 +901,7 @@
 
       html += '<div class="wap-footer">'
             + '  <a href="javascript:void(0)">返回主城</a> | <a href="javascript:void(0)">一键存盘</a> | <a href="javascript:void(0)">刷新</a><br>'
-            + '  山河远征 · 经典文字版'
+            + '  烽原战策 · 文字战争策略游戏'
             + '</div>';
 
       container.innerHTML = html;

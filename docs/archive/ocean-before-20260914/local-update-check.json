@@ -1,0 +1,13 @@
+{
+  "coordinateChecks": {
+    "player_cities": true,
+    "npc_cities": true,
+    "bandits": true,
+    "wild_tiles": true
+  },
+  "terrainLength": 40000,
+  "seaCells": 9057,
+  "seaRatio": 0.226425,
+  "submergedAssetCells": 0,
+  "migration": "33"
+}

@@ -1,0 +1,6302 @@
+[
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 106,
+    "y": 100,
+    "level": 3,
+    "garrison": "{\"armored\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 106,
+    "y": 95,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 96,
+    "y": 93,
+    "level": 5,
+    "garrison": "{\"motor\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 104,
+    "y": 103,
+    "level": 6,
+    "garrison": "{\"motor\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 103,
+    "y": 93,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 101,
+    "y": 104,
+    "level": 6,
+    "garrison": "{\"motor\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 106,
+    "y": 93,
+    "level": 2,
+    "garrison": "{\"armored\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 107,
+    "y": 107,
+    "level": 4,
+    "garrison": "{\"infantry\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 109,
+    "y": 107,
+    "level": 1,
+    "garrison": "{\"motor\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 98,
+    "y": 107,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 104,
+    "y": 109,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 102,
+    "y": 108,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 97,
+    "y": 95,
+    "level": 1,
+    "garrison": "{\"infantry\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 109,
+    "y": 98,
+    "level": 2,
+    "garrison": "{\"infantry\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 108,
+    "y": 100,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 109,
+    "y": 109,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 98,
+    "y": 93,
+    "level": 4,
+    "garrison": "{\"infantry\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 109,
+    "y": 94,
+    "level": 1,
+    "garrison": "{\"ltank\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 100,
+    "y": 106,
+    "level": 1,
+    "garrison": "{\"ltank\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 94,
+    "y": 99,
+    "level": 2,
+    "garrison": "{\"ltank\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 105,
+    "y": 107,
+    "level": 2,
+    "garrison": "{\"motor\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 164,
+    "y": 135,
+    "level": 3,
+    "garrison": "{\"motor\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 3,
+    "y": 61,
+    "level": 2,
+    "garrison": "{\"armored\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 52,
+    "y": 3,
+    "level": 1,
+    "garrison": "{\"infantry\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 109,
+    "y": 1,
+    "level": 5,
+    "garrison": "{\"motor\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 117,
+    "y": 65,
+    "level": 5,
+    "garrison": "{\"armored\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 5,
+    "y": 65,
+    "level": 4,
+    "garrison": "{\"motor\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 85,
+    "y": 117,
+    "level": 4,
+    "garrison": "{\"motor\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 123,
+    "y": 100,
+    "level": 2,
+    "garrison": "{\"armored\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 116,
+    "y": 76,
+    "level": 1,
+    "garrison": "{\"infantry\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 71,
+    "y": 77,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 121,
+    "y": 149,
+    "level": 4,
+    "garrison": "{\"infantry\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 67,
+    "y": 138,
+    "level": 2,
+    "garrison": "{\"infantry\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 121,
+    "y": 36,
+    "level": 6,
+    "garrison": "{\"ltank\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 47,
+    "y": 109,
+    "level": 3,
+    "garrison": "{\"motor\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 66,
+    "y": 39,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 83,
+    "y": 172,
+    "level": 1,
+    "garrison": "{\"armored\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 17,
+    "y": 47,
+    "level": 1,
+    "garrison": "{\"infantry\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 117,
+    "y": 163,
+    "level": 4,
+    "garrison": "{\"infantry\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 117,
+    "y": 188,
+    "level": 5,
+    "garrison": "{\"motor\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 56,
+    "y": 176,
+    "level": 1,
+    "garrison": "{\"infantry\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 120,
+    "y": 0,
+    "level": 1,
+    "garrison": "{\"motor\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 37,
+    "y": 110,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 125,
+    "y": 170,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 73,
+    "y": 170,
+    "level": 2,
+    "garrison": "{\"ltank\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 167,
+    "y": 37,
+    "level": 1,
+    "garrison": "{\"motor\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 55,
+    "y": 66,
+    "level": 2,
+    "garrison": "{\"infantry\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 80,
+    "y": 36,
+    "level": 2,
+    "garrison": "{\"motor\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 14,
+    "y": 32,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 146,
+    "y": 149,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 149,
+    "y": 0,
+    "level": 2,
+    "garrison": "{\"ltank\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 11,
+    "y": 60,
+    "level": 1,
+    "garrison": "{\"armored\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 81,
+    "y": 2,
+    "level": 3,
+    "garrison": "{\"armored\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 112,
+    "y": 52,
+    "level": 2,
+    "garrison": "{\"infantry\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 139,
+    "y": 80,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 133,
+    "y": 162,
+    "level": 6,
+    "garrison": "{\"ltank\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 145,
+    "y": 107,
+    "level": 4,
+    "garrison": "{\"motor\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 9,
+    "y": 128,
+    "level": 2,
+    "garrison": "{\"armored\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 146,
+    "y": 19,
+    "level": 1,
+    "garrison": "{\"armored\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 137,
+    "y": 2,
+    "level": 5,
+    "garrison": "{\"armored\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 45,
+    "y": 29,
+    "level": 2,
+    "garrison": "{\"ltank\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 41,
+    "y": 102,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 151,
+    "y": 0,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 82,
+    "y": 122,
+    "level": 2,
+    "garrison": "{\"ltank\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 96,
+    "y": 62,
+    "level": 3,
+    "garrison": "{\"motor\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 87,
+    "y": 36,
+    "level": 1,
+    "garrison": "{\"ltank\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 90,
+    "y": 110,
+    "level": 5,
+    "garrison": "{\"armored\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 146,
+    "y": 156,
+    "level": 2,
+    "garrison": "{\"infantry\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 55,
+    "y": 78,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 5,
+    "y": 165,
+    "level": 3,
+    "garrison": "{\"armored\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 126,
+    "y": 114,
+    "level": 6,
+    "garrison": "{\"ltank\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 117,
+    "y": 17,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 18,
+    "y": 136,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 124,
+    "y": 52,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 42,
+    "y": 180,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 145,
+    "y": 53,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 91,
+    "y": 30,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 23,
+    "y": 156,
+    "level": 5,
+    "garrison": "{\"armored\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 42,
+    "y": 9,
+    "level": 3,
+    "garrison": "{\"armored\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 109,
+    "y": 10,
+    "level": 1,
+    "garrison": "{\"infantry\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 100,
+    "y": 15,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 66,
+    "y": 96,
+    "level": 6,
+    "garrison": "{\"motor\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 116,
+    "y": 78,
+    "level": 2,
+    "garrison": "{\"armored\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 8,
+    "y": 104,
+    "level": 1,
+    "garrison": "{\"ltank\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 19,
+    "y": 22,
+    "level": 2,
+    "garrison": "{\"motor\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 27,
+    "y": 77,
+    "level": 1,
+    "garrison": "{\"ltank\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 150,
+    "y": 126,
+    "level": 3,
+    "garrison": "{\"armored\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 111,
+    "y": 171,
+    "level": 2,
+    "garrison": "{\"motor\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 106,
+    "y": 72,
+    "level": 2,
+    "garrison": "{\"infantry\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 109,
+    "y": 122,
+    "level": 6,
+    "garrison": "{\"motor\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 77,
+    "y": 90,
+    "level": 1,
+    "garrison": "{\"armored\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 109,
+    "y": 186,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 81,
+    "y": 85,
+    "level": 2,
+    "garrison": "{\"motor\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 92,
+    "y": 47,
+    "level": 4,
+    "garrison": "{\"motor\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 49,
+    "y": 26,
+    "level": 2,
+    "garrison": "{\"infantry\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 124,
+    "y": 183,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 73,
+    "y": 20,
+    "level": 1,
+    "garrison": "{\"ltank\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 138,
+    "y": 126,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 131,
+    "y": 35,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 31,
+    "y": 98,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 7,
+    "y": 189,
+    "level": 1,
+    "garrison": "{\"motor\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 67,
+    "y": 125,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 76,
+    "y": 51,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 101,
+    "y": 83,
+    "level": 2,
+    "garrison": "{\"armored\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 103,
+    "y": 26,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 79,
+    "y": 138,
+    "level": 1,
+    "garrison": "{\"ltank\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 111,
+    "y": 54,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 110,
+    "y": 82,
+    "level": 1,
+    "garrison": "{\"armored\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 89,
+    "y": 59,
+    "level": 5,
+    "garrison": "{\"motor\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 183,
+    "y": 84,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 94,
+    "y": 91,
+    "level": 4,
+    "garrison": "{\"infantry\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 104,
+    "y": 124,
+    "level": 4,
+    "garrison": "{\"infantry\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 69,
+    "y": 80,
+    "level": 1,
+    "garrison": "{\"ltank\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 42,
+    "y": 147,
+    "level": 2,
+    "garrison": "{\"armored\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 124,
+    "y": 95,
+    "level": 2,
+    "garrison": "{\"infantry\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 44,
+    "y": 87,
+    "level": 5,
+    "garrison": "{\"motor\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 46,
+    "y": 118,
+    "level": 2,
+    "garrison": "{\"armored\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 36,
+    "y": 178,
+    "level": 2,
+    "garrison": "{\"ltank\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 18,
+    "y": 79,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 2,
+    "y": 167,
+    "level": 2,
+    "garrison": "{\"motor\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 92,
+    "y": 84,
+    "level": 2,
+    "garrison": "{\"motor\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 133,
+    "y": 98,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 63,
+    "y": 181,
+    "level": 1,
+    "garrison": "{\"infantry\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 98,
+    "y": 1,
+    "level": 5,
+    "garrison": "{\"armored\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 76,
+    "y": 20,
+    "level": 1,
+    "garrison": "{\"motor\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 89,
+    "y": 56,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 138,
+    "y": 145,
+    "level": 1,
+    "garrison": "{\"infantry\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 153,
+    "y": 170,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 142,
+    "y": 153,
+    "level": 1,
+    "garrison": "{\"armored\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 8,
+    "y": 91,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 97,
+    "y": 91,
+    "level": 4,
+    "garrison": "{\"motor\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 75,
+    "y": 35,
+    "level": 6,
+    "garrison": "{\"ltank\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 130,
+    "y": 157,
+    "level": 3,
+    "garrison": "{\"armored\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 15,
+    "y": 36,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 79,
+    "y": 40,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 51,
+    "y": 96,
+    "level": 2,
+    "garrison": "{\"infantry\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 23,
+    "y": 111,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 140,
+    "y": 43,
+    "level": 6,
+    "garrison": "{\"motor\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 5,
+    "y": 21,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 34,
+    "y": 146,
+    "level": 3,
+    "garrison": "{\"motor\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 144,
+    "y": 26,
+    "level": 4,
+    "garrison": "{\"motor\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 40,
+    "y": 17,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 94,
+    "y": 68,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 62,
+    "y": 111,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 41,
+    "y": 23,
+    "level": 2,
+    "garrison": "{\"motor\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 83,
+    "y": 126,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 63,
+    "y": 83,
+    "level": 1,
+    "garrison": "{\"motor\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 1,
+    "y": 127,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 103,
+    "y": 156,
+    "level": 2,
+    "garrison": "{\"motor\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 62,
+    "y": 89,
+    "level": 3,
+    "garrison": "{\"armored\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 61,
+    "y": 45,
+    "level": 6,
+    "garrison": "{\"ltank\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 82,
+    "y": 109,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 161,
+    "y": 41,
+    "level": 2,
+    "garrison": "{\"armored\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 76,
+    "y": 133,
+    "level": 3,
+    "garrison": "{\"motor\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 89,
+    "y": 70,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 55,
+    "y": 140,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 101,
+    "y": 86,
+    "level": 1,
+    "garrison": "{\"armored\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 57,
+    "y": 166,
+    "level": 1,
+    "garrison": "{\"armored\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 32,
+    "y": 54,
+    "level": 1,
+    "garrison": "{\"armored\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 110,
+    "y": 154,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 55,
+    "y": 168,
+    "level": 2,
+    "garrison": "{\"ltank\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 28,
+    "y": 127,
+    "level": 6,
+    "garrison": "{\"motor\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 23,
+    "y": 113,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 10,
+    "y": 100,
+    "level": 5,
+    "garrison": "{\"armored\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 57,
+    "y": 94,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 48,
+    "y": 177,
+    "level": 2,
+    "garrison": "{\"ltank\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 32,
+    "y": 50,
+    "level": 4,
+    "garrison": "{\"motor\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 121,
+    "y": 169,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 46,
+    "y": 168,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 52,
+    "y": 64,
+    "level": 4,
+    "garrison": "{\"infantry\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 119,
+    "y": 132,
+    "level": 2,
+    "garrison": "{\"infantry\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 65,
+    "y": 16,
+    "level": 1,
+    "garrison": "{\"ltank\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 55,
+    "y": 107,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 83,
+    "y": 15,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 67,
+    "y": 109,
+    "level": 5,
+    "garrison": "{\"motor\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 101,
+    "y": 186,
+    "level": 4,
+    "garrison": "{\"motor\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 140,
+    "y": 3,
+    "level": 6,
+    "garrison": "{\"motor\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 152,
+    "y": 128,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 46,
+    "y": 176,
+    "level": 2,
+    "garrison": "{\"ltank\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 68,
+    "y": 119,
+    "level": 4,
+    "garrison": "{\"motor\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 134,
+    "y": 21,
+    "level": 6,
+    "garrison": "{\"ltank\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 65,
+    "y": 25,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 118,
+    "y": 33,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 5,
+    "y": 78,
+    "level": 3,
+    "garrison": "{\"motor\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 94,
+    "y": 23,
+    "level": 6,
+    "garrison": "{\"motor\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 42,
+    "y": 6,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 34,
+    "y": 158,
+    "level": 1,
+    "garrison": "{\"armored\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 121,
+    "y": 178,
+    "level": 1,
+    "garrison": "{\"ltank\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 20,
+    "y": 1,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 29,
+    "y": 49,
+    "level": 4,
+    "garrison": "{\"infantry\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 76,
+    "y": 146,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 97,
+    "y": 160,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 126,
+    "y": 9,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 146,
+    "y": 143,
+    "level": 1,
+    "garrison": "{\"motor\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 43,
+    "y": 160,
+    "level": 5,
+    "garrison": "{\"armored\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 116,
+    "y": 124,
+    "level": 2,
+    "garrison": "{\"motor\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 34,
+    "y": 132,
+    "level": 3,
+    "garrison": "{\"armored\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 13,
+    "y": 51,
+    "level": 1,
+    "garrison": "{\"ltank\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 129,
+    "y": 10,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 23,
+    "y": 195,
+    "level": 6,
+    "garrison": "{\"motor\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 1,
+    "y": 122,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 140,
+    "y": 35,
+    "level": 3,
+    "garrison": "{\"motor\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 40,
+    "y": 136,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 30,
+    "y": 137,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 97,
+    "y": 128,
+    "level": 2,
+    "garrison": "{\"ltank\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 105,
+    "y": 36,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 71,
+    "y": 118,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 13,
+    "y": 176,
+    "level": 6,
+    "garrison": "{\"ltank\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 94,
+    "y": 119,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 43,
+    "y": 54,
+    "level": 2,
+    "garrison": "{\"infantry\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 20,
+    "y": 128,
+    "level": 1,
+    "garrison": "{\"motor\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 9,
+    "y": 169,
+    "level": 2,
+    "garrison": "{\"motor\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 96,
+    "y": 133,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 80,
+    "y": 189,
+    "level": 1,
+    "garrison": "{\"ltank\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 1,
+    "y": 173,
+    "level": 6,
+    "garrison": "{\"motor\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 36,
+    "y": 9,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 74,
+    "y": 88,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 26,
+    "y": 99,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 159,
+    "y": 35,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 90,
+    "y": 167,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 57,
+    "y": 186,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 25,
+    "y": 148,
+    "level": 2,
+    "garrison": "{\"armored\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 7,
+    "y": 58,
+    "level": 5,
+    "garrison": "{\"motor\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 128,
+    "y": 169,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 14,
+    "y": 64,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 69,
+    "y": 190,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 70,
+    "y": 43,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 92,
+    "y": 95,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 36,
+    "y": 51,
+    "level": 4,
+    "garrison": "{\"motor\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 32,
+    "y": 119,
+    "level": 4,
+    "garrison": "{\"motor\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 34,
+    "y": 138,
+    "level": 1,
+    "garrison": "{\"infantry\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 22,
+    "y": 173,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 22,
+    "y": 99,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 94,
+    "y": 19,
+    "level": 3,
+    "garrison": "{\"armored\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 111,
+    "y": 135,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 120,
+    "y": 118,
+    "level": 5,
+    "garrison": "{\"armored\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 27,
+    "y": 187,
+    "level": 5,
+    "garrison": "{\"armored\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 0,
+    "y": 147,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 121,
+    "y": 33,
+    "level": 4,
+    "garrison": "{\"infantry\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 94,
+    "y": 59,
+    "level": 6,
+    "garrison": "{\"motor\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 38,
+    "y": 53,
+    "level": 2,
+    "garrison": "{\"ltank\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 40,
+    "y": 181,
+    "level": 2,
+    "garrison": "{\"ltank\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 165,
+    "y": 42,
+    "level": 4,
+    "garrison": "{\"infantry\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 58,
+    "y": 152,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 13,
+    "y": 54,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 35,
+    "y": 94,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 3,
+    "y": 104,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 5,
+    "y": 173,
+    "level": 4,
+    "garrison": "{\"motor\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 46,
+    "y": 7,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 52,
+    "y": 84,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 41,
+    "y": 124,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 111,
+    "y": 42,
+    "level": 1,
+    "garrison": "{\"ltank\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 18,
+    "y": 145,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 11,
+    "y": 90,
+    "level": 1,
+    "garrison": "{\"ltank\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 57,
+    "y": 129,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 51,
+    "y": 91,
+    "level": 5,
+    "garrison": "{\"motor\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 22,
+    "y": 182,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 30,
+    "y": 76,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 27,
+    "y": 43,
+    "level": 2,
+    "garrison": "{\"motor\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 113,
+    "y": 87,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 152,
+    "y": 139,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 113,
+    "y": 50,
+    "level": 3,
+    "garrison": "{\"armored\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 42,
+    "y": 56,
+    "level": 1,
+    "garrison": "{\"armored\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 153,
+    "y": 23,
+    "level": 2,
+    "garrison": "{\"infantry\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 32,
+    "y": 106,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 50,
+    "y": 182,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 112,
+    "y": 125,
+    "level": 2,
+    "garrison": "{\"infantry\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 87,
+    "y": 79,
+    "level": 6,
+    "garrison": "{\"motor\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 108,
+    "y": 153,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 135,
+    "y": 121,
+    "level": 6,
+    "garrison": "{\"ltank\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 86,
+    "y": 143,
+    "level": 2,
+    "garrison": "{\"motor\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 121,
+    "y": 40,
+    "level": 5,
+    "garrison": "{\"motor\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 4,
+    "y": 139,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 48,
+    "y": 15,
+    "level": 3,
+    "garrison": "{\"motor\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 144,
+    "y": 13,
+    "level": 1,
+    "garrison": "{\"armored\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 39,
+    "y": 21,
+    "level": 1,
+    "garrison": "{\"ltank\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 102,
+    "y": 80,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 41,
+    "y": 21,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 78,
+    "y": 99,
+    "level": 3,
+    "garrison": "{\"armored\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 44,
+    "y": 197,
+    "level": 2,
+    "garrison": "{\"infantry\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 34,
+    "y": 42,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 166,
+    "y": 17,
+    "level": 2,
+    "garrison": "{\"motor\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 64,
+    "y": 130,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 73,
+    "y": 121,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 13,
+    "y": 166,
+    "level": 3,
+    "garrison": "{\"motor\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 75,
+    "y": 143,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 115,
+    "y": 134,
+    "level": 1,
+    "garrison": "{\"motor\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 7,
+    "y": 102,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 152,
+    "y": 179,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 118,
+    "y": 171,
+    "level": 1,
+    "garrison": "{\"infantry\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 4,
+    "y": 67,
+    "level": 4,
+    "garrison": "{\"motor\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 12,
+    "y": 158,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 163,
+    "y": 10,
+    "level": 1,
+    "garrison": "{\"ltank\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 152,
+    "y": 32,
+    "level": 4,
+    "garrison": "{\"infantry\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 95,
+    "y": 1,
+    "level": 1,
+    "garrison": "{\"infantry\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 135,
+    "y": 115,
+    "level": 4,
+    "garrison": "{\"infantry\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 102,
+    "y": 37,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 30,
+    "y": 43,
+    "level": 4,
+    "garrison": "{\"motor\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 7,
+    "y": 1,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 87,
+    "y": 168,
+    "level": 1,
+    "garrison": "{\"motor\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 96,
+    "y": 124,
+    "level": 5,
+    "garrison": "{\"motor\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 88,
+    "y": 50,
+    "level": 3,
+    "garrison": "{\"armored\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 134,
+    "y": 74,
+    "level": 2,
+    "garrison": "{\"ltank\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 62,
+    "y": 127,
+    "level": 6,
+    "garrison": "{\"ltank\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 83,
+    "y": 50,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 142,
+    "y": 14,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 28,
+    "y": 86,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 105,
+    "y": 142,
+    "level": 3,
+    "garrison": "{\"motor\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 127,
+    "y": 2,
+    "level": 6,
+    "garrison": "{\"ltank\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 81,
+    "y": 55,
+    "level": 2,
+    "garrison": "{\"motor\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 6,
+    "y": 24,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 60,
+    "y": 197,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 1,
+    "y": 138,
+    "level": 1,
+    "garrison": "{\"infantry\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 147,
+    "y": 17,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 84,
+    "y": 113,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 15,
+    "y": 60,
+    "level": 4,
+    "garrison": "{\"motor\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 94,
+    "y": 79,
+    "level": 6,
+    "garrison": "{\"ltank\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 94,
+    "y": 166,
+    "level": 1,
+    "garrison": "{\"infantry\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 14,
+    "y": 199,
+    "level": 6,
+    "garrison": "{\"motor\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 24,
+    "y": 151,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 152,
+    "y": 35,
+    "level": 5,
+    "garrison": "{\"motor\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 109,
+    "y": 179,
+    "level": 5,
+    "garrison": "{\"motor\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 108,
+    "y": 128,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 129,
+    "y": 74,
+    "level": 3,
+    "garrison": "{\"motor\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 87,
+    "y": 13,
+    "level": 5,
+    "garrison": "{\"motor\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 15,
+    "y": 19,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 61,
+    "y": 161,
+    "level": 3,
+    "garrison": "{\"armored\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 2,
+    "y": 108,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 84,
+    "y": 9,
+    "level": 1,
+    "garrison": "{\"armored\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 21,
+    "y": 71,
+    "level": 3,
+    "garrison": "{\"armored\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 30,
+    "y": 115,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 59,
+    "y": 67,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 113,
+    "y": 11,
+    "level": 5,
+    "garrison": "{\"armored\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 129,
+    "y": 81,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 1,
+    "y": 97,
+    "level": 4,
+    "garrison": "{\"infantry\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 92,
+    "y": 69,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 0,
+    "y": 117,
+    "level": 2,
+    "garrison": "{\"motor\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 157,
+    "y": 47,
+    "level": 2,
+    "garrison": "{\"armored\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 118,
+    "y": 62,
+    "level": 2,
+    "garrison": "{\"motor\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 122,
+    "y": 92,
+    "level": 1,
+    "garrison": "{\"armored\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 94,
+    "y": 172,
+    "level": 3,
+    "garrison": "{\"armored\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 67,
+    "y": 60,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 13,
+    "y": 94,
+    "level": 2,
+    "garrison": "{\"ltank\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 7,
+    "y": 127,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 46,
+    "y": 143,
+    "level": 2,
+    "garrison": "{\"armored\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 18,
+    "y": 176,
+    "level": 5,
+    "garrison": "{\"motor\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 52,
+    "y": 57,
+    "level": 3,
+    "garrison": "{\"motor\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 48,
+    "y": 19,
+    "level": 1,
+    "garrison": "{\"motor\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 25,
+    "y": 85,
+    "level": 3,
+    "garrison": "{\"armored\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 69,
+    "y": 64,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 52,
+    "y": 122,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 76,
+    "y": 80,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 60,
+    "y": 157,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 66,
+    "y": 6,
+    "level": 2,
+    "garrison": "{\"motor\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 108,
+    "y": 24,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 28,
+    "y": 30,
+    "level": 2,
+    "garrison": "{\"armored\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 3,
+    "y": 39,
+    "level": 1,
+    "garrison": "{\"armored\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 143,
+    "y": 29,
+    "level": 1,
+    "garrison": "{\"ltank\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 10,
+    "y": 88,
+    "level": 2,
+    "garrison": "{\"ltank\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 23,
+    "y": 61,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 53,
+    "y": 181,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 157,
+    "y": 33,
+    "level": 5,
+    "garrison": "{\"armored\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 108,
+    "y": 14,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 68,
+    "y": 23,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 74,
+    "y": 127,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 156,
+    "y": 146,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 4,
+    "y": 152,
+    "level": 6,
+    "garrison": "{\"ltank\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 90,
+    "y": 149,
+    "level": 5,
+    "garrison": "{\"motor\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 24,
+    "y": 59,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 21,
+    "y": 54,
+    "level": 1,
+    "garrison": "{\"infantry\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 159,
+    "y": 134,
+    "level": 6,
+    "garrison": "{\"motor\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 32,
+    "y": 28,
+    "level": 4,
+    "garrison": "{\"motor\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 6,
+    "y": 82,
+    "level": 4,
+    "garrison": "{\"motor\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 106,
+    "y": 68,
+    "level": 1,
+    "garrison": "{\"motor\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 80,
+    "y": 30,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 152,
+    "y": 14,
+    "level": 6,
+    "garrison": "{\"ltank\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 110,
+    "y": 66,
+    "level": 3,
+    "garrison": "{\"motor\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 73,
+    "y": 150,
+    "level": 2,
+    "garrison": "{\"armored\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 131,
+    "y": 171,
+    "level": 6,
+    "garrison": "{\"motor\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 112,
+    "y": 138,
+    "level": 1,
+    "garrison": "{\"armored\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 57,
+    "y": 62,
+    "level": 1,
+    "garrison": "{\"motor\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 103,
+    "y": 74,
+    "level": 6,
+    "garrison": "{\"ltank\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 115,
+    "y": 23,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 72,
+    "y": 17,
+    "level": 2,
+    "garrison": "{\"motor\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 56,
+    "y": 4,
+    "level": 2,
+    "garrison": "{\"armored\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 93,
+    "y": 66,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 94,
+    "y": 182,
+    "level": 1,
+    "garrison": "{\"ltank\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 97,
+    "y": 34,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 67,
+    "y": 99,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 96,
+    "y": 30,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 10,
+    "y": 24,
+    "level": 3,
+    "garrison": "{\"motor\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 151,
+    "y": 6,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 83,
+    "y": 65,
+    "level": 2,
+    "garrison": "{\"armored\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 157,
+    "y": 24,
+    "level": 1,
+    "garrison": "{\"ltank\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 81,
+    "y": 195,
+    "level": 1,
+    "garrison": "{\"ltank\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 115,
+    "y": 55,
+    "level": 2,
+    "garrison": "{\"infantry\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 27,
+    "y": 9,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 33,
+    "y": 5,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 11,
+    "y": 52,
+    "level": 2,
+    "garrison": "{\"armored\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 121,
+    "y": 185,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 55,
+    "y": 180,
+    "level": 2,
+    "garrison": "{\"armored\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 1,
+    "y": 43,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 147,
+    "y": 70,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 131,
+    "y": 87,
+    "level": 1,
+    "garrison": "{\"ltank\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 97,
+    "y": 42,
+    "level": 1,
+    "garrison": "{\"armored\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 39,
+    "y": 167,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 104,
+    "y": 160,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 52,
+    "y": 17,
+    "level": 3,
+    "garrison": "{\"armored\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 117,
+    "y": 183,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 11,
+    "y": 147,
+    "level": 1,
+    "garrison": "{\"motor\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 18,
+    "y": 191,
+    "level": 1,
+    "garrison": "{\"motor\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 63,
+    "y": 194,
+    "level": 1,
+    "garrison": "{\"motor\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 67,
+    "y": 14,
+    "level": 5,
+    "garrison": "{\"armored\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 103,
+    "y": 168,
+    "level": 1,
+    "garrison": "{\"infantry\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 82,
+    "y": 151,
+    "level": 1,
+    "garrison": "{\"infantry\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 72,
+    "y": 68,
+    "level": 5,
+    "garrison": "{\"armored\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 125,
+    "y": 128,
+    "level": 4,
+    "garrison": "{\"motor\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 8,
+    "y": 150,
+    "level": 6,
+    "garrison": "{\"motor\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 136,
+    "y": 123,
+    "level": 2,
+    "garrison": "{\"motor\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 51,
+    "y": 164,
+    "level": 6,
+    "garrison": "{\"motor\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 0,
+    "y": 84,
+    "level": 2,
+    "garrison": "{\"infantry\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 95,
+    "y": 137,
+    "level": 1,
+    "garrison": "{\"infantry\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 101,
+    "y": 122,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 152,
+    "y": 48,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 95,
+    "y": 126,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 136,
+    "y": 154,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 19,
+    "y": 33,
+    "level": 2,
+    "garrison": "{\"infantry\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 51,
+    "y": 55,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 76,
+    "y": 17,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 137,
+    "y": 107,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 67,
+    "y": 132,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 85,
+    "y": 122,
+    "level": 3,
+    "garrison": "{\"armored\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 35,
+    "y": 185,
+    "level": 3,
+    "garrison": "{\"armored\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 86,
+    "y": 188,
+    "level": 5,
+    "garrison": "{\"armored\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 22,
+    "y": 151,
+    "level": 3,
+    "garrison": "{\"armored\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 42,
+    "y": 191,
+    "level": 5,
+    "garrison": "{\"motor\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 92,
+    "y": 107,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 125,
+    "y": 66,
+    "level": 6,
+    "garrison": "{\"motor\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 72,
+    "y": 48,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 107,
+    "y": 172,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 135,
+    "y": 177,
+    "level": 3,
+    "garrison": "{\"motor\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 46,
+    "y": 154,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 92,
+    "y": 157,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 103,
+    "y": 187,
+    "level": 2,
+    "garrison": "{\"ltank\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 125,
+    "y": 58,
+    "level": 2,
+    "garrison": "{\"armored\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 31,
+    "y": 109,
+    "level": 6,
+    "garrison": "{\"ltank\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 90,
+    "y": 183,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 129,
+    "y": 86,
+    "level": 1,
+    "garrison": "{\"armored\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 106,
+    "y": 50,
+    "level": 1,
+    "garrison": "{\"infantry\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 112,
+    "y": 157,
+    "level": 2,
+    "garrison": "{\"armored\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 67,
+    "y": 52,
+    "level": 2,
+    "garrison": "{\"infantry\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 45,
+    "y": 0,
+    "level": 5,
+    "garrison": "{\"motor\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 62,
+    "y": 24,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 56,
+    "y": 160,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 27,
+    "y": 103,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 49,
+    "y": 185,
+    "level": 2,
+    "garrison": "{\"motor\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 26,
+    "y": 145,
+    "level": 2,
+    "garrison": "{\"ltank\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 88,
+    "y": 101,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 141,
+    "y": 105,
+    "level": 6,
+    "garrison": "{\"motor\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 142,
+    "y": 39,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 71,
+    "y": 137,
+    "level": 1,
+    "garrison": "{\"armored\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 97,
+    "y": 74,
+    "level": 5,
+    "garrison": "{\"motor\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 149,
+    "y": 132,
+    "level": 2,
+    "garrison": "{\"infantry\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 116,
+    "y": 97,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 23,
+    "y": 34,
+    "level": 1,
+    "garrison": "{\"motor\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 3,
+    "y": 37,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 127,
+    "y": 84,
+    "level": 6,
+    "garrison": "{\"motor\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 61,
+    "y": 99,
+    "level": 5,
+    "garrison": "{\"motor\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 63,
+    "y": 34,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 52,
+    "y": 98,
+    "level": 3,
+    "garrison": "{\"motor\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 106,
+    "y": 90,
+    "level": 4,
+    "garrison": "{\"motor\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 122,
+    "y": 82,
+    "level": 2,
+    "garrison": "{\"motor\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 137,
+    "y": 28,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 97,
+    "y": 187,
+    "level": 1,
+    "garrison": "{\"motor\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 112,
+    "y": 65,
+    "level": 4,
+    "garrison": "{\"motor\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 85,
+    "y": 170,
+    "level": 4,
+    "garrison": "{\"motor\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 5,
+    "y": 5,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 31,
+    "y": 74,
+    "level": 6,
+    "garrison": "{\"motor\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 18,
+    "y": 95,
+    "level": 1,
+    "garrison": "{\"armored\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 110,
+    "y": 173,
+    "level": 2,
+    "garrison": "{\"armored\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 49,
+    "y": 1,
+    "level": 1,
+    "garrison": "{\"armored\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 181,
+    "y": 79,
+    "level": 1,
+    "garrison": "{\"motor\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 144,
+    "y": 19,
+    "level": 3,
+    "garrison": "{\"motor\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 59,
+    "y": 172,
+    "level": 1,
+    "garrison": "{\"armored\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 83,
+    "y": 22,
+    "level": 4,
+    "garrison": "{\"motor\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 5,
+    "y": 150,
+    "level": 1,
+    "garrison": "{\"motor\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 107,
+    "y": 3,
+    "level": 5,
+    "garrison": "{\"armored\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 67,
+    "y": 168,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 56,
+    "y": 138,
+    "level": 5,
+    "garrison": "{\"motor\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 149,
+    "y": 50,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 84,
+    "y": 94,
+    "level": 2,
+    "garrison": "{\"ltank\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 47,
+    "y": 76,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 88,
+    "y": 93,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 61,
+    "y": 148,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 142,
+    "y": 77,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 71,
+    "y": 34,
+    "level": 2,
+    "garrison": "{\"motor\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 51,
+    "y": 162,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 49,
+    "y": 60,
+    "level": 5,
+    "garrison": "{\"armored\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 52,
+    "y": 174,
+    "level": 2,
+    "garrison": "{\"ltank\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 118,
+    "y": 117,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 37,
+    "y": 15,
+    "level": 3,
+    "garrison": "{\"armored\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 134,
+    "y": 48,
+    "level": 1,
+    "garrison": "{\"infantry\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 14,
+    "y": 38,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 4,
+    "y": 59,
+    "level": 6,
+    "garrison": "{\"ltank\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 165,
+    "y": 25,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 27,
+    "y": 150,
+    "level": 5,
+    "garrison": "{\"motor\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 28,
+    "y": 81,
+    "level": 1,
+    "garrison": "{\"motor\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 75,
+    "y": 62,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 84,
+    "y": 151,
+    "level": 3,
+    "garrison": "{\"motor\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 64,
+    "y": 23,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 22,
+    "y": 148,
+    "level": 6,
+    "garrison": "{\"motor\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 154,
+    "y": 42,
+    "level": 5,
+    "garrison": "{\"armored\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 134,
+    "y": 2,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 82,
+    "y": 43,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 118,
+    "y": 101,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 109,
+    "y": 145,
+    "level": 6,
+    "garrison": "{\"ltank\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 11,
+    "y": 180,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 125,
+    "y": 99,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 100,
+    "y": 89,
+    "level": 1,
+    "garrison": "{\"armored\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 29,
+    "y": 33,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 72,
+    "y": 103,
+    "level": 4,
+    "garrison": "{\"motor\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 138,
+    "y": 26,
+    "level": 1,
+    "garrison": "{\"motor\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 140,
+    "y": 51,
+    "level": 2,
+    "garrison": "{\"armored\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 31,
+    "y": 21,
+    "level": 1,
+    "garrison": "{\"motor\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 76,
+    "y": 40,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 138,
+    "y": 165,
+    "level": 2,
+    "garrison": "{\"infantry\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 95,
+    "y": 48,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 114,
+    "y": 57,
+    "level": 4,
+    "garrison": "{\"motor\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 112,
+    "y": 159,
+    "level": 4,
+    "garrison": "{\"motor\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 96,
+    "y": 6,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 123,
+    "y": 70,
+    "level": 2,
+    "garrison": "{\"armored\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 13,
+    "y": 12,
+    "level": 1,
+    "garrison": "{\"ltank\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 49,
+    "y": 192,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 47,
+    "y": 137,
+    "level": 3,
+    "garrison": "{\"motor\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 4,
+    "y": 94,
+    "level": 6,
+    "garrison": "{\"motor\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 152,
+    "y": 10,
+    "level": 3,
+    "garrison": "{\"armored\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 163,
+    "y": 20,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 81,
+    "y": 5,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 29,
+    "y": 7,
+    "level": 2,
+    "garrison": "{\"infantry\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 133,
+    "y": 102,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 111,
+    "y": 72,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 130,
+    "y": 33,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 128,
+    "y": 150,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 25,
+    "y": 109,
+    "level": 2,
+    "garrison": "{\"ltank\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 34,
+    "y": 44,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 119,
+    "y": 86,
+    "level": 1,
+    "garrison": "{\"armored\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 132,
+    "y": 137,
+    "level": 2,
+    "garrison": "{\"ltank\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 54,
+    "y": 190,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 111,
+    "y": 11,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 165,
+    "y": 23,
+    "level": 2,
+    "garrison": "{\"armored\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 4,
+    "y": 57,
+    "level": 6,
+    "garrison": "{\"ltank\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 158,
+    "y": 140,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 34,
+    "y": 82,
+    "level": 5,
+    "garrison": "{\"motor\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 26,
+    "y": 126,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 140,
+    "y": 31,
+    "level": 4,
+    "garrison": "{\"motor\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 12,
+    "y": 151,
+    "level": 4,
+    "garrison": "{\"motor\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 64,
+    "y": 78,
+    "level": 1,
+    "garrison": "{\"motor\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 100,
+    "y": 23,
+    "level": 5,
+    "garrison": "{\"armored\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 126,
+    "y": 189,
+    "level": 4,
+    "garrison": "{\"infantry\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 70,
+    "y": 74,
+    "level": 5,
+    "garrison": "{\"armored\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 46,
+    "y": 66,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 73,
+    "y": 2,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 100,
+    "y": 126,
+    "level": 4,
+    "garrison": "{\"infantry\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 38,
+    "y": 84,
+    "level": 6,
+    "garrison": "{\"ltank\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 104,
+    "y": 134,
+    "level": 2,
+    "garrison": "{\"motor\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 103,
+    "y": 162,
+    "level": 1,
+    "garrison": "{\"ltank\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 54,
+    "y": 50,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 151,
+    "y": 30,
+    "level": 1,
+    "garrison": "{\"infantry\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 58,
+    "y": 162,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 89,
+    "y": 19,
+    "level": 1,
+    "garrison": "{\"ltank\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 62,
+    "y": 185,
+    "level": 6,
+    "garrison": "{\"ltank\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 170,
+    "y": 11,
+    "level": 5,
+    "garrison": "{\"armored\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 12,
+    "y": 154,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 150,
+    "y": 33,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 150,
+    "y": 17,
+    "level": 1,
+    "garrison": "{\"armored\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 85,
+    "y": 19,
+    "level": 1,
+    "garrison": "{\"armored\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 44,
+    "y": 94,
+    "level": 2,
+    "garrison": "{\"armored\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 58,
+    "y": 106,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 130,
+    "y": 7,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 25,
+    "y": 96,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 108,
+    "y": 131,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 113,
+    "y": 174,
+    "level": 2,
+    "garrison": "{\"armored\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 83,
+    "y": 144,
+    "level": 1,
+    "garrison": "{\"motor\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 128,
+    "y": 34,
+    "level": 5,
+    "garrison": "{\"motor\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 75,
+    "y": 10,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 112,
+    "y": 14,
+    "level": 3,
+    "garrison": "{\"armored\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 113,
+    "y": 48,
+    "level": 2,
+    "garrison": "{\"infantry\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 98,
+    "y": 83,
+    "level": 1,
+    "garrison": "{\"armored\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 129,
+    "y": 167,
+    "level": 2,
+    "garrison": "{\"ltank\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 33,
+    "y": 38,
+    "level": 1,
+    "garrison": "{\"motor\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 116,
+    "y": 51,
+    "level": 4,
+    "garrison": "{\"infantry\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 60,
+    "y": 113,
+    "level": 6,
+    "garrison": "{\"motor\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 23,
+    "y": 193,
+    "level": 4,
+    "garrison": "{\"infantry\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 119,
+    "y": 152,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 95,
+    "y": 38,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 21,
+    "y": 189,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 114,
+    "y": 53,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 135,
+    "y": 0,
+    "level": 5,
+    "garrison": "{\"motor\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 25,
+    "y": 50,
+    "level": 2,
+    "garrison": "{\"armored\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 84,
+    "y": 156,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 93,
+    "y": 139,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 79,
+    "y": 108,
+    "level": 5,
+    "garrison": "{\"motor\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 20,
+    "y": 96,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 83,
+    "y": 158,
+    "level": 1,
+    "garrison": "{\"infantry\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 113,
+    "y": 44,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 69,
+    "y": 95,
+    "level": 2,
+    "garrison": "{\"motor\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 100,
+    "y": 44,
+    "level": 3,
+    "garrison": "{\"armored\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 107,
+    "y": 56,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 107,
+    "y": 18,
+    "level": 4,
+    "garrison": "{\"infantry\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 60,
+    "y": 12,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 32,
+    "y": 83,
+    "level": 2,
+    "garrison": "{\"ltank\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 32,
+    "y": 179,
+    "level": 4,
+    "garrison": "{\"infantry\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 63,
+    "y": 176,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 24,
+    "y": 94,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 129,
+    "y": 163,
+    "level": 2,
+    "garrison": "{\"ltank\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 76,
+    "y": 75,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 8,
+    "y": 61,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 69,
+    "y": 30,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 116,
+    "y": 36,
+    "level": 2,
+    "garrison": "{\"infantry\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 71,
+    "y": 4,
+    "level": 3,
+    "garrison": "{\"armored\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 14,
+    "y": 71,
+    "level": 1,
+    "garrison": "{\"ltank\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 9,
+    "y": 73,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 132,
+    "y": 145,
+    "level": 3,
+    "garrison": "{\"armored\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 145,
+    "y": 110,
+    "level": 6,
+    "garrison": "{\"ltank\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 64,
+    "y": 87,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 55,
+    "y": 99,
+    "level": 6,
+    "garrison": "{\"ltank\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 124,
+    "y": 9,
+    "level": 3,
+    "garrison": "{\"armored\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 71,
+    "y": 179,
+    "level": 4,
+    "garrison": "{\"infantry\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 111,
+    "y": 161,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 3,
+    "y": 81,
+    "level": 6,
+    "garrison": "{\"ltank\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 154,
+    "y": 0,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 85,
+    "y": 85,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 91,
+    "y": 180,
+    "level": 1,
+    "garrison": "{\"infantry\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 128,
+    "y": 104,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 147,
+    "y": 74,
+    "level": 1,
+    "garrison": "{\"ltank\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 26,
+    "y": 62,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 81,
+    "y": 163,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 143,
+    "y": 164,
+    "level": 1,
+    "garrison": "{\"infantry\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 124,
+    "y": 76,
+    "level": 1,
+    "garrison": "{\"armored\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 81,
+    "y": 99,
+    "level": 1,
+    "garrison": "{\"ltank\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 8,
+    "y": 78,
+    "level": 2,
+    "garrison": "{\"armored\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 137,
+    "y": 130,
+    "level": 6,
+    "garrison": "{\"motor\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 108,
+    "y": 28,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 104,
+    "y": 116,
+    "level": 3,
+    "garrison": "{\"motor\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 131,
+    "y": 11,
+    "level": 3,
+    "garrison": "{\"motor\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 33,
+    "y": 128,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 73,
+    "y": 188,
+    "level": 2,
+    "garrison": "{\"infantry\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 121,
+    "y": 15,
+    "level": 1,
+    "garrison": "{\"armored\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 154,
+    "y": 140,
+    "level": 5,
+    "garrison": "{\"motor\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 94,
+    "y": 121,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 3,
+    "y": 124,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 68,
+    "y": 70,
+    "level": 5,
+    "garrison": "{\"motor\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 0,
+    "y": 111,
+    "level": 3,
+    "garrison": "{\"armored\":15}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 77,
+    "y": 150,
+    "level": 4,
+    "garrison": "{\"infantry\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 38,
+    "y": 81,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 40,
+    "y": 175,
+    "level": 1,
+    "garrison": "{\"infantry\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 21,
+    "y": 74,
+    "level": 2,
+    "garrison": "{\"armored\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 129,
+    "y": 26,
+    "level": 1,
+    "garrison": "{\"infantry\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 143,
+    "y": 157,
+    "level": 2,
+    "garrison": "{\"ltank\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 78,
+    "y": 110,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 76,
+    "y": 125,
+    "level": 2,
+    "garrison": "{\"motor\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 129,
+    "y": 55,
+    "level": 3,
+    "garrison": "{\"ltank\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 123,
+    "y": 157,
+    "level": 5,
+    "garrison": "{\"infantry\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 94,
+    "y": 71,
+    "level": 6,
+    "garrison": "{\"motor\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 38,
+    "y": 116,
+    "level": 6,
+    "garrison": "{\"motor\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 64,
+    "y": 27,
+    "level": 1,
+    "garrison": "{\"infantry\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 59,
+    "y": 139,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 84,
+    "y": 48,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 49,
+    "y": 79,
+    "level": 1,
+    "garrison": "{\"ltank\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 83,
+    "y": 74,
+    "level": 3,
+    "garrison": "{\"infantry\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 56,
+    "y": 44,
+    "level": 1,
+    "garrison": "{\"motor\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 42,
+    "y": 3,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 54,
+    "y": 10,
+    "level": 2,
+    "garrison": "{\"motor\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 136,
+    "y": 134,
+    "level": 4,
+    "garrison": "{\"infantry\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 140,
+    "y": 62,
+    "level": 4,
+    "garrison": "{\"ltank\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 40,
+    "y": 162,
+    "level": 2,
+    "garrison": "{\"motor\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 137,
+    "y": 100,
+    "level": 1,
+    "garrison": "{\"ltank\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 135,
+    "y": 100,
+    "level": 2,
+    "garrison": "{\"infantry\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 85,
+    "y": 36,
+    "level": 1,
+    "garrison": "{\"ltank\":5}",
+    "total_res": 800
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 0,
+    "y": 102,
+    "level": 4,
+    "garrison": "{\"motor\":20}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 58,
+    "y": 96,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 31,
+    "y": 195,
+    "level": 1,
+    "garrison": "{\"armored\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 123,
+    "y": 15,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 116,
+    "y": 146,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 59,
+    "y": 102,
+    "level": 6,
+    "garrison": "{\"ltank\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 93,
+    "y": 105,
+    "level": 2,
+    "garrison": "{\"ltank\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 125,
+    "y": 139,
+    "level": 2,
+    "garrison": "{\"armored\":10}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 111,
+    "y": 179,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 11,
+    "y": 178,
+    "level": 6,
+    "garrison": "{\"armored\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 127,
+    "y": 47,
+    "level": 3,
+    "garrison": "{\"armored\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 48,
+    "y": 42,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 4800
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 83,
+    "y": 104,
+    "level": 3,
+    "garrison": "{\"motor\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 137,
+    "y": 42,
+    "level": 3,
+    "garrison": "{\"motor\":15}",
+    "total_res": 2400
+  },
+  {
+    "world_id": 1,
+    "type": "forest",
+    "x": 48,
+    "y": 58,
+    "level": 6,
+    "garrison": "{\"infantry\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "hill",
+    "x": 52,
+    "y": 25,
+    "level": 6,
+    "garrison": "{\"motor\":30}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "swamp",
+    "x": 33,
+    "y": 103,
+    "level": 1,
+    "garrison": "{\"armored\":5}",
+    "total_res": 0
+  },
+  {
+    "world_id": 1,
+    "type": "grainfield",
+    "x": 109,
+    "y": 90,
+    "level": 2,
+    "garrison": "{\"infantry\":10}",
+    "total_res": 1600
+  },
+  {
+    "world_id": 1,
+    "type": "ironworks",
+    "x": 77,
+    "y": 73,
+    "level": 4,
+    "garrison": "{\"armored\":20}",
+    "total_res": 3200
+  },
+  {
+    "world_id": 1,
+    "type": "oil",
+    "x": 53,
+    "y": 157,
+    "level": 5,
+    "garrison": "{\"ltank\":25}",
+    "total_res": 4000
+  },
+  {
+    "world_id": 1,
+    "type": "rarefactory",
+    "x": 7,
+    "y": 7,
+    "level": 5,
+    "garrison": "{\"armored\":25}",
+    "total_res": 4000
+  }
+]

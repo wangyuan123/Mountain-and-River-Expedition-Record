@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="3gqq">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <base href="../">
+  <title>野地战报预览</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/themes.css">
+</head>
+<body><div id="screen"><div id="view"></div></div>
+<script src="js/data.js"></script>
+<script src="js/core.js"></script>
+<script>
+Game.state = Game.Core.state = { player: {}, world: {}, reports: [], unreadReportCount: 0 };
+Game.Core.history = [];
+Game.API = { getToken: function () { return 'preview'; } };
+Game.Core.render = function () {
+  var view = document.getElementById('view');
+  if (Game.Core.route === 'reportDetail') Game.Battle.renderReportDetail(view);
+  else Game.Battle.renderReportsList(view);
+};
+</script>
+<script src="js/battle.js?v=1.8-wild-occupation"></script>
+<script>
+Game.Battle.markOneRead = function () {};
+Game.state.reports = [
+  { wildConquered: true },
+  { wildConquered: false },
+  { win: false, wildConquered: false },
+  { action: 'plunder', wildConquered: false },
+  { subject: '占领野地胜利 油田' }
+].map(function (fields, i) {
+  return Object.assign({ id: i + 1, type: 'battle', time: Date.now(), readAt: 1,
+    win: true, action: 'conquer', targetType: 'wild', attackerName: '测试玩家',
+    fromName: '主城', fromCoord: '10,10', toName: '油田', toCoord: '20,30',
+    initialAttacker: { infantry: 100 }, survivorAttacker: { infantry: 95 },
+    initialDefender: { infantry: 10 }, survivorDefender: {}, roundLogs: []
+  }, fields);
+});
+Game.Core.route = 'reports';
+Game.Core.render();
+</script>
+</body></html>

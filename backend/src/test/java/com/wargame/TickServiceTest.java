@@ -298,4 +298,29 @@ class TickServiceTest extends BaseServiceTest {
         int effCap = (Integer) pop.get("effectiveCapacity");
         assertTrue(effCap < 200, "80%重税下，有效容纳上限应低于标称容量200");
     }
+
+    @Test
+    @DisplayName("行军Tick推送包含完整坐标与兵力")
+    void testTickMarchesIncludeFullCoordinatesAndArmy() {
+        long now = System.currentTimeMillis();
+        createMarch(playerId, "wild", "10", "油田 Lv.4", 50, 60, 55, 65,
+                Map.of("fighter", 100), "conquer", now, now + 60000, false, false);
+
+        Map<String, Object> changes = tickService.pushStateChanges(playerId);
+        assertNotNull(changes);
+        @SuppressWarnings("unchecked")
+        java.util.List<Map<String, Object>> marches = (java.util.List<Map<String, Object>>) changes.get("marches");
+        assertNotNull(marches);
+        assertEquals(1, marches.size());
+        Map<String, Object> m = marches.get(0);
+        assertEquals(50, m.get("fromX"), "Tick 推送必须包含 fromX");
+        assertEquals(60, m.get("fromY"), "Tick 推送必须包含 fromY");
+        assertEquals(55, m.get("targetX"), "Tick 推送必须包含 targetX");
+        assertEquals(65, m.get("targetY"), "Tick 推送必须包含 targetY");
+        assertNotNull(m.get("distance"), "Tick 推送必须包含 distance");
+        assertNotNull(m.get("army"), "Tick 推送必须包含 army 兵力信息");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> army = (Map<String, Object>) m.get("army");
+        assertEquals(100, army.get("fighter"), "兵力应包含 fighter=100");
+    }
 }

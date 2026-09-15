@@ -22,6 +22,9 @@ import java.util.*;
 @Service
 public class TechService {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.service.CityScope cityScope;
+
     private final TechnologyRepository technologyRepository;
     private final ResourcesRepository resourcesRepository;
     private final BuildingRepository buildingRepository;
@@ -199,7 +202,7 @@ public class TechService {
     // ================================================================
 
     private int buildingLevel(Long playerId, String buildingType) {
-        List<Building> buildings = buildingRepository.findByPlayerIdAndType(playerId, buildingType);
+        List<Building> buildings = buildingRepository.findByPlayerIdAndCitySlotAndType(playerId, cityScope.slot(playerId), buildingType);
         int sum = 0;
         for (Building b : buildings) {
             sum += b.getLevel() != null ? b.getLevel() : 0;
@@ -208,7 +211,7 @@ public class TechService {
     }
 
     private boolean costEnough(Long playerId, Map<String, Integer> costs) {
-        Resources r = resourcesRepository.findByPlayerId(playerId).orElse(null);
+        Resources r = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (r == null) return false;
         for (Map.Entry<String, Integer> entry : costs.entrySet()) {
             int have = getResource(r, entry.getKey());
@@ -218,7 +221,7 @@ public class TechService {
     }
 
     private void deductCosts(Long playerId, Map<String, Integer> costs) {
-        Resources r = resourcesRepository.findByPlayerId(playerId).orElse(null);
+        Resources r = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (r == null) return;
         for (Map.Entry<String, Integer> entry : costs.entrySet()) {
             int current = getResource(r, entry.getKey());

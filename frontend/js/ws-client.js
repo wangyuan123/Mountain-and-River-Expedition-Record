@@ -7,14 +7,29 @@ window.Game = window.Game || {};
   var WS = {
     socket: null,
     connected: false,
+    status: 'disconnected',
+    lastPong: 0,
     reconnectTimer: null,
     heartbeatTimer: null,
     listeners: {},  // type -> [callback]
 
+    statusHtml: function () {
+      var label = { connected: '已连接', connecting: '连接中', reconnecting: '重连中', disconnected: '已断开' }[this.status];
+      return '<span class="connection-status" data-connection="' + this.status + '"><span class="online-dot"></span><span class="online-text">' + label + '</span></span>';
+    },
+
+    setStatus: function (status) {
+      this.status = status;
+      var nodes = document.querySelectorAll('.connection-status');
+      for (var i = 0; i < nodes.length; i++) nodes[i].outerHTML = this.statusHtml();
+    },
+
     connect: function () {
       // Get token from API
       var token = G.API.getToken();
-      if (!token) return;
+      if (!token) { this.setStatus('disconnected'); return; }
+      if (this.socket && this.socket.readyState < 2) return;
+      this.setStatus(this.status === 'reconnecting' ? 'reconnecting' : 'connecting');
 
       this._intentionalDisconnect = false;
 
@@ -28,10 +43,13 @@ window.Game = window.Game || {};
       }
       var wsUrl = protocol + '//' + wsHost + '/ws/game?token=' + token;
 
-      this.socket = new WebSocket(wsUrl);
+      var socket = this.socket = new WebSocket(wsUrl);
 
       this.socket.onopen = function () {
+        if (WS.socket !== socket) return;
         WS.connected = true;
+        WS.lastPong = Date.now();
+        WS.setStatus('connected');
         console.log('WebSocket connected');
         WS.startHeartbeat();
         // Request fresh state on connect
@@ -39,12 +57,14 @@ window.Game = window.Game || {};
       };
 
       this.socket.onmessage = function (event) {
-        WS.handleMessage(event.data);
+        if (WS.socket === socket) WS.handleMessage(event.data);
       };
 
       this.socket.onclose = function () {
+        if (WS.socket !== socket) return;
         var wasConnected = WS.connected;
         WS.connected = false;
+        WS.setStatus(WS._intentionalDisconnect ? 'disconnected' : 'reconnecting');
         console.log('WebSocket disconnected');
         WS.stopHeartbeat();
         // Only emit disconnected and schedule reconnect if we were previously connected
@@ -74,6 +94,7 @@ window.Game = window.Game || {};
         this.socket = null;
       }
       this.connected = false;
+      this.setStatus('disconnected');
     },
 
     scheduleReconnect: function () {
@@ -85,7 +106,16 @@ window.Game = window.Game || {};
     },
 
     startHeartbeat: function () {
+      this.stopHeartbeat();
       this.heartbeatTimer = setInterval(function () {
+        if (WS.connected && Date.now() - WS.lastPong >= 90000) {
+          WS.disconnect();
+          WS._intentionalDisconnect = false;
+          WS.setStatus('reconnecting');
+          WS.emit('disconnected', {});
+          WS.scheduleReconnect();
+          return;
+        }
         if (WS.connected && WS.socket.readyState === WebSocket.OPEN) {
           WS.socket.send(JSON.stringify({ type: 'ping' }));
         }
@@ -100,6 +130,7 @@ window.Game = window.Game || {};
     },
 
     handleMessage: function (data) {
+      if (data === 'pong') { this.lastPong = Date.now(); return; }
       try {
         var msg = JSON.parse(data);
       } catch (e) {
@@ -107,9 +138,12 @@ window.Game = window.Game || {};
         return;
       }
 
+      var current = (G.Core && G.Core.state) || G.state;
+      if (msg.citySlot != null && ((G.Cities && G.Cities.switching) ||
+          (current && current.player && msg.citySlot !== (current.player.citySlot || 0)))) return;
       switch (msg.type) {
         case 'pong':
-          // Heartbeat response, ignore
+          this.lastPong = Date.now();
           break;
         case 'tick':
           this.emit('tick', msg.data);

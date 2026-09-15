@@ -1,10 +1,10 @@
 package com.wargame.service;
 
-import com.wargame.model.constants.GameConstants;
 import com.wargame.model.constants.MilitaryRankDef;
 import com.wargame.model.constants.WorldConfig;
 import com.wargame.model.constants.WildTypeDef;
 import com.wargame.model.constants.FortDef;
+import com.wargame.model.constants.TechDef;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
 import com.wargame.util.JsonUtil;
@@ -19,11 +19,20 @@ import java.util.concurrent.ThreadLocalRandom;
 @Service
 public class GameStateService {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.service.CityScope cityScope;
+    @org.springframework.beans.factory.annotation.Autowired
+    private WorldTerrainService terrain;
+
+    @org.springframework.beans.factory.annotation.Autowired private CityService cityService;
+    @org.springframework.beans.factory.annotation.Autowired private ArmyProductionQueueRepository armyQueues;
+
     private final WorldViewService worldViewService;
     private final PlayerRepository playerRepository;
     private final ResourcesRepository resourcesRepository;
     private final BuildingRepository buildingRepository;
     private final ArmyUnitRepository armyUnitRepository;
+    private final WoundedUnitRepository woundedUnitRepository;
     private final FortificationRepository fortificationRepository;
     private final TechnologyRepository technologyRepository;
     private final OfficerRepository officerRepository;
@@ -53,7 +62,7 @@ public class GameStateService {
     public GameStateService(WorldViewService worldViewService, PlayerRepository playerRepository,
                             ResourcesRepository resourcesRepository,
                             BuildingRepository buildingRepository,
-                            ArmyUnitRepository armyUnitRepository,
+                            ArmyUnitRepository armyUnitRepository, WoundedUnitRepository woundedUnitRepository,
                             FortificationRepository fortificationRepository,
                             TechnologyRepository technologyRepository,
                             OfficerRepository officerRepository,
@@ -79,6 +88,7 @@ public class GameStateService {
         this.resourcesRepository = resourcesRepository;
         this.buildingRepository = buildingRepository;
         this.armyUnitRepository = armyUnitRepository;
+        this.woundedUnitRepository = woundedUnitRepository;
         this.fortificationRepository = fortificationRepository;
         this.technologyRepository = technologyRepository;
         this.officerRepository = officerRepository;
@@ -105,14 +115,13 @@ public class GameStateService {
     public void setCityName(Long playerId, String cityName) {
         Player player = playerRepository.findById(playerId)
                 .orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
-        player.setCityName(cityName);
+        cityScope.economy(playerId).setCityName(cityName);
         playerRepository.save(player);
-        playerCityRepository.findByOwnerId(playerId).stream()
-                .filter(city -> player.getCityPosX().equals(city.getX()) && player.getCityPosY().equals(city.getY()))
-                .forEach(city -> {
-                    city.setName(cityName);
-                    playerCityRepository.save(city);
-                });
+        cityScope.saveEconomy(playerId);
+        cityScope.selected(playerId).ifPresent(city -> {
+            city.setName(cityName);
+            playerCityRepository.save(city);
+        });
     }
 
     @Transactional
@@ -121,6 +130,7 @@ public class GameStateService {
                 .orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
         player.setAvatar(avatar == null ? "" : avatar.trim());
         playerRepository.save(player);
+        cityScope.saveEconomy(playerId);
     }
 
     // ================================================================
@@ -142,7 +152,8 @@ public class GameStateService {
         playerInfo.put("id", player.getId());
         playerInfo.put("username", player.getUsername());
         playerInfo.put("faction", player.getFaction());
-        playerInfo.put("cityName", player.getCityName());
+        playerInfo.put("cityName", cityScope.economy(playerId).getCityName() == null || cityScope.economy(playerId).getCityName().isBlank()
+                ? "新城市" : cityScope.economy(playerId).getCityName());
         playerInfo.put("avatar", player.getAvatar() != null ? player.getAvatar() : "");
         int rankTier = player.getMilitaryRank() != null ? player.getMilitaryRank() : 1;
         playerInfo.put("militaryRank", rankTier);
@@ -157,11 +168,17 @@ public class GameStateService {
             guildInfo.put("role", member.getRole());
             playerInfo.put("guild", guildInfo);
         }));
+        cityScope.selected(playerId).ifPresent(city -> {
+            playerInfo.put("activeCityId", city.getId());
+            playerInfo.put("mainCity", city.getCitySlot() == 0);
+        });
+        playerInfo.put("citySlot", cityScope.slot(playerId));
+        state.put("cityOverview", cityService.overview(playerId));
         state.put("player", playerInfo);
         state.put("unreadReportCount", scoutReportRepository.countUnreadByPlayerId(playerId));
 
         // --- resources ---
-        Resources resources = resourcesRepository.findByPlayerId(playerId).orElse(null);
+        Resources resources = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         Map<String, Object> resMap = new LinkedHashMap<>();
         if (resources != null) {
             resMap.put("food", resources.getFood() != null ? resources.getFood() : 0);
@@ -169,7 +186,7 @@ public class GameStateService {
             resMap.put("oil", resources.getOil() != null ? resources.getOil() : 0);
             resMap.put("rare", resources.getRare() != null ? resources.getRare() : 0);
             resMap.put("gold", resources.getGold() != null ? resources.getGold() : 0);
-            resMap.put("diamond", resources.getDiamond() != null ? resources.getDiamond() : 0);
+            resMap.put("diamond", java.util.Objects.requireNonNullElse(cityScope.wallet(playerId).getDiamond(), 0));
         } else {
             resMap.put("food", 0);
             resMap.put("steel", 0);
@@ -181,15 +198,15 @@ public class GameStateService {
         state.put("resources", resMap);
 
         // --- buildings ---
-        List<Building> buildings = buildingRepository.findByPlayerId(playerId);
+        List<Building> buildings = buildingRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         state.put("buildings", buildBuildingsMap(buildings));
 
         int populationCapacity = buildings.stream()
                 .filter(b -> "house".equals(b.getType()))
                 .mapToInt(b -> b.getLevel() != null ? b.getLevel() : 0)
                 .sum() * 100;
-        int civilians = Math.max(0, player.getCivilianPopulation() != null ? player.getCivilianPopulation() : 0);
-        int morale = player.getMorale() != null ? player.getMorale() : 70;
+        int civilians = Math.max(0, cityScope.economy(playerId).getCivilianPopulation() != null ? cityScope.economy(playerId).getCivilianPopulation() : 0);
+        int morale = cityScope.economy(playerId).getMorale() != null ? cityScope.economy(playerId).getMorale() : 70;
         int effectiveCapacity = populationCapacity <= 0 ? 0 : Math.max(10, (int) Math.round(populationCapacity * Math.min(1.0, morale / 70.0)));
         Map<String, Object> population = new LinkedHashMap<>();
         population.put("civilian", civilians);
@@ -200,15 +217,18 @@ public class GameStateService {
         state.put("population", population);
 
         // --- army ---
-        List<ArmyUnit> armyUnits = armyUnitRepository.findByPlayerId(playerId);
+        List<ArmyUnit> armyUnits = armyUnitRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         Map<String, Object> armyMap = new LinkedHashMap<>();
         for (ArmyUnit unit : armyUnits) {
             armyMap.put(unit.getType(), unit.getCount());
         }
         state.put("army", armyMap);
+        state.put("woundedCount", woundedUnitRepository
+                .findByPlayerIdAndExpiresAtGreaterThanOrderByExpiresAtAscIdAsc(playerId, System.currentTimeMillis())
+                .stream().mapToLong(WoundedUnit::getCount).sum());
 
         // --- forts ---
-        List<Fortification> forts = fortificationRepository.findByPlayerId(playerId);
+        List<Fortification> forts = fortificationRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         Map<String, Object> fortMap = new LinkedHashMap<>();
         for (Fortification fort : forts) {
             fortMap.put(fort.getType(), fort.getCount());
@@ -227,12 +247,13 @@ public class GameStateService {
         List<Technology> techs = technologyRepository.findByPlayerId(playerId);
         Map<String, Object> techMap = new LinkedHashMap<>();
         for (Technology tech : techs) {
+            if (!TechDef.TECHS.containsKey(tech.getType())) continue;
             techMap.put(tech.getType(), tech.getLevel());
         }
         state.put("tech", techMap);
 
         // --- officers ---
-        List<Officer> officers = officerRepository.findByPlayerId(playerId);
+        List<Officer> officers = officerRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         List<Map<String, Object>> officerList = new ArrayList<>();
         for (Officer o : officers) {
             Map<String, Object> offMap = new LinkedHashMap<>();
@@ -269,22 +290,53 @@ public class GameStateService {
         state.put("officers", officerList);
 
         // --- constructions ---
-        List<Construction> constructions = constructionRepository.findByPlayerId(playerId);
+        List<Construction> constructions = constructionRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         List<Map<String, Object>> constructionList = new ArrayList<>();
+        Map<String, List<Building>> buildingsByType = new LinkedHashMap<>();
+        for (Building b : buildings) {
+            buildingsByType.computeIfAbsent(b.getType(), k -> new ArrayList<>()).add(b);
+        }
+        for (List<Building> blist : buildingsByType.values()) {
+            blist.sort(Comparator.comparing(b -> b.getSlot() == null ? 0 : b.getSlot()));
+        }
         for (Construction c : constructions) {
             Map<String, Object> cMap = new LinkedHashMap<>();
             cMap.put("queueId", c.getId());
             cMap.put("id", c.getBuildingType());
             cMap.put("slot", c.getSlot());
-            cMap.put("targetLevel", c.getTargetLevel() != null ? c.getTargetLevel() : 0);
+            int targetLv = c.getTargetLevel() != null ? c.getTargetLevel() : 0;
+            cMap.put("targetLevel", targetLv);
             cMap.put("startedAt", c.getStartAt() != null ? c.getStartAt() : 0);
             cMap.put("finishesAt", c.getFinishAt() != null ? c.getFinishAt() : 0);
+
+            int curLv = 0;
+            List<Building> typeBuildings = buildingsByType.get(c.getBuildingType());
+            if (typeBuildings != null) {
+                if (c.getSlot() != null && MULTI_SLOT.contains(c.getBuildingType())) {
+                    if (c.getSlot() < typeBuildings.size()) {
+                        Building b = typeBuildings.get(c.getSlot());
+                        curLv = b.getLevel() != null ? b.getLevel() : 0;
+                    }
+                } else if (!typeBuildings.isEmpty()) {
+                    Building b = typeBuildings.get(0);
+                    curLv = b.getLevel() != null ? b.getLevel() : 0;
+                }
+            }
+
+            if (targetLv < curLv) {
+                cMap.put("action", "dismantle");
+                cMap.put("fromLevel", curLv);
+            } else {
+                cMap.put("action", "upgrade");
+                cMap.put("fromLevel", Math.max(0, targetLv - 1));
+            }
+
             constructionList.add(cMap);
         }
         state.put("constructions", constructionList);
 
         // --- academy ---
-        Academy academy = academyRepository.findByPlayerId(playerId).orElse(null);
+        Academy academy = academyRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         Map<String, Object> academyMap = new LinkedHashMap<>();
         if (academy != null) {
             academyMap.put("list", JsonUtil.parseList(academy.getOfficers()));
@@ -301,7 +353,7 @@ public class GameStateService {
                 player.getPosY() == null ? 0 : player.getPosY(), WorldConfig.VIEW_RADIUS));
 
         // --- cityState ---
-        CityState cityState = cityStateRepository.findByPlayerId(playerId).orElse(null);
+        CityState cityState = cityStateRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         Map<String, Object> csMap = new LinkedHashMap<>();
         if (cityState != null) {
             csMap.put("status", cityState.getStatus() != null ? cityState.getStatus() : "peace");
@@ -319,12 +371,12 @@ public class GameStateService {
         state.put("cityState", csMap);
 
         // --- scalar fields ---
-        state.put("tax", player.getTax() != null ? player.getTax() : 30);
-        state.put("morale", player.getMorale() != null ? player.getMorale() : 70);
-        state.put("resentment", player.getResentment() != null ? player.getResentment() : 0);
-        state.put("lastAppeaseAt", player.getLastAppeaseAt() != null ? player.getLastAppeaseAt() : 0L);
+        state.put("tax", cityScope.economy(playerId).getTax() != null ? cityScope.economy(playerId).getTax() : 30);
+        state.put("morale", cityScope.economy(playerId).getMorale() != null ? cityScope.economy(playerId).getMorale() : 70);
+        state.put("resentment", cityScope.economy(playerId).getResentment() != null ? cityScope.economy(playerId).getResentment() : 0);
+        state.put("lastAppeaseAt", cityScope.economy(playerId).getLastAppeaseAt() != null ? cityScope.economy(playerId).getLastAppeaseAt() : 0L);
         state.put("prestige", player.getPrestige() != null ? player.getPrestige() : 0);
-        state.put("lastTick", player.getLastTick() != null ? player.getLastTick() : 0);
+        state.put("lastTick", cityScope.economy(playerId).getLastTick() != null ? cityScope.economy(playerId).getLastTick() : 0);
         state.put("stats", new LinkedHashMap<>());
         state.put("progress", new LinkedHashMap<>());
 
@@ -346,13 +398,14 @@ public class GameStateService {
         Player player = playerRepository.findById(playerId)
                 .orElseThrow(() -> new IllegalArgumentException("Player not found: " + playerId));
 
-        int oldTax = player.getTax() != null ? player.getTax() : 30;
+        int oldTax = cityScope.economy(playerId).getTax() != null ? cityScope.economy(playerId).getTax() : 30;
         int taxDelta = tax - oldTax;
-        int curMorale = player.getMorale() != null ? player.getMorale() : 70;
+        int curMorale = cityScope.economy(playerId).getMorale() != null ? cityScope.economy(playerId).getMorale() : 70;
         int newMorale = Math.max(0, Math.min(100, curMorale - taxDelta));
-        player.setTax(tax);
-        player.setMorale(newMorale);
+        cityScope.economy(playerId).setTax(tax);
+        cityScope.economy(playerId).setMorale(newMorale);
         playerRepository.save(player);
+        cityScope.saveEconomy(playerId);
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("success", true);
@@ -374,7 +427,7 @@ public class GameStateService {
         }
         Player player = playerRepository.findById(playerId)
                 .orElseThrow(() -> new IllegalArgumentException("Player not found: " + playerId));
-        Resources resources = resourcesRepository.findByPlayerId(playerId)
+        Resources resources = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId))
                 .orElseThrow(() -> new IllegalArgumentException("Resources not found for player: " + playerId));
 
         int moraleGain;
@@ -382,7 +435,7 @@ public class GameStateService {
         String message;
 
         if ("gold".equalsIgnoreCase(type)) {
-            int civilians = Math.max(0, player.getCivilianPopulation() != null ? player.getCivilianPopulation() : 0);
+            int civilians = Math.max(0, cityScope.economy(playerId).getCivilianPopulation() != null ? cityScope.economy(playerId).getCivilianPopulation() : 0);
             int goldCost = Math.max(1000, Math.min(10000, civilians * 2));
             int currentGold = resources.getGold() != null ? resources.getGold() : 0;
             if (currentGold < goldCost) {
@@ -394,11 +447,13 @@ public class GameStateService {
             message = "消耗 " + goldCost + " 黄金开仓赈民，民心 +" + moraleGain + "，民怨 -" + resentmentLoss;
         } else if ("diamond".equalsIgnoreCase(type)) {
             int diamondCost = 20;
-            int currentDiamond = resources.getDiamond() != null ? resources.getDiamond() : 0;
+            Resources wallet = cityScope.wallet(playerId);
+            int currentDiamond = java.util.Objects.requireNonNullElse(wallet.getDiamond(), 0);
             if (currentDiamond < diamondCost) {
                 throw new IllegalArgumentException("钻石不足，特赦犒赏需要 " + diamondCost + " 钻石（当前: " + currentDiamond + "）");
             }
-            resources.setDiamond(currentDiamond - diamondCost);
+            wallet.setDiamond(currentDiamond - diamondCost);
+            resourcesRepository.save(wallet);
             moraleGain = 25;
             resentmentLoss = 20;
             message = "消耗 " + diamondCost + " 钻石大赦天下与重金犒赏，民心 +" + moraleGain + "，民怨 -" + resentmentLoss;
@@ -406,21 +461,22 @@ public class GameStateService {
             throw new IllegalArgumentException("未知的安抚类型: " + type);
         }
 
-        int curMorale = player.getMorale() != null ? player.getMorale() : 70;
-        int curResentment = player.getResentment() != null ? player.getResentment() : 0;
+        int curMorale = cityScope.economy(playerId).getMorale() != null ? cityScope.economy(playerId).getMorale() : 70;
+        int curResentment = cityScope.economy(playerId).getResentment() != null ? cityScope.economy(playerId).getResentment() : 0;
 
-        player.setMorale(Math.min(100, Math.max(0, curMorale + moraleGain)));
-        player.setResentment(Math.max(0, curResentment - resentmentLoss));
-        player.setLastAppeaseAt(System.currentTimeMillis());
+        cityScope.economy(playerId).setMorale(Math.min(100, Math.max(0, curMorale + moraleGain)));
+        cityScope.economy(playerId).setResentment(Math.max(0, curResentment - resentmentLoss));
+        cityScope.economy(playerId).setLastAppeaseAt(System.currentTimeMillis());
 
         resourcesRepository.save(resources);
         playerRepository.save(player);
+        cityScope.saveEconomy(playerId);
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("success", true);
         result.put("message", message);
-        result.put("morale", player.getMorale());
-        result.put("resentment", player.getResentment());
+        result.put("morale", cityScope.economy(playerId).getMorale());
+        result.put("resentment", cityScope.economy(playerId).getResentment());
         result.put("state", getGameState(playerId));
         return result;
     }
@@ -429,6 +485,8 @@ public class GameStateService {
     @Transactional
     public void repairExistingPlayerCoordinates() {
         Set<String> used = collectStaticCoordinates();
+        playerCityRepository.findAll().stream().filter(c -> c.getCitySlot() != null && c.getCitySlot() > 0)
+                .forEach(c -> used.add(c.getX() + "," + c.getY()));
         List<Player> players = new ArrayList<>(playerRepository.findAll());
         players.sort(Comparator.comparing(Player::getId));
         for (Player player : players) {
@@ -453,21 +511,35 @@ public class GameStateService {
         Long worldId = worldMapRepository.findFirstByOrderByIdAsc().map(WorldMap::getId).orElse(null);
         if (worldId == null || player.getCityPosX() == null || player.getCityPosY() == null) return;
 
+        var taggedMain = playerCityRepository.findByOwnerIdAndCitySlot(player.getId(), 0);
+        if (taggedMain.isPresent()) {
+            PlayerCity main = taggedMain.get();
+            main.setX(player.getCityPosX()); main.setY(player.getCityPosY());
+            main.setName(player.getCityName() == null || player.getCityName().isBlank() ? "新城市" : player.getCityName());
+            playerCityRepository.save(main);
+            return;
+        }
+
         boolean exists = playerCityRepository.findByOwnerId(player.getId()).stream()
                 .anyMatch(city -> worldId.equals(city.getWorldId())
                         && player.getCityPosX().equals(city.getX())
                         && player.getCityPosY().equals(city.getY()));
-        if (exists) return;
+        if (exists) {
+            playerCityRepository.findByOwnerId(player.getId()).stream()
+                    .filter(c -> player.getCityPosX().equals(c.getX()) && player.getCityPosY().equals(c.getY()))
+                    .filter(c -> c.getCitySlot() == null).findFirst().ifPresent(c -> { c.setCitySlot(0); playerCityRepository.save(c); });
+            return;
+        }
 
         PlayerCity city = new PlayerCity();
         city.setWorldId(worldId);
         city.setName(player.getCityName() == null || player.getCityName().isBlank()
                 ? "新城市" : player.getCityName());
         city.setOwnerId(player.getId());
+        city.setCitySlot(0);
         city.setLevel(1);
         city.setX(player.getCityPosX());
         city.setY(player.getCityPosY());
-        city.setArmy("{}");
         city.setForts("{}");
         city.setResources("{}");
         city.setPrestige(player.getPrestige() == null ? 0 : player.getPrestige());
@@ -491,7 +563,7 @@ public class GameStateService {
     private Set<String> collectNonPlayerCoordinates() {
         Set<String> used = collectStaticCoordinates();
         worldMapRepository.findFirstByOrderByIdAsc().ifPresent(world ->
-                playerCityRepository.findByWorldId(world.getId()).forEach(city -> used.add(city.getX() + "," + city.getY())));
+                playerCityRepository.findByWorldId(world.getId()).forEach(city -> reserveCity(used,city.getX(),city.getY(),city.getOwnerId()==null?1:2)));
         return used;
     }
 
@@ -501,11 +573,16 @@ public class GameStateService {
         return used;
     }
 
+    private void reserveCity(Set<String> used,int x,int y,int span) {
+        x=WorldTerrainService.anchor(x,span);y=WorldTerrainService.anchor(y,span);
+        for(int yy=y;yy<y+span;yy++)for(int xx=x;xx<x+span;xx++)used.add(xx+","+yy);
+    }
+
     private Set<String> collectRealPlayerCoordinates() {
         Set<String> used = new HashSet<>();
         playerRepository.findAll().forEach(player -> {
             if (player.getCityPosX() != null && player.getCityPosY() != null) {
-                used.add(player.getCityPosX() + "," + player.getCityPosY());
+                reserveCity(used,player.getCityPosX(),player.getCityPosY(),2);
             }
         });
         return used;
@@ -517,14 +594,23 @@ public class GameStateService {
 
     @Transactional
     public void initializeNewPlayer(Long playerId) {
+        try (var ignored = cityScope.enter(playerId, 0)) { initializeMainCity(playerId); }
+    }
+
+    private void initializeMainCity(Long playerId) {
         if (playerId == null) {
             throw new IllegalArgumentException("Invalid player ID: null");
         }
         Player player = playerRepository.findById(playerId)
                 .orElseThrow(() -> new IllegalArgumentException("Player not found: " + playerId));
 
-        Set<String> used = collectOccupiedCoordinates();
-        int[] cityCoord = freeCoord(used);
+        player.setActiveCityId(null);
+        playerCityRepository.deleteAll(playerCityRepository.findByOwnerIdAndCitySlotIsNotNullOrderByCitySlotAsc(playerId));
+        playerCityRepository.flush();
+        WorldMap placementWorld=terrain.lockWorld(); terrain.ensure();
+        Set<String> used = terrain.occupiedCoordinates(placementWorld.getId());
+        used.addAll(collectRealPlayerCoordinates());
+        int[] cityCoord = freeCoord(used, 2);
         player.setPosX(cityCoord[0]);
         player.setPosY(cityCoord[1]);
         player.setCityPosX(cityCoord[0]);
@@ -541,9 +627,10 @@ public class GameStateService {
         ensureRealPlayerCity(player);
 
         // Default resources
-        resourcesRepository.findByPlayerId(playerId).ifPresent(r -> resourcesRepository.delete(r));
+        resourcesRepository.deleteByPlayerId(playerId);
         Resources resources = new Resources();
         resources.setPlayerId(playerId);
+        resources.setCitySlot(cityScope.slot(playerId));
         resources.setFood(100000);
         resources.setSteel(100000);
         resources.setOil(100000);
@@ -563,13 +650,18 @@ public class GameStateService {
 
         // Default buildings
         buildingRepository.deleteByPlayerId(playerId);
+        buildingRepository.flush();
         saveBuilding(playerId, "command", 1);
         saveBuilding(playerId, "house", 1);
         saveBuilding(playerId, "farm", 1);
         saveBuilding(playerId, "refinery", 1);
 
+        armyQueues.deleteByPlayerId(playerId);
+
         // Default army
         armyUnitRepository.deleteByPlayerId(playerId);
+        armyUnitRepository.flush();
+        woundedUnitRepository.deleteByPlayerId(playerId);
         saveArmyUnit(playerId, "infantry", 50);
 
         // Default forts (all 0 - no rows needed, frontend defaults to 0)
@@ -587,17 +679,19 @@ public class GameStateService {
         // (see WorldBootstrap / DataInitializer), not on every signup.
 
         // Academy with initial refresh
-        academyRepository.findByPlayerId(playerId).ifPresent(a -> academyRepository.delete(a));
+        academyRepository.deleteByPlayerId(playerId);
         Academy academy = new Academy();
         academy.setPlayerId(playerId);
+        academy.setCitySlot(cityScope.slot(playerId));
         academy.setRefreshAt(0L);
         academy.setOfficers("[]");
         academyRepository.save(academy);
 
         // CityState
-        cityStateRepository.findByPlayerId(playerId).ifPresent(cs -> cityStateRepository.delete(cs));
+        cityStateRepository.deleteByPlayerId(playerId);
         CityState cs = new CityState();
         cs.setPlayerId(playerId);
+        cs.setCitySlot(cityScope.slot(playerId));
         cs.setStatus("peace");
         cs.setWarTargetId(null);
         cs.setWarAt(0L);
@@ -605,7 +699,6 @@ public class GameStateService {
         cs.setShieldUntil(0L);
         cs.setPeaceUntil(0L);
         cs.setMarchBoostUntil(0L);
-        cs.setCloakUntil(0L);
         cityStateRepository.save(cs);
 
         // 邮件种子 (欢迎/礼包/通告)
@@ -759,6 +852,7 @@ public class GameStateService {
             wildTileRepository.save(wildTile);
         }
 
+        terrain.ensure();
         return worldMap;
     }
 
@@ -812,15 +906,20 @@ public class GameStateService {
     }
 
     private int[] freeCoord(Set<String> used) {
-        int x, y;
-        String key;
-        do {
-            x = rand(0, WorldConfig.SIZE - 1);
-            y = rand(0, WorldConfig.SIZE - 1);
-            key = x + "," + y;
-        } while (used.contains(key));
-        used.add(key);
-        return new int[]{x, y};
+        return freeCoord(used,1);
+    }
+
+    private int[] freeCoord(Set<String> used, int span) {
+        String mask=terrain.current(); if(mask==null)mask=WorldTerrainService.generate();
+        int start=rand(0,WorldConfig.SIZE*WorldConfig.SIZE-1);
+        for(int i=0;i<WorldConfig.SIZE*WorldConfig.SIZE;i++){
+            int n=(start+i)%(WorldConfig.SIZE*WorldConfig.SIZE),x=n%WorldConfig.SIZE,y=n/WorldConfig.SIZE;
+            if(x+span>WorldConfig.SIZE||y+span>WorldConfig.SIZE)continue;
+            boolean free=true;
+            for(int yy=y;yy<y+span;yy++)for(int xx=x;xx<x+span;xx++)if(used.contains(xx+","+yy)||WorldTerrainService.sea(mask,xx,yy))free=false;
+            if(free){for(int yy=y;yy<y+span;yy++)for(int xx=x;xx<x+span;xx++)used.add(xx+","+yy);return new int[]{x,y};}
+        }
+        throw new IllegalArgumentException("地图没有足够空地");
     }
 
     /**
@@ -849,6 +948,7 @@ public class GameStateService {
     private void saveBuilding(Long playerId, String type, int level) {
         Building b = new Building();
         b.setPlayerId(playerId);
+        b.setCitySlot(cityScope.slot(playerId));
         b.setType(type);
         b.setLevel(level);
         buildingRepository.save(b);
@@ -857,6 +957,7 @@ public class GameStateService {
     private void saveArmyUnit(Long playerId, String type, int count) {
         ArmyUnit u = new ArmyUnit();
         u.setPlayerId(playerId);
+        u.setCitySlot(cityScope.slot(playerId));
         u.setType(type);
         u.setCount(count);
         armyUnitRepository.save(u);

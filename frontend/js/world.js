@@ -43,6 +43,24 @@ window.Game = window.Game || {};
   }
 
   var World = {
+    // The canvas keeps stable IDs. Legacy actions receive a freshly resolved record.
+    mapAction: function (target, action) {
+      var keys = { wild: 'wildTiles', player: 'playerCities', npc: 'npcCities', simulated_npc: 'simulatedNpcCities', bandit: 'bandits' };
+      var key = keys[target.kind];
+      if (!key) return;
+      var list = Core.state.world[key] || (Core.state.world[key] = []);
+      var idx = list.findIndex(function (t) { return String(t.id) === String(target.id); });
+      if (idx < 0) { idx = list.length; list.push(target); } else list[idx] = target;
+      if (target.selfCity) { G.go('home'); return; }
+      if (action === 'declare') { this.declareWar(target.kind, idx); return; }
+      if (target.kind === 'wild') {
+        if (action === 'scout') this.scoutWild(idx);
+        else if (action === 'gather') this.gatherWild(idx);
+        else if (action === 'abandon') this.abandonWild(idx);
+        else this.attackWild(idx, action);
+      } else this.attack(target.kind, idx, action);
+    },
+
     move: function (dx, dy) {
       var direction;
       if (dx === 0 && dy === -1) direction = 'up';
@@ -53,6 +71,7 @@ window.Game = window.Game || {};
       // 清空 _mapPos, 让视角跟随后端真实位置 world.pos 移动
       if (Core.state && Core.state.world) {
         Core.state.world._mapPos = null;
+        Core.state.world._searchTarget = null;
       }
       G.API.worldMove(direction).then(function () {
         // 后端 move 接口会同步返回完整 state (含 world.pos), applyState 已生效, 直接重渲染
@@ -74,6 +93,7 @@ window.Game = window.Game || {};
 
     jumpTo: function (x, y) {
       var s = Core.state;
+      s.world._searchTarget = null;
       s.world._mapPos = {
         x: G.clamp(x, 0, D.world.size - 1),
         y: G.clamp(y, 0, D.world.size - 1)
@@ -176,6 +196,7 @@ window.Game = window.Game || {};
       var y = G.clamp(parseInt(m[2], 10), 0, D.world.size - 1);
       var s = Core.state;
       s.world._searchCoord = x + ',' + y;
+      s.world._searchTarget = null;
       s.world._mapPos = { x: x, y: y };
       s.world._scan = { r: D.world.viewRadius, at: Date.now() };
       // 搜索不受视野过滤影响，只加载坐标处的基础目标信息；详细情报仍需侦查
@@ -183,6 +204,7 @@ window.Game = window.Game || {};
         G.API.getCoordinateTarget(x, y).then(function (target) {
           s.world._searchTarget = target && target.kind ? target : null;
           if (target && target.kind) {
+            s.world._activeTab = target.kind === 'wild' && target.occupied ? 'owned' : 'all';
             var listKey = target.kind === 'player' ? 'playerCities' :
               (target.kind === 'npc' ? 'npcCities' : (target.kind === 'simulated_npc' ? 'simulatedNpcCities' : 'wildTiles'));
             if ((target.kind === 'player' || target.kind === 'simulated_npc') && typeof target.id === 'string') {
@@ -256,12 +278,8 @@ window.Game = window.Game || {};
       var s = Core.state;
       var t = s.world.wildTiles[idx];
       if (!t) return;
-      G.API.wildScout(t.id).then(function () {
-        G.toast('侦察完成');
-        Core.render();
-      }).catch(function (err) {
-        G.toast(err.message || '侦察失败');
-      });
+      s.world._dispatchTarget = { kind: 'wild', idx: idx, action: 'scout', target: t };
+      G.go('dispatch');
     },
 
     attackWild: function (idx, action) {
@@ -280,6 +298,7 @@ window.Game = window.Game || {};
       if (!t || !t.occupied) return;
       if (!confirm('放弃该资源野地?')) return;
       G.API.wildAbandon(t.id).then(function () {
+        if (G.WorldMap) G.WorldMap.invalidate();
         G.toast('已放弃');
         Core.render();
       }).catch(function (err) {
@@ -344,7 +363,7 @@ window.Game = window.Game || {};
                 '<span class="dw-name">' + esc(target.name) + '</span>' +
               '</div>' +
               '<div class="dw-target-meta">' +
-                '<span class="dw-meta-item">⭐ ' + G.fmt(target.prestige || 0) + '</span>' +
+                '<span class="dw-meta-item">声望：' + G.fmt(target.prestige || 0) + '</span>' +
                 '<span class="dw-meta-sep">·</span>' +
                 '<span class="dw-meta-item">📍 (' + (target.x || 0) + ',' + (target.y || 0) + ')</span>' +
                 '<span class="dw-meta-sep">·</span>' +
@@ -406,6 +425,7 @@ window.Game = window.Game || {};
       mask.querySelector('#dwOk').onclick = function () {
         close();
         G.API.declareWar(target.id).then(function () {
+          if (G.WorldMap) G.WorldMap.invalidate();
           G.toast('宣战成功! ' + fmtLeft(prepareSec) + '后开打,持续 ' + fmtLeft(warSec));
           Core.render();
         }).catch(function (err) {
@@ -566,8 +586,9 @@ window.Game = window.Game || {};
         carryRes: carryRes
       };
 
-      delete s.world._dispatchTarget;
+      if(this._launching)return;this._launching=true;
       G.API.worldDispatch(dispatchRequest).then(function () {
+        delete s.world._dispatchTarget;
         G.toast('部队出征');
         // 触发每日任务进度
         var act = dispatchRequest.action;
@@ -577,13 +598,12 @@ window.Game = window.Game || {};
         G.go('world');
       }).catch(function (err) {
         G.toast(err.message || '出征失败');
-        G.go('world');
-      });
+      }).finally(function(){G.World._launching=false;});
     },
 
     cancelMarch: function (marchId) {
       G.API.cancelMarch(marchId).then(function () {
-        G.toast('行军已取消，部队和携带资源已返还');
+        G.toast('部队已撤回，正在返城，抵达后归还部队和携带资源');
         Core.render();
       }).catch(function (err) {
         G.toast(err.message || '取消行军失败');
@@ -621,12 +641,14 @@ window.Game = window.Game || {};
       var isScout = dt.action === 'scout';
       var actionNames = { conquer: '征服', plunder: '掠夺', scout: '侦查', gather: '采集' };
       var actionName = actionNames[dt.action] || '征服';
-      var actionDesc = isGather
+      var actionDesc = isScout
+        ? '派遣侦察机前往目标，抵达后进行侦查并生成情报报告，幸存侦察机自动返城。'
+        : isGather
         ? '派遣部队前往已占领野地采集资源，采集量取决于部队负重，采集完成后自动返城。'
         : isWildConquer
           ? (dt.action === 'plunder'
             ? '击败野地守军后掠夺资源，根据幸存部队负重夺取野地资源，不占领该野地。'
-            : (wtInfo.res
+            : (target._wildType.res
               ? '征服野地守军后占领该资源点，可派遣部队采集资源。'
               : '征服野地守军后占领该地块，扩张领土。'))
           : {
@@ -650,7 +672,7 @@ window.Game = window.Game || {};
         var wtResName = wtInfo.res ? D.resources[wtInfo.res].name : '无资源';
         h += '<div class="d">类型: ' + wtIcon2 + ' ' + wtInfo.name + ' | 资源: ' + wtResName + '</div>';
         h += '<div class="cost">剩余资源: ' + G.fmt(wildRemain) + ' / ' + G.fmt(wtRef.totalRes || 0) + '</div>';
-        if (isWildTarget) {
+        if (isWildConquer) {
           if (wtRef.scouted) {
             h += '<div class="d">守军: ' + armyText(wtRef.garrison) + '</div>';
           } else {
@@ -676,8 +698,8 @@ window.Game = window.Game || {};
         h += '<div class="d" style="color:#888">敌情未知 — 需先侦查才能获知守军、城防和资源详情</div>';
       }
       }
-      var dispDist = dist(s.world.pos.x, s.world.pos.y, target.x, target.y);
-      h += '<div class="desc">出征距离: <b>' + dispDist + '</b> 格 (当前坐标→目标坐标)</div>';
+      h += '<div id="dispatchRoute" class="desc" aria-live="polite">选择兵力后计算实际路线和时间</div>';
+      h += '<div class="desc">舰队沿海航行；跨海陆军需要运输机，每架提供 80 运力。旧内陆城市保留海军补给通道。</div>';
       h += '<div class="d" style="color:var(--gold);margin-top:4px">' + actionDesc + '</div>';
       h += '</div>';
 
@@ -795,9 +817,42 @@ window.Game = window.Game || {};
       h += '<button class="btn warn" onclick="Game.World.cancelDispatch()">返回</button>';
       h += '</div>';
       v.innerHTML = h;
+      if(G.API&&G.API.client&&v.querySelector)this.bindRoutePreview(v,v.querySelector('#dispatchRoute'),function(){
+        var army={};v.querySelectorAll('[id^="dqty_"]').forEach(function(el){army[el.id.slice(5)]=Math.max(0,parseInt(el.value,10)||0);});
+        return {targetKind:dt.kind,targetId:target.id,action:dt.action||'conquer',army:army};
+      },{start:s.player&&s.player.cityName,end:target.name+(target.level?' Lv.'+target.level:'')});
+    },
+
+    bindRoutePreview: function(container,hint,request,labels) {
+      if(!hint||!G.API||!G.API.client)return;
+      var timer,sequence=0,terrain=null,currentRoute=null;
+      if(G.DispatchRoute)G.DispatchRoute.loadTerrain().then(function(data){
+        terrain=data;
+        if(hint.isConnected&&currentRoute)G.DispatchRoute.render(hint,currentRoute,labels,terrain);
+      });
+      function update(){
+        clearTimeout(timer);var seq=++sequence;currentRoute=null;
+        hint.setAttribute('aria-busy','true');
+        var badge=hint.querySelector('.dispatch-map-header > span');
+        if(badge)badge.textContent='正在更新路线…';
+        else hint.innerHTML='<div class="dispatch-map-card dispatch-map-empty">正在计算行军路线与抵达时间…</div>';
+        timer=setTimeout(function(){
+          if(!hint.isConnected)return;
+          G.API.client.post('/game/world/route',request(),{silent:true}).then(function(route){
+            if(!hint.isConnected||seq!==sequence)return;
+            currentRoute=route;hint.setAttribute('aria-busy','false');
+            if(G.DispatchRoute)G.DispatchRoute.render(hint,route,labels,terrain);
+            else hint.textContent='行军距离 '+route.distance+' 格 · 预计 '+route.seconds+' 秒';
+          }).catch(function(e){
+            if(hint.isConnected&&seq===sequence){hint.setAttribute('aria-busy','false');hint.textContent=e.message||'路线计算失败，请重新选择部队后重试';}
+          });
+        },300);
+      }
+      container.addEventListener('input',update);update();
     },
 
     renderView: function (v) {
+      if (G.WorldMap && G.WorldMap.isMap()) { G.WorldMap.render(v); return; }
       var s = Core.state;
       var W = D.world;
       var cityPos = s.world.cityPos || {};
@@ -971,7 +1026,7 @@ window.Game = window.Game || {};
             '<button class="tcard-btn" onclick="Game.World.attack(\'' + it.kind + '\',' + it.i + ',\'scout\')">侦察</button>';
         return '<div class="tcard tcard-npc' + (n.defeated ? ' tcard-done' : '') + '">' +
           '<div class="tcard-head">' +
-            '<span class="tcard-emoji npc-icon">⚔</span>' +
+            '<img class="tcard-icon" src="img/map/npc-fortress.webp" alt="NPC 要塞城"/>' +
             '<div class="tcard-title"><span class="npc-mark">NPC</span> ' + esc(n.name) + ' <span class="tcard-lv">Lv.' + n.level + '</span></div>' +
             '<div class="tcard-dist">📍 ' + it.d + '格</div>' +
           '</div>' +
@@ -1033,7 +1088,7 @@ window.Game = window.Game || {};
           '<div class="tcard-expand">' +
             '<div class="tcard-meta">城市 ' + esc(p.name || '未知城市') + '</div>' +
             '<div class="tcard-meta">状态 <b>' + (stateMap[p.cityState] || '和平') + '</b></div>' +
-            '<div class="tcard-meta">声望 ⭐' + G.fmt(p.prestige || 0) + '</div>' +
+            '<div class="tcard-meta">声望：' + G.fmt(p.prestige || 0) + '</div>' +
             (warActive ? '<div class="tcard-meta">剩余 ' + remStr + '</div>' : '') +
             (preWar ? '<div class="tcard-meta">宣战后 ' + remStr + ' 开战</div>' : '') +
             '<div class="tcard-actions">' + renderPlayerActions(it, p, cooling, warActive, preWar) + '</div>' +
@@ -1048,7 +1103,7 @@ window.Game = window.Game || {};
             '<span class="tcard-emoji">🏰</span>' +
             '<span class="tcard-mini-name">' + esc(p.name) + '</span>' +
             combatIcon +
-            '<span class="tcard-mini-prestige" title="声望">⭐' + G.fmt(p.prestige || 0) + '</span>' +
+            '<span class="tcard-mini-prestige">声望：' + G.fmt(p.prestige || 0) + '</span>' +
             '<span class="tcard-mini-coord">(' + p.x + ',' + p.y + ')</span>' +
             '<span class="tcard-mini-dist">' + it.d + '格</span>' +
             miniBadge +
@@ -1063,7 +1118,8 @@ window.Game = window.Game || {};
           (cityPos.x != null && p.x === cityPos.x && p.y === cityPos.y) ||
           (s.player && p.ownerId && String(p.ownerId) === String(s.player.id));
         if (selfCity) {
-          return '<button class="tcard-btn tcard-btn-ok" onclick="event.stopPropagation();Game.go(\'home\')">进入城市</button>';
+          if (p.readyAt > Date.now()) return '<button class="tcard-btn" disabled>城市建设中</button>';
+          return '<button class="tcard-btn tcard-btn-ok" onclick="event.stopPropagation();Game.Cities.enter(' + p.id + ')">进入城市</button>';
         }
         if (p._readonlyTarget) {
           return '<button class="tcard-btn" disabled>需靠近后侦察</button>';
@@ -1151,10 +1207,21 @@ window.Game = window.Game || {};
 
       // 4. 目标卡片列表
       var cards = [];
-      if (activeTab === 'all' || activeTab === 'wild') wildsNearby.forEach(function (x) { cards.push(renderWildCard(x, false)); });
-      if (activeTab === 'all' || activeTab === 'npc') npcsNearby.forEach(function (x) { cards.push(renderNpcCard(x)); });
-      if (activeTab === 'all' || activeTab === 'player') playersNearby.forEach(function (x) { cards.push(renderPlayerCard(x)); });
-      if (activeTab === 'owned') owned.forEach(function (x) { cards.push(renderWildCard(x, true)); });
+      var searchTarget = s.world._searchTarget;
+      function addCard(it, html) {
+        var target = it.t || it.n || it.p;
+        // 跨兵种/目标分类置顶定位结果，不改动原数组及行动按钮使用的索引。
+        if (searchTarget && it.kind === searchTarget.kind &&
+            target.x === searchTarget.x && target.y === searchTarget.y) {
+          cards.unshift(html);
+        } else {
+          cards.push(html);
+        }
+      }
+      if (activeTab === 'all' || activeTab === 'wild') wildsNearby.forEach(function (x) { addCard(x, renderWildCard(x, false)); });
+      if (activeTab === 'all' || activeTab === 'npc') npcsNearby.forEach(function (x) { addCard(x, renderNpcCard(x)); });
+      if (activeTab === 'all' || activeTab === 'player') playersNearby.forEach(function (x) { addCard(x, renderPlayerCard(x)); });
+      if (activeTab === 'owned') owned.forEach(function (x) { addCard(x, renderWildCard(x, true)); });
 
       if (cards.length === 0) {
         h += '<div class="map-empty">' +
@@ -1182,6 +1249,7 @@ window.Game = window.Game || {};
            '</div>';
 
       v.innerHTML = h;
+      if (G.WorldMap) v.insertAdjacentHTML('afterbegin', '<div class="world-map-list-switch"><button class="world-map-button" onclick="Game.WorldMap.setMode(\'map\')">返回大地图</button></div>');
       var hasWar = false;
       for (var wi = 0; wi < s.world.playerCities.length; wi++) {
         var wp = s.world.playerCities[wi];
@@ -1208,15 +1276,45 @@ window.Game = window.Game || {};
       }
     },
 
+    alertCountdown: function (arriveAt) {
+      var deadline = Number(arriveAt);
+      if (!Number.isFinite(deadline)) return '<b>时间未知</b>';
+      var text = deadline <= Date.now() ? '已到达，等待战斗结果' : this.fmtMarchTime(deadline);
+      return '<b class="alert-countdown" data-arrive-at="' + deadline + '">' + text + '</b>';
+    },
+
+    stopAlertTimer: function () {
+      if (this._alertTimer != null) clearInterval(this._alertTimer);
+      this._alertTimer = null;
+    },
+
+    startAlertTimer: function (view) {
+      this.stopAlertTimer();
+      if (!view.querySelectorAll || !view.querySelectorAll('[data-arrive-at]').length) return;
+      var self = this;
+      this._alertTimer = setInterval(function () {
+        if (Core.route !== 'alerts' || view.isConnected === false) {
+          self.stopAlertTimer();
+          return;
+        }
+        var now = Date.now();
+        view.querySelectorAll('[data-arrive-at]').forEach(function (el) {
+          var deadline = Number(el.getAttribute('data-arrive-at'));
+          var text = deadline <= now ? '已到达，等待战斗结果' : self.fmtMarchTime(deadline);
+          if (el.textContent !== text) el.textContent = text;
+        });
+      }, 1000);
+    },
+
     renderAlerts: function (v) {
       var s = Core.state;
       var marches = s.world.marches || [];
       var incoming = s.world.incoming || [];
       var h = '';
-      h += '<div class="title">- 军情警讯 -</div>';
-      h += '<div class="desc">行军中 ' + marches.length + ' 起 / 来袭 ' + incoming.length + ' 起</div>';
+      h += '<div class="alerts-hero"><div class="title">军情警讯</div>';
+      h += '<div class="alerts-summary"><span>行军中 <b>' + marches.length + '</b> 起</span><i></i><span class="' + (incoming.length ? 'danger' : '') + '">来袭 <b>' + incoming.length + '</b> 起</span></div></div>';
 
-      h += '<div class="zone-head">=== 我军行军 (' + marches.length + ') ===</div>';
+      h += '<div class="zone-head alerts-section-title"><span class="section-icon">➤</span> 我军行军 <em>' + marches.length + '</em></div>';
       h += '<div class="menu">';
       if (!marches.length) {
         h += '<div class="desc">暂无行军中的部队。</div>';
@@ -1225,8 +1323,8 @@ window.Game = window.Game || {};
         for (var mi = 0; mi < marches.length; mi++) {
           var m = marches[mi];
           var remain = Math.max(0, Math.ceil((m.arriveAt - now) / 1000));
-          var timeStr = this.fmtMarchTime(m.arriveAt);
-          var kindName = m.returning ? '返城' : ({ conquer: '征服', plunder: '掠夺', scout: '侦查' }[m.action] || '出征');
+          var timeStr = this.alertCountdown(m.arriveAt);
+          var kindName = m.returning ? '返城' : ({ conquer: '征服', plunder: '掠夺', scout: '侦查', transport: '运输', rebase: '调遣' }[m.action] || '出征');
           var urgent = remain <= 10 ? 'urgent' : '';
           // 兼容字段缺失: 老存档/老推送可能没带 distance/originName 等
           var fromX = m.fromX != null ? m.fromX : '?';
@@ -1240,7 +1338,7 @@ window.Game = window.Game || {};
           h += '<span class="n">' + kindName + '->' + G.escapeHtml(targetName) + (m.returning ? ' (撤自' + G.escapeHtml(originName || '原地') + ')' : '') + '</span>';
           h += '<span class="lv">距' + distance + '格 (' + fromX + ',' + fromY + '->' + toX + ',' + toY + ')</span>';
           h += '<div class="d">兵力: ' + armyText(m.army) + '</div>';
-          h += '<div class="cost ' + urgent + '">剩余: <b>' + timeStr + '</b></div>';
+          h += '<div class="cost ' + urgent + '">剩余: ' + timeStr + '</div>';
           if (remain > 0 && !m.returning) {
             h += '<div class="btn-row"><button class="btn warn sm" onclick="Game.World.cancelMarch(\'' + m.id + '\')">撤回</button></div>';
           }
@@ -1249,7 +1347,7 @@ window.Game = window.Game || {};
       }
       h += '</div>';
 
-      h += '<div class="zone-head">=== 敌军来袭 (' + incoming.length + ') ===</div>';
+      h += '<div class="zone-head alerts-section-title enemy-section"><span class="section-icon">⚠</span> 敌军来袭 (' + incoming.length + ') <em>' + incoming.length + '</em></div>';
       h += '<div class="menu">';
       if (!incoming.length) {
         h += '<div class="desc">暂无敌方来袭情报。</div>';
@@ -1258,19 +1356,19 @@ window.Game = window.Game || {};
         for (var ii = 0; ii < incoming.length; ii++) {
           var im = incoming[ii];
           var rem = Math.max(0, Math.ceil((im.arriveAt - now2) / 1000));
-          var tStr = this.fmtMarchTime(im.arriveAt);
+          var tStr = this.alertCountdown(im.arriveAt);
           var isArrived = im.arrived;
           // 兼容旧存档/旧推送只带 fromName 的来袭记录，避免界面出现 undefined。
-          var attackerName = im.attackerName || im.sourcePlayer || im.fromName || '未知敌军';
+          var attackerName = G.escapeHtml(im.attackerName || im.sourcePlayer || im.fromName || '未知敌军');
           var targetX = im.targetX != null ? im.targetX : (s.world.cityPos ? s.world.cityPos.x : '?');
           var targetY = im.targetY != null ? im.targetY : (s.world.cityPos ? s.world.cityPos.y : '?');
-          var targetName = im.targetName || (s.player && (s.player.cityName || s.player.username)) || '我方主城';
+          var targetName = G.escapeHtml(im.targetName || (s.player && (s.player.cityName || s.player.username)) || '我方主城');
           h += '<div class="menu-item ' + (isArrived ? 'ok' : 'lock') + '" style="cursor:pointer" onclick="Game.World.toggleIncomingExpand(' + ii + ')">';
           h += '<span class="n">' + attackerName + ' 来袭</span>';
           if (isArrived) {
             h += '<span class="lv" style="color:var(--danger);font-weight:bold">已到达！待迎战</span>';
           } else {
-            h += '<span class="lv">到达: <b style="color:var(--danger)">' + tStr + '</b></span>';
+            h += '<span class="lv">到达: ' + tStr + '</span>';
           }
           h += ' <span class="lv">' + (im.expanded ? '▼' : '▶') + '</span>';
           if (im.expanded) {
@@ -1298,7 +1396,7 @@ window.Game = window.Game || {};
               h += '<div class="cost urgent" style="color:var(--danger)">敌军已到达城下！</div>';
               h += '<div class="btn-row" onclick="event.stopPropagation()"><button class="btn ok" style="font-size:16px;padding:8px 24px" onclick="Game.World.startIncomingBattle(' + ii + ')">迎战！</button></div>';
             } else {
-              h += '<div class="cost urgent">到达倒计时: <b>' + tStr + '</b></div>';
+              h += '<div class="cost urgent">到达倒计时: ' + tStr + '</div>';
             }
             h += '</div>';
           }
@@ -1309,6 +1407,7 @@ window.Game = window.Game || {};
 
       h += '<div class="menu-item back" onclick="Game.go(\'home\')">[0] 返回主菜单</div>';
       v.innerHTML = h;
+      this.startAlertTimer(v);
     }
   };
 

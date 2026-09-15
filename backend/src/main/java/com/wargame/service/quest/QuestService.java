@@ -25,6 +25,9 @@ import java.util.*;
 @Service
 public class QuestService {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.service.CityScope cityScope;
+
     private static final Logger log = LoggerFactory.getLogger(QuestService.class);
 
     private final PlayerQuestRepository playerQuestRepository;
@@ -226,7 +229,7 @@ public class QuestService {
     /** 派发奖励 (资源 + 道具) - 提为独立方法以便引导步骤复用。 */
     private void grantReward(Long playerId, QuestCatalog.Reward r) {
         if (r == null) return;
-        Resources res = resourcesRepository.findByPlayerId(playerId).orElse(null);
+        Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (res != null) {
             res.setFood((res.getFood() != null ? res.getFood() : 0) + r.food());
             res.setSteel((res.getSteel() != null ? res.getSteel() : 0) + r.steel());

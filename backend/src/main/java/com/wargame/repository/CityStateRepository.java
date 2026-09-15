@@ -12,4 +12,6 @@ public interface CityStateRepository extends JpaRepository<CityState, Long> {
     Optional<CityState> findByPlayerId(Long playerId);
 
     void deleteByPlayerId(Long playerId);
+
+    Optional<CityState> findByPlayerIdAndCitySlot(Long playerId, Integer citySlot);
 }

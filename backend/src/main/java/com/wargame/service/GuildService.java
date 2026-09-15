@@ -1,5 +1,6 @@
 package com.wargame.service;
 
+import com.wargame.config.GameWebSocketHandler;
 import com.wargame.model.entity.Guild;
 import com.wargame.model.entity.GuildApplication;
 import com.wargame.model.entity.GuildMember;
@@ -29,17 +30,19 @@ public class GuildService {
     private final GuildApplicationRepository guildApplicationRepository;
     private final PlayerRepository playerRepository;
     private final MailService mailService;
+    private final GameWebSocketHandler presence;
 
     public GuildService(GuildRepository guildRepository,
                         GuildMemberRepository guildMemberRepository,
                         GuildApplicationRepository guildApplicationRepository,
                         PlayerRepository playerRepository,
-                        MailService mailService) {
+                        MailService mailService, GameWebSocketHandler presence) {
         this.guildRepository = guildRepository;
         this.guildMemberRepository = guildMemberRepository;
         this.guildApplicationRepository = guildApplicationRepository;
         this.playerRepository = playerRepository;
         this.mailService = mailService;
+        this.presence = presence;
     }
 
     public Map<String, Object> getMyGuild(Long playerId) {
@@ -180,6 +183,7 @@ public class GuildService {
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("playerId", p.getId()); item.put("name", p.getUsername()); item.put("cityName", p.getCityName());
             item.put("prestige", p.getPrestige()); item.put("role", member.getRole());
+            item.put("online", presence.isPlayerOnline(p.getId()));
             members.add(item);
         }
         result.put("members", members);

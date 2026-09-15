@@ -19,7 +19,7 @@ public record OfficerSkillDef(
             "suppress", new OfficerSkillDef("suppress", "压制",   "降低敌方攻击力8%/级",         5, "debuff"),
             "pierce",   new OfficerSkillDef("pierce",   "破甲",   "无视敌方防御12%/级",          5, "pierce"),
             "supply",   new OfficerSkillDef("supply",   "补给",   "粮食消耗-20%/级",             5, "logi"),
-            "medic",    new OfficerSkillDef("medic",    "急救",   "战后伤兵恢复+15%/级",         5, "medic"),
+            "medic",    new OfficerSkillDef("medic",    "急救",   "战后伤兵额外回收+3%/级，最高15%", 5, "medic"),
             "combo",    new OfficerSkillDef("combo",    "连击",   "8%/级概率额外攻击一次",       5, "combo")
     );
 }

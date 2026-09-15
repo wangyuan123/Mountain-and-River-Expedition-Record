@@ -30,6 +30,11 @@ import java.util.*;
 @Service
 public class BuildService {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.service.CityScope cityScope;
+    @org.springframework.beans.factory.annotation.Autowired
+    private WorldTerrainService terrain;
+
     private final BuildingRepository buildingRepository;
     private final ConstructionRepository constructionRepository;
     private final ResourcesRepository resourcesRepository;
@@ -53,9 +58,9 @@ public class BuildService {
 
     /** 建筑分组 - 对应 JS G.Build.GROUPS */
     private static final Map<String, List<String>> GROUPS = Map.of(
-            "res",  List.of("house", "farm", "refinery", "oilfield", "raremine", "depot", "transit", "exchange"),
-            "army", List.of("command", "factory", "lightfactory", "heavyfactory", "port",
-                            "academy", "staff", "lab", "radar", "wall", "apron", "liaison")
+            "res",  List.of("farm", "refinery", "oilfield", "raremine"),
+            "army", List.of("command", "house", "factory", "lightfactory", "heavyfactory", "port",
+                            "academy", "staff", "lab", "radar", "wall", "apron", "liaison", "depot", "transit", "exchange")
     );
 
     /** 同时施工上限 - JS: if (jobs.length >= 2) */
@@ -63,6 +68,9 @@ public class BuildService {
 
     /** 取消施工退款比例（JS 中无 cancel，采用 50%） */
     private static final double CANCEL_REFUND_RATIO = 0.5;
+
+    /** 拆除建筑退款比例（按 30% 回收） */
+    private static final double DISMANTLE_REFUND_RATIO = 0.3;
 
     // ===== 构造器 =====
 
@@ -101,7 +109,7 @@ public class BuildService {
         }
 
         // 2. 检查施工队数量上限（JS: if (jobs.length >= 2)）
-        List<Construction> allJobs = constructionRepository.findByPlayerId(playerId);
+        List<Construction> allJobs = constructionRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         if (allJobs.size() >= MAX_CONCURRENT) {
             result.put("success", false);
             result.put("message", "两支施工队都在忙，请等待完成");
@@ -117,6 +125,14 @@ public class BuildService {
             curLv = buildingLevel(playerId, buildingType, slot);
         } else {
             curLv = buildingLevel(playerId, buildingType);
+        }
+
+        if("port".equals(buildingType)&&curLv==0){
+            terrain.ensure();
+            var city=cityScope.selected(playerId);
+            if(city.isPresent()&&!terrain.canUsePort(city.get())){
+                result.put("success",false);result.put("message","新建港口需要沿海城市，请在海边建立分城");return result;
+            }
         }
 
         // 4. 检查该建筑/槽位是否正在施工（JS: isBuilding 检查）
@@ -158,9 +174,9 @@ public class BuildService {
             return result;
         }
 
-        // 7. 新建多槽位建筑时检查槽位上限和分组槽位（JS: groupSlotsRemaining）
-        if (curLv == 0 && multi) {
-            List<Building> existingBuildings = buildingRepository.findByPlayerIdAndType(playerId, buildingType);
+        // 7. 所有新建建筑（含单栋建筑）均占用所属分组额度。
+        if (curLv == 0) {
+            List<Building> existingBuildings = buildingRepository.findByPlayerIdAndCitySlotAndType(playerId, cityScope.slot(playerId), buildingType);
             long builtCount = existingBuildings.stream()
                     .filter(bd -> bd.getLevel() != null && bd.getLevel() > 0)
                     .count();
@@ -174,7 +190,9 @@ public class BuildService {
                 int remaining = groupSlotsCap(playerId, groupKey) - groupSlotsUsed(playerId, groupKey);
                 if (remaining <= 0) {
                     result.put("success", false);
-                    result.put("message", "该分组建筑已满，请先拆除其他建筑");
+                    result.put("message", "res".equals(groupKey)
+                            ? "资源建筑已达当前上限(" + groupSlotsCap(playerId, groupKey) + "栋，含新建中)，可升级市政厅扩容（最高32栋），或拆除建筑、取消新建"
+                            : "军事建筑已达当前上限(" + groupSlotsCap(playerId, groupKey) + "栋，含新建中)，请升级市政厅、拆除建筑或取消新建");
                     return result;
                 }
             }
@@ -217,6 +235,7 @@ public class BuildService {
         long now = System.currentTimeMillis();
         Construction construction = new Construction();
         construction.setPlayerId(playerId);
+        construction.setCitySlot(cityScope.slot(playerId));
         construction.setBuildingType(buildingType);
         construction.setTargetLevel(curLv + 1);
         construction.setStartAt(now);
@@ -241,7 +260,106 @@ public class BuildService {
     }
 
     // ================================================================
-    //  cancel - JS 中无此方法，按 50% 退款实现
+    //  dismantle - 建筑拆除
+    // ================================================================
+
+    @Transactional
+    public Map<String, Object> dismantle(Long playerId, String buildingType, int slot) {
+        Map<String, Object> result = new LinkedHashMap<>();
+
+        // 1. 校验建筑类型
+        BuildingDef b = GameData.BUILDINGS.get(buildingType);
+        if (b == null) {
+            result.put("success", false);
+            result.put("message", "无效的建筑类型: " + buildingType);
+            return result;
+        }
+
+        // 2. 市政厅为核心枢纽，不可拆除
+        if ("command".equals(buildingType)) {
+            result.put("success", false);
+            result.put("message", "市政厅为核心枢纽，不可拆除");
+            return result;
+        }
+
+        // 3. 检查施工队数量上限
+        List<Construction> allJobs = constructionRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
+        if (allJobs.size() >= MAX_CONCURRENT) {
+            result.put("success", false);
+            result.put("message", "两支施工队都在忙，请等待完成");
+            return result;
+        }
+
+        boolean multi = isMultiSlot(buildingType);
+        Integer slotKey = multi ? slot : null;
+
+        // 4. 获取当前等级
+        int curLv;
+        if (multi) {
+            curLv = buildingLevel(playerId, buildingType, slot);
+        } else {
+            curLv = buildingLevel(playerId, buildingType);
+        }
+
+        if (curLv <= 0) {
+            result.put("success", false);
+            result.put("message", "建筑未建造，无法拆除");
+            return result;
+        }
+
+        // 5. 检查该建筑/槽位是否正在施工
+        for (Construction c : allJobs) {
+            if (!buildingType.equals(c.getBuildingType())) continue;
+            if (slotKey == null) {
+                if (c.getSlot() == null) {
+                    result.put("success", false);
+                    result.put("message", b.name() + " 正在施工中");
+                    return result;
+                }
+            } else if (slotKey.equals(c.getSlot())) {
+                result.put("success", false);
+                result.put("message", b.name() + " 正在施工中");
+                return result;
+            }
+        }
+
+        // 6. 计算拆除时间（与升级到当前等级消耗相同的时间）
+        double techMul = Math.max(0.5, buildMul(playerId));
+        double sec = 30 * Math.pow(2.4, curLv - 1);
+        int duration = (int) Math.min(86400L, Math.ceil(sec * techMul));
+
+        // 7. 目标等级：curLv - 1 (如 2级拆除后为1级，1级拆除后为0级即彻底消失)
+        int targetLevel = curLv - 1;
+
+        // 8. 创建施工记录
+        long now = System.currentTimeMillis();
+        Construction construction = new Construction();
+        construction.setPlayerId(playerId);
+        construction.setCitySlot(cityScope.slot(playerId));
+        construction.setBuildingType(buildingType);
+        construction.setTargetLevel(targetLevel);
+        construction.setStartAt(now);
+        construction.setFinishAt(now + duration * 1000L);
+        construction.setSlot(slotKey);
+        constructionRepository.save(construction);
+
+        // 9. 返回结果
+        String label = b.name() + (multi ? " #" + (slot + 1) : "");
+        String actionMsg = targetLevel == 0 ? "开始拆除 (拆除后消失释放卡槽)" : ("开始拆除，预计降至 Lv." + targetLevel);
+        result.put("success", true);
+        result.put("message", label + " " + actionMsg + "，预计 " + duration + " 秒完成");
+        result.put("buildingType", buildingType);
+        result.put("slot", multi ? slot : null);
+        result.put("targetLevel", targetLevel);
+        result.put("buildTime", duration);
+        result.put("startAt", now);
+        result.put("finishAt", now + duration * 1000L);
+
+        return result;
+    }
+
+    // ================================================================
+    //  cancel - 取消施工 (支持升级与拆除)
     // ================================================================
 
     @Transactional
@@ -259,7 +377,7 @@ public class BuildService {
         Integer slotKey = multi ? slot : null;
 
         // 查找该建筑/槽位的施工记录
-        List<Construction> allJobs = constructionRepository.findByPlayerId(playerId);
+        List<Construction> allJobs = constructionRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         Construction target = null;
         for (Construction c : allJobs) {
             if (!buildingType.equals(c.getBuildingType())) continue;
@@ -273,6 +391,19 @@ public class BuildService {
         if (target == null) {
             result.put("success", false);
             result.put("message", "未找到该建筑的施工记录");
+            return result;
+        }
+
+        int curLv = multi ? buildingLevel(playerId, buildingType, slot) : buildingLevel(playerId, buildingType);
+        boolean isDismantle = target.getTargetLevel() < curLv;
+
+        if (isDismantle) {
+            // 取消拆除：直接删除施工记录，不产生退款，建筑保留原级
+            constructionRepository.delete(target);
+            result.put("success", true);
+            result.put("message", "已取消拆除");
+            result.put("buildingType", buildingType);
+            result.put("slot", multi ? slot : null);
             return result;
         }
 
@@ -338,7 +469,7 @@ public class BuildService {
         long reduceMs = item.speedUpSeconds() * 1000L * count;
 
         // 2. 找到目标施工
-        List<Construction> jobs = constructionRepository.findByPlayerId(playerId);
+        List<Construction> jobs = constructionRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         Construction target = null;
         if (queueId != null) {
             for (Construction c : jobs) {
@@ -401,7 +532,7 @@ public class BuildService {
         result.put("count", count);
         result.put("buildingType", target.getBuildingType());
         if (completed) {
-            result.put("message", "⚡ " + item.name() + " ×" + count + " 使用成功，建筑升级完成!");
+            result.put("message", "⚡ " + item.name() + " ×" + count + " 使用成功，工程完成!");
         } else {
             long remainSec = Math.max(0, remainingMs / 1000);
             result.put("message", "⚡ " + item.name() + " ×" + count + " 使用成功，剩余 " + remainSec + " 秒");
@@ -411,12 +542,12 @@ public class BuildService {
     }
 
     // ================================================================
-    //  completeUpgrade - 对应 JS G.Build.completeUpgrade
+    //  completeUpgrade - 施工完成 (支持升级与拆除)
     // ================================================================
 
     @Transactional
     public List<String> completeUpgrade(Long playerId, long now) {
-        List<Construction> completed = constructionRepository.findByPlayerIdAndFinishAtLessThanEqual(playerId, now);
+        List<Construction> completed = constructionRepository.findByPlayerIdAndCitySlotAndFinishAtLessThanEqual(playerId, cityScope.slot(playerId), now);
         List<String> completedTypes = new ArrayList<>();
 
         for (Construction construction : completed) {
@@ -432,65 +563,117 @@ public class BuildService {
 
             boolean multi = isMultiSlot(buildingType);
 
-            if (multi && slot != null) {
-                // 多槽位：按 id 排序后定位槽位
-                List<Building> buildings = buildingRepository.findByPlayerIdAndTypeOrderByIdAsc(playerId, buildingType);
+            if (targetLevel == 0) {
+                // ===== 1级拆除完毕 -> 彻底删除建筑实体，释放卡槽 =====
+                if (multi && slot != null) {
+                    List<Building> buildings = buildingRepository.findByPlayerIdAndCitySlotAndTypeOrderByIdAsc(playerId, cityScope.slot(playerId), buildingType);
+                    if (slot < buildings.size()) {
+                        Building building = buildings.get(slot);
+                        buildingRepository.delete(building);
+                        buildings.remove(slot.intValue());
+                        // 重排剩余同类型建筑的 slot 序号 (保持 0..N-1 连续)
+                        for (int i = 0; i < buildings.size(); i++) {
+                            Building rem = buildings.get(i);
+                            if (rem.getSlot() == null || rem.getSlot() != i) {
+                                rem.setSlot(i);
+                                buildingRepository.save(rem);
+                            }
+                        }
+                    }
+                } else {
+                    List<Building> buildings = buildingRepository.findByPlayerIdAndCitySlotAndType(playerId, cityScope.slot(playerId), buildingType);
+                    if (!buildings.isEmpty()) {
+                        buildingRepository.delete(buildings.get(0));
+                    }
+                }
+                // 返还 30% Lv.1 基础消耗资源
+                Map<String, Integer> cost = calcBuildCost(buildingType, 0);
+                refundCosts(playerId, cost, DISMANTLE_REFUND_RATIO);
+            } else if (multi && slot != null) {
+                // ===== 多槽位建筑 (targetLevel > 0) =====
+                List<Building> buildings = buildingRepository.findByPlayerIdAndCitySlotAndTypeOrderByIdAsc(playerId, cityScope.slot(playerId), buildingType);
                 if (slot < buildings.size()) {
                     Building building = buildings.get(slot);
                     int currentLevel = building.getLevel() != null ? building.getLevel() : 0;
-                    building.setLevel(Math.max(currentLevel, targetLevel));
-                    buildingRepository.save(building);
+                    if (targetLevel < currentLevel) {
+                        // 拆除降级 (如 2级 -> 1级)
+                        building.setLevel(targetLevel);
+                        buildingRepository.save(building);
+                        // 返还 30% 该等级资源
+                        Map<String, Integer> cost = calcBuildCost(buildingType, targetLevel);
+                        refundCosts(playerId, cost, DISMANTLE_REFUND_RATIO);
+                    } else {
+                        // 升级
+                        building.setLevel(Math.max(currentLevel, targetLevel));
+                        buildingRepository.save(building);
+                        grantPrestigeAndQuest(playerId, buildingType, targetLevel);
+                    }
                 } else {
-                    // 新槽位：创建新建筑实例.
-                    // ⚠️ 必须显式 setSlot(slot) —— V5 的 UNIQUE(player_id, type, is_slot0=1)
-                    // 约束下, 默认 slot=0 会与已有的 slot=0 行冲突, 导致 INSERT 失败.
+                    // 新槽位新建
                     Building building = new Building();
                     building.setPlayerId(playerId);
+                    building.setCitySlot(cityScope.slot(playerId));
                     building.setType(buildingType);
                     building.setLevel(targetLevel);
                     building.setSlot(slot);
                     buildingRepository.save(building);
+                    grantPrestigeAndQuest(playerId, buildingType, targetLevel);
                 }
             } else {
-                // 单槽位
-                List<Building> buildings = buildingRepository.findByPlayerIdAndType(playerId, buildingType);
+                // ===== 单槽位建筑 (targetLevel > 0) =====
+                List<Building> buildings = buildingRepository.findByPlayerIdAndCitySlotAndType(playerId, cityScope.slot(playerId), buildingType);
                 if (!buildings.isEmpty()) {
                     Building building = buildings.get(0);
                     int currentLevel = building.getLevel() != null ? building.getLevel() : 0;
-                    building.setLevel(Math.max(currentLevel, targetLevel));
-                    buildingRepository.save(building);
+                    if (targetLevel < currentLevel) {
+                        // 拆除降级
+                        building.setLevel(targetLevel);
+                        buildingRepository.save(building);
+                        Map<String, Integer> cost = calcBuildCost(buildingType, targetLevel);
+                        refundCosts(playerId, cost, DISMANTLE_REFUND_RATIO);
+                    } else {
+                        // 升级
+                        building.setLevel(Math.max(currentLevel, targetLevel));
+                        buildingRepository.save(building);
+                        grantPrestigeAndQuest(playerId, buildingType, targetLevel);
+                    }
                 } else {
                     Building building = new Building();
                     building.setPlayerId(playerId);
+                    building.setCitySlot(cityScope.slot(playerId));
                     building.setType(buildingType);
                     building.setLevel(targetLevel);
                     building.setSlot(0);
                     buildingRepository.save(building);
+                    grantPrestigeAndQuest(playerId, buildingType, targetLevel);
                 }
             }
 
             constructionRepository.delete(construction);
             completedTypes.add(buildingType);
 
-            // 竣工结算：建筑升级成功后正式发放声望
-            int fromLevel = Math.max(0, targetLevel - 1);
-            int prestigeGain = calculatePrestigeGain(playerId, buildingType, fromLevel);
-            if (prestigeGain > 0) {
-                Player player = playerRepository.findById(playerId).orElse(null);
-                if (player != null) {
-                    player.setPrestige((player.getPrestige() != null ? player.getPrestige() : 0) + prestigeGain);
-                    playerRepository.save(player);
-                }
-            }
-
-            // 主线任务进度钩子
+            // 主线与每日任务进度钩子
             try {
-                questService.onEvent(playerId, "BUILD_UPGRADE_DONE", buildingType, 1);
                 questService.onEvent(playerId, "BUILD_LEVEL_SUM");
                 questService.onEvent(playerId, "BUILD_COUNT");
             } catch (Exception ignored) { /* 任务系统不可用不能阻塞建造 */ }
         }
         return completedTypes;
+    }
+
+    private void grantPrestigeAndQuest(Long playerId, String buildingType, int targetLevel) {
+        int fromLevel = Math.max(0, targetLevel - 1);
+        int prestigeGain = calculatePrestigeGain(playerId, buildingType, fromLevel);
+        if (prestigeGain > 0) {
+            Player player = playerRepository.findById(playerId).orElse(null);
+            if (player != null) {
+                player.setPrestige((player.getPrestige() != null ? player.getPrestige() : 0) + prestigeGain);
+                playerRepository.save(player);
+            }
+        }
+        try {
+            questService.onEvent(playerId, "BUILD_UPGRADE_DONE", buildingType, 1);
+        } catch (Exception ignored) {}
     }
 
     public int calculatePrestigeGain(Long playerId, String buildingType, int fromLevel) {
@@ -510,7 +693,7 @@ public class BuildService {
     // ================================================================
 
     public int buildingLevel(Long playerId, String buildingType) {
-        List<Building> buildings = buildingRepository.findByPlayerIdAndType(playerId, buildingType);
+        List<Building> buildings = buildingRepository.findByPlayerIdAndCitySlotAndType(playerId, cityScope.slot(playerId), buildingType);
         int sum = 0;
         for (Building b : buildings) {
             sum += b.getLevel() != null ? b.getLevel() : 0;
@@ -525,7 +708,7 @@ public class BuildService {
 
     public int buildingLevel(Long playerId, String buildingType, int slot) {
         if (isMultiSlot(buildingType)) {
-            List<Building> buildings = buildingRepository.findByPlayerIdAndTypeOrderByIdAsc(playerId, buildingType);
+            List<Building> buildings = buildingRepository.findByPlayerIdAndCitySlotAndTypeOrderByIdAsc(playerId, cityScope.slot(playerId), buildingType);
             if (slot >= 0 && slot < buildings.size()) {
                 Building b = buildings.get(slot);
                 return b.getLevel() != null ? b.getLevel() : 0;
@@ -580,7 +763,7 @@ public class BuildService {
     // ================================================================
 
     public boolean costEnough(Long playerId, Map<String, Integer> costs) {
-        Resources r = resourcesRepository.findByPlayerId(playerId).orElse(null);
+        Resources r = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (r == null) return false;
         for (Map.Entry<String, Integer> entry : costs.entrySet()) {
             int have = getResource(r, entry.getKey());
@@ -595,7 +778,7 @@ public class BuildService {
     // ================================================================
 
     public void deductCosts(Long playerId, Map<String, Integer> costs) {
-        Resources r = resourcesRepository.findByPlayerId(playerId).orElse(null);
+        Resources r = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (r == null) return;
         for (Map.Entry<String, Integer> entry : costs.entrySet()) {
             int current = getResource(r, entry.getKey());
@@ -610,7 +793,7 @@ public class BuildService {
     // ================================================================
 
     public void refundCosts(Long playerId, Map<String, Integer> costs, double ratio) {
-        Resources r = resourcesRepository.findByPlayerId(playerId).orElse(null);
+        Resources r = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (r == null) return;
         for (Map.Entry<String, Integer> entry : costs.entrySet()) {
             int current = getResource(r, entry.getKey());
@@ -656,21 +839,34 @@ public class BuildService {
         if (buildingTypes == null) return 0;
         int used = 0;
         for (String type : buildingTypes) {
-            List<Building> buildings = buildingRepository.findByPlayerIdAndType(playerId, type);
+            List<Building> buildings = buildingRepository.findByPlayerIdAndCitySlotAndType(playerId, cityScope.slot(playerId), type);
             for (Building b : buildings) {
                 if (b.getLevel() != null && b.getLevel() > 0) used++;
             }
         }
+        if ("res".equals(groupKey) || "army".equals(groupKey)) {
+            used += (int) constructionRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).stream()
+                    .filter(c -> buildingTypes.contains(c.getBuildingType()) && Integer.valueOf(1).equals(c.getTargetLevel()))
+                    .filter(c -> {
+                        int cur = c.getSlot() != null
+                                ? buildingLevel(playerId, c.getBuildingType(), c.getSlot())
+                                : buildingLevel(playerId, c.getBuildingType());
+                        return cur == 0;
+                    })
+                    .count();
+        }
         return used;
     }
 
-    /** 分组槽位上限 - 对应 JS Core.groupSlotsCap: base + commandLv * 2 */
+    /** 资源区基础12栋，每级市政厅增加2栋，最高32栋；军事区采用相同扩容规则。 */
     private int groupSlotsCap(Long playerId, String groupKey) {
-        int base = "res".equals(groupKey)
-                ? GameConstants.GROUP_SLOTS_RES
-                : GameConstants.GROUP_SLOTS_ARMY;
         int commandLv = buildingLevel(playerId, "command");
-        return base + commandLv * 2;
+        if ("res".equals(groupKey)) {
+            return Math.min(GameConstants.GROUP_SLOTS_RES_MAX,
+                    GameConstants.GROUP_SLOTS_RES + Math.max(0, commandLv) * 2);
+        }
+        int base = GameConstants.GROUP_SLOTS_ARMY;
+        return Math.min(GameConstants.GROUP_SLOTS_ARMY_MAX, base + Math.max(0, commandLv) * 2);
     }
 
     /** 从 Resources 实体读取指定资源值 */

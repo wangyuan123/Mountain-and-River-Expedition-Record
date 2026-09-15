@@ -386,6 +386,7 @@ window.Game = window.Game || {};
       h += '<div class="army-tabs">' +
         '<div id="army-tab-units" class="army-tab' + (!isQueueTab ? ' active' : '') + '" onclick="Game.Army.setTab(\'units\')">军队</div>' +
         '<div id="army-tab-queue" class="army-tab' + (isQueueTab ? ' active' : '') + '" onclick="Game.Army.setTab(\'queue\')">生产队列 <span id="army-queue-badge" class="army-tab-badge" style="display:' + badgeStyle + '">' + badgeText + '</span></div>' +
+        '<button class="army-tab" onclick="Game.go(\'wounded\')">伤兵营' + (s.woundedCount ? ' (' + G.fmt(s.woundedCount) + ')' : '') + '</button>' +
       '</div>';
 
       // 军队面板（所有兵种直接合并展示，取消分类分区）

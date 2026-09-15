@@ -54,7 +54,7 @@ window.Game = window.Game || {};
     // 行军 / 采集
     for (var j = 0; j < marches.length; j++) {
       var m = marches[j];
-      var actionName = ({ scout: '侦查', gather: '采集', attack: '出征', occupy: '占领', returnHome: '回城' })[m.action] || m.action || '行动';
+      var actionName = ({ scout: '侦查', gather: '采集', attack: '出征', occupy: '占领', returnHome: '回城', transport: '运输', rebase: '调遣', conquer: '征服', plunder: '掠夺' })[m.action] || m.action || '行动';
       var target = m.targetName || (m.targetX != null ? '(' + m.targetX + ',' + m.targetY + ')' : '目标');
       var key = m.gathering ? 'gatherEndAt' : 'arriveAt';
       var remain2 = (m[key] || 0) - now;

@@ -23,6 +23,8 @@ public record ItemDef(
     public static final String CAT_OFFICER = "officer";
     /** cat: resource - 资源道具 */
     public static final String CAT_RESOURCE = "resource";
+    /** cat: jewelry - 珠宝珍品与宝箱 */
+    public static final String CAT_JEWELRY = "jewelry";
 
     public static final Map<String, ItemDef> ITEMS = Map.ofEntries(
             // —— 军官道具 ——
@@ -98,7 +100,14 @@ public record ItemDef(
             // —— 其他功能道具 ——
             Map.entry("shield",    new ItemDef("shield",    "护盾",     "🛡️", CAT_UTIL, "使用后8小时免受玩家攻击", 0)),
             Map.entry("marchOrd",  new ItemDef("marchOrd",  "行军令",   "🚩", CAT_UTIL, "行军速度+50%,持续1小时", 0)),
-            Map.entry("cloak",     new ItemDef("cloak",     "反侦察符", "🕶️", CAT_UTIL, "降低被敌方侦察成功率,持续6小时", 0)),
-            Map.entry("populationOrder", new ItemDef("populationOrder", "人口动员令", "👥", CAT_UTIL, "使用后立即增加500空闲人口,不超过人口上限", 0))
+            Map.entry("populationOrder", new ItemDef("populationOrder", "人口动员令", "👥", CAT_UTIL, "使用后立即增加500空闲人口,不超过人口上限", 0)),
+
+            // —— 军衔珠宝宝箱 ——
+            Map.entry("box_gem",          new ItemDef("box_gem",          "军衔珠宝宝箱",   "🗃️", CAT_JEWELRY, "开启获得晋升必备珠宝：珍珠×5、珊瑚×3、琉璃×3、琥珀×2、玛瑙×2", 0)),
+            Map.entry("box_gem_primary",  new ItemDef("box_gem_primary",  "初级珠宝宝箱",   "🧰", CAT_JEWELRY, "开启获得士官晋升基础珠宝：珍珠×8、珊瑚×6、琉璃×5", 0)),
+            Map.entry("box_gem_medium",   new ItemDef("box_gem_medium",   "中级珠宝宝箱",   "🧰", CAT_JEWELRY, "开启获得尉官晋升进阶珠宝：琥珀×8、玛瑙×6、水晶×5、翡翠×2", 0)),
+            Map.entry("box_gem_senior",   new ItemDef("box_gem_senior",   "高级珠宝宝箱",   "🎁", CAT_JEWELRY, "开启获得校官晋升精选珠宝：水晶×8、翡翠×8、玉石×6、夜明珠×3", 0)),
+            Map.entry("box_gem_supreme",  new ItemDef("box_gem_supreme",  "特级夜明珠宝箱", "🌟", CAT_JEWELRY, "开启获得将官晋升极品珍宝：夜明珠×8、玉石×10、翡翠×10", 0)),
+            Map.entry("box_gem_grand",    new ItemDef("box_gem_grand",    "璀璨珠宝全集箱", "💎", CAT_JEWELRY, "开启获得全部9种晋升珠宝各5颗(共45颗珠宝)，助统帅连升数阶！", 0))
     );
 }

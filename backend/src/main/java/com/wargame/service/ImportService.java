@@ -2,6 +2,7 @@ package com.wargame.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.wargame.model.constants.WorldConfig;
+import com.wargame.model.constants.TechDef;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
 import com.wargame.util.JsonUtil;
@@ -17,6 +18,7 @@ public class ImportService {
     private final ResourcesRepository resourcesRepository;
     private final BuildingRepository buildingRepository;
     private final ArmyUnitRepository armyUnitRepository;
+    private final WoundedUnitRepository woundedUnitRepository;
     private final FortificationRepository fortificationRepository;
     private final TechnologyRepository technologyRepository;
     private final OfficerRepository officerRepository;
@@ -39,7 +41,7 @@ public class ImportService {
     public ImportService(PlayerRepository playerRepository,
                          ResourcesRepository resourcesRepository,
                          BuildingRepository buildingRepository,
-                         ArmyUnitRepository armyUnitRepository,
+                         ArmyUnitRepository armyUnitRepository, WoundedUnitRepository woundedUnitRepository,
                          FortificationRepository fortificationRepository,
                          TechnologyRepository technologyRepository,
                          OfficerRepository officerRepository,
@@ -58,6 +60,7 @@ public class ImportService {
         this.resourcesRepository = resourcesRepository;
         this.buildingRepository = buildingRepository;
         this.armyUnitRepository = armyUnitRepository;
+        this.woundedUnitRepository = woundedUnitRepository;
         this.fortificationRepository = fortificationRepository;
         this.technologyRepository = technologyRepository;
         this.officerRepository = officerRepository;
@@ -95,6 +98,9 @@ public class ImportService {
             throw new IllegalArgumentException("Invalid JSON save data");
         }
 
+        if (playerCityRepository.findByOwnerIdAndCitySlotIsNotNullOrderByCitySlotAsc(playerId).size() > 1) {
+            throw new IllegalArgumentException("旧版单城存档不能覆盖多城账号");
+        }
         // Clear existing data for this player
         clearPlayerData(playerId);
 
@@ -150,6 +156,7 @@ public class ImportService {
         resourcesRepository.findByPlayerId(playerId).ifPresent(resourcesRepository::delete);
         buildingRepository.deleteByPlayerId(playerId);
         armyUnitRepository.deleteByPlayerId(playerId);
+        woundedUnitRepository.deleteByPlayerId(playerId);
         fortificationRepository.deleteByPlayerId(playerId);
         technologyRepository.deleteByPlayerId(playerId);
         officerRepository.deleteByPlayerId(playerId);
@@ -303,6 +310,7 @@ public class ImportService {
         Iterator<Map.Entry<String, JsonNode>> fields = techNode.fields();
         while (fields.hasNext()) {
             Map.Entry<String, JsonNode> entry = fields.next();
+            if (!TechDef.TECHS.containsKey(entry.getKey())) continue;
             int level = entry.getValue().asInt(0);
             if (level > 0) {
                 Technology tech = new Technology();

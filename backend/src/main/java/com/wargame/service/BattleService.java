@@ -49,7 +49,7 @@ public class BattleService {
             "suppress", 0.08,
             "pierce", 0.12,
             "supply", 0.20,
-            "medic", 0.15,
+            "medic", 0.03,
             "combo", 0.08
     );
 
@@ -316,22 +316,8 @@ public class BattleService {
         }
         int expGained = calcKillExp(enemyKilled);
 
-        // 幸存攻方单位
-        Map<String, Integer> survivorAttacker;
-        if (win) {
-            // 胜利时攻方幸存 = 当前剩余单位 - 对应 JS finish win 分支
-            survivorAttacker = filterPositive(mine);
-        } else {
-            // 失败时残部回收: survRate = 0.5 + medicalMul - 对应 JS finish else 分支
-            double survRate = 0.5 + medicalMul(attackerTech);
-            survivorAttacker = new LinkedHashMap<>();
-            for (Map.Entry<String, Integer> e : mine.entrySet()) {
-                if (e.getValue() != null && e.getValue() > 0) {
-                    survivorAttacker.put(e.getKey(), (int) Math.floor(e.getValue() * survRate));
-                }
-            }
-            report.append("残部回收率: ").append((int) Math.floor(survRate * 100)).append("%\n");
-        }
+        // 战场幸存者直接返还；实际损失的可救治部分另由伤兵营记录，不自动复活。
+        Map<String, Integer> survivorAttacker = filterPositive(mine);
 
         // 幸存守方单位
         Map<String, Integer> survivorDefender = filterPositive(enemy);
@@ -761,17 +747,6 @@ public class BattleService {
 
     private int percent(double value) {
         return (int) Math.round(value * 100);
-    }
-
-    /**
-     * 医疗科技加成 - 对应 JS Core.medicalMul()
-     * <p>
-     * min(0.9, 0.05 * log_medical)
-     */
-    private double medicalMul(Map<String, Integer> tech) {
-        if (tech == null) return 0;
-        int lv = tech.getOrDefault("log_medical", 0);
-        return Math.min(0.9, 0.05 * lv);
     }
 
     // ========================================================================

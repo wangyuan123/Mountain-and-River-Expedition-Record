@@ -25,7 +25,7 @@ import java.util.concurrent.ThreadLocalRandom;
 /**
  * 仓库道具使用服务。
  * <p>
- * 历史上 depot.js 完全在前端修改 Core.state（资源、exp、技能、护盾/行军/反侦察等），
+ * 历史上 depot.js 完全在前端修改 Core.state（资源、exp、技能、护盾/行军等），
  * 没有调用任何后端 API，导致刷新页面后所有效果丢失。
  * <p>
  * 本服务对所有"使用即生效"的道具做服务端权威化处理：
@@ -33,7 +33,7 @@ import java.util.concurrent.ThreadLocalRandom;
  *   <li>资源类（黄金箱/资源箱/钢铁大礼包/战备补给包）→ 写入 resources 表</li>
  *   <li>军官类（经验书/技能书/忠诚宝箱/改名卡/星耀符）→ 写入 officers 表</li>
  *   <li>征募令 → 在 officers 表新增 1 名 5 星军官</li>
- *   <li>功能类（护盾/行军令/反侦察符）→ 写入 city_state 表</li>
+ *   <li>功能类（护盾/行军令）→ 写入 city_state 表</li>
  * </ul>
  * 每次调用都会原子地：
  * 1. 校验玩家持有该道具
@@ -43,6 +43,9 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 @Service
 public class DepotService {
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.service.CityScope cityScope;
 
     private final ResourcesRepository resourcesRepository;
     private final PlayerItemRepository playerItemRepository;
@@ -90,10 +93,13 @@ public class DepotService {
         if (isEquipmentBox(itemId)) {
             return useEquipmentBox(playerId, itemId);
         }
+        // 军衔珠宝宝箱类（开启直接获得对应军衔晋升珠宝）
+        if (isJewelryBox(itemId)) {
+            return useJewelryBox(playerId, itemId);
+        }
         // 功能类
         if ("shield".equals(itemId)) return useShield(playerId);
         if ("marchOrd".equals(itemId)) return useMarchOrd(playerId);
-        if ("cloak".equals(itemId)) return useCloak(playerId);
         if ("populationOrder".equals(itemId)) return usePopulationOrder(playerId);
         // 征募令
         if ("recruitOrd".equals(itemId)) return useRecruitOrd(playerId);
@@ -134,7 +140,7 @@ public class DepotService {
         if (consumed == 0) return error("道具数量不足");
 
         // 2. 加载资源
-        Resources res = resourcesRepository.findByPlayerId(playerId).orElse(null);
+        Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (res == null) {
             // 退还（add back）
             playerItemRepository.tryConsume(playerId, itemId, -1, System.currentTimeMillis());
@@ -200,14 +206,14 @@ public class DepotService {
     // ================================================================
 
     private CityState getOrCreateCityState(Long playerId) {
-        return cityStateRepository.findByPlayerId(playerId).orElseGet(() -> {
+        return cityStateRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElseGet(() -> {
             CityState cs = new CityState();
             cs.setPlayerId(playerId);
+            cs.setCitySlot(cityScope.slot(playerId));
             cs.setStatus("peace");
             cs.setShieldUntil(0L);
             cs.setPeaceUntil(0L);
             cs.setMarchBoostUntil(0L);
-            cs.setCloakUntil(0L);
             return cityStateRepository.save(cs);
         });
     }
@@ -234,36 +240,26 @@ public class DepotService {
         return success("🚩 行军令启用,行军速度 +50% 持续 1 小时", Map.of("marchBoostUntil", cs.getMarchBoostUntil()));
     }
 
-    private Map<String, Object> useCloak(Long playerId) {
-        int consumed = playerItemRepository.tryConsume(playerId, "cloak", 1, System.currentTimeMillis());
-        if (consumed == 0) return error("反侦察符数量不足");
-        CityState cs = getOrCreateCityState(playerId);
-        long until = System.currentTimeMillis() + 6L * 3600 * 1000;
-        long cur = cs.getCloakUntil() != null ? cs.getCloakUntil() : 0L;
-        cs.setCloakUntil(Math.max(cur, until));
-        cityStateRepository.save(cs);
-        return success("🕶️ 反侦察符启用,持续 6 小时", Map.of("cloakUntil", cs.getCloakUntil()));
-    }
-
     private Map<String, Object> usePopulationOrder(Long playerId) {
         int consumed = playerItemRepository.tryConsume(playerId, "populationOrder", 1, System.currentTimeMillis());
         if (consumed == 0) return error("人口动员令数量不足");
 
         Player player = playerRepository.findById(playerId).orElse(null);
         if (player == null) return error("玩家不存在");
-        int capacity = buildingRepository.findByPlayerId(playerId).stream()
+        int capacity = buildingRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).stream()
                 .filter(b -> "house".equals(b.getType()))
                 .mapToInt(b -> b.getLevel() != null ? b.getLevel() : 0)
                 .sum() * 100;
-        int current = player.getCivilianPopulation() != null ? player.getCivilianPopulation() : 0;
+        int current = cityScope.economy(playerId).getCivilianPopulation() != null ? cityScope.economy(playerId).getCivilianPopulation() : 0;
         int added = Math.min(500, Math.max(0, capacity - current));
         if (added == 0) {
             playerItemRepository.tryConsume(playerId, "populationOrder", -1, System.currentTimeMillis());
             return error("当前空闲人口已达到上限");
         }
-        player.setCivilianPopulation(current + added);
+        cityScope.economy(playerId).setCivilianPopulation(current + added);
         playerRepository.save(player);
-        return success("👥 人口动员完成,空闲人口 +" + added, Map.of("civilianPopulation", player.getCivilianPopulation()));
+        cityScope.saveEconomy(playerId);
+        return success("👥 人口动员完成,空闲人口 +" + added, Map.of("civilianPopulation", cityScope.economy(playerId).getCivilianPopulation()));
     }
 
     // ================================================================
@@ -291,6 +287,7 @@ public class DepotService {
         // 与 recruit() 一致落库
         Officer officer = new Officer();
         officer.setPlayerId(playerId);
+        officer.setCitySlot(cityScope.slot(playerId));
         officer.setName(o.get("name") != null ? o.get("name").toString() : "未知");
         officer.setStar(5);
         officer.setLevel(1);
@@ -321,7 +318,7 @@ public class DepotService {
 
     private Officer requireOfficer(Long playerId, Long officerId) {
         if (officerId == null) return null;
-        List<Officer> list = officerRepository.findByPlayerId(playerId);
+        List<Officer> list = officerRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         for (Officer o : list) {
             if (o.getId().equals(officerId)) return o;
         }
@@ -511,6 +508,85 @@ public class DepotService {
                 + String.join("、", awardedNames)
                 + "（穿齐激活 " + boxDef.setBonusDesc() + "）！";
         return success(msg, Map.of("boxId", itemId, "items", boxDef.equipmentKeys()));
+    }
+
+    // ================================================================
+    //  军衔珠宝宝箱：开启后直接向玩家发放用于提升军衔的各类珠宝
+    // ================================================================
+
+    private record JewelryBoxDef(String boxName, Map<String, Integer> gems) {}
+
+    private static final Map<String, JewelryBoxDef> JEWELRY_BOXES = Map.of(
+        "box_gem", new JewelryBoxDef("军衔珠宝宝箱", Map.of(
+            "gem_pearl", 5, "gem_coral", 3, "gem_glaze", 3, "gem_amber", 2, "gem_agate", 2
+        )),
+        "box_gem_primary", new JewelryBoxDef("初级珠宝宝箱", Map.of(
+            "gem_pearl", 8, "gem_coral", 6, "gem_glaze", 5
+        )),
+        "box_gem_medium", new JewelryBoxDef("中级珠宝宝箱", Map.of(
+            "gem_amber", 8, "gem_agate", 6, "gem_crystal", 5, "gem_jadeite", 2
+        )),
+        "box_gem_senior", new JewelryBoxDef("高级珠宝宝箱", Map.of(
+            "gem_crystal", 8, "gem_jadeite", 8, "gem_jade", 6, "gem_nightpearl", 3
+        )),
+        "box_gem_supreme", new JewelryBoxDef("特级夜明珠宝箱", Map.of(
+            "gem_nightpearl", 8, "gem_jade", 10, "gem_jadeite", 10
+        )),
+        "box_gem_grand", new JewelryBoxDef("璀璨珠宝全集箱", Map.of(
+            "gem_pearl", 5, "gem_coral", 5, "gem_glaze", 5, "gem_amber", 5, "gem_agate", 5,
+            "gem_crystal", 5, "gem_jadeite", 5, "gem_jade", 5, "gem_nightpearl", 5
+        ))
+    );
+
+    private static boolean isJewelryBox(String itemId) {
+        return itemId != null && JEWELRY_BOXES.containsKey(itemId);
+    }
+
+    private Map<String, Object> useJewelryBox(Long playerId, String itemId) {
+        JewelryBoxDef boxDef = JEWELRY_BOXES.get(itemId);
+        if (boxDef == null) {
+            return error("未知的珠宝宝箱");
+        }
+
+        // 1. 原子扣减宝箱道具 1 个
+        int consumed = playerItemRepository.tryConsume(playerId, itemId, 1, System.currentTimeMillis());
+        if (consumed == 0) {
+            return error("【" + boxDef.boxName() + "】数量不足");
+        }
+
+        // 2. 发放各类珠宝到玩家背包
+        long now = System.currentTimeMillis();
+        List<String> awardedNames = new ArrayList<>();
+        Map<String, Integer> awardedItems = new LinkedHashMap<>();
+
+        for (Map.Entry<String, Integer> entry : boxDef.gems().entrySet()) {
+            String gemKey = entry.getKey();
+            int count = entry.getValue();
+            var gemDef = com.wargame.model.constants.MilitaryRankDef.GEMS.get(gemKey);
+            String name = gemDef != null ? gemDef.name() : gemKey;
+            String icon = gemDef != null ? gemDef.icon() : "💎";
+            awardedNames.add(icon + name + "×" + count);
+            awardedItems.put(gemKey, count);
+
+            Optional<PlayerItem> existing = playerItemRepository.findByPlayerIdAndItemKey(playerId, gemKey);
+            if (existing.isPresent()) {
+                PlayerItem pi = existing.get();
+                pi.setCount(pi.getCount() + count);
+                pi.setUpdatedAt(now);
+                playerItemRepository.save(pi);
+            } else {
+                PlayerItem pi = new PlayerItem();
+                pi.setPlayerId(playerId);
+                pi.setItemKey(gemKey);
+                pi.setCount(count);
+                pi.setUpdatedAt(now);
+                playerItemRepository.save(pi);
+            }
+        }
+
+        String msg = "🎉 开启【" + boxDef.boxName() + "】，获得军衔晋升珠宝："
+                + String.join("、", awardedNames) + "！";
+        return success(msg, Map.of("boxId", itemId, "gems", awardedItems));
     }
 
     // ================================================================

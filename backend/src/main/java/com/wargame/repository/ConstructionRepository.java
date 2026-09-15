@@ -16,4 +16,8 @@ public interface ConstructionRepository extends JpaRepository<Construction, Long
     List<Construction> findByPlayerIdAndBuildingTypeAndSlot(Long playerId, String buildingType, Integer slot);
 
     void deleteByPlayerId(Long playerId);
+
+    List<Construction> findByPlayerIdAndCitySlot(Long playerId, Integer citySlot);
+    List<Construction> findByPlayerIdAndCitySlotAndFinishAtLessThanEqual(Long playerId, Integer citySlot, Long finishAt);
+    List<Construction> findByPlayerIdAndCitySlotAndBuildingTypeAndSlot(Long playerId, Integer citySlot, String buildingType, Integer slot);
 }

@@ -46,7 +46,7 @@ window.Game = window.Game || {};
       } else if (G.Core) {
         // 编辑中: 仍刷新顶栏/导航, 但不动 content
         if (G.Core.refreshTop) G.Core.refreshTop();
-        if (G.Core.renderNavBar) G.Core.renderNavBar();
+        if (G.Main && G.Main.renderNavBar) G.Main.renderNavBar();
       }
     }).catch(function (e) {
       console.error('WS state refresh failed:', e);
@@ -68,7 +68,23 @@ window.Game = window.Game || {};
       G.state.constructions = data.constructions;
     }
     if (data.marches && G.state.world) {
-      G.state.world.marches = data.marches;
+      var prevMap = {};
+      (G.state.world.marches || []).forEach(function (m) {
+        if (m && m.id != null) prevMap[String(m.id)] = m;
+      });
+      G.state.world.marches = data.marches.map(function (m) {
+        var prev = prevMap[String(m.id)];
+        return prev ? Object.assign({}, prev, m) : m;
+      });
+    }
+    if (Array.isArray(data.incoming) && G.state.world) {
+      var previousIncoming = G.state.world.incoming || [];
+      data.incoming.forEach(function (attack) {
+        var previous = previousIncoming.find(function (item) { return String(item.id) === String(attack.id); });
+        if (previous && previous.expanded) attack.expanded = true;
+      });
+      G.state.world.incoming = data.incoming;
+      if (G.Main && G.Main.renderNavBar) G.Main.renderNavBar();
     }
     if (data.cityState) {
       G.state.cityState = data.cityState;
@@ -185,7 +201,12 @@ window.Game = window.Game || {};
 
   // incoming handler - being attacked
   G.WS.on('incoming', function (data) {
-    G.toast('警告: 敌军来袭! 来自' + (data.fromName || '未知'));
+    if (!data) return;
+    if (!data.event || data.event === 'started') {
+      G.toast('警告: 敌军来袭! 来自' + (data.fromName || '未知'));
+    } else if (data.event === 'cancelled') {
+      G.toast((data.fromName || '敌军') + ' 已撤回行军');
+    }
     // Refresh state
     refreshState();
   });

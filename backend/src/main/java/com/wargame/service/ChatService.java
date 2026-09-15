@@ -1,6 +1,5 @@
 package com.wargame.service;
 
-import com.wargame.config.GameWebSocketHandler;
 import com.wargame.model.dto.ChatDtos;
 import com.wargame.model.entity.ChatMessage;
 import com.wargame.model.entity.Player;

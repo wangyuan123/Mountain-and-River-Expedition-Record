@@ -30,6 +30,7 @@ public class WebSocketPushService {
 
     private static final Logger log = LoggerFactory.getLogger(WebSocketPushService.class);
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false) private CityScope cityScope;
     private final GameWebSocketHandler handler;
     private final ObjectMapper objectMapper;
 
@@ -59,6 +60,9 @@ public class WebSocketPushService {
         message.put("type", type);
         message.put("data", data);
         message.put("timestamp", System.currentTimeMillis());
+        if (playerId != null && cityScope != null && java.util.Set.of("tick", "march", "army", "build", "resources").contains(type)) {
+            message.put("citySlot", cityScope.slot(playerId));
+        }
         try {
             String json = objectMapper.writeValueAsString(message);
             // Freeze the payload now, but never announce a rolled-back battle or purchase.

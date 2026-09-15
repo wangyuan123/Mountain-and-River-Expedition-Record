@@ -13,11 +13,14 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Entity
 @Table(name = "players")
-public class Player extends VersionedEntity {
+public class Player extends VersionedEntity implements CityEconomy {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "active_city_id")
+    private Long activeCityId;
 
     @Column(name = "username", unique = true, nullable = false, length = 50)
     private String username;

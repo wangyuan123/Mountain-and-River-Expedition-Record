@@ -65,3 +65,16 @@ test('数量为 0 的道具不会出现在对应分类中', () => {
   assert.doesNotMatch(html, /空加速券/);
   assert.match(html, /暂无此类道具/);
 });
+
+test('珠宝宝箱在珠宝分类中显示开启宝箱按钮而非前往晋升军衔', () => {
+  const G = setup();
+  G.DATA.items.box_gem = { cat: 'jewelry', icon: '🗃️', name: '军衔珠宝宝箱', desc: '开启获得晋升珠宝', isBox: true };
+  G.state.items.box_gem = 1;
+  G.state._depotTab = 'jewelry';
+  let html = '';
+  G.Depot.renderView({ set innerHTML(value) { html = value; } });
+  assert.match(html, /🗃️ 军衔珠宝宝箱/);
+  assert.match(html, /onclick="Game\.Depot\.useItem\('box_gem'\)">开启宝箱<\/button>/);
+  assert.match(html, /onclick="Game\.go\('mainQuest'\)">前往晋升军衔<\/button>/);
+});
+

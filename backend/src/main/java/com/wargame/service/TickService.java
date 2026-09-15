@@ -2,7 +2,6 @@ package com.wargame.service;
 
 import com.wargame.model.constants.BuildingDef;
 import com.wargame.model.constants.GameData;
-import com.wargame.model.constants.ResourceDef;
 import com.wargame.model.constants.UnitDef;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
@@ -20,6 +19,9 @@ import java.util.concurrent.atomic.AtomicLong;
 @Service
 public class TickService {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.service.CityScope cityScope;
+
     private static final Logger log = LoggerFactory.getLogger(TickService.class);
 
     /** Bankruptcy protection: gold floor (can be revoked by future feature). */
@@ -36,6 +38,7 @@ public class TickService {
     private final EquipmentService equipmentService;
     private final CityStateRepository cityStateRepository;
 
+    private final WorldViewService worldViewService;
     private final MarchService marchService;
     private final ArmyService armyService;
     private final BuildService buildService;
@@ -45,7 +48,7 @@ public class TickService {
 
 
     /** Per-player consecutive tick count at gold floor; resets when player earns gold. */
-    private final ConcurrentHashMap<Long, AtomicLong> bankruptTicks = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, AtomicLong> bankruptTicks = new ConcurrentHashMap<>();
 
     @org.springframework.beans.factory.annotation.Value("${game.max-offline-hours:8}")
     private int maxOfflineHours = 8;
@@ -65,7 +68,7 @@ public class TickService {
                        @Lazy BuildService buildService,
                        MarchRepository marchRepository,
                        ConstructionRepository constructionRepository,
-                       @Lazy WebSocketPushService pushService) {
+                       @Lazy WebSocketPushService pushService, WorldViewService worldViewService) {
         this.playerRepository = playerRepository;
         this.resourcesRepository = resourcesRepository;
         this.buildingRepository = buildingRepository;
@@ -80,19 +83,31 @@ public class TickService {
         this.marchRepository = marchRepository;
         this.constructionRepository = constructionRepository;
         this.pushService = pushService;
+        this.worldViewService = worldViewService;
     }
 
     // ================================================================
     // tick - Process a single player's tick
     // ================================================================
 
+    @org.springframework.beans.factory.annotation.Autowired private PlayerCityRepository playerCities;
+
     @Transactional
     public void tick(Long playerId) {
+        // Each city settles its own clock and queues. Slot zero also advances the scheduler's account clock.
+        try (var ignored = cityScope.enter(playerId, 0)) { tickCity(playerId); }
+        for (PlayerCity city : playerCities.findByOwnerIdAndCitySlotIsNotNullOrderByCitySlotAsc(playerId)) {
+            if (city.getCitySlot() == 0 || city.getReadyAt() > System.currentTimeMillis()) continue;
+            try (var ignored = cityScope.enter(city)) { tickCity(playerId); }
+        }
+    }
+
+    private void tickCity(Long playerId) {
         Player player = playerRepository.findById(playerId).orElse(null);
         if (player == null) return;
 
         long now = System.currentTimeMillis();
-        long lastTick = player.getLastTick() != null ? player.getLastTick() : now;
+        long lastTick = cityScope.economy(playerId).getLastTick() != null ? cityScope.economy(playerId).getLastTick() : now;
         double dt = (now - lastTick) / 1000.0;
         if (dt <= 0) return;
         dt = Math.min(dt, Math.max(1, maxOfflineHours) * 3600.0);
@@ -112,10 +127,11 @@ public class TickService {
         if ("shield".equals(cityStatus)) stateMul = 1.1;
 
         // Get resources
-        Resources res = resourcesRepository.findByPlayerId(playerId).orElse(null);
+        Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (res == null) {
             res = new Resources();
             res.setPlayerId(playerId);
+            res.setCitySlot(cityScope.slot(playerId));
             res.setFood(0);
             res.setSteel(0);
             res.setOil(0);
@@ -163,8 +179,8 @@ public class TickService {
         food = (int) Math.round(Math.max(0, food - foodUse));
 
         // Resentment & Morale calculation
-        int tax = player.getTax() != null ? player.getTax() : 30;
-        int resentment = player.getResentment() != null ? player.getResentment() : 0;
+        int tax = cityScope.economy(playerId).getTax() != null ? cityScope.economy(playerId).getTax() : 30;
+        int resentment = cityScope.economy(playerId).getResentment() != null ? cityScope.economy(playerId).getResentment() : 0;
 
         // High tax (>50) generates resentment; low tax (<=20) dissipates resentment
         if (tax > 50) {
@@ -180,7 +196,7 @@ public class TickService {
         }
 
         int targetMorale = clamp(100 - tax - resentment, 0, 100);
-        int currentMorale = player.getMorale() != null ? player.getMorale() : 70;
+        int currentMorale = cityScope.economy(playerId).getMorale() != null ? cityScope.economy(playerId).getMorale() : 70;
         int morale = currentMorale;
 
         if (hours >= 1.0) {
@@ -199,8 +215,8 @@ public class TickService {
         // 平民按民居容量与民心自然增长/逃亡，小数部分累计到下一次结算。
         int populationCap = popMax(playerId);
         int effectiveCap = populationCap <= 0 ? 0 : Math.max(10, (int) Math.round(populationCap * Math.min(1.0, morale / 70.0)));
-        int civilians = Math.max(0, player.getCivilianPopulation() != null ? player.getCivilianPopulation() : 0);
-        double populationRemainder = player.getPopulationGrowthRemainder() != null ? player.getPopulationGrowthRemainder() : 0.0;
+        int civilians = Math.max(0, cityScope.economy(playerId).getCivilianPopulation() != null ? cityScope.economy(playerId).getCivilianPopulation() : 0);
+        double populationRemainder = cityScope.economy(playerId).getPopulationGrowthRemainder() != null ? cityScope.economy(playerId).getPopulationGrowthRemainder() : 0.0;
         if (civilians < effectiveCap) {
             double growthRateMultiplier = Math.max(0.2, morale / 70.0);
             double growth = populationCap * 0.03 * growthRateMultiplier * hours + populationRemainder;
@@ -230,7 +246,7 @@ public class TickService {
         }
 
         // Officer salary
-        List<Officer> officers = officerRepository.findByPlayerId(playerId);
+        List<Officer> officers = officerRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         double totalSalary = 0;
         for (Officer off : officers) {
             totalSalary += (off.getSalary() != null ? off.getSalary() : 0);
@@ -249,7 +265,7 @@ public class TickService {
         // Bankruptcy protection: clamp at floor, and if we were already at floor, count down.
         if (goldAfterSalary < GOLD_FLOOR) {
             long consecutive = bankruptTicks
-                .computeIfAbsent(playerId, k -> new AtomicLong(0))
+                .computeIfAbsent(playerId + ":" + cityScope.slot(playerId), k -> new AtomicLong(0))
                 .incrementAndGet();
             if (consecutive >= BANKRUPTCY_GRACE_TICKS) {
                 // Force officers to quit / morale to drop to force player to act.
@@ -261,7 +277,7 @@ public class TickService {
             gold = GOLD_FLOOR;
         } else {
             // Earning again: clear the counter
-            bankruptTicks.computeIfPresent(playerId, (k, v) -> { v.set(0); return v; });
+            bankruptTicks.computeIfPresent(playerId + ":" + cityScope.slot(playerId), (k, v) -> { v.set(0); return v; });
             gold = goldAfterSalary;
         }
 
@@ -277,12 +293,13 @@ public class TickService {
         officerRepository.saveAll(officers);
 
         // Save player
-        player.setMorale(morale);
-        player.setResentment(resentment);
-        player.setCivilianPopulation(civilians);
-        player.setPopulationGrowthRemainder(populationRemainder);
-        player.setLastTick(now);
+        cityScope.economy(playerId).setMorale(morale);
+        cityScope.economy(playerId).setResentment(resentment);
+        cityScope.economy(playerId).setCivilianPopulation(civilians);
+        cityScope.economy(playerId).setPopulationGrowthRemainder(populationRemainder);
+        cityScope.economy(playerId).setLastTick(now);
         playerRepository.save(player);
+        cityScope.saveEconomy(playerId);
 
         // Update city state
         updateCityState(playerId, now);
@@ -294,7 +311,7 @@ public class TickService {
         marchService.processMarches(playerId, now);
 
         // Process incoming
-        marchService.processIncoming(playerId, now);
+        if (cityScope.slot(playerId) == 0) marchService.processIncoming(playerId, now);
 
         // Complete constructions
         List<String> completedBuilds = buildService.completeUpgrade(playerId, now);
@@ -310,6 +327,35 @@ public class TickService {
      */
     private void pushTickUpdate(Long playerId, Resources res, long now, List<String> completedBuilds,
                                 int civilians, int populationCap, int effectiveCap, int morale, int resentment, int tax) {
+        Map<String, Object> stateChanges = buildStateChanges(playerId, res, now, completedBuilds,
+                civilians, populationCap, effectiveCap, morale, resentment, tax);
+        pushService.pushTickUpdate(playerId, stateChanges);
+    }
+
+    /**
+     * 手动触发指定玩家的状态变更推送，并返回当前状态变更数据。
+     */
+    public Map<String, Object> pushStateChanges(Long playerId) {
+        long now = System.currentTimeMillis();
+        Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
+        if (res == null) {
+            res = resourcesRepository.findByPlayerId(playerId).orElseGet(Resources::new);
+        }
+        CityEconomy econ = cityScope.economy(playerId);
+        int civilians = econ.getCivilianPopulation() != null ? econ.getCivilianPopulation() : 0;
+        int populationCap = popMax(playerId);
+        int effectiveCap = capacity(playerId).getOrDefault("civilianEffective", (long) populationCap).intValue();
+        int morale = econ.getMorale() != null ? econ.getMorale() : 70;
+        int resentment = econ.getResentment() != null ? econ.getResentment() : 0;
+        int tax = econ.getTax() != null ? econ.getTax() : 0;
+        Map<String, Object> stateChanges = buildStateChanges(playerId, res, now, Collections.emptyList(),
+                civilians, populationCap, effectiveCap, morale, resentment, tax);
+        pushService.pushTickUpdate(playerId, stateChanges);
+        return stateChanges;
+    }
+
+    public Map<String, Object> buildStateChanges(Long playerId, Resources res, long now, List<String> completedBuilds,
+                                                int civilians, int populationCap, int effectiveCap, int morale, int resentment, int tax) {
         Map<String, Object> stateChanges = new LinkedHashMap<>();
 
         // 资源
@@ -335,48 +381,40 @@ public class TickService {
         population.put("growthPerHour", populationCap * 0.03 * Math.max(0.2, morale / 70.0));
         stateChanges.put("population", population);
 
+        playerRepository.findById(playerId).ifPresent(player ->
+                stateChanges.put("incoming", worldViewService.getIncoming(player)));
+
         // 行军进度
-        List<March> marches = marchRepository.findByPlayerId(playerId);
+        List<March> marches = marchRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         List<Map<String, Object>> marchList = new ArrayList<>();
         for (March m : marches) {
-            Map<String, Object> marchInfo = new LinkedHashMap<>();
-            marchInfo.put("id", m.getId());
-            marchInfo.put("targetName", m.getTargetName());
-            marchInfo.put("targetKind", m.getTargetKind());
-            marchInfo.put("action", m.getAction());
-            marchInfo.put("returning", Boolean.TRUE.equals(m.getReturning()));
-            marchInfo.put("gathering", Boolean.TRUE.equals(m.getGathering()));
-            marchInfo.put("startAt", m.getStartAt());
-            marchInfo.put("arriveAt", m.getArriveAt());
-
-            long start = m.getStartAt() != null ? m.getStartAt() : now;
-            long arrive = m.getArriveAt() != null ? m.getArriveAt() : now;
-            if (Boolean.TRUE.equals(m.getGathering())) {
-                long gatherEnd = m.getGatherEndAt() != null ? m.getGatherEndAt() : now;
-                marchInfo.put("gatherEndAt", gatherEnd);
-                int gatherProgress = calcProgress(start, gatherEnd, now);
-                marchInfo.put("progress", gatherProgress);
-            } else {
-                marchInfo.put("progress", calcProgress(start, arrive, now));
-            }
-            marchList.add(marchInfo);
+            marchList.add(worldViewService.toMarchMap(m, now));
         }
         stateChanges.put("marches", marchList);
 
         // 建筑进度
-        List<Construction> constructions = constructionRepository.findByPlayerId(playerId);
+        List<Construction> constructions = constructionRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         List<Map<String, Object>> buildList = new ArrayList<>();
         for (Construction c : constructions) {
             Map<String, Object> buildInfo = new LinkedHashMap<>();
             buildInfo.put("id", c.getBuildingType());
             buildInfo.put("slot", c.getSlot());
-            buildInfo.put("targetLevel", c.getTargetLevel());
+            int targetLv = c.getTargetLevel() != null ? c.getTargetLevel() : 0;
+            buildInfo.put("targetLevel", targetLv);
             buildInfo.put("startedAt", c.getStartAt() != null ? c.getStartAt() : 0);
             buildInfo.put("finishesAt", c.getFinishAt() != null ? c.getFinishAt() : 0);
             buildInfo.put("progress", calcProgress(
                     c.getStartAt() != null ? c.getStartAt() : now,
                     c.getFinishAt() != null ? c.getFinishAt() : now,
                     now));
+            int curLv = buildService.buildingLevel(playerId, c.getBuildingType(), c.getSlot() != null ? c.getSlot() : 0);
+            if (targetLv < curLv) {
+                buildInfo.put("action", "dismantle");
+                buildInfo.put("fromLevel", curLv);
+            } else {
+                buildInfo.put("action", "upgrade");
+                buildInfo.put("fromLevel", Math.max(0, targetLv - 1));
+            }
             buildList.add(buildInfo);
         }
         stateChanges.put("constructions", buildList);
@@ -386,7 +424,7 @@ public class TickService {
             stateChanges.put("completedBuilds", completedBuilds);
         }
 
-        pushService.pushTickUpdate(playerId, stateChanges);
+        return stateChanges;
     }
 
     /** 计算进度百分比 (0-100) */
@@ -411,7 +449,7 @@ public class TickService {
         BuildingDef b = GameData.BUILDINGS.get(buildingType);
         if (b == null || b.produces() == null) return 0;
 
-        List<Building> buildings = buildingRepository.findByPlayerIdAndType(playerId, buildingType);
+        List<Building> buildings = buildingRepository.findByPlayerIdAndCitySlotAndType(playerId, cityScope.slot(playerId), buildingType);
         double total = 0;
         for (Building building : buildings) {
             int lv = building.getLevel() != null ? building.getLevel() : 0;
@@ -442,7 +480,7 @@ public class TickService {
      * sum of D.units[id].food * army[id] for each army unit
      */
     public int foodPerHour(Long playerId) {
-        List<ArmyUnit> units = armyUnitRepository.findByPlayerId(playerId);
+        List<ArmyUnit> units = armyUnitRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         int sum = 0;
         for (ArmyUnit unit : units) {
             UnitDef def = GameData.UNITS.get(unit.getType());
@@ -492,7 +530,7 @@ public class TickService {
      * Returns "shield", "war", or "peace"
      */
     public String getCityStatus(Long playerId) {
-        CityState cs = cityStateRepository.findByPlayerId(playerId).orElse(null);
+        CityState cs = cityStateRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (cs == null) return "peace";
 
         long now = System.currentTimeMillis();
@@ -525,7 +563,7 @@ public class TickService {
      * Find first officer with the given role for the player
      */
     public Officer getOfficerByRole(Long playerId, String role) {
-        List<Officer> officers = officerRepository.findByPlayerIdAndRole(playerId, role);
+        List<Officer> officers = officerRepository.findByPlayerIdAndCitySlotAndRole(playerId, cityScope.slot(playerId), role);
         if (officers != null && !officers.isEmpty()) {
             return officers.get(0);
         }
@@ -538,7 +576,7 @@ public class TickService {
      * (For multi-slot buildings, sums all slots; for single-slot, returns the level)
      */
     public int buildingLevel(Long playerId, String buildingType) {
-        List<Building> buildings = buildingRepository.findByPlayerIdAndType(playerId, buildingType);
+        List<Building> buildings = buildingRepository.findByPlayerIdAndCitySlotAndType(playerId, cityScope.slot(playerId), buildingType);
         int sum = 0;
         for (Building b : buildings) {
             sum += b.getLevel() != null ? b.getLevel() : 0;
@@ -551,10 +589,11 @@ public class TickService {
      * Check war/shield/peace expiration
      */
     private void updateCityState(Long playerId, long now) {
-        CityState cs = cityStateRepository.findByPlayerId(playerId).orElse(null);
+        CityState cs = cityStateRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (cs == null) {
             cs = new CityState();
             cs.setPlayerId(playerId);
+            cs.setCitySlot(cityScope.slot(playerId));
             cs.setStatus("peace");
             cs.setWarTargetId(null);
             cs.setWarAt(0L);

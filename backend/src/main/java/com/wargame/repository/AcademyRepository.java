@@ -12,4 +12,6 @@ public interface AcademyRepository extends JpaRepository<Academy, Long> {
     Optional<Academy> findByPlayerId(Long playerId);
 
     void deleteByPlayerId(Long playerId);
+
+    Optional<Academy> findByPlayerIdAndCitySlot(Long playerId, Integer citySlot);
 }

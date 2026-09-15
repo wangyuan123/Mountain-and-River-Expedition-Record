@@ -29,24 +29,24 @@ window.Game = window.Game || {};
     },
 
     groupSlots: {
-      res: 10,
-      army: 10
+      res: 12,
+      army: 12
     },
     buildings: {
       command:      { name: '市政厅',   desc: '主城,决定其他建筑等级上限', baseCost: { steel: 400, food: 200 },            growth: 1.6, cat: 'core', slots: 1 },
-      house:        { name: '民居',     desc: '提供人口上限,每级+1200人口', baseCost: { steel: 120, food: 60 },             growth: 1.5, cat: 'core', popPer: 1200, slots: 20 },
-      factory:      { name: '军工厂',   desc: '生产步兵、装甲车辆与战机',   baseCost: { steel: 240, oil: 100 },             growth: 1.6, cat: 'army', slots: 10 },
+      house:        { name: '民居',     desc: '提供人口上限,每级+1200人口', baseCost: { steel: 120, food: 60 },             growth: 1.5, cat: 'core', popPer: 1200, slots: 32 },
+      factory:      { name: '军工厂',   desc: '生产步兵、装甲车辆与战机',   baseCost: { steel: 240, oil: 100 },             growth: 1.6, cat: 'army', slots: 32 },
       lightfactory: { name: '轻工厂',   desc: '生产轻型坦克',              baseCost: { steel: 260, oil: 110, rare: 10 },   growth: 1.6, cat: 'army', slots: 1 },
       heavyfactory: { name: '重工厂',   desc: '生产重型坦克/突击炮/火箭',  baseCost: { steel: 320, oil: 140, rare: 30 },   growth: 1.6, cat: 'army', slots: 1 },
       airport:      { name: '机场',     desc: '生产空军',                  baseCost: { steel: 280, oil: 120, rare: 30 },   growth: 1.6, cat: 'army', slots: 1 },
       port:         { name: '港口',     desc: '生产海军',                  baseCost: { steel: 360, oil: 160, rare: 50 },   growth: 1.7, cat: 'army', slots: 1 },
       academy:      { name: '军校',     desc: '招募军官',                  baseCost: { steel: 200, food: 120, gold: 200 }, growth: 1.6, cat: 'core', slots: 1 },
       staff:        { name: '参谋部',   desc: '军官槽位与野地上限,带兵上限 +10%/级', baseCost: { steel: 220, food: 100 },            growth: 1.6, cat: 'core', slots: 1 },
-      farm:         { name: '农田',     desc: '每小时产出粮食',            baseCost: { steel: 80 },                        growth: 1.5, cat: 'res', produces: 'food',  baseProduce: 40, slots: 10 },
-      refinery:     { name: '炼钢厂',   desc: '每小时产出钢铁',            baseCost: { steel: 80 },                        growth: 1.5, cat: 'res', produces: 'steel', baseProduce: 40, slots: 10 },
-      oilfield:     { name: '石油基地', desc: '每小时产出石油',            baseCost: { steel: 80 },                        growth: 1.5, cat: 'res', produces: 'oil',   baseProduce: 25, slots: 36 },
-      raremine:     { name: '稀矿厂',   desc: '每小时产出稀矿',            baseCost: { steel: 120, oil: 40 },              growth: 1.6, cat: 'res', produces: 'rare',  baseProduce: 12, slots: 10 },
-      depot:        { name: '仓库',     desc: '提升资源上限,被掠夺时保护资源', baseCost: { steel: 100 },                  growth: 1.5, cat: 'res', capPer: 1500, protectPer: 1000, slots: 10 },
+      farm:         { name: '农田',     desc: '每小时产出粮食',            baseCost: { steel: 80 },                        growth: 1.5, cat: 'res', produces: 'food',  baseProduce: 40, slots: 32 },
+      refinery:     { name: '炼钢厂',   desc: '每小时产出钢铁',            baseCost: { steel: 80 },                        growth: 1.5, cat: 'res', produces: 'steel', baseProduce: 40, slots: 32 },
+      oilfield:     { name: '石油基地', desc: '每小时产出石油',            baseCost: { steel: 80 },                        growth: 1.5, cat: 'res', produces: 'oil',   baseProduce: 25, slots: 32 },
+      raremine:     { name: '稀矿厂',   desc: '每小时产出稀矿',            baseCost: { steel: 120, oil: 40 },              growth: 1.6, cat: 'res', produces: 'rare',  baseProduce: 12, slots: 32 },
+      depot:        { name: '仓库',     desc: '提升资源上限,被掠夺时保护资源', baseCost: { steel: 100 },                  growth: 1.5, cat: 'res', capPer: 1500, protectPer: 1000, slots: 32 },
       lab:          { name: '科研中心', desc: '解锁与加速科技研究',        baseCost: { steel: 200, food: 100, rare: 20 },  growth: 1.6, cat: 'core', slots: 1 },
       radar:        { name: '雷达站',   desc: '侦察野地与敌方兵力',        baseCost: { steel: 180, oil: 60, rare: 20 },    growth: 1.6, cat: 'core', slots: 1 },
       wall:         { name: '围墙',     desc: '城防,提升守城部队防御',     baseCost: { steel: 200, food: 80 },             growth: 1.5, cat: 'def', defBonus: 5, slots: 1 },
@@ -97,10 +97,9 @@ window.Game = window.Game || {};
       log_food:      { name: '军需补给',   branch: '后勤', desc: '养兵耗粮 -5%/级',         max: 10, labReq: 3, baseCost: { steel: 360, food: 200 }, growth: 1.8, affect: 'food_save' },
       log_train:     { name: '训练加速',   branch: '后勤', desc: '征召批量 +10%/级',         max: 10, labReq: 2, baseCost: { steel: 300, food: 180, gold: 100 }, growth: 1.8, affect: 'train' },
       log_build:     { name: '建筑加速',   branch: '后勤', desc: '建筑升级资源 -5%/级',     max: 10, labReq: 2, baseCost: { steel: 340, food: 160, gold: 120 }, growth: 1.8, affect: 'build' },
-      log_medical:   { name: '医疗技术',   branch: '后勤', desc: '败战部队存活率 +5%/级',   max: 10, labReq: 3, baseCost: { steel: 320, food: 220, gold: 150 }, growth: 1.8, affect: 'medical' },
+      log_medical:   { name: '医疗技术',   branch: '后勤', desc: '伤兵可回收 +5%/级，最高50%',   max: 10, labReq: 3, baseCost: { steel: 320, food: 220, gold: 150 }, growth: 1.8, affect: 'medical' },
       recon_level:   { name: '侦察技术',   branch: '侦察', desc: '侦察情报深度 +1 阶/级，逐级探明城防、守军、建筑、科技与将领', max: 5, labReq: 1, baseCost: { steel: 180, oil: 60 }, growth: 1.6, affect: 'recon' },
       recon_radar:   { name: '雷达预警',   branch: '侦察', desc: '提前发现敌方 +1 回合',    max: 3, labReq: 2, baseCost: { steel: 240, oil: 100, rare: 20 }, growth: 1.7, affect: 'radar' },
-      recon_stealth: { name: '反侦察',     branch: '侦察', desc: '降低被侦察成功率',        max: 5, labReq: 3, baseCost: { steel: 220, oil: 80, rare: 30 }, growth: 1.7, affect: 'stealth' }
     },
     officerNames: [
       '隆美尔', '朱可夫', '巴顿', '蒙哥马利', '古德里安', '曼施坦因', '麦克阿瑟', '尼米兹',
@@ -111,13 +110,17 @@ window.Game = window.Game || {};
     starColor: { 1: '#bbb', 2: '#7fc4ff', 3: '#a070ff', 4: '#ffa84a', 5: '#ffe14a' },
 
     wildTypes: {
-      forest:     { name: '森林',   res: null,     icon: 'img/forest.svg' },
-      hill:       { name: '丘陵',   res: null,     icon: 'img/mount.svg' },
-      swamp:      { name: '沼泽',   res: null,     icon: 'img/swamp.svg' },
-      grainfield: { name: '粮田',   res: 'food',   icon: 'img/grainfield.svg' },
-      ironworks:  { name: '炼铁厂', res: 'steel',  icon: 'img/ironworks.svg' },
-      oil:        { name: '油田',   res: 'oil',    icon: 'img/wild-oil.svg' },
-      rarefactory:{ name: '稀矿厂', res: 'rare',   icon: 'img/rarefactory.svg' }
+      forest:     { name: '森林',   res: null,     icon: 'img/map/wild-forest.webp' },
+      hill:       { name: '丘陵',   res: null,     icon: 'img/map/wild-hill.webp' },
+      swamp:      { name: '沼泽',   res: null,     icon: 'img/map/wild-swamp.webp' },
+      grassland:  { name: '草原',   res: null,     icon: 'img/map/grass-lush.webp' },
+      plains:     { name: '平原',   res: null,     icon: 'img/map/grass-plain.webp' },
+      snow:       { name: '雪地',   res: null,     icon: 'img/map/wild-snow.webp' },
+      rock:       { name: '岩石',   res: null,     icon: 'img/map/wild-rock.webp' },
+      grainfield: { name: '粮田',   res: 'food',   icon: 'img/map/wild-grainfield.webp' },
+      ironworks:  { name: '炼铁厂', res: 'steel',  icon: 'img/map/wild-ironworks.webp' },
+      oil:        { name: '油田',   res: 'oil',    icon: 'img/map/wild-oil.webp' },
+      rarefactory:{ name: '稀矿厂', res: 'rare',   icon: 'img/map/wild-rarefactory.webp' }
     },
 
     zones: {
@@ -196,7 +199,7 @@ window.Game = window.Game || {};
       suppress: { name: '压制',   desc: '降低敌方攻击力8%/级',         max: 5, cat: 'debuff' },
       pierce:   { name: '破甲',   desc: '无视敌方防御12%/级',          max: 5, cat: 'pierce' },
       supply:   { name: '补给',   desc: '粮食消耗-20%/级',             max: 5, cat: 'logi' },
-      medic:    { name: '急救',   desc: '战后伤兵恢复+15%/级',         max: 5, cat: 'medic' },
+      medic:    { name: '急救',   desc: '战后伤兵额外回收+3%/级，最高15%', max: 5, cat: 'medic' },
       combo:    { name: '连击',   desc: '8%/级概率额外攻击一次',       max: 5, cat: 'combo' }
     },
     items: {
@@ -232,7 +235,6 @@ window.Game = window.Game || {};
       speedUp72h: { name: '72时加速符',icon: '⚡', desc: '立即缩短72小时建筑/造兵时间',    cat: 'util', seconds: 259200},
       shield:    { name: '护盾',     icon: '🛡️', desc: '使用后8小时免受玩家攻击',         cat: 'util' },
       marchOrd:  { name: '行军令',   icon: '🚩', desc: '行军速度+50%,持续1小时',           cat: 'util' },
-      cloak:     { name: '反侦察符', icon: '🕶️', desc: '降低被敌方侦察成功率,持续6小时',    cat: 'util' },
       populationOrder: { name: '人口动员令', icon: '👥', desc: '使用后立即增加500空闲人口,不超过人口上限', cat: 'util' },
       annivPack: { name: '周年庆大礼', icon: '🎉', desc: '周年庆礼包',                         cat: 'gift' },
 
@@ -245,7 +247,15 @@ window.Game = window.Game || {};
       gem_crystal:    { name: '水晶',   icon: '💎', desc: '璀璨高纯水晶，野地采集获得，用于晋升军衔', cat: 'jewelry' },
       gem_jadeite:    { name: '翡翠',   icon: '🟢', desc: '翠绿极品翡翠，野地采集获得，用于晋升军衔', cat: 'jewelry' },
       gem_jade:       { name: '玉石',   icon: '🪨', desc: '温润无瑕美玉，野地采集获得，用于晋升军衔', cat: 'jewelry' },
-      gem_nightpearl: { name: '夜明珠', icon: '🌟', desc: '绝世璀璨夜明珠，高级野地采集获得，用于晋升将官军衔', cat: 'jewelry' }
+      gem_nightpearl: { name: '夜明珠', icon: '🌟', desc: '绝世璀璨夜明珠，高级野地采集获得，用于晋升将官军衔', cat: 'jewelry' },
+
+      // —— 军衔珠宝宝箱（开启直接获得晋升军衔所需各类珠宝）——
+      box_gem:         { name: '军衔珠宝宝箱', icon: '🗃️', desc: '开启获得晋升必备珠宝：珍珠×5、珊瑚×3、琉璃×3、琥珀×2、玛瑙×2', cat: 'jewelry', isBox: true },
+      box_gem_primary: { name: '初级珠宝宝箱', icon: '🧰', desc: '开启获得士官晋升基础珠宝：珍珠×8、珊瑚×6、琉璃×5', cat: 'jewelry', isBox: true },
+      box_gem_medium:  { name: '中级珠宝宝箱', icon: '🧰', desc: '开启获得尉官晋升进阶珠宝：琥珀×8、玛瑙×6、水晶×5、翡翠×2', cat: 'jewelry', isBox: true },
+      box_gem_senior:  { name: '高级珠宝宝箱', icon: '🎁', desc: '开启获得校官晋升精选珠宝：水晶×8、翡翠×8、玉石×6、夜明珠×3', cat: 'jewelry', isBox: true },
+      box_gem_supreme: { name: '特级夜明珠宝箱', icon: '🌟', desc: '开启获得将官晋升极品珍宝：夜明珠×8、玉石×10、翡翠×10', cat: 'jewelry', isBox: true },
+      box_gem_grand:   { name: '璀璨珠宝全集箱', icon: '💎', desc: '开启获得全部9种晋升珠宝各5颗(共45颗珠宝)，助统帅连升数阶！', cat: 'jewelry', isBox: true }
     },
     historicalOfficers: [
       { name: '隆美尔', fullName: '埃尔温·隆美尔', birth: 1891, death: 1944, nation: '德国', rank: '陆军元帅', bio: '绰号"沙漠之狐"。二战期间率领非洲军团在北非战场屡创英军，以机动战术闻名于世。后因卷入刺杀希特勒事件被迫服毒自尽。' },

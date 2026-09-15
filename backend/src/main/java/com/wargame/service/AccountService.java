@@ -32,6 +32,7 @@ public class AccountService {
     private final PlayerCityRepository playerCityRepository;
     private final BuildingRepository buildingRepository;
     private final ArmyUnitRepository armyUnitRepository;
+    private final WoundedUnitRepository woundedUnitRepository;
     private final FortificationRepository fortificationRepository;
     private final TechnologyRepository technologyRepository;
     private final OfficerRepository officerRepository;
@@ -60,7 +61,7 @@ public class AccountService {
     public AccountService(PlayerRepository playerRepository,
                           PlayerCityRepository playerCityRepository,
                           BuildingRepository buildingRepository,
-                          ArmyUnitRepository armyUnitRepository,
+                          ArmyUnitRepository armyUnitRepository, WoundedUnitRepository woundedUnitRepository,
                           FortificationRepository fortificationRepository,
                           TechnologyRepository technologyRepository,
                           OfficerRepository officerRepository,
@@ -81,6 +82,7 @@ public class AccountService {
         this.playerCityRepository = playerCityRepository;
         this.buildingRepository = buildingRepository;
         this.armyUnitRepository = armyUnitRepository;
+        this.woundedUnitRepository = woundedUnitRepository;
         this.fortificationRepository = fortificationRepository;
         this.technologyRepository = technologyRepository;
         this.officerRepository = officerRepository;
@@ -178,6 +180,7 @@ public class AccountService {
 
         buildingRepository.deleteByPlayerId(playerId);
         armyUnitRepository.deleteByPlayerId(playerId);
+        woundedUnitRepository.deleteByPlayerId(playerId);
         fortificationRepository.deleteByPlayerId(playerId);
         technologyRepository.deleteByPlayerId(playerId);
         officerRepository.deleteByPlayerId(playerId);

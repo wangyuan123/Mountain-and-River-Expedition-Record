@@ -699,6 +699,13 @@
     h += '  <div style="font-size:12px;color:var(--muted);">基础出兵容量: <b style="color:var(--ink);">' + G.fmt(rankInfo.baseCap) + '</b></div>';
     h += '</div>';
 
+    if (s.cityOverview) {
+      var cities = s.cityOverview;
+      h += '<div class="city-hint">城市名额：<b>' + cities.count + ' / ' + cities.cap + '</b>（包含主城）';
+      if (cities.nextRankName) h += ' · 晋升' + escapeHtml(cities.nextRankName) + '后可拥有 ' + cities.nextCap + ' 座';
+      else h += ' · 已达城市数量上限';
+      h += '</div>';
+    }
     if (rankInfo.isMax) {
       h += '<div style="font-size:13px;color:var(--ok);padding:10px;background:rgba(82,196,26,0.1);border-radius:6px;margin-top:6px;display:flex;align-items:center;justify-content:space-between;">';
       h += '  <span>⭐ 已晋升至终极统帅军衔【上将】！基础出兵上限 20,000，享集团军出征极限！</span>';

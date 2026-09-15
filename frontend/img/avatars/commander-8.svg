@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
   <!-- Clean white/soft background -->
   <rect width="100" height="100" rx="20" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
-  <!-- Doodle Frame Corners (like in screenshot) -->
+  <!-- Doodle Frame Corners -->
   <path d="M18 28 L18 18 L28 18" fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-linecap="round"/>
   <path d="M72 18 L82 18 L82 28" fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-linecap="round"/>
   <path d="M18 72 L18 82 L28 82" fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-linecap="round"/>

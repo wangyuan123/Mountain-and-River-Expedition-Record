@@ -14,4 +14,7 @@ public interface ArmyUnitRepository extends JpaRepository<ArmyUnit, Long> {
     List<ArmyUnit> findByPlayerIdAndType(Long playerId, String type);
 
     void deleteByPlayerId(Long playerId);
+
+    List<ArmyUnit> findByPlayerIdAndCitySlot(Long playerId, Integer citySlot);
+    List<ArmyUnit> findByPlayerIdAndCitySlotAndType(Long playerId, Integer citySlot, String type);
 }
