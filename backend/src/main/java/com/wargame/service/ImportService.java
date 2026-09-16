@@ -513,7 +513,7 @@ public class ImportService {
             for (JsonNode bNode : banditsNode) {
                 Bandit bandit = new Bandit();
                 bandit.setWorldId(worldId);
-                bandit.setName(bNode.path("name").asText("流寇"));
+                bandit.setName(bNode.path("name").asText("日寇据点"));
                 bandit.setLevel(bNode.path("level").asInt(1));
                 bandit.setX(bNode.path("x").asInt(0));
                 bandit.setY(bNode.path("y").asInt(0));

@@ -38,7 +38,7 @@ public final class QuestCatalog {
             q("q2_2", "ch2", "炮兵连", "训练 20 个炮兵", "ARMY_RECRUIT", "artillery", 20, r(0,3000,1000,0,500), "q2_1"),
             q("q2_3", "ch2", "前线侦察", "派出侦察兵完成 1 次侦查", "SCOUT_COMPLETE", null, 1, r(1000,1000,500,0,400), "q2_2"),
             q("q2_4", "ch2", "远征采集", "完成 1 次野外资源采集并运回主城", "GATHER_COMPLETE", null, 1, r(3000,2000,1000,200,500), "q2_3"),
-            q("q2_5", "ch2", "肃清流寇", "击败 1 个流寇据点", "BANDIT_DEFEAT", null, 1, new Reward(0,0,0,0,500,0,"1",null,null,0), "q2_4"),
+            q("q2_5", "ch2", "歼灭日寇", "击败 1 个日寇据点", "BANDIT_DEFEAT", null, 1, new Reward(0,0,0,0,500,0,"1",null,null,0), "q2_4"),
                 q("q2_6", "ch2", "占领野地", "占领 1 块资源野地", "WILD_CLAIM", null, 1, r(5000,2000,0,0,500), "q2_5")
         )),
         new Chapter("ch3", "第三章 · 开疆扩土", "补齐资源产能，打造攻守兼备的基地。", List.of(

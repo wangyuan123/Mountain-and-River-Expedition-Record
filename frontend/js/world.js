@@ -892,11 +892,8 @@ window.Game = window.Game || {};
       var wildAll = (s.world.wildTiles || []).map(function (t, i) {
         return { kind: 'wild', t: t, i: i, d: dist(px, py, t.x, t.y) };
       });
-      var npcAll = (s.world.npcCities || []).map(function (n, i) {
-        return { kind: 'npc', n: n, i: i, d: dist(px, py, n.x, n.y) };
-      });
-      var simulatedNpcAll = (s.world.simulatedNpcCities || []).map(function (n, i) {
-        return { kind: 'simulated_npc', n: n, i: i, d: dist(px, py, n.x, n.y) };
+      var banditAll = (s.world.bandits || []).map(function (n, i) {
+        return { kind: 'bandit', n: n, i: i, d: dist(px, py, n.x, n.y) };
       });
       var playerAll = (s.world.playerCities || []).map(function (p, i) {
         return { kind: 'player', p: p, i: i, d: dist(px, py, p.x, p.y) };
@@ -918,7 +915,7 @@ window.Game = window.Game || {};
       var inRange = scanR > 0 ? function (x) { return x.d <= scanR; } : function () { return true; };
       // 坐标搜索结果可在视野外显示，但只展示基础信息；详细情报仍需侦查
       var wildsNearby = wildAll.filter(function (x) { return (inRange(x) || x.t._searchOnly) && !x.t.occupied; });
-      var npcsNearby = npcAll.concat(simulatedNpcAll)
+      var npcsNearby = banditAll
         .filter(function (x) { return inRange(x) || x.n._searchOnly; })
         .filter(function (x) { return !x.n.defeated; });
       var playersNearby = playerAll.filter(function (x) { return inRange(x) || x.p._searchOnly; });
@@ -1011,7 +1008,7 @@ window.Game = window.Game || {};
         '</div>';
       }
 
-      // 寇城卡：NPC 不需要宣战，可直接征服、掠夺或侦察
+      // 日寇据点卡：不需要宣战，可直接进攻或侦察
       function renderNpcCard(it) {
         var n = it.n;
         var nScouted = getScouted(n.x, n.y);
@@ -1026,8 +1023,8 @@ window.Game = window.Game || {};
             '<button class="tcard-btn" onclick="Game.World.attack(\'' + it.kind + '\',' + it.i + ',\'scout\')">侦察</button>';
         return '<div class="tcard tcard-npc' + (n.defeated ? ' tcard-done' : '') + '">' +
           '<div class="tcard-head">' +
-            '<img class="tcard-icon" src="img/map/npc-fortress.webp" alt="NPC 要塞城"/>' +
-            '<div class="tcard-title"><span class="npc-mark">NPC</span> ' + esc(n.name) + ' <span class="tcard-lv">Lv.' + n.level + '</span></div>' +
+            '<span class="tcard-emoji">⚔</span>' +
+            '<div class="tcard-title"><span class="npc-mark">日寇</span> ' + esc(n.name) + ' <span class="tcard-lv">Lv.' + n.level + '</span></div>' +
             '<div class="tcard-dist">📍 ' + it.d + '格</div>' +
           '</div>' +
           info +
@@ -1182,7 +1179,7 @@ window.Game = window.Game || {};
            '</div>' +
             '<div class="map-toolbar-quick">' +
               '<button class="qt-btn" onclick="Game.World.locateClosest(\'wild\')" title="跳转最近未占领野地">🪨 最近野地</button>' +
-              '<button class="qt-btn" onclick="Game.World.locateClosest(\'npc\')" title="跳转最近流寇">⚔ 最近流寇</button>' +
+              '<button class="qt-btn" onclick="Game.World.locateClosest(\'bandit\')" title="跳转最近日寇">⚔ 最近日寇</button>' +
               '<button class="qt-btn" onclick="Game.World.locateClosest(\'player\')" title="跳转最近玩家">🏰 最近玩家</button>' +
               '<button class="qt-btn" onclick="Game.World.locateClosest(\'owned\')" title="跳转最近已占领野地">🚩 我的领地</button>' +
             '</div>' +
@@ -1193,7 +1190,7 @@ window.Game = window.Game || {};
       h += '<div class="map-tabs">' +
            '<div class="map-tab ' + (activeTab === 'all' ? 'active' : '') + '" onclick="Game.World.setTab(\'all\')">全部 <span class="mt-count">' + total + '</span></div>' +
            '<div class="map-tab ' + (activeTab === 'wild' ? 'active' : '') + '" onclick="Game.World.setTab(\'wild\')">野地 <span class="mt-count">' + wildsNearby.length + '</span></div>' +
-           '<div class="map-tab ' + (activeTab === 'npc' ? 'active' : '') + '" onclick="Game.World.setTab(\'npc\')">流寇 <span class="mt-count">' + npcsNearby.length + '</span></div>' +
+           '<div class="map-tab ' + (activeTab === 'npc' ? 'active' : '') + '" onclick="Game.World.setTab(\'npc\')">日寇 <span class="mt-count">' + npcsNearby.length + '</span></div>' +
            '<div class="map-tab ' + (activeTab === 'player' ? 'active' : '') + '" onclick="Game.World.setTab(\'player\')">玩家 <span class="mt-count">' + playersNearby.length + '</span></div>' +
            '<div class="map-tab ' + (activeTab === 'owned' ? 'active' : '') + '" onclick="Game.World.setTab(\'owned\')">已占 <span class="mt-count">' + owned.length + '</span></div>' +
            '<div class="map-tabs-sort">' +

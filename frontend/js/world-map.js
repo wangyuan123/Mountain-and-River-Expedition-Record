@@ -368,7 +368,7 @@
       var coordinates = '(' + t.x + ', ' + t.y + ')';
       var info = showWildLevel ? t.level + '级' : '';
       if (isCity) {
-        var now = Date.now(), status = '流寇据点';
+        var now = Date.now(), status = '日寇据点';
         if (t.kind === 'player' || t.selfCity) {
           var cp = G.Core.state.world.cityPos || G.Core.state.world.pos || {};
           var ownState = t.selfCity && t.x === cp.x && t.y === cp.y && G.Core.getCityStatus ? G.Core.getCityStatus() : '';

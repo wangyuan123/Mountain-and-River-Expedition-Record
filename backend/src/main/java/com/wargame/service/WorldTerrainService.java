@@ -123,7 +123,7 @@ public class WorldTerrainService {
             int span=citySpan(c), cx=anchor(c.getX(),span),cy=anchor(c.getY(),span);
             if(cx<x+2&&cx+span>x&&cy<y+2&&cy+span>y)return "该范围与现有城市占地重叠";
         }
-        if(!occupants(NpcCity.class,world,x,x+1,y,y+1).isEmpty()||!occupants(Bandit.class,world,x,x+1,y,y+1).isEmpty())return "该范围内有 NPC 据点";
+        if(!occupants(NpcCity.class,world,x,x+1,y,y+1).isEmpty()||!occupants(Bandit.class,world,x,x+1,y,y+1).isEmpty())return "该范围内有日寇据点";
         if(occupants(WildTile.class,world,x,x+1,y,y+1).stream().anyMatch(w->!Objects.equals(w.getId(),consumedWild)))return "该范围内有野地，请选择空地";
         return "";
     }

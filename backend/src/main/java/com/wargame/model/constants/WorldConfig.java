@@ -1,5 +1,7 @@
 package com.wargame.model.constants;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -13,13 +15,17 @@ public final class WorldConfig {
     public static final int SIZE = 200;
     public static final int VIEW_RADIUS = 3;
     public static final int MARCH_SEC_PER_GRID = 9;
+        public static final int MAX_NPC_LEVEL = 30;
 
     public static final List<String> BANDIT_NAMES = List.of(
-            "流寇营地", "残兵游勇", "马匪哨所", "叛军据点",
-            "山贼窝点", "溃兵残部", "武装走私队", "雇佣兵营"
+            "日寇前哨", "日寇营地", "日寇炮楼", "日寇据点",
+            "日寇补给站", "日寇哨所", "日寇机场", "日寇舰队基地"
     );
 
-    public static final List<BanditLevel> BANDIT_LEVELS = List.of(
+        public static final List<BanditLevel> BANDIT_LEVELS = createBanditLevels();
+
+        private static List<BanditLevel> createBanditLevels() {
+                List<BanditLevel> levels = new ArrayList<>(List.of(
             new BanditLevel(1,
                     Map.of("infantry", 20),
                     Map.of("food", 80, "steel", 120, "oil", 60, "rare", 10, "gold", 15, "exp", 15)),
@@ -44,7 +50,30 @@ public final class WorldConfig {
             new BanditLevel(8,
                     Map.of("battleship", 4, "carrier", 1, "fighter", 20),
                     Map.of("food", 800, "steel", 1200, "oil", 760, "rare", 180, "gold", 220, "exp", 250))
-    );
+        ));
+
+        for (int level = 9; level <= MAX_NPC_LEVEL; level++) {
+            Map<String, Integer> army = new LinkedHashMap<>();
+            army.put("htank", level * 2);
+            army.put("rocket", level);
+            if (level >= 12) army.put("assault", level / 2);
+            if (level >= 15) army.put("fighter", level);
+            if (level >= 18) army.put("bomber", level / 2);
+            if (level >= 21) army.put("sub", level / 3);
+            if (level >= 24) army.put("battleship", level / 4);
+            if (level >= 27) army.put("carrier", Math.max(1, level / 10));
+
+            levels.add(new BanditLevel(level, army, Map.of(
+                    "food", level * 120,
+                    "steel", level * 180,
+                    "oil", level * 100,
+                    "rare", level * 30,
+                    "gold", level * 40,
+                    "exp", level * 60
+            )));
+        }
+        return List.copyOf(levels);
+    }
 
     public static final List<String> NPC_CITY_NAMES = List.of(
             "汉堡", "华沙", "维也纳", "布鲁塞尔", "阿姆斯特丹", "斯德哥尔摩", "奥斯陆", "哥本哈根",

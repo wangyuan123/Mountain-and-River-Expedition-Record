@@ -789,50 +789,13 @@ public class GameStateService {
             banditRepository.save(bandit);
         }
 
-        // Generate 12 NPC cities
-        for (int n = 0; n < 12; n++) {
-            int[] coord = freeCoord(used);
-            int nLv = rand(3, 8);
-            // Generate army
-            List<String> npool = List.of("infantry", "motor", "armored", "ltank", "htank", "assault");
-            int nk = Math.min(npool.size(), 1 + nLv / 2);
-            List<String> nshuffled = new ArrayList<>(npool);
-            Collections.shuffle(nshuffled);
-            Map<String, Integer> nArmy = new LinkedHashMap<>();
-            for (int j = 0; j < nk; j++) {
-                nArmy.put(nshuffled.get(j), rand(nLv * 10, nLv * 20));
-            }
-            // Generate forts
-            Map<String, Integer> nForts = genNpcForts(nLv);
-            // Generate reward
-            Map<String, Integer> nReward = new LinkedHashMap<>();
-            nReward.put("food", nLv * 80);
-            nReward.put("steel", nLv * 120);
-            nReward.put("oil", nLv * 70);
-            nReward.put("rare", nLv * 20);
-            nReward.put("gold", nLv * 30);
-            nReward.put("exp", nLv * 30);
-
-            NpcCity npcCity = new NpcCity();
-            npcCity.setWorldId(worldId);
-            npcCity.setName(WorldConfig.NPC_CITY_NAMES.get(n));
-            npcCity.setLevel(nLv);
-            npcCity.setX(coord[0]);
-            npcCity.setY(coord[1]);
-            npcCity.setArmy(JsonUtil.toJson(nArmy));
-            npcCity.setForts(JsonUtil.toJson(nForts));
-            npcCity.setResources(JsonUtil.toJson(nReward));
-            npcCity.setDefeated(false);
-            npcCityRepository.save(npcCity);
-        }
-
         // Generate 40 wild tiles
         List<String> wildTypes = new ArrayList<>(WildTypeDef.WILD_TYPES.keySet());
         List<String> wDefUnits = List.of("infantry", "motor", "armored", "ltank");
 
         for (int w = 0; w < 40; w++) {
             int[] coord = freeCoord(used);
-            int wLv = rand(1, 6);
+            int wLv = rand(1, WorldConfig.MAX_NPC_LEVEL);
             String wType = wildTypes.get(rand(0, wildTypes.size() - 1));
             Map<String, Integer> wGarrison = new LinkedHashMap<>();
             wGarrison.put(wDefUnits.get(rand(0, wDefUnits.size() - 1)), 5 * wLv);
