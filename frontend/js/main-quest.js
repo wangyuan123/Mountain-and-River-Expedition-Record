@@ -230,13 +230,15 @@
         : ('→ ' + getRouteLabel(g.nextRoute));
       if (blocking) {
         goBtn =
-          '<button class="btn sm ok" id="guideGo" style="flex:1">' +
+          '<button class="btn sm' + (prog.complete ? ' lock' : ' ok') + '" id="guideGo" style="flex:1"' +
+            (prog.complete ? ' disabled title="目标已完成，请点击下一步"' : '') + '>' +
             targetLabel +
           '</button>';
       } else {
         // 放行态下, 玩家已经在该区域, 给一个"滚到目标"的小按钮
         goBtn =
-          '<button class="btn sm" id="guideGoHome" style="flex:0 0 auto;font-size:11px;padding:4px 8px">' +
+          '<button class="btn sm' + (prog.complete ? ' lock' : '') + '" id="guideGoHome" style="flex:0 0 auto;font-size:11px;padding:4px 8px"' +
+            (prog.complete ? ' disabled title="目标已完成，请点击下一步"' : '') + '>' +
             (target.buildingName
               ? ('→ ' + (target.verb || '前往') + ' ' + target.buildingName)
               : ('← 返回 ' + getRouteLabel(g.nextRoute))) +

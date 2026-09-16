@@ -57,9 +57,9 @@ public final class QuestCatalog {
     );
 
     public static final List<GuideStep> NEWBIE_STEPS = List.of(
-        g("g_welcome", "欢迎来到烽原战策", "我是您的作战参谋。完成训练营后，您将拥有一座能生产、能防守的主城。", null, 0, "开始新手训练营", "NONE", null, 0, null, new Reward(0,0,0,0,0,0,null,null,null,0)),
+        g("g_welcome", "欢迎来到山河远征录", "我是您的作战参谋。完成训练营后，您将拥有一座能生产、能防守的主城。", null, 0, "开始新手训练营", "NONE", null, 0, null, new Reward(0,0,0,0,0,0,null,null,null,0)),
         g("g_upgrade_command", "第一步 · 升级市政厅", "升级市政厅到 2 级，解锁更高等级的建设。", "buildArmy", 1, "市政厅等级 ≥ 2", "BUILD_LEVEL", "command", 2, "command", r(2000,1500,0,0,100)),
-        g("g_build_house", "第二步 · 建造民居", "把民居升到 2 级，增加人口上限。", "buildRes", 2, "民居等级 ≥ 2", "BUILD_LEVEL", "house", 2, "house", r(1500,500,0,0,50)),
+        g("g_build_house", "第二步 · 建造民居", "把民居升到 2 级，增加人口上限。", "buildArmy", 2, "民居等级 ≥ 2", "BUILD_LEVEL", "house", 2, "house", r(1500,500,0,0,50)),
         g("g_build_farm", "第三步 · 建造农田", "建造并升级农田，为军队提供粮食。", "buildRes", 3, "农田等级 ≥ 2", "BUILD_LEVEL", "farm", 2, "farm", r(2000,0,0,0,50)),
         g("g_build_refinery", "第四步 · 建造炼钢厂", "钢铁是建造和训练的核心资源。", "buildRes", 4, "炼钢厂等级 ≥ 2", "BUILD_LEVEL", "refinery", 2, "refinery", r(0,2500,0,0,50)),
         g("g_build_oilfield", "第五步 · 建造石油基地", "石油支撑机动部队和高级军工生产。", "buildRes", 5, "石油基地等级 ≥ 1", "BUILD_LEVEL", "oilfield", 1, "oilfield", r(0,0,1500,0,50)),

@@ -170,7 +170,7 @@ window.Game = window.Game || {};
 
   Core.views.login = function (v) {
     var h = '';
-    h += '<div class="title">- 烽原战策 -</div>';
+    h += '<div class="title">- 山河远征录 -</div>';
     h += '<div class="desc">请登录或注册，游戏进度由服务器自动保存</div>';
     h += '<div class="panel">';
     h += '<div class="edit-row"><label>用户名</label><input id="loginUser" class="qty" style="width:100%" maxlength="32" placeholder="3-32位字符"></div>';
@@ -831,7 +831,7 @@ window.Game = window.Game || {};
 
     h += '<div class="zone-head"><span class="zone-title">关于</span></div>';
     h += '<div class="panel">';
-    h += '<div class="d">烽原战策 - 文字战争策略游戏</div>';
+    h += '<div class="d">山河远征录 - 文字战争策略游戏</div>';
     h += '<div class="d">版本: 1.0.0</div>';
     h += '</div>';
 

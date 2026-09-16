@@ -719,7 +719,7 @@ public class GameStateService {
         defaults.put("renameCard", 1);
         defaults.put("goldBox", 2);
         defaults.put("resBox", 2);
-        defaults.put("speedUp", 3);
+        defaults.put("speedUp1h", 10);
         defaults.put("shield", 1);
 
         for (Map.Entry<String, Integer> e : defaults.entrySet()) {

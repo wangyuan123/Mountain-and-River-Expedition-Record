@@ -95,6 +95,10 @@ window.Game = window.Game || {};
         Main.renderNavBar();
         Core.route = 'home';
         Core.render();
+        if (G.MainQuest) G.MainQuest.init();
+        if (Main.shouldShowTutorial(state)) {
+          setTimeout(function () { Main.showTutorial(); }, 600);
+        }
         // Connect WebSocket for real-time updates (skip guest mode - no valid JWT)
         if (G.WS && !Main.guestMode) {
           G.WS.connect();
@@ -417,7 +421,7 @@ window.Game = window.Game || {};
       modal.className = 'modal-mask';
       modal.innerHTML =
         '<div class="modal-card" style="max-width:520px">' +
-          '<div class="modal-title">欢迎来到烽原战策</div>' +
+          '<div class="modal-title">欢迎来到山河远征录</div>' +
           '<div class="modal-body" style="line-height:1.7;font-size:14px">' +
             '<p>1. <b>资源</b>([1]): 升级农场/炼油厂/钢/稀矿,提升每小时产量。</p>' +
             '<p>2. <b>军事</b>([2]): 建造兵营、兵工厂、解锁高级兵种。</p>' +
