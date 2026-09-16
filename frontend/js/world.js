@@ -1494,20 +1494,20 @@ window.Game = window.Game || {};
            '<span class="msb-sep">·</span>' +
            '<span class="msb-meta">地图 ' + W.size + '×' + W.size + '</span>' +
            '<span class="msb-sep">·</span>' +
-           '<span class="msb-meta">视野 ' + (scanR > 0 ? 'r=' + scanR : '全图') + '</span>' +
+           '<span class="msb-meta">范围：' + (scanR > 0 ? scanR + '格' : '全图') + '</span>' +
            '</div>';
 
       // 2. 工具栏：搜索 + 快捷跳转
-      // 视野选择器选项: 3 (默认迷雾) / 5 / 8 / 10 / 0 (全图) ; 当前值回显
+      // 查看范围（格数）；0 表示全图。
       var curRadius = scanR;
       var radiusOptions = [
-        { v: 3,  label: 'r=3 迷雾' },
-        { v: 5,  label: 'r=5 中等' },
-        { v: 8,  label: 'r=8 广阔' },
-        { v: 10, label: 'r=10 全屏' },
-        { v: 0,  label: '全图' }
+        { v: 3,  label: '范围：3格' },
+        { v: 5,  label: '范围：5格' },
+        { v: 8,  label: '范围：8格' },
+        { v: 10, label: '范围：10格' },
+        { v: 0,  label: '范围：全图' }
       ];
-      var radSel = '<select class="qty msb-radius" id="viewRadiusSel" onchange="Game.World.setViewRadius(this.value)" title="视野半径">' +
+      var radSel = '<select class="qty msb-radius" id="viewRadiusSel" onchange="Game.World.setViewRadius(this.value)" aria-label="地图查看范围" title="以当前视角为中心，选择查看范围">' +
                    radiusOptions.map(function (o) { return '<option value="' + o.v + '"' + (o.v === curRadius || (curRadius > 10 && o.v === 0) ? ' selected' : '') + '>' + o.label + '</option>'; }).join('') +
                    '</select>';
       h += '<div class="map-toolbar">' +

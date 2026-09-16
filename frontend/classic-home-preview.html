@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="blue-white-classic">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>经典家园 · 山河远征录主题预览</title>
+  <link rel="stylesheet" href="css/style.css?v=2.9-war-header">
+  <link rel="stylesheet" href="css/themes.css?v=2.8-classic-home">
+  <link rel="stylesheet" href="css/classic-home.css?v=1.0">
+  <style>
+    .preview-tools { max-width:480px; margin:16px auto 10px; padding:0 10px; color:#264664; font:13px/1.8 Arial,"Microsoft YaHei",sans-serif; }
+    .preview-tools strong { font-size:19px; color:#183c68; }
+    .preview-tools select { padding:5px; margin:7px 0; max-width:100%; background:white; color:#2457a5; border:1px solid #9ab9dc; }
+    .preview-tools a { color:#2457a5; }
+    #previewNotice { padding:6px; background:#e5eff7; color:#2457a5; font-size:13px; }
+  </style>
+</head>
+<body data-theme="blue-white-classic">
+  <aside class="preview-tools">
+    <strong>经典家园</strong> · 白底蓝字，旧时光里的新征程<br>
+    <label for="previewTheme">对比风格 </label><select id="previewTheme"></select><br>
+    使用示例数据 · 可浏览首页与建筑栏目 · <a href="index.html">进入游戏 &gt;&gt;</a>
+  </aside>
+  <div id="screen">
+    <div id="header"><div id="topbar"></div><div id="navbar"></div></div>
+    <div id="previewNotice" role="status">欢迎回到远征家园，今日也要守好这片山河。</div>
+    <main id="view"></main>
+    <div id="footbar"><a href="#home" onclick="Game.go('home');return false">返回首页</a> · <a href="#previewTheme">切换风格</a><br>山河远征录 · 经典家园主题预览</div>
+  </div>
+  <div id="toast"></div>
+  <script src="js/theme.js?v=1.2-classic-home"></script>
+  <script src="js/data.js"></script>
+  <script src="js/core.js"></script>
+  <script src="js/build.js"></script>
+  <script src="js/main-view.js"></script>
+  <script>
+    // 复用游戏的真实视图与样式；预览不连接服务端，也不保存主题偏好。
+    (function (G) {
+      var C = G.Core;
+      C.state = {
+        player: { name: '山河故人', cityName: '远征家园', avatar: 'img/avatars/commander-8.svg' },
+        resources: { food: 84200, steel: 65100, oil: 42000, rare: 18500, gold: 45200, diamond: 680 },
+        buildings: { command: 8, farm: [7, 6], refinery: [6], oilfield: [5], raremine: [4], house: [7], depot: 5, barracks: 5, radar: 3 },
+        army: { infantry: 320, ltank: 45, scout: 18, truck: 12 },
+        officers: [{ name: '远征先锋', star: 4, level: 15, role: 'commander', military: 92, logistics: 78, knowledge: 86, skills: [] }],
+        world: { pos: { x: 142, y: 88 }, marches: [], incoming: [] },
+        population: { civilian: 8200, capacity: 12000, growthPerHour: 360 },
+        tax: 20, morale: 92, tech: {}, items: {}, reports: [], constructions: [], mails: []
+      };
+      G.state = C.state;
+      G.WS = { statusHtml: function () { return '<span class="online-text">欢迎回到家园</span>'; } };
+      function notice() { document.getElementById('previewNotice').textContent = '这里是主题预览。完整操作请点击上方「进入游戏」。'; }
+      G.Main = { openPlayerDrawer: notice, showResourceDetail: notice, showPopulationDetail: notice, toggleEditCity: notice, sendChat: notice };
+      G.Chat = { sendFromInput: notice };
+      G.go = function (route) {
+        if (['home', 'buildRes', 'buildArmy'].indexOf(route) < 0) { notice(); return; }
+        C.route = route;
+        C.views[route](document.getElementById('view'));
+        document.getElementById('navbar').innerHTML = G.MainView.navBar();
+        // 建筑预览只允许展开详情，不执行建设或消耗资源。
+        if (route !== 'home') {
+          document.querySelectorAll('#view button').forEach(function (button) { button.onclick = notice; });
+        }
+      };
+      G.back = function () { G.go('home'); };
+      G.Build.onSlotClick = notice;
+      G.Build.openBuildPicker = notice;
+      var selector = document.getElementById('previewTheme');
+      G.Theme.THEMES.forEach(function (theme) {
+        var option = document.createElement('option'); option.value = theme.id; option.textContent = theme.name; selector.appendChild(option);
+      });
+      selector.value = 'blue-white-classic';
+      selector.onchange = function () {
+        document.documentElement.setAttribute('data-theme', selector.value);
+        document.body.setAttribute('data-theme', selector.value);
+      };
+      selector.onchange();
+      C.renderTop();
+      G.go('home');
+    })(window.Game);
+  </script>
+</body>
+</html>

@@ -1,0 +1,208 @@
+/* 经典家园：继承蓝白系列的功能组件，采用早期手机门户的文字排版。 */
+html[data-theme="blue-white-classic"],
+body[data-theme="blue-white-classic"] {
+  --surface: #fff;
+  --surface-muted: #e5eff7;
+  --ink: #151515;
+  --muted: #687580;
+  --accent: #2457a5;
+  --accent-dark: #19458d;
+  --accent-soft: #e5eff7;
+  --line: #b2cdef;
+  --danger: #c63828;
+  background: #dfeaec !important;
+  color: #151515 !important;
+  font-family: Arial, "Microsoft YaHei", "PingFang SC", sans-serif !important;
+  font-size: 15px;
+  line-height: 1.65;
+  color-scheme: light;
+}
+
+[data-theme="blue-white-classic"] #screen {
+  max-width: 560px;
+  margin: 10px auto;
+  min-height: calc(100vh - 20px);
+  border: 1px solid #d2dbdf !important;
+  box-shadow: none !important;
+  padding: 0 5px;
+}
+[data-theme="blue-white-classic"] #header { position: static; }
+[data-theme="blue-white-classic"] #topbar {
+  background: #fff !important;
+  border: 0 !important;
+  color: #151515 !important;
+  padding: 10px 5px 8px !important;
+}
+[data-theme="blue-white-classic"] .topbar-player-name {
+  color: #2457a5 !important;
+  font-size: 17px;
+  text-shadow: none;
+}
+[data-theme="blue-white-classic"] .topbar-avatar-wrap {
+  border: 2px solid #abc9ee !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+[data-theme="blue-white-classic"] .topbar-avatar { border-radius: 0; }
+[data-theme="blue-white-classic"] #topbar .topbar-online-status .online-text {
+  color: #687580 !important;
+}
+[data-theme="blue-white-classic"] #topbar .player-bar-right .diamond,
+[data-theme="blue-white-classic"] #topbar .player-bar-right .shop-btn {
+  background: #edf4fb !important;
+  color: #2457a5 !important;
+  border: 1px solid #b2cdef !important;
+  border-radius: 2px !important;
+}
+
+/* 两行文字导航仍支持现有分页、未读标记与滑动操作。 */
+[data-theme="blue-white-classic"] #navbar {
+  background: linear-gradient(#86b8ef 0%, #4382cb 22%, #3476c1 78%, #71a5e0 100%) !important;
+  border-top: 1px solid #b3d5ff !important;
+  border-bottom: 2px solid #9ec3ef !important;
+  padding: 1px 2px !important;
+}
+[data-theme="blue-white-classic"] #navbar .nav-page {
+  grid-template-rows: repeat(2, minmax(32px, auto));
+  gap: 0;
+}
+[data-theme="blue-white-classic"] #navbar .nav-page .navitem {
+  min-height: 32px !important;
+  border-radius: 0 !important;
+  padding: 3px 1px !important;
+}
+[data-theme="blue-white-classic"] #navbar .navlabel {
+  font-size: 15px !important;
+  line-height: 1.4 !important;
+  letter-spacing: 0 !important;
+}
+[data-theme="blue-white-classic"] #navbar .navitem.active {
+  background: rgba(255,255,255,.18) !important;
+  box-shadow: none !important;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+[data-theme="blue-white-classic"] #view { padding: 0 0 14px !important; }
+[data-theme="blue-white-classic"] .city-head {
+  background: #e5eff7 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 9px 6px !important;
+  margin: 0 0 8px !important;
+}
+[data-theme="blue-white-classic"] .city-cell,
+[data-theme="blue-white-classic"] .city-cell b { font-size: 14px !important; }
+
+/* 用标题下方的浅蓝横线区分栏目，减少色块与卡片边框。 */
+[data-theme="blue-white-classic"] #view .zone-head,
+[data-theme="blue-white-classic"] #view .title {
+  background: #fff !important;
+  border: 0 !important;
+  border-bottom: 4px solid #acc9ed !important;
+  border-radius: 0 !important;
+  color: #1f5095 !important;
+  padding: 3px 5px 1px !important;
+  margin: 13px 0 4px !important;
+  font-size: 17px !important;
+  text-align: left !important;
+  line-height: 1.5 !important;
+  letter-spacing: 0 !important;
+  text-shadow: none !important;
+  flex-wrap: wrap;
+}
+[data-theme="blue-white-classic"] #view .zone-head::before,
+[data-theme="blue-white-classic"] #view .zone-head::after,
+[data-theme="blue-white-classic"] #view .zone-title::before,
+[data-theme="blue-white-classic"] #view .zone-title::after { content: none !important; display: none !important; }
+[data-theme="blue-white-classic"] .zone-title { font-size: 17px !important; color: #1f5095 !important; }
+[data-theme="blue-white-classic"] .zone-sub { font-size: 12px !important; color: #687580 !important; }
+
+[data-theme="blue-white-classic"] .home-officer-card,
+[data-theme="blue-white-classic"] .home-officer-item,
+[data-theme="blue-white-classic"] .army-summary,
+[data-theme="blue-white-classic"] .army-summary-item,
+[data-theme="blue-white-classic"] .army-summary-foot,
+[data-theme="blue-white-classic"] .home-officer-foot,
+[data-theme="blue-white-classic"] .menu-item,
+[data-theme="blue-white-classic"] .bcard,
+[data-theme="blue-white-classic"] .chat-terminal {
+  background: #fff !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+[data-theme="blue-white-classic"] .home-officer-card { padding: 2px 5px !important; }
+[data-theme="blue-white-classic"] .home-officer-item { padding: 7px 0 !important; border-bottom: 1px dotted #cbd7e3 !important; }
+[data-theme="blue-white-classic"] .home-officer-name { font-size: 16px !important; }
+[data-theme="blue-white-classic"] .home-officer-go,
+[data-theme="blue-white-classic"] .army-go { color: #2457a5 !important; }
+[data-theme="blue-white-classic"] .army-summary { gap: 0 !important; padding: 3px 5px !important; }
+[data-theme="blue-white-classic"] .army-summary-item { padding: 6px 3px !important; }
+[data-theme="blue-white-classic"] .army-summary-name { color: #2457a5 !important; font-size: 14px !important; }
+[data-theme="blue-white-classic"] .army-summary-foot { padding: 5px !important; }
+
+[data-theme="blue-white-classic"] .res-grid { display: block !important; }
+[data-theme="blue-white-classic"] .res-card {
+  background: #fff !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 5px !important;
+}
+[data-theme="blue-white-classic"] .res-summary { gap: 7px !important; justify-content: flex-start; flex-wrap: wrap; }
+[data-theme="blue-white-classic"] .res-name,
+[data-theme="blue-white-classic"] .res-main,
+[data-theme="blue-white-classic"] .res-cur { font-size: 15px !important; }
+[data-theme="blue-white-classic"] .res-cur { color: #2457a5 !important; font-weight: 400 !important; }
+[data-theme="blue-white-classic"] .res-rate { font-size: 12px !important; margin-left: auto; }
+[data-theme="blue-white-classic"] .menu-item {
+  padding: 8px 5px !important;
+  margin: 0 !important;
+  border-bottom: 1px dotted #cbd7e3 !important;
+  font-size: 14px;
+}
+[data-theme="blue-white-classic"] .menu-item.lock { background: #f4f6f8 !important; }
+[data-theme="blue-white-classic"] .bcard { border-bottom: 1px solid #cbd7e3 !important; }
+[data-theme="blue-white-classic"] .bcard-head { background: #fff !important; padding: 9px 5px !important; }
+[data-theme="blue-white-classic"] .bcard-icon { border-radius: 0 !important; }
+[data-theme="blue-white-classic"] .bcard-expand { background: #edf4fb !important; }
+[data-theme="blue-white-classic"] .slot-card {
+  background: #fff !important;
+  border: 1px solid #c4d7ec !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+[data-theme="blue-white-classic"] .slot-card-empty { background: #f1f6fb !important; border-style: dotted !important; }
+[data-theme="blue-white-classic"] .slot-card-name,
+[data-theme="blue-white-classic"] .slot-card-empty-btn,
+[data-theme="blue-white-classic"] .slot-card-lv { color: #2457a5 !important; }
+[data-theme="blue-white-classic"] .slot-card-tag,
+[data-theme="blue-white-classic"] .slot-card-empty-label { color: #687580 !important; }
+[data-theme="blue-white-classic"] .slot-card.in-job { border: 2px solid #6b91c2 !important; }
+[data-theme="blue-white-classic"] .panel { background: #eef4fa !important; border-radius: 0 !important; }
+[data-theme="blue-white-classic"] .btn,
+[data-theme="blue-white-classic"] .qty,
+[data-theme="blue-white-classic"] .page-back-button { border-radius: 2px !important; }
+[data-theme="blue-white-classic"] .home-alert { border-radius: 0 !important; box-shadow: none !important; }
+[data-theme="blue-white-classic"] .chat-term-header { display: none !important; }
+[data-theme="blue-white-classic"] .chat-box { background: #fff !important; padding: 4px 5px !important; }
+[data-theme="blue-white-classic"] .chat-msg { font-size: 14px !important; }
+[data-theme="blue-white-classic"] .chat-input-bar { background: #e5eff7 !important; border-radius: 0 !important; }
+[data-theme="blue-white-classic"] #footbar {
+  background: #fff !important;
+  border-top: 4px solid #acc9ed !important;
+  color: #687580 !important;
+  padding: 8px 4px !important;
+  line-height: 1.9;
+}
+[data-theme="blue-white-classic"] a { color: #2457a5; }
+[data-theme="blue-white-classic"] a:hover { text-decoration: underline; }
+[data-theme="blue-white-classic"] .res-card:hover,
+[data-theme="blue-white-classic"] .menu-item:not(.lock):hover,
+[data-theme="blue-white-classic"] .bcard-head:hover { background: #edf4fb !important; }
+[data-theme="blue-white-classic"] :focus-visible { outline: 2px solid #2457a5; outline-offset: 2px; }
+
+@media (max-width: 480px) {
+  [data-theme="blue-white-classic"] #screen { margin: 0 auto; min-height: 100vh; }
+}

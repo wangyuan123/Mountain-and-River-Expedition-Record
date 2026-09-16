@@ -14,6 +14,12 @@ window.Game = window.Game || {};
       desc: '天蓝导航、白底文字与紧凑信息排布，便于查看资源和军情'
     },
     {
+      id: 'blue-white-classic',
+      name: '经典家园',
+      tag: '怀旧文字风',
+      desc: '白底蓝字、渐变导航与浅蓝分隔线，重温早期手机家园的简洁排版'
+    },
+    {
       id: 'paper',
       name: '战术公文沙盘风',
       tag: '护眼米白',
