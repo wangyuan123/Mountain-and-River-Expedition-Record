@@ -49,4 +49,19 @@ public class WildTile extends VersionedEntity {
 
     @Column(name = "mined")
     private Integer mined;
+
+    @Column(name = "gathering")
+    private Boolean gathering;
+
+    @Column(name = "gather_start_at")
+    private Long gatherStartAt;
+
+    @Column(name = "gather_end_at")
+    private Long gatherEndAt;
+
+    @Column(name = "gather_load")
+    private Integer gatherLoad;
+
+    @Column(name = "gather_res", length = 50)
+    private String gatherRes;
 }

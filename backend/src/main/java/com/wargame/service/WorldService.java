@@ -607,14 +607,6 @@ public class WorldService {
     public Map<String, Object> scout(Long playerId, int targetIdx, String targetKind) {
         Map<String, Object> result = new LinkedHashMap<>();
 
-        // JS: var radarLv = s.buildings.radar || 0; if (radarLv <= 0)
-        int radarLv = buildingLevel(playerId, "radar");
-        if (radarLv <= 0) {
-            result.put("success", false);
-            result.put("message", "需建造雷达站才能侦察");
-            return result;
-        }
-
         Player player = playerRepository.findById(playerId).orElse(null);
         if (player == null) {
             result.put("success", false);
@@ -720,7 +712,8 @@ public class WorldService {
         int py = cityScope.economy(playerId).getCityPosY();
         int marchDist = manhattanDist(px, py, targetX, targetY);
         UnitDef scoutDef = GameData.UNITS.get("scout");
-        int spd = scoutDef != null ? Math.max(1, scoutDef.spd()) : 1;
+        int airLv = getTechLevel(playerId, "air_engine");
+        double spd = (scoutDef != null ? Math.max(1, scoutDef.spd()) : 1) * (1.0 + 0.05 * airLv);
         int marchSec = (int) Math.ceil((double) marchDist * WorldConfig.MARCH_SEC_PER_GRID / spd);
         if (marchSec < 1) marchSec = 1;
 
@@ -824,15 +817,49 @@ public class WorldService {
             return result;
         }
 
+        // 若有驻军，自动撤回主城
+        if (wt.getGarrison() != null && !wt.getGarrison().trim().isEmpty() && !wt.getGarrison().equals("{}")) {
+            Map<String, Integer> army = com.wargame.util.JsonUtil.parseIntMap(wt.getGarrison());
+            returnArmy(playerId, army);
+        }
+
         wt.setOccupied(false);
         wt.setScouted(false);
         wt.setMined(0);
         wt.setOccupiedBy(null);
+        wt.setGarrison("{}");
+        wt.setGathering(false);
+        wt.setGatherStartAt(0L);
+        wt.setGatherEndAt(0L);
+        wt.setGatherLoad(0);
+        wt.setGatherRes(null);
         wildTileRepository.save(wt);
 
         result.put("success", true);
-        result.put("message", "已放弃该野地");
+        result.put("message", "已放弃该领地，驻扎部队已自动撤回主城");
         return result;
+    }
+
+    private void returnArmy(Long playerId, Map<String, Integer> army) {
+        if (army == null || army.isEmpty()) return;
+        for (Map.Entry<String, Integer> entry : army.entrySet()) {
+            String type = entry.getKey();
+            int count = entry.getValue();
+            if (count <= 0) continue;
+            List<ArmyUnit> existing = armyUnitRepository.findByPlayerIdAndCitySlotAndType(playerId, cityScope.slot(playerId), type);
+            if (existing.isEmpty()) {
+                ArmyUnit unit = new ArmyUnit();
+                unit.setPlayerId(playerId);
+                unit.setCitySlot(cityScope.slot(playerId));
+                unit.setType(type);
+                unit.setCount(count);
+                armyUnitRepository.save(unit);
+            } else {
+                ArmyUnit unit = existing.get(0);
+                unit.setCount((unit.getCount() != null ? unit.getCount() : 0) + count);
+                armyUnitRepository.save(unit);
+            }
+        }
     }
 
     // ================================================================

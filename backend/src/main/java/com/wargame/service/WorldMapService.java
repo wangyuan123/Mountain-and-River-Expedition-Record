@@ -33,9 +33,13 @@ public class WorldMapService {
         int maxY = Math.min(y + CHUNK_SIZE - 1, WorldConfig.SIZE - 1);
         if (world != null) {
             List<PlayerCity> cityList = cities.findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(world, x, maxX, y, maxY);
+            List<WildTile> wildList = wilds.findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(world, x, maxX, y, maxY);
             Map<Long, Player> owners = new HashMap<>();
             Set<Long> ids = new HashSet<>();
             cityList.forEach(c -> { if (c.getOwnerId() != null) ids.add(c.getOwnerId()); });
+            wildList.forEach(w -> {
+                if (Boolean.TRUE.equals(w.getOccupied()) && w.getOccupiedBy() != null) ids.add(w.getOccupiedBy());
+            });
             if (!ids.isEmpty()) players.findAllById(ids).forEach(p -> owners.put(p.getId(), p));
             cityList.forEach(c -> targets.add(city(viewer, c, owners.get(c.getOwnerId()))));
             npcs.findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(world, x, maxX, y, maxY).forEach(n -> {
@@ -46,8 +50,7 @@ public class WorldMapService {
                 Map<String, Object> t = base("bandit", b.getId(), b.getX(), b.getY(), b.getName(), b.getLevel());
                 t.put("defeated", Boolean.TRUE.equals(b.getDefeated())); targets.add(t);
             });
-            wilds.findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(world, x, maxX, y, maxY)
-                    .forEach(w -> targets.add(wild(viewer, w)));
+            wildList.forEach(w -> targets.add(wild(viewer, w, owners.get(w.getOccupiedBy()))));
         }
         return Map.of("cx", cx, "cy", cy, "size", CHUNK_SIZE, "worldSize", WorldConfig.SIZE,
                 "targets", targets, "updatedAt", System.currentTimeMillis());
@@ -76,13 +79,20 @@ public class WorldMapService {
             }
             case "wild" -> {
                 WildTile w = wilds.findById(id).filter(v -> world.equals(v.getWorldId())).orElseThrow(this::missing);
-                Map<String, Object> t = wild(viewer, w);
+                Player owner = Boolean.TRUE.equals(w.getOccupied()) && w.getOccupiedBy() != null
+                        ? players.findById(w.getOccupiedBy()).orElse(null) : null;
+                Map<String, Object> t = wild(viewer, w, owner);
                 // Only the owner receives live stock/defence. Other players use their scout reports.
                 if (Boolean.TRUE.equals(t.get("occupied"))) {
                     t.put("totalRes", w.getTotalRes() == null ? 0 : w.getTotalRes());
                     t.put("mined", w.getMined() == null ? 0 : w.getMined());
                     t.put("garrison", JsonUtil.parseObjMap(w.getGarrison()));
                     t.put("scouted", true);
+                    t.put("gathering", Boolean.TRUE.equals(w.getGathering()));
+                    t.put("gatherStartAt", w.getGatherStartAt() == null ? 0L : w.getGatherStartAt());
+                    t.put("gatherEndAt", w.getGatherEndAt() == null ? 0L : w.getGatherEndAt());
+                    t.put("gatherLoad", w.getGatherLoad() == null ? 0 : w.getGatherLoad());
+                    t.put("gatherRes", w.getGatherRes());
                 }
                 return t;
             }
@@ -111,11 +121,15 @@ public class WorldMapService {
         return t;
     }
 
-    private Map<String, Object> wild(Long viewer, WildTile w) {
+    private Map<String, Object> wild(Long viewer, WildTile w, Player owner) {
         Map<String, Object> t = base("wild", w.getId(), w.getX(), w.getY(), w.getType(), w.getLevel());
         t.put("type", w.getType());
         t.put("occupied", Boolean.TRUE.equals(w.getOccupied()) && viewer.equals(w.getOccupiedBy()));
         t.put("claimed", Boolean.TRUE.equals(w.getOccupied()));
+        if (Boolean.TRUE.equals(w.getOccupied()) && w.getOccupiedBy() != null) {
+            t.put("ownerId", w.getOccupiedBy());
+            if (owner != null) t.put("ownerName", owner.getUsername());
+        }
         return t;
     }
     private Map<String, Object> base(String kind, Long id, int x, int y, String name, Integer level) {

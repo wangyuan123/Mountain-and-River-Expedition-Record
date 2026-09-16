@@ -6,7 +6,7 @@ function fixture(){
  }}};c.window=c;vm.createContext(c);
  for(const file of ['map-camera.js','map-layout.js','world-map.js']){
   let source=fs.readFileSync(path.join(__dirname,'../js',file),'utf8');
-  source=source.replace('  G.WorldMap={','  G.TestMapView=MapView; G.TestMapIcon=icon;\n  G.WorldMap={');vm.runInContext(source,c);
+  source=source.replace('  G.WorldMap={','  G.TestMapView=MapView; G.TestMapIcon=icon; G.TestOwnershipCaption=ownershipCaption; G.TestDrawOwnership=drawOwnership;\n  G.WorldMap={');vm.runInContext(source,c);
  }
  const v=Object.create(c.Game.TestMapView.prototype);v.camera=new c.Game.MapCamera(200,100.5,100.5,48);v.camera.width=390;v.camera.height=550;
  v.markerLayer={children:[]};v.visible=[];v.loadDetail=t=>{v.result={target:t};};v.loadSite=(x,y)=>{v.result={site:[x,y]};};
@@ -57,4 +57,34 @@ test('selection outline is limited to empty land and non-resource wild terrain',
  for(const target of [null,{kind:'npc'}, {kind:'player'}, {kind:'wild',type:'oil'}, {kind:'wild',type:'grainfield'}, {kind:'wild',type:'unknown'}]){
   v.selected=target;assert.equal(v.showSelectionOutline(),false);
  }
+});
+
+test('map labels distinguish own, other and unclaimed territory without treating claimed as mine',()=>{
+ const {c}=fixture();c.Game.DATA={wildTypes:{oil:{name:'油田',res:'oil'},forest:{res:null}}};
+ const caption=c.Game.TestOwnershipCaption;
+ assert.equal(caption({kind:'player',selfCity:true}),'我的城市');
+ assert.equal(caption({kind:'player',selfCity:false,ownerName:'远山'}),'远山');
+ const wild={kind:'wild',type:'oil',level:1};
+ assert.equal(caption({...wild,occupied:true,claimed:true}),'我的 · 1级');
+ assert.equal(caption({...wild,occupied:false,claimed:true,ownerName:'远山'}),'远山 · 1级');
+ assert.equal(caption({...wild,occupied:false,claimed:false}),'油田 · 1级');
+ assert.equal(caption({kind:'npc'}),'');
+ assert.equal(caption({kind:'wild',type:'forest'}),'');
+ assert.equal(caption({kind:'wild',type:'forest',occupied:true,level:3}),'我的 · 3级');
+});
+
+test('reused badges update on capture and release, and clicking a badge opens its target',()=>{
+ const {v,c,marker}=fixture();c.Game.DATA={wildTypes:{oil:{name:'油田',res:'oil'},forest:{res:null}}};
+ const target={kind:'wild',type:'oil',id:1,x:100,y:100,level:1,ownerName:'远山'};
+ const m=marker(target,Array(16).fill(0));
+ const g={};for(const key of ['clear','lineStyle','beginFill','drawRoundedRect','endFill','drawPolygon','moveTo','lineTo'])g[key]=()=>g;
+ m.ownershipPlate=g;m.ownershipText={text:'',width:50,style:{},position:{set(){}}};
+ v.captionLayer={children:[{mapMarker:m}]};
+ for(const [occupied,claimed,expected] of [[false,false,'油田 · 1级'],[true,true,'我的 · 1级'],[false,true,'远山 · 1级'],[false,false,'油田 · 1级']]){
+  Object.assign(target,{occupied,claimed});c.Game.TestDrawOwnership(m,target,-90);
+  assert.equal(m.ownershipText.text,expected);assert.equal(g.visible,true);
+  v.pick({x:m.x,y:m.y-80});assert.equal(v.result.target,target);
+ }
+ target.type='forest';c.Game.TestDrawOwnership(m,target,-90);
+ assert.equal(g.visible,false);assert.equal(m.ownershipHit,null);
 });

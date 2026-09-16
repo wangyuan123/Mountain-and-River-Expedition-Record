@@ -201,9 +201,17 @@ public class WorldViewService {
                 wtMap.put("level", wt.getLevel());
                 wtMap.put("garrison", JsonUtil.parseObjMap(wt.getGarrison()));
                 wtMap.put("scouted", wt.getScouted() != null && wt.getScouted());
-                wtMap.put("occupied", Boolean.TRUE.equals(wt.getOccupied()) && player.getId().equals(wt.getOccupiedBy()));
+                boolean isOwner = Boolean.TRUE.equals(wt.getOccupied()) && player.getId().equals(wt.getOccupiedBy());
+                wtMap.put("occupied", isOwner);
                 wtMap.put("totalRes", wt.getTotalRes() != null ? wt.getTotalRes() : 0);
                 wtMap.put("mined", wt.getMined() != null ? wt.getMined() : 0);
+                if (isOwner) {
+                    wtMap.put("gathering", Boolean.TRUE.equals(wt.getGathering()));
+                    wtMap.put("gatherStartAt", wt.getGatherStartAt() != null ? wt.getGatherStartAt() : 0L);
+                    wtMap.put("gatherEndAt", wt.getGatherEndAt() != null ? wt.getGatherEndAt() : 0L);
+                    wtMap.put("gatherLoad", wt.getGatherLoad() != null ? wt.getGatherLoad() : 0);
+                    wtMap.put("gatherRes", wt.getGatherRes());
+                }
                 wildTiles.add(wtMap);
             }
         }

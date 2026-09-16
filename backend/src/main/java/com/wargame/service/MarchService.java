@@ -235,8 +235,34 @@ public class MarchService {
                 continue;
             }
 
-            // 3c. 征服/掠夺野地 (排除侦查任务)
-            if ("wild".equals(targetKind) && !returning && !"scout".equals(m.getAction())) {
+            // 3b-2. 派遣部队进驻已占领野地
+            if ("wild".equals(targetKind) && !returning && "station".equals(m.getAction())) {
+                WildTile sTile = targets.findWildTileById(m.getTargetId());
+                if (sTile == null || !Boolean.TRUE.equals(sTile.getOccupied()) || !playerId.equals(sTile.getOccupiedBy())) {
+                    startReturnMarch(m, now);
+                    marchRepository.save(m);
+                    continue;
+                }
+                Map<String, Integer> curGarrison = new LinkedHashMap<>(JsonUtil.parseIntMap(sTile.getGarrison()));
+                Map<String, Integer> incomingArmy = JsonUtil.parseIntMap(m.getArmy());
+                incomingArmy.forEach((u, count) -> curGarrison.merge(u, count, Integer::sum));
+                sTile.setGarrison(JsonUtil.toJson(curGarrison));
+                wildTileRepository.save(sTile);
+
+                if (m.getCommanderId() != null) {
+                    Officer officer = targets.getOfficerById(playerId, m.getCommanderId());
+                    if (officer != null) {
+                        officer.setRole("idle");
+                        officerRepository.save(officer);
+                    }
+                }
+                marchRepository.delete(m);
+                pushService.pushMarchUpdate(playerId, marchEvent("stationed", m, Collections.emptyMap()));
+                continue;
+            }
+
+            // 3c. 征服/掠夺野地 (排除侦查与进驻任务)
+            if ("wild".equals(targetKind) && !returning && !"scout".equals(m.getAction()) && !"station".equals(m.getAction())) {
                 WildTile cTile = targets.findWildTileById(m.getTargetId());
                 if (cTile == null || Boolean.TRUE.equals(cTile.getOccupied())) {
                     marchRepository.delete(m);
@@ -405,8 +431,173 @@ public class MarchService {
     }
 
     // ========================================================================
+    // 野地驻军与就地采集/收获/撤回
+    // ========================================================================
+
+    @Transactional
+    public Map<String, Object> startWildGather(Long playerId, Long wildTileId) {
+        WildTile wt = wildTileRepository.findById(wildTileId)
+                .orElseThrow(() -> new IllegalArgumentException("野地不存在"));
+        if (!Boolean.TRUE.equals(wt.getOccupied()) || !playerId.equals(wt.getOccupiedBy())) {
+            throw new IllegalArgumentException("只能在自己占领的野地上开启采集");
+        }
+        if (Boolean.TRUE.equals(wt.getGathering())) {
+            throw new IllegalArgumentException("该野地已在采集中");
+        }
+        Map<String, Integer> garrison = JsonUtil.parseIntMap(wt.getGarrison());
+        if (garrison.isEmpty()) {
+            throw new IllegalArgumentException("野地暂无驻军，请先派遣部队进驻");
+        }
+        WildTypeDef wtDef = WildTypeDef.WILD_TYPES.get(wt.getType());
+        if (wtDef == null || wtDef.res() == null) {
+            throw new IllegalArgumentException("该野地无资源可采集");
+        }
+        int totalRes = wt.getTotalRes() != null ? wt.getTotalRes() : 0;
+        int mined = wt.getMined() != null ? wt.getMined() : 0;
+        int remaining = totalRes - mined;
+        if (remaining <= 0) {
+            throw new IllegalArgumentException("该野地资源已耗尽");
+        }
+        int load = calcArmyLoad(garrison);
+        if (load <= 0) {
+            throw new IllegalArgumentException("当前驻军无运载能力，无法采集");
+        }
+        int gatherAmount = Math.min(remaining, load);
+        long now = System.currentTimeMillis();
+        long gatherDuration = (long) Math.max(30L, Math.ceil(gatherAmount / 10.0)) * 1000L;
+
+        wt.setGathering(true);
+        wt.setGatherStartAt(now);
+        wt.setGatherEndAt(now + gatherDuration);
+        wt.setGatherLoad(gatherAmount);
+        wt.setGatherRes(wtDef.res());
+        wildTileRepository.save(wt);
+
+        Map<String, Object> res = new LinkedHashMap<>();
+        res.put("success", true);
+        res.put("message", "野地驻军已开始采集资源");
+        res.put("gatherAmount", gatherAmount);
+        res.put("gatherRes", wtDef.res());
+        res.put("gatherEndAt", wt.getGatherEndAt());
+        return res;
+    }
+
+    @Transactional
+    public Map<String, Object> harvestWild(Long playerId, Long wildTileId) {
+        WildTile wt = wildTileRepository.findById(wildTileId)
+                .orElseThrow(() -> new IllegalArgumentException("野地不存在"));
+        if (!Boolean.TRUE.equals(wt.getOccupied()) || !playerId.equals(wt.getOccupiedBy())) {
+            throw new IllegalArgumentException("该野地未被你占领");
+        }
+        if (!Boolean.TRUE.equals(wt.getGathering())) {
+            throw new IllegalArgumentException("该野地当前并未在采集中");
+        }
+        long now = System.currentTimeMillis();
+        long startAt = wt.getGatherStartAt() != null ? wt.getGatherStartAt() : now;
+        long endAt = wt.getGatherEndAt() != null ? wt.getGatherEndAt() : now;
+        int maxLoad = wt.getGatherLoad() != null ? wt.getGatherLoad() : 0;
+        String resKey = wt.getGatherRes();
+
+        int harvestAmount;
+        if (now >= endAt || endAt <= startAt) {
+            harvestAmount = maxLoad;
+        } else {
+            double ratio = (double) (now - startAt) / (endAt - startAt);
+            harvestAmount = (int) Math.floor(ratio * maxLoad);
+        }
+        int totalRes = wt.getTotalRes() != null ? wt.getTotalRes() : 0;
+        int mined = wt.getMined() != null ? wt.getMined() : 0;
+        int remaining = Math.max(0, totalRes - mined);
+        harvestAmount = Math.min(harvestAmount, remaining);
+
+        if (harvestAmount > 0 && resKey != null) {
+            addResources(playerId, Map.of(resKey, harvestAmount));
+            wt.setMined(mined + harvestAmount);
+        }
+
+        wt.setGathering(false);
+        wt.setGatherStartAt(0L);
+        wt.setGatherEndAt(0L);
+        wt.setGatherLoad(0);
+        wt.setGatherRes(null);
+        wildTileRepository.save(wt);
+
+        try { questService.onEvent(playerId, "GATHER_COMPLETE", null, 1); } catch (Exception ignored) {}
+
+        String resName = switch (resKey != null ? resKey : "") {
+            case "food" -> "粮食";
+            case "steel" -> "钢铁";
+            case "oil" -> "石油";
+            case "rare" -> "稀矿";
+            default -> "资源";
+        };
+
+        Map<String, Object> res = new LinkedHashMap<>();
+        res.put("success", true);
+        res.put("message", harvestAmount > 0 ? ("成功收获 " + harvestAmount + " " + resName + "！") : "当前尚未采集到资源，已停止采集");
+        res.put("harvestAmount", harvestAmount);
+        res.put("harvestRes", resKey);
+        return res;
+    }
+
+    @Transactional
+    public Map<String, Object> recallWild(Long playerId, Long wildTileId) {
+        WildTile wt = wildTileRepository.findById(wildTileId)
+                .orElseThrow(() -> new IllegalArgumentException("野地不存在"));
+        if (!Boolean.TRUE.equals(wt.getOccupied()) || !playerId.equals(wt.getOccupiedBy())) {
+            throw new IllegalArgumentException("该野地未被你占领");
+        }
+        Map<String, Integer> garrison = JsonUtil.parseIntMap(wt.getGarrison());
+        if (garrison.isEmpty()) {
+            throw new IllegalArgumentException("该野地暂无驻军可撤回");
+        }
+        long now = System.currentTimeMillis();
+        int harvested = 0;
+        String resKey = wt.getGatherRes();
+        if (Boolean.TRUE.equals(wt.getGathering())) {
+            long startAt = wt.getGatherStartAt() != null ? wt.getGatherStartAt() : now;
+            long endAt = wt.getGatherEndAt() != null ? wt.getGatherEndAt() : now;
+            int maxLoad = wt.getGatherLoad() != null ? wt.getGatherLoad() : 0;
+            if (now >= endAt || endAt <= startAt) harvested = maxLoad;
+            else harvested = (int) Math.floor(((double) (now - startAt) / (endAt - startAt)) * maxLoad);
+            int remaining = Math.max(0, (wt.getTotalRes() != null ? wt.getTotalRes() : 0) - (wt.getMined() != null ? wt.getMined() : 0));
+            harvested = Math.min(harvested, remaining);
+            if (harvested > 0 && resKey != null) {
+                addResources(playerId, Map.of(resKey, harvested));
+                wt.setMined((wt.getMined() != null ? wt.getMined() : 0) + harvested);
+            }
+            wt.setGathering(false);
+            wt.setGatherStartAt(0L);
+            wt.setGatherEndAt(0L);
+            wt.setGatherLoad(0);
+            wt.setGatherRes(null);
+        }
+
+        returnArmy(playerId, garrison);
+        wt.setGarrison("{}");
+        wildTileRepository.save(wt);
+
+        Map<String, Object> res = new LinkedHashMap<>();
+        res.put("success", true);
+        res.put("message", harvested > 0 ? ("已撤回驻军，同时收获了已采集的 " + harvested + " 资源") : "野地驻军已成功撤回主城");
+        return res;
+    }
+
+    // ========================================================================
     // createDispatch - 对应 JS world.js launchDispatch
     // ========================================================================
+
+    public double getUnitTechSpdMul(Long playerId, String cat) {
+        String catKey = switch (cat != null ? cat : "") {
+            case "arm" -> "arm_engine";
+            case "air" -> "air_engine";
+            case "nav" -> "nav_engine";
+            default -> null;
+        };
+        if (catKey == null) return 1.0;
+        int lv = targets.getTechLevel(playerId, catKey);
+        return 1.0 + 0.05 * lv;
+    }
 
     @Transactional
     public Map<String,Object> previewRoute(Long playerId,DispatchRequest req) {
@@ -414,19 +605,21 @@ public class MarchService {
         if(target==null)throw new IllegalArgumentException("目标不存在");
         boolean transfer="transport".equals(req.action())||"rebase".equals(req.action());
         if(transfer&&(!(target instanceof PlayerCity c)||!playerId.equals(c.getOwnerId())))throw new IllegalArgumentException("只能向自己的城市运输或调遣");
-        Map<String,Integer> army=new LinkedHashMap<>();int slowest=Integer.MAX_VALUE;
+        Map<String,Integer> army=new LinkedHashMap<>();double slowest=Double.MAX_VALUE;
         for(var e:(req.army()==null?Map.<String,Integer>of():req.army()).entrySet()){
             var u=GameData.UNITS.get(e.getKey());if(u==null||e.getValue()==null||e.getValue()<=0)continue;
             if("scout".equals(req.action())&&!"scout".equals(e.getKey()))continue;
             int have=armyUnitRepository.findByPlayerIdAndCitySlotAndType(playerId,cityScope.slot(playerId),e.getKey()).stream().mapToInt(v->Objects.requireNonNullElse(v.getCount(),0)).sum();
             int count=Math.min(e.getValue(),have);if(count<=0)continue;
-            army.put(e.getKey(),count);slowest=Math.min(slowest,u.spd());
+            army.put(e.getKey(),count);
+            double effectiveSpd = u.spd() * getUnitTechSpdMul(playerId, u.cat());
+            slowest=Math.min(slowest,effectiveSpd);
         }
         if(army.isEmpty())throw new IllegalArgumentException("请选择出征部队以计算路线");
         var route=routes.plan(playerId,target,army,transfer);
         var cs=cityStateRepository.findByPlayerIdAndCitySlot(playerId,cityScope.slot(playerId)).orElse(null);
         double boost=cs!=null&&cs.getMarchBoostUntil()!=null&&cs.getMarchBoostUntil()>System.currentTimeMillis()?1.5:1;
-        int seconds=Math.max(1,(int)Math.ceil((double)route.distance()*WorldConfig.MARCH_SEC_PER_GRID/(Math.max(1,slowest)*boost)));
+        int seconds=Math.max(1,(int)Math.ceil((double)route.distance()*WorldConfig.MARCH_SEC_PER_GRID/(Math.max(0.1,slowest)*boost)));
         return Map.of("mode",route.mode(),"points",route.points(),"distance",route.distance(),"seconds",seconds,"reservedLoad",route.reservedLoad(),"cargoLimit",Math.min(calcArmyLoad(army),route.cargoLimit()));
     }
 
@@ -439,19 +632,17 @@ public class MarchService {
         String action = req.action() != null ? req.action() : "conquer";
         boolean isGather = "wild_gather".equals(kind);
         boolean isScout = "scout".equals(action);
+        boolean isStation = "station".equals(action);
         boolean transfer = "transport".equals(action) || "rebase".equals(action);
-        if (!Set.of("conquer", "plunder", "scout", "gather", "transport", "rebase").contains(action)) throw new IllegalArgumentException("无效行军类型");
+        if (!Set.of("conquer", "plunder", "scout", "gather", "transport", "rebase", "station").contains(action)) throw new IllegalArgumentException("无效行军类型");
 
         // 1. 查找目标
         Object target = targets.findTargetByLongId(kind, req.targetId());
         if (target == null) throw new IllegalArgumentException("目标不存在");
-        if (isScout && target instanceof WildTile && targets.buildingLevel(playerId, "radar") <= 0) {
-            throw new IllegalArgumentException("需建造雷达站才能侦察");
-        }
         if ("player".equals(kind) && target instanceof PlayerCity pc && !targets.hasRealOwner(pc)) {
             throw new IllegalArgumentException("该城市为模拟 NPC，请使用 simulated_npc 目标类型");
         }
-        if (!isGather && targets.isDefeated(target)) throw new IllegalArgumentException("目标已被击败");
+        if (!isGather && !isStation && targets.isDefeated(target)) throw new IllegalArgumentException("目标已被击败");
 
         if (transfer) {
             if (!(target instanceof PlayerCity pc) || !playerId.equals(pc.getOwnerId())) throw new IllegalArgumentException("只能向自己的城市运输或调遣");
@@ -474,7 +665,7 @@ public class MarchService {
         // 2. 验证并配置兵力
         Map<String, Integer> reqArmy = req.army() != null ? req.army() : Collections.emptyMap();
         Map<String, Integer> customArmy = new LinkedHashMap<>();
-        int slowestSpd = Integer.MAX_VALUE;
+        double slowestSpd = Double.MAX_VALUE;
         for (Map.Entry<String, Integer> entry : reqArmy.entrySet()) {
             String uid = entry.getKey();
             int n = entry.getValue() != null ? entry.getValue() : 0;
@@ -487,7 +678,8 @@ public class MarchService {
             if (n > max) n = max;
             if (n <= 0) continue;
             customArmy.put(uid, n);
-            if (u.spd() < slowestSpd) slowestSpd = u.spd();
+            double effectiveSpd = u.spd() * getUnitTechSpdMul(playerId, u.cat());
+            if (effectiveSpd < slowestSpd) slowestSpd = effectiveSpd;
         }
         if (customArmy.isEmpty()) throw new IllegalArgumentException("请至少选择一种兵种出征");
 
@@ -505,6 +697,13 @@ public class MarchService {
             }
             if (isGather && (!Boolean.TRUE.equals(wt2.getOccupied()) || !playerId.equals(wt2.getOccupiedBy()))) {
                 throw new IllegalArgumentException("只能采集自己已占领的野地");
+            }
+            if (isStation) {
+                if (!Boolean.TRUE.equals(wt2.getOccupied()) || !playerId.equals(wt2.getOccupiedBy())) {
+                    throw new IllegalArgumentException("只能派遣部队进驻已占领的野地");
+                }
+            } else if ("conquer".equals(action) && Boolean.TRUE.equals(wt2.getOccupied()) && playerId.equals(wt2.getOccupiedBy())) {
+                throw new IllegalArgumentException("该野地已被您占领，请使用【派遣】进驻");
             }
         }
 
@@ -558,7 +757,7 @@ public class MarchService {
         int py = java.util.Objects.requireNonNullElse(cityScope.economy(playerId).getCityPosY(), 0);
         int marchDist = route.distance();
         int secPerGrid = WorldConfig.MARCH_SEC_PER_GRID;
-        int spd = Math.max(1, slowestSpd);
+        double spd = Math.max(0.1, slowestSpd);
         long now = System.currentTimeMillis();
         double speedMul = 1.0;
         CityState cs = cityStateRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);

@@ -25,6 +25,7 @@ public abstract class BaseServiceTest {
     @Autowired protected MarchService marchService;
     @Autowired protected BuildService buildService;
     @Autowired protected GameStateService gameStateService;
+    @Autowired protected WorldService worldService;
 
     @Autowired protected PlayerRepository playerRepository;
     @Autowired protected ResourcesRepository resourcesRepository;

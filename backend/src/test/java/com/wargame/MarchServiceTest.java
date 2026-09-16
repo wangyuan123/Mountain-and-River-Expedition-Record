@@ -642,4 +642,109 @@ class MarchServiceTest extends BaseServiceTest {
         assertNotNull(data.get("plunderable"));
         assertTrue((Boolean) data.get("showCityInfo"));
     }
+
+    @Test
+    @DisplayName("行军速度与科技加成: 多兵种出征按最慢速度计算并应用引擎科技加成")
+    void testDispatchMarchSpeedWithTechAndMultiUnits() {
+        createArmyUnit(playerId, "scout", 10);
+        createArmyUnit(playerId, "infantry", 100);
+        createArmyUnit(playerId, "ltank", 20);
+
+        // 1. 纯空军 (scout 基础速度 14)
+        DispatchRequest reqScout = new DispatchRequest(
+                "wild", wildTile.getId(), "scout",
+                Map.of("scout", 5), null, null
+        );
+        var previewScout = marchService.previewRoute(playerId, reqScout);
+        int scoutSeconds = (int) previewScout.get("seconds");
+
+        // 2. 混合部队：侦察机(14) + 步兵(3)，全军必须按最慢步兵速度(3)行军，时间显著更长
+        DispatchRequest reqMixed = new DispatchRequest(
+                "wild", wildTile.getId(), "conquer",
+                Map.of("scout", 5, "infantry", 20), null, null
+        );
+        var previewMixed = marchService.previewRoute(playerId, reqMixed);
+        int mixedSeconds = (int) previewMixed.get("seconds");
+        assertTrue(mixedSeconds > scoutSeconds, "混合出征包含步兵时应按最慢步兵速度行军，耗时应显著大于纯侦察机");
+
+        // 3. 科技加成：研究装甲引擎 arm_engine 4级 (+20%)
+        createTechnology(playerId, "arm_engine", 4);
+        DispatchRequest reqTank = new DispatchRequest(
+                "wild", wildTile.getId(), "conquer",
+                Map.of("ltank", 10), null, null
+        );
+        var previewTankWithTech = marchService.previewRoute(playerId, reqTank);
+        int dist = (int) previewTankWithTech.get("distance");
+        // ltank 基础速度 6, 科技加成 1.20x -> 有效速度 7.2
+        // seconds = ceil(dist * 9 / 7.2)
+        int expectedSeconds = (int) Math.ceil((double) dist * 9 / 7.2);
+        assertEquals(expectedSeconds, (int) previewTankWithTech.get("seconds"), "装甲引擎科技应使坦克出征时间准确缩短");
+    }
+
+    @Test
+    @DisplayName("占领野地完整流转: 派遣进驻 -> 驻扎成为驻军 -> 原地采集 -> 结算收获 -> 撤军返城 -> 放弃领地")
+    void testWildStationGatherHarvestRecallFlow() {
+        WildTile tile = createWildTile(worldId, "ironworks", 15, 15, 1, null, 1000);
+        tile.setOccupied(true);
+        tile.setOccupiedBy(playerId);
+        wildTileRepository.save(tile);
+
+        createArmyUnit(playerId, "infantry", 50);
+        createArmyUnit(playerId, "truck", 10);
+
+        // 1. 派遣部队进驻
+        DispatchRequest stationReq = new DispatchRequest(
+                "wild", tile.getId(), "station",
+                Map.of("infantry", 20, "truck", 5), null, null
+        );
+        March march = marchService.createDispatch(playerId, stationReq);
+        assertNotNull(march);
+        assertEquals("station", march.getAction());
+
+        // 行军抵达
+        long arriveAt = march.getArriveAt();
+        marchService.processMarches(playerId, arriveAt + 1000);
+
+        // 验证行军已完成，且部队已作为驻军进驻到野地
+        assertTrue(marchRepository.findById(march.getId()).isEmpty(), "进驻完成后行军记录应已删除");
+        WildTile stationedTile = wildTileRepository.findById(tile.getId()).orElseThrow();
+        Map<String, Integer> garrison = com.wargame.util.JsonUtil.parseIntMap(stationedTile.getGarrison());
+        assertEquals(20, garrison.get("infantry"), "野地驻军应包含20名步兵");
+        assertEquals(5, garrison.get("truck"), "野地驻军应包含5辆卡车");
+
+        // 2. 原地开启资源采集
+        Map<String, Object> gatherRes = marchService.startWildGather(playerId, tile.getId());
+        assertTrue((boolean) gatherRes.get("success"));
+        WildTile gatheringTile = wildTileRepository.findById(tile.getId()).orElseThrow();
+        assertTrue(gatheringTile.getGathering(), "野地应处于采集中状态");
+        assertEquals("steel", gatheringTile.getGatherRes(), "炼铁厂采集资源应为钢铁");
+        assertTrue(gatheringTile.getGatherLoad() > 0, "采集载荷应大于0");
+
+        // 3. 结算收获
+        int steelBefore = getResources(playerId).getSteel();
+        Map<String, Object> harvestRes = marchService.harvestWild(playerId, tile.getId());
+        assertTrue((boolean) harvestRes.get("success"));
+        int harvestAmount = (int) harvestRes.get("harvestAmount");
+        assertTrue(harvestAmount >= 0);
+        WildTile harvestedTile = wildTileRepository.findById(tile.getId()).orElseThrow();
+        assertFalse(harvestedTile.getGathering(), "收获后采集中状态应结束");
+        assertEquals(harvestAmount, harvestedTile.getMined(), "野地已开采量应累加");
+
+        // 4. 撤回驻军
+        int infBefore = armyUnitRepository.findByPlayerIdAndType(playerId, "infantry").get(0).getCount();
+        Map<String, Object> recallRes = marchService.recallWild(playerId, tile.getId());
+        assertTrue((boolean) recallRes.get("success"));
+        WildTile recalledTile = wildTileRepository.findById(tile.getId()).orElseThrow();
+        assertTrue(recalledTile.getOccupied(), "撤回驻军后野地仍应属于我方占领");
+        assertEquals("{}", recalledTile.getGarrison(), "撤军后野地驻军应清空");
+        int infAfter = armyUnitRepository.findByPlayerIdAndType(playerId, "infantry").get(0).getCount();
+        assertEquals(infBefore + 20, infAfter, "撤回后步兵应归还主城军营");
+
+        // 5. 放弃领地
+        Map<String, Object> abandonRes = worldService.abandonWild(playerId, tile.getId());
+        assertTrue((boolean) abandonRes.get("success"));
+        WildTile abandonedTile = wildTileRepository.findById(tile.getId()).orElseThrow();
+        assertFalse(abandonedTile.getOccupied(), "放弃后野地不再被占领");
+        assertNull(abandonedTile.getOccupiedBy(), "放弃后占领者应为null");
+    }
 }

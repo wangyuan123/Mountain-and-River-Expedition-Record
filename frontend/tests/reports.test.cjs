@@ -99,7 +99,27 @@ test('battle list uses action titles and keeps detailed results behind both deta
   const detail = { innerHTML: '' };
   G.Battle.renderReportDetail(detail);
   assert.match(detail.innerHTML, /掠夺资源:<\/b> 粮300/);
+  assert.match(detail.innerHTML, /id="battleDetailsBox" style="display:none/);
+  assert.match(detail.innerHTML, /id="btnBattleDetails".*查看战斗详情/);
   assert.match(detail.innerHTML, /战斗回合记录/);
+
+  const battleBox = { style: { display: 'none' } };
+  const toggleBtn = {
+    innerHTML: '',
+    classList: { add: () => {}, remove: () => {} },
+    querySelector: () => null
+  };
+  context.document.getElementById = id => {
+    if (id === 'battleDetailsBox') return battleBox;
+    if (id === 'btnBattleDetails') return toggleBtn;
+    return null;
+  };
+  G.Battle.toggleBattleDetails();
+  assert.equal(battleBox.style.display, 'block');
+  assert.match(toggleBtn.innerHTML, /收起战斗详情/);
+  G.Battle.toggleBattleDetails();
+  assert.equal(battleBox.style.display, 'none');
+  assert.match(toggleBtn.innerHTML, /查看战斗详情/);
 });
 
 test('report titles distinguish actions and support historical subjects without matching target names', () => {

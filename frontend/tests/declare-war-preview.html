@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="blue-white">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <base href="../">
+  <title>宣战弹窗 · 样式预览</title>
+  <link rel="stylesheet" href="css/style.css?v=2.9-war-header">
+  <link rel="stylesheet" href="css/themes.css?v=2.7-profile-layout">
+  <style>body{margin:0;padding:24px}main{max-width:520px;margin:auto}nav{display:flex;gap:12px;margin:16px 0}#preview-note{font-size:13px}</style>
+</head>
+<body>
+  <main>
+    <h1>宣战弹窗预览</h1>
+    <nav><a href="tests/declare-war-preview.html?theme=blue-white">蓝白主题</a><a href="tests/declare-war-preview.html?theme=paper">纸色主题</a><a href="tests/declare-war-preview.html?theme=dark">深色主题</a></nav>
+    <button class="btn" id="preview-open">查看宣战弹窗</button>
+    <p id="preview-note">演示数据，仅预览弹窗，不会发起宣战。</p>
+  </main>
+  <script src="js/data.js"></script>
+  <script src="js/core.js"></script>
+  <script src="js/world.js?v=3.3-war-header"></script>
+  <script>
+    var query=new URLSearchParams(location.search), theme=query.get('theme');
+    document.documentElement.dataset.theme=['blue-white','paper','dark'].indexOf(theme)>=0?theme:'blue-white';
+    Game.Core.state={world:{pos:{x:105,y:106},playerCities:[{id:1,name:query.get('name')||'新城市',x:145,y:146,prestige:0}]}};
+    Game.API={declareWar:function(){return Promise.reject(new Error('预览模式，不会发起宣战'));}};
+    Game.toast=function(message){document.getElementById('preview-note').textContent=message;};
+    document.getElementById('preview-open').onclick=function(){Game.World.declareWar('player',0);};
+    Game.World.declareWar('player',0);
+  </script>
+</body>
+</html>

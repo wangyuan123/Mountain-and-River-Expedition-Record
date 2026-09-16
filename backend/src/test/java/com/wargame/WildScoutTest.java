@@ -37,7 +37,6 @@ class WildScoutTest extends BaseServiceTest {
         Long id = player.getId();
         WildTile tile = createWildTile(createTestWorld().getId(), "oil", 15, 15, 3,
                 Map.of("infantry", 10), 5000);
-        createBuilding(id, "radar", 1);
         createTechnology(id, "recon_level", 1);
         createArmyUnit(id, "scout", 5);
         createArmyUnit(id, "infantry", 10);
@@ -73,13 +72,11 @@ class WildScoutTest extends BaseServiceTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
-    void cannotScoutWithoutRadarOrAircraft(boolean legacyEndpoint) {
+    void cannotScoutWithoutAircraft(boolean legacyEndpoint) {
         Player player = createTestPlayer();
         WildTile tile = createWildTile(createTestWorld().getId(), "oil", 15, 15, 3, Map.of(), 5000);
-        assertEquals("需建造雷达站才能侦察", assertThrows(IllegalArgumentException.class,
+        assertEquals("请至少选择一种兵种出征", assertThrows(IllegalArgumentException.class,
                 () -> dispatch(player, tile, legacyEndpoint)).getMessage());
-        createBuilding(player.getId(), "radar", 1);
-        assertThrows(IllegalArgumentException.class, () -> dispatch(player, tile, legacyEndpoint));
         assertFalse(tile.getScouted());
         assertTrue(marchRepository.findByPlayerId(player.getId()).isEmpty());
         assertTrue(scoutReportRepository.findByPlayerId(player.getId()).isEmpty());

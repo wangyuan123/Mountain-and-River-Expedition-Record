@@ -49,8 +49,7 @@
     var sourceDepth = G.MapLayout.isPlayer(t) ? (t.coastal === true ? .60 : .90) : .75;
     var p = G.MapCamera.projection;
     var groundDepth = (Math.abs(p.b) + Math.abs(p.d)) / (Math.abs(p.a) + Math.abs(p.c));
-    // Two successive 5% pitch adjustments bring the upper face toward the viewer.
-    return width * groundDepth / sourceDepth * 1.1025;
+    return width * groundDepth / sourceDepth;
   }
   function icon(t, snowCells) {
     if (t.selfCity || t.kind === 'player') return t.coastal === true ? 'img/cities/harbor.webp' : 'img/cities/garden-citadel.webp';
@@ -63,7 +62,47 @@
     if (t.kind === 'wild') return (G.DATA.wildTypes[t.type] || {}).icon || 'img/map/wild-forest.webp';
     return 'img/map/npc-fortress.webp';
   }
-  function color(t) { return t.selfCity ? 0x337dac : (t.occupied ? 0x508545 : (t.kind === 'wild' ? 0x6d8e5e : 0xaa6655)); }
+  // `occupied` is viewer-specific; `claimed` also includes other players' wilds.
+  function ownership(t) {
+    if (t.selfCity || (t.kind === 'wild' && t.occupied)) return 'own';
+    if (t.kind === 'player' || (t.kind === 'wild' && t.claimed)) return 'other';
+    return t.kind === 'wild' ? 'neutral' : 'npc';
+  }
+  var ownershipStyles = {
+    own: { fill:0x163f58, edge:0x76ccea, ink:0xf1fbff },
+    other: { fill:0x55391e, edge:0xe7b76d, ink:0xfff1d9 },
+    neutral: { fill:0x343b36, edge:0xaeb8ad, ink:0xf1f3ea }
+  };
+  function ownershipCaption(t) {
+    var relation = ownership(t);
+    if (relation === 'npc') return '';
+    if (t.kind !== 'wild') return relation === 'own' ? '我的城市' : (t.ownerName || '未知玩家');
+    // Natural scenery has no resource actions; only claimed scenery needs a badge.
+    if (relation === 'neutral' && !(G.DATA.wildTypes[t.type] || {}).res) return '';
+    var title = relation === 'own' ? '我的' : (relation === 'other' ? (t.ownerName || '未知玩家') : name(t));
+    return title + (t.level != null ? ' · ' + t.level + '级' : '');
+  }
+  function drawOwnership(marker, target, y) {
+    var label = ownershipCaption(target), plate = marker.ownershipPlate, text = marker.ownershipText;
+    plate.clear(); plate.visible = text.visible = !!label; marker.ownershipHit = null;
+    if (!label) return;
+    if (text.text !== label) text.text = label;
+    var relation = ownership(target), style = ownershipStyles[relation], w = Math.ceil(text.width) + 31, h = 22;
+    var x = -w/2, cy = y+h/2, cx = x+12;
+    text.style.fill = style.ink; text.position.set(x+23, cy);
+    plate.lineStyle(0).beginFill(0x10251f,.24).drawRoundedRect(x,y+2,w,h,5).endFill();
+    plate.lineStyle(1,style.edge,.95).beginFill(style.fill,.96).drawRoundedRect(x,y,w,h,5).endFill();
+    if (relation === 'own') {
+      plate.lineStyle(0).beginFill(style.edge).drawPolygon([cx-5,cy-6,cx+5,cy-6,cx+5,cy+1,cx,cy+6,cx-5,cy+1]).endFill();
+      plate.lineStyle(1.4,style.fill).moveTo(cx-2.5,cy-1).lineTo(cx-.5,cy+1).lineTo(cx+3,cy-3);
+    } else {
+      plate.lineStyle(1.3,style.edge);
+      if (relation === 'other') plate.beginFill(style.edge);
+      plate.drawPolygon([cx,cy-5,cx+5,cy,cx,cy+5,cx-5,cy,cx,cy-5]);
+      if (relation === 'other') plate.endFill();
+    }
+    marker.ownershipHit = {x:x,y:y,width:w,height:h};
+  }
   var cache = new G.MapChunks(function (x, y) { return G.API.getMapChunk(x, y); }, { limit: 96 });
   function MapView(v) {
     this.view = v; this.destroyed = false; this.pointers = new Map(); this.listeners = [];
@@ -76,19 +115,19 @@
     v.innerHTML = '<section class="world-map-shell">' +
       '<div class="world-map-toolbar"><strong>战略地图</strong><button class="world-map-button" data-map="list">列表</button><button class="world-map-button" data-map="full" aria-expanded="false">全屏</button></div>' +
       '<form class="world-map-search"><input aria-label="定位坐标" placeholder="坐标定位，例如 100,100" inputmode="text"><button class="world-map-button primary" type="submit">定位</button><button type="button" class="world-map-button" data-map="refresh">刷新</button></form>' +
-      '<div class="world-map-filters" aria-label="目标筛选">' + [['all','全部'],['player','玩家'],['npc','流寇'],['wild','野地'],['owned','我的领地']].map(function (f) { return '<button data-filter="' + f[0] + '" aria-pressed="' + (f[0] === 'all') + '">' + f[1] + '</button>'; }).join('') + '</div>' +
+      '<div class="world-map-filters" aria-label="目标筛选" style="display:none">' + [['all','全部'],['player','玩家'],['npc','流寇'],['wild','野地'],['owned','我的领地']].map(function (f) { return '<button data-filter="' + f[0] + '" aria-pressed="' + (f[0] === 'all') + '">' + f[1] + '</button>'; }).join('') + '</div>' +
       '<div class="world-map-stage"><button type="button" class="world-map-button world-map-exit-full" data-map="exit-full" aria-label="关闭全屏">× 关闭全屏</button><div class="world-map-canvas"></div><aside class="world-map-minimap"><button class="minimap-toggle" type="button" aria-expanded="true" aria-label="收起世界缩略图"><span>世界缩略图</span><span class="minimap-toggle-icon">−</span></button><div class="minimap-body"><div class="minimap-surface"><canvas width="280" height="280" tabindex="0" role="img" aria-label="世界缩略图，北方朝上；点击或拖动定位，方向键移动视野"></canvas><span class="minimap-north" aria-hidden="true">北 ↑</span></div><div class="minimap-key"><span>◆ 城市</span><span>◇ 视野</span></div></div><div class="world-map-hud"><b class="map-coordinate"></b><span class="map-terrain-region"></span></div></aside>' +
       '<div class="world-map-controls"><button class="world-map-button" data-map="plus" aria-label="放大地图">+</button><button class="world-map-button" data-map="minus" aria-label="缩小地图">−</button><button class="world-map-button home" data-map="home">主城</button><button class="world-map-button" data-map="coast">海岸</button></div>' +
       '<div class="world-map-loading" role="status"></div><div class="world-map-crosshair"></div>' +
-      '<div class="world-map-legend"><span class="own">● 我的城市</span><span class="enemy">● 其他据点</span><span class="resource">● 资源与领地</span><span>点击目标查看详情 · 点击空地建城</span></div>' +
-      '<div class="world-map-detail" hidden></div></div><div class="world-map-hint">俯视角：上方地形较远、下方地形较近 · 单指拖动 · 双指、滚轮或加减按钮缩放 · 拖动仅浏览，不改变出征起点</div></section>';
+      '<div class="world-map-legend"><span class="own"><i class="map-key-shield" aria-hidden="true">✓</i> 我的城市 / 野地</span><span class="other">◆ 其他玩家</span><span class="neutral">◇ 无主野地</span><span class="map-legend-hint">点击标识或目标查看详情</span></div>' +
+      '<div class="world-map-detail" hidden></div></div><div class="world-map-hint">上北下南 · 左西右东 · 单指拖动 · 双指、滚轮或加减按钮缩放 · 拖动仅浏览，不改变出征起点</div></section>';
     this.shell = v.querySelector('.world-map-shell'); this.stageEl = v.querySelector('.world-map-stage');
     this.host = v.querySelector('.world-map-canvas'); this.detail = v.querySelector('.world-map-detail');
     this.statusEl = v.querySelector('.world-map-loading'); this.coordEl = v.querySelector('.map-coordinate'); this.regionEl = v.querySelector('.map-terrain-region');
     this.app = new PIXI.Application({ width: 1, height: 1, backgroundColor: 0xe0e7d8, antialias: true, autoStart: false, resolution: Math.min(window.devicePixelRatio || 1, 2), autoDensity: true });
     this.app.stop();
     this.host.appendChild(this.app.view);
-    // Zero-size probes share the canvas CSS transform, including parent perspective and fullscreen rotation.
+    // Zero-size probes share the canvas bounds, including portrait fullscreen rotation.
     var plane=document.createElement('div'); plane.className='world-map-input-plane'; plane.setAttribute('aria-hidden','true');
     this.inputCorners=[[0,0],[100,0],[100,100],[0,100]].map(function(p){
       var corner=document.createElement('i');corner.style.left=p[0]+'%';corner.style.top=p[1]+'%';plane.appendChild(corner);return corner;
@@ -330,6 +369,10 @@
         marker = new PIXI.Container(); marker.badge = new PIXI.Graphics(); marker.addChild(marker.badge);
         marker.sprite = new PIXI.Sprite(textures[path]); marker.sprite.anchor.set(.5); marker.addChild(marker.sprite);
         marker.captions = new PIXI.Container(); self.captionLayer.addChild(marker.captions);
+        marker.captions.mapMarker = marker;
+        marker.ownershipPlate = new PIXI.Graphics(); marker.captions.addChild(marker.ownershipPlate);
+        marker.ownershipText = new PIXI.Text('', { fontFamily:'-apple-system, PingFang SC, Microsoft YaHei, sans-serif', fontSize:11, fontWeight:'600' });
+        marker.ownershipText.anchor.set(0,.5); marker.captions.addChild(marker.ownershipText);
         marker.label = new PIXI.Text('', { fontFamily: '-apple-system, PingFang SC, Microsoft YaHei, sans-serif', fontSize: 11, fill: 0x304d43, stroke: 0xf5f7ee, strokeThickness: 3, fontWeight: '600', align: 'center' });
         marker.label.anchor.set(.5, 0); marker.captions.addChild(marker.label);
         marker.info = new PIXI.Text('', { fontFamily: '-apple-system, PingFang SC, Microsoft YaHei, sans-serif', fontSize: 10, fill: 0x244665, stroke: 0xf5f7ee, strokeThickness: 3, fontWeight: '600', align: 'center', lineHeight: 12 });
@@ -363,10 +406,9 @@
         if (caption.length > maxChars) caption = caption.slice(0, maxChars - 1) + '…';
         caption += suffix;
       }
-      var showWildLevel = !isCity && !!(G.DATA.wildTypes[t.type] || {}).res && t.level != null;
-      marker.info.visible = isCity || showWildLevel;
+      marker.info.visible = isCity;
       var coordinates = '(' + t.x + ', ' + t.y + ')';
-      var info = showWildLevel ? t.level + '级' : '';
+      var info = '';
       if (isCity) {
         var now = Date.now(), status = '日寇据点';
         if (t.kind === 'player' || t.selfCity) {
@@ -383,6 +425,7 @@
       }
       if (marker.info.text !== info) marker.info.text = info;
       marker.info.y = -height/2-4;
+      drawOwnership(marker, t, marker.info.y - (isCity ? marker.info.height+26 : 22));
       if (marker.label.text !== caption) marker.label.text = caption;
       marker.label.y = height/2+3;
     });
@@ -563,6 +606,15 @@
   };
   MapView.prototype.focus = function(x,y,kind) { var center=markerCenter({kind:kind||'wild',x:x,y:y});this.vx=this.vy=0; this.camera.x=center.x;this.camera.y=center.y;this.camera.clamp();this.closeDetail();this.requestChunks();this.wake(); };
   MapView.prototype.pick = function(p) {
+    // Captions are above all artwork and stay clickable outside the ground cell.
+    var captions = this.captionLayer ? this.captionLayer.children : [];
+    for (var j=captions.length-1;j>=0;j--) {
+      var captionMarker = captions[j].mapMarker, hit = captionMarker && captionMarker.ownershipHit;
+      if (hit && p.x>=captionMarker.x+hit.x && p.x<=captionMarker.x+hit.x+hit.width &&
+          p.y>=captionMarker.y+hit.y && p.y<=captionMarker.y+hit.y+hit.height) {
+        this.loadDetail(captionMarker.target); return;
+      }
+    }
     // Prefer visible artwork in reverse paint order; transparent image corners remain empty ground.
     for(var i=this.markerLayer.children.length-1;i>=0;i--){
       var marker=this.markerLayer.children[i], sprite=marker.sprite;
@@ -630,7 +682,7 @@
     this.renderedDetail=JSON.stringify(t);
     var self=this, cp=G.Core.state.world.cityPos||G.Core.state.world.pos, distance=Math.abs(cp.x-t.x)+Math.abs(cp.y-t.y);
     var meta='('+t.x+', '+t.y+') · 距城市 '+distance+' 格（实际行程见出征准备）'+(t.level!=null?' · Lv.'+t.level:'');
-    var text=t.kind==='wild'?(t.occupied?'我的领地':(t.claimed?'已被占领的野地':'未占领野地')):(t.selfCity?'我的城市':(t.ownerName?'城主：'+t.ownerName:'流寇据点'));
+    var text=t.kind==='wild'?(t.occupied?'我的野地':(t.claimed?'占领者：'+(t.ownerName||'未知玩家'):name(t))):(t.selfCity?'我的城市':(t.ownerName?'城主：'+t.ownerName:'流寇据点'));
     var now=Date.now();
     if(t.coastal)text+=' · 沿海城市';
     else if(t.legacyNaval)text+=' · 保留海军补给通道';
@@ -644,7 +696,88 @@
     function button(label, action, primary) { var b=document.createElement('button');b.className='world-map-button'+(primary?' primary':'');b.textContent=label;b.onclick=function(){self.act(action,b);};actions.appendChild(b); }
     if(t.selfCity){button('返回城市','home',true);return;}
     if(t.defeated||t.readyAt>now)return;
-    if(t.kind==='wild'&&t.occupied){if((G.DATA.wildTypes[t.type]||{}).res)button('采集','gather',true);button('放弃领地','abandon');return;}
+    if(t.kind==='wild'&&t.occupied){
+      var garrisonUnits = t.garrison || {};
+      var hasGarrison = false;
+      var garrisonList = [];
+      var totalLoad = 0;
+      for (var uid in garrisonUnits) {
+        var count = parseInt(garrisonUnits[uid], 10) || 0;
+        if (count > 0) {
+          hasGarrison = true;
+          var udef = (G.DATA && G.DATA.units && G.DATA.units[uid]) || { name: uid, load: 10 };
+          garrisonList.push(udef.name + ' ×' + count);
+          totalLoad += (udef.load || 0) * count;
+        }
+      }
+
+      var isGathering = Boolean(t.gathering);
+      var extraHtml = '';
+
+      if (isGathering) {
+        var start = t.gatherStartAt || now, end = t.gatherEndAt || now, maxL = t.gatherLoad || totalLoad;
+        var rk = t.gatherRes || (G.DATA.wildTypes[t.type] || {}).res;
+        var rName = {food:'粮食', steel:'钢铁', oil:'石油', rare:'稀矿'}[rk] || '资源';
+        var progress = end > start ? Math.max(0, Math.min(1, (now - start) / (end - start))) : 1;
+        var currentMined = Math.min(maxL, Math.floor(progress * maxL));
+        var done = now >= end;
+        var leftSec = done ? 0 : Math.ceil((end - now) / 1000);
+        var timeTip = done ? '已采满，请收获' : '开采中，剩余 ' + leftSec + ' 秒';
+
+        extraHtml += '<div class="wild-gather-panel" style="margin:8px 0;padding:10px;background:rgba(70,125,165,0.1);border-radius:6px;border:1px solid rgba(70,125,165,0.25);">' +
+          '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">' +
+            '<span><b>⛏ 正在开采' + esc(rName) + '</b></span>' +
+            '<span style="color:var(--primary,#467da5);font-weight:600;">' + esc(timeTip) + '</span>' +
+          '</div>' +
+          '<div style="height:6px;background:rgba(0,0,0,0.08);border-radius:3px;overflow:hidden;margin:6px 0;">' +
+            '<div style="height:100%;width:' + Math.round(progress * 100) + '%;background:var(--primary,#467da5);transition:width .3s;"></div>' +
+          '</div>' +
+          '<div style="font-size:12px;display:flex;justify-content:space-between;color:var(--ink-sec,#666);">' +
+            '<span>已开采：' + G.fmt(currentMined) + ' / ' + G.fmt(maxL) + '</span>' +
+            '<span>驻军：' + esc(garrisonList.join(', ')) + '</span>' +
+          '</div>' +
+        '</div>';
+
+        this.detail.querySelector('p').insertAdjacentHTML('afterend', extraHtml);
+        button('收获', 'harvest', true);
+        return;
+      }
+
+      if (hasGarrison) {
+        extraHtml += '<div class="wild-garrison-panel" style="margin:8px 0;padding:8px 10px;background:rgba(87,134,87,0.1);border-radius:6px;border:1px solid rgba(87,134,87,0.25);font-size:12px;">' +
+          '<div style="margin-bottom:4px;"><b>🛡 驻守部队</b>：' + esc(garrisonList.join(' · ')) + '</div>' +
+          '<div style="color:var(--ink-sec,#666);">部队运载负重：<b>' + G.fmt(totalLoad) + '</b></div>' +
+        '</div>';
+        this.detail.querySelector('p').insertAdjacentHTML('afterend', extraHtml);
+
+        var wtDef = G.DATA.wildTypes[t.type] || {};
+        var remaining = Math.max(0, (t.totalRes || 0) - (t.mined || 0));
+        if (wtDef.res && remaining > 0) {
+          button('采集', 'gather', true);
+        }
+        button('撤回', 'recall');
+        button('放弃领地', 'abandon');
+        return;
+      }
+
+      // 无驻军状态
+      var im = (G.Core.state.world.marches || []).find(function(m){ return String(m.targetId) === String(t.id) && !m.returning; });
+      if (im) {
+        var leftArrival = Math.max(1, Math.ceil((im.arriveAt - now) / 1000));
+        extraHtml += '<div style="margin:8px 0;padding:8px 10px;background:rgba(70,125,165,0.08);border-radius:6px;font-size:12px;color:var(--primary,#467da5);">' +
+          '🎖 派遣部队进驻行军中（约 ' + leftArrival + ' 秒后到达）' +
+        '</div>';
+      } else {
+        extraHtml += '<div style="margin:8px 0;padding:6px 10px;background:rgba(0,0,0,0.04);border-radius:6px;font-size:12px;color:var(--ink-sec,#666);">' +
+          '暂无驻扎部队，派遣部队进驻后可就地开启资源采集与驻防。' +
+        '</div>';
+      }
+      this.detail.querySelector('p').insertAdjacentHTML('afterend', extraHtml);
+
+      button('派遣', 'station', true);
+      button('放弃领地', 'abandon');
+      return;
+    }
     button('侦察','scout');
     if(t.kind==='player'){
       if(t.warAt&&t.warAt<=now&&t.warEndAt>now){button('征服','conquer',true);button('掠夺','plunder');}
@@ -698,7 +831,7 @@
       try{instance=new MapView(v);}catch(e){console.error(e);v.innerHTML='<div class="panel">暂时无法打开地图画布。<button class="btn" onclick="Game.WorldMap.setMode(\'list\')">使用列表</button></div>';}
     },
     unmount:function(){if(instance){instance.destroy();instance=null;}},
-    setMode:function(next){mode=next;this.unmount();if(camera&&G.Core.state.world){G.Core.state.world._mapPos={x:Math.floor(camera.x),y:Math.floor(camera.y)};G.Core.state.world._scan={r:8,at:Date.now()};}G.Core.render();},
+    setMode:function(next){mode=next;this.unmount();if(next==='map'&&G.Core.state.world){G.Core.state.world._activeTab='all';}if(camera&&G.Core.state.world){G.Core.state.world._mapPos={x:Math.floor(camera.x),y:Math.floor(camera.y)};G.Core.state.world._scan={r:8,at:Date.now()};}G.Core.render();},
     invalidate:function(){cache.invalidate();if(instance){instance.requestChunks();if(instance.selected){if(instance.selected.kind==='site')instance.loadSite(instance.selected.x,instance.selected.y);else instance.loadDetail(instance.selected,true);}instance.wake();}},
     // Exposed camera/cache metrics are useful for automated interaction and load checks.
     metrics:function(){return { mounted:!!instance,x:camera&&camera.x,y:camera&&camera.y,scale:camera&&camera.scale,chunks:cache.entries.size,pending:cache.active,markers:instance?instance.markers.size:0 };}

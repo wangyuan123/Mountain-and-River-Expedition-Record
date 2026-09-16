@@ -570,6 +570,21 @@ window.Game = window.Game || {};
         .then(extractState).then(applyState);
     },
 
+    wildStartGather: function (wildTileId) {
+      return client.post('/game/wild/gather', { wildTileId: wildTileId })
+        .then(extractState).then(applyState);
+    },
+
+    wildHarvest: function (wildTileId) {
+      return client.post('/game/wild/harvest', { wildTileId: wildTileId })
+        .then(extractState).then(applyState);
+    },
+
+    wildRecall: function (wildTileId) {
+      return client.post('/game/wild/recall', { wildTileId: wildTileId })
+        .then(extractState).then(applyState);
+    },
+
     // ==================== 商城 ====================
 
     shopRecharge: function (pkgId, rmb, diamond, channel) {

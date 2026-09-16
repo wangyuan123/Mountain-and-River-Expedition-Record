@@ -78,18 +78,45 @@ public class WildController {
             throw new IllegalArgumentException("野地ID不能为空");
         }
         Long playerId = authService.getCurrentPlayer().getId();
-        DispatchRequest dispatch = new DispatchRequest(
-                "wild_gather",
-                request.wildTileId(),
-                "gather",
-                request.army(),
-                request.commanderId(),
-                request.carryRes()
-        );
-        marchService.createDispatch(playerId, dispatch);
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("success", true);
-        result.put("message", "采集部队出发成功");
+        Map<String, Object> result;
+        if (request.army() == null || request.army().isEmpty()) {
+            result = marchService.startWildGather(playerId, request.wildTileId());
+        } else {
+            DispatchRequest dispatch = new DispatchRequest(
+                    "wild_gather",
+                    request.wildTileId(),
+                    "gather",
+                    request.army(),
+                    request.commanderId(),
+                    request.carryRes()
+            );
+            marchService.createDispatch(playerId, dispatch);
+            result = new LinkedHashMap<>();
+            result.put("success", true);
+            result.put("message", "采集部队出发成功");
+        }
+        result.put("state", gameStateService.getGameState(playerId));
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/harvest")
+    public ResponseEntity<Map<String, Object>> harvest(@RequestBody GameDtos.WildTileRequest request) {
+        if (request.wildTileId() == null) {
+            throw new IllegalArgumentException("野地ID不能为空");
+        }
+        Long playerId = authService.getCurrentPlayer().getId();
+        Map<String, Object> result = marchService.harvestWild(playerId, request.wildTileId());
+        result.put("state", gameStateService.getGameState(playerId));
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/recall")
+    public ResponseEntity<Map<String, Object>> recall(@RequestBody GameDtos.WildTileRequest request) {
+        if (request.wildTileId() == null) {
+            throw new IllegalArgumentException("野地ID不能为空");
+        }
+        Long playerId = authService.getCurrentPlayer().getId();
+        Map<String, Object> result = marchService.recallWild(playerId, request.wildTileId());
         result.put("state", gameStateService.getGameState(playerId));
         return ResponseEntity.ok(result);
     }

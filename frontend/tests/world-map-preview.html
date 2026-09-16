@@ -1,4 +1,4 @@
-<!doctype html><html lang="zh-CN" data-theme="3gqq"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><base href="../"><title>战略地图 · 交互验证</title><link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="css/themes.css"><link rel="stylesheet" href="css/world-map.css?v=4.0-hit-test"><style>body{margin:0}#fixture-head{padding:14px;background:#527cac;color:white;font:600 15px sans-serif}.fixture-tools{padding:6px 12px;font:11px sans-serif;background:#edf4fb;color:#426078}.fixture-tools button{margin:4px;padding:4px 8px}#fixture-log{white-space:pre-wrap;font:11px monospace;padding:8px;color:#375975}</style></head><body><div id="screen"><div id="fixture-head">战略地图 · 野地分布预览 <button id="scatter" style="float:right;padding:4px 10px;border:0;border-radius:4px;color:#375975;background:white;cursor:pointer">换一批分布</button></div><div class="fixture-tools"><button id="rerender">模拟页面刷新</button><button id="netfail">切换弱网失败</button><button id="pinch">验证双指缩放</button><button id="theme">切换主题</button><div id="fixture-metrics"></div></div><div style="padding:6px 14px;background:#edf4fb"><button id="snow-preview" class="btn">查看雪地渐变</button> <button id="north-preview" class="btn">北方雪带</button></div><div id="view"></div><div id="fixture-log"></div></div>
+<!doctype html><html lang="zh-CN" data-theme="3gqq"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><base href="../"><title>战略地图 · 交互验证</title><link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="css/themes.css"><link rel="stylesheet" href="css/world-map.css?v=4.17-north-up"><style>body{margin:0}#fixture-head{padding:14px;background:#527cac;color:white;font:600 15px sans-serif}.fixture-tools{padding:6px 12px;font:11px sans-serif;background:#edf4fb;color:#426078}.fixture-tools button{margin:4px;padding:4px 8px}#fixture-log{white-space:pre-wrap;font:11px monospace;padding:8px;color:#375975}</style></head><body><div id="screen"><div id="fixture-head">战略地图 · 野地分布预览 <button id="scatter" style="float:right;padding:4px 10px;border:0;border-radius:4px;color:#375975;background:white;cursor:pointer">换一批分布</button></div><div class="fixture-tools"><button id="rerender">模拟页面刷新</button><button id="netfail">切换弱网失败</button><button id="pinch">验证双指缩放</button><button id="theme">切换主题</button><div id="fixture-metrics"></div></div><div style="padding:6px 14px;background:#edf4fb"><button id="snow-preview" class="btn">查看雪地渐变</button> <button id="north-preview" class="btn">北方雪带</button></div><div id="view"></div><div id="fixture-log"></div></div>
 <script src="js/data.js?v=4.4-snow-depth"></script><script src="js/core.js"></script>
 <script>
 // Emulate browsers without element fullscreen to verify the landscape fallback.
@@ -40,17 +40,30 @@ Game.API={getToken:function(){return 'preview:'+previewGeneration;},getMapChunk:
 Game.Core.route='world';Game.Core.renderTop=function(){};Game.Core.footer=function(){return '';};Game.Core.render=function(){var v=document.getElementById('view');if(!Game.WorldMap.mounted(v))v.innerHTML='';if(Game.WorldMap.isMap())Game.WorldMap.render(v);else v.innerHTML='<button onclick="Game.WorldMap.setMode(\'map\')">返回大地图</button>';};
 Game.toast=function(t){log.textContent=t;};Game.go=function(r){log.textContent='进入：'+r;};Game.World={mapAction:function(t,action){log.textContent='目标 '+t.kind+':'+t.id+'，操作 '+action;}};
 window.addEventListener('error',function(e){log.textContent='ERROR: '+e.message;});
-</script><script src="js/map-camera.js"></script><script src="js/map-chunks.js"></script><script src="js/map-layout.js?v=4.0-hit-test"></script><script src="js/map-terrain.js?v=4.11-northern-snow"></script><script src="js/world-map.js?v=4.14-city-pitch"></script><script>
+</script><script src="js/map-camera.js?v=1.2-north-up"></script><script src="js/map-chunks.js"></script><script src="js/map-layout.js?v=4.0-hit-test"></script><script src="js/map-terrain.js?v=4.11-northern-snow"></script><script src="js/world-map.js?v=4.17-north-up"></script><script>
 if(new URLSearchParams(location.search).has('showcase')){document.querySelector('.fixture-tools').hidden=true;document.getElementById('fixture-log').hidden=true;}
 // A repeatable mixed meadow scene, with resource clearings across a chunk boundary.
 if(new URLSearchParams(location.search).has('meadow')){
   sampleTargets=[['forest',100,86],['forest',103,89],['grassland',102,87],['grassland',105,88],['oil',103,84],['grainfield',99,91],['ironworks',108,88],['rarefactory',95,87]].map(function(p,i){return {kind:'wild',id:i+1,type:p[0],x:p[1],y:p[2],level:3,occupied:false};});
   Game.Core.state.world.cityPos={x:101,y:87};Game.Core.state.world.pos={x:101,y:87};Game.Core.state.world.marches=[];
 }
+// Fixed ownership examples use the same renderer and viewer-specific API fields as the live map.
+if(new URLSearchParams(location.search).has('ownership')){
+  sampleTargets=[
+    {id:1,kind:'player',selfCity:true,x:100,y:100,name:'新城市',ownerName:'指挥官'},
+    {id:2,kind:'player',selfCity:false,x:97,y:102,name:'远山城',ownerName:'远山'},
+    {id:3,kind:'wild',type:'oil',x:103,y:101,level:1,occupied:true,claimed:true},
+    {id:4,kind:'wild',type:'ironworks',x:101,y:104,level:3,occupied:false,claimed:true,ownerName:'远山'},
+    {id:5,kind:'wild',type:'grainfield',x:104,y:104,level:2,occupied:false,claimed:false},
+    {id:6,kind:'wild',type:'rarefactory',x:106,y:102,level:4,occupied:false,claimed:false}
+  ];
+  Game.Core.state.world.marches=[];
+  document.getElementById('fixture-head').textContent='战略地图 · 归属标识预览';
+}
 Game.Core.render();setInterval(function(){var m=Game.WorldMap.metrics();document.getElementById('fixture-metrics').textContent='镜头 '+(m.x||0).toFixed(2)+','+(m.y||0).toFixed(2)+' · 缩放 '+(m.scale||0).toFixed(1)+' · 缓存 '+m.chunks+' · 请求 '+requests+' · 图标 '+m.markers+' · 实际位置 '+Game.state.world.pos.x+','+Game.state.world.pos.y;},300);
 document.getElementById('north-preview').onclick=function(){var form=document.querySelector('.world-map-search');form.querySelector('input').value='100,18';form.requestSubmit();};
 document.getElementById('snow-preview').onclick=function(){var form=document.querySelector('.world-map-search');form.querySelector('input').value='95,96';form.requestSubmit();};
-document.getElementById('scatter').onclick=function(){scatterWilds();previewGeneration++;Game.WorldMap.unmount();Game.Core.render();};
+if(document.getElementById('scatter'))document.getElementById('scatter').onclick=function(){scatterWilds();previewGeneration++;Game.WorldMap.unmount();Game.Core.render();};
 document.getElementById('rerender').onclick=function(){Game.Core.render();};document.getElementById('netfail').onclick=function(){failed=!failed;this.textContent=failed?'恢复网络':'切换弱网失败';};document.getElementById('theme').onclick=function(){document.documentElement.dataset.theme=document.documentElement.dataset.theme==='3gqq'?'dark':'3gqq';};
 document.getElementById('pinch').onclick=function(){var el=document.querySelector('canvas'),r=el.getBoundingClientRect();function e(type,id,x,y){el.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:'touch',clientX:r.left+x,clientY:r.top+y}));}var old=el.setPointerCapture;el.setPointerCapture=function(){};e('pointerdown',11,140,170);e('pointerdown',12,240,170);e('pointermove',11,100,170);e('pointermove',12,280,170);e('pointerup',11,100,170);e('pointerup',12,280,170);el.setPointerCapture=old;log.textContent='已模拟双指展开手势';};
 </script></body></html>

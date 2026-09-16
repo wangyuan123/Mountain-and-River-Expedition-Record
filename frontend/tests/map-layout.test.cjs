@@ -63,16 +63,30 @@ test('expanded view finds a city anchored across a chunk boundary', () => {
   assert.equal(layout.pick(targets,16.8,16.8,200),city);
   assert.ok(camera.chunks().some(chunk=>chunk.cx===0&&chunk.cy===0));
 });
-test('ground cells project to diamonds and empty bounding-box corners do not select them', () => {
+test('north-up cells select their full displayed footprint with no diagonal offset', () => {
   const cam=new c.Game.MapCamera(200,100.5,100.5,48);cam.width=390;cam.height=550;
   const npc={kind:'npc',id:5,x:100,y:100};
   const points=cam.polygon(100,100,1);
-  assert.deepEqual(Array.from(points),[195,251,243,275,195,299,147,275]);
-  const empty=cam.world(148,252);
+  assert.deepEqual(Array.from(points),[147,251,243,251,243,299,147,299]);
+  const empty=cam.world(146,252);
   assert.equal(layout.pick([npc],empty.x,empty.y,200),null);
-  for(const [sx,sy] of [[195,253],[240,275],[195,297],[150,275]]) {
+  for(const [sx,sy] of [[148,252],[242,252],[242,298],[148,298],[195,275]]) {
     const p=cam.world(sx,sy);assert.equal(layout.pick([npc],p.x,p.y,200),npc);
   }
+});
+test('cardinal neighbors stay aligned on screen at every zoom and map location',()=>{
+ const cam=new c.Game.MapCamera(200,100,100,48);cam.width=390;cam.height=550;
+ for(const scale of [48,64,88])for(const [x,y] of [[1,1],[100,100],[198,198]]){
+  cam.scale=scale;
+  const center=cam.screen(x,y),north=cam.screen(x,y-1),south=cam.screen(x,y+1),east=cam.screen(x+1,y),west=cam.screen(x-1,y);
+  assert.equal(north.x,center.x);assert.equal(south.x,center.x);
+  assert.ok(north.y<center.y&&south.y>center.y);
+  assert.equal(east.y,center.y);assert.equal(west.y,center.y);
+  assert.ok(east.x>center.x&&west.x<center.x);
+  for(const [actual,expected] of [[north,[x,y-1]],[south,[x,y+1]],[east,[x+1,y]],[west,[x-1,y]]]){
+   const world=cam.world(actual.x,actual.y);assert.equal(world.x,expected[0]);assert.equal(world.y,expected[1]);
+  }
+ }
 });
 test('drag follows the pointer and all viewport corners stay covered at world edges', () => {
   const cam=new c.Game.MapCamera(200,100,100,48);cam.width=920;cam.height=660;

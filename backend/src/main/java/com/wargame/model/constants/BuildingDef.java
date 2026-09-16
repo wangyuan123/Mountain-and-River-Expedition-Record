@@ -69,7 +69,7 @@ public record BuildingDef(
                 null, null, null, 1500, 1000, null, null, null));
         m.put("lab", new BuildingDef("lab", "科研中心", "解锁与加速科技研究",
                 Map.of("steel", 200, "food", 100, "rare", 20), 1.6, "core", 1));
-        m.put("radar", new BuildingDef("radar", "雷达站", "侦察野地与敌方兵力",
+        m.put("radar", new BuildingDef("radar", "雷达站", "预警进犯敌军与探测兵力",
                 Map.of("steel", 180, "oil", 60, "rare", 20), 1.6, "core", 1));
         m.put("wall", new BuildingDef("wall", "围墙", "城防,提升守城部队防御",
                 Map.of("steel", 200, "food", 80), 1.5, "def", 1,

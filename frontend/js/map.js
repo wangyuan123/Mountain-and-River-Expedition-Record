@@ -124,7 +124,7 @@ window.Game = window.Game || {};
       h += '</div>';
 
       h += '<div class="zone-head">=== 侦察与占领 ===</div>';
-      h += '<div class="menu-item ok" onclick="Game.Wild.scout()"><span class="num">[侦]</span> 派出侦察(需雷达站)</div>';
+      h += '<div class="menu-item ok" onclick="Game.Wild.scout()"><span class="num">[侦]</span> 派出侦察(需侦察机)</div>';
       if (s.wilds._scout) {
         var sc = s.wilds._scout;
         var wt = D.wildTypes[sc.type];

@@ -33,7 +33,21 @@ class WorldMapServiceTest extends BaseServiceTest {
         t.setOccupied(true);t.setOccupiedBy(a.getId());t.setMined(200);wildTileRepository.save(t);
         var own=maps.target(a.getId(),"wild",t.getId());assertEquals(true,own.get("occupied"));assertEquals(1000,own.get("totalRes"));assertEquals(200,own.get("mined"));
         var other=maps.target(b.getId(),"wild",t.getId());assertEquals(false,other.get("occupied"));assertEquals(true,other.get("claimed"));assertFalse(other.containsKey("garrison"));
+        assertEquals(a.getId(),other.get("ownerId"));assertEquals(a.getUsername(),other.get("ownerName"));
+        assertEquals(a.getUsername(),own.get("ownerName"));
         var edge=(List<Map<String,Object>>)maps.chunk(b.getId(),12,12).get("targets");assertEquals(t.getId(),edge.get(0).get("id"));
+        assertEquals(a.getUsername(),edge.get(0).get("ownerName"));
+        assertFalse(edge.get(0).containsKey("garrison"));assertFalse(edge.get(0).containsKey("totalRes"));
+        t.setOccupiedBy(b.getId());wildTileRepository.save(t);
+        assertEquals(b.getUsername(),maps.target(a.getId(),"wild",t.getId()).get("ownerName"));
+        var changed=(List<Map<String,Object>>)maps.chunk(a.getId(),12,12).get("targets");
+        assertEquals(b.getUsername(),changed.get(0).get("ownerName"));
+        // Unclaimed wilds must not retain the previous owner's public identity.
+        t.setOccupied(false);wildTileRepository.save(t);
+        var unclaimed=maps.target(a.getId(),"wild",t.getId());
+        assertEquals(false,unclaimed.get("claimed"));assertFalse(unclaimed.containsKey("ownerId"));assertFalse(unclaimed.containsKey("ownerName"));
+        var released=(List<Map<String,Object>>)maps.chunk(a.getId(),12,12).get("targets");
+        assertFalse(released.get(0).containsKey("ownerName"));
         assertThrows(IllegalArgumentException.class,()->maps.target(a.getId(),"invalid",t.getId()));
     }
     @Test

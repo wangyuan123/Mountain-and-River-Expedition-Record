@@ -48,7 +48,7 @@ window.Game = window.Game || {};
       raremine:     { name: '稀矿厂',   desc: '每小时产出稀矿',            baseCost: { steel: 120, oil: 40 },              growth: 1.6, cat: 'res', produces: 'rare',  baseProduce: 12, slots: 32 },
       depot:        { name: '仓库',     desc: '提升资源上限,被掠夺时保护资源', baseCost: { steel: 100 },                  growth: 1.5, cat: 'res', capPer: 1500, protectPer: 1000, slots: 32 },
       lab:          { name: '科研中心', desc: '解锁与加速科技研究',        baseCost: { steel: 200, food: 100, rare: 20 },  growth: 1.6, cat: 'core', slots: 1 },
-      radar:        { name: '雷达站',   desc: '侦察野地与敌方兵力',        baseCost: { steel: 180, oil: 60, rare: 20 },    growth: 1.6, cat: 'core', slots: 1 },
+      radar:        { name: '雷达站',   desc: '预警进犯敌军与探测兵力',        baseCost: { steel: 180, oil: 60, rare: 20 },    growth: 1.6, cat: 'core', slots: 1 },
       wall:         { name: '围墙',     desc: '城防,提升守城部队防御',     baseCost: { steel: 200, food: 80 },             growth: 1.5, cat: 'def', defBonus: 5, slots: 1 },
       apron:        { name: '停机坪',   desc: '空军调度,提升空军出击上限', baseCost: { steel: 220, oil: 80, rare: 20 },    growth: 1.6, cat: 'def', airCap: 20, slots: 1 },
       transit:      { name: '运输站',   desc: '资源调度,全资源产出 +3%/级', baseCost: { steel: 160, food: 80 },            growth: 1.6, cat: 'res', resBonus: 3, slots: 1 },

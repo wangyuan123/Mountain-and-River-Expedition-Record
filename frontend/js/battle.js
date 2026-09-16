@@ -788,6 +788,25 @@ window.Game = window.Game || {};
       return h + '</div>';
     },
 
+    toggleBattleDetails: function () {
+      var box = document.getElementById('battleDetailsBox');
+      var btn = document.getElementById('btnBattleDetails');
+      if (!box) return;
+      var isHidden = box.style.display === 'none';
+      box.style.display = isHidden ? 'block' : 'none';
+      if (btn) {
+        var countBadge = btn.querySelector('.rb-details-count');
+        var countHtml = countBadge ? countBadge.outerHTML : '';
+        if (isHidden) {
+          btn.innerHTML = '📜 收起战斗详情 ' + countHtml + ' <span class="rb-toggle-arrow">▴</span>';
+          btn.classList.add('active');
+        } else {
+          btn.innerHTML = '📜 查看战斗详情 ' + countHtml + ' <span class="rb-toggle-arrow">▾</span>';
+          btn.classList.remove('active');
+        }
+      }
+    },
+
     renderReportDetail: function (v) {
       var r = this._viewReport;
       if (!r) { G.go('reports'); return; }
@@ -801,12 +820,26 @@ window.Game = window.Game || {};
         h += '</div>';
       } else {
         h += this.renderReportBoard(r, false);
+        var logs = Array.isArray(r.roundLogs) ? r.roundLogs : [];
+        var roundCount = 0;
+        for (var i = 0; i < logs.length; i++) {
+          if (String(logs[i] || '').indexOf('--') === 0) roundCount++;
+        }
+        var countText = roundCount > 0 ? ('共 ' + roundCount + ' 回合') : (logs.length > 0 ? (logs.length + ' 条记录') : '');
+        var badgeHtml = countText ? '<span class="rb-details-count" style="font-size:11px;font-weight:normal;opacity:0.85;margin-left:4px;">(' + countText + ')</span>' : '';
+
+        h += '<div class="report-details-toggle-wrap" style="margin:14px 0 6px;">';
+        h += '<button type="button" class="btn report-details-toggle-btn" id="btnBattleDetails" onclick="Game.Battle.toggleBattleDetails()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:4px;padding:8px 12px;font-size:13px;font-weight:600;">';
+        h += '📜 查看战斗详情 ' + badgeHtml + ' <span class="rb-toggle-arrow">▾</span>';
+        h += '</button>';
+        h += '</div>';
+
+        h += '<div id="battleDetailsBox" style="display:none;margin-top:8px;">';
         h += '<div class="zone-head">【回合战斗细节】</div>';
         h += this.renderCommanderPanel(r.commanders);
-        h += '<div class="blog" style="max-height:none">';
-        var logs = Array.isArray(r.roundLogs) ? r.roundLogs : [];
-        for (var i = 0; i < logs.length; i++) {
-          var line = String(logs[i] || '');
+        h += '<div class="blog" style="max-height:480px;overflow-y:auto;">';
+        for (var j = 0; j < logs.length; j++) {
+          var line = String(logs[j] || '');
           var lineCls = 'logline';
           if (line.indexOf('我方将领加成：') === 0) lineCls += ' mine commander-bonus';
           else if (line.indexOf('敌方将领加成：') === 0) lineCls += ' enemy commander-bonus';
@@ -817,7 +850,12 @@ window.Game = window.Game || {};
           else if (line.indexOf('--') === 0) lineCls += ' round';
           h += '<div class="' + lineCls + '">' + G.escapeHtml(line) + '</div>';
         }
+        if (!logs.length) {
+          h += '<div class="logline rc-dim" style="text-align:center;padding:8px;">暂无详细回合记录</div>';
+        }
         h += '</div>';
+        h += '</div>';
+
         h += '<div class="btn-row report-detail-actions" style="margin-top:10px">';
         h += '<button class="btn" onclick="Game.go(\'reports\')">↩ 返回战报</button>';
         h += '<button class="btn" onclick="Game.go(\'wounded\')">伤兵营</button>';

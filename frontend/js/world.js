@@ -55,7 +55,10 @@ window.Game = window.Game || {};
       if (action === 'declare') { this.declareWar(target.kind, idx); return; }
       if (target.kind === 'wild') {
         if (action === 'scout') this.scoutWild(idx);
-        else if (action === 'gather') this.gatherWild(idx);
+        else if (action === 'station') this.dispatchWild(idx, 'station');
+        else if (action === 'gather') this.startGatherWild(idx);
+        else if (action === 'harvest') this.harvestWild(idx);
+        else if (action === 'recall') this.recallWild(idx);
         else if (action === 'abandon') this.abandonWild(idx);
         else this.attackWild(idx, action);
       } else this.attack(target.kind, idx, action);
@@ -126,8 +129,9 @@ window.Game = window.Game || {};
           .map(function (t) { return { t: t, d: dist(px, py, t.x, t.y) }; })
           .sort(function (a, b) { return a.d - b.d; })[0];
         if (target) target = target.t;
-      } else if (kind === 'npc') {
-        target = (s.world.npcCities || [])
+      } else if (kind === 'npc' || kind === 'bandit') {
+        var bandits = (s.world.bandits && s.world.bandits.length) ? s.world.bandits : (s.world.npcCities || []);
+        target = bandits
           .filter(function (n) { return !n.defeated; })
           .map(function (n) { return { n: n, d: dist(px, py, n.x, n.y) }; })
           .sort(function (a, b) { return a.d - b.d; })[0];
@@ -147,6 +151,15 @@ window.Game = window.Game || {};
         if (target) target = target.t;
       }
       if (!target) { G.toast('没有可跳转的目标'); return; }
+      if (kind === 'owned') {
+        s.world._activeTab = 'owned';
+      } else if (kind === 'wild') {
+        s.world._activeTab = 'wild';
+      } else if (kind === 'npc' || kind === 'bandit') {
+        s.world._activeTab = 'npc';
+      } else if (kind === 'player') {
+        s.world._activeTab = 'player';
+      }
       this.jumpTo(target.x, target.y);
       G.toast('已跳转至 (' + target.x + ',' + target.y + ') 距 ' + dist(px, py, target.x, target.y) + ' 格');
     },
@@ -292,21 +305,103 @@ window.Game = window.Game || {};
       G.go('dispatch');
     },
 
+    showConfirm: function (opts) {
+      if (typeof document === 'undefined') {
+        if (confirm((opts.title ? opts.title + '\n\n' : '') + opts.message)) {
+          if (opts.onConfirm) opts.onConfirm();
+        }
+        return;
+      }
+      var mask = document.createElement('div');
+      mask.className = 'modal-mask';
+      var esc = G.escapeHtml || function (s) { return s; };
+      var title = esc(opts.title || '操作确认');
+      var msg = esc(opts.message || '');
+      var sub = opts.subMessage ? '<div style="margin-top:10px;font-size:13px;opacity:.78;line-height:1.5;">' + esc(opts.subMessage) + '</div>' : '';
+      var okText = esc(opts.okText || '确定');
+      var cancelText = esc(opts.cancelText || '取消');
+      var okClass = opts.danger ? 'btn btn-danger' : 'btn btn-primary';
+      mask.innerHTML =
+        '<div class="modal-card" style="max-width:380px;width:92%;text-align:center;box-shadow:0 12px 36px rgba(0,0,0,.35);">' +
+          '<div class="modal-title" style="font-size:16px;font-weight:bold;margin-bottom:12px;">' + title + '</div>' +
+          '<div style="font-size:14px;color:var(--ink-sec, #555);line-height:1.6;margin-bottom:20px;text-align:left;padding:0 4px;">' +
+            msg + sub +
+          '</div>' +
+          '<div style="display:flex;gap:12px;justify-content:flex-end;">' +
+            '<button class="btn btn-secondary" id="confirmCancelBtn">' + cancelText + '</button>' +
+            '<button class="' + okClass + '" id="confirmOkBtn">' + okText + '</button>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(mask);
+      var cleanup = function () { if (mask.parentNode) mask.parentNode.removeChild(mask); };
+      mask.querySelector('#confirmCancelBtn').onclick = cleanup;
+      mask.querySelector('#confirmOkBtn').onclick = function () {
+        cleanup();
+        if (typeof opts.onConfirm === 'function') opts.onConfirm();
+      };
+      mask.onclick = function (e) { if (e.target === mask) cleanup(); };
+    },
+
+    dispatchWild: function (idx, action) {
+      var s = Core.state;
+      var t = s.world.wildTiles[idx];
+      if (!t) return;
+      s.world._dispatchTarget = { kind: 'wild', idx: idx, action: action || 'station', target: t };
+      G.go('dispatch');
+    },
+
     abandonWild: function (idx) {
       var s = Core.state;
       var t = s.world.wildTiles[idx];
       if (!t || !t.occupied) return;
-      if (!confirm('放弃该资源野地?')) return;
-      G.API.wildAbandon(t.id).then(function () {
-        if (G.WorldMap) G.WorldMap.invalidate();
-        G.toast('已放弃');
-        Core.render();
-      }).catch(function (err) {
-        G.toast(err.message || '操作失败');
+      var wtDef = (G.DATA && G.DATA.wildTypes && G.DATA.wildTypes[t.type]) || {};
+      var wtName = wtDef.name || '野地';
+      var hasGarrison = t.garrison && Object.values(t.garrison).some(function (v) { return v > 0; });
+      this.showConfirm({
+        title: '⚠️ 放弃领地确认',
+        danger: true,
+        okText: '确认放弃',
+        cancelText: '保留领地',
+        message: '确定要放弃【' + wtName + ' (' + t.x + ', ' + t.y + ')】吗？',
+        subMessage: '放弃后领地将恢复为中立未占领状态' + (hasGarrison ? '，驻扎的部队将自动撤回主城' : '') + '。',
+        onConfirm: function () {
+          G.API.wildAbandon(t.id).then(function (res) {
+            if (G.WorldMap) G.WorldMap.invalidate();
+            G.toast(res && res.message ? res.message : '已放弃领地');
+            Core.render();
+          }).catch(function (err) {
+            G.toast(err.message || '操作失败');
+          });
+        }
       });
     },
 
-    gatherWild: function (idx) {
+    recallWild: function (idx) {
+      var s = Core.state;
+      var t = s.world.wildTiles[idx];
+      if (!t || !t.occupied) return;
+      var wtDef = (G.DATA && G.DATA.wildTypes && G.DATA.wildTypes[t.type]) || {};
+      var wtName = wtDef.name || '野地';
+      this.showConfirm({
+        title: '🛡 撤回驻军确认',
+        danger: false,
+        okText: '确认撤回',
+        cancelText: '取消',
+        message: '确定要撤回驻扎在【' + wtName + ' (' + t.x + ', ' + t.y + ')】的部队吗？',
+        subMessage: '驻扎部队将撤回并返回主城，野地保留您的占领归属，您可随时重新派遣部队进驻。',
+        onConfirm: function () {
+          G.API.wildRecall(t.id).then(function (res) {
+            if (G.WorldMap) G.WorldMap.invalidate();
+            G.toast(res && res.message ? res.message : '驻军已撤回主城');
+            Core.render();
+          }).catch(function (err) {
+            G.toast(err.message || '操作失败');
+          });
+        }
+      });
+    },
+
+    startGatherWild: function (idx) {
       var s = Core.state;
       var t = s.world.wildTiles[idx];
       if (!t || !t.occupied) return;
@@ -314,8 +409,43 @@ window.Game = window.Game || {};
       if (!wt || !wt.res) { G.toast('该野地无资源可采集'); return; }
       var remaining = (t.totalRes || 0) - (t.mined || 0);
       if (remaining <= 0) { G.toast('该野地资源已耗尽'); return; }
-      s.world._dispatchTarget = { kind: 'wild_gather', idx: idx, action: 'gather', target: t };
-      G.go('dispatch');
+      var hasGarrison = t.garrison && Object.values(t.garrison).some(function (v) { return v > 0; });
+      if (!hasGarrison) {
+        G.toast('野地暂无驻军，请先【派遣】部队进驻');
+        return;
+      }
+      G.API.wildStartGather(t.id).then(function (res) {
+        if (G.WorldMap) G.WorldMap.invalidate();
+        G.toast(res && res.message ? res.message : '已开始就地采集');
+        Core.render();
+      }).catch(function (err) {
+        G.toast(err.message || '开启采集失败');
+      });
+    },
+
+    harvestWild: function (idx) {
+      var s = Core.state;
+      var t = s.world.wildTiles[idx];
+      if (!t || !t.occupied) return;
+      G.API.wildHarvest(t.id).then(function (res) {
+        if (G.WorldMap) G.WorldMap.invalidate();
+        G.toast(res && res.message ? res.message : '收获成功');
+        Core.render();
+      }).catch(function (err) {
+        G.toast(err.message || '收获失败');
+      });
+    },
+
+    gatherWild: function (idx) {
+      var s = Core.state;
+      var t = s.world.wildTiles[idx];
+      if (!t || !t.occupied) return;
+      var hasGarrison = t.garrison && Object.values(t.garrison).some(function (v) { return v > 0; });
+      if (hasGarrison) {
+        this.startGatherWild(idx);
+      } else {
+        this.dispatchWild(idx, 'station');
+      }
     },
 
     toggleIncomingExpand: function (idx) {
@@ -354,7 +484,11 @@ window.Game = window.Game || {};
       var esc = G.escapeHtml || function (s) { return s; };
       mask.innerHTML =
         '<div class="modal-card dw-confirm">' +
-          '<div class="modal-title dw-title"><span class="dw-icon">⚔</span>对 ' + esc(target.name) + ' 宣战</div>' +
+          '<div class="dw-title">' +
+            '<span class="dw-icon" aria-hidden="true">⚔</span>' +
+            '<div class="dw-title-copy"><div class="dw-title-heading">宣战确认</div>' +
+              '<div class="dw-title-target">对「' + esc(target.name) + '」发起战争</div></div>' +
+          '</div>' +
           '<div class="modal-body dw-body">' +
             // 敌城信息
             '<div class="dw-target">' +
@@ -477,6 +611,79 @@ window.Game = window.Game || {};
       return Math.floor(total);
     },
 
+    calcDispatchSpeed: function (army) {
+      var slowestSpd = Infinity;
+      var slowestUnitId = null;
+      var slowestUnitName = '';
+      var unitCount = 0;
+      var totalTroops = 0;
+      var unitsInfo = [];
+
+      for (var uid in army) {
+        var count = parseInt(army[uid], 10) || 0;
+        if (count <= 0) continue;
+        var u = D.units[uid];
+        if (!u) continue;
+
+        unitCount++;
+        totalTroops += count;
+
+        var baseSpd = u.spd || 1;
+        var techMul = (typeof Core !== 'undefined' && Core.spdMul) ? Core.spdMul(u.cat) : 1;
+        var effSpd = baseSpd * techMul;
+
+        unitsInfo.push({
+          uid: uid,
+          name: u.name,
+          cat: u.cat,
+          baseSpd: baseSpd,
+          techMul: techMul,
+          effSpd: effSpd,
+          count: count
+        });
+
+        if (effSpd < slowestSpd) {
+          slowestSpd = effSpd;
+          slowestUnitId = uid;
+          slowestUnitName = u.name;
+        }
+      }
+
+      if (unitCount === 0) {
+        return { slowestSpd: null, slowestUnitId: null, slowestUnitName: '', unitCount: 0, totalTroops: 0, units: [] };
+      }
+
+      return {
+        slowestSpd: slowestSpd,
+        slowestUnitId: slowestUnitId,
+        slowestUnitName: slowestUnitName,
+        unitCount: unitCount,
+        totalTroops: totalTroops,
+        units: unitsInfo
+      };
+    },
+
+    calcDispatchMarchTime: function (distance, slowestSpd, speedMul) {
+      if (!slowestSpd || slowestSpd <= 0 || distance == null || distance < 0) return null;
+      var mul = speedMul || 1.0;
+      var sec = Math.max(1, Math.ceil((distance * 9) / (slowestSpd * mul)));
+      return sec;
+    },
+
+    fmtDuration: function (sec) {
+      if (sec == null) return '--';
+      var s = Math.max(0, Math.round(sec));
+      if (s < 60) return s + ' 秒';
+      var m = Math.floor(s / 60);
+      var remS = s % 60;
+      if (m < 60) {
+        return remS > 0 ? (m + ' 分 ' + remS + ' 秒') : (m + ' 分钟');
+      }
+      var h = Math.floor(m / 60);
+      var remM = m % 60;
+      return h + ' 小时 ' + (remM > 0 ? (remM + ' 分 ') : '') + (remS > 0 ? (remS + ' 秒') : '');
+    },
+
     onDispatchSliderChange: function (uid, val) {
       var num = parseInt(val, 10);
       if (isNaN(num)) num = 0;
@@ -489,7 +696,7 @@ window.Game = window.Game || {};
         var pct = max > 0 ? Math.min(100, Math.max(0, (num / max) * 100)) : 0;
         sliderEl.style.setProperty('--p', pct.toFixed(1) + '%');
       }
-      this.updateEstLoad();
+      this.updateDispatchStats();
     },
 
     onDispatchInputChange: function (uid, val) {
@@ -499,7 +706,7 @@ window.Game = window.Game || {};
       if (val === '') {
         sliderEl.value = 0;
         sliderEl.style.setProperty('--p', '0%');
-        this.updateEstLoad();
+        this.updateDispatchStats();
         return;
       }
       var num = parseInt(val, 10);
@@ -508,12 +715,13 @@ window.Game = window.Game || {};
       sliderEl.value = clamped;
       var pct = max > 0 ? Math.min(100, Math.max(0, (clamped / max) * 100)) : 0;
       sliderEl.style.setProperty('--p', pct.toFixed(1) + '%');
-      this.updateEstLoad();
+      this.updateDispatchStats();
     },
 
-    updateEstLoad: function () {
-      var el = document.getElementById('estLoad');
-      if (!el) return;
+    updateDispatchStats: function () {
+      if (typeof document === 'undefined' || !document.getElementById) return;
+      var s = Core.state;
+      var dt = s && s.world && s.world._dispatchTarget;
       var currentArmy = {};
       for (var k in D.units) {
         var input = document.getElementById('dqty_' + k);
@@ -522,7 +730,89 @@ window.Game = window.Game || {};
           if (n > 0) currentArmy[k] = n;
         }
       }
-      el.textContent = G.fmt(this.calcDispatchLoad(currentArmy));
+
+      // 1. 更新负重
+      var estLoadEl = document.getElementById('estLoad');
+      if (estLoadEl) {
+        estLoadEl.textContent = G.fmt(this.calcDispatchLoad(currentArmy));
+      }
+
+      // 2. 行军情报卡片
+      var statsCard = document.getElementById('dispatchStatsCard');
+      if (!statsCard) return;
+
+      var speedRes = this.calcDispatchSpeed(currentArmy);
+
+      // 目标与距离计算
+      var cp = (s.world && (s.world.cityPos || s.world.pos)) || { x: 0, y: 0 };
+      var targetX = dt && dt.target ? dt.target.x : 0;
+      var targetY = dt && dt.target ? dt.target.y : 0;
+      var marchDist = (this._currentRoute && this._currentRoute.distance != null)
+        ? this._currentRoute.distance
+        : (Math.abs(cp.x - targetX) + Math.abs(cp.y - targetY));
+
+      // 行军加速状态
+      var now = Date.now();
+      var cs = s.cityState || {};
+      var hasBoost = cs.marchBoostUntil && cs.marchBoostUntil > now;
+      var speedMul = hasBoost ? 1.5 : 1.0;
+
+      var distEl = document.getElementById('estMarchDist');
+      var speedEl = document.getElementById('estMarchSpeed');
+      var timeOneWayEl = document.getElementById('estMarchTimeOneWay');
+      var timeRoundEl = document.getElementById('estMarchTimeRound');
+      var speedTipEl = document.getElementById('estMarchSpeedTip');
+      var boostTagEl = document.getElementById('estMarchBoostTag');
+
+      if (distEl) distEl.textContent = marchDist + ' 格';
+
+      if (boostTagEl) {
+        boostTagEl.style.display = hasBoost ? 'inline-block' : 'none';
+      }
+
+      if (!speedRes.slowestSpd) {
+        if (speedEl) speedEl.textContent = '--';
+        if (timeOneWayEl) timeOneWayEl.textContent = '请选择出征部队';
+        if (timeRoundEl) timeRoundEl.textContent = '--';
+        if (speedTipEl) speedTipEl.textContent = '未选择出征兵力，暂无法计算行军时间与全军移速';
+        return;
+      }
+
+      var sec = this.calcDispatchMarchTime(marchDist, speedRes.slowestSpd, speedMul);
+      var roundSec = sec * 2;
+
+      var effSpdStr = speedRes.slowestSpd.toFixed(1);
+      if (effSpdStr.endsWith('.0')) effSpdStr = effSpdStr.slice(0, -2);
+      if (speedEl) {
+        speedEl.textContent = effSpdStr + ' 格/单位';
+      }
+      if (timeOneWayEl) {
+        timeOneWayEl.textContent = this.fmtDuration(sec);
+      }
+      if (timeRoundEl) {
+        timeRoundEl.textContent = this.fmtDuration(roundSec);
+      }
+
+      if (speedTipEl) {
+        var slowestUnit = speedRes.units.find(function(u) { return u.uid === speedRes.slowestUnitId; });
+        var techBonus = slowestUnit ? Math.round((slowestUnit.techMul - 1) * 100) : 0;
+        var techStr = techBonus > 0 ? (' 含科技+' + techBonus + '%') : '';
+
+        var tip = '';
+        if (speedRes.unitCount > 1) {
+          tip = '协同行军：受限于最慢兵种【' + speedRes.slowestUnitName + '】(基速 ' + (slowestUnit ? slowestUnit.baseSpd : '') + (techStr ? ' ·' + techStr : '') + ')，全军保持统一速度出发与到达';
+        } else {
+          tip = '单一兵种【' + speedRes.slowestUnitName + '】全速推进 (基速 ' + (slowestUnit ? slowestUnit.baseSpd : '') + (techStr ? ' ·' + techStr : '') + ')';
+        }
+        if (hasBoost) {
+          tip += ' · ⚡行军加速生效中 (+50%)';
+        }
+        speedTipEl.textContent = tip;
+      }
+    },
+
+    updateEstLoad: function () {
+      this.updateDispatchStats();
     },
 
     cancelDispatch: function () {
@@ -639,17 +929,20 @@ window.Game = window.Game || {};
       var isWildConquer = dt.kind === 'wild';
       var isGather = dt.kind === 'wild_gather';
       var isScout = dt.action === 'scout';
-      var actionNames = { conquer: '征服', plunder: '掠夺', scout: '侦查', gather: '采集' };
+      var isStation = dt.action === 'station';
+      var actionNames = { conquer: '征服', plunder: '掠夺', scout: '侦查', gather: '采集', station: '派遣进驻' };
       var actionName = actionNames[dt.action] || '征服';
       var actionDesc = isScout
         ? '派遣侦察机前往目标，抵达后进行侦查并生成情报报告，幸存侦察机自动返城。'
+        : isStation
+        ? '派遣部队行军进驻已占领野地，进驻后可驻防防守并就地开启资源采集。'
         : isGather
         ? '派遣部队前往已占领野地采集资源，采集量取决于部队负重，采集完成后自动返城。'
         : isWildConquer
           ? (dt.action === 'plunder'
             ? '击败野地守军后掠夺资源，根据幸存部队负重夺取野地资源，不占领该野地。'
             : (target._wildType.res
-              ? '征服野地守军后占领该资源点，可派遣部队采集资源。'
+              ? '征服野地守军后占领该资源点，可派遣部队进驻并采集资源。'
               : '征服野地守军后占领该地块，扩张领土。'))
           : {
               conquer: '彻底攻占敌方城市，胜利后夺取全部资源（含黄金）',
@@ -657,7 +950,7 @@ window.Game = window.Game || {};
               scout: '派遣侦查机刺探敌方详情'
             }[dt.action] || '';
       var h = '';
-      h += '<div class="title">- ' + (isGather ? '采集派遣' : '出征准备') + ' -</div>';
+      h += '<div class="title">- ' + (isStation ? '派遣进驻' : (isGather ? '采集派遣' : '出征准备')) + ' -</div>';
       h += '<div class="panel">';
       h += '<div class="bfield">行动: <b style="color:var(--accent)">' + actionName + '</b> | 目标: <b>' + target.name + '</b>';
       if (dt.kind !== 'player' && target.level) h += ' Lv.' + target.level;
@@ -705,11 +998,15 @@ window.Game = window.Game || {};
 
       h += '<div class="zone-head">-- 兵种配置 (选择出征数量) --</div>';
       h += '<div class="panel">';
-      var defaultLoad = this.calcDispatchLoad(s.army);
+      var defaultArmy = {};
+      for (var uid in D.units) {
+        var have = s.army[uid] || 0;
+        if (have <= 0) continue;
+        if (isScout && uid !== 'scout') continue;
+        defaultArmy[uid] = Math.min(have, 1);
+      }
+      var defaultLoad = this.calcDispatchLoad(defaultArmy);
       var hasAny = false;
-      // 征服/掠夺时默认编入 1 架侦察机，作为前置侦察与吸收首轮火力的炮灰；
-      // 纯侦查行动仍只显示侦察机并默认 1 架，采集等行动保持全量配置。
-      var sacrificialScout = dt.action === 'conquer' || dt.action === 'plunder';
       for (var uid in D.units) {
         var have = s.army[uid] || 0;
         if (have <= 0) continue;
@@ -717,12 +1014,19 @@ window.Game = window.Game || {};
         hasAny = true;
         var u = D.units[uid];
         var isLogi = u.logistic ? ' (辎重' + u.load + '/辆)' : '';
-        var initialVal = (isScout || (sacrificialScout && uid === 'scout')) ? Math.min(have, 1) : have;
+        var techMul = (typeof Core !== 'undefined' && Core.spdMul) ? Core.spdMul(u.cat) : 1;
+        var techBonus = Math.round((techMul - 1) * 100);
+        var effSpd = (u.spd * techMul).toFixed(1);
+        if (effSpd.endsWith('.0')) effSpd = effSpd.slice(0, -2);
+        var spdBadge = techBonus > 0
+          ? ' <span class="dispatch-unit-spd has-tech" title="基础移速 ' + u.spd + '，科技加成 +' + techBonus + '%">移速 ' + effSpd + ' <small class="tech-tag">⚡+' + techBonus + '%</small></span>'
+          : ' <span class="dispatch-unit-spd" title="基础移速 ' + u.spd + '">移速 ' + effSpd + '</span>';
+        var initialVal = Math.min(have, 1);
         var pct = have > 0 ? ((initialVal / have) * 100).toFixed(1) : 0;
         var sliderId = 'dslider_' + uid;
         h += '<div class="dispatch-unit-row">';
         h += '<div class="dispatch-unit-info">';
-        h += '<span class="dispatch-unit-name">' + u.name + isLogi + '</span>';
+        h += '<span class="dispatch-unit-name">' + u.name + isLogi + spdBadge + '</span>';
         h += '<span class="dispatch-unit-have">城内' + G.fmt(have) + '</span>';
         h += '</div>';
         h += '<div class="dispatch-unit-control">';
@@ -734,7 +1038,36 @@ window.Game = window.Game || {};
         h += '</div>';
       }
       if (!hasAny) h += '<div class="desc">' + (isScout ? '城内无侦察机可用,请先制造侦察机。' : '城内无可用部队,请先征兵。') + '</div>';
-      if (!isScout) h += '<div class="desc" style="margin-top:4px">当前编队预估辎重: <b id="estLoad">' + G.fmt(defaultLoad) + '</b></div>';
+      h += '<div class="dispatch-stats-card" id="dispatchStatsCard">';
+      h += '  <div class="dispatch-stats-header">';
+      h += '    <span class="dispatch-stats-title">行军与编队情报</span>';
+      h += '    <span class="dispatch-boost-tag" id="estMarchBoostTag" style="display:none">⚡ 行军加速生效中 (+50%)</span>';
+      h += '  </div>';
+      h += '  <div class="dispatch-stats-grid">';
+      h += '    <div class="dispatch-stat-item">';
+      h += '      <span class="dispatch-stat-label">行军距离</span>';
+      h += '      <strong class="dispatch-stat-val" id="estMarchDist">--</strong>';
+      h += '    </div>';
+      h += '    <div class="dispatch-stat-item">';
+      h += '      <span class="dispatch-stat-label">全军基准移速</span>';
+      h += '      <strong class="dispatch-stat-val" id="estMarchSpeed">--</strong>';
+      h += '    </div>';
+      h += '    <div class="dispatch-stat-item highlight">';
+      h += '      <span class="dispatch-stat-label">预计单程耗时</span>';
+      h += '      <strong class="dispatch-stat-val highlight" id="estMarchTimeOneWay">--</strong>';
+      h += '    </div>';
+      h += '    <div class="dispatch-stat-item">';
+      h += '      <span class="dispatch-stat-label">预计往返总耗时</span>';
+      h += '      <strong class="dispatch-stat-val" id="estMarchTimeRound">--</strong>';
+      h += '    </div>';
+      h += '  </div>';
+      h += '  <div class="dispatch-stats-tip" id="estMarchSpeedTip">请配置出征兵力以计算行军时间</div>';
+      if (!isScout) {
+        h += '  <div class="dispatch-stats-footer">';
+        h += '    <span>当前编队预估辎重: <b id="estLoad">' + G.fmt(defaultLoad) + '</b></span>';
+        h += '  </div>';
+      }
+      h += '</div>';
       h += '</div>';
 
       // 任何行军(侦查/征服/掠夺/采集)都可以带指挥官
@@ -817,6 +1150,8 @@ window.Game = window.Game || {};
       h += '<button class="btn warn" onclick="Game.World.cancelDispatch()">返回</button>';
       h += '</div>';
       v.innerHTML = h;
+      this._currentRoute = null;
+      this.updateDispatchStats();
       if(G.API&&G.API.client&&v.querySelector)this.bindRoutePreview(v,v.querySelector('#dispatchRoute'),function(){
         var army={};v.querySelectorAll('[id^="dqty_"]').forEach(function(el){army[el.id.slice(5)]=Math.max(0,parseInt(el.value,10)||0);});
         return {targetKind:dt.kind,targetId:target.id,action:dt.action||'conquer',army:army};
@@ -826,6 +1161,7 @@ window.Game = window.Game || {};
     bindRoutePreview: function(container,hint,request,labels) {
       if(!hint||!G.API||!G.API.client)return;
       var timer,sequence=0,terrain=null,currentRoute=null;
+      var self = this;
       if(G.DispatchRoute)G.DispatchRoute.loadTerrain().then(function(data){
         terrain=data;
         if(hint.isConnected&&currentRoute)G.DispatchRoute.render(hint,currentRoute,labels,terrain);
@@ -840,11 +1176,19 @@ window.Game = window.Game || {};
           if(!hint.isConnected)return;
           G.API.client.post('/game/world/route',request(),{silent:true}).then(function(route){
             if(!hint.isConnected||seq!==sequence)return;
-            currentRoute=route;hint.setAttribute('aria-busy','false');
+            currentRoute=route;
+            self._currentRoute = route;
+            hint.setAttribute('aria-busy','false');
             if(G.DispatchRoute)G.DispatchRoute.render(hint,route,labels,terrain);
             else hint.textContent='行军距离 '+route.distance+' 格 · 预计 '+route.seconds+' 秒';
+            self.updateDispatchStats();
           }).catch(function(e){
-            if(hint.isConnected&&seq===sequence){hint.setAttribute('aria-busy','false');hint.textContent=e.message||'路线计算失败，请重新选择部队后重试';}
+            if(hint.isConnected&&seq===sequence){
+              hint.setAttribute('aria-busy','false');
+              hint.textContent=e.message||'路线计算失败，请重新选择部队后重试';
+              self._currentRoute = null;
+              self.updateDispatchStats();
+            }
           });
         },300);
       }
@@ -951,31 +1295,27 @@ window.Game = window.Game || {};
           : '<div class="tcard-meta tcard-muted">守军未知</div>';
 
         if (ownedView) {
-          var gatherMarch = null;
-          var allMarches = s.world.marches || [];
-          for (var gmi = 0; gmi < allMarches.length; gmi++) {
-            if (allMarches[gmi].targetKind === 'wild_gather' && allMarches[gmi].targetId === t.id) {
-              gatherMarch = allMarches[gmi];
-              break;
-            }
-          }
+          var hasGarrison = t.garrison && Object.values(t.garrison).some(function(v){ return v > 0; });
+          var isGathering = Boolean(t.gathering);
           var statusHtml = '';
           var actions = '';
-          if (!wt.res) {
-            actions = '<button class="tcard-btn tcard-btn-warn" onclick="Game.World.abandonWild(' + it.i + ')">放弃</button>';
-          } else if (remain <= 0) {
-            statusHtml = '<div class="tcard-status tcard-status-bad">已耗尽</div>';
-            actions = '<button class="tcard-btn tcard-btn-warn" onclick="Game.World.abandonWild(' + it.i + ')">放弃</button>';
-          } else if (gatherMarch) {
-            if (gatherMarch.gathering && !gatherMarch.returning) {
-              statusHtml = '<div class="tcard-status tcard-status-busy">采集中 ' + World.fmtMarchTime(gatherMarch.gatherEndAt) + '</div>';
-            } else if (gatherMarch.returning) {
-              statusHtml = '<div class="tcard-status tcard-status-busy">返程中 ' + World.fmtMarchTime(gatherMarch.arriveAt) + '</div>';
-            } else {
-              statusHtml = '<div class="tcard-status tcard-status-busy">行军中 ' + World.fmtMarchTime(gatherMarch.arriveAt) + '</div>';
-            }
+
+          if (isGathering) {
+            statusHtml = '<div class="tcard-status tcard-status-busy">⛏ 采集中 ' + (t.gatherEndAt ? World.fmtMarchTime(t.gatherEndAt) : '') + '</div>';
+            actions = '<button class="tcard-btn tcard-btn-ok" onclick="Game.World.harvestWild(' + it.i + ')">收获</button>';
+          } else if (hasGarrison) {
+            statusHtml = '<div class="tcard-status" style="color:var(--good,#4caf50);font-size:11px;">🛡 驻守中 · 守军 ' + armyText(t.garrison) + '</div>';
+            actions = (wt.res && remain > 0 ? '<button class="tcard-btn tcard-btn-ok" onclick="Game.World.startGatherWild(' + it.i + ')">采集</button>' : '') +
+                      '<button class="tcard-btn" onclick="Game.World.recallWild(' + it.i + ')">撤回</button>' +
+                      '<button class="tcard-btn tcard-btn-warn" onclick="Game.World.abandonWild(' + it.i + ')">放弃</button>';
           } else {
-            actions = '<button class="tcard-btn tcard-btn-ok" onclick="Game.World.gatherWild(' + it.i + ')">采集</button>' +
+            var im = (s.world.marches || []).find(function(m){ return String(m.targetId) === String(t.id) && !m.returning; });
+            if (im) {
+              statusHtml = '<div class="tcard-status tcard-status-busy">进驻行军中 ' + World.fmtMarchTime(im.arriveAt) + '</div>';
+            } else {
+              statusHtml = '<div class="tcard-status tcard-muted">暂无驻军</div>';
+            }
+            actions = '<button class="tcard-btn tcard-btn-ok" onclick="Game.World.dispatchWild(' + it.i + ',\'station\')">派遣</button>' +
                       '<button class="tcard-btn tcard-btn-warn" onclick="Game.World.abandonWild(' + it.i + ')">放弃</button>';
           }
           return '<div class="tcard tcard-owned">' +
@@ -1187,13 +1527,18 @@ window.Game = window.Game || {};
 
       // 3. Tabs
       var total = wildsNearby.length + npcsNearby.length + playersNearby.length;
-      h += '<div class="map-tabs">' +
-           '<div class="map-tab ' + (activeTab === 'all' ? 'active' : '') + '" onclick="Game.World.setTab(\'all\')">全部 <span class="mt-count">' + total + '</span></div>' +
-           '<div class="map-tab ' + (activeTab === 'wild' ? 'active' : '') + '" onclick="Game.World.setTab(\'wild\')">野地 <span class="mt-count">' + wildsNearby.length + '</span></div>' +
-           '<div class="map-tab ' + (activeTab === 'npc' ? 'active' : '') + '" onclick="Game.World.setTab(\'npc\')">日寇 <span class="mt-count">' + npcsNearby.length + '</span></div>' +
-           '<div class="map-tab ' + (activeTab === 'player' ? 'active' : '') + '" onclick="Game.World.setTab(\'player\')">玩家 <span class="mt-count">' + playersNearby.length + '</span></div>' +
-           '<div class="map-tab ' + (activeTab === 'owned' ? 'active' : '') + '" onclick="Game.World.setTab(\'owned\')">已占 <span class="mt-count">' + owned.length + '</span></div>' +
-           '<div class="map-tabs-sort">' +
+      h += '<div class="map-tabs">';
+      if (activeTab === 'owned') {
+        h += '<div class="map-tab active" onclick="Game.World.setTab(\'owned\')">已占 <span class="mt-count">' + owned.length + '</span></div>' +
+             '<div class="map-tab map-tab-back" onclick="Game.World.setTab(\'all\')" title="返回查看周边全部目标" style="flex:1.5;color:var(--accent);">‹ 返回全部目标</div>';
+      } else {
+        h += '<div class="map-tab ' + (activeTab === 'all' ? 'active' : '') + '" onclick="Game.World.setTab(\'all\')">全部 <span class="mt-count">' + total + '</span></div>' +
+             '<div class="map-tab ' + (activeTab === 'wild' ? 'active' : '') + '" onclick="Game.World.setTab(\'wild\')">野地 <span class="mt-count">' + wildsNearby.length + '</span></div>' +
+             '<div class="map-tab ' + (activeTab === 'npc' ? 'active' : '') + '" onclick="Game.World.setTab(\'npc\')">日寇 <span class="mt-count">' + npcsNearby.length + '</span></div>' +
+             '<div class="map-tab ' + (activeTab === 'player' ? 'active' : '') + '" onclick="Game.World.setTab(\'player\')">玩家 <span class="mt-count">' + playersNearby.length + '</span></div>' +
+             '<div class="map-tab ' + (activeTab === 'owned' ? 'active' : '') + '" onclick="Game.World.setTab(\'owned\')">已占 <span class="mt-count">' + owned.length + '</span></div>';
+      }
+      h += '<div class="map-tabs-sort">' +
              '<select class="qty" onchange="Game.World.setSort(this.value)">' +
                '<option value="distance"' + (sortMode === 'distance' ? ' selected' : '') + '>近→远</option>' +
                '<option value="level-desc"' + (sortMode === 'level-desc' ? ' selected' : '') + '>高Lv</option>' +
@@ -1223,8 +1568,8 @@ window.Game = window.Game || {};
       if (cards.length === 0) {
         h += '<div class="map-empty">' +
              '<div class="me-icon">🗺️</div>' +
-             '<div class="me-text">视野内无可操作目标</div>' +
-             '<div class="me-hint">点击上方「最近野/寇/玩家/我占」快速跳转,或用底部方向键探索</div>' +
+             '<div class="me-text">' + (activeTab === 'owned' ? '暂无已占领的野地' : '视野内无可操作目标') + '</div>' +
+             '<div class="me-hint">' + (activeTab === 'owned' ? '可前往世界地图侦查并征服野地' : '点击上方「最近野/寇/玩家/我占」快速跳转,或用底部方向键探索') + '</div>' +
              '</div>';
       } else {
         h += '<div class="tcard-grid">' + cards.join('') + '</div>';

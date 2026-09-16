@@ -6,8 +6,9 @@
     this.minScale = this.scale;
     this.width = 1; this.height = 1;
   }
-  // Shared ground-plane projection. Art stays upright above these diamond cells.
-  Camera.projection = { a:1, b:.5, c:-1, d:.5 };
+  // North stays up and south stays down: neither axis shifts the other.
+  // Keep the previous cell's displayed width/depth so artwork retains its size.
+  Camera.projection = { a:2, b:0, c:0, d:1 };
   Camera.prototype.delta = function (x, y) {
     var p = Camera.projection, det = (p.a*p.d-p.b*p.c)*this.scale;
     return { x:(p.d*x-p.c*y)/det, y:(p.a*y-p.b*x)/det };

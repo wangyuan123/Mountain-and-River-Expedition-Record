@@ -2159,6 +2159,114 @@ button.drawer-rank-tip:hover { border-color: var(--accent); }
   }
 }
 
+/* 出征界面兵种速度徽章与行军情报仪表板 */
+.dispatch-unit-spd {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted, #64748b);
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.dispatch-unit-spd.has-tech {
+  color: var(--accent, #3182ce);
+  background: var(--accent-soft, rgba(49, 130, 206, 0.1));
+  border: 1px solid rgba(49, 130, 206, 0.25);
+}
+.dispatch-unit-spd .tech-tag {
+  font-size: 10px;
+  font-weight: 700;
+  color: #dd6b20;
+}
+
+.dispatch-stats-card {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: var(--surface-muted, #f8fafc);
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+.dispatch-stats-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.dispatch-stats-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink, #1e293b);
+  letter-spacing: 0.3px;
+}
+.dispatch-boost-tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: #b7791f;
+  background: #fefcbf;
+  border: 1px solid #f6e05e;
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+.dispatch-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+}
+@media (max-width: 500px) {
+  .dispatch-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.dispatch-stat-item {
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 6px;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dispatch-stat-item.highlight {
+  background: rgba(49, 130, 206, 0.07);
+  border-color: rgba(49, 130, 206, 0.28);
+}
+.dispatch-stat-label {
+  font-size: 11px;
+  color: var(--muted, #64748b);
+}
+.dispatch-stat-val {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink, #1e293b);
+  font-variant-numeric: tabular-nums;
+}
+.dispatch-stat-val.highlight {
+  color: var(--accent, #2b6cb0);
+  font-size: 14px;
+}
+.dispatch-stats-tip {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--muted, #64748b);
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 4px;
+  padding: 5px 8px;
+  margin-bottom: 6px;
+}
+.dispatch-stats-footer {
+  display: flex;
+  justify-content: flex-end;
+  font-size: 12px;
+  color: var(--muted, #64748b);
+}
+
 .bfield, .btimer, .bforce, .blog {
   border-radius: 8px;
   box-shadow: none;
@@ -2309,6 +2417,32 @@ button.drawer-rank-tip:hover { border-color: var(--accent); }
 .rb-side.l { color: var(--danger); }
 .rb-unit.mine { color: var(--accent); }
 .rb-unit.enemy { color: var(--danger); }
+
+.report-details-toggle-wrap {
+  margin: 12px 0 6px;
+}
+.report-details-toggle-btn {
+  background: var(--surface-muted, #f4f0e4);
+  color: var(--accent-dark, #4a3417);
+  border: 1px solid var(--line, #d8c890);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.report-details-toggle-btn:hover {
+  background: var(--surface, #ffffff);
+  border-color: var(--accent, #9a6a22);
+}
+.report-details-toggle-btn.active {
+  background: var(--surface, #ffffff);
+  border-color: var(--accent, #9a6a22);
+  color: var(--accent, #9a6a22);
+}
+.rb-toggle-arrow {
+  display: inline-block;
+  font-size: 11px;
+  transition: transform 0.2s ease;
+}
 
 #toast {
   /* container only - individual toast items carry the visual styling */
@@ -4119,15 +4253,34 @@ button.drawer-rank-tip:hover { border-color: var(--accent); }
 
 /* ===== 宣战二次确认弹窗 ===== */
 .dw-confirm { max-width: 380px; }
-.dw-confirm .modal-title.dw-title {
-  background: linear-gradient(180deg, #8a2c2c 0%, #6a1f1f 100%);
-  color: #ffe7c4;
-  border-bottom: 2px solid #d4a04c;
-  text-align: center;
-  font-size: 16px;
-  letter-spacing: 1px;
+/* Own the header palette; generic theme .modal-title rules must not recolor it. */
+.dw-confirm .dw-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 auto;
+  padding: 16px 18px;
+  background: linear-gradient(135deg, #293d50 0%, #192936 100%);
+  color: #fff8e9;
+  border-bottom: 2px solid #d9b578;
+  text-align: left;
 }
-.dw-confirm .dw-icon { font-size: 18px; margin-right: 6px; vertical-align: -2px; }
+.dw-confirm .dw-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 38px;
+  height: 38px;
+  border: 1px solid #9e825b;
+  border-radius: 9px;
+  background: #374450;
+  color: #f3cf8e;
+  font-size: 23px;
+  line-height: 1;
+}
+.dw-confirm .dw-title-copy { min-width: 0; }
+.dw-confirm .dw-title-heading { color: #fff8e9; font-size: 18px; font-weight: 700; line-height: 1.4; letter-spacing: 1px; }
+.dw-confirm .dw-title-target { margin-top: 4px; color: #d5dfe7; font-size: 12px; font-weight: 400; line-height: 1.5; overflow-wrap: anywhere; }
 .dw-confirm .dw-body { padding: 14px 18px 4px; }
 
 /* 敌城信息 */
