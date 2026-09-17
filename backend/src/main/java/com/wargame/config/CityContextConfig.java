@@ -32,6 +32,6 @@ public class CityContextConfig implements WebMvcConfigurer {
             @Override public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
                 if (request.getAttribute("game.cityScope") instanceof CityScope.Scope selected) selected.close();
             }
-        }).addPathPatterns("/api/**").excludePathPatterns("/api/auth/**");
+        }).addPathPatterns("/api/game/**");
     }
 }

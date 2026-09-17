@@ -25,6 +25,7 @@ window.Game = window.Game || {};
     },
 
     connect: function () {
+      if (G.Protection && !G.Protection.canRequest()) return;
       // Get token from API
       var token = G.API.getToken();
       if (!token) { this.setStatus('disconnected'); return; }
@@ -41,7 +42,8 @@ window.Game = window.Game || {};
       if (port && port !== 8080 && port !== 80) {
         wsHost = location.hostname + ':8080';
       }
-      var wsUrl = protocol + '//' + wsHost + '/ws/game?token=' + token;
+      var wsUrl = protocol + '//' + wsHost + '/ws/game?token=' + encodeURIComponent(token);
+      if (G.Protection) wsUrl += '&playSession=' + encodeURIComponent(G.Protection.session());
 
       var socket = this.socket = new WebSocket(wsUrl);
 
@@ -62,6 +64,9 @@ window.Game = window.Game || {};
 
       this.socket.onclose = function (event) {
         if (WS.socket !== socket) return;
+        if (event && event.code === 4003 && G.Protection) {
+          WS.disconnect(); G.Protection.denied({ message: '游戏许可已结束，请查看开放时间。' }); G.Protection.refresh(); return;
+        }
         if (event && event.code === 4001) {
           WS.disconnect();
           // 本标签正在提交注销时，先让 HTTP 结果或状态查询完成。
@@ -136,6 +141,7 @@ window.Game = window.Game || {};
     },
 
     handleMessage: function (data) {
+      if (G.Protection && !G.Protection.canRequest()) return;
       if (data === 'pong') { this.lastPong = Date.now(); return; }
       try {
         var msg = JSON.parse(data);

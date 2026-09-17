@@ -520,10 +520,15 @@ window.Game = window.Game || {};
       if (alertCount > 0) {
         html += '<div class="march-bar" onclick="Game.go(\'alerts\')" style="cursor:pointer">⚔ 军情 ' + alertCount + ' 起 (行军' + marches.length + '/来袭' + incoming.length + ') 点击查看</div>';
       }
+      if (G.Protection) html += G.Protection.banner();
       top.innerHTML = html;
     },
 
     render: function () {
+      if (G.Protection && G.Protection.blocked && this.route !== 'login' && this.route !== 'protection') {
+        this.route = G.API.isLoggedIn() ? 'protection' : 'login';
+        this.state = null; G.state = null;
+      }
       if (G.WorldMap && (this.route !== 'world' || !G.WorldMap.isMap())) G.WorldMap.unmount();
       if (this.route !== 'alerts' && G.World && G.World.stopAlertTimer) G.World.stopAlertTimer();
       if (this.route !== 'wounded' && G.Wounded) G.Wounded.stop();
@@ -535,7 +540,7 @@ window.Game = window.Game || {};
       fn.call(this, v);
       // 每个功能页提供一致的返回入口。按钮放在页面渲染完成后插入，
       // 因此不会覆盖各模块自己的标题、筛选器或地图容器。
-      if (this.route !== 'home' && this.route !== 'login') this.renderBackButton(v);
+      if (this.route !== 'home' && this.route !== 'login' && this.route !== 'protection') this.renderBackButton(v);
       var foot = $('footbar');
       foot.innerHTML = this.footer();
       if (G.Onboarding) G.Onboarding.render();
@@ -684,7 +689,8 @@ window.Game = window.Game || {};
     /** 登录页只展示站点信息；游戏内提供常用导航并标识当前页面。 */
     footer: function () {
       var map = {
-        login: '登录/注册 或 [0]游客模式',
+        login: '实名注册 · 健康游戏',
+        protection: '账号服务在休息期间仍可办理',
         home: '',
         buildRes: '[1-9]升级 [0]返回',
         buildArmy: '[1-9]升级 [0]返回',

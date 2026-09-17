@@ -94,8 +94,13 @@ window.Game = window.Game || {};
 
     startGame: function () {
       var self = this;
-      // 通过 API 加载游戏状态，整体替换 G.state（不与旧状态合并）
-      return G.load().then(function (state) {
+      // 先建立游戏许可；账号登录本身不授予游戏数据访问权限。
+      var permit = G.Protection ? G.Protection.enter() : Promise.resolve(true);
+      return permit.then(function (allowed) {
+        if (!allowed) return null;
+        return G.load();
+      }).then(function (state) {
+        if (!state || (G.Protection && !G.Protection.canRequest())) return;
         G.state = state;
         Core.state = G.state;
         Core.init();
@@ -103,12 +108,16 @@ window.Game = window.Game || {};
         Core.route = 'home';
         Core.render();
         if (G.MainQuest) G.MainQuest.init();
+        if (G.Chat) G.Chat.loadHistory();
+        if (G.Mail) G.Mail.seed();
+        if (G.Task && G.Task.Quests) { G.Task.Quests.init(); G.Task.Quests.onEvent('login', 1, true); }
         // Connect WebSocket for real-time updates (skip guest mode - no valid JWT)
         if (G.WS && !Main.guestMode) {
           G.WS.connect();
         }
       }).catch(function (err) {
-        if (G.toast) G.toast('加载游戏状态失败');
+        if (G.Protection && G.API.isLoggedIn()) G.Protection.denied(err);
+        if (G.toast && !(G.Protection && G.Protection.blocked)) G.toast('加载游戏状态失败');
         console.warn('[Main] startGame load failed:', err);
       });
     },
@@ -325,42 +334,9 @@ window.Game = window.Game || {};
   G.Main = Main;
 
   function boot() {
-    if (G.API.isLoggedIn()) {
-      // 已登录：通过 API 异步加载游戏状态后再初始化
-      G.load().then(function (state) {
-        G.state = state;
-        Core.state = G.state;
-        Core.init();
-        Main.renderNavBar();
-        Core.route = 'home';
-        Core.render();
-        // 主线任务 + 新手引导系统
-        if (G.MainQuest) G.MainQuest.init();
-        // 加载世界频道历史，实时消息由 WebSocket 广播
-        if (G.Chat) G.Chat.loadHistory();
-        // 初始化邮件种子
-        if (G.Mail) G.Mail.seed();
-        // 初始化每日任务；登录进度照常计入，但页面刷新不弹任务提示。
-        if (G.Task && G.Task.Quests) {
-          G.Task.Quests.init();
-          G.Task.Quests.onEvent('login', 1, true);
-        }
-        // Connect WebSocket for real-time updates (skip guest tokens - no valid JWT)
-        var token = G.API.getToken();
-        if (G.WS && token && token.indexOf('guest_') !== 0) {
-          G.WS.connect();
-        }
-      }).catch(function (err) {
-        console.warn('[Main] boot load failed:', err);
-        Core.bindKeys();
-        Core.route = 'login';
-        Core.render();
-      });
-    } else {
-      Core.bindKeys();
-      Core.route = 'login';
-      Core.render();
-    }
+    Core.bindKeys();
+    if (G.API.isLoggedIn()) Main.startGame();
+    else { Core.route = 'login'; Core.render(); }
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

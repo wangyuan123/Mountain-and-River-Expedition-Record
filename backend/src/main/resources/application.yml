@@ -32,6 +32,14 @@ jwt:
   expiration: ${WARGAME_JWT_EXPIRATION:86400000}  # 24 hours in milliseconds
 
 game:
+  compliance:
+    data-key: ${WARGAME_COMPLIANCE_DATA_KEY:}
+    calendar-from: ${WARGAME_PLAY_CALENDAR_FROM:}
+    calendar-through: ${WARGAME_PLAY_CALENDAR_THROUGH:}
+    calendar-source: ${WARGAME_PLAY_CALENDAR_SOURCE:}
+    extra-open-dates: ${WARGAME_PLAY_EXTRA_OPEN_DATES:}
+    closed-dates: ${WARGAME_PLAY_CLOSED_DATES:}
+    support-url: ${WARGAME_SUPPORT_URL:}
   tick-interval: 5000
   tick-batch-size: 100
   tick-max-batches: 20

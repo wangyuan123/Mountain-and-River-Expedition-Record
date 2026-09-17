@@ -1,0 +1,13 @@
+.protection-page { --text: #243244; --bg: #fff; --border: #cbd5e1; --accent: #24569a; max-width: 680px; margin: 0 auto; padding: 16px; line-height: 1.7; }
+[data-theme="dark"] .protection-page { --text: #e2e8f0; --bg: #162032; --border: #3a4b5e; --accent: #94bddf; }
+[data-theme="paper"] .protection-page { --text: #273136; --bg: #f6f5f0; --border: #ded9cd; --accent: #3f5e4d; }
+.protection-page .panel { margin: 16px 0; padding: 16px; }
+.protection-page label { display: block; margin: 8px 0; }
+.protection-page input:not([type="checkbox"]), .protection-page select { max-width: 100%; padding: 8px; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; }
+.protection-page .btn { margin: 6px; }
+.protection-page a { color: var(--accent); }
+.protection-message { padding: 12px; border-left: 3px solid var(--accent); overflow-wrap: anywhere; }
+.protection-banner { width: 100%; padding: 7px 12px; border: 1px solid #cbd5e1; border-radius: 4px; background: #edf4fb; color: #24569a; cursor: pointer; font: inherit; }
+[data-theme="dark"] .protection-banner { background: #162032; color: #94bddf; border-color: #3a4b5e; }
+[data-theme="paper"] .protection-banner { background: #f6f5f0; color: #3f5e4d; border-color: #ded9cd; }
+.guardian-card { margin: 12px 0; padding: 12px; border: 1px solid var(--border); border-radius: 8px; }

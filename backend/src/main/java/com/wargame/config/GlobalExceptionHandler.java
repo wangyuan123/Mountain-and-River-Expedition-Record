@@ -12,6 +12,11 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(com.wargame.security.GameAccessException.class)
+    public ResponseEntity<Map<String, Object>> handleGameAccess(com.wargame.security.GameAccessException e) {
+        return ResponseEntity.status(e.getStatus()).body(Map.of("error", e.getMessage(), "code", e.getCode()));
+    }
+
     @ExceptionHandler({OptimisticLockingFailureException.class, OptimisticLockException.class})
     public ResponseEntity<Map<String, String>> handleConcurrentUpdate(Exception e) {
         return ResponseEntity.status(HttpStatus.CONFLICT)

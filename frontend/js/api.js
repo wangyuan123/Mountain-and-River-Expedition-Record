@@ -19,6 +19,7 @@ window.Game = window.Game || {};
 
   // 将后端返回的状态整体替换到 G.state / Core.state
   function applyState(state) {
+    if (G.Protection && !G.Protection.canRequest()) return null;
     if (state && typeof state === 'object') {
       // 兼容后端字段：username -> name
       if (state.player && state.player.username != null && state.player.name == null) {
@@ -120,6 +121,8 @@ window.Game = window.Game || {};
     },
 
     logout: function () {
+      // 结束服务端租约，失败时仍在客户端退出，租约超时会自动失效。
+      if (G.Protection) client.post('/play-sessions/end', {}, { silent: true, retry: 0 }).catch(function () {});
       client.clearToken();
       client.invalidateStateCache();
     },
@@ -171,6 +174,7 @@ window.Game = window.Game || {};
     },
 
     getGameState: function (force) {
+      if (G.Protection && !G.Protection.canRequest()) return Promise.reject(G.Protection.error());
       if (!force) {
         var cached = client.getCachedState();
         if (cached) return Promise.resolve(cached);

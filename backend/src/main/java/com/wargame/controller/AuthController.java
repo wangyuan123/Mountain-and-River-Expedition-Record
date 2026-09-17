@@ -22,6 +22,8 @@ public class AuthController {
     private final AuthService authService;
     private final JwtUtil jwtUtil;
     private final AccountService accountService;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.service.compliance.AntiAddictionService protection;
 
     public AuthController(AuthService authService, JwtUtil jwtUtil, AccountService accountService) {
         this.authService = authService;
@@ -50,6 +52,8 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<Map<String, String>> logout(HttpServletRequest request) {
+        // 主动退出及时结算许可；丢失退出请求仍由短租约停止计时。
+        protection.end(authService.getCurrentPlayer(), request.getHeader("X-Play-Session"));
         String header = request.getHeader("Authorization");
         if (header != null && header.startsWith("Bearer ")) {
             jwtUtil.revoke(header.substring(7));

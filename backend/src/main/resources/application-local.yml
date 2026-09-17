@@ -1,0 +1,6 @@
+# 只供本机人工验收，不得用于公开测试或生产；HTTP 核验还会检查回环地址。
+server:
+  address: 127.0.0.1
+game:
+  compliance:
+    local-fixtures: true

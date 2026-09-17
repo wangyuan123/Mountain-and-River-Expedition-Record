@@ -20,6 +20,8 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class AccountService {
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.service.compliance.AntiAddictionService protection;
     private final PlayerRepository players;
     private final PlayerCityRepository cities;
     private final GuildMemberRepository members;
@@ -219,6 +221,7 @@ public class AccountService {
         player.setWarAgainstId(null); player.setWarAt(0L); player.setWarEndAt(0L);
         player.setTax(0); player.setMorale(0); player.setResentment(0); player.setLastAppeaseAt(0L);
         // 保留用户名仅用于占用检查，密码替换为无法通过 BCrypt 验证的墓碑值。
+        protection.deleteAccount(id);
         player.setPasswordHash("!deleted");
         player.setAccountStatus("DELETED"); player.setDisabled(1); player.setDeletedAt(now);
         player.setAuthVersion(player.getAuthVersion() + 1);

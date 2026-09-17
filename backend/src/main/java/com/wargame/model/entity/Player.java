@@ -22,6 +22,10 @@ public class Player extends VersionedEntity implements CityEconomy {
     @Column(name = "active_city_id")
     private Long activeCityId;
 
+    /** 账号可先注册，只有实名及游戏许可通过后才初始化角色；旧存档默认已初始化。 */
+    @Column(name = "game_initialized", nullable = false)
+    private boolean gameInitialized = true;
+
     @Column(name = "username", unique = true, nullable = false, length = 50)
     private String username;
 

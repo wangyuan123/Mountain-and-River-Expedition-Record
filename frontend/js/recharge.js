@@ -64,6 +64,10 @@ window.Game = window.Game || {};
     },
 
     renderView: function (v) {
+      if (G.Protection && (!G.Protection.data || G.Protection.data.enabled !== false)) {
+        v.innerHTML = '<div class="title">充值服务未开放</div><div class="panel">当前未开放真实支付或模拟充值。你可继续使用正常玩法获得的资源。</div>';
+        return;
+      }
       var self = this;
       var h = '<div class="title">- 战时补给站 -</div>';
       h += '<div class="rech-empty">模拟支付环境，点击确认后钻石立即到账。</div>';

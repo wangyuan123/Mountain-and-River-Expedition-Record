@@ -11,7 +11,7 @@ import java.util.Optional;
 public interface PlayerRepository extends JpaRepository<Player, Long> {
 
     @org.springframework.data.jpa.repository.Query("select p.id from Player p where p.id > :afterId "
-            + "and p.accountStatus <> 'DELETED' and (p.accountStatus <> 'PENDING_DELETION' or p.recoverUntil > :cutoff) "
+            + "and p.gameInitialized = true and p.accountStatus <> 'DELETED' and (p.accountStatus <> 'PENDING_DELETION' or p.recoverUntil > :cutoff) "
             + "and (p.lastTick is null or p.lastTick <= :cutoff) order by p.id")
     List<Long> findDuePlayerIds(@org.springframework.data.repository.query.Param("afterId") long afterId,
                              @org.springframework.data.repository.query.Param("cutoff") long cutoff,

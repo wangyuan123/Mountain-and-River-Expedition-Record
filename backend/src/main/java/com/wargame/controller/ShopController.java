@@ -27,6 +27,9 @@ import java.util.Optional;
 public class ShopController {
 
     @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.service.compliance.AntiAddictionService protection;
+
+    @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
 
     private final AuthService authService;
@@ -50,6 +53,8 @@ public class ShopController {
     @PostMapping("/recharge")
     @Transactional
     public ResponseEntity<Map<String, Object>> recharge(@RequestBody GameDtos.ShopRechargeRequest request) {
+        // 当前只有模拟发钻接口，生产不提供付费服务，不能伪装成真实支付或绕过额度账本。
+        if (protection.enabled()) throw new com.wargame.security.GameAccessException("PAYMENT_DISABLED", "当前未开放充值服务");
         Long playerId = authService.getCurrentPlayer().getId();
         Map<String, Object> result = new LinkedHashMap<>();
         Integer diamonds = ShopItemPrices.getRechargeDiamond(request.pkgId());

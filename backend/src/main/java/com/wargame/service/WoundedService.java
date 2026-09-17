@@ -12,6 +12,9 @@ import java.util.*;
 public class WoundedService {
 
     @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.service.compliance.AntiAddictionService protection;
+
+    @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
     public static final long RETENTION_MS = 7L * 24 * 60 * 60 * 1000;
     private final WoundedUnitRepository wounded;
@@ -91,7 +94,7 @@ public class WoundedService {
             batch.setType(entry.getKey());
             batch.setCount(count);
             batch.setCreatedAt(now);
-            batch.setExpiresAt(now + RETENTION_MS);
+            batch.setExpiresAt(protection.treatmentDeadline(playerId, now + RETENTION_MS));
             batch.setRecoveryPercent(percent);
             wounded.save(batch);
             recovered.put(entry.getKey(), count);
@@ -147,7 +150,7 @@ public class WoundedService {
         WoundedUnit batch = wounded.findForTreatment(playerId, batchId)
                 .orElseThrow(() -> new IllegalArgumentException("伤兵不存在或已治疗"));
         if (batch.getCitySlot() != cityScope.slot(playerId)) throw new IllegalArgumentException("请切换到伤兵所属城市后治疗");
-        if (batch.getExpiresAt() <= System.currentTimeMillis()) throw new IllegalArgumentException("该批伤兵已超过7天救治期限");
+        if (batch.getExpiresAt() <= System.currentTimeMillis()) throw new IllegalArgumentException("该批伤兵已超过救治期限");
         if (count > batch.getCount()) throw new IllegalArgumentException("治疗数量超过剩余伤兵");
         long cost = "gold".equals(currency) ? goldCost(batch.getType(), count) : diamondCost(batch.getType(), count);
         int available = "gold".equals(currency) ? Objects.requireNonNullElse(balance.getGold(), 0) : Objects.requireNonNullElse(balance.getDiamond(), 0);

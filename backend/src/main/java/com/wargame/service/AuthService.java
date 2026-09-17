@@ -16,6 +16,9 @@ import java.util.concurrent.ThreadLocalRandom;
 @Service
 public class AuthService {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.service.compliance.AntiAddictionService protection;
+
     private final PlayerRepository playerRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
@@ -66,8 +69,13 @@ public class AuthService {
         player.setPasswordHash(passwordEncoder.encode(password));
         player.setFaction("allies");
         player.setCityName("新城市");
+        if (protection.enabled()) {
+            player.setGameInitialized(false);
+            player.setPosX(null); player.setPosY(null); player.setCityPosX(null); player.setCityPosY(null);
+        }
         player = playerRepository.save(player);
-        gameStateService.initializeNewPlayer(player.getId());
+        // 未实名账号仅具有账号服务权限，正式进入游戏时才创建城市和资源。
+        if (!protection.enabled()) gameStateService.initializeNewPlayer(player.getId());
         String token = jwtUtil.generateToken(username, player.getId());
         return new AuthResult(token, username, player.getId());
     }
@@ -110,6 +118,7 @@ public class AuthService {
     }
 
     public AuthResult createGuest(HttpServletRequest req) {
+        if (protection.enabled()) throw new com.wargame.security.GameAccessException("REAL_NAME_REQUIRED", "游客模式已关闭，请注册并完成实名认证");
         String ip = clientIp(req);
         if (!rateLimiter.allow("GUEST:" + ip, registerPerHour, 3600_000L)) {
             throw new IllegalStateException("游客注册过于频繁，请稍后再试");

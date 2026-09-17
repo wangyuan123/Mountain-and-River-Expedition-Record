@@ -22,6 +22,9 @@ import java.util.Map;
 @Component
 public class JwtHandshakeInterceptor implements HandshakeInterceptor {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.service.compliance.AntiAddictionService protection;
+
     private final JwtUtil jwtUtil;
     private final com.wargame.repository.PlayerRepository players;
 
@@ -56,6 +59,14 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
             reject(response, "account session expired");
             return false;
         }
+        String playSession = org.springframework.web.util.UriComponentsBuilder.fromUri(request.getURI()).build().getQueryParams().getFirst("playSession");
+        try { protection.requireAccess(player, playSession, "/ws/game"); }
+        catch (com.wargame.security.GameAccessException e) {
+            response.setStatusCode(HttpStatus.FORBIDDEN);
+            response.getHeaders().add("X-Auth-Reason", e.getCode());
+            return false;
+        }
+        if (playSession != null) attributes.put("playSession", playSession);
         attributes.put("token", token);
         attributes.put("authVersion", player.getAuthVersion());
         attributes.put("playerId", playerId);

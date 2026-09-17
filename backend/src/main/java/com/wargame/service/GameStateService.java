@@ -494,7 +494,7 @@ public class GameStateService {
         players.sort(Comparator.comparing(Player::getId));
         for (Player player : players) {
             // 到期注销账号保留墓碑；启动修复不得重新分配地块或重建其主城。
-            if (player.deletionDue(System.currentTimeMillis())) continue;
+            if (!player.isGameInitialized() || player.deletionDue(System.currentTimeMillis())) continue;
             int x = player.getCityPosX() == null ? -1 : player.getCityPosX();
             int y = player.getCityPosY() == null ? -1 : player.getCityPosY();
             String key = x + "," + y;
@@ -599,7 +599,10 @@ public class GameStateService {
 
     @Transactional
     public void initializeNewPlayer(Long playerId) {
-        try (var ignored = cityScope.enter(playerId, 0)) { initializeMainCity(playerId); }
+        try (var ignored = cityScope.enter(playerId, 0)) {
+            initializeMainCity(playerId);
+            playerRepository.findById(playerId).orElseThrow().setGameInitialized(true);
+        }
     }
 
     private void initializeMainCity(Long playerId) {

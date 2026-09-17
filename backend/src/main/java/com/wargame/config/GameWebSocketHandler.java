@@ -34,6 +34,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
     private final ObjectMapper objectMapper = new ObjectMapper();
     @org.springframework.beans.factory.annotation.Autowired private com.wargame.repository.PlayerRepository players;
     @org.springframework.beans.factory.annotation.Autowired private com.wargame.util.JwtUtil jwt;
+    @org.springframework.beans.factory.annotation.Autowired private com.wargame.service.compliance.AntiAddictionService protection;
 
     /** 逐次发送与心跳均检查持久化版本，多实例不依赖本机撤销表。 */
     private boolean validSession(WebSocketSession session) {
@@ -41,7 +42,18 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         Object token = session.getAttributes().get("token");
         if (!(token instanceof String value) || !jwt.validateToken(value)) return false;
         var player = players.findById(getPlayerId(session)).orElse(null);
-        return player != null && player.accountActive() && player.getAuthVersion() == jwt.getAuthVersion(value);
+        if (player == null || !player.accountActive() || player.getAuthVersion() != jwt.getAuthVersion(value)) return false;
+        try {
+            protection.requireAccess(player, (String) session.getAttributes().get("playSession"), "/ws/game");
+            return true;
+        } catch (com.wargame.security.GameAccessException e) {
+            session.getAttributes().put("gameAccessRevoked", true);
+            return false;
+        } catch (RuntimeException e) {
+            // 许可存储不可用时停止推送，不把基础设施故障当成允许访问。
+            session.getAttributes().put("gameAccessRevoked", true);
+            return false;
+        }
     }
 
     public void disconnectPlayer(Long playerId) {
@@ -49,7 +61,8 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
     }
 
     private void closeExpired(WebSocketSession session) {
-        try { session.close(new CloseStatus(4001, "account session expired")); }
+        try { session.close(Boolean.TRUE.equals(session.getAttributes().get("gameAccessRevoked"))
+                ? new CloseStatus(4003, "game access revoked") : new CloseStatus(4001, "account session expired")); }
         catch (IOException e) { log.debug("关闭失效账号连接失败", e); }
         afterConnectionClosed(session, CloseStatus.POLICY_VIOLATION);
     }
@@ -158,6 +171,15 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         if (!session.isOpen()) return;
         if (!validSession(session)) { closeExpired(session); return; }
         try {
+            // 聊天禁用也覆盖实时广播，不能通过 WebSocket 绕过聊天历史接口限制。
+            if (players != null && "chat".equals(objectMapper.readTree(message.getPayload()).path("type").asText())) {
+                var player = players.findById(getPlayerId(session)).orElseThrow();
+                try { protection.requireAccess(player, (String) session.getAttributes().get("playSession"), "/api/game/chat/push"); }
+                catch (com.wargame.security.GameAccessException e) {
+                    if (!"CHAT_RESTRICTED".equals(e.getCode())) closeExpired(session);
+                    return;
+                }
+            }
             synchronized (session) {
                 session.sendMessage(message);
             }

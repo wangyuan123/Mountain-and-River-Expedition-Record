@@ -51,6 +51,7 @@ window.Game = window.Game || {};
     }
 
     clearToken() {
+      if (G.Protection) G.Protection.reset();
       this.cityId = null; this.invalidateCityRequests();
       localStorage.removeItem(this.tokenKey);
       localStorage.removeItem(this.userKey);
@@ -131,6 +132,9 @@ window.Game = window.Game || {};
     // options: { silent: 不显示 loading, retry: 网络错误重试次数, noCache: 忽略 state 缓存 }
     request(method, path, body, options) {
       options = options || {};
+      if (G.Protection && G.Protection.isGamePath(path) && !G.Protection.canRequest()) {
+        return Promise.reject(G.Protection.error());
+      }
       method = method.toUpperCase();
       // A lost response does not mean a write failed. Never replay a mutation.
       var safeToRetry = method === 'GET' || method === 'HEAD';
@@ -148,8 +152,9 @@ window.Game = window.Game || {};
       var controller = options.timeout ? new AbortController() : null;
       var timeoutId = controller ? setTimeout(function () { controller.abort(); }, options.timeout) : null;
       var revision = self.cityRevision;
-      var promise = self._doFetch(method, path, body, retry, { cityId: self.cityId, token: self.getToken(), revision: revision, preserveSession: options.preserveSession, signal: controller ? controller.signal : undefined }).then(function (data) {
+      var promise = self._doFetch(method, path, body, retry, { cityId: self.cityId, token: self.getToken(), revision: revision, preserveSession: options.preserveSession, playSession: G.Protection ? G.Protection.session() : '', signal: controller ? controller.signal : undefined }).then(function (data) {
         if (revision !== self.cityRevision) throw new Error('城市或账号已切换，已忽略旧页面响应');
+        if (G.Protection && G.Protection.isGamePath(path) && !G.Protection.canRequest()) throw G.Protection.error();
         return data;
       });
 
@@ -176,6 +181,7 @@ window.Game = window.Game || {};
       var headers = { 'Content-Type': 'application/json' };
       var token = context.token;
       if (token) headers['Authorization'] = 'Bearer ' + token;
+      if (context.playSession) headers['X-Play-Session'] = context.playSession;
       if (context.cityId && path.indexOf('/game/') === 0) headers['X-City-Id'] = String(context.cityId);
 
       var opts = { method: method, headers: headers };
@@ -202,6 +208,7 @@ window.Game = window.Game || {};
             failure.status = res.status;
             failure.retryAfter = data && data.retryAfter;
             failure.uncertain = res.status >= 500 && method !== 'GET';
+            if (G.Protection && G.Protection.isGamePath(path) && G.Protection.isAccessError(failure.code)) G.Protection.denied(failure);
             throw failure;
           }
           // 非 GET 请求可能改变了状态，作废缓存

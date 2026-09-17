@@ -31,6 +31,7 @@
 
     /** 清空账号会话并让已有请求过期；主题等非账号偏好继续保留。 */
     endSession: function (notice, preserveStoredToken) {
+      if (G.Protection) G.Protection.reset();
       this.notice = notice || { title: '登录状态已失效', message: '请重新登录验证账号状态。' };
       this.recovery = null;
       if (G.WS) G.WS.disconnect();
