@@ -1,0 +1,632 @@
+[
+  {
+    "style": "a-garden",
+    "building": "command",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2696507
+  },
+  {
+    "style": "a-garden",
+    "building": "house",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2634658
+  },
+  {
+    "style": "a-garden",
+    "building": "factory",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2591369
+  },
+  {
+    "style": "a-garden",
+    "building": "lightfactory",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2598897
+  },
+  {
+    "style": "a-garden",
+    "building": "heavyfactory",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2817606
+  },
+  {
+    "style": "a-garden",
+    "building": "airport",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2538601
+  },
+  {
+    "style": "a-garden",
+    "building": "port",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2724944
+  },
+  {
+    "style": "a-garden",
+    "building": "academy",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2600694
+  },
+  {
+    "style": "a-garden",
+    "building": "staff",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2590529
+  },
+  {
+    "style": "a-garden",
+    "building": "lab",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2637724
+  },
+  {
+    "style": "a-garden",
+    "building": "radar",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2328380
+  },
+  {
+    "style": "a-garden",
+    "building": "wall",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2514663
+  },
+  {
+    "style": "a-garden",
+    "building": "apron",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2311333
+  },
+  {
+    "style": "a-garden",
+    "building": "liaison",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2462645
+  },
+  {
+    "style": "a-garden",
+    "building": "depot",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2514274
+  },
+  {
+    "style": "a-garden",
+    "building": "transit",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2513044
+  },
+  {
+    "style": "a-garden",
+    "building": "exchange",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2483806
+  },
+  {
+    "style": "a-garden",
+    "building": "farm",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2647350
+  },
+  {
+    "style": "a-garden",
+    "building": "refinery",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2635161
+  },
+  {
+    "style": "a-garden",
+    "building": "oilfield",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2547212
+  },
+  {
+    "style": "a-garden",
+    "building": "raremine",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2704366
+  },
+  {
+    "style": "b-frontier",
+    "building": "command",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2523495
+  },
+  {
+    "style": "b-frontier",
+    "building": "house",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2507715
+  },
+  {
+    "style": "b-frontier",
+    "building": "factory",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2417838
+  },
+  {
+    "style": "b-frontier",
+    "building": "lightfactory",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2254757
+  },
+  {
+    "style": "b-frontier",
+    "building": "heavyfactory",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2637571
+  },
+  {
+    "style": "b-frontier",
+    "building": "airport",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2328764
+  },
+  {
+    "style": "b-frontier",
+    "building": "port",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2530312
+  },
+  {
+    "style": "b-frontier",
+    "building": "academy",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2436266
+  },
+  {
+    "style": "b-frontier",
+    "building": "staff",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2523978
+  },
+  {
+    "style": "b-frontier",
+    "building": "lab",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2397144
+  },
+  {
+    "style": "b-frontier",
+    "building": "radar",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2287459
+  },
+  {
+    "style": "b-frontier",
+    "building": "wall",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2527363
+  },
+  {
+    "style": "b-frontier",
+    "building": "apron",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2185804
+  },
+  {
+    "style": "b-frontier",
+    "building": "liaison",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2384819
+  },
+  {
+    "style": "b-frontier",
+    "building": "depot",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2332192
+  },
+  {
+    "style": "b-frontier",
+    "building": "transit",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2482790
+  },
+  {
+    "style": "b-frontier",
+    "building": "exchange",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2505994
+  },
+  {
+    "style": "b-frontier",
+    "building": "farm",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2340849
+  },
+  {
+    "style": "b-frontier",
+    "building": "refinery",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2574101
+  },
+  {
+    "style": "b-frontier",
+    "building": "oilfield",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2450652
+  },
+  {
+    "style": "b-frontier",
+    "building": "raremine",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2602991
+  },
+  {
+    "style": "c-industrial",
+    "building": "command",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2374404
+  },
+  {
+    "style": "c-industrial",
+    "building": "house",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2508115
+  },
+  {
+    "style": "c-industrial",
+    "building": "factory",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2324175
+  },
+  {
+    "style": "c-industrial",
+    "building": "lightfactory",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2307057
+  },
+  {
+    "style": "c-industrial",
+    "building": "heavyfactory",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2422920
+  },
+  {
+    "style": "c-industrial",
+    "building": "airport",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2229173
+  },
+  {
+    "style": "c-industrial",
+    "building": "port",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2298326
+  },
+  {
+    "style": "c-industrial",
+    "building": "academy",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2306782
+  },
+  {
+    "style": "c-industrial",
+    "building": "staff",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2355824
+  },
+  {
+    "style": "c-industrial",
+    "building": "lab",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2421918
+  },
+  {
+    "style": "c-industrial",
+    "building": "radar",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2276652
+  },
+  {
+    "style": "c-industrial",
+    "building": "wall",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2323736
+  },
+  {
+    "style": "c-industrial",
+    "building": "apron",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2179196
+  },
+  {
+    "style": "c-industrial",
+    "building": "liaison",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2317882
+  },
+  {
+    "style": "c-industrial",
+    "building": "depot",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2392137
+  },
+  {
+    "style": "c-industrial",
+    "building": "transit",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2363367
+  },
+  {
+    "style": "c-industrial",
+    "building": "exchange",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2312737
+  },
+  {
+    "style": "c-industrial",
+    "building": "farm",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2371396
+  },
+  {
+    "style": "c-industrial",
+    "building": "refinery",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2411894
+  },
+  {
+    "style": "c-industrial",
+    "building": "oilfield",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2429271
+  },
+  {
+    "style": "c-industrial",
+    "building": "raremine",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "bytes": 2570208
+  }
+]

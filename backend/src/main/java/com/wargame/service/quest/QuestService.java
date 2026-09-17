@@ -28,10 +28,12 @@ public class QuestService {
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private OnboardingService onboarding;
+
     private static final Logger log = LoggerFactory.getLogger(QuestService.class);
 
     private final PlayerQuestRepository playerQuestRepository;
-    private final PlayerGuideRepository playerGuideRepository;
     private final ResourcesRepository resourcesRepository;
     private final PlayerItemRepository playerItemRepository;
     private final PlayerRepository playerRepository;
@@ -40,7 +42,6 @@ public class QuestService {
     private final OfficerRepository officerRepository;
 
     public QuestService(PlayerQuestRepository playerQuestRepository,
-                        PlayerGuideRepository playerGuideRepository,
                         ResourcesRepository resourcesRepository,
                         PlayerItemRepository playerItemRepository,
                         PlayerRepository playerRepository,
@@ -48,7 +49,6 @@ public class QuestService {
                         ArmyUnitRepository armyUnitRepository,
                         OfficerRepository officerRepository) {
         this.playerQuestRepository = playerQuestRepository;
-        this.playerGuideRepository = playerGuideRepository;
         this.resourcesRepository = resourcesRepository;
         this.playerItemRepository = playerItemRepository;
         this.playerRepository = playerRepository;
@@ -73,6 +73,7 @@ public class QuestService {
     public void onEvent(Long playerId, String eventType, String targetKey, int delta) {
         if (playerId == null || eventType == null) return;
         if (delta <= 0) delta = 1;
+        onboarding.onEvent(playerId, eventType, targetKey, delta);
 
         for (QuestCatalog.Chapter chapter : QuestCatalog.CHAPTERS) {
             for (QuestCatalog.Quest q : chapter.quests()) {
@@ -316,292 +317,10 @@ public class QuestService {
         return out;
     }
 
-    // ====================================================================
-    //  Guide - 新手引导
-    // ====================================================================
+    /** 旧接口只返回新版状态，不再发放废弃训练营的奖励。 */
+    public Map<String, Object> getGuide(Long playerId) { return onboarding.status(playerId); }
 
-    /**
-     * 拉取新手引导当前状态。
-     * <p>
-     * 返回结构：
-     * <pre>
-     *   { id, title, body, nextRoute, order, goal, complete, total, index,
-     *     progress: { current, target, pct, complete },
-     *     reward }
-     * </pre>
-     * 或 { done: true } 表示已全部完成。
-     */
-    @Transactional
-    public Map<String, Object> getGuide(Long playerId) {
-        QuestCatalog.GuideStep active = findActiveStep(playerId);
-        if (active == null) {
-            // 全部 done / skipped
-            Map<String, Object> end = new LinkedHashMap<>();
-            end.put("done", true);
-            return end;
-        }
+    public Map<String, Object> advanceGuide(Long playerId) { return onboarding.status(playerId); }
 
-        Map<String, Object> out = new LinkedHashMap<>();
-        out.put("id", active.id());
-        out.put("title", active.title());
-        out.put("body", active.body());
-        out.put("nextRoute", active.nextRoute());
-        out.put("order", active.order());
-        out.put("goal", active.goal());
-        // UI 跳转目标: 与 checkKey 分离, 前端据此滚动并高亮
-        if (active.targetBuilding() != null) {
-            out.put("targetBuilding", active.targetBuilding());
-        }
-        out.put("total", QuestCatalog.NEWBIE_STEPS.size());
-        out.put("index", QuestCatalog.NEWBIE_STEPS.indexOf(active) + 1);
-
-        // 实时进度评估
-        GuideProgress prog = evaluateGuideStep(playerId, active);
-        out.put("progress", prog.toMap());
-
-        // 整段引导是否全部完成
-        out.put("complete", prog.complete);
-
-        // 奖励预览
-        if (active.reward() != null && !active.reward().isEmpty()) {
-            out.put("reward", active.reward());
-        }
-
-        return out;
-    }
-
-    /**
-     * 推进到下一步 - 仅在当前步骤目标达成时允许。
-     * <p>
-     * 达成时会自动派发该步骤的奖励并标记完成。
-     */
-    @Transactional
-    public Map<String, Object> advanceGuide(Long playerId) {
-        QuestCatalog.GuideStep current = findActiveStep(playerId);
-        if (current == null) {
-            return getGuide(playerId);
-        }
-
-        GuideProgress prog = evaluateGuideStep(playerId, current);
-
-        if (!prog.complete) {
-            Map<String, Object> err = new LinkedHashMap<>();
-            err.put("success", false);
-            err.put("message", "目标未完成: " + (current.goal() == null ? current.title() : current.goal())
-                    + " (当前 " + prog.current + "/" + prog.target + ")");
-            err.put("guide", getGuide(playerId));
-            return err;
-        }
-
-        // 派发奖励
-        if (current.reward() != null && !current.reward().isEmpty()) {
-            try {
-                grantReward(playerId, current.reward());
-            } catch (Exception e) {
-                log.warn("Guide reward grant failed: step={} player={} err={}",
-                        current.id(), playerId, e.getMessage());
-            }
-        }
-
-        // 标 done
-        PlayerGuide pg = playerGuideRepository.findByPlayerIdAndStepId(playerId, current.id())
-                .orElseGet(() -> {
-                    PlayerGuide x = new PlayerGuide();
-                    x.setPlayerId(playerId);
-                    x.setStepId(current.id());
-                    return x;
-                });
-        pg.setStatus("done");
-        pg.setCompletedAt(System.currentTimeMillis());
-        playerGuideRepository.save(pg);
-
-        log.info("Guide step done: player={} step={} rewardGiven={}",
-                playerId, current.id(), current.reward() != null && !current.reward().isEmpty());
-
-        // 返回下一步骤的同时带回本次实际入账奖励，供前端明确提示玩家。
-        Map<String, Object> nextGuide = getGuide(playerId);
-        if (current.reward() != null && !current.reward().isEmpty()) {
-            nextGuide.put("completedReward", current.reward());
-        }
-        nextGuide.put("completedStepTitle", current.title());
-        return nextGuide;
-    }
-
-    @Transactional
-    public Map<String, Object> skipGuide(Long playerId) {
-        for (QuestCatalog.GuideStep s : QuestCatalog.NEWBIE_STEPS) {
-            PlayerGuide pg = playerGuideRepository.findByPlayerIdAndStepId(playerId, s.id()).orElse(null);
-            if (pg != null && "active".equals(pg.getStatus())) {
-                pg.setStatus("skipped");
-                pg.setCompletedAt(System.currentTimeMillis());
-                playerGuideRepository.save(pg);
-            }
-        }
-        Map<String, Object> end = new LinkedHashMap<>();
-        end.put("done", true);
-        return end;
-    }
-
-    // ----------------------------------------------------------------
-    //  内部：找当前 active 步骤
-    // ----------------------------------------------------------------
-
-    /**
-     * 找当前 active 步骤。
-     * <p>
-     * 规则（按 NEWBIE_STEPS 顺序）：
-     * <ol>
-     *   <li>第一个无 DB 行的步骤 = 当前 active (玩家刚走到这里)</li>
-     *   <li>若所有步骤都有行且都是 done/skipped, 则 active = null (引导完成)</li>
-     *   <li>若遇到 status="active" 的行, 视为"在执行中", 但:
-     *      <ul>
-     *          <li>若更靠前的步骤无行 → 把它当脏数据 (旧的 active 行遗留), 修正为 done, 继续找真正的 active</li>
-     *          <li>否则它就是当前 active</li>
-     *      </ul>
-     *   </li>
-     * </ol>
-     */
-    private QuestCatalog.GuideStep findActiveStep(Long playerId) {
-        // 一次性拉全部行, 避免 N 次查询
-        Map<String, PlayerGuide> pgMap = new HashMap<>();
-        for (PlayerGuide pg : playerGuideRepository.findByPlayerId(playerId)) {
-            pgMap.put(pg.getStepId(), pg);
-        }
-
-        QuestCatalog.GuideStep firstNoRow = null;
-        QuestCatalog.GuideStep activeRowStep = null;
-        int firstNoRowIdx = -1;
-        int activeRowIdx = -1;
-
-        for (int i = 0; i < QuestCatalog.NEWBIE_STEPS.size(); i++) {
-            QuestCatalog.GuideStep s = QuestCatalog.NEWBIE_STEPS.get(i);
-            PlayerGuide pg = pgMap.get(s.id());
-            if (pg == null) {
-                if (firstNoRowIdx < 0) {
-                    firstNoRowIdx = i;
-                    firstNoRow = s;
-                }
-            } else if ("active".equals(pg.getStatus())) {
-                if (activeRowIdx < 0) {
-                    activeRowIdx = i;
-                    activeRowStep = s;
-                }
-            }
-        }
-
-        // 情况 1: 有"无行"步骤, 且它比任何"active"行更靠前
-        //         → 那个"active"行是脏数据 (旧系统遗留), 修正它
-        if (firstNoRowIdx >= 0 && (activeRowIdx < 0 || firstNoRowIdx < activeRowIdx)) {
-            if (activeRowIdx >= 0) {
-                // 修正脏数据: 把"active"行标 done
-                PlayerGuide stale = pgMap.get(activeRowStep.id());
-                if (stale != null) {
-                    stale.setStatus("done");
-                    stale.setCompletedAt(System.currentTimeMillis());
-                    playerGuideRepository.save(stale);
-                    log.info("Guide: cleaning stale active row player={} step={}",
-                            playerId, activeRowStep.id());
-                }
-            }
-            return firstNoRow;
-        }
-
-        // 情况 2: 没有任何"无行"步骤
-        if (firstNoRowIdx < 0) {
-            // 有 "active" 行 → 它是当前 active
-            // 否则 → 全部 done, 引导完成 (返回 null)
-            return activeRowStep;
-        }
-
-        // 情况 3: 只有"无行"步骤, 没有 active 行
-        return firstNoRow;
-    }
-
-    // ----------------------------------------------------------------
-    //  内部：评估一个引导步骤的实时进度
-    // ----------------------------------------------------------------
-
-    /** 步骤进度快照。 */
-    public record GuideProgress(int current, int target, boolean complete) {
-        public int pct() {
-            if (target <= 0) return complete ? 100 : 0;
-            return Math.min(100, (int) Math.round(current * 100.0 / target));
-        }
-        public Map<String, Object> toMap() {
-            Map<String, Object> m = new LinkedHashMap<>();
-            m.put("current", current);
-            m.put("target", target);
-            m.put("pct", pct());
-            m.put("complete", complete);
-            return m;
-        }
-    }
-
-    public GuideProgress evaluateGuideStep(Long playerId, QuestCatalog.GuideStep step) {
-        String type = step.checkType() == null ? "NONE" : step.checkType();
-        if ("NONE".equals(type)) {
-            return new GuideProgress(1, 1, true);
-        }
-        int current = 0;
-        int target = Math.max(1, step.checkValue());
-        switch (type) {
-            case "BUILD_LEVEL": {
-                // 取最高槽位等级 (不计算"已计划但未完成"的施工, 避免点 + 立刻达成)
-                // 玩家必须真的等建造倒计时跑完, 升级完才视为达成
-                List<Building> bs = buildingRepository.findByPlayerIdAndType(playerId, step.checkKey());
-                for (Building b : bs) {
-                    int lv = b.getLevel() != null ? b.getLevel() : 0;
-                    if (lv > current) current = lv;
-                }
-                break;
-            }
-            case "BUILD_LEVEL_SUM": {
-                List<Building> bs = buildingRepository.findByPlayerIdAndType(playerId, step.checkKey());
-                for (Building b : bs) {
-                    current += b.getLevel() != null ? b.getLevel() : 0;
-                }
-                break;
-            }
-            case "BUILD_COUNT": {
-                current = buildingRepository.findByPlayerIdAndType(playerId, step.checkKey()).size();
-                break;
-            }
-            case "ARMY_RECRUIT": {
-                List<ArmyUnit> units = armyUnitRepository.findByPlayerIdAndType(playerId, step.checkKey());
-                for (ArmyUnit u : units) {
-                    current += u.getCount() != null ? u.getCount() : 0;
-                }
-                break;
-            }
-            case "ARMY_TOTAL": {
-                List<ArmyUnit> all = armyUnitRepository.findByPlayerId(playerId);
-                for (ArmyUnit u : all) {
-                    current += u.getCount() != null ? u.getCount() : 0;
-                }
-                break;
-            }
-            case "OFFICER_RECRUIT": {
-                current = officerRepository.findByPlayerId(playerId).size();
-                break;
-            }
-            case "OFFICER_APPOINT": {
-                String role = step.checkKey() == null ? "any" : step.checkKey();
-                if ("any".equalsIgnoreCase(role)) {
-                    List<Officer> os = officerRepository.findByPlayerId(playerId);
-                    for (Officer o : os) {
-                        String r = o.getRole() == null ? "idle" : o.getRole();
-                        if (!"idle".equals(r)) { current = 1; break; }
-                    }
-                } else {
-                    current = officerRepository.findByPlayerIdAndRole(playerId, role).size();
-                }
-                break;
-            }
-            default:
-                // 未知类型: 视为达成
-                return new GuideProgress(1, 1, true);
-        }
-        boolean complete = current >= target;
-        return new GuideProgress(current, target, complete);
-    }
+    public Map<String, Object> skipGuide(Long playerId) { return onboarding.pause(playerId, true); }
 }

@@ -14,6 +14,7 @@ public class UserPrincipal implements UserDetails {
     private final String username;
     private final String password;
     private final boolean disabled;
+    private long authVersion;
 
     public UserPrincipal(Long playerId, String username, String password, boolean disabled) {
         this.playerId = playerId;
@@ -23,9 +24,12 @@ public class UserPrincipal implements UserDetails {
     }
 
     public static UserPrincipal from(Player player) {
-        boolean disabled = player.getDisabled() != null && player.getDisabled() == 1;
-        return new UserPrincipal(player.getId(), player.getUsername(), player.getPasswordHash(), disabled);
+        UserPrincipal principal = new UserPrincipal(player.getId(), player.getUsername(), player.getPasswordHash(), !player.accountActive());
+        principal.authVersion = player.getAuthVersion();
+        return principal;
     }
+
+    public long getAuthVersion() { return authVersion; }
 
     public Long getPlayerId() {
         return playerId;

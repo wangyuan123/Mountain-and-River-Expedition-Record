@@ -21,6 +21,8 @@ import java.util.Map;
 @Service
 public class GuildService {
 
+    @org.springframework.beans.factory.annotation.Autowired private AccountService accounts;
+
     private static final int MAX_MEMBERS = 30;
     private static final String LEADER = "leader";
     private static final String ADMIN = "admin";
@@ -72,6 +74,7 @@ public class GuildService {
     public Map<String, Object> apply(Long playerId, Long guildId) {
         requireNoGuild(playerId);
         Guild guild = guildRepository.findById(guildId).orElseThrow(() -> new IllegalArgumentException("军团不存在"));
+        if (!player(guild.getLeaderPlayerId()).accountActive()) throw new IllegalArgumentException("该军团暂不接受入团申请");
         if (guildMemberRepository.countByGuildId(guildId) >= MAX_MEMBERS) throw new IllegalArgumentException("军团人数已满");
         if (guildApplicationRepository.findByGuildIdAndPlayerId(guildId, playerId).isPresent()) throw new IllegalArgumentException("已提交申请，请等待审核");
         guildApplicationRepository.save(new GuildApplication(null, guildId, playerId, System.currentTimeMillis()));
@@ -85,7 +88,8 @@ public class GuildService {
         GuildApplication application = guildApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new IllegalArgumentException("申请不存在或已处理"));
         Guild guild = requireManager(leaderId, application.getGuildId());
-        Player applicant = player(application.getPlayerId());
+        Player applicant = accounts.lockPlayer(application.getPlayerId());
+        if (!applicant.accountActive()) throw new IllegalArgumentException("该玩家暂不可加入军团");
         guildApplicationRepository.delete(application);
         if (!approved) {
             mailService.sendSystem(applicant.getId(), "军团系统", "alliance", "入团申请结果", "军团「" + guild.getName() + "」拒绝了你的申请。", List.of());
@@ -133,6 +137,27 @@ public class GuildService {
         target.setRole(role);
         guildMemberRepository.save(target);
         return detail(guild.getId(), playerId);
+    }
+
+    /** 注销前可将团长交给正常成员；两个成员角色与军团归属在同一事务内更新。 */
+    @Transactional
+    public Map<String, Object> transferLeadership(Long playerId, Long targetPlayerId) {
+        if (playerId.equals(targetPlayerId)) throw new IllegalArgumentException("请选择其他军团成员");
+        GuildMember operator = guildMemberRepository.findByPlayerId(playerId)
+                .orElseThrow(() -> new IllegalArgumentException("尚未加入军团"));
+        Guild guild = requireLeader(playerId, operator.getGuildId());
+        Player targetPlayer = accounts.lockPlayer(targetPlayerId);
+        if (!targetPlayer.accountActive()) throw new IllegalArgumentException("接任者账号不可用，请选择其他成员");
+        GuildMember target = guildMemberRepository.findByPlayerId(targetPlayerId)
+                .filter(member -> member.getGuildId().equals(guild.getId()))
+                .orElseThrow(() -> new IllegalArgumentException("接任者必须是本军团成员"));
+        operator.setRole("member");
+        target.setRole(LEADER);
+        guild.setLeaderPlayerId(targetPlayerId);
+        guildMemberRepository.save(operator);
+        guildMemberRepository.save(target);
+        guildRepository.saveAndFlush(guild);
+        return Map.of("success", true, "message", "团长已转让，可返回设置申请注销");
     }
 
     @Transactional

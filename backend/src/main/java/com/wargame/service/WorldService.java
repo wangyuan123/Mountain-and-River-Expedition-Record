@@ -32,6 +32,8 @@ import java.util.*;
 @Service
 public class WorldService {
 
+    @org.springframework.beans.factory.annotation.Autowired private AccountService accounts;
+
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
 
@@ -188,7 +190,7 @@ public class WorldService {
         if (worldId == null) return result;
 
         Player realPlayer = playerRepository.findByCityPosXAndCityPosY(x, y).orElse(null);
-        if (realPlayer != null) {
+        if (realPlayer != null && !realPlayer.deletionDue(System.currentTimeMillis())) {
             PlayerCity realCity = playerCityRepository.findByOwnerId(realPlayer.getId()).stream()
                     .filter(city -> x == city.getX() && y == city.getY())
                     .findFirst().orElse(null);
@@ -219,6 +221,7 @@ public class WorldService {
         if (playerCity != null) {
             Player owner = playerCity.getOwnerId() != null
                     ? playerRepository.findById(playerCity.getOwnerId()).orElse(null) : null;
+            if (owner != null && owner.deletionDue(System.currentTimeMillis())) return result;
             boolean simulatedNpc = owner == null;
             result.put("kind", simulatedNpc ? "simulated_npc" : "player");
             result.put("id", playerCity.getId());
@@ -347,6 +350,7 @@ public class WorldService {
                     ownerId = coordinateOwner.getId();
                 }
                 Player owner = ownerId != null ? byId.get(ownerId) : null;
+                if (owner != null && owner.deletionDue(System.currentTimeMillis())) continue;
                 if (owner == null) {
                     m.put("simulatedNpc", true);
                     m.put("distance", manhattanDist(px, py, pc.getX(), pc.getY()));
@@ -451,7 +455,8 @@ public class WorldService {
             return result;
         }
 
-        Player defender = playerRepository.findById(defenderId).orElse(null);
+        Player defender = accounts.lockPlayer(defenderId);
+        if (defender.deletionDue(System.currentTimeMillis())) throw new IllegalArgumentException("目标城池已失效");
         if (defender == null) {
             result.put("success", false);
             result.put("message", "目标玩家不存在");

@@ -36,7 +36,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 String username = jwtUtil.getUsernameFromToken(token);
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                if (userDetails == null || !userDetails.isEnabled() || !userDetails.isAccountNonLocked()) {
+                if (!(userDetails instanceof com.wargame.model.UserPrincipal principal)
+                        || !userDetails.isEnabled() || !userDetails.isAccountNonLocked()
+                        || principal.getAuthVersion() != jwtUtil.getAuthVersion(token)
+                        || !principal.getPlayerId().equals(jwtUtil.getPlayerIdFromToken(token))) {
                     // 账号已被注销，禁止继续访问
                     SecurityContextHolder.clearContext();
                 } else {

@@ -32,6 +32,36 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
     private final Map<String, Long> lastHeartbeats = new ConcurrentHashMap<>();
     private static final long PRESENCE_TIMEOUT_MS = 90_000;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    @org.springframework.beans.factory.annotation.Autowired private com.wargame.repository.PlayerRepository players;
+    @org.springframework.beans.factory.annotation.Autowired private com.wargame.util.JwtUtil jwt;
+
+    /** 逐次发送与心跳均检查持久化版本，多实例不依赖本机撤销表。 */
+    private boolean validSession(WebSocketSession session) {
+        if (players == null) return true; // 独立处理器单元测试没有 Spring 容器。
+        Object token = session.getAttributes().get("token");
+        if (!(token instanceof String value) || !jwt.validateToken(value)) return false;
+        var player = players.findById(getPlayerId(session)).orElse(null);
+        return player != null && player.accountActive() && player.getAuthVersion() == jwt.getAuthVersion(value);
+    }
+
+    public void disconnectPlayer(Long playerId) {
+        for (WebSocketSession session : java.util.List.copyOf(getSessions(playerId))) closeExpired(session);
+    }
+
+    private void closeExpired(WebSocketSession session) {
+        try { session.close(new CloseStatus(4001, "account session expired")); }
+        catch (IOException e) { log.debug("关闭失效账号连接失败", e); }
+        afterConnectionClosed(session, CloseStatus.POLICY_VIOLATION);
+    }
+
+    /** 其他实例受理注销后，最迟下一次校验关闭本实例空闲连接。 */
+    public void closeInvalidSessions() {
+        for (var sessions : playerSessions.values()) {
+            for (var session : java.util.List.copyOf(sessions)) {
+                if (!validSession(session)) closeExpired(session);
+            }
+        }
+    }
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
@@ -52,6 +82,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             return sessions;
         });
 
+        if (!validSession(session)) { closeExpired(session); return; }
         log.info("WebSocket 连接建立: playerId={}, sessionId={}, 当前在线会话数={}",
                 playerId, session.getId(), getSessionCount(playerId));
     }
@@ -73,6 +104,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) {
+        if (!validSession(session)) { closeExpired(session); return; }
         String payload = message.getPayload();
 
         // 兼容旧客户端纯文本心跳，当前客户端使用 JSON 消息。
@@ -124,6 +156,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
     private void send(WebSocketSession session, TextMessage message) {
         if (!session.isOpen()) return;
+        if (!validSession(session)) { closeExpired(session); return; }
         try {
             synchronized (session) {
                 session.sendMessage(message);

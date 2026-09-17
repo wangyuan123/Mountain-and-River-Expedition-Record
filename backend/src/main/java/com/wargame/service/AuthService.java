@@ -82,37 +82,31 @@ public class AuthService {
         }
     }
 
-    public AuthResult login(String username, String password, HttpServletRequest req) {
-        if (username == null || username.isBlank() || password == null || password.isBlank()) {
+    /** 登录验证只签发恢复凭据，必须由玩家明确确认才撤销注销。 */
+    @org.springframework.transaction.annotation.Transactional
+    public java.util.Map<String, Object> login(String username, String password, HttpServletRequest req) {
+        Player player = verifyCredentials(username, password, req);
+        if (!player.accountActive()) return accountService.recoveryRequired(player);
+        return java.util.Map.of("token", jwtUtil.generateToken(username, player.getId(), player.getAuthVersion()),
+                "username", username, "playerId", player.getId());
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public java.util.Map<String, Object> deletionStatus(String username, String password, HttpServletRequest req) {
+        return accountService.status(verifyCredentials(username, password, req));
+    }
+
+    private Player verifyCredentials(String username, String password, HttpServletRequest req) {
+        accountService.limit("LOGIN_IP:" + clientIp(req), loginFailGlobalPerMinute, 60_000L);
+        if (username == null || username.isBlank() || password == null || password.isBlank())
             throw new IllegalArgumentException("用户名或密码错误");
-        }
-        String ip = clientIp(req);
-        // Global per-IP rate cap (defeats distributed credential stuffing)
-        if (!rateLimiter.allow("LOGIN_IP:" + ip, loginFailGlobalPerMinute, 60_000L)) {
-            throw new IllegalStateException("登录请求过于频繁，请稍后再试");
-        }
-        Player player = playerRepository.findByUsername(username).orElse(null);
-        if (player == null) {
-            rateLimiter.allow("LOGIN_FAIL_ACC:" + username, loginFailPerAccountPerHour, 3600_000L);
+        accountService.limit("LOGIN_ACCOUNT:" + username, loginFailPerAccountPerHour, 3_600_000L);
+        Player found = playerRepository.findByUsername(username).orElse(null);
+        if (found == null) throw new IllegalArgumentException("用户名或密码错误");
+        Player player = accountService.lockPlayer(found.getId());
+        if ("DELETED".equals(player.getAccountStatus()) || !passwordEncoder.matches(password, player.getPasswordHash()))
             throw new IllegalArgumentException("用户名或密码错误");
-        }
-        if (!passwordEncoder.matches(password, player.getPasswordHash())) {
-            rateLimiter.allow("LOGIN_FAIL_ACC:" + username, loginFailPerAccountPerHour, 3600_000L);
-            throw new IllegalArgumentException("用户名或密码错误");
-        }
-        // 账号已注销：先尝试在宽限期内自动恢复；已过宽限期则清理并拒绝
-        if (player.getDisabled() != null && player.getDisabled() == 1) {
-            long disabledAt = player.getDisabledAt() == null ? 0L : player.getDisabledAt();
-            long cooldownMs = (long) accountService.getCooldownDays() * 86_400_000L;
-            if (System.currentTimeMillis() - disabledAt < cooldownMs) {
-                accountService.recoverIfWithinCooldown(player);
-            } else {
-                accountService.purgeExpiredAccount(player);
-                throw new IllegalStateException("账号已注销且超出恢复期，无法登录");
-            }
-        }
-        String token = jwtUtil.generateToken(username, player.getId());
-        return new AuthResult(token, username, player.getId());
+        return player;
     }
 
     public AuthResult createGuest(HttpServletRequest req) {
@@ -142,8 +136,11 @@ public class AuthService {
             // Defensive: if filter was bypassed or anonymous slipped in, refuse.
             throw new RuntimeException("无法获取当前用户");
         }
-        return playerRepository.findById(userPrincipal.getPlayerId())
+        Player player = playerRepository.findById(userPrincipal.getPlayerId())
                 .orElseThrow(() -> new RuntimeException("当前用户不存在"));
+        if (!player.accountActive() || player.getAuthVersion() != userPrincipal.getAuthVersion())
+            throw new com.wargame.security.AccountException("ACCOUNT_UNAVAILABLE", "登录状态已失效，请重新登录");
+        return player;
     }
 
     private static String clientIp(HttpServletRequest req) {

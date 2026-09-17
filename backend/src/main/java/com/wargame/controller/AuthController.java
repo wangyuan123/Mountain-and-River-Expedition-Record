@@ -37,10 +37,9 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthDtos.AuthResponse> login(@RequestBody AuthDtos.LoginRequest request,
+    public ResponseEntity<Map<String, Object>> login(@RequestBody AuthDtos.LoginRequest request,
                                                         HttpServletRequest httpRequest) {
-        AuthService.AuthResult result = authService.login(request.username(), request.password(), httpRequest);
-        return ResponseEntity.ok(new AuthDtos.AuthResponse(result.token(), result.username(), result.playerId()));
+        return ResponseEntity.ok(authService.login(request.username(), request.password(), httpRequest));
     }
 
     @PostMapping("/guest")
@@ -73,26 +72,28 @@ public class AuthController {
                 player.getId(), player.getUsername(), player.getFaction(), player.getCityName()));
     }
 
-    /**
-     * 注销当前登录账号。
-     * - 验证密码
-     * - 验证前端 confirm 字段 == "确认注销"
-     * - 标记 disabled=1
-     * - 撤销当前 Token
-     */
+    @GetMapping("/deletion-preview")
+    public ResponseEntity<Map<String, Object>> deletionPreview() {
+        return ResponseEntity.ok(accountService.preview(authService.getCurrentPlayer().getId()));
+    }
+
+    /** 密码确认后受理注销，不接受客户端传入的玩家编号或截止时间。 */
     @PostMapping("/disable")
-    public ResponseEntity<Map<String, Object>> disable(@RequestBody AuthDtos.DisableAccountRequest request,
-                                                        HttpServletRequest httpRequest) {
+    public ResponseEntity<Map<String, Object>> disable(@RequestBody AuthDtos.DisableAccountRequest request) {
         Player player = authService.getCurrentPlayer();
-        if (request.confirm() == null || !"确认注销".equals(request.confirm().trim())) {
-            throw new IllegalArgumentException("请输入\"确认注销\"以完成操作");
-        }
-        String token = null;
-        String header = httpRequest.getHeader("Authorization");
-        if (header != null && header.startsWith("Bearer ")) {
-            token = header.substring(7);
-        }
-        Map<String, Object> result = accountService.disableAccount(player.getId(), request.password(), token);
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(accountService.disableAccount(player.getId(), request.password(), request.confirm(), request.requestId()));
+    }
+
+    @PostMapping("/recover")
+    public ResponseEntity<Map<String, Object>> recover(@RequestBody AuthDtos.RecoverAccountRequest request,
+                                                      HttpServletRequest httpRequest) {
+        accountService.limit("RECOVERY_IP:" + httpRequest.getRemoteAddr(), 30, 60_000);
+        return ResponseEntity.ok(accountService.recover(request.recoveryToken(), request.confirm()));
+    }
+
+    @PostMapping("/deletion-status")
+    public ResponseEntity<Map<String, Object>> deletionStatus(@RequestBody AuthDtos.LoginRequest request,
+                                                             HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(authService.deletionStatus(request.username(), request.password(), httpRequest));
     }
 }

@@ -26,6 +26,7 @@ class MultiCityControllerTest extends BaseServiceTest {
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
         Long id = registration.path("playerId").asLong(); String auth = "Bearer " + registration.path("token").asText();
         Player player = playerRepository.findById(id).orElseThrow(); player.setMilitaryRank(4); playerRepository.save(player);
+        giveResources(id, 100000, 100000, 100000, 100000, 100000);
         PlayerCity main = playerCityRepository.findByOwnerIdAndCitySlot(id, 0).orElseThrow();
         WildTile site = new WildTile(); site.setWorldId(world.getId()); site.setX(45); site.setY(46); site.setType("hill");
         site.setLevel(1); site.setOccupied(true); site.setOccupiedBy(id); wildTileRepository.save(site);
@@ -64,6 +65,7 @@ class MultiCityControllerTest extends BaseServiceTest {
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
         Long id=registration.path("playerId").asLong();String auth="Bearer "+registration.path("token").asText();
         Player player=playerRepository.findById(id).orElseThrow();player.setMilitaryRank(4);playerRepository.save(player);
+        giveResources(id, 100000, 100000, 100000, 100000, 100000);
         PlayerCity main=playerCityRepository.findByOwnerIdAndCitySlot(id,0).orElseThrow();
         assertTrue(main.getX()<99);assertTrue(main.getY()<199);
         JsonNode map=json.readTree(http.perform(get("/api/game/world/map/terrain").header("Authorization",auth))

@@ -27,6 +27,7 @@ public class GameController {
     private final AuthService authService;
     private final GameStateService gameStateService;
     private final ScoutReportRepository scoutReportRepository;
+    @org.springframework.beans.factory.annotation.Autowired private com.wargame.service.ReportPrivacyService reportPrivacy;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public GameController(AuthService authService, GameStateService gameStateService, ScoutReportRepository scoutReportRepository) {
@@ -73,6 +74,7 @@ public class GameController {
             }
             out.add(item);
         }
+        reportPrivacy.anonymize(out);
         return ResponseEntity.ok(out);
     }
 

@@ -41,7 +41,9 @@ public class WorldMapService {
                 if (Boolean.TRUE.equals(w.getOccupied()) && w.getOccupiedBy() != null) ids.add(w.getOccupiedBy());
             });
             if (!ids.isEmpty()) players.findAllById(ids).forEach(p -> owners.put(p.getId(), p));
-            cityList.forEach(c -> targets.add(city(viewer, c, owners.get(c.getOwnerId()))));
+            cityList.stream().filter(c -> owners.get(c.getOwnerId()) == null ||
+                    !owners.get(c.getOwnerId()).deletionDue(System.currentTimeMillis()))
+                    .forEach(c -> targets.add(city(viewer, c, owners.get(c.getOwnerId()))));
             npcs.findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(world, x, maxX, y, maxY).forEach(n -> {
                 Map<String, Object> t = base("npc", n.getId(), n.getX(), n.getY(), n.getName(), n.getLevel());
                 t.put("defeated", Boolean.TRUE.equals(n.getDefeated())); targets.add(t);
@@ -63,6 +65,7 @@ public class WorldMapService {
             case "player", "simulated_npc" -> {
                 PlayerCity c = cities.findById(id).filter(v -> world.equals(v.getWorldId())).orElseThrow(this::missing);
                 Player owner = c.getOwnerId() == null ? null : players.findById(c.getOwnerId()).orElse(null);
+                if (owner != null && owner.deletionDue(System.currentTimeMillis())) throw missing();
                 Map<String, Object> t = city(viewer, c, owner);
                 if (!kind.equals(t.get("kind"))) throw new IllegalArgumentException("目标归属已变化，请刷新地图");
                 return t;

@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="css/style.css?v=2.9-war-header">
   <link rel="stylesheet" href="css/themes.css?v=2.8-classic-home">
   <link rel="stylesheet" href="css/classic-home.css?v=1.0">
+  <link rel="stylesheet" href="css/footer.css?v=1.0">
   <style>
     .preview-tools { max-width:480px; margin:16px auto 10px; padding:0 10px; color:#264664; font:13px/1.8 Arial,"Microsoft YaHei",sans-serif; }
     .preview-tools strong { font-size:19px; color:#183c68; }
@@ -25,7 +26,7 @@
     <div id="header"><div id="topbar"></div><div id="navbar"></div></div>
     <div id="previewNotice" role="status">欢迎回到远征家园，今日也要守好这片山河。</div>
     <main id="view"></main>
-    <div id="footbar"><a href="#home" onclick="Game.go('home');return false">返回首页</a> · <a href="#previewTheme">切换风格</a><br>山河远征录 · 经典家园主题预览</div>
+    <footer id="footbar" aria-label="游戏导航与备案信息"></footer>
   </div>
   <div id="toast"></div>
   <script src="js/theme.js?v=1.2-classic-home"></script>
@@ -57,6 +58,7 @@
         C.route = route;
         C.views[route](document.getElementById('view'));
         document.getElementById('navbar').innerHTML = G.MainView.navBar();
+        document.getElementById('footbar').innerHTML = C.footer();
         // 建筑预览只允许展开详情，不执行建设或消耗资源。
         if (route !== 'home') {
           document.querySelectorAll('#view button').forEach(function (button) { button.onclick = notice; });

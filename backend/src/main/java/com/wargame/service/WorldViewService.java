@@ -137,6 +137,7 @@ public class WorldViewService {
                     cityOwner = coordinateOwner.getId();
                 }
                 Player owner = cityOwner != null ? byId.get(cityOwner) : null;
+                if (owner != null && owner.deletionDue(System.currentTimeMillis())) continue;
                 if (owner == null) {
                     cityOwner = null;
                     pcMap.put("simulatedNpc", true);

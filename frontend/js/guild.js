@@ -125,6 +125,19 @@ window.Game = window.Game || {};
       }).catch(function (err) { G.toast(err.message || '角色设置失败'); });
     },
 
+    /** 转让团长后本人成为普通成员，可继续申请账号注销。 */
+    transferLeadership: function (playerId) {
+      if (this.transferring) return;
+      var member = (this.mine && this.mine.members || []).find(function (m) { return m.playerId === playerId; });
+      if (!member || !window.confirm('将团长转让给“' + member.name + '”？你将成为普通成员。')) return;
+      this.transferring = true;
+      G.API.transferGuildLeadership(playerId).then(function (data) {
+        G.toast(data.message || '团长已转让');
+        Guild.reload();
+      }).catch(function (err) { G.toast(err.message || '转让失败，请刷新确认'); })
+        .finally(function () { Guild.transferring = false; });
+    },
+
     remove: function (playerId) {
       if (!window.confirm('确定将该成员移出军团吗？')) return;
       G.API.removeGuildMember(playerId).then(function (data) {
@@ -197,6 +210,7 @@ window.Game = window.Game || {};
         h += '<div class="guild-member guild-member-presence"><div class="guild-member-info"><b>' + esc(m.name) + '</b> <span class="guild-role">' + role + '</span> <span id="guildPresence_' + m.playerId + '">' + this.presenceHtml(m.online) + '</span><div class="guild-muted">' + esc(m.cityName || '新城市') + ' · ★' + G.fmt(m.prestige || 0) + '</div></div>';
         h += '<button class="tcard-btn" onclick="Game.Guild.contact(' + m.playerId + ')">写信</button>';
         if (g.isLeader && m.role !== 'leader') h += '<button class="tcard-btn tcard-btn-ok" onclick="Game.Guild.updateRole(' + m.playerId + ',\'' + (m.role === 'admin' ? 'member' : 'admin') + '\')">' + (m.role === 'admin' ? '取消管理员' : '任命管理员') + '</button>';
+        if (g.isLeader && m.role !== 'leader') h += ' <button class="tcard-btn tcard-btn-warn" onclick="Game.Guild.transferLeadership(' + m.playerId + ')">转让团长</button>';
         if ((g.isLeader || g.role === 'admin') && m.role !== 'leader') h += ' <button class="tcard-btn tcard-btn-warn" onclick="Game.Guild.remove(' + m.playerId + ')">移出</button>';
         h += '</div>';
       }

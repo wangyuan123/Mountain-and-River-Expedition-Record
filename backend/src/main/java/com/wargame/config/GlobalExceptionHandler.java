@@ -18,6 +18,12 @@ public class GlobalExceptionHandler {
                 .body(Map.of("error", "游戏状态刚刚发生变化，本次操作未生效，请刷新后重试"));
     }
 
+    @ExceptionHandler(com.wargame.security.AccountException.class)
+    public ResponseEntity<Map<String, Object>> handleAccount(com.wargame.security.AccountException e) {
+        HttpStatus status = "RATE_LIMITED".equals(e.getCode()) ? HttpStatus.TOO_MANY_REQUESTS : HttpStatus.BAD_REQUEST;
+        return ResponseEntity.status(status).body(Map.of("error", e.getMessage(), "code", e.getCode(), "retryAfter", e.getRetryAfter()));
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)

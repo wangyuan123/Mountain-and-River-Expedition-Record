@@ -51,6 +51,17 @@ public class WebSocketPushService {
         send(type, data, playerId);
     }
 
+    /** 只在注销事务提交后踢下线，回滚不会误断开正常会话。 */
+    public void disconnectAccountAfterCommit(Long playerId) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override public void afterCommit() { handler.disconnectPlayer(playerId); }
+            });
+        } else {
+            handler.disconnectPlayer(playerId);
+        }
+    }
+
     public void broadcast(String type, Object data) {
         send(type, data, null);
     }

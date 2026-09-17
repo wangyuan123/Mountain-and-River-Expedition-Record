@@ -20,9 +20,6 @@ public final class QuestCatalog {
                     && (itemKey == null || itemKey.isBlank() || itemCount == 0);
         }
     }
-    public record GuideStep(String id, String title, String body, String nextRoute, int order,
-                            String goal, String checkType, String checkKey, int checkValue,
-                            String targetBuilding, Reward reward) {}
 
     public static final List<Chapter> CHAPTERS = List.of(
         new Chapter("ch1", "第一章 · 开荒奠基", "建设主城根基，建立第一支部队。", List.of(
@@ -56,23 +53,9 @@ public final class QuestCatalog {
         ))
     );
 
-    public static final List<GuideStep> NEWBIE_STEPS = List.of(
-        g("g_welcome", "欢迎来到山河远征录", "我是您的作战参谋。完成训练营后，您将拥有一座能生产、能防守的主城。", null, 0, "开始新手训练营", "NONE", null, 0, null, new Reward(0,0,0,0,0,0,null,null,null,0)),
-        g("g_upgrade_command", "第一步 · 升级市政厅", "升级市政厅到 2 级，解锁更高等级的建设。", "buildArmy", 1, "市政厅等级 ≥ 2", "BUILD_LEVEL", "command", 2, "command", r(2000,1500,0,0,100)),
-        g("g_build_house", "第二步 · 建造民居", "把民居升到 2 级，增加人口上限。", "buildArmy", 2, "民居等级 ≥ 2", "BUILD_LEVEL", "house", 2, "house", r(1500,500,0,0,50)),
-        g("g_build_farm", "第三步 · 建造农田", "建造并升级农田，为军队提供粮食。", "buildRes", 3, "农田等级 ≥ 2", "BUILD_LEVEL", "farm", 2, "farm", r(2000,0,0,0,50)),
-        g("g_build_refinery", "第四步 · 建造炼钢厂", "钢铁是建造和训练的核心资源。", "buildRes", 4, "炼钢厂等级 ≥ 2", "BUILD_LEVEL", "refinery", 2, "refinery", r(0,2500,0,0,50)),
-        g("g_build_oilfield", "第五步 · 建造石油基地", "石油支撑机动部队和高级军工生产。", "buildRes", 5, "石油基地等级 ≥ 1", "BUILD_LEVEL", "oilfield", 1, "oilfield", r(0,0,1500,0,50)),
-        g("g_build_factory", "第六步 · 建造军工厂", "军工厂是训练地面部队的前置建筑。", "buildArmy", 6, "军工厂等级 ≥ 1", "BUILD_LEVEL", "factory", 1, "factory", r(0,1500,500,0,80)),
-        g("g_recruit_infantry", "第七步 · 训练步兵", "训练 20 个步兵，建立第一支守军。", "buildArmy", 7, "步兵累计 ≥ 20", "ARMY_RECRUIT", "infantry", 20, "factory", r(0,0,0,0,150)),
-        g("g_recruit_officer", "第八步 · 招募军官", "军官可以显著提升部队与城市能力。", "buildArmy", 8, "拥有 ≥ 1 名军官", "OFFICER_RECRUIT", null, 1, "academy", new Reward(0,0,0,0,200,0,"1",null,null,0)),
-        g("g_appoint_mayor", "第九步 · 任命市长", "任命军官管理主城，提升发展效率。", "buildArmy", 9, "已任命 1 名市长", "OFFICER_APPOINT", "mayor", 1, "staff", r(2000,2000,1000,0,200)),
-        g("g_done", "新手训练营 · 毕业", "恭喜您掌握了主城建设、军队训练和军官任用。接下来沿主线任务扩张领土吧。", null, 99, "已毕业", "NONE", null, 0, null, new Reward(5000,5000,2000,0,500,0,"1","1",null,0))
-    );
 
     private static Quest q(String id, String chapter, String title, String desc, String event, String key, int target, Reward reward, String requires) { return new Quest(id, chapter, title, desc, event, key, target, reward, requires); }
     private static Reward r(int food, int steel, int oil, int rare, int gold) { return new Reward(food, steel, oil, rare, gold, 0, null, null, null, 0); }
-    private static GuideStep g(String id, String title, String body, String route, int order, String goal, String type, String key, int value, String building, Reward reward) { return new GuideStep(id, title, body, route, order, goal, type, key, value, building, reward); }
     public static Quest findQuest(String id) { return CHAPTERS.stream().flatMap(c -> c.quests().stream()).filter(q -> q.id().equals(id)).findFirst().orElse(null); }
     public static String firstQuestOf(String chapterId) { return CHAPTERS.stream().filter(c -> c.id().equals(chapterId)).findFirst().map(c -> c.quests().get(0).id()).orElse(null); }
     public static String nextQuestInChapter(String id) { for (Chapter c : CHAPTERS) for (int i = 0; i < c.quests().size(); i++) if (c.quests().get(i).id().equals(id)) return i + 1 < c.quests().size() ? c.quests().get(i + 1).id() : null; return null; }

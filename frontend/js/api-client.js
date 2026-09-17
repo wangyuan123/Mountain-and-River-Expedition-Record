@@ -114,6 +114,8 @@ window.Game = window.Game || {};
 
     // ===== 401 处理：清 token，跳转登录页 =====
     handleUnauthorized() {
+      // 注销受理会先使并行请求失效，保留提交页面等待其响应或凭据状态查询。
+      if (G.Account && G.Account.submitting) return;
       this.clearToken();
       this.invalidateStateCache();
       if (typeof this.onUnauthorized === 'function') {
@@ -146,7 +148,7 @@ window.Game = window.Game || {};
       var controller = options.timeout ? new AbortController() : null;
       var timeoutId = controller ? setTimeout(function () { controller.abort(); }, options.timeout) : null;
       var revision = self.cityRevision;
-      var promise = self._doFetch(method, path, body, retry, { cityId: self.cityId, token: self.getToken(), revision: revision, signal: controller ? controller.signal : undefined }).then(function (data) {
+      var promise = self._doFetch(method, path, body, retry, { cityId: self.cityId, token: self.getToken(), revision: revision, preserveSession: options.preserveSession, signal: controller ? controller.signal : undefined }).then(function (data) {
         if (revision !== self.cityRevision) throw new Error('城市或账号已切换，已忽略旧页面响应');
         return data;
       });
@@ -159,7 +161,11 @@ window.Game = window.Game || {};
       }, function (err) {
         if (timeoutId) clearTimeout(timeoutId);
         if (showLoad) self.hideLoading();
-        if (err.name === 'AbortError') throw new Error('地图区域加载超时，请重试');
+        if (err.name === 'AbortError') {
+          var timeout = new Error(safeToRetry ? '请求加载超时，请重试' : '请求超时，操作结果尚未确认');
+          timeout.uncertain = !safeToRetry;
+          throw timeout;
+        }
         throw err;
       });
     }
@@ -185,11 +191,18 @@ window.Game = window.Game || {};
             try { data = JSON.parse(text); } catch (e) { data = null; }
           }
           if (res.status === 401) {
-            self.handleUnauthorized();
-            throw new Error((data && data.error) || '未登录或登录已过期');
+            if (!context.preserveSession) self.handleUnauthorized();
+            var unauthorized = new Error((data && data.error) || '未登录或登录已过期');
+            unauthorized.status = 401;
+            throw unauthorized;
           }
           if (!res.ok) {
-            throw new Error((data && data.error) || ('请求失败 (' + res.status + ')'));
+            var failure = new Error((data && data.error) || ('请求失败 (' + res.status + ')'));
+            failure.code = data && data.code;
+            failure.status = res.status;
+            failure.retryAfter = data && data.retryAfter;
+            failure.uncertain = res.status >= 500 && method !== 'GET';
+            throw failure;
           }
           // 非 GET 请求可能改变了状态，作废缓存
           if (method !== 'GET') self.invalidateStateCache();
@@ -213,7 +226,9 @@ window.Game = window.Game || {};
             ? '网络错误，请检查网络连接'
             : '连接中断，操作结果尚未确认，请刷新查看后再操作';
           if (G.toast) G.toast(message);
-          throw new Error(message);
+          var networkError = new Error(message);
+          networkError.uncertain = method !== 'GET' && method !== 'HEAD';
+          throw networkError;
         }
         throw err;
       });

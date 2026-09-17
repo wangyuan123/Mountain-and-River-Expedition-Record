@@ -94,6 +94,9 @@ public class TickService {
 
     @Transactional
     public void tick(Long playerId) {
+        Player current = playerRepository.lockById(playerId).orElse(null);
+        // 恢复期继续结算；到期后绝不能补建已经清除的个人资产。
+        if (current == null || current.deletionDue(System.currentTimeMillis())) return;
         // Each city settles its own clock and queues. Slot zero also advances the scheduler's account clock.
         try (var ignored = cityScope.enter(playerId, 0)) { tickCity(playerId); }
         for (PlayerCity city : playerCities.findByOwnerIdAndCitySlotIsNotNullOrderByCitySlotAsc(playerId)) {

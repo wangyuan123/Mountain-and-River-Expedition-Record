@@ -36,6 +36,8 @@ import java.util.*;
 @Service
 public class MailService {
 
+    @org.springframework.beans.factory.annotation.Autowired private AccountService accounts;
+
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
 
@@ -122,6 +124,8 @@ public class MailService {
                 .orElseThrow(() -> new IllegalArgumentException("发件人不存在"));
         Player to = playerRepository.findByUsername(toName)
                 .orElseThrow(() -> new IllegalArgumentException("收件人不存在: " + toName));
+        to = accounts.lockPlayer(to.getId());
+        if (to.deletionDue(System.currentTimeMillis())) throw new IllegalArgumentException("收件人不存在");
         if (to.getId().equals(fromPlayerId)) {
             throw new IllegalArgumentException("不能给自己发邮件");
         }
@@ -167,6 +171,8 @@ public class MailService {
                            String subject, String body, List<Map<String, Object>> attach) {
         Player to = playerRepository.findById(toPlayerId)
                 .orElseThrow(() -> new IllegalArgumentException("收件人不存在: " + toPlayerId));
+        to = accounts.lockPlayer(toPlayerId);
+        if (to.deletionDue(System.currentTimeMillis())) return null;
         Mail mail = new Mail();
         mail.setFromPlayerId(null);
         mail.setFromName(fromName == null ? "系统" : fromName);

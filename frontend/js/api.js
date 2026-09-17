@@ -95,18 +95,18 @@ window.Game = window.Game || {};
     register: function (username, password) {
       return client.post('/auth/register', { username: username, password: password })
         .then(function (data) {
-          client.setToken(data.token, data.username);
+          if (data.token) client.setToken(data.token, data.username);
           client.invalidateStateCache();
-          return data; // { token, username, playerId }
+          return data; // 待注销登录仅返回恢复凭据，不建立游戏会话。
         });
     },
 
     login: function (username, password) {
       return client.post('/auth/login', { username: username, password: password })
         .then(function (data) {
-          client.setToken(data.token, data.username);
+          if (data.token) client.setToken(data.token, data.username);
           client.invalidateStateCache();
-          return data; // { token, username, playerId }
+          return data; // 待注销登录仅返回恢复凭据，不建立游戏会话。
         });
     },
 
@@ -134,16 +134,23 @@ window.Game = window.Game || {};
       return client.post('/auth/tutorial/dismiss', {});
     }, 
 
-    /**
-     * 注销当前账号。需要后端校验当前密码 + confirm 文案。
-     * 成功后：Token 立即失效，本地登录态被清空，页面回到登录入口。
-     */
-    disableAccount: function (password, confirm) {
-      return client.post('/auth/disable', { password: password, confirm: confirm })
-        .then(function (data) {
-          // 注销后立即吊销本地会话
-          client.clearToken();
-          client.invalidateStateCache();
+    deletionPreview: function () { return client.get('/auth/deletion-preview', { timeout: 15000 }); },
+
+    /** 注销写请求不重试；结果不明时由只读状态查询确认。 */
+    disableAccount: function (password, confirm, requestId) {
+      return client.post('/auth/disable', { password: password, confirm: confirm, requestId: requestId },
+        { timeout: 15000, preserveSession: true });
+    },
+
+    deletionStatus: function (username, password) {
+      return client.post('/auth/deletion-status', { username: username, password: password },
+        { timeout: 15000, preserveSession: true });
+    },
+
+    recoverAccount: function (recoveryToken) {
+      return client.post('/auth/recover', { recoveryToken: recoveryToken, confirm: true },
+        { timeout: 15000, preserveSession: true }).then(function (data) {
+          client.setToken(data.token, data.username);
           return data;
         });
     },
@@ -239,6 +246,7 @@ window.Game = window.Game || {};
     updateGuildSettings: function (name, icon) { return client.post('/game/guild/settings', { name: name, icon: icon }); },
     updateGuildRole: function (playerId, role) { return client.post('/game/guild/members/' + playerId + '/role', { role: role }); },
     removeGuildMember: function (playerId) { return client.post('/game/guild/members/' + playerId + '/remove', {}); },
+    transferGuildLeadership: function (playerId) { return client.post('/game/guild/members/' + playerId + '/transfer', {}); },
     leaveGuild: function () { return client.post('/game/guild/leave', {}); },
     // ==================== 建筑 ====================
 
@@ -675,6 +683,9 @@ window.Game = window.Game || {};
 
   // 401 时跳转登录页（运行时 Core 已就绪）
   client.onUnauthorized = function () {
+    if (G.Account) { G.Account.endSession(); return; }
+    if (G.WS) G.WS.disconnect();
+    G.state = null;
     if (G.toast) G.toast('登录已过期，请重新登录');
     if (G.Core) {
       G.Core.state = null;

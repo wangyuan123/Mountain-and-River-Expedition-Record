@@ -294,9 +294,9 @@ class TickServiceTest extends BaseServiceTest {
         @SuppressWarnings("unchecked")
         Map<String, Object> pop = (Map<String, Object>) state.get("population");
         assertNotNull(pop);
-        assertEquals(200, pop.get("capacity"));
+        assertEquals(2400, pop.get("capacity"));
         int effCap = (Integer) pop.get("effectiveCapacity");
-        assertTrue(effCap < 200, "80%重税下，有效容纳上限应低于标称容量200");
+        assertTrue(effCap < 2400, "80%重税下，有效容纳上限应低于标称容量2400");
     }
 
     @Test

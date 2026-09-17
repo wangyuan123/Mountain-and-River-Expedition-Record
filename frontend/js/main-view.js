@@ -169,8 +169,10 @@ window.Game = window.Game || {};
   }
 
   Core.views.login = function (v) {
+    if (G.Account && G.Account.recovery) { v.innerHTML = G.Account.recoveryPanel(); return; }
     var h = '';
     h += '<div class="title">- 山河远征录 -</div>';
+    if (G.Account) h += G.Account.loginPanel();
     h += '<div class="desc">请登录或注册，游戏进度由服务器自动保存</div>';
     h += '<div class="panel">';
     h += '<div class="edit-row"><label>用户名</label><input id="loginUser" class="qty" style="width:100%" maxlength="32" placeholder="3-32位字符"></div>';
@@ -807,7 +809,7 @@ window.Game = window.Game || {};
     h += '</div>';
     h += '</div>';
 
-    h += '<div class="zone-head"><span class="zone-title">账号信息</span></div>';
+    h += '<div class="zone-head"><span class="zone-title">账号与安全</span></div>';
     h += '<div class="panel">';
     if (G.API && G.API.isLoggedIn()) {
       h += '<div class="d">登录账号: <b>' + G.escapeHtml(G.API.getUsername() || '未知') + '</b></div>';
@@ -840,16 +842,18 @@ window.Game = window.Game || {};
       h += '<button class="btn warn" style="width:100%;padding:12px;font-size:16px;color:#fff;background:var(--danger);border:0;border-radius:8px" onclick="Game.Main.logout(\'exit\')">退出登录</button>';
       h += '</div>';
 
+      if (!(G.Main && G.Main.guestMode) && (G.API.getUsername() || '').indexOf('游客_') !== 0) {
       h += '<div class="zone-head" style="margin-top:18px;color:var(--danger)"><span class="zone-title">危险操作</span></div>';
       h += '<div class="panel" style="border-left:3px solid var(--danger)">';
       h += '<div class="d" style="color:var(--danger)">注销账号</div>';
       h += '<div class="d" style="font-size:12px;color:var(--muted)">';
-      h += '注销后账号将进入 7 天恢复期，期间重新登录即可恢复；超出恢复期后将永久清理所有游戏数据，且该用户名不可重新注册。';
+      h += '申请后进入恢复期，到期将永久清理游戏进度。查看详情后需验证密码并确认操作。';
       h += '</div>';
       h += '<div class="btn-row" style="margin-top:6px">';
-      h += '<button class="btn sm warn2" style="background:#b03020;color:#fff;border:0" onclick="Game.Main.openDisableAccount()">注销账号</button>';
+      h += '<button class="btn sm account-delete-entry" onclick="Game.Main.openDisableAccount()">注销账号</button>';
       h += '</div>';
       h += '</div>';
+      }
     }
 
     h += '<div class="menu-item back" onclick="Game.go(\'home\')">[0] 返回主菜单</div>';

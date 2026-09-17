@@ -238,41 +238,39 @@ test('施工中建筑在详情弹窗中展示倒计时、进度条、加速与�
   assert.match(modalHtml, /id="bdetailCancelBtn"/);
 });
 
-test('资源Tab卡槽卡片图标与首页资源区SVG图标严格对齐', () => {
+test('资源建筑显示对应设施的花园卫城模型', () => {
   const { G, state } = setup();
   const gridHtml = G.Build.renderSlotGrid('res', [], state);
-  // 农田 -> img/res-food.svg
-  assert.match(gridHtml, /<img class="b-icon-img" src="img\/res-food\.svg" alt="农田"/);
-  // 炼钢厂 -> img/res-steel.svg
-  assert.match(gridHtml, /<img class="b-icon-img" src="img\/res-steel\.svg" alt="炼钢厂"/);
-
-  // BUILD_ICON 四大资源建筑严格对齐首页资源SVG
-  assert.equal(G.Build.BUILD_ICON.farm, 'img/res-food.svg');
-  assert.equal(G.Build.BUILD_ICON.refinery, 'img/res-steel.svg');
-  assert.equal(G.Build.BUILD_ICON.oilfield, 'img/res-oil.svg');
-  assert.equal(G.Build.BUILD_ICON.raremine, 'img/res-rare.svg');
+  assert.match(gridHtml, /<img class="b-icon-img" src="img\/buildings\/garden\/farm\.webp" alt="农田"/);
+  assert.match(gridHtml, /<img class="b-icon-img" src="img\/buildings\/garden\/refinery\.webp" alt="炼钢厂"/);
+  for (const id of ['farm', 'refinery', 'oilfield', 'raremine']) {
+    assert.equal(G.Build.BUILD_ICON[id], `img/buildings/garden/${id}.webp`);
+  }
 });
 
-test('军事Tab所有建筑采用二战战术矢量SVG图标', () => {
+test('军事建筑显示花园卫城模型，全部 21 个映射都有实际素材', () => {
   const { G, state } = setup();
-  // 测试军事建筑 BUILD_ICON 映射
   const armyBuildings = [
     'command', 'house', 'factory', 'lightfactory', 'heavyfactory',
     'airport', 'port', 'academy', 'staff', 'lab', 'radar', 'wall',
     'apron', 'liaison', 'depot', 'transit', 'exchange'
   ];
-  for (const bid of armyBuildings) {
-    assert.equal(G.Build.BUILD_ICON[bid], `img/buildings/${bid}.svg`);
+  for (const id of armyBuildings) {
+    assert.equal(G.Build.BUILD_ICON[id], `img/buildings/garden/${id}.webp`);
   }
-
-  // 渲染军事建筑卡槽网格，包含已建成的 command (Lv.2) 和 radar (Lv.1)
+  assert.equal(Object.keys(G.Build.BUILD_ICON).length, 21);
+  for (const asset of Object.values(G.Build.BUILD_ICON)) {
+    assert.ok(fs.existsSync(path.join(__dirname, '..', asset)), `缺少建筑素材：${asset}`);
+  }
   const armyGridHtml = G.Build.renderSlotGrid('army', [], state);
-  assert.match(armyGridHtml, /<img class="b-icon-img" src="img\/buildings\/command\.svg" alt="市政厅"/);
-  assert.match(armyGridHtml, /<img class="b-icon-img" src="img\/buildings\/radar\.svg" alt="雷达站"/);
+  assert.match(armyGridHtml, /<img class="b-icon-img" src="img\/buildings\/garden\/command\.webp" alt="市政厅"/);
+  assert.match(armyGridHtml, /<img class="b-icon-img" src="img\/buildings\/garden\/radar\.webp" alt="雷达站"/);
 });
 
-test('renderBuildingIcon 支持 SVG 图片路径及 emoji 降级', () => {
+test('renderBuildingIcon 支持 WebP、SVG 图片路径及 emoji 降级', () => {
   const { G } = setup();
+  const modelImg = G.Build.renderBuildingIcon(G.Build.BUILD_ICON.farm, '农田');
+  assert.match(modelImg, /src="img\/buildings\/garden\/farm\.webp" alt="农田"/);
   const svgImg = G.Build.renderBuildingIcon('img/buildings/factory.svg', '军工厂', 'custom-cls');
   assert.equal(svgImg, '<img class="b-icon-img custom-cls" src="img/buildings/factory.svg" alt="军工厂" draggable="false"/>');
 

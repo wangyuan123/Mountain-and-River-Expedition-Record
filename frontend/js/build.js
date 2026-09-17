@@ -1254,32 +1254,29 @@ window.Game = window.Game || {};
       port:        'army'
     },
 
-    /** 建筑类型 → 视觉图标（资源对齐首页SVG，军事全新二战战术矢量SVG） */
+    /** 建筑统一使用 A「花园卫城」透明模型；资源数量栏继续使用资源符号。 */
     BUILD_ICON: {
-      // 资源建筑：与首页资源区 (img/res-*.svg) 严格对齐
-      farm:         'img/res-food.svg',
-      refinery:     'img/res-steel.svg',
-      oilfield:     'img/res-oil.svg',
-      raremine:     'img/res-rare.svg',
-
-      // 军事与核心建筑：全新二战军事战术风格矢量 SVG
-      command:      'img/buildings/command.svg',
-      house:        'img/buildings/house.svg',
-      factory:      'img/buildings/factory.svg',
-      lightfactory: 'img/buildings/lightfactory.svg',
-      heavyfactory: 'img/buildings/heavyfactory.svg',
-      airport:      'img/buildings/airport.svg',
-      port:         'img/buildings/port.svg',
-      academy:      'img/buildings/academy.svg',
-      staff:        'img/buildings/staff.svg',
-      lab:          'img/buildings/lab.svg',
-      radar:        'img/buildings/radar.svg',
-      wall:         'img/buildings/wall.svg',
-      apron:        'img/buildings/apron.svg',
-      liaison:      'img/buildings/liaison.svg',
-      depot:        'img/buildings/depot.svg',
-      transit:      'img/buildings/transit.svg',
-      exchange:     'img/buildings/exchange.svg'
+      farm:         'img/buildings/garden/farm.webp',
+      refinery:     'img/buildings/garden/refinery.webp',
+      oilfield:     'img/buildings/garden/oilfield.webp',
+      raremine:     'img/buildings/garden/raremine.webp',
+      command:      'img/buildings/garden/command.webp',
+      house:        'img/buildings/garden/house.webp',
+      factory:      'img/buildings/garden/factory.webp',
+      lightfactory: 'img/buildings/garden/lightfactory.webp',
+      heavyfactory: 'img/buildings/garden/heavyfactory.webp',
+      airport:      'img/buildings/garden/airport.webp',
+      port:         'img/buildings/garden/port.webp',
+      academy:      'img/buildings/garden/academy.webp',
+      staff:        'img/buildings/garden/staff.webp',
+      lab:          'img/buildings/garden/lab.webp',
+      radar:        'img/buildings/garden/radar.webp',
+      wall:         'img/buildings/garden/wall.webp',
+      apron:        'img/buildings/garden/apron.webp',
+      liaison:      'img/buildings/garden/liaison.webp',
+      depot:        'img/buildings/garden/depot.webp',
+      transit:      'img/buildings/garden/transit.webp',
+      exchange:     'img/buildings/garden/exchange.webp'
     },
     renderBuildingIcon: renderBuildingIcon,
 

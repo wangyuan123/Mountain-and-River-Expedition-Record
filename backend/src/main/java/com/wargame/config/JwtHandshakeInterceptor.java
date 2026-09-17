@@ -23,9 +23,11 @@ import java.util.Map;
 public class JwtHandshakeInterceptor implements HandshakeInterceptor {
 
     private final JwtUtil jwtUtil;
+    private final com.wargame.repository.PlayerRepository players;
 
-    public JwtHandshakeInterceptor(JwtUtil jwtUtil) {
+    public JwtHandshakeInterceptor(JwtUtil jwtUtil, com.wargame.repository.PlayerRepository players) {
         this.jwtUtil = jwtUtil;
+        this.players = players;
     }
 
     @Override
@@ -49,6 +51,13 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
             return false;
         }
 
+        var player = players.findById(playerId).orElse(null);
+        if (player == null || !player.accountActive() || player.getAuthVersion() != jwtUtil.getAuthVersion(token)) {
+            reject(response, "account session expired");
+            return false;
+        }
+        attributes.put("token", token);
+        attributes.put("authVersion", player.getAuthVersion());
         attributes.put("playerId", playerId);
         return true;
     }

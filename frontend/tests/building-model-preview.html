@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="blue-white">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <base href="../">
+  <title>花园卫城 · 建筑预览</title>
+  <link rel="stylesheet" href="css/style.css?v=3.0-garden-buildings">
+  <link rel="stylesheet" href="css/themes.css?v=3.0-garden-buildings">
+  <link rel="stylesheet" href="css/classic-home.css">
+  <style>
+    .preview-toolbar { padding: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .preview-toolbar strong { margin-right: auto; }
+    #preview-message { padding: 0 12px; font-size: 12px; }
+    #screen { width: 100%; }
+  </style>
+</head>
+<body>
+  <div id="screen">
+    <div class="preview-toolbar">
+      <strong>A · 花园卫城建筑</strong>
+      <button class="btn" onclick="Game.go('buildArmy')">军事区</button>
+      <button class="btn" onclick="Game.go('buildRes')">资源区</button>
+      <button class="btn" onclick="document.getElementById('screen').style.maxWidth='375px'">手机宽度</button>
+      <button class="btn" onclick="document.getElementById('screen').style.maxWidth='720px'">桌面宽度</button>
+      <button class="btn" onclick="document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'blue-white':'dark'">切换主题</button>
+    </div>
+    <div id="preview-message">建筑外观预览，可点击查看详情或空地；此页使用独立示例数据。</div>
+    <div id="view"></div>
+  </div>
+  <script src="js/data.js"></script>
+  <script src="js/core.js"></script>
+  <script>
+    // 只加载本地示例数据；预览操作不调用服务器，也不写入玩家存档。
+    var buildings = {};
+    Object.keys(Game.DATA.buildings).forEach(function (id) {
+      buildings[id] = Game.DATA.buildings[id].slots > 1 ? [1] : 1;
+    });
+    buildings.command = 3;
+    Game.state = Game.Core.state = {
+      buildings: buildings, constructions: [], tech: {}, items: {}, officers: [], roles: {},
+      resources: { food: 100000, steel: 100000, oil: 100000, rare: 100000, gold: 100000 },
+      world: {}, player: {}
+    };
+    Game.toast = function (text) { document.getElementById('preview-message').textContent = text; };
+    Game.go = function (route) {
+      Game.Core.route = route === 'buildRes' ? 'buildRes' : 'buildArmy';
+      Game.Core.render();
+    };
+    Game.Core.render = function () { Game.Core.views[Game.Core.route](document.getElementById('view')); };
+    Game.API = new Proxy({}, { get: function () { return function () {
+      Game.toast('此页仅预览建筑外观，操作未提交。');
+      return Promise.resolve({ success: false, message: '外观预览' });
+    }; } });
+    window.addEventListener('error', function (e) { Game.toast('ERROR: ' + e.message); });
+  </script>
+  <script src="js/build.js?v=1.5-garden-buildings"></script>
+  <script>Game.go('buildArmy');</script>
+</body>
+</html>

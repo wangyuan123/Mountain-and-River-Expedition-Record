@@ -43,24 +43,31 @@ window.Game = window.Game || {};
     },
 
     doLogin: function () {
+      if (this._loginBusy) return;
       var self = this;
       var u = (document.getElementById('loginUser').value || '').trim();
-      var p = (document.getElementById('loginPass').value || '').trim();
+      var p = document.getElementById('loginPass').value || '';
       if (!u || !p) { this.showLoginMsg('请输入用户名和密码', true); return; }
+      this._loginBusy = true;
       this.showLoginMsg('登录中...', false);
-      G.API.login(u, p).then(function () {
+      G.API.login(u, p).then(function (data) {
+        if (data.status === 'RECOVERY_REQUIRED') {
+          G.Account.showRecovery(data);
+          return;
+        }
+        if (G.Account) G.Account.clearNotice();
         self.showLoginMsg('登录成功,加载游戏...', false);
         self.guestMode = false;
         return self.startGame();
       }).catch(function (err) {
         self.showLoginMsg(err && err.message ? err.message : '登录失败', true);
-      });
+      }).finally(function () { self._loginBusy = false; });
     },
 
     doRegister: function () {
       var self = this;
       var u = (document.getElementById('loginUser').value || '').trim();
-      var p = (document.getElementById('loginPass').value || '').trim();
+      var p = document.getElementById('loginPass').value || '';
       if (!u || !p) { this.showLoginMsg('请输入用户名和密码', true); return; }
       if (u.length < 3) { this.showLoginMsg('用户名至少3位', true); return; }
       if (p.length < 6) { this.showLoginMsg('密码至少6位', true); return; }
@@ -96,9 +103,6 @@ window.Game = window.Game || {};
         Core.route = 'home';
         Core.render();
         if (G.MainQuest) G.MainQuest.init();
-        if (Main.shouldShowTutorial(state)) {
-          setTimeout(function () { Main.showTutorial(); }, 600);
-        }
         // Connect WebSocket for real-time updates (skip guest mode - no valid JWT)
         if (G.WS && !Main.guestMode) {
           G.WS.connect();
@@ -222,95 +226,8 @@ window.Game = window.Game || {};
       Core.render();
     },
 
-    // ============================================================
-    //  注销账号：二次确认弹窗 + 提交后清空本地会话
-    // ============================================================
-
-    openDisableAccount: function () {
-      if (!G.API || !G.API.isLoggedIn()) {
-        G.toast('当前未登录账号，无需注销');
-        return;
-      }
-      if (G.Main && G.Main.guestMode) {
-        G.toast('游客模式无账号，无需注销');
-        return;
-      }
-      var existing = document.getElementById('disableAccountModal');
-      if (existing) existing.remove();
-
-      var mask = document.createElement('div');
-      mask.className = 'modal-mask';
-      mask.id = 'disableAccountModal';
-      mask.innerHTML =
-        '<div class="modal-card" style="max-width:380px">' +
-          '<div class="modal-title" style="color:var(--danger)">⚠ 注销账号</div>' +
-          '<div class="modal-body">' +
-            '<div style="font-size:13px;line-height:1.6;color:var(--ink)">' +
-              '注销后账号将进入 <b>7 天恢复期</b>。<br>' +
-              '• 宽限期内重新登录可自动恢复；<br>' +
-              '• 超出 7 天将永久清理账号数据，且该用户名不可再用；<br>' +
-              '• 注销会立即撤销当前会话。' +
-            '</div>' +
-            '<div class="edit-row" style="margin-top:10px"><label>当前密码</label>' +
-              '<input id="disablePassword" class="qty" style="width:100%" type="password" maxlength="64" placeholder="请输入当前登录密码">' +
-            '</div>' +
-            '<div class="edit-row"><label>确认操作</label>' +
-              '<input id="disableConfirm" class="qty" style="width:100%" maxlength="16" placeholder="请输入 确认注销">' +
-            '</div>' +
-            '<div id="disableMsg" style="margin-top:6px;font-size:12px;color:var(--muted)">输入"确认注销"以继续</div>' +
-          '</div>' +
-          '<div class="btn-row" style="margin-top:10px">' +
-            '<button class="btn sm" onclick="Game.Main.closeDisableAccount()">取消</button>' +
-            '<button class="btn sm warn2" style="background:#b03020;color:#fff" onclick="Game.Main.submitDisableAccount()">确认注销</button>' +
-          '</div>' +
-        '</div>';
-      document.body.appendChild(mask);
-      setTimeout(function () {
-        var pwd = document.getElementById('disablePassword');
-        if (pwd) pwd.focus();
-      }, 50);
-    },
-
-    closeDisableAccount: function () {
-      var mask = document.getElementById('disableAccountModal');
-      if (mask) mask.remove();
-    },
-
-    submitDisableAccount: function () {
-      var pwdEl = document.getElementById('disablePassword');
-      var confEl = document.getElementById('disableConfirm');
-      var msgEl = document.getElementById('disableMsg');
-      var password = pwdEl ? pwdEl.value : '';
-      var confirmText = confEl ? confEl.value.trim() : '';
-      if (!password) {
-        if (msgEl) { msgEl.textContent = '请输入当前密码'; msgEl.style.color = 'var(--danger)'; }
-        return;
-      }
-      if (confirmText !== '确认注销') {
-        if (msgEl) { msgEl.textContent = '请输入"确认注销"以继续'; msgEl.style.color = 'var(--danger)'; }
-        return;
-      }
-
-      var self = this;
-      G.API.disableAccount(password, confirmText).then(function (data) {
-        self.closeDisableAccount();
-        // 关闭 WS、清空状态、回到登录页
-        if (G.WS) G.WS.disconnect();
-        G.state = null;
-        Core.state = null;
-        self.guestMode = false;
-        Core.history = [];
-        Core.route = 'login';
-        Core.render();
-        var cooldown = data && data.cooldownDays ? data.cooldownDays : 7;
-        G.toast('账号已注销，' + cooldown + ' 天内登录可恢复');
-      }).catch(function (err) {
-        if (msgEl) {
-          msgEl.textContent = (err && err.message) ? err.message : '注销失败';
-          msgEl.style.color = 'var(--danger)';
-        }
-      });
-    },
+    /** 注销交互由独立模块维护，避免主流程实时重绘覆盖密码输入。 */
+    openDisableAccount: function () { G.Account.open(); },
 
     sendChat: function () {
       var el = document.getElementById('worldChatInput');
@@ -402,60 +319,6 @@ window.Game = window.Game || {};
       updateDots();
     },
 
-    // ================================================================
-    // 新手引导
-    // ================================================================
-    shouldShowTutorial: function (state) {
-      try {
-        // 跳过状态以服务端玩家数据为准，刷新或更换设备后仍然有效。
-        if (state && state.player && state.player.tutorialDismissed) return false;
-        // 资源仍处于初始范围(每种 <= 12万) 才视为新玩家
-        var r = (state && state.resources) || {};
-        var max = Math.max(r.food || 0, r.steel || 0, r.oil || 0, r.rare || 0);
-        return max <= 120000;
-      } catch (e) { return false; }
-    },
-
-    showTutorial: function () {
-      var modal = document.createElement('div');
-      modal.className = 'modal-mask';
-      modal.innerHTML =
-        '<div class="modal-card" style="max-width:520px">' +
-          '<div class="modal-title">欢迎来到山河远征录</div>' +
-          '<div class="modal-body" style="line-height:1.7;font-size:14px">' +
-            '<p>1. <b>资源</b>([1]): 升级农场/炼油厂/钢/稀矿,提升每小时产量。</p>' +
-            '<p>2. <b>军事</b>([2]): 建造兵营、兵工厂、解锁高级兵种。</p>' +
-            '<p>3. <b>军官学院</b>: 消耗 <b>200 黄金/次</b> 刷新候选,招幕将领出战。</p>' +
-            '<p>4. <b>地图</b>([6]): 扫描周围资源/流寇/玩家主城。宣战前需 6 小时备战 + 24 小时战争。</p>' +
-            '<p>5. <b>军饷</b>: 系统按<b>每小时</b>从黄金中扣除军官薪资总额,金币不足时武将忠诚度会下降,请保持税源。</p>' +
-          '</div>' +
-          '<div class="modal-foot">' +
-            '<button class="btn ok" id="tutOk">明白了</button>' +
-            '<button class="btn" id="tutDismiss">不再提示</button>' +
-          '</div>' +
-        '</div>';
-      document.body.appendChild(modal);
-      var close = function () {
-        if (modal.parentNode) modal.parentNode.removeChild(modal);
-      };
-      modal.querySelector('#tutOk').onclick = close;
-      modal.querySelector('#tutDismiss').onclick = function () {
-        var button = modal.querySelector('#tutDismiss');
-        button.disabled = true;
-        if (!G.API || !G.API.dismissTutorial) {
-          G.toast('引导状态保存失败，请稍后重试');
-          button.disabled = false;
-          return;
-        }
-        G.API.dismissTutorial().then(function () {
-          if (G.state && G.state.player) G.state.player.tutorialDismissed = true;
-          close();
-        }).catch(function () {
-          G.toast('引导状态保存失败，请稍后重试');
-          button.disabled = false;
-        });
-      };
-    }
   };
 
   Object.assign(Main, G.PlayerProfile);
@@ -477,10 +340,6 @@ window.Game = window.Game || {};
         if (G.Chat) G.Chat.loadHistory();
         // 初始化邮件种子
         if (G.Mail) G.Mail.seed();
-        // 新手引导：仅对首次登录且资源等级很低的玩家展示一次
-        if (Main.shouldShowTutorial(state)) {
-          setTimeout(function () { Main.showTutorial(); }, 600);
-        }
         // 初始化每日任务；登录进度照常计入，但页面刷新不弹任务提示。
         if (G.Task && G.Task.Quests) {
           G.Task.Quests.init();

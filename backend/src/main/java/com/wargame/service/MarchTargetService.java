@@ -72,7 +72,9 @@ public class MarchTargetService {
             case "simulated_npc":
                 return playerCityRepository.findById(id).filter(pc -> !hasRealOwner(pc)).orElse(null);
             case "player":
-                return playerCityRepository.findById(id).filter(this::hasRealOwner).orElse(null);
+                return playerCityRepository.findById(id).filter(this::hasRealOwner)
+                        .filter(pc -> playerRepository.findById(pc.getOwnerId())
+                                .map(p -> !p.deletionDue(System.currentTimeMillis())).orElse(false)).orElse(null);
             default:
                 return null;
         }

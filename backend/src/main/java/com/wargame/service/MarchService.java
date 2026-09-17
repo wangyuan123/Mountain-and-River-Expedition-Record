@@ -26,6 +26,8 @@ import java.util.*;
 @Service
 public class MarchService {
 
+    @org.springframework.beans.factory.annotation.Autowired private AccountService accounts;
+
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
     @org.springframework.beans.factory.annotation.Autowired
@@ -107,6 +109,8 @@ public class MarchService {
 
     @Transactional
     public void processMarches(Long playerId, long now) {
+        Player account = playerRepository.lockById(playerId).orElse(null);
+        if (account == null || account.deletionDue(System.currentTimeMillis())) return;
         List<March> marches = marchRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         if (marches == null || marches.isEmpty()) return;
 
@@ -179,7 +183,9 @@ public class MarchService {
                             });
                 }
 
-                try { questService.onEvent(playerId, "GATHER_COMPLETE", gatherRes, 1); } catch (Exception ignored) {}
+                if (gatherAmount > 0 && gatherRes != null) {
+                    questService.onEvent(playerId, "GATHER_COMPLETE", gatherRes, 1);
+                }
                 returnArmy(playerId, JsonUtil.parseIntMap(m.getArmy()));
 
                 Map<String, Object> extra = new LinkedHashMap<>(resourceEvent(m.getGatherRes(), gatherAmount));
@@ -363,6 +369,12 @@ public class MarchService {
 
             // 3e. 攻击/侦查流寇、NPC城、玩家城 - 查找目标
             Object target = targets.findTargetById(targetKind, m.getTargetId());
+            if (target == null && "player".equals(targetKind)) {
+                // 注销目标失效后正常返程，不瞬移返兵，也不额外发放战利品。
+                startReturnMarch(m, now);
+                marchRepository.save(m);
+                continue;
+            }
             if (target == null || targets.isDefeated(target)) {
                 marchRepository.delete(m);
                 returnArmy(playerId, JsonUtil.parseIntMap(m.getArmy()));
@@ -371,6 +383,15 @@ public class MarchService {
                     addResources(playerId, carryRes);
                 }
                 continue;
+            }
+
+            if (target instanceof PlayerCity defenderCity && defenderCity.getOwnerId() != null) {
+                Player defender = accounts.lockPlayer(defenderCity.getOwnerId());
+                if (defender == null || defender.deletionDue(System.currentTimeMillis())) {
+                    startReturnMarch(m, now);
+                    marchRepository.save(m);
+                    continue;
+                }
             }
 
             // 玩家城保护期检查 - 对应 JS target.coolAt > now
@@ -522,7 +543,10 @@ public class MarchService {
         wt.setGatherRes(null);
         wildTileRepository.save(wt);
 
-        try { questService.onEvent(playerId, "GATHER_COMPLETE", null, 1); } catch (Exception ignored) {}
+        // 提前收获可能得到0资源，只有实际入库才计为完成采集。
+        if (harvestAmount > 0 && resKey != null) {
+            questService.onEvent(playerId, "GATHER_COMPLETE", resKey, 1);
+        }
 
         String resName = switch (resKey != null ? resKey : "") {
             case "food" -> "粮食";
@@ -576,6 +600,10 @@ public class MarchService {
         returnArmy(playerId, garrison);
         wt.setGarrison("{}");
         wildTileRepository.save(wt);
+
+        if (harvested > 0 && resKey != null) {
+            questService.onEvent(playerId, "GATHER_COMPLETE", resKey, 1);
+        }
 
         Map<String, Object> res = new LinkedHashMap<>();
         res.put("success", true);
@@ -638,6 +666,11 @@ public class MarchService {
 
         // 1. 查找目标
         Object target = targets.findTargetByLongId(kind, req.targetId());
+        if (target instanceof PlayerCity pc && pc.getOwnerId() != null) {
+            Player owner = accounts.lockPlayer(pc.getOwnerId());
+            if (owner.deletionDue(System.currentTimeMillis())) throw new IllegalArgumentException("目标城池已失效");
+        }
+
         if (target == null) throw new IllegalArgumentException("目标不存在");
         if ("player".equals(kind) && target instanceof PlayerCity pc && !targets.hasRealOwner(pc)) {
             throw new IllegalArgumentException("该城市为模拟 NPC，请使用 simulated_npc 目标类型");
@@ -826,6 +859,8 @@ public class MarchService {
 
     @Transactional
     public void processIncoming(Long playerId, long now) {
+        Player account = playerRepository.lockById(playerId).orElse(null);
+        if (account == null || account.deletionDue(System.currentTimeMillis())) return;
         List<IncomingMarch> incoming = incomingMarchRepository.findByTargetPlayerId(playerId);
         if (incoming == null || incoming.isEmpty()) return;
 

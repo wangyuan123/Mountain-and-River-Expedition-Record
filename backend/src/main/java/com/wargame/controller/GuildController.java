@@ -39,6 +39,10 @@ public class GuildController {
     public ResponseEntity<Map<String, Object>> role(@PathVariable Long targetPlayerId, @RequestBody GameDtos.GuildRoleRequest request) { return ResponseEntity.ok(guildService.updateRole(playerId(), targetPlayerId, request.role())); }
     @PostMapping("/members/{targetPlayerId}/remove")
     public ResponseEntity<Map<String, Object>> remove(@PathVariable Long targetPlayerId) { return ResponseEntity.ok(guildService.removeMember(playerId(), targetPlayerId)); }
+    @PostMapping("/members/{targetPlayerId}/transfer")
+    public ResponseEntity<Map<String, Object>> transfer(@PathVariable Long targetPlayerId) {
+        return ResponseEntity.ok(guildService.transferLeadership(playerId(), targetPlayerId));
+    }
     @PostMapping("/leave")
     public ResponseEntity<Map<String, Object>> leave() { return ResponseEntity.ok(guildService.leave(playerId())); }
 

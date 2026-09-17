@@ -794,8 +794,8 @@ select.qty { width: 80px; cursor: pointer; }
 .bcard-expanded .bcard-head { border-bottom-color: #d8c890; background: linear-gradient(180deg, #f8eec8 0%, #ecdfa0 100%); }
 
 .bcard-icon {
-  width: 28px;
-  height: 28px;
+  width: 56px;
+  height: 56px;
   border-radius: 6px;
   display: inline-flex;
   align-items: center;
@@ -807,8 +807,8 @@ select.qty { width: 80px; cursor: pointer; }
   flex-shrink: 0;
 }
 .bcard-icon .b-icon-img {
-  width: 20px;
-  height: 20px;
+  width: 52px;
+  height: 52px;
   object-fit: contain;
   display: block;
 }
@@ -938,9 +938,10 @@ select.qty { width: 80px; cursor: pointer; }
 .slot-overview-panel {
   margin: 8px 0 14px;
 }
+/* 建筑微缩模型需要足够的画幅；空地与已建地块保持同高。 */
 .slot-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
   gap: 6px;
   margin-top: 6px;
 }
@@ -949,7 +950,7 @@ select.qty { width: 80px; cursor: pointer; }
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  height: 96px;
+  height: 148px;
   padding: 6px 4px 4px;
   border-radius: 6px;
   border: 1px solid #c9b27a;
@@ -1015,8 +1016,8 @@ select.qty { width: 80px; cursor: pointer; }
 .slot-card-icon {
   font-size: 22px;
   line-height: 1;
-  width: 32px;
-  height: 32px;
+  width: 84px;
+  height: 84px;
   margin: 0;
   display: flex;
   align-items: center;
@@ -1024,8 +1025,8 @@ select.qty { width: 80px; cursor: pointer; }
   flex-shrink: 0;
 }
 .slot-card-icon .b-icon-img {
-  width: 28px;
-  height: 28px;
+  width: 84px;
+  height: 84px;
   object-fit: contain;
   display: block;
 }
@@ -1058,7 +1059,7 @@ select.qty { width: 80px; cursor: pointer; }
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  height: 96px;
+  height: 148px;
   padding: 6px 4px 4px;
   border: 1.5px dashed #b5a060;
   background: rgba(255, 255, 255, .45);
@@ -1078,9 +1079,9 @@ select.qty { width: 80px; cursor: pointer; }
   font-size: 24px;
   font-weight: 800;
   color: var(--accent, #526b4d);
-  line-height: 32px;
-  width: 32px;
-  height: 32px;
+  line-height: 84px;
+  width: 84px;
+  height: 84px;
   margin: 0;
   display: flex;
   align-items: center;
@@ -1130,15 +1131,15 @@ select.qty { width: 80px; cursor: pointer; }
 .build-picker-icon {
   font-size: 28px;
   flex-shrink: 0;
-  width: 34px;
+  width: 64px;
   text-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .build-picker-icon .b-icon-img {
-  width: 30px;
-  height: 30px;
+  width: 64px;
+  height: 64px;
   object-fit: contain;
   display: block;
 }
@@ -5668,8 +5669,8 @@ button.drawer-rank-tip:hover { border-color: var(--accent); }
   justify-content: center;
 }
 .bdetail-icon .b-icon-img {
-  width: 32px;
-  height: 32px;
+  width: 88px;
+  height: 88px;
   object-fit: contain;
   display: block;
 }

@@ -1,0 +1,11 @@
+{
+  "errors": [],
+  "verified": [
+    "desktop",
+    "mobile",
+    "pause-reload-resume",
+    "base-supply",
+    "real-production",
+    "real-scouting"
+  ]
+}

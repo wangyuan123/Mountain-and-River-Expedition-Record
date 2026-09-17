@@ -24,6 +24,9 @@ public class GameStateService {
     @org.springframework.beans.factory.annotation.Autowired
     private WorldTerrainService terrain;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.service.quest.OnboardingService onboarding;
+
     @org.springframework.beans.factory.annotation.Autowired private CityService cityService;
     @org.springframework.beans.factory.annotation.Autowired private ArmyProductionQueueRepository armyQueues;
 
@@ -204,7 +207,7 @@ public class GameStateService {
         int populationCapacity = buildings.stream()
                 .filter(b -> "house".equals(b.getType()))
                 .mapToInt(b -> b.getLevel() != null ? b.getLevel() : 0)
-                .sum() * 100;
+                .sum() * com.wargame.model.constants.BuildingDef.BUILDINGS.get("house").popPer();
         int civilians = Math.max(0, cityScope.economy(playerId).getCivilianPopulation() != null ? cityScope.economy(playerId).getCivilianPopulation() : 0);
         int morale = cityScope.economy(playerId).getMorale() != null ? cityScope.economy(playerId).getMorale() : 70;
         int effectiveCapacity = populationCapacity <= 0 ? 0 : Math.max(10, (int) Math.round(populationCapacity * Math.min(1.0, morale / 70.0)));
@@ -490,6 +493,8 @@ public class GameStateService {
         List<Player> players = new ArrayList<>(playerRepository.findAll());
         players.sort(Comparator.comparing(Player::getId));
         for (Player player : players) {
+            // 到期注销账号保留墓碑；启动修复不得重新分配地块或重建其主城。
+            if (player.deletionDue(System.currentTimeMillis())) continue;
             int x = player.getCityPosX() == null ? -1 : player.getCityPosX();
             int y = player.getCityPosY() == null ? -1 : player.getCityPosY();
             String key = x + "," + y;
@@ -620,22 +625,23 @@ public class GameStateService {
         player.setPrestige(0);
         player.setLevel(1);
         player.setVipLevel(0);
-        player.setCivilianPopulation(50);
+        // 为步兵、侦察和运输的小批征召留出人口，同时保留税收人口。
+        player.setCivilianPopulation(150);
         player.setPopulationGrowthRemainder(0.0);
         player.setLastTick(System.currentTimeMillis());
         playerRepository.save(player);
         ensureRealPlayerCity(player);
 
-        // Default resources
+        // 初始储备覆盖基础建设与小批征兵，后续发展仍需生产和出征补给。
         resourcesRepository.deleteByPlayerId(playerId);
         Resources resources = new Resources();
         resources.setPlayerId(playerId);
         resources.setCitySlot(cityScope.slot(playerId));
-        resources.setFood(100000);
-        resources.setSteel(100000);
-        resources.setOil(100000);
-        resources.setRare(100000);
-        resources.setGold(100000);
+        resources.setFood(2000);
+        resources.setSteel(3000);
+        resources.setOil(1000);
+        resources.setRare(200);
+        resources.setGold(1000);
         resources.setDiamond(0);
         resourcesRepository.save(resources);
 
@@ -703,6 +709,7 @@ public class GameStateService {
 
         // 邮件种子 (欢迎/礼包/通告)
         mailService.seedForNewPlayer(playerId);
+        onboarding.start(playerId);
     }
 
     /**

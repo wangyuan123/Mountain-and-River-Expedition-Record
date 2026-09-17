@@ -6,6 +6,13 @@ window.Game = window.Game || {};
 
   var D = G.DATA;
 
+  // 上线时统一替换为实际运营主体和已取得的备案号，并关闭模拟标记。
+  var SITE_INFO = {
+    operator: '山河远征网络科技有限公司',
+    icpNumber: '京ICP备00000000号-1',
+    isPlaceholder: true
+  };
+
   function $(id) { return document.getElementById(id); }
 
   function fmt(n) {
@@ -531,6 +538,7 @@ window.Game = window.Game || {};
       if (this.route !== 'home' && this.route !== 'login') this.renderBackButton(v);
       var foot = $('footbar');
       foot.innerHTML = this.footer();
+      if (G.Onboarding) G.Onboarding.render();
     },
 
     renderBackButton: function (view) {
@@ -665,10 +673,19 @@ window.Game = window.Game || {};
       }
     },
 
+    /** 底部入口切换后回到页首，避免长页面切换后仍停留在页脚。 */
+    footerNavigate: function (route) {
+      if (route) G.go(route);
+      var view = $('view');
+      if (view) view.scrollTop = 0;
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    },
+
+    /** 登录页只展示站点信息；游戏内提供常用导航并标识当前页面。 */
     footer: function () {
       var map = {
         login: '登录/注册 或 [0]游客模式',
-        home: '[1-9]导航',
+        home: '',
         buildRes: '[1-9]升级 [0]返回',
         buildArmy: '[1-9]升级 [0]返回',
         fort: '修筑/拆除城防 [0]返回',
@@ -689,7 +706,36 @@ window.Game = window.Game || {};
         depotUse: '选择军官使用道具 [0]返回',
         settings: '游戏设置与账号管理 [0]返回'
       };
-      return map[this.route] || '[0]返回';
+      var html = '';
+      if (this.state && this.route !== 'login') {
+        var items = [
+          { route: 'home', label: '首页', icon: '⌂' },
+          { route: 'world', label: '地图', icon: '◎' },
+          { route: 'mainQuest', label: '任务', icon: '⚑' },
+          { route: 'mail', label: '邮件', icon: '✉' },
+          { route: 'settings', label: '设置', icon: '⚙' }
+        ];
+        html += '<nav class="footer-nav" aria-label="底部快捷导航">';
+        for (var i = 0; i < items.length; i++) {
+          var item = items[i];
+          var current = this.route === item.route;
+          html += '<button type="button" class="footer-nav-item"' + (current ? ' aria-current="page"' : '') +
+            ' onclick="Game.Core.footerNavigate(\'' + item.route + '\')">' +
+            '<span class="footer-nav-icon" aria-hidden="true">' + item.icon + '</span><span>' + item.label + '</span></button>';
+        }
+        html += '<button type="button" class="footer-nav-item" aria-label="返回顶部" onclick="Game.Core.footerNavigate()">' +
+          '<span class="footer-nav-icon" aria-hidden="true">↑</span><span>顶部</span></button></nav>';
+      }
+      var hint = Object.prototype.hasOwnProperty.call(map, this.route) ? map[this.route] : '[0]返回';
+      if (hint) html += '<p class="footer-hint">' + escapeHtml(hint) + '</p>';
+      var placeholder = SITE_INFO.isPlaceholder ? '（模拟）' : '';
+      html += '<div class="footer-site-info">' +
+        '<p class="footer-brand">山河远征录<span> · 文字战争策略游戏</span></p>' +
+        '<p>运营主体：' + escapeHtml(SITE_INFO.operator) + placeholder + '</p>' +
+        '<p><a class="footer-icp" href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">' +
+        escapeHtml(SITE_INFO.icpNumber) + placeholder + '</a></p>' +
+        (SITE_INFO.isPlaceholder ? '<p class="footer-placeholder">备案信息为演示占位，非真实备案</p>' : '') + '</div>';
+      return html;
     },
 
     views: {}

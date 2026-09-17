@@ -209,8 +209,8 @@ body[data-theme|="blue-white"] {
   background: #e8f1fb !important;
 }
 [data-theme|="blue-white"] .bcard-icon {
-  width: 30px !important;
-  height: 30px !important;
+  width: 56px !important;
+  height: 56px !important;
   border-radius: 6px !important;
   background: linear-gradient(180deg, #f4f8fd 0%, #d8e6f4 100%) !important;
   border: 1px solid #9fb9d5 !important;
@@ -3197,4 +3197,51 @@ body[data-theme="dark"] {
   --accent: #94bddf; --accent-soft: #243446; --line: #3a4b5e;
   --surface: #1c2937; --muted: #a9b8c8; --ink: #e0e8f1;
   --gold-soft: #352e20; --gold: #deb973; --danger: #ff9990;
+}
+
+/* 注销账号沿用主题变量，最终确认按钮才使用实心危险色。 */
+.account-modal { padding: 16px; box-sizing: border-box; }
+.account-modal .account-card { width: 100%; max-width: 420px; max-height: calc(100dvh - 32px); overflow-y: auto; }
+.account-card p, .account-result p { line-height: 1.7; }
+.account-card .edit-row { display: block; margin-top: 12px; }
+.account-card .edit-row label { display: block; margin-bottom: 6px; }
+.account-card .qty { width: 100%; box-sizing: border-box; }
+.account-consequences { padding-left: 20px; line-height: 1.8; }
+.account-error, #disableMsg { color: var(--danger); }
+#disableMsg { margin: 12px 0; font-size: 13px; }
+.account-card > .btn-row { justify-content: flex-end; gap: 10px; padding: 12px 18px; margin: 0; }
+.account-danger { color: #fff; background: var(--danger); border-color: var(--danger); }
+.account-card button:disabled { opacity: .5; cursor: not-allowed; }
+.account-result { border-left: 3px solid var(--danger); }
+
+.account-delete-entry { color: var(--danger); background: transparent; border: 1px solid var(--danger); }
+
+/* 通用旧弹窗使用固定纸色，账号流程单独覆盖以保证深色主题可读。 */
+[data-theme|="blue-white"] :is(.account-modal, .account-result) {
+  --surface: #fff; --surface-muted: #f6f9fc; --ink: #283b50; --muted: #61748a;
+  --line: #dce5ef; --danger: #b03020; --danger-ink: #fff;
+}
+[data-theme="paper"] :is(.account-modal, .account-result) {
+  --surface: #f6f5f0; --surface-muted: #f0eee6; --ink: #273136; --muted: #626c61;
+  --line: #dcded2; --danger: #a33a2b; --danger-ink: #fff;
+}
+[data-theme="dark"] :is(.account-modal, .account-result) {
+  --surface: #111724; --surface-muted: #162032; --ink: #e2e8f0; --muted: #9aabc0;
+  --line: #2b3b52; --danger: #ff9990; --danger-ink: #231313;
+  color-scheme: dark;
+}
+[data-theme] .account-modal .account-card, [data-theme] .account-result {
+  background: var(--surface) !important; color: var(--ink) !important; border-color: var(--line) !important;
+}
+[data-theme] .account-modal .modal-title, [data-theme] .account-modal .modal-body {
+  color: var(--ink) !important; border-color: var(--line) !important;
+}
+[data-theme] .account-modal input.qty {
+  background: var(--surface-muted) !important; color: var(--ink) !important; border-color: var(--line) !important;
+}
+[data-theme] .account-modal .btn.account-danger, [data-theme] .account-modal .btn.account-danger:hover {
+  background: var(--danger) !important; color: var(--danger-ink, #fff) !important; border-color: var(--danger) !important;
+}
+[data-theme] .btn.account-delete-entry {
+  background: transparent !important; color: var(--danger) !important; border-color: var(--danger) !important;
 }

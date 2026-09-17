@@ -50,11 +50,17 @@ public class JwtUtil {
     }
 
     public String generateToken(String username, Long playerId) {
+        return generateToken(username, playerId, 0L);
+    }
+
+    /** 账号版本持久化，注销后恢复也不能重新启用旧设备的凭据。 */
+    public String generateToken(String username, Long playerId, long authVersion) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiration);
         return Jwts.builder()
                 .subject(username)
                 .claim("playerId", playerId)
+                .claim("authVersion", authVersion)
                 .id(java.util.UUID.randomUUID().toString())  // jti for revocation
                 .issuedAt(now)
                 .expiration(expiryDate)
@@ -82,6 +88,11 @@ public class JwtUtil {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    public long getAuthVersion(String token) {
+        Number version = parseClaims(token).get("authVersion", Number.class);
+        return version == null ? 0L : version.longValue();
     }
 
     public String getUsernameFromToken(String token) {

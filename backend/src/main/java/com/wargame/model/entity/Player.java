@@ -102,6 +102,38 @@ public class Player extends VersionedEntity implements CityEconomy {
     @Column(name = "disabled_at")
     private Long disabledAt = 0L;
 
+    /** 注销生命周期独立于登录态；恢复期限受理后不随配置变化。 */
+    @Column(name = "account_status", nullable = false, length = 24)
+    private String accountStatus = "ACTIVE";
+
+    @Column(name = "recover_until", nullable = false)
+    private Long recoverUntil = 0L;
+
+    @Column(name = "deleted_at", nullable = false)
+    private Long deletedAt = 0L;
+
+    @Column(name = "auth_version", nullable = false)
+    private Long authVersion = 0L;
+
+    @Column(name = "deletion_request_id", length = 64)
+    private String deletionRequestId;
+
+    /** 仅存恢复凭据摘要，单次消费并绑定本次注销版本。 */
+    @Column(name = "recovery_token_hash", length = 64)
+    private String recoveryTokenHash;
+
+    @Column(name = "recovery_token_expires_at", nullable = false)
+    private Long recoveryTokenExpiresAt = 0L;
+
+    public boolean accountActive() {
+        return "ACTIVE".equals(accountStatus) && !Integer.valueOf(1).equals(disabled);
+    }
+
+    public boolean deletionDue(long now) {
+        return "DELETED".equals(accountStatus) ||
+                ("PENDING_DELETION".equals(accountStatus) && now >= recoverUntil);
+    }
+
     /** 是否已跳过新手引导，避免刷新或跨设备后重复弹窗 */
     @Column(name = "tutorial_dismissed")
     private Boolean tutorialDismissed = false;

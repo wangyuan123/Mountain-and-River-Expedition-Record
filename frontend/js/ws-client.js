@@ -60,8 +60,14 @@ window.Game = window.Game || {};
         if (WS.socket === socket) WS.handleMessage(event.data);
       };
 
-      this.socket.onclose = function () {
+      this.socket.onclose = function (event) {
         if (WS.socket !== socket) return;
+        if (event && event.code === 4001) {
+          WS.disconnect();
+          // 本标签正在提交注销时，先让 HTTP 结果或状态查询完成。
+          if (G.Account && !G.Account.submitting) G.Account.endSession();
+          return;
+        }
         var wasConnected = WS.connected;
         WS.connected = false;
         WS.setStatus(WS._intentionalDisconnect ? 'disconnected' : 'reconnecting');

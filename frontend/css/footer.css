@@ -1,0 +1,69 @@
+/* 页脚沿用当前主题，保持普通文档流，避免遮挡地图或聊天输入框。 */
+#footbar {
+  --footer-accent: var(--accent);
+  --footer-soft: var(--accent-soft);
+  --footer-line: var(--line);
+}
+[data-theme|="blue-white"] #footbar {
+  --footer-accent: #2457a5;
+  --footer-soft: #e5eff7;
+  --footer-line: #cbdced;
+}
+[data-theme="dark"] #footbar {
+  --footer-accent: #9bd4f5;
+  --footer-soft: #1c3046;
+  --footer-line: #34465c;
+  background: #111724;
+  color: #a9b8c8;
+  border-color: var(--footer-line);
+}
+#footbar .footer-nav {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 4px;
+  padding: 2px 0 10px;
+}
+#footbar .footer-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  min-height: 52px;
+  padding: 5px 2px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--footer-accent);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+#footbar .footer-nav-item:hover,
+#footbar .footer-nav-item[aria-current="page"] {
+  background: var(--footer-soft);
+  border-color: var(--footer-line);
+}
+#footbar .footer-nav-item[aria-current="page"] { font-weight: 700; }
+#footbar .footer-nav-icon { font-size: 21px; line-height: 1.1; }
+#footbar .footer-nav-item:focus-visible,
+#footbar .footer-icp:focus-visible {
+  outline: 2px solid var(--footer-accent);
+  outline-offset: 2px;
+}
+#footbar .footer-hint { margin: 0 0 8px; font-size: 11px; }
+#footbar .footer-site-info {
+  padding: 10px 2px calc(4px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--footer-line);
+  font-size: 11px;
+  line-height: 1.9;
+  overflow-wrap: anywhere;
+}
+#footbar .footer-site-info:first-child { border-top: 0; }
+#footbar .footer-brand { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+#footbar .footer-brand span { font-size: 11px; font-weight: 400; }
+#footbar .footer-icp { display: inline-block; padding: 2px 4px; color: inherit; text-underline-offset: 3px; }
+#footbar .footer-icp:hover { color: var(--footer-accent); }
+#footbar .footer-placeholder { font-size: 10px; }

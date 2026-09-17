@@ -1,0 +1,163 @@
+{
+  "status": "complete",
+  "styles": [
+    {
+      "id": "a-garden",
+      "name": "花园卫城配套",
+      "code": "A",
+      "subtitle": "奶油石墙 · 红陶屋瓦 · 精致庭院",
+      "desc": "最接近现有玩家城市，推荐优先比较。"
+    },
+    {
+      "id": "b-frontier",
+      "name": "滇缅战地营区",
+      "code": "B",
+      "subtitle": "灰瓦木构 · 军绿铁皮 · 战地院落",
+      "desc": "更贴近远征军前进基地，材质有适度风化。"
+    },
+    {
+      "id": "c-industrial",
+      "name": "红砖工业基地",
+      "code": "C",
+      "subtitle": "红砖立面 · 蓝灰屋顶 · 钢架设施",
+      "desc": "更强的军工与后勤气质，建筑体量厚重。"
+    }
+  ],
+  "buildings": [
+    {
+      "id": "command",
+      "name": "市政厅",
+      "group": "军事",
+      "idea": "石砌门廊、中央钟塔，表现基地行政中枢"
+    },
+    {
+      "id": "house",
+      "name": "民居",
+      "group": "军事",
+      "idea": "滇西坡屋顶与成组住屋，保留生活温度"
+    },
+    {
+      "id": "factory",
+      "name": "军工厂",
+      "group": "军事",
+      "idea": "锯齿采光顶、烟囱与装配厂门"
+    },
+    {
+      "id": "lightfactory",
+      "name": "轻工厂",
+      "group": "军事",
+      "idea": "低矮单跨车间与紧凑轻型坦克"
+    },
+    {
+      "id": "heavyfactory",
+      "name": "重工厂",
+      "group": "军事",
+      "idea": "高大厂房、龙门吊与厚重履带"
+    },
+    {
+      "id": "airport",
+      "name": "机场",
+      "group": "军事",
+      "idea": "拱形机库、跑道与螺旋桨飞机"
+    },
+    {
+      "id": "port",
+      "name": "港口",
+      "group": "军事",
+      "idea": "栈桥、装卸吊臂与船体"
+    },
+    {
+      "id": "academy",
+      "name": "军校",
+      "group": "军事",
+      "idea": "对称校舍、操场与展开的书本"
+    },
+    {
+      "id": "staff",
+      "name": "参谋部",
+      "group": "军事",
+      "idea": "野战指挥帐篷与作战地图"
+    },
+    {
+      "id": "lab",
+      "name": "科研中心",
+      "group": "军事",
+      "idea": "砖砌研究室与实验玻璃器皿"
+    },
+    {
+      "id": "radar",
+      "name": "雷达站",
+      "group": "军事",
+      "idea": "早期矩形栅格天线与支撑塔"
+    },
+    {
+      "id": "wall",
+      "name": "围墙",
+      "group": "军事",
+      "idea": "混凝土防御墙、射孔与岗哨"
+    },
+    {
+      "id": "apron",
+      "name": "停机坪",
+      "group": "军事",
+      "idea": "开放硬化地坪、停机线与螺旋桨飞机"
+    },
+    {
+      "id": "liaison",
+      "name": "联络中心",
+      "group": "军事",
+      "idea": "低层通信所、线式天线与无线电"
+    },
+    {
+      "id": "depot",
+      "name": "仓库",
+      "group": "军事",
+      "idea": "双坡储备库、板条箱与装卸门"
+    },
+    {
+      "id": "transit",
+      "name": "运输站",
+      "group": "军事",
+      "idea": "雨棚货台与四十年代军用卡车"
+    },
+    {
+      "id": "exchange",
+      "name": "交易所",
+      "group": "军事",
+      "idea": "市集拱廊、布篷与秤盘"
+    },
+    {
+      "id": "farm",
+      "name": "农田",
+      "group": "资源",
+      "idea": "成行水田、田埂与稻穗"
+    },
+    {
+      "id": "refinery",
+      "name": "炼钢厂",
+      "group": "资源",
+      "idea": "高炉、热钢槽与工业烟囱"
+    },
+    {
+      "id": "oilfield",
+      "name": "石油基地",
+      "group": "资源",
+      "idea": "游梁抽油机与圆形储油罐"
+    },
+    {
+      "id": "raremine",
+      "name": "稀矿厂",
+      "group": "资源",
+      "idea": "坑口木支架、矿车与矿石"
+    }
+  ],
+  "reference_images": [
+    "output/imagegen/fortified-cities-20260914/c-garden-citadel-v2.png",
+    "frontend/img/cities/harbor.webp"
+  ],
+  "planned_image_count": 63,
+  "api_base_url": "https://new.home.wuguokai.vip:81/v1",
+  "model": "gpt-image-2",
+  "generated_count": 63,
+  "method": "imagegen bundled CLI, gpt-image-2, user-authorized compatible API"
+}
