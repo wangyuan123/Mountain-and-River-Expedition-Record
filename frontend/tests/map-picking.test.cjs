@@ -17,6 +17,29 @@ function fixture(){
  }
  return {v,marker,c};
 }
+test('gathering countdown, progress and map caption advance without a server response',()=>{
+ const {c,v}=fixture();let now=100000,wakes=0;
+ c.Date={now:()=>now};c.Game.fmt=String;c.Game.DATA={wildTypes:{ironworks:{name:'炼铁厂',res:'steel'}}};
+ const target={kind:'wild',id:1,type:'ironworks',occupied:true,level:1,gathering:true,gatherStartAt:100000,gatherEndAt:180000,gatherLoad:800};
+ const time={},progress={style:{}},amount={};
+ const nodes={'[data-gather-time]':time,'[data-gather-progress]':progress,'[data-gather-amount]':amount};
+ const panel={querySelector:key=>nodes[key]};
+ v.selected=target;v.visible=[target];v.detail={hidden:false,querySelector:()=>panel};v.wake=()=>wakes++;
+ v.updateGathering();assert.equal(time.textContent,'采集中，剩余 80 秒');assert.equal(progress.style.width,'0%');
+ assert.equal(c.Game.TestOwnershipCaption(target),'我的 · 1级 · 采集中');
+ now+=20000;v.updateGathering();assert.equal(time.textContent,'采集中，剩余 60 秒');
+ assert.equal(progress.style.width,'25%');assert.equal(amount.textContent,'已开采：200 / 800');
+ now+=90000;v.updateGathering();assert.equal(time.textContent,'已采满，请收获');
+ assert.equal(progress.style.width,'100%');assert.equal(amount.textContent,'已开采：800 / 800');
+ assert.equal(c.Game.TestOwnershipCaption(target),'我的 · 1级 · 待收获');
+ v.selected=null;v.detail.hidden=true;v.updateGathering();assert.equal(wakes,4);
+ target.gathering=false;v.updateGathering();assert.equal(wakes,4);
+ assert.equal(c.Game.TestOwnershipCaption(target),'我的 · 1级');
+ target.gathering=true;target.occupied=false;target.claimed=true;
+ assert.doesNotMatch(c.Game.TestOwnershipCaption(target),/采集中|待收获/);
+ target.occupied=true;c.document.hidden=true;v.updateGathering();assert.equal(wakes,4);
+ c.document.hidden=false;v.destroyed=true;v.updateGathering();assert.equal(wakes,4);
+});
 test('player art follows actual coast status for own and other cities, including legacy inland naval cities',()=>{
  const {c}=fixture(),icon=c.Game.TestMapIcon;
  for(const selfCity of [true,false]){

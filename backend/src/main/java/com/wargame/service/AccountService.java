@@ -199,7 +199,7 @@ public class AccountService {
         });
         em.flush();
         for (String entity : List.of("GuildApplication", "GuildMember", "OfficerEquipment", "ArmyProductionQueue",
-                "WoundedUnit", "Building", "ArmyUnit", "Fortification", "Technology", "Officer", "Construction",
+                "TechResearchQueue", "WoundedUnit", "Building", "ArmyUnit", "Fortification", "Technology", "Officer", "Construction",
                 "Resources", "CityState", "Academy", "PlayerItem", "ScoutReport", "PlayerQuest", "PlayerGuide", "March", "ChatMessage")) {
             em.createQuery("delete from " + entity + " e where e.playerId = :id").setParameter("id", id).executeUpdate();
         }

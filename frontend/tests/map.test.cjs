@@ -77,6 +77,25 @@ test('wild map dispatch renders safely and retains one scout and strongest comma
   assert.match(v.innerHTML,/name="dpOfficer" value="1" checked/);
   assert.doesNotMatch(v.innerHTML,/name="dpOfficer" value="2" checked/);
 });
+test('only conquest and plunder preselect troops; owned wild dispatch starts empty',()=>{
+  const state={world:{pos:{x:100,y:100},wildTiles:[]},tech:{},resources:{},reports:[],army:{scout:8,infantry:20},officers:[]};
+  const messages=[];
+  const c=context({DATA:{wildTypes:{oil:{name:'油田',res:'oil'}},resources:{oil:{name:'石油'}},units:{scout:{name:'侦察机',load:1},infantry:{name:'步兵',load:10}},starColor:{}},Core:{state,views:{}},go(){},toast:m=>messages.push(m),fmt:String});load(c,'world.js');
+  const target={id:42,type:'oil',level:3,x:110,y:154,owned:true};
+  for(const action of ['station','gather','scout','conquer','plunder']){
+    state.world._dispatchTarget={kind:action==='gather'?'wild_gather':'wild',action,target};
+    const v={innerHTML:''};c.Game.World.renderDispatch(v);
+    const selected=action==='conquer'||action==='plunder';
+    const inputs=[...v.innerHTML.matchAll(/id="dqty_([^"]+)"[^>]*value="([^"]*)"/g)];
+    assert.equal(inputs.length,action==='scout'?1:2);
+    for(const input of inputs) assert.equal(input[2],selected?'1':'',action);
+    for(const slider of v.innerHTML.matchAll(/id="dslider_[^"]+"[^>]*value="([^"]*)"/g)) assert.equal(slider[1],selected?'1':'0',action);
+  }
+  state.world._dispatchTarget={kind:'wild',action:'station',target};
+  c.document={getElementById:()=>({value:''}),querySelector:()=>null};
+  c.Game.World.launchDispatch();
+  assert.deepEqual(messages,['请至少选择一种兵种出征']);
+});
 test('wild scouting opens preparation and submits a scout march only after launch',async()=>{
   const state={world:{pos:{x:100,y:100},wildTiles:[]},tech:{},resources:{},reports:[],army:{scout:8,infantry:20},officers:[]};
   const routes=[],messages=[],requests=[];
@@ -89,7 +108,7 @@ test('wild scouting opens preparation and submits a scout march only after launc
   assert.equal(messages.length,0);
   assert.equal(target.scouted,undefined);
   const v={innerHTML:''};c.Game.World.renderDispatch(v);
-  assert.match(v.innerHTML,/id="dqty_scout"[^>]*value="1"/);
+  assert.match(v.innerHTML,/id="dqty_scout"[^>]*value=""/);
   assert.doesNotMatch(v.innerHTML,/id="dqty_infantry"|征服野地守军后/);
   assert.match(v.innerHTML,/抵达后进行侦查并生成情报报告/);
   state.world.wildTiles=[];

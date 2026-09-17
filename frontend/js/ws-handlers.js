@@ -92,6 +92,22 @@ window.Game = window.Game || {};
     if (data.officers) {
       G.state.officers = data.officers;
     }
+    if (data.research !== undefined) {
+      if (G.Core && G.Core.state) G.Core.state.research = data.research;
+      if (G.state) G.state.research = data.research;
+    }
+    if (data.tech) {
+      if (G.Core && G.Core.state) G.Core.state.tech = data.tech;
+      if (G.state) G.state.tech = data.tech;
+    }
+    if (data.completedResearch && data.completedResearch.length > 0) {
+      for (var ri = 0; ri < data.completedResearch.length; ri++) {
+        G.toast(data.completedResearch[ri]);
+      }
+      if (G.Tech && G.Core && G.Core.route === 'tech') {
+        G.Core.refreshContent();
+      }
+    }
     // 本 tick 内刚刚完成的建筑(后端在建筑倒计时归零时通过 tick 推送)
     if (data.completedBuilds && G.Task && G.Task.Quests && G.Task.Quests.onEvent) {
       for (var bi = 0; bi < data.completedBuilds.length; bi++) {

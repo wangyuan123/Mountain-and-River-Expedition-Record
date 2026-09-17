@@ -999,11 +999,13 @@ window.Game = window.Game || {};
       h += '<div class="zone-head">-- 兵种配置 (选择出征数量) --</div>';
       h += '<div class="panel">';
       var defaultArmy = {};
+      // 仅征服、掠夺预选每种兵力 1；进驻、采集和侦查由玩家自行配置。
+      var preselectUnits = dt.action === 'conquer' || dt.action === 'plunder';
       for (var uid in D.units) {
         var have = s.army[uid] || 0;
         if (have <= 0) continue;
         if (isScout && uid !== 'scout') continue;
-        defaultArmy[uid] = Math.min(have, 1);
+        if (preselectUnits) defaultArmy[uid] = Math.min(have, 1);
       }
       var defaultLoad = this.calcDispatchLoad(defaultArmy);
       var hasAny = false;
@@ -1021,8 +1023,9 @@ window.Game = window.Game || {};
         var spdBadge = techBonus > 0
           ? ' <span class="dispatch-unit-spd has-tech" title="基础移速 ' + u.spd + '，科技加成 +' + techBonus + '%">移速 ' + effSpd + ' <small class="tech-tag">⚡+' + techBonus + '%</small></span>'
           : ' <span class="dispatch-unit-spd" title="基础移速 ' + u.spd + '">移速 ' + effSpd + '</span>';
-        var initialVal = Math.min(have, 1);
-        var pct = have > 0 ? ((initialVal / have) * 100).toFixed(1) : 0;
+        var initialVal = defaultArmy[uid] || '';
+        var sliderVal = defaultArmy[uid] || 0;
+        var pct = have > 0 ? ((sliderVal / have) * 100).toFixed(1) : 0;
         var sliderId = 'dslider_' + uid;
         h += '<div class="dispatch-unit-row">';
         h += '<div class="dispatch-unit-info">';
@@ -1032,7 +1035,7 @@ window.Game = window.Game || {};
         h += '<div class="dispatch-unit-control">';
         h += '<input class="qty recruit-qty" id="dqty_' + uid + '" type="number" min="0" max="' + have + '" value="' + initialVal + '" oninput="Game.World.onDispatchInputChange(\'' + uid + '\',this.value)" onchange="var v=parseInt(this.value,10);if(isNaN(v)||v<0){this.value=0;}else if(v>' + have + '){this.value=' + have + ';}Game.World.onDispatchInputChange(\'' + uid + '\',this.value);" />';
         h += '<div class="recruit-slider-wrap">';
-        h += '<input type="range" class="recruit-slider" id="' + sliderId + '" min="0" max="' + have + '" value="' + initialVal + '" style="--p:' + pct + '%" oninput="Game.World.onDispatchSliderChange(\'' + uid + '\',this.value)" />';
+        h += '<input type="range" class="recruit-slider" id="' + sliderId + '" min="0" max="' + have + '" value="' + sliderVal + '" style="--p:' + pct + '%" oninput="Game.World.onDispatchSliderChange(\'' + uid + '\',this.value)" />';
         h += '</div>';
         h += '</div>';
         h += '</div>';

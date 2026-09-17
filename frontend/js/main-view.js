@@ -183,8 +183,9 @@ window.Game = window.Game || {};
     h += '</div>';
     h += '<div id="loginMsg" style="margin-top:6px;font-size:13px"></div>';
     h += '</div>';
-    h += '<p>进入游戏前须完成实名认证。未成年人仅在规定日期的20:00—21:00游戏。</p>';
-    h += '<p><a href="privacy.html" target="_blank" rel="noopener">实名与儿童个人信息说明</a> · <button class="btn" onclick="Game.go(\'protection\')">防沉迷与帮助</button></p>';
+    // TODO：恢复防沉迷后取消以下登录页说明与入口的注释。
+    // h += '<p>进入游戏前须完成实名认证。未成年人仅在规定日期的20:00—21:00游戏。</p>';
+    // h += '<p><a href="privacy.html" target="_blank" rel="noopener">实名与儿童个人信息说明</a> · <button class="btn" onclick="Game.go(\'protection\')">防沉迷与帮助</button></p>';
     v.innerHTML = h;
   };
 
@@ -817,7 +818,9 @@ window.Game = window.Game || {};
       h += '<div class="d">游戏进度由服务器自动保存</div>';
       h += '<div class="btn-row" style="margin-top:6px">';
       h += '<button class="btn sm" onclick="Game.Main.logout()">切换账号</button>';
-      h += '<button class="btn sm" onclick="Game.Protection.open()">实名、防沉迷与家长监护</button>';
+      if (G.Protection && G.Protection.data && G.Protection.data.enabled !== false) {
+        h += '<button class="btn sm" onclick="Game.Protection.open()">实名、防沉迷与家长监护</button>';
+      }
       h += '</div>';
     } else if (G.Main && G.Main.guestMode) {
       h += '<div class="d">当前模式: <b style="color:var(--muted)">游客模式</b></div>';

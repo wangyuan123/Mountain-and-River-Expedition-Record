@@ -45,6 +45,7 @@ public class TickService {
     private final MarchRepository marchRepository;
     private final ConstructionRepository constructionRepository;
     private final WebSocketPushService pushService;
+    private final TechService techService;
 
 
     /** Per-player consecutive tick count at gold floor; resets when player earns gold. */
@@ -66,6 +67,7 @@ public class TickService {
                        @Lazy MarchService marchService,
                        @Lazy ArmyService armyService,
                        @Lazy BuildService buildService,
+                       @Lazy TechService techService,
                        MarchRepository marchRepository,
                        ConstructionRepository constructionRepository,
                        @Lazy WebSocketPushService pushService, WorldViewService worldViewService) {
@@ -80,6 +82,7 @@ public class TickService {
         this.marchService = marchService;
         this.armyService = armyService;
         this.buildService = buildService;
+        this.techService = techService;
         this.marchRepository = marchRepository;
         this.constructionRepository = constructionRepository;
         this.pushService = pushService;
@@ -316,21 +319,21 @@ public class TickService {
         // Process incoming
         if (cityScope.slot(playerId) == 0) marchService.processIncoming(playerId, now);
 
-        // Complete constructions
+        // Complete constructions and research
         List<String> completedBuilds = buildService.completeUpgrade(playerId, now);
+        List<String> completedResearch = techService != null ? techService.settleCompletedResearch(playerId, now) : Collections.emptyList();
 
         // Push tick update to player via WebSocket
-        pushTickUpdate(playerId, res, now, completedBuilds, civilians, populationCap, effectiveCap, morale, resentment, tax);
+        pushTickUpdate(playerId, res, now, completedBuilds, completedResearch, civilians, populationCap, effectiveCap, morale, resentment, tax);
     }
 
     /**
      * 构建 tick 更新数据并推送到玩家。
-     * 包含: 资源、行军进度、建筑进度；如本 tick 有建筑刚刚完成，会附带 completedBuilds 列表，
-     * 前端据此触发"建筑升级完成"事件(每日任务等需要等真完成才计数的逻辑)。
+     * 包含: 资源、行军进度、建筑进度、科研进度；如本 tick 有建筑或科技刚刚完成，会附带对应 completed 列表。
      */
-    private void pushTickUpdate(Long playerId, Resources res, long now, List<String> completedBuilds,
+    private void pushTickUpdate(Long playerId, Resources res, long now, List<String> completedBuilds, List<String> completedResearch,
                                 int civilians, int populationCap, int effectiveCap, int morale, int resentment, int tax) {
-        Map<String, Object> stateChanges = buildStateChanges(playerId, res, now, completedBuilds,
+        Map<String, Object> stateChanges = buildStateChanges(playerId, res, now, completedBuilds, completedResearch,
                 civilians, populationCap, effectiveCap, morale, resentment, tax);
         pushService.pushTickUpdate(playerId, stateChanges);
     }
@@ -351,13 +354,19 @@ public class TickService {
         int morale = econ.getMorale() != null ? econ.getMorale() : 70;
         int resentment = econ.getResentment() != null ? econ.getResentment() : 0;
         int tax = econ.getTax() != null ? econ.getTax() : 0;
-        Map<String, Object> stateChanges = buildStateChanges(playerId, res, now, Collections.emptyList(),
+        Map<String, Object> stateChanges = buildStateChanges(playerId, res, now, Collections.emptyList(), Collections.emptyList(),
                 civilians, populationCap, effectiveCap, morale, resentment, tax);
         pushService.pushTickUpdate(playerId, stateChanges);
         return stateChanges;
     }
 
     public Map<String, Object> buildStateChanges(Long playerId, Resources res, long now, List<String> completedBuilds,
+                                                int civilians, int populationCap, int effectiveCap, int morale, int resentment, int tax) {
+        return buildStateChanges(playerId, res, now, completedBuilds, Collections.emptyList(),
+                civilians, populationCap, effectiveCap, morale, resentment, tax);
+    }
+
+    public Map<String, Object> buildStateChanges(Long playerId, Resources res, long now, List<String> completedBuilds, List<String> completedResearch,
                                                 int civilians, int populationCap, int effectiveCap, int morale, int resentment, int tax) {
         Map<String, Object> stateChanges = new LinkedHashMap<>();
 
@@ -422,9 +431,22 @@ public class TickService {
         }
         stateChanges.put("constructions", buildList);
 
+        // 科技研发进度
+        if (techService != null) {
+            stateChanges.put("research", techService.getActiveResearch(playerId));
+        }
+
         // 本 tick 内刚刚完成的建筑(每项推一次 BUILD_DONE 给前端)
         if (completedBuilds != null && !completedBuilds.isEmpty()) {
             stateChanges.put("completedBuilds", completedBuilds);
+        }
+
+        // 本 tick 内刚刚完成的科技
+        if (completedResearch != null && !completedResearch.isEmpty()) {
+            stateChanges.put("completedResearch", completedResearch);
+            if (techService != null) {
+                stateChanges.put("tech", techService.getTechMap(playerId));
+            }
         }
 
         return stateChanges;

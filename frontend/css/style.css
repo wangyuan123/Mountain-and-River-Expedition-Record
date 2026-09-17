@@ -936,22 +936,23 @@ select.qty { width: 80px; cursor: pointer; }
 
 /* ===== 卡槽地块总览与选建面板 ===== */
 .slot-overview-panel {
-  margin: 8px 0 14px;
+  margin: 6px 0 10px;
 }
-/* 建筑微缩模型需要足够的画幅；空地与已建地块保持同高。 */
+/* 紧凑卡槽：手机一行容纳更多建筑，空地与已建地块保持同高。 */
 .slot-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
-  gap: 6px;
-  margin-top: 6px;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 4px;
+  margin-top: 4px;
 }
 .slot-card {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  height: 148px;
-  padding: 6px 4px 4px;
+  min-width: 0;
+  height: 108px;
+  padding: 4px 3px;
   border-radius: 6px;
   border: 1px solid #c9b27a;
   background: linear-gradient(180deg, #fffcf2 0%, #f4e8cb 100%);
@@ -972,20 +973,21 @@ select.qty { width: 80px; cursor: pointer; }
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  height: 16px;
-  min-height: 16px;
-  padding: 0 3px;
+  height: 14px;
+  min-height: 14px;
+  padding: 0;
+  gap: 2px;
   font-size: 10px;
-  margin-bottom: 2px;
+  margin-bottom: 0;
   box-sizing: border-box;
 }
 .slot-card-tag {
   color: #7a5f25;
   font-weight: 700;
   font-size: 10px;
-  line-height: 16px;
+  line-height: 14px;
   display: inline-block;
-  min-height: 16px;
+  min-height: 14px;
 }
 .slot-badge {
   font-size: 9px;
@@ -993,6 +995,7 @@ select.qty { width: 80px; cursor: pointer; }
   border-radius: 3px;
   font-weight: 600;
   line-height: 1.1;
+  white-space: nowrap;
 }
 .slot-badge-up {
   color: #276728;
@@ -1014,10 +1017,10 @@ select.qty { width: 80px; cursor: pointer; }
   box-shadow: 0 0 5px rgba(212, 136, 6, .35);
 }
 .slot-card-icon {
-  font-size: 22px;
+  font-size: 20px;
   line-height: 1;
-  width: 84px;
-  height: 84px;
+  width: 48px;
+  height: 48px;
   margin: 0;
   display: flex;
   align-items: center;
@@ -1025,8 +1028,8 @@ select.qty { width: 80px; cursor: pointer; }
   flex-shrink: 0;
 }
 .slot-card-icon .b-icon-img {
-  width: 84px;
-  height: 84px;
+  width: 48px;
+  height: 48px;
   object-fit: contain;
   display: block;
 }
@@ -1040,7 +1043,7 @@ select.qty { width: 80px; cursor: pointer; }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 72px;
+  max-width: 100%;
   text-align: center;
 }
 .slot-card-lv {
@@ -1059,8 +1062,6 @@ select.qty { width: 80px; cursor: pointer; }
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  height: 148px;
-  padding: 6px 4px 4px;
   border: 1.5px dashed #b5a060;
   background: rgba(255, 255, 255, .45);
   cursor: pointer;
@@ -1076,12 +1077,12 @@ select.qty { width: 80px; cursor: pointer; }
   border-style: solid;
 }
 .slot-card-plus {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 800;
   color: var(--accent, #526b4d);
-  line-height: 84px;
-  width: 84px;
-  height: 84px;
+  line-height: 48px;
+  width: 48px;
+  height: 48px;
   margin: 0;
   display: flex;
   align-items: center;
@@ -1110,6 +1111,10 @@ select.qty { width: 80px; cursor: pointer; }
   margin-top: 1px;
   text-decoration: underline;
   text-align: center;
+}
+
+@media (max-width: 360px) {
+  .slot-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
 /* 选建建筑弹窗列表 */

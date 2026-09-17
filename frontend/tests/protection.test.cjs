@@ -34,6 +34,26 @@ function harness() {
 const permitted = () => ({ enabled: true, canPlay: true, serverNow: 100000, allowedUntil: 3700000, leaseUntil: 160000, minor: true });
 const drain = async () => { for (let i = 0; i < 12; i++) await Promise.resolve(); };
 
+test('disabled protection enters gameplay without timers or cross-tab session restrictions', async () => {
+  const { G, calls, events, advance } = harness();
+  const disabled = { enabled: false, canPlay: true, sessionActive: true, serverNow: 100000 };
+  const entering = G.Protection.enter();
+  calls[0].reply(disabled); await drain();
+  // 保留进入接口，以初始化停留在实名阶段的旧账号。
+  assert.equal(calls[1].url, '/api/play-sessions');
+  calls[1].reply(disabled);
+  assert.equal(await entering, true);
+  assert.equal(G.Protection.timer, null);
+  assert.equal(G.Protection.banner(), '');
+  events.storage({ key: G.Protection.key(), oldValue: 'one', newValue: 'two' });
+  advance(86400000); G.Protection.tick();
+  assert.equal(G.Protection.canRequest(), true);
+  assert.equal(calls.length, 2);
+  const request = G.API.client.get('/game/state');
+  calls[2].reply({ cityName: '测试城市' });
+  assert.equal((await request).cityName, '测试城市');
+});
+
 test('unverified clients cannot read gameplay but can access account services', async () => {
   const { G, calls } = harness();
   await assert.rejects(G.API.client.get('/game/state'), { code: 'PLAY_SESSION_EXPIRED' });

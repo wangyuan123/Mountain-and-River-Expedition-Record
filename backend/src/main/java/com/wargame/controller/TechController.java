@@ -36,4 +36,30 @@ public class TechController {
         result.put("state", gameStateService.getGameState(playerId));
         return ResponseEntity.ok(result);
     }
+
+    @PostMapping("/cancel")
+    public ResponseEntity<Map<String, Object>> cancel(@RequestBody(required = false) Map<String, Object> body) {
+        Long playerId = authService.getCurrentPlayer().getId();
+        Long queueId = null;
+        if (body != null && body.get("queueId") != null) {
+            try {
+                queueId = Long.valueOf(body.get("queueId").toString());
+            } catch (NumberFormatException ignored) {}
+        }
+        Map<String, Object> result = techService.cancelResearch(playerId, queueId);
+        result.put("state", gameStateService.getGameState(playerId));
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/speedup")
+    public ResponseEntity<Map<String, Object>> speedUp(@RequestBody(required = false) GameDtos.SpeedUpRequest request) {
+        Long playerId = authService.getCurrentPlayer().getId();
+        String itemId = request != null && request.itemId() != null && !request.itemId().isBlank()
+                ? request.itemId() : "speedUp10m";
+        Long queueId = request != null ? request.queueId() : null;
+        int count = request != null && request.count() != null && request.count() > 0 ? request.count() : 1;
+        Map<String, Object> result = techService.useSpeedUp(playerId, queueId, itemId, count);
+        result.put("state", gameStateService.getGameState(playerId));
+        return ResponseEntity.ok(result);
+    }
 }

@@ -30,7 +30,11 @@ class WorldMapServiceTest extends BaseServiceTest {
         Player a=createTestPlayer("owner-a",30),b=createTestPlayer("viewer-b",30);
         long world=createTestWorld().getId();
         WildTile t=createWildTile(world,"grainfield",199,199,1,Map.of("infantry",10),1000);
-        t.setOccupied(true);t.setOccupiedBy(a.getId());t.setMined(200);wildTileRepository.save(t);
+        t.setOccupied(true);t.setOccupiedBy(a.getId());t.setMined(200);
+        t.setGathering(true);t.setGatherEndAt(123456L);wildTileRepository.save(t);
+        var ownChunk=(List<Map<String,Object>>)maps.chunk(a.getId(),12,12).get("targets");
+        assertEquals(true,ownChunk.get(0).get("gathering"));
+        assertEquals(123456L,ownChunk.get(0).get("gatherEndAt"));
         var own=maps.target(a.getId(),"wild",t.getId());assertEquals(true,own.get("occupied"));assertEquals(1000,own.get("totalRes"));assertEquals(200,own.get("mined"));
         var other=maps.target(b.getId(),"wild",t.getId());assertEquals(false,other.get("occupied"));assertEquals(true,other.get("claimed"));assertFalse(other.containsKey("garrison"));
         assertEquals(a.getId(),other.get("ownerId"));assertEquals(a.getUsername(),other.get("ownerName"));
@@ -38,6 +42,11 @@ class WorldMapServiceTest extends BaseServiceTest {
         var edge=(List<Map<String,Object>>)maps.chunk(b.getId(),12,12).get("targets");assertEquals(t.getId(),edge.get(0).get("id"));
         assertEquals(a.getUsername(),edge.get(0).get("ownerName"));
         assertFalse(edge.get(0).containsKey("garrison"));assertFalse(edge.get(0).containsKey("totalRes"));
+        assertFalse(edge.get(0).containsKey("gathering"));assertFalse(edge.get(0).containsKey("gatherEndAt"));
+        assertFalse(other.containsKey("gathering"));
+        t.setGathering(false);t.setGatherEndAt(0L);wildTileRepository.save(t);
+        var harvested=(List<Map<String,Object>>)maps.chunk(a.getId(),12,12).get("targets");
+        assertEquals(false,harvested.get(0).get("gathering"));assertEquals(0L,harvested.get(0).get("gatherEndAt"));
         t.setOccupiedBy(b.getId());wildTileRepository.save(t);
         assertEquals(b.getUsername(),maps.target(a.getId(),"wild",t.getId()).get("ownerName"));
         var changed=(List<Map<String,Object>>)maps.chunk(a.getId(),12,12).get("targets");

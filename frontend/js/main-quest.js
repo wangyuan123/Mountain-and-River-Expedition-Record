@@ -235,6 +235,29 @@
     '</div>';
   }
 
+  var EQUIPMENT_NAMES = {
+    recruit_military_weapon: '列兵军刀', recruit_military_badge: '列兵臂章', recruit_military_coat: '列兵作训服',
+    recruit_logistics_weapon: '列兵工具包', recruit_logistics_badge: '列兵通行证', recruit_logistics_coat: '列兵工作服',
+    recruit_knowledge_weapon: '列兵笔记本', recruit_knowledge_badge: '列兵学员章', recruit_knowledge_coat: '列兵学员服',
+    officer_military_weapon: '校官军刀', officer_military_badge: '校官勋章', officer_military_coat: '校官军服',
+    officer_logistics_weapon: '校官补给箱', officer_logistics_badge: '校官调度章', officer_logistics_coat: '校官军需服',
+    officer_knowledge_weapon: '校官战术罗盘', officer_knowledge_badge: '校官参谋章', officer_knowledge_coat: '校官参谋服',
+    marshal_military_weapon: '元帅佩剑', marshal_military_badge: '元帅将星', marshal_military_coat: '元帅礼服',
+    marshal_logistics_weapon: '元帅辎重车', marshal_logistics_badge: '元帅军需印', marshal_logistics_coat: '元帅长袍',
+    marshal_knowledge_weapon: '元帅望远镜', marshal_knowledge_badge: '元帅军师印', marshal_knowledge_coat: '元帅军礼服'
+  };
+
+  function itemLabel(key) {
+    if (!key) return '';
+    if (D && D.items && D.items[key] && D.items[key].name) {
+      return D.items[key].name;
+    }
+    if (EQUIPMENT_NAMES[key]) {
+      return EQUIPMENT_NAMES[key];
+    }
+    return key;
+  }
+
   function formatReward(r) {
     if (!r) return '';
     var parts = [];

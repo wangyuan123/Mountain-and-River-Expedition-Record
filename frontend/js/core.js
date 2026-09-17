@@ -532,6 +532,7 @@ window.Game = window.Game || {};
       if (G.WorldMap && (this.route !== 'world' || !G.WorldMap.isMap())) G.WorldMap.unmount();
       if (this.route !== 'alerts' && G.World && G.World.stopAlertTimer) G.World.stopAlertTimer();
       if (this.route !== 'wounded' && G.Wounded) G.Wounded.stop();
+      if (this.route !== 'tech' && G.Tech && G.Tech.stopTimer) G.Tech.stopTimer();
       this.renderTop();
       if (G.Main && G.Main.renderNavBar) G.Main.renderNavBar();
       var v = $('view');
@@ -689,7 +690,8 @@ window.Game = window.Game || {};
     /** 登录页只展示站点信息；游戏内提供常用导航并标识当前页面。 */
     footer: function () {
       var map = {
-        login: '实名注册 · 健康游戏',
+        // TODO：恢复防沉迷后改回“实名注册 · 健康游戏”。
+        login: '登录账号 · 开启远征',
         protection: '账号服务在休息期间仍可办理',
         home: '',
         buildRes: '[1-9]升级 [0]返回',

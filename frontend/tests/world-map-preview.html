@@ -60,6 +60,11 @@ if(new URLSearchParams(location.search).has('ownership')){
   Game.Core.state.world.marches=[];
   document.getElementById('fixture-head').textContent='战略地图 · 归属标识预览';
 }
+if(new URLSearchParams(location.search).has('gathering')){
+  sampleTargets=[{id:10,kind:'wild',type:'ironworks',x:100,y:100,level:1,occupied:true,claimed:true,gathering:true,gatherStartAt:Date.now(),gatherEndAt:Date.now()+20000,gatherLoad:800,gatherRes:'steel',garrison:{truck:999}}];
+  Game.Core.state.world.marches=[];
+  document.getElementById('fixture-head').textContent='战略地图 · 采集实时状态预览';
+}
 Game.Core.render();setInterval(function(){var m=Game.WorldMap.metrics();document.getElementById('fixture-metrics').textContent='镜头 '+(m.x||0).toFixed(2)+','+(m.y||0).toFixed(2)+' · 缩放 '+(m.scale||0).toFixed(1)+' · 缓存 '+m.chunks+' · 请求 '+requests+' · 图标 '+m.markers+' · 实际位置 '+Game.state.world.pos.x+','+Game.state.world.pos.y;},300);
 document.getElementById('north-preview').onclick=function(){var form=document.querySelector('.world-map-search');form.querySelector('input').value='100,18';form.requestSubmit();};
 document.getElementById('snow-preview').onclick=function(){var form=document.querySelector('.world-map-search');form.querySelector('input').value='95,96';form.requestSubmit();};

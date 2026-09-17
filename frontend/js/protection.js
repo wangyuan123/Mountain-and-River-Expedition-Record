@@ -55,7 +55,8 @@
           // 用户退出或切换页面后，迟到的许可不能重新打开游戏。
           if (token !== G.API.getToken() || generation !== self.generation) return false;
           localStorage.setItem(self.key(), session);
-          self.adopt(result); self.blocked = false; self.startTimer();
+          self.adopt(result); self.blocked = false;
+          if (result.enabled !== false) self.startTimer();
           return true;
         });
       }).catch(function (err) {
@@ -119,6 +120,7 @@
       }
     },
     banner: function () {
+      if (!this.data || this.data.enabled === false) return '';
       return '<button class="protection-banner" id="playTimeStatus" onclick="Game.Protection.open()">' +
         (this.data && this.data.minor ? '未成年人模式 · 点击查看游戏时间' : '实名与健康游戏') + '</button>';
     },
@@ -202,7 +204,7 @@
   G.Protection = P;
   G.Core.views.protection = function (view) { P.render(view); };
   if (window.addEventListener) window.addEventListener('storage', function (event) {
-    if (event.key === P.key() && event.oldValue !== event.newValue && !P.blocked) {
+    if (event.key === P.key() && event.oldValue !== event.newValue && !P.blocked && P.data && P.data.enabled !== false) {
       P.denied({ message: '其他页面已更新游戏会话，请重新确认。' });
     }
   });

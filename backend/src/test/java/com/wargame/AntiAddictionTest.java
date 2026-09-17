@@ -80,6 +80,26 @@ class AntiAddictionTest extends BaseServiceTest {
         http.perform(post("/api/auth/guest")).andExpect(status().isForbidden());
     }
 
+    @Test void disabledProtectionInitializesPreviouslyBlockedAccountsAndAllowsGameplay() throws Exception {
+        createTestWorld();
+        var result = auth.register("paused-protection", "password123", new MockHttpServletRequest());
+        Player player = playerRepository.findById(result.playerId()).orElseThrow();
+        assertFalse(player.isGameInitialized());
+        config.setEnabled(false);
+        try {
+            String bearer = "Bearer " + token(player);
+            http.perform(post("/api/play-sessions").header("Authorization", bearer)
+                    .contentType(MediaType.APPLICATION_JSON).content("{\"sessionSecret\":\"\"}"))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.enabled").value(false))
+                    .andExpect(jsonPath("$.canPlay").value(true));
+            assertTrue(playerRepository.findById(player.getId()).orElseThrow().isGameInitialized());
+            http.perform(get("/api/game/state").header("Authorization", bearer)).andExpect(status().isOk());
+            http.perform(post("/api/auth/tutorial/dismiss").header("Authorization", bearer)).andExpect(status().isOk());
+        } finally {
+            config.setEnabled(true);
+        }
+    }
+
     @Test void registrationDoesNotCreateWorldAssetsOrGetRepairedOnRestart() {
         var result = auth.register("waiting-registration", "password123", new MockHttpServletRequest());
         Player player = playerRepository.findById(result.playerId()).orElseThrow();

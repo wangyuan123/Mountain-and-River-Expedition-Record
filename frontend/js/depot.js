@@ -195,7 +195,22 @@
       if (itemId.indexOf('speedUp') === 0 && D.items[itemId] && D.items[itemId].seconds) {
         if ((s.items[itemId] || 0) <= 0) { G.toast(D.items[itemId].name + ' 数量不足'); return; }
         var q = getBuildQueue();
-        if (!q.length) { G.toast('当前无施工中建筑'); return; }
+        var res = s.research;
+        if (!q.length && !res) { G.toast('当前无施工中建筑或研发中科技'); return; }
+        if (res && !q.length) {
+          G.API.techSpeedUp(itemId, res.queueId, 1).then(function (resp) {
+            if (resp && resp.success === false) {
+              G.toast(resp.message || '加速失败');
+              if (resp.state) G.API.applyState(resp.state);
+              return;
+            }
+            G.toast(resp.message || ('⚡ ' + D.items[itemId].name + ' 使用成功'));
+            Core.render();
+          }).catch(function (err) {
+            G.toast(err.message || '加速失败');
+          });
+          return;
+        }
         G.API.buildSpeedUp(itemId).then(function (resp) {
           if (resp && resp.success === false) {
             G.toast(resp.message || '加速失败');

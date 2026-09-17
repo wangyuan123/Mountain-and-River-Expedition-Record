@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS tech_research_queue (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    player_id BIGINT NOT NULL,
+    city_slot INT NOT NULL DEFAULT 0,
+    tech_type VARCHAR(50) NOT NULL,
+    target_level INT NOT NULL,
+    started_at BIGINT NOT NULL,
+    finishes_at BIGINT NOT NULL,
+    duration_seconds INT NOT NULL,
+    cost_food INT NOT NULL DEFAULT 0,
+    cost_steel INT NOT NULL DEFAULT 0,
+    cost_oil INT NOT NULL DEFAULT 0,
+    cost_rare INT NOT NULL DEFAULT 0,
+    cost_gold INT NOT NULL DEFAULT 0,
+    version BIGINT NOT NULL DEFAULT 0,
+    PRIMARY KEY (id),
+    KEY idx_tech_queue_player_finish (player_id, finishes_at),
+    KEY idx_tech_queue_player_city (player_id, city_slot),
+    CONSTRAINT fk_tech_queue_player FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
+);

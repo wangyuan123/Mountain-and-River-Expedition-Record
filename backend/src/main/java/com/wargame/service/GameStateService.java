@@ -29,6 +29,8 @@ public class GameStateService {
 
     @org.springframework.beans.factory.annotation.Autowired private CityService cityService;
     @org.springframework.beans.factory.annotation.Autowired private ArmyProductionQueueRepository armyQueues;
+    @org.springframework.beans.factory.annotation.Autowired private TechService techService;
+    @org.springframework.beans.factory.annotation.Autowired private TechResearchQueueRepository techResearchQueueRepository;
 
     private final WorldViewService worldViewService;
     private final PlayerRepository playerRepository;
@@ -247,6 +249,9 @@ public class GameStateService {
         state.put("items", itemMap);
 
         // --- tech ---
+        if (techService != null) {
+            techService.settleCompletedResearch(playerId, System.currentTimeMillis());
+        }
         List<Technology> techs = technologyRepository.findByPlayerId(playerId);
         Map<String, Object> techMap = new LinkedHashMap<>();
         for (Technology tech : techs) {
@@ -254,6 +259,7 @@ public class GameStateService {
             techMap.put(tech.getType(), tech.getLevel());
         }
         state.put("tech", techMap);
+        state.put("research", techService != null ? techService.getActiveResearch(playerId) : null);
 
         // --- officers ---
         List<Officer> officers = officerRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
@@ -651,6 +657,9 @@ public class GameStateService {
         // Clean all player data before re-initializing
         fortificationRepository.findByPlayerId(playerId).forEach(fortificationRepository::delete);
         technologyRepository.findByPlayerId(playerId).forEach(technologyRepository::delete);
+        if (techResearchQueueRepository != null) {
+            techResearchQueueRepository.deleteByPlayerId(playerId);
+        }
         officerRepository.findByPlayerId(playerId).forEach(officerRepository::delete);
         constructionRepository.findByPlayerId(playerId).forEach(constructionRepository::delete);
         marchRepository.findByPlayerId(playerId).forEach(marchRepository::delete);

@@ -129,6 +129,11 @@ public class WorldMapService {
         t.put("type", w.getType());
         t.put("occupied", Boolean.TRUE.equals(w.getOccupied()) && viewer.equals(w.getOccupiedBy()));
         t.put("claimed", Boolean.TRUE.equals(w.getOccupied()));
+        // 地图概览仅向领地主人提供采集状态，不暴露其他玩家的生产情报。
+        if (Boolean.TRUE.equals(t.get("occupied"))) {
+            t.put("gathering", Boolean.TRUE.equals(w.getGathering()));
+            t.put("gatherEndAt", w.getGatherEndAt() == null ? 0L : w.getGatherEndAt());
+        }
         if (Boolean.TRUE.equals(w.getOccupied()) && w.getOccupiedBy() != null) {
             t.put("ownerId", w.getOccupiedBy());
             if (owner != null) t.put("ownerName", owner.getUsername());

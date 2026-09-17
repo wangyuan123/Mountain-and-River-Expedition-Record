@@ -15,15 +15,16 @@ public class ComplianceConfig {
     @Bean @ConditionalOnMissingBean(Clock.class)
     public Clock complianceClock() { return Clock.systemUTC(); }
 
-    /** 绕过开关仅供自动测试；测试身份仅限显式 local/test 环境，prod 混用也拒绝启动。 */
+    /** 防沉迷暂时关闭；测试身份仍仅限显式 local/test 环境。 */
     @Bean
     public org.springframework.beans.factory.InitializingBean complianceStartupCheck(ComplianceProperties config,
             Environment environment, IdentityVault vault) {
         return () -> {
             var profiles = Arrays.asList(environment.getActiveProfiles());
             boolean prod = profiles.contains("prod");
-            if (!config.isEnabled() && (prod || !profiles.contains("test")))
-                throw new IllegalStateException("正式运行不能关闭防沉迷控制");
+            // TODO：产品完善并恢复默认启用后，取消下面两行注释。
+            // if (!config.isEnabled() && (prod || !profiles.contains("test")))
+            //     throw new IllegalStateException("正式运行不能关闭防沉迷控制");
             if (config.isLocalFixtures() && (prod || !(profiles.contains("local") || profiles.contains("test"))))
                 throw new IllegalStateException("测试身份仅允许在 local/test 环境启用");
             if (config.isLocalFixtures() && config.getDataKey().isBlank())

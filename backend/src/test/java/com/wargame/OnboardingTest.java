@@ -23,6 +23,7 @@ class OnboardingTest extends BaseServiceTest {
     @Autowired ArmyService army;
     @Autowired TechService tech;
     @Autowired ArmyProductionQueueRepository queues;
+    @Autowired com.wargame.repository.TechResearchQueueRepository techQueues;
     @Autowired PlayerGuideRepository guides;
     @Autowired CityScope scope;
     Long playerId;
@@ -48,7 +49,7 @@ class OnboardingTest extends BaseServiceTest {
         assertEquals(steel + 1000, getResources(playerId).getSteel(), "重复请求只能入账一次");
         recruit("infantry", 3); recruit("truck", 2); recruit("scout", 1);
         assertTrue(complete("train"));
-        build("lab"); assertTrue((Boolean) tech.upgrade(playerId, "recon_level").get("success"));
+        build("lab"); research("recon_level");
         assertTrue(complete("recon"));
 
         Map<String, Object> target = onboarding.target(playerId, false);
@@ -147,6 +148,14 @@ class OnboardingTest extends BaseServiceTest {
         assertTrue((Boolean) army.recruit(playerId, type, count).get("success"));
         queues.findByPlayerIdOrderByStartedAtAscIdAsc(playerId).forEach(q -> { q.setFinishesAt(System.currentTimeMillis() - 1); queues.save(q); });
         army.completeProduction(playerId, System.currentTimeMillis());
+    }
+    private void research(String type) {
+        assertTrue((Boolean) tech.upgrade(playerId, type).get("success"));
+        techQueues.findByPlayerIdOrderByStartedAtAscIdAsc(playerId).forEach(q -> {
+            q.setFinishesAt(System.currentTimeMillis() - 1);
+            techQueues.save(q);
+        });
+        tech.settleCompletedResearch(playerId, System.currentTimeMillis());
     }
     private March dispatch(Long id, String kind, String action, Map<String, Integer> units) {
         return marchService.createDispatch(playerId, new DispatchRequest(kind, id, action, units, null, Map.of()));

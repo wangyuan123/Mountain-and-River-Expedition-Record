@@ -11,7 +11,9 @@ import java.util.List;
 @Component
 @ConfigurationProperties(prefix = "game.compliance")
 public class ComplianceProperties {
-    private boolean enabled = true;
+    // TODO：产品完善后恢复默认启用；防沉迷实现与数据结构暂时保留。
+    // private boolean enabled = true;
+    private boolean enabled = false;
     private boolean localFixtures;
     private String dataKey = "";
     private String calendarFrom = "";

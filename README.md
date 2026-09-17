@@ -19,8 +19,8 @@
 - 数据库：MySQL 8+；`backend/src/main/resources/db/migration` 是数据库版本的唯一依据。
 - 通信：HTTP API + WebSocket；部署使用 Docker Compose + Nginx。
 - 玩法：城建、资源与税收、征兵、科技、军官与装备、行军战斗、野地、军团、任务、邮件、排行榜、商城。
-- 实名与防沉迷：服务端准入、北京时间窗口、同身份会话/时长、监护管理和休息页；正常 PvP 保留。
-- 当前真实支付未接通，防沉迷启用时同时关闭模拟充值。正式实名适配尚待接入，默认未实名账号不能进入游戏。
+- 实名与防沉迷暂时关闭：保留准入、时段、时长、监护和休息页实现，待产品完善后恢复。当前注册、登录可直接进入游戏。
+- 当前真实支付未接通，防沉迷启用时同时关闭模拟充值。正式实名适配尚待接入，重新启用防沉迷后，未实名账号不能进入游戏。
 
 ## 本地启动
 
@@ -39,7 +39,7 @@ python3 -m http.server 8081 --directory frontend
 
 访问 <http://localhost:8081>，后端端口为 8080。`.mvn/jvm.config` 指定 UTF-8，避免中文项目路径在不同终端编码下导致 Maven 读取旧构建记录失败。
 
-`local` 仅监听回环地址，并提供虚构身份 `DEMO-ADULT`、`DEMO-PARENT`、`DEMO-TEEN`、`DEMO-CHILD`。注册后在实名页提交测试凭据，未成年人仍受北京时间窗口控制。仅使用独立开发库；不要向公网代理该配置。未指定 `local` 时不会接受测试身份。配置、接口与正式接入边界见 [防沉迷实施说明](docs/ANTI_ADDICTION_IMPLEMENTATION.md)。
+`local` 仅监听回环地址，并提供虚构身份 `DEMO-ADULT`、`DEMO-PARENT`、`DEMO-TEEN`、`DEMO-CHILD`。当前默认关闭防沉迷，无需提交测试凭据。需要验收原有控制时，设置 `WARGAME_COMPLIANCE_ENABLED=true`，注册后在实名页提交测试凭据。仅使用独立开发库；不要向公网代理该配置。未指定 `local` 时不会接受测试身份。配置、接口与正式接入边界见 [防沉迷实施说明](docs/ANTI_ADDICTION_IMPLEMENTATION.md)。
 
 `SPRING_PROFILES_ACTIVE=local ./start-local.sh` 可自动准备本机依赖并启动本机测试服务；该脚本会安装缺失依赖，并结束占用 8080/8081 的旧进程，适合专用开发环境。
 

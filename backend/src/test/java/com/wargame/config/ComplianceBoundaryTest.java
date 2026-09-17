@@ -25,14 +25,14 @@ class ComplianceBoundaryTest {
         assertEquals("IDENTITY_UNAVAILABLE", assertThrows(GameAccessException.class, () -> provider.verify("DEMO-ADULT", 1L)).getCode());
     }
 
-    @Test void productionRejectsFixtureAndEnforcementBypassesEvenWithMixedProfiles() {
+    @Test void productionStillRejectsFixturesWhileEnforcementIsTemporarilyDisabled() {
         ComplianceProperties config = new ComplianceProperties();
         MockEnvironment env = new MockEnvironment(); env.setActiveProfiles("prod", "test", "local");
         var check = new ComplianceConfig().complianceStartupCheck(config, env, new IdentityVault(config));
         config.setLocalFixtures(true);
         assertThrows(IllegalStateException.class, check::afterPropertiesSet);
         config.setLocalFixtures(false); config.setEnabled(false);
-        assertThrows(IllegalStateException.class, check::afterPropertiesSet);
+        assertDoesNotThrow(check::afterPropertiesSet);
     }
 
     @Test void incompleteCalendarCannotSilentlyClaimCoverage() {

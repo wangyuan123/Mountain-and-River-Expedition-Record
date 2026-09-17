@@ -2,7 +2,20 @@
 
 更新：2026-09-17。当前是可运行、可测试的核心控制实现，尚未完成国家实名平台接入及公众运营验收。法规依据和完整目标见 [设计文档](ANTI_ADDICTION_DESIGN.md)。
 
-## 已实现的行为
+## 暂停与恢复
+
+按当前产品安排，防沉迷默认关闭。注册、登录不再要求实名或受游戏时段限制；游戏内入口、倒计时与心跳停用，登录页说明已注释。HTTP/WebSocket 仍保留原有账号鉴权。此前尚未初始化角色的账号会在进入游戏时补建角色。
+
+原有实现、测试及 V36 数据结构保留，未删除身份和存档。暂停期间不执行防沉迷会话维护，新伤兵使用普通期限；已有伤兵期限不回写。模拟充值沿用原有关闭防沉迷时的行为，真实支付尚未接通。
+
+临时验收可设置 `WARGAME_COMPLIANCE_ENABLED=true` 并重启后端。产品完善后正式恢复时：
+
+1. 将 `ComplianceProperties.enabled`、`application.yml`、`.env.example` 和 `docker-compose.yml` 中的默认值恢复为 `true`，同步实际部署环境变量。
+2. 取消 `ComplianceConfig.complianceStartupCheck` 中禁止关闭的两行注释。
+3. 取消 `frontend/js/main-view.js` 登录页说明与入口的注释，恢复 `frontend/js/core.js` 登录副标题。游戏内入口和计时会自动跟随服务端开关。
+4. 配置核验服务、身份密钥及开放日历，运行前后端测试并重新部署。
+
+## 启用后的行为
 
 - 新注册账号先获得账号凭据，通过可信身份核验与游戏许可后才创建角色、城市和资产。旧存档保留，但再次进入也须核验。游客入口关闭。
 - 未满 18 周岁按北京时间的开放日 20:00（含）至 21:00（不含）准入。审核日历未覆盖、身份过期、账本故障均不放行；18 岁转换按可信生日计算。
@@ -16,10 +29,11 @@
 
 ## 配置与开发
 
-默认 `game.compliance.enabled=true`；仅 `test` profile 可以关闭。`prod` 与测试绕过或虚构身份混用时启动失败。
+当前默认 `game.compliance.enabled=false`，可通过 `WARGAME_COMPLIANCE_ENABLED` 覆盖。禁止关闭的启动检查已暂时注释；`prod` 仍禁止虚构测试身份。
 
 | 环境变量 | 含义 |
 | --- | --- |
+| `WARGAME_COMPLIANCE_ENABLED` | 当前默认 `false`；设为 `true` 恢复控制 |
 | `WARGAME_COMPLIANCE_DATA_KEY` | Base64 编码的 32 字节随机密钥，用于身份 HMAC 和生日 AES-GCM；所有实例一致 |
 | `WARGAME_PLAY_CALENDAR_FROM` / `THROUGH` | 已审核日期覆盖区间，`YYYY-MM-DD` |
 | `WARGAME_PLAY_CALENDAR_SOURCE` | 审核依据或内部审核记录编号 |
@@ -34,7 +48,7 @@
 使用独立开发数据库，然后运行：
 
 ```sh
-JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF-8 mvn -f backend/pom.xml spring-boot:run -Dspring-boot.run.profiles=local
+WARGAME_COMPLIANCE_ENABLED=true JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF-8 mvn -f backend/pom.xml spring-boot:run -Dspring-boot.run.profiles=local
 python3 -m http.server 8081 --bind 127.0.0.1 --directory frontend
 ```
 
@@ -73,7 +87,7 @@ node --test frontend/tests/*.test.cjs
 JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF-8 mvn -f backend/pom.xml test
 ```
 
-本次全量结果：前端 142 项通过；后端 232 项中 231 项通过、1 项 MySQL 专用迁移测试未配置独立库而跳过。包含未实名 HTTP 准入、出生年龄/时间等号、监护收紧、同主体并发换会话、退出计时、旧 JWT 版本、儿童授权、正式提供者不可用、prod 绕过拒绝、WebSocket 截断/聊天限制、存档迁移保留和前端迟到请求隔离。H2 迁移测试通过不替代 MySQL 迁移测试；多实例运行仍须在真实部署拓扑压测与演练。
+启用实现时的历史全量结果：前端 142 项通过；后端 232 项中 231 项通过、1 项 MySQL 专用迁移测试未配置独立库而跳过。包含未实名 HTTP 准入、出生年龄/时间等号、监护收紧、同主体并发换会话、退出计时、旧 JWT 版本、儿童授权、正式提供者不可用、prod 虚构身份拒绝、WebSocket 截断/聊天限制、存档迁移保留和前端迟到请求隔离。H2 迁移测试通过不替代 MySQL 迁移测试；多实例运行仍须在真实部署拓扑压测与演练。
 
 另在独立 H2 内存库与本机浏览器验证：新注册停留实名页、成年人核验后初始化城市并建立 WebSocket、主动离开清除游戏画面、儿童在周四被拒绝且显示周五 20:00 的下次窗口。验收未连接用户的游戏数据库。
 

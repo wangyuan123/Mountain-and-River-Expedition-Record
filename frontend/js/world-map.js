@@ -80,7 +80,16 @@
     // Natural scenery has no resource actions; only claimed scenery needs a badge.
     if (relation === 'neutral' && !(G.DATA.wildTypes[t.type] || {}).res) return '';
     var title = relation === 'own' ? '我的' : (relation === 'other' ? (t.ownerName || '未知玩家') : name(t));
-    return title + (t.level != null ? ' · ' + t.level + '级' : '');
+    var gathering = relation === 'own' && t.gathering
+      ? (Date.now() >= t.gatherEndAt ? ' · 待收获' : ' · 采集中') : '';
+    return title + (t.level != null ? ' · ' + t.level + '级' : '') + gathering;
+  }
+  function gatherProgress(t, now) {
+    var start = Number(t.gatherStartAt) || now, end = Number(t.gatherEndAt) || now;
+    var load = Math.max(0, Number(t.gatherLoad) || 0);
+    var progress = end > start ? Math.max(0, Math.min(1, (now - start) / (end - start))) : 1;
+    return { percent: Math.round(progress * 100), mined: Math.floor(progress * load), load: load,
+      tip: now >= end ? '已采满，请收获' : '采集中，剩余 ' + Math.ceil((end - now) / 1000) + ' 秒' };
   }
   function drawOwnership(marker, target, y) {
     var label = ownershipCaption(target), plate = marker.ownershipPlate, text = marker.ownershipText;
@@ -159,6 +168,7 @@
     this.marchTimer = setInterval(function () {
       if (!document.hidden && ((G.Core.state.world.marches || []).length || (self.visibleSea&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches))) self.wake();
     }, 250);
+    this.gatherTimer = setInterval(function () { self.updateGathering(); }, 1000);
     cache.changed = function () {
       if (self.destroyed) return;
       if(G.MapTerrain.updateChunk)cache.entries.forEach(function(e){
@@ -169,6 +179,21 @@
     this.resize();
   }
   MapView.prototype.on = function (node, event, fn, opts) { node.addEventListener(event, fn, opts); this.listeners.push(function () { node.removeEventListener(event, fn, opts); }); };
+  MapView.prototype.updateGathering = function () {
+    if (this.destroyed || document.hidden) return;
+    var target = this.selected;
+    if (target && target.kind === 'wild' && target.occupied && target.gathering && !this.detail.hidden) {
+      var panel = this.detail.querySelector('.wild-gather-panel');
+      if (panel) {
+        var state = gatherProgress(target, Date.now());
+        panel.querySelector('[data-gather-time]').textContent = state.tip;
+        panel.querySelector('[data-gather-progress]').style.width = state.percent + '%';
+        panel.querySelector('[data-gather-amount]').textContent = '已开采：' + G.fmt(state.mined) + ' / ' + G.fmt(state.load);
+      }
+    }
+    // 即使没有打开详情，也要在到点时把地图标识从采集中切换为待收获。
+    if (this.visible.some(function (t) { return t.kind === 'wild' && t.occupied && t.gathering; })) this.wake();
+  };
   MapView.prototype.resize = function () {
     if (this.destroyed) return;
     var w = this.host.clientWidth, h = this.host.clientHeight;
@@ -602,7 +627,7 @@
     this.on(window, 'resize', function () {
       if (self.fullscreen) { self.vx=self.vy=0; self.pointers.clear(); self.minimapPointer=null; self.resize(); }
     });
-    this.on(document,'visibilitychange',function(){ if(!document.hidden){self.vx=self.vy=0;self.requestChunks();self.wake();} });
+    this.on(document,'visibilitychange',function(){ if(!document.hidden){self.vx=self.vy=0;self.requestChunks();self.updateGathering();self.wake();} });
   };
   MapView.prototype.focus = function(x,y,kind) { var center=markerCenter({kind:kind||'wild',x:x,y:y});this.vx=this.vy=0; this.camera.x=center.x;this.camera.y=center.y;this.camera.clamp();this.closeDetail();this.requestChunks();this.wake(); };
   MapView.prototype.pick = function(p) {
@@ -715,25 +740,20 @@
       var extraHtml = '';
 
       if (isGathering) {
-        var start = t.gatherStartAt || now, end = t.gatherEndAt || now, maxL = t.gatherLoad || totalLoad;
+        var gather = gatherProgress(t, now);
         var rk = t.gatherRes || (G.DATA.wildTypes[t.type] || {}).res;
         var rName = {food:'粮食', steel:'钢铁', oil:'石油', rare:'稀矿'}[rk] || '资源';
-        var progress = end > start ? Math.max(0, Math.min(1, (now - start) / (end - start))) : 1;
-        var currentMined = Math.min(maxL, Math.floor(progress * maxL));
-        var done = now >= end;
-        var leftSec = done ? 0 : Math.ceil((end - now) / 1000);
-        var timeTip = done ? '已采满，请收获' : '开采中，剩余 ' + leftSec + ' 秒';
 
         extraHtml += '<div class="wild-gather-panel" style="margin:8px 0;padding:10px;background:rgba(70,125,165,0.1);border-radius:6px;border:1px solid rgba(70,125,165,0.25);">' +
           '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">' +
             '<span><b>⛏ 正在开采' + esc(rName) + '</b></span>' +
-            '<span style="color:var(--primary,#467da5);font-weight:600;">' + esc(timeTip) + '</span>' +
+            '<span data-gather-time style="color:var(--primary,#467da5);font-weight:600;">' + esc(gather.tip) + '</span>' +
           '</div>' +
           '<div style="height:6px;background:rgba(0,0,0,0.08);border-radius:3px;overflow:hidden;margin:6px 0;">' +
-            '<div style="height:100%;width:' + Math.round(progress * 100) + '%;background:var(--primary,#467da5);transition:width .3s;"></div>' +
+            '<div data-gather-progress style="height:100%;width:' + gather.percent + '%;background:var(--primary,#467da5);transition:width .3s;"></div>' +
           '</div>' +
           '<div style="font-size:12px;display:flex;justify-content:space-between;color:var(--ink-sec,#666);">' +
-            '<span>已开采：' + G.fmt(currentMined) + ' / ' + G.fmt(maxL) + '</span>' +
+            '<span data-gather-amount>已开采：' + G.fmt(gather.mined) + ' / ' + G.fmt(gather.load) + '</span>' +
             '<span>驻军：' + esc(garrisonList.join(', ')) + '</span>' +
           '</div>' +
         '</div>';
@@ -796,7 +816,7 @@
   };
   MapView.prototype.destroy = function() {
     this.destroyed=true;this.exitFullscreen();this.detailSeq++;this.vx=this.vy=0;
-    if(this.raf)cancelAnimationFrame(this.raf);clearInterval(this.refreshTimer);clearInterval(this.marchTimer);
+    if(this.raf)cancelAnimationFrame(this.raf);clearInterval(this.refreshTimer);clearInterval(this.marchTimer);clearInterval(this.gatherTimer);
     this.resizeObserver.disconnect();this.listeners.forEach(function(off){off();});
     cache.changed=function(){};cache.queue=[];cache.wanted.clear();
     this.groundTiles.forEach(function(tile){tile.destroy({texture:true,baseTexture:true});}); this.groundTiles.clear();

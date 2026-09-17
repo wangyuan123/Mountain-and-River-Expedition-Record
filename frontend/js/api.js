@@ -343,6 +343,16 @@ window.Game = window.Game || {};
         .then(extractState).then(applyState);
     },
 
+    techCancel: function (queueId) {
+      return client.post('/game/tech/cancel', { queueId: queueId })
+        .then(extractState).then(applyState);
+    },
+
+    techSpeedUp: function (itemId, queueId, count) {
+      return client.post('/game/tech/speedup', { itemId: itemId, queueId: queueId, count: count })
+        .then(extractState).then(applyState);
+    },
+
     // ==================== 军官 ====================
 
     refreshAcademy: function () {

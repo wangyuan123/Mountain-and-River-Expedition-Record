@@ -159,7 +159,11 @@ public class AntiAddictionService {
         data.put("canPlay", false); data.put("sessionActive", false); data.put("allowedUntil", 0L); data.put("remainingSeconds", 0L);
         data.put("code", "REAL_NAME_REQUIRED"); data.put("message", "请先完成实名认证"); data.put("identityStatus", "UNVERIFIED");
         data.put("realPaymentEnabled", false);
-        if (!enabled()) { data.put("canPlay", true); data.put("sessionActive", true); data.put("code", "ALLOWED"); return data; }
+        if (!enabled()) {
+            data.put("canPlay", true); data.put("sessionActive", true); data.put("code", "ALLOWED");
+            data.put("message", "当前可以进入游戏");
+            return data;
+        }
         Subject subject = subject(playerId);
         if (subject == null) return data;
         data.put("identityStatus", subject.getVerifiedUntil() > now ? "VERIFIED" : "EXPIRED");
@@ -245,6 +249,7 @@ public class AntiAddictionService {
 
     @Transactional
     public void end(Player player, String secret) {
+        if (!enabled()) return;
         Subject subject = subject(player.getId());
         if (subject == null) return;
         subject = lockSubject(subject.getId());
@@ -309,6 +314,7 @@ public class AntiAddictionService {
 
     @Transactional(readOnly = true)
     public long treatmentDeadline(Long playerId, long original) {
+        if (!enabled()) return original;
         Subject subject = subject(playerId);
         return subject != null && minor(subject, clock.millis()) ? calendar.treatmentDeadline(original) : original;
     }
@@ -334,6 +340,7 @@ public class AntiAddictionService {
     /** 有界维护：补记失联租约、标记结束并按已公布的开发默认期限清理去标识化记录。 */
     @Transactional
     public void maintain() {
+        if (!enabled()) return;
         long now = clock.millis();
         for (String id : em.createQuery("select s.subjectId from PlaySession s where s.endedAt = 0 and (s.leaseUntil <= :now or s.allowedUntil <= :now)", String.class)
                 .setParameter("now", now).setMaxResults(100).getResultList()) {
