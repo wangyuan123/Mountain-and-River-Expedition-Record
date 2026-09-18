@@ -698,12 +698,6 @@ public class BattleService {
         return 1 + 0.05 * tech.getOrDefault(catKey, 0);
     }
 
-    /** cat -> 攻击科技 key */
-    private String catAtkKey(String cat) { return "attack_tech"; }
-
-    /** cat -> 防御科技 key */
-    private String catDefKey(String cat) { return "defense_tech"; }
-
     // ========================================================================
     // 技能加成 (对应 JS Core.skillBonus)
     // ========================================================================
@@ -869,20 +863,6 @@ public class BattleService {
             if (u != null && u.range() > mr) mr = u.range();
         }
         return mr;
-    }
-
-    /**
-     * 最低基础速度 (基础 spd，不含科技/技能) - 用于估算初始交战距离。
-     * 返回 Integer.MAX_VALUE 表示该 army 没有任何可行动单位。
-     */
-    private int minSpdOf(Map<String, Integer> army) {
-        int ms = Integer.MAX_VALUE;
-        for (String id : army.keySet()) {
-            if (army.getOrDefault(id, 0) <= 0) continue;
-            UnitStats u = getStats(id);
-            if (u != null && u.spd() > 0 && u.spd() < ms) ms = u.spd();
-        }
-        return ms;
     }
 
     /**

@@ -17,4 +17,4 @@ javac.*.args
 *.log
 
 # 设计素材打包产物
-/output/imagegen/**/*.zip
+/output/**/*.zip

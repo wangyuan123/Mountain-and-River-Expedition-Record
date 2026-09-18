@@ -17,13 +17,6 @@ window.Game = window.Game || {};
     return arr.join(' ');
   }
 
-  function fortCost(id, n) {
-    var f = D.forts[id];
-    var cost = {};
-    for (var k in f.cost) cost[k] = f.cost[k] * n;
-    return cost;
-  }
-
   function readQty(inputId) {
     var el = document.getElementById(inputId);
     if (!el) return 1;
@@ -40,12 +33,6 @@ window.Game = window.Game || {};
     var s = Core.state, sum = 0;
     for (var id in D.forts) sum += (s.forts[id] || 0);
     return sum;
-  }
-
-  function armyEmpty() {
-    var s = Core.state;
-    for (var id in s.army) if (s.army[id] > 0) return false;
-    return true;
   }
 
   var Fort = {

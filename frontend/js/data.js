@@ -23,7 +23,7 @@ window.Game = window.Game || {};
     },
     // 资源成本/快捷显示用的 emoji 表
     // (按钮、邮件、弹窗等纯文本场景统一用 emoji, 不再用 img 路径,
-    // 避免 img/oil.svg160 这种字符串泄露问题)
+    // 避免把图片路径拼接进按钮、邮件等纯文本)
     resEmoji: {
       food: '🌾', steel: '🔩', oil: '🛢️', rare: '💠', gold: '🪙', diamond: '💎'
     },

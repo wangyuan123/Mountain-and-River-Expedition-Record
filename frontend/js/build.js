@@ -36,7 +36,7 @@ window.Game = window.Game || {};
     var emojiMap = (G.DATA && G.DATA.resEmoji) || {};
     for (var k in cost) {
       // 纯文本按钮场景: 统一用 emoji, 不再用 icon 字段(可能是图片路径),
-      // 否则会渲染成 "🛢️ img/oil.svg160" 这种字符串。
+      // 否则会把图片路径拼接进纯文本。
       var ico = emojiMap[k] || G.DATA.resources[k].icon || k;
       arr.push(ico + cost[k]);
     }

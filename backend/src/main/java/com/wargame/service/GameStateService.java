@@ -3,7 +3,6 @@ package com.wargame.service;
 import com.wargame.model.constants.MilitaryRankDef;
 import com.wargame.model.constants.WorldConfig;
 import com.wargame.model.constants.WildTypeDef;
-import com.wargame.model.constants.FortDef;
 import com.wargame.model.constants.TechDef;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
@@ -578,12 +577,6 @@ public class GameStateService {
         return used;
     }
 
-    private Set<String> collectOccupiedCoordinates() {
-        Set<String> used = collectNonPlayerCoordinates();
-        used.addAll(collectRealPlayerCoordinates());
-        return used;
-    }
-
     private void reserveCity(Set<String> used,int x,int y,int span) {
         x=WorldTerrainService.anchor(x,span);y=WorldTerrainService.anchor(y,span);
         for(int yy=y;yy<y+span;yy++)for(int xx=x;xx<x+span;xx++)used.add(xx+","+yy);
@@ -873,20 +866,6 @@ public class GameStateService {
     // Private helpers - world generation
     // ================================================================
 
-    private Map<String, Integer> genNpcForts(int level) {
-        List<String> fkeys = new ArrayList<>(FortDef.FORTS.keySet());
-        int count = rand(1, Math.min(fkeys.size(), 1 + level / 2));
-        Set<String> picked = new HashSet<>();
-        Map<String, Integer> f = new LinkedHashMap<>();
-        for (int i = 0; i < count; i++) {
-            String fk = fkeys.get(rand(0, fkeys.size() - 1));
-            if (picked.contains(fk)) continue;
-            picked.add(fk);
-            f.put(fk, rand(level * 5, level * 30));
-        }
-        return f;
-    }
-
     private int[] freeCoord(Set<String> used) {
         return freeCoord(used,1);
     }
@@ -902,29 +881,6 @@ public class GameStateService {
             if(free){for(int yy=y;yy<y+span;yy++)for(int xx=x;xx<x+span;xx++)used.add(xx+","+yy);return new int[]{x,y};}
         }
         throw new IllegalArgumentException("地图没有足够空地");
-    }
-
-    /**
-     * 在 (cx-r, cy-r) ~ (cx+r, cy+r) 的方形区域内找一个未占用的坐标 (自动裁剪到世界边界)。
-     * 找不到时回退到全图, 避免死循环。最多尝试 200 次。
-     */
-    private int[] freeCoordNear(Set<String> used, int cx, int cy, int r) {
-        int size = WorldConfig.SIZE;
-        int x0 = Math.max(0, cx - r);
-        int x1 = Math.min(size - 1, cx + r);
-        int y0 = Math.max(0, cy - r);
-        int y1 = Math.min(size - 1, cy + r);
-        for (int i = 0; i < 200; i++) {
-            int x = rand(x0, x1);
-            int y = rand(y0, y1);
-            String key = x + "," + y;
-            if (!used.contains(key)) {
-                used.add(key);
-                return new int[]{x, y};
-            }
-        }
-        // 区域已满, 回退到全图
-        return freeCoord(used);
     }
 
     private void saveBuilding(Long playerId, String type, int level) {

@@ -15,37 +15,6 @@ window.Game = window.Game || {};
     return Math.min(ATTR_MAX, attr + 1 + Math.floor(Math.random() * 3));
   }
 
-  var MULTI_SLOT = ['house', 'farm', 'refinery', 'oilfield', 'raremine', 'factory', 'depot'];
-
-  function migrateBuildings(b) {
-    if (!b || typeof b !== 'object') return b;
-    delete b.barracks;
-    for (var i = 0; i < MULTI_SLOT.length; i++) {
-      var id = MULTI_SLOT[i];
-      var v = b[id];
-      if (Array.isArray(v)) {
-        var arr = [];
-        for (var j = 0; j < v.length; j++) if ((v[j] || 0) > 0) arr.push(v[j]);
-        b[id] = arr;
-      } else if (typeof v === 'number') {
-        b[id] = v > 0 ? [v] : [];
-      } else {
-        b[id] = [];
-      }
-    }
-    return b;
-  }
-
-  function migrateConstructions(list) {
-    if (!Array.isArray(list)) return list;
-    for (var i = 0; i < list.length; i++) {
-      var job = list[i];
-      if (!job || job.id == null) continue;
-      if (MULTI_SLOT.indexOf(job.id) >= 0 && job.slot == null) job.slot = 0;
-    }
-    return list;
-  }
-
   // ===== 存档逻辑：状态由后端管理，前端不再做本地存档/云端同步 =====
   // 保留 Save 对象作为兼容桩，所有方法为空操作或转发到 API。
   var Save = {

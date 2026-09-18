@@ -70,7 +70,7 @@ test('map requests abort on timeout so loading slots can recover',async()=>{
 });
 test('wild map dispatch renders safely and retains one scout and strongest commander defaults',()=>{
   const state={world:{pos:{x:100,y:100},wildTiles:[],_dispatchTarget:null},tech:{},resources:{},reports:[],army:{scout:687,infantry:20},officers:[{id:1,name:'first',military:330,star:1,level:1},{id:2,name:'second',military:330,star:1,level:1},{id:3,name:'mayor',role:'mayor',military:500}]};
-  const c=context({DATA:{wildTypes:{grainfield:{name:'粮田',res:'food',icon:'img/grainfield.svg'}},resources:{food:{name:'粮食'}},units:{scout:{name:'侦察机'},infantry:{name:'步兵'}},starColor:{}},Core:{state,views:{}},go(){},toast(){},fmt:String});load(c,'world.js');
+  const c=context({DATA:{wildTypes:{grainfield:{name:'粮田',res:'food',icon:'img/map/wild-grainfield.webp'}},resources:{food:{name:'粮食'}},units:{scout:{name:'侦察机'},infantry:{name:'步兵'}},starColor:{}},Core:{state,views:{}},go(){},toast(){},fmt:String});load(c,'world.js');
   c.Game.World.mapAction({kind:'wild',id:5,type:'grainfield',level:2,x:103,y:105},'conquer');
   const v={innerHTML:''};c.Game.World.renderDispatch(v);
   assert.match(v.innerHTML,/id="dqty_scout"[^>]*value="1"/);
@@ -99,7 +99,7 @@ test('only conquest and plunder preselect troops; owned wild dispatch starts emp
 test('wild scouting opens preparation and submits a scout march only after launch',async()=>{
   const state={world:{pos:{x:100,y:100},wildTiles:[]},tech:{},resources:{},reports:[],army:{scout:8,infantry:20},officers:[]};
   const routes=[],messages=[],requests=[];
-  const c=context({DATA:{wildTypes:{oil:{name:'油田',res:'oil',icon:'oil.svg'}},resources:{oil:{name:'石油'}},units:{scout:{name:'侦察机'},infantry:{name:'步兵'}},starColor:{}},Core:{state,views:{}},go:r=>routes.push(r),toast:m=>messages.push(m),fmt:String,API:{wildScout(){assert.fail('must not reveal intelligence instantly');},worldDispatch:r=>{requests.push(r);return Promise.resolve();}}});load(c,'world.js');
+  const c=context({DATA:{wildTypes:{oil:{name:'油田',res:'oil',icon:'img/map/wild-oil.webp'}},resources:{oil:{name:'石油'}},units:{scout:{name:'侦察机'},infantry:{name:'步兵'}},starColor:{}},Core:{state,views:{}},go:r=>routes.push(r),toast:m=>messages.push(m),fmt:String,API:{wildScout(){assert.fail('must not reveal intelligence instantly');},worldDispatch:r=>{requests.push(r);return Promise.resolve();}}});load(c,'world.js');
   const target={kind:'wild',id:42,type:'oil',level:3,x:110,y:154};
   c.Game.World.mapAction(target,'scout');
   assert.equal(routes.at(-1),'dispatch');

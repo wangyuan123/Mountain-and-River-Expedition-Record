@@ -419,15 +419,6 @@ public class ArmyService {
         return Collections.min(laneAvailableAt);
     }
 
-    private int queuedArmy(Long playerId) {
-        return armyProductionQueueRepository.findByPlayerIdAndCitySlotOrderByStartedAtAscIdAsc(playerId, cityScope.slot(playerId)).stream().mapToInt(q -> q.getUnitCount() == null ? 0 : q.getUnitCount()).sum();
-    }
-
-    private int queuedPopulation(Long playerId) {
-        return armyProductionQueueRepository.findByPlayerIdAndCitySlotOrderByStartedAtAscIdAsc(playerId, cityScope.slot(playerId)).stream()
-                .mapToInt(q -> { UnitDef unit = GameData.UNITS.get(q.getUnitType()); return unit == null ? 0 : unit.pop() * q.getUnitCount(); }).sum();
-    }
-
     private void refund(Long playerId, int food, int steel, int oil, int rare) {
         Resources r = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null); if (r == null) return;
         r.setFood((r.getFood() == null ? 0 : r.getFood()) + food); r.setSteel((r.getSteel() == null ? 0 : r.getSteel()) + steel);

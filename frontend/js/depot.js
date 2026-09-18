@@ -58,18 +58,6 @@
     if (!Array.isArray(s.constructions)) s.constructions = [];
     return s.constructions;
   }
-  function setShield(hours) {
-    var s = Core.state;
-    s.world = s.world || {};
-    var until = Date.now() + hours * 3600 * 1000;
-    s.world.shieldUntil = Math.max(s.world.shieldUntil || 0, until);
-  }
-  function setMarchBoost(hours) {
-    var s = Core.state;
-    s.world = s.world || {};
-    var until = Date.now() + hours * 3600 * 1000;
-    s.world.marchBoostUntil = Math.max(s.world.marchBoostUntil || 0, until);
-  }
   // 当前生效状态描述
   function statusText() {
     var s = Core.state;
