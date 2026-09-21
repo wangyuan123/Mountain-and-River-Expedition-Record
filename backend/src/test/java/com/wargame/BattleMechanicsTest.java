@@ -51,8 +51,8 @@ class BattleMechanicsTest {
         Object suppression = context(Map.of(), Map.of("suppress", 1));
         for (boolean defending : new boolean[]{false, true}) {
             assertEquals(343, damage(defending, suppression, empty, 0, true));
-            assertEquals(326, damage(defending, empty, suppression, 0, true), "压制光环在军官回合降低敌方5%伤害");
-            assertEquals(326, damage(defending, empty, suppression, 0, false), "压制光环在普通回合常驻生效降低敌方5%伤害");
+            assertEquals(322, damage(defending, empty, suppression, 0, true), "压制光环在军官回合降低敌方6%伤害");
+            assertEquals(322, damage(defending, empty, suppression, 0, false), "压制光环在普通回合常驻生效降低敌方6%伤害");
         }
     }
 

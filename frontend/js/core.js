@@ -459,7 +459,7 @@ window.Game = window.Game || {};
       var lv = skills[skillId] || 0;
       if (lv <= 0) return 0;
       var rates = {
-        ration: 0.16, harvest: 0.10, construct: 0.04, finance: 0.08, research: 0.08
+        ration: 0.16, harvest: 0.10, construct: 0.04, finance: 0.04, research: 0.04
       };
       return (rates[skillId] || 0) * lv;
     },
@@ -472,9 +472,9 @@ window.Game = window.Game || {};
         return 0.10 * Math.min(5, lv);
       }
       var rates = {
-        frenzy: 0.10, bulwark: 0.10, blitz: 0.04, suppress: 0.05,
-        pierce: 0.06, leadership: 0.10, supply: 0.10, medic: 0.03,
-        ration: 0.16, harvest: 0.10, construct: 0.04, finance: 0.08, research: 0.08
+        frenzy: 0.10, bulwark: 0.10, blitz: 0.06, suppress: 0.06,
+        pierce: 0.06, leadership: 0.04, supply: 0.04, medic: 0.03,
+        ration: 0.16, harvest: 0.10, construct: 0.04, finance: 0.04, research: 0.04
       };
       return (rates[skillId] || 0) * lv;
     },

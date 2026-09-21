@@ -29,7 +29,7 @@ public class MayorSkillServiceTest extends BaseServiceTest {
         assertTrue(OfficerSkillDef.OFFICER_SKILLS.containsKey("research"), "应包含格物技能");
         assertTrue(OfficerSkillDef.OFFICER_SKILLS.containsKey("leadership"), "应包含统帅技能");
         assertTrue(OfficerSkillDef.OFFICER_SKILLS.containsKey("ration"), "应包含军屯技能");
-        assertTrue(OfficerSkillDef.OFFICER_SKILLS.containsKey("counter"), "应包含绝地反击技能");
+        assertTrue(OfficerSkillDef.OFFICER_SKILLS.containsKey("counter"), "应包含绝境反击技能");
         assertFalse(OfficerSkillDef.OFFICER_SKILLS.containsKey("supply"), "技能池不应直接包含旧补给技能");
         assertEquals("leadership", OfficerSkillDef.getSkill("supply").key(), "旧补给技能应平滑映射至统帅");
         for (var def : OfficerSkillDef.OFFICER_SKILLS.values()) {
@@ -130,7 +130,7 @@ public class MayorSkillServiceTest extends BaseServiceTest {
 
         int durationWithoutMayor = techService.calcTechDuration(playerId, "mil_infantry", 0, 5);
 
-        // 任命带 格物 Lv.5 的市长（研发速度+40%）
+        // 任命带 格物 Lv.5 的市长（研发速度+20%）
         Officer mayor = new Officer();
         mayor.setPlayerId(playerId);
         mayor.setCitySlot(0);
@@ -147,8 +147,8 @@ public class MayorSkillServiceTest extends BaseServiceTest {
         int durationWithMayor = techService.calcTechDuration(playerId, "mil_infantry", 0, 5);
         assertTrue(durationWithMayor < durationWithoutMayor, "格物技能应显著缩短研发时间");
         // base = 30, labSpeed = 1 + 0.1 * 4 = 1.4 -> durationWithoutMayor = round(30 / 1.4) = 21
-        // mayorSpeed = 1 + 0.08 * 5 = 1.4 -> durationWithMayor = round(30 / (1.4 * 1.4)) = round(30 / 1.96) = 15
-        assertEquals(15, durationWithMayor, "格物Lv.5应加速研发");
+        // mayorSpeed = 1 + 0.04 * 5 = 1.2 -> durationWithMayor = round(30 / (1.4 * 1.2)) = 18
+        assertEquals(18, durationWithMayor, "格物Lv.5应加速研发");
     }
 
     @Test
@@ -177,18 +177,18 @@ public class MayorSkillServiceTest extends BaseServiceTest {
         // base 2000 * (1 + 1 * 0.025) = 2050
         assertEquals(2050, capWithNormalCmd);
 
-        // 升级统帅技能 Lv.5 (+50%)
+        // 升级统帅技能 Lv.5 (+20%)
         cmd.setSkills(JsonUtil.toJson(List.of(Map.of("id", "leadership", "lv", 5))));
         officerRepository.save(cmd);
 
         int capWithLeadCmd = armyService.armyCap(playerId);
-        // 2050 * 1.5 = 3075
-        assertEquals(3075, capWithLeadCmd, "统帅Lv.5应提升50%带兵上限");
+        // 2050 * 1.2 = 2460
+        assertEquals(2460, capWithLeadCmd, "统帅Lv.5应提升20%带兵上限");
 
         // 兼容旧 supply 技能
         cmd.setSkills(JsonUtil.toJson(List.of(Map.of("id", "supply", "lv", 5))));
         officerRepository.save(cmd);
-        assertEquals(3075, armyService.armyCap(playerId), "旧supply技能应向后兼容统帅效果");
+        assertEquals(2460, armyService.armyCap(playerId), "旧supply技能应向后兼容统帅效果");
     }
 
     @Test
