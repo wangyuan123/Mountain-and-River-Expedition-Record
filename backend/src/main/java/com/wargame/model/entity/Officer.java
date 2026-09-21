@@ -32,6 +32,9 @@ public class Officer extends CityOwnedEntity {
     @Column(name = "military")
     private Integer military;
 
+    @Column(name = "defense")
+    private Integer defense;
+
     @Column(name = "logistics")
     private Integer logistics;
 

@@ -5,6 +5,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 function setup() {
+  const timers = [];
   const state = {
     world: {},
     resources: { food: 5000, steel: 5000, oil: 5000, rare: 5000, gold: 5000 },
@@ -21,7 +22,7 @@ function setup() {
   const context = vm.createContext({
     console, Date, Math, parseInt, Array, Object, String,
     setTimeout(fn) { fn(); return 1; }, clearTimeout() {},
-    setInterval() { return 1; }, clearInterval() {},
+    setInterval(fn) { timers.push(fn); return timers.length; }, clearInterval() {},
     window: null,
     document: {
       createElement() {
@@ -29,7 +30,11 @@ function setup() {
           className: '',
           innerHTML: '',
           style: {},
-          querySelector() { return null; },
+          nodes: {},
+          querySelector(selector) {
+            if (!selector.startsWith('#') || !this.innerHTML.includes('id="' + selector.slice(1) + '"')) return null;
+            return this.nodes[selector] || (this.nodes[selector] = { style: {} });
+          },
           querySelectorAll() { return []; },
           addEventListener() {},
           appendChild() {},
@@ -124,8 +129,91 @@ function setup() {
   context.window = context;
   const G = context.Game;
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/build.js'), 'utf8'), context);
-  return { G, context, state };
+  return { G, context, state, timers };
 }
+
+test('免费加速按钮在无道具时仍可用，超过门槛仍需道具', () => {
+  const { G, state, context } = setup();
+  context.Date = class extends Date { static now() { return 1000000; } };
+  state.items = {};
+  state.freeBuildSpeedUpSeconds = 300;
+  const job = { id: 'farm', slot: 0, queueId: 42, finishesAt: 1300000 };
+  assert.equal(G.Build.canFreeSpeedUp(job), true);
+  assert.match(G.Build.renderQueueHtml([job], state), /免费加速/);
+  assert.doesNotMatch(G.Build.renderQueueHtml([job], state), /disabled/);
+  job.finishesAt++;
+  assert.equal(G.Build.canFreeSpeedUp(job), false);
+  assert.doesNotMatch(G.Build.renderQueueHtml([job], state), /免费加速/);
+  assert.match(G.Build.renderQueueHtml([job], state), /disabled/);
+  state.items.speedUp10m = 1;
+  assert.doesNotMatch(G.Build.renderQueueHtml([job], state), /disabled/);
+});
+
+test('所有施工详情和满员弹窗在倒计时进入五分钟时切换免费按钮', () => {
+  for (const view of ['showJobDetails', 'onSlotClick', 'showBusyJobs']) {
+    const { G, state, context, timers } = setup();
+    let now = 1000000;
+    context.Date = class extends Date { static now() { return now; } };
+    state.items = {};
+    state.constructions = [{ id: 'farm', slot: 0, queueId: 42, startedAt: 990000,
+      finishesAt: 1301000, targetLevel: 3 }];
+    G.Build[view]('farm', 0);
+    const modal = context.document.body.appended.at(-1);
+    const selector = view === 'showJobDetails' ? '#detailSpeedUp' : view === 'onSlotClick' ? '#bdetailSpeedBtn' : '#busySpeedUp0';
+    now += 1001;
+    timers.forEach(fn => fn());
+    const button = modal.querySelector(selector);
+    assert.equal(button.disabled, false);
+    assert.equal(button.textContent, '⚡ 免费加速');
+  }
+});
+
+test('免费加速精确定位队列，连点只发一次请求，失败后可重试', async () => {
+  const { G, state } = setup();
+  state.constructions = [{ id: 'farm', queueId: 42, finishesAt: Date.now() + 60000 }];
+  let resolve;
+  let calls = 0;
+  let renders = 0;
+  G.Core.render = () => { renders++; };
+  G.API.buildFreeSpeedUp = (id) => {
+    assert.equal(id, 42);
+    calls++;
+    return new Promise(done => { resolve = done; });
+  };
+  G.Build.openSpeedUpPicker = () => assert.fail('免费加速不应打开道具选择器');
+  const first = G.Build.accelerateJobById(42);
+  assert.equal(G.Build.accelerateJobById(42), first);
+  assert.equal(calls, 1);
+  resolve({ success: false, message: '时间尚未满足' });
+  await first;
+  assert.equal(G._lastToast, '时间尚未满足');
+  const retry = G.Build.accelerateJobById(42);
+  resolve({ success: true });
+  await retry;
+  assert.equal(calls, 2);
+  assert.equal(renders, 2);
+  G.Build.accelerateJobById(999);
+  assert.equal(calls, 2);
+});
+
+test('免费加速接口发送队列ID并立即应用完工后的服务端状态', async () => {
+  const { G, state, context } = setup();
+  const completedState = { ...state, buildings: { ...state.buildings, command: 3 },
+    constructions: [], freeBuildSpeedUpSeconds: 300 };
+  G.ApiClient = function () {
+    this.post = async (url, payload) => {
+      assert.equal(url, '/game/build/free-speedup');
+      assert.equal(payload.queueId, 42);
+      assert.equal(Object.keys(payload).length, 1);
+      return { success: true, state: completedState };
+    };
+  };
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/api.js'), 'utf8'), context);
+  await G.Build.freeSpeedUpJob({ queueId: 42 });
+  assert.equal(G.Core.state, completedState);
+  assert.equal(G.Core.state.buildings.command, 3);
+  assert.equal(G.Core.state.constructions.length, 0);
+});
 
 test('卡槽地块网格正确渲染已建建筑与空闲卡槽(+号)', () => {
   const { G, state } = setup();
@@ -173,6 +261,46 @@ test('队列渲染显示拆除中状态', () => {
   const queueHtml = G.Build.renderQueueHtml(jobs, state);
   assert.match(queueHtml, /农田 #1 \(拆除中: 降至 Lv\.1\)/);
   assert.match(queueHtml, /炼钢厂 #1 \(拆除中: 移除\)/);
+});
+
+test('六支施工队的空闲提示随工程数量更新', () => {
+  const { G, state } = setup();
+  assert.match(G.Build.renderQueueHtml([], state), /6 支施工队空闲：可同时进行 6 项建筑工程/);
+  const jobs = Array.from({ length: 6 }, (_, slot) => ({
+    id: 'farm', slot, targetLevel: 1, finishesAt: Date.now() + 60000
+  }));
+  assert.match(G.Build.renderQueueHtml(jobs.slice(0, 2), state), /剩余 4 支施工队空闲/);
+  assert.match(G.Build.renderQueueHtml(jobs.slice(0, 5), state), /剩余 1 支施工队空闲/);
+  const fullHtml = G.Build.renderQueueHtml(jobs, state);
+  assert.match(fullHtml, /施工队 6：/);
+  assert.doesNotMatch(fullHtml, /空闲/);
+});
+
+test('不足六项工程可确认升级和拆除，六项时显示满员提示', () => {
+  for (const count of [2, 5, 6]) {
+    for (const action of ['confirmUpgrade', 'confirmDismantle']) {
+      const { G, state, context } = setup();
+      state.constructions = Array.from({ length: count }, (_, slot) => ({
+        id: 'oilfield', slot, targetLevel: 1, finishesAt: Date.now() + 60000
+      }));
+      G.Build[action]('farm', 1);
+      const html = context.document.body.appended.at(-1).innerHTML;
+      if (count < 6) {
+        assert.doesNotMatch(html, /施工队全忙/);
+        assert.match(html, action === 'confirmUpgrade' ? /升级确认/ : /拆除建筑确认/);
+      } else {
+        assert.match(html, /施工队全忙/);
+        assert.match(html, /6 支施工队均在作业中/);
+      }
+      G.Build.onSlotClick('farm', 1);
+      const detailHtml = context.document.body.appended.at(-1).innerHTML;
+      if (count < 6) {
+        assert.doesNotMatch(detailHtml, /施工队全忙/);
+      } else {
+        assert.match(detailHtml, /施工队全忙 \(6\/6\)/);
+      }
+    }
+  }
 });
 
 test('renderGroup 不再渲染下方冗余的手风琴卡片列表', () => {
@@ -289,4 +417,3 @@ test('单栋建筑与多栋建筑卡槽头部标签行高保持一致不塌陷',
   // 多栋建筑或空闲卡槽应当包含 # 编号
   assert.match(armyGridHtml, /<span class="slot-card-tag">#\d+<\/span>/);
 });
-

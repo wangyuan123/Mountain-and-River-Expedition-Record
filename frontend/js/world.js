@@ -7,6 +7,12 @@ window.Game = window.Game || {};
   var D = G.DATA;
   var Core = G.Core;
 
+  function esc(s) {
+    if (G && typeof G.escapeHtml === 'function') return G.escapeHtml(s);
+    if (s == null) return '';
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
   function dist(x1, y1, x2, y2) {
     return Math.abs(x1 - x2) + Math.abs(y1 - y2);
   }
@@ -463,8 +469,8 @@ window.Game = window.Game || {};
       if (kind === 'player') target = s.world.playerCities[idx];
       if (!target) return;
 
-      var prepareSec = 6 * 3600;
-      var warSec = 24 * 3600;
+      var prepareSec = 2 * 3600;
+      var warSec = 48 * 3600;
       var now = new Date();
       var attackTime = new Date(Date.now() + prepareSec * 1000);
       var endTime = new Date(attackTime.getTime() + warSec * 1000);
@@ -482,12 +488,13 @@ window.Game = window.Game || {};
       var mask = document.createElement('div');
       mask.className = 'modal-mask';
       var esc = G.escapeHtml || function (s) { return s; };
+      var targetPlayer = target.playerName || target.ownerName || target.player || target.name;
       mask.innerHTML =
         '<div class="modal-card dw-confirm">' +
           '<div class="dw-title">' +
             '<span class="dw-icon" aria-hidden="true">⚔</span>' +
             '<div class="dw-title-copy"><div class="dw-title-heading">宣战确认</div>' +
-              '<div class="dw-title-target">对「' + esc(target.name) + '」发起战争</div></div>' +
+              '<div class="dw-title-target">对玩家「' + esc(targetPlayer) + '」发起战争</div></div>' +
           '</div>' +
           '<div class="modal-body dw-body">' +
             // 敌城信息
@@ -495,6 +502,7 @@ window.Game = window.Game || {};
               '<div class="dw-target-row">' +
                 '<span class="dw-emoji">🏰</span>' +
                 '<span class="dw-name">' + esc(target.name) + '</span>' +
+                (targetPlayer && targetPlayer !== target.name ? '<span class="dw-owner" style="font-size:12px;color:var(--muted);margin-left:6px">(玩家: ' + esc(targetPlayer) + ')</span>' : '') +
               '</div>' +
               '<div class="dw-target-meta">' +
                 '<span class="dw-meta-item">声望：' + G.fmt(target.prestige || 0) + '</span>' +
@@ -540,8 +548,7 @@ window.Game = window.Game || {};
               '<ul class="dw-warn-list">' +
                 '<li>备战期内双方都无法进攻,只能侦察</li>' +
                 '<li>对方同时也可对你发起进攻,务必留守部队</li>' +
-                '<li>失败会损失兵力、战败可能被征服</li>' +
-                '<li>24 小时交战期结束自动恢复和平</li>' +
+                '<li>48 小时交战期结束自动恢复和平</li>' +
               '</ul>' +
             '</div>' +
           '</div>' +
@@ -1029,7 +1036,13 @@ window.Game = window.Game || {};
         var sliderId = 'dslider_' + uid;
         h += '<div class="dispatch-unit-row">';
         h += '<div class="dispatch-unit-info">';
-        h += '<span class="dispatch-unit-name">' + u.name + isLogi + spdBadge + '</span>';
+        var uName = (G.unitDisplayName ? G.unitDisplayName(u.name) : (function (name) {
+          var codeMatch = name.match(/[（(]([^）)]+)[）)]/);
+          var code = codeMatch ? codeMatch[1].trim() : '';
+          var base = name.indexOf('-') > 0 ? name.split('-')[0].trim() : name.replace(/[（(].*?[）)]/, '').trim();
+          return code ? base + '(' + code + ')' : base;
+        })(u.name));
+        h += '<span class="dispatch-unit-name" title="' + esc(u.name) + '">' + uName + isLogi + spdBadge + '</span>';
         h += '<span class="dispatch-unit-have">城内' + G.fmt(have) + '</span>';
         h += '</div>';
         h += '<div class="dispatch-unit-control">';
@@ -1683,8 +1696,13 @@ window.Game = window.Game || {};
           h += '<span class="n">' + kindName + '->' + G.escapeHtml(targetName) + (m.returning ? ' (撤自' + G.escapeHtml(originName || '原地') + ')' : '') + '</span>';
           h += '<span class="lv">距' + distance + '格 (' + fromX + ',' + fromY + '->' + toX + ',' + toY + ')</span>';
           h += '<div class="d">兵力: ' + armyText(m.army) + '</div>';
-          h += '<div class="cost ' + urgent + '">剩余: ' + timeStr + '</div>';
-          if (remain > 0 && !m.returning) {
+          if (m.inBattle || m.battleId) {
+            h += '<div class="cost urgent">已到达战场，等待你的战术指令</div>';
+            h += '<div class="btn-row"><button class="btn ok sm" onclick="Game.Battle.openTactical(' + m.id + ')">进入战斗</button></div>';
+          } else {
+            h += '<div class="cost ' + urgent + '">剩余: ' + timeStr + '</div>';
+          }
+          if (remain > 0 && !m.returning && !(m.inBattle || m.battleId)) {
             h += '<div class="btn-row"><button class="btn warn sm" onclick="Game.World.cancelMarch(\'' + m.id + '\')">撤回</button></div>';
           }
           h += '</div>';

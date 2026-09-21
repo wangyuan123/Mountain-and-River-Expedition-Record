@@ -1,22 +1,55 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
   <defs>
-    <linearGradient id="carrierHull" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#94a3b8"/>
-      <stop offset="100%" stop-color="#334155"/>
+    <radialGradient id="carrierBg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0f2942"/>
+      <stop offset="100%" stop-color="#040d16"/>
+    </radialGradient>
+    <linearGradient id="flightDeckWood" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#475569"/>
+      <stop offset="30%" stop-color="#334155"/>
+      <stop offset="70%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
     </linearGradient>
   </defs>
-  <!-- Waterline -->
-  <path d="M0 24 Q8 23 16 24 Q24 25 32 24 L32 28 L0 28 Z" fill="#0284c7" opacity="0.4"/>
-  <!-- Hull beneath flight deck -->
-  <polygon points="4,23 7,16 27,16 29,23" fill="url(#carrierHull)" stroke="#0f172a" stroke-width="0.7"/>
-  <!-- Flat Flight Deck (Long Horizontal Runway) -->
-  <polygon points="1,16 4,14 31,14 29,16" fill="#475569" stroke="#0f172a" stroke-width="0.8"/>
-  <!-- Runway Centerline Dashes -->
-  <line x1="5" y1="15" x2="9" y2="15" stroke="#f8fafc" stroke-width="0.8"/>
-  <line x1="13" y1="15" x2="17" y2="15" stroke="#f8fafc" stroke-width="0.8"/>
-  <line x1="21" y1="15" x2="25" y2="15" stroke="#f8fafc" stroke-width="0.8"/>
-  <!-- Island Superstructure & Radar Mast (Starboard / Right) -->
-  <rect x="22" y="9" width="4.5" height="5" rx="0.5" fill="#1e293b" stroke="#0f172a" stroke-width="0.5"/>
-  <line x1="24.2" y1="9" x2="24.2" y2="4.5" stroke="#0f172a" stroke-width="1"/>
-  <line x1="22" y1="6" x2="26.5" y2="6" stroke="#0f172a" stroke-width="0.8"/>
+  <rect width="128" height="128" rx="20" fill="url(#carrierBg)"/>
+  <rect x="2" y="2" width="124" height="124" rx="19" fill="none" stroke="#38bdf8" stroke-width="1.5" opacity="0.4"/>
+
+  <!-- Ocean Waves / Ship Wake -->
+  <path d="M4 116 C30 108 50 114 70 106 C90 98 110 108 126 102" fill="none" stroke="#38bdf8" stroke-width="2" opacity="0.4"/>
+  <path d="M10 122 C35 116 65 120 95 112 C115 106 124 110 128 108" fill="none" stroke="#bae6fd" stroke-width="1.2" opacity="0.3"/>
+
+  <!-- Massive Flat-top Flight Deck -->
+  <polygon points="12,106 38,20 86,16 116,92 108,102" fill="url(#flightDeckWood)" stroke="#020617" stroke-width="2"/>
+  <line x1="22" y1="92" x2="98" y2="78" stroke="#475569" stroke-width="0.8"/>
+  <line x1="30" y1="64" x2="90" y2="52" stroke="#475569" stroke-width="0.8"/>
+  <line x1="36" y1="40" x2="88" y2="30" stroke="#475569" stroke-width="0.8"/>
+
+  <!-- Runway White Dashed Centerline -->
+  <line x1="26" y1="100" x2="34" y2="78" stroke="#f8fafc" stroke-width="3" stroke-linecap="round"/>
+  <line x1="39" y1="66" x2="47" y2="46" stroke="#f8fafc" stroke-width="3" stroke-linecap="round"/>
+  <line x1="52" y1="36" x2="60" y2="22" stroke="#f8fafc" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Bold Carrier Number "9" -->
+  <text x="66" y="32" font-family="Arial, sans-serif" font-weight="900" font-size="16" fill="#f8fafc" opacity="0.9" transform="rotate(-18 66 32)">9</text>
+
+  <!-- Starboard Island Superstructure -->
+  <polygon points="86,42 98,38 102,68 88,72" fill="#64748b" stroke="#0f172a" stroke-width="1.5"/>
+  <rect x="91" y="46" width="6" height="18" fill="#1e293b"/>
+  <line x1="95" y1="38" x2="95" y2="20" stroke="#94a3b8" stroke-width="1.8"/>
+  <line x1="91" y1="24" x2="99" y2="24" stroke="#94a3b8" stroke-width="1.5"/>
+  <rect x="92" y="16" width="6" height="5" fill="#f8fafc" opacity="0.8"/>
+
+  <!-- Parked Carrier Aircraft -->
+  <g transform="translate(48, 76) rotate(-20)">
+    <polygon points="10,0 2,12 18,12" fill="#1d4ed8" stroke="#0f172a" stroke-width="0.8"/>
+    <ellipse cx="10" cy="8" rx="8" ry="2" fill="#1e40af"/>
+  </g>
+  <g transform="translate(68, 72) rotate(-20)">
+    <polygon points="10,0 2,12 18,12" fill="#1d4ed8" stroke="#0f172a" stroke-width="0.8"/>
+    <ellipse cx="10" cy="8" rx="8" ry="2" fill="#1e40af"/>
+  </g>
+  <g transform="translate(38, 92) rotate(-20)">
+    <polygon points="10,0 2,12 18,12" fill="#1d4ed8" stroke="#0f172a" stroke-width="0.8"/>
+    <ellipse cx="10" cy="8" rx="8" ry="2" fill="#1e40af"/>
+  </g>
 </svg>

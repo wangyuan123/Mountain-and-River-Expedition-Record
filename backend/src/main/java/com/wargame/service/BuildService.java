@@ -6,6 +6,7 @@ import com.wargame.model.constants.BuildingDef;
 import com.wargame.model.constants.ItemDef;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
+import com.wargame.util.JsonUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +35,8 @@ public class BuildService {
     private com.wargame.service.CityScope cityScope;
     @org.springframework.beans.factory.annotation.Autowired
     private WorldTerrainService terrain;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.repository.OfficerRepository officerRepository;
 
     private final BuildingRepository buildingRepository;
     private final ConstructionRepository constructionRepository;
@@ -63,8 +66,11 @@ public class BuildService {
                             "academy", "staff", "lab", "radar", "wall", "apron", "liaison", "depot", "transit", "exchange")
     );
 
-    /** 同时施工上限 - JS: if (jobs.length >= 2) */
-    private static final int MAX_CONCURRENT = 2;
+    /** 每城开局提供 6 支施工队，新建、升级与拆除共用；与前端 build.js 保持一致。 */
+    private static final int MAX_CONCURRENT = 6;
+
+    /** 剩余工期不超过 5 分钟时可免费完工；通过游戏状态同步给前端。 */
+    public static final int FREE_SPEED_UP_SECONDS = 300;
 
     /** 取消施工退款比例（JS 中无 cancel，采用 50%） */
     private static final double CANCEL_REFUND_RATIO = 0.5;
@@ -108,11 +114,11 @@ public class BuildService {
             return result;
         }
 
-        // 2. 检查施工队数量上限（JS: if (jobs.length >= 2)）
+        // 2. 检查当前城市的施工队数量上限
         List<Construction> allJobs = constructionRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         if (allJobs.size() >= MAX_CONCURRENT) {
             result.put("success", false);
-            result.put("message", "两支施工队都在忙，请等待完成");
+            result.put("message", MAX_CONCURRENT + " 支施工队都在忙，请等待完成");
             return result;
         }
 
@@ -219,7 +225,7 @@ public class BuildService {
         //     sec = 30 * pow(2.4, lv - 1); return min(86400, ceil(sec * techMul));
         //   Lv.1=30s  Lv.2=1.2分  Lv.3=2.9分  Lv.4=6.9分  Lv.5=16.6分
         //   Lv.6=40分  Lv.7=1.6时  Lv.8=3.8时   Lv.9=9.2时  Lv.10=22时(封顶24h)
-        double techMul = Math.max(0.5, buildMul(playerId));
+        double techMul = Math.max(0.35, buildDurationMul(playerId));
         double sec = 30 * Math.pow(2.4, curLv);
         int duration = (int) Math.min(86400L, Math.ceil(sec * techMul));
 
@@ -286,7 +292,7 @@ public class BuildService {
         List<Construction> allJobs = constructionRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         if (allJobs.size() >= MAX_CONCURRENT) {
             result.put("success", false);
-            result.put("message", "两支施工队都在忙，请等待完成");
+            result.put("message", MAX_CONCURRENT + " 支施工队都在忙，请等待完成");
             return result;
         }
 
@@ -324,7 +330,7 @@ public class BuildService {
         }
 
         // 6. 计算拆除时间（与升级到当前等级消耗相同的时间）
-        double techMul = Math.max(0.5, buildMul(playerId));
+        double techMul = Math.max(0.35, buildDurationMul(playerId));
         double sec = 30 * Math.pow(2.4, curLv - 1);
         int duration = (int) Math.min(86400L, Math.ceil(sec * techMul));
 
@@ -433,6 +439,34 @@ public class BuildService {
         result.put("slot", multi ? slot : null);
         result.put("refund", refund);
 
+        return result;
+    }
+
+    /** 免费完成当前城市的指定工程，沿用正常完工的建筑、声望和任务结算。 */
+    @Transactional
+    public Map<String, Object> freeSpeedUp(Long playerId, Long queueId) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("success", false);
+        // 与 TickService 共用玩家锁，串行处理自动完工及重复点击，避免重复结算。
+        playerRepository.lockById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
+        Construction target = constructionRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId))
+                .stream().filter(c -> c.getId().equals(queueId)).findFirst().orElse(null);
+        if (target == null || target.getFinishAt() == null) {
+            result.put("message", "该工程已完成或不存在，请刷新施工队列");
+            return result;
+        }
+        long now = System.currentTimeMillis();
+        if (target.getFinishAt() - now > FREE_SPEED_UP_SECONDS * 1000L) {
+            result.put("message", "剩余施工时间不超过5分钟时才可免费加速");
+            return result;
+        }
+        target.setFinishAt(now);
+        constructionRepository.save(target);
+        completeUpgrade(playerId, now);
+        result.put("success", true);
+        result.put("completed", true);
+        result.put("queueId", queueId);
+        result.put("message", "免费加速成功，工程已完成！");
         return result;
     }
 
@@ -811,6 +845,34 @@ public class BuildService {
     private double buildMul(Long playerId) {
         int logBuild = techLevel(playerId, "log_build");
         return 1 - 0.05 * logBuild;
+    }
+
+    /** 建造工期系数：叠加科技系数与市长营造技能加速（每级缩短4%工期，最高20%） */
+    private double buildDurationMul(Long playerId) {
+        double mul = buildMul(playerId);
+        int constructLv = getMayorConstructLevel(playerId);
+        if (constructLv > 0) {
+            mul *= (1.0 - 0.04 * constructLv);
+        }
+        return mul;
+    }
+
+    private int getMayorConstructLevel(Long playerId) {
+        if (officerRepository == null || cityScope == null || playerId == null) return 0;
+        try {
+            List<Officer> list = officerRepository.findByPlayerIdAndCitySlotAndRole(playerId, cityScope.slot(playerId), "mayor");
+            if (list == null || list.isEmpty()) return 0;
+            Officer mayor = list.get(0);
+            if (mayor.getSkills() == null || mayor.getSkills().isBlank()) return 0;
+            List<Map<String, Object>> skills = JsonUtil.parseList(mayor.getSkills());
+            for (Map<String, Object> sk : skills) {
+                if ("construct".equals(sk.get("id"))) {
+                    Object lv = sk.get("lv");
+                    return lv instanceof Number ? ((Number) lv).intValue() : 0;
+                }
+            }
+        } catch (Exception ignored) {}
+        return 0;
     }
 
     /** 获取玩家某项科技等级 */

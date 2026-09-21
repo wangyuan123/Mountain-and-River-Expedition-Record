@@ -19,10 +19,10 @@ window.Game = window.Game || {};
   }
 
   function equipmentName(itemId) {
-    var m = /^(recruit|officer|marshal)_(military|logistics|knowledge)_(weapon|badge|coat)$/.exec(itemId || '');
+    var m = /^(recruit|officer|marshal)_(military|defense|logistics|knowledge)_(weapon|badge|coat)$/.exec(itemId || '');
     if (!m) return itemId || '装备';
     var tiers = { recruit: '列兵', officer: '校官', marshal: '元帅' };
-    var branches = { military: '军事', logistics: '后勤', knowledge: '学识' };
+    var branches = { military: '军事', defense: '防御', logistics: '后勤', knowledge: '学识' };
     var slots = { weapon: '武器', badge: '徽章', coat: '外套' };
     return tiers[m[1]] + branches[m[2]] + slots[m[3]];
   }
@@ -54,8 +54,39 @@ window.Game = window.Game || {};
   }
 
   var Officer = {
-    refreshAcademy: function (force) {
-      G.API.refreshAcademy().then(function () {
+    onRefreshClick: function (e) {
+      if (e && e.currentTarget && typeof document !== 'undefined') {
+        var btn = e.currentTarget;
+        var rippleContainer = btn.querySelector ? btn.querySelector('.btn-ripple-container') : null;
+        if (rippleContainer && btn.getBoundingClientRect) {
+          var rect = btn.getBoundingClientRect();
+          var size = Math.max(rect.width, rect.height) * 2.2;
+          var clientX = (e.clientX != null) ? e.clientX : (rect.left + rect.width / 2);
+          var clientY = (e.clientY != null) ? e.clientY : (rect.top + rect.height / 2);
+          var x = clientX - rect.left;
+          var y = clientY - rect.top;
+          var wave = document.createElement('span');
+          wave.className = 'water-ripple-wave';
+          wave.style.width = size + 'px';
+          wave.style.height = size + 'px';
+          wave.style.left = (x - size / 2) + 'px';
+          wave.style.top = (y - size / 2) + 'px';
+          rippleContainer.appendChild(wave);
+          setTimeout(function () {
+            if (wave && wave.parentNode) wave.parentNode.removeChild(wave);
+          }, 700);
+        }
+      }
+      return Officer.refreshAcademy();
+    },
+
+    refreshAcademy: function () {
+      return G.API.refreshAcademy().then(function (resp) {
+        if (!resp || resp.success === false) {
+          G.toast((resp && resp.message) || '刷新失败');
+          Core.render();
+          return;
+        }
         G.toast('军校已刷新');
         if (G.MainQuest && G.MainQuest.refresh) G.MainQuest.refresh();
         Core.render();
@@ -504,7 +535,7 @@ window.Game = window.Game || {};
       var o = findOfficer(s.officers, officerId);
       if (!o) return;
       var wrap = document.getElementById('attr-add-' + attr);
-      var attrNames = { logistics: '后勤', military: '军事', knowledge: '学识' };
+      var attrNames = { logistics: '后勤', military: '军事', defense: '防御', knowledge: '学识' };
       if (action === 'confirm') {
         var input = document.getElementById('attr-input-' + attr);
         var n = customVal !== undefined ? customVal : (input ? parseInt(input.value, 10) : 0);
@@ -612,12 +643,24 @@ window.Game = window.Game || {};
       if (academyLv <= 0) {
         h += '<div class="panel"><div class="d">尚未建造军校,无法招募军官。请到 <b>军事</b> 建造 <b>军校</b> 后再来。</div></div>';
       } else {
+        // 概率由后端下发，明确按整批计算，避免误解为每名候选人独立抽取。
+        var batchChance = s.academy.fiveStarBatchChance;
+        if (typeof batchChance === 'number') {
+          h += '<div class="desc">每次刷新7名候选人，整批出现1名五星的概率：<b>' +
+            Number((batchChance * 100).toFixed(2)) + '%</b>；每批最多1名五星。军校1级为0.3%，10级为3%，每级增加0.3%。</div>';
+        }
         var mins = s.academy.refreshAt > now ? Math.ceil((s.academy.refreshAt - now) / 60000) : 0;
-        h += '<div class="menu-item ok" onclick="Game.Officer.refreshAcademy(' + (s.academy.refreshAt > now) + ')">';
-        h += '<span class="num">[刷]</span> ';
-        h += s.academy.refreshAt > now
-          ? '<span class="n">立即刷新(200金,自动还剩 ' + mins + ' 分)</span>'
-          : '<span class="n">刷新候选人(200金)</span>';
+        h += '<div class="academy-refresh-row">';
+        if (mins > 0) {
+          h += '<button type="button" class="btn academy-refresh-btn cooling" disabled>';
+          h += '  <span class="refresh-icon">⏳</span> 刷新休整中 (' + mins + ' 分钟后可再次刷新)';
+          h += '</button>';
+        } else {
+          h += '<button type="button" class="btn ok academy-refresh-btn with-ripple" onclick="Game.Officer.onRefreshClick(event)">';
+          h += '  <span class="btn-ripple-container"></span>';
+          h += '  <span class="refresh-icon">⟳</span> 刷新候选人 (200金)';
+          h += '</button>';
+        }
         h += '</div>';
 
         if (!s.academy.list || !s.academy.list.length) {
@@ -632,9 +675,13 @@ window.Game = window.Game || {};
             h += '<div class="' + cls + '">';
             h += '<span class="n" style="color:' + D.starColor[o.star] + '">' + o.name + '</span> ';
             h += '<span class="stars">' + starStr(o.star) + '</span>';
-            h += '<div class="d">后勤' + o.logistics + ' 军事' + o.military + ' 学识' + o.knowledge + skillText(o) + '</div>';
+            h += '<div class="d">后勤' + o.logistics + ' 军事' + o.military + ' 防御' + (o.defense || 0) + ' 学识' + o.knowledge + skillText(o) + '</div>';
             h += '<div class="cost">招募: 金' + cost + '</div>';
-            h += '<div class="btn-row"><button class="btn" onclick="Game.Officer.recruit(' + i + ')">招募</button></div>';
+            if (can) {
+              h += '<div class="officer-recruit-act"><span class="link-act" onclick="event.stopPropagation();Game.Officer.recruit(' + i + ')">[招募]</span></div>';
+            } else {
+              h += '<div class="officer-recruit-act"><span class="link-act disabled" title="黄金不足">[招募]</span></div>';
+            }
             h += '</div>';
           });
           h += '</div>';
@@ -676,7 +723,7 @@ window.Game = window.Game || {};
           h += '<span class="stars">' + starStr(o.star) + '</span> ';
           h += '<span class="lv">Lv.' + o.level + (o.level >= G.OFFICER_MAX_LEVEL ? '(满)' : '') + '</span> ';
           h += '<span class="lv">' + roleText(o.role) + '</span>';
-          h += '<div class="d">后勤' + o.logistics + ' 军事' + o.military + ' 学识' + o.knowledge + skillText(o) + '</div>';
+          h += '<div class="d">后勤' + o.logistics + ' 军事' + o.military + ' 防御' + (o.defense || 0) + ' 学识' + o.knowledge + skillText(o) + '</div>';
           h += '<div class="d">忠诚' + (o.loyalty || 0) + ' 薪资' + (o.salary || 0) + '金/h</div>';
           if (o.level < G.OFFICER_MAX_LEVEL) {
             h += '<div class="expbar"><div class="expfill" style="width:' + Math.min(100, pct) + '%"></div></div>';
@@ -730,12 +777,15 @@ window.Game = window.Game || {};
     equipmentName: function (itemId) {
       var names = {
         recruit_military_weapon: '列兵军刀', recruit_military_badge: '列兵臂章', recruit_military_coat: '列兵作训服',
+        recruit_defense_weapon: '列兵护身盾', recruit_defense_badge: '列兵坚守勋章', recruit_defense_coat: '列兵防弹背心',
         recruit_logistics_weapon: '列兵工具包', recruit_logistics_badge: '列兵通行证', recruit_logistics_coat: '列兵工作服',
         recruit_knowledge_weapon: '列兵笔记本', recruit_knowledge_badge: '列兵学员章', recruit_knowledge_coat: '列兵学员服',
         officer_military_weapon: '校官军刀', officer_military_badge: '校官勋章', officer_military_coat: '校官军服',
+        officer_defense_weapon: '校官防暴盾', officer_defense_badge: '校官铁壁勋章', officer_defense_coat: '校官重装防弹甲',
         officer_logistics_weapon: '校官补给箱', officer_logistics_badge: '校官调度章', officer_logistics_coat: '校官军需服',
         officer_knowledge_weapon: '校官战术罗盘', officer_knowledge_badge: '校官参谋章', officer_knowledge_coat: '校官参谋服',
         marshal_military_weapon: '元帅佩剑', marshal_military_badge: '元帅将星', marshal_military_coat: '元帅礼服',
+        marshal_defense_weapon: '元帅重装盾', marshal_defense_badge: '元帅不屈之星', marshal_defense_coat: '元帅钛金铠',
         marshal_logistics_weapon: '元帅辎重车', marshal_logistics_badge: '元帅军需印', marshal_logistics_coat: '元帅长袍',
         marshal_knowledge_weapon: '元帅望远镜', marshal_knowledge_badge: '元帅军师印', marshal_knowledge_coat: '元帅军礼服'
       };
@@ -750,7 +800,7 @@ window.Game = window.Game || {};
       for (var i = 0; i < equipped.length; i++) {
         var e = equipped[i]; used[e.slot] = true;
         h += '<div style="margin:5px 0"><b>' + (slots[e.slot] || e.slot) + '：</b>' + this.equipmentName(e.itemId) +
-          ' <span class="d">军事+' + (e.military || 0) + ' 后勤+' + (e.logistics || 0) + ' 学识+' + (e.knowledge || 0) + '</span>' +
+          ' <span class="d">军事+' + (e.military || 0) + ' 防御+' + (e.defense || 0) + ' 后勤+' + (e.logistics || 0) + ' 学识+' + (e.knowledge || 0) + '</span>' +
           ' <button class="btn sm warn" onclick="Game.Officer.unequip(\'' + o.id + '\',\'' + e.itemId + '\')">卸下</button></div>';
       }
       var bonuses = o.setBonuses || [];
@@ -812,6 +862,7 @@ window.Game = window.Game || {};
       var canAdd = (o.attrPoints || 0) > 0;
       h += '<div style="margin:4px 0;display:flex;align-items:center;flex-wrap:wrap">后勤: <b>' + o.logistics + '</b> / ' + G.ATTR_MAX + (o.role === 'mayor' ? ' <span class="d" style="color:var(--accent);margin-left:4px">(市长:资源+' + o.logistics + '%)</span>' : '') + (canAdd && o.logistics < G.ATTR_MAX ? ' <button class="btn sm ok" style="padding:1px 8px;margin-left:6px;font-weight:bold" onclick="Game.Officer.addAttr(\'' + o.id + '\',\'logistics\')">+</button>' : '') + '<span id="attr-add-logistics"></span></div>';
       h += '<div style="margin:4px 0;display:flex;align-items:center;flex-wrap:wrap">军事: <b>' + o.military + '</b> / ' + G.ATTR_MAX + (o.role === 'commander' ? ' <span class="d" style="color:var(--accent);margin-left:4px">(指挥官:攻击+' + o.military + '%)</span>' : '') + (canAdd && o.military < G.ATTR_MAX ? ' <button class="btn sm ok" style="padding:1px 8px;margin-left:6px;font-weight:bold" onclick="Game.Officer.addAttr(\'' + o.id + '\',\'military\')">+</button>' : '') + '<span id="attr-add-military"></span></div>';
+      h += '<div style="margin:4px 0;display:flex;align-items:center;flex-wrap:wrap">防御: <b>' + (o.defense || 0) + '</b> / ' + G.ATTR_MAX + (o.role === 'commander' ? ' <span class="d" style="color:var(--accent);margin-left:4px">(指挥官:防御+' + (o.defense || 0) + '%)</span>' : '') + (canAdd && (o.defense || 0) < G.ATTR_MAX ? ' <button class="btn sm ok" style="padding:1px 8px;margin-left:6px;font-weight:bold" onclick="Game.Officer.addAttr(\'' + o.id + '\',\'defense\')">+</button>' : '') + '<span id="attr-add-defense"></span></div>';
       h += '<div style="margin:4px 0;display:flex;align-items:center;flex-wrap:wrap">学识: <b>' + o.knowledge + '</b> / ' + G.ATTR_MAX + (o.role === 'mayor' ? ' <span class="d" style="color:var(--accent);margin-left:4px">(市长:黄金+' + o.knowledge + '%)</span>' : '') + (canAdd && o.knowledge < G.ATTR_MAX ? ' <button class="btn sm ok" style="padding:1px 8px;margin-left:6px;font-weight:bold" onclick="Game.Officer.addAttr(\'' + o.id + '\',\'knowledge\')">+</button>' : '') + '<span id="attr-add-knowledge"></span></div>';
       h += '<div id="wash-row" class="btn-row" style="flex-wrap:wrap;margin-top:8px">';
       h += '<button class="btn warn sm" onclick="Game.Officer.wash(\'' + o.id + '\',\'ask\')">洗点(200金)</button>';

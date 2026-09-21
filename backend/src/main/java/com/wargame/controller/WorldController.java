@@ -91,6 +91,21 @@ public class WorldController {
         return ResponseEntity.ok(result);
     }
 
+    @GetMapping("/battle")
+    public ResponseEntity<Map<String, Object>> battle(@RequestParam Long marchId) {
+        Long playerId = authService.getCurrentPlayer().getId();
+        return ResponseEntity.ok(marchService.getTacticalBattle(playerId, marchId));
+    }
+
+    @PostMapping("/battle/command")
+    public ResponseEntity<Map<String, Object>> battleCommand(@RequestParam Long marchId,
+                                                               @RequestBody GameDtos.BattleCommandRequest request) {
+        Long playerId = authService.getCurrentPlayer().getId();
+        Map<String, Object> result = marchService.executeTacticalRound(playerId, marchId, request);
+        result.put("state", gameStateService.getGameState(playerId));
+        return ResponseEntity.ok(result);
+    }
+
     @PostMapping("/declare-war")
     public ResponseEntity<Map<String, Object>> declareWar(@RequestBody GameDtos.DeclareWarRequest request) {
         if (request.targetCityId() == null) {

@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.random.RandomGenerator;
 
 /**
  * 军官管理服务 - 对应 JS 中 G.Officer 和 G.genOfficer 的后端实现。
@@ -45,7 +46,7 @@ public class OfficerService {
     private final com.wargame.service.quest.QuestService questService;
 
     /** 军官属性上限 - 对应 JS G.ATTR_MAX */
-    private static final int ATTR_MAX = 255;
+    private static final int ATTR_MAX = 219;
     /** 军官等级上限 - 对应 JS G.OFFICER_MAX_LEVEL */
     private static final int OFFICER_MAX_LEVEL = 100;
     /** 军校刷新费用 - 对应 JS refreshAcademy 中 var cost = 200（约 6.7 小时黄金产出） */
@@ -97,6 +98,12 @@ public class OfficerService {
         Map<String, Object> result = new LinkedHashMap<>();
 
         long now = System.currentTimeMillis();
+        int academyLv = buildingLevel(playerId, "academy");
+        if (academyLv <= 0) {
+            result.put("success", false);
+            result.put("message", "请先建造军校");
+            return result;
+        }
         Academy academy = getOrCreateAcademy(playerId);
         long refreshAt = academy.getRefreshAt() != null ? academy.getRefreshAt() : 0L;
 
@@ -104,13 +111,11 @@ public class OfficerService {
         if (refreshAt > now) {
             long mins = (long) Math.ceil((refreshAt - now) / 60000.0);
             result.put("success", false);
-            result.put("message", "军校 " + mins + " 分钟后自动刷新");
+            result.put("message", "军校 " + mins + " 分钟后可再次刷新");
             return result;
         }
 
-        // JS: if (force) { cost = 50; check gold; deduct }
-        int liaisonLv = buildingLevel(playerId, "liaison");
-        // force=true (主动刷新需花费黄金)
+        // 主动刷新整批候选人需花费黄金。
         Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (res == null || getGold(res) < ACADEMY_REFRESH_COST) {
             result.put("success", false);
@@ -120,11 +125,7 @@ public class OfficerService {
         setGold(res, getGold(res) - ACADEMY_REFRESH_COST);
         resourcesRepository.save(res);
 
-        // JS: for (i = 0; i < count; i++) list.push(G.genOfficer(liaisonLv))
-        List<Map<String, Object>> list = new ArrayList<>();
-        for (int i = 0; i < ACADEMY_COUNT; i++) {
-            list.add(genOfficer(liaisonLv));
-        }
+        List<Map<String, Object>> list = genAcademyCandidates(academyLv, ThreadLocalRandom.current());
 
         academy.setOfficers(JsonUtil.toJson(list));
         academy.setRefreshAt(now + ACADEMY_REFRESH_COOLDOWN);
@@ -201,6 +202,7 @@ public class OfficerService {
         officer.setLevel(1);
         officer.setLogistics(getInt(o, "logistics"));
         officer.setMilitary(getInt(o, "military"));
+        officer.setDefense(getInt(o, "defense"));
         officer.setKnowledge(getInt(o, "knowledge"));
         officer.setLoyalty(getInt(o, "loyalty"));
         officer.setSalary(getInt(o, "salary"));
@@ -555,7 +557,7 @@ public class OfficerService {
             }
 
             int upgraded = 100 - level;
-            int pointsGained = upgraded * 4;
+            int pointsGained = upgraded;
             officer.setLevel(100);
             officer.setExp(0L);
             officer.setAttrPoints((officer.getAttrPoints() != null ? officer.getAttrPoints() : 0) + pointsGained);
@@ -648,7 +650,7 @@ public class OfficerService {
         if (level >= 100) {
             curExp = 0L;
         }
-        int pointsGained = upgraded * 4;
+        int pointsGained = upgraded;
         officer.setLevel(level);
         officer.setExp(curExp);
         officer.setAttrPoints((officer.getAttrPoints() != null ? officer.getAttrPoints() : 0) + pointsGained);
@@ -676,7 +678,7 @@ public class OfficerService {
             result.put("message", "分配点数必须大于 0");
             return result;
         }
-        if (!"military".equals(attr) && !"logistics".equals(attr) && !"knowledge".equals(attr)) {
+        if (!"military".equals(attr) && !"defense".equals(attr) && !"logistics".equals(attr) && !"knowledge".equals(attr)) {
             result.put("success", false);
             result.put("message", "未知的属性类型: " + attr);
             return result;
@@ -701,6 +703,9 @@ public class OfficerService {
         if ("military".equals(attr)) {
             currentVal = officer.getMilitary() != null ? officer.getMilitary() : 0;
             attrName = "军事";
+        } else if ("defense".equals(attr)) {
+            currentVal = officer.getDefense() != null ? officer.getDefense() : 0;
+            attrName = "防御";
         } else if ("logistics".equals(attr)) {
             currentVal = officer.getLogistics() != null ? officer.getLogistics() : 0;
             attrName = "后勤";
@@ -709,10 +714,10 @@ public class OfficerService {
             attrName = "学识";
         }
 
-        int maxAdd = Math.max(0, 255 - currentVal);
+        int maxAdd = Math.max(0, ATTR_MAX - currentVal);
         if (maxAdd <= 0) {
             result.put("success", false);
-            result.put("message", attrName + " 已达到上限 (255)");
+            result.put("message", attrName + " 已达到上限 (" + ATTR_MAX + ")");
             return result;
         }
 
@@ -720,6 +725,8 @@ public class OfficerService {
         int newVal = currentVal + actualAdd;
         if ("military".equals(attr)) {
             officer.setMilitary(newVal);
+        } else if ("defense".equals(attr)) {
+            officer.setDefense(newVal);
         } else if ("logistics".equals(attr)) {
             officer.setLogistics(newVal);
         } else {
@@ -764,22 +771,55 @@ public class OfficerService {
         resourcesRepository.save(res);
 
         int star = officer.getStar() != null ? officer.getStar() : 1;
-        int base = 30 + star * 12;
-        officer.setMilitary(base);
-        officer.setLogistics(base);
-        officer.setKnowledge(base);
-
         int level = officer.getLevel() != null ? officer.getLevel() : 1;
-        int totalPoints = Math.max(0, (level - 1) * 4);
+        int totalPoints = Math.max(0, level - 1);
+
+        if (star >= 5) {
+            int curMil = officer.getMilitary() != null ? officer.getMilitary() : 0;
+            int curDef = officer.getDefense() != null ? officer.getDefense() : 0;
+            int curLog = officer.getLogistics() != null ? officer.getLogistics() : 0;
+            int curKno = officer.getKnowledge() != null ? officer.getKnowledge() : 0;
+            int maxVal = Math.max(Math.max(curMil, curDef), Math.max(curLog, curKno));
+            int mainBase = 120;
+            if (curMil == maxVal) {
+                officer.setMilitary(mainBase);
+                officer.setDefense(75);
+                officer.setLogistics(75);
+                officer.setKnowledge(75);
+            } else if (curDef == maxVal) {
+                officer.setDefense(mainBase);
+                officer.setMilitary(75);
+                officer.setLogistics(75);
+                officer.setKnowledge(75);
+            } else if (curLog == maxVal) {
+                officer.setLogistics(mainBase);
+                officer.setMilitary(75);
+                officer.setDefense(75);
+                officer.setKnowledge(75);
+            } else {
+                officer.setKnowledge(mainBase);
+                officer.setMilitary(75);
+                officer.setDefense(75);
+                officer.setLogistics(75);
+            }
+        } else {
+            int base = 30 + star * 12;
+            officer.setMilitary(base);
+            officer.setDefense(base);
+            officer.setLogistics(base);
+            officer.setKnowledge(base);
+        }
+
         officer.setAttrPoints(totalPoints);
         officerRepository.save(officer);
 
         result.put("success", true);
         result.put("message", officer.getName() + " 洗点成功！属性恢复初始值，返还 " + totalPoints + " 点可分配属性点");
         result.put("attrPoints", totalPoints);
-        result.put("military", base);
-        result.put("logistics", base);
-        result.put("knowledge", base);
+        result.put("military", officer.getMilitary());
+        result.put("defense", officer.getDefense());
+        result.put("logistics", officer.getLogistics());
+        result.put("knowledge", officer.getKnowledge());
         return result;
     }
 
@@ -945,17 +985,32 @@ public class OfficerService {
         return switch (branch) { case "military" -> "军事"; case "logistics" -> "后勤"; default -> "学识"; };
     }
 
-    // ================================================================
-    //  genOfficer - 对应 JS G.genOfficer(liaisonLv)
-    //  与前端 JS 保持一致的生成逻辑
-    // ================================================================
+    /** 军校整批出现一名五星的概率：每级增加 0.3%，1 级 0.3%，10 级满级 3%。 */
+    public static double academyFiveStarBatchChance(int academyLevel) {
+        if (academyLevel <= 0) return 0;
+        return Math.min(10, academyLevel) * 0.003;
+    }
 
+    /** 整批只判定一次五星；命中后随机放入一个位置，其余候选人仅生成 1～4 星。 */
+    List<Map<String, Object>> genAcademyCandidates(int academyLevel, RandomGenerator rng) {
+        boolean hasFiveStar = rng.nextDouble() < academyFiveStarBatchChance(academyLevel);
+        int fiveStarSlot = hasFiveStar ? rng.nextInt(ACADEMY_COUNT) : -1;
+        List<Map<String, Object>> list = new ArrayList<>();
+        for (int i = 0; i < ACADEMY_COUNT; i++) {
+            int star = 5;
+            if (i != fiveStarSlot) {
+                // 保留旧普通招募中 1～4 星的相对权重，排除再次独立抽出五星。
+                double roll = rng.nextDouble() * 0.985;
+                star = roll < 0.5 ? 1 : roll < 0.78 ? 2 : roll < 0.92 ? 3 : 4;
+            }
+            list.add(genOfficerWithStar(star));
+        }
+        return list;
+    }
+
+    /** 道具生成沿用既有规则；普通军校刷新使用整批概率入口。 */
     public Map<String, Object> genOfficer(int liaisonLv) {
         ThreadLocalRandom rng = ThreadLocalRandom.current();
-
-        // JS: var name = names[Math.floor(Math.random() * names.length)]
-        List<String> names = GameConstants.OFFICER_NAMES;
-        String name = names.get(rng.nextInt(names.size()));
 
         // JS: var starBias = liaisonLv || 0
         int starBias = liaisonLv;
@@ -969,13 +1024,60 @@ public class OfficerService {
         else if (starRoll < 0.985) star = 4;
         else star = 5;
 
-        // JS: var base = 30 + star * 12 + Math.floor(Math.random() * 10)
-        int base = 30 + star * 12 + rng.nextInt(10);
+        return genOfficerWithStar(star);
+    }
 
-        // JS: logistics = rollAttr(base, 10) = min(ATTR_MAX, base + floor(random*10) + 10)
-        int logistics = Math.min(ATTR_MAX, base + rng.nextInt(10) + 10);
-        int military = Math.min(ATTR_MAX, base + rng.nextInt(10) - 8);
-        int knowledge = Math.min(ATTR_MAX, base + rng.nextInt(10) - 5);
+    /** 先确定星级，再生成对应初始属性与技能，避免仅改星标导致品质不匹配。 */
+    private Map<String, Object> genOfficerWithStar(int star) {
+        ThreadLocalRandom rng = ThreadLocalRandom.current();
+        List<String> names = GameConstants.OFFICER_NAMES;
+        String name = names.get(rng.nextInt(names.size()));
+
+        int military;
+        int defense;
+        int logistics;
+        int knowledge;
+        int base;
+
+        if (star >= 5) {
+            base = 120;
+            int specialtyRoll = rng.nextInt(4); // 0: military, 1: defense, 2: logistics, 3: knowledge
+            int mainAttr = 111 + rng.nextInt(10); // 111 ~ 120 (极品满级可达 219)
+            int subAttr1 = 50 + rng.nextInt(51);  // 50 ~ 100
+            int subAttr2 = 50 + rng.nextInt(51);  // 50 ~ 100
+            int subAttr3 = 50 + rng.nextInt(51);  // 50 ~ 100
+
+            if (specialtyRoll == 0) {
+                military = mainAttr;
+                defense = subAttr1;
+                logistics = subAttr2;
+                knowledge = subAttr3;
+            } else if (specialtyRoll == 1) {
+                defense = mainAttr;
+                military = subAttr1;
+                logistics = subAttr2;
+                knowledge = subAttr3;
+            } else if (specialtyRoll == 2) {
+                logistics = mainAttr;
+                military = subAttr1;
+                defense = subAttr2;
+                knowledge = subAttr3;
+            } else {
+                knowledge = mainAttr;
+                military = subAttr1;
+                defense = subAttr2;
+                logistics = subAttr3;
+            }
+        } else {
+            // JS: var base = 30 + star * 12 + Math.floor(Math.random() * 10)
+            base = 30 + star * 12 + rng.nextInt(10);
+
+            // JS: logistics = rollAttr(base, 10) = min(ATTR_MAX, base + floor(random*10) + 10)
+            logistics = Math.min(ATTR_MAX, base + rng.nextInt(10) + 10);
+            military = Math.min(ATTR_MAX, base + rng.nextInt(10) - 8);
+            defense = Math.min(ATTR_MAX, base + rng.nextInt(10) - 6);
+            knowledge = Math.min(ATTR_MAX, base + rng.nextInt(10) - 5);
+        }
 
         // JS: genSkills(star)
         List<Map<String, Object>> skills = genSkills(star);
@@ -996,6 +1098,7 @@ public class OfficerService {
         officer.put("bio", bio);
         officer.put("logistics", logistics);
         officer.put("military", military);
+        officer.put("defense", defense);
         officer.put("knowledge", knowledge);
         officer.put("skills", skills);
         officer.put("loyalty", loyalty);
@@ -1005,37 +1108,26 @@ public class OfficerService {
     }
 
     // ================================================================
-    //  genSkills - 对应 JS genSkills(star)
+    //  genSkills - 1-5星军官默认都带1个技能，在当前技能库中随机挑选一个
     // ================================================================
 
     private List<Map<String, Object>> genSkills(int star) {
         ThreadLocalRandom rng = ThreadLocalRandom.current();
-        // JS: var count = star >= 5 ? 3 : (star >= 3 ? 2 : 1)
-        int count = star >= 5 ? 3 : (star >= 3 ? 2 : 1);
-
         List<String> pool = new ArrayList<>(GameData.OFFICER_SKILLS.keySet());
-        List<Map<String, Object>> picked = new ArrayList<>();
-        Set<String> used = new HashSet<>();
-
-        while (picked.size() < count && !pool.isEmpty()) {
-            int idx = rng.nextInt(pool.size());
-            String sid = pool.get(idx);
-            if (used.contains(sid)) {
-                pool.remove(idx);
-                continue;
-            }
-            used.add(sid);
-            pool.remove(idx);
-
-            OfficerSkillDef skDef = GameData.OFFICER_SKILLS.get(sid);
-            // JS: var lv = Math.min(max, 1 + Math.floor(Math.random() * Math.max(1, star)))
-            int lv = Math.min(skDef.max(), 1 + rng.nextInt(Math.max(1, star)));
-
-            Map<String, Object> sk = new LinkedHashMap<>();
-            sk.put("id", sid);
-            sk.put("lv", lv);
-            picked.add(sk);
+        if (pool.isEmpty()) {
+            return new ArrayList<>();
         }
+
+        String sid = pool.get(rng.nextInt(pool.size()));
+        OfficerSkillDef skDef = GameData.OFFICER_SKILLS.get(sid);
+        int lv = Math.min(skDef.max(), 1 + rng.nextInt(Math.max(1, star)));
+
+        Map<String, Object> sk = new LinkedHashMap<>();
+        sk.put("id", sid);
+        sk.put("lv", lv);
+
+        List<Map<String, Object>> picked = new ArrayList<>();
+        picked.add(sk);
         return picked;
     }
 

@@ -74,7 +74,7 @@ test('珠宝宝箱在珠宝分类中显示开启宝箱按钮而非前往晋升�
   let html = '';
   G.Depot.renderView({ set innerHTML(value) { html = value; } });
   assert.match(html, /🗃️ 军衔珠宝宝箱/);
-  assert.match(html, /onclick="Game\.Depot\.useItem\('box_gem'\)">开启宝箱<\/button>/);
-  assert.match(html, /onclick="Game\.go\('mainQuest'\)">前往晋升军衔<\/button>/);
+  assert.match(html, /onclick="Game\.Depot\.useItem\('box_gem'\)">\[?开启宝箱\]?<\/button>/);
+  assert.match(html, /onclick="Game\.go\('mainQuest'\)">\[?前往晋升军衔\]?<\/button>/);
 });
 

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img">
+<defs>
+  <radialGradient id="bg" cx="42%" cy="34%" r="80%"><stop offset="0" stop-color="#163755"/><stop offset="1" stop-color="#081524"/></radialGradient>
+  <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b7c5c8"/><stop offset="0.46" stop-color="#5c7b8b"/><stop offset="1" stop-color="#20282b"/></linearGradient>
+  <linearGradient id="olive" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#687b72"/><stop offset="1" stop-color="#334c4b"/></linearGradient>
+  <linearGradient id="warm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0d28b"/><stop offset="1" stop-color="#e0b768"/></linearGradient>
+  <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%"><feGaussianBlur in="SourceAlpha" stdDeviation="2.3"/><feOffset dy="2"/><feComponentTransfer><feFuncA type="linear" slope="0.55"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <filter id="soft"><feGaussianBlur stdDeviation="0.7"/></filter>
+  <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.72" numOctaves="2" stitchTiles="stitch"/><feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 .07 0"/></filter>
+</defs>
+<rect width="128" height="128" rx="12" fill="url(#bg)"/>
+<circle cx="64" cy="64" r="52" fill="none" stroke="#47728f" stroke-opacity=".32" stroke-width="1"/>
+<circle cx="64" cy="64" r="48" fill="none" stroke="#fff" stroke-opacity=".06" stroke-width="1"/>
+<rect width="128" height="128" rx="12" filter="url(#grain)" opacity=".28"/>
+
+<g filter="url(#shadow)" transform="rotate(-8 64 64)">
+  <ellipse cx="64" cy="89" rx="47" ry="7" fill="#000" opacity=".38" filter="url(#soft)"/>
+  <path d="M61 17 L68 17 L72 44 L111 59 L109 67 L73 62 L70 88 L58 88 L55 62 L19 67 L17 59 L56 44 Z" fill="url(#metal)" stroke="#11181d" stroke-width="1.2"/>
+  <path d="M60 19 L65 19 L68 85 L59 85 Z" fill="url(#olive)"/>
+  <path d="M27 59 L55 52 L55 61 L23 65 Z M73 52 L101 59 L105 65 L73 61 Z" fill="#5c7b8b"/>
+  <path d="M55 47 L64 43 L73 47 L70 57 L58 57 Z" fill="#8ed0e3" stroke="#19262b" stroke-width="1"/>
+  <g fill="#20282b" stroke="#b9b9aa" stroke-width=".8"><circle cx="41" cy="57" r="3.2"/><circle cx="87" cy="57" r="3.2"/><circle cx="47" cy="59" r="2.5"/><circle cx="81" cy="59" r="2.5"/></g>
+  <path d="M61 85 L64 94 L67 85" fill="none" stroke="#e0b768" stroke-width="1.2"/>
+</g>
+</svg>

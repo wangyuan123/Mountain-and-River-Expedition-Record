@@ -5,25 +5,25 @@ window.Game = window.Game || {};
   var Core = G.Core;
   var D = G.DATA;
 
-  // 兵种实体图标映射 (使用军事实体 SVG 图标)
-  var UNIT_ICON = {
-    infantry: 'img/units/infantry.svg',
-    motor: 'img/units/motor.svg',
-    truck: 'img/units/truck.svg',
-    armored: 'img/units/armored.svg',
-    ltank: 'img/units/ltank.svg',
-    htank: 'img/units/htank.svg',
-    assault: 'img/units/assault.svg',
-    rocket: 'img/units/rocket.svg',
-    scout: 'img/units/scout.svg',
-    special: 'img/units/special.svg',
-    fighter: 'img/units/fighter.svg',
-    bomber: 'img/units/bomber.svg',
-    transport: 'img/units/transport.svg',
-    destroyer: 'img/units/destroyer.svg',
-    sub: 'img/units/sub.svg',
-    battleship: 'img/units/battleship.svg',
-    carrier: 'img/units/carrier.svg'
+  // 首页总览使用写实武器模型；独立映射避免影响其他页面的紧凑兵种图标。
+  var UNIT_MODEL = {
+    infantry: 'img/units/models/infantry.webp',
+    motor: 'img/units/models/motor.webp',
+    truck: 'img/units/models/truck.webp',
+    armored: 'img/units/models/armored.webp',
+    ltank: 'img/units/models/ltank.webp',
+    htank: 'img/units/models/htank.webp',
+    assault: 'img/units/models/assault.webp',
+    rocket: 'img/units/models/rocket.webp',
+    scout: 'img/units/models/scout.webp',
+    special: 'img/units/models/special.webp',
+    fighter: 'img/units/models/fighter.webp',
+    bomber: 'img/units/models/bomber.webp',
+    transport: 'img/units/models/transport.webp',
+    destroyer: 'img/units/models/destroyer.webp',
+    sub: 'img/units/models/sub.webp',
+    battleship: 'img/units/models/battleship.webp',
+    carrier: 'img/units/models/carrier.webp'
   };
 
   function renderArmySummaryList() {
@@ -48,13 +48,21 @@ window.Game = window.Game || {};
     var html = '';
     for (var i = 0; i < top.length; i++) {
       var u = top[i];
-      var rawIcon = UNIT_ICON[u.id] || '⚔';
+      var rawIcon = UNIT_MODEL[u.id] || (G.UNIT_ICON && G.UNIT_ICON[u.id]) || '⚔';
       var iconHtml = /\.svg$|\.png$|\.jpg$|\.webp$/i.test(rawIcon)
         ? '<img class="army-summary-icon-img" src="' + rawIcon + '" alt="' + G.escapeHtml(u.name) + '"/>'
         : rawIcon;
-      html += '<div class="army-summary-item">'
+      var displayName = (G && typeof G.unitDisplayName === 'function')
+        ? G.unitDisplayName(u.name)
+        : (function (name) {
+            var codeMatch = name.match(/[（(]([^）)]+)[）)]/);
+            var code = codeMatch ? codeMatch[1].trim() : '';
+            var base = name.indexOf('-') > 0 ? name.split('-')[0].trim() : name.replace(/[（(].*?[）)]/, '').trim();
+            return code ? base + '(' + code + ')' : base;
+          })(u.name);
+      html += '<div class="army-summary-item" title="' + G.escapeHtml(u.name) + ' × ' + G.fmt(u.cnt) + '">'
             + '<span class="army-summary-icon">' + iconHtml + '</span>'
-            + '<span class="army-summary-name">' + G.escapeHtml(u.name) + '</span>'
+            + '<span class="army-summary-name">' + G.escapeHtml(displayName) + '</span>'
             + '<span class="army-summary-cnt">' + G.fmt(u.cnt) + '</span>'
             + '</div>';
     }
@@ -83,7 +91,11 @@ window.Game = window.Game || {};
     var totalCount = officers.length;
     var html = '';
 
-    html += '<div class="zone-head"><span class="zone-title">🎖️ 军官将领</span><span class="zone-sub">已招募 ' + totalCount + ' 名</span></div>';
+    html += '<div class="zone-head">'
+          + '<span class="zone-title">🎖️ 军官将领</span>'
+          + '<span class="zone-sub">已招募 ' + totalCount + ' 名</span>'
+          + '<span class="home-officer-go zone-head-action" onclick="event.stopPropagation();Game.go(\'academy\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.stopPropagation();Game.go(\'academy\');event.preventDefault();}" role="button" tabindex="0" title="点击前往军校 · 招募将领">去招募 &gt;</span>'
+          + '</div>';
     html += '<div class="home-officer-card" onclick="Game.go(\'officer\')" role="button" tabindex="0" title="点击前往参谋部 · 军官管理">';
 
     if (totalCount === 0) {
@@ -193,14 +205,14 @@ window.Game = window.Game || {};
     { key: '1', label: '资源', route: 'buildRes' },
     { key: '2', label: '军事', route: 'buildArmy' },
     { key: '3', label: '军队', route: 'army' },
-    { key: '4', label: '科技', route: 'tech' },
-    { key: '5', label: '地图', route: 'world' },
-    { key: '6', label: '军情', route: 'alerts' },
-    { key: '7', label: '战报', route: 'reports' },
-    { key: '8', label: '邮件', route: 'mail' },
-    { key: '9', label: '任务', route: 'mainQuest' },
-    { key: '0', label: '军团', route: 'guild' },
-    { key: '·', label: '仓库', route: 'depot' }
+    { key: '4', label: '地图', route: 'world' },
+    { key: '5', label: '情报', route: 'alerts' },
+    { key: '6', label: '战报', route: 'reports' },
+    { key: '7', label: '邮件', route: 'mail' },
+    { key: '8', label: '任务', route: 'mainQuest' },
+    { key: '9', label: '军团', route: 'guild' },
+    { key: '0', label: '仓库', route: 'depot' },
+    { key: '·', label: '科技', route: 'tech' }
   ];
 
   function navBar() {
@@ -210,7 +222,6 @@ window.Game = window.Game || {};
     var items = [];
     var homeActive = Core.route === 'home' ? ' active' : '';
     items.push('<div class="navitem home-tab' + homeActive + '" data-route="home" onclick="Game.go(\'home\')"><span class="navlabel">首页</span></div>');
-    if (G.Cities) items.push(G.Cities.nav());
     for (var i = 0; i < NAV_ITEMS.length; i++) {
       var it = NAV_ITEMS[i];
       var action = 'Game.go(\'' + it.route + '\')';
@@ -227,6 +238,7 @@ window.Game = window.Game || {};
       }
       items.push('<div class="navitem' + active + alertCls + '" data-route="' + it.route + '" onclick="' + action + '"><span class="navnum">[' + it.key + ']</span><span class="navlabel">' + (it.icon ? '<img class="nav-icon" src="' + it.icon + '" alt="' + it.label + '"/>' : it.label) + '</span>' + mailBadge + reportsBadge + questBadge + '</div>');
     }
+    if (G.Cities) items.push(G.Cities.nav());
     // 每页两排七列，超过十四个入口才分页。
     var pageSize = 14;
     var pages = [];
@@ -386,10 +398,10 @@ window.Game = window.Game || {};
       var mayorKnow = (mayor && mayor.knowledge) ? mayor.knowledge : 0;
 
       modal.querySelector('#popSliderNum').textContent = taxVal + '%';
-      var sliderEl = modal.querySelector('#popTaxSlider');
       if (sliderEl) sliderEl.style.setProperty('--p', taxVal + '%');
 
-      var prevGold = Math.round(civ * (taxVal / 100.0) * (1 + mayorKnow / 100.0) * 2);
+      var prevFinanceBonus = Core.mayorSkillBonus ? Core.mayorSkillBonus('finance') : 0;
+      var prevGold = Math.round(civ * (taxVal / 100.0) * (1 + mayorKnow / 100.0) * (1 + prevFinanceBonus) * 2);
       modal.querySelector('#popPrevGold').textContent = '+' + G.fmt(prevGold) + '/h';
 
       var targetMorale = Math.max(0, Math.min(100, 100 - taxVal - resent));
@@ -682,7 +694,8 @@ window.Game = window.Game || {};
     var netSteel = Core.produceOf('refinery');
     var netOil = Core.produceOf('oilfield');
     var netRare = Core.produceOf('raremine');
-    var goldRate = Math.floor(Core.civilianPopulation() * (s.tax / 100) * (1 + (mayor ? mayor.knowledge / 100 : 0)) * 2);
+    var financeBonus = Core.mayorSkillBonus ? Core.mayorSkillBonus('finance') : 0;
+    var goldRate = Math.floor(Core.civilianPopulation() * (s.tax / 100) * (1 + (mayor ? mayor.knowledge / 100 : 0)) * (1 + financeBonus) * 2);
     var cap = Core.capacity();
     var caps = { food: cap.food, steel: cap.steel, oil: cap.oil, rare: cap.rare, gold: 999999 };
     var nets = { food: netFood, steel: netSteel, oil: netOil, rare: netRare, gold: goldRate };
@@ -949,7 +962,8 @@ window.Game = window.Game || {};
     var netSteel = Core.produceOf('refinery');
     var netOil = Core.produceOf('oilfield');
     var netRare = Core.produceOf('raremine');
-    var goldRate = Math.floor(Core.civilianPopulation() * (s.tax / 100) * (1 + (mayor ? mayor.knowledge / 100 : 0)) * 2);
+    var financeBonus = Core.mayorSkillBonus ? Core.mayorSkillBonus('finance') : 0;
+    var goldRate = Math.floor(Core.civilianPopulation() * (s.tax / 100) * (1 + (mayor ? mayor.knowledge / 100 : 0)) * (1 + financeBonus) * 2);
     var cap = Core.capacity();
     var caps = { food: cap.food, steel: cap.steel, oil: cap.oil, rare: cap.rare, gold: 999999 };
     var nets = { food: netFood, steel: netSteel, oil: netOil, rare: netRare, gold: goldRate };
@@ -1037,6 +1051,8 @@ window.Game = window.Game || {};
 
   G.MainView = {
     navBar: navBar,
+    renderArmySummaryList: renderArmySummaryList,
+    renderOfficerSummaryCard: renderOfficerSummaryCard,
     showResourceDetail: showResourceDetail,
     showPopulationDetailModal: showPopulationDetailModal,
     getCurrentAvatar: getCurrentAvatar,

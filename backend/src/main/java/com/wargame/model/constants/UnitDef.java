@@ -11,9 +11,9 @@ public record UnitDef(
         String key,
         String name,
         String cat,
-        int atk,
-        int def,
-        int hp,
+        double atkGround, double atkAir, double atkSea, double atkFort,
+        double def,
+        double hp,
         int spd,
         int range,
         int food,
@@ -27,75 +27,80 @@ public record UnitDef(
         Boolean autoAdvance
 ) {
     /** 便捷构造器，用于没有可选字段的单位 */
-    public UnitDef(String key, String name, String cat, int atk, int def, int hp, int spd, int range,
+    public UnitDef(String key, String name, String cat, double atkGround, double atkAir, double atkSea, double atkFort, double def, double hp, int spd, int range,
                    int food, int pop, String build, Map<String, Integer> cost, String strongVs, String branch) {
-        this(key, name, cat, atk, def, hp, spd, range, food, pop, build, cost, strongVs, branch, null, null, null);
+        this(key, name, cat, atkGround, atkAir, atkSea, atkFort, def, hp, spd, range, food, pop, build, cost, strongVs, branch, null, null, null);
     }
 
     /** 便捷构造器，带有后勤和载重 */
-    public UnitDef(String key, String name, String cat, int atk, int def, int hp, int spd, int range,
+    public UnitDef(String key, String name, String cat, double atkGround, double atkAir, double atkSea, double atkFort, double def, double hp, int spd, int range,
                    int food, int pop, String build, Map<String, Integer> cost, String strongVs, String branch,
                    boolean logistic, int load) {
-        this(key, name, cat, atk, def, hp, spd, range, food, pop, build, cost, strongVs, branch, logistic, load, null);
+        this(key, name, cat, atkGround, atkAir, atkSea, atkFort, def, hp, spd, range, food, pop, build, cost, strongVs, branch, logistic, load, null);
     }
 
+    /** 对部队的最高攻击仅供经验与概览战力估算；攻坚针对廉价工事单独定标，不计入该估值。 */
+    public double peakTroopAttack() { return Math.max(atkGround, Math.max(atkAir, atkSea)); }
+
+    // 四项依次为对地、对空、对海、对工事攻击；数值由 docs/balance/attack-design.json 独立推导；所有攻击至少为1，弱项仅保留低效火力，专项克制见 BattleRules。
+    // 与前端共用完整历史名称，确保征召提示和新战报一致；存档与战斗规则仍使用稳定的 key。
     public static final Map<String, UnitDef> UNITS;
     static {
         Map<String, UnitDef> m = new HashMap<>();
-        m.put("infantry", new UnitDef("infantry", "步兵", "inf",
-                6, 4, 30, 3, 100, 1, 1, "factory",
-                Map.of("steel", 20, "oil", 0, "rare", 0), null, "land"));
-        m.put("motor", new UnitDef("motor", "摩托兵", "inf",
-                10, 4, 30, 7, 100, 2, 1, "factory",
-                Map.of("steel", 40, "oil", 10, "rare", 0), "infantry", "land"));
-        m.put("truck", new UnitDef("truck", "卡车", "inf",
-                2, 6, 50, 8, 0, 2, 1, "factory",
-                Map.of("steel", 60, "oil", 20, "rare", 0), null, "land",
+        m.put("infantry", new UnitDef("infantry", "步兵-加兰德步枪兵（M1）", "inf",
+                6, 5, 5, 2, 15, 120, 3, 100, 1, 1, "factory",
+                Map.of("steel", 30, "oil", 0, "rare", 0), null, "land"));
+        m.put("motor", new UnitDef("motor", "摩托兵-哈雷（WLA）", "inf",
+                12, 5, 5, 5, 13, 100, 7, 140, 2, 1, "factory",
+                Map.of("steel", 35, "oil", 10, "rare", 0), "infantry", "land"));
+        m.put("truck", new UnitDef("truck", "卡车-十轮大卡（CCKW-353）", "inf",
+                2, 1, 1, 1, 5.5, 150, 6, 0, 2, 1, "factory",
+                Map.of("steel", 50, "oil", 15, "rare", 0), null, "land",
                 true, 50, false));
-        m.put("armored", new UnitDef("armored", "装甲车", "arm",
-                18, 12, 80, 7, 120, 4, 2, "factory",
-                Map.of("steel", 120, "oil", 40, "rare", 10), "fighter", "land"));
-        m.put("ltank", new UnitDef("ltank", "轻型坦克", "arm",
-                28, 22, 120, 6, 130, 5, 2, "lightfactory",
-                Map.of("steel", 200, "oil", 60, "rare", 20), "armored", "land"));
-        m.put("htank", new UnitDef("htank", "重型坦克", "arm",
-                50, 40, 220, 4, 140, 8, 4, "heavyfactory",
-                Map.of("steel", 400, "oil", 120, "rare", 50), "ltank", "land"));
-        m.put("assault", new UnitDef("assault", "突击炮", "arm",
-                60, 18, 120, 4, 300, 7, 3, "heavyfactory",
-                Map.of("steel", 360, "oil", 100, "rare", 60), "htank", "land"));
-        m.put("rocket", new UnitDef("rocket", "火箭", "arm",
-                90, 14, 100, 4, 350, 9, 4, "heavyfactory",
-                Map.of("steel", 500, "oil", 160, "rare", 100), "htank", "land"));
-        m.put("scout", new UnitDef("scout", "侦察机", "air",
-                4, 6, 30, 14, 200, 3, 1, "factory",
-                Map.of("steel", 80, "oil", 40, "rare", 10), null, "air",
+        m.put("armored", new UnitDef("armored", "装甲车-猎鹿犬防空型（T17E2）", "arm",
+                18, 33.5, 45, 36, 33, 360, 7, 300, 4, 2, "factory",
+                Map.of("steel", 180, "oil", 60, "rare", 20), "motor", "land"));
+        m.put("ltank", new UnitDef("ltank", "轻型坦克-斯图亚特（M5A1）", "arm",
+                33, 10, 55, 45, 53, 270, 6, 220, 5, 2, "lightfactory",
+                Map.of("steel", 240, "oil", 80, "rare", 25), "armored", "land"));
+        m.put("htank", new UnitDef("htank", "重型坦克-斯大林（IS-2）", "arm",
+                50, 15, 65, 50, 63.5, 385, 4, 320, 8, 4, "heavyfactory",
+                Map.of("steel", 450, "oil", 120, "rare", 50), "ltank", "land"));
+        m.put("assault", new UnitDef("assault", "突击炮-自行加榴炮（ISU-152）", "arm",
+                34, 30, 65, 167, 28, 200, 4, 750, 4, 2, "factory",
+                Map.of("steel", 200, "oil", 50, "rare", 25), "bunker", "land"));
+        m.put("rocket", new UnitDef("rocket", "火箭-喀秋莎（BM-13）", "arm",
+                100, 5, 25, 179, 28, 150, 5, 2000, 5, 3, "factory",
+                Map.of("steel", 220, "oil", 70, "rare", 45), "htank", "land"));
+        m.put("scout", new UnitDef("scout", "侦察机-闪电侦察型（F-5）", "air",
+                1, 4, 1, 1, 13, 70.5, 11, 200, 3, 1, "factory",
+                Map.of("steel", 60, "oil", 30, "rare", 10), null, "air",
                 null, null, false));
-        m.put("special", new UnitDef("special", "特种兵", "air",
-                24, 14, 60, 13, 180, 4, 2, "factory",
-                Map.of("steel", 160, "oil", 60, "rare", 30), null, "air"));
-        m.put("fighter", new UnitDef("fighter", "战斗机", "air",
-                35, 22, 90, 12, 260, 5, 2, "factory",
-                Map.of("steel", 200, "oil", 80, "rare", 30), "bomber", "air"));
-        m.put("bomber", new UnitDef("bomber", "轰炸机", "air",
-                70, 16, 110, 9, 280, 7, 3, "factory",
-                Map.of("steel", 320, "oil", 140, "rare", 60), "htank", "air"));
-        m.put("transport", new UnitDef("transport", "运输机", "air",
-                2, 12, 120, 8, 0, 5, 2, "factory",
-                Map.of("steel", 240, "oil", 100, "rare", 30), null, "air",
+        m.put("special", new UnitDef("special", "特种兵-英国突击队（Commando）", "inf",
+                30, 10, 125, 188, 5.5, 150, 8, 180, 4, 2, "factory",
+                Map.of("steel", 100, "oil", 40, "rare", 20), "howitzer", "land"));
+        m.put("fighter", new UnitDef("fighter", "战斗机-野马（P-51）", "air",
+                12, 64, 75, 5, 30, 150, 10, 350, 5, 2, "factory",
+                Map.of("steel", 220, "oil", 90, "rare", 35), "bomber", "air"));
+        m.put("bomber", new UnitDef("bomber", "轰炸机-飞行堡垒（B-17G）", "air",
+                56, 12, 95, 429, 22, 195, 8, 300, 7, 3, "factory",
+                Map.of("steel", 350, "oil", 150, "rare", 60), "htank", "air"));
+        m.put("transport", new UnitDef("transport", "运输机-空中列车（C-47）", "air",
+                1, 1, 1, 1, 10, 220, 8, 0, 5, 2, "factory",
+                Map.of("steel", 180, "oil", 80, "rare", 20), null, "air",
                 true, 80, false));
-        m.put("destroyer", new UnitDef("destroyer", "驱逐舰", "nav",
-                40, 28, 160, 6, 250, 7, 3, "port",
-                Map.of("steel", 300, "oil", 120, "rare", 60), "sub", "sea"));
-        m.put("sub", new UnitDef("sub", "潜艇", "nav",
-                65, 18, 110, 5, 230, 6, 3, "port",
-                Map.of("steel", 360, "oil", 100, "rare", 80), "battleship", "sea"));
-        m.put("battleship", new UnitDef("battleship", "战列舰", "nav",
-                100, 60, 360, 4, 320, 12, 6, "port",
-                Map.of("steel", 700, "oil", 240, "rare", 160), "destroyer", "sea"));
-        m.put("carrier", new UnitDef("carrier", "航母", "nav",
-                130, 40, 280, 4, 400, 15, 8, "port",
-                Map.of("steel", 900, "oil", 300, "rare", 240), null, "sea"));
+        m.put("destroyer", new UnitDef("destroyer", "驱逐舰-弗莱彻级（Fletcher）", "nav",
+                44, 59, 47, 35, 50, 555, 7, 400, 7, 3, "port",
+                Map.of("steel", 450, "oil", 160, "rare", 80), "sub", "sea"));
+        m.put("sub", new UnitDef("sub", "潜艇-小鲨鱼级（Gato）", "nav",
+                1, 1, 66, 1, 20, 395, 5, 100, 6, 3, "port",
+                Map.of("steel", 300, "oil", 80, "rare", 60), "battleship", "sea"));
+        m.put("battleship", new UnitDef("battleship", "战列舰-衣阿华级（Iowa）", "nav",
+                91, 35, 96, 108, 120, 1300, 6, 1600, 12, 6, "port",
+                Map.of("steel", 1200, "oil", 400, "rare", 250), "destroyer", "sea"));
+        m.put("carrier", new UnitDef("carrier", "航母-埃塞克斯级（Essex）", "nav",
+                82, 125, 80, 110, 70, 1100, 6, 1900, 15, 8, "port",
+                Map.of("steel", 1400, "oil", 500, "rare", 350), "bomber", "sea"));
         UNITS = Collections.unmodifiableMap(m);
     }
 }

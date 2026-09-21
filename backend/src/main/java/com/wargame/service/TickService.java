@@ -5,6 +5,7 @@ import com.wargame.model.constants.GameData;
 import com.wargame.model.constants.UnitDef;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
+import com.wargame.util.JsonUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
@@ -177,10 +178,15 @@ public class TickService {
             }
         }
 
-        // Food consumption
+        // Food consumption - 受粮食保存科技及市长军屯技能降低
         int logFoodLevel = getTechLevel(playerId, "log_food");
         double foodSave = 1 - 0.05 * logFoodLevel;
         if (foodSave < 0.5) foodSave = 0.5;
+        int rationLv = getOfficerSkillLevel(mayor, "ration");
+        if (rationLv > 0) {
+            foodSave *= (1.0 - 0.16 * rationLv);
+        }
+        if (foodSave < 0.1) foodSave = 0.1;
         double foodUse = foodPerHour(playerId) * foodSave * hours;
         food = (int) Math.round(Math.max(0, food - foodUse));
 
@@ -244,8 +250,9 @@ public class TickService {
             populationRemainder = 0.0;
         }
 
-        // 黄金税收以当前平民人口为基数，超过上限时不再继续增加。
-        double goldRate = civilians * (tax / 100.0) * (1 + mayorKnow / 100.0) * 2;
+        // 黄金税收以当前平民人口为基数，超过上限时不再继续增加（市长理财技能每级+8%）。
+        int financeLv = getOfficerSkillLevel(mayor, "finance");
+        double goldRate = civilians * (tax / 100.0) * (1 + mayorKnow / 100.0) * (1.0 + 0.08 * financeLv) * 2;
         long goldCap = cap.get("gold");
         if (gold < goldCap) {
             gold = (int) Math.round(Math.min(goldCap, gold + goldRate * hours));
@@ -488,16 +495,35 @@ public class TickService {
     /**
      * resBonusMul() - matches JS Core.resBonusMul
      * bonus = 1 + 0.05 * tech.log_production + mayor.logistics / 100
+     * bonus *= 1 + 0.05 * mayor.harvest
      * bonus *= 1 + 0.03 * buildings.transit
      */
     private double resBonusMul(Long playerId) {
         Officer mayor = getOfficerByRole(playerId, "mayor");
         double mayorLogi = mayor != null ? equipmentService.attributes(mayor).logistics() : 0;
+        int harvestLv = getOfficerSkillLevel(mayor, "harvest");
         int logProduction = getTechLevel(playerId, "log_production");
         double bonus = 1 + 0.05 * logProduction + mayorLogi / 100.0;
+        if (harvestLv > 0) {
+            bonus *= (1.0 + 0.10 * harvestLv);
+        }
         int transitLevel = buildingLevel(playerId, "transit");
         bonus *= 1 + 0.03 * transitLevel;
         return bonus;
+    }
+
+    private int getOfficerSkillLevel(Officer officer, String skillId) {
+        if (officer == null || officer.getSkills() == null || officer.getSkills().isBlank()) return 0;
+        try {
+            List<Map<String, Object>> list = JsonUtil.parseList(officer.getSkills());
+            for (Map<String, Object> sk : list) {
+                if (skillId.equals(sk.get("id"))) {
+                    Object lv = sk.get("lv");
+                    return lv instanceof Number ? ((Number) lv).intValue() : 0;
+                }
+            }
+        } catch (Exception ignored) {}
+        return 0;
     }
 
     /**

@@ -343,9 +343,11 @@
             var eqCnt = s.items[eqId];
             hasInCat = true;
             h += '<div class="menu-item ok">';
-            h += '<span class="n">' + eqInfo.icon + ' ' + eqInfo.name + '</span> <span class="lv">×' + eqCnt + '</span>';
+            h += '<div class="depot-item-head">' +
+              '<div class="depot-item-title"><span class="n">' + eqInfo.icon + ' ' + eqInfo.name + '</span> <span class="lv">×' + eqCnt + '</span></div>' +
+              '<button type="button" class="btn depot-btn" onclick="Game.Depot.useItem(\'' + eqId + '\')">[选择军官穿戴]</button>' +
+            '</div>';
             h += '<div class="d">' + eqInfo.desc + '</div>';
-            h += '<div class="btn-row"><button class="btn ok sm" onclick="Game.Depot.useItem(\'' + eqId + '\')">选择军官穿戴</button></div>';
             h += '</div>';
           }
         } else {
@@ -357,17 +359,21 @@
             if (cnt <= 0) continue;
             hasInCat = true;
             var cls = cnt > 0 ? 'menu-item ok' : 'menu-item lock';
-            h += '<div class="' + cls + '">';
-            h += '<span class="n">' + info.icon + ' ' + info.name + '</span> <span class="lv">×' + cnt + '</span>';
-            h += '<div class="d">' + info.desc + '</div>';
+            var btnHtml = '';
             if (cnt > 0) {
               if (info.cat === 'jewelry' && !info.isBox && iid.indexOf('box_') !== 0) {
-                h += '<div class="btn-row"><button class="btn ok sm" onclick="Game.go(\'mainQuest\')">前往晋升军衔</button></div>';
+                btnHtml = '<button type="button" class="btn depot-btn" onclick="Game.go(\'mainQuest\')">[前往晋升军衔]</button>';
               } else {
                 var btnLabel = (info.isBox || iid.indexOf('box_') === 0) ? '开启宝箱' : (iid === 'expBook' || iid === 'expBookAdv' || iid === 'expBookMax' || iid === 'loyaltyBox' || iid === 'renameCard' || iid === 'skillBook' || iid === 'starUp') ? '选择军官使用' : '使用';
-                h += '<div class="btn-row"><button class="btn ok sm" onclick="Game.Depot.useItem(\'' + iid + '\')">' + btnLabel + '</button></div>';
+                btnHtml = '<button type="button" class="btn depot-btn" onclick="Game.Depot.useItem(\'' + iid + '\')">[' + btnLabel + ']</button>';
               }
             }
+            h += '<div class="' + cls + '">';
+            h += '<div class="depot-item-head">' +
+              '<div class="depot-item-title"><span class="n">' + info.icon + ' ' + info.name + '</span> <span class="lv">×' + cnt + '</span></div>' +
+              btnHtml +
+            '</div>';
+            h += '<div class="d">' + info.desc + '</div>';
             h += '</div>';
           }
         }
@@ -470,7 +476,7 @@
       h += '<div class="d">为 <b>' + o.name + '</b> 更换新名字</div>';
       h += '<div class="edit-row" style="margin-top:6px"><label>新名字</label><input id="renameInput" class="qty" style="width:100%" maxlength="12" value="' + o.name + '" /></div>';
       h += '<div class="d" style="color:var(--muted);margin-top:4px">改名后将消耗 1 张【改名卡】,不可撤销</div>';
-      h += '<div class="btn-row" style="margin-top:6px"><button class="btn ok sm" onclick="Game.Depot.confirmRename()">确认改名</button><button class="btn sm" onclick="Game.Depot.cancelRename()">取消(退回改名卡)</button></div>';
+      h += '<div class="btn-row" style="margin-top:6px"><button type="button" class="btn depot-btn" onclick="Game.Depot.confirmRename()">[确认改名]</button><button type="button" class="btn depot-btn warn" onclick="Game.Depot.cancelRename()">[取消(退回改名卡)]</button></div>';
       h += '</div>';
       h += '<div class="menu-item back" onclick="Game.Depot.cancelRename()">[0] 返回</div>';
       v.innerHTML = h;

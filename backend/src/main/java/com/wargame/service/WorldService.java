@@ -51,10 +51,10 @@ public class WorldService {
     private final ChatService chatService;
     private final MailService mailService;
 
-    /** 宣战准备时间 (6小时) - 对应 JS var prepareSec = 6 * 3600 */
-    private static final long WAR_PREPARE_MS = 6 * 3600 * 1000L;
-    /** 交战持续时间 (24小时) - 对应 JS var warSec = 24 * 3600 */
-    private static final long WAR_DURATION_MS = 24 * 3600 * 1000L;
+    /** 宣战准备时间 (2小时) - 对应 JS var prepareSec = 2 * 3600 */
+    private static final long WAR_PREPARE_MS = 2 * 3600 * 1000L;
+    /** 交战持续时间 (48小时) - 对应 JS var warSec = 48 * 3600 */
+    private static final long WAR_DURATION_MS = 48 * 3600 * 1000L;
 
     public WorldService(PlayerRepository playerRepository,
                         WorldMapRepository worldMapRepository,
@@ -360,6 +360,7 @@ public class WorldService {
                 boolean selfCity = ownerId.equals(playerId);
                 boolean relatedWar = !selfCity && playerId.equals(owner.getWarAgainstId());
                 m.put("ownerId", ownerId);
+                m.put("playerName", owner != null ? owner.getUsername() : "");
                 m.put("selfCity", selfCity);
                 m.put("warAt", relatedWar && owner.getWarAt() != null ? owner.getWarAt() : 0L);
                 m.put("warEndAt", relatedWar && owner.getWarEndAt() != null ? owner.getWarEndAt() : 0L);
@@ -517,28 +518,59 @@ public class WorldService {
         // 世界频道广播
         try {
             String attackerName = attacker.getUsername();
-            String targetName = target.getName();
-            String content = "⚔ " + attackerName + " 对 " + targetName + " 宣战!";
+            String defenderName = defender.getUsername();
+            String content = "⚔ " + attackerName + " 对玩家「" + defenderName + "」宣战!";
             chatService.sendSystem(content);
         } catch (Exception ignored) {}
 
-        // 邮件通知被宣战方
-        if (defenderId != null) {
-            String attackerName = attacker.getUsername();
-            String targetName = target.getName();
-            String subject = "宣战通知：" + attackerName + " 向你宣战";
-            String startTime = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
-                    .withZone(ZoneId.systemDefault())
-                    .format(Instant.ofEpochMilli(warAt));
-            String body = attackerName + " 已向你的城市「" + targetName + "」宣战。\n"
-                    + "备战时间：6 小时\n"
-                    + "交战时间：24 小时\n"
-                    + "开战时间：" + startTime;
-            mailService.sendSystem(defenderId, "系统", "combat", subject, body, List.of());
+        // 邮件通知双方
+        if (mailService != null) {
+            try {
+                String attackerName = attacker.getUsername();
+                String defenderName = defender.getUsername();
+                String targetName = target.getName();
+                String targetCoord = (target.getX() != null && target.getY() != null)
+                        ? " (" + target.getX() + ", " + target.getY() + ")" : "";
+                String startTime = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+                        .withZone(ZoneId.systemDefault())
+                        .format(Instant.ofEpochMilli(warAt));
+                String endTime = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+                        .withZone(ZoneId.systemDefault())
+                        .format(Instant.ofEpochMilli(warEndTime));
+
+                // 1. 发给宣战发起方 (attacker)
+                String attackerSubject = "【宣战公告】已对玩家「" + defenderName + "」宣战";
+                String attackerBody = "指挥官，您已正式向玩家「" + defenderName + "」的城市「" + targetName + "」" + targetCoord + "发起宣战！\n\n"
+                        + "【战争时间安排】\n"
+                        + "· 备战时间：2 小时（倒计时中）\n"
+                        + "· 开战时间：" + startTime + "\n"
+                        + "· 交战时间：48 小时\n"
+                        + "· 终战时间：" + endTime + "\n\n"
+                        + "【战术作战指示】\n"
+                        + "1. 备战期间双方处于戒备状态，无法发动直接军事进攻，但可派遣侦察部队收集目标城防情报。\n"
+                        + "2. 备战倒计时结束后，战争状态正式激活，即可派出作战部队发起进攻或掠夺。\n"
+                        + "3. 宣战后双方城池均进入战争状态，对方亦可发起进攻与反击，请务必调派得力军官与主力部队留守城防！";
+                mailService.sendSystem(playerId, "系统", "combat", attackerSubject, attackerBody, List.of());
+
+                // 2. 发给被宣战方 (defender)
+                if (defenderId != null) {
+                    String defenderSubject = "【战争警报】玩家「" + attackerName + "」向你宣战！";
+                    String defenderBody = "警报！玩家「" + attackerName + "」已向你的城市「" + targetName + "」" + targetCoord + "发起宣战！\n\n"
+                            + "【战争时间安排】\n"
+                            + "· 备战时间：2 小时\n"
+                            + "· 开战时间：" + startTime + "\n"
+                            + "· 交战时间：48 小时\n"
+                            + "· 终战时间：" + endTime + "\n\n"
+                            + "【防守应对建议】\n"
+                            + "1. 备战期间敌军尚无法发起军事进攻，请抓紧时间检视并巩固城防设施。\n"
+                            + "2. 请尽快调配精锐部队与强力军官进驻城防，或联络盟友准备联防与反击！";
+                    mailService.sendSystem(defenderId, "系统", "combat", defenderSubject, defenderBody, List.of());
+                }
+            } catch (Exception ignored) {}
         }
 
         result.put("success", true);
-        result.put("message", "已宣战! 6小时后可交战,持续24小时");
+        result.put("message", "已宣战! 2小时后可交战,持续48小时");
         result.put("warAt", warAt);
         result.put("warEndAt", warEndTime);
         return result;

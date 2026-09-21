@@ -13,7 +13,7 @@ import java.util.Map;
  */
 public record OfficerEquipmentDef(String key, String name, String description, String setKey,
                                   String setName, String branch, String slot, int tier,
-                                  int requiredLevel, int military, int logistics, int knowledge) {
+                                  int requiredLevel, int military, int defense, int logistics, int knowledge) {
     public static final Map<String, OfficerEquipmentDef> ITEMS = createItems();
 
     private static Map<String, OfficerEquipmentDef> createItems() {
@@ -29,11 +29,12 @@ public record OfficerEquipmentDef(String key, String name, String description, S
     }
 
     /**
-     * 注册一整套（3 个分支）。
+     * 注册一整套（4 个分支）。
      */
     private static void addSet(Map<String, OfficerEquipmentDef> items, String tierKey, String tierName,
                                int requiredLevel, int primary, int secondary, int setPrimary) {
         addBranch(items, tierKey, tierName, requiredLevel, primary, secondary, setPrimary, "military", "军事");
+        addBranch(items, tierKey, tierName, requiredLevel, primary, secondary, setPrimary, "defense", "防御");
         addBranch(items, tierKey, tierName, requiredLevel, primary, secondary, setPrimary, "logistics", "后勤");
         addBranch(items, tierKey, tierName, requiredLevel, primary, secondary, setPrimary, "knowledge", "学识");
     }
@@ -59,6 +60,7 @@ public record OfficerEquipmentDef(String key, String name, String description, S
                                 String tierKey, String tierName, String branchName,
                                 String slot, String slotLabel, String itemName) {
         int military = branch.equals("military") ? primary : secondary;
+        int defense = branch.equals("defense") ? primary : secondary;
         int logistics = branch.equals("logistics") ? primary : secondary;
         int knowledge = branch.equals("knowledge") ? primary : secondary;
         String key = setKey + "_" + slot;
@@ -71,7 +73,7 @@ public record OfficerEquipmentDef(String key, String name, String description, S
                 + "。";
         int tierNum = tierKey.equals("recruit") ? 1 : tierKey.equals("officer") ? 2 : 3;
         items.put(key, new OfficerEquipmentDef(key, itemName, desc, setKey, setName, branch, slot,
-                tierNum, level, military, logistics, knowledge));
+                tierNum, level, military, defense, logistics, knowledge));
     }
 
     // —— 武器槽位名称 ——
@@ -79,16 +81,19 @@ public record OfficerEquipmentDef(String key, String name, String description, S
         return switch (tierKey) {
             case "recruit" -> switch (branch) {
                 case "military" -> "列兵军刀";
+                case "defense" -> "列兵护身盾";
                 case "logistics" -> "列兵工具包";
                 default -> "列兵笔记本";
             };
             case "officer" -> switch (branch) {
                 case "military" -> "校官军刀";
+                case "defense" -> "校官防暴盾";
                 case "logistics" -> "校官补给箱";
                 default -> "校官战术罗盘";
             };
             default -> switch (branch) {
                 case "military" -> "元帅佩剑";
+                case "defense" -> "元帅重装盾";
                 case "logistics" -> "元帅辎重车";
                 default -> "元帅望远镜";
             };
@@ -100,16 +105,19 @@ public record OfficerEquipmentDef(String key, String name, String description, S
         return switch (tierKey) {
             case "recruit" -> switch (branch) {
                 case "military" -> "列兵臂章";
+                case "defense" -> "列兵坚守勋章";
                 case "logistics" -> "列兵通行证";
                 default -> "列兵学员章";
             };
             case "officer" -> switch (branch) {
                 case "military" -> "校官勋章";
+                case "defense" -> "校官铁壁勋章";
                 case "logistics" -> "校官调度章";
                 default -> "校官参谋章";
             };
             default -> switch (branch) {
                 case "military" -> "元帅将星";
+                case "defense" -> "元帅不屈之星";
                 case "logistics" -> "元帅军需印";
                 default -> "元帅军师印";
             };
@@ -121,16 +129,19 @@ public record OfficerEquipmentDef(String key, String name, String description, S
         return switch (tierKey) {
             case "recruit" -> switch (branch) {
                 case "military" -> "列兵作训服";
+                case "defense" -> "列兵防弹背心";
                 case "logistics" -> "列兵工作服";
                 default -> "列兵学员服";
             };
             case "officer" -> switch (branch) {
                 case "military" -> "校官军服";
+                case "defense" -> "校官重装防弹甲";
                 case "logistics" -> "校官军需服";
                 default -> "校官参谋服";
             };
             default -> switch (branch) {
                 case "military" -> "元帅礼服";
+                case "defense" -> "元帅钛金铠";
                 case "logistics" -> "元帅长袍";
                 default -> "元帅军礼服";
             };

@@ -100,7 +100,7 @@ class MarchCommanderBattleTest extends BaseServiceTest {
         List<Map<String, Object>> skills = (List<Map<String, Object>>) attackerCmd.get("skills");
         assertNotNull(skills);
         assertFalse(skills.isEmpty(), "尼米兹的技能列表应存在");
-        assertEquals("闪电战", skills.get(0).get("name"));
+        assertEquals("闪电突击", skills.get(0).get("name"));
 
         // 核心断言: 尼米兹必须获得战斗结算经验 (原先遗漏)
         Officer refreshedNimitz = officerRepository.findById(nimitz.getId()).orElseThrow();

@@ -1,0 +1,494 @@
+{
+  "version": "balance-v7-lean-multipliers-20260920",
+  "economyWeights": {
+    "steel": 1,
+    "oil": 2,
+    "rare": 4
+  },
+  "profiles": {
+    "infantry": {
+      "role": "廉价地面基础兵",
+      "attacks": {
+        "atkGround": {
+          "target": "infantry",
+          "volleys": 6,
+          "multiplier": 1
+        },
+        "atkAir": {
+          "baseline": true
+        },
+        "atkSea": {
+          "baseline": true
+        },
+        "atkFort": {
+          "target": "bunker",
+          "volleys": 64,
+          "multiplier": 1
+        }
+      }
+    },
+    "motor": {
+      "role": "快速反步兵与侧翼突击",
+      "attacks": {
+        "atkGround": {
+          "target": "infantry",
+          "volleys": 4.5,
+          "multiplier": 2
+        },
+        "atkAir": {
+          "baseline": true
+        },
+        "atkSea": {
+          "baseline": true
+        },
+        "atkFort": {
+          "target": "bunker",
+          "volleys": 72,
+          "multiplier": 1
+        }
+      }
+    },
+    "truck": {
+      "role": "运输后勤，仅接触自卫",
+      "attacks": {
+        "atkGround": {
+          "target": "infantry",
+          "volleys": 90,
+          "multiplier": 1
+        },
+        "atkAir": {
+          "baseline": true
+        },
+        "atkSea": {
+          "baseline": true
+        },
+        "atkFort": {
+          "baseline": true
+        }
+      }
+    },
+    "armored": {
+      "role": "反步兵与机动防空护航",
+      "attacks": {
+        "atkGround": {
+          "target": "motor",
+          "volleys": 9,
+          "multiplier": 1.75
+        },
+        "atkAir": {
+          "target": "bomber",
+          "volleys": 1.75,
+          "multiplier": 1
+        },
+        "atkSea": {
+          "target": "destroyer",
+          "volleys": 32,
+          "multiplier": 1
+        },
+        "atkFort": {
+          "target": "bunker",
+          "volleys": 48,
+          "multiplier": 1
+        }
+      }
+    },
+    "ltank": {
+      "role": "机动反装甲车与反炮兵",
+      "attacks": {
+        "atkGround": {
+          "target": "armored",
+          "volleys": 7,
+          "multiplier": 1.5
+        },
+        "atkAir": {
+          "target": "scout",
+          "volleys": 40,
+          "multiplier": 1
+        },
+        "atkSea": {
+          "target": "destroyer",
+          "volleys": 16,
+          "multiplier": 1
+        },
+        "atkFort": {
+          "target": "bunker",
+          "volleys": 64,
+          "multiplier": 1
+        }
+      }
+    },
+    "htank": {
+      "role": "高耐久前排掩护，反轻坦",
+      "attacks": {
+        "atkGround": {
+          "relativeTo": "ltank",
+          "field": "atkGround",
+          "factor": 1.5,
+          "offset": 0
+        },
+        "atkAir": {
+          "target": "scout",
+          "volleys": 80,
+          "multiplier": 1
+        },
+        "atkSea": {
+          "target": "destroyer",
+          "volleys": 48,
+          "multiplier": 1
+        },
+        "atkFort": {
+          "target": "bunker",
+          "volleys": 120,
+          "multiplier": 1
+        }
+      }
+    },
+    "assault": {
+      "role": "远程多用途火力与攻坚支援",
+      "attacks": {
+        "atkGround": {
+          "target": "ltank",
+          "volleys": 8,
+          "multiplier": 1
+        },
+        "atkAir": {
+          "target": "fighter",
+          "volleys": 4,
+          "multiplier": 1
+        },
+        "atkSea": {
+          "target": "destroyer",
+          "volleys": 10,
+          "multiplier": 1
+        },
+        "atkFort": {
+          "target": "bunker",
+          "volleys": 12,
+          "multiplier": 1
+        }
+      }
+    },
+    "rocket": {
+      "role": "远程反重装甲，防空火力极弱",
+      "attacks": {
+        "atkGround": {
+          "relativeTo": "htank",
+          "field": "atkGround",
+          "factor": 2,
+          "offset": 0
+        },
+        "atkAir": {
+          "baseline": true
+        },
+        "atkSea": {
+          "target": "destroyer",
+          "volleys": 9,
+          "multiplier": 1
+        },
+        "atkFort": {
+          "target": "bunker",
+          "volleys": 16,
+          "multiplier": 1
+        }
+      }
+    },
+    "scout": {
+      "role": "侦察为主，保留微弱多用途自卫火力",
+      "attacks": {
+        "atkGround": {
+          "baseline": true
+        },
+        "atkAir": {
+          "target": "scout",
+          "volleys": 10,
+          "multiplier": 1
+        },
+        "atkSea": {
+          "baseline": true
+        },
+        "atkFort": {
+          "baseline": true
+        }
+      }
+    },
+    "special": {
+      "role": "绕过前排的反炮兵与工事破袭",
+      "attacks": {
+        "atkGround": {
+          "target": "rocket",
+          "volleys": 2,
+          "multiplier": 2
+        },
+        "atkAir": {
+          "baseline": true
+        },
+        "atkSea": {
+          "baseline": true
+        },
+        "atkFort": {
+          "relativeTo": "rocket",
+          "field": "atkFort",
+          "factor": 1.05,
+          "offset": 0
+        }
+      }
+    },
+    "fighter": {
+      "role": "制空拦截，低效对地",
+      "attacks": {
+        "atkGround": {
+          "target": "infantry",
+          "volleys": 72,
+          "multiplier": 1
+        },
+        "atkAir": {
+          "target": "bomber",
+          "volleys": 1.5,
+          "multiplier": 1.15
+        },
+        "atkSea": {
+          "target": "destroyer",
+          "volleys": 48,
+          "multiplier": 1
+        },
+        "atkFort": {
+          "target": "bunker",
+          "volleys": 640,
+          "multiplier": 1
+        }
+      }
+    },
+    "bomber": {
+      "role": "对地、反舰与攻坚，依赖护航",
+      "attacks": {
+        "atkGround": {
+          "target": "htank",
+          "volleys": 15,
+          "multiplier": 2
+        },
+        "atkAir": {
+          "target": "fighter",
+          "volleys": 30,
+          "multiplier": 1
+        },
+        "atkSea": {
+          "target": "battleship",
+          "volleys": 11,
+          "multiplier": 1
+        },
+        "atkFort": {
+          "target": "bunker",
+          "volleys": 14,
+          "multiplier": 1
+        }
+      }
+    },
+    "transport": {
+      "role": "空中运输，保留微弱自卫火力",
+      "attacks": {
+        "atkGround": {
+          "baseline": true
+        },
+        "atkAir": {
+          "baseline": true
+        },
+        "atkSea": {
+          "baseline": true
+        },
+        "atkFort": {
+          "baseline": true
+        }
+      }
+    },
+    "destroyer": {
+      "role": "反潜与舰队防空护航",
+      "attacks": {
+        "atkGround": {
+          "target": "infantry",
+          "volleys": 32,
+          "multiplier": 1
+        },
+        "atkAir": {
+          "target": "bomber",
+          "volleys": 3,
+          "multiplier": 1
+        },
+        "atkSea": {
+          "target": "sub",
+          "volleys": 2,
+          "multiplier": 2.5
+        },
+        "atkFort": {
+          "target": "bunker",
+          "volleys": 160,
+          "multiplier": 1
+        }
+      }
+    },
+    "sub": {
+      "role": "海上伏击大型舰艇",
+      "attacks": {
+        "atkGround": {
+          "baseline": true
+        },
+        "atkAir": {
+          "baseline": true
+        },
+        "atkSea": {
+          "target": "battleship",
+          "volleys": 3.5,
+          "multiplier": 3
+        },
+        "atkFort": {
+          "baseline": true
+        }
+      }
+    },
+    "battleship": {
+      "role": "重型对海与岸轰火力",
+      "attacks": {
+        "atkGround": {
+          "target": "htank",
+          "volleys": 40,
+          "multiplier": 1
+        },
+        "atkAir": {
+          "target": "bomber",
+          "volleys": 12,
+          "multiplier": 1
+        },
+        "atkSea": {
+          "target": "destroyer",
+          "volleys": 6,
+          "multiplier": 1.75
+        },
+        "atkFort": {
+          "target": "bunker",
+          "volleys": 120,
+          "multiplier": 1
+        }
+      }
+    },
+    "carrier": {
+      "role": "远程制空与航空支援",
+      "attacks": {
+        "atkGround": {
+          "target": "htank",
+          "volleys": 48,
+          "multiplier": 1.25
+        },
+        "atkAir": {
+          "target": "bomber",
+          "volleys": 4.5,
+          "multiplier": 1
+        },
+        "atkSea": {
+          "target": "battleship",
+          "volleys": 24,
+          "multiplier": 1
+        },
+        "atkFort": {
+          "target": "bunker",
+          "volleys": 160,
+          "multiplier": 1
+        }
+      }
+    },
+    "bunker": {
+      "role": "固定反步兵掩体",
+      "attacks": {
+        "atkGround": {
+          "target": "infantry",
+          "volleys": 12,
+          "multiplier": 1.5
+        },
+        "atkAir": {
+          "baseline": true
+        },
+        "atkSea": {
+          "baseline": true
+        },
+        "atkFort": {
+          "baseline": true
+        }
+      }
+    },
+    "howitzer": {
+      "role": "固定远程反步兵与岸防",
+      "attacks": {
+        "atkGround": {
+          "target": "infantry",
+          "volleys": 4,
+          "multiplier": 1.5
+        },
+        "atkAir": {
+          "baseline": true
+        },
+        "atkSea": {
+          "target": "destroyer",
+          "volleys": 2,
+          "multiplier": 1
+        },
+        "atkFort": {
+          "target": "bunker",
+          "volleys": 24,
+          "multiplier": 1
+        }
+      }
+    },
+    "antitank": {
+      "role": "固定反装甲与岸防",
+      "attacks": {
+        "atkGround": {
+          "target": "ltank",
+          "volleys": 1.5,
+          "multiplier": 2
+        },
+        "atkAir": {
+          "baseline": true
+        },
+        "atkSea": {
+          "target": "destroyer",
+          "volleys": 2,
+          "multiplier": 1
+        },
+        "atkFort": {
+          "target": "bunker",
+          "volleys": 60,
+          "multiplier": 1
+        }
+      }
+    },
+    "flak": {
+      "role": "固定防空火力",
+      "attacks": {
+        "atkGround": {
+          "target": "infantry",
+          "volleys": 22,
+          "multiplier": 1
+        },
+        "atkAir": {
+          "target": "fighter",
+          "volleys": 1,
+          "multiplier": 1
+        },
+        "atkSea": {
+          "target": "destroyer",
+          "volleys": 8,
+          "multiplier": 1
+        },
+        "atkFort": {
+          "baseline": true
+        }
+      }
+    }
+  },
+  "minimumAttack": 1,
+  "rangeRelations": {
+    "rocket": {
+      "relativeTo": "assault",
+      "factor": 2,
+      "offset": 500
+    }
+  }
+}

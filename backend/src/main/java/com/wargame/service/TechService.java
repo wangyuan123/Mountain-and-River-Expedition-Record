@@ -5,6 +5,7 @@ import com.wargame.model.constants.ItemDef;
 import com.wargame.model.constants.TechDef;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
+import com.wargame.util.JsonUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,6 +62,9 @@ public class TechService {
         this.speedUpSupport = speedUpSupport;
     }
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.repository.OfficerRepository officerRepository;
+
     // ================================================================
     //  upgrade / startResearch - 开始研发科技
     // ================================================================
@@ -115,7 +119,7 @@ public class TechService {
 
         // 5. 计算费用与工期 (JS: techCost - baseCost * growth^lv)
         Map<String, Integer> cost = calcTechCost(techType, lv);
-        int duration = calcTechDuration(techType, lv, labLv);
+        int duration = calcTechDuration(playerId, techType, lv, labLv);
 
         // 6. 检查资源是否充足 (JS: Core.costEnough)
         if (!costEnough(playerId, cost)) {
@@ -353,14 +357,38 @@ public class TechService {
     }
 
     // ================================================================
-    //  calcTechDuration - 计算研发工期（秒）
+    //  calcTechDuration - 计算研发工期（秒，受科研中心等级及市长格物技能加速）
     // ================================================================
 
-    public int calcTechDuration(String techType, int currentLevel, int labLevel) {
+    public int calcTechDuration(Long playerId, String techType, int currentLevel, int labLevel) {
         double base = 30.0 * Math.pow(1.8, Math.max(0, currentLevel));
         double labSpeed = 1.0 + 0.10 * Math.max(0, labLevel - 1);
-        int duration = (int) Math.round(base / labSpeed);
+        int researchLv = getMayorResearchLevel(playerId);
+        double mayorSpeed = 1.0 + 0.08 * researchLv;
+        int duration = (int) Math.round(base / (labSpeed * mayorSpeed));
         return Math.max(5, Math.min(86400, duration));
+    }
+
+    public int calcTechDuration(String techType, int currentLevel, int labLevel) {
+        return calcTechDuration(null, techType, currentLevel, labLevel);
+    }
+
+    private int getMayorResearchLevel(Long playerId) {
+        if (officerRepository == null || cityScope == null || playerId == null) return 0;
+        try {
+            List<Officer> list = officerRepository.findByPlayerIdAndCitySlotAndRole(playerId, cityScope.slot(playerId), "mayor");
+            if (list == null || list.isEmpty()) return 0;
+            Officer mayor = list.get(0);
+            if (mayor.getSkills() == null || mayor.getSkills().isBlank()) return 0;
+            List<Map<String, Object>> skills = JsonUtil.parseList(mayor.getSkills());
+            for (Map<String, Object> sk : skills) {
+                if ("research".equals(sk.get("id"))) {
+                    Object lv = sk.get("lv");
+                    return lv instanceof Number ? ((Number) lv).intValue() : 0;
+                }
+            }
+        } catch (Exception ignored) {}
+        return 0;
     }
 
     // ================================================================

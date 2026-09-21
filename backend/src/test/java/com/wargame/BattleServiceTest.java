@@ -1,6 +1,7 @@
 package com.wargame;
 
 import com.wargame.model.dto.BattleResult;
+import com.wargame.model.constants.UnitDef;
 import com.wargame.service.BattleService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -18,7 +19,7 @@ class BattleServiceTest {
     @BeforeEach
     void setUp() {
         // BattleService has no repository dependencies — only uses static GameData
-        battleService = new BattleService();
+        battleService = new BattleService(0);
     }
 
     @Test
@@ -47,7 +48,7 @@ class BattleServiceTest {
     void testStrongerArmyWins() {
         // Defender: 10 infantry (atk=6, def=4, hp=30 each)
         Map<String, Integer> garrison = Map.of("infantry", 10);
-        // Attacker: 100 heavy tanks (atk=50, def=40, hp=220 each) — overwhelmingly stronger
+        // Attacker: 100 heavy tanks (atk=24, def=60, hp=420 each) — overwhelmingly stronger
         Map<String, Integer> attacker = Map.of("htank", 100);
 
         BattleResult result = battleService.resolveWild(garrison, attacker);
@@ -154,15 +155,14 @@ class BattleServiceTest {
     @Test
     @DisplayName("概率击杀: 单个步兵对重型坦克的微量伤害不应强制击毁")
     void testMicroDamageDoesNotGuaranteeKill() {
-        // 守方: 10辆重型坦克 (def=40, hp=220)
+        // 守方: 10辆重型坦克 (def=60, hp=420)
         Map<String, Integer> garrison = Map.of("htank", 10);
         // 攻方: 1个步兵 (atk=6)
         Map<String, Integer> attacker = Map.of("infantry", 1);
 
         BattleResult result = battleService.resolveWild(garrison, attacker);
 
-        // 步兵对重坦单次伤害 dmg = (6*6*1)/(40*10) = 0.09
-        // 0.09 / 220 约 0.0004 概率，绝大多数情况下坦克无损
+        // 线性微量火力只产生极小的概率击杀，不得保底击毁一辆重坦。
         assertFalse(result.isWin(), "1个步兵无法击败10辆重型坦克");
         int survivingTanks = result.getSurvivorDefender().getOrDefault("htank", 0);
         assertEquals(10, survivingTanks, "微量伤害不应强制击毁重型坦克");
@@ -181,21 +181,87 @@ class BattleServiceTest {
         assertTrue(result.isWin(), "重型坦克掩护下应获胜");
         // 战斗日志中，卡车(range=0)在射程外不应有前进日志，直到距离进入0或战斗结束
         String report = result.getReport();
-        assertFalse(report.contains("我方卡车(5) 前进"), "卡车不应主动冲锋前进");
+        assertFalse(report.contains("我方" + UnitDef.UNITS.get("truck").name() + "(5) 前进"), "卡车不应主动冲锋前进");
     }
 
     @Test
-    @DisplayName("野地初始交战距离: 修复+2000硬编码后应基于双方航速合理进入射程")
-    void testWildBattleDistanceNoLegacy2000() {
-        // 双方均为步兵 (range 100, spd 3)
-        Map<String, Integer> attacker = Map.of("infantry", 10);
-        Map<String, Integer> defender = Map.of("infantry", 10);
+    @DisplayName("野地战斗动态距离与两阶段机动推进验证")
+    void testWildBattleDistance() {
+        BattleResult result = battleService.resolveWild(Map.of("infantry", 10), Map.of("infantry", 10));
+        assertTrue(result.getReport().contains("战场初始距离: 1000"), "双方步兵(spd=3, range=100)保底初始距离应为 1000");
+        assertTrue(result.getReport().contains("[前进] 推进150 -> 坐标150"), "第一回合攻方步兵推进150");
+    }
 
-        BattleResult result = battleService.resolveWild(defender, attacker);
+    @Test
+    @DisplayName("战术指令: 验证后退与阵地边界底线规则")
+    void testCommandActionRetreatAndHold() {
+        // 攻方下达后退指令，初始在坐标 0 (已在阵地底线)
+        Map<String, BattleService.UnitOrder> attackerOrders = Map.of(
+                "infantry", new BattleService.UnitOrder(BattleService.CommandAction.RETREAT)
+        );
+        BattleResult result = battleService.resolveWild(Map.of("infantry", 10), Map.of("infantry", 10),
+                attackerOrders, null);
+
         String report = result.getReport();
+        assertTrue(report.contains("[后退] 已达阵地底线(坐标0) 退无可退"), "阵地底线0不可穿透");
+    }
 
-        // 原先加了2000，初始距离2100，步兵每回合走150需要14回合才接敌
-        // 修复后初始距离为 100 + 3 * 50 = 250，步兵走150后距离100，第1-2回合即可开火
-        assertFalse(report.contains("距离->1950"), "野地战斗不应有遗留的+2000超大距离");
+    @Test
+    @DisplayName("战术指令: 指定集火目标与重坦掩护机制")
+    void testCommandFocusTargetWithTankCover() {
+        // 守方有重坦与火炮
+        Map<String, Integer> garrison = Map.of("htank", 5, "howitzer", 5);
+        // 攻方步兵指定集火后排榴弹炮，但受重坦前排掩护阻挡
+        Map<String, BattleService.UnitOrder> attackerOrders = Map.of(
+                "infantry", new BattleService.UnitOrder(BattleService.CommandAction.ADVANCE, "howitzer")
+        );
+
+        BattleResult result = battleService.resolveWild(garrison, Map.of("infantry", 100), attackerOrders, null);
+        String report = result.getReport();
+        // 步兵无法穿透重坦掩护直接打榴弹炮，应优先攻击前排重坦
+        assertTrue(report.contains("敌重型坦克"), "步兵面对重坦掩护应优先承伤攻击重坦");
+    }
+
+    @Test
+    @DisplayName("指挥官属性: 验证守方防御属性对冲与战报日志显示")
+    void testCommanderDefenseAttributeMitigation() {
+        // 双方 100 步兵，第 3 回合军官加成生效：攻方军事 100，守方防御 100
+        BattleResult result = battleService.startWorldDispatch(
+                Map.of("infantry", 100),
+                Map.of("infantry", 100),
+                Map.of(),
+                Map.of(), Map.of(),
+                Map.of(), Map.of(),
+                100, 0, // 攻方 mil=100, def=0
+                0, 100, // 守方 mil=0, def=100
+                0, 0,
+                "conquer",
+                Map.of(), 0,
+                true);
+
+        String report = result.getReport();
+        assertTrue(report.contains("我方将领加成：军事属性 +100%攻击"), "战报应体现攻方军事加成");
+        assertTrue(report.contains("敌方将领加成：防御属性 +100%防御"), "战报应体现守方防御加成");
+    }
+
+    @Test
+    @DisplayName("军官技能: 绝地反击受击存活后以100%火力反击")
+    void testCounterSkillTriggersCounterattack() {
+        // 守方拥有 绝地反击 Lv.5 (触发概率 52%，100% 火力反击)
+        BattleResult result = battleService.startWorldDispatch(
+                Map.of("infantry", 100),
+                Map.of("infantry", 100),
+                Map.of(),
+                Map.of(), Map.of(),
+                Map.of(), Map.of("counter", 5),
+                0, 0,
+                0, 0,
+                0, 0,
+                "conquer",
+                Map.of(), 0,
+                true);
+
+        String report = result.getReport();
+        assertTrue(report.contains("[绝地反击]"), "战报应包含绝地反击日志");
     }
 }

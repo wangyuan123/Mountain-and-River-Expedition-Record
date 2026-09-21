@@ -1,24 +1,55 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
   <defs>
-    <linearGradient id="shipSteel" x1="0%" y1="0%" x2="0%" y2="100%">
+    <radialGradient id="destBg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#142436"/>
+      <stop offset="100%" stop-color="#050a10"/>
+    </radialGradient>
+    <linearGradient id="fletcherSteel" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#94a3b8"/>
-      <stop offset="60%" stop-color="#64748b"/>
+      <stop offset="50%" stop-color="#64748b"/>
       <stop offset="100%" stop-color="#334155"/>
     </linearGradient>
   </defs>
-  <!-- Ocean Waterline -->
-  <path d="M0 24 Q8 23 16 24 Q24 25 32 24 L32 28 L0 28 Z" fill="#0284c7" opacity="0.4"/>
-  <!-- Destroyer Warship Hull -->
-  <path d="M2 20 L6 16 L27 16 L31 22 C28 24 22 24 2 24 Z" fill="url(#shipSteel)" stroke="#0f172a" stroke-width="0.7"/>
-  <!-- Bridge Superstructure & Mast -->
-  <rect x="10" y="11" width="7" height="5" rx="0.5" fill="#475569" stroke="#0f172a" stroke-width="0.5"/>
-  <line x1="14" y1="11" x2="14" y2="5" stroke="#1e293b" stroke-width="1"/>
-  <!-- Smokestack Funnel -->
-  <polygon points="18,16 20,10 22,10 21,16" fill="#334155"/>
-  <!-- Forward Gun Turret & Barrel -->
-  <rect x="5" y="14" width="3.5" height="2" rx="0.5" fill="#1e293b"/>
-  <line x1="1" y1="15" x2="6" y2="15" stroke="#0f172a" stroke-width="1.2"/>
-  <!-- Aft Gun Turret -->
-  <rect x="23" y="14" width="3.5" height="2" rx="0.5" fill="#1e293b"/>
-  <line x1="25" y1="15" x2="30" y2="15" stroke="#0f172a" stroke-width="1.2"/>
+  <rect width="128" height="128" rx="20" fill="url(#destBg)"/>
+  <rect x="2" y="2" width="124" height="124" rx="19" fill="none" stroke="#64748b" stroke-width="1.5" opacity="0.4"/>
+
+  <!-- High-speed ocean bow waves & spray -->
+  <path d="M4 88 Q16 80 26 84 Q46 92 76 86 Q100 82 124 88" fill="none" stroke="#bae6fd" stroke-width="2"/>
+  <path d="M2 94 C20 86 50 94 80 88 C100 84 120 90 126 94" fill="none" stroke="#38bdf8" stroke-width="1.5" opacity="0.6"/>
+
+  <!-- Fletcher DD-445 Slim Flush-deck Hull -->
+  <path d="M6 82 L18 70 L110 70 L122 78 C116 86 30 88 6 82 Z" fill="url(#fletcherSteel)" stroke="#0f172a" stroke-width="2"/>
+  <text x="18" y="80" font-family="Arial, sans-serif" font-weight="bold" font-size="7" fill="#f8fafc">445</text>
+
+  <!-- Gun Mount 51 -->
+  <path d="M20 70 L24 62 L32 62 L34 70 Z" fill="#475569" stroke="#0f172a" stroke-width="1.2"/>
+  <line x1="10" y1="64" x2="26" y2="64" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Gun Mount 52 -->
+  <rect x="32" y="65" width="8" height="5" fill="#334155"/>
+  <path d="M33 65 L36 57 L43 57 L45 65 Z" fill="#475569" stroke="#0f172a" stroke-width="1.2"/>
+  <line x1="22" y1="60" x2="36" y2="60" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Bridge Pilot House & Radar Mast -->
+  <polygon points="46,70 48,50 62,50 64,70" fill="#475569" stroke="#0f172a" stroke-width="1.5"/>
+  <rect x="50" y="52" width="10" height="4" fill="#0f172a"/>
+  <line x1="56" y1="50" x2="56" y2="28" stroke="#94a3b8" stroke-width="2"/>
+  <line x1="52" y1="36" x2="60" y2="36" stroke="#94a3b8" stroke-width="1.5"/>
+  <line x1="51" y1="30" x2="61" y2="30" stroke="#38bdf8" stroke-width="2"/>
+
+  <!-- Twin Smokestacks -->
+  <polygon points="66,70 69,48 74,48 73,70" fill="#334155" stroke="#0f172a" stroke-width="1.2"/>
+  <rect x="69" y="46" width="5" height="3" fill="#0f172a"/>
+  <polygon points="86,70 89,50 94,50 93,70" fill="#334155" stroke="#0f172a" stroke-width="1.2"/>
+  <rect x="89" y="48" width="5" height="3" fill="#0f172a"/>
+
+  <!-- Quintuple 21-inch Torpedo Tube Mount -->
+  <rect x="75" y="64" width="9" height="6" rx="1" fill="#0f172a" stroke="#38bdf8" stroke-width="0.8"/>
+  <line x1="74" y1="66" x2="84" y2="66" stroke="#f8fafc" stroke-width="1"/>
+  <line x1="74" y1="68" x2="84" y2="68" stroke="#f8fafc" stroke-width="1"/>
+
+  <!-- Aft Gun Mounts & Depth Charge Racks -->
+  <path d="M98 70 L101 64 L107 64 L109 70 Z" fill="#475569" stroke="#0f172a" stroke-width="1.2"/>
+  <line x1="106" y1="66" x2="118" y2="66" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round"/>
+  <rect x="114" y="68" width="6" height="4" fill="#0f172a"/>
 </svg>

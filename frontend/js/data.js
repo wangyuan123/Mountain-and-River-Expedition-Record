@@ -35,12 +35,12 @@ window.Game = window.Game || {};
     buildings: {
       command:      { name: '市政厅',   desc: '主城,决定其他建筑等级上限', baseCost: { steel: 400, food: 200 },            growth: 1.6, cat: 'core', slots: 1 },
       house:        { name: '民居',     desc: '提供人口上限,每级+1200人口', baseCost: { steel: 120, food: 60 },             growth: 1.5, cat: 'core', popPer: 1200, slots: 32 },
-      factory:      { name: '军工厂',   desc: '生产步兵、装甲车辆与战机',   baseCost: { steel: 240, oil: 100 },             growth: 1.6, cat: 'army', slots: 32 },
+      factory:      { name: '军工厂',   desc: '生产步兵、装甲车、突击炮、火箭与战机',   baseCost: { steel: 240, oil: 100 },             growth: 1.6, cat: 'army', slots: 32 },
       lightfactory: { name: '轻工厂',   desc: '生产轻型坦克',              baseCost: { steel: 260, oil: 110, rare: 10 },   growth: 1.6, cat: 'army', slots: 1 },
-      heavyfactory: { name: '重工厂',   desc: '生产重型坦克/突击炮/火箭',  baseCost: { steel: 320, oil: 140, rare: 30 },   growth: 1.6, cat: 'army', slots: 1 },
+      heavyfactory: { name: '重工厂',   desc: '生产重型坦克',  baseCost: { steel: 320, oil: 140, rare: 30 },   growth: 1.6, cat: 'army', slots: 1 },
       airport:      { name: '机场',     desc: '生产空军',                  baseCost: { steel: 280, oil: 120, rare: 30 },   growth: 1.6, cat: 'army', slots: 1 },
       port:         { name: '港口',     desc: '生产海军',                  baseCost: { steel: 360, oil: 160, rare: 50 },   growth: 1.7, cat: 'army', slots: 1 },
-      academy:      { name: '军校',     desc: '招募军官',                  baseCost: { steel: 200, food: 120, gold: 200 }, growth: 1.6, cat: 'core', slots: 1 },
+      academy:      { name: '军校',     desc: '招募军官,等级提升整批五星概率',                  baseCost: { steel: 200, food: 120, gold: 200 }, growth: 1.6, cat: 'core', slots: 1 },
       staff:        { name: '参谋部',   desc: '军官槽位与野地上限,带兵上限 +10%/级', baseCost: { steel: 220, food: 100 },            growth: 1.6, cat: 'core', slots: 1 },
       farm:         { name: '农田',     desc: '每小时产出粮食',            baseCost: { steel: 80 },                        growth: 1.5, cat: 'res', produces: 'food',  baseProduce: 40, slots: 32 },
       refinery:     { name: '炼钢厂',   desc: '每小时产出钢铁',            baseCost: { steel: 80 },                        growth: 1.5, cat: 'res', produces: 'steel', baseProduce: 40, slots: 32 },
@@ -52,35 +52,61 @@ window.Game = window.Game || {};
       wall:         { name: '围墙',     desc: '城防,提升守城部队防御',     baseCost: { steel: 200, food: 80 },             growth: 1.5, cat: 'def', defBonus: 5, slots: 1 },
       apron:        { name: '停机坪',   desc: '空军调度,提升空军出击上限', baseCost: { steel: 220, oil: 80, rare: 20 },    growth: 1.6, cat: 'def', airCap: 20, slots: 1 },
       transit:      { name: '运输站',   desc: '资源调度,全资源产出 +3%/级', baseCost: { steel: 160, food: 80 },            growth: 1.6, cat: 'res', resBonus: 3, slots: 1 },
-      liaison:      { name: '联络中心', desc: '外交,军官刷新更优质',       baseCost: { steel: 200, food: 120, gold: 200 }, growth: 1.6, cat: 'core', slots: 1 },
+      liaison:      { name: '联络中心', desc: '外交联络',       baseCost: { steel: 200, food: 120, gold: 200 }, growth: 1.6, cat: 'core', slots: 1 },
       exchange:     { name: '交易所',   desc: '资源互换,按比例转换资源',   baseCost: { steel: 180, food: 100, gold: 100 }, growth: 1.5, cat: 'res', slots: 1 }
     },
 
     forts: {
-      bunker:   { name: '碉堡',     desc: '坚固掩体,反步兵,近程高血防', atk: 8,  def: 14, hp: 260, range: 60,  spd: 0, cost: { steel: 30, oil: 0,  rare: 0  }, strongVs: 'infantry', cat: 'fort', autoAdvance: false },
-      howitzer: { name: '榴弹炮',   desc: '远程压制,反步兵与建筑',     atk: 50, def: 6,  hp: 80,  range: 300, spd: 0, cost: { steel: 60, oil: 10, rare: 5  }, strongVs: 'infantry', cat: 'fort', autoAdvance: false },
-      antitank: { name: '反坦克炮', desc: '穿甲火力,反装甲',           atk: 45, def: 6,  hp: 70,  range: 250, spd: 0, cost: { steel: 70, oil: 10, rare: 10 }, strongVs: 'ltank',    cat: 'fort', autoAdvance: false },
-      flak:     { name: '防空炮',   desc: '对空火力,反空军',           atk: 35, def: 5,  hp: 60,  range: 280, spd: 0, cost: { steel: 55, oil: 15, rare: 15 }, strongVs: 'fighter',  cat: 'fort', autoAdvance: false }
+      bunker:   { name: '碉堡',     desc: '坚固掩体,反步兵,近程高血防', atkGround: 8, atkAir: 1, atkSea: 1, atkFort: 1,  def: 24, hp: 260, range: 1050, spd: 0, cost: { steel: 80, oil: 0,  rare: 0  }, strongVs: 'infantry', cat: 'fort', autoAdvance: false },
+      howitzer: { name: '榴弹炮',   desc: '远程压制,反步兵与建筑',     atkGround: 30, atkAir: 1, atkSea: 28, atkFort: 30, def: 6,  hp: 80,  range: 3950, spd: 0, cost: { steel: 60, oil: 10, rare: 5  }, strongVs: 'infantry', cat: 'fort', autoAdvance: false },
+      antitank: { name: '反坦克炮', desc: '穿甲火力,反装甲',           atkGround: 42, atkAir: 1, atkSea: 36, atkFort: 15, def: 8,  hp: 80,  range: 3850, spd: 0, cost: { steel: 70, oil: 10, rare: 10 }, strongVs: 'ltank',    cat: 'fort', autoAdvance: false },
+      flak:     { name: '防空炮',   desc: '对空火力,反空军',           atkGround: 12, atkAir: 63, atkSea: 10, atkFort: 1, def: 8,  hp: 80,  range: 1850, spd: 0, cost: { steel: 55, oil: 15, rare: 15 }, strongVs: 'fighter',  cat: 'fort', autoAdvance: false }
     },
 
+    // 与服务端 BattleRules 对应的编成说明；战斗由服务端结算。
+    combatRoles: {
+      infantry: '廉价步兵；适合数量压制，惧怕摩托兵与装甲车',
+      motor: '机动反步兵；对步兵类×2，面对装甲火力减半',
+      truck: '地面后勤；载重50，不主动冲锋',
+      armored: '反步兵与机动防空；对步兵类×1.75，惧怕轻坦',
+      ltank: '机动反炮兵；对火炮×2，对装甲车×1.5，正面遭遇火箭需空军支援',
+      htank: '前排盾牌；对轻坦×2.25，前置部署并掩护身后地面部队，惧怕火箭与轰炸机',
+      assault: '远程多用途火力与攻坚支援，惧怕轻坦、特种兵和火箭',
+      rocket: '远程对地；对重坦×2.5，对装甲×1.75，对火炮×1.5，对特种兵×0.6，对空火力极弱',
+      scout: '侦察与反侦察；对空自卫为主，其他火力极弱，不主动冲锋',
+      special: '工事破袭；攻坚略高于火箭，可绕过重坦掩护，对火炮×2，惧怕装甲车与火箭远程压制',
+      fighter: '制空拦截，可反制防空薄弱的火箭；对轰炸机额外×1.15',
+      bomber: '对地、反舰与攻坚轰炸；对重坦×2，依赖战斗机护航',
+      transport: '空中后勤；载重80，支持跨海运兵，保留微弱自卫火力',
+      destroyer: '反潜与防空护航；对潜艇×2.5，惧怕战列舰',
+      sub: '对海专精，其他火力极弱；对战列舰/航母×3，惧怕驱逐舰',
+      battleship: '重型舰炮；对驱逐舰×1.75，对潜艇仅×0.25',
+      carrier: '远程制空与航空支援，对潜艇仅×0.25',
+      bunker: '地面反步兵×1.5，对空与对海火力极弱',
+      howitzer: '地面反步兵×1.5，可岸防，对空火力极弱',
+      antitank: '对装甲车/轻坦/重坦×2，可岸防，对空火力极弱',
+      flak: '固定防空火力，对地和对海较弱，攻坚能力极弱'
+    },
+
+    // 名称采用真实二战装备/部队原型；history 仅用于介绍，数值仍由游戏独立平衡，来源见 docs/UNIT_HISTORY_20260918.md。
     units: {
-      infantry:  { name: '步兵',     cat: 'inf',  atk: 6,   def: 4,   hp: 30,  spd: 3, range: 100, food: 1,  pop: 1, build: 'factory',  cost: { steel: 20,  oil: 0,   rare: 0  }, strongVs: null,           branch: 'land' },
-      motor:     { name: '摩托兵',   cat: 'inf',  atk: 10,  def: 4,   hp: 30,  spd: 7, range: 100, food: 2,  pop: 1, build: 'factory',  cost: { steel: 40,  oil: 10,  rare: 0  }, strongVs: 'infantry',     branch: 'land' },
-      truck:     { name: '卡车',     cat: 'inf',  atk: 2,   def: 6,   hp: 50,  spd: 8, range: 0,   food: 2,  pop: 1, build: 'factory',  cost: { steel: 60,  oil: 20,  rare: 0  }, strongVs: null,           branch: 'land', logistic: true, load: 50, autoAdvance: false },
-      armored:   { name: '装甲车',   cat: 'arm',  atk: 18,  def: 12,  hp: 80,  spd: 7, range: 120, food: 4,  pop: 2, build: 'factory',  cost: { steel: 120, oil: 40,  rare: 10 }, strongVs: 'fighter',      branch: 'land' },
-      ltank:     { name: '轻型坦克', cat: 'arm',  atk: 28,  def: 22,  hp: 120, spd: 6, range: 130, food: 5,  pop: 2, build: 'lightfactory', cost: { steel: 200, oil: 60, rare: 20 }, strongVs: 'armored',      branch: 'land' },
-      htank:     { name: '重型坦克', cat: 'arm',  atk: 50,  def: 40,  hp: 220, spd: 4, range: 140, food: 8,  pop: 4, build: 'heavyfactory', cost: { steel: 400, oil: 120, rare: 50 }, strongVs: 'ltank',        branch: 'land' },
-      assault:   { name: '突击炮',   cat: 'arm',  atk: 60,  def: 18,  hp: 120, spd: 4, range: 300, food: 7,  pop: 3, build: 'heavyfactory', cost: { steel: 360, oil: 100, rare: 60 }, strongVs: 'htank',        branch: 'land' },
-      rocket:    { name: '火箭',     cat: 'arm',  atk: 90,  def: 14,  hp: 100, spd: 4, range: 350, food: 9,  pop: 4, build: 'heavyfactory', cost: { steel: 500, oil: 160, rare: 100}, strongVs: 'htank',        branch: 'land' },
-      scout:     { name: '侦察机',   cat: 'air',  atk: 4,   def: 6,   hp: 30,  spd: 14,range: 200, food: 3,  pop: 1, build: 'factory',  cost: { steel: 80,  oil: 40,  rare: 10 }, strongVs: null,           branch: 'air', autoAdvance: false },
-      special:   { name: '特种兵',   cat: 'air',  atk: 24,  def: 14,  hp: 60,  spd: 13,range: 180, food: 4,  pop: 2, build: 'factory',  cost: { steel: 160, oil: 60,  rare: 30 }, strongVs: null,           branch: 'air' },
-      fighter:   { name: '战斗机',   cat: 'air',  atk: 35,  def: 22,  hp: 90,  spd: 12,range: 260, food: 5,  pop: 2, build: 'factory',  cost: { steel: 200, oil: 80,  rare: 30 }, strongVs: 'bomber',       branch: 'air' },
-      bomber:    { name: '轰炸机',   cat: 'air',  atk: 70,  def: 16,  hp: 110, spd: 9, range: 280, food: 7,  pop: 3, build: 'factory',  cost: { steel: 320, oil: 140, rare: 60 }, strongVs: 'htank',        branch: 'air' },
-      transport: { name: '运输机',   cat: 'air',  atk: 2,   def: 12,  hp: 120, spd: 8, range: 0,   food: 5,  pop: 2, build: 'factory',  cost: { steel: 240, oil: 100, rare: 30 }, strongVs: null,           branch: 'air', logistic: true, load: 80 },
-      destroyer: { name: '驱逐舰',   cat: 'nav',  atk: 40,  def: 28,  hp: 160, spd: 6, range: 250, food: 7,  pop: 3, build: 'port',     cost: { steel: 300, oil: 120, rare: 60 }, strongVs: 'sub',          branch: 'sea' },
-      sub:       { name: '潜艇',     cat: 'nav',  atk: 65,  def: 18,  hp: 110, spd: 5, range: 230, food: 6,  pop: 3, build: 'port',     cost: { steel: 360, oil: 100, rare: 80 }, strongVs: 'battleship',   branch: 'sea' },
-      battleship:{ name: '战列舰',   cat: 'nav',  atk: 100, def: 60,  hp: 360, spd: 4, range: 320, food: 12, pop: 6, build: 'port',     cost: { steel: 700, oil: 240, rare: 160}, strongVs: 'destroyer',    branch: 'sea' },
-      carrier:   { name: '航母',     cat: 'nav',  atk: 130, def: 40,  hp: 280, spd: 4, range: 400, food: 15, pop: 8, build: 'port',     cost: { steel: 900, oil: 300, rare: 240}, strongVs: null,           branch: 'sea' }
+      infantry:  { name: '步兵-加兰德步枪兵（M1）', history: '美国｜装备M1加兰德半自动步枪的步兵，二战美军的代表性步兵装备。',     cat: 'inf',  atkGround: 6, atkAir: 5, atkSea: 5, atkFort: 2,   def: 15,  hp: 120, spd: 3, range: 100, food: 1,  pop: 1, build: 'factory',  cost: { steel: 30,  oil: 0,   rare: 0  }, strongVs: null,           branch: 'land' },
+      motor: { name: '摩托兵-哈雷（WLA）', history: '美国｜哈雷WLA军用摩托，二战中用于侦察、通信与联络。', cat: 'inf', atkGround: 12, atkAir: 5, atkSea: 5, atkFort: 5, def: 13, hp: 100, spd: 7, range: 140, food: 2, pop: 1, build: 'factory', cost: { steel: 35, oil: 10, rare: 0 }, strongVs: 'infantry', branch: 'land' },
+      truck:     { name: '卡车-十轮大卡（CCKW-353）', history: '美国｜GMC六轮驱动运输卡车，承担盟军兵员与物资运输。',     cat: 'inf',  atkGround: 2, atkAir: 1, atkSea: 1, atkFort: 1,   def: 5.5, hp: 150, spd: 6, range: 0,   food: 2,  pop: 1, build: 'factory',  cost: { steel: 50,  oil: 15,  rare: 0  }, strongVs: null,           branch: 'land', logistic: true, load: 50, autoAdvance: false },
+      armored: { name: '装甲车-猎鹿犬防空型（T17E2）', history: '美国制造、英军使用｜猎鹿犬的双联重机枪防空型，为地面部队提供机动掩护。', cat: 'arm', atkGround: 18, atkAir: 33.5, atkSea: 45, atkFort: 36, def: 33, hp: 360, spd: 7, range: 300, food: 4, pop: 2, build: 'factory', cost: { steel: 180, oil: 60, rare: 20 }, strongVs: 'motor', branch: 'land' },
+      ltank: { name: '轻型坦克-斯图亚特（M5A1）', history: '美国｜斯图亚特系列轻型坦克，以机动侦察与步兵支援为主要任务。', cat: 'arm', atkGround: 33, atkAir: 10, atkSea: 55, atkFort: 45, def: 53, hp: 270, spd: 6, range: 220, food: 5, pop: 2, build: 'lightfactory', cost: { steel: 240, oil: 80, rare: 25 }, strongVs: 'armored', branch: 'land' },
+      htank: { name: '重型坦克-斯大林（IS-2）', history: '苏联｜装备122毫米主炮的重型坦克，用于突破防线与支援进攻。', cat: 'arm', atkGround: 50, atkAir: 15, atkSea: 65, atkFort: 50, def: 63.5, hp: 385, spd: 4, range: 320, food: 8, pop: 4, build: 'heavyfactory', cost: { steel: 450, oil: 120, rare: 50 }, strongVs: 'ltank', branch: 'land' },
+      assault: { name: '突击炮-自行加榴炮（ISU-152）', history: '苏联｜装备152毫米加榴炮的重型自行火炮，用于摧毁工事和提供突击支援。', cat: 'arm', atkGround: 34, atkAir: 30, atkSea: 65, atkFort: 167, def: 28, hp: 200, spd: 4, range: 750, food: 4, pop: 2, build: 'factory', cost: { steel: 200, oil: 50, rare: 25 }, strongVs: 'bunker', branch: 'land' },
+      rocket: { name: '火箭-喀秋莎（BM-13）', history: '苏联｜车载多管火箭炮，1941年投入作战，以密集齐射实施火力覆盖。', cat: 'arm', atkGround: 100, atkAir: 5, atkSea: 25, atkFort: 179, def: 28, hp: 150, spd: 5, range: 2000, food: 5, pop: 3, build: 'factory', cost: { steel: 220, oil: 70, rare: 45 }, strongVs: 'htank', branch: 'land' },
+      scout:     { name: '侦察机-闪电侦察型（F-5）', history: '美国｜由P-38闪电改装的照相侦察机，以航空摄影获取战场情报。',   cat: 'air',  atkGround: 1, atkAir: 4, atkSea: 1, atkFort: 1,   def: 13,  hp: 70.5,spd: 11,range: 200, food: 3,  pop: 1, build: 'factory',  cost: { steel: 60,  oil: 30,  rare: 10 }, strongVs: null,           branch: 'air', autoAdvance: false },
+      special: { name: '特种兵-英国突击队（Commando）', history: '英国｜1940年组建的突袭部队，接受渗透、爆破与两栖突击训练。', cat: 'inf', atkGround: 30, atkAir: 10, atkSea: 125, atkFort: 188, def: 5.5, hp: 150, spd: 8, range: 180, food: 4, pop: 2, build: 'factory', cost: { steel: 100, oil: 40, rare: 20 }, strongVs: 'howitzer', branch: 'land' },
+      fighter: { name: '战斗机-野马（P-51）', history: '美国｜北美航空研制的战斗机，二战中承担远程护航与制空任务。', cat: 'air', atkGround: 12, atkAir: 64, atkSea: 75, atkFort: 5, def: 30, hp: 150, spd: 10, range: 350, food: 5, pop: 2, build: 'factory', cost: { steel: 220, oil: 90, rare: 35 }, strongVs: 'bomber', branch: 'air' },
+      bomber: { name: '轰炸机-飞行堡垒（B-17G）', history: '美国｜波音四发重型轰炸机，主要执行编队轰炸并以多处机枪阵位自卫。', cat: 'air', atkGround: 56, atkAir: 12, atkSea: 95, atkFort: 429, def: 22, hp: 195, spd: 8, range: 300, food: 7, pop: 3, build: 'factory', cost: { steel: 350, oil: 150, rare: 60 }, strongVs: 'htank', branch: 'air' },
+      transport: { name: '运输机-空中列车（C-47）', history: '美国｜由DC-3发展而来的军用运输机，执行空运、空投与伞兵运输。',   cat: 'air',  atkGround: 1, atkAir: 1, atkSea: 1, atkFort: 1,   def: 10,  hp: 220, spd: 8, range: 0,   food: 5,  pop: 2, build: 'factory',  cost: { steel: 180, oil: 80, rare: 20 }, strongVs: null,           branch: 'air', logistic: true, load: 80, autoAdvance: false },
+      destroyer: { name: '驱逐舰-弗莱彻级（Fletcher）', history: '美国｜二战主力舰队驱逐舰，承担护航、防空、反潜与水面作战。', cat: 'nav', atkGround: 44, atkAir: 59, atkSea: 47, atkFort: 35, def: 50, hp: 555, spd: 7, range: 400, food: 7, pop: 3, build: 'port', cost: { steel: 450, oil: 160, rare: 80 }, strongVs: 'sub', branch: 'sea' },
+      sub: { name: '潜艇-小鲨鱼级（Gato）', history: '美国｜二战远洋柴电潜艇，以鱼雷攻击敌方舰船并执行海上破交。', cat: 'nav', atkGround: 1, atkAir: 1, atkSea: 66, atkFort: 1, def: 20, hp: 395, spd: 5, range: 100, food: 6, pop: 3, build: 'port', cost: { steel: 300, oil: 80, rare: 60 }, strongVs: 'battleship', branch: 'sea' },
+      battleship: { name: '战列舰-衣阿华级（Iowa）', history: '美国｜装备406毫米主炮的高速战列舰，承担舰队作战与对岸炮击。', cat: 'nav', atkGround: 91, atkAir: 35, atkSea: 96, atkFort: 108, def: 120, hp: 1300, spd: 6, range: 1600, food: 12, pop: 6, build: 'port', cost: { steel: 1200, oil: 400, rare: 250 }, strongVs: 'destroyer', branch: 'sea' },
+      carrier: { name: '航母-埃塞克斯级（Essex）', history: '美国｜二战舰队航空母舰，以舰载机执行制空、对海与对地打击。', cat: 'nav', atkGround: 82, atkAir: 125, atkSea: 80, atkFort: 110, def: 70, hp: 1100, spd: 6, range: 1900, food: 15, pop: 8, build: 'port', cost: { steel: 1400, oil: 500, rare: 350 }, strongVs: 'bomber', branch: 'sea' }
     },
 
     techs: {
@@ -193,14 +219,20 @@ window.Game = window.Game || {};
       playerCityNames: ['钢铁洪流', '虎式之巢', '苍穹之眼', '深海利剑', '雷霆要塞', '孤狼营地', '铁血堡垒', '风暴前线', '暗夜哨站', '烈焰军团']
     },
     officerSkills: {
-      frenzy:   { name: '猛攻',   desc: '攻击力额外+10%/级',           max: 5, cat: 'atk' },
-      bulwark:  { name: '铁壁',   desc: '防御力额外+10%/级',           max: 5, cat: 'def' },
-      blitz:    { name: '闪电战', desc: '行军速度+15%/级',             max: 5, cat: 'spd' },
-      suppress: { name: '压制',   desc: '降低敌方攻击力8%/级',         max: 5, cat: 'debuff' },
-      pierce:   { name: '破甲',   desc: '无视敌方防御12%/级',          max: 5, cat: 'pierce' },
-      supply:   { name: '补给',   desc: '粮食消耗-20%/级',             max: 5, cat: 'logi' },
-      medic:    { name: '急救',   desc: '战后伤兵额外回收+3%/级，最高15%', max: 5, cat: 'medic' },
-      combo:    { name: '连击',   desc: '8%/级概率额外攻击一次',       max: 5, cat: 'combo' }
+      frenzy:   { name: '全力猛攻', desc: '攻击力额外+10%/级',           max: 5, cat: 'atk' },
+      bulwark:  { name: '铜墙铁壁', desc: '防御力额外+10%/级',           max: 5, cat: 'def' },
+      blitz:    { name: '闪电突击', desc: '战场移动速度+4%/级，最高20%',  max: 5, cat: 'spd' },
+      suppress: { name: '火力压制', desc: '降低敌方攻击力5%/级，最高25%',  max: 5, cat: 'debuff' },
+      pierce:   { name: '破甲打击', desc: '无视敌方防御6%/级',           max: 5, cat: 'pierce' },
+      leadership:{ name: '三军统帅',desc: '指挥官任命时，带兵上限额外+10%/级', max: 5, cat: 'mil' },
+      supply:   { name: '三军统帅', desc: '指挥官任命时，带兵上限额外+10%/级', max: 5, cat: 'mil' },
+      medic:    { name: '战地急救', desc: '战后伤兵额外回收+3%/级，最高15%', max: 5, cat: 'medic' },
+      harvest:  { name: '屯田增产', desc: '市长任命时，基础资源产出额外+10%/级', max: 5, cat: 'logi' },
+      construct:{ name: '工程营造', desc: '市长任命时，建筑工期缩短4%/级，最高20%', max: 5, cat: 'logi' },
+      finance:  { name: '精明理财', desc: '市长任命时，黄金税收产出额外+8%/级', max: 5, cat: 'know' },
+      research: { name: '格物致知', desc: '市长任命时，科研速度提升8%/级',     max: 5, cat: 'know' },
+      ration:   { name: '军屯自给', desc: '市长任命时，全城养兵耗粮降低16%/级，最高80%', max: 5, cat: 'logi' },
+      counter:  { name: '绝地反击', desc: '受击存活后在第3/6/9...回合进行反击，伤害为剩余兵力总伤害的10%/级（最高50%）', max: 5, cat: 'def' }
     },
     items: {
       expBook:   { name: '经验书',   icon: '📘', desc: '军官使用,获得10000经验',          cat: 'officer' },
@@ -329,6 +361,37 @@ window.Game = window.Game || {};
         break;
       }
     }
-    return G.getMilitaryRankTierInfo(curIdx + 1);
+  };
+
+  // 全局兵种实体图标映射 (结合3D真实实物渲染图与无白边高清军武特征矢量)
+  G.UNIT_ICON = {
+    infantry: 'img/units/infantry.svg',
+    motor: 'img/units/motor.svg',
+    truck: 'img/units/truck.svg',
+    armored: 'img/units/armored.svg',
+    ltank: 'img/units/ltank.svg',
+    htank: 'img/units/htank.png',
+    assault: 'img/units/assault.png',
+    rocket: 'img/units/rocket.svg',
+    scout: 'img/units/scout.svg',
+    special: 'img/units/special.svg',
+    fighter: 'img/units/fighter.png',
+    bomber: 'img/units/bomber.svg',
+    transport: 'img/units/transport.svg',
+    destroyer: 'img/units/destroyer.svg',
+    sub: 'img/units/sub.svg',
+    battleship: 'img/units/battleship.png',
+    carrier: 'img/units/carrier.svg'
+  };
+
+  // 通用兵种图标渲染辅助函数
+  G.getUnitIconHtml = function (id, name, extraCls) {
+    var raw = (G.UNIT_ICON && G.UNIT_ICON[id]) || '⚔';
+    var cls = extraCls ? (' ' + extraCls) : '';
+    if (/\.svg$|\.png$|\.jpg$|\.webp$/i.test(raw)) {
+      var alt = G.escapeHtml ? G.escapeHtml(name || id) : (name || id);
+      return '<span class="unit-icon-wrap' + cls + '"><img class="unit-icon-img" src="' + raw + '" alt="' + alt + '"/></span>';
+    }
+    return '<span class="unit-icon-wrap' + cls + '">' + raw + '</span>';
   };
 })(window.Game);

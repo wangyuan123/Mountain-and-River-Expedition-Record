@@ -23,7 +23,7 @@ window.Game = window.Game || {};
         steel: Core.produceOf('refinery'),
         oil: Core.produceOf('oilfield'),
         rare: Core.produceOf('raremine'),
-        gold: Math.floor(Core.civilianPopulation() * (s.tax / 100) * (1 + (mayor ? mayor.knowledge / 100 : 0)) * 2)
+        gold: Math.floor(Core.civilianPopulation() * (s.tax / 100) * (1 + (mayor ? mayor.knowledge / 100 : 0)) * (1 + (Core.mayorSkillBonus ? Core.mayorSkillBonus('finance') : 0)) * 2)
       };
       var caps = { food: cap.food, steel: cap.steel, oil: cap.oil, rare: cap.rare, gold: 999999 };
       var info = D.resources[key];

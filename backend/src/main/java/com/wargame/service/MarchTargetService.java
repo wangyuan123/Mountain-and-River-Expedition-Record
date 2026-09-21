@@ -358,6 +358,7 @@ public class MarchTargetService {
                     oMap.put("star", o.getStar() != null ? o.getStar() : 1);
                     oMap.put("level", o.getLevel() != null ? o.getLevel() : 1);
                     oMap.put("military", o.getMilitary() != null ? o.getMilitary() : 0);
+                    oMap.put("defense", o.getDefense() != null ? o.getDefense() : 0);
                     oMap.put("knowledge", o.getKnowledge() != null ? o.getKnowledge() : 0);
                     oMap.put("logistics", o.getLogistics() != null ? o.getLogistics() : 0);
                     oMap.put("role", o.getRole() != null ? o.getRole() : "idle");
@@ -371,6 +372,7 @@ public class MarchTargetService {
             oMap.put("star", Math.min(5, 1 + cityLv / 2));
             oMap.put("level", cityLv * 5);
             oMap.put("military", 50 + cityLv * 8);
+            oMap.put("defense", 50 + cityLv * 8);
             oMap.put("knowledge", 40 + cityLv * 6);
             oMap.put("logistics", 40 + cityLv * 6);
             oMap.put("role", "commander");

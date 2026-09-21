@@ -56,6 +56,42 @@ class BuildServiceTest extends BaseServiceTest {
     }
 
     @Test
+    @DisplayName("开局可同时新建六项工程，第七项被拒绝且不扣资源，取消后可继续建造")
+    void testSixConstructionTeams() {
+        giveResources(playerId, 5000, 5000, 5000, 5000, 5000);
+        for (int slot = 0; slot < 6; slot++) {
+            assertEquals(true, buildService.upgrade(playerId, "farm", slot).get("success"));
+        }
+        int steelBefore = getResources(playerId).getSteel();
+        Map<String, Object> blocked = buildService.upgrade(playerId, "farm", 6);
+        assertEquals(false, blocked.get("success"));
+        assertEquals("6 支施工队都在忙，请等待完成", blocked.get("message"));
+        assertEquals(steelBefore, getResources(playerId).getSteel());
+        assertEquals(6, constructionRepository.findByPlayerId(playerId).size());
+
+        assertEquals(true, buildService.cancel(playerId, "farm", 0).get("success"));
+        assertEquals(true, buildService.upgrade(playerId, "farm", 6).get("success"));
+        assertEquals(6, constructionRepository.findByPlayerId(playerId).size());
+    }
+
+    @Test
+    @DisplayName("拆除与新建共用六支施工队")
+    void testDismantleSharesConstructionTeams() {
+        giveResources(playerId, 5000, 5000, 5000, 5000, 5000);
+        createBuilding(playerId, "refinery", 1);
+        createBuilding(playerId, "oilfield", 1);
+        for (int slot = 0; slot < 5; slot++) {
+            assertEquals(true, buildService.upgrade(playerId, "farm", slot).get("success"));
+        }
+        assertEquals(true, buildService.dismantle(playerId, "refinery", 0).get("success"));
+        Map<String, Object> blocked = buildService.dismantle(playerId, "oilfield", 0);
+        assertEquals(false, blocked.get("success"));
+        assertEquals("6 支施工队都在忙，请等待完成", blocked.get("message"));
+        assertEquals(false, buildService.upgrade(playerId, "farm", 5).get("success"));
+        assertEquals(6, constructionRepository.findByPlayerId(playerId).size());
+    }
+
+    @Test
     @DisplayName("资源不足: 资源不足时应返回失败")
     void testInsufficientResources() {
         // Give player insufficient steel (farm costs 80 steel)

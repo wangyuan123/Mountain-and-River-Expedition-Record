@@ -1,30 +1,62 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
   <defs>
-    <linearGradient id="armBody" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#647558"/>
-      <stop offset="60%" stop-color="#4c5b41"/>
-      <stop offset="100%" stop-color="#323e2a"/>
+    <radialGradient id="armoredBg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#090d16"/>
+    </radialGradient>
+    <linearGradient id="staghoundGreen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#657b53"/>
+      <stop offset="50%" stop-color="#4e5f3e"/>
+      <stop offset="100%" stop-color="#2d3823"/>
+    </linearGradient>
+    <linearGradient id="offroadTire" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#334155"/>
+      <stop offset="50%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#000000"/>
     </linearGradient>
   </defs>
+  <rect width="128" height="128" rx="20" fill="url(#armoredBg)"/>
+  <rect x="2" y="2" width="124" height="124" rx="19" fill="none" stroke="#657b53" stroke-width="1.5" opacity="0.4"/>
 
-  <!-- Machine Gun Barrel on Turret -->
-  <line x1="2" y1="9.5" x2="11" y2="9.5" stroke="#0f172a" stroke-width="1.2" stroke-linecap="round"/>
+  <!-- Shadow -->
+  <ellipse cx="64" cy="116" rx="58" ry="8" fill="#000" opacity="0.7"/>
 
-  <!-- Small Machine Gun Turret -->
-  <path d="M10 12 C10 8.5 13 7.5 16 7.5 C19 7.5 21 8.5 21 12 Z" fill="url(#armBody)" stroke="#1a2214" stroke-width="0.7"/>
+  <!-- 4 Huge Off-Road Tires -->
+  <g>
+    <circle cx="32" cy="94" r="22" fill="url(#offroadTire)" stroke="#000" stroke-width="2.5"/>
+    <circle cx="32" cy="94" r="15" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+    <circle cx="32" cy="94" r="8" fill="#334155"/>
+    <circle cx="32" cy="94" r="3" fill="#0f172a"/>
+    <line x1="10" y1="94" x2="17" y2="94" stroke="#64748b" stroke-width="3"/>
+    <line x1="47" y1="94" x2="54" y2="94" stroke="#64748b" stroke-width="3"/>
+    <line x1="32" y1="72" x2="32" y2="79" stroke="#64748b" stroke-width="3"/>
+    <line x1="32" y1="109" x2="32" y2="116" stroke="#64748b" stroke-width="3"/>
+  </g>
+  <g>
+    <circle cx="96" cy="94" r="22" fill="url(#offroadTire)" stroke="#000" stroke-width="2.5"/>
+    <circle cx="96" cy="94" r="15" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+    <circle cx="96" cy="94" r="8" fill="#334155"/>
+    <circle cx="96" cy="94" r="3" fill="#0f172a"/>
+    <line x1="74" y1="94" x2="81" y2="94" stroke="#64748b" stroke-width="3"/>
+    <line x1="111" y1="94" x2="118" y2="94" stroke="#64748b" stroke-width="3"/>
+    <line x1="96" y1="72" x2="96" y2="79" stroke="#64748b" stroke-width="3"/>
+    <line x1="96" y1="109" x2="96" y2="116" stroke="#64748b" stroke-width="3"/>
+  </g>
 
-  <!-- Sloped Armored Hull -->
-  <polygon points="4,17 7,12 24,12 28,15 29,20 2,20" fill="url(#armBody)" stroke="#1a2214" stroke-width="0.8"/>
-  <!-- Armored Vision Slit / Visor -->
-  <rect x="7.5" y="14" width="3.5" height="1" fill="#bae6fd" stroke="#0f172a" stroke-width="0.3"/>
+  <!-- Heavy Armored Chassis -->
+  <polygon points="8,86 16,68 32,66 48,66 100,66 116,72 122,86 108,90 98,80 88,80 40,80 30,90" fill="url(#staghoundGreen)" stroke="#1a2214" stroke-width="2"/>
+  <polygon points="18,68 36,48 88,48 100,66 22,66" fill="url(#staghoundGreen)" stroke="#1a2214" stroke-width="1.8"/>
+  <rect x="36" y="52" width="16" height="5" rx="1" fill="#0f172a" stroke="#38bdf8" stroke-width="1"/>
+  <rect x="64" y="52" width="16" height="5" rx="1" fill="#0f172a" stroke="#38bdf8" stroke-width="1"/>
 
-  <!-- 4 Large Off-Road Wheels -->
-  <circle cx="7.5" cy="22.5" r="3.8" fill="#1e293b" stroke="#000" stroke-width="0.7"/>
-  <circle cx="7.5" cy="22.5" r="1.8" fill="#475569"/>
+  <!-- Dual AA Turret -->
+  <path d="M50 48 C50 34 56 26 70 26 C84 26 90 34 90 48 Z" fill="#3b4830" stroke="#1a2214" stroke-width="2"/>
 
-  <circle cx="15.5" cy="22.5" r="3.8" fill="#1e293b" stroke="#000" stroke-width="0.7"/>
-  <circle cx="15.5" cy="22.5" r="1.8" fill="#475569"/>
-
-  <circle cx="23.5" cy="22.5" r="3.8" fill="#1e293b" stroke="#000" stroke-width="0.7"/>
-  <circle cx="23.5" cy="22.5" r="1.8" fill="#475569"/>
+  <!-- Twin Elevated M2HB Barrels -->
+  <line x1="16" y1="12" x2="68" y2="34" stroke="#000" stroke-width="5" stroke-linecap="round"/>
+  <line x1="18" y1="13" x2="66" y2="34" stroke="#64748b" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="22" y1="6" x2="74" y2="28" stroke="#000" stroke-width="5" stroke-linecap="round"/>
+  <line x1="24" y1="7" x2="72" y2="28" stroke="#64748b" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="17" cy="12" r="3.5" fill="#0f172a"/>
+  <circle cx="23" cy="6" r="3.5" fill="#0f172a"/>
 </svg>

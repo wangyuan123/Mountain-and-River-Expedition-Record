@@ -6,6 +6,8 @@ window.Game = window.Game || {};
 
   var D = G.DATA;
   var Core = G.Core;
+  // 每城开局提供 6 支施工队，新建、升级与拆除共用；与后端 BuildService.MAX_CONCURRENT 保持一致。
+  var MAX_CONCURRENT = 6;
 
   function buildCost(id, fromLevel) {
     var b = D.buildings[id];
@@ -66,6 +68,62 @@ window.Game = window.Game || {};
 
   var Build = {
     init: function () {},
+
+    /** 按服务端下发的剩余工期门槛展示免费入口，最终资格由后端校验。 */
+    canFreeSpeedUp: function (job) {
+      var seconds = Core.state.freeBuildSpeedUpSeconds;
+      if (seconds == null) seconds = 300;
+      return !!job && job.finishesAt > 0 && job.finishesAt - Date.now() <= seconds * 1000;
+    },
+
+    renderSpeedUpButton: function (job, count, attrs) {
+      var free = this.canFreeSpeedUp(job);
+      return '<button class="btn sm' + (free || count > 0 ? ' ok' : '') + '" ' + attrs +
+        (free || count > 0 ? '' : ' disabled') + ' title="剩余工期不超过5分钟可免费完成">' +
+        (free ? '⚡ 免费加速' : '⚡ 加速 (×' + count + ')') + '</button>';
+    },
+
+    /** 详情弹窗不重建 DOM，在倒计时跨过门槛时启用免费按钮。 */
+    updateSpeedUpButton: function (button, job, count) {
+      if (!button) return;
+      var free = this.canFreeSpeedUp(job);
+      button.disabled = !free && count <= 0;
+      button.textContent = free ? '⚡ 免费加速' : '⚡ 加速 (×' + count + ')';
+      button.className = 'btn sm' + (free || count > 0 ? ' ok' : '');
+    },
+
+    accelerateJobById: function (queueId) {
+      var job = this.getConstructions().find(function (entry) { return entry.queueId === queueId; });
+      if (!job) { G.toast('该工程已完成或不存在，请刷新施工队列'); return; }
+      return this.accelerateJob(job);
+    },
+
+    accelerateJob: function (job) {
+      if (this.canFreeSpeedUp(job)) return this.freeSpeedUpJob(job);
+      this.openSpeedUpPicker(job);
+    },
+
+    /** 使用稳定的队列 ID 定位工程，防止队列重排或连点加速到其他建筑。 */
+    freeSpeedUpJob: function (job) {
+      if (!job || job.queueId == null) { G.toast('请刷新施工队列后重试'); return; }
+      var pending = this._freeSpeedUpPending || (this._freeSpeedUpPending = {});
+      if (pending[job.queueId]) return pending[job.queueId];
+      pending[job.queueId] = G.API.buildFreeSpeedUp(job.queueId).then(function (resp) {
+        if (!resp || !resp.success) {
+          G.toast((resp && resp.message) || '免费加速失败');
+          Core.render();
+          return;
+        }
+        G.toast(resp.message || '免费加速成功，工程已完成！');
+        if (G.MainQuest && G.MainQuest.refresh) G.MainQuest.refresh();
+        Core.render();
+      }).catch(function (err) {
+        G.toast(err.message || '免费加速失败');
+      }).finally(function () {
+        delete pending[job.queueId];
+      });
+      return pending[job.queueId];
+    },
 
     getConstructions: function () {
       var s = Core.state;
@@ -157,9 +215,7 @@ window.Game = window.Game || {};
         speedTotal += (Core.state.items && Core.state.items[speedOrder[si]]) || 0;
       }
 
-      var speedBtnHtml = speedTotal > 0
-        ? '<button class="btn ok" id="detailSpeedUp">⚡ 加速 (×' + speedTotal + ')</button>'
-        : '<button class="btn" disabled title="可在商城购买加速符">⚡ 加速 (无)</button>';
+      var speedBtnHtml = this.renderSpeedUpButton(job, speedTotal, 'id="detailSpeedUp"');
 
       var mask = document.createElement('div');
       mask.className = 'modal-mask';
@@ -222,7 +278,7 @@ window.Game = window.Game || {};
       if (speedBtn) {
         speedBtn.onclick = function () {
           close();
-          Game.Build.openSpeedUpPicker(job);
+          Game.Build.accelerateJob(job);
         };
       }
 
@@ -241,6 +297,7 @@ window.Game = window.Game || {};
         if (!mask.parentNode) { clearInterval(timer); return; }
         var curNow = Date.now();
         var curRemain = Math.max(0, Math.ceil((job.finishesAt - curNow) / 1000));
+        Build.updateSpeedUpButton(speedBtn, job, speedTotal);
         var remainEl = mask.querySelector('#detailRemainTime');
         if (remainEl) remainEl.textContent = timeText(curRemain);
         if (totalSec > 0) {
@@ -282,9 +339,8 @@ window.Game = window.Game || {};
         var jobName = jobDef.name;
         if (job.slot != null) jobName += ' #' + (job.slot + 1);
         var remainSec = Math.max(0, Math.ceil((job.finishesAt - now) / 1000));
-        var speedBtn = speedTotal > 0
-          ? '<button class="btn sm ok" style="padding:2px 8px;font-size:12px" onclick="Game.Build._busySpeedUp(' + i + ')">⚡ 加速</button>'
-          : '<button class="btn sm" disabled style="padding:2px 8px;font-size:12px">⚡ 加速(无)</button>';
+        var speedBtn = this.renderSpeedUpButton(job, speedTotal,
+          'id="busySpeedUp' + i + '" onclick="Game.Build._busySpeedUp(' + i + ')"');
         var isDis = job.action === 'dismantle' || (job.fromLevel != null && job.targetLevel < job.fromLevel);
         var targetText = isDis
           ? (job.targetLevel === 0 ? '拆除(移除)' : ('拆除至 Lv.' + job.targetLevel))
@@ -309,7 +365,7 @@ window.Game = window.Game || {};
         '<div class="modal-card" style="max-width:340px">' +
           '<div class="modal-title">🏗 施工队全忙</div>' +
           '<div class="modal-body" style="font-size:13px">' +
-            '<div class="cu-warn" style="margin-top:0;margin-bottom:10px">两支施工队均在作业中，无法开始新工程。请等待完工或使用加速符：</div>' +
+            '<div class="cu-warn" style="margin-top:0;margin-bottom:10px">' + MAX_CONCURRENT + ' 支施工队均在作业中，无法开始新工程。请等待完工或使用加速符：</div>' +
             rows +
           '</div>' +
           '<div class="modal-foot">' +
@@ -335,6 +391,7 @@ window.Game = window.Game || {};
           var sRemain = Math.max(0, Math.ceil((jobs[k].finishesAt - curNow) / 1000));
           var el = mask.querySelector('.busy-remain-' + k);
           if (el) el.textContent = timeText(sRemain);
+          Build.updateSpeedUpButton(mask.querySelector('#busySpeedUp' + k), jobs[k], speedTotal);
           if (sRemain > 0) allDone = false;
         }
         if (allDone) { close(); Core.render(); }
@@ -347,7 +404,7 @@ window.Game = window.Game || {};
         Build._busyMask.parentNode.removeChild(Build._busyMask);
       }
       Build._busyMask = null;
-      Game.Build.openSpeedUpPicker(targetJob);
+      Game.Build.accelerateJob(targetJob);
     },
 
     _busyCancel: function (building, slot) {
@@ -377,7 +434,7 @@ window.Game = window.Game || {};
         return;
       }
       // 若施工队全满，转到施工队全忙提示
-      if (jobs.length >= 2) {
+      if (jobs.length >= MAX_CONCURRENT) {
         this.showBusyJobs();
         return;
       }
@@ -513,7 +570,7 @@ window.Game = window.Game || {};
         this.showJobDetails(id, slotIdx);
         return;
       }
-      if (jobs.length >= 2) {
+      if (jobs.length >= MAX_CONCURRENT) {
         this.showBusyJobs();
         return;
       }
@@ -791,7 +848,7 @@ window.Game = window.Game || {};
             '</div>' +
           '</div>' +
           '<div style="display:flex;gap:6px;margin-top:8px">' +
-            '<button class="btn sm" style="flex:1" id="bdetailSpeedBtn"' + (speedTotal > 0 ? '' : ' disabled') + '>⚡ 使用加速符 (' + speedTotal + ')</button>' +
+            this.renderSpeedUpButton(job, speedTotal, 'style="flex:1" id="bdetailSpeedBtn"') +
             '<button class="btn sm warn" id="bdetailCancelBtn">' + (isDis ? '取消拆除' : '取消升级') + '</button>' +
           '</div>' +
         '</div>';
@@ -810,7 +867,7 @@ window.Game = window.Game || {};
           var uCost = buildCost(id, curLv);
           var uDur = buildDuration(id, curLv);
           var canAfford = Core.costEnough(uCost);
-          var isBusy = jobs.length >= 2;
+          var isBusy = jobs.length >= MAX_CONCURRENT;
 
           var costItems = '';
           var resEmoji = D.resEmoji || {};
@@ -826,7 +883,7 @@ window.Game = window.Game || {};
             '</div>';
           }
 
-          var upBtnText = isBusy ? '施工队全忙 (2/2)' : (canAfford ? ('🚀 升级至 Lv.' + toLv) : '资源不足无法升级');
+          var upBtnText = isBusy ? ('施工队全忙 (' + jobs.length + '/' + MAX_CONCURRENT + ')') : (canAfford ? ('🚀 升级至 Lv.' + toLv) : '资源不足无法升级');
           var upBtnDisabled = (!canAfford && !isBusy) ? ' disabled' : '';
 
           upHtml = '<div class="bdetail-action-card">' +
@@ -945,7 +1002,7 @@ window.Game = window.Game || {};
         if (speedBtn) {
           speedBtn.onclick = function () {
             close();
-            Game.Build.openSpeedUpPicker(job);
+            Game.Build.accelerateJob(job);
           };
         }
         var cancelBtn = mask.querySelector('#bdetailCancelBtn');
@@ -958,6 +1015,7 @@ window.Game = window.Game || {};
 
         timer = setInterval(function () {
           var rem = Math.max(0, Math.ceil((job.finishesAt - Date.now()) / 1000));
+          Build.updateSpeedUpButton(speedBtn, job, speedTotal);
           var tSec = Math.max(1, Math.ceil((job.finishesAt - job.startedAt) / 1000));
           var curPct = Math.min(100, Math.max(0, Math.floor((1 - rem / tSec) * 100)));
           var remEl = mask.querySelector('#bdetailRemainTime');
@@ -977,7 +1035,7 @@ window.Game = window.Game || {};
         if (upBtn) {
           upBtn.onclick = function () {
             close();
-            if (jobs.length >= 2) {
+            if (jobs.length >= MAX_CONCURRENT) {
               self.showBusyJobs();
             } else {
               self.confirmUpgrade(id, slotIdx != null ? slotIdx : null);
@@ -1005,7 +1063,7 @@ window.Game = window.Game || {};
       if (!g) return;
 
       var jobs = this.getConstructions();
-      var isBusy = jobs.length >= 2;
+      var isBusy = jobs.length >= MAX_CONCURRENT;
 
       var order = g.order;
       var buildable = [];
@@ -1402,7 +1460,7 @@ window.Game = window.Game || {};
             expand += '<button class="btn sm" style="background:#8f7b53;border-color:#8f7b53" onclick="Game.Build.showJobDetails(\'' + id + '\',' + si + ')">' + (isDis ? '拆除中 (查看)' : '施工中 (查看)') + '</button>';
           } else {
             if (slv < max) {
-              if (jobs.length >= 2) {
+              if (jobs.length >= MAX_CONCURRENT) {
                 expand += '<button class="btn sm" onclick="Game.Build.showBusyJobs()">升 Lv.' + (slv + 1) + '</button>';
               } else {
                 expand += '<button class="btn sm ok" onclick="Game.Build.confirmUpgrade(\'' + id + '\',' + si + ')">升 Lv.' + (slv + 1) + '</button>';
@@ -1420,7 +1478,7 @@ window.Game = window.Game || {};
           var groupKey = Core.buildingGroup(id);
           var groupRemain = groupKey ? Core.groupSlotsRemaining(groupKey) : 1;
           var targetSlot = newSlot >= 0 ? newSlot : arr.length;
-          var newBtnAction = jobs.length >= 2 ? 'Game.Build.showBusyJobs()' : ('Game.Build.confirmUpgrade(\'' + id + '\',' + targetSlot + ')');
+          var newBtnAction = jobs.length >= MAX_CONCURRENT ? 'Game.Build.showBusyJobs()' : ('Game.Build.confirmUpgrade(\'' + id + '\',' + targetSlot + ')');
           expand += '<div class="bcard-slot-row bcard-slot-new">';
           expand += '<span class="bcard-slot-tag">+' + (arr.length + 1) + '</span>';
           expand += '<span class="bcard-slot-lv">空闲槽位</span>';
@@ -1438,8 +1496,8 @@ window.Game = window.Game || {};
           expand += '<button class="btn ok" onclick="Game.Build.showJobDetails(\'' + id + '\')">' + btnLabel + '</button>';
         } else {
           if (lvN < max) {
-            var btnLabel = jobs.length >= 2 ? '施工队全忙 (点击查看)' : (lvN === 0 ? '新建至 Lv.1' : '升级至 Lv.' + (lvN + 1));
-            var btnAction = jobs.length >= 2 ? 'Game.Build.showBusyJobs()' : ('Game.Build.confirmUpgrade(\'' + id + '\')');
+            var btnLabel = jobs.length >= MAX_CONCURRENT ? '施工队全忙 (点击查看)' : (lvN === 0 ? '新建至 Lv.1' : '升级至 Lv.' + (lvN + 1));
+            var btnAction = jobs.length >= MAX_CONCURRENT ? 'Game.Build.showBusyJobs()' : ('Game.Build.confirmUpgrade(\'' + id + '\')');
             expand += '<button class="btn ok" onclick="' + btnAction + '">' + btnLabel + '</button>';
           } else {
             expand += '<span class="bcard-max-tip">已达最大等级</span>';
@@ -1740,9 +1798,8 @@ window.Game = window.Game || {};
           for (var si = 0; si < speedOrder.length; si++) {
             speedTotal += (s.items && s.items[speedOrder[si]]) || 0;
           }
-          var speedBtn = speedTotal > 0
-            ? '<button class="btn sm ok" style="margin-left:6px;padding:2px 10px;font-size:13px" onclick="Game.Build.openSpeedUpPicker(' + ji + ')">⚡ 加速 (×' + speedTotal + ')</button>'
-            : '<button class="btn sm" disabled style="margin-left:6px;padding:2px 10px;font-size:13px" title="商城可购买加速符">⚡ 加速 (无)</button>';
+          var speedBtn = this.renderSpeedUpButton(job, speedTotal,
+            'style="margin-left:6px" onclick="Game.Build.accelerateJobById(' + job.queueId + ')"');
           var isDismantle = job.action === 'dismantle' || (job.fromLevel != null && job.targetLevel < job.fromLevel);
           var actionDesc;
           if (isDismantle) {
@@ -1755,9 +1812,9 @@ window.Game = window.Game || {};
           qh += speedBtn;
           qh += '</div>';
         }
-        if (jobs.length < 2) qh += '<div class="bfield">施工队 ' + (jobs.length + 1) + ' 空闲：还可开始一项建筑工程</div>';
+        if (jobs.length < MAX_CONCURRENT) qh += '<div class="bfield">剩余 ' + (MAX_CONCURRENT - jobs.length) + ' 支施工队空闲：还可开始 ' + (MAX_CONCURRENT - jobs.length) + ' 项建筑工程</div>';
       } else {
-        qh += '<div class="bfield">两支施工队空闲：可同时进行两项建筑工程</div>';
+        qh += '<div class="bfield">' + MAX_CONCURRENT + ' 支施工队空闲：可同时进行 ' + MAX_CONCURRENT + ' 项建筑工程</div>';
       }
       return qh;
     },

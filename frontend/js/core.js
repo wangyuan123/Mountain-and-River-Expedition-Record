@@ -39,6 +39,15 @@ window.Game = window.Game || {};
       .replace(/'/g, '&#39;');
   }
 
+  function unitDisplayName(val) {
+    if (!val) return '';
+    var name = typeof val === 'object' && val.name ? val.name : String(val);
+    var codeMatch = name.match(/[（(]([^）)]+)[）)]/);
+    var code = codeMatch ? codeMatch[1].trim() : '';
+    var base = name.indexOf('-') > 0 ? name.split('-')[0].trim() : name.replace(/[（(].*?[）)]/, '').trim();
+    return code ? base + '(' + code + ')' : base;
+  }
+
   var Core = {
     state: null,
     route: 'home',
@@ -139,6 +148,8 @@ window.Game = window.Game || {};
       var mayor = this.getOfficerByRole('mayor');
       var mayorLogi = mayor ? mayor.logistics : 0;
       var bonus = 1 + 0.05 * (s.tech.log_production || 0) + mayorLogi / 100;
+      var harvestBonus = this.mayorSkillBonus ? this.mayorSkillBonus('harvest') : 0;
+      if (harvestBonus > 0) bonus *= (1 + harvestBonus);
       bonus *= 1 + 0.03 * (s.buildings.transit || 0);
       return bonus;
     },
@@ -218,7 +229,15 @@ window.Game = window.Game || {};
     foodPerHour: function () {
       var s = this.state, sum = 0;
       for (var id in s.army) sum += (D.units[id] ? D.units[id].food : 0) * s.army[id];
-      return sum;
+      var techLv = this.techLevel ? this.techLevel('log_food') : 0;
+      var foodSave = 1 - 0.05 * techLv;
+      if (foodSave < 0.5) foodSave = 0.5;
+      var rationBonus = this.mayorSkillBonus ? this.mayorSkillBonus('ration') : 0;
+      if (rationBonus > 0) {
+        foodSave *= Math.max(0.1, 1.0 - rationBonus);
+      }
+      if (foodSave < 0.1) foodSave = 0.1;
+      return Math.round(sum * foodSave);
     },
 
     popMax: function () {
@@ -336,7 +355,10 @@ window.Game = window.Game || {};
     },
 
     buildMul: function () {
-      return 1 - 0.05 * (this.state.tech.log_build || 0);
+      var mul = 1 - 0.05 * (this.state.tech.log_build || 0);
+      var constructBonus = this.mayorSkillBonus ? this.mayorSkillBonus('construct') : 0;
+      if (constructBonus > 0) mul *= (1 - constructBonus);
+      return Math.max(0.35, mul);
     },
 
     medicalMul: function () {
@@ -356,7 +378,11 @@ window.Game = window.Game || {};
       var commandLv = Math.max(1, this.buildingLevel('command'));
       var staffLv = this.buildingLevel('staff');
       var base = rankBase + commandLv * 1000;
-      return Math.floor(base * (1 + staffLv * 0.10) * (1 + cmdLv * 0.025));
+      var leadBonus = 0;
+      if (this.skillBonus) {
+        leadBonus = Math.max(this.skillBonus('leadership'), this.skillBonus('supply'));
+      }
+      return Math.floor(base * (1 + staffLv * 0.10) * (1 + cmdLv * 0.025) * (1 + leadBonus));
     },
 
     addExp: function () {},
@@ -416,13 +442,39 @@ window.Game = window.Game || {};
       return map;
     },
 
+    getMayorSkills: function () {
+      var mayor = this.getOfficerByRole('mayor');
+      if (!mayor || !mayor.skills) return {};
+      var map = {};
+      for (var i = 0; i < mayor.skills.length; i++) {
+        if (mayor.skills[i] && mayor.skills[i].id) {
+          map[mayor.skills[i].id] = mayor.skills[i].lv;
+        }
+      }
+      return map;
+    },
+
+    mayorSkillBonus: function (skillId) {
+      var skills = this.getMayorSkills();
+      var lv = skills[skillId] || 0;
+      if (lv <= 0) return 0;
+      var rates = {
+        ration: 0.16, harvest: 0.10, construct: 0.04, finance: 0.08, research: 0.08
+      };
+      return (rates[skillId] || 0) * lv;
+    },
+
     skillBonus: function (skillId) {
       var skills = this.getCommanderSkills();
       var lv = skills[skillId] || 0;
       if (lv <= 0) return 0;
+      if (skillId === 'counter') {
+        return 0.10 * Math.min(5, lv);
+      }
       var rates = {
-        frenzy: 0.10, bulwark: 0.10, blitz: 0.15, suppress: 0.08,
-        pierce: 0.12, supply: 0.20, medic: 0.03, combo: 0.08
+        frenzy: 0.10, bulwark: 0.10, blitz: 0.04, suppress: 0.05,
+        pierce: 0.06, leadership: 0.10, supply: 0.10, medic: 0.03,
+        ration: 0.16, harvest: 0.10, construct: 0.04, finance: 0.08, research: 0.08
       };
       return (rates[skillId] || 0) * lv;
     },
@@ -531,6 +583,7 @@ window.Game = window.Game || {};
       }
       if (G.WorldMap && (this.route !== 'world' || !G.WorldMap.isMap())) G.WorldMap.unmount();
       if (this.route !== 'alerts' && G.World && G.World.stopAlertTimer) G.World.stopAlertTimer();
+      if (this.route !== 'battle' && G.Battle && G.Battle.stopTacticalTimer) G.Battle.stopTacticalTimer();
       if (this.route !== 'wounded' && G.Wounded) G.Wounded.stop();
       if (this.route !== 'tech' && G.Tech && G.Tech.stopTimer) G.Tech.stopTimer();
       this.renderTop();
@@ -555,8 +608,7 @@ window.Game = window.Game || {};
       button.type = 'button';
       button.className = 'page-back-button';
       button.setAttribute('aria-label', '返回上一步');
-      button.title = '返回上一步';
-      button.innerHTML = '<span aria-hidden="true">‹</span><span>返回上一步</span>';
+      button.innerHTML = '<span>[‹ 返回上一步]</span>';
       button.addEventListener('click', function () { Core.back(); });
       bar.appendChild(button);
       view.insertBefore(bar, view.firstChild);
@@ -705,7 +757,7 @@ window.Game = window.Game || {};
         wild: '点击占领/废弃 [0]返回',
         world: '拖动浏览 · 双指缩放 · 点击目标查看详情',
         dispatch: '选配兵力/军官/辎重 [0]返回',
-        alerts: '查看军情 [0]返回',
+        alerts: '查看情报 [0]返回',
         reports: '点击展开 [0]返回',
         reportDetail: '返回战报列表/主菜单',
         battle: '[1]立即结算/下一回合 [0]撤退',
@@ -750,6 +802,7 @@ window.Game = window.Game || {};
   };
 
   G.escapeHtml = escapeHtml;
+  G.unitDisplayName = unitDisplayName;
   G.Core = Core;
   G.$ = $;
   G.fmt = fmt;

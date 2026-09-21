@@ -49,26 +49,26 @@ function setup(extra = {}) {
 test('calcDispatchSpeed selects slowest unit speed among multiple unit types', () => {
   const { Game: g } = setup();
 
-  // Single unit: scout (base speed 14)
+  // Single unit: scout (base speed 11)
   const res1 = g.World.calcDispatchSpeed({ scout: 5 });
-  assert.equal(res1.slowestSpd, 14);
+  assert.equal(res1.slowestSpd, 11);
   assert.equal(res1.slowestUnitId, 'scout');
-  assert.equal(res1.slowestUnitName, '侦察机');
+  assert.equal(res1.slowestUnitName, g.DATA.units.scout.name);
   assert.equal(res1.unitCount, 1);
 
-  // Mixed units: scout (14) and infantry (3)
+  // Mixed units: scout (11) and infantry (3)
   // Army always travels together, so slowest speed (3) must be chosen
   const res2 = g.World.calcDispatchSpeed({ scout: 10, infantry: 50 });
   assert.equal(res2.slowestSpd, 3);
   assert.equal(res2.slowestUnitId, 'infantry');
-  assert.equal(res2.slowestUnitName, '步兵');
+  assert.equal(res2.slowestUnitName, g.DATA.units.infantry.name);
   assert.equal(res2.unitCount, 2);
 
-  // Mixed units: ltank (6), motor (7), truck (8) -> slowest is ltank (6)
+  // Mixed units: ltank (6), motor (7), truck (6) -> slowest is ltank (6)
   const res3 = g.World.calcDispatchSpeed({ ltank: 20, motor: 30, truck: 10 });
   assert.equal(res3.slowestSpd, 6);
   assert.equal(res3.slowestUnitId, 'ltank');
-  assert.equal(res3.slowestUnitName, '轻型坦克');
+  assert.equal(res3.slowestUnitName, g.DATA.units.ltank.name);
 
   // Empty army
   const res4 = g.World.calcDispatchSpeed({});
@@ -92,11 +92,11 @@ test('calcDispatchSpeed factors in engine technology speed bonuses', () => {
   const resArm = g.World.calcDispatchSpeed({ ltank: 10 });
   assert.ok(Math.abs(resArm.slowestSpd - 6.6) < 1e-6);
 
-  // scout base speed = 14. With air_engine lv 4 (1.20x) -> effective speed = 16.8
+  // scout base speed = 11. With air_engine lv 4 (1.20x) -> effective speed = 13.2
   const resAir = g.World.calcDispatchSpeed({ scout: 5 });
-  assert.ok(Math.abs(resAir.slowestSpd - 16.8) < 1e-6);
+  assert.ok(Math.abs(resAir.slowestSpd - 13.2) < 1e-6);
 
-  // Combination: ltank (6.6) + scout (16.8) -> slowest is ltank (6.6)
+  // Combination: ltank (6.6) + scout (13.2) -> slowest is ltank (6.6)
   const resMixed = g.World.calcDispatchSpeed({ ltank: 10, scout: 5 });
   assert.ok(Math.abs(resMixed.slowestSpd - 6.6) < 1e-6);
   assert.equal(resMixed.slowestUnitId, 'ltank');

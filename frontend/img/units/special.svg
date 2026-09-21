@@ -1,57 +1,34 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
   <defs>
-    <!-- Special Forces Maroon / Dark Crimson Beret -->
-    <linearGradient id="beretGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#b91c1c"/>
-      <stop offset="60%" stop-color="#881337"/>
-      <stop offset="100%" stop-color="#4c0519"/>
-    </linearGradient>
-    <!-- Tactical Camo Uniform -->
-    <linearGradient id="camoUniform" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#475569"/>
-      <stop offset="100%" stop-color="#1e293b"/>
-    </linearGradient>
-    <!-- Skin Tone -->
-    <linearGradient id="commandoSkin" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#fed7aa"/>
-      <stop offset="100%" stop-color="#fba464"/>
-    </linearGradient>
-    <!-- Gun Steel -->
-    <linearGradient id="subgunSteel" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#64748b"/>
-      <stop offset="100%" stop-color="#0f172a"/>
+    <radialGradient id="bgGlow_sp" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#14241a"/>
+      <stop offset="100%" stop-color="#08100a"/>
+    </radialGradient>
+    <linearGradient id="beretGreen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#166534"/>
+      <stop offset="100%" stop-color="#052e16"/>
     </linearGradient>
   </defs>
+  <rect width="128" height="128" rx="20" fill="url(#bgGlow_sp)"/>
+  <rect x="2" y="2" width="124" height="124" rx="19" fill="none" stroke="#16a34a" stroke-width="1.5" opacity="0.4"/>
 
-  <!-- Body / Torso with Tactical Vest -->
-  <path d="M7 29 C7 21 10 18 16 18 C22 18 25 21 25 29 Z" fill="url(#camoUniform)" stroke="#0f172a" stroke-width="0.8"/>
-  <!-- Tactical Vest Straps & Webbing -->
-  <rect x="11" y="20" width="3" height="9" fill="#334155" stroke="#0f172a" stroke-width="0.4"/>
-  <rect x="18" y="20" width="3" height="9" fill="#334155" stroke="#0f172a" stroke-width="0.4"/>
-  <rect x="11" y="24" width="10" height="2" fill="#475569" stroke="#0f172a" stroke-width="0.4"/>
+  <!-- Beret -->
+  <g transform="translate(16, 54) rotate(-15)">
+    <path d="M8 34 C8 12 36 4 64 8 C80 10 88 18 88 30 C88 40 70 42 40 42 C18 42 8 40 8 34 Z" fill="url(#beretGreen)" stroke="#052e16" stroke-width="2"/>
+    <path d="M14 36 C30 40 62 40 82 32" fill="none" stroke="#0f172a" stroke-width="4.5"/>
+  </g>
 
-  <!-- Commando Head & Face -->
-  <circle cx="16" cy="13" r="4.8" fill="url(#commandoSkin)" stroke="#9a3412" stroke-width="0.7"/>
-
-  <!-- Tactical Eye Goggles on Forehead -->
-  <rect x="12" y="10" width="8" height="2.2" rx="0.8" fill="#1e293b" stroke="#0f172a" stroke-width="0.5"/>
-  <rect x="12.5" y="10.4" width="3" height="1.4" rx="0.4" fill="#38bdf8"/>
-  <rect x="16.5" y="10.4" width="3" height="1.4" rx="0.4" fill="#38bdf8"/>
-
-  <!-- Airborne / Special Forces Beret (Pulled sharply over right brow) -->
-  <path d="M10 10.5 C10 5.5 17 5 21 6.5 C25 8 26 12.5 19 12 C13 12 10.5 11 10 10.5 Z" 
-        fill="url(#beretGrad)" stroke="#4c0519" stroke-width="0.8"/>
-  <!-- Gold Commando Dagger / Wings Insignia Badge on Beret -->
-  <polygon points="13,7.5 14,6.5 14.5,8 14,9.5" fill="#facc15" stroke="#a16207" stroke-width="0.3"/>
-
-  <!-- Submachine Gun (Carried across chest: MP40 / Thompson profile) -->
-  <!-- Gun Barrel pointing Left -->
-  <rect x="2" y="21" width="12" height="1.5" rx="0.4" fill="url(#subgunSteel)" stroke="#000" stroke-width="0.4"/>
-  <rect x="0.5" y="20.5" width="2" height="2.5" rx="0.4" fill="#1e293b"/>
-  <!-- Gun Receiver & Handguard -->
-  <rect x="10" y="20.5" width="8" height="3" rx="0.5" fill="url(#subgunSteel)" stroke="#000" stroke-width="0.4"/>
-  <!-- Magazine (Straight stick magazine curving down) -->
-  <rect x="12" y="23.5" width="2" height="5" rx="0.4" fill="#334155" stroke="#000" stroke-width="0.4"/>
-  <!-- Grip & Stock -->
-  <path d="M17 23.5 L19 26.5 L22 26 L20 22 Z" fill="#78350f" stroke="#451a03" stroke-width="0.4"/>
+  <!-- F-S Dagger -->
+  <g transform="translate(64, 64) rotate(45) translate(-64, -64)">
+    <polygon points="64,8 59,68 64,66" fill="#f8fafc"/>
+    <polygon points="64,8 69,68 64,66" fill="#334155"/>
+    <line x1="64" y1="8" x2="64" y2="66" stroke="#0f172a" stroke-width="1.5"/>
+    <ellipse cx="64" cy="68" rx="20" ry="4" fill="#ca8a04" stroke="#854d0e" stroke-width="1.5"/>
+    <rect x="61" y="72" width="6" height="40" rx="2" fill="#334155" stroke="#0f172a" stroke-width="1.5"/>
+    <line x1="59" y1="78" x2="69" y2="78" stroke="#ca8a04" stroke-width="2"/>
+    <line x1="59" y1="86" x2="69" y2="86" stroke="#ca8a04" stroke-width="2"/>
+    <line x1="59" y1="94" x2="69" y2="94" stroke="#ca8a04" stroke-width="2"/>
+    <line x1="59" y1="102" x2="69" y2="102" stroke="#ca8a04" stroke-width="2"/>
+    <circle cx="64" cy="114" r="5" fill="#ca8a04" stroke="#854d0e" stroke-width="1.5"/>
+  </g>
 </svg>

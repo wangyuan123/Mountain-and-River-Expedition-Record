@@ -39,7 +39,7 @@ public class OfficerLevelUpTest extends BaseServiceTest {
         assertEquals(50, updated.getMilitary());
         assertEquals(40, updated.getLogistics());
         assertEquals(30, updated.getKnowledge());
-        assertEquals(4, updated.getAttrPoints());
+        assertEquals(1, updated.getAttrPoints());
     }
 
     @Test
@@ -65,21 +65,27 @@ public class OfficerLevelUpTest extends BaseServiceTest {
         assertEquals(50, updated.getMilitary());
         assertEquals(40, updated.getLogistics());
         assertEquals(30, updated.getKnowledge());
-        assertEquals(8, updated.getAttrPoints()); // 2 levels * 4 points
+        assertEquals(2, updated.getAttrPoints()); // 2 levels * 1 point
     }
 
     @Test
     public void testAssignAttrSuccess() {
         Player player = createTestPlayer();
-        Officer officer = createOfficer(player.getId(), "commander", 50, 40, 30);
-        officer.setAttrPoints(8);
+        Officer officer = createOfficer(player.getId(), "commander", 50, 45, 40, 30);
+        officer.setAttrPoints(10);
         officerRepository.save(officer);
 
         // Assign 5 points to military
         Map<String, Object> res1 = officerService.assignAttr(player.getId(), officer.getId(), "military", 5);
         assertTrue((Boolean) res1.get("success"));
         assertEquals(55, res1.get("newValue"));
-        assertEquals(3, res1.get("attrPoints"));
+        assertEquals(5, res1.get("attrPoints"));
+
+        // Assign 2 points to defense
+        Map<String, Object> resDef = officerService.assignAttr(player.getId(), officer.getId(), "defense", 2);
+        assertTrue((Boolean) resDef.get("success"));
+        assertEquals(47, resDef.get("newValue"));
+        assertEquals(3, resDef.get("attrPoints"));
 
         // Assign 2 points to logistics
         Map<String, Object> res2 = officerService.assignAttr(player.getId(), officer.getId(), "logistics", 2);
@@ -95,6 +101,7 @@ public class OfficerLevelUpTest extends BaseServiceTest {
 
         Officer updated = officerRepository.findById(officer.getId()).orElseThrow();
         assertEquals(55, updated.getMilitary());
+        assertEquals(47, updated.getDefense());
         assertEquals(42, updated.getLogistics());
         assertEquals(31, updated.getKnowledge());
         assertEquals(0, updated.getAttrPoints());
@@ -119,13 +126,13 @@ public class OfficerLevelUpTest extends BaseServiceTest {
 
         Officer officer = createOfficer(player.getId(), "commander", 70, 50, 40);
         officer.setStar(2);
-        officer.setLevel(5); // (5 - 1) * 4 = 16 points
+        officer.setLevel(5); // (5 - 1) * 1 = 4 points
         officer.setAttrPoints(0);
         officerRepository.save(officer);
 
         Map<String, Object> res = officerService.wash(player.getId(), officer.getId());
         assertTrue((Boolean) res.get("success"));
-        assertEquals(16, res.get("attrPoints"));
+        assertEquals(4, res.get("attrPoints"));
 
         // Base for 2 star is 30 + 2 * 12 = 54
         assertEquals(54, res.get("military"));
@@ -133,7 +140,7 @@ public class OfficerLevelUpTest extends BaseServiceTest {
         assertEquals(54, res.get("knowledge"));
 
         Officer updated = officerRepository.findById(officer.getId()).orElseThrow();
-        assertEquals(16, updated.getAttrPoints());
+        assertEquals(4, updated.getAttrPoints());
         assertEquals(54, updated.getMilitary());
 
         // Check gold deducted by 200: 500 - 200 = 300
@@ -231,9 +238,50 @@ public class OfficerLevelUpTest extends BaseServiceTest {
         Officer updated = officerRepository.findById(officer.getId()).orElseThrow();
         assertEquals(100, updated.getLevel());
         assertEquals(0L, updated.getExp());
-        assertEquals(99 * 4, updated.getAttrPoints()); // 1级到100级获得 99*4=396 属性点
+        assertEquals(99, updated.getAttrPoints()); // 1级到100级获得 99*1=99 属性点
 
         PlayerItem itemUpdated = playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "expBookMax").orElseThrow();
         assertEquals(1, itemUpdated.getCount()); // 消耗1本，剩余1本
+    }
+
+    @Test
+    public void testAssignAttrClampedAt219() {
+        Player player = createTestPlayer();
+        Officer officer = createOfficer(player.getId(), "commander", 210, 50, 50);
+        officer.setAttrPoints(20);
+        officerRepository.save(officer);
+
+        Map<String, Object> res = officerService.assignAttr(player.getId(), officer.getId(), "military", 15);
+        assertTrue((Boolean) res.get("success"));
+        assertEquals(9, res.get("added")); // 219 - 210 = 9 max add
+        assertEquals(219, res.get("newValue"));
+        assertEquals(11, res.get("attrPoints")); // 20 - 9 = 11
+
+        // Trying to assign again should fail with limit reached
+        Map<String, Object> resOver = officerService.assignAttr(player.getId(), officer.getId(), "military", 1);
+        assertFalse((Boolean) resOver.get("success"));
+        assertTrue(resOver.get("message").toString().contains("已达到上限 (219)"));
+    }
+
+    @Test
+    public void testWashFiveStarOfficer() {
+        Player player = createTestPlayer();
+        giveResources(player.getId(), 1000, 1000, 1000, 500, 500);
+
+        Officer officer = createOfficer(player.getId(), "commander", 150, 70, 60);
+        officer.setStar(5);
+        officer.setLevel(10); // (10 - 1) * 1 = 9 points
+        officer.setAttrPoints(0);
+        officerRepository.save(officer);
+
+        Map<String, Object> res = officerService.wash(player.getId(), officer.getId());
+        assertTrue((Boolean) res.get("success"));
+        assertEquals(9, res.get("attrPoints"));
+
+        // Military was highest, so it resets to 120 (mainBase), others reset to 75
+        assertEquals(120, res.get("military"));
+        assertEquals(75, res.get("defense"));
+        assertEquals(75, res.get("logistics"));
+        assertEquals(75, res.get("knowledge"));
     }
 }

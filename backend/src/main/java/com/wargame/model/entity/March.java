@@ -95,4 +95,8 @@ public class March extends CityOwnedEntity {
 
     @Column(name = "origin_y")
     private Integer originY;
+
+    /** 已到达且等待玩家逐回合指挥的战斗会话。 */
+    @Column(name = "battle_id")
+    private Long battleId;
 }

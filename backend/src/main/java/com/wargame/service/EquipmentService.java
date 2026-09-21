@@ -43,7 +43,7 @@ public class EquipmentService {
         OfficerEquipment equipment = new OfficerEquipment();
         equipment.setPlayerId(playerId); equipment.setOfficerId(officerId); equipment.setItemKey(def.key());
         equipment.setSetType(def.setKey()); equipment.setTier(def.tier()); equipment.setSlot(def.slot());
-        equipment.setMilitaryBonus(def.military()); equipment.setLogisticsBonus(def.logistics()); equipment.setKnowledgeBonus(def.knowledge());
+        equipment.setMilitaryBonus(def.military()); equipment.setDefenseBonus(def.defense()); equipment.setLogisticsBonus(def.logistics()); equipment.setKnowledgeBonus(def.knowledge());
         equipment.setCreatedAt(System.currentTimeMillis()); equipment.setEquippedAt(System.currentTimeMillis());
         equipmentRepository.save(equipment);
         return success("已为 " + officer.getName() + " 装备 " + def.name());
@@ -63,10 +63,10 @@ public class EquipmentService {
 
     public Attributes attributes(Officer officer) {
         List<OfficerEquipment> equipped = equipmentRepository.findByPlayerIdAndOfficerId(officer.getPlayerId(), officer.getId());
-        int military = value(officer.getMilitary()), logistics = value(officer.getLogistics()), knowledge = value(officer.getKnowledge());
+        int military = value(officer.getMilitary()), defense = value(officer.getDefense()), logistics = value(officer.getLogistics()), knowledge = value(officer.getKnowledge());
         Map<String, List<OfficerEquipment>> sets = new HashMap<>();
         for (OfficerEquipment e : equipped) {
-            military += value(e.getMilitaryBonus()); logistics += value(e.getLogisticsBonus()); knowledge += value(e.getKnowledgeBonus());
+            military += value(e.getMilitaryBonus()); defense += value(e.getDefenseBonus()); logistics += value(e.getLogisticsBonus()); knowledge += value(e.getKnowledgeBonus());
             sets.computeIfAbsent(e.getSetType(), key -> new ArrayList<>()).add(e);
         }
         List<Map<String, Object>> bonuses = new ArrayList<>();
@@ -77,17 +77,19 @@ public class EquipmentService {
             int setMain = def.tier() == 1 ? 3 : def.tier() == 2 ? 15 : 30;
             int all = def.tier() == 3 ? 5 : 0;
             if (def.branch().equals("military")) military += setMain;
+            if (def.branch().equals("defense")) defense += setMain;
             if (def.branch().equals("logistics")) logistics += setMain;
             if (def.branch().equals("knowledge")) knowledge += setMain;
-            military += all; logistics += all; knowledge += all;
+            military += all; defense += all; logistics += all; knowledge += all;
             Map<String, Object> bonus = new LinkedHashMap<>();
             bonus.put("setName", def.setName()); bonus.put("description", "集齐3件：" + branchName(def.branch()) + "+" + setMain + (all > 0 ? "，全属性+" + all : ""));
             bonus.put("military", def.branch().equals("military") ? setMain + all : all);
+            bonus.put("defense", def.branch().equals("defense") ? setMain + all : all);
             bonus.put("logistics", def.branch().equals("logistics") ? setMain + all : all);
             bonus.put("knowledge", def.branch().equals("knowledge") ? setMain + all : all);
             bonuses.add(bonus);
         }
-        return new Attributes(military, logistics, knowledge, equipped, bonuses);
+        return new Attributes(military, defense, logistics, knowledge, equipped, bonuses);
     }
 
     private void addToInventory(Long playerId, String itemKey) {
@@ -97,8 +99,8 @@ public class EquipmentService {
         }, () -> { PlayerItem item = new PlayerItem(); item.setPlayerId(playerId); item.setItemKey(itemKey); item.setCount(1); item.setUpdatedAt(now); playerItemRepository.save(item); });
     }
     private static int value(Integer value) { return value == null ? 0 : value; }
-    private static String branchName(String branch) { return switch (branch) { case "military" -> "军事"; case "logistics" -> "后勤"; default -> "学识"; }; }
+    private static String branchName(String branch) { return switch (branch) { case "military" -> "军事"; case "defense" -> "防御"; case "logistics" -> "后勤"; default -> "学识"; }; }
     private static Map<String, Object> error(String message) { Map<String, Object> r = new LinkedHashMap<>(); r.put("success", false); r.put("message", message); return r; }
     private static Map<String, Object> success(String message) { Map<String, Object> r = new LinkedHashMap<>(); r.put("success", true); r.put("message", message); return r; }
-    public record Attributes(int military, int logistics, int knowledge, List<OfficerEquipment> equipment, List<Map<String, Object>> bonuses) {}
+    public record Attributes(int military, int defense, int logistics, int knowledge, List<OfficerEquipment> equipment, List<Map<String, Object>> bonuses) {}
 }
