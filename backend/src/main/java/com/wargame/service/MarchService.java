@@ -147,8 +147,22 @@ public class MarchService {
             if (now < arriveAt) continue;
 
             String targetKind = m.getTargetKind();
-            // 战斗会话存在时，行军已抵达战场；只能由玩家的回合指令推进，Tick 不得自动结算。
-            if (!returning && m.getBattleId() != null) continue;
+            // 战斗会话存在时，行军已抵达战场；若超过60秒未下达战术指令，自动结算避免部队永久卡死。
+            if (!returning && m.getBattleId() != null) {
+                BattleSession session = battleSessionRepository.findById(m.getBattleId()).orElse(null);
+                if (session == null || now > (m.getArriveAt() != null ? m.getArriveAt() : 0L) + 60_000L) {
+                    if (session != null) {
+                        Object target = targets.findTargetById(session.getTargetKind(), session.getTargetId());
+                        if (target != null) {
+                            resolveAttack(playerId, m, target, now);
+                        }
+                        battleSessionRepository.delete(session);
+                    }
+                    m.setBattleId(null);
+                    marchRepository.save(m);
+                }
+                continue;
+            }
             if (!returning) {
                 pushService.pushMarchUpdate(playerId, marchEvent("arrived", m, Collections.emptyMap()));
             }
@@ -427,8 +441,79 @@ public class MarchService {
     }
 
     private void resolveTarget(Long playerId, March march, Object target, long now, String action) {
-        if ("scout".equals(action)) resolveScout(playerId, march, target, now);
-        else startTacticalBattle(playerId, march, target, now);
+        if ("scout".equals(action)) {
+            resolveScout(playerId, march, target, now);
+        } else if (action != null && action.startsWith("tactical")) {
+            startTacticalBattle(playerId, march, target, now);
+        } else {
+            resolveAttack(playerId, march, target, now);
+        }
+    }
+
+    private void resolveAttack(Long playerId, March m, Object target, long now) {
+        Map<String, Integer> armyMap = JsonUtil.parseIntMap(m.getArmy());
+
+        // 攻方信息
+        Map<String, Integer> attackerTech = targets.getTechMap(playerId);
+        Officer commander = m.getCommanderId() != null
+                ? targets.getOfficerById(playerId, m.getCommanderId())
+                : targets.getCommander(playerId);
+        int attackerCommanderMil = 0;
+        int attackerCommanderDef = 0;
+        if (commander != null) {
+            EquipmentService.Attributes aAttrs = equipmentService.attributes(commander);
+            attackerCommanderMil = aAttrs.military();
+            attackerCommanderDef = aAttrs.defense();
+        }
+        Map<String, Integer> attackerSkills = targets.getCommanderSkills(commander);
+        Officer defenderCommander = target instanceof PlayerCity pc && pc.getOwnerId() != null
+                ? targets.getCommander(pc.getOwnerId()) : null;
+
+        // 守方信息
+        Map<String, Integer> defenderArmy = targets.getTargetArmy(target);
+        Map<String, Integer> defenderForts = targets.getTargetForts(target);
+        Map<String, Integer> defenderResources = targets.getTargetResources(target);
+        String action = m.getAction() != null ? m.getAction() : "conquer";
+        if (action.startsWith("tactical_")) {
+            action = action.substring("tactical_".length());
+        }
+
+        // 流寇奖励来自 WorldConfig
+        if (target instanceof Bandit bandit) {
+            int level = bandit.getLevel() != null ? bandit.getLevel() : 1;
+            if (level >= 1 && level <= WorldConfig.BANDIT_LEVELS.size()) {
+                defenderResources = new LinkedHashMap<>(WorldConfig.BANDIT_LEVELS.get(level - 1).reward());
+            }
+        }
+
+        boolean isPlayerBattle = (target instanceof PlayerCity);
+        Long defenderPlayerId = (target instanceof PlayerCity pc) ? pc.getOwnerId() : null;
+        Map<String, Integer> defenderTech = defenderPlayerId != null ? targets.getTechMap(defenderPlayerId) : Collections.emptyMap();
+        Map<String, Integer> defenderSkills = targets.getCommanderSkills(defenderCommander);
+        int defenderCommanderMil = 0;
+        int defenderCommanderDef = 0;
+        if (defenderCommander != null) {
+            EquipmentService.Attributes dAttrs = equipmentService.attributes(defenderCommander);
+            defenderCommanderMil = dAttrs.military();
+            defenderCommanderDef = dAttrs.defense();
+        } else if (target instanceof NpcCity city) {
+            int level = city.getLevel() != null ? city.getLevel() : 1;
+            defenderCommanderMil = 50 + level * 8;
+            defenderCommanderDef = 50 + level * 8;
+        }
+        int defenderWallLevel = defenderPlayerId != null ? targets.buildingLevel(defenderPlayerId, "wall") : 0;
+        long defenderWarehouseLevel = defenderPlayerId != null ? targets.buildingLevel(defenderPlayerId, "depot") : 0;
+
+        BattleResult result = battleService.startWorldDispatch(
+                armyMap, defenderArmy, defenderForts,
+                attackerTech, defenderTech,
+                attackerSkills, defenderSkills,
+                attackerCommanderMil, attackerCommanderDef,
+                defenderCommanderMil, defenderCommanderDef,
+                0, defenderWallLevel,
+                action, defenderResources, defenderWarehouseLevel,
+                isPlayerBattle);
+        settleTacticalBattle(playerId, m, target, now, result, commander, defenderCommander, action);
     }
 
     /**

@@ -21,7 +21,7 @@ public interface MarchRepository extends JpaRepository<March, Long> {
               and m.playerId <> :defenderId
               and (m.returning = false or m.returning is null)
               and (m.gathering = false or m.gathering is null)
-              and m.action in ('conquer', 'plunder', 'scout')
+              and (m.action in ('conquer', 'plunder', 'scout') or m.action like 'tactical%')
             order by m.arriveAt, m.id
             """)
     List<March> findIncomingPlayerMarches(
