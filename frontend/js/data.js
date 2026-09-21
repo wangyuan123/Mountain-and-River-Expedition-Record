@@ -219,20 +219,20 @@ window.Game = window.Game || {};
       playerCityNames: ['钢铁洪流', '虎式之巢', '苍穹之眼', '深海利剑', '雷霆要塞', '孤狼营地', '铁血堡垒', '风暴前线', '暗夜哨站', '烈焰军团']
     },
     officerSkills: {
-      frenzy:   { name: '全力猛攻', desc: '攻击力额外+10%/级',           max: 5, cat: 'atk' },
-      bulwark:  { name: '铜墙铁壁', desc: '防御力额外+10%/级',           max: 5, cat: 'def' },
-      blitz:    { name: '闪电突击', desc: '战场移动速度+4%/级，最高20%',  max: 5, cat: 'spd' },
-      suppress: { name: '火力压制', desc: '降低敌方攻击力5%/级，最高25%',  max: 5, cat: 'debuff' },
+      frenzy:   { name: '全军冲锋', desc: '攻击力额外+10%/级，第1、4、7…回合触发', max: 5, cat: 'atk' },
+      bulwark:  { name: '坚守阵地', desc: '防御力额外+10%/级，第2、5、8…回合触发', max: 5, cat: 'def' },
+      blitz:    { name: '闪电突击', desc: '战场移动速度+6%/级，最高30%',       max: 5, cat: 'spd' },
+      suppress: { name: '火力压制', desc: '降低敌方攻击力6%/级，最高30%',       max: 5, cat: 'debuff' },
       pierce:   { name: '破甲打击', desc: '无视敌方防御6%/级',           max: 5, cat: 'pierce' },
-      leadership:{ name: '三军统帅',desc: '指挥官任命时，带兵上限额外+10%/级', max: 5, cat: 'mil' },
-      supply:   { name: '三军统帅', desc: '指挥官任命时，带兵上限额外+10%/级', max: 5, cat: 'mil' },
+      leadership:{ name: '三军统帅',desc: '指挥官任命时，带兵上限额外+4%/级，最高20%', max: 5, cat: 'mil' },
+      supply:   { name: '三军统帅', desc: '指挥官任命时，带兵上限额外+4%/级，最高20%', max: 5, cat: 'mil' },
       medic:    { name: '战地急救', desc: '战后伤兵额外回收+3%/级，最高15%', max: 5, cat: 'medic' },
       harvest:  { name: '屯田增产', desc: '市长任命时，基础资源产出额外+10%/级', max: 5, cat: 'logi' },
       construct:{ name: '工程营造', desc: '市长任命时，建筑工期缩短4%/级，最高20%', max: 5, cat: 'logi' },
-      finance:  { name: '精明理财', desc: '市长任命时，黄金税收产出额外+8%/级', max: 5, cat: 'know' },
-      research: { name: '格物致知', desc: '市长任命时，科研速度提升8%/级',     max: 5, cat: 'know' },
+      finance:  { name: '精明理财', desc: '市长任命时，黄金税收产出额外+4%/级', max: 5, cat: 'know' },
+      research: { name: '格物致知', desc: '市长任命时，科研速度提升4%/级',     max: 5, cat: 'know' },
       ration:   { name: '军屯自给', desc: '市长任命时，全城养兵耗粮降低16%/级，最高80%', max: 5, cat: 'logi' },
-      counter:  { name: '绝地反击', desc: '受击存活后在第3/6/9...回合进行反击，伤害为剩余兵力总伤害的10%/级（最高50%）', max: 5, cat: 'def' }
+      counter:  { name: '绝境反击', desc: '受击存活后在第3/6/9...回合进行反击，伤害为剩余兵力总伤害的10%/级（最高50%）', max: 5, cat: 'def' }
     },
     items: {
       expBook:   { name: '经验书',   icon: '📘', desc: '军官使用,获得10000经验',          cat: 'officer' },
@@ -384,6 +384,27 @@ window.Game = window.Game || {};
     carrier: 'img/units/carrier.svg'
   };
 
+  // 首页与军队页统一使用的写实兵种模型。
+  G.UNIT_MODEL = {
+    infantry: 'img/units/models/infantry.webp',
+    motor: 'img/units/models/motor.webp',
+    truck: 'img/units/models/truck.webp',
+    armored: 'img/units/models/armored.webp',
+    ltank: 'img/units/models/ltank.webp',
+    htank: 'img/units/models/htank.webp',
+    assault: 'img/units/models/assault.webp',
+    rocket: 'img/units/models/rocket.webp',
+    scout: 'img/units/models/scout.webp',
+    special: 'img/units/models/special.webp',
+    fighter: 'img/units/models/fighter.webp',
+    bomber: 'img/units/models/bomber.webp',
+    transport: 'img/units/models/transport.webp',
+    destroyer: 'img/units/models/destroyer.webp',
+    sub: 'img/units/models/sub.webp',
+    battleship: 'img/units/models/battleship.webp',
+    carrier: 'img/units/models/carrier.webp'
+  };
+
   // 通用兵种图标渲染辅助函数
   G.getUnitIconHtml = function (id, name, extraCls) {
     var raw = (G.UNIT_ICON && G.UNIT_ICON[id]) || '⚔';
@@ -393,5 +414,13 @@ window.Game = window.Game || {};
       return '<span class="unit-icon-wrap' + cls + '"><img class="unit-icon-img" src="' + raw + '" alt="' + alt + '"/></span>';
     }
     return '<span class="unit-icon-wrap' + cls + '">' + raw + '</span>';
+  };
+
+  G.getUnitModelIconHtml = function (id, name, extraCls) {
+    var raw = (G.UNIT_MODEL && G.UNIT_MODEL[id]);
+    if (!raw) return G.getUnitIconHtml(id, name, extraCls);
+    var cls = extraCls ? (' ' + extraCls) : '';
+    var alt = G.escapeHtml ? G.escapeHtml(name || id) : (name || id);
+    return '<span class="unit-icon-wrap unit-model-icon' + cls + '"><img class="unit-icon-img" src="' + raw + '" alt="' + alt + '"/></span>';
   };
 })(window.Game);

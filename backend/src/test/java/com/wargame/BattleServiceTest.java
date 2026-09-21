@@ -245,9 +245,9 @@ class BattleServiceTest {
     }
 
     @Test
-    @DisplayName("军官技能: 绝地反击受击存活后以100%火力反击")
+    @DisplayName("军官技能: 绝境反击受击存活后以100%火力反击")
     void testCounterSkillTriggersCounterattack() {
-        // 守方拥有 绝地反击 Lv.5 (触发概率 52%，100% 火力反击)
+        // 守方拥有 绝境反击 Lv.5 (触发概率 52%，100% 火力反击)
         BattleResult result = battleService.startWorldDispatch(
                 Map.of("infantry", 100),
                 Map.of("infantry", 100),
@@ -262,6 +262,6 @@ class BattleServiceTest {
                 true);
 
         String report = result.getReport();
-        assertTrue(report.contains("[绝地反击]"), "战报应包含绝地反击日志");
+        assertTrue(report.contains("[绝境反击]"), "战报应包含绝境反击日志");
     }
 }

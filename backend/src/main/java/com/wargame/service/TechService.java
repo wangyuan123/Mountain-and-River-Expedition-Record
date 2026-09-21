@@ -364,7 +364,7 @@ public class TechService {
         double base = 30.0 * Math.pow(1.8, Math.max(0, currentLevel));
         double labSpeed = 1.0 + 0.10 * Math.max(0, labLevel - 1);
         int researchLv = getMayorResearchLevel(playerId);
-        double mayorSpeed = 1.0 + 0.08 * researchLv;
+        double mayorSpeed = 1.0 + 0.04 * researchLv;
         int duration = (int) Math.round(base / (labSpeed * mayorSpeed));
         return Math.max(5, Math.min(86400, duration));
     }

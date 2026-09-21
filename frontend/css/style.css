@@ -1966,6 +1966,7 @@ button.drawer-rank-tip:hover { border-color: var(--accent); }
   object-fit: cover;
   display: block;
 }
+.unit-model-icon .unit-icon-img { object-fit: contain; }
 .unit-card-icon {
   width: 22px;
   height: 22px;
@@ -3202,6 +3203,7 @@ body.theme-classic .unit-card-details,
   user-select: none;
   line-height: 1.2;
 }
+.army-dispatch-go { font-size: 11.5px; }
 .zone-head-action:hover {
   text-decoration: underline;
   filter: brightness(1.15);
@@ -3243,7 +3245,6 @@ body.theme-classic .unit-card-details,
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px 12px;
-  cursor: pointer;
 }
 .army-summary-item {
   display: grid;
@@ -3257,6 +3258,13 @@ body.theme-classic .unit-card-details,
   color: var(--ink, #1f2937);
   padding: 4px 0;
   border-bottom: 1px dashed var(--line, #e2e8f0);
+  cursor: pointer;
+  transition: background-color .12s ease;
+}
+.army-summary-item:hover,
+.army-summary-item:focus-visible {
+  background: var(--accent-soft, #eef4fb);
+  outline: none;
 }
 /* 完整呈现机翼、舰艏与炮管；透明模型不使用 cover 裁切。 */
 .army-summary-icon {
@@ -3336,6 +3344,83 @@ body.theme-classic .unit-card-details,
   margin-left: auto;
   color: var(--accent, #004499);
   font-weight: 600;
+}
+
+/* 首页兵种详情弹窗 */
+.unit-detail-card { max-width: 540px; }
+.unit-detail-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.unit-detail-close {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 18px;
+  line-height: 1;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+.unit-detail-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.unit-detail-overview {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line, #e2e8f0);
+}
+.unit-detail-icon {
+  width: 96px;
+  height: 72px;
+  flex: 0 0 96px;
+  object-fit: contain;
+  display: block;
+}
+.unit-detail-icon-text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 44px;
+}
+.unit-detail-overview-copy { min-width: 0; }
+.unit-detail-overview h2 {
+  margin: 0;
+  color: var(--accent-dark, #2457a5);
+  font-size: 18px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.unit-detail-count { margin-top: 4px; color: var(--muted); }
+.unit-detail-section { margin-top: 14px; }
+.unit-detail-section h3 {
+  margin: 0 0 5px;
+  color: var(--accent-dark, #2457a5);
+  font-size: 14px;
+}
+.unit-detail-section p { margin: 0; color: var(--ink); overflow-wrap: anywhere; }
+.unit-detail-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 10px;
+}
+.unit-detail-stat {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 8px;
+  background: var(--surface-muted, #f4f7fb);
+  border: 1px solid var(--line, #e2e8f0);
+}
+.unit-detail-stat span { color: var(--muted); }
+.unit-detail-stat b { color: var(--ink); font-variant-numeric: tabular-nums; }
+@media (max-width: 420px) {
+  .unit-detail-mask { padding: 12px; }
+  .unit-detail-icon { width: 78px; height: 62px; flex-basis: 78px; }
+  .unit-detail-overview h2 { font-size: 16px; }
+  .unit-detail-stats { grid-template-columns: 1fr; }
 }
 .act-card .act-cta {
   flex: 0 0 auto;

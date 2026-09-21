@@ -495,7 +495,7 @@ public class ArmyService {
         int base = rankBase + commandLv * 1000;
         double cap = base * (1 + staffLv * 0.10) * (1 + cmdLv * 0.025);
         if (leadershipLv > 0) {
-            cap *= (1.0 + 0.10 * leadershipLv);
+            cap *= (1.0 + 0.04 * leadershipLv);
         }
         return (int) Math.floor(cap);
     }

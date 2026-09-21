@@ -62,13 +62,13 @@ test('Core.armyCap 受到指挥官统帅技能提升，且旧 supply 兼容生�
   const baseCap = Core.armyCap();
   assert.equal(baseCap, 2050);
 
-  // 统帅 Lv.5 (+50%)
+  // 统帅 Lv.5 (+20%)
   Core.state.officers[0].skills = [{ id: 'leadership', lv: 5 }];
-  assert.equal(Core.armyCap(), 3075);
+  assert.equal(Core.armyCap(), 2460);
 
-  // 旧 supply Lv.5 (+50%)
+  // 旧 supply Lv.5 (+20%)
   Core.state.officers[0].skills = [{ id: 'supply', lv: 5 }];
-  assert.equal(Core.armyCap(), 3075);
+  assert.equal(Core.armyCap(), 2460);
 });
 
 test('Core.foodPerHour 受到市长军屯技能降低', () => {
@@ -89,10 +89,10 @@ test('Core.foodPerHour 受到市长军屯技能降低', () => {
   assert.equal(Core.foodPerHour(), 20);
 });
 
-test('数据定义包含绝地反击 counter，且 skillBonus 正常生效', () => {
+test('数据定义包含绝境反击 counter，且 skillBonus 正常生效', () => {
   const { Core, D } = setupGame();
   assert.ok(D.officerSkills.counter, '应有 counter 技能');
-  assert.equal(D.officerSkills.counter.name, '绝地反击');
+  assert.equal(D.officerSkills.counter.name, '绝境反击');
 
   Core.state = {
     officers: [

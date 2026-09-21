@@ -250,9 +250,9 @@ public class TickService {
             populationRemainder = 0.0;
         }
 
-        // 黄金税收以当前平民人口为基数，超过上限时不再继续增加（市长理财技能每级+8%）。
+        // 黄金税收以当前平民人口为基数，超过上限时不再继续增加（市长理财技能每级+4%）。
         int financeLv = getOfficerSkillLevel(mayor, "finance");
-        double goldRate = civilians * (tax / 100.0) * (1 + mayorKnow / 100.0) * (1.0 + 0.08 * financeLv) * 2;
+        double goldRate = civilians * (tax / 100.0) * (1 + mayorKnow / 100.0) * (1.0 + 0.04 * financeLv) * 2;
         long goldCap = cap.get("gold");
         if (gold < goldCap) {
             gold = (int) Math.round(Math.min(goldCap, gold + goldRate * hours));

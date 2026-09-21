@@ -36,11 +36,11 @@ public class BattleService {
     private static final Map<String, Double> SKILL_RATES = Map.ofEntries(
             Map.entry("frenzy", 0.10),
             Map.entry("bulwark", 0.10),
-            Map.entry("blitz", 0.04),
-            Map.entry("suppress", 0.05),
+            Map.entry("blitz", 0.06),
+            Map.entry("suppress", 0.06),
             Map.entry("pierce", 0.06),
-            Map.entry("leadership", 0.10),
-            Map.entry("supply", 0.10),
+            Map.entry("leadership", 0.04),
+            Map.entry("supply", 0.04),
             Map.entry("medic", 0.03),
             Map.entry("counter", 0.10),
             Map.entry("ration", 0.16)
@@ -369,14 +369,10 @@ public class BattleService {
         for (int round = 1; round <= MAX_ROUND; round++) {
             boolean officerActive = (round % 3 == 0);
 
-            if (officerActive) {
-                report.append("-- 第").append(round).append("回合 (军官加成生效) --\n");
-            } else {
-                report.append("-- 第").append(round).append("回合 --\n");
-            }
+            report.append("-- 第").append(round).append("回合 (军官加成生效) --\n");
 
-            String mineBonusLog = buildCommanderBonusLog("我方", attackerCtx, officerActive, true);
-            String foeBonusLog = buildCommanderBonusLog("敌方", defenderCtx, officerActive, false);
+            String mineBonusLog = buildCommanderBonusLog("我方", attackerCtx, round, true);
+            String foeBonusLog = buildCommanderBonusLog("敌方", defenderCtx, round, false);
             if (!mineBonusLog.isEmpty()) report.append(mineBonusLog).append("\n");
             if (!foeBonusLog.isEmpty()) report.append(foeBonusLog).append("\n");
 
@@ -442,11 +438,10 @@ public class BattleService {
         TechCtx defenderCtx = new TechCtx(defenderTech != null ? defenderTech : Collections.emptyMap(),
                 defenderSkills != null ? defenderSkills : Collections.emptyMap(), defenderCommanderMil, defenderCommanderDef);
         boolean officerActive = round % 3 == 0;
-        StringBuilder report = new StringBuilder("-- 第").append(round).append("回合")
-                .append(officerActive ? " (军官加成生效) --\n" : " --\n");
+        StringBuilder report = new StringBuilder("-- 第").append(round).append("回合 (军官加成生效) --\n");
 
-        String mineBonusLog = buildCommanderBonusLog("我方", attackerCtx, officerActive, true);
-        String foeBonusLog = buildCommanderBonusLog("敌方", defenderCtx, officerActive, false);
+        String mineBonusLog = buildCommanderBonusLog("我方", attackerCtx, round, true);
+        String foeBonusLog = buildCommanderBonusLog("敌方", defenderCtx, round, false);
         if (!mineBonusLog.isEmpty()) report.append(mineBonusLog).append("\n");
         if (!foeBonusLog.isEmpty()) report.append(foeBonusLog).append("\n");
 
@@ -731,6 +726,8 @@ public class BattleService {
             boolean officerActive,
             int round) {
 
+        boolean frenzyActive = round % 3 == 1;
+        boolean bulwarkActive = round % 3 == 2;
         List<ActionEntry> order = buildOrder(mine, enemy, attackerCtx, defenderCtx, round);
         for (ActionEntry a : order) {
             Map<String, Integer> myA = a.side == Side.MINE ? mine : enemy;
@@ -749,7 +746,8 @@ public class BattleService {
             String focusTarget = uOrder != null ? uOrder.focusTarget() : null;
 
             fireUnitCombat(a.id, myA, foe, minePos, enemyPos, initialDist, report, a.side,
-                    actCtx, foeCtx, foeWallLevel, myWallLevel, officerActive, focusTarget, false);
+                    actCtx, foeCtx, foeWallLevel, myWallLevel, officerActive,
+                    frenzyActive, bulwarkActive, focusTarget, false);
         }
     }
 
@@ -791,7 +789,8 @@ public class BattleService {
                                 boolean officerActive,
                                 String focusTarget) {
         fireUnitCombat(unitId, myArmy, foeArmy, minePos, enemyPos, initialDist, report, side,
-                actCtx, foeCtx, foeWallLevel, 0, officerActive, focusTarget, false);
+                actCtx, foeCtx, foeWallLevel, 0, officerActive,
+                officerActive, officerActive, focusTarget, false);
     }
 
     /**
@@ -810,6 +809,8 @@ public class BattleService {
                                 int foeWallLevel,
                                 int myWallLevel,
                                 boolean officerActive,
+                                boolean frenzyActive,
+                                boolean bulwarkActive,
                                 String focusTarget,
                                 boolean isCounter) {
         UnitStats u = getStats(unitId);
@@ -833,7 +834,8 @@ public class BattleService {
 
         // 射程内开火
         double attackBonus = actCtx == null ? 1
-                : attackBonus(u.cat(), actCtx.tech, actCtx.skills, actCtx.commanderMil, officerActive);
+                : attackBonus(u.cat(), actCtx.tech, actCtx.skills, actCtx.commanderMil,
+                        officerActive, frenzyActive);
         if (foeCtx != null) attackBonus *= 1 - skillBonus(foeCtx.skills, "suppress");
         double pierce = actCtx == null ? 0 : skillBonus(actCtx.skills, "pierce");
         double totalActions = count;
@@ -844,7 +846,7 @@ public class BattleService {
             UnitStats tU = getStats(target);
             double def = foeCtx == null ? tU.def()
                     : effDef(target, foeCtx.tech, foeCtx.skills, foeCtx.commanderDef,
-                    foeWallLevel, officerActive, side == Side.MINE);
+                    foeWallLevel, officerActive, bulwarkActive, side == Side.MINE);
             def = Math.max(0, def * (1 - pierce));
             double cm = counterMul(unitId, target);
             double targetAttack = baseAttack(unitId, target) * attackBonus;
@@ -884,7 +886,7 @@ public class BattleService {
             report.append(" 伤害").append(Math.round(appliedDamage)).append(" 击毁").append(kills)
                     .append(" 剩余攻击额度").append(Math.round(100 * remainingActions / totalActions)).append("%\n");
 
-            // --- 绝地反击 (Counterattack) ---
+            // --- 绝境反击 (Counterattack) ---
             // 调整为在第 3, 6, 9... 回合 (officerActive) 触发反击，反击伤害为剩余兵力总伤害的 10%/级 (满级 50%)
             if (officerActive && !isCounter && foeCtx != null && remainingTarget > 0 && myArmy.getOrDefault(unitId, 0) > 0) {
                 double counterRate = skillBonus(foeCtx.skills, "counter");
@@ -893,12 +895,13 @@ public class BattleService {
                     int dist = getUnitDistToFoe(side, unitId, target, minePos, enemyPos, initialDist);
                     if (dist <= targetRange) {
                         Side foeSide = (side == Side.MINE ? Side.ENEMY : Side.MINE);
-                        double cAtkBonus = attackBonus(tU.cat(), foeCtx.tech, foeCtx.skills, foeCtx.commanderMil, officerActive);
+                        double cAtkBonus = attackBonus(tU.cat(), foeCtx.tech, foeCtx.skills, foeCtx.commanderMil,
+                                officerActive, frenzyActive);
                         if (actCtx != null) cAtkBonus *= 1 - skillBonus(actCtx.skills, "suppress");
                         double cPierce = skillBonus(foeCtx.skills, "pierce");
                         double cDef = actCtx == null ? u.def()
                                 : effDef(unitId, actCtx.tech, actCtx.skills, actCtx.commanderDef,
-                                myWallLevel, officerActive, foeSide == Side.MINE);
+                                myWallLevel, officerActive, bulwarkActive, foeSide == Side.MINE);
                         cDef = Math.max(0, cDef * (1 - cPierce));
                         double cCm = counterMul(target, unitId);
                         double cBaseAtk = baseAttack(target, unitId) * cAtkBonus;
@@ -920,7 +923,7 @@ public class BattleService {
                         String foeSidePrefix = foeSide == Side.MINE ? "我方" : "敌方";
                         String mySidePrefix = side == Side.MINE ? "我" : "敌";
                         report.append(foeSidePrefix).append(tU.name()).append("(").append(remainingTarget).append(")")
-                                .append(" [绝地反击] ").append(mySidePrefix).append(u.name()).append("(").append(cBeforeKill).append(")");
+                                .append(" [绝境反击] ").append(mySidePrefix).append(u.name()).append("(").append(cBeforeKill).append(")");
                         List<String> cTags = new ArrayList<>();
                         if (cCm > 1.0001) cTags.add("倍率×" + cCm + " 相克");
                         else if (cCm < 0.9999) cTags.add("倍率×" + cCm + " 火力受限");
@@ -1025,14 +1028,15 @@ public class BattleService {
                           int commanderMil, boolean officerActive) {
         UnitStats u = getStats(unitId);
         if (u == null) return 0;
-        return u.peakTroopAttack() * attackBonus(u.cat(), tech, skills, commanderMil, officerActive);
+        return u.peakTroopAttack() * attackBonus(u.cat(), tech, skills, commanderMil,
+                officerActive, officerActive);
     }
 
     /** 加成对四项攻击采用同一规则；弱项火力也按自身面板增益，不能借用主武器攻击。 */
     private double attackBonus(String cat, Map<String, Integer> tech, Map<String, Integer> skills,
-                               int commanderMil, boolean officerActive) {
-        double multiplier = atkMul(cat, tech, officerActive ? commanderMil : 0);
-        return officerActive ? multiplier * (1 + skillBonus(skills, "frenzy")) : multiplier;
+                               int commanderMil, boolean commanderActive, boolean frenzyActive) {
+        double multiplier = atkMul(cat, tech, commanderActive ? commanderMil : 0);
+        return frenzyActive ? multiplier * (1 + skillBonus(skills, "frenzy")) : multiplier;
     }
 
     private double baseAttack(String attacker, String target) {
@@ -1046,13 +1050,14 @@ public class BattleService {
         };
     }
 
-    /** 防御科技双方常驻，城墙只加守城方；防御属性和铁壁在军官回合生效。 */
+    /** 防御科技双方常驻，城墙只加守城方；防御属性和坚守阵地按各自回合生效。 */
     private double effDef(String unitId, Map<String, Integer> tech, Map<String, Integer> skills,
-                          int commanderDef, int wallLevel, boolean officerActive, boolean defendingCity) {
+                          int commanderDef, int wallLevel, boolean commanderActive,
+                          boolean bulwarkActive, boolean defendingCity) {
         UnitStats u = getStats(unitId);
         if (u == null) return 1;
-        double multiplier = defMul(u.cat(), tech, wallLevel, defendingCity, officerActive ? commanderDef : 0);
-        if (officerActive) multiplier *= 1 + skillBonus(skills, "bulwark");
+        double multiplier = defMul(u.cat(), tech, wallLevel, defendingCity, commanderActive ? commanderDef : 0);
+        if (bulwarkActive) multiplier *= 1 + skillBonus(skills, "bulwark");
         return u.def() * multiplier;
     }
 
@@ -1166,18 +1171,21 @@ public class BattleService {
         return rate * Math.min(5, lv);
     }
 
-    private String buildCommanderBonusLog(String sideName, TechCtx ctx, boolean officerActive, boolean isAttacker) {
+    private String buildCommanderBonusLog(String sideName, TechCtx ctx, int round, boolean isAttacker) {
+        boolean officerActive = round % 3 == 0;
+        boolean frenzyActive = round % 3 == 1;
+        boolean bulwarkActive = round % 3 == 2;
         List<String> bonuses = new ArrayList<>();
-        if (officerActive) {
+        if (officerActive || frenzyActive || bulwarkActive) {
             if (ctx.commanderMil > 0) {
-                bonuses.add("军事属性 +" + ctx.commanderMil + "%攻击");
+                if (officerActive) bonuses.add("军事属性 +" + ctx.commanderMil + "%攻击");
             }
             if (ctx.commanderDef > 0) {
-                bonuses.add("防御属性 +" + ctx.commanderDef + "%防御");
+                if (officerActive) bonuses.add("防御属性 +" + ctx.commanderDef + "%防御");
             }
-            appendSkillBonus(bonuses, ctx.skills, "frenzy", "全力猛攻", "+", "攻击");
+            if (frenzyActive) appendSkillBonus(bonuses, ctx.skills, "frenzy", "全军冲锋", "+", "攻击");
             appendSkillBonus(bonuses, ctx.skills, "suppress", "火力压制", "-", "敌方攻击");
-            appendSkillBonus(bonuses, ctx.skills, "bulwark", "铜墙铁壁", "+", "防御");
+            if (bulwarkActive) appendSkillBonus(bonuses, ctx.skills, "bulwark", "坚守阵地", "+", "防御");
             appendSkillBonus(bonuses, ctx.skills, "blitz", "闪电突击", "+", "速度（持续生效）");
             return sideName + "将领加成：" + (bonuses.isEmpty() ? "本回合无将领属性或技能加成生效" : String.join("；", bonuses));
         }
@@ -1543,7 +1551,7 @@ public class BattleService {
             return atk * count;
         } else {
             // 防御力: 使用军官生效时的最大值 (isMine=true)
-            double def = effDef(unitType, t, s, 0, 0, true, true);
+            double def = effDef(unitType, t, s, 0, 0, true, true, true);
             return def * count;
         }
     }

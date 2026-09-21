@@ -175,9 +175,9 @@ window.Game = window.Game || {};
       } else {
         speedBtn = '<button type="button" class="btn sm army-queue-btn disabled" disabled title="背包暂无加速符">[⚡加速]</button>';
       }
-      var iconHtml = (G && typeof G.getUnitIconHtml === 'function')
-        ? G.getUnitIconHtml(item.unitType, unit.name, 'army-queue-icon')
-        : '';
+      var iconHtml = (G && typeof G.getUnitModelIconHtml === 'function')
+        ? G.getUnitModelIconHtml(item.unitType, unit.name, 'army-queue-icon')
+        : (G && typeof G.getUnitIconHtml === 'function' ? G.getUnitIconHtml(item.unitType, unit.name, 'army-queue-icon') : '');
       h += '<div class="menu-item ok army-queue-item">' +
         '<div class="army-queue-info">' +
           iconHtml +
@@ -464,9 +464,9 @@ window.Game = window.Game || {};
         var isExpanded = !!expandedUnits[id];
         var cardCls = (can ? 'menu-item ok' : 'menu-item lock') + ' unit-card' + (isExpanded ? ' expanded' : '');
 
-        var iconHtml = (G && typeof G.getUnitIconHtml === 'function')
-          ? G.getUnitIconHtml(id, u.name, 'unit-card-icon')
-          : '';
+        var iconHtml = (G && typeof G.getUnitModelIconHtml === 'function')
+          ? G.getUnitModelIconHtml(id, u.name, 'unit-card-icon')
+          : (G && typeof G.getUnitIconHtml === 'function' ? G.getUnitIconHtml(id, u.name, 'unit-card-icon') : '');
         h += '<div id="unit-card-' + id + '" class="' + cardCls + '">';
         h += '<div class="unit-card-header" onclick="Game.Army.toggleUnitCard(\'' + id + '\', event)" title="点击展开/收起具体信息">';
         h += '<div class="unit-card-header-left">';

@@ -5,26 +5,8 @@ window.Game = window.Game || {};
   var Core = G.Core;
   var D = G.DATA;
 
-  // 首页总览使用写实武器模型；独立映射避免影响其他页面的紧凑兵种图标。
-  var UNIT_MODEL = {
-    infantry: 'img/units/models/infantry.webp',
-    motor: 'img/units/models/motor.webp',
-    truck: 'img/units/models/truck.webp',
-    armored: 'img/units/models/armored.webp',
-    ltank: 'img/units/models/ltank.webp',
-    htank: 'img/units/models/htank.webp',
-    assault: 'img/units/models/assault.webp',
-    rocket: 'img/units/models/rocket.webp',
-    scout: 'img/units/models/scout.webp',
-    special: 'img/units/models/special.webp',
-    fighter: 'img/units/models/fighter.webp',
-    bomber: 'img/units/models/bomber.webp',
-    transport: 'img/units/models/transport.webp',
-    destroyer: 'img/units/models/destroyer.webp',
-    sub: 'img/units/models/sub.webp',
-    battleship: 'img/units/models/battleship.webp',
-    carrier: 'img/units/models/carrier.webp'
-  };
+  // 首页总览与军队页共用写实武器模型；没有模型时回退到通用图标。
+  var UNIT_MODEL = G.UNIT_MODEL || {};
 
   function renderArmySummaryList() {
     var s = Core.state || {};
@@ -60,7 +42,10 @@ window.Game = window.Game || {};
             var base = name.indexOf('-') > 0 ? name.split('-')[0].trim() : name.replace(/[（(].*?[）)]/, '').trim();
             return code ? base + '(' + code + ')' : base;
           })(u.name);
-      html += '<div class="army-summary-item" title="' + G.escapeHtml(u.name) + ' × ' + G.fmt(u.cnt) + '">'
+      var unitClick = ' role="button" tabindex="0" title="' + G.escapeHtml(u.name) + ' × ' + G.fmt(u.cnt) + '" aria-label="查看' + G.escapeHtml(u.name) + '详情"' +
+        ' onclick="Game.MainView.showUnitDetailModal(\'' + G.escapeHtml(u.id) + '\', event)"' +
+        ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.MainView.showUnitDetailModal(\'' + G.escapeHtml(u.id) + '\', event);event.preventDefault();}"';
+      html += '<div class="army-summary-item"' + unitClick + '>'
             + '<span class="army-summary-icon">' + iconHtml + '</span>'
             + '<span class="army-summary-name">' + G.escapeHtml(displayName) + '</span>'
             + '<span class="army-summary-cnt">' + G.fmt(u.cnt) + '</span>'
@@ -70,6 +55,48 @@ window.Game = window.Game || {};
       html += '<div class="army-summary-more">还有 ' + (arr.length - 8) + ' 种部队…</div>';
     }
     return html;
+  }
+
+  function showUnitDetailModal(id, ev) {
+    if (ev && ev.stopPropagation) ev.stopPropagation();
+    var unit = D.units && D.units[id];
+    if (!unit || typeof document === 'undefined' || !document.createElement || !document.body) return;
+
+    var esc = G.escapeHtml;
+    var count = (Core.state && Core.state.army && Core.state.army[id]) || 0;
+    var rawIcon = UNIT_MODEL[id] || (G.UNIT_ICON && G.UNIT_ICON[id]) || '';
+    var iconHtml = /\.svg$|\.png$|\.jpg$|\.gif$|\.webp$/i.test(rawIcon)
+      ? '<img class="unit-detail-icon" src="' + esc(rawIcon) + '" alt="' + esc(unit.name) + '" />'
+      : '<span class="unit-detail-icon unit-detail-icon-text">' + esc(rawIcon || '⚔') + '</span>';
+    var role = (D.combatRoles && D.combatRoles[id]) || '暂无战斗定位说明';
+    var stats = [
+      ['对地攻击', unit.atkGround], ['对空攻击', unit.atkAir], ['对海攻击', unit.atkSea], ['对工事攻击', unit.atkFort],
+      ['防御', unit.def], ['生命', unit.hp], ['速度', unit.spd], ['射程', unit.range],
+      ['耗粮', (unit.food || 0) + '/小时'], ['人口占用', unit.pop || 0]
+    ];
+    var statHtml = '';
+    for (var i = 0; i < stats.length; i++) {
+      statHtml += '<div class="unit-detail-stat"><span>' + esc(stats[i][0]) + '</span><b>' + esc(String(stats[i][1])) + '</b></div>';
+    }
+
+    var modal = document.createElement('div');
+    modal.className = 'modal-mask unit-detail-mask';
+    modal.innerHTML =
+      '<section class="modal-card unit-detail-card" role="dialog" aria-modal="true" aria-labelledby="unitDetailTitle">' +
+        '<div class="modal-title unit-detail-title" id="unitDetailTitle"><span>兵种详情</span><button type="button" class="unit-detail-close" aria-label="关闭兵种详情">✕</button></div>' +
+        '<div class="modal-body unit-detail-body">' +
+          '<div class="unit-detail-overview">' + iconHtml + '<div class="unit-detail-overview-copy"><h2>' + esc(unit.name) + '</h2><div class="unit-detail-count">当前兵力：<b>' + G.fmt(count) + '</b></div></div></div>' +
+          '<div class="unit-detail-section"><h3>历史信息</h3><p>' + esc(unit.history || '暂无历史信息') + '</p></div>' +
+          '<div class="unit-detail-section"><h3>战斗定位</h3><p>' + esc(role) + '</p></div>' +
+          '<div class="unit-detail-section"><h3>属性信息</h3><div class="unit-detail-stats">' + statHtml + '</div></div>' +
+        '</div>' +
+      '</section>';
+    document.body.appendChild(modal);
+
+    var close = function () { if (modal.parentNode) modal.parentNode.removeChild(modal); };
+    var closeBtn = modal.querySelector('.unit-detail-close');
+    if (closeBtn) closeBtn.onclick = close;
+    modal.addEventListener('click', function (event) { if (event.target === modal) close(); });
   }
 
   function renderOfficerSummaryCard() {
@@ -704,8 +731,8 @@ window.Game = window.Game || {};
     h += renderOfficerSummaryCard();
 
     // 军队总览（活动与任务块已迁移到顶部菜单"任务"页内）
-    h += '<div class="zone-head"><span class="zone-title">🪖 军队总览</span><span class="zone-sub">带兵上限 ' + G.fmt(Core.armyCap()) + '</span></div>';
-    h += '<div class="army-summary" onclick="Game.go(\'army\')">';
+    h += '<div class="zone-head"><span class="zone-title">🪖 军队总览</span><span class="zone-sub">带兵上限 ' + G.fmt(Core.armyCap()) + '</span><span class="army-dispatch-go zone-head-action" role="button" tabindex="0" onclick="Game.go(\'world\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.go(\'world\');event.preventDefault();}">去出征 &gt;</span></div>';
+    h += '<div class="army-summary">';
     h += renderArmySummaryList();
     h += '</div>';
     h += '<div class="army-summary-foot" onclick="Game.go(\'army\')">';
@@ -1053,6 +1080,7 @@ window.Game = window.Game || {};
     navBar: navBar,
     renderArmySummaryList: renderArmySummaryList,
     renderOfficerSummaryCard: renderOfficerSummaryCard,
+    showUnitDetailModal: showUnitDetailModal,
     showResourceDetail: showResourceDetail,
     showPopulationDetailModal: showPopulationDetailModal,
     getCurrentAvatar: getCurrentAvatar,
