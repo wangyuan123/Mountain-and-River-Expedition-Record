@@ -278,6 +278,14 @@ window.Game = window.Game || {};
         });
     },
 
+    buildFreeSpeedUp: function (queueId) {
+      return client.post('/game/build/free-speedup', { queueId: queueId })
+        .then(function (data) {
+          if (data && data.state) applyState(data.state);
+          return data;
+        });
+    },
+
     buildSpeedUp: function (itemId, queueId, count) {
       var payload = { itemId: itemId || 'speedUp10m' };
       if (queueId != null) payload.queueId = queueId;
@@ -490,6 +498,20 @@ window.Game = window.Game || {};
     cancelMarch: function (marchId) {
       return client.post('/game/world/cancel-march', { marchId: marchId })
         .then(extractState).then(applyState);
+    },
+
+    /** 获取已到达部队的逐回合战场状态。 */
+    getTacticalBattle: function (marchId) {
+      return client.get('/game/world/battle?marchId=' + encodeURIComponent(marchId));
+    },
+
+    /** 提交本回合所有已选择兵种的战术命令，并取得下一回合战场快照。 */
+    commandTacticalBattle: function (marchId, orders) {
+      return client.post('/game/world/battle/command?marchId=' + encodeURIComponent(marchId), { orders: orders || {} })
+        .then(function (data) {
+          if (data && data.state) applyState(data.state);
+          return data;
+        });
     },
 
     declareWar: function (targetCityId) {

@@ -38,17 +38,17 @@ public record BuildingDef(
         m.put("house", new BuildingDef("house", "民居", "提供人口上限,每级+1200人口",
                 Map.of("steel", 120, "food", 60), 1.5, "core", GameConstants.GROUP_SLOTS_ARMY_MAX,
                 1200, null, null, null, null, null, null, null));
-        m.put("factory", new BuildingDef("factory", "军工厂", "生产步兵/卡车/装甲车与战机",
+        m.put("factory", new BuildingDef("factory", "军工厂", "生产步兵/卡车/装甲车/突击炮/火箭与战机",
                 Map.of("steel", 240, "oil", 100), 1.6, "army", GameConstants.GROUP_SLOTS_ARMY_MAX));
         m.put("lightfactory", new BuildingDef("lightfactory", "轻工厂", "生产轻型坦克",
                 Map.of("steel", 260, "oil", 110, "rare", 10), 1.6, "army", 1));
-        m.put("heavyfactory", new BuildingDef("heavyfactory", "重工厂", "生产重型坦克/突击炮/火箭",
+        m.put("heavyfactory", new BuildingDef("heavyfactory", "重工厂", "生产重型坦克",
                 Map.of("steel", 320, "oil", 140, "rare", 30), 1.6, "army", 1));
         m.put("airport", new BuildingDef("airport", "机场", "生产空军",
                 Map.of("steel", 280, "oil", 120, "rare", 30), 1.6, "army", 1));
         m.put("port", new BuildingDef("port", "港口", "生产海军",
                 Map.of("steel", 360, "oil", 160, "rare", 50), 1.7, "army", 1));
-        m.put("academy", new BuildingDef("academy", "军校", "招募军官",
+        m.put("academy", new BuildingDef("academy", "军校", "招募军官,等级提升整批五星概率",
                 Map.of("steel", 200, "food", 120, "gold", 200), 1.6, "core", 1));
         m.put("staff", new BuildingDef("staff", "参谋部", "军官槽位与野地上限,带兵上限 +10%/级",
                 Map.of("steel", 220, "food", 100), 1.6, "core", 1));
@@ -80,7 +80,7 @@ public record BuildingDef(
         m.put("transit", new BuildingDef("transit", "运输站", "资源调度,全资源产出 +3%/级",
                 Map.of("steel", 160, "food", 80), 1.6, "res", 1,
                 null, null, null, null, null, null, null, 3));
-        m.put("liaison", new BuildingDef("liaison", "联络中心", "外交,军官刷新更优质",
+        m.put("liaison", new BuildingDef("liaison", "联络中心", "外交联络",
                 Map.of("steel", 200, "food", 120, "gold", 200), 1.6, "core", 1));
         m.put("exchange", new BuildingDef("exchange", "交易所", "资源互换,按比例转换资源",
                 Map.of("steel", 180, "food", 100, "gold", 100), 1.5, "res", 1));

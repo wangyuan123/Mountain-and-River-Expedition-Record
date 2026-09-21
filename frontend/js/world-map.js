@@ -62,6 +62,22 @@
     if (t.kind === 'wild') return (G.DATA.wildTypes[t.type] || {}).icon || 'img/map/wild-forest.webp';
     return 'img/map/npc-fortress.webp';
   }
+  /**
+   * 选择行军地图标记所代表的主力兵种，不影响服务端的行军速度或战斗结算。
+   * @param {Object} march - 含 army 编队数据的行军记录。
+   * @returns {string|null} 数量最多且有图标资源的兵种 ID；无有效兵种时返回 null。
+   */
+  function primaryMarchUnit(march) {
+    var army = march && march.army || {}, primaryUnit = null, primaryCount = 0;
+    Object.keys(army).forEach(function (unitId) {
+      var count = Number(army[unitId]) || 0;
+      if (count > primaryCount && G.UNIT_ICON && G.UNIT_ICON[unitId]) {
+        primaryUnit = unitId;
+        primaryCount = count;
+      }
+    });
+    return primaryUnit;
+  }
   // `occupied` is viewer-specific; `claimed` also includes other players' wilds.
   function ownership(t) {
     if (t.selfCity || (t.kind === 'wild' && t.occupied)) return 'own';
@@ -151,11 +167,12 @@
     this.terrainVersion=version;
     this.ground = new PIXI.Sprite(terrainTexture);
     this.groundDetails = new PIXI.Container(); this.groundTiles = new Map();
-    this.terrain = new PIXI.Graphics(); this.markerLayer = new PIXI.Container(); this.routes = new PIXI.Graphics();
+    this.terrain = new PIXI.Graphics(); this.routes = new PIXI.Graphics();
+    this.marchLayer = new PIXI.Container(); this.marchMarkers = new Map(); this.markerLayer = new PIXI.Container();
     this.selectionOutline = new PIXI.Graphics();
     // All captions render after all map artwork, including neighboring markers.
     this.captionLayer = new PIXI.Container();
-    this.app.stage.addChild(this.ground, this.groundDetails, this.terrain, this.routes, this.markerLayer, this.selectionOutline, this.captionLayer);
+    this.app.stage.addChild(this.ground, this.groundDetails, this.terrain, this.routes, this.marchLayer, this.markerLayer, this.selectionOutline, this.captionLayer);
     this.bind();
     this.initMinimap();
     var self = this;
@@ -519,25 +536,60 @@
     ctx.beginPath();ctx.arc(c.x*scale,c.y*scale,2,0,Math.PI*2);ctx.fillStyle='#fff9e5';ctx.fill();
   };
   MapView.prototype.drawRoutes = function () {
-    var c = this.camera, g = this.routes; g.clear();
-    var targets = cache.targets({ minX:0, minY:0, maxX:c.size-1, maxY:c.size-1 });
+    var self = this, camera = this.camera, routeGraphics = this.routes, now = Date.now(); routeGraphics.clear();
+    var targets = cache.targets({ minX:0, minY:0, maxX:camera.size-1, maxY:camera.size-1 }), keep = new Set();
     function endpoint(x, y, kind) {
       var t = kind === 'player' ? {kind:'player',x:x,y:y} : targets.find(function(t){ return t.x === x && t.y === y && (!kind || t.kind === kind); });
       var center = t ? markerCenter(t) : {x:x+.5,y:y+.5};
-      return c.screen(center.x, center.y);
+      return camera.screen(center.x, center.y);
     }
-    (G.Core.state.world.marches || []).forEach(function (m) {
-      var fromX = m.fromX != null ? m.fromX : m.originX, fromY = m.fromY != null ? m.fromY : m.originY;
-      if (fromX == null || fromY == null || m.targetX == null || m.targetY == null) return;
-      var a = endpoint(fromX, fromY, 'player'), b = endpoint(m.targetX, m.targetY, m.targetKind === 'player' ? 'player' : null);
-      var tint = m.returning ? 0x578657 : 0x467da5;
-      var points=Array.isArray(m.route)&&m.route.length>1?m.route.map(function(p){return c.screen(p[0]+.5,p[1]+.5);}):[a,b];
-      g.lineStyle(2, tint, .6).moveTo(points[0].x,points[0].y);
-      var lengths=[],total=0;
-      for(var i=1;i<points.length;i++){g.lineTo(points[i].x,points[i].y);var segment=Array.isArray(m.route)?Math.abs(m.route[i][0]-m.route[i-1][0])+Math.abs(m.route[i][1]-m.route[i-1][1]):1;lengths.push(segment);total+=segment;}
-      var duration=m.arriveAt-m.startAt,ratio=duration>0?Math.max(0,Math.min(1,(Date.now()-m.startAt)/duration)):1,travel=ratio*total,position=points[points.length-1];
-      for(var j=0;j<lengths.length;j++){if(travel<=lengths[j]){var f=lengths[j]?travel/lengths[j]:1;position={x:points[j].x+(points[j+1].x-points[j].x)*f,y:points[j].y+(points[j+1].y-points[j].y)*f};break;}travel-=lengths[j];}
-      g.lineStyle(0).beginFill(tint).drawCircle(position.x,position.y,4).endFill();
+    (G.Core.state.world.marches || []).forEach(function (march) {
+      var fromX = march.fromX != null ? march.fromX : march.originX, fromY = march.fromY != null ? march.fromY : march.originY;
+      if (fromX == null || fromY == null || march.targetX == null || march.targetY == null) return;
+      var start = endpoint(fromX, fromY, 'player'), end = endpoint(march.targetX, march.targetY, march.targetKind === 'player' ? 'player' : null);
+      var tint = march.returning ? 0x578657 : 0x467da5;
+      var points = Array.isArray(march.route) && march.route.length > 1 ? march.route.map(function (point) { return camera.screen(point[0]+.5,point[1]+.5); }) : [start,end];
+      routeGraphics.lineStyle(2, tint, .6).moveTo(points[0].x,points[0].y);
+      var lengths = [], total = 0;
+      for (var pointIndex = 1; pointIndex < points.length; pointIndex++) {
+        routeGraphics.lineTo(points[pointIndex].x,points[pointIndex].y);
+        var segment = Array.isArray(march.route) ? Math.abs(march.route[pointIndex][0]-march.route[pointIndex-1][0])+Math.abs(march.route[pointIndex][1]-march.route[pointIndex-1][1]) : 1;
+        lengths.push(segment); total += segment;
+      }
+      var duration = march.arriveAt-march.startAt, ratio = duration > 0 ? Math.max(0,Math.min(1,(now-march.startAt)/duration)) : 1, travel = ratio*total, position = points[points.length-1];
+      for (var segmentIndex = 0; segmentIndex < lengths.length; segmentIndex++) {
+        if (travel <= lengths[segmentIndex]) {
+          var fraction = lengths[segmentIndex] ? travel/lengths[segmentIndex] : 1;
+          position = {x:points[segmentIndex].x+(points[segmentIndex+1].x-points[segmentIndex].x)*fraction,y:points[segmentIndex].y+(points[segmentIndex+1].y-points[segmentIndex].y)*fraction};
+          break;
+        }
+        travel -= lengths[segmentIndex];
+      }
+      var markerKey = String(march.id != null ? march.id : [fromX, fromY, march.targetX, march.targetY].join(':'));
+      keep.add(markerKey);
+      var unitId = primaryMarchUnit(march), iconPath = unitId && G.UNIT_ICON[unitId], marker = self.marchMarkers.get(markerKey);
+      if (!marker) {
+        marker = new PIXI.Container(); marker.backdrop = new PIXI.Graphics(); marker.addChild(marker.backdrop);
+        marker.icon = new PIXI.Sprite(PIXI.Texture.EMPTY); marker.icon.anchor.set(.5); marker.addChild(marker.icon);
+        self.marchLayer.addChild(marker); self.marchMarkers.set(markerKey, marker);
+      }
+      if (iconPath) {
+        var texture = textures[iconPath];
+        if (!texture) {
+          texture = textures[iconPath] = PIXI.Texture.from(iconPath);
+          texture.baseTexture.once('loaded', function () { self.wake(); });
+        }
+        if (marker.icon.texture !== texture) marker.icon.texture = texture;
+      }
+      var iconSize = Math.max(15, Math.min(25, camera.scale*.32));
+      marker.position.set(position.x, position.y); marker.visible = !!iconPath;
+      marker.backdrop.clear().lineStyle(1.5, tint, .98).beginFill(0x10251f,.9).drawCircle(0,0,iconSize*.62).endFill();
+      var source = marker.icon.texture.orig || {width:1,height:1}, sourceWidth = source.width || 1, sourceHeight = source.height || 1, iconScale = iconSize/Math.max(sourceWidth,sourceHeight);
+      marker.icon.width = sourceWidth*iconScale; marker.icon.height = sourceHeight*iconScale;
+    });
+    this.marchMarkers.forEach(function (marker, markerKey) {
+      if (keep.has(markerKey)) return;
+      self.marchLayer.removeChild(marker); marker.destroy({children:true}); self.marchMarkers.delete(markerKey);
     });
   };
   MapView.prototype.local = function (event) {
@@ -820,6 +872,7 @@
     this.resizeObserver.disconnect();this.listeners.forEach(function(off){off();});
     cache.changed=function(){};cache.queue=[];cache.wanted.clear();
     this.groundTiles.forEach(function(tile){tile.destroy({texture:true,baseTexture:true});}); this.groundTiles.clear();
+    this.marchMarkers.clear();
     this.app.destroy(true,{children:true,texture:false,baseTexture:false});
   };
   G.WorldMap={

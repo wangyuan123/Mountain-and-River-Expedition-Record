@@ -22,7 +22,7 @@
   <script>
     var query=new URLSearchParams(location.search), theme=query.get('theme');
     document.documentElement.dataset.theme=['blue-white','paper','dark'].indexOf(theme)>=0?theme:'blue-white';
-    Game.Core.state={world:{pos:{x:105,y:106},playerCities:[{id:1,name:query.get('name')||'新城市',x:145,y:146,prestige:0}]}};
+    Game.Core.state={world:{pos:{x:105,y:106},playerCities:[{id:1,name:query.get('name')||'新城市',playerName:query.get('player')||'战地指挥官',x:145,y:146,prestige:0}]}};
     Game.API={declareWar:function(){return Promise.reject(new Error('预览模式，不会发起宣战'));}};
     Game.toast=function(message){document.getElementById('preview-note').textContent=message;};
     document.getElementById('preview-open').onclick=function(){Game.World.declareWar('player',0);};

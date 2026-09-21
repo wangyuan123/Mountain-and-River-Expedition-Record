@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img">
+<defs>
+  <radialGradient id="bg" cx="42%" cy="34%" r="80%"><stop offset="0" stop-color="#163755"/><stop offset="1" stop-color="#081524"/></radialGradient>
+  <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b7c5c8"/><stop offset="0.46" stop-color="#5c7b8b"/><stop offset="1" stop-color="#20282b"/></linearGradient>
+  <linearGradient id="olive" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#687b72"/><stop offset="1" stop-color="#334c4b"/></linearGradient>
+  <linearGradient id="warm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0d28b"/><stop offset="1" stop-color="#e0b768"/></linearGradient>
+  <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%"><feGaussianBlur in="SourceAlpha" stdDeviation="2.3"/><feOffset dy="2"/><feComponentTransfer><feFuncA type="linear" slope="0.55"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <filter id="soft"><feGaussianBlur stdDeviation="0.7"/></filter>
+  <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.72" numOctaves="2" stitchTiles="stitch"/><feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 .07 0"/></filter>
+</defs>
+<rect width="128" height="128" rx="12" fill="url(#bg)"/>
+<circle cx="64" cy="64" r="52" fill="none" stroke="#47728f" stroke-opacity=".32" stroke-width="1"/>
+<circle cx="64" cy="64" r="48" fill="none" stroke="#fff" stroke-opacity=".06" stroke-width="1"/>
+<rect width="128" height="128" rx="12" filter="url(#grain)" opacity=".28"/>
+
+<g filter="url(#shadow)" transform="rotate(-8 64 65)">
+  <ellipse cx="65" cy="87" rx="48" ry="9" fill="#a7d7e5" opacity=".32" filter="url(#soft)"/>
+  <path d="M11 69 L25 54 L86 51 L112 69 L91 82 L33 82 Z" fill="url(#metal)" stroke="#111b20" stroke-width="1.4"/>
+  <path d="M22 67 L88 63 L105 70 L89 77 L35 77 Z" fill="#10283a" opacity=".95"/>
+  <path d="M46 55 L49 38 L63 36 L68 57 Z" fill="url(#olive)" stroke="#172127" stroke-width="1"/>
+  <path d="M57 37 L60 25 L65 25 L66 38 Z" fill="#5c7b8b" stroke="#14202a" stroke-width="1"/>
+  <path d="M56 29 L56 20 M63 26 L63 16" stroke="#b7c5c8" stroke-width="1"/>
+  <path d="M36 61 L43 58 L50 61 L43 65 Z M78 58 L87 60 L84 64 L75 62 Z" fill="url(#warm)" stroke="#1b2327" stroke-width=".8"/>
+  <path d="M18 72 L7 78 M24 76 L12 84 M95 74 L118 81 M92 78 L110 88" stroke="#a7d7e5" stroke-width="1.5" opacity=".62"/>
+  <path d="M49 42 L67 40 M49 46 L69 44" stroke="#d7d1bd" stroke-width=".8" opacity=".65"/>
+</g>
+</svg>

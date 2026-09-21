@@ -125,8 +125,7 @@ body[data-theme="blue-white-classic"] {
 [data-theme="blue-white-classic"] .army-summary-foot,
 [data-theme="blue-white-classic"] .home-officer-foot,
 [data-theme="blue-white-classic"] .menu-item,
-[data-theme="blue-white-classic"] .bcard,
-[data-theme="blue-white-classic"] .chat-terminal {
+[data-theme="blue-white-classic"] .bcard {
   background: #fff !important;
   border: 0 !important;
   border-radius: 0 !important;
@@ -134,12 +133,14 @@ body[data-theme="blue-white-classic"] {
 }
 [data-theme="blue-white-classic"] .home-officer-card { padding: 2px 5px !important; }
 [data-theme="blue-white-classic"] .home-officer-item { padding: 7px 0 !important; border-bottom: 1px dotted #cbd7e3 !important; }
-[data-theme="blue-white-classic"] .home-officer-name { font-size: 16px !important; }
+[data-theme="blue-white-classic"] .home-officer-name { font-size: 12px !important; }
 [data-theme="blue-white-classic"] .home-officer-go,
-[data-theme="blue-white-classic"] .army-go { color: #2457a5 !important; }
+[data-theme="blue-white-classic"] .army-go,
+[data-theme="blue-white-classic"] .zone-head-action { color: #2457a5 !important; }
 [data-theme="blue-white-classic"] .army-summary { gap: 0 !important; padding: 3px 5px !important; }
-[data-theme="blue-white-classic"] .army-summary-item { padding: 6px 3px !important; }
-[data-theme="blue-white-classic"] .army-summary-name { color: #2457a5 !important; font-size: 14px !important; }
+[data-theme="blue-white-classic"] .army-summary-item { padding: 5px 3px !important; }
+[data-theme="blue-white-classic"] .army-summary-name { color: #2457a5 !important; font-size: 12px !important; }
+[data-theme="blue-white-classic"] .army-summary-cnt { margin-left: 0 !important; flex-shrink: 0 !important; font-size: 12px !important; }
 [data-theme="blue-white-classic"] .army-summary-foot { padding: 5px !important; }
 
 [data-theme="blue-white-classic"] .res-grid { display: block !important; }
@@ -182,13 +183,13 @@ body[data-theme="blue-white-classic"] {
 [data-theme="blue-white-classic"] .slot-card.in-job { border: 2px solid #6b91c2 !important; }
 [data-theme="blue-white-classic"] .panel { background: #eef4fa !important; border-radius: 0 !important; }
 [data-theme="blue-white-classic"] .btn,
-[data-theme="blue-white-classic"] .qty,
-[data-theme="blue-white-classic"] .page-back-button { border-radius: 2px !important; }
+[data-theme="blue-white-classic"] .qty { border-radius: 2px !important; }
 [data-theme="blue-white-classic"] .home-alert { border-radius: 0 !important; box-shadow: none !important; }
 [data-theme="blue-white-classic"] .chat-term-header { display: none !important; }
-[data-theme="blue-white-classic"] .chat-box { background: #fff !important; padding: 4px 5px !important; }
+/* 世界频道沿用公共黑底浅字配色，经典主题仅调整排版。 */
+[data-theme="blue-white-classic"] .chat-box { padding: 4px 5px !important; }
 [data-theme="blue-white-classic"] .chat-msg { font-size: 14px !important; }
-[data-theme="blue-white-classic"] .chat-input-bar { background: #e5eff7 !important; border-radius: 0 !important; }
+[data-theme="blue-white-classic"] .chat-input-bar { border-radius: 0 !important; }
 [data-theme="blue-white-classic"] #footbar {
   background: #fff !important;
   border-top: 4px solid #acc9ed !important;

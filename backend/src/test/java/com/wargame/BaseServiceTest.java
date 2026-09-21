@@ -141,12 +141,17 @@ public abstract class BaseServiceTest {
     // ================================================================
 
     protected Officer createOfficer(Long playerId, String role, int military, int logistics, int knowledge) {
+        return createOfficer(playerId, role, military, 30, logistics, knowledge);
+    }
+
+    protected Officer createOfficer(Long playerId, String role, int military, int defense, int logistics, int knowledge) {
         Officer officer = new Officer();
         officer.setPlayerId(playerId);
         officer.setName("TestOfficer");
         officer.setStar(1);
         officer.setLevel(1);
         officer.setMilitary(military);
+        officer.setDefense(defense);
         officer.setLogistics(logistics);
         officer.setKnowledge(knowledge);
         officer.setLoyalty(80);

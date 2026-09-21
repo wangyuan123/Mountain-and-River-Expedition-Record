@@ -1,0 +1,206 @@
+[
+  {
+    "id": "infantry",
+    "source": "raw/infantry.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "outputSize": [
+      384,
+      384
+    ]
+  },
+  {
+    "id": "motor",
+    "source": "raw/motor.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "outputSize": [
+      384,
+      384
+    ]
+  },
+  {
+    "id": "truck",
+    "source": "raw/truck.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "outputSize": [
+      384,
+      384
+    ]
+  },
+  {
+    "id": "armored",
+    "source": "raw/armored.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "outputSize": [
+      384,
+      384
+    ]
+  },
+  {
+    "id": "ltank",
+    "source": "raw/ltank.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "outputSize": [
+      384,
+      384
+    ]
+  },
+  {
+    "id": "htank",
+    "source": "raw/htank.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "outputSize": [
+      384,
+      384
+    ]
+  },
+  {
+    "id": "assault",
+    "source": "raw/assault.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "outputSize": [
+      384,
+      384
+    ]
+  },
+  {
+    "id": "rocket",
+    "source": "raw/rocket.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "outputSize": [
+      384,
+      384
+    ]
+  },
+  {
+    "id": "scout",
+    "source": "raw/scout.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "outputSize": [
+      384,
+      384
+    ]
+  },
+  {
+    "id": "special",
+    "source": "raw/special.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "outputSize": [
+      384,
+      384
+    ]
+  },
+  {
+    "id": "fighter",
+    "source": "raw/fighter.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "outputSize": [
+      384,
+      384
+    ]
+  },
+  {
+    "id": "bomber",
+    "source": "raw/bomber.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "outputSize": [
+      384,
+      384
+    ]
+  },
+  {
+    "id": "transport",
+    "source": "raw/transport.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "outputSize": [
+      384,
+      384
+    ]
+  },
+  {
+    "id": "destroyer",
+    "source": "destroyer-v2.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "outputSize": [
+      384,
+      384
+    ]
+  },
+  {
+    "id": "sub",
+    "source": "raw/sub.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "outputSize": [
+      384,
+      384
+    ]
+  },
+  {
+    "id": "battleship",
+    "source": "raw/battleship.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "outputSize": [
+      384,
+      384
+    ]
+  },
+  {
+    "id": "carrier",
+    "source": "raw/carrier.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "outputSize": [
+      384,
+      384
+    ]
+  }
+]

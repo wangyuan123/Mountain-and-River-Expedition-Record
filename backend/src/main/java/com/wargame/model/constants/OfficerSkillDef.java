@@ -12,14 +12,25 @@ public record OfficerSkillDef(
         int max,
         String cat
 ) {
-    public static final Map<String, OfficerSkillDef> OFFICER_SKILLS = Map.of(
-            "frenzy",   new OfficerSkillDef("frenzy",   "猛攻",   "攻击力额外+10%/级",           5, "atk"),
-            "bulwark",  new OfficerSkillDef("bulwark",  "铁壁",   "防御力额外+10%/级",           5, "def"),
-            "blitz",    new OfficerSkillDef("blitz",    "闪电战", "行军速度+15%/级",             5, "spd"),
-            "suppress", new OfficerSkillDef("suppress", "压制",   "降低敌方攻击力8%/级",         5, "debuff"),
-            "pierce",   new OfficerSkillDef("pierce",   "破甲",   "无视敌方防御12%/级",          5, "pierce"),
-            "supply",   new OfficerSkillDef("supply",   "补给",   "粮食消耗-20%/级",             5, "logi"),
-            "medic",    new OfficerSkillDef("medic",    "急救",   "战后伤兵额外回收+3%/级，最高15%", 5, "medic"),
-            "combo",    new OfficerSkillDef("combo",    "连击",   "8%/级概率额外攻击一次",       5, "combo")
+    public static final Map<String, OfficerSkillDef> OFFICER_SKILLS = Map.ofEntries(
+            Map.entry("frenzy",     new OfficerSkillDef("frenzy",     "全力猛攻", "攻击力额外+10%/级",           5, "atk")),
+            Map.entry("bulwark",    new OfficerSkillDef("bulwark",    "铜墙铁壁", "防御力额外+10%/级",           5, "def")),
+            Map.entry("blitz",      new OfficerSkillDef("blitz",      "闪电突击", "战场移动速度+4%/级，最高20%",  5, "spd")),
+            Map.entry("suppress",   new OfficerSkillDef("suppress",   "火力压制", "降低敌方攻击力5%/级，最高25%",  5, "debuff")),
+            Map.entry("pierce",     new OfficerSkillDef("pierce",     "破甲打击", "无视敌方防御6%/级",           5, "pierce")),
+            Map.entry("leadership", new OfficerSkillDef("leadership", "三军统帅", "指挥官任命时，带兵上限额外+10%/级", 5, "mil")),
+            Map.entry("medic",      new OfficerSkillDef("medic",      "战地急救", "战后伤兵额外回收+3%/级，最高15%", 5, "medic")),
+            Map.entry("harvest",    new OfficerSkillDef("harvest",    "屯田增产", "市长任命时，基础资源产出额外+10%/级", 5, "logi")),
+            Map.entry("construct",  new OfficerSkillDef("construct",  "工程营造", "市长任命时，建筑工期缩短4%/级，最高20%", 5, "logi")),
+            Map.entry("finance",    new OfficerSkillDef("finance",    "精明理财", "市长任命时，黄金税收产出额外+8%/级", 5, "know")),
+            Map.entry("research",   new OfficerSkillDef("research",   "格物致知", "市长任命时，科研速度提升8%/级",     5, "know")),
+            Map.entry("ration",     new OfficerSkillDef("ration",     "军屯自给", "市长任命时，全城养兵耗粮降低16%/级，最高80%", 5, "logi")),
+            Map.entry("counter",    new OfficerSkillDef("counter",    "绝地反击", "受击存活后在第3/6/9...回合进行反击，伤害为剩余兵力总伤害的10%/级（最高50%）", 5, "def"))
     );
+
+    /** 获取技能定义（自动兼容历史存量 supply 技能映射到 leadership） */
+    public static OfficerSkillDef getSkill(String key) {
+        if ("supply".equals(key)) return OFFICER_SKILLS.get("leadership");
+        return OFFICER_SKILLS.get(key);
+    }
 }

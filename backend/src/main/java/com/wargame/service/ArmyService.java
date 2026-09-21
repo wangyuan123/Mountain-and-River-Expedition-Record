@@ -6,6 +6,7 @@ import com.wargame.model.constants.UnitDef;
 import com.wargame.model.constants.BuildingDef;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
+import com.wargame.util.JsonUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -477,15 +478,40 @@ public class ArmyService {
         if (commandLv < 1) commandLv = 1;
         int staffLv = buildingLevel(playerId, "staff");
 
-        // Commander level
+        // Commander level & leadership skill
         int cmdLv = 1;
+        int leadershipLv = 0;
         List<Officer> commanders = officerRepository.findByPlayerIdAndCitySlotAndRole(playerId, cityScope.slot(playerId), "commander");
         if (commanders != null && !commanders.isEmpty()) {
-            cmdLv = commanders.get(0).getLevel() != null ? commanders.get(0).getLevel() : 1;
+            Officer cmd = commanders.get(0);
+            cmdLv = cmd.getLevel() != null ? cmd.getLevel() : 1;
+            leadershipLv = getOfficerSkillLevel(cmd, "leadership");
+            if (leadershipLv == 0) {
+                // 兼容历史老存档 supply
+                leadershipLv = getOfficerSkillLevel(cmd, "supply");
+            }
         }
 
         int base = rankBase + commandLv * 1000;
-        return (int) Math.floor(base * (1 + staffLv * 0.10) * (1 + cmdLv * 0.025));
+        double cap = base * (1 + staffLv * 0.10) * (1 + cmdLv * 0.025);
+        if (leadershipLv > 0) {
+            cap *= (1.0 + 0.10 * leadershipLv);
+        }
+        return (int) Math.floor(cap);
+    }
+
+    private int getOfficerSkillLevel(Officer officer, String skillId) {
+        if (officer == null || officer.getSkills() == null || officer.getSkills().isBlank()) return 0;
+        try {
+            List<Map<String, Object>> list = JsonUtil.parseList(officer.getSkills());
+            for (Map<String, Object> sk : list) {
+                if (skillId.equals(sk.get("id"))) {
+                    Object lv = sk.get("lv");
+                    return lv instanceof Number ? ((Number) lv).intValue() : 0;
+                }
+            }
+        } catch (Exception ignored) {}
+        return 0;
     }
 
     // ================================================================

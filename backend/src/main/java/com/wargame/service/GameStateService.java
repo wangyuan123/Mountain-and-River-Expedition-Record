@@ -277,9 +277,11 @@ public class GameStateService {
             EquipmentService.Attributes attrs = equipmentService.attributes(o);
             offMap.put("baseLogistics", o.getLogistics() != null ? o.getLogistics() : 0);
             offMap.put("baseMilitary", o.getMilitary() != null ? o.getMilitary() : 0);
+            offMap.put("baseDefense", o.getDefense() != null ? o.getDefense() : 0);
             offMap.put("baseKnowledge", o.getKnowledge() != null ? o.getKnowledge() : 0);
             offMap.put("logistics", attrs.logistics());
             offMap.put("military", attrs.military());
+            offMap.put("defense", attrs.defense());
             offMap.put("knowledge", attrs.knowledge());
             offMap.put("setBonuses", attrs.bonuses());
             offMap.put("skills", JsonUtil.parseList(o.getSkills()));
@@ -342,6 +344,7 @@ public class GameStateService {
             constructionList.add(cMap);
         }
         state.put("constructions", constructionList);
+        state.put("freeBuildSpeedUpSeconds", BuildService.FREE_SPEED_UP_SECONDS);
 
         // --- academy ---
         Academy academy = academyRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
@@ -353,6 +356,9 @@ public class GameStateService {
             academyMap.put("list", new ArrayList<>());
             academyMap.put("refreshAt", 0);
         }
+        int academyLevel = buildings.stream().filter(b -> "academy".equals(b.getType()))
+                .mapToInt(b -> b.getLevel() != null ? b.getLevel() : 0).sum();
+        academyMap.put("fiveStarBatchChance", OfficerService.academyFiveStarBatchChance(academyLevel));
         state.put("academy", academyMap);
 
         // --- world ---

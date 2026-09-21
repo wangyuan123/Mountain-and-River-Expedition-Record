@@ -50,7 +50,7 @@ window.Game = window.Game || {};
         rankProgressHtml = '<button type="button" class="drawer-rank-tip" onclick="Game.Main.closePlayerDrawer();Game.go(\'mainQuest\');">'
           + '<span class="drawer-rank-heading"><span>下一军衔 · <b>' + G.escapeHtml(rankInfo.nextName || '') + '</b></span><span class="drawer-rank-link">晋升任务 ›</span></span>'
           + '<span class="drawer-rank-track" aria-hidden="true"><span style="width:' + pct + '%"></span></span>'
-          + '<span class="drawer-rank-note">' + (needed > 0 ? '声望进度 ' + pct + '% · 还需 ' + G.fmt(needed) + ' 声望' : '声望已达标，查看其他晋升条件') + '</span>'
+          + '<span class="drawer-rank-note">' + (needed > 0 ? '进度 ' + pct + '% · 还需 ' + G.fmt(needed) + ' 声望' : '声望已达标，查看晋升条件') + '</span>'
           + '</button>';
       }
 
@@ -83,6 +83,7 @@ window.Game = window.Game || {};
         + '  </div>'
         + '  <div class="drawer-section">'
         + '    <div class="drawer-section-title">军衔与资产</div>'
+        + '    <div class="drawer-assets-card">'
         + '    <div class="drawer-stat-grid">'
         + '      <div class="drawer-stat-box">'
         + '        <div class="stat-k">统帅军衔</div>'
@@ -102,6 +103,7 @@ window.Game = window.Game || {};
         + '      </button>'
         + '    </div>'
         + rankProgressHtml
+        + '    </div>'
         + '  </div>'
         + '  <div class="drawer-section">'
         + '    <div class="drawer-section-title">当前城市</div>'

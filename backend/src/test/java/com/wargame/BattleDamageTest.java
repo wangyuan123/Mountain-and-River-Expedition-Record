@@ -1,7 +1,8 @@
 package com.wargame;
 
-import com.wargame.model.dto.BattleResult;
 import com.wargame.service.BattleService;
+import com.wargame.model.constants.UnitDef;
+import com.wargame.model.constants.FortDef;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -9,125 +10,192 @@ import java.lang.reflect.Constructor;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.HashSet;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/** 单次行动隔离后续回合，验证火力守恒、目标换算与攻守对称。 */
 class BattleDamageTest {
-    private final BattleService service = new BattleService();
+    private final BattleService service = new BattleService(4096);
 
     @Test
-    void rocketSalvoCarriesDamageFromTanksThroughMultipleFortifications() throws Exception {
-        Map<String, Integer> defenders = army("htank", 33, "howitzer", 61, "bunker", 88);
-        String report = act("rocket", 1054, defenders, 0, false, null, null);
-
-        // 截图中的齐射：64030.5，总生命值为 7260 + 4880 + 22880。
-        assertEquals(army("htank", 0, "howitzer", 0, "bunker", 0), defenders);
-        assertTrue(report.contains("本次总伤害64031 伤害7260 击毁33 剩余伤害56771"), report);
-        assertTrue(report.contains("余伤攻击敌榴弹炮(61) 伤害4880 击毁61 剩余伤害51891"), report);
-        assertTrue(report.contains("余伤攻击敌碉堡(88) 伤害22880 击毁88 剩余伤害29011"), report);
-        assertEquals(1, report.lines().filter(line -> line.contains("齐射")).count());
+    void exactFirepowerExhaustionStopsBeforeNextTarget() throws Exception {
+        Map<String, Integer> targets = army("htank", 25, "bunker", 10);
+        String report = act("rocket", 402, targets, 0, false, null, null);
+        assertEquals(0, targets.get("htank"));
+        assertEquals(10, targets.get("bunker"));
     }
 
     @Test
-    void switchingTargetsConsumesOnlyTheRemainingDamage() throws Exception {
-        Map<String, Integer> defenders = army("htank", 33, "howitzer", 500, "bunker", 88);
-        String report = act("rocket", 400, defenders, 0, false, null, null);
-
-        // 总伤害 24300，重坦消耗 7260，余下 17040 只能击毁 213 门榴弹炮。
-        assertEquals(0, defenders.get("htank"));
-        assertEquals(287, defenders.get("howitzer"));
-        assertEquals(88, defenders.get("bunker"));
-        assertTrue(report.contains("余伤攻击敌榴弹炮(500) 伤害17040 击毁213 剩余伤害0"), report);
-        assertFalse(report.contains("余伤攻击敌碉堡"), report);
+    void spilloverRecalculatesDefenseAndMatchupForEveryTarget() throws Exception {
+        Map<String, Integer> targets = army("htank", 1, "bunker", 100);
+        String report = act("rocket", 32, targets, 0, false, null, null);
+        assertEquals(0, targets.get("htank"));
+        assertTrue(targets.get("bunker") == 95);
+        assertTrue(report.contains("余伤攻击敌碉堡(100) 对工事攻击179 伤害1296"), report);
+        assertEquals(1, report.lines().filter(line -> line.contains("本次原始火力")).count());
     }
 
     @Test
-    void exactDamageExhaustionStopsBeforeTheNextTarget() throws Exception {
-        Map<String, Integer> defenders = army("infantry", 6, "truck", 5);
-        String report = act("infantry", 100, defenders, 0, false, null, null);
+    void antiAirBonusNeverSpillsIntoGroundTargets() throws Exception {
+        Map<String, Integer> targets = army("scout", 1, "htank", 100);
+        String report = act("armored", 10, targets, 100, false, null, null);
+        assertEquals(0, targets.get("scout"));
+        assertTrue(report.contains("余伤攻击敌" + UnitDef.UNITS.get("htank").name() + "(100) [前排承伤] 对地攻击18 伤害28"), report);
+        assertTrue(targets.get("htank") >= 99);
+    }
 
-        assertEquals(0, defenders.get("infantry")); // 180 伤害，正好击毁 6 个 30 HP 步兵。
-        assertEquals(5, defenders.get("truck"));
+    @Test
+    void weakAirAttackRemainsIndependentWithSkills() throws Exception {
+        Map<String, Integer> targets = army("fighter", 100);
+        String report = act("rocket", 100, targets, 0, false,
+                context(Map.of("attack_tech", 10), Map.of("pierce", 5)), null);
+        assertTrue(report.contains("本次原始火力750 伤害366"), report);
+        assertTrue(targets.get("fighter") == 97);
+    }
+
+    @Test
+    void excessGroundAttackSwitchesToWeakAirWeapon() throws Exception {
+        Map<String, Integer> targets = army("infantry", 1, "fighter", 100);
+        String report = act("rocket", 100, targets, 0, false, null, null);
+        assertEquals(0, targets.get("infantry"));
+        assertTrue(report.contains("余伤攻击敌" + UnitDef.UNITS.get("fighter").name() + "(100) 对空攻击5 伤害196"), report);
+        assertTrue(targets.get("fighter") >= 98);
+    }
+
+    @Test
+    void allEmplacementsUseFortAttackIncludingArtilleryClasses() throws Exception {
+        // 对工事429独立于对地56；火炮仍可保留反炮兵分类，但不能误走对地武器。
+        Map<String, Integer> damages = Map.of("bunker", 19500, "howitzer", 33000, "antitank", 30643, "flak", 30643);
+        for (boolean defending : new boolean[]{false, true}) {
+            for (var entry : damages.entrySet()) {
+                String report = act("bomber", 100, army(entry.getKey(), 1000), 0, defending, null, null);
+                assertTrue(report.contains("对工事攻击429 本次原始火力42900 伤害" + entry.getValue()), report);
+            }
+        }
+    }
+
+    @Test
+    void logisticsUseWeakSiegeWeaponAtContact() throws Exception {
+        Map<String, Integer> targets = army("infantry", 1, "bunker", 100);
+        String report = act("truck", 1000, targets, 0, false, null, null);
+        assertEquals(0, targets.get("infantry"));
+        assertTrue(report.contains("对工事攻击1 伤害407"), report);
+        assertTrue(targets.get("bunker") == 98 || targets.get("bunker") == 99);
+    }
+
+    @Test
+    void submarineSwitchesFromSeaWeaponToWeakGroundFire() throws Exception {
+        Map<String, Integer> targets = army("infantry", 1000, "battleship", 1);
+        String report = act("sub", 150, targets, 0, false, null, null);
+        assertEquals(0, targets.get("battleship"));
+        assertTrue(report.contains("对海攻击66"), report);
+        assertTrue(report.contains("对地攻击1 伤害"), report);
+        assertTrue(targets.get("infantry") >= 997);
+    }
+
+    @Test
+    void specialForcesUseImprovedSiegeFireAgainstEveryFort() throws Exception {
+        for (String fort : new String[]{"bunker", "howitzer", "antitank", "flak"}) {
+            String report = act("special", 100, army(fort, 10000), 0, false, null, null);
+            assertTrue(report.contains("对工事攻击188 本次原始火力18800"), report);
+            // 纯属性模式下无额外克制倍率，伤害完全由攻坚面板 188 与各工事防御减免决定
+            assertTrue(report.contains("伤害" + switch (fort) {
+                case "bunker" -> 8545;
+                case "howitzer" -> 14462;
+                default -> 13429;
+            }), report);
+        }
+    }
+
+    @Test
+    void transportHasRealSelfDefenseAtContact() throws Exception {
+        String report = act("transport", 100, army("fighter", 100), 0, false, null, null);
+        assertTrue(report.contains("对空攻击1 本次原始火力100 伤害40"), report);
+    }
+
+    @Test
+    void everyUnitAndFortCanDamageEveryDomainInRange() throws Exception {
+        var attackers = new HashSet<>(UnitDef.UNITS.keySet());
+        attackers.addAll(FortDef.FORTS.keySet());
+        // 接触距离覆盖零射程后勤；每类目标分别行动，验证最低火力实际进入结算。
+        for (String attacker : attackers) {
+            for (String target : new String[]{"infantry", "fighter", "destroyer", "bunker"}) {
+                Map<String, Integer> targets = army(target, 100000);
+                String report = act(attacker, 10000, targets, 0, false, null, null);
+                assertTrue(report.contains("伤害"), attacker + " -> " + target + report);
+                assertTrue(targets.get(target) < 100000, attacker + " -> " + target);
+            }
+        }
+    }
+
+    @Test
+    void weakAirWeaponDoesNotInheritGroundAttackOrAntiArmorBonus() throws Exception {
+        Map<String, Integer> targets = army("scout", 100);
+        String report = act("ltank", 100, targets, 100, false, null, null);
+        assertTrue(report.contains("对空攻击10 本次原始火力1000 伤害606"), report);
+        assertTrue(targets.get("scout") >= 90);
+    }
+
+    @Test
+    void fractionalKillDoesNotCreateSpillover() throws Exception {
+        Map<String, Integer> targets = army("htank", 1, "infantry", 10);
+        String report = act("rocket", 1, targets, 350, false, null, null);
+        assertEquals(10, targets.get("infantry"));
         assertFalse(report.contains("余伤攻击"), report);
     }
 
     @Test
-    void fractionalKillNeverCreatesDamageForAnotherTarget() throws Exception {
-        for (int i = 0; i < 30; i++) {
-            Map<String, Integer> defenders = army("htank", 1, "infantry", 10);
-            String report = act("rocket", 1, defenders, 350, false, null, null);
-            // 30.375 不够击毁 220 HP 重坦；即使概率击杀成功也没有可转移余伤。
-            assertTrue(defenders.get("htank") == 0 || defenders.get("htank") == 1);
-            assertEquals(10, defenders.get("infantry"));
-            assertFalse(report.contains("余伤攻击"), report);
-        }
-    }
-
-    @Test
-    void outOfRangeActionOnlyMovesEvenWhenTheMoveEntersRange() throws Exception {
-        Map<String, Integer> defenders = army("htank", 33, "howitzer", 61);
-        String report = act("rocket", 1054, defenders, 351, false, null, null);
-
-        assertEquals(army("htank", 33, "howitzer", 61), defenders);
-        assertTrue(report.contains("前进 200 距离->151"), report);
+    void movementStopsAtRangeAndDoesNotFireInSameAction() throws Exception {
+        Map<String, Integer> targets = army("htank", 1);
+        String report = act("rocket", 100, targets, 2001, false, null, null);
+        assertEquals(1, targets.get("htank"));
+        assertTrue(report.contains("前进 1 距离->2000"), report);
         assertFalse(report.contains("伤害"), report);
     }
 
     @Test
-    void defenderAttacksAlsoCarryDamageAndSkipEmptyTargets() throws Exception {
-        Map<String, Integer> attackers = army("htank", 33, "howitzer", 0, "bunker", 88);
-        String report = act("rocket", 1054, attackers, 0, true, null, null);
-
-        assertEquals(army("htank", 0, "howitzer", 0, "bunker", 0), attackers);
-        assertTrue(report.contains("敌方火箭(1054)余伤攻击我碉堡(88)"), report);
-        assertFalse(report.contains("榴弹炮"), report);
+    void pointBlankDoesNotDoubleArtilleryDamage() throws Exception {
+        Map<String, Integer> close = army("htank", 100);
+        Map<String, Integer> far = army("htank", 100);
+        String closeLog = act(new BattleService(4096), "rocket", 168, close, 0, false, null, null);
+        String farLog = act(new BattleService(4096), "rocket", 168, far, 2000, false, null, null);
+        assertEquals(close, far);
+        assertTrue(closeLog.contains("伤害4024"));
+        assertTrue(farLog.contains("伤害4024"));
     }
 
     @Test
-    void eachNewTargetUsesItsEffectiveHealthWithoutApplyingComboAgain() throws Exception {
-        Map<String, Integer> defenders = army("htank", 33, "howitzer", 500, "bunker", 88);
-        Object attackerContext = context(Map.of(), Map.of("combo", 13)); // 100% 以上，必定连击。
-        Object defenderContext = context(Map.of("cmd_hp", 20), Map.of()); // 生命值翻倍。
-        String report = act("rocket", 400, defenders, 0, false, attackerContext, defenderContext);
-
-        // 连击总伤害 48600。重坦消耗 14520，剩余 34080 / 榴弹炮160 HP = 213。
-        assertEquals(0, defenders.get("htank"));
-        assertEquals(287, defenders.get("howitzer"));
-        assertEquals(88, defenders.get("bunker"));
-        assertTrue(report.contains("本次总伤害48600"), report);
-        assertTrue(report.contains("伤害34080 击毁213 剩余伤害0"), report);
-        assertEquals(1, report.lines().filter(line -> line.contains("连击")).count());
+    void defenderUsesSameSpilloverRulesAndSkipsDeadTargets() throws Exception {
+        Map<String, Integer> targets = army("htank", 1, "bunker", 100, "scout", 0);
+        String report = act("rocket", 32, targets, 0, true, null, null);
+        assertEquals(0, targets.get("htank"));
+        assertTrue(report.contains("余伤攻击我碉堡(100) 对工事攻击179 伤害1296"), report);
+        assertFalse(report.contains("侦察机"), report);
     }
 
     @Test
-    void wildAndCityBattlesResolveSpilloverBeforeDestroyedEnemiesCanAct() {
-        Map<String, Integer> attacker = Map.of("rocket", 1054);
-        Map<String, Integer> defenders = army("htank", 33, "howitzer", 61, "bunker", 1);
-        BattleResult wild = service.resolveWild(defenders, attacker);
-        BattleResult city = service.startWorldDispatch(attacker, Map.of("htank", 33),
-                Map.of("howitzer", 61, "bunker", 1), Map.of(), Map.of(), Map.of(), Map.of(),
-                0, 0, 0, 0, "conquer", Map.of("food", 100), 0);
-
-        for (BattleResult result : new BattleResult[]{wild, city}) {
-            assertTrue(result.isWin(), result.getReport());
-            assertTrue(result.getSurvivorDefender().isEmpty());
-            assertTrue(result.getSurvivorAttacker().get("rocket") > 0);
-            assertTrue(result.getReport().contains("余伤攻击敌碉堡"), result.getReport());
-        }
-        assertTrue(city.isCityConquered());
-        assertEquals(army("htank", 33, "howitzer", 61, "bunker", 1), defenders,
-                "计算应修改战斗副本，不能改变调用者传入的军队");
+    void targetsUseEffectiveHealthWithCommanderHp() throws Exception {
+        Map<String, Integer> targets = army("htank", 1, "bunker", 100);
+        String report = act("rocket", 32, targets, 0, false,
+                context(Map.of(), Map.of()), context(Map.of("cmd_hp", 20), Map.of()));
+        assertEquals(0, targets.get("htank"));
+        assertTrue(report.contains("本次原始火力3200"), report);
     }
 
     private String act(String unit, int count, Map<String, Integer> targets, int distance,
+                       boolean enemy, Object attackerContext, Object defenderContext) throws Exception {
+        return act(service, unit, count, targets, distance, enemy, attackerContext, defenderContext);
+    }
+
+    private String act(BattleService svc, String unit, int count, Map<String, Integer> targets, int distance,
                        boolean enemy, Object attackerContext, Object defenderContext) throws Exception {
         Class<?> sideClass = Class.forName("com.wargame.service.BattleService$Side");
         Object side = Arrays.stream(sideClass.getEnumConstants())
                 .filter(value -> ((Enum<?>) value).name().equals(enemy ? "ENEMY" : "MINE"))
                 .findFirst().orElseThrow();
         StringBuilder report = new StringBuilder();
-        // 单次行动测试隔离后续回合，直接验证余伤守恒及射程边界。
-        ReflectionTestUtils.invokeMethod(service, "simAct", unit, army(unit, count), targets,
+        ReflectionTestUtils.invokeMethod(svc, "simAct", unit, army(unit, count), targets,
                 distance, report, side, attackerContext, defenderContext, 0, false);
         return report.toString();
     }

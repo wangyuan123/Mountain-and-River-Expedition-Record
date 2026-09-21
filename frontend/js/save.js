@@ -4,7 +4,7 @@ window.Game = window.Game || {};
 (function (G) {
   'use strict';
 
-  var ATTR_MAX = 255;
+  var ATTR_MAX = 219;
   var OFFICER_MAX_LEVEL = 100;
 
   function expNeeded(level) {

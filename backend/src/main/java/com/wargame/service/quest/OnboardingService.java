@@ -34,7 +34,7 @@ public class OnboardingService {
     public record Supply(String id, String title, List<String> requires, Map<String, Integer> resources) {}
 
     public static final List<Objective> OBJECTIVES = List.of(
-            new Objective("base", "整备前进基地", "将市政厅升至2级、农田总等级达到2，并建成军工厂。两条施工队列可以同时工作。", "buildArmy", "command"),
+            new Objective("base", "整备前进基地", "将市政厅升至2级、农田总等级达到2，并建成军工厂。开局即有6支施工队，可同时进行6项建筑工程。", "buildArmy", "command"),
             new Objective("train", "组织小队", "完成一批步兵和一批卡车生产。建议先训练3名步兵、2辆卡车，保留平民维持税收；已有50步兵可承担首战。", "army", ""),
             new Objective("recon", "建立侦察能力", "建成科研中心，升级1级侦察技术，并生产至少1架侦察机。科技直接生效，生产完成后飞机才能出发。", "tech", "lab"),
             new Objective("scout", "查明补给点守军", "对资源野地完成一次成功侦察，获得精确守军情报。行军期间可以继续安排建设。", "world", ""),

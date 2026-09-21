@@ -325,3 +325,20 @@ test('军情倒计时每秒更新，延迟后按真实时间校正，重新渲�
   [...timers.values()][0]();
   assert.equal(timers.size, 0);
 });
+
+test('导航栏将科技和切换置于末尾，军情显示为情报', () => {
+  const context = sandbox();
+  for (const file of ['js/data.js', 'js/core.js', 'js/cities.js', 'js/main-view.js']) load(context, file);
+  const G = context.Game;
+  G.state = { player: { id: 1, cityName: '主城' }, world: { incoming: [] } };
+  G.Core.state = G.state;
+  G.Core.route = 'home';
+  const navHtml = G.MainView.navBar();
+
+  const labels = [...navHtml.matchAll(/class="navlabel">([^<]+)<\/span>/g)].map(m => m[1]);
+  assert.deepEqual(labels, [
+    '首页', '资源', '军事', '军队', '地图', '情报', '战报', '邮件', '任务', '军团', '仓库', '科技', '切换'
+  ]);
+  assert.doesNotMatch(navHtml, /军情/);
+});
+

@@ -1,0 +1,10 @@
+Use case: product-mockup
+Asset type: square unit icon sample for a historically grounded WWII strategy game.
+Primary request: a photorealistic macro product photograph of a museum-grade physical scale model. Convincing miniature materials and accurate engineering, absolutely not a vector icon, flat drawing, cartoon, low-poly toy or illustration.
+Scene/backdrop: seamless neutral charcoal studio background, subtly lighter behind the subject, no scenery, no text, no badge, no UI frame.
+Composition/framing: one complete miniature centered, three-quarter view from above, its long axis diagonally across the square, front toward lower left, fill 85 percent of the frame with safe margins around all extremities. Focus stacking, entire model sharply in focus, no tilt-shift blur. Distinct silhouette readable when reduced to 40px.
+Lighting/mood: large softbox upper left, restrained rim light, realistic ambient occlusion and contact shadows. Sober military museum photography.
+Materials/textures: physically realistic painted metal, restrained paint wear at edges, fine panel seams, precise subtle weathering; no exaggerated rust, no glossy plastic, no thick outlines, no saturation boost.
+Constraints: historically plausible WWII equipment, no modern weapons, no fantasy embellishments, no watermark, no labels, no decorative border. One object only.
+
+Subject: a WWII 1944 Iowa-class battleship 1:700 museum waterline scale model, completely visible from pointed bow to stern. Very long slender hull, THREE main turrets each with THREE 16-inch barrels, two turrets forward and one aft; wartime superstructure, two funnels, secondary enclosed twin five-inch gun mounts and period AA mounts. Blue-gray naval paint, muted wood deck. No missiles, no helicopters, no modern radar domes, no aircraft carrier deck. Tiny restrained dark resin-water plinth following the hull, subtle small ripples, no towering waves or action scene. Elevated bow-quarter viewpoint reveals full deck arrangement and all three main turrets; ship occupies almost full image diagonal without cropping.

@@ -114,10 +114,12 @@ class WoundedServiceTest extends BaseServiceTest {
         assertThrows(IllegalArgumentException.class, () -> service.heal(other, batch.getId(), 1, "gold"));
         assertThrows(IllegalArgumentException.class, () -> service.heal(player.getId(), batch.getId(), 0, "gold"));
         assertThrows(IllegalArgumentException.class, () -> service.heal(player.getId(), batch.getId(), 51, "gold"));
-        assertThrows(IllegalArgumentException.class, () -> service.heal(player.getId(), batch.getId(), 1, "food"));
+        Resources res = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
+        res.setGold(100);
+        resourcesRepository.save(res);
         assertThrows(IllegalArgumentException.class, () -> service.heal(player.getId(), batch.getId(), 50, "gold"));
         assertEquals(50, batch.getCount());
-        assertEquals(500, resourcesRepository.findByPlayerId(player.getId()).orElseThrow().getGold());
+        assertEquals(100, resourcesRepository.findByPlayerId(player.getId()).orElseThrow().getGold());
         assertTrue(armyUnitRepository.findByPlayerId(player.getId()).isEmpty());
         batch.setExpiresAt(System.currentTimeMillis() - 1);
         wounded.save(batch);

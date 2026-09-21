@@ -24,6 +24,8 @@ public class GameDtos {
 
     public record BuildRequest(String building, Integer slot) {}
 
+    public record FreeBuildSpeedUpRequest(Long queueId) {}
+
     public record SpeedUpRequest(String itemId, Long queueId, Integer count, String building, Integer slot) {
         public SpeedUpRequest(String itemId, Long queueId, Integer count) {
             this(itemId, queueId, count, null, null);
@@ -70,6 +72,11 @@ public class GameDtos {
     public record DeclareWarRequest(Long targetCityId) {}
 
     public record CancelMarchRequest(Long marchId) {}
+
+    /** 战术战斗中每个己方兵种本回合的机动与可选集火目标。 */
+    public record BattleUnitOrderRequest(String action, String focusTarget) {}
+
+    public record BattleCommandRequest(Map<String, BattleUnitOrderRequest> orders) {}
 
     public record ReseedRequest(Integer count, Integer centerX, Integer centerY, Integer radius) {}
 

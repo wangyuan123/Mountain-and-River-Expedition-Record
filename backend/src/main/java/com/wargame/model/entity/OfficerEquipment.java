@@ -22,6 +22,7 @@ public class OfficerEquipment extends VersionedEntity {
     @Column(name = "tier", nullable = false) private Integer tier;
     @Column(name = "slot", nullable = false, length = 20) private String slot;
     @Column(name = "military_bonus", nullable = false) private Integer militaryBonus;
+    @Column(name = "defense_bonus", nullable = false) private Integer defenseBonus = 0;
     @Column(name = "logistics_bonus", nullable = false) private Integer logisticsBonus;
     @Column(name = "knowledge_bonus", nullable = false) private Integer knowledgeBonus;
     @Column(name = "created_at", nullable = false) private Long createdAt;

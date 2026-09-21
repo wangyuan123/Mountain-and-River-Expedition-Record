@@ -6,7 +6,7 @@ function fixture(){
  }}};c.window=c;vm.createContext(c);
  for(const file of ['map-camera.js','map-layout.js','world-map.js']){
   let source=fs.readFileSync(path.join(__dirname,'../js',file),'utf8');
-  source=source.replace('  G.WorldMap={','  G.TestMapView=MapView; G.TestMapIcon=icon; G.TestOwnershipCaption=ownershipCaption; G.TestDrawOwnership=drawOwnership;\n  G.WorldMap={');vm.runInContext(source,c);
+  source=source.replace('  G.WorldMap={','  G.TestMapView=MapView; G.TestMapIcon=icon; G.TestOwnershipCaption=ownershipCaption; G.TestDrawOwnership=drawOwnership; G.TestPrimaryMarchUnit=primaryMarchUnit;\n  G.WorldMap={');vm.runInContext(source,c);
  }
  const v=Object.create(c.Game.TestMapView.prototype);v.camera=new c.Game.MapCamera(200,100.5,100.5,48);v.camera.width=390;v.camera.height=550;
  v.markerLayer={children:[]};v.visible=[];v.loadDetail=t=>{v.result={target:t};};v.loadSite=(x,y)=>{v.result={site:[x,y]};};
@@ -48,6 +48,13 @@ test('player art follows actual coast status for own and other cities, including
   assert.equal(icon({kind:'player',selfCity}),'img/cities/garden-citadel.webp');
  }
  assert.equal(icon({kind:'npc',coastal:true}),'img/map/npc-fortress.webp');
+});
+test('march marker selects the largest represented unit that has an icon asset',()=>{
+ const {c}=fixture();c.Game.UNIT_ICON={infantry:'img/units/infantry.svg',ltank:'img/units/ltank.svg'};
+ const primary=c.Game.TestPrimaryMarchUnit;
+ assert.equal(primary({army:{infantry:120,ltank:80}}),'infantry');
+ assert.equal(primary({army:{unknown:999,ltank:80}}),'ltank');
+ assert.equal(primary({army:{unknown:999,ltank:0}}),null);
 });
 test('a visible resource rooftop outside its ground cell opens the resource instead of building a city',()=>{
  const {v,marker}=fixture();const t={kind:'wild',id:1,type:'ironworks',x:100,y:100};

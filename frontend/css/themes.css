@@ -746,6 +746,7 @@ body[data-theme|="blue-white"] {
 [data-theme|="blue-white"] .home-officer-name {
   color: #004499 !important;
   font-weight: 600 !important;
+  font-size: 12px !important;
 }
 [data-theme|="blue-white"] .home-officer-item {
   background: #fbfcfe !important;
@@ -779,7 +780,8 @@ body[data-theme|="blue-white"] {
   color: #0f172a !important;
 }
 [data-theme|="blue-white"] .home-officer-go,
-[data-theme|="blue-white"] .army-go {
+[data-theme|="blue-white"] .army-go,
+[data-theme|="blue-white"] .zone-head-action {
   color: #004499 !important;
   font-weight: 600 !important;
 }
@@ -920,7 +922,7 @@ body[data-theme|="blue-white"] {
   padding: 2.5px 0 !important;
 }
 [data-theme|="blue-white"] .chat-msg .chat-time {
-  color: #475569 !important;
+  color: #94a3b8 !important;
 }
 [data-theme|="blue-white"] .chat-msg .chat-text,
 [data-theme|="blue-white"] .chat-msg .chat-content {
@@ -942,7 +944,7 @@ body[data-theme|="blue-white"] {
   color: #f8fafc !important;
 }
 [data-theme|="blue-white"] .chat-input::placeholder {
-  color: #475569 !important;
+  color: #94a3b8 !important;
 }
 [data-theme|="blue-white"] .chat-send {
   background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
@@ -3245,3 +3247,246 @@ body[data-theme="dark"] {
 [data-theme] .btn.account-delete-entry {
   background: transparent !important; color: var(--danger) !important; border-color: var(--danger) !important;
 }
+
+/* 兵种配置与军队界面紧凑尺寸覆盖（跨主题统一规范） */
+[data-theme] .army-tabs {
+  margin: 6px 0 8px !important;
+  gap: 6px !important;
+}
+[data-theme] .army-tab {
+  padding: 4px 8px !important;
+  font-size: 12px !important;
+  min-height: 28px !important;
+}
+[data-theme] .unit-card {
+  padding: 5px 8px !important;
+  margin-bottom: 5px !important;
+}
+[data-theme] .unit-card .n {
+  font-size: 12.5px !important;
+}
+[data-theme] .unit-card .lv {
+  font-size: 11px !important;
+}
+[data-theme] .unit-card .blv {
+  font-size: 10px !important;
+}
+[data-theme] .unit-card .cost {
+  margin-top: 2px !important;
+  font-size: 11px !important;
+}
+[data-theme] .unit-card-toggle {
+  font-size: 10.5px !important;
+  padding: 1px 5px !important;
+  margin-left: 6px !important;
+}
+[data-theme] .unit-card .recruit-row {
+  margin-top: 4px !important;
+  gap: 5px !important;
+}
+[data-theme] .recruit-btn,
+.recruit-btn {
+  height: 24px !important;
+  min-height: 24px !important;
+  line-height: 24px !important;
+  min-width: auto !important;
+  padding: 0 3px !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--accent, #004499) !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+  letter-spacing: 0.02em !important;
+}
+[data-theme] .recruit-btn:hover,
+.recruit-btn:hover {
+  background: transparent !important;
+  color: var(--accent-dark, #002d66) !important;
+  text-decoration: underline !important;
+}
+[data-theme] .recruit-btn:active,
+.recruit-btn:active {
+  opacity: 0.75 !important;
+}
+[data-theme] .recruit-btn.warn,
+.recruit-btn.warn {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--danger, #c63828) !important;
+}
+[data-theme] .recruit-btn.warn:hover,
+.recruit-btn.warn:hover {
+  background: transparent !important;
+  color: #9e2316 !important;
+  text-decoration: underline !important;
+}
+[data-theme] .recruit-qty,
+.recruit-qty {
+  width: 48px !important;
+  min-width: 48px !important;
+  height: 24px !important;
+  min-height: 24px !important;
+  line-height: 22px !important;
+  font-size: 11.5px !important;
+  padding: 0 2px !important;
+  border-radius: 3px !important;
+  text-align: center;
+}
+[data-theme] .recruit-slider-wrap,
+.recruit-slider-wrap {
+  height: 24px !important;
+  min-width: 60px !important;
+}
+[data-theme] .recruit-slider,
+.recruit-slider {
+  height: 24px !important;
+}
+
+[data-theme] .depot-item-head,
+.depot-item-head {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  line-height: 1.4 !important;
+}
+
+[data-theme] .depot-item-title,
+.depot-item-title {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+[data-theme] .depot-btn,
+.depot-btn {
+  height: 22px !important;
+  min-height: 22px !important;
+  line-height: 22px !important;
+  min-width: auto !important;
+  padding: 0 2px !important;
+  margin: 0 !important;
+  flex: 0 0 auto !important;
+  white-space: nowrap !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--accent, #004499) !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+  letter-spacing: 0.02em !important;
+}
+[data-theme] .depot-btn:hover,
+.depot-btn:hover {
+  background: transparent !important;
+  color: var(--accent-dark, #002d66) !important;
+  text-decoration: underline !important;
+}
+[data-theme] .depot-btn:active,
+.depot-btn:active {
+  opacity: 0.75 !important;
+}
+[data-theme] .depot-btn.warn,
+.depot-btn.warn {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--danger, #c63828) !important;
+}
+[data-theme] .depot-btn.warn:hover,
+.depot-btn.warn:hover {
+  background: transparent !important;
+  color: #9e2316 !important;
+  text-decoration: underline !important;
+}
+
+[data-theme] .page-back-button,
+.page-back-button {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--accent, #004499) !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  padding: 0 4px !important;
+  min-height: 22px !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+}
+
+[data-theme] .page-back-button:hover,
+.page-back-button:hover {
+  background: transparent !important;
+  color: var(--accent-dark, #002d66) !important;
+  text-decoration: underline !important;
+}
+
+[data-theme] .army-queue-btn,
+.army-queue-btn {
+  height: 22px !important;
+  min-height: 22px !important;
+  line-height: 22px !important;
+  min-width: auto !important;
+  padding: 0 3px !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--accent, #004499) !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+  letter-spacing: 0.02em !important;
+}
+
+[data-theme] .army-queue-btn:hover:not(:disabled),
+.army-queue-btn:hover:not(:disabled) {
+  background: transparent !important;
+  color: var(--accent-dark, #002d66) !important;
+  text-decoration: underline !important;
+}
+
+[data-theme] .army-queue-btn:active:not(:disabled),
+.army-queue-btn:active:not(:disabled) {
+  opacity: 0.75 !important;
+}
+
+[data-theme] .army-queue-btn.warn,
+.army-queue-btn.warn {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--danger, #c63828) !important;
+}
+
+[data-theme] .army-queue-btn.warn:hover:not(:disabled),
+.army-queue-btn.warn:hover:not(:disabled) {
+  background: transparent !important;
+  color: #9e2316 !important;
+  text-decoration: underline !important;
+}
+
+[data-theme] .army-queue-btn:disabled,
+[data-theme] .army-queue-btn.disabled,
+.army-queue-btn:disabled,
+.army-queue-btn.disabled {
+  background: transparent !important;
+  border: none !important;
+  color: #94a3b8 !important;
+  cursor: not-allowed !important;
+  text-decoration: none !important;
+}
+
+[data-theme] .home-officer-name,
+.home-officer-name {
+  font-size: 12px !important;
+}
+

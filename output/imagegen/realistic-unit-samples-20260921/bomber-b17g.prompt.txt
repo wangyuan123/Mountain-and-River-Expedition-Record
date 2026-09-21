@@ -1,0 +1,10 @@
+Use case: product-mockup
+Asset type: square unit icon sample for a historically grounded WWII strategy game.
+Primary request: a photorealistic macro product photograph of a museum-grade physical scale model. Convincing miniature materials and accurate engineering, absolutely not a vector icon, flat drawing, cartoon, low-poly toy or illustration.
+Scene/backdrop: seamless neutral charcoal studio background, subtly lighter behind the subject, no scenery, no text, no badge, no UI frame.
+Composition/framing: one complete miniature centered, three-quarter view from above, its long axis diagonally across the square, front toward lower left, fill 85 percent of the frame with safe margins around all extremities. Focus stacking, entire model sharply in focus, no tilt-shift blur. Distinct silhouette readable when reduced to 40px.
+Lighting/mood: large softbox upper left, restrained rim light, realistic ambient occlusion and contact shadows. Sober military museum photography.
+Materials/textures: physically realistic painted metal, restrained paint wear at edges, fine panel seams, precise subtle weathering; no exaggerated rust, no glossy plastic, no thick outlines, no saturation boost.
+Constraints: historically plausible WWII equipment, no modern weapons, no fantasy embellishments, no watermark, no labels, no decorative border. One object only.
+
+Subject: a Boeing B-17G Flying Fortress 1:72 museum scale model. Exactly FOUR radial engine nacelles and FOUR three-bladed propellers, two engines per wing. Long slender fuselage, large broad wings, single tall vertical tail, glazed bombardier nose, defining twin-gun chin turret below nose, dorsal turret and ball turret where visible. Olive-drab upper surfaces and neutral-gray underside, restrained WWII US star-and-bar insignia. Landing gear retracted, discreet dark belly support blending into background. Accurately depict a heavy four-engine bomber, never a twin-engine aircraft or jet. All four engines and complete wing tips visible.

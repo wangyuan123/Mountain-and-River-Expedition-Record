@@ -146,6 +146,7 @@ public class WorldViewService {
                 }
                 boolean selfCity = cityOwner.equals(player.getId());
                 pcMap.put("ownerId", cityOwner);
+                pcMap.put("playerName", owner != null ? owner.getUsername() : "");
                 pcMap.put("level", 0); // 真实玩家等级仅个人档案可见，地图区不展示玩家等级
                 long pcWarAt = 0L, pcWarEnd = 0L;
                 if (!selfCity && owner != null && player.getId().equals(owner.getWarAgainstId())) {
@@ -314,6 +315,8 @@ public class WorldViewService {
         mMap.put("gatherEndAt", m.getGatherEndAt());
         mMap.put("gatherAmount", m.getGatherAmount());
         mMap.put("gatherRes", m.getGatherRes());
+        mMap.put("battleId", m.getBattleId());
+        mMap.put("inBattle", m.getBattleId() != null);
         mMap.put("originName", m.getOriginName());
         mMap.put("originX", m.getOriginX());
         mMap.put("originY", m.getOriginY());

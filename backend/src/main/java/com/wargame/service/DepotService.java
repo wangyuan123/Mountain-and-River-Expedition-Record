@@ -337,7 +337,7 @@ public class DepotService {
             if (consumed == 0) return error("满级经验书不足");
 
             int upgraded = 100 - level;
-            int pointsGained = upgraded * 4;
+            int pointsGained = upgraded;
             officer.setLevel(100);
             officer.setExp(0L);
             officer.setAttrPoints((officer.getAttrPoints() != null ? officer.getAttrPoints() : 0) + pointsGained);
@@ -363,7 +363,7 @@ public class DepotService {
         while (level < 100 && exp >= (long) level * 200) {
             exp -= (long) level * 200;
             level += 1;
-            officer.setAttrPoints((officer.getAttrPoints() != null ? officer.getAttrPoints() : 0) + 4);
+            officer.setAttrPoints((officer.getAttrPoints() != null ? officer.getAttrPoints() : 0) + 1);
         }
         if (level >= 100) exp = 0L;
         officer.setLevel(level);
@@ -426,9 +426,11 @@ public class DepotService {
             return error("该军官已满星(5★)");
         }
         officer.setStar(star + 1);
-        officer.setMilitary((int) Math.floor((officer.getMilitary() != null ? officer.getMilitary() : 0) * 1.4) + 5);
-        officer.setLogistics((int) Math.floor((officer.getLogistics() != null ? officer.getLogistics() : 0) * 1.3) + 5);
-        officer.setKnowledge((int) Math.floor((officer.getKnowledge() != null ? officer.getKnowledge() : 0) * 1.2) + 5);
+        int level = officer.getLevel() != null ? officer.getLevel() : 1;
+        int maxAttrAllowed = Math.max(120, 219 - (100 - level)); // 确保升至满级后单项属性不超过 219
+        officer.setMilitary(Math.min(maxAttrAllowed, (int) Math.floor((officer.getMilitary() != null ? officer.getMilitary() : 0) * 1.4) + 5));
+        officer.setLogistics(Math.min(maxAttrAllowed, (int) Math.floor((officer.getLogistics() != null ? officer.getLogistics() : 0) * 1.3) + 5));
+        officer.setKnowledge(Math.min(maxAttrAllowed, (int) Math.floor((officer.getKnowledge() != null ? officer.getKnowledge() : 0) * 1.2) + 5));
         officerRepository.save(officer);
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("success", true);

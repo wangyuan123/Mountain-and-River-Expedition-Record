@@ -1,0 +1,8 @@
+Use case: product-mockup
+Asset type: realistic miniature military equipment icon for a historical strategy game army overview.
+Primary request: One WWII M5A1 Stuart light tank, compact angular small turret with slim 37 mm cannon, two paired roadwheel bogies per side, raised rear engine deck, olive drab hull. Clearly a small agile light tank, no oversized gun.
+Style/medium: premium museum-quality physical scale model product photography, true realistic three-dimensional geometry, crisp tiny mechanical details, painted metal, restrained authentic weathering, tactile material detail. Same sophisticated realistic miniature quality as an architectural city model. Never flat illustration, vector, cartoon, badge or game UI.
+Composition/framing: square canvas, elevated three-quarter view from above at 30 degrees, front directed toward lower left, entire subject fits in frame with at least 7 percent clean margin. Broad enough silhouette to read at 64px; occupy about 84 percent of image width. All parts in sharp focus; no tilt-shift blur.
+Scene/backdrop: perfectly uniform pure white #ffffff seamless background, clean isolated object, no scenery, no plinth, no landscape, no horizon, no ground texture. No cast shadow on background; ambient contact shading only on the object itself.
+Lighting/mood: soft neutral daylight from upper left, realistic restrained contrast and material highlights.
+Constraints: historically recognizable WWII equipment, one coherent miniature only, no labels, lettering, watermark, logos, insignia, flags or decorative border. No crops, explosions or smoke. Retain realistic proportions.

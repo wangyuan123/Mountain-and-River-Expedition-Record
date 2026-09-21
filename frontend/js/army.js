@@ -10,6 +10,7 @@ window.Game = window.Game || {};
   var refreshTimer = null;
   var currentTab = 'units';
   var lastRoute = null;
+  var expandedUnits = {};
 
   function setTab(tab) {
     currentTab = tab || 'units';
@@ -31,6 +32,15 @@ window.Game = window.Game || {};
         panelQueue.style.display = 'none';
       }
     }
+  }
+
+  function getUnitDisplayName(val) {
+    if (G && typeof G.unitDisplayName === 'function') return G.unitDisplayName(val);
+    var name = typeof val === 'object' && val.name ? val.name : String(val || '');
+    var codeMatch = name.match(/[（(]([^）)]+)[）)]/);
+    var code = codeMatch ? codeMatch[1].trim() : '';
+    var base = name.indexOf('-') > 0 ? name.split('-')[0].trim() : name.replace(/[（(].*?[）)]/, '').trim();
+    return code ? base + '(' + code + ')' : base;
   }
 
   function unitCost(id, n) {
@@ -138,7 +148,7 @@ window.Game = window.Game || {};
     if (!queue.length) {
       el.innerHTML = '<div class="desc" style="text-align:center;padding:24px 0;">' +
         '<div style="font-size:14px;color:var(--muted);margin-bottom:12px;">' + (syncError || '暂无进行中的生产队列') + '</div>' +
-        '<button class="btn ok sm" onclick="Game.Army.setTab(\'units\')">前往征召部队</button>' +
+        '<button type="button" class="btn ok sm" onclick="Game.Army.setTab(\'units\')">[前往征召部队]</button>' +
       '</div>';
       return;
     }
@@ -158,21 +168,27 @@ window.Game = window.Game || {};
     queue.forEach(function (item) {
       var unit = D.units[item.unitType] || { name: item.unitType };
       var left = Math.max(0, Math.ceil((item.finishesAt - now) / 1000));
-      // 加速按钮：拥有任意加速符时可点击；否则显示灰色提示
+      // 加速按钮：拥有任意加速符时可点击；否则显示禁用提示，文字精简避免折行
       var speedBtn;
       if (totalSpeed > 0) {
-        speedBtn = '<button class="btn ok sm army-queue-btn" onclick="Game.Army.openSpeedUpPicker(' + item.id + ')">⚡ 加速</button>';
+        speedBtn = '<button type="button" class="btn ok sm army-queue-btn" title="加速生产" onclick="Game.Army.openSpeedUpPicker(' + item.id + ')">[⚡加速]</button>';
       } else {
-        speedBtn = '<button class="btn sm army-queue-btn" disabled title="商城可购买加速符">⚡ 加速(无)</button>';
+        speedBtn = '<button type="button" class="btn sm army-queue-btn disabled" disabled title="背包暂无加速符">[⚡加速]</button>';
       }
+      var iconHtml = (G && typeof G.getUnitIconHtml === 'function')
+        ? G.getUnitIconHtml(item.unitType, unit.name, 'army-queue-icon')
+        : '';
       h += '<div class="menu-item ok army-queue-item">' +
         '<div class="army-queue-info">' +
-          '<span class="n">' + unit.name + ' x' + item.count + '</span>' +
-          '<span class="lv">剩余 ' + formatSeconds(left) + '</span>' +
+          iconHtml +
+          '<div class="army-queue-text">' +
+            '<span class="n" title="' + G.escapeHtml(unit.name) + '">' + getUnitDisplayName(unit.name) + ' <b class="army-queue-qty">x' + item.count + '</b></span>' +
+            '<span class="lv">剩余 ' + formatSeconds(left) + '</span>' +
+          '</div>' +
         '</div>' +
         '<div class="army-queue-actions">' +
           speedBtn +
-          '<button class="btn warn sm army-queue-btn" onclick="Game.Army.cancelProduction(' + item.id + ')">取消</button>' +
+          '<button type="button" class="btn warn sm army-queue-btn" title="取消生产" onclick="Game.Army.cancelProduction(' + item.id + ')">[取消]</button>' +
         '</div>' +
       '</div>';
     });
@@ -195,7 +211,7 @@ window.Game = window.Game || {};
     // 找到当前 queue 中的目标订单（用于显示兵种名）
     var qItem = null;
     for (var i = 0; i < queue.length; i++) if (queue[i].id === queueId) { qItem = queue[i]; break; }
-    var unitLabel = qItem ? ((D.units[qItem.unitType] || { name: qItem.unitType }).name + ' x' + qItem.count) : ('订单 #' + queueId);
+    var unitLabel = qItem ? (getUnitDisplayName(D.units[qItem.unitType] || qItem.unitType) + ' x' + qItem.count) : ('订单 #' + queueId);
     var now = Date.now();
     var remSec = qItem && qItem.finishesAt ? Math.max(0, Math.ceil((qItem.finishesAt - now) / 1000)) : 0;
     var remText = formatSeconds(remSec);
@@ -207,7 +223,7 @@ window.Game = window.Game || {};
       + '<div class="spicker-head">⚡ 选择加速符 <span class="spicker-close" onclick="Game.Army.closeSpeedUpPicker()">×</span></div>'
       + '<div class="spicker-sub">目标: ' + G.escapeHtml(unitLabel) + ' · 剩余 ' + remText + '</div>'
       + '<div class="spicker-list"></div>'
-      + '<div class="spicker-foot"><button class="btn sm" onclick="Game.Army.closeSpeedUpPicker()">取消</button></div>'
+      + '<div class="spicker-foot"><button type="button" class="btn sm" onclick="Game.Army.closeSpeedUpPicker()">[取消]</button></div>'
       + '</div>';
     document.body.appendChild(mask);
 
@@ -324,7 +340,7 @@ window.Game = window.Game || {};
           finishesAt: resp.finishesAt,
           durationSeconds: resp.durationSeconds
         });
-        G.toast(resp.message || ('已加入 ' + D.units[id].name + ' 生产队列 x' + queuedCount));
+        G.toast(resp.message || ('已加入 ' + getUnitDisplayName(D.units[id].name) + ' 生产队列 x' + queuedCount));
         // 先立即显示本次订单；随后与后端队列同步，避免用户感到点击无反馈。
         renderQueue();
         if (Core.route === 'army') Core.render();
@@ -356,7 +372,7 @@ window.Game = window.Game || {};
         return;
       }
       G.API.dismiss(id, n).then(function () {
-        G.toast('解散 ' + D.units[id].name + ' x' + n);
+        G.toast('解散 ' + getUnitDisplayName(D.units[id].name) + ' x' + n);
         if (G.MainQuest && G.MainQuest.refresh) G.MainQuest.refresh();
         Core.render();
       }).catch(function (err) { G.toast(err.message || '解散失败'); });
@@ -366,6 +382,41 @@ window.Game = window.Game || {};
       var s = Core.state, sum = 0;
       for (var id in s.army) sum += s.army[id];
       return sum;
+    },
+
+    toggleUnitCard: function (id, ev) {
+      if (ev && ev.stopPropagation) ev.stopPropagation();
+      expandedUnits[id] = !expandedUnits[id];
+      var card = document.getElementById('unit-card-' + id);
+      if (card) {
+        var details = card.querySelector('.unit-card-details');
+        var toggle = card.querySelector('.unit-card-toggle');
+        if (expandedUnits[id]) {
+          card.classList.add('expanded');
+          if (details) details.style.display = 'block';
+          if (toggle) {
+            toggle.innerHTML = '收起 &#9652;';
+            toggle.classList.add('active');
+          }
+        } else {
+          card.classList.remove('expanded');
+          if (details) details.style.display = 'none';
+          if (toggle) {
+            toggle.innerHTML = '详情 &#9662;';
+            toggle.classList.remove('active');
+          }
+        }
+      } else if (Core.route === 'army') {
+        Core.render();
+      }
+    },
+
+    isUnitExpanded: function (id) {
+      return !!expandedUnits[id];
+    },
+
+    setUnitExpanded: function (id, val) {
+      expandedUnits[id] = !!val;
     },
 
     renderView: function (v) {
@@ -382,6 +433,7 @@ window.Game = window.Game || {};
       var h = '<div class="title">- 兵种整编 -</div>';
       h += '<div class="desc">平民: ' + Core.civilianPopulation() + '/' + Core.populationCapacity() + ' (可征召 ' + Core.popFree() + '，增长 +' + G.fmt(Core.populationGrowthPerHour()) + '/h)  带兵: ' + this.totalArmy() + '/' + Core.armyCap() + (cmd ? '  指挥官:' + cmd.name : '  未任命指挥官') + '</div>';
       h += '<div class="desc">养兵耗粮: ' + G.fmt(Core.foodPerHour()) + '/h；创建征兵队列立即扣除平民，取消或解散返还</div>';
+      h += '<div class="desc">按目标使用对地、对空、对海或对工事攻击；所有兵种均有基础火力，弱项攻击效率很低，请搭配护航与攻坚部队。</div>';
 
       h += '<div class="army-tabs">' +
         '<div id="army-tab-units" class="army-tab' + (!isQueueTab ? ' active' : '') + '" onclick="Game.Army.setTab(\'units\')">军队</div>' +
@@ -409,24 +461,45 @@ window.Game = window.Game || {};
         // 兵工厂展示: 1栋时显示 Lv.x, 多栋时显示 Lv.总和(共N栋) 让玩家清楚每个兵工厂独立计算
         var lvLabel = stats.count > 1 ? ('Lv.' + sumLv + ' (共' + stats.count + '栋)') : ('Lv.' + sumLv);
         var bName = (D.buildings[u.build] && D.buildings[u.build].name) || u.build;
+        var isExpanded = !!expandedUnits[id];
+        var cardCls = (can ? 'menu-item ok' : 'menu-item lock') + ' unit-card' + (isExpanded ? ' expanded' : '');
 
-        h += '<div class="' + (can ? 'menu-item ok' : 'menu-item lock') + '"><span class="n">' + u.name + '</span> <span class="lv">x' + have + '</span> <span class="blv">(' + bName + ' ' + lvLabel + ')</span>';
-        h += '<div class="d">攻' + u.atk + ' 防' + u.def + ' 血' + u.hp + ' 速' + u.spd + ' 射程' + u.range + ' 耗粮' + u.food + '/h</div>';
-        h += '<div class="cost">单价: ' + costText(Object.assign({ pop: u.pop }, u.cost)) + '</div>';
+        var iconHtml = (G && typeof G.getUnitIconHtml === 'function')
+          ? G.getUnitIconHtml(id, u.name, 'unit-card-icon')
+          : '';
+        h += '<div id="unit-card-' + id + '" class="' + cardCls + '">';
+        h += '<div class="unit-card-header" onclick="Game.Army.toggleUnitCard(\'' + id + '\', event)" title="点击展开/收起具体信息">';
+        h += '<div class="unit-card-header-left">';
+        h += iconHtml + '<span class="n" title="' + G.escapeHtml(u.name) + '">' + getUnitDisplayName(u.name) + '</span> <span class="lv">x' + have + '</span> <span class="blv">(' + bName + ' ' + lvLabel + ')</span>';
+        h += '</div>';
+        h += '<span class="unit-card-toggle' + (isExpanded ? ' active' : '') + '">' + (isExpanded ? '收起 &#9652;' : '详情 &#9662;') + '</span>';
+        h += '</div>';
+
+        // 默认隐藏的原型与生产等具体信息展示区
+        h += '<div class="unit-card-details" style="display:' + (isExpanded ? 'block' : 'none') + ';">';
+        if (u.history) h += '<div class="d unit-history">原型：' + G.escapeHtml(u.history) + '</div>';
+        h += '<div class="d">' + G.escapeHtml((D.combatRoles && D.combatRoles[id]) || '') + '</div>';
+        h += '<div class="d">对地' + u.atkGround + ' 对空' + u.atkAir + ' 对海' + u.atkSea + ' 对工事' + u.atkFort + ' 防' + u.def + ' 血' + u.hp + ' 速' + u.spd + ' 射程' + u.range + ' 耗粮' + u.food + '/h</div>';
         if (can) {
           var parallel = stats.parallel;
-          h += '<div class="d">生产: 基础 ' + (30 + Math.floor((u.cost.steel + u.cost.oil + u.cost.rare) / 10)) + '秒/个，并行 ' + parallel + ' 条 (按栋独立), 平均速度 ×' + stats.avgSpeed.toFixed(2) + '</div>';
+          h += '<div class="d unit-prod-stat">生产: 基础 ' + (30 + Math.floor((u.cost.steel + u.cost.oil + u.cost.rare) / 10)) + '秒/个，并行 ' + parallel + ' 条 (按栋独立), 平均速度 ×' + stats.avgSpeed.toFixed(2) + '</div>';
           h += '<div class="desc batch-hint">当前最多可征召 ' + maxRecruit + ' 个（受可用平民和资源限制）；兵工厂等级与训练科技只影响生产速度和并行数。</div>';
+        }
+        h += '</div>';
+
+        // 常驻展示的单价与征召解散操作行
+        h += '<div class="cost">单价: ' + costText(Object.assign({ pop: u.pop }, u.cost)) + '</div>';
+        if (can) {
           var sliderId = 'slider_' + id;
           var initialVal = maxRecruit > 0 ? 1 : 0;
           var pct = maxRecruit > 0 ? ((initialVal / maxRecruit) * 100).toFixed(1) : 0;
-          h += '<div class="recruit-row">' +
+          h += '<div class="recruit-row" onclick="event.stopPropagation()">' +
             '<input class="qty recruit-qty" id="' + inpId + '" type="number" min="0" max="' + maxRecruit + '" value="' + initialVal + '"' + (maxRecruit <= 0 && have <= 0 ? ' disabled' : '') + ' oninput="Game.Army.onInputChange(\'' + id + '\',this.value)" onchange="var v=parseInt(this.value,10);if(isNaN(v)||v<0){this.value=0;}else if(v>' + maxRecruit + '){this.value=' + maxRecruit + ';}Game.Army.onInputChange(\'' + id + '\',this.value);" />' +
             '<div class="recruit-slider-wrap">' +
               '<input type="range" class="recruit-slider" id="' + sliderId + '" min="0" max="' + maxRecruit + '" value="' + initialVal + '"' + (maxRecruit <= 0 ? ' disabled' : '') + ' style="--p:' + pct + '%" oninput="Game.Army.onSliderChange(\'' + id + '\',this.value)" />' +
             '</div>' +
-            '<button class="btn recruit-btn" onclick="Game.Army.recruit(\'' + id + '\',\'' + inpId + '\')">征召</button>';
-          if (have > 0) h += '<button class="btn warn recruit-btn" onclick="Game.Army.disband(\'' + id + '\',\'' + inpId + '\')">解散</button>';
+            '<button type="button" class="btn recruit-btn" onclick="Game.Army.recruit(\'' + id + '\',\'' + inpId + '\')">[征召]</button>';
+          if (have > 0) h += '<button type="button" class="btn warn recruit-btn" onclick="Game.Army.disband(\'' + id + '\',\'' + inpId + '\')">[解散]</button>';
           h += '</div>';
         } else {
           h += '<div class="cost">需先建造 ' + bName + '</div>';

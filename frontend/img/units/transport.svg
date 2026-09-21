@@ -1,20 +1,35 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
   <defs>
-    <linearGradient id="transBody" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#94a3b8"/>
-      <stop offset="100%" stop-color="#475569"/>
+    <radialGradient id="bgGlow_tp" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#090d16"/>
+    </radialGradient>
+    <linearGradient id="c47Green" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4d6139"/>
+      <stop offset="100%" stop-color="#24301a"/>
     </linearGradient>
   </defs>
+  <rect width="128" height="128" rx="20" fill="url(#bgGlow_tp)"/>
+  <rect x="2" y="2" width="124" height="124" rx="19" fill="none" stroke="#65a30d" stroke-width="1.5" opacity="0.4"/>
+
   <!-- Wings -->
-  <polygon points="12,14 17,4 22,5 17,15" fill="url(#transBody)" stroke="#1e293b" stroke-width="0.6"/>
-  <polygon points="11,16 17,28 22,27 15,17" fill="url(#transBody)" stroke="#1e293b" stroke-width="0.6"/>
-  <!-- 2 Twin Engines -->
-  <rect x="15" y="8" width="4" height="2" rx="0.5" fill="#334155"/>
-  <rect x="15" y="22" width="4" height="2" rx="0.5" fill="#334155"/>
+  <polygon points="64,52 6,68 8,78 64,70 120,78 122,68" fill="url(#c47Green)" stroke="#1a2214" stroke-width="2"/>
+  <!-- Invasion Stripes -->
+  <polygon points="26,64 31,65 31,75 26,74" fill="#f8fafc"/>
+  <polygon points="31,65 36,66 36,76 31,75" fill="#0f172a"/>
+  <polygon points="36,66 41,67 41,77 36,76" fill="#f8fafc"/>
+  <polygon points="87,67 92,66 92,76 87,77" fill="#f8fafc"/>
+  <polygon points="92,66 97,65 97,75 92,76" fill="#0f172a"/>
+  <polygon points="97,65 102,64 102,74 97,75" fill="#f8fafc"/>
+
+  <!-- Engines -->
+  <rect x="40" y="58" width="11" height="18" rx="4" fill="#1c1917" stroke="#000" stroke-width="1.5"/>
+  <ellipse cx="45" cy="58" rx="12" ry="3" fill="#fef08a" opacity="0.85"/>
+  <rect x="77" y="58" width="11" height="18" rx="4" fill="#1c1917" stroke="#000" stroke-width="1.5"/>
+  <ellipse cx="83" cy="58" rx="12" ry="3" fill="#fef08a" opacity="0.85"/>
+
   <!-- Fuselage -->
-  <path d="M3 15 C3 13 8 12.5 22 13 C26 13.5 29 15 30 16 C29 17 26 18.5 22 19 C8 19.5 3 19 3 17 Z" fill="url(#transBody)" stroke="#0f172a" stroke-width="0.7"/>
-  <!-- Cockpit -->
-  <path d="M5 14 C6 13 8 13 9 14 Z" fill="#bae6fd"/>
-  <!-- Parachute/Cargo Door Marking -->
-  <rect x="20" y="14" width="2" height="4" fill="#334155"/>
+  <path d="M64 14 C57 14 55 24 55 52 L56 102 C56 110 64 118 64 118 C64 118 72 110 72 102 L73 52 C73 24 71 14 64 14 Z" fill="url(#c47Green)" stroke="#1a2214" stroke-width="2"/>
+  <path d="M59 22 L69 22 L68 26 L60 26 Z" fill="#93c5fd" stroke="#0f172a" stroke-width="1"/>
+  <polygon points="64,102 40,110 42,116 64,112 86,116 88,110" fill="url(#c47Green)" stroke="#1a2214" stroke-width="1.5"/>
 </svg>

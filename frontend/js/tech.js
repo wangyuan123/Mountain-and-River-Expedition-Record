@@ -25,7 +25,8 @@ window.Game = window.Game || {};
     var lab = labLv != null ? labLv : ((Core.state && Core.state.buildings && Core.state.buildings.lab) || 0);
     var base = 30.0 * Math.pow(1.8, Math.max(0, lv));
     var labSpeed = 1.0 + 0.10 * Math.max(0, lab - 1);
-    var duration = Math.round(base / labSpeed);
+    var mayorSpeed = 1.0 + (Core.mayorSkillBonus ? Core.mayorSkillBonus('research') : 0);
+    var duration = Math.round(base / (labSpeed * mayorSpeed));
     return Math.max(5, Math.min(86400, duration));
   }
 

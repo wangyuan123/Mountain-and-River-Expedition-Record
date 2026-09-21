@@ -1,0 +1,10 @@
+Use case: product-mockup
+Asset type: square unit icon sample for a historically grounded WWII strategy game.
+Primary request: a photorealistic macro product photograph of a museum-grade physical scale model. Convincing miniature materials and accurate engineering, absolutely not a vector icon, flat drawing, cartoon, low-poly toy or illustration.
+Scene/backdrop: seamless neutral charcoal studio background, subtly lighter behind the subject, no scenery, no text, no badge, no UI frame.
+Composition/framing: one complete miniature centered, three-quarter view from above, its long axis diagonally across the square, front toward lower left, fill 85 percent of the frame with safe margins around all extremities. Focus stacking, entire model sharply in focus, no tilt-shift blur. Distinct silhouette readable when reduced to 40px.
+Lighting/mood: large softbox upper left, restrained rim light, realistic ambient occlusion and contact shadows. Sober military museum photography.
+Materials/textures: physically realistic painted metal, restrained paint wear at edges, fine panel seams, precise subtle weathering; no exaggerated rust, no glossy plastic, no thick outlines, no saturation boost.
+Constraints: historically plausible WWII equipment, no modern weapons, no fantasy embellishments, no watermark, no labels, no decorative border. One object only.
+
+Subject: a North American P-51D Mustang 1:48 museum scale model. Single piston engine in the nose with one FOUR-BLADED propeller, single vertical tail, bubble canopy, low-mounted straight tapered wings (not swept), characteristic belly radiator scoop. Natural aluminum skin with olive-drab anti-glare panel, subtle WWII US star-and-bar insignia. Wings intact, correct proportions, no jets. Landing gear retracted, a discreet dark display support under the belly blending into the background; no broad pedestal hiding the silhouette. Camera reveals nose, canopy, upper wing surfaces and tail.

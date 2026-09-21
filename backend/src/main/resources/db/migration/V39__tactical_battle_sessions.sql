@@ -1,0 +1,38 @@
+ALTER TABLE marches ADD COLUMN battle_id BIGINT NULL;
+CREATE INDEX idx_marches_battle_id ON marches(battle_id);
+
+CREATE TABLE battle_sessions (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    player_id BIGINT NOT NULL,
+    march_id BIGINT NOT NULL,
+    target_kind VARCHAR(50),
+    target_id VARCHAR(100),
+    target_name VARCHAR(100),
+    action VARCHAR(50),
+    round_no INT NOT NULL DEFAULT 0,
+    initial_distance INT NOT NULL,
+    attacker_army TEXT,
+    defender_army TEXT,
+    initial_attacker TEXT,
+    initial_defender TEXT,
+    attacker_positions TEXT,
+    defender_positions TEXT,
+    attacker_tech TEXT,
+    defender_tech TEXT,
+    attacker_skills TEXT,
+    defender_skills TEXT,
+    defender_resources TEXT,
+    battle_log LONGTEXT,
+    attacker_commander_mil INT NOT NULL DEFAULT 0,
+    attacker_commander_def INT NOT NULL DEFAULT 0,
+    defender_commander_mil INT NOT NULL DEFAULT 0,
+    defender_commander_def INT NOT NULL DEFAULT 0,
+    defender_wall_level INT NOT NULL DEFAULT 0,
+    defender_warehouse_level BIGINT NOT NULL DEFAULT 0,
+    version BIGINT NOT NULL DEFAULT 0,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_battle_sessions_march (march_id),
+    KEY idx_battle_sessions_player (player_id),
+    CONSTRAINT fk_battle_sessions_player FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE,
+    CONSTRAINT fk_battle_sessions_march FOREIGN KEY (march_id) REFERENCES marches(id) ON DELETE CASCADE
+);

@@ -75,4 +75,13 @@ public class BuildController {
         result.put("state", gameStateService.getGameState(playerId));
         return ResponseEntity.ok(result);
     }
+
+    @PostMapping("/free-speedup")
+    public ResponseEntity<Map<String, Object>> freeSpeedUp(@RequestBody GameDtos.FreeBuildSpeedUpRequest request) {
+        if (request.queueId() == null) throw new IllegalArgumentException("施工队列ID不能为空");
+        Long playerId = authService.getCurrentPlayer().getId();
+        Map<String, Object> result = buildService.freeSpeedUp(playerId, request.queueId());
+        result.put("state", gameStateService.getGameState(playerId));
+        return ResponseEntity.ok(result);
+    }
 }

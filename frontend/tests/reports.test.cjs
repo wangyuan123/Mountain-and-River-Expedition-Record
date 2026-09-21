@@ -35,6 +35,32 @@ function setup(initialCount = 0) {
 }
 const flush = () => new Promise(resolve => setImmediate(resolve));
 
+for (const legacy of [true, false]) {
+  test(`unit renaming preserves log-only troop and casualty recovery: legacy=${legacy}`, () => {
+    const { G } = setup();
+    const dataContext = { window: { Game: {} } };
+    vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../js/data.js'), 'utf8'), dataContext);
+    Object.assign(G.DATA, dataContext.window.Game.DATA);
+    G.fmt = String;
+    const nameOf = unit => legacy ? unit.name.split('-')[0] : unit.name;
+    for (const [id, unit] of Object.entries(G.DATA.units)) {
+      // 旧战报可能缺少初始兵力表，必须从日志恢复；新名称中的型号括号不能干扰数量解析。
+      const attacked = G.Battle.renderArmyUnits('enemy', null, { [id]: 7 }, [
+        `我方${nameOf(G.DATA.units.rocket)}(20)齐射敌${nameOf(unit)}(10) 伤害100 击毁3`
+      ]);
+      assert.ok(attacked.includes(unit.name), id);
+      assert.match(attacked, /rb-u-init">10<\/span>/, id);
+      assert.match(attacked, /rb-u-surv">7<\/span>/, id);
+      assert.match(attacked, /rb-loss-val lost">\(-3\)<\/span>/, id);
+      const moved = G.Battle.renderArmyUnits('mine', null, null, [
+        `我方${nameOf(unit)}(12) 前进 100 距离->200`
+      ]);
+      assert.ok(moved.includes(unit.name), id);
+      assert.match(moved, /rb-u-init">12<\/span>/, id);
+    }
+  });
+}
+
 for (const intercepted of [true, false]) {
   test(`incoming scout report uses defender perspective: intercepted=${intercepted}`, () => {
     const { G } = setup();
@@ -174,6 +200,22 @@ test('scout intelligence uses own research level and hides retired research in h
   } });
   assert.match(html, /侦察技术Lv.3/);
   assert.doesNotMatch(html, /反侦|recon_stealth|rb-fog-box/);
+});
+
+test('scout intelligence renders each defender unit type on its own line', () => {
+  const { G } = setup();
+  G.fmt = String;
+  G.DATA.units = {
+    submarine: { name: '潜艇' },
+    heavyTank: { name: '重型坦克' },
+    bomber: { name: '轰炸机' }
+  };
+  const html = G.Battle.renderScoutReportBoard({ time: Date.now(), data: {
+    targetKind: 'player', showCityInfo: true,
+    army: { submarine: 4, heavyTank: 16, bomber: 10 }
+  } });
+  assert.match(html, /守军编制:<\/b> 潜艇x4<\/div><div class="rb-line">重型坦克x16<\/div><div class="rb-line">轰炸机x10<\/div>/);
+  assert.doesNotMatch(html, /潜艇x4 重型坦克x16/);
 });
 
 test('login shows the server total without opening reports, caps at 99+, and hides zero', () => {

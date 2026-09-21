@@ -358,7 +358,9 @@ window.Game = window.Game || {};
         if (!name) return null;
         name = name.trim();
         for (var k in D.units) {
-          if (D.units[k] && D.units[k].name === name) return k;
+          var unit = D.units[k];
+          // 历史战报只存旧类别名；完整名称首个“-”前保留该类别，兼容旧日志的兵力与战损反查。
+          if (unit && (unit.name === name || unit.name.split('-')[0] === name)) return k;
         }
         if (D.forts) {
           for (var fk in D.forts) {
@@ -605,14 +607,22 @@ window.Game = window.Game || {};
 
         // 守军兵力 (Lv.0 模糊 / Lv.2+ 精确)
         if (data.army) {
-          var armyStr = '';
+          var armyUnits = [];
           for (var aid in data.army) {
             if (data.army[aid] > 0) {
               var au = U(aid);
-              armyStr += (au ? au.name : aid) + 'x' + data.army[aid] + ' ';
+              armyUnits.push(esc((au ? au.name : aid) + 'x' + data.army[aid]));
             }
           }
-          h += '<div class="rb-line"><b>守军编制:</b> ' + (armyStr ? esc(armyStr.trim()) : '无驻防部队') + '</div>';
+          if (armyUnits.length) {
+            // 精确情报按兵种分行，避免兵种较多时因容器宽度而混排。
+            h += '<div class="rb-line"><b>守军编制:</b> ' + armyUnits[0] + '</div>';
+            for (var ai = 1; ai < armyUnits.length; ai++) {
+              h += '<div class="rb-line">' + armyUnits[ai] + '</div>';
+            }
+          } else {
+            h += '<div class="rb-line"><b>守军编制:</b> 无驻防部队</div>';
+          }
         } else if (data.armyVague) {
           h += '<div class="rb-line rc-dim"><b>守军编制:</b> ' + esc(data.armyVague) + '</div>';
         }
@@ -807,6 +817,157 @@ window.Game = window.Game || {};
       }
     },
 
+    /**
+     * 从军情打开已到达的战术战斗，并将所有存活单位初始为待命。
+     * @param {number} marchId - 战斗关联的行军 ID
+     */
+    openTactical: function (marchId) {
+      var self = this;
+      G.API.getTacticalBattle(marchId).then(function (battle) {
+        self._activeTactical = battle;
+        self.resetTacticalOrders();
+        Core.go('battle');
+      }).catch(function (err) {
+        G.toast(err.message || '战斗会话已结束或不可用');
+      });
+    },
+
+    /** 为当前存活单位生成本回合默认待命命令。 */
+    resetTacticalOrders: function () {
+      var army = (this._activeTactical && this._activeTactical.attackerArmy) || {};
+      this._tacticalOrders = {};
+      Object.keys(army).forEach(function (unitId) {
+        // 不写入显式命令，提交时由后端按兵种的默认推进规则处理。
+        this._tacticalOrders[unitId] = { action: null, focusTarget: null };
+      }, this);
+      this.startTacticalTimer();
+    },
+
+    /** 设置一个兵种本回合的移动命令。 */
+    setTacticalAction: function (unitId, action) {
+      var order = this._tacticalOrders[unitId] || { focusTarget: null };
+      order.action = action;
+      this._tacticalOrders[unitId] = order;
+      Core.render();
+    },
+
+    /** 设置一个兵种的可选集火目标；不选择时后端按常规规则索敌。 */
+    setTacticalFocus: function (unitId, targetId) {
+      var order = this._tacticalOrders[unitId] || { action: null };
+      order.focusTarget = targetId || null;
+      this._tacticalOrders[unitId] = order;
+      Core.render();
+    },
+
+    /** 启动当前回合的十秒倒计时，倒计时结束自动提交现有命令。 */
+    startTacticalTimer: function () {
+      this.stopTacticalTimer();
+      var battle = this._activeTactical;
+      if (!battle || battle.finished) return;
+      this._tacticalDeadline = Date.now() + 15000;
+      var self = this;
+      function update() {
+        var remaining = Math.max(0, self._tacticalDeadline - Date.now());
+        var countdown = document.getElementById('tacticalCountdown');
+        if (countdown) countdown.textContent = '剩余 ' + Math.ceil(remaining / 1000) + ' 秒自动执行';
+        if (remaining <= 0) {
+          self.stopTacticalTimer();
+          self.executeTacticalRound();
+        }
+      }
+      update();
+      this._tacticalTimer = setInterval(update, 250);
+    },
+
+    /** 离开战斗页或提交回合时清理倒计时，避免旧战斗继续发请求。 */
+    stopTacticalTimer: function () {
+      if (this._tacticalTimer) clearInterval(this._tacticalTimer);
+      this._tacticalTimer = null;
+      this._tacticalDeadline = 0;
+    },
+
+    /** 提交当前面板上的命令；一次请求只推进一回合。 */
+    executeTacticalRound: function () {
+      var self = this;
+      var battle = this._activeTactical;
+      if (!battle || battle.finished || this._tacticalSubmitting) return;
+      this.stopTacticalTimer();
+      this._tacticalSubmitting = true;
+      G.API.commandTacticalBattle(battle.marchId, this._tacticalOrders).then(function (next) {
+        self._activeTactical = next;
+        self.resetTacticalOrders();
+        Core.render();
+      }).catch(function (err) {
+        G.toast(err.message || '本回合指令未能执行');
+        Core.render();
+      }).finally(function () {
+        self._tacticalSubmitting = false;
+      });
+    },
+
+    /** 绘制地图两端的敌我部队、命令面板和最近的回合日志。 */
+    renderTacticalBattle: function (v) {
+      var battle = this._activeTactical;
+      if (!battle) { G.go('alerts'); return; }
+      var esc = G.escapeHtml;
+      var distance = Math.max(1, battle.initialDistance || 1);
+      var attacker = battle.attackerArmy || {};
+      var defender = battle.defenderArmy || {};
+      var attackerPositions = battle.attackerPositions || {};
+      var defenderPositions = battle.defenderPositions || {};
+      var orders = this._tacticalOrders || {};
+      var h = '<div class="tactical-battle">';
+      h += '<div class="tactical-head"><div><div class="title">战术指挥：' + esc(battle.targetName || '敌军') + '</div>';
+      h += '<div class="desc">第 ' + (battle.round || 0) + '/' + (battle.maxRound || 30) + ' 回合 · 每次执行只结算一回合</div></div>';
+      h += '<div class="tactical-head-actions"><span id="tacticalCountdown" class="tactical-countdown">剩余 15 秒自动执行</span><button class="btn sm" onclick="Game.go(\'alerts\')">返回军情</button></div></div>';
+      h += '<div class="tactical-map"><div class="tactical-base mine-base">我军阵地</div><div class="tactical-base foe-base">敌军阵地</div><div class="tactical-axis"></div>';
+      h += this.renderTacticalMarkers(attacker, attackerPositions, distance, 'mine');
+      h += this.renderTacticalMarkers(defender, defenderPositions, distance, 'foe');
+      h += '<div class="tactical-distance">战场宽度 ' + distance + '</div></div>';
+      if (battle.finished) {
+        var result = battle.result || {};
+        h += '<div class="tactical-finish ' + (result.win ? 'win' : 'lose') + '"><b>' + (result.win ? '战斗胜利' : '战斗结束') + '</b><span>战果已写入战报，幸存部队将按原路线返程。</span></div>';
+      } else {
+        h += '<div class="zone-head">我军本回合命令</div><div class="tactical-orders">';
+        Object.keys(attacker).forEach(function (unitId) {
+          var unit = U(unitId) || {};
+          var order = orders[unitId] || { action: null, focusTarget: null };
+          var encodedId = JSON.stringify(unitId);
+          h += '<div class="tactical-order-card"><div class="tactical-order-name">' + esc(unit.name || unitId) + ' <b>×' + attacker[unitId] + '</b></div><div class="tactical-actions">';
+          [['ADVANCE', '前进'], ['RETREAT', '后退'], ['HOLD', '待命']].forEach(function (choice) {
+            h += '<button class="btn sm ' + (order.action === choice[0] ? 'ok' : '') + '" onclick="Game.Battle.setTacticalAction(' + encodedId + ',\'' + choice[0] + '\')">' + choice[1] + '</button>';
+          });
+          h += '</div><label class="tactical-focus">集火 <select onchange="Game.Battle.setTacticalFocus(' + encodedId + ',this.value)">';
+          h += '<option value="">常规索敌</option>';
+          Object.keys(defender).forEach(function (targetId) {
+            var target = U(targetId) || {};
+            h += '<option value="' + esc(targetId) + '"' + (order.focusTarget === targetId ? ' selected' : '') + '>' + esc(target.name || targetId) + '</option>';
+          });
+          h += '</select></label></div>';
+        });
+        h += '</div><div class="btn-row tactical-execute"><button class="btn ok" onclick="Game.Battle.executeTacticalRound()">执行第 ' + ((battle.round || 0) + 1) + ' 回合</button></div>';
+      }
+      var logs = String(battle.log || '').trim().split('\n').filter(Boolean);
+      h += '<div class="zone-head">战场记录</div><div class="blog tactical-log">';
+      logs.slice(-24).forEach(function (line) { h += '<div class="logline">' + esc(line) + '</div>'; });
+      h += '</div></div>';
+      v.innerHTML = h;
+      this.startTacticalTimer();
+    },
+
+    /** 根据服务端的一维战场坐标，在地图上渲染某一方的单位标记。 */
+    renderTacticalMarkers: function (army, positions, distance, side) {
+      var esc = G.escapeHtml;
+      var html = '';
+      Object.keys(army || {}).forEach(function (unitId) {
+        var unit = U(unitId) || {};
+        var position = positions[unitId] != null ? positions[unitId] : (side === 'mine' ? 0 : distance);
+        var percent = Math.max(3, Math.min(97, Math.round(position / distance * 100)));
+        html += '<div class="tactical-marker ' + side + '" style="left:' + percent + '%" title="' + esc(unit.name || unitId) + ' ×' + army[unitId] + '"><span>' + esc(unit.name || unitId) + '</span><b>×' + army[unitId] + '</b></div>';
+      });
+      return html;
+    },
+
     renderReportDetail: function (v) {
       var r = this._viewReport;
       if (!r) { G.go('reports'); return; }
@@ -867,7 +1028,7 @@ window.Game = window.Game || {};
   };
 
   G.Battle = Battle;
-  Core.views.battle = function (v) { G.go('reports'); };
+  Core.views.battle = function (v) { Battle.renderTacticalBattle(v); };
   Core.views.report = function (v) { G.go('reports'); };
   Core.views.reports = function (v) { Battle.renderReportsList(v); };
   Core.views.reportDetail = function (v) { Battle.renderReportDetail(v); };

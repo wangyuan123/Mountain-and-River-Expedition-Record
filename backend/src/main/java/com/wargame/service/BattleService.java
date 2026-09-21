@@ -1,9 +1,11 @@
 package com.wargame.service;
 
 import com.wargame.model.constants.BuildingDef;
+import com.wargame.model.constants.BattleRules;
 import com.wargame.model.constants.FortDef;
 import com.wargame.model.constants.GameData;
 import com.wargame.model.constants.UnitDef;
+import com.wargame.model.dto.BattleRoundState;
 import com.wargame.model.dto.BattleResult;
 import org.springframework.stereotype.Service;
 
@@ -11,47 +13,52 @@ import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * 战斗服务 - 对应 JS G.Battle 中的核心战斗逻辑。
- * <p>
- * 战斗公式 (来自 JS simAct):
- * <pre>
- *   dmg = (atk * atk * count * cm * closeMul) / (def * 10)
- *   remainingDamage = dmg  // 单次行动只计算一次总伤害
- *   appliedDamage = min(remainingDamage, targetCount * hpPer)
- *   remainingDamage -= appliedDamage
- *   // 当前目标全灭且仍有余伤时，继续攻击下一个目标；不足一单位的伤害按概率结算。
- * </pre>
- * 其中:
- * <ul>
- *   <li>atk = effAtk(unitId) - 有效攻击力</li>
- *   <li>count = 攻击方该兵种数量</li>
- *   <li>cm = counterMul - 首个目标的相克倍率 (strongVs 时 1.5, 否则 1.0)</li>
- *   <li>closeMul = 贴脸倍率 (距离 0 时 2.0, 否则 1.0)</li>
- *   <li>def = effDef(target) - 首个目标的有效防御力 (被破甲技能削减, 最低 1)</li>
- *   <li>hpPer = effHp(target) - 每单位有效生命值</li>
- * </ul>
+ * 服务端战斗结算：针对目标领域的线性攻击 × 专项克制 × 100/(100 + 5×有效防御)。
+ * 每次行动共享一份攻击额度；跨地空海及工事切换目标时按剩余额度使用对应武器，不能重新打一轮。
+ * 重坦前置且掩护身后的地面单位，特种兵可绕过掩护；空海目标不受地面掩护影响。
  */
 @Service
 public class BattleService {
 
-    private static final int MAX_ROUND = 30;
+    public static final int MAX_ROUND = 30;
+    private final java.util.function.DoubleSupplier random;
 
-    /** NPC/野地战斗初始固定距离 */
-    public static final int DISTANCE_NPC = 2200;
-    /** 玩家之间战斗初始固定距离 */
-    public static final int DISTANCE_PLAYER = 3000;
+    public BattleService() {
+        random = () -> ThreadLocalRandom.current().nextDouble();
+    }
+
+    /** 固定种子用于复现平衡实验；默认服务仍按每次战斗的随机抽样结算。 */
+    public BattleService(long seed) {
+        random = new Random(seed)::nextDouble;
+    }
 
     /** 军官技能每级加成比率 - 对应 JS Core.skillBonus 中的 rates */
-    private static final Map<String, Double> SKILL_RATES = Map.of(
-            "frenzy", 0.10,
-            "bulwark", 0.10,
-            "blitz", 0.15,
-            "suppress", 0.08,
-            "pierce", 0.12,
-            "supply", 0.20,
-            "medic", 0.03,
-            "combo", 0.08
+    private static final Map<String, Double> SKILL_RATES = Map.ofEntries(
+            Map.entry("frenzy", 0.10),
+            Map.entry("bulwark", 0.10),
+            Map.entry("blitz", 0.04),
+            Map.entry("suppress", 0.05),
+            Map.entry("pierce", 0.06),
+            Map.entry("leadership", 0.10),
+            Map.entry("supply", 0.10),
+            Map.entry("medic", 0.03),
+            Map.entry("counter", 0.10),
+            Map.entry("ration", 0.16)
     );
+
+    /** 战术机动指令类型 */
+    public enum CommandAction {
+        ADVANCE, // 前进（接敌/压迫）
+        RETREAT, // 后退（拉扯/边打边退）
+        HOLD     // 待命（坚守阵地/不移动）
+    }
+
+    /** 单位战术指令：机动行为 + 指定集火目标 (可选) */
+    public record UnitOrder(CommandAction action, String focusTarget) {
+        public UnitOrder(CommandAction action) {
+            this(action, null);
+        }
+    }
 
     // ========================================================================
     // 内部数据结构
@@ -59,8 +66,10 @@ public class BattleService {
 
     /** 统一单位/城防属性 - 对应 JS U(id) 返回值的常用字段 */
     private record UnitStats(String key, String name, String cat,
-                             int atk, int def, int hp, int spd, int range,
-                             String strongVs, boolean autoAdvance) {}
+                             double atkGround, double atkAir, double atkSea, double atkFort, double def, double hp, int spd, int range,
+                             String strongVs, boolean autoAdvance) {
+        double peakTroopAttack() { return Math.max(atkGround, Math.max(atkAir, atkSea)); }
+    }
 
     /** 从 UnitDef 或 FortDef 获取统一属性 - 对应 JS U(id) */
     private UnitStats getStats(String id) {
@@ -68,16 +77,66 @@ public class BattleService {
         UnitDef u = GameData.UNITS.get(id);
         if (u != null) {
             return new UnitStats(u.key(), u.name(), u.cat(),
-                    u.atk(), u.def(), u.hp(), u.spd(), u.range(),
+                    u.atkGround(), u.atkAir(), u.atkSea(), u.atkFort(), u.def(), u.hp(), u.spd(), u.range(),
                     u.strongVs(), u.autoAdvance() == null || u.autoAdvance());
         }
         FortDef f = GameData.FORTS.get(id);
         if (f != null) {
             return new UnitStats(f.key(), f.name(), f.cat(),
-                    f.atk(), f.def(), f.hp(), f.spd(), f.range(),
+                    f.atkGround(), f.atkAir(), f.atkSea(), f.atkFort(), f.def(), f.hp(), f.spd(), f.range(),
                     f.strongVs(), f.autoAdvance());
         }
         return null;
+    }
+
+    /**
+     * 默认机动指令解析：根据单位的 autoAdvance 属性决定。
+     */
+    private CommandAction defaultAction(String unitId) {
+        UnitStats u = getStats(unitId);
+        if (u == null || !u.autoAdvance()) {
+            return CommandAction.HOLD;
+        }
+        return CommandAction.ADVANCE;
+    }
+
+    /**
+     * 动态战场初始距离计算公式：
+     * D = max(1000, 3 * (maxSpdA + maxSpdB) * 50 + maxRange)
+     */
+    public int calcInitialDistance(Map<String, Integer> attackerArmy,
+                                  Map<String, Integer> defenderArmy,
+                                  TechCtx attackerCtx,
+                                  TechCtx defenderCtx) {
+        double maxSpdA = 0;
+        int maxRangeA = 0;
+        if (attackerArmy != null) {
+            for (Map.Entry<String, Integer> e : attackerArmy.entrySet()) {
+                if (e.getValue() != null && e.getValue() > 0) {
+                    double spd = attackerCtx != null ? effSpd(e.getKey(), attackerCtx.tech, attackerCtx.skills) : (getStats(e.getKey()) != null ? getStats(e.getKey()).spd() : 0);
+                    int r = effectiveRange(e.getKey(), attackerCtx);
+                    if (spd > maxSpdA) maxSpdA = spd;
+                    if (r > maxRangeA) maxRangeA = r;
+                }
+            }
+        }
+
+        double maxSpdB = 0;
+        int maxRangeB = 0;
+        if (defenderArmy != null) {
+            for (Map.Entry<String, Integer> e : defenderArmy.entrySet()) {
+                if (e.getValue() != null && e.getValue() > 0) {
+                    double spd = defenderCtx != null ? effSpd(e.getKey(), defenderCtx.tech, defenderCtx.skills) : (getStats(e.getKey()) != null ? getStats(e.getKey()).spd() : 0);
+                    int r = effectiveRange(e.getKey(), defenderCtx);
+                    if (spd > maxSpdB) maxSpdB = spd;
+                    if (r > maxRangeB) maxRangeB = r;
+                }
+            }
+        }
+
+        int maxRange = Math.max(maxRangeA, maxRangeB);
+        int calcDist = (int) Math.round(3 * (maxSpdA + maxSpdB) * 50 + maxRange);
+        return Math.max(1000, calcDist);
     }
 
     // ========================================================================
@@ -85,45 +144,41 @@ public class BattleService {
     // ========================================================================
 
     /**
-     * 解析野地战斗 - 对应 JS G.Battle.resolveWild(garrison, mine)。
-     * <p>
-     * 野地战斗不设战场上下文 (ctx 为 null), 因此 effAtk/effDef 返回基础值,
-     * 仅使用兵种原生属性进行模拟。
-     *
-     * @param garrison 守方驻军 (unitType -> count)
-     * @param attacker 攻方军队 (unitType -> count)
-     * @return 战斗结果, 包含幸存攻方单位和胜负
+     * 解析野地战斗 (默认指令) - 对应 JS G.Battle.resolveWild(garrison, mine)。
      */
     public BattleResult resolveWild(Map<String, Integer> garrison, Map<String, Integer> attacker) {
+        return resolveWild(garrison, attacker, null, null);
+    }
+
+    /**
+     * 解析野地战斗 (支持玩家与防守方自定义战术指令)。
+     */
+    public BattleResult resolveWild(Map<String, Integer> garrison, Map<String, Integer> attacker,
+                                    Map<String, UnitOrder> attackerOrders, Map<String, UnitOrder> defenderOrders) {
         Map<String, Integer> myArmy = snapshot(attacker);
         Map<String, Integer> foeArmy = snapshot(garrison);
         Map<String, Integer> myStart = snapshot(myArmy);
         Map<String, Integer> foeStart = snapshot(foeArmy);
 
-        int initialDist = DISTANCE_NPC;
+        int initialDist = calcInitialDistance(myArmy, foeArmy, null, null);
         Map<String, Integer> minePos = new LinkedHashMap<>();
         Map<String, Integer> enemyPos = new LinkedHashMap<>();
-        for (String k : myArmy.keySet()) minePos.put(k, 0);
-        for (String k : foeArmy.keySet()) enemyPos.put(k, initialDist);
+        for (String k : myArmy.keySet()) minePos.put(k, formationOffset(k));
+        for (String k : foeArmy.keySet()) enemyPos.put(k, initialDist - formationOffset(k));
 
-        StringBuilder report = new StringBuilder();
+        StringBuilder report = new StringBuilder("规则版本：" + BattleRules.VERSION + "\n");
+        report.append("战场初始距离: ").append(initialDist).append("\n");
 
         for (int round = 1; round <= MAX_ROUND; round++) {
-            List<ActionEntry> order = buildOrder(myArmy, foeArmy, null, null);
-            boolean moved = false;
-            for (ActionEntry a : order) {
-                Map<String, Integer> myA = a.side == Side.MINE ? myArmy : foeArmy;
-                Map<String, Integer> foe = a.side == Side.MINE ? foeArmy : myArmy;
-                if (myA.getOrDefault(a.id, 0) <= 0) continue;
-                if (allDead(foe)) break;
-                boolean actionMoved = simAct(a.id, myA, foe, minePos, enemyPos, initialDist, report, a.side,
-                        null, null, 0, false);
-                if (actionMoved) moved = true;
-            }
+            report.append("-- 第").append(round).append("回合 --\n");
 
+            // 阶段一: 统一机动
+            executeMovementPhase(myArmy, foeArmy, minePos, enemyPos, initialDist, report,
+                    attackerOrders, defenderOrders, null, null);
 
-
-
+            // 阶段二: 战术交火
+            executeCombatPhase(myArmy, foeArmy, minePos, enemyPos, initialDist, report,
+                    attackerOrders, defenderOrders, null, null, 0, 0, false, round);
 
             if (allDead(foeArmy)) {
                 return buildWildResult(true, myArmy, foeArmy, myStart, foeStart, report);
@@ -160,15 +215,15 @@ public class BattleService {
             long defenderWarehouseLevel) {
         return startWorldDispatch(attackerArmy, defenderArmy, defenderForts,
                 attackerTech, defenderTech, attackerSkills, defenderSkills,
-                attackerCommanderMil, defenderCommanderMil,
+                attackerCommanderMil, 0,
+                defenderCommanderMil, 0,
                 attackerWallLevel, defenderWallLevel,
-                action, defenderResources, defenderWarehouseLevel, false);
+                action, defenderResources, defenderWarehouseLevel, false,
+                null, null);
     }
 
     /**
      * 解析世界出征战斗 (支持区分 NPC 战斗与玩家对战)。
-     *
-     * @param isPlayerBattle 是否为玩家对战 (true: 初始距离 3000, false: 初始距离 2200)
      */
     public BattleResult startWorldDispatch(
             Map<String, Integer> attackerArmy,
@@ -186,6 +241,92 @@ public class BattleService {
             Map<String, Integer> defenderResources,
             long defenderWarehouseLevel,
             boolean isPlayerBattle) {
+        return startWorldDispatch(attackerArmy, defenderArmy, defenderForts,
+                attackerTech, defenderTech, attackerSkills, defenderSkills,
+                attackerCommanderMil, 0,
+                defenderCommanderMil, 0,
+                attackerWallLevel, defenderWallLevel,
+                action, defenderResources, defenderWarehouseLevel, isPlayerBattle,
+                null, null);
+    }
+
+    public BattleResult startWorldDispatch(
+            Map<String, Integer> attackerArmy,
+            Map<String, Integer> defenderArmy,
+            Map<String, Integer> defenderForts,
+            Map<String, Integer> attackerTech,
+            Map<String, Integer> defenderTech,
+            Map<String, Integer> attackerSkills,
+            Map<String, Integer> defenderSkills,
+            int attackerCommanderMil,
+            int attackerCommanderDef,
+            int defenderCommanderMil,
+            int defenderCommanderDef,
+            int attackerWallLevel,
+            int defenderWallLevel,
+            String action,
+            Map<String, Integer> defenderResources,
+            long defenderWarehouseLevel,
+            boolean isPlayerBattle) {
+        return startWorldDispatch(attackerArmy, defenderArmy, defenderForts,
+                attackerTech, defenderTech, attackerSkills, defenderSkills,
+                attackerCommanderMil, attackerCommanderDef,
+                defenderCommanderMil, defenderCommanderDef,
+                attackerWallLevel, defenderWallLevel,
+                action, defenderResources, defenderWarehouseLevel, isPlayerBattle,
+                null, null);
+    }
+
+    /**
+     * 解析世界出征战斗 (完整参数：支持自定义战术指令与攻防将领四维属性)。
+     */
+    public BattleResult startWorldDispatch(
+            Map<String, Integer> attackerArmy,
+            Map<String, Integer> defenderArmy,
+            Map<String, Integer> defenderForts,
+            Map<String, Integer> attackerTech,
+            Map<String, Integer> defenderTech,
+            Map<String, Integer> attackerSkills,
+            Map<String, Integer> defenderSkills,
+            int attackerCommanderMil,
+            int defenderCommanderMil,
+            int attackerWallLevel,
+            int defenderWallLevel,
+            String action,
+            Map<String, Integer> defenderResources,
+            long defenderWarehouseLevel,
+            boolean isPlayerBattle,
+            Map<String, UnitOrder> attackerOrders,
+            Map<String, UnitOrder> defenderOrders) {
+        return startWorldDispatch(attackerArmy, defenderArmy, defenderForts,
+                attackerTech, defenderTech, attackerSkills, defenderSkills,
+                attackerCommanderMil, 0,
+                defenderCommanderMil, 0,
+                attackerWallLevel, defenderWallLevel,
+                action, defenderResources, defenderWarehouseLevel, isPlayerBattle,
+                attackerOrders, defenderOrders);
+    }
+
+    public BattleResult startWorldDispatch(
+            Map<String, Integer> attackerArmy,
+            Map<String, Integer> defenderArmy,
+            Map<String, Integer> defenderForts,
+            Map<String, Integer> attackerTech,
+            Map<String, Integer> defenderTech,
+            Map<String, Integer> attackerSkills,
+            Map<String, Integer> defenderSkills,
+            int attackerCommanderMil,
+            int attackerCommanderDef,
+            int defenderCommanderMil,
+            int defenderCommanderDef,
+            int attackerWallLevel,
+            int defenderWallLevel,
+            String action,
+            Map<String, Integer> defenderResources,
+            long defenderWarehouseLevel,
+            boolean isPlayerBattle,
+            Map<String, UnitOrder> attackerOrders,
+            Map<String, UnitOrder> defenderOrders) {
 
         // 克隆军队 (不修改原始 map)
         Map<String, Integer> mine = snapshot(attackerArmy);
@@ -206,22 +347,26 @@ public class BattleService {
         Map<String, Integer> aSkills = attackerSkills != null ? attackerSkills : Collections.emptyMap();
         Map<String, Integer> dSkills = defenderSkills != null ? defenderSkills : Collections.emptyMap();
 
+        TechCtx attackerCtx = new TechCtx(aTech, aSkills, attackerCommanderMil, attackerCommanderDef);
+        TechCtx defenderCtx = new TechCtx(dTech, dSkills, defenderCommanderMil, defenderCommanderDef);
+
         // 保存初始军队快照 (用于战后经验计算) - 对应 JS mineStart / enemyStart
         Map<String, Integer> mineStart = snapshot(mine);
         Map<String, Integer> enemyStart = snapshot(enemy);
 
-        // 战场初始距离: NPC战斗固定2200, 玩家对战固定3000
-        int initialDist = isPlayerBattle ? DISTANCE_PLAYER : DISTANCE_NPC;
+        // 动态计算初始战场距离
+        int initialDist = calcInitialDistance(mine, enemy, attackerCtx, defenderCtx);
+
         Map<String, Integer> minePos = new LinkedHashMap<>();
         Map<String, Integer> enemyPos = new LinkedHashMap<>();
-        for (String k : mine.keySet()) minePos.put(k, 0);
-        for (String k : enemy.keySet()) enemyPos.put(k, initialDist);
+        for (String k : mine.keySet()) minePos.put(k, formationOffset(k));
+        for (String k : enemy.keySet()) enemyPos.put(k, initialDist - formationOffset(k));
 
-        StringBuilder report = new StringBuilder();
+        StringBuilder report = new StringBuilder("规则版本：" + BattleRules.VERSION + "\n");
+        report.append("战场初始距离: ").append(initialDist).append("\n");
 
         // 模拟 30 回合 - 对应 JS resolveRound 循环
         for (int round = 1; round <= MAX_ROUND; round++) {
-            // 军官每 3 回合生效 - 对应 JS ctx.round % 3 === 0
             boolean officerActive = (round % 3 == 0);
 
             if (officerActive) {
@@ -230,45 +375,21 @@ public class BattleService {
                 report.append("-- 第").append(round).append("回合 --\n");
             }
 
-            TechCtx attackerCtx = new TechCtx(aTech, aSkills, attackerCommanderMil);
-            TechCtx defenderCtx = new TechCtx(dTech, dSkills, defenderCommanderMil);
             String mineBonusLog = buildCommanderBonusLog("我方", attackerCtx, officerActive, true);
             String foeBonusLog = buildCommanderBonusLog("敌方", defenderCtx, officerActive, false);
             if (!mineBonusLog.isEmpty()) report.append(mineBonusLog).append("\n");
             if (!foeBonusLog.isEmpty()) report.append(foeBonusLog).append("\n");
 
-            // 构建行动序列 - 对应 JS buildOrder
-            List<ActionEntry> order = buildOrder(mine, enemy, attackerCtx, defenderCtx);
+            // 阶段一: 统一机动阶段
+            executeMovementPhase(mine, enemy, minePos, enemyPos, initialDist, report,
+                    attackerOrders, defenderOrders, attackerCtx, defenderCtx);
 
-            boolean moved = false;
-            for (ActionEntry a : order) {
-                Map<String, Integer> myA = a.side == Side.MINE ? mine : enemy;
-                Map<String, Integer> foe = a.side == Side.MINE ? enemy : mine;
-                if (myA.getOrDefault(a.id, 0) <= 0) continue;
-                if (allDead(foe)) break;
+            // 阶段二: 战术交火阶段
+            executeCombatPhase(mine, enemy, minePos, enemyPos, initialDist, report,
+                    attackerOrders, defenderOrders, attackerCtx, defenderCtx,
+                    attackerWallLevel, defenderWallLevel, officerActive, round);
 
-                // 行动方科技上下文
-                TechCtx actCtx = a.side == Side.MINE
-                        ? new TechCtx(aTech, aSkills, attackerCommanderMil)
-                        : new TechCtx(dTech, dSkills, defenderCommanderMil);
-                // 防守方科技上下文 (目标所属方, 与行动方相反)
-                TechCtx foeCtx = a.side == Side.MINE
-                        ? new TechCtx(dTech, dSkills, defenderCommanderMil)
-                        : new TechCtx(aTech, aSkills, attackerCommanderMil);
-                int foeWallLevel = a.side == Side.MINE ? defenderWallLevel : attackerWallLevel;
-
-                boolean actionMoved = simAct(a.id, myA, foe, minePos, enemyPos, initialDist, report, a.side,
-                        actCtx, foeCtx, foeWallLevel, officerActive);
-                if (actionMoved) moved = true;
-            }
-
-
-
-
-
-
-
-            // 胜负判定 - 对应 JS resolveRound 中的判定
+            // 胜负判定
             if (allDead(enemy)) {
                 report.append("★ 全歼敌军,胜利!\n");
                 return finishBattle(true, mine, enemy, mineStart, enemyStart,
@@ -289,6 +410,78 @@ public class BattleService {
         // 安全兜底
         return finishBattle(false, mine, enemy, mineStart, enemyStart,
                 aTech, action, defenderResources, defenderWarehouseLevel, report);
+    }
+
+    /**
+     * 结算战术战斗的一回合。调用方负责持久化返回的位置和存活单位，确保刷新页面不会重置战场。
+     */
+    public BattleRoundState resolveWorldRound(Map<String, Integer> attackerArmy,
+                                              Map<String, Integer> defenderArmy,
+                                              Map<String, Integer> attackerPositions,
+                                              Map<String, Integer> defenderPositions,
+                                              int initialDistance,
+                                              Map<String, Integer> attackerTech,
+                                              Map<String, Integer> defenderTech,
+                                              Map<String, Integer> attackerSkills,
+                                              Map<String, Integer> defenderSkills,
+                                              int attackerCommanderMil,
+                                              int attackerCommanderDef,
+                                              int defenderCommanderMil,
+                                              int defenderCommanderDef,
+                                              int attackerWallLevel,
+                                              int defenderWallLevel,
+                                              int round,
+                                              Map<String, UnitOrder> attackerOrders,
+                                              Map<String, UnitOrder> defenderOrders) {
+        Map<String, Integer> mine = snapshot(attackerArmy);
+        Map<String, Integer> enemy = snapshot(defenderArmy);
+        Map<String, Integer> minePos = new LinkedHashMap<>(attackerPositions);
+        Map<String, Integer> enemyPos = new LinkedHashMap<>(defenderPositions);
+        TechCtx attackerCtx = new TechCtx(attackerTech != null ? attackerTech : Collections.emptyMap(),
+                attackerSkills != null ? attackerSkills : Collections.emptyMap(), attackerCommanderMil, attackerCommanderDef);
+        TechCtx defenderCtx = new TechCtx(defenderTech != null ? defenderTech : Collections.emptyMap(),
+                defenderSkills != null ? defenderSkills : Collections.emptyMap(), defenderCommanderMil, defenderCommanderDef);
+        boolean officerActive = round % 3 == 0;
+        StringBuilder report = new StringBuilder("-- 第").append(round).append("回合")
+                .append(officerActive ? " (军官加成生效) --\n" : " --\n");
+
+        String mineBonusLog = buildCommanderBonusLog("我方", attackerCtx, officerActive, true);
+        String foeBonusLog = buildCommanderBonusLog("敌方", defenderCtx, officerActive, false);
+        if (!mineBonusLog.isEmpty()) report.append(mineBonusLog).append("\n");
+        if (!foeBonusLog.isEmpty()) report.append(foeBonusLog).append("\n");
+
+        executeMovementPhase(mine, enemy, minePos, enemyPos, initialDistance, report,
+                attackerOrders, defenderOrders, attackerCtx, defenderCtx);
+        executeCombatPhase(mine, enemy, minePos, enemyPos, initialDistance, report,
+                attackerOrders, defenderOrders, attackerCtx, defenderCtx,
+                attackerWallLevel, defenderWallLevel, officerActive, round);
+
+        boolean attackerWin = allDead(enemy);
+        boolean defenderWin = allDead(mine) || (!attackerWin && round >= MAX_ROUND);
+        if (attackerWin) report.append("★ 全歼敌军,胜利!\n");
+        else if (defenderWin && allDead(mine)) report.append("✗ 部队溃败,失败!\n");
+        else if (defenderWin) report.append("✗ 回合耗尽,被迫撤退\n");
+
+        return new BattleRoundState(round, attackerWin || defenderWin, attackerWin,
+                filterPositive(mine), filterPositive(enemy), minePos, enemyPos, report.toString());
+    }
+
+    /**
+     * 基于已完成的逐回合战场状态生成经验、掠夺和战报等最终结算数据。
+     */
+    public BattleResult finishWorldBattle(boolean win,
+                                          Map<String, Integer> survivorAttacker,
+                                          Map<String, Integer> survivorDefender,
+                                          Map<String, Integer> initialAttacker,
+                                          Map<String, Integer> initialDefender,
+                                          Map<String, Integer> attackerTech,
+                                          String action,
+                                          Map<String, Integer> defenderResources,
+                                          long defenderWarehouseLevel,
+                                          String report) {
+        return finishBattle(win, survivorAttacker, survivorDefender, initialAttacker, initialDefender,
+                attackerTech != null ? attackerTech : Collections.emptyMap(), action, defenderResources,
+                defenderWarehouseLevel, new StringBuilder(report != null ? report : ""));
     }
 
     // ========================================================================
@@ -379,175 +572,380 @@ public class BattleService {
     // simAct - 单个单位行动 (对应 JS Battle.simAct)
     // ========================================================================
 
-    /**
-     * 模拟一个单位的行动: 移动或攻击 (各兵种独立计算坐标与距离)。
-     *
-     * @return 该单位是否产生位移前进
-     */
-    private boolean simAct(String unitId,
-                           Map<String, Integer> myArmy,
-                           Map<String, Integer> foeArmy,
-                           Map<String, Integer> minePos,
-                           Map<String, Integer> enemyPos,
-                           int initialDist,
-                           StringBuilder report,
-                           Side side,
-                           TechCtx actCtx,
-                           TechCtx foeCtx,
-                           int foeWallLevel,
-                           boolean officerActive) {
-        UnitStats u = getStats(unitId);
-        if (u == null) return false;
+    // ========================================================================
+    // 阶段一: 统一机动阶段 (Movement Phase)
+    // 双方所有存活单位同时结算前进/后退/待命，刷新战场坐标，阵地边界不可穿透
+    // ========================================================================
 
-        int count = myArmy.getOrDefault(unitId, 0);
-        if (count <= 0) return false;
+    private void executeMovementPhase(
+            Map<String, Integer> mine,
+            Map<String, Integer> enemy,
+            Map<String, Integer> minePos,
+            Map<String, Integer> enemyPos,
+            int initialDist,
+            StringBuilder report,
+            Map<String, UnitOrder> attackerOrders,
+            Map<String, UnitOrder> defenderOrders,
+            TechCtx attackerCtx,
+            TechCtx defenderCtx) {
 
-        // 速度计算 - 对应 JS simAct 中 spd 的取值
-        double spd;
-        if (actCtx != null) {
-            spd = effSpd(unitId, actCtx.tech, actCtx.skills);
-        } else {
-            spd = u.spd(); // resolveWild 场景: 基础速度
+        // 快照移动前坐标，避免先后计算造成不对称
+        Map<String, Integer> oldMinePos = new LinkedHashMap<>(minePos);
+        Map<String, Integer> oldEnemyPos = new LinkedHashMap<>(enemyPos);
+
+        // 1. 攻方机动
+        for (Map.Entry<String, Integer> e : mine.entrySet()) {
+            String unitId = e.getKey();
+            int count = e.getValue() != null ? e.getValue() : 0;
+            if (count <= 0) continue;
+            UnitStats u = getStats(unitId);
+            if (u == null) continue;
+
+            UnitOrder order = attackerOrders != null ? attackerOrders.get(unitId) : null;
+            CommandAction action = order != null ? order.action() : defaultAction(unitId);
+
+            double spd = attackerCtx != null ? effSpd(unitId, attackerCtx.tech, attackerCtx.skills) : u.spd();
+            int rawStep = (int) (spd * 50);
+            int curX = minePos.getOrDefault(unitId, formationOffset(unitId));
+
+            if (action == CommandAction.ADVANCE) {
+                if (!u.autoAdvance() && order == null) {
+                    report.append("我方").append(u.name()).append("(").append(count)
+                            .append(") [待命] 原地待命 坐标").append(curX).append("\n");
+                    continue;
+                }
+                int minDist = minDistanceToLivingFoe(Side.MINE, unitId, enemy, oldMinePos, oldEnemyPos, initialDist);
+                if (minDist == Integer.MAX_VALUE) {
+                    report.append("我方").append(u.name()).append("(").append(count)
+                            .append(") [前进] 无可攻击目标 原地待命 坐标").append(curX).append("\n");
+                    continue;
+                }
+                int range = effectiveRange(unitId, attackerCtx);
+                int neededDist = Math.max(0, minDist - range);
+                int step = Math.min(rawStep, neededDist);
+                step = Math.min(step, Math.max(0, initialDist - curX));
+                int newX = curX + step;
+                minePos.put(unitId, newX);
+                if (step > 0) {
+                    report.append("我方").append(u.name()).append("(").append(count)
+                            .append(") [前进] 推进").append(step).append(" -> 坐标").append(newX)
+                            .append(" (距敌").append(minDist - step).append(")\n");
+                } else {
+                    report.append("我方").append(u.name()).append("(").append(count)
+                            .append(") [前进] 已进入射程(距敌").append(minDist).append(") 原地保持 坐标").append(newX).append("\n");
+                }
+            } else if (action == CommandAction.RETREAT) {
+                int step = Math.min(rawStep, curX);
+                int newX = curX - step;
+                minePos.put(unitId, newX);
+                if (curX <= 0) {
+                    report.append("我方").append(u.name()).append("(").append(count)
+                            .append(") [后退] 已达阵地底线(坐标0) 退无可退\n");
+                } else {
+                    report.append("我方").append(u.name()).append("(").append(count)
+                            .append(") [后退] 撤退").append(step).append(" -> 坐标").append(newX).append("\n");
+                }
+            } else {
+                report.append("我方").append(u.name()).append("(").append(count)
+                        .append(") [待命] 坚守阵地 坐标").append(curX).append("\n");
+            }
         }
+
+        // 2. 守方机动
+        for (Map.Entry<String, Integer> e : enemy.entrySet()) {
+            String unitId = e.getKey();
+            int count = e.getValue() != null ? e.getValue() : 0;
+            if (count <= 0) continue;
+            UnitStats u = getStats(unitId);
+            if (u == null) continue;
+
+            UnitOrder order = defenderOrders != null ? defenderOrders.get(unitId) : null;
+            CommandAction action = order != null ? order.action() : defaultAction(unitId);
+
+            double spd = defenderCtx != null ? effSpd(unitId, defenderCtx.tech, defenderCtx.skills) : u.spd();
+            int rawStep = (int) (spd * 50);
+            int curX = enemyPos.getOrDefault(unitId, initialDist - formationOffset(unitId));
+
+            if (action == CommandAction.ADVANCE) {
+                if (!u.autoAdvance() && order == null) {
+                    report.append("敌方").append(u.name()).append("(").append(count)
+                            .append(") [待命] 原地待命 坐标").append(curX).append("\n");
+                    continue;
+                }
+                int minDist = minDistanceToLivingFoe(Side.ENEMY, unitId, mine, oldMinePos, oldEnemyPos, initialDist);
+                if (minDist == Integer.MAX_VALUE) {
+                    report.append("敌方").append(u.name()).append("(").append(count)
+                            .append(") [前进] 无可攻击目标 原地待命 坐标").append(curX).append("\n");
+                    continue;
+                }
+                int range = effectiveRange(unitId, defenderCtx);
+                int neededDist = Math.max(0, minDist - range);
+                int step = Math.min(rawStep, neededDist);
+                step = Math.min(step, curX);
+                int newX = curX - step;
+                enemyPos.put(unitId, newX);
+                if (step > 0) {
+                    report.append("敌方").append(u.name()).append("(").append(count)
+                            .append(") [前进] 推进").append(step).append(" -> 坐标").append(newX)
+                            .append(" (距我").append(minDist - step).append(")\n");
+                } else {
+                    report.append("敌方").append(u.name()).append("(").append(count)
+                            .append(") [前进] 已进入射程(距我").append(minDist).append(") 原地保持 坐标").append(newX).append("\n");
+                }
+            } else if (action == CommandAction.RETREAT) {
+                int step = Math.min(rawStep, Math.max(0, initialDist - curX));
+                int newX = curX + step;
+                enemyPos.put(unitId, newX);
+                if (curX >= initialDist) {
+                    report.append("敌方").append(u.name()).append("(").append(count)
+                            .append(") [后退] 已达阵地底线(坐标").append(initialDist).append(") 退无可退\n");
+                } else {
+                    report.append("敌方").append(u.name()).append("(").append(count)
+                            .append(") [后退] 撤退").append(step).append(" -> 坐标").append(newX).append("\n");
+                }
+            } else {
+                report.append("敌方").append(u.name()).append("(").append(count)
+                        .append(") [待命] 坚守阵地 坐标").append(curX).append("\n");
+            }
+        }
+    }
+
+    // ========================================================================
+    // 阶段二: 战术交火阶段 (Combat Phase)
+    // 按射程降序、速度降序依次开火；优先集火目标，支持边打边退
+    // ========================================================================
+
+    private void executeCombatPhase(
+            Map<String, Integer> mine,
+            Map<String, Integer> enemy,
+            Map<String, Integer> minePos,
+            Map<String, Integer> enemyPos,
+            int initialDist,
+            StringBuilder report,
+            Map<String, UnitOrder> attackerOrders,
+            Map<String, UnitOrder> defenderOrders,
+            TechCtx attackerCtx,
+            TechCtx defenderCtx,
+            int attackerWallLevel,
+            int defenderWallLevel,
+            boolean officerActive,
+            int round) {
+
+        List<ActionEntry> order = buildOrder(mine, enemy, attackerCtx, defenderCtx, round);
+        for (ActionEntry a : order) {
+            Map<String, Integer> myA = a.side == Side.MINE ? mine : enemy;
+            Map<String, Integer> foe = a.side == Side.MINE ? enemy : mine;
+            if (myA.getOrDefault(a.id, 0) <= 0) continue;
+            if (allDead(foe)) break;
+
+            TechCtx actCtx = a.side == Side.MINE ? attackerCtx : defenderCtx;
+            TechCtx foeCtx = a.side == Side.MINE ? defenderCtx : attackerCtx;
+            int foeWallLevel = a.side == Side.MINE ? defenderWallLevel : attackerWallLevel;
+            int myWallLevel = a.side == Side.MINE ? attackerWallLevel : defenderWallLevel;
+
+            UnitOrder uOrder = a.side == Side.MINE
+                    ? (attackerOrders != null ? attackerOrders.get(a.id) : null)
+                    : (defenderOrders != null ? defenderOrders.get(a.id) : null);
+            String focusTarget = uOrder != null ? uOrder.focusTarget() : null;
+
+            fireUnitCombat(a.id, myA, foe, minePos, enemyPos, initialDist, report, a.side,
+                    actCtx, foeCtx, foeWallLevel, myWallLevel, officerActive, focusTarget, false);
+        }
+    }
+
+    /**
+     * 选择交火目标：优先指定集火目标（受重坦掩护与特种兵穿透约束），否则按常规克制权重选取。
+     */
+    private String pickCombatTarget(String attackerId, Side side, Map<String, Integer> foeArmy,
+                                    Map<String, Integer> minePos, Map<String, Integer> enemyPos,
+                                    int initialDist, TechCtx ctx, String focusTarget) {
+        if (focusTarget != null && foeArmy.getOrDefault(focusTarget, 0) > 0 && baseAttack(attackerId, focusTarget) > 0) {
+            int range = effectiveRange(attackerId, ctx);
+            int dist = getUnitDistToFoe(side, attackerId, focusTarget, minePos, enemyPos, initialDist);
+            if (dist <= range) {
+                int tankDistance = foeArmy.getOrDefault("htank", 0) > 0
+                        ? getUnitDistToFoe(side, attackerId, "htank", minePos, enemyPos, initialDist)
+                        : Integer.MAX_VALUE;
+                boolean blockedByTank = !"special".equals(attackerId) && !"htank".equals(focusTarget)
+                        && BattleRules.ground(focusTarget)
+                        && tankDistance <= dist && tankDistance <= range;
+                if (!blockedByTank) {
+                    return focusTarget;
+                }
+            }
+        }
+        return pickTargetInRange(attackerId, side, foeArmy, minePos, enemyPos, initialDist, ctx);
+    }
+
+    private void fireUnitCombat(String unitId,
+                                Map<String, Integer> myArmy,
+                                Map<String, Integer> foeArmy,
+                                Map<String, Integer> minePos,
+                                Map<String, Integer> enemyPos,
+                                int initialDist,
+                                StringBuilder report,
+                                Side side,
+                                TechCtx actCtx,
+                                TechCtx foeCtx,
+                                int foeWallLevel,
+                                boolean officerActive,
+                                String focusTarget) {
+        fireUnitCombat(unitId, myArmy, foeArmy, minePos, enemyPos, initialDist, report, side,
+                actCtx, foeCtx, foeWallLevel, 0, officerActive, focusTarget, false);
+    }
+
+    /**
+     * 执行单个单位的交火逻辑。
+     */
+    private void fireUnitCombat(String unitId,
+                                Map<String, Integer> myArmy,
+                                Map<String, Integer> foeArmy,
+                                Map<String, Integer> minePos,
+                                Map<String, Integer> enemyPos,
+                                int initialDist,
+                                StringBuilder report,
+                                Side side,
+                                TechCtx actCtx,
+                                TechCtx foeCtx,
+                                int foeWallLevel,
+                                int myWallLevel,
+                                boolean officerActive,
+                                String focusTarget,
+                                boolean isCounter) {
+        UnitStats u = getStats(unitId);
+        if (u == null) return;
+        int count = myArmy.getOrDefault(unitId, 0);
+        if (count <= 0) return;
 
         String sidePrefix = side == Side.MINE ? "我方" : "敌方";
 
-        // 寻找射程内的攻击目标
-        String target = pickTargetInRange(unitId, side, foeArmy, minePos, enemyPos, initialDist);
-
-        // 射程外: 移动阶段
+        // 寻找射程内目标
+        String target = pickCombatTarget(unitId, side, foeArmy, minePos, enemyPos, initialDist, actCtx, focusTarget);
         if (target == null) {
             int minDist = minDistanceToLivingFoe(side, unitId, foeArmy, minePos, enemyPos, initialDist);
-            if (!u.autoAdvance()) {
-                // 不主动前进的单位(如卡车、运输机、城防设施等)在射程外待命，不主动冲锋
-                report.append(sidePrefix).append(u.name())
-                        .append("(").append(count).append(")")
-                        .append(" 待命 距离").append(minDist).append("\n");
-                return false;
-            }
-
-            int step = Math.min((int) (spd * 50), minDist);
-            if (step <= 0) return false;
-
-            if (side == Side.MINE) {
-                int curPos = minePos.getOrDefault(unitId, 0);
-                minePos.put(unitId, curPos + step);
+            if (minDist == Integer.MAX_VALUE) {
+                report.append(sidePrefix).append(u.name()).append("(").append(count).append(") 射程外待机 无可攻击目标\n");
             } else {
-                int curPos = enemyPos.getOrDefault(unitId, initialDist);
-                enemyPos.put(unitId, curPos - step);
+                report.append(sidePrefix).append(u.name()).append("(").append(count).append(") 射程外待机 (最近敌军距离").append(minDist).append(")\n");
             }
-            int newDist = minDist - step;
-            report.append(sidePrefix).append(u.name())
-                    .append("(").append(count).append(")")
-                    .append(" 前进 ").append(step).append(" 距离->").append(newDist).append("\n");
-            return true;
+            return;
         }
 
-        // 射程内: 攻击阶段 (前进0)
-        int targetDist = getUnitDistToFoe(side, unitId, target, minePos, enemyPos, initialDist);
-        report.append(sidePrefix).append(u.name())
-                .append("(").append(count).append(")")
-                .append(" 前进0(射程内) 距离").append(targetDist).append("\n");
-
-        int baseAtk = u.atk();
-
-        // 有效攻击力 - 对应 JS effAtk
-        double atk;
-        if (actCtx != null) {
-            atk = effAtk(unitId, actCtx.tech, actCtx.skills, actCtx.commanderMil, officerActive);
-        } else {
-            atk = baseAtk; // resolveWild 场景: 基础攻击力
-        }
-
-        // 有效防御力 - 对应 JS effDef
-        // foeIsMine: 目标是否属于"我方" (JS 中 foeIsMine = side === 'enemy')
-        boolean foeIsMine = (side == Side.ENEMY);
-        double def;
-        if (foeCtx != null) {
-            def = effDef(target, foeCtx.tech, foeCtx.skills, foeCtx.commanderMil,
-                    foeWallLevel, officerActive, foeIsMine);
-        } else {
-            UnitStats tStats = getStats(target);
-            def = tStats != null ? tStats.def() : 1;
-        }
-
-        // 破甲技能 - 对应 JS pierce (仅攻方 mine 侧生效)
-        double pierce = 0;
-        if (actCtx != null && side == Side.MINE) {
-            pierce = skillBonus(actCtx.skills, "pierce");
-        }
-        if (pierce > 0) def = def * (1 - pierce);
-        if (def < 1) def = 1;
-
-        // 相克倍率 - 对应 JS counterMul
-        double cm = counterMul(unitId, target);
-
-        // 贴脸倍率 - 对应 JS closeMul (与目标距离 0 时 ×2)
-        double closeMul = (targetDist == 0) ? 2.0 : 1.0;
-
-        // 伤害公式 - 对应 JS dmg = (atk * atk * count * cm * closeMul) / (def * 10)
-        double dmg = (atk * atk * count * cm * closeMul) / (def * 10);
-
-        // 连击技能 - 对应 JS combo (仅攻方 mine 侧生效)
-        double comboRate = 0;
-        if (actCtx != null && side == Side.MINE) {
-            comboRate = skillBonus(actCtx.skills, "combo");
-        }
-        boolean comboHit = comboRate > 0 && ThreadLocalRandom.current().nextDouble() < comboRate;
-        if (comboHit) dmg *= 2;
-
-        StringBuilder bonusTag = new StringBuilder();
-        if (side == Side.MINE && baseAtk > 0 && atk / baseAtk > 1.01) {
-            bonusTag.append(" 军官加成×").append(String.format("%.2f", atk / baseAtk));
-        }
-        if (pierce > 0) bonusTag.append(" 破甲").append((int) Math.round(pierce * 100)).append("%");
-        if (comboHit) bonusTag.append(" 连击");
-        if (cm > 1) bonusTag.append(" 相克");
-        if (closeMul > 1) bonusTag.append(" 贴脸");
-
-        // 一次行动共用固定伤害池。余伤仅攻击仍在自身射程内的敌方存活目标。
-        double remainingDamage = dmg;
+        // 射程内开火
+        double attackBonus = actCtx == null ? 1
+                : attackBonus(u.cat(), actCtx.tech, actCtx.skills, actCtx.commanderMil, officerActive);
+        if (foeCtx != null) attackBonus *= 1 - skillBonus(foeCtx.skills, "suppress");
+        double pierce = actCtx == null ? 0 : skillBonus(actCtx.skills, "pierce");
+        double totalActions = count;
+        double remainingActions = totalActions;
         boolean firstTarget = true;
-        while (target != null && remainingDamage > 0) {
+
+        while (target != null && remainingActions > 1e-9) {
             UnitStats tU = getStats(target);
-            double hpPer = foeCtx != null ? effHp(target, foeCtx.tech) : tU.hp();
-            hpPer = Math.max(1, hpPer);
+            double def = foeCtx == null ? tU.def()
+                    : effDef(target, foeCtx.tech, foeCtx.skills, foeCtx.commanderDef,
+                    foeWallLevel, officerActive, side == Side.MINE);
+            def = Math.max(0, def * (1 - pierce));
+            double cm = counterMul(unitId, target);
+            double targetAttack = baseAttack(unitId, target) * attackBonus;
+            double damagePerAction = targetAttack * cm * 100.0 / (100.0 + 5 * def);
+            double hpPer = Math.max(1, foeCtx == null ? tU.hp() : effHp(target, foeCtx.tech));
             int beforeKill = foeArmy.getOrDefault(target, 0);
             double targetHp = hpPer * beforeKill;
-            double appliedDamage = Math.min(remainingDamage, targetHp);
-
+            double damage = remainingActions * damagePerAction;
+            double appliedDamage = Math.min(damage, targetHp);
             int kills;
-            if (remainingDamage >= targetHp) {
+            if (damage + 1e-9 >= targetHp) {
                 kills = beforeKill;
-                remainingDamage -= targetHp;
+                remainingActions = Math.max(0, remainingActions - targetHp / damagePerAction);
             } else {
-                // 不足以全灭时沿用概率击杀；本次余伤全部消耗在当前目标上。
                 kills = (int) Math.floor(appliedDamage / hpPer);
-                double fraction = (appliedDamage % hpPer) / hpPer;
-                if (fraction > 0 && ThreadLocalRandom.current().nextDouble() < fraction) kills++;
-                remainingDamage = 0;
+                double fraction = appliedDamage / hpPer - kills;
+                if (fraction > 0 && random.getAsDouble() < fraction) kills++;
+                remainingActions = 0;
             }
-            foeArmy.put(target, beforeKill - kills);
-
+            int remainingTarget = beforeKill - kills;
+            foeArmy.put(target, remainingTarget);
             report.append(sidePrefix).append(u.name()).append("(").append(count).append(")")
                     .append(firstTarget ? verb(unitId) : "余伤攻击")
                     .append(side == Side.MINE ? "敌" : "我").append(tU.name())
                     .append("(").append(beforeKill).append(")");
-            if (firstTarget && bonusTag.length() > 0) report.append(" [").append(bonusTag.toString().trim()).append("]");
-            if (firstTarget) report.append(" 本次总伤害").append(Math.round(dmg));
-            report.append(" 伤害").append(Math.round(appliedDamage)).append(" 击毁").append(kills);
-            report.append(" 剩余伤害").append(Math.round(remainingDamage));
-            report.append("\n");
+            List<String> tags = new ArrayList<>();
+            if (cm > 1.0001) tags.add("倍率×" + cm + " 相克");
+            else if (cm < 0.9999) tags.add("倍率×" + cm + " 火力受限");
+            if ("htank".equals(target)) tags.add("前排承伤");
+            if (firstTarget && focusTarget != null && focusTarget.equals(target)) tags.add("指定集火");
+            if (pierce > 0) tags.add("破甲" + percent(pierce) + "%");
+            if (!tags.isEmpty()) {
+                report.append(" [").append(String.join(" ", tags)).append("]");
+            }
+            report.append(" ").append(BattleRules.domainLabel(target)).append("攻击").append(Math.round(targetAttack));
+            if (firstTarget) report.append(" 本次原始火力").append(Math.round(targetAttack * totalActions));
+            report.append(" 伤害").append(Math.round(appliedDamage)).append(" 击毁").append(kills)
+                    .append(" 剩余攻击额度").append(Math.round(100 * remainingActions / totalActions)).append("%\n");
+
+            // --- 绝地反击 (Counterattack) ---
+            // 调整为在第 3, 6, 9... 回合 (officerActive) 触发反击，反击伤害为剩余兵力总伤害的 10%/级 (满级 50%)
+            if (officerActive && !isCounter && foeCtx != null && remainingTarget > 0 && myArmy.getOrDefault(unitId, 0) > 0) {
+                double counterRate = skillBonus(foeCtx.skills, "counter");
+                if (counterRate > 0 && baseAttack(target, unitId) > 0) {
+                    int targetRange = effectiveRange(target, foeCtx);
+                    int dist = getUnitDistToFoe(side, unitId, target, minePos, enemyPos, initialDist);
+                    if (dist <= targetRange) {
+                        Side foeSide = (side == Side.MINE ? Side.ENEMY : Side.MINE);
+                        double cAtkBonus = attackBonus(tU.cat(), foeCtx.tech, foeCtx.skills, foeCtx.commanderMil, officerActive);
+                        if (actCtx != null) cAtkBonus *= 1 - skillBonus(actCtx.skills, "suppress");
+                        double cPierce = skillBonus(foeCtx.skills, "pierce");
+                        double cDef = actCtx == null ? u.def()
+                                : effDef(unitId, actCtx.tech, actCtx.skills, actCtx.commanderDef,
+                                myWallLevel, officerActive, foeSide == Side.MINE);
+                        cDef = Math.max(0, cDef * (1 - cPierce));
+                        double cCm = counterMul(target, unitId);
+                        double cBaseAtk = baseAttack(target, unitId) * cAtkBonus;
+                        double cDamagePerAction = cBaseAtk * cCm * 100.0 / (100.0 + 5 * cDef);
+                        double cHpPer = Math.max(1, actCtx == null ? u.hp() : effHp(unitId, actCtx.tech));
+                        int cBeforeKill = myArmy.getOrDefault(unitId, 0);
+                        double cTotalDamage = remainingTarget * cDamagePerAction * counterRate;
+                        double cAppliedDamage = Math.min(cTotalDamage, cHpPer * cBeforeKill);
+                        int cKills;
+                        if (cTotalDamage + 1e-9 >= cHpPer * cBeforeKill) {
+                            cKills = cBeforeKill;
+                        } else {
+                            cKills = (int) Math.floor(cAppliedDamage / cHpPer);
+                            double cFrac = cAppliedDamage / cHpPer - cKills;
+                            if (cFrac > 0 && random.getAsDouble() < cFrac) cKills++;
+                        }
+                        myArmy.put(unitId, cBeforeKill - cKills);
+
+                        String foeSidePrefix = foeSide == Side.MINE ? "我方" : "敌方";
+                        String mySidePrefix = side == Side.MINE ? "我" : "敌";
+                        report.append(foeSidePrefix).append(tU.name()).append("(").append(remainingTarget).append(")")
+                                .append(" [绝地反击] ").append(mySidePrefix).append(u.name()).append("(").append(cBeforeKill).append(")");
+                        List<String> cTags = new ArrayList<>();
+                        if (cCm > 1.0001) cTags.add("倍率×" + cCm + " 相克");
+                        else if (cCm < 0.9999) cTags.add("倍率×" + cCm + " 火力受限");
+                        if (cPierce > 0) cTags.add("破甲" + percent(cPierce) + "%");
+                        if (!cTags.isEmpty()) {
+                            report.append(" [").append(String.join(" ", cTags)).append("]");
+                        }
+                        report.append(" 伤害").append(Math.round(cAppliedDamage)).append(" 击毁").append(cKills).append("\n");
+
+                        // 若发起攻击的单位被反击全歼，则无法继续攻击其他目标
+                        if (myArmy.getOrDefault(unitId, 0) <= 0) {
+                            break;
+                        }
+                    }
+                }
+            }
 
             firstTarget = false;
-            target = remainingDamage > 0 ? pickTargetInRange(unitId, side, foeArmy, minePos, enemyPos, initialDist) : null;
+            target = remainingActions > 1e-9
+                    ? pickCombatTarget(unitId, side, foeArmy, minePos, enemyPos, initialDist, actCtx, null) : null;
         }
-
-        return false;
     }
 
     /**
-     * 兼容重载: 单个距离参数版本的 simAct (用于单元测试直接反射调用等)。
+     * 兼容反射调用: 单个距离参数版本的 simAct
      */
     private int simAct(String unitId,
                        Map<String, Integer> myArmy,
@@ -574,46 +972,88 @@ public class BattleService {
         return minDistanceToLivingFoe(side, unitId, foeArmy, minePos, enemyPos, initialDist);
     }
 
+    /**
+     * 兼容反射调用: 完整坐标参数版本的 simAct
+     */
+    private boolean simAct(String unitId,
+                           Map<String, Integer> myArmy,
+                           Map<String, Integer> foeArmy,
+                           Map<String, Integer> minePos,
+                           Map<String, Integer> enemyPos,
+                           int initialDist,
+                           StringBuilder report,
+                           Side side,
+                           TechCtx actCtx,
+                           TechCtx foeCtx,
+                           int foeWallLevel,
+                           boolean officerActive) {
+        UnitStats u = getStats(unitId);
+        if (u == null) return false;
+        int count = myArmy.getOrDefault(unitId, 0);
+        if (count <= 0) return false;
+
+        String target = pickCombatTarget(unitId, side, foeArmy, minePos, enemyPos, initialDist, actCtx, null);
+        if (target == null) {
+            int minDist = minDistanceToLivingFoe(side, unitId, foeArmy, minePos, enemyPos, initialDist);
+            if (minDist == Integer.MAX_VALUE) return false;
+            if (!u.autoAdvance()) return false;
+            double spd = actCtx != null ? effSpd(unitId, actCtx.tech, actCtx.skills) : u.spd();
+            int step = Math.min((int) (spd * 50), Math.max(0, minDist - effectiveRange(unitId, actCtx)));
+            if (step <= 0) return false;
+            if (side == Side.MINE) {
+                minePos.put(unitId, minePos.getOrDefault(unitId, 0) + step);
+            } else {
+                enemyPos.put(unitId, enemyPos.getOrDefault(unitId, initialDist) - step);
+            }
+            int newDist = minDist - step;
+            String sidePrefix = side == Side.MINE ? "我方" : "敌方";
+            report.append(sidePrefix).append(u.name()).append("(").append(count)
+                    .append(") 前进 ").append(step).append(" 距离->").append(newDist).append("\n");
+            return true;
+        }
+
+        fireUnitCombat(unitId, myArmy, foeArmy, minePos, enemyPos, initialDist, report, side, actCtx, foeCtx, foeWallLevel, officerActive, null);
+        return false;
+    }
+
     // ========================================================================
     // 有效属性计算 (对应 JS effAtk / effDef / effHp / effSpd)
     // ========================================================================
 
-    /**
-     * 有效攻击力 - 对应 JS effAtk(id)
-     * <p>
-     * 军官生效时: base * atkMul(cat) * (1 + frenzy) * (1 - suppress)
-     * 否则: base
-     */
+    /** 概览战力使用对部队的最高攻击；攻坚单独定标，不用于提升经验与概览战力。 */
     private double effAtk(String unitId, Map<String, Integer> tech, Map<String, Integer> skills,
                           int commanderMil, boolean officerActive) {
         UnitStats u = getStats(unitId);
         if (u == null) return 0;
-        double base = u.atk();
-        if (!officerActive) return base;
-        double mul = atkMul(u.cat(), tech, commanderMil);
-        double frenzy = skillBonus(skills, "frenzy");
-        double suppress = skillBonus(skills, "suppress");
-        mul *= (1 + frenzy);
-        mul *= (1 - suppress);
-        return base * mul;
+        return u.peakTroopAttack() * attackBonus(u.cat(), tech, skills, commanderMil, officerActive);
     }
 
-    /**
-     * 有效防御力 - 对应 JS effDef(id, isMine)
-     * <p>
-     * 军官生效且 isMine 时: base * defMul(cat, isMine) * (1 + bulwark)
-     * 否则: base
-     */
+    /** 加成对四项攻击采用同一规则；弱项火力也按自身面板增益，不能借用主武器攻击。 */
+    private double attackBonus(String cat, Map<String, Integer> tech, Map<String, Integer> skills,
+                               int commanderMil, boolean officerActive) {
+        double multiplier = atkMul(cat, tech, officerActive ? commanderMil : 0);
+        return officerActive ? multiplier * (1 + skillBonus(skills, "frenzy")) : multiplier;
+    }
+
+    private double baseAttack(String attacker, String target) {
+        UnitStats stats = getStats(attacker);
+        if (stats == null) return 0;
+        return switch (BattleRules.domain(target)) {
+            case "air" -> stats.atkAir();
+            case "sea" -> stats.atkSea();
+            case "fort" -> stats.atkFort();
+            default -> stats.atkGround();
+        };
+    }
+
+    /** 防御科技双方常驻，城墙只加守城方；防御属性和铁壁在军官回合生效。 */
     private double effDef(String unitId, Map<String, Integer> tech, Map<String, Integer> skills,
-                          int commanderMil, int wallLevel, boolean officerActive, boolean isMine) {
+                          int commanderDef, int wallLevel, boolean officerActive, boolean defendingCity) {
         UnitStats u = getStats(unitId);
         if (u == null) return 1;
-        double base = u.def();
-        if (!officerActive || !isMine) return base;
-        double mul = defMul(u.cat(), tech, wallLevel, isMine);
-        double bulwark = skillBonus(skills, "bulwark");
-        mul *= (1 + bulwark);
-        return base * mul;
+        double multiplier = defMul(u.cat(), tech, wallLevel, defendingCity, officerActive ? commanderDef : 0);
+        if (officerActive) multiplier *= 1 + skillBonus(skills, "bulwark");
+        return u.def() * multiplier;
     }
 
     /**
@@ -658,12 +1098,19 @@ public class BattleService {
     /**
      * 防御倍率 - 对应 JS Core.defMul(cat, isMine)
      * <p>
-     * (1 + 0.05*defense_tech) * wallMul
+     * (1 + 0.05*defense_tech) * (1 + cmdDef/100) * wallMul
      * wallMul = (isMine && cat != 'air') ? (1 + 0.05*wall) : 1
      */
     private double defMul(String cat, Map<String, Integer> tech, int wallLevel, boolean isMine) {
+        return defMul(cat, tech, wallLevel, isMine, 0);
+    }
+
+    private double defMul(String cat, Map<String, Integer> tech, int wallLevel, boolean isMine, int commanderDef) {
         int cmdDefense = tech.getOrDefault("defense_tech", 0);
         double allMul = 1 + 0.05 * cmdDefense;
+        if (commanderDef > 0) {
+            allMul *= (1 + commanderDef / 100.0);
+        }
         double catMul = 1;
         double wallMul = (isMine && !"air".equals(cat)) ? (1 + 0.05 * wallLevel) : 1;
         return allMul * catMul * wallMul;
@@ -711,8 +1158,12 @@ public class BattleService {
         if (skills == null) return 0;
         int lv = skills.getOrDefault(skillId, 0);
         if (lv <= 0) return 0;
+        if ("counter".equals(skillId)) {
+            // 方案 A+：初始 20% 概率，每级 +8%，满级 52%
+            return 0.12 + 0.08 * Math.min(5, lv);
+        }
         double rate = SKILL_RATES.getOrDefault(skillId, 0.0);
-        return rate * lv;
+        return rate * Math.min(5, lv);
     }
 
     private String buildCommanderBonusLog(String sideName, TechCtx ctx, boolean officerActive, boolean isAttacker) {
@@ -721,12 +1172,13 @@ public class BattleService {
             if (ctx.commanderMil > 0) {
                 bonuses.add("军事属性 +" + ctx.commanderMil + "%攻击");
             }
-            appendSkillBonus(bonuses, ctx.skills, "frenzy", "猛攻", "+", "攻击");
-            appendSkillBonus(bonuses, ctx.skills, "suppress", "压制", "-", "攻击");
-            if (isAttacker) {
-                appendSkillBonus(bonuses, ctx.skills, "bulwark", "铁壁", "+", "防御");
+            if (ctx.commanderDef > 0) {
+                bonuses.add("防御属性 +" + ctx.commanderDef + "%防御");
             }
-            appendSkillBonus(bonuses, ctx.skills, "blitz", "闪电战", "+", "速度（持续生效）");
+            appendSkillBonus(bonuses, ctx.skills, "frenzy", "全力猛攻", "+", "攻击");
+            appendSkillBonus(bonuses, ctx.skills, "suppress", "火力压制", "-", "敌方攻击");
+            appendSkillBonus(bonuses, ctx.skills, "bulwark", "铜墙铁壁", "+", "防御");
+            appendSkillBonus(bonuses, ctx.skills, "blitz", "闪电突击", "+", "速度（持续生效）");
             return sideName + "将领加成：" + (bonuses.isEmpty() ? "本回合无将领属性或技能加成生效" : String.join("；", bonuses));
         }
 
@@ -751,7 +1203,11 @@ public class BattleService {
     private enum Side { MINE, ENEMY }
 
     /** 科技/技能上下文 */
-    private record TechCtx(Map<String, Integer> tech, Map<String, Integer> skills, int commanderMil) {}
+    public record TechCtx(Map<String, Integer> tech, Map<String, Integer> skills, int commanderMil, int commanderDef) {
+        public TechCtx(Map<String, Integer> tech, Map<String, Integer> skills, int commanderMil) {
+            this(tech, skills, commanderMil, 0);
+        }
+    }
 
     /** 行动序列条目 */
     private record ActionEntry(Side side, String id, int range, double spd) {}
@@ -762,7 +1218,7 @@ public class BattleService {
      * 按射程降序、速度降序排序
      */
     private List<ActionEntry> buildOrder(Map<String, Integer> mine, Map<String, Integer> enemy,
-                                         TechCtx mineCtx, TechCtx foeCtx) {
+                                         TechCtx mineCtx, TechCtx foeCtx, int round) {
         List<ActionEntry> arr = new ArrayList<>();
 
         for (Map.Entry<String, Integer> e : mine.entrySet()) {
@@ -772,7 +1228,7 @@ public class BattleService {
             double spd = mineCtx != null
                     ? effSpd(e.getKey(), mineCtx.tech, mineCtx.skills)
                     : u.spd();
-            arr.add(new ActionEntry(Side.MINE, e.getKey(), u.range(), spd));
+            arr.add(new ActionEntry(Side.MINE, e.getKey(), effectiveRange(e.getKey(), mineCtx), spd));
         }
         for (Map.Entry<String, Integer> e : enemy.entrySet()) {
             if (e.getValue() == null || e.getValue() <= 0) continue;
@@ -781,51 +1237,24 @@ public class BattleService {
             double spd = foeCtx != null
                     ? effSpd(e.getKey(), foeCtx.tech, foeCtx.skills)
                     : u.spd();
-            arr.add(new ActionEntry(Side.ENEMY, e.getKey(), u.range(), spd));
+            arr.add(new ActionEntry(Side.ENEMY, e.getKey(), effectiveRange(e.getKey(), foeCtx), spd));
         }
 
         // 排序: 射程降序, 速度降序 - 对应 JS arr.sort
         arr.sort((a, b) -> {
             if (b.range != a.range) return b.range - a.range;
-            return Double.compare(b.spd, a.spd);
+            int speedOrder = Double.compare(b.spd, a.spd);
+            if (speedOrder != 0) return speedOrder;
+            // 同射程同速度轮换先手；同侧按 ID 排序，结果不依赖 Map 的遍历顺序。
+            if (a.side != b.side) return a.side == (round % 2 == 1 ? Side.MINE : Side.ENEMY) ? -1 : 1;
+            return a.id.compareTo(b.id);
         });
         return arr;
     }
 
-    /**
-     * 选择攻击目标 - 对应 JS Battle.pickTarget
-     * <p>
-     * 1. 如果攻击者有 strongVs 且目标存在: 优先攻击相克目标
-     * 2. 否则: 攻击 HP 最低的单位
-     */
-    private String pickTarget(String attackerId, Map<String, Integer> foeArmy) {
-        UnitStats u = getStats(attackerId);
-        if (u != null && u.strongVs() != null && foeArmy.getOrDefault(u.strongVs(), 0) > 0) {
-            return u.strongVs();
-        }
-        String best = null;
-        int bestHp = Integer.MAX_VALUE;
-        for (Map.Entry<String, Integer> e : foeArmy.entrySet()) {
-            if (e.getValue() == null || e.getValue() <= 0) continue;
-            UnitStats fu = getStats(e.getKey());
-            if (fu == null) continue;
-            if (fu.hp() < bestHp) {
-                best = e.getKey();
-                bestHp = fu.hp();
-            }
-        }
-        return best;
-    }
-
-    /**
-     * 相克倍率 - 对应 JS counterMul
-     * <p>
-     * strongVs 匹配时 1.5, 否则 1.0
-     */
+    /** 具体兵种/目标类别决定倍率，旧 strongVs 只保留为代表性克制标签。 */
     private double counterMul(String attackerId, String defenderId) {
-        UnitStats u = getStats(attackerId);
-        if (u != null && u.strongVs() != null && u.strongVs().equals(defenderId)) return 1.5;
-        return 1.0;
+        return BattleRules.multiplier(attackerId, defenderId);
     }
 
     /**
@@ -836,7 +1265,7 @@ public class BattleService {
     private int unitExpValue(String unitId) {
         UnitStats u = getStats(unitId);
         if (u == null) return 1;
-        return (int) Math.floor((u.hp() + u.atk() * 3 + u.def() * 2) / 10.0) + 1;
+        return (int) Math.floor((u.hp() + u.peakTroopAttack() * 3 + u.def() * 2) / 10.0) + 1;
     }
 
     /**
@@ -887,52 +1316,65 @@ public class BattleService {
     }
 
     /**
-     * 计算指定单位到敌方当前所有存活单位的最近距离。
+     * 仅向能够攻击的目标靠近；没有目标时返回 MAX_VALUE，避免被近处的无效目标卡住。
      */
     private int minDistanceToLivingFoe(Side side, String myUnitId, Map<String, Integer> foeArmy,
                                        Map<String, Integer> minePos, Map<String, Integer> enemyPos, int initialDist) {
         int minDist = Integer.MAX_VALUE;
         for (Map.Entry<String, Integer> e : foeArmy.entrySet()) {
             if (e.getValue() == null || e.getValue() <= 0) continue;
+            if (baseAttack(myUnitId, e.getKey()) <= 0) continue;
             int d = getUnitDistToFoe(side, myUnitId, e.getKey(), minePos, enemyPos, initialDist);
             if (d < minDist) minDist = d;
         }
-        return minDist == Integer.MAX_VALUE ? 0 : minDist;
+        return minDist;
+    }
+
+    /** 开局前置机制已取消，所有单位开局均从阵地底线出发 (攻方0 / 守方initialDist)。 */
+    private int formationOffset(String id) {
+        return 0;
+    }
+
+    private int effectiveRange(String id, TechCtx ctx) {
+        UnitStats u = getStats(id);
+        return u == null ? 0 : (int) Math.floor(u.range()
+                * (1 + 0.05 * (ctx == null ? 0 : ctx.tech.getOrDefault("weapon_range", 0))));
     }
 
     /**
-     * 在射程内选择攻击目标:
-     * 1. 优先选择相克目标 (strongVs, 且必须在射程内且存活)
-     * 2. 否则在射程内的敌方存活单位中选择 HP 最低的单位 (HP 相同选距离最近的)
-     * 3. 若射程内无任何敌军，返回 null
+     * 先过滤攻击能力、射程与重坦掩护，再按领域攻击×专项倍率选择有利目标，其次距离、生命和 ID。
+     * 重坦只能掩护位于其后方的地面单位，不能替空军/舰船挡弹；特种兵可渗透后排。
      */
     private String pickTargetInRange(String attackerId, Side side, Map<String, Integer> foeArmy,
-                                     Map<String, Integer> minePos, Map<String, Integer> enemyPos, int initialDist) {
-        UnitStats u = getStats(attackerId);
-        if (u == null) return null;
-        int range = u.range();
-
-        if (u.strongVs() != null && foeArmy.getOrDefault(u.strongVs(), 0) > 0) {
-            int d = getUnitDistToFoe(side, attackerId, u.strongVs(), minePos, enemyPos, initialDist);
-            if (d <= range) {
-                return u.strongVs();
-            }
-        }
-
+                                     Map<String, Integer> minePos, Map<String, Integer> enemyPos,
+                                     int initialDist, TechCtx ctx) {
+        int range = effectiveRange(attackerId, ctx);
+        int tankDistance = foeArmy.getOrDefault("htank", 0) > 0
+                ? getUnitDistToFoe(side, attackerId, "htank", minePos, enemyPos, initialDist)
+                : Integer.MAX_VALUE;
         String best = null;
-        int bestHp = Integer.MAX_VALUE;
-        int bestDist = Integer.MAX_VALUE;
-        for (Map.Entry<String, Integer> e : foeArmy.entrySet()) {
-            if (e.getValue() == null || e.getValue() <= 0) continue;
-            int d = getUnitDistToFoe(side, attackerId, e.getKey(), minePos, enemyPos, initialDist);
-            if (d <= range) {
-                UnitStats fu = getStats(e.getKey());
-                if (fu == null) continue;
-                if (fu.hp() < bestHp || (fu.hp() == bestHp && d < bestDist)) {
-                    best = e.getKey();
-                    bestHp = fu.hp();
-                    bestDist = d;
-                }
+        double bestMultiplier = -1;
+        int bestDistance = Integer.MAX_VALUE;
+        double bestHp = Double.MAX_VALUE;
+        for (Map.Entry<String, Integer> entry : foeArmy.entrySet()) {
+            String id = entry.getKey();
+            UnitStats target = getStats(id);
+            if (target == null || entry.getValue() == null || entry.getValue() <= 0) continue;
+            if (baseAttack(attackerId, id) <= 0) continue;
+            int distance = getUnitDistToFoe(side, attackerId, id, minePos, enemyPos, initialDist);
+            if (distance > range) continue;
+            if (!"special".equals(attackerId) && !"htank".equals(id) && BattleRules.ground(id)
+                    && tankDistance <= distance && tankDistance <= range) continue;
+            double multiplier = baseAttack(attackerId, id) * counterMul(attackerId, id);
+            if (multiplier > bestMultiplier
+                    || (multiplier == bestMultiplier && distance < bestDistance)
+                    || (multiplier == bestMultiplier && distance == bestDistance && target.hp() < bestHp)
+                    || (multiplier == bestMultiplier && distance == bestDistance && target.hp() == bestHp
+                    && (best == null || id.compareTo(best) < 0))) {
+                best = id;
+                bestMultiplier = multiplier;
+                bestDistance = distance;
+                bestHp = target.hp();
             }
         }
         return best;
@@ -1002,7 +1444,7 @@ public class BattleService {
             case "truck" -> "碾压";
             case "armored" -> "扫射";
             case "ltank", "htank", "destroyer", "howitzer" -> "炮击";
-            case "assault" -> "远轰";
+            case "assault" -> "拦射";
             case "rocket" -> "齐射";
             case "scout" -> "侦察";
             case "special" -> "突袭";

@@ -1,0 +1,10 @@
+Use case: product-mockup
+Asset type: square unit icon sample for a historically grounded WWII strategy game.
+Primary request: a photorealistic macro product photograph of a museum-grade physical scale model. Convincing miniature materials and accurate engineering, absolutely not a vector icon, flat drawing, cartoon, low-poly toy or illustration.
+Scene/backdrop: seamless neutral charcoal studio background, subtly lighter behind the subject, no scenery, no text, no badge, no UI frame.
+Composition/framing: one complete miniature centered, three-quarter view from above, its long axis diagonally across the square, front toward lower left, fill 85 percent of the frame with safe margins around all extremities. Focus stacking, entire model sharply in focus, no tilt-shift blur. Distinct silhouette readable when reduced to 40px.
+Lighting/mood: large softbox upper left, restrained rim light, realistic ambient occlusion and contact shadows. Sober military museum photography.
+Materials/textures: physically realistic painted metal, restrained paint wear at edges, fine panel seams, precise subtle weathering; no exaggerated rust, no glossy plastic, no thick outlines, no saturation boost.
+Constraints: historically plausible WWII equipment, no modern weapons, no fantasy embellishments, no watermark, no labels, no decorative border. One object only.
+
+Subject: a Soviet IS-2 model 1944 heavy tank 1:35 museum scale model. Correct low cast rounded turret, very long 122 mm D-25T cannon with prominent double-baffle muzzle brake, sloped front hull, wide steel tracks, SIX large road wheels per side. Olive 4BO green paint with light edge wear, cast armor texture, weld beads, hatch and engine-deck detail. Tank and gun both point toward lower left, full barrel remains inside frame. Tracks rest directly on charcoal studio surface; no toy display stand, no earth diorama. Must be an IS-2, not a T-34, KV-2 or modern tank.

@@ -1,51 +1,44 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
   <defs>
-    <!-- Light Tank Camo (Sandy Khaki / Olive Green) -->
-    <linearGradient id="ltankBody" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#84966e"/>
-      <stop offset="60%" stop-color="#5f714b"/>
-      <stop offset="100%" stop-color="#425032"/>
+    <radialGradient id="bgGlow_lt" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#090d16"/>
+    </radialGradient>
+    <linearGradient id="armorGreen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#657b53"/>
+      <stop offset="50%" stop-color="#4e5f3e"/>
+      <stop offset="100%" stop-color="#323e27"/>
     </linearGradient>
-    <linearGradient id="ltankTracks" x1="0%" y1="0%" x2="0%" y2="100%">
+    <linearGradient id="steelTread" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0%" stop-color="#475569"/>
+      <stop offset="50%" stop-color="#1e293b"/>
       <stop offset="100%" stop-color="#0f172a"/>
     </linearGradient>
   </defs>
+  <rect width="128" height="128" rx="20" fill="url(#bgGlow_lt)"/>
+  <rect x="2" y="2" width="124" height="124" rx="19" fill="none" stroke="#334155" stroke-width="1.5" opacity="0.6"/>
+  <ellipse cx="64" cy="112" rx="54" ry="8" fill="#000" opacity="0.7"/>
 
-  <!-- Gun Barrel (Agile, High-Velocity 37mm-50mm) -->
-  <rect x="2" y="11.5" width="10" height="1.2" fill="#334155" stroke="#0f172a" stroke-width="0.4"/>
-  <!-- Mantlet -->
-  <ellipse cx="12" cy="12" rx="2" ry="2.2" fill="#425032" stroke="#1f2717" stroke-width="0.5"/>
+  <!-- Treads & Suspension -->
+  <path d="M14 90 C14 80 22 78 32 78 L98 78 C108 78 116 82 116 92 C116 102 106 104 96 104 L30 104 C18 104 14 98 14 90 Z" fill="url(#steelTread)" stroke="#0f172a" stroke-width="2"/>
+  <circle cx="34" cy="92" r="10" fill="#334155" stroke="#0f172a" stroke-width="2"/>
+  <circle cx="54" cy="92" r="10" fill="#334155" stroke="#0f172a" stroke-width="2"/>
+  <circle cx="74" cy="92" r="10" fill="#334155" stroke="#0f172a" stroke-width="2"/>
+  <circle cx="94" cy="92" r="10" fill="#334155" stroke="#0f172a" stroke-width="2"/>
 
-  <!-- Turret (Compact, Angular) -->
-  <path d="M11 11.5 L13 8.5 C14 8 19 8 21 8.5 L22 11.5 L21 14.5 L12 14.5 Z" 
-        fill="url(#ltankBody)" stroke="#1f2717" stroke-width="0.6"/>
-  <!-- Hatch -->
-  <rect x="15" y="7" width="3.5" height="1.4" rx="0.5" fill="#5f714b" stroke="#1f2717" stroke-width="0.4"/>
+  <!-- Hull -->
+  <polygon points="18,78 28,52 96,52 106,78" fill="url(#armorGreen)" stroke="#1a2214" stroke-width="2"/>
+  <circle cx="36" cy="65" r="4" fill="#1e293b"/>
+  <line x1="28" y1="65" x2="36" y2="65" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round"/>
 
-  <!-- Antenna -->
-  <line x1="20" y1="8" x2="23" y2="3.5" stroke="#1f2717" stroke-width="0.6"/>
+  <!-- Turret & Gun -->
+  <path d="M46 52 L52 32 L84 32 L92 52 Z" fill="url(#armorGreen)" stroke="#1a2214" stroke-width="2"/>
+  <rect x="40" y="37" width="13" height="12" rx="2" fill="#3b4830" stroke="#1a2214" stroke-width="1.5"/>
+  <line x1="6" y1="43" x2="42" y2="43" stroke="#1a2214" stroke-width="5" stroke-linecap="round"/>
+  <line x1="8" y1="43" x2="41" y2="43" stroke="#556b43" stroke-width="2.8" stroke-linecap="round"/>
 
-  <!-- Upper Hull & Sloped Armor -->
-  <polygon points="6,14.5 24,14.5 27,18.5 4,18.5" fill="url(#ltankBody)" stroke="#1f2717" stroke-width="0.6"/>
-  <polygon points="4,18.5 6,14.5 11,14.5 8,18.5" fill="#a3b78c" opacity="0.4"/>
-
-  <!-- Caterpillar Tracks (Agile light tread) -->
-  <path d="M5 19.5 L25 19.5 C27 19.5 28.5 21 28.5 23.5 C28.5 26 27 27.5 25 27.5 L5 27.5 C3 27.5 1.5 26 1.5 23.5 C1.5 21 3 19.5 5 19.5 Z" 
-        fill="url(#ltankTracks)" stroke="#000" stroke-width="0.7"/>
-  <path d="M5.5 20.5 L24.5 20.5 C26 20.5 27 21.5 27 23.5 C27 25.5 26 26.5 24.5 26.5 L5.5 26.5 C4 26.5 3 25.5 3 23.5 C3 21.5 4 20.5 5.5 20.5 Z" 
-        fill="#1e293b"/>
-
-  <!-- 4 Road Wheels (Classic Light Tank Bogies) -->
-  <circle cx="6.5" cy="23.5" r="2.4" fill="#64748b" stroke="#0f172a" stroke-width="0.5"/>
-  <circle cx="6.5" cy="23.5" r="0.8" fill="#cbd5e1"/>
-
-  <circle cx="12" cy="23.5" r="2.4" fill="#64748b" stroke="#0f172a" stroke-width="0.5"/>
-  <circle cx="12" cy="23.5" r="0.8" fill="#cbd5e1"/>
-
-  <circle cx="17.5" cy="23.5" r="2.4" fill="#64748b" stroke="#0f172a" stroke-width="0.5"/>
-  <circle cx="17.5" cy="23.5" r="0.8" fill="#cbd5e1"/>
-
-  <circle cx="23" cy="23.5" r="2.4" fill="#64748b" stroke="#0f172a" stroke-width="0.5"/>
-  <circle cx="23" cy="23.5" r="0.8" fill="#cbd5e1"/>
+  <!-- Commander Cupola & AA MG -->
+  <ellipse cx="76" cy="32" rx="9" ry="3.5" fill="#3b4830" stroke="#1a2214" stroke-width="1"/>
+  <line x1="66" y1="22" x2="80" y2="29" stroke="#0f172a" stroke-width="3" stroke-linecap="round"/>
+  <path d="M68 62 L70 67 L75 67 L71 70 L73 75 L68 72 L63 75 L65 70 L61 67 L66 67 Z" fill="#f8fafc" opacity="0.9"/>
 </svg>
