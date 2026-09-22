@@ -76,7 +76,14 @@ public class GameDtos {
     /** 战术战斗中每个己方兵种本回合的机动与可选集火目标。 */
     public record BattleUnitOrderRequest(String action, String focusTarget) {}
 
-    public record BattleCommandRequest(Map<String, BattleUnitOrderRequest> orders) {}
+    /**
+     * round 是客户端读取战场时的回合号，用于拒绝已经被自动结算推进的过期指令。
+     */
+    public record BattleCommandRequest(Map<String, BattleUnitOrderRequest> orders, Integer round) {
+        public BattleCommandRequest(Map<String, BattleUnitOrderRequest> orders) {
+            this(orders, null);
+        }
+    }
 
     public record ReseedRequest(Integer count, Integer centerX, Integer centerY, Integer radius) {}
 

@@ -460,7 +460,12 @@ window.Game = window.Game || {};
     },
 
     startIncomingBattle: function (idx) {
-      G.toast('战斗由后端自动处理');
+      var incoming = Core.state && Core.state.world && Core.state.world.incoming && Core.state.world.incoming[idx];
+      if (!incoming || !incoming.marchId) {
+        G.toast('该来袭记录不支持战术指挥');
+        return;
+      }
+      G.Battle.openTactical(incoming.marchId);
     },
 
     declareWar: function (kind, idx) {
@@ -677,6 +682,28 @@ window.Game = window.Game || {};
       return sec;
     },
 
+    /**
+     * 计算出征所需的石油。
+     * 出征不再受粮食限制，只有按路线距离和预扣趟数计算的油耗会影响能否出发。
+     * @param {Object} army - 按兵种键聚合的出征数量。
+     * @param {number} distance - 单程路线格数。
+     * @param {number} legs - 需要预扣的行军趟数。
+     * @returns {number} 预扣的石油总量。
+     */
+    calcDispatchFuel: function (army, distance, legs) {
+      var oil = 0;
+      var routeDistance = Math.max(0, Number(distance) || 0);
+      var routeLegs = Math.max(1, Number(legs) || 1);
+      for (var uid in army || {}) {
+        var count = Math.max(0, Number(army[uid]) || 0);
+        var unit = D.units[uid];
+        if (!unit || count <= 0) continue;
+        oil += count * (Number(unit.marchOil) || 0) * routeDistance / 100;
+      }
+      // 按整支部队汇总后向上取整，避免零散兵力的油耗被舍弃。
+      return Math.ceil(oil * routeLegs);
+    },
+
     fmtDuration: function (sec) {
       if (sec == null) return '--';
       var s = Math.max(0, Math.round(sec));
@@ -725,17 +752,32 @@ window.Game = window.Game || {};
       this.updateDispatchStats();
     },
 
+    /**
+     * 刷新出征编队的兵力、负重、行军时间与补给预估。
+     * @returns {void}
+     */
     updateDispatchStats: function () {
       if (typeof document === 'undefined' || !document.getElementById) return;
       var s = Core.state;
       var dt = s && s.world && s.world._dispatchTarget;
       var currentArmy = {};
+      var selectedTroops = 0;
       for (var k in D.units) {
         var input = document.getElementById('dqty_' + k);
         if (input) {
           var n = parseInt(input.value, 10) || 0;
-          if (n > 0) currentArmy[k] = n;
+          if (n > 0) {
+            currentArmy[k] = n;
+            selectedTroops += n;
+          }
         }
+      }
+
+      var armyCap = typeof Core.armyCap === 'function' ? Math.max(0, Number(Core.armyCap()) || 0) : 0;
+      var troopCountEl = document.getElementById('estDispatchTroops');
+      if (troopCountEl) {
+        troopCountEl.textContent = G.fmt(selectedTroops) + ' / ' + G.fmt(armyCap);
+        troopCountEl.style.color = selectedTroops > armyCap ? 'var(--danger, #c53030)' : '';
       }
 
       // 1. 更新负重
@@ -770,6 +812,8 @@ window.Game = window.Game || {};
       var timeRoundEl = document.getElementById('estMarchTimeRound');
       var speedTipEl = document.getElementById('estMarchSpeedTip');
       var boostTagEl = document.getElementById('estMarchBoostTag');
+      var supplyOilEl = document.getElementById('estSupplyOil');
+      var supplyLegEl = document.getElementById('estSupplyLeg');
 
       if (distEl) distEl.textContent = marchDist + ' 格';
 
@@ -781,12 +825,17 @@ window.Game = window.Game || {};
         if (speedEl) speedEl.textContent = '--';
         if (timeOneWayEl) timeOneWayEl.textContent = '请选择出征部队';
         if (timeRoundEl) timeRoundEl.textContent = '--';
+        if (supplyOilEl) supplyOilEl.textContent = '--';
+        if (supplyLegEl) supplyLegEl.textContent = '请选择部队后计算补给';
         if (speedTipEl) speedTipEl.textContent = '未选择出征兵力，暂无法计算行军时间与全军移速';
         return;
       }
 
       var sec = this.calcDispatchMarchTime(marchDist, speedRes.slowestSpd, speedMul);
       var roundSec = sec * 2;
+      var isStation = dt && dt.action === 'station';
+      var supplyLegs = isStation ? 1 : 2;
+      var fuel = this.calcDispatchFuel(currentArmy, marchDist, supplyLegs);
 
       var effSpdStr = speedRes.slowestSpd.toFixed(1);
       if (effSpdStr.endsWith('.0')) effSpdStr = effSpdStr.slice(0, -2);
@@ -797,8 +846,10 @@ window.Game = window.Game || {};
         timeOneWayEl.textContent = this.fmtDuration(sec);
       }
       if (timeRoundEl) {
-        timeRoundEl.textContent = this.fmtDuration(roundSec);
+        timeRoundEl.textContent = isStation ? '驻防不返程' : this.fmtDuration(roundSec);
       }
+      if (supplyOilEl) supplyOilEl.textContent = G.fmt(fuel);
+      if (supplyLegEl) supplyLegEl.textContent = isStation ? '预扣单程补给（进驻）' : '预扣往返补给（返程已备）';
 
       if (speedTipEl) {
         var slowestUnit = speedRes.units.find(function(u) { return u.uid === speedRes.slowestUnitId; });
@@ -827,6 +878,10 @@ window.Game = window.Game || {};
       G.go('world');
     },
 
+    /**
+     * 校验当前编队并提交出征请求。
+     * @returns {void}
+     */
     launchDispatch: function () {
       var s = Core.state;
       var dt = s.world._dispatchTarget;
@@ -857,6 +912,16 @@ window.Game = window.Game || {};
         }
       }
       if (!hasUnits) { G.toast('请至少选择一种兵种出征'); return; }
+
+      var selectedTroops = Object.values(customArmy).reduce(function (total, count) { return total + count; }, 0);
+      var hasArmyCap = typeof Core.armyCap === 'function';
+      var armyCap = hasArmyCap ? Math.max(0, Number(Core.armyCap()) || 0) : 0;
+      var format = typeof G.fmt === 'function' ? G.fmt : String;
+      // 前端提前反馈，后端仍会在扣除资源与兵力前复核，防止绕过界面请求。
+      if (hasArmyCap && selectedTroops > armyCap) {
+        G.toast('出征兵力超过带兵上限 ' + format(armyCap) + '（当前选择 ' + format(selectedTroops) + '）');
+        return;
+      }
 
       var commEl = document.querySelector('input[name="dpOfficer"]:checked');
       var commanderId = null;
@@ -1023,6 +1088,7 @@ window.Game = window.Game || {};
         hasAny = true;
         var u = D.units[uid];
         var isLogi = u.logistic ? ' (辎重' + u.load + '/辆)' : '';
+        var supplyBadge = ' <span class="dispatch-unit-supply" title="每100格油耗 ' + (u.marchOil || 0) + '">油耗 ' + (u.marchOil || 0) + '</span>';
         var techMul = (typeof Core !== 'undefined' && Core.spdMul) ? Core.spdMul(u.cat) : 1;
         var techBonus = Math.round((techMul - 1) * 100);
         var effSpd = (u.spd * techMul).toFixed(1);
@@ -1042,7 +1108,7 @@ window.Game = window.Game || {};
           var base = name.indexOf('-') > 0 ? name.split('-')[0].trim() : name.replace(/[（(].*?[）)]/, '').trim();
           return code ? base + '(' + code + ')' : base;
         })(u.name));
-        h += '<span class="dispatch-unit-name" title="' + esc(u.name) + '">' + uName + isLogi + spdBadge + '</span>';
+        h += '<span class="dispatch-unit-name" title="' + esc(u.name) + '">' + uName + isLogi + spdBadge + supplyBadge + '</span>';
         h += '<span class="dispatch-unit-have">城内' + G.fmt(have) + '</span>';
         h += '</div>';
         h += '<div class="dispatch-unit-control">';
@@ -1068,6 +1134,10 @@ window.Game = window.Game || {};
       h += '      <span class="dispatch-stat-label">全军基准移速</span>';
       h += '      <strong class="dispatch-stat-val" id="estMarchSpeed">--</strong>';
       h += '    </div>';
+      h += '    <div class="dispatch-stat-item">';
+      h += '      <span class="dispatch-stat-label">出征兵力 / 带兵上限</span>';
+      h += '      <strong class="dispatch-stat-val" id="estDispatchTroops">' + G.fmt(Object.values(defaultArmy).reduce(function (total, count) { return total + count; }, 0)) + ' / ' + G.fmt(typeof Core.armyCap === 'function' ? Core.armyCap() : 0) + '</strong>';
+      h += '    </div>';
       h += '    <div class="dispatch-stat-item highlight">';
       h += '      <span class="dispatch-stat-label">预计单程耗时</span>';
       h += '      <strong class="dispatch-stat-val highlight" id="estMarchTimeOneWay">--</strong>';
@@ -1076,7 +1146,12 @@ window.Game = window.Game || {};
       h += '      <span class="dispatch-stat-label">预计往返总耗时</span>';
       h += '      <strong class="dispatch-stat-val" id="estMarchTimeRound">--</strong>';
       h += '    </div>';
+      h += '    <div class="dispatch-stat-item supply-oil">';
+      h += '      <span class="dispatch-stat-label">行军油耗</span>';
+      h += '      <strong class="dispatch-stat-val" id="estSupplyOil">--</strong>';
+      h += '    </div>';
       h += '  </div>';
+      h += '  <div class="dispatch-supply-note" id="estSupplyLeg">请选择部队后计算补给</div>';
       h += '  <div class="dispatch-stats-tip" id="estMarchSpeedTip">请配置出征兵力以计算行军时间</div>';
       if (!isScout) {
         h += '  <div class="dispatch-stats-footer">';
@@ -1098,7 +1173,7 @@ window.Game = window.Game || {};
         var bestOfficerIndex = -1;
         var bestMilitary = -Infinity;
         for (var bi = 0; bi < officers.length; bi++) {
-          if (officers[bi].role === 'mayor') continue;
+          if (officers[bi].role === 'mayor' || officers[bi].role === 'commander') continue;
           var military = Number(officers[bi].military) || 0;
           if (bestOfficerIndex < 0 || military > bestMilitary) {
             bestOfficerIndex = bi;
@@ -1111,7 +1186,7 @@ window.Game = window.Game || {};
         }
         for (var oi = 0; oi < officers.length; oi++) {
           var o = officers[oi];
-          if (o.role === 'mayor') continue;
+          if (o.role === 'mayor' || o.role === 'commander') continue;
           var checked = oi === bestOfficerIndex ? ' checked' : '';
           var starStr = '';
           for (var si = 0; si < o.star; si++) starStr += '★';
@@ -1127,7 +1202,6 @@ window.Game = window.Game || {};
           h += '<input type="radio" name="dpOfficer" value="' + o.id + '"' + checked + ' /> ';
           h += o.name + ' <span style="color:' + (D.starColor[o.star] || '#bbb') + '">' + starStr + '</span>';
           h += ' Lv.' + o.level + ' 将' + o.military + ' 军' + o.logistics + ' 智' + o.knowledge;
-          if (o.role === 'commander') h += ' [司令]';
           h += extraHint;
           h += '</label>';
           h += '</div>';
@@ -1176,13 +1250,39 @@ window.Game = window.Game || {};
 
     bindRoutePreview: function(container,hint,request,labels) {
       if(!hint||!G.API||!G.API.client)return;
-      var timer,sequence=0,terrain=null,currentRoute=null;
+      var timer,sequence=0,terrain=null,currentRoute=null,lastRouteKey=null,isLoading=false,lastRouteFailed=false;
       var self = this;
       if(G.DispatchRoute)G.DispatchRoute.loadTerrain().then(function(data){
         terrain=data;
         if(hint.isConnected&&currentRoute)G.DispatchRoute.render(hint,currentRoute,labels,terrain);
       });
-      function update(){
+      /**
+       * 生成路线计算所需的稳定键。
+       * 数量变化只影响编队统计，不改变路线几何；只有兵种集合变化才需要重绘预览。
+       * @param {Object} payload - 路线请求参数
+       * @returns {string} 路线决定因素的稳定键
+       */
+      function routeKey(payload){
+        var army=payload&&payload.army||{},units=[];
+        Object.keys(army).sort().forEach(function(uid){
+          if(Math.max(0,parseInt(army[uid],10)||0)>0)units.push(uid);
+        });
+        return [payload&&payload.targetKind||'',payload&&payload.targetId||'',payload&&payload.action||'',units.join(',')].join('|');
+      }
+      /**
+       * 在路线决定因素变化时重新请求预览，否则仅刷新下方的动态统计。
+       * @param {boolean} force - 是否忽略路线键并强制请求
+       * @returns {void}
+       */
+      function update(force){
+        var payload=request(),nextRouteKey=routeKey(payload);
+        if(!force&&nextRouteKey===lastRouteKey&&(!lastRouteFailed||isLoading)){
+          self.updateDispatchStats();
+          return;
+        }
+        lastRouteKey=nextRouteKey;
+        isLoading=true;
+        lastRouteFailed=false;
         clearTimeout(timer);var seq=++sequence;currentRoute=null;
         hint.setAttribute('aria-busy','true');
         var badge=hint.querySelector('.dispatch-map-header > span');
@@ -1190,16 +1290,19 @@ window.Game = window.Game || {};
         else hint.innerHTML='<div class="dispatch-map-card dispatch-map-empty">正在计算行军路线与抵达时间…</div>';
         timer=setTimeout(function(){
           if(!hint.isConnected)return;
-          G.API.client.post('/game/world/route',request(),{silent:true}).then(function(route){
+          G.API.client.post('/game/world/route',payload,{silent:true}).then(function(route){
             if(!hint.isConnected||seq!==sequence)return;
             currentRoute=route;
             self._currentRoute = route;
+            isLoading=false;
             hint.setAttribute('aria-busy','false');
             if(G.DispatchRoute)G.DispatchRoute.render(hint,route,labels,terrain);
             else hint.textContent='行军距离 '+route.distance+' 格 · 预计 '+route.seconds+' 秒';
             self.updateDispatchStats();
           }).catch(function(e){
             if(hint.isConnected&&seq===sequence){
+              isLoading=false;
+              lastRouteFailed=true;
               hint.setAttribute('aria-busy','false');
               hint.textContent=e.message||'路线计算失败，请重新选择部队后重试';
               self._currentRoute = null;
@@ -1208,7 +1311,9 @@ window.Game = window.Game || {};
           });
         },300);
       }
-      container.addEventListener('input',update);update();
+      // 数量输入的 input 事件只更新统计；change 事件用于检查兵种集合是否真的变化。
+      container.addEventListener('change',function(){update(false);});
+      update(true);
     },
 
     renderView: function (v) {
@@ -1692,11 +1797,13 @@ window.Game = window.Game || {};
           var distance = m.distance != null ? m.distance : '?';
           var targetName = m.targetName || '目标';
           var originName = m.originName || '';
+          // 到达时间已过时，即使状态刷新尚未带回 battleId，也允许玩家点击进入并由接口补建会话。
+          var canEnterBattle = !m.returning && remain <= 0 && m.action !== 'scout' && m.action !== 'transport' && m.action !== 'rebase';
           h += '<div class="menu-item ' + (m.returning ? 'lock' : 'ok') + '">';
           h += '<span class="n">' + kindName + '->' + G.escapeHtml(targetName) + (m.returning ? ' (撤自' + G.escapeHtml(originName || '原地') + ')' : '') + '</span>';
           h += '<span class="lv">距' + distance + '格 (' + fromX + ',' + fromY + '->' + toX + ',' + toY + ')</span>';
           h += '<div class="d">兵力: ' + armyText(m.army) + '</div>';
-          if (m.inBattle || m.battleId) {
+          if (m.inBattle || m.battleId || canEnterBattle) {
             h += '<div class="cost urgent">已到达战场，等待你的战术指令</div>';
             h += '<div class="btn-row"><button class="btn ok sm" onclick="Game.Battle.openTactical(' + m.id + ')">进入战斗</button></div>';
           } else {
@@ -1720,7 +1827,8 @@ window.Game = window.Game || {};
           var im = incoming[ii];
           var rem = Math.max(0, Math.ceil((im.arriveAt - now2) / 1000));
           var tStr = this.alertCountdown(im.arriveAt);
-          var isArrived = im.arrived;
+          // 对真实来袭行军，到达时间已过即可由防守方首次进入战斗并由接口补建会话。
+          var isArrived = Boolean(im.arrived) || (Boolean(im.marchId) && rem <= 0);
           // 兼容旧存档/旧推送只带 fromName 的来袭记录，避免界面出现 undefined。
           var attackerName = G.escapeHtml(im.attackerName || im.sourcePlayer || im.fromName || '未知敌军');
           var targetX = im.targetX != null ? im.targetX : (s.world.cityPos ? s.world.cityPos.x : '?');
@@ -1755,9 +1863,11 @@ window.Game = window.Game || {};
               armyTotal += im.army[auid];
             }
             h += '<div>总兵力: <b style="color:var(--danger)">' + G.fmt(armyTotal) + '</b></div>';
-            if (isArrived) {
+            if (isArrived && im.marchId) {
               h += '<div class="cost urgent" style="color:var(--danger)">敌军已到达城下！</div>';
-              h += '<div class="btn-row" onclick="event.stopPropagation()"><button class="btn ok" style="font-size:16px;padding:8px 24px" onclick="Game.World.startIncomingBattle(' + ii + ')">迎战！</button></div>';
+              h += '<div class="btn-row" onclick="event.stopPropagation()"><button class="btn ok" onclick="Game.World.startIncomingBattle(' + ii + ')">进入战斗</button></div>';
+            } else if (isArrived) {
+              h += '<div class="cost urgent" style="color:var(--danger)">敌军已到达城下，正在自动结算。</div>';
             } else {
               h += '<div class="cost urgent">到达倒计时: ' + tStr + '</div>';
             }

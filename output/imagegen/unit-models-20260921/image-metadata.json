@@ -1,7 +1,7 @@
 [
   {
     "id": "infantry",
-    "source": "raw/infantry.png",
+    "source": "infantry-soldier.png",
     "sourceSize": [
       1254,
       1254
@@ -109,7 +109,7 @@
   },
   {
     "id": "special",
-    "source": "raw/special.png",
+    "source": "special-commando.png",
     "sourceSize": [
       1254,
       1254

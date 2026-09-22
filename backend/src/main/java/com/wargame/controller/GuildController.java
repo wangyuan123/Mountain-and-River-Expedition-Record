@@ -35,6 +35,10 @@ public class GuildController {
     public ResponseEntity<Map<String, Object>> notice(@RequestBody Map<String, Object> body) { return ResponseEntity.ok(guildService.updateNotice(playerId(), (String) body.get("notice"))); }
     @PostMapping("/settings")
     public ResponseEntity<Map<String, Object>> settings(@RequestBody GameDtos.GuildSettingsRequest request) { return ResponseEntity.ok(guildService.updateSettings(playerId(), request.name(), request.icon())); }
+    @PostMapping("/relations/{targetGuildId}")
+    public ResponseEntity<Map<String, Object>> relation(@PathVariable Long targetGuildId, @RequestBody Map<String, Object> body) {
+        return ResponseEntity.ok(guildService.updateRelation(playerId(), targetGuildId, (String) body.get("status")));
+    }
     @PostMapping("/members/{targetPlayerId}/role")
     public ResponseEntity<Map<String, Object>> role(@PathVariable Long targetPlayerId, @RequestBody GameDtos.GuildRoleRequest request) { return ResponseEntity.ok(guildService.updateRole(playerId(), targetPlayerId, request.role())); }
     @PostMapping("/members/{targetPlayerId}/remove")

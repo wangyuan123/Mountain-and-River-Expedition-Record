@@ -28,7 +28,7 @@ public class ScoutReport {
     @Column(name = "target_name", length = 100)
     private String targetName;
 
-    @Column(name = "data", columnDefinition = "text")
+    @Column(name = "data", columnDefinition = "longtext")
     private String data;
 
     /** 战报类型: scout=侦查 / battle=战斗(征服/掠夺/野地战) */

@@ -141,6 +141,25 @@ test('a selected dispatch keeps its target when the visible map array is replace
   await Promise.resolve();
 });
 
+test('dispatch blocks an army selection above the troop cap before requesting the server', () => {
+  let requests = 0;
+  let message = '';
+  const world = { npcCities: [{ id: 41, name: 'Selected', x: 10, y: 10 }] };
+  const context = sandbox({ Game: {
+    DATA: { units: { infantry: {} } },
+    Core: { state: { world }, views: {}, armyCap: () => 9 }, go() {},
+    toast(text) { message = text; },
+    API: { worldDispatch() { requests++; return Promise.resolve({ success: true }); } }
+  } });
+  context.document.getElementById = id => id === 'dqty_infantry' ? { value: '10' } : null;
+  load(context, 'js/world.js');
+  context.Game.World.attack('npc', 0, 'plunder');
+  context.Game.World.launchDispatch();
+
+  assert.equal(requests, 0);
+  assert.equal(message, '出征兵力超过带兵上限 9（当前选择 10）');
+});
+
 
 test('resource buildings share town hall capacity including new construction reservations', () => {
   const context = sandbox();
@@ -259,6 +278,25 @@ test('incoming tick updates the list and keeps the military alert red until the 
   assert.match(view.innerHTML, /暂无敌方来袭情报/);
 });
 
+test('arrived incoming player march opens the same tactical battle for defender command', () => {
+  const G = incomingContext();
+  const view = { innerHTML: '' };
+  let openedMarchId = null;
+  G.Battle = { openTactical: marchId => { openedMarchId = marchId; } };
+  G.state.world.incoming = [{
+    id: 'march-19', marchId: 19, fromName: '敌方', targetName: '我方城',
+    targetX: 100, targetY: 100, arriveAt: Date.now() - 1,
+    army: { infantry: 10 }, action: 'plunder', expanded: true
+  }];
+
+  G.World.renderAlerts(view);
+
+  assert.match(view.innerHTML, /进入战斗/);
+  assert.match(view.innerHTML, /Game\.World\.startIncomingBattle\(0\)/);
+  G.World.startIncomingBattle(0);
+  assert.equal(openedMarchId, 19);
+});
+
 test('incoming events force a fresh state and cancellation does not announce another attack', async () => {
   const G = incomingContext();
   let calls = 0;
@@ -341,4 +379,3 @@ test('导航栏将科技和切换置于末尾，军情显示为情报', () => {
   ]);
   assert.doesNotMatch(navHtml, /军情/);
 });
-

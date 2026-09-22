@@ -6,6 +6,7 @@ window.Game = window.Game || {};
 
   var D = G.DATA;
   var Core = G.Core;
+  var skillDetailModal = null;
 
   function starStr(star) {
     var s = '';
@@ -40,6 +41,11 @@ window.Game = window.Game || {};
       else if (item.name) parts.push(item.name + (item.lv ? 'Lv' + item.lv : ''));
     }
     return parts.length ? ' 技能: ' + parts.join('/') : '';
+  }
+
+  function closeSkillDetailModal() {
+    if (skillDetailModal && skillDetailModal.parentNode) skillDetailModal.parentNode.removeChild(skillDetailModal);
+    skillDetailModal = null;
   }
 
   function findOfficer(officers, id) {
@@ -135,12 +141,12 @@ window.Game = window.Game || {};
       }
       if (action === 'cancel') {
         if (wrap) {
-          wrap.innerHTML = '<button class="btn warn" onclick="Game.Officer.dismiss(\'' + officerId + '\',\'ask\')">解雇</button>';
+          wrap.innerHTML = '<button type="button" class="btn depot-btn warn" onclick="Game.Officer.dismiss(\'' + officerId + '\',\'ask\')">[解雇]</button>';
         }
         return;
       }
       if (wrap) {
-        wrap.innerHTML = '<button class="btn warn2" onclick="Game.Officer.dismiss(\'' + officerId + '\',\'confirm\')">确认解雇</button> <button class="btn" onclick="Game.Officer.dismiss(\'' + officerId + '\',\'cancel\')">取消</button>';
+        wrap.innerHTML = '<button type="button" class="btn depot-btn warn" onclick="Game.Officer.dismiss(\'' + officerId + '\',\'confirm\')">[确认解雇]</button> <button type="button" class="btn depot-btn" onclick="Game.Officer.dismiss(\'' + officerId + '\',\'cancel\')">[取消]</button>';
       }
     },
 
@@ -157,12 +163,12 @@ window.Game = window.Game || {};
       }
       if (action === 'cancel') {
         if (wrap) {
-          wrap.innerHTML = '<button class="btn warn" onclick="event.stopPropagation();Game.Officer.dismissList(\'' + officerId + '\',\'ask\')">解雇</button>';
+          wrap.innerHTML = '<button type="button" class="btn depot-btn warn" onclick="event.stopPropagation();Game.Officer.dismissList(\'' + officerId + '\',\'ask\')">[解雇]</button>';
         }
         return;
       }
       if (wrap) {
-        wrap.innerHTML = '<button class="btn warn2" onclick="event.stopPropagation();Game.Officer.dismissList(\'' + officerId + '\',\'confirm\')">确认解雇</button> <button class="btn" onclick="event.stopPropagation();Game.Officer.dismissList(\'' + officerId + '\',\'cancel\')">取消</button>';
+        wrap.innerHTML = '<button type="button" class="btn depot-btn warn" onclick="event.stopPropagation();Game.Officer.dismissList(\'' + officerId + '\',\'confirm\')">[确认解雇]</button> <button type="button" class="btn depot-btn" onclick="event.stopPropagation();Game.Officer.dismissList(\'' + officerId + '\',\'cancel\')">[取消]</button>';
       }
     },
 
@@ -202,12 +208,12 @@ window.Game = window.Game || {};
       }
       if (action === 'cancel') {
         if (wrap) {
-          wrap.innerHTML = '<b style="color:var(--accent-dark)">' + skName + ' Lv.' + sk.lv + '/' + skInfo.max + '</b> <span class="d">' + skInfo.desc + '</span> <button class="btn sm warn" onclick="Game.Officer.forgetSkill(\'' + officerId + '\',' + skillIdx + ',\'ask\')">废弃</button>';
+          wrap.innerHTML = '<b style="color:var(--accent-dark)">' + skName + ' Lv.' + sk.lv + '/' + skInfo.max + '</b> <span class="d">' + skInfo.desc + '</span> <button type="button" class="btn depot-btn warn" onclick="Game.Officer.forgetSkill(\'' + officerId + '\',' + skillIdx + ',\'ask\')">[废弃]</button>';
         }
         return;
       }
       if (wrap) {
-        wrap.innerHTML = '<b style="color:var(--accent-dark)">' + skName + ' Lv.' + sk.lv + '/' + skInfo.max + '</b> <span class="d">' + skInfo.desc + '</span> <button class="btn sm warn2" onclick="Game.Officer.forgetSkill(\'' + officerId + '\',' + skillIdx + ',\'confirm\')">确认废弃</button> <button class="btn sm" onclick="Game.Officer.forgetSkill(\'' + officerId + '\',' + skillIdx + ',\'cancel\')">取消</button>';
+        wrap.innerHTML = '<b style="color:var(--accent-dark)">' + skName + ' Lv.' + sk.lv + '/' + skInfo.max + '</b> <span class="d">' + skInfo.desc + '</span> <button type="button" class="btn depot-btn warn" onclick="Game.Officer.forgetSkill(\'' + officerId + '\',' + skillIdx + ',\'confirm\')">[确认废弃]</button> <button type="button" class="btn depot-btn" onclick="Game.Officer.forgetSkill(\'' + officerId + '\',' + skillIdx + ',\'cancel\')">[取消]</button>';
       }
     },
 
@@ -221,6 +227,34 @@ window.Game = window.Game || {};
         Core.render();
       }).catch(function (err) {
         G.toast(err.message || '学习失败');
+      });
+    },
+
+    availableSpecificSkillBooks: function () {
+      var items = (Core.state && Core.state.items) || {};
+      return Object.keys(D.items).filter(function (itemId) {
+        return itemId.indexOf('skillBook_') === 0 && items[itemId] > 0;
+      }).map(function (itemId) {
+        return { itemId: itemId, info: D.items[itemId], count: items[itemId] };
+      });
+    },
+
+    useSpecificSkillBook: function (officerId, itemId) {
+      var book = D.items[itemId];
+      if (!book || itemId.indexOf('skillBook_') !== 0) {
+        G.toast('指定技能书不存在');
+        return Promise.resolve();
+      }
+      return G.API.depotUse(itemId, officerId).then(function (resp) {
+        if (resp && resp.success === false) {
+          G.toast(resp.message || '使用失败');
+          return resp;
+        }
+        G.toast((resp && resp.message) || ('已学习「' + book.name.replace('技能书', '') + '」'));
+        Core.render();
+        return resp;
+      }).catch(function (err) {
+        G.toast(err.message || '使用失败');
       });
     },
 
@@ -616,12 +650,12 @@ window.Game = window.Game || {};
       }
       if (action === 'cancel') {
         if (wrap) {
-          wrap.innerHTML = '<button class="btn warn sm" onclick="Game.Officer.wash(\'' + officerId + '\',\'ask\')">洗点(200金)</button>';
+          wrap.innerHTML = '<button type="button" class="btn depot-btn warn" onclick="Game.Officer.wash(\'' + officerId + '\',\'ask\')">[洗点(200金)]</button>';
         }
         return;
       }
       if (wrap) {
-        wrap.innerHTML = '<button class="btn warn2 sm" onclick="Game.Officer.wash(\'' + officerId + '\',\'confirm\')">确认洗点(消耗200金)</button> <button class="btn sm" onclick="Game.Officer.wash(\'' + officerId + '\',\'cancel\')">取消</button>';
+        wrap.innerHTML = '<button type="button" class="btn depot-btn warn" onclick="Game.Officer.wash(\'' + officerId + '\',\'confirm\')">[确认洗点(消耗200金)]</button> <button type="button" class="btn depot-btn" onclick="Game.Officer.wash(\'' + officerId + '\',\'cancel\')">[取消]</button>';
       }
     },
 
@@ -865,7 +899,7 @@ window.Game = window.Game || {};
       h += '<div style="margin:4px 0;display:flex;align-items:center;flex-wrap:wrap">防御: <b>' + (o.defense || 0) + '</b> / ' + G.ATTR_MAX + (o.role === 'commander' ? ' <span class="d" style="color:var(--accent);margin-left:4px">(指挥官:防御+' + (o.defense || 0) + '%)</span>' : '') + (canAdd && (o.defense || 0) < G.ATTR_MAX ? ' <button class="btn sm ok" style="padding:1px 8px;margin-left:6px;font-weight:bold" onclick="Game.Officer.addAttr(\'' + o.id + '\',\'defense\')">+</button>' : '') + '<span id="attr-add-defense"></span></div>';
       h += '<div style="margin:4px 0;display:flex;align-items:center;flex-wrap:wrap">学识: <b>' + o.knowledge + '</b> / ' + G.ATTR_MAX + (o.role === 'mayor' ? ' <span class="d" style="color:var(--accent);margin-left:4px">(市长:黄金+' + o.knowledge + '%)</span>' : '') + (canAdd && o.knowledge < G.ATTR_MAX ? ' <button class="btn sm ok" style="padding:1px 8px;margin-left:6px;font-weight:bold" onclick="Game.Officer.addAttr(\'' + o.id + '\',\'knowledge\')">+</button>' : '') + '<span id="attr-add-knowledge"></span></div>';
       h += '<div id="wash-row" class="btn-row" style="flex-wrap:wrap;margin-top:8px">';
-      h += '<button class="btn warn sm" onclick="Game.Officer.wash(\'' + o.id + '\',\'ask\')">洗点(200金)</button>';
+      h += '<button type="button" class="btn depot-btn warn" onclick="Game.Officer.wash(\'' + o.id + '\',\'ask\')">[洗点(200金)]</button>';
       h += '</div>';
       h += '</div>';
 
@@ -910,7 +944,9 @@ window.Game = window.Game || {};
       }
       h += '</div>';
 
-      h += '<div class="zone-head">技能 (' + (o.skills ? o.skills.length : 0) + '/3) <span class="d">技能书: ' + ((s.items && s.items.skillBook) || 0) + '本</span></div>';
+      var specificSkillBooks = Officer.availableSpecificSkillBooks();
+      var specificSkillBookCount = specificSkillBooks.reduce(function (total, book) { return total + book.count; }, 0);
+      h += '<div class="zone-head">技能 (' + (o.skills ? o.skills.length : 0) + '/3) <span class="d">通用技能书: ' + ((s.items && s.items.skillBook) || 0) + '本 · 指定技能书: ' + specificSkillBookCount + '本</span></div>';
       h += '<div class="panel">';
       if (!o.skills || !o.skills.length) {
         h += '<div class="d">暂无技能</div>';
@@ -918,11 +954,22 @@ window.Game = window.Game || {};
         for (var si = 0; si < o.skills.length; si++) {
           var sk = D.officerSkills[o.skills[si].id];
           if (!sk) continue;
-          h += '<div id="skill-row-' + si + '" style="margin:3px 0"><b style="color:var(--accent-dark)">' + sk.name + ' Lv.' + o.skills[si].lv + '/' + sk.max + '</b> <span class="d">' + sk.desc + '</span> <button class="btn sm warn" onclick="Game.Officer.forgetSkill(\'' + o.id + '\',' + si + ',\'ask\')">废弃</button></div>';
+          h += '<div id="skill-row-' + si + '" class="officer-skill-row"><button type="button" class="officer-skill-detail-trigger" onclick="Game.Officer.showSkillDetail(\'' + o.skills[si].id + '\',' + o.skills[si].lv + ')" title="查看技能详情">' + sk.name + ' Lv.' + o.skills[si].lv + '/' + sk.max + '</button> <button type="button" class="btn depot-btn warn" onclick="Game.Officer.forgetSkill(\'' + o.id + '\',' + si + ',\'ask\')">[废弃]</button></div>';
         }
       }
       if (!o.skills || o.skills.length < 3) {
         h += '<div style="margin-top:6px"><button class="btn sm" onclick="Game.Officer.learnSkill(\'' + o.id + '\')">学习技能(消耗1本技能书)</button></div>';
+      }
+      if (specificSkillBooks.length) {
+        var hasSkillSlot = !o.skills || o.skills.length < 3;
+        h += '<div style="margin-top:10px"><div class="d" style="margin-bottom:4px">使用指定技能书：</div><div class="btn-row" style="flex-wrap:wrap">';
+        for (var bi = 0; bi < specificSkillBooks.length; bi++) {
+          var book = specificSkillBooks[bi];
+          var disabled = hasSkillSlot ? '' : ' disabled title="技能位已满，请先废弃一个技能"';
+          var click = hasSkillSlot ? ' onclick="Game.Officer.useSpecificSkillBook(\'' + o.id + '\',\'' + book.itemId + '\')"' : '';
+          h += '<button type="button" class="btn depot-btn' + (hasSkillSlot ? ' ok' : '') + '"' + click + disabled + '>[' + book.info.icon + ' 使用' + book.info.name + ' ×' + book.count + ']</button>';
+        }
+        h += '</div></div>';
       }
       h += '</div>';
 
@@ -949,12 +996,43 @@ window.Game = window.Game || {};
 
       h += '<div class="zone-head">操作</div>';
       h += '<div id="dismiss-row" class="btn-row" style="flex-wrap:wrap">';
-      h += '<button class="btn warn" onclick="Game.Officer.dismiss(\'' + o.id + '\',\'ask\')">解雇</button>';
+      h += '<button type="button" class="btn depot-btn warn" onclick="Game.Officer.dismiss(\'' + o.id + '\',\'ask\')">[解雇]</button>';
       h += '</div>';
 
       h += '<div class="menu-item back" onclick="Game.go(\'officer\')">[0] 返回军官列表</div>';
       v.innerHTML = h;
-    }
+    },
+
+    showSkillDetail: function (skillId, level) {
+      var skill = D.officerSkills && D.officerSkills[skillId];
+      if (!skill) { G.toast('技能不存在'); return; }
+      if (typeof document === 'undefined' || !document.createElement || !document.body) return;
+
+      closeSkillDetailModal();
+      var esc = G.escapeHtml || function (value) { return String(value); };
+      var currentLevel = Math.max(1, Math.min(skill.max || 1, parseInt(level, 10) || 1));
+      var mask = document.createElement('div');
+      mask.className = 'modal-mask officer-skill-detail-mask';
+      mask.innerHTML = '<section class="modal-card officer-skill-detail-modal" role="dialog" aria-modal="true" aria-labelledby="officerSkillDetailTitle">' +
+        '<div class="officer-skill-detail-head">' +
+          '<div><div class="officer-skill-detail-kicker">军官技能</div><h2 id="officerSkillDetailTitle">' + esc(skill.name) + '</h2></div>' +
+          '<button type="button" class="officer-skill-detail-close" aria-label="关闭技能详情">×</button>' +
+        '</div>' +
+        '<div class="officer-skill-detail-body">' +
+          '<div class="officer-skill-detail-level">当前等级 <b>Lv.' + currentLevel + '</b><span>最高 Lv.' + esc(skill.max) + '</span></div>' +
+          '<div class="officer-skill-detail-section"><h3>技能说明</h3><p>' + esc(skill.desc || '暂无技能说明') + '</p></div>' +
+        '</div>' +
+      '</section>';
+      document.body.appendChild(mask);
+      skillDetailModal = mask;
+
+      var close = function () { closeSkillDetailModal(); };
+      var closeButton = mask.querySelector('.officer-skill-detail-close');
+      if (closeButton) closeButton.onclick = close;
+      mask.addEventListener('click', function (event) { if (event.target === mask) close(); });
+    },
+
+    closeSkillDetailModal: closeSkillDetailModal
   };
 
   G.Officer = Officer;

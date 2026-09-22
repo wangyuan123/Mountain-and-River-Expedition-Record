@@ -130,6 +130,29 @@ test('calcDispatchMarchTime computes march seconds accurately with distance and 
   assert.equal(t4, 1);
 });
 
+test('calcDispatchFuel uses distance and route legs for oil consumption', () => {
+  const { Game: g } = setup();
+
+  // 10 格、30 秒单程：步兵无油耗；特种兵装备和坦克均消耗石油。
+  const oneWay = g.World.calcDispatchFuel({ infantry: 10, special: 2, ltank: 3 }, 10, 1);
+  assert.equal(oneWay, 2);
+
+  // 普通出征预扣往返油耗，驻防只需要单程油耗。
+  const roundTrip = g.World.calcDispatchFuel({ infantry: 10, special: 2, ltank: 3 }, 10, 2);
+  assert.equal(roundTrip, 3);
+});
+
+test('all units define non-negative march fuel while infantry remains fuel-free', () => {
+  const { Game: g } = setup();
+
+  for (const unit of Object.values(g.DATA.units)) {
+    assert.equal(Number.isInteger(unit.marchOil), true, unit.name + ' must define marchOil');
+    assert.ok(unit.marchOil >= 0, unit.name + ' marchOil must not be negative');
+  }
+  assert.equal(g.DATA.units.infantry.marchOil, 0);
+  assert.ok(g.DATA.units.special.marchOil > 0);
+});
+
 test('fmtDuration formats duration nicely', () => {
   const { Game: g } = setup();
 
@@ -153,5 +176,6 @@ test('renderDispatch defaults all available units to 1', () => {
   assert.match(v.innerHTML, /id="dqty_infantry"[^>]*value="1"/);
   assert.match(v.innerHTML, /id="dqty_ltank"[^>]*value="1"/);
   assert.match(v.innerHTML, /id="dqty_truck"[^>]*value="1"/);
+  assert.match(v.innerHTML, /行军油耗/);
+  assert.doesNotMatch(v.innerHTML, /行军粮耗|每5分钟粮耗/);
 });
-

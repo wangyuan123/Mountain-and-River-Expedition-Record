@@ -37,6 +37,9 @@ public class BattleSession extends VersionedEntity {
     @Column(name = "round_no", nullable = false)
     private Integer roundNo;
 
+    @Column(name = "round_deadline_at", nullable = false)
+    private Long roundDeadlineAt;
+
     @Column(name = "initial_distance", nullable = false)
     private Integer initialDistance;
 

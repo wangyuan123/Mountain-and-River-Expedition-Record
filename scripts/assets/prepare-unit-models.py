@@ -10,12 +10,32 @@ ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / 'output/imagegen/unit-models-20260921'
 DEST = ROOT / 'frontend/img/units/models'
 
+# 步兵和特种兵采用人物战斗形象；原装备静物仍保留在 raw/ 便于追溯。
+SOURCE_OVERRIDES = {
+    'infantry': SOURCE / 'infantry-soldier.png',
+    'special': SOURCE / 'special-commando.png',
+    'destroyer': SOURCE / 'destroyer-v2.png',
+}
+
 
 def prepare(path):
     """仅剔除白色摄影背景，保留银色机身的内部高光及完整装备轮廓。"""
     original = Image.open(path)
     # 兼容 API 部分返回图自带真实 alpha，直接保留，避免二次分割损伤机翼。
     if original.mode == 'RGBA' and original.getchannel('A').getextrema()[0] < 255:
+        if path.stem in ('infantry-soldier', 'special-commando'):
+            rgba = np.array(original)
+            white_distance = 255 - rgba[:, :, :3].min(axis=2).astype(float)
+            # 人物不含白色装备，可去掉脚下生成的白色棚拍阴影，避免深色主题出现白边。
+            clean_alpha = np.clip((white_distance - 8) / 42, 0, 1) * 255
+            rgba[:, :, 3] = np.minimum(rgba[:, :, 3], clean_alpha).astype('uint8')
+            channel_span = rgba[:, :, :3].max(axis=2).astype(float) - rgba[:, :, :3].min(axis=2)
+            neutral_shadow = channel_span < 35
+            neutral_alpha = np.clip((200 - rgba[:, :, :3].min(axis=2)) / 45, 0, 1) * 255
+            rgba[:, :, 3][neutral_shadow] = np.minimum(
+                rgba[:, :, 3][neutral_shadow], neutral_alpha[neutral_shadow]
+            ).astype('uint8')
+            original = Image.fromarray(rgba)
         return normalize(original)
     im = original.convert('RGB')
     im.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
@@ -58,9 +78,7 @@ def main():
     units = json.loads((SOURCE / 'units.json').read_text())
     metadata = []
     for u in units:
-        path = SOURCE / 'raw' / (u['id'] + '.png')
-        if u['id'] == 'destroyer':
-            path = SOURCE / 'destroyer-v2.png'
+        path = SOURCE_OVERRIDES.get(u['id'], SOURCE / 'raw' / (u['id'] + '.png'))
         if not path.exists():
             continue
         target = DEST / (u['id'] + '.webp')

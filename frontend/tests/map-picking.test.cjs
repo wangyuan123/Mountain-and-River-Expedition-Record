@@ -6,7 +6,7 @@ function fixture(){
  }}};c.window=c;vm.createContext(c);
  for(const file of ['map-camera.js','map-layout.js','world-map.js']){
   let source=fs.readFileSync(path.join(__dirname,'../js',file),'utf8');
-  source=source.replace('  G.WorldMap={','  G.TestMapView=MapView; G.TestMapIcon=icon; G.TestOwnershipCaption=ownershipCaption; G.TestDrawOwnership=drawOwnership; G.TestPrimaryMarchUnit=primaryMarchUnit;\n  G.WorldMap={');vm.runInContext(source,c);
+  source=source.replace('  G.WorldMap={','  G.TestMapView=MapView; G.TestMapIcon=icon; G.TestOwnershipCaption=ownershipCaption; G.TestDrawOwnership=drawOwnership; G.TestMarchUnitIcon=marchUnitIcon; G.TestMarchFormation=marchFormation; G.TestPrimaryMarchUnit=primaryMarchUnit; G.TestMarchMarkerIconSize=marchMarkerIconSize;\n  G.WorldMap={');vm.runInContext(source,c);
  }
  const v=Object.create(c.Game.TestMapView.prototype);v.camera=new c.Game.MapCamera(200,100.5,100.5,48);v.camera.width=390;v.camera.height=550;
  v.markerLayer={children:[]};v.visible=[];v.loadDetail=t=>{v.result={target:t};};v.loadSite=(x,y)=>{v.result={site:[x,y]};};
@@ -49,12 +49,29 @@ test('player art follows actual coast status for own and other cities, including
  }
  assert.equal(icon({kind:'npc',coastal:true}),'img/map/npc-fortress.webp');
 });
-test('march marker selects the largest represented unit that has an icon asset',()=>{
- const {c}=fixture();c.Game.UNIT_ICON={infantry:'img/units/infantry.svg',ltank:'img/units/ltank.svg'};
+test('march marker uses the home-page unit model for its largest represented unit',()=>{
+ const {c}=fixture();c.Game.UNIT_ICON={infantry:'img/units/infantry.svg',ltank:'img/units/ltank.svg'};c.Game.UNIT_MODEL={infantry:'img/units/models/infantry.webp'};
  const primary=c.Game.TestPrimaryMarchUnit;
  assert.equal(primary({army:{infantry:120,ltank:80}}),'infantry');
  assert.equal(primary({army:{unknown:999,ltank:80}}),'ltank');
  assert.equal(primary({army:{unknown:999,ltank:0}}),null);
+ assert.equal(c.Game.TestMarchUnitIcon('infantry'),'img/units/models/infantry.webp');
+ assert.equal(c.Game.TestMarchUnitIcon('ltank'),'img/units/ltank.svg');
+});
+test('march marker represents a mixed formation with a main model, two companions and a remaining-type count',()=>{
+ const {c}=fixture();c.Game.UNIT_MODEL={infantry:'infantry.webp',ltank:'ltank.webp',rocket:'rocket.webp',fighter:'fighter.webp'};
+ const formation=c.Game.TestMarchFormation({army:{infantry:120,ltank:100,rocket:80,fighter:60,unknown:40}});
+ assert.equal(formation.primary.id,'infantry');
+ assert.deepEqual(Array.from(formation.companions,unit=>unit.id),['ltank','rocket']);
+ assert.equal(formation.total,400);
+ assert.equal(formation.extraTypes,2);
+});
+test('march marker renders an enlarged transparent unit model without a circular backdrop',()=>{
+ const {c}=fixture();
+ assert.equal(c.Game.TestMarchMarkerIconSize(48),36);
+ assert.equal(c.Game.TestMarchMarkerIconSize(80),56);
+ const source=fs.readFileSync(path.join(__dirname,'../js/world-map.js'),'utf8');
+ assert.doesNotMatch(source,/marker\.backdrop/);
 });
 test('a visible resource rooftop outside its ground cell opens the resource instead of building a city',()=>{
  const {v,marker}=fixture();const t={kind:'wild',id:1,type:'ironworks',x:100,y:100};

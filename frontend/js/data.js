@@ -89,24 +89,25 @@ window.Game = window.Game || {};
     },
 
     // 名称采用真实二战装备/部队原型；history 仅用于介绍，数值仍由游戏独立平衡，来源见 docs/UNIT_HISTORY_20260918.md。
+    // marchOil 为每单位每 100 格油耗，marchFood 为每单位每 5 分钟行军粮耗；food 保留为城内每小时耗粮。
     units: {
-      infantry:  { name: '步兵-加兰德步枪兵（M1）', history: '美国｜装备M1加兰德半自动步枪的步兵，二战美军的代表性步兵装备。',     cat: 'inf',  atkGround: 6, atkAir: 5, atkSea: 5, atkFort: 2,   def: 15,  hp: 120, spd: 3, range: 100, food: 1,  pop: 1, build: 'factory',  cost: { steel: 30,  oil: 0,   rare: 0  }, strongVs: null,           branch: 'land' },
-      motor: { name: '摩托兵-哈雷（WLA）', history: '美国｜哈雷WLA军用摩托，二战中用于侦察、通信与联络。', cat: 'inf', atkGround: 12, atkAir: 5, atkSea: 5, atkFort: 5, def: 13, hp: 100, spd: 7, range: 140, food: 2, pop: 1, build: 'factory', cost: { steel: 35, oil: 10, rare: 0 }, strongVs: 'infantry', branch: 'land' },
-      truck:     { name: '卡车-十轮大卡（CCKW-353）', history: '美国｜GMC六轮驱动运输卡车，承担盟军兵员与物资运输。',     cat: 'inf',  atkGround: 2, atkAir: 1, atkSea: 1, atkFort: 1,   def: 5.5, hp: 150, spd: 6, range: 0,   food: 2,  pop: 1, build: 'factory',  cost: { steel: 50,  oil: 15,  rare: 0  }, strongVs: null,           branch: 'land', logistic: true, load: 50, autoAdvance: false },
-      armored: { name: '装甲车-猎鹿犬防空型（T17E2）', history: '美国制造、英军使用｜猎鹿犬的双联重机枪防空型，为地面部队提供机动掩护。', cat: 'arm', atkGround: 18, atkAir: 33.5, atkSea: 45, atkFort: 36, def: 33, hp: 360, spd: 7, range: 300, food: 4, pop: 2, build: 'factory', cost: { steel: 180, oil: 60, rare: 20 }, strongVs: 'motor', branch: 'land' },
-      ltank: { name: '轻型坦克-斯图亚特（M5A1）', history: '美国｜斯图亚特系列轻型坦克，以机动侦察与步兵支援为主要任务。', cat: 'arm', atkGround: 33, atkAir: 10, atkSea: 55, atkFort: 45, def: 53, hp: 270, spd: 6, range: 220, food: 5, pop: 2, build: 'lightfactory', cost: { steel: 240, oil: 80, rare: 25 }, strongVs: 'armored', branch: 'land' },
-      htank: { name: '重型坦克-斯大林（IS-2）', history: '苏联｜装备122毫米主炮的重型坦克，用于突破防线与支援进攻。', cat: 'arm', atkGround: 50, atkAir: 15, atkSea: 65, atkFort: 50, def: 63.5, hp: 385, spd: 4, range: 320, food: 8, pop: 4, build: 'heavyfactory', cost: { steel: 450, oil: 120, rare: 50 }, strongVs: 'ltank', branch: 'land' },
-      assault: { name: '突击炮-自行加榴炮（ISU-152）', history: '苏联｜装备152毫米加榴炮的重型自行火炮，用于摧毁工事和提供突击支援。', cat: 'arm', atkGround: 34, atkAir: 30, atkSea: 65, atkFort: 167, def: 28, hp: 200, spd: 4, range: 750, food: 4, pop: 2, build: 'factory', cost: { steel: 200, oil: 50, rare: 25 }, strongVs: 'bunker', branch: 'land' },
-      rocket: { name: '火箭-喀秋莎（BM-13）', history: '苏联｜车载多管火箭炮，1941年投入作战，以密集齐射实施火力覆盖。', cat: 'arm', atkGround: 100, atkAir: 5, atkSea: 25, atkFort: 179, def: 28, hp: 150, spd: 5, range: 2000, food: 5, pop: 3, build: 'factory', cost: { steel: 220, oil: 70, rare: 45 }, strongVs: 'htank', branch: 'land' },
-      scout:     { name: '侦察机-闪电侦察型（F-5）', history: '美国｜由P-38闪电改装的照相侦察机，以航空摄影获取战场情报。',   cat: 'air',  atkGround: 1, atkAir: 4, atkSea: 1, atkFort: 1,   def: 13,  hp: 70.5,spd: 11,range: 200, food: 3,  pop: 1, build: 'factory',  cost: { steel: 60,  oil: 30,  rare: 10 }, strongVs: null,           branch: 'air', autoAdvance: false },
-      special: { name: '特种兵-英国突击队（Commando）', history: '英国｜1940年组建的突袭部队，接受渗透、爆破与两栖突击训练。', cat: 'inf', atkGround: 30, atkAir: 10, atkSea: 125, atkFort: 188, def: 5.5, hp: 150, spd: 8, range: 180, food: 4, pop: 2, build: 'factory', cost: { steel: 100, oil: 40, rare: 20 }, strongVs: 'howitzer', branch: 'land' },
-      fighter: { name: '战斗机-野马（P-51）', history: '美国｜北美航空研制的战斗机，二战中承担远程护航与制空任务。', cat: 'air', atkGround: 12, atkAir: 64, atkSea: 75, atkFort: 5, def: 30, hp: 150, spd: 10, range: 350, food: 5, pop: 2, build: 'factory', cost: { steel: 220, oil: 90, rare: 35 }, strongVs: 'bomber', branch: 'air' },
-      bomber: { name: '轰炸机-飞行堡垒（B-17G）', history: '美国｜波音四发重型轰炸机，主要执行编队轰炸并以多处机枪阵位自卫。', cat: 'air', atkGround: 56, atkAir: 12, atkSea: 95, atkFort: 429, def: 22, hp: 195, spd: 8, range: 300, food: 7, pop: 3, build: 'factory', cost: { steel: 350, oil: 150, rare: 60 }, strongVs: 'htank', branch: 'air' },
-      transport: { name: '运输机-空中列车（C-47）', history: '美国｜由DC-3发展而来的军用运输机，执行空运、空投与伞兵运输。',   cat: 'air',  atkGround: 1, atkAir: 1, atkSea: 1, atkFort: 1,   def: 10,  hp: 220, spd: 8, range: 0,   food: 5,  pop: 2, build: 'factory',  cost: { steel: 180, oil: 80, rare: 20 }, strongVs: null,           branch: 'air', logistic: true, load: 80, autoAdvance: false },
-      destroyer: { name: '驱逐舰-弗莱彻级（Fletcher）', history: '美国｜二战主力舰队驱逐舰，承担护航、防空、反潜与水面作战。', cat: 'nav', atkGround: 44, atkAir: 59, atkSea: 47, atkFort: 35, def: 50, hp: 555, spd: 7, range: 400, food: 7, pop: 3, build: 'port', cost: { steel: 450, oil: 160, rare: 80 }, strongVs: 'sub', branch: 'sea' },
-      sub: { name: '潜艇-小鲨鱼级（Gato）', history: '美国｜二战远洋柴电潜艇，以鱼雷攻击敌方舰船并执行海上破交。', cat: 'nav', atkGround: 1, atkAir: 1, atkSea: 66, atkFort: 1, def: 20, hp: 395, spd: 5, range: 100, food: 6, pop: 3, build: 'port', cost: { steel: 300, oil: 80, rare: 60 }, strongVs: 'battleship', branch: 'sea' },
-      battleship: { name: '战列舰-衣阿华级（Iowa）', history: '美国｜装备406毫米主炮的高速战列舰，承担舰队作战与对岸炮击。', cat: 'nav', atkGround: 91, atkAir: 35, atkSea: 96, atkFort: 108, def: 120, hp: 1300, spd: 6, range: 1600, food: 12, pop: 6, build: 'port', cost: { steel: 1200, oil: 400, rare: 250 }, strongVs: 'destroyer', branch: 'sea' },
-      carrier: { name: '航母-埃塞克斯级（Essex）', history: '美国｜二战舰队航空母舰，以舰载机执行制空、对海与对地打击。', cat: 'nav', atkGround: 82, atkAir: 125, atkSea: 80, atkFort: 110, def: 70, hp: 1100, spd: 6, range: 1900, food: 15, pop: 8, build: 'port', cost: { steel: 1400, oil: 500, rare: 350 }, strongVs: 'bomber', branch: 'sea' }
+      infantry:  { name: '步兵-加兰德步枪兵（M1）', history: '美国｜装备M1加兰德半自动步枪的步兵，二战美军的代表性步兵装备。',     cat: 'inf',  atkGround: 6, atkAir: 5, atkSea: 5, atkFort: 2,   def: 15,  hp: 120, spd: 3, range: 100, food: 1,  marchOil: 0,  marchFood: 1,  pop: 1, build: 'factory',  cost: { steel: 30,  oil: 0,   rare: 0  }, strongVs: null,           branch: 'land' },
+      motor: { name: '摩托兵-哈雷（WLA）', history: '美国｜哈雷WLA军用摩托，二战中用于侦察、通信与联络。', cat: 'inf', atkGround: 12, atkAir: 5, atkSea: 5, atkFort: 5, def: 13, hp: 100, spd: 7, range: 140, food: 2, marchOil: 1, marchFood: 1, pop: 1, build: 'factory', cost: { steel: 35, oil: 10, rare: 0 }, strongVs: 'infantry', branch: 'land' },
+      truck:     { name: '卡车-十轮大卡（CCKW-353）', history: '美国｜GMC六轮驱动运输卡车，承担盟军兵员与物资运输。',     cat: 'inf',  atkGround: 2, atkAir: 1, atkSea: 1, atkFort: 1,   def: 5.5, hp: 150, spd: 6, range: 0,   food: 2,  marchOil: 2,  marchFood: 1,  pop: 1, build: 'factory',  cost: { steel: 50,  oil: 15,  rare: 0  }, strongVs: null,           branch: 'land', logistic: true, load: 50, autoAdvance: false },
+      armored: { name: '装甲车-猎鹿犬防空型（T17E2）', history: '美国制造、英军使用｜猎鹿犬的双联重机枪防空型，为地面部队提供机动掩护。', cat: 'arm', atkGround: 18, atkAir: 33.5, atkSea: 45, atkFort: 36, def: 33, hp: 360, spd: 7, range: 300, food: 4, marchOil: 3, marchFood: 2, pop: 2, build: 'factory', cost: { steel: 180, oil: 60, rare: 20 }, strongVs: 'motor', branch: 'land' },
+      ltank: { name: '轻型坦克-斯图亚特（M5A1）', history: '美国｜斯图亚特系列轻型坦克，以机动侦察与步兵支援为主要任务。', cat: 'arm', atkGround: 33, atkAir: 10, atkSea: 55, atkFort: 45, def: 53, hp: 270, spd: 6, range: 220, food: 5, marchOil: 4, marchFood: 2, pop: 2, build: 'lightfactory', cost: { steel: 240, oil: 80, rare: 25 }, strongVs: 'armored', branch: 'land' },
+      htank: { name: '重型坦克-斯大林（IS-2）', history: '苏联｜装备122毫米主炮的重型坦克，用于突破防线与支援进攻。', cat: 'arm', atkGround: 50, atkAir: 15, atkSea: 65, atkFort: 50, def: 63.5, hp: 385, spd: 4, range: 320, food: 8, marchOil: 7, marchFood: 3, pop: 4, build: 'heavyfactory', cost: { steel: 450, oil: 120, rare: 50 }, strongVs: 'ltank', branch: 'land' },
+      assault: { name: '突击炮-自行加榴炮（ISU-152）', history: '苏联｜装备152毫米加榴炮的重型自行火炮，用于摧毁工事和提供突击支援。', cat: 'arm', atkGround: 34, atkAir: 30, atkSea: 65, atkFort: 167, def: 28, hp: 200, spd: 4, range: 750, food: 4, marchOil: 5, marchFood: 2, pop: 2, build: 'factory', cost: { steel: 200, oil: 50, rare: 25 }, strongVs: 'bunker', branch: 'land' },
+      rocket: { name: '火箭-喀秋莎（BM-13）', history: '苏联｜车载多管火箭炮，1941年投入作战，以密集齐射实施火力覆盖。', cat: 'arm', atkGround: 100, atkAir: 5, atkSea: 25, atkFort: 179, def: 28, hp: 150, spd: 5, range: 2000, food: 5, marchOil: 4, marchFood: 3, pop: 3, build: 'factory', cost: { steel: 220, oil: 70, rare: 45 }, strongVs: 'htank', branch: 'land' },
+      scout:     { name: '侦察机-闪电侦察型（F-5）', history: '美国｜由P-38闪电改装的照相侦察机，以航空摄影获取战场情报。',   cat: 'air',  atkGround: 1, atkAir: 4, atkSea: 1, atkFort: 1,   def: 13,  hp: 70.5,spd: 11,range: 200, food: 3,  marchOil: 8,  marchFood: 1,  pop: 1, build: 'factory',  cost: { steel: 60,  oil: 30,  rare: 10 }, strongVs: null,           branch: 'air', autoAdvance: false },
+      special: { name: '特种兵-英国突击队（Commando）', history: '英国｜1940年组建的突袭部队，接受渗透、爆破与两栖突击训练。', cat: 'inf', atkGround: 30, atkAir: 10, atkSea: 125, atkFort: 188, def: 5.5, hp: 150, spd: 8, range: 180, food: 4, marchOil: 1, marchFood: 2, pop: 2, build: 'factory', cost: { steel: 100, oil: 40, rare: 20 }, strongVs: 'howitzer', branch: 'land' },
+      fighter: { name: '战斗机-野马（P-51）', history: '美国｜北美航空研制的战斗机，二战中承担远程护航与制空任务。', cat: 'air', atkGround: 12, atkAir: 64, atkSea: 75, atkFort: 5, def: 30, hp: 150, spd: 10, range: 350, food: 5, marchOil: 10, marchFood: 2, pop: 2, build: 'factory', cost: { steel: 220, oil: 90, rare: 35 }, strongVs: 'bomber', branch: 'air' },
+      bomber: { name: '轰炸机-飞行堡垒（B-17G）', history: '美国｜波音四发重型轰炸机，主要执行编队轰炸并以多处机枪阵位自卫。', cat: 'air', atkGround: 56, atkAir: 12, atkSea: 95, atkFort: 429, def: 22, hp: 195, spd: 8, range: 300, food: 7, marchOil: 22, marchFood: 4, pop: 3, build: 'factory', cost: { steel: 350, oil: 150, rare: 60 }, strongVs: 'htank', branch: 'air' },
+      transport: { name: '运输机-空中列车（C-47）', history: '美国｜由DC-3发展而来的军用运输机，执行空运、空投与伞兵运输。',   cat: 'air',  atkGround: 1, atkAir: 1, atkSea: 1, atkFort: 1,   def: 10,  hp: 220, spd: 8, range: 0,   food: 5,  marchOil: 16, marchFood: 3,  pop: 2, build: 'factory',  cost: { steel: 180, oil: 80, rare: 20 }, strongVs: null,           branch: 'air', logistic: true, load: 80, autoAdvance: false },
+      destroyer: { name: '驱逐舰-弗莱彻级（Fletcher）', history: '美国｜二战主力舰队驱逐舰，承担护航、防空、反潜与水面作战。', cat: 'nav', atkGround: 44, atkAir: 59, atkSea: 47, atkFort: 35, def: 50, hp: 555, spd: 7, range: 400, food: 7, marchOil: 15, marchFood: 6, pop: 3, build: 'port', cost: { steel: 450, oil: 160, rare: 80 }, strongVs: 'sub', branch: 'sea' },
+      sub: { name: '潜艇-小鲨鱼级（Gato）', history: '美国｜二战远洋柴电潜艇，以鱼雷攻击敌方舰船并执行海上破交。', cat: 'nav', atkGround: 1, atkAir: 1, atkSea: 66, atkFort: 1, def: 20, hp: 395, spd: 5, range: 100, food: 6, marchOil: 9, marchFood: 4, pop: 3, build: 'port', cost: { steel: 300, oil: 80, rare: 60 }, strongVs: 'battleship', branch: 'sea' },
+      battleship: { name: '战列舰-衣阿华级（Iowa）', history: '美国｜装备406毫米主炮的高速战列舰，承担舰队作战与对岸炮击。', cat: 'nav', atkGround: 91, atkAir: 35, atkSea: 96, atkFort: 108, def: 120, hp: 1300, spd: 6, range: 1600, food: 12, marchOil: 35, marchFood: 15, pop: 6, build: 'port', cost: { steel: 1200, oil: 400, rare: 250 }, strongVs: 'destroyer', branch: 'sea' },
+      carrier: { name: '航母-埃塞克斯级（Essex）', history: '美国｜二战舰队航空母舰，以舰载机执行制空、对海与对地打击。', cat: 'nav', atkGround: 82, atkAir: 125, atkSea: 80, atkFort: 110, def: 70, hp: 1100, spd: 6, range: 1900, food: 15, marchOil: 42, marchFood: 22, pop: 8, build: 'port', cost: { steel: 1400, oil: 500, rare: 350 }, strongVs: 'bomber', branch: 'sea' }
     },
 
     techs: {
@@ -232,13 +233,15 @@ window.Game = window.Game || {};
       finance:  { name: '精明理财', desc: '市长任命时，黄金税收产出额外+4%/级', max: 5, cat: 'know' },
       research: { name: '格物致知', desc: '市长任命时，科研速度提升4%/级',     max: 5, cat: 'know' },
       ration:   { name: '军屯自给', desc: '市长任命时，全城养兵耗粮降低16%/级，最高80%', max: 5, cat: 'logi' },
-      counter:  { name: '绝境反击', desc: '受击存活后在第3/6/9...回合进行反击，伤害为剩余兵力总伤害的10%/级（最高50%）', max: 5, cat: 'def' }
+      counter:  { name: '绝境反击', desc: '受击存活后在第3/6/9...回合进行反击，伤害为剩余兵力总伤害的10%/级（最高50%）', max: 5, cat: 'def' },
+      learn:    { name: '师夷长技', desc: '第3、6、9…回合触发：同名存活敌军对应攻击的6%/级，单次最高敌方同名兵种攻击30%，仅本回合主动攻击生效', max: 5, cat: 'atk' },
+      borrow_armor: { name: '借甲御敌', desc: '第2、5、8…回合触发：同名存活敌军防御的6%/级，单次最高敌方同名兵种防御30%，仅本回合生效', max: 5, cat: 'def' }
     },
     items: {
       expBook:   { name: '经验书',   icon: '📘', desc: '军官使用,获得10000经验',          cat: 'officer' },
       expBookAdv:{ name: '高级经验书',icon: '📕', desc: '军官使用,获得100000经验',         cat: 'officer' },
       expBookMax:{ name: '满级经验书',icon: '📙', desc: '军官使用,直接升至满级(Lv.100)',    cat: 'officer' },
-      skillBook: { name: '技能书',   icon: '📗', desc: '军官学习新技能',                 cat: 'officer' },
+      skillBook: { name: '通用技能书', icon: '📗', desc: '军官使用，随机学习一个未掌握技能', cat: 'officer' },
       loyaltyBox:{ name: '忠诚宝箱', icon: '🎁', desc: '军官使用,忠诚度+20',              cat: 'officer' },
       renameCard:{ name: '改名卡',   icon: '🏷️', desc: '为军官更换新名字',                cat: 'officer' },
       recruitOrd:{ name: '征募令',   icon: '🎖️', desc: '刷新军校,保底出现一名五星军官',   cat: 'officer' },
@@ -346,6 +349,19 @@ window.Game = window.Game || {};
       isMax: !next
     };
   };
+
+  // 指定技能书由技能定义派生，旧 supply 仅为兼容别名，不单独生成商品。
+  Object.keys(G.DATA.officerSkills).forEach(function (skillId) {
+    if (skillId === 'supply') return;
+    var skill = G.DATA.officerSkills[skillId];
+    G.DATA.items['skillBook_' + skillId] = {
+      name: skill.name + '技能书',
+      icon: '📗',
+      desc: '军官使用，直接学习「' + skill.name + '」Lv.1',
+      cat: 'officer',
+      skillId: skillId
+    };
+  });
 
   G.getMilitaryRankInfo = function (tierOrPrestige) {
     var ranks = G.DATA.militaryRanks;

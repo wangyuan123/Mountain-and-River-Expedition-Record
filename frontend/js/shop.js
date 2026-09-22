@@ -16,6 +16,23 @@ window.Game = window.Game || {};
     { id: 'gift',    name: '礼包' }
   ];
 
+  // 指定技能书与 data.js 的技能表保持同步，旧 supply 仅为兼容别名，不单独上架。
+  var SPECIFIC_SKILL_BOOKS = Object.keys(G.DATA.officerSkills).filter(function (skillId) {
+    return skillId !== 'supply';
+  }).map(function (skillId) {
+    var skill = G.DATA.officerSkills[skillId];
+    return {
+      id: 'skillBook_' + skillId,
+      cat: 'officer',
+      name: skill.name + '技能书',
+      icon: '📗',
+      desc: '选择军官使用，直接学习「' + skill.name + '」Lv.1',
+      price: 160,
+      stock: null,
+      tag: '指定'
+    };
+  });
+
   var SHOP_ITEMS = [
     // —— 军衔珠宝宝箱（开启直接获得晋升军衔所需各类珠宝）——
     { id: 'box_gem',         cat: 'jewelry', name: '军衔珠宝宝箱', icon: '🗃️', desc: '开启获得晋升必备珠宝：珍珠×5、珊瑚×3、琉璃×3、琥珀×2、玛瑙×2', price: 200,  stock: null, tag: '热销' },
@@ -29,7 +46,7 @@ window.Game = window.Game || {};
     { id: 'expBook',    cat: 'officer',  name: '经验书',     icon: '📘', desc: '军官使用,获得10000经验',          price: 30,   stock: null, tag: '热销' },
     { id: 'expBookAdv', cat: 'officer',  name: '高级经验书', icon: '📕', desc: '军官使用,获得100000经验',         price: 150,  stock: null, tag: '推荐' },
     { id: 'expBookMax', cat: 'officer',  name: '满级经验书', icon: '📙', desc: '军官使用,直接升至满级(Lv.100)',   price: 1000, stock: null, tag: '极品' },
-    { id: 'skillBook',  cat: 'officer',  name: '技能书',     icon: '📗', desc: '为军官学习新技能',               price: 80,   stock: null, tag: '' },
+    { id: 'skillBook',  cat: 'officer',  name: '通用技能书', icon: '📗', desc: '选择军官使用，随机学习一个未掌握技能', price: 80, stock: null, tag: '随机' },
     { id: 'loyaltyBox', cat: 'officer',  name: '忠诚宝箱',   icon: '🎁', desc: '军官忠诚度+20,提升留任意愿',     price: 50,   stock: null, tag: '' },
     { id: 'renameCard', cat: 'officer',  name: '改名卡',     icon: '🏷️', desc: '为军官更换新名字',               price: 60,   stock: null, tag: '' },
     { id: 'recruitOrd', cat: 'officer',  name: '征募令',     icon: '🎖️', desc: '刷新军校,保底出现一名五星军官',   price: 500,  stock: 3,    tag: '稀有' },
@@ -71,7 +88,7 @@ window.Game = window.Game || {};
     { id: 'monthCard',  cat: 'gift', name: '钻石月卡',   icon: '💳', desc: '立即得300钻,30天内每日登录送100钻',           price: 1500, stock: 1, tag: '推荐' },
     { id: 'warChest',   cat: 'gift', name: '战备月卡',   icon: '🎖️', desc: '立即得500钻+15个常用道具组合',                price: 888,  stock: 1, tag: '超值' },
     { id: 'annivPack',  cat: 'gift', name: '周年庆大礼', icon: '🎉', desc: '钻石×2000 + 道具×20 + 限定头衔',              price: 1999, stock: 1, tag: '限定' }
-  ];
+  ].concat(SPECIFIC_SKILL_BOOKS);
 
   var Shop = {
     curCat: 'all',

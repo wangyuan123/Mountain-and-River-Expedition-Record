@@ -265,7 +265,7 @@ public class ShopController {
             Map.entry("expBook", "经验书"),
             Map.entry("expBookAdv", "高级经验书"),
             Map.entry("expBookMax", "满级经验书"),
-            Map.entry("skillBook", "技能书"),
+            Map.entry("skillBook", "通用技能书"),
             Map.entry("loyaltyBox", "忠诚宝箱"),
             Map.entry("renameCard", "改名卡"),
             Map.entry("recruitOrd", "征募令"),
@@ -342,7 +342,24 @@ public class ShopController {
         );
 
         static Integer getRechargeDiamond(String pkgId) { return RECHARGE_DIAMONDS.get(pkgId); }
-        static Integer getPrice(String itemId) { return PRICES.get(itemId); }
-        static String getItemName(String itemId) { return NAMES.get(itemId); }
+        static Integer getPrice(String itemId) {
+            return specificSkillBookName(itemId) != null ? 160 : PRICES.get(itemId);
+        }
+
+        static String getItemName(String itemId) {
+            String specificBookName = specificSkillBookName(itemId);
+            return specificBookName != null ? specificBookName : NAMES.get(itemId);
+        }
+
+        /**
+         * 返回已定义军官技能对应的指定技能书名称。
+         * 价格与名称均由后端技能定义派生，防止前端伪造不存在的技能书商品。
+         */
+        private static String specificSkillBookName(String itemId) {
+            if (itemId == null || !itemId.startsWith("skillBook_")) return null;
+            String skillId = itemId.substring("skillBook_".length());
+            var skill = com.wargame.model.constants.OfficerSkillDef.OFFICER_SKILLS.get(skillId);
+            return skill == null ? null : skill.name() + "技能书";
+        }
     }
 }

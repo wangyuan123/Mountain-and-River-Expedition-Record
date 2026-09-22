@@ -6,6 +6,17 @@ const path = require('node:path');
 
 function setupArmy() {
   const nodes = {};
+  const modalNodes = {};
+  const body = {
+    appendChild(element) {
+      element.parentNode = this;
+      nodes[element.id] = element;
+    },
+    removeChild(element) {
+      if (nodes[element.id] === element) delete nodes[element.id];
+      element.parentNode = null;
+    }
+  };
   const G = {
     Core: {
       views: {},
@@ -75,7 +86,12 @@ function setupArmy() {
     Game: G,
     document: {
       activeElement: null,
-      getElementById: id => nodes[id] || null
+      body,
+      getElementById: id => nodes[id] || null,
+      createElement: () => ({
+        style: {},
+        querySelector: selector => modalNodes[selector] || null
+      })
     },
     setInterval: () => 1,
     clearInterval: () => {}
@@ -83,7 +99,7 @@ function setupArmy() {
   ctx.window = ctx;
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/army.js'), 'utf8'), ctx);
 
-  return { G, nodes };
+  return { G, nodes, modalNodes };
 }
 
 test('army cards hide prototype and production details by default, keeping header and recruit row visible', () => {
@@ -113,6 +129,9 @@ test('army cards hide prototype and production details by default, keeping heade
   assert.match(html, /<div class="cost">单价:/);
   assert.match(html, /class="recruit-row"/);
   assert.match(html, /class="btn recruit-btn"/);
+  assert.match(html, />征召<\/button>/);
+  assert.match(html, />解散<\/button>/);
+  assert.doesNotMatch(html, /\[征召\]|\[解散\]/);
 });
 
 test('toggleUnitCard toggles expand state and updates toggle text and display style', () => {
@@ -169,6 +188,42 @@ test('renderView preserves expanded state for already expanded unit cards', () =
   // Motor should remain collapsed
   assert.match(html, /id="unit-card-motor"[\s\S]*?class="unit-card-details"[^>]*style="display:none;"/);
   assert.match(html, /id="unit-card-motor"[\s\S]*?详情 &#9662;/);
+});
+
+test('disband opens a dedicated modal with its own quantity input and slider', async () => {
+  const { G, nodes, modalNodes } = setupArmy();
+  const dismissed = [];
+  let renders = 0;
+  G.Core.render = () => { renders += 1; };
+  G.API.dismiss = async (unit, count) => {
+    dismissed.push({ unit, count });
+    return { success: true };
+  };
+  modalNodes['#armyDisbandQty'] = { value: '1', style: { setProperty: () => {} } };
+  modalNodes['#armyDisbandSlider'] = { value: '1', style: { setProperty: () => {} } };
+  modalNodes['#armyDisbandClose'] = {};
+  modalNodes['#armyDisbandCancel'] = {};
+  modalNodes['#armyDisbandConfirm'] = {};
+
+  G.Army.openDisbandModal('infantry');
+
+  const modal = nodes.armyDisbandModalMask;
+  assert.ok(modal);
+  assert.match(modal.innerHTML, /class="army-disband-head"/);
+  assert.match(modal.innerHTML, /class="army-disband-body"/);
+  assert.match(modal.innerHTML, /class="army-disband-quantity"/);
+  assert.match(modal.innerHTML, /id="armyDisbandQty"[^>]*min="1" max="100000" value="1"/);
+  assert.match(modal.innerHTML, /id="armyDisbandSlider"[^>]*min="1" max="100000" value="1"/);
+  assert.doesNotMatch(modal.innerHTML, /id="qty_infantry"/);
+
+  modalNodes['#armyDisbandSlider'].value = '325';
+  modalNodes['#armyDisbandSlider'].oninput();
+  assert.equal(modalNodes['#armyDisbandQty'].value, 325);
+
+  await modalNodes['#armyDisbandConfirm'].onclick();
+  assert.deepEqual(dismissed, [{ unit: 'infantry', count: 325 }]);
+  assert.equal(nodes.armyDisbandModalMask, undefined);
+  assert.equal(renders, 1);
 });
 
 test('unitDisplayName formats full names to [兵种名](编号) and home summary uses this format', () => {
@@ -233,6 +288,7 @@ test('dispatch unit selection displays compact [兵种名](编号) format with t
       Core: {
         views: {},
         state: { tech: {}, army: { infantry: 100, armored: 50 }, officers: [], resources: {}, world: { pos: { x: 10, y: 10 }, wildTiles: [] } },
+        armyCap: () => 200,
         spdMul: () => 1
       }
     }
@@ -250,6 +306,8 @@ test('dispatch unit selection displays compact [兵种名](编号) format with t
   assert.match(html, /<span class="dispatch-unit-name" title="装甲车-猎鹿犬防空型（T17E2）">装甲车\(T17E2\)/);
   assert.match(html, /class="qty recruit-qty"/);
   assert.match(html, /class="recruit-slider"/);
+  assert.match(html, /出征兵力 \/ 带兵上限/);
+  assert.match(html, /id="estDispatchTroops">2 \/ 200/);
 });
 
 test('compact css styles define 24px height controls and reduced margins', () => {
@@ -263,4 +321,3 @@ test('compact css styles define 24px height controls and reduced margins', () =>
   // compact unit cards
   assert.match(css, /\.unit-card\s*\{[^}]*padding:\s*5px 8px/);
 });
-

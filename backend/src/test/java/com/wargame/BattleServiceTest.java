@@ -1,12 +1,14 @@
 package com.wargame;
 
 import com.wargame.model.dto.BattleResult;
+import com.wargame.model.dto.BattleRoundState;
 import com.wargame.model.constants.UnitDef;
 import com.wargame.service.BattleService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -20,6 +22,77 @@ class BattleServiceTest {
     void setUp() {
         // BattleService has no repository dependencies — only uses static GameData
         battleService = new BattleService(0);
+    }
+
+    /**
+     * 以无科技、无军官与无城防的固定环境结算单个战术回合。
+     *
+     * @param attackerArmy 攻方兵力。
+     * @param defenderArmy 守方兵力。
+     * @param attackerPositions 攻方坐标。
+     * @param defenderPositions 守方坐标。
+     * @param initialDistance 战场初始宽度。
+     * @param attackerOrders 攻方指令。
+     * @return 结算后的回合快照。
+     */
+    private BattleRoundState resolveTacticalRound(Map<String, Integer> attackerArmy,
+                                                   Map<String, Integer> defenderArmy,
+                                                   Map<String, Integer> attackerPositions,
+                                                   Map<String, Integer> defenderPositions,
+                                                   int initialDistance,
+                                                   Map<String, BattleService.UnitOrder> attackerOrders) {
+        return battleService.resolveWorldRound(
+                attackerArmy, defenderArmy, attackerPositions, defenderPositions, initialDistance,
+                Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(),
+                0, 0, 0, 0, 0, 0, 1, attackerOrders, Collections.emptyMap()
+        );
+    }
+
+    @Test
+    @DisplayName("战术空域: 敌方空军或防空装甲车存活时，空军不得越过封锁线")
+    void tacticalAirCannotAdvancePastEnemyAirOrAntiAirLine() {
+        BattleRoundState state = resolveTacticalRound(
+                Map.of("fighter", 1), Map.of("armored", 1),
+                Map.of("fighter", 2700), Map.of("armored", 3000), 5000,
+                Map.of("fighter", new BattleService.UnitOrder(BattleService.CommandAction.ADVANCE))
+        );
+
+        assertEquals(2700, state.attackerPositions().get("fighter"),
+                "战斗机进入防空装甲车射程后必须停在防空封锁线前，不能继续穿越");
+    }
+
+    @Test
+    @DisplayName("战术空域: 敌方无空军和防空装甲车时，空军可越过地面前排进入纵深")
+    void tacticalAirCanBypassGroundLineWhenAirspaceIsOpen() {
+        BattleRoundState state = resolveTacticalRound(
+                Map.of("fighter", 1), Map.of("infantry", 100, "rocket", 1),
+                Map.of("fighter", 1400), Map.of("infantry", 1500, "rocket", 4000), 5000,
+                Map.of("fighter", new BattleService.UnitOrder(BattleService.CommandAction.ADVANCE))
+        );
+
+        assertEquals(1900, state.attackerPositions().get("fighter"),
+                "空域开放后，战斗机应越过普通地面前排并继续向敌方纵深推进");
+    }
+
+    @Test
+    @DisplayName("战术空域: 空中封锁下未指定目标攻击最近单位，玩家可指定其他射程内目标")
+    void tacticalAirDefaultsToNearestTargetAtBlockadeLine() {
+        Map<String, Integer> defenderArmy = Map.of("armored", 10, "fighter", 1);
+        Map<String, Integer> defenderPositions = Map.of("armored", 3000, "fighter", 3030);
+        BattleRoundState automatic = resolveTacticalRound(
+                Map.of("fighter", 1), defenderArmy,
+                Map.of("fighter", 2700), defenderPositions, 5000, Collections.emptyMap()
+        );
+        BattleRoundState focused = resolveTacticalRound(
+                Map.of("fighter", 1), defenderArmy,
+                Map.of("fighter", 2700), defenderPositions, 5000,
+                Map.of("fighter", new BattleService.UnitOrder(BattleService.CommandAction.ADVANCE, "fighter"))
+        );
+
+        assertTrue(automatic.log().contains("空战敌装甲车"),
+                "未指定目标时，空军应攻击封锁线射程内最近的合法目标");
+        assertTrue(focused.log().contains("空战敌战斗机"),
+                "玩家指定后，空军应可攻击射程内任意合法单位");
     }
 
     @Test

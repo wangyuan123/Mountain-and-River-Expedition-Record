@@ -22,6 +22,7 @@ import java.util.Map;
 public class GuildService {
 
     @org.springframework.beans.factory.annotation.Autowired private AccountService accounts;
+    @org.springframework.beans.factory.annotation.Autowired private GuildRelationService guildRelations;
 
     private static final int MAX_MEMBERS = 30;
     private static final String LEADER = "leader";
@@ -127,6 +128,17 @@ public class GuildService {
         return detail(guild.getId(), playerId);
     }
 
+    /**
+     * 由军团门面暴露外交关系设置，复用团员权限与详情返回约定。
+     * @param playerId 当前操作玩家 ID
+     * @param targetGuildId 目标军团 ID
+     * @param status hostile、friendly 或 neutral
+     * @return 关系更新结果
+     */
+    public Map<String, Object> updateRelation(Long playerId, Long targetGuildId, String status) {
+        return guildRelations.updateRelation(playerId, targetGuildId, status);
+    }
+
     @Transactional
     public Map<String, Object> updateRole(Long playerId, Long targetPlayerId, String role) {
         GuildMember operator = guildMemberRepository.findByPlayerId(playerId).orElseThrow(() -> new IllegalArgumentException("尚未加入军团"));
@@ -212,6 +224,8 @@ public class GuildService {
             members.add(item);
         }
         result.put("members", members);
+        // 外交关系属于军团共享状态，所有成员均需看到当前名单以理解地图交战规则。
+        result.put("relations", guildRelations != null ? guildRelations.listRelations(guildId) : List.of());
         if (isManager(viewer)) {
             List<Map<String, Object>> applications = new ArrayList<>();
             for (GuildApplication app : guildApplicationRepository.findByGuildIdOrderByCreatedAtAsc(guildId)) {

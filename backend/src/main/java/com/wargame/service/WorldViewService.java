@@ -239,6 +239,7 @@ public class WorldViewService {
     /** 来袭情报直接关联实际行军，避免再创建一份会重复结算战斗的 IncomingMarch。 */
     public List<Map<String, Object>> getIncoming(Player player) {
         Long playerId = player.getId();
+        long now = System.currentTimeMillis();
         List<Map<String, Object>> incoming = new ArrayList<>();
         if (playerId != null) {
             List<IncomingMarch> entities = incomingMarchRepository.findByTargetPlayerId(playerId);
@@ -283,7 +284,9 @@ public class WorldViewService {
                 info.put("army", JsonUtil.parseObjMap(march.getArmy()));
                 info.put("arriveAt", march.getArriveAt());
                 info.put("action", march.getAction());
-                info.put("arrived", false);
+                // 防守方可在抵达后直接进入同一战术会话，首次读取会由战斗接口补建会话。
+                info.put("arrived", march.getBattleId() != null
+                        || now >= Objects.requireNonNullElse(march.getArriveAt(), Long.MAX_VALUE));
                 incoming.add(info);
             }
         }

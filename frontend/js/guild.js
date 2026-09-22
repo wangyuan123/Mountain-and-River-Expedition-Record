@@ -118,6 +118,13 @@ window.Game = window.Game || {};
       }).catch(function (err) { G.toast(err.message || '保存失败'); });
     },
 
+    updateRelation: function (guildId, status) {
+      G.API.updateGuildRelation(guildId, status).then(function (data) {
+        G.toast(data.message || '军团关系已更新');
+        Guild.reload();
+      }).catch(function (err) { G.toast(err.message || '关系设置失败'); });
+    },
+
     updateRole: function (playerId, role) {
       G.API.updateGuildRole(playerId, role).then(function () {
         G.toast(role === 'admin' ? '已任命管理员' : '已取消管理员');
@@ -212,6 +219,24 @@ window.Game = window.Game || {};
         if (g.isLeader && m.role !== 'leader') h += '<button class="tcard-btn tcard-btn-ok" onclick="Game.Guild.updateRole(' + m.playerId + ',\'' + (m.role === 'admin' ? 'member' : 'admin') + '\')">' + (m.role === 'admin' ? '取消管理员' : '任命管理员') + '</button>';
         if (g.isLeader && m.role !== 'leader') h += ' <button class="tcard-btn tcard-btn-warn" onclick="Game.Guild.transferLeadership(' + m.playerId + ')">转让团长</button>';
         if ((g.isLeader || g.role === 'admin') && m.role !== 'leader') h += ' <button class="tcard-btn tcard-btn-warn" onclick="Game.Guild.remove(' + m.playerId + ')">移出</button>';
+        h += '</div>';
+      }
+      h += '</div>';
+      h += '<div class="zone-head">=== 军团外交 ===</div><div class="desc">敌对军团成员可直接征服、掠夺；友好军团成员不能宣战或交战。</div><div class="guild-list">';
+      var relations = g.relations || [];
+      var relationByGuild = {};
+      for (var ri = 0; ri < relations.length; ri++) relationByGuild[relations[ri].guildId] = relations[ri].status;
+      var candidates = this.list || [];
+      if (!candidates.length) h += '<div class="panel">暂无其他军团可设置关系。</div>';
+      for (var gi = 0; gi < candidates.length; gi++) {
+        var other = candidates[gi];
+        if (other.id === g.id) continue;
+        var status = relationByGuild[other.id] || 'neutral';
+        var statusText = status === 'hostile' ? '敌对' : (status === 'friendly' ? '友好' : '中立');
+        h += '<div class="guild-member"><div><b>' + esc(other.icon || '⚑') + ' ' + esc(other.name) + '</b><div class="guild-muted">当前关系：' + statusText + '</div></div>';
+        if (g.isManager) {
+          h += '<div><button class="tcard-btn tcard-btn-warn" onclick="Game.Guild.updateRelation(' + other.id + ',\'hostile\')">设为敌对</button> <button class="tcard-btn tcard-btn-ok" onclick="Game.Guild.updateRelation(' + other.id + ',\'friendly\')">设为友好</button> <button class="tcard-btn" onclick="Game.Guild.updateRelation(' + other.id + ',\'neutral\')">设为中立</button></div>';
+        }
         h += '</div>';
       }
       h += '</div>';

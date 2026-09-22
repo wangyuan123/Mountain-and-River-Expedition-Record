@@ -24,9 +24,9 @@ test('all displayed unit stats and recruitment costs match server definitions', 
     const [, id, key, name, cat, numbers, build, costs, strongVs, branch, options] = match;
     assert.equal(id, key);
     const stats = numbers.split(',').map((value) => Number(value.trim()));
-    assert.equal(stats.length, 10, id);
+    assert.equal(stats.length, 12, id);
     const expected = { name, cat, build, branch, cost: costMap(costs), strongVs: JSON.parse(strongVs) };
-    ['atkGround', 'atkAir', 'atkSea', 'atkFort', 'def', 'hp', 'spd', 'range', 'food', 'pop'].forEach((field, i) => { expected[field] = stats[i]; });
+    ['atkGround', 'atkAir', 'atkSea', 'atkFort', 'def', 'hp', 'spd', 'range', 'food', 'marchOil', 'marchFood', 'pop'].forEach((field, i) => { expected[field] = stats[i]; });
     for (const [field, value] of Object.entries(expected)) assert.deepEqual(data.units[id][field], value, id + '.' + field);
     const optional = options.split(',').map((value) => value.trim()).filter(Boolean);
     if (optional.length) {

@@ -364,7 +364,7 @@
               if (info.cat === 'jewelry' && !info.isBox && iid.indexOf('box_') !== 0) {
                 btnHtml = '<button type="button" class="btn depot-btn" onclick="Game.go(\'mainQuest\')">[前往晋升军衔]</button>';
               } else {
-                var btnLabel = (info.isBox || iid.indexOf('box_') === 0) ? '开启宝箱' : (iid === 'expBook' || iid === 'expBookAdv' || iid === 'expBookMax' || iid === 'loyaltyBox' || iid === 'renameCard' || iid === 'skillBook' || iid === 'starUp') ? '选择军官使用' : '使用';
+                var btnLabel = (info.isBox || iid.indexOf('box_') === 0) ? '开启宝箱' : (iid === 'expBook' || iid === 'expBookAdv' || iid === 'expBookMax' || iid === 'loyaltyBox' || iid === 'renameCard' || iid === 'skillBook' || iid.indexOf('skillBook_') === 0 || iid === 'starUp') ? '选择军官使用' : '使用';
                 btnHtml = '<button type="button" class="btn depot-btn" onclick="Game.Depot.useItem(\'' + iid + '\')">[' + btnLabel + ']</button>';
               }
             }
