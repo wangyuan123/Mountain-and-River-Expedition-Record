@@ -33,6 +33,7 @@ import java.util.*;
 public class WorldService {
 
     @org.springframework.beans.factory.annotation.Autowired private AccountService accounts;
+    @org.springframework.beans.factory.annotation.Autowired private GuildRelationService guildRelations;
 
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
@@ -456,6 +457,18 @@ public class WorldService {
             return result;
         }
 
+        String guildRelation = guildRelations.relationshipBetweenPlayers(playerId, defenderId);
+        if (GuildRelationService.HOSTILE.equals(guildRelation)) {
+            result.put("success", false);
+            result.put("message", "敌对军团成员可直接征服或掠夺，无需宣战");
+            return result;
+        }
+        if (GuildRelationService.FRIENDLY.equals(guildRelation)) {
+            result.put("success", false);
+            result.put("message", "友好军团成员之间不能宣战");
+            return result;
+        }
+
         Player defender = accounts.lockPlayer(defenderId);
         if (defender.deletionDue(System.currentTimeMillis())) throw new IllegalArgumentException("目标城池已失效");
         if (defender == null) {
@@ -597,6 +610,14 @@ public class WorldService {
         Long defenderId = target.getOwnerId();
         long warAt;
         long warEndAt;
+        if (defenderId != null && GuildRelationService.HOSTILE.equals(guildRelations.relationshipBetweenPlayers(playerId, defenderId))) {
+            result.put("phase", "combat");
+            result.put("warAt", now);
+            result.put("warEndAt", 0L);
+            result.put("remaining", 0L);
+            result.put("guildRelation", GuildRelationService.HOSTILE);
+            return result;
+        }
         if (defenderId != null) {
             Player defender = playerRepository.findById(defenderId).orElse(null);
             if (defender != null) {

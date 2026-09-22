@@ -45,6 +45,8 @@ game:
   tick-interval: 5000
   tick-batch-size: 100
   tick-max-batches: 20
+  tactical-battle-interval: 1000
+  tactical-battle-batch-size: 100
   scheduling:
     enabled: true
   max-offline-hours: 8

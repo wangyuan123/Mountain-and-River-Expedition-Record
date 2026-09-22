@@ -148,6 +148,119 @@ test('battle list uses action titles and keeps detailed results behind both deta
   assert.match(toggleBtn.innerHTML, /查看战斗详情/);
 });
 
+test('defender battle report maps the invader and commander to the enemy side', () => {
+  const { G } = setup();
+  G.fmt = String;
+  G.state.player.name = 'strong-defender';
+  G.DATA.units = {
+    infantry: { name: '步兵' },
+    heavyTank: { name: '重型坦克' }
+  };
+  const report = {
+    id: 31, type: 'battle', time: Date.now(), perspective: 'defender', win: true, attackerWin: false,
+    targetType: 'player', action: 'plunder', attackerName: '来袭玩家', fromName: '敌方城市',
+    toName: '我方主城', toCoord: '20,20', plunder: { food: 30 }, exp: 999,
+    initialAttacker: { heavyTank: 1 }, survivorAttacker: { heavyTank: 0 },
+    initialDefender: { infantry: 1000 }, survivorDefender: { infantry: 990 },
+    commanders: { attacker: { name: '朱可夫', level: 100, military: 219 }, defender: null },
+    roundLogs: ['我方重型坦克(1)炮击敌步兵(1000) 伤害10 击毁10']
+  };
+  const card = G.Battle.renderReportCard(report);
+  const board = G.Battle.renderReportBoard(report, false);
+
+  assert.match(card, /rc-result w">胜/);
+  assert.match(board, /防守成功/);
+  assert.match(board, /敌方统帅:<\/b> 朱可夫/);
+  assert.match(board, /来袭玩家 对我方城市 我方主城 20,20 发起了掠夺/);
+  assert.match(board, /我方防守成功，已击退来袭部队/);
+  assert.doesNotMatch(board, /我方遭受强烈阻击/);
+  assert.match(board, /损失资源:<\/b> 粮30/);
+  assert.doesNotMatch(board, /获得经验/);
+
+  const mineStart = board.indexOf('【我方军队】');
+  const enemyStart = board.indexOf('【敌方军队】');
+  const mineHtml = board.slice(mineStart, enemyStart);
+  const enemyHtml = board.slice(enemyStart);
+  assert.match(mineHtml, /无将领参战/);
+  assert.match(mineHtml, /步兵/);
+  assert.doesNotMatch(mineHtml, /朱可夫|重型坦克/);
+  assert.match(enemyHtml, /朱可夫/);
+  assert.match(enemyHtml, /重型坦克/);
+});
+
+test('battle commander skills show final bonuses instead of per-level rules', () => {
+  const { G } = setup();
+  G.escapeHtml = value => String(value).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const panel = G.Battle.renderCommanderPanel({
+    attacker: {
+      name: '朱可夫', level: 100, military: 219,
+      skills: [
+        { name: '全军冲锋', level: 5, description: '攻击力额外+10%/级，第1、4、7…回合触发' },
+        { name: '破甲打击', level: 5, description: '无视敌方防御6%/级' }
+      ]
+    },
+    defender: null
+  }, 'attacker');
+
+  assert.match(panel, /攻击力额外\+50%，第1、4、7…回合触发/);
+  assert.match(panel, /无视敌方防御30%/);
+  assert.doesNotMatch(panel, /%\/级/);
+});
+
+test('legacy player battle report infers defender perspective from attacker name', () => {
+  const { G } = setup();
+  G.fmt = String;
+  G.state.player.name = '本方玩家';
+  G.DATA.units = { infantry: { name: '步兵' }, heavyTank: { name: '重型坦克' } };
+  const board = G.Battle.renderReportBoard({
+    time: Date.now(), targetType: 'player', action: 'plunder', attackerName: '其他玩家', win: false,
+    toName: '本方主城', initialAttacker: { heavyTank: 1 }, survivorAttacker: {},
+    initialDefender: { infantry: 10 }, survivorDefender: { infantry: 9 },
+    commanders: { attacker: { name: '朱可夫' }, defender: null }
+  }, false);
+
+  assert.match(board, /防守成功/);
+  assert.ok(board.indexOf('步兵') < board.indexOf('【敌方军队】'));
+  assert.ok(board.indexOf('朱可夫') > board.indexOf('【敌方军队】'));
+});
+
+test('battle report summary displays the defender commander and preserves old report fallback', () => {
+  const { G } = setup();
+  G.escapeHtml = value => String(value).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  const attackerBoard = G.Battle.renderReportBoard({
+    time: Date.now(), perspective: 'attacker', commanders: {
+      attacker: { name: '朱可夫' }, defender: { name: '<蒙哥马利>' }
+    }
+  }, false);
+  const currentBoardWithoutCommander = G.Battle.renderReportBoard({ time: Date.now(), perspective: 'attacker' }, false);
+
+  assert.match(attackerBoard, /敌方统帅:<\/b> &lt;蒙哥马利&gt;/);
+  assert.match(currentBoardWithoutCommander, /敌方统帅:<\/b> 统帅信息未记录/);
+});
+
+test('new battle reports show a recipient settlement snapshot', () => {
+  const { G } = setup();
+  G.fmt = String;
+  const board = G.Battle.renderReportBoard({
+    time: Date.now(), perspective: 'attacker', win: true, action: 'conquer', targetType: 'npc',
+    plunder: { food: 120, gold: 30 }, exp: 80,
+    prestigeChange: 12, prestigeAfter: 248, moraleChange: 1, moraleAfter: 71,
+    losses: 40, recoveryPercent: 25, recoveredCount: 10
+  }, false);
+
+  assert.match(board, /【战果结算】/);
+  assert.match(board, /资源战果/);
+  assert.match(board, /将领经验/);
+  assert.match(board, /声望变化/);
+  assert.match(board, /\+12 <small>当前 248<\/small>/);
+  assert.match(board, /民心变化/);
+  assert.match(board, /\+1 <small>当前 71<\/small>/);
+  assert.match(board, /本方战损/);
+  assert.match(board, /伤兵回收/);
+  assert.match(board, /25% <small>入营 10<\/small>/);
+});
+
 test('report titles distinguish actions and support historical subjects without matching target names', () => {
   const { G } = setup();
   for (const [report, title] of [

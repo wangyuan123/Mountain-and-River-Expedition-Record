@@ -248,6 +248,7 @@ window.Game = window.Game || {};
     reviewGuildApplication: function (id, approved) { return client.post('/game/guild/applications/' + id + '/review', { approved: approved }); },
     updateGuildNotice: function (notice) { return client.post('/game/guild/notice', { notice: notice }); },
     updateGuildSettings: function (name, icon) { return client.post('/game/guild/settings', { name: name, icon: icon }); },
+    updateGuildRelation: function (guildId, status) { return client.post('/game/guild/relations/' + guildId, { status: status }); },
     updateGuildRole: function (playerId, role) { return client.post('/game/guild/members/' + playerId + '/role', { role: role }); },
     removeGuildMember: function (playerId) { return client.post('/game/guild/members/' + playerId + '/remove', {}); },
     transferGuildLeadership: function (playerId) { return client.post('/game/guild/members/' + playerId + '/transfer', {}); },
@@ -506,8 +507,11 @@ window.Game = window.Game || {};
     },
 
     /** 提交本回合所有已选择兵种的战术命令，并取得下一回合战场快照。 */
-    commandTacticalBattle: function (marchId, orders) {
-      return client.post('/game/world/battle/command?marchId=' + encodeURIComponent(marchId), { orders: orders || {} })
+    commandTacticalBattle: function (marchId, orders, round) {
+      return client.post('/game/world/battle/command?marchId=' + encodeURIComponent(marchId), {
+        orders: orders || {},
+        round: Number.isFinite(Number(round)) ? Number(round) : null
+      })
         .then(function (data) {
           if (data && data.state) applyState(data.state);
           return data;

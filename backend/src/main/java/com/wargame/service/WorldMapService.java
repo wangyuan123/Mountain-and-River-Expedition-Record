@@ -22,6 +22,7 @@ public class WorldMapService {
     private final WildTileRepository wilds;
     private final PlayerRepository players;
     private final WorldTerrainService terrain;
+    @org.springframework.beans.factory.annotation.Autowired private GuildRelationService guildRelations;
 
     public Map<String, Object> chunk(Long viewer, int cx, int cy) {
         int count = (WorldConfig.SIZE + CHUNK_SIZE - 1) / CHUNK_SIZE;
@@ -115,6 +116,8 @@ public class WorldMapService {
             t.put("ownerId", owner.getId());
             t.put("ownerName", owner.getUsername());
             t.put("prestige", owner.getPrestige() == null ? 0 : owner.getPrestige());
+            // 敌对军团可绕过个人宣战；关系值供地图在不伪造战争倒计时的前提下展示操作入口。
+            t.put("guildRelation", guildRelations.relationshipBetweenPlayers(viewer, owner.getId()));
             boolean related = !self && viewer.equals(owner.getWarAgainstId());
             long warAt = related && owner.getWarAt() != null ? owner.getWarAt() : 0L;
             long warEnd = related && owner.getWarEndAt() != null ? owner.getWarEndAt() : 0L;

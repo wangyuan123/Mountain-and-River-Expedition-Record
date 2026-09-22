@@ -1,5 +1,7 @@
 package com.wargame.service;
 
+import com.wargame.model.constants.GameData;
+import com.wargame.model.constants.ItemDef;
 import com.wargame.model.constants.OfficerEquipmentDef;
 import com.wargame.model.entity.CityState;
 import com.wargame.model.entity.Officer;
@@ -109,6 +111,10 @@ public class DepotService {
         }
         if ("skillBook".equals(itemId)) {
             return useSkillBook(playerId, officerId);
+        }
+        String specificSkillId = specificSkillId(itemId);
+        if (specificSkillId != null) {
+            return useSpecificSkillBook(playerId, itemId, officerId, specificSkillId);
         }
         if ("loyaltyBox".equals(itemId)) {
             return useLoyaltyBox(playerId, officerId);
@@ -381,6 +387,23 @@ public class DepotService {
     private Map<String, Object> useSkillBook(Long playerId, Long officerId) {
         // 复用 OfficerService.learnSkill 已有逻辑（已服务端化）
         return officerService.learnSkill(playerId, officerId);
+    }
+
+    /**
+     * 解析指定技能书对应的技能 ID。
+     * 道具必须同时注册在物品定义和军官技能定义中，避免客户端伪造书名学习任意技能。
+     *
+     * @param itemId 仓库中使用的道具 ID
+     * @return 对应的技能 ID；非指定技能书时返回 {@code null}
+     */
+    private String specificSkillId(String itemId) {
+        if (itemId == null || !itemId.startsWith("skillBook_") || !ItemDef.ITEMS.containsKey(itemId)) return null;
+        String skillId = itemId.substring("skillBook_".length());
+        return GameData.OFFICER_SKILLS.containsKey(skillId) ? skillId : null;
+    }
+
+    private Map<String, Object> useSpecificSkillBook(Long playerId, String itemId, Long officerId, String skillId) {
+        return officerService.learnSpecificSkill(playerId, officerId, itemId, skillId);
     }
 
     private Map<String, Object> useLoyaltyBox(Long playerId, Long officerId) {

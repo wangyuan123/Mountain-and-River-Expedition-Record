@@ -74,9 +74,8 @@ class MarchCommanderBattleTest extends BaseServiceTest {
         assertNotNull(march);
         assertEquals(nimitz.getId(), march.getCommanderId(), "行军记录应绑定尼米兹作为指挥官");
 
-        // 4. 模拟时间流逝，行军到达目标并触发战斗结算
-        long arriveTime = march.getArriveAt() + 1000L;
-        marchService.processMarches(playerId, arriveTime);
+        // 4. 模拟离线玩家：每个 15 秒回合由服务端默认战术自动结算。
+        settleWithDefaultTactics(march);
 
         // 5. 校验战报
         List<ScoutReport> reports = scoutReportRepository.findByPlayerId(playerId);
@@ -132,8 +131,7 @@ class MarchCommanderBattleTest extends BaseServiceTest {
         );
 
         March march = marchService.createDispatch(playerId, req);
-        long arriveTime = march.getArriveAt() + 1000L;
-        marchService.processMarches(playerId, arriveTime);
+        settleWithDefaultTactics(march);
 
         // 验证战报攻方将领是尼米兹，而非主城的巴顿
         List<ScoutReport> reports = scoutReportRepository.findByPlayerId(playerId);
@@ -151,5 +149,17 @@ class MarchCommanderBattleTest extends BaseServiceTest {
 
         assertTrue(updatedNimitz.getExp() > 0L, "参战的尼米兹应获得经验");
         assertEquals(0L, updatedPatton.getExp(), "未带兵出征的主城司令巴顿不应获得该战斗经验");
+    }
+
+    /** 模拟不进入指挥界面时，服务端按 15 秒时限自动推进整场战斗。 */
+    private void settleWithDefaultTactics(March march) {
+        long roundTime = march.getArriveAt();
+        marchService.processMarches(playerId, roundTime);
+        for (int round = 0; round < 30 && marchRepository.findById(march.getId()).isPresent(); round++) {
+            March activeMarch = marchRepository.findById(march.getId()).orElseThrow();
+            if (activeMarch.getBattleId() == null) break;
+            roundTime += 15_000L;
+            marchService.processMarches(playerId, roundTime);
+        }
     }
 }

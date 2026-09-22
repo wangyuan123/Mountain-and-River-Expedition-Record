@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="blue-white-classic">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <base href="../">
+  <title>战术单位横向对齐预览</title>
+  <link rel="stylesheet" href="css/style.css?v=3.9-tactical-alignment">
+  <link rel="stylesheet" href="css/themes.css">
+  <link rel="stylesheet" href="css/classic-home.css">
+  <style>body{margin:0}#screen{padding:12px}.preview-note{margin-bottom:10px;color:var(--muted);font-size:12px}</style>
+</head>
+<body><div id="screen"><div class="preview-note">敌我相同兵种固定在同一水平线上；我军从左向右推进，敌军从右向左推进。</div><div id="view"></div></div>
+<script src="js/data.js"></script>
+<script>
+Game.Core={views:{},render:function(){}};
+Game.escapeHtml=function(value){return String(value);};
+Game.fmt=function(value){return String(value);};
+Game.go=function(){};
+Game.API={};
+</script>
+<script src="js/battle.js?v=1.19-tactical-return-alerts"></script>
+<script>
+Game.Battle._activeTactical={
+  targetName:'相向行军预览', side:'attacker', initialDistance:600, round:4, maxRound:30,
+  finished:true, result:{win:false}, log:'双方单位朝战场中央推进',
+  attackerArmy:{truck:12,ltank:8,rocket:5,fighter:3},
+  defenderArmy:{truck:10,ltank:7,rocket:4,fighter:2},
+  attackerPositions:{truck:55,ltank:130,rocket:215,fighter:300},
+  defenderPositions:{truck:545,ltank:470,rocket:385,fighter:300}
+};
+Game.Battle.renderTacticalBattle(document.getElementById('view'));
+</script></body></html>

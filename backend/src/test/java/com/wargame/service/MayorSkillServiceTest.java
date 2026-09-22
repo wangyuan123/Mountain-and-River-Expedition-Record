@@ -21,8 +21,8 @@ public class MayorSkillServiceTest extends BaseServiceTest {
     @Autowired private ArmyService armyService;
 
     @Test
-    void skillPoolContainsAllThirteenSkills() {
-        assertEquals(13, OfficerSkillDef.OFFICER_SKILLS.size(), "技能池应包含13个技能");
+    void skillPoolContainsAllFifteenSkills() {
+        assertEquals(15, OfficerSkillDef.OFFICER_SKILLS.size(), "技能池应包含15个技能");
         assertTrue(OfficerSkillDef.OFFICER_SKILLS.containsKey("harvest"), "应包含屯田技能");
         assertTrue(OfficerSkillDef.OFFICER_SKILLS.containsKey("construct"), "应包含营造技能");
         assertTrue(OfficerSkillDef.OFFICER_SKILLS.containsKey("finance"), "应包含理财技能");
@@ -30,6 +30,9 @@ public class MayorSkillServiceTest extends BaseServiceTest {
         assertTrue(OfficerSkillDef.OFFICER_SKILLS.containsKey("leadership"), "应包含统帅技能");
         assertTrue(OfficerSkillDef.OFFICER_SKILLS.containsKey("ration"), "应包含军屯技能");
         assertTrue(OfficerSkillDef.OFFICER_SKILLS.containsKey("counter"), "应包含绝境反击技能");
+        assertTrue(OfficerSkillDef.OFFICER_SKILLS.containsKey("learn"), "应包含师夷长技技能");
+        assertTrue(OfficerSkillDef.OFFICER_SKILLS.containsKey("borrow_armor"), "应包含借甲御敌技能");
+        assertTrue(OfficerSkillDef.conflictsWith("bulwark", "borrow_armor"), "坚守阵地与借甲御敌应互斥");
         assertFalse(OfficerSkillDef.OFFICER_SKILLS.containsKey("supply"), "技能池不应直接包含旧补给技能");
         assertEquals("leadership", OfficerSkillDef.getSkill("supply").key(), "旧补给技能应平滑映射至统帅");
         for (var def : OfficerSkillDef.OFFICER_SKILLS.values()) {

@@ -39,23 +39,31 @@ test('preview escapes names, shows server metrics and handles missing or coincid
   g.DispatchRoute.render(el,{...route,points:[]});assert.match(el.innerHTML,/路线坐标暂不可用/);assert.doesNotMatch(el.innerHTML,/<svg/);
   g.DispatchRoute.render(el,{...route,points:[[20,30]]});assert.match(el.innerHTML,/起终/);assert.doesNotMatch(el.innerHTML,/NaN|Infinity/);
 });
-test('changing units rejects stale previews; late terrain and detached views cannot restore old routes',async()=>{
-  const timers=[],requests=[];let onInput,resolveTerrain;
+test('quantity changes keep the existing preview; unit changes reject stale previews',async()=>{
+  const timers=[],requests=[];let onChange,resolveTerrain;
   const c=setup({setTimeout:fn=>(timers.push(fn),timers.length),clearTimeout(){}});
   c.Game.DispatchRoute.loadTerrain=()=>new Promise(resolve=>resolveTerrain=resolve);
   const rendered=[];c.Game.DispatchRoute.render=(hint,route)=>rendered.push(route.distance);
   c.Game.API={client:{post:()=>new Promise((resolve,reject)=>requests.push({resolve,reject}))}};
   const hint={isConnected:true,innerHTML:'',textContent:'',setAttribute(){},querySelector(){return null;}};
-  c.Game.World.bindRoutePreview({addEventListener:(type,fn)=>onInput=fn},hint,()=>({army:{scout:1}}));
-  timers.pop()();onInput();timers.pop()();
+  let army={scout:1};
+  c.Game.World.bindRoutePreview({addEventListener:(type,fn)=>{if(type==='change')onChange=fn;}},hint,()=>({army}),{start:'起点',end:'终点'});
+  timers.pop()();
+  army={scout:2};onChange();
+  assert.equal(timers.length,0);
+  assert.deepEqual(rendered,[]);
+  army={scout:2,infantry:1};onChange();timers.pop()();
+  resolveTerrain({sea(){return false;}});await new Promise(setImmediate);
   requests[1].resolve({distance:22});await new Promise(setImmediate);
   requests[0].resolve({distance:11});await new Promise(setImmediate);
   assert.deepEqual(rendered,[22]);
-  onInput();resolveTerrain({sea(){return false;}});await new Promise(setImmediate);
+  army={scout:3,infantry:1};onChange();
+  assert.equal(timers.length,0);
   assert.deepEqual(rendered,[22]);
-  timers.pop()();requests[2].reject(Error('所需运力不足'));await new Promise(setImmediate);
+  army={scout:2,infantry:1,transport:1};onChange();timers.pop()();
+  requests[2].reject(Error('所需运力不足'));await new Promise(setImmediate);
   assert.match(hint.textContent,/所需运力不足/);
-  onInput();timers.pop()();hint.isConnected=false;
+  army={scout:2,infantry:1,transport:2};onChange();timers.pop()();hint.isConnected=false;
   requests[3].resolve({distance:33});await new Promise(setImmediate);
   assert.deepEqual(rendered,[22]);
 });

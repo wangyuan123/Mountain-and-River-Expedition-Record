@@ -11,6 +11,7 @@ window.Game = window.Game || {};
   var currentTab = 'units';
   var lastRoute = null;
   var expandedUnits = {};
+  var disbandModal = null;
 
   function setTab(tab) {
     currentTab = tab || 'units';
@@ -66,6 +67,11 @@ window.Game = window.Game || {};
     if (!el) return dflt != null ? dflt : 1;
     var n = parseInt(el.value, 10);
     return isNaN(n) ? (dflt != null ? dflt : 1) : n;
+  }
+
+  function closeDisbandModal() {
+    if (disbandModal && disbandModal.parentNode) disbandModal.parentNode.removeChild(disbandModal);
+    disbandModal = null;
   }
 
   function maxRecruitable(unit) {
@@ -360,18 +366,84 @@ window.Game = window.Game || {};
     useSpeedUp: useSpeedUp,
     formatSeconds: formatSeconds,
 
-    disband: function (id, inputId) {
-      var n = readQty(inputId, 0);
+    openDisbandModal: function (id) {
       var have = (Core.state && Core.state.army && Core.state.army[id]) || 0;
-      if (n <= 0) {
-        G.toast('请输入大于 0 的解散数量');
+      if (have <= 0) {
+        G.toast('当前没有可解散的部队');
         return;
+      }
+
+      closeDisbandModal();
+      var unit = D.units[id] || { name: id };
+      var unitName = getUnitDisplayName(unit.name);
+      var mask = document.createElement('div');
+      mask.className = 'modal-mask';
+      mask.id = 'armyDisbandModalMask';
+      mask.innerHTML = '<div class="modal-card army-disband-modal">' +
+        '<div class="army-disband-head">' +
+          '<div class="army-disband-title">解散部队</div>' +
+          '<button type="button" class="army-disband-close" id="armyDisbandClose" aria-label="关闭">×</button>' +
+        '</div>' +
+        '<div class="army-disband-body">' +
+          '<div class="army-disband-unit">' +
+            '<span>兵种</span><b>' + G.escapeHtml(unitName) + '</b>' +
+            '<span>当前数量</span><strong>' + G.fmt(have) + '</strong>' +
+          '</div>' +
+          '<div class="army-disband-quantity">' +
+            '<div class="army-disband-label">解散数量 <span>1 - ' + G.fmt(have) + '</span></div>' +
+            '<div class="army-disband-qty-row">' +
+              '<input class="qty recruit-qty" id="armyDisbandQty" type="number" min="1" max="' + have + '" value="1" />' +
+              '<div class="recruit-slider-wrap"><input type="range" class="recruit-slider" id="armyDisbandSlider" min="1" max="' + have + '" value="1" style="--p:' + (100 / have).toFixed(1) + '%" /></div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="army-disband-hint">解散后部队将永久离队，请确认数量。</div>' +
+        '</div>' +
+        '<div class="btn-row army-disband-actions">' +
+          '<button type="button" class="btn sm" id="armyDisbandCancel">取消</button>' +
+          '<button type="button" class="btn sm warn" id="armyDisbandConfirm">确定解散</button>' +
+        '</div>' +
+      '</div>';
+      document.body.appendChild(mask);
+      disbandModal = mask;
+
+      var input = mask.querySelector('#armyDisbandQty');
+      var slider = mask.querySelector('#armyDisbandSlider');
+      var normalizeQty = function (value) {
+        var amount = parseInt(value, 10);
+        if (isNaN(amount)) amount = 1;
+        amount = Math.min(have, Math.max(1, amount));
+        input.value = amount;
+        slider.value = amount;
+        slider.style.setProperty('--p', ((amount / have) * 100).toFixed(1) + '%');
+        return amount;
+      };
+      input.oninput = function () { normalizeQty(input.value); };
+      input.onchange = function () { normalizeQty(input.value); };
+      slider.oninput = function () { normalizeQty(slider.value); };
+      mask.querySelector('#armyDisbandCancel').onclick = closeDisbandModal;
+      mask.querySelector('#armyDisbandClose').onclick = closeDisbandModal;
+      mask.querySelector('#armyDisbandConfirm').onclick = function () {
+        var amount = normalizeQty(input.value);
+        closeDisbandModal();
+        return Army.disband(id, amount);
+      };
+      mask.onclick = function (event) { if (event.target === mask) closeDisbandModal(); };
+    },
+
+    closeDisbandModal: closeDisbandModal,
+
+    disband: function (id, count) {
+      var n = parseInt(count, 10);
+      var have = (Core.state && Core.state.army && Core.state.army[id]) || 0;
+      if (isNaN(n) || n <= 0) {
+        G.toast('请输入大于 0 的解散数量');
+        return Promise.resolve();
       }
       if (n > have) {
         G.toast('解散数量不能超过当前拥有的数量(' + have + ')');
-        return;
+        return Promise.resolve();
       }
-      G.API.dismiss(id, n).then(function () {
+      return G.API.dismiss(id, n).then(function () {
         G.toast('解散 ' + getUnitDisplayName(D.units[id].name) + ' x' + n);
         if (G.MainQuest && G.MainQuest.refresh) G.MainQuest.refresh();
         Core.render();
@@ -479,7 +551,8 @@ window.Game = window.Game || {};
         h += '<div class="unit-card-details" style="display:' + (isExpanded ? 'block' : 'none') + ';">';
         if (u.history) h += '<div class="d unit-history">原型：' + G.escapeHtml(u.history) + '</div>';
         h += '<div class="d">' + G.escapeHtml((D.combatRoles && D.combatRoles[id]) || '') + '</div>';
-        h += '<div class="d">对地' + u.atkGround + ' 对空' + u.atkAir + ' 对海' + u.atkSea + ' 对工事' + u.atkFort + ' 防' + u.def + ' 血' + u.hp + ' 速' + u.spd + ' 射程' + u.range + ' 耗粮' + u.food + '/h</div>';
+        h += '<div class="d">对地' + u.atkGround + ' 对空' + u.atkAir + ' 对海' + u.atkSea + ' 对工事' + u.atkFort + ' 防' + u.def + ' 血' + u.hp + ' 速' + u.spd + ' 射程' + u.range + ' 常驻耗粮' + u.food + '/h</div>';
+        h += '<div class="d">行军补给：油耗' + (u.marchOil || 0) + '/100格，粮耗' + (u.marchFood || 0) + '/5分钟</div>';
         if (can) {
           var parallel = stats.parallel;
           h += '<div class="d unit-prod-stat">生产: 基础 ' + (30 + Math.floor((u.cost.steel + u.cost.oil + u.cost.rare) / 10)) + '秒/个，并行 ' + parallel + ' 条 (按栋独立), 平均速度 ×' + stats.avgSpeed.toFixed(2) + '</div>';
@@ -498,8 +571,8 @@ window.Game = window.Game || {};
             '<div class="recruit-slider-wrap">' +
               '<input type="range" class="recruit-slider" id="' + sliderId + '" min="0" max="' + maxRecruit + '" value="' + initialVal + '"' + (maxRecruit <= 0 ? ' disabled' : '') + ' style="--p:' + pct + '%" oninput="Game.Army.onSliderChange(\'' + id + '\',this.value)" />' +
             '</div>' +
-            '<button type="button" class="btn recruit-btn" onclick="Game.Army.recruit(\'' + id + '\',\'' + inpId + '\')">[征召]</button>';
-          if (have > 0) h += '<button type="button" class="btn warn recruit-btn" onclick="Game.Army.disband(\'' + id + '\',\'' + inpId + '\')">[解散]</button>';
+            '<button type="button" class="btn recruit-btn" onclick="Game.Army.recruit(\'' + id + '\',\'' + inpId + '\')">征召</button>';
+          if (have > 0) h += '<button type="button" class="btn warn recruit-btn" onclick="Game.Army.openDisbandModal(\'' + id + '\')">解散</button>';
           h += '</div>';
         } else {
           h += '<div class="cost">需先建造 ' + bName + '</div>';

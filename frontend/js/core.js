@@ -474,7 +474,8 @@ window.Game = window.Game || {};
       var rates = {
         frenzy: 0.10, bulwark: 0.10, blitz: 0.06, suppress: 0.06,
         pierce: 0.06, leadership: 0.04, supply: 0.04, medic: 0.03,
-        ration: 0.16, harvest: 0.10, construct: 0.04, finance: 0.04, research: 0.04
+        ration: 0.16, harvest: 0.10, construct: 0.04, finance: 0.04, research: 0.04,
+        learn: 0.06, borrow_armor: 0.06
       };
       return (rates[skillId] || 0) * lv;
     },
@@ -590,13 +591,15 @@ window.Game = window.Game || {};
       if (G.Main && G.Main.renderNavBar) G.Main.renderNavBar();
       var v = $('view');
       var fn = this.views[this.route] || this.views.home;
-      if (!(this.route === 'world' && G.WorldMap && G.WorldMap.isMap() && G.WorldMap.mounted(v))) v.innerHTML = '';
-      fn.call(this, v);
-      // 每个功能页提供一致的返回入口。按钮放在页面渲染完成后插入，
-      // 因此不会覆盖各模块自己的标题、筛选器或地图容器。
-      if (this.route !== 'home' && this.route !== 'login' && this.route !== 'protection') this.renderBackButton(v);
+      if (v) {
+        if (!(this.route === 'world' && G.WorldMap && G.WorldMap.isMap() && G.WorldMap.mounted(v))) v.innerHTML = '';
+        fn.call(this, v);
+        // 每个功能页提供一致的返回入口。按钮放在页面渲染完成后插入，
+        // 因此不会覆盖各模块自己的标题、筛选器或地图容器。
+        if (this.route !== 'home' && this.route !== 'login' && this.route !== 'protection') this.renderBackButton(v);
+      }
       var foot = $('footbar');
-      foot.innerHTML = this.footer();
+      if (foot) foot.innerHTML = this.footer();
       if (G.Onboarding) G.Onboarding.render();
     },
 

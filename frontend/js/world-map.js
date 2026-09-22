@@ -62,21 +62,60 @@
     if (t.kind === 'wild') return (G.DATA.wildTypes[t.type] || {}).icon || 'img/map/wild-forest.webp';
     return 'img/map/npc-fortress.webp';
   }
+  function marchUnitIcon(unitId) {
+    return (G.UNIT_MODEL && G.UNIT_MODEL[unitId]) || (G.UNIT_ICON && G.UNIT_ICON[unitId]) || '';
+  }
+  /**
+   * 计算行军地图中兵种模型的显示尺寸。
+   * 标记不使用圆形底板，模型需要保留足够尺寸以便在地图缩放后仍可辨认。
+   * @param {number} cameraScale - 当前地图缩放比例。
+   * @returns {number} 兵种模型的像素尺寸。
+   */
+  function marchMarkerIconSize(cameraScale) {
+    return Math.max(36, Math.min(56, cameraScale * .7));
+  }
+  /**
+   * 将行军编队整理为地图可读的主力、伴随兵种和规模信息。
+   * 地图最多同时绘制三种模型，防止混编大部队遮挡路线；未绘制兵种通过 +N 角标保留信息。
+   * @param {Object} march - 含 army 编队数据的行军记录。
+   * @returns {Object} 主力、最多两种伴随兵种、总兵力及未展开兵种数。
+   */
+  function marchFormation(march) {
+    var army = march && march.army || {}, units = [], total = 0;
+    Object.keys(army).forEach(function (unitId) {
+      var count = Number(army[unitId]) || 0;
+      if (count <= 0) return;
+      total += count;
+      units.push({ id:unitId, count:count, iconPath:marchUnitIcon(unitId) });
+    });
+    units.sort(function (a, b) { return b.count - a.count || a.id.localeCompare(b.id); });
+    var drawable = units.filter(function (unit) { return !!unit.iconPath; });
+    var primary = drawable[0] || null, companions = drawable.slice(1, 3);
+    return {
+      primary:primary,
+      companions:companions,
+      total:total,
+      extraTypes:Math.max(0, units.length - (primary ? 1 + companions.length : 0))
+    };
+  }
+  /**
+   * 按透明原图比例设置行军模型尺寸。
+   * @param {PIXI.Sprite} sprite - 待缩放的模型精灵。
+   * @param {number} size - 模型最长边的目标像素尺寸。
+   */
+  function sizeMarchSprite(sprite, size) {
+    var source = sprite.texture.orig || {width:1,height:1}, sourceWidth = source.width || 1, sourceHeight = source.height || 1, scale = size / Math.max(sourceWidth, sourceHeight);
+    sprite.width = sourceWidth * scale;
+    sprite.height = sourceHeight * scale;
+  }
   /**
    * 选择行军地图标记所代表的主力兵种，不影响服务端的行军速度或战斗结算。
    * @param {Object} march - 含 army 编队数据的行军记录。
-   * @returns {string|null} 数量最多且有图标资源的兵种 ID；无有效兵种时返回 null。
+   * @returns {string|null} 数量最多且有首页兵种模型或回退图标的兵种 ID；无有效兵种时返回 null。
    */
   function primaryMarchUnit(march) {
-    var army = march && march.army || {}, primaryUnit = null, primaryCount = 0;
-    Object.keys(army).forEach(function (unitId) {
-      var count = Number(army[unitId]) || 0;
-      if (count > primaryCount && G.UNIT_ICON && G.UNIT_ICON[unitId]) {
-        primaryUnit = unitId;
-        primaryCount = count;
-      }
-    });
-    return primaryUnit;
+    var primary = marchFormation(march).primary;
+    return primary ? primary.id : null;
   }
   // `occupied` is viewer-specific; `claimed` also includes other players' wilds.
   function ownership(t) {
@@ -538,6 +577,14 @@
   MapView.prototype.drawRoutes = function () {
     var self = this, camera = this.camera, routeGraphics = this.routes, now = Date.now(); routeGraphics.clear();
     var targets = cache.targets({ minX:0, minY:0, maxX:camera.size-1, maxY:camera.size-1 }), keep = new Set();
+    function loadMarchTexture(iconPath) {
+      var texture = textures[iconPath];
+      if (!texture) {
+        texture = textures[iconPath] = PIXI.Texture.from(iconPath);
+        texture.baseTexture.once('loaded', function () { self.wake(); });
+      }
+      return texture;
+    }
     function endpoint(x, y, kind) {
       var t = kind === 'player' ? {kind:'player',x:x,y:y} : targets.find(function(t){ return t.x === x && t.y === y && (!kind || t.kind === kind); });
       var center = t ? markerCenter(t) : {x:x+.5,y:y+.5};
@@ -567,25 +614,36 @@
       }
       var markerKey = String(march.id != null ? march.id : [fromX, fromY, march.targetX, march.targetY].join(':'));
       keep.add(markerKey);
-      var unitId = primaryMarchUnit(march), iconPath = unitId && G.UNIT_ICON[unitId], marker = self.marchMarkers.get(markerKey);
+      var formation = marchFormation(march), primary = formation.primary, iconPath = primary && primary.iconPath, marker = self.marchMarkers.get(markerKey);
       if (!marker) {
-        marker = new PIXI.Container(); marker.backdrop = new PIXI.Graphics(); marker.addChild(marker.backdrop);
+        marker = new PIXI.Container();
+        marker.companions = [new PIXI.Sprite(PIXI.Texture.EMPTY), new PIXI.Sprite(PIXI.Texture.EMPTY)];
+        marker.companions.forEach(function (sprite) { sprite.anchor.set(.5); marker.addChild(sprite); });
         marker.icon = new PIXI.Sprite(PIXI.Texture.EMPTY); marker.icon.anchor.set(.5); marker.addChild(marker.icon);
+        marker.countText = new PIXI.Text('', { fontFamily:'-apple-system, PingFang SC, Microsoft YaHei, sans-serif', fontSize:10, fill:0xffffff, stroke:0x172a25, strokeThickness:3, fontWeight:'700' });
+        marker.countText.anchor.set(0, 1); marker.addChild(marker.countText);
         self.marchLayer.addChild(marker); self.marchMarkers.set(markerKey, marker);
       }
       if (iconPath) {
-        var texture = textures[iconPath];
-        if (!texture) {
-          texture = textures[iconPath] = PIXI.Texture.from(iconPath);
-          texture.baseTexture.once('loaded', function () { self.wake(); });
-        }
+        var texture = loadMarchTexture(iconPath);
         if (marker.icon.texture !== texture) marker.icon.texture = texture;
       }
-      var iconSize = Math.max(15, Math.min(25, camera.scale*.32));
+      // 主力模型居中，最多两种伴随模型缩小排在两侧，表现混编大部队但不遮挡路线。
+      var iconSize = marchMarkerIconSize(camera.scale);
       marker.position.set(position.x, position.y); marker.visible = !!iconPath;
-      marker.backdrop.clear().lineStyle(1.5, tint, .98).beginFill(0x10251f,.9).drawCircle(0,0,iconSize*.62).endFill();
-      var source = marker.icon.texture.orig || {width:1,height:1}, sourceWidth = source.width || 1, sourceHeight = source.height || 1, iconScale = iconSize/Math.max(sourceWidth,sourceHeight);
-      marker.icon.width = sourceWidth*iconScale; marker.icon.height = sourceHeight*iconScale;
+      sizeMarchSprite(marker.icon, iconSize);
+      formation.companions.forEach(function (companion, companionIndex) {
+        var sprite = marker.companions[companionIndex], companionTexture = loadMarchTexture(companion.iconPath);
+        if (sprite.texture !== companionTexture) sprite.texture = companionTexture;
+        sizeMarchSprite(sprite, iconSize * .56);
+        sprite.position.set(companionIndex === 0 ? -iconSize * .42 : iconSize * .42, iconSize * .15);
+        sprite.visible = true;
+      });
+      for (var companionIndex = formation.companions.length; companionIndex < marker.companions.length; companionIndex++) marker.companions[companionIndex].visible = false;
+      marker.countText.text = '×' + (typeof G.fmt === 'function' ? G.fmt(formation.total) : formation.total) + (formation.extraTypes ? ' +' + formation.extraTypes : '');
+      marker.countText.style.fontSize = Math.max(9, Math.round(iconSize * .22));
+      marker.countText.position.set(iconSize * .4, iconSize * .46);
+      marker.countText.visible = !!iconPath && formation.total > 0;
     });
     this.marchMarkers.forEach(function (marker, markerKey) {
       if (keep.has(markerKey)) return;
@@ -765,7 +823,9 @@
     else if(t.legacyNaval)text+=' · 保留海军补给通道';
     if(t.defeated)text+=' · 已被击败，等待恢复';
     if(t.readyAt>now)text+=' · 城市建设中';
-    if(t.warAt>now)text+=' · 备战中，约 '+Math.ceil((t.warAt-now)/60000)+' 分钟后可交战';
+    if(t.guildRelation==='hostile')text+=' · 敌对军团，可直接交战';
+    else if(t.guildRelation==='friendly')text+=' · 友好军团，禁止交战';
+    else if(t.warAt>now)text+=' · 备战中，约 '+Math.ceil((t.warAt-now)/60000)+' 分钟后可交战';
     else if(t.warEndAt>now&&t.warAt)text+=' · 交战中';
     if(t.occupied)text+=' · 剩余资源 '+G.fmt(Math.max(0,(t.totalRes||0)-(t.mined||0)));
     this.detail.innerHTML='<button class="world-map-detail-close" data-map="close" aria-label="关闭详情">×</button><div class="world-map-detail-head"><img'+' class="world-map-city-model"'+' src="'+esc(icon(t))+'" alt=""><div><b>'+esc(name(t))+'</b><div class="world-map-detail-meta">'+esc(meta)+'</div></div></div><p>'+esc(text)+'</p>'+(!t.occupied&&!t.selfCity?'<p>守军和资源情报请通过侦察获取。</p>':'')+'<div class="world-map-actions"></div>';
@@ -852,7 +912,9 @@
     }
     button('侦察','scout');
     if(t.kind==='player'){
-      if(t.warAt&&t.warAt<=now&&t.warEndAt>now){button('征服','conquer',true);button('掠夺','plunder');}
+      if(t.guildRelation==='hostile'){button('征服','conquer',true);button('掠夺','plunder');}
+      else if(t.guildRelation==='friendly')actions.insertAdjacentHTML('beforeend','<span class="world-map-action-note">友好军团成员不可宣战或交战</span>');
+      else if(t.warAt&&t.warAt<=now&&t.warEndAt>now){button('征服','conquer',true);button('掠夺','plunder');}
       else if(!t.warAt||t.warEndAt<=now)button('宣战','declare',true);
     }else{button('征服','conquer',true);button('掠夺','plunder');}
   };

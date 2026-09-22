@@ -24,12 +24,11 @@ window.Game = window.Game || {};
     if (!arr.length) {
       return '<div class="army-summary-empty">暂无可用部队，前往 <a onclick="Game.go(\'army\')">军队</a> 征召</div>';
     }
-    // 数量从大到小排序，前 8 个优先
+    // 数量从大到小排序，全部兵种在首页总览中展示；超出视口时由容器纵向滚动。
     arr.sort(function (a, b) { return b.cnt - a.cnt; });
-    var top = arr.slice(0, 8);
     var html = '';
-    for (var i = 0; i < top.length; i++) {
-      var u = top[i];
+    for (var i = 0; i < arr.length; i++) {
+      var u = arr[i];
       var rawIcon = UNIT_MODEL[u.id] || (G.UNIT_ICON && G.UNIT_ICON[u.id]) || '⚔';
       var iconHtml = /\.svg$|\.png$|\.jpg$|\.webp$/i.test(rawIcon)
         ? '<img class="army-summary-icon-img" src="' + rawIcon + '" alt="' + G.escapeHtml(u.name) + '"/>'
@@ -51,9 +50,6 @@ window.Game = window.Game || {};
             + '<span class="army-summary-cnt">' + G.fmt(u.cnt) + '</span>'
             + '</div>';
     }
-    if (arr.length > 8) {
-      html += '<div class="army-summary-more">还有 ' + (arr.length - 8) + ' 种部队…</div>';
-    }
     return html;
   }
 
@@ -72,7 +68,8 @@ window.Game = window.Game || {};
     var stats = [
       ['对地攻击', unit.atkGround], ['对空攻击', unit.atkAir], ['对海攻击', unit.atkSea], ['对工事攻击', unit.atkFort],
       ['防御', unit.def], ['生命', unit.hp], ['速度', unit.spd], ['射程', unit.range],
-      ['耗粮', (unit.food || 0) + '/小时'], ['人口占用', unit.pop || 0]
+      ['常驻耗粮', (unit.food || 0) + '/小时'], ['行军油耗', (unit.marchOil || 0) + '/100格'],
+      ['行军粮耗', (unit.marchFood || 0) + '/5分钟'], ['人口占用', unit.pop || 0]
     ];
     var statHtml = '';
     for (var i = 0; i < stats.length; i++) {
@@ -123,7 +120,7 @@ window.Game = window.Game || {};
           + '<span class="zone-sub">已招募 ' + totalCount + ' 名</span>'
           + '<span class="home-officer-go zone-head-action" onclick="event.stopPropagation();Game.go(\'academy\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.stopPropagation();Game.go(\'academy\');event.preventDefault();}" role="button" tabindex="0" title="点击前往军校 · 招募将领">去招募 &gt;</span>'
           + '</div>';
-    html += '<div class="home-officer-card" onclick="Game.go(\'officer\')" role="button" tabindex="0" title="点击前往参谋部 · 军官管理">';
+    html += '<div class="home-officer-card">';
 
     if (totalCount === 0) {
       html += '<div class="home-officer-empty">'
@@ -164,7 +161,7 @@ window.Game = window.Game || {};
         // 技能摘要
         var skillSummary = Core.formatSkills ? Core.formatSkills(o.skills) : '';
 
-        html += '<div class="home-officer-item">';
+        html += '<div class="home-officer-item home-officer-item-action" role="button" tabindex="0" title="查看' + G.escapeHtml(o.name || '军官') + '详情" aria-label="查看' + G.escapeHtml(o.name || '军官') + '详情" onclick="Game.Officer.showDetail(\'' + o.id + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.Officer.showDetail(\'' + o.id + '\');event.preventDefault();}">';
         html += '<div class="home-officer-top-row">';
         html += '<div class="home-officer-identity">';
         html += roleTag;
@@ -199,7 +196,7 @@ window.Game = window.Game || {};
         html += '共 <b>' + totalCount + '</b> 名将领 · 市长: <b>' + (mayor ? G.escapeHtml(mayor.name) : '未任命') + '</b> · 指挥官: <b>' + (cmd ? G.escapeHtml(cmd.name) : '未任命') + '</b>';
       }
       html += '</div>';
-      html += '<span class="home-officer-go">参谋部 &gt;</span>';
+      html += '<span class="home-officer-go" onclick="Game.go(\'officer\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.go(\'officer\');event.preventDefault();}" role="button" tabindex="0" title="前往参谋部 · 军官管理">参谋部 &gt;</span>';
       html += '</div>';
     }
 
@@ -732,7 +729,7 @@ window.Game = window.Game || {};
 
     // 军队总览（活动与任务块已迁移到顶部菜单"任务"页内）
     h += '<div class="zone-head"><span class="zone-title">🪖 军队总览</span><span class="zone-sub">带兵上限 ' + G.fmt(Core.armyCap()) + '</span><span class="army-dispatch-go zone-head-action" role="button" tabindex="0" onclick="Game.go(\'world\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.go(\'world\');event.preventDefault();}">去出征 &gt;</span></div>';
-    h += '<div class="army-summary">';
+    h += '<div class="army-summary" role="region" aria-label="军队总览，向下滚动查看全部兵种">';
     h += renderArmySummaryList();
     h += '</div>';
     h += '<div class="army-summary-foot" onclick="Game.go(\'army\')">';

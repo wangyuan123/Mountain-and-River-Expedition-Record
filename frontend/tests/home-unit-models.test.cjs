@@ -27,14 +27,14 @@ test('首页全部当前兵种均有对应的真实模型，长名称保留在�
   }
 });
 
-test('替换首页模型后仍按数量排序显示前八类，零兵力不显示', () => {
+test('首页总览按数量排序显示全部兵种，零兵力不显示', () => {
   const G = setup();
   const ids = Object.keys(G.DATA.units);
   ids.forEach((id, i) => { G.Core.state.army[id] = i; });
   const html = G.MainView.renderArmySummaryList();
   const images = [...html.matchAll(/src="img\/units\/models\/([^".]+)\.webp"/g)].map(m => m[1]);
-  assert.deepEqual(images, ids.slice(-8).reverse());
-  assert.match(html, /还有 8 种部队/);
+  assert.deepEqual(images, ids.slice(1).reverse());
+  assert.doesNotMatch(html, /army-summary-more|还有 \d+ 种部队/);
   G.Core.state.army = {};
   assert.match(G.MainView.renderArmySummaryList(), /army-summary-empty/);
 });

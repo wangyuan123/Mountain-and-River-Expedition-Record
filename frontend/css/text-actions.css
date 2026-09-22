@@ -1,0 +1,254 @@
+/* 游戏内操作控件统一为方括号文字按钮，覆盖各主题的实心按钮配色。 */
+#screen button.btn,
+#screen button.tcard-btn,
+#screen button.qt-btn,
+#screen button.world-map-button,
+#screen button.shop-buy,
+#screen button.mail-send,
+#screen button.mail-reply-btn,
+#screen button.mail-claim,
+#screen button.chat-send,
+#screen button.protection-banner,
+#screen button.rech-pay-btn,
+#screen button.slot-card-empty-btn,
+#screen button.build-picker-action,
+#screen button[class^="mcb-"],
+#screen button[class*=" mcb-"],
+#screen .world-map-filters button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 2px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--accent, #004499) !important;
+  font: inherit !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  line-height: 1.65 !important;
+  letter-spacing: 0.02em !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+}
+
+#screen button.btn:not(.depot-btn)::before,
+#screen button.btn:not(.depot-btn)::after,
+#screen button.tcard-btn::before,
+#screen button.tcard-btn::after,
+#screen button.qt-btn::before,
+#screen button.qt-btn::after,
+#screen button.world-map-button::before,
+#screen button.world-map-button::after,
+#screen button.shop-buy::before,
+#screen button.shop-buy::after,
+#screen button.mail-send::before,
+#screen button.mail-send::after,
+#screen button.mail-reply-btn::before,
+#screen button.mail-reply-btn::after,
+#screen button.mail-claim::before,
+#screen button.mail-claim::after,
+#screen button.chat-send::before,
+#screen button.chat-send::after,
+#screen button.protection-banner::before,
+#screen button.protection-banner::after,
+#screen button.rech-pay-btn::before,
+#screen button.rech-pay-btn::after,
+#screen button.slot-card-empty-btn::before,
+#screen button.slot-card-empty-btn::after,
+#screen button.build-picker-action::before,
+#screen button.build-picker-action::after,
+#screen button[class^="mcb-"]::before,
+#screen button[class^="mcb-"]::after,
+#screen button[class*=" mcb-"]::before,
+#screen button[class*=" mcb-"]::after,
+#screen .world-map-filters button::before,
+#screen .world-map-filters button::after {
+  display: inline;
+}
+
+#screen button.btn:not(.depot-btn)::before,
+#screen button.tcard-btn::before,
+#screen button.qt-btn::before,
+#screen button.world-map-button::before,
+#screen button.shop-buy::before,
+#screen button.mail-send::before,
+#screen button.mail-reply-btn::before,
+#screen button.mail-claim::before,
+#screen button.chat-send::before,
+#screen button.protection-banner::before,
+#screen button.rech-pay-btn::before,
+#screen button.slot-card-empty-btn::before,
+#screen button.build-picker-action::before,
+#screen button[class^="mcb-"]::before,
+#screen button[class*=" mcb-"]::before,
+#screen .world-map-filters button::before {
+  content: '[';
+}
+
+#screen button.btn:not(.depot-btn)::after,
+#screen button.tcard-btn::after,
+#screen button.qt-btn::after,
+#screen button.world-map-button::after,
+#screen button.shop-buy::after,
+#screen button.mail-send::after,
+#screen button.mail-reply-btn::after,
+#screen button.mail-claim::after,
+#screen button.chat-send::after,
+#screen button.protection-banner::after,
+#screen button.rech-pay-btn::after,
+#screen button.slot-card-empty-btn::after,
+#screen button.build-picker-action::after,
+#screen button[class^="mcb-"]::after,
+#screen button[class*=" mcb-"]::after,
+#screen .world-map-filters button::after {
+  content: ']';
+}
+
+#screen button.btn.warn,
+#screen button.btn.warn2,
+#screen button.btn.danger,
+#screen button.btn-dismantle,
+#screen button.tcard-btn-warn,
+#screen button.account-danger {
+  color: var(--danger, #c63828) !important;
+}
+
+#screen button.btn:hover:not(:disabled),
+#screen button.tcard-btn:hover:not(:disabled),
+#screen button.qt-btn:hover:not(:disabled),
+#screen button.world-map-button:hover:not(:disabled),
+#screen button.shop-buy:hover:not(:disabled),
+#screen button.mail-send:hover:not(:disabled),
+#screen button.mail-reply-btn:hover:not(:disabled),
+#screen button.mail-claim:hover:not(:disabled),
+#screen button.chat-send:hover:not(:disabled),
+#screen button.protection-banner:hover:not(:disabled),
+#screen button.rech-pay-btn:hover:not(:disabled),
+#screen button.slot-card-empty-btn:hover:not(:disabled),
+#screen button.build-picker-action:hover:not(:disabled),
+#screen button[class^="mcb-"]:hover:not(:disabled),
+#screen button[class*=" mcb-"]:hover:not(:disabled),
+#screen .world-map-filters button:hover:not(:disabled) {
+  background: transparent !important;
+  color: var(--accent-dark, #002d66) !important;
+  text-decoration: underline !important;
+}
+
+#screen button.btn.warn:hover:not(:disabled),
+#screen button.btn.warn2:hover:not(:disabled),
+#screen button.btn.danger:hover:not(:disabled),
+#screen button.btn-dismantle:hover:not(:disabled),
+#screen button.tcard-btn-warn:hover:not(:disabled),
+#screen button.account-danger:hover:not(:disabled) {
+  color: #9e2316 !important;
+}
+
+#screen button.btn:disabled,
+#screen button.tcard-btn:disabled,
+#screen button.qt-btn:disabled,
+#screen button.world-map-button:disabled,
+#screen button.shop-buy:disabled,
+#screen button.mail-send:disabled,
+#screen button.mail-reply-btn:disabled,
+#screen button.mail-claim:disabled,
+#screen button.chat-send:disabled,
+#screen button.protection-banner:disabled,
+#screen button.rech-pay-btn:disabled,
+#screen button.slot-card-empty-btn:disabled,
+#screen button.build-picker-action:disabled,
+#screen button[class^="mcb-"]:disabled,
+#screen button[class*=" mcb-"]:disabled,
+#screen .world-map-filters button:disabled,
+#screen button.disabled {
+  background: transparent !important;
+  color: #94a3b8 !important;
+  cursor: not-allowed !important;
+  text-decoration: none !important;
+}
+
+/* 弹窗中的关闭、确认等操作保留实体按钮，避免与页面内文字操作混淆。 */
+#screen .modal-mask button:not(.modal-button-exempt),
+.modal-mask button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 34px !important;
+  padding: 6px 14px !important;
+  border: 1px solid var(--accent, #004499) !important;
+  border-radius: 4px !important;
+  background: var(--accent, #004499) !important;
+  color: #fff !important;
+  font: inherit !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+}
+
+#screen .modal-mask button:not(.modal-button-exempt)::before,
+#screen .modal-mask button:not(.modal-button-exempt)::after,
+.modal-mask button::before,
+.modal-mask button::after { content: none !important; }
+#screen .modal-mask button:not(.modal-button-exempt).warn,
+#screen .modal-mask button:not(.modal-button-exempt).warn2,
+#screen .modal-mask button:not(.modal-button-exempt).danger,
+#screen .modal-mask button:not(.modal-button-exempt).btn-danger,
+.modal-mask button.warn,
+.modal-mask button.warn2,
+.modal-mask button.danger,
+.modal-mask button.btn-danger {
+  border-color: var(--danger, #c63828) !important;
+  background: var(--danger, #c63828) !important;
+}
+#screen .modal-mask button:not(.modal-button-exempt):hover:not(:disabled),
+.modal-mask button:hover:not(:disabled) {
+  background: var(--accent-dark, #002d66) !important;
+  border-color: var(--accent-dark, #002d66) !important;
+  text-decoration: none !important;
+}
+#screen .modal-mask button:not(.modal-button-exempt).warn:hover:not(:disabled),
+#screen .modal-mask button:not(.modal-button-exempt).warn2:hover:not(:disabled),
+#screen .modal-mask button:not(.modal-button-exempt).danger:hover:not(:disabled),
+#screen .modal-mask button:not(.modal-button-exempt).btn-danger:hover:not(:disabled),
+.modal-mask button.warn:hover:not(:disabled),
+.modal-mask button.warn2:hover:not(:disabled),
+.modal-mask button.danger:hover:not(:disabled),
+.modal-mask button.btn-danger:hover:not(:disabled) {
+  background: #9e2316 !important;
+  border-color: #9e2316 !important;
+}
+#screen .modal-mask button:not(.modal-button-exempt):disabled,
+#screen .modal-mask button:not(.modal-button-exempt).disabled,
+.modal-mask button:disabled,
+.modal-mask button.disabled {
+  background: #c7c8c2 !important;
+  border-color: #c7c8c2 !important;
+  color: #f7f7f5 !important;
+  cursor: not-allowed !important;
+}
+
+#switchAccountModal .account-confirm-cancel {
+  border-color: var(--account-line) !important;
+  background: var(--account-surface) !important;
+  color: var(--account-ink) !important;
+}
+#switchAccountModal .account-confirm-cancel:hover:not(:disabled) {
+  border-color: var(--account-line) !important;
+  background: var(--account-soft) !important;
+}
+#switchAccountModal .account-confirm-submit {
+  border-color: var(--account-accent) !important;
+  background: var(--account-accent) !important;
+  color: var(--account-button-ink) !important;
+}
+#switchAccountModal .account-confirm-submit:hover:not(:disabled) {
+  border-color: var(--account-accent-hover) !important;
+  background: var(--account-accent-hover) !important;
+}

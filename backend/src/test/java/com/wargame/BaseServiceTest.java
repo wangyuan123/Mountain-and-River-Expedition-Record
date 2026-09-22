@@ -256,6 +256,8 @@ public abstract class BaseServiceTest {
         m.setGatherEndAt(0L);
         m.setGatherAmount(0);
         m.setGatherRes(null);
+        // 测试夹具默认创建主城行军，必须写入槽位以匹配按城市范围查询的结算器。
+        m.setCitySlot(0);
         return marchRepository.save(m);
     }
 

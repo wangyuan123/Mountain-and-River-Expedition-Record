@@ -73,3 +73,16 @@ test('首页在无军官时标题栏依然展示【去招募>】按钮', () => {
   assert.match(html, /<span class="home-officer-go zone-head-action"[^>]*>去招募 &gt;<\/span>/);
   assert.match(html, /Game\.go\('academy'\)/);
 });
+
+test('首页点击将领进入详情，只有底部参谋部入口跳转至军官管理', () => {
+  const G = setupTest([
+    { id: 42, name: '古德里安', level: 10, star: 5, military: 90, logistics: 80, knowledge: 70, role: 'idle' }
+  ]);
+  const html = G.MainView.renderOfficerSummaryCard();
+
+  assert.match(html, /class="home-officer-card">/);
+  assert.doesNotMatch(html, /home-officer-card" onclick="Game\.go\('officer'\)/);
+  assert.match(html, /class="home-officer-item home-officer-item-action"[^>]*onclick="Game\.Officer\.showDetail\('42'\)"/);
+  assert.match(html, /参谋部 &gt;<\/span>/);
+  assert.match(html, /onclick="Game\.go\('officer'\)"[^>]*title="前往参谋部 · 军官管理"/);
+});

@@ -28,9 +28,14 @@ class BattleMechanicsTest {
     }
 
     private long damage(boolean defending, Object own, Object foe, int foeWall, boolean active) throws Exception {
+        return damage("infantry", "infantry", defending, own, foe, foeWall, active);
+    }
+
+    private long damage(String attackerId, String defenderId, boolean defending,
+                        Object own, Object foe, int foeWall, boolean active) throws Exception {
         StringBuilder report = new StringBuilder();
-        ReflectionTestUtils.invokeMethod(new BattleService(4096), "simAct", "infantry",
-                new LinkedHashMap<>(Map.of("infantry", 100)), new LinkedHashMap<>(Map.of("infantry", 10000)),
+        ReflectionTestUtils.invokeMethod(new BattleService(4096), "simAct", attackerId,
+                new LinkedHashMap<>(Map.of(attackerId, 100)), new LinkedHashMap<>(Map.of(defenderId, 10000)),
                 100, report, side(defending), own, foe, foeWall, active);
         var matcher = Pattern.compile(" 伤害(\\d+)").matcher(report);
         assertTrue(matcher.find(), report.toString());
@@ -77,6 +82,50 @@ class BattleMechanicsTest {
             assertEquals(282, damage(defending, empty, bulwark, 0, true));
             assertEquals(343, damage(defending, empty, bulwark, 0, false));
         }
+    }
+
+    @Test
+    void learningSkillUsesRoundSnapshotAndScalesWithEnemyAttack() throws Exception {
+        Object empty = context(Map.of(), Map.of());
+        Object learning = context(Map.of(), Map.of("learn", 5));
+        Object strongerEnemy = context(Map.of("attack_tech", 20), Map.of());
+
+        assertEquals(343, damage(false, learning, empty, 0, false), "非第3/6/9回合不应触发师夷长技");
+        assertEquals(446, damage(false, learning, empty, 0, true), "同名敌军存在时，满级应学习敌军攻击的30%");
+        assertEquals(549, damage(false, learning, strongerEnemy, 0, true), "敌军攻击更高时，应获得更高的学习收益");
+        String bonusLog = ReflectionTestUtils.invokeMethod(new BattleService(4096), "buildCommanderBonusLog",
+                "我方", learning, 3, true);
+        assertTrue(bonusLog.contains("上限敌方同名兵种攻击30%"), "战斗详情应说明封顶以敌方攻击为准");
+
+        StringBuilder report = new StringBuilder();
+        ReflectionTestUtils.invokeMethod(new BattleService(4096), "simAct", "infantry",
+                new LinkedHashMap<>(Map.of("infantry", 100)), new LinkedHashMap<>(Map.of("motor", 10000)),
+                100, report, side(false), learning, empty, 0, true);
+        assertFalse(report.toString().contains("师夷长技"), "没有同名存活敌军时不应获得学习加成");
+    }
+
+    @Test
+    void borrowedArmorUsesRoundSnapshotAndScalesWithEnemyDefense() throws Exception {
+        Object empty = context(Map.of(), Map.of());
+        Object borrowedArmor = context(Map.of(), Map.of("borrow_armor", 5));
+        Object strongerEnemy = context(Map.of("defense_tech", 20), Map.of("borrow_armor", 5));
+        Object bulwark = context(Map.of(), Map.of("bulwark", 5));
+        Object conflictingSkills = context(Map.of(), Map.of("bulwark", 5, "borrow_armor", 5));
+
+        long base = damage(false, empty, empty, 0, true);
+        long borrowed = damage(false, empty, borrowedArmor, 0, true);
+        assertEquals(base, damage(false, empty, borrowedArmor, 0, false), "非第2/5/8回合不应触发借甲御敌");
+        assertTrue(borrowed < base, "同名敌军存在时，借甲御敌应降低受到的伤害");
+        assertTrue(damage(false, strongerEnemy, borrowedArmor, 0, true) < borrowed,
+                "敌军防御更高时，应获得更高的借甲收益");
+        String bonusLog = ReflectionTestUtils.invokeMethod(new BattleService(4096), "buildCommanderBonusLog",
+                "我方", borrowedArmor, 2, true);
+        assertTrue(bonusLog.contains("上限敌方同名兵种防御30%"), "战斗详情应说明封顶以敌方防御为准");
+        assertEquals(damage(false, empty, bulwark, 0, true), damage(false, empty, conflictingSkills, 0, true),
+                "旧存档同时拥有两个互斥技能时，应仅保留坚守阵地生效");
+        assertEquals(damage("motor", "infantry", false, empty, empty, 0, true),
+                damage("motor", "infantry", false, empty, borrowedArmor, 0, true),
+                "没有同名存活敌军时不应获得借甲防御");
     }
 
     @Test

@@ -286,4 +286,28 @@ public class ShopControllerTest extends BaseServiceTest {
             assertTrue(def.name().contains("宝箱") || def.name().contains("箱"), "名称应包含宝箱: " + def.name());
         }
     }
+
+    @Test
+    @DisplayName("购买指定技能书并使用：扣除钻石、入仓并让军官学习指定技能")
+    void testBuyAndUseSpecificSkillBook() {
+        Resources res = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
+        res.setDiamond(500);
+        resourcesRepository.save(res);
+
+        ResponseEntity<Map<String, Object>> buyResp = shopController.buy(new GameDtos.ShopBuyRequest("skillBook_frenzy"));
+        assertNotNull(buyResp.getBody());
+        assertTrue((Boolean) buyResp.getBody().get("success"), "购买全军冲锋技能书应成功");
+        assertEquals("已购买 全军冲锋技能书", buyResp.getBody().get("message"));
+        assertEquals(340, resourcesRepository.findByPlayerId(player.getId()).orElseThrow().getDiamond(), "应扣除160钻石");
+        assertEquals(1, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "skillBook_frenzy").orElseThrow().getCount(), "技能书应入仓");
+
+        Officer officer = createOfficer(player.getId(), "idle", 30, 30, 30);
+        Map<String, Object> useResp = depotService.useItem(player.getId(), "skillBook_frenzy", officer.getId(), null);
+
+        assertTrue((Boolean) useResp.get("success"), "使用指定技能书应成功: " + useResp.get("message"));
+        assertEquals("frenzy", useResp.get("skillId"));
+        assertEquals(1, useResp.get("level"));
+        assertEquals(0, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "skillBook_frenzy").orElseThrow().getCount(), "使用后技能书应扣除");
+        assertTrue(officerRepository.findById(officer.getId()).orElseThrow().getSkills().contains("\"frenzy\""), "军官应学习全军冲锋");
+    }
 }

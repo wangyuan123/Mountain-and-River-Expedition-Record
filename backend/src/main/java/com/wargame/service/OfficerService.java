@@ -393,13 +393,13 @@ public class OfficerService {
             return result;
         }
 
-        // Server-side consumption: must own at least 1 skill book.
+        // Server-side consumption: must own at least 1 universal skill book.
         // Historical BUG: client only tracked skill book count locally,
         // so a refresh-tab would let players learn skills indefinitely.
         int consumed = playerItemRepository.tryConsume(playerId, "skillBook", 1, System.currentTimeMillis());
         if (consumed == 0) {
             result.put("success", false);
-            result.put("message", "技能书不足");
+            result.put("message", "通用技能书不足");
             return result;
         }
 
@@ -419,12 +419,17 @@ public class OfficerService {
         Set<String> owned = new HashSet<>();
         for (Map<String, Object> sk : skills) {
             Object id = sk.get("id");
-            if (id != null) owned.add(id.toString());
+            if (id != null) {
+                OfficerSkillDef ownedSkill = OfficerSkillDef.getSkill(id.toString());
+                owned.add(ownedSkill != null ? ownedSkill.key() : id.toString());
+            }
         }
 
         List<String> pool = new ArrayList<>();
         for (String sid : GameData.OFFICER_SKILLS.keySet()) {
-            if (!owned.contains(sid)) pool.add(sid);
+            if (!owned.contains(sid) && owned.stream().noneMatch(existing -> OfficerSkillDef.conflictsWith(existing, sid))) {
+                pool.add(sid);
+            }
         }
 
         if (pool.isEmpty()) {
@@ -453,10 +458,83 @@ public class OfficerService {
         officerRepository.save(officer);
 
         result.put("success", true);
-        result.put("message", "学习成功: " + pickInfo.name() + " Lv." + lv + " (消耗1本技能书)");
+        result.put("message", "学习成功: " + pickInfo.name() + " Lv." + lv + " (消耗1本通用技能书)");
         result.put("skillId", pickId);
         result.put("skillName", pickInfo.name());
         result.put("level", lv);
+        return result;
+    }
+
+    /**
+     * 使用指定技能书为军官学习对应技能。
+     * 指定书固定授予 Lv.1，且继续执行技能槽上限、重复技能和技能互斥校验。
+     *
+     * @param playerId 玩家 ID
+     * @param officerId 要学习技能的军官 ID
+     * @param itemId 指定技能书道具 ID
+     * @param skillId 指定技能 ID
+     * @return 学习结果及获得的技能信息
+     */
+    @Transactional
+    public Map<String, Object> learnSpecificSkill(Long playerId, Long officerId, String itemId, String skillId) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        OfficerSkillDef skill = GameData.OFFICER_SKILLS.get(skillId);
+        if (skill == null || !("skillBook_" + skillId).equals(itemId)) {
+            result.put("success", false);
+            result.put("message", "无效的指定技能书");
+            return result;
+        }
+
+        Officer officer = findOfficer(playerId, officerId);
+        if (officer == null) {
+            result.put("success", false);
+            result.put("message", "军官不存在");
+            return result;
+        }
+
+        List<Map<String, Object>> skills = parseSkills(officer.getSkills());
+        if (skills.size() >= MAX_SKILLS) {
+            result.put("success", false);
+            result.put("message", "技能已满3个，请先废弃一个");
+            return result;
+        }
+
+        for (Map<String, Object> owned : skills) {
+            Object ownedId = owned.get("id");
+            if (ownedId == null) continue;
+            OfficerSkillDef ownedSkill = OfficerSkillDef.getSkill(ownedId.toString());
+            String canonicalId = ownedSkill != null ? ownedSkill.key() : ownedId.toString();
+            if (skillId.equals(canonicalId)) {
+                result.put("success", false);
+                result.put("message", officer.getName() + " 已掌握「" + skill.name() + "」");
+                return result;
+            }
+            if (OfficerSkillDef.conflictsWith(canonicalId, skillId)) {
+                result.put("success", false);
+                result.put("message", "「" + skill.name() + "」与已掌握技能互斥");
+                return result;
+            }
+        }
+
+        int consumed = playerItemRepository.tryConsume(playerId, itemId, 1, System.currentTimeMillis());
+        if (consumed == 0) {
+            result.put("success", false);
+            result.put("message", skill.name() + "技能书不足");
+            return result;
+        }
+
+        Map<String, Object> learned = new LinkedHashMap<>();
+        learned.put("id", skillId);
+        learned.put("lv", 1);
+        skills.add(learned);
+        officer.setSkills(JsonUtil.toJson(skills));
+        officerRepository.save(officer);
+
+        result.put("success", true);
+        result.put("message", "学习成功: " + skill.name() + " Lv.1 (消耗1本" + skill.name() + "技能书)");
+        result.put("skillId", skillId);
+        result.put("skillName", skill.name());
+        result.put("level", 1);
         return result;
     }
 

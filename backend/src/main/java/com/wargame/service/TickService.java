@@ -115,8 +115,9 @@ public class TickService {
 
         long now = System.currentTimeMillis();
         long lastTick = cityScope.economy(playerId).getLastTick() != null ? cityScope.economy(playerId).getLastTick() : now;
-        double dt = (now - lastTick) / 1000.0;
-        if (dt <= 0) return;
+        // 新建或历史账号可能尚未写入 lastTick。即使本次没有经济时间差，
+        // 也必须继续处理到达行军和战术回合，避免离线战斗永久停滞。
+        double dt = Math.max(0, (now - lastTick) / 1000.0);
         dt = Math.min(dt, Math.max(1, maxOfflineHours) * 3600.0);
         double hours = dt / 3600.0;
 
