@@ -2,7 +2,7 @@
 (function (G) {
   'use strict';
   // Fixed world-space fields keep the same terrain under every zoom and viewport.
-  var palette = { soil: [83, 73, 61], grass: [157, 169, 126] };
+  var palette = G.Constants.terrainPalette;
   var snowImages = [], meadowImages = [], meadowLoading = null, meadowReady = false, forestImage = null;
   var targetChunks = new Map(), clearings = new Map(), terrainRevision = 0;
   function updateChunk(cx, cy, targets) {

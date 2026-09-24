@@ -97,6 +97,7 @@ function setupArmy() {
     clearInterval: () => {}
   });
   ctx.window = ctx;
+  require('./load-constants.cjs')(ctx);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/army.js'), 'utf8'), ctx);
 
   return { G, nodes, modalNodes };
@@ -233,6 +234,7 @@ test('unitDisplayName formats full names to [兵种名](编号) and home summary
   });
   coreCtx.window = coreCtx;
   const coreSrc = fs.readFileSync(path.join(__dirname, '../js/core.js'), 'utf8');
+  require('./load-constants.cjs')(coreCtx);
   vm.runInContext(coreSrc, coreCtx);
 
   assert.equal(coreCtx.Game.unitDisplayName('装甲车-猎鹿犬防空型（T17E2）'), '装甲车(T17E2)');
@@ -252,6 +254,7 @@ test('unitDisplayName formats full names to [兵种名](编号) and home summary
   ctx.window = ctx;
 
   const mainViewSrc = fs.readFileSync(path.join(__dirname, '../js/main-view.js'), 'utf8');
+  require('./load-constants.cjs')(ctx);
   vm.runInContext(mainViewSrc, ctx);
 
   const html = G.MainView.renderArmySummaryList();
@@ -295,6 +298,7 @@ test('dispatch unit selection displays compact [兵种名](编号) format with t
   });
   c.window = c;
   c.Core = c.Game.Core;
+  require('./load-constants.cjs')(c);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/world.js'), 'utf8'), c);
 
   c.Game.World.mapAction({ kind: 'wild', id: 1, type: 'plain', name: '平原', x: 11, y: 11 }, 'conquer');

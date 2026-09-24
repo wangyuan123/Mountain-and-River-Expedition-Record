@@ -26,6 +26,7 @@ function setup() {
   };
   const context = vm.createContext({ window: { Game, innerWidth: 1024 }, document: {} });
   context.Game = Game;
+  require('./load-constants.cjs')(context);
   vm.runInContext(fs.readFileSync(path.join(frontend, 'js/battle.js'), 'utf8'), context);
   return Game;
 }
@@ -45,6 +46,12 @@ test('仅镜像我军模型图片，数量文字和敌军模型不受变换', ()
   assert.doesNotMatch(css, /\.tactical-marker\.foe[^}]*scaleX\(-1\)/s);
   assert.doesNotMatch(css, /\.tactical-marker\.mine\s*\{[^}]*scaleX\(-1\)/s);
   assert.match(css, /\.tactical-marker\.mine,\s*\.tactical-marker\.foe\s*\{[^}]*top:\s*calc\(78px \+ var\(--marker-row, 0\) \* 37px\)/s);
+});
+
+test('移动端战场保留按兵种行数计算的高度', () => {
+  const css = fs.readFileSync(path.join(frontend, 'css/style.css'), 'utf8');
+  const mobileStyles = css.slice(css.lastIndexOf('@media (max-width: 520px)'));
+  assert.match(mobileStyles, /^@media \(max-width: 520px\)\s*\{[\s\S]*?\.tactical-map\s*\{\s*min-height:\s*max\(285px,\s*var\(--tactical-map-height,\s*250px\)\)/);
 });
 
 test('战术单位按服务端坐标横向定位，并保留纵向行序', () => {
@@ -182,6 +189,8 @@ test('战术命令区提供全部待命、全部前进和全部后退快捷操�
   const view = { innerHTML: '' };
 
   Battle.renderTacticalBattle(view);
+
+  assert.match(view.innerHTML, /已选命令在倒计时结束后提交，也可点击下方执行按钮/);
 
   assert.match(view.innerHTML, /全部待命/);
   assert.match(view.innerHTML, /全部前进/);

@@ -4,6 +4,7 @@ function fixture(){
    const ctx={drawImage(source){this.source=source;},getImageData(){return {data:this.source};}};
    return {getContext:()=>ctx};
  }}};c.window=c;vm.createContext(c);
+ require('./load-constants.cjs')(c);
  for(const file of ['map-camera.js','map-layout.js','world-map.js']){
   let source=fs.readFileSync(path.join(__dirname,'../js',file),'utf8');
   source=source.replace('  G.WorldMap={','  G.TestMapView=MapView; G.TestMapIcon=icon; G.TestOwnershipCaption=ownershipCaption; G.TestDrawOwnership=drawOwnership; G.TestMarchUnitIcon=marchUnitIcon; G.TestMarchFormation=marchFormation; G.TestPrimaryMarchUnit=primaryMarchUnit; G.TestMarchMarkerIconSize=marchMarkerIconSize;\n  G.WorldMap={');vm.runInContext(source,c);

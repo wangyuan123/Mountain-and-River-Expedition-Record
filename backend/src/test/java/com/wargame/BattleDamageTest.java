@@ -37,6 +37,8 @@ class BattleDamageTest {
         assertTrue(report.contains("倍率×10.0 相克"), report);
         assertTrue(report.contains("余伤攻击敌碉堡(100) 对工事攻击179 伤害2473"), report);
         assertEquals(1, report.lines().filter(line -> line.contains("本次原始火力")).count());
+        String rocketName = UnitDef.UNITS.get("rocket").name();
+        assertEquals(1, report.lines().filter(line -> line.startsWith("我方" + rocketName)).count(), report);
     }
 
     @Test

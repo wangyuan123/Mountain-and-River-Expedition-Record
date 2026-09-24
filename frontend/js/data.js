@@ -358,6 +358,41 @@ window.Game = window.Game || {};
     };
   };
 
+  /** 用同一套徽记规则表现各阶军衔，避免页面各自定义不一致的图标。 */
+  G.renderMilitaryRankIcon = function (tier) {
+    var rank = G.DATA.militaryRanks[Math.max(1, Math.min(G.DATA.militaryRanks.length, parseInt(tier, 10) || 1)) - 1];
+    var level = rank.tier;
+    var group = level <= 2 ? 'enlisted' : level <= 6 ? 'sergeant' : level === 7 ? 'warrant' : level <= 10 ? 'officer' : level <= 14 ? 'field' : 'general';
+    var marks = '';
+    var index;
+    if (level <= 6) {
+      var chevrons = level <= 2 ? level : level === 6 ? 3 : level - 2;
+      for (index = 0; index < chevrons; index++) {
+        var y = 22 - (chevrons - 1) * 3 + index * 6;
+        marks += '<path d="M11 ' + y + ' L20 ' + (y + 5) + ' L29 ' + y + '" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+      }
+      if (level >= 3) marks += level === 6
+        ? '<circle cx="16" cy="11" r="2"/><circle cx="24" cy="11" r="2"/>'
+        : '<circle cx="20" cy="11" r="2.5"/>';
+    } else if (level === 7) {
+      marks = '<path d="M20 8 L30 20 L20 32 L10 20 Z" fill="none" stroke="currentColor" stroke-width="2.5"/><circle cx="20" cy="20" r="3"/>';
+    } else if (level <= 10) {
+      for (index = 0; index < level - 7; index++) {
+        marks += '<rect x="12" y="' + (20 - (level - 7) * 4 + index * 8) + '" width="16" height="4" rx="1"/>';
+      }
+    } else {
+      var stars = level <= 14 ? level - 10 : level - 14;
+      var positions = stars === 1 ? [[20, 20]] : stars === 2 ? [[15, 20], [25, 20]]
+        : stars === 3 ? [[14, 16], [26, 16], [20, 26]] : [[14, 15], [26, 15], [14, 26], [26, 26]];
+      if (level >= 15) marks += '<path d="M13 10 Q6 20 13 31 M27 10 Q34 20 27 31" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>';
+      for (index = 0; index < positions.length; index++) {
+        marks += '<path transform="translate(' + positions[index][0] + ' ' + positions[index][1] + ')" d="M0 -5 L1.6 -1.6 L5 -1.6 L2.5 1 L3.5 5 L0 3 L-3.5 5 L-2.5 1 L-5 -1.6 L-1.6 -1.6 Z"/>';
+      }
+    }
+    return '<svg class="rank-insignia rank-insignia-' + group + '" viewBox="0 0 40 40" aria-hidden="true" focusable="false">'
+      + '<rect x="1" y="1" width="38" height="38" rx="8" class="rank-insignia-plate"/>' + marks + '</svg>';
+  };
+
   // 指定技能书由技能定义派生，旧 supply 仅为兼容别名，不单独生成商品。
   Object.keys(G.DATA.officerSkills).forEach(function (skillId) {
     if (skillId === 'supply') return;

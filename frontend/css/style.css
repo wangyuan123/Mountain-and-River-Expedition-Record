@@ -1543,6 +1543,7 @@ html, body {
 .drawer-stat-box .stat-k { display: flex; align-items: center; gap: 4px; font-size: 12px; line-height: 1.5; color: var(--muted); white-space: nowrap; }
 .drawer-stat-box .stat-v { display: block; margin-left: auto; font-size: 14px; line-height: 1.5; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .drawer-stat-box .stat-v.highlight, .drawer-stat-box .stat-v.diamond-text { color: var(--accent); }
+.drawer-stat-box .drawer-rank-value { display: inline-flex; align-items: center; gap: 5px; }
 .drawer-stat-action { cursor: pointer; }
 .drawer-stat-action:hover { background: var(--accent-soft); }
 .player-drawer .drawer-stat-action:focus-visible { outline-offset: -3px; }
@@ -3610,6 +3611,26 @@ body.theme-classic .unit-card-details,
 }
 
 /* 首页 军队总览 块 */
+.army-summary-expand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-left: auto;
+  padding: 3px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--accent, #004499);
+  cursor: pointer;
+}
+.army-summary-expand:hover,
+.army-summary-expand:focus-visible {
+  background: var(--accent-soft, #eef4fb);
+  outline: 2px solid var(--accent, #004499);
+}
+.army-summary-expand + .army-dispatch-go { margin-left: 0; }
 .army-summary {
   background: var(--surface, #ffffff);
   border: 1px solid var(--line, #e2e8f0);
@@ -3617,6 +3638,7 @@ body.theme-classic .unit-card-details,
   padding: 8px 10px;
   display: grid;
   grid-auto-flow: column;
+  grid-template-rows: repeat(3, minmax(64px, auto));
   grid-auto-columns: clamp(160px, 32vw, 220px);
   gap: 8px;
   overflow-x: auto;
@@ -3688,6 +3710,7 @@ body.theme-classic .unit-card-details,
   .army-summary-icon { width: 56px; height: 56px; }
 }
 .army-summary-empty {
+  grid-row: 1 / -1;
   font-size: 12px;
   color: var(--muted, #64748b);
   text-align: center;
@@ -3716,6 +3739,41 @@ body.theme-classic .unit-card-details,
   color: var(--accent, #004499);
   font-weight: 600;
 }
+
+.modal-mask.army-summary-mask { padding: 0; }
+.modal-card.army-summary-dialog {
+  max-width: none;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
+  border-radius: 0;
+  background: var(--surface, #fff);
+}
+.army-summary-dialog-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--accent, #004499);
+}
+.army-summary-close {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 20px;
+  cursor: pointer;
+}
+.army-summary-close:focus-visible { outline: 2px solid currentColor; }
+.army-summary-dialog-body { min-height: 0; }
+.army-summary-expanded {
+  grid-auto-flow: row;
+  grid-template-rows: none;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr));
+  grid-auto-columns: auto;
+  overflow: visible;
+  scroll-snap-type: none;
+}
+.army-summary-expanded .army-summary-empty { grid-row: auto; grid-column: 1 / -1; }
 
 /* 首页兵种详情弹窗 */
 .unit-detail-card { max-width: 540px; }
@@ -5034,6 +5092,137 @@ body.theme-classic .unit-card-details,
   gap: 8px;
   border-top: 1px solid #e8dcc0;
   background: rgba(255, 255, 255, .35);
+}
+
+.modal-card.rank-cap-dialog { max-width: 460px; background: var(--surface); color: var(--ink); border-color: var(--line); }
+.rank-insignia { display: inline-block; width: 24px; height: 24px; flex: none; vertical-align: middle; color: #d7e5f5; fill: currentColor; }
+.rank-insignia-plate { fill: #34445d; stroke: #7e94ad; stroke-width: 1.5; }
+.rank-insignia-sergeant, .rank-insignia-warrant { color: #e8d292; }
+.rank-insignia-officer, .rank-insignia-field, .rank-insignia-general { color: #ffe19a; }
+.rank-insignia-officer .rank-insignia-plate, .rank-insignia-field .rank-insignia-plate { fill: #263d59; stroke: #b49755; }
+.rank-insignia-general .rank-insignia-plate { fill: #36334c; stroke: #dbb65f; }
+.rank-cap-label { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.rank-cap-label .rank-insignia { width: 26px; height: 26px; }
+.rank-cap-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.rank-cap-header h2 { margin: 0; font-size: 16px; color: var(--ink); }
+.rank-cap-close { border: 0; background: transparent; color: var(--muted); font-size: 18px; cursor: pointer; }
+.rank-cap-close:hover { color: var(--accent); }
+.modal-body.rank-cap-body { color: var(--ink); min-height: 0; }
+.rank-cap-summary { padding: 10px; margin-bottom: 10px; border-radius: 8px; background: var(--accent-soft); }
+.rank-cap-summary strong { color: var(--accent); }
+.rank-cap-table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+.rank-cap-table th, .rank-cap-table td { padding: 7px 5px; border-bottom: 1px solid var(--line); text-align: left; }
+.rank-cap-table td:last-child, .rank-cap-table thead th:last-child { text-align: right; white-space: nowrap; }
+.rank-cap-table thead { color: var(--muted); background: var(--surface-muted); }
+.rank-cap-table .rank-cap-current { background: var(--accent-soft); color: var(--accent); }
+.rank-cap-dialog .modal-foot { border-color: var(--line); background: var(--surface); }
+
+/* ===== 军官技能升级弹窗 ===== */
+.skill-upgrade-modal {
+  max-width: 380px;
+  width: 92%;
+  background: #f8fbff;
+  border: 1px solid #4c83b8;
+  border-radius: 8px;
+  color: #173b61;
+  box-shadow: 0 12px 32px rgba(3, 25, 52, .42), 0 0 0 1px rgba(255, 225, 74, .18);
+}
+.skill-upgrade-head {
+  padding: 14px 18px 12px;
+  background: linear-gradient(135deg, #0b3f77 0%, #1260a0 100%);
+  border-bottom: 2px solid #ffe14a;
+  color: #fff;
+}
+.skill-upgrade-kicker {
+  display: block;
+  margin-bottom: 2px;
+  color: #b8d4ff;
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+.skill-upgrade-head h3 {
+  color: #fff;
+  font-size: 17px;
+  line-height: 1.3;
+}
+.skill-upgrade-body {
+  padding: 16px 18px 14px;
+}
+.skill-upgrade-level {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 10px;
+  background: #e8f2ff;
+  border: 1px solid #bdd5ee;
+  border-radius: 5px;
+  color: #58718c;
+  font-size: 12px;
+}
+.skill-upgrade-level strong {
+  color: #1b5790;
+  font-size: 15px;
+}
+.skill-upgrade-level .skill-upgrade-arrow {
+  margin: 0 3px;
+  color: #d19a18;
+  font-size: 17px;
+  font-weight: bold;
+}
+.skill-upgrade-level .skill-upgrade-next { color: #b47700; }
+.skill-upgrade-hint {
+  margin: 12px 0 8px;
+  color: #48627d;
+  font-size: 12px;
+}
+.skill-upgrade-book {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  text-align: left;
+  border: 1px solid #31805a;
+  border-radius: 5px;
+}
+.skill-upgrade-book-icon {
+  font-size: 21px;
+  line-height: 1;
+}
+.skill-upgrade-book span:nth-child(2) {
+  flex: 1;
+  font-weight: bold;
+}
+.skill-upgrade-book small {
+  display: block;
+  margin-top: 2px;
+  color: #c6f0d4;
+  font-size: 11px;
+  font-weight: normal;
+}
+.skill-upgrade-book-arrow {
+  color: #d8f7df;
+  font-size: 24px;
+  line-height: 1;
+}
+.skill-upgrade-empty {
+  padding: 10px 12px;
+  background: #fff4e6;
+  border: 1px solid #e4bd85;
+  border-radius: 5px;
+  color: #8a5a24;
+  font-size: 12px;
+}
+.skill-upgrade-foot {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 18px 14px;
+  border-top: 1px solid #d7e4f0;
+  background: #eef5fb;
+}
+.skill-upgrade-foot .btn {
+  flex: 0 0 auto;
+  min-width: 68px;
 }
 
 /* ===== 宣战二次确认弹窗 ===== */
@@ -6987,7 +7176,7 @@ body.theme-classic .unit-card-details,
 
 @media (max-width: 520px) {
   .rb-settlement-grid { grid-template-columns: 1fr; }
-  .tactical-map { min-height: 285px; }
+  .tactical-map { min-height: max(285px, var(--tactical-map-height, 250px)); }
   .tactical-marker { width: 44px; min-width: 44px; height: 33px; }
   .tactical-marker .tactical-unit-icon { width: 14px; height: 14px; }
   .tactical-marker b { font-size: 7.5px; }

@@ -5,11 +5,11 @@ window.Game = window.Game || {};
   'use strict';
 
   // GET /api/game/state 缓存有效期（毫秒）
-  var STATE_CACHE_TTL = 2000;
+  var STATE_CACHE_TTL = G.Constants.apiStateCacheTtl;
   // 网络错误自动重试次数
-  var NETWORK_RETRY = 1;
+  var NETWORK_RETRY = G.Constants.apiNetworkRetry;
   // 加载指示器延迟显示时间（毫秒）——避免快速请求闪烁
-  var LOADING_DELAY = 500;
+  var LOADING_DELAY = G.Constants.apiLoadingDelay;
 
   /**
    * 统一请求处理器：负责鉴权头注入、401 跳登录、网络错误处理、

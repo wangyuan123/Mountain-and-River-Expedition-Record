@@ -24,7 +24,7 @@ window.Game = window.Game || {};
     if (!arr.length) {
       return '<div class="army-summary-empty">暂无可用部队，前往 <a onclick="Game.go(\'army\')">军队</a> 征召</div>';
     }
-    // 数量从大到小排序，全部兵种在首页总览中展示；超出视口时由容器横向滚动。
+    // 数量从大到小排序；首页按三行横向浏览，全屏视图复用这份完整列表。
     arr.sort(function (a, b) { return b.cnt - a.cnt; });
     var html = '';
     for (var i = 0; i < arr.length; i++) {
@@ -51,6 +51,31 @@ window.Game = window.Game || {};
         + '</div>';
     }
     return html;
+  }
+
+  /** 展开当前城市的全部可用兵种，保留兵种卡片原有的详情入口。 */
+  function showArmySummaryFullscreen() {
+    if (typeof document === 'undefined' || !document.createElement || !document.body) return;
+    var previousFocus = document.activeElement;
+    var modal = document.createElement('div');
+    modal.className = 'modal-mask army-summary-mask';
+    modal.innerHTML =
+      '<section class="modal-card army-summary-dialog" role="dialog" aria-modal="true" aria-labelledby="armySummaryTitle">' +
+      '<div class="modal-title army-summary-dialog-title" id="armySummaryTitle"><span>🪖 军队总览</span><button type="button" class="army-summary-close" aria-label="关闭军队总览">✕</button></div>' +
+      '<div class="modal-body army-summary-dialog-body"><div class="army-summary army-summary-expanded" aria-label="全部可用兵种">' + renderArmySummaryList() + '</div></div>' +
+      '</section>';
+    document.body.appendChild(modal);
+
+    var close = function () {
+      document.removeEventListener('keydown', onKeydown);
+      if (modal.parentNode) modal.parentNode.removeChild(modal);
+      if (previousFocus && previousFocus.focus) previousFocus.focus();
+    };
+    var onKeydown = function (event) { if (event.key === 'Escape') close(); };
+    modal.querySelector('.army-summary-close').onclick = close;
+    modal.addEventListener('click', function (event) { if (event.target === modal) close(); });
+    document.addEventListener('keydown', onKeydown);
+    modal.querySelector('.army-summary-close').focus();
   }
 
   function showUnitDetailModal(id, ev) {
@@ -225,20 +250,7 @@ window.Game = window.Game || {};
     v.innerHTML = h;
   };
 
-  var NAV_ITEMS = [
-    { key: '1', label: '资源', route: 'buildRes' },
-    { key: '2', label: '军事', route: 'buildArmy' },
-    { key: '3', label: '军队', route: 'army' },
-    { key: '·', label: '战术', route: 'battleDefaults' },
-    { key: '4', label: '地图', route: 'world' },
-    { key: '5', label: '情报', route: 'alerts' },
-    { key: '6', label: '战报', route: 'reports' },
-    { key: '7', label: '邮件', route: 'mail' },
-    { key: '8', label: '任务', route: 'mainQuest' },
-    { key: '9', label: '军团', route: 'guild' },
-    { key: '0', label: '仓库', route: 'depot' },
-    { key: '·', label: '科技', route: 'tech' }
-  ];
+  var NAV_ITEMS = G.Constants.navItems;
 
   function navBar() {
     var s = Core.state;
@@ -730,8 +742,8 @@ window.Game = window.Game || {};
     h += renderOfficerSummaryCard();
 
     // 军队总览（活动与任务块已迁移到顶部菜单"任务"页内）
-    h += '<div class="zone-head"><span class="zone-title">🪖 军队总览</span><span class="zone-sub">带兵上限 ' + G.fmt(Core.armyCap()) + '</span><span class="army-dispatch-go zone-head-action" role="button" tabindex="0" onclick="Game.go(\'world\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.go(\'world\');event.preventDefault();}">去出征 &gt;</span></div>';
-    h += '<div class="army-summary" role="region" tabindex="0" aria-label="军队总览，左右滑动查看全部兵种">';
+    h += '<div class="zone-head"><span class="zone-title">🪖 军队总览</span><span class="zone-sub">带兵上限 ' + G.fmt(Core.armyCap()) + '</span><button type="button" class="army-summary-expand" title="全屏展开军队总览" aria-label="全屏展开军队总览" onclick="Game.MainView.showArmySummaryFullscreen()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg></button><span class="army-dispatch-go zone-head-action" role="button" tabindex="0" onclick="Game.go(\'world\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.go(\'world\');event.preventDefault();}">去出征 &gt;</span></div>';
+    h += '<div class="army-summary" role="region" tabindex="0" aria-label="军队总览，三排排列，左右滑动查看全部兵种">';
     h += renderArmySummaryList();
     h += '</div>';
     h += '<div class="army-summary-foot" onclick="Game.go(\'army\')">';
@@ -746,7 +758,7 @@ window.Game = window.Game || {};
 
     h += '<div class="zone-head"><span class="zone-title">资源</span></div>';
     h += '<div class="res-grid">';
-    var resKeys = ['food', 'steel', 'oil', 'rare', 'gold'];
+    var resKeys = G.Constants.resourceKeysWithGold;
     for (var ri = 0; ri < resKeys.length; ri++) {
       var rk = resKeys[ri];
       var rinfo = D.resources[rk];
@@ -828,7 +840,7 @@ window.Game = window.Game || {};
 
     h += '<div class="zone-head"><span class="zone-title">游戏设置</span></div>';
     h += '<div class="panel">';
-    var curTheme = (G.Theme && G.Theme.get) ? G.Theme.get() : 'blue-white';
+    var curTheme = (G.Theme && G.Theme.get) ? G.Theme.get() : 'blue-white-classic';
     h += '<div class="btn-row" style="margin-bottom:8px;align-items:center;">';
     h += '<span style="flex:1;font-size:14px">🎨 界面风格</span>';
     h += '<select id="themeSelector" style="padding:4px 8px;font-size:13px;border-radius:4px;" onchange="if(Game.Theme)Game.Theme.set(this.value)">';
@@ -839,7 +851,7 @@ window.Game = window.Game || {};
         h += '<option value="' + tObj.id + '"' + isSel + '>' + tObj.name + '</option>';
       }
     } else {
-      h += '<option value="blue-white">晴空蓝白 (推荐)</option>';
+      h += '<option value="blue-white-classic">战术经典蓝白风（推荐）</option>';
       h += '<option value="paper">战术公文沙盘风</option>';
       h += '<option value="dark">战术夜航终端黑</option>';
     }
@@ -901,16 +913,7 @@ window.Game = window.Game || {};
     v.innerHTML = h;
   };
 
-  var PRESET_AVATARS = [
-    { id: 'commander-8', name: '萌系指挥官', role: '休闲', src: 'img/avatars/commander-8.svg' },
-    { id: 'commander-1', name: '陆军上将', role: '全军统帅', src: 'img/avatars/commander-1.svg' },
-    { id: 'commander-2', name: '装甲指挥官', role: '装甲先锋', src: 'img/avatars/commander-2.svg' },
-    { id: 'commander-3', name: '王牌飞行员', role: '空中制霸', src: 'img/avatars/commander-3.svg' },
-    { id: 'commander-4', name: '海军提督', role: '深海巨舰', src: 'img/avatars/commander-4.svg' },
-    { id: 'commander-5', name: '战术参谋长', role: '战役规划', src: 'img/avatars/commander-5.svg' },
-    { id: 'commander-6', name: '特战先锋', role: '敌后奇袭', src: 'img/avatars/commander-6.svg' },
-    { id: 'commander-7', name: '最高元帅', role: '荣誉勋章', src: 'img/avatars/commander-7.svg' }
-  ];
+  var PRESET_AVATARS = G.Constants.presetAvatars;
 
   function getCurrentAvatar() {
     var s = Core.state || {};
@@ -990,7 +993,7 @@ window.Game = window.Game || {};
     var cap = Core.capacity();
     var caps = { food: cap.food, steel: cap.steel, oil: cap.oil, rare: cap.rare, gold: 999999 };
     var nets = { food: netFood, steel: netSteel, oil: netOil, rare: netRare, gold: goldRate };
-    var resKeys = ['food', 'steel', 'oil', 'rare', 'gold'];
+    var resKeys = G.Constants.resourceKeysWithGold;
 
     for (var ri = 0; ri < resKeys.length; ri++) {
       var rk = resKeys[ri];
@@ -1066,6 +1069,7 @@ window.Game = window.Game || {};
   G.MainView = {
     navBar: navBar,
     renderArmySummaryList: renderArmySummaryList,
+    showArmySummaryFullscreen: showArmySummaryFullscreen,
     renderOfficerSummaryCard: renderOfficerSummaryCard,
     showUnitDetailModal: showUnitDetailModal,
     showResourceDetail: showResourceDetail,

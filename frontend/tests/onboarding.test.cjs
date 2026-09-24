@@ -20,6 +20,7 @@ function runtime() {
       post(url, body) { const request = deferred(); calls.push({ method: 'POST', url, body, request }); return request.promise; }
     } }, go(route) { this.Core.route = route; } };
   vm.createContext(ctx);
+  require('./load-constants.cjs')(ctx);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/onboarding.js'), 'utf8'), ctx);
   return { G: ctx.Game, calls, applied, elements, setAccount(id) { token = 'account-' + id; ctx.Game.Core.state.player.id = id; } };
 }

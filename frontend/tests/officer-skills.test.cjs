@@ -26,6 +26,7 @@ function setupGame() {
   context.window = context;
   context.G = context.Game;
 
+  require('./load-constants.cjs')(context);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/data.js'), 'utf8'), context);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/core.js'), 'utf8'), context);
 
@@ -263,7 +264,7 @@ test('军官技能升级只选择对应的指定技能书，满级禁用', async
   };
 
   Game.Officer.openSkillUpgrade(7, 0);
-  assert.match(modal.innerHTML, /全军冲锋技能书 ×2/);
+  assert.match(modal.innerHTML, /全军冲锋技能书.*×2/);
   assert.doesNotMatch(modal.innerHTML, /精明理财技能书|通用技能书/);
   await bookButton.onclick();
   assert.deepEqual(request, [7, 0, 'skillBook_frenzy']);

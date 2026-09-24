@@ -13,6 +13,17 @@ import java.util.*;
 @RequiredArgsConstructor
 public class WorldTerrainService {
     public static final int SIZE = WorldConfig.SIZE;
+    public static final int TERRAIN_VERSION = 2;
+    private static final int[][] ISLANDS = {
+            {182, 78, 5, 8}, {176, 142, 4, 6},
+            {184, 6, 2, 3}, {181, 20, 3, 2}, {192, 34, 2, 4},
+            {173, 49, 4, 3}, {188, 61, 3, 5}, {164, 75, 2, 4},
+            {179, 88, 5, 3}, {194, 103, 2, 3}, {169, 119, 3, 5},
+            {185, 132, 4, 3}, {197, 148, 2, 4}, {174, 161, 5, 3},
+            {190, 176, 3, 5}, {160, 184, 3, 2}, {183, 47, 2, 2},
+            {198, 81, 1, 2}, {160, 101, 2, 2}, {197, 124, 2, 2},
+            {195, 190, 2, 3}, {193, 160, 2, 2}
+    };
     private final WorldMapRepository worlds;
     private final PlayerCityRepository cities;
     private final NpcCityRepository npcs;
@@ -24,15 +35,50 @@ public class WorldTerrainService {
     public static boolean inside(int x, int y) { return x >= 0 && y >= 0 && x < SIZE && y < SIZE; }
     public static int anchor(int n, int span) { return Math.min(n, SIZE - span); }
     public static boolean sea(String mask, int x, int y) { return inside(x,y) && mask.charAt(y*SIZE+x) == '1'; }
+    /** Generate the stable world mask with a coastal mainland and varied offshore islands. */
     public static String generate() {
         char[] mask = new char[SIZE*SIZE];
         for (int y=0;y<SIZE;y++) for(int x=0;x<SIZE;x++) {
-            double coast = 162 + 12*Math.sin(y*.065) + 6*Math.sin(y*.19) - 28*Math.exp(-Math.pow((y-105)/27.0,2));
-            boolean water = x > coast || (x > 95 && y > 186 + 6*Math.sin(x*.07));
-            if (Math.pow((x-182)/5.0,2)+Math.pow((y-78)/8.0,2)<1 || Math.pow((x-176)/4.0,2)+Math.pow((y-142)/6.0,2)<1) water=false;
+            boolean water = baseWater(x, y);
+            if (island(x, y)) water = false;
             mask[y*SIZE+x] = water ? '1' : '0';
         }
         return new String(mask);
+    }
+    private static boolean baseWater(int x, int y) {
+        double coast = 162 + 12*Math.sin(y*.065) + 6*Math.sin(y*.19) - 28*Math.exp(-Math.pow((y-105)/27.0,2));
+        return x > coast || (x > 95 && y > 186 + 6*Math.sin(x*.07));
+    }
+    private static boolean island(int x, int y) {
+        for (int[] island : ISLANDS) {
+            double dx = (x - island[0]) / (double) island[2];
+            double dy = (y - island[1]) / (double) island[3];
+            double angle = Math.atan2(dy, dx);
+            double edge = 1 + .13 * Math.sin(angle * 3 + island[0]) + .08 * Math.sin(angle * 5 + island[1]);
+            if (dx * dx + dy * dy < edge * edge) return true;
+        }
+        return false;
+    }
+    private static String mergeIslands(String terrain) {
+        char[] mask = terrain.toCharArray();
+        for (int y = 0; y < SIZE; y++) for (int x = 0; x < SIZE; x++) {
+            if (mask[y * SIZE + x] == '1' && island(x, y)) mask[y * SIZE + x] = '0';
+        }
+        return new String(mask);
+    }
+    /** Deterministic offshore cells for island content; never includes mainland or protected legacy land. */
+    public static List<List<Integer>> islandCells(String mask) {
+        List<List<Integer>> islands = new ArrayList<>();
+        for (int[] island : ISLANDS) {
+            List<Integer> cells = new ArrayList<>();
+            for (int y = Math.max(0, island[1] - island[3] - 2); y <= Math.min(SIZE - 1, island[1] + island[3] + 2); y++) {
+                for (int x = Math.max(0, island[0] - island[2] - 2); x <= Math.min(SIZE - 1, island[0] + island[2] + 2); x++) {
+                    if (baseWater(x, y) && island(x, y) && !sea(mask, x, y)) cells.add(y * SIZE + x);
+                }
+            }
+            islands.add(cells);
+        }
+        return islands;
     }
     private void protect(char[] mask, int x, int y, int span) {
         x=anchor(x,span); y=anchor(y,span);
@@ -46,10 +92,10 @@ public class WorldTerrainService {
     @Transactional
     public String ensure() {
         WorldMap world=worlds.findFirstByOrderByIdAsc().orElseThrow(()->new IllegalArgumentException("世界尚未初始化"));
-        if(world.getTerrainData()!=null) return world.getTerrainData();
+        if(world.getTerrainData()!=null && world.getTerrainVersion() != null && world.getTerrainVersion() >= TERRAIN_VERSION) return world.getTerrainData();
         world=worlds.lockById(world.getId()).orElseThrow();
-        if(world.getTerrainData()!=null) return world.getTerrainData();
-        char[] mask=generate().toCharArray(); Long id=world.getId();
+        if(world.getTerrainData()!=null && world.getTerrainVersion() != null && world.getTerrainVersion() >= TERRAIN_VERSION) return world.getTerrainData();
+        char[] mask=(world.getTerrainData() == null ? generate() : mergeIslands(world.getTerrainData())).toCharArray(); Long id=world.getId();
         cities.findByWorldId(id).forEach(c->protect(mask,c.getX(),c.getY(),citySpan(c)));
         npcs.findByWorldId(id).forEach(c->protect(mask,c.getX(),c.getY(),1));
         bandits.findByWorldId(id).forEach(c->protect(mask,c.getX(),c.getY(),1));
@@ -60,14 +106,14 @@ public class WorldTerrainService {
         for(int i=0;i<mask.length;i++) if(mask[i]=='1'&&(i%SIZE==0||i%SIZE==SIZE-1||i/SIZE==0||i/SIZE==SIZE-1)){visited[i]=true;q.add(i);}
         while(!q.isEmpty()){int p=q.remove();for(int n:neighbors(p))if(!visited[n]&&mask[n]=='1'){visited[n]=true;q.add(n);}}
         for(int i=0;i<mask.length;i++)if(mask[i]=='1'&&!visited[i])mask[i]='0';
-        world.setTerrainData(new String(mask)); worlds.saveAndFlush(world); return world.getTerrainData();
+        world.setTerrainData(new String(mask)); world.setTerrainVersion(TERRAIN_VERSION); worlds.saveAndFlush(world); return world.getTerrainData();
     }
     /** Read-only callers never initialize terrain during state assembly. */
     public String current() { return worlds.findFirstByOrderByIdAsc().map(WorldMap::getTerrainData).orElse(null); }
     @Transactional
     public Map<String,Object> descriptor() {
         String data=ensure();
-        return Map.of("version",1,"size",SIZE,"cells",data,"seaCells",data.chars().filter(c->c=='1').count());
+        return Map.of("version",TERRAIN_VERSION,"size",SIZE,"cells",data,"seaCells",data.chars().filter(c->c=='1').count());
     }
     public static List<Integer> neighbors(int p) {
         List<Integer> out=new ArrayList<>(4);int x=p%SIZE,y=p/SIZE;

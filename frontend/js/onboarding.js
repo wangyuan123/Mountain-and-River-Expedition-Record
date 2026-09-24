@@ -3,8 +3,8 @@
   'use strict';
   var Core = G.Core;
   var state = { data: null, timer: null, pending: null, busy: false, epoch: 0, error: '' };
-  var labels = { food: '粮食', steel: '钢铁', oil: '石油', rare: '稀矿', gold: '黄金' };
-  var plans = { economy: ['稳固经济', 'buildRes'], expansion: ['继续扩张', 'world'], military: ['发展军备', 'army'] };
+  var labels = G.Constants.resourceNames;
+  var plans = G.Constants.onboardingPlans;
 
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) {

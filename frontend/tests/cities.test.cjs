@@ -10,7 +10,7 @@ function runtime(extra = {}) {
     setTimeout,clearTimeout,setInterval,clearInterval, ...extra };
   ctx.window=ctx;ctx.Game=ctx.Game||{};return vm.createContext(ctx);
 }
-function load(ctx,name){vm.runInContext(fs.readFileSync(path.join(__dirname,'../js',name),'utf8'),ctx);}
+function load(ctx,name){require('./load-constants.cjs')(ctx);vm.runInContext(fs.readFileSync(path.join(__dirname,'../js',name),'utf8'),ctx);}
 function response(body){return {ok:true,status:200,text:async()=>JSON.stringify(body)};}
 
 test('requests retain their originating city header and reject delayed responses after switching', async()=>{

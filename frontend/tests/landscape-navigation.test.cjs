@@ -33,6 +33,7 @@ test('landscape navigation preserves its scroll and reveals the active entry', (
   };
   context.window = context;
   vm.createContext(context);
+  require('./load-constants.cjs')(context);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/main.js'), 'utf8'), context);
 
   context.Game.Main.renderNavBar();
@@ -63,6 +64,7 @@ test('landscape sidebar toggle persists and updates its accessible label', () =>
   };
   context.window = context;
   vm.createContext(context);
+  require('./load-constants.cjs')(context);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/main.js'), 'utf8'), context);
   const main = context.Game.Main;
   main.toggleLandscapeNav();
@@ -83,7 +85,7 @@ test('game navigation renders an accessible landscape collapse control', () => {
   const context = { Game: {}, document: {} };
   context.window = context;
   vm.createContext(context);
-  for (const file of ['data.js', 'core.js', 'main-view.js']) {
+  for (const file of ['constants.js', 'data.js', 'core.js', 'main-view.js']) {
     vm.runInContext(fs.readFileSync(path.join(__dirname, '../js', file), 'utf8'), context);
   }
   context.Game.Core.state = { world: { incoming: [] } };
@@ -100,6 +102,7 @@ test('changing or returning to a route resets the independently scrolling view',
   };
   context.window = context;
   vm.createContext(context);
+  require('./load-constants.cjs')(context);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/core.js'), 'utf8'), context);
   const core = context.Game.Core;
   core.route = 'home';

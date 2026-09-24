@@ -5,7 +5,7 @@ const vm=require('node:vm');
 const path=require('node:path');
 function setup(extra={}) {
   const c=vm.createContext({console,Promise,Math,Game:{DATA:{},Core:{state:{},views:{}}},...extra});c.window=c;
-  for(const file of ['dispatch-route.js','world.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../js',file),'utf8'),c);
+  for(const file of ['constants.js','dispatch-route.js','world.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../js',file),'utf8'),c);
   return c;
 }
 test('preview preserves route turns, centres axis-aligned routes and labels direction',()=>{

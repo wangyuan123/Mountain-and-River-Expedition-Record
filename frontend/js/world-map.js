@@ -140,11 +140,7 @@
     if (t.kind === 'player' || (t.kind === 'wild' && t.claimed)) return 'other';
     return t.kind === 'wild' ? 'neutral' : 'npc';
   }
-  var ownershipStyles = {
-    own: { fill:0x163f58, edge:0x76ccea, ink:0xf1fbff },
-    other: { fill:0x55391e, edge:0xe7b76d, ink:0xfff1d9 },
-    neutral: { fill:0x343b36, edge:0xaeb8ad, ink:0xf1f3ea }
-  };
+  var ownershipStyles = G.Constants.mapOwnershipStyles;
   function ownershipCaption(t) {
     var relation = ownership(t);
     if (relation === 'npc') return '';

@@ -27,7 +27,7 @@ function setup() {
   context.window = context;
   const sandbox = vm.createContext(context);
   const load = file => vm.runInContext(fs.readFileSync(path.join(root, 'js', file), 'utf8'), sandbox);
-  load('api-client.js'); load('api.js'); load('account.js');
+  load('constants.js'); load('api-client.js'); load('api.js'); load('account.js');
   const account = context.Game.Account;
   account.preview = { blocker: '' }; account.username = '测试账号'; account.requestId = 'request-test-123';
   return { ...context, nodes, storage, listeners, account, counters: () => ({ renders, disconnects, starts }) };

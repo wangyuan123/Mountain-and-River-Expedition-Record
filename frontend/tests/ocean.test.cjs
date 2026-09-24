@@ -1,5 +1,5 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
-function setup(){const c=vm.createContext({console,Math,Game:{}});c.window=c;for(const f of ['map-ocean.js','map-terrain.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../js',f),'utf8'),c);return c;}
+function setup(){const c=vm.createContext({console,Math,Game:{}});c.window=c;for(const f of ['constants.js','map-ocean.js','map-terrain.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../js',f),'utf8'),c);return c;}
 test('authoritative ocean mask preserves cell boundaries and rejects malformed data',()=>{
  const c=setup(),o=c.Game.MapOcean;assert.equal(o.ready(),false);o.configure({size:4,cells:'0011001100110011'});
  assert.equal(o.sea(1.99,2),false);assert.equal(o.sea(2,2),true);assert.equal(o.sea(-1,2),false);assert.equal(o.sea(4,2),false);

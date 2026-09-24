@@ -825,14 +825,14 @@ public class BattleService {
     }
 
     /**
-     * 将交火阶段结果合并到本回合对应的机动日志，避免移动与首次交火在战报中分段展示。
+     * 将交火阶段结果合并到本回合对应的兵种日志，避免同一兵种的多段攻击结果被其他兵种隔开。
      *
      * @param report 当前回合战报。
      * @param movementReportStart 本回合机动日志的起始位置。
      * @param side 行动方。
      * @param unitName 单位显示名称。
      * @param outcome 要追加的交火结果。
-     * @param advanceOnly 是否仅允许追加到前进日志。
+     * @param advanceOnly 是否仅允许追加到前进日志；否则也允许追加到该兵种已有的交火日志。
      * @return 是否找到匹配的机动日志并成功追加。
      */
     private boolean appendCombatOutcomeToMovementLog(StringBuilder report, int movementReportStart,
@@ -848,7 +848,7 @@ public class BattleService {
             boolean movementLine = line.contains(" [前进] ")
                     || line.contains(" [后退] ")
                     || line.contains(" [待命] ");
-            if (movementLine && (!advanceOnly || line.contains(" [前进] ")) && line.startsWith(prefix)) {
+            if ((!advanceOnly || (movementLine && line.contains(" [前进] "))) && line.startsWith(prefix)) {
                 matchedLineEnd = lineEnd;
             }
             cursor = lineEnd + 1;
@@ -1014,11 +1014,13 @@ public class BattleService {
             if (firstTarget) attackOutcome.append(" 本次原始火力").append(Math.round(targetAttack * totalActions));
             attackOutcome.append(" 伤害").append(Math.round(appliedDamage)).append(" 击毁").append(kills)
                     .append(" 剩余攻击额度").append(Math.round(100 * remainingActions / totalActions)).append("%");
-            // 仅把前进后的首次开火接到移动行，余伤与反击仍按交火实际顺序单独记录。
+            // 首次开火优先接到前进行；后续余伤追加到同一兵种已有日志，避免被其他兵种隔开。
             String combatPrefix = sidePrefix + u.name() + "(" + count + ")";
             String attackDetails = attackOutcome.substring(combatPrefix.length());
-            if (!firstTarget || !appendCombatOutcomeToMovementLog(report, movementReportStart, side, u.name(),
-                    attackDetails, true)) {
+            int unitLogStart = Math.max(0, movementReportStart);
+            boolean appendToUnitLog = appendCombatOutcomeToMovementLog(report, unitLogStart, side,
+                    u.name(), attackDetails, firstTarget);
+            if (!appendToUnitLog) {
                 report.append(attackOutcome).append("\n");
             }
 

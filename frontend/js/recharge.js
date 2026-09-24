@@ -5,22 +5,8 @@ window.Game = window.Game || {};
   'use strict';
 
   var Core = G.Core;
-  var CATEGORIES = [
-    { id: 'diamond', name: '钻石充值' },
-    { id: 'marshal', name: '元帅礼包' },
-    { id: 'monthly', name: '月卡特权' }
-  ];
-  var PACKAGES = [
-    { id: 'p6', cat: 'diamond', name: '试玩补给', icon: '💎', rmb: 6, diamond: 60, desc: '适合首次体验充值' },
-    { id: 'p30', cat: 'diamond', name: '少将补给', icon: '💠', rmb: 30, diamond: 330, desc: '额外赠送30钻石', bonus: '赠30' },
-    { id: 'p98', cat: 'diamond', name: '中将补给', icon: '💠', rmb: 98, diamond: 1080, desc: '额外赠送100钻石', bonus: '赠100' },
-    { id: 'p198', cat: 'diamond', name: '上将补给', icon: '💎', rmb: 198, diamond: 2230, desc: '额外赠送250钻石', bonus: '赠250' },
-    { id: 'p328', cat: 'diamond', name: '大将补给', icon: '💎', rmb: 328, diamond: 3780, desc: '额外赠送500钻石', bonus: '赠500' },
-    { id: 'p648', cat: 'diamond', name: '统帅补给', icon: '💎', rmb: 648, diamond: 7680, desc: '额外赠送1200钻石', bonus: '赠1200' },
-    { id: 'p1280', cat: 'marshal', name: '元帅礼包', icon: '🎖️', rmb: 1280, diamond: 15800, desc: '钻石、资源与稀有道具组合礼包', bonus: '豪华' },
-    { id: 'mk30', cat: 'monthly', name: '钻石月卡', icon: '💳', rmb: 30, diamond: 300, desc: '立即获得300钻石，持续领取月卡福利' },
-    { id: 'wk98', cat: 'monthly', name: '战备月卡', icon: '🎖️', rmb: 98, diamond: 980, desc: '立即获得980钻石，享受战备补给特权' }
-  ];
+  var CATEGORIES = G.Constants.rechargeCategories;
+  var PACKAGES = G.Constants.rechargePackages;
 
   var Recharge = {
     curTab: 'diamond',

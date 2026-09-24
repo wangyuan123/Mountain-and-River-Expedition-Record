@@ -4,8 +4,8 @@ window.Game = window.Game || {};
 (function (G) {
   'use strict';
 
-  var ATTR_MAX = 219;
-  var OFFICER_MAX_LEVEL = 100;
+  var ATTR_MAX = G.Constants.saveAttrMax;
+  var OFFICER_MAX_LEVEL = G.Constants.officerMaxLevel;
 
   function expNeeded(level) {
     return level * 200;

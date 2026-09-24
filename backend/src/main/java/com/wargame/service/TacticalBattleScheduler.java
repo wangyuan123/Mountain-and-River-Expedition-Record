@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(name = "game.scheduling.enabled", havingValue = "true", matchIfMissing = true)
 public class TacticalBattleScheduler {
     private static final Logger log = LoggerFactory.getLogger(TacticalBattleScheduler.class);
+    private static final long COMMAND_SUBMISSION_GRACE_MS = 2_000L;
 
     private final BattleSessionRepository battleSessions;
     private final MarchService marches;
@@ -29,7 +30,8 @@ public class TacticalBattleScheduler {
     @Scheduled(fixedDelayString = "${game.tactical-battle-interval:1000}")
     public void resolveTimedOutRounds() {
         long now = System.currentTimeMillis();
-        for (Long battleSessionId : battleSessions.findDueRoundIds(now, PageRequest.of(0, batchSize))) {
+        // 页面截止时提交已选命令；后台延迟兜底，避免先结算而丢弃玩家的本回合指令。
+        for (Long battleSessionId : battleSessions.findDueRoundIds(now - COMMAND_SUBMISSION_GRACE_MS, PageRequest.of(0, batchSize))) {
             try {
                 marches.processTimedOutTacticalBattle(battleSessionId, now);
             } catch (Exception e) {

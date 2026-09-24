@@ -20,7 +20,7 @@ window.Game = window.Game || {};
   // ============================================================
   //  收件人历史 (本地 UX 状态, 与游戏数据分离; 按账号隔离)
   // ============================================================
-  var HISTORY_MAX = 20;
+  var HISTORY_MAX = G.Constants.mailHistoryMax;
 
   function _userKey() {
     try { return (G.API && G.API.getUsername && G.API.getUsername()) || 'guest'; }

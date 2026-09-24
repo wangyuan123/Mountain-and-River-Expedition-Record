@@ -179,7 +179,7 @@ window.Game = window.Game || {};
     },
 
     reportTitle: function (r) {
-      var titles = { conquer: '征服报告', plunder: '掠夺报告', scout: '侦查报告' };
+      var titles = G.Constants.battleReportTitles;
       if (titles[r.action]) return titles[r.action];
       // 历史战报未保存行动字段，只根据旧标题的行动前缀判断，避免误匹配玩家名。
       if (r.cityConquered || r.wildConquered) return '征服报告';
@@ -290,7 +290,7 @@ window.Game = window.Game || {};
 
     _formatRes: function (res) {
       if (!res) return '';
-      var names = { food: '粮', steel: '钢', oil: '油', rare: '稀矿', gold: '金' };
+      var names = G.Constants.battleResourceNames;
       var parts = [];
       for (var k in res) {
         if (res[k] > 0) parts.push((names[k] || k) + G.fmt(res[k]));
@@ -1133,7 +1133,7 @@ window.Game = window.Game || {};
           + '<div><span class="tactical-turn-label">重试倒计时</span><b id="tacticalCountdown" class="tactical-countdown">5 秒</b></div></div>';
       } else {
         h += '<div class="tactical-turn-status"><div><span class="tactical-turn-label">当前回合</span><b>第 ' + roundNo + ' 回合</b><small>/ 共 ' + maxRound + ' 回合</small></div>';
-        h += '<div><span class="tactical-turn-label">本回合倒计时</span><b id="tacticalCountdown" class="tactical-countdown">15 秒</b><small>结束后自动进入下一回合</small></div></div>';
+        h += '<div><span class="tactical-turn-label">本回合倒计时</span><b id="tacticalCountdown" class="tactical-countdown">15 秒</b><small>已选命令在倒计时结束后提交，也可点击下方执行按钮</small></div></div>';
       }
       h += '<div class="tactical-map" style="--tactical-map-height:' + mapHeight + 'px"><div class="tactical-base mine-base">我军阵地</div><div class="tactical-base foe-base">敌军阵地</div><div class="tactical-axis"></div>';
       h += this.renderTacticalRangeBeams(attacker, attackerPositions, defender, defenderPositions, distance, markerRowIndexes, attackerTech, defenderTech);
@@ -1249,7 +1249,7 @@ window.Game = window.Game || {};
         || (Core.state && Core.state.tech) || {};
       var skills = skillsMap || (this._activeTactical && this._activeTactical.attackerSkills) || {};
       var cat = unit.cat;
-      var catKey = { inf: null, arm: 'arm_engine', air: 'air_engine', nav: 'nav_engine' }[cat];
+      var catKey = G.Constants.unitTechKeys[cat];
       var engLv = catKey ? Number(tech[catKey] || 0) : 0;
       var blitzLv = Number(skills.blitz || 0);
       return Math.round(baseSpd * (1 + 0.05 * engLv) * (1 + 0.05 * blitzLv) * 10) / 10;

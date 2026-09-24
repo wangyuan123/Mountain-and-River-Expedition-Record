@@ -38,6 +38,7 @@ function setup(initial) {
     setInterval(callback, delay) { const id = nextTimer++; timers.set(id, { callback, delay }); return id; },
     clearInterval(id) { timers.delete(id); }
   });
+  require('./load-constants.cjs')(context);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/onboarding.js'), 'utf8'), context);
   return { G, timers, nodes, reads: () => reads };
 }

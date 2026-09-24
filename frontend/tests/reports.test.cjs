@@ -30,6 +30,7 @@ function setup(initialCount = 0) {
   });
   context.window = context;
   const load = file => vm.runInContext(fs.readFileSync(path.join(__dirname, '../js', file), 'utf8'), context);
+  load('constants.js');
   load('battle.js');
   return { context, G: context.Game, nav, load };
 }

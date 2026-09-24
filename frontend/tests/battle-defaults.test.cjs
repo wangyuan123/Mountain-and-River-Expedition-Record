@@ -26,8 +26,13 @@ function setup() {
 }
 
 test('顶部军队后展示独立默认战术入口', () => {
-  const source = fs.readFileSync(path.join(__dirname, '../js/main-view.js'), 'utf8');
-  assert.match(source, /route: 'army' \},\s*\{ key: '[^']+', label: '(?:默认)?战术', route: 'battleDefaults'/);
+  const context = vm.createContext({ window: null });
+  context.window = context;
+  require('./load-constants.cjs')(context);
+  const navItems = context.Game.Constants.navItems;
+  const armyIndex = navItems.findIndex(item => item.route === 'army');
+  assert.equal(navItems[armyIndex + 1].route, 'battleDefaults');
+  assert.match(navItems[armyIndex + 1].label, /^(?:默认)?战术$/);
 });
 
 test('分别编辑攻守兵种，只在保存时提交两套完整预设', async () => {

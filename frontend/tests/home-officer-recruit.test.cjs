@@ -47,6 +47,7 @@ function setupTest(officers = []) {
   context.window = context;
 
   const mainViewSrc = fs.readFileSync(path.join(__dirname, '../js/main-view.js'), 'utf8');
+  require('./load-constants.cjs')(context);
   vm.runInContext(mainViewSrc, context);
   return context.Game;
 }

@@ -96,6 +96,7 @@ function setupTestEnvironment() {
   context.window = context;
   vm.createContext(context);
   const code = fs.readFileSync(path.join(__dirname, '../js/tech.js'), 'utf8');
+  require('./load-constants.cjs')(context);
   vm.runInContext(code, context);
   return { G: context.Game, appendedElements, context };
 }

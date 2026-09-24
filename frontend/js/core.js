@@ -6,12 +6,7 @@ window.Game = window.Game || {};
 
   var D = G.DATA;
 
-  // 上线时统一替换为实际运营主体和已取得的备案号，并关闭模拟标记。
-  var SITE_INFO = {
-    operator: '山河远征网络科技有限公司',
-    icpNumber: '京ICP备00000000号-1',
-    isPlaceholder: true
-  };
+  var SITE_INFO = G.Constants.siteInfo;
 
   function $(id) { return document.getElementById(id); }
 
@@ -371,7 +366,7 @@ window.Game = window.Game || {};
 
     spdMul: function (cat) {
       var s = this.state;
-      var catKey = { inf: null, arm: 'arm_engine', air: 'air_engine', nav: 'nav_engine' }[cat];
+      var catKey = G.Constants.unitTechKeys[cat];
       if (!catKey) return 1;
       return 1 + 0.05 * (s.tech[catKey] || 0);
     },
@@ -722,15 +717,7 @@ window.Game = window.Game || {};
 
       // 1. Static / transactional pages: skip DOM updates completely.
       // Data is already synced in G.state, topbar resources are updated by refreshTop.
-      var staticRoutes = {
-        shop: 1, depot: 1, depotUse: 1, depotRename: 1,
-        officer: 1, officerDetail: 1, academy: 1,
-        tech: 1, settings: 1, battleDefaults: 1,
-        reports: 1, reportDetail: 1, battle: 1, report: 1,
-        mail: 1, recharge: 1, login: 1,
-        guild: 1, map: 1, wild: 1, dispatch: 1
-      };
-      if (staticRoutes[route]) {
+      if (G.Constants.staticRoutes[route]) {
         return;
       }
 
@@ -789,40 +776,10 @@ window.Game = window.Game || {};
 
     /** 登录页只展示站点信息；游戏内提供常用导航并标识当前页面。 */
     footer: function () {
-      var map = {
-        // TODO：恢复防沉迷后改回“实名注册 · 健康游戏”。
-        login: '登录账号 · 开启远征',
-        protection: '账号服务在休息期间仍可办理',
-        home: '',
-        buildRes: '[1-9]升级 [0]返回',
-        buildArmy: '[1-9]升级 [0]返回',
-        fort: '修筑/拆除城防 [0]返回',
-        army: '点击征召/解散 [0]返回',
-        officer: '点击招募/任命/查看详情 [0]返回',
-        officerDetail: '查看军官详情 [0]返回',
-        tech: '[1-6]研究 [0]返回',
-        map: '点击挑战 [0]返回',
-        wild: '点击占领/废弃 [0]返回',
-        world: '拖动浏览 · 双指缩放 · 点击目标查看详情',
-        dispatch: '选配兵力/军官/辎重 [0]返回',
-        alerts: '查看情报 [0]返回',
-        reports: '点击展开 [0]返回',
-        reportDetail: '返回战报列表/主菜单',
-        battle: '[1]立即结算/下一回合 [0]撤退',
-        report: '[1]再战 [0]返回地图',
-        depot: '查看和使用道具 [0]返回',
-        depotUse: '选择军官使用道具 [0]返回',
-        settings: '游戏设置与账号管理 [0]返回'
-      };
+      var map = G.Constants.footerHints;
       var html = '';
       if (this.state && this.route !== 'login') {
-        var items = [
-          { route: 'home', label: '首页', icon: '⌂' },
-          { route: 'world', label: '地图', icon: '◎' },
-          { route: 'mainQuest', label: '任务', icon: '⚑' },
-          { route: 'mail', label: '邮件', icon: '✉' },
-          { route: 'settings', label: '设置', icon: '⚙' }
-        ];
+        var items = G.Constants.footerNavItems;
         html += '<nav class="footer-nav" aria-label="底部快捷导航">';
         for (var i = 0; i < items.length; i++) {
           var item = items[i];
