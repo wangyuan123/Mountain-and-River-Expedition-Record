@@ -132,6 +132,26 @@ class TacticalBattleRoundTest {
     }
 
     @Test
+    void spilloverAppearsWithTheSameUnitWithinOneRound() {
+        BattleRoundState state = new BattleService(0).resolveWorldRound(
+                Map.of("rocket", 100, "truck", 1), Map.of("armored", 1, "htank", 100_000),
+                Map.of("rocket", 0, "truck", 0), Map.of("armored", 300, "htank", 2_000), 2_000,
+                Map.of(), Map.of(), Map.of(), Map.of(),
+                0, 0, 0, 0, 0, 0, 1,
+                Map.of("rocket", new BattleService.UnitOrder(BattleService.CommandAction.ADVANCE)),
+                Map.of("armored", new BattleService.UnitOrder(BattleService.CommandAction.HOLD),
+                        "htank", new BattleService.UnitOrder(BattleService.CommandAction.HOLD)));
+
+        String report = state.log();
+        String rocketLine = report.lines().filter(line -> line.startsWith("我方" + UnitDef.UNITS.get("rocket").name()))
+                .findFirst().orElseThrow();
+        assertTrue(rocketLine.contains("[前进]"), report);
+        assertTrue(rocketLine.contains("齐射敌" + UnitDef.UNITS.get("armored").name()), report);
+        assertTrue(rocketLine.contains("余伤攻击敌" + UnitDef.UNITS.get("htank").name()), report);
+        assertEquals(1, report.lines().filter(line -> line.startsWith("我方" + UnitDef.UNITS.get("rocket").name())).count(), report);
+    }
+
+    @Test
     void opposingAdvancesMeetWithoutCrossing() {
         BattleRoundState state = new BattleService(0).resolveWorldRound(
                 Map.of("truck", 1), Map.of("truck", 1),

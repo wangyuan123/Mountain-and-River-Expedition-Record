@@ -49,24 +49,29 @@ public class NpcCitySpawnService {
             int y = position / size;
             if (WorldTerrainService.sea(mask, x, y) || used.contains(x + "," + y)
                     || (oldX != null && oldY != null && x == oldX && y == oldY)) continue;
-            int level = ThreadLocalRandom.current().nextInt(3, 9);
-            WorldConfig.BanditLevel tier = WorldConfig.BANDIT_LEVELS.get(level - 1);
-            NpcCity city = new NpcCity();
-            city.setWorldId(worldId);
-            city.setName(WorldConfig.NPC_CITY_NAMES.get(ThreadLocalRandom.current().nextInt(WorldConfig.NPC_CITY_NAMES.size())));
-            city.setLevel(level);
-            city.setX(x);
-            city.setY(y);
-            city.setArmy(JsonUtil.toJson(tier.army()));
-            city.setForts(JsonUtil.toJson(Map.of("bunker", level * 2, "antitank", level)));
-            Map<String, Integer> supplies = new LinkedHashMap<>(tier.reward());
-            supplies.remove("exp");
-            city.setResources(JsonUtil.toJson(supplies));
-            city.setDefeated(false);
-            city.setScoutedBy("[]");
-            return cities.save(city);
+            return spawnAt(worldId, x, y);
         }
         throw new IllegalStateException("地图没有可生成 NPC 城市的空闲陆地");
+    }
+
+    /** Caller holds the world placement lock and has reserved an empty land cell. */
+    public NpcCity spawnAt(Long worldId, int x, int y) {
+        int level = ThreadLocalRandom.current().nextInt(3, 9);
+        WorldConfig.BanditLevel tier = WorldConfig.BANDIT_LEVELS.get(level - 1);
+        NpcCity city = new NpcCity();
+        city.setWorldId(worldId);
+        city.setName(WorldConfig.NPC_CITY_NAMES.get(ThreadLocalRandom.current().nextInt(WorldConfig.NPC_CITY_NAMES.size())));
+        city.setLevel(level);
+        city.setX(x);
+        city.setY(y);
+        city.setArmy(JsonUtil.toJson(tier.army()));
+        city.setForts(JsonUtil.toJson(Map.of("bunker", level * 2, "antitank", level)));
+        Map<String, Integer> supplies = new LinkedHashMap<>(tier.reward());
+        supplies.remove("exp");
+        city.setResources(JsonUtil.toJson(supplies));
+        city.setDefeated(false);
+        city.setScoutedBy("[]");
+        return cities.save(city);
     }
 
     /** 删除已征服的旧城并补一座新城，保留战报中的旧城名称和坐标。 */

@@ -39,6 +39,21 @@ class OceanTerrainTest extends BaseServiceTest {
         List<Integer> all=new ArrayList<>();for(int i=0;i<mask.length();i++)if(mask.charAt(i)=='1')all.add(i);
         assertFalse(MarchRouteService.path(mask,List.of(all.get(0)),List.of(all.get(all.size()-1)),true).isEmpty());
     }
+    @Test void existingTerrainOnlyGainsIslandLandAndRetainsPreviousCoast(){
+        WorldMap world=createTestWorld();
+        char[] old=generate().toCharArray();
+        int islandCell=islandCells(new String(old)).get(3).get(0);
+        old[islandCell]='1';
+        old[42*SIZE+198]='1';
+        world.setTerrainData(new String(old));
+        world.setTerrainVersion(1);
+        worldMapRepository.save(world);
+        String upgraded=terrain.ensure();
+        assertEquals('0',upgraded.charAt(islandCell));
+        assertEquals('1',upgraded.charAt(42*SIZE+198));
+        assertEquals(2,worldMapRepository.findById(world.getId()).orElseThrow().getTerrainVersion());
+        assertEquals(upgraded,terrain.ensure());
+    }
     @Test void coastalFoundingReservesFourCellsAndKeepsResourceRules(){
         WorldMap w=coastWorld();Player p=player("coastal-founder");city(p,w,98,40);
         assertEquals(true,cities.site(p.getId(),98,45).get("valid"));

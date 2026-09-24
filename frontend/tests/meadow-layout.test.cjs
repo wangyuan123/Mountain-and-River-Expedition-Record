@@ -24,7 +24,7 @@ function setup() {
     });
     return canvas;
   }};
-  for(const file of ['map-camera.js','map-terrain.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../js',file),'utf8'),c);
+  for(const file of ['constants.js','map-camera.js','map-terrain.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../js',file),'utf8'),c);
   return c.Game.MapTerrain;
 }
 

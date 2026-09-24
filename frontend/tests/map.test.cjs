@@ -6,7 +6,7 @@ const path = require('node:path');
 function context(game = {}) {
   const c=vm.createContext({console,Date,Map,Set,Promise,Math,setTimeout,clearTimeout,Game:game});c.window=c;return c;
 }
-function load(c,file){vm.runInContext(fs.readFileSync(path.join(__dirname,'../js',file),'utf8'),c);}
+function load(c,file){require('./load-constants.cjs')(c);vm.runInContext(fs.readFileSync(path.join(__dirname,'../js',file),'utf8'),c);}
 const flush=()=>new Promise(setImmediate);
 test('camera zoom keeps finger anchor and camera never moves game coordinates',()=>{
   const c=context();load(c,'map-camera.js');const cam=new c.Game.MapCamera(200,100,100,48);cam.width=390;cam.height=550;

@@ -516,11 +516,7 @@ window.Game = window.Game || {};
       // 军队面板（所有兵种直接合并展示，取消分类分区）
       h += '<div id="army-panel-units" style="display:' + (!isQueueTab ? 'block' : 'none') + ';">';
       h += '<div class="menu">';
-      var allUnits = [
-        'infantry', 'motor', 'truck', 'armored', 'ltank', 'htank', 'assault', 'rocket',
-        'scout', 'special', 'fighter', 'bomber', 'transport',
-        'destroyer', 'sub', 'battleship', 'carrier'
-      ];
+      var allUnits = G.Constants.armyUnitOrder;
       allUnits.forEach(function (id) {
         var u = D.units[id];
         if (!u) return;

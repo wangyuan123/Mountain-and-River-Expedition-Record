@@ -51,7 +51,7 @@ window.Game = window.Game || {};
   var World = {
     // The canvas keeps stable IDs. Legacy actions receive a freshly resolved record.
     mapAction: function (target, action) {
-      var keys = { wild: 'wildTiles', player: 'playerCities', npc: 'npcCities', simulated_npc: 'simulatedNpcCities', bandit: 'bandits' };
+      var keys = G.Constants.worldTargetKeys;
       var key = keys[target.kind];
       if (!key) return;
       var list = Core.state.world[key] || (Core.state.world[key] = []);
@@ -971,7 +971,7 @@ window.Game = window.Game || {};
       }
 
       var carryRes = {};
-      var resKeys = ['food', 'steel', 'oil', 'rare'];
+      var resKeys = G.Constants.resourceKeys;
       for (var i = 0; i < resKeys.length; i++) {
         var rk = resKeys[i];
         carryRes[rk] = 0;
@@ -1042,7 +1042,7 @@ window.Game = window.Game || {};
       var isGather = dt.kind === 'wild_gather';
       var isScout = dt.action === 'scout';
       var isStation = dt.action === 'station';
-      var actionNames = { conquer: '征服', plunder: '掠夺', scout: '侦查', gather: '采集', station: '派遣进驻' };
+      var actionNames = G.Constants.dispatchActionNames;
       var actionName = actionNames[dt.action] || '征服';
       var actionDesc = isScout
         ? '派遣侦察机前往目标，抵达后进行侦查并生成情报报告，幸存侦察机自动返城。'
@@ -1258,7 +1258,7 @@ window.Game = window.Game || {};
         h += '<div class="zone-head">-- 携带资源 (货辎队负重内) --</div>';
         h += '<div class="panel">';
         h += '<div class="desc">携带资源随军出征,战胜则返还并计入掠夺,战败则丢失。</div>';
-        var resOrder = ['food', 'steel', 'oil', 'rare'];
+        var resOrder = G.Constants.resourceKeys;
         for (var ri = 0; ri < resOrder.length; ri++) {
           var rk = resOrder[ri];
           var rinfo = D.resources[rk] || {};
@@ -1581,7 +1581,7 @@ window.Game = window.Game || {};
 
         // ---- 展开态内容 ----
         var pScouted = getScouted(p.x, p.y);
-        var stateMap = { peace: '和平', war: '战争', shield: '护盾' };
+        var stateMap = G.Constants.cityStateNames;
         var expandHtml =
           '<div class="tcard-expand">' +
             '<div class="tcard-meta">城市 ' + esc(p.name || '未知城市') + '</div>' +
@@ -1661,13 +1661,7 @@ window.Game = window.Game || {};
       // 2. 工具栏：搜索 + 快捷跳转
       // 查看范围（格数）；0 表示全图。
       var curRadius = scanR;
-      var radiusOptions = [
-        { v: 3,  label: '范围：3格' },
-        { v: 5,  label: '范围：5格' },
-        { v: 8,  label: '范围：8格' },
-        { v: 10, label: '范围：10格' },
-        { v: 0,  label: '范围：全图' }
-      ];
+      var radiusOptions = G.Constants.mapRadiusOptions;
       var radSel = '<select class="qty msb-radius" id="viewRadiusSel" onchange="Game.World.setViewRadius(this.value)" aria-label="地图查看范围" title="以当前视角为中心，选择查看范围">' +
                    radiusOptions.map(function (o) { return '<option value="' + o.v + '"' + (o.v === curRadius || (curRadius > 10 && o.v === 0) ? ' selected' : '') + '>' + o.label + '</option>'; }).join('') +
                    '</select>';

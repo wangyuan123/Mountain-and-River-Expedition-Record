@@ -14,7 +14,7 @@ body{margin:0}.model-tools{display:flex;flex-wrap:wrap;gap:8px;padding:14px;alig
 <div class="model-tools"><strong>兵种武器模型</strong><button class="btn" onclick="showModels(0)">陆军</button><button class="btn" onclick="showModels(1)">空军与舰队</button><button class="btn" onclick="showModels(2)">特种部队</button><button class="btn" onclick="document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'blue-white-classic':'dark'">切换主题</button></div>
 <div class="model-note">当前兵种对应的装备原型 · 使用首页真实渲染器与示例兵力</div><div id="model-view"></div><div id="model-log"></div>
 </div>
-<script src="js/data.js"></script><script src="js/core.js"></script>
+<script src="js/constants.js"></script><script src="js/data.js"></script><script src="js/core.js"></script>
 <script>
 // 预览只使用本地示例兵力，不调用服务器或修改玩家存档。
 Game.Core.state={army:{}};

@@ -40,7 +40,7 @@ function setup(extra = {}) {
   c.Core = c.Game.Core;
 
   // Load data.js and world.js
-  for (const file of ['data.js', 'world.js']) {
+  for (const file of ['constants.js', 'data.js', 'world.js']) {
     vm.runInContext(fs.readFileSync(path.join(__dirname, '../js', file), 'utf8'), c);
   }
   return c;

@@ -23,6 +23,7 @@ function setupClock() {
   };
   context.window = context;
   vm.createContext(context);
+  require('./load-constants.cjs')(context);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/core.js'), 'utf8'), context);
   return {
     core: context.Game.Core,

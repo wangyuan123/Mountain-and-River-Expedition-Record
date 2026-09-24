@@ -17,16 +17,16 @@ window.Game = window.Game || {};
   }
 
   function roleText(r) {
-    return { mayor: '市长', commander: '指挥官', march: '行军中', idle: '闲置' }[r] || '闲置';
+    return G.Constants.officerRoles[r] || '闲置';
   }
 
   function equipmentName(itemId) {
     var m = /^(recruit|officer|marshal)_(military|defense|logistics|knowledge)_(weapon|badge|coat)$/.exec(itemId || '');
     if (!m) return itemId || '装备';
-    var tiers = { recruit: '列兵', officer: '校官', marshal: '元帅' };
-    var branches = { military: '军事', defense: '防御', logistics: '后勤', knowledge: '学识' };
-    var slots = { weapon: '武器', badge: '徽章', coat: '外套' };
-    return tiers[m[1]] + branches[m[2]] + slots[m[3]];
+    var tiers = G.Constants.equipmentTiers;
+    var branches = G.Constants.equipmentBranches;
+    var slots = G.Constants.equipmentSlots;
+    return tiers[m[1]].name + branches[m[2]] + slots[m[3]];
   }
 
   function skillText(o) {
@@ -245,11 +245,14 @@ window.Game = window.Game || {};
       if (skillUpgradeModal) Officer.closeSkillUpgrade();
       var mask = document.createElement('div');
       mask.className = 'modal-mask';
-      mask.innerHTML = '<div class="modal-card" style="max-width:380px;width:92%">'
-        + '<h3>升级「' + info.name + '」</h3>'
-        + '<p>Lv.' + owned.lv + ' → Lv.' + (owned.lv + 1) + '，请选择一本同类型技能书：</p>'
-        + (book && count > 0 ? '<button type="button" class="btn ok skill-upgrade-book">' + book.icon + ' ' + book.name + ' ×' + count + ' (消耗1本)</button>' : '<p class="d">暂无' + info.name + '技能书，请前往商城获取。</p>')
-        + '<div class="btn-row"><button type="button" class="btn skill-upgrade-cancel">取消</button></div></div>';
+      mask.innerHTML = '<div class="modal-card skill-upgrade-modal">'
+        + '<div class="skill-upgrade-head"><span class="skill-upgrade-kicker">军官技能</span><h3>升级「' + info.name + '」</h3></div>'
+        + '<div class="skill-upgrade-body">'
+        + '<div class="skill-upgrade-level"><span>当前等级</span><strong>Lv.' + owned.lv + '</strong><span class="skill-upgrade-arrow">→</span><span>目标等级</span><strong class="skill-upgrade-next">Lv.' + (owned.lv + 1) + '</strong></div>'
+        + '<p class="skill-upgrade-hint">请选择一本同类型技能书完成升级</p>'
+        + (book && count > 0 ? '<button type="button" class="btn ok skill-upgrade-book"><span class="skill-upgrade-book-icon">' + book.icon + '</span><span>' + book.name + '<small>库存 ×' + count + ' · 消耗 1 本</small></span><span class="skill-upgrade-book-arrow">›</span></button>' : '<p class="skill-upgrade-empty">暂无' + info.name + '技能书，请前往商城获取。</p>')
+        + '</div>'
+        + '<div class="skill-upgrade-foot"><button type="button" class="btn skill-upgrade-cancel">取消</button></div></div>';
       document.body.appendChild(mask);
       skillUpgradeModal = mask;
       mask.querySelector('.skill-upgrade-cancel').onclick = Officer.closeSkillUpgrade;
@@ -630,7 +633,7 @@ window.Game = window.Game || {};
       var o = findOfficer(s.officers, officerId);
       if (!o) return;
       var wrap = document.getElementById('attr-add-' + attr);
-      var attrNames = { logistics: '后勤', military: '军事', defense: '防御', knowledge: '学识' };
+      var attrNames = G.Constants.officerAttributes;
       if (action === 'confirm') {
         var input = document.getElementById('attr-input-' + attr);
         var n = customVal !== undefined ? customVal : (input ? parseInt(input.value, 10) : 0);
@@ -870,27 +873,14 @@ window.Game = window.Game || {};
     },
 
     equipmentName: function (itemId) {
-      var names = {
-        recruit_military_weapon: '列兵军刀', recruit_military_badge: '列兵臂章', recruit_military_coat: '列兵作训服',
-        recruit_defense_weapon: '列兵护身盾', recruit_defense_badge: '列兵坚守勋章', recruit_defense_coat: '列兵防弹背心',
-        recruit_logistics_weapon: '列兵工具包', recruit_logistics_badge: '列兵通行证', recruit_logistics_coat: '列兵工作服',
-        recruit_knowledge_weapon: '列兵笔记本', recruit_knowledge_badge: '列兵学员章', recruit_knowledge_coat: '列兵学员服',
-        officer_military_weapon: '校官军刀', officer_military_badge: '校官勋章', officer_military_coat: '校官军服',
-        officer_defense_weapon: '校官防暴盾', officer_defense_badge: '校官铁壁勋章', officer_defense_coat: '校官重装防弹甲',
-        officer_logistics_weapon: '校官补给箱', officer_logistics_badge: '校官调度章', officer_logistics_coat: '校官军需服',
-        officer_knowledge_weapon: '校官战术罗盘', officer_knowledge_badge: '校官参谋章', officer_knowledge_coat: '校官参谋服',
-        marshal_military_weapon: '元帅佩剑', marshal_military_badge: '元帅将星', marshal_military_coat: '元帅礼服',
-        marshal_defense_weapon: '元帅重装盾', marshal_defense_badge: '元帅不屈之星', marshal_defense_coat: '元帅钛金铠',
-        marshal_logistics_weapon: '元帅辎重车', marshal_logistics_badge: '元帅军需印', marshal_logistics_coat: '元帅长袍',
-        marshal_knowledge_weapon: '元帅望远镜', marshal_knowledge_badge: '元帅军师印', marshal_knowledge_coat: '元帅军礼服'
-      };
+      var names = G.Constants.equipmentNames;
       return names[itemId] || itemId;
     },
 
     renderEquipment: function (o, s) {
       var h = '<div class="zone-head">军官套装 <span class="d">武器、徽章、外套各1件；同套3件激活套装效果</span></div><div class="panel">';
       var equipped = o.equipment || [];
-      var slots = { weapon: '武器', badge: '徽章', coat: '外套' };
+      var slots = G.Constants.equipmentSlots;
       var used = {};
       for (var i = 0; i < equipped.length; i++) {
         var e = equipped[i]; used[e.slot] = true;

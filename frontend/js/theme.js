@@ -4,34 +4,8 @@ window.Game = window.Game || {};
 (function (G) {
   'use strict';
 
-  var STORAGE_KEY = 'wargame_theme_pref';
-
-  var THEMES = [
-    {
-      id: 'blue-white',
-      name: '晴空蓝白 (推荐)',
-      tag: '清爽易读',
-      desc: '天蓝导航、白底文字与紧凑信息排布，便于查看资源和军情'
-    },
-    {
-      id: 'blue-white-classic',
-      name: '经典家园',
-      tag: '怀旧文字风',
-      desc: '白底蓝字、渐变导航与浅蓝分隔线，重温早期手机家园的简洁排版'
-    },
-    {
-      id: 'paper',
-      name: '战术公文沙盘风',
-      tag: '护眼米白',
-      desc: '米白档案纸底 + 1px极细墨线 + 战备橄榄绿与印章红'
-    },
-    {
-      id: 'dark',
-      name: '战术夜航终端黑',
-      tag: '极简冷黑',
-      desc: '高纯度冷墨黑 + 雷达天青微光，夜间游玩省电护眼'
-    }
-  ];
+  var STORAGE_KEY = G.Constants.themeStorageKey;
+  var THEMES = G.Constants.themes;
 
   var Theme = {
     THEMES: THEMES,
@@ -41,7 +15,7 @@ window.Game = window.Game || {};
         var saved = localStorage.getItem(STORAGE_KEY);
         // 仅用于迁移旧版主题偏好，不向界面输出旧标识。
         if (saved === '3gqq') {
-          saved = 'blue-white';
+          saved = 'blue-white-classic';
           try { localStorage.setItem(STORAGE_KEY, saved); } catch (e) { /* ignore */ }
         }
         if (saved) {
@@ -50,7 +24,7 @@ window.Game = window.Game || {};
           }
         }
       } catch (e) { /* ignore */ }
-      return 'blue-white'; // 默认采用晴空蓝白风格
+      return G.Constants.defaultTheme; // 默认采用经典家园风格
     },
 
     set: function (themeId, quiet) {
@@ -60,7 +34,7 @@ window.Game = window.Game || {};
           if (THEMES[vi].id === themeId) { valid = true; break; }
         }
       }
-      if (!valid) themeId = 'blue-white';
+      if (!valid) themeId = G.Constants.defaultTheme;
       try {
         localStorage.setItem(STORAGE_KEY, themeId);
       } catch (e) { /* ignore */ }

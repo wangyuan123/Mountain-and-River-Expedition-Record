@@ -60,7 +60,7 @@
     var h = '<div class="panel" style="margin-bottom:14px;border:1px solid rgba(212,163,89,0.35);background:linear-gradient(135deg, rgba(212,163,89,0.06), rgba(0,0,0,0.2));border-radius:8px;padding:12px 14px;">';
     h += '<div class="quest-chapter-head" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
     h += '  <div class="quest-chapter-name" style="font-size:15px;color:var(--accent);font-weight:bold;display:flex;align-items:center;gap:6px;">';
-    h += '    <span>🎖️</span> <span>统帅军衔 · 【' + escapeHtml(rankInfo.name) + '】</span>';
+    h += '    ' + G.renderMilitaryRankIcon(rankInfo.tier) + ' <span>统帅军衔 · 【' + escapeHtml(rankInfo.name) + '】</span>';
     h += '    <span style="font-size:11px;padding:2px 6px;border-radius:4px;background:rgba(212,163,89,0.2);color:var(--ink);">第 ' + rankInfo.tier + ' / 17 阶</span>';
     h += '  </div>';
     h += '  <div style="font-size:12px;color:var(--muted);">基础出兵容量: <b style="color:var(--ink);">' + G.fmt(rankInfo.baseCap) + '</b></div>';
@@ -235,17 +235,7 @@
     '</div>';
   }
 
-  var EQUIPMENT_NAMES = {
-    recruit_military_weapon: '列兵军刀', recruit_military_badge: '列兵臂章', recruit_military_coat: '列兵作训服',
-    recruit_logistics_weapon: '列兵工具包', recruit_logistics_badge: '列兵通行证', recruit_logistics_coat: '列兵工作服',
-    recruit_knowledge_weapon: '列兵笔记本', recruit_knowledge_badge: '列兵学员章', recruit_knowledge_coat: '列兵学员服',
-    officer_military_weapon: '校官军刀', officer_military_badge: '校官勋章', officer_military_coat: '校官军服',
-    officer_logistics_weapon: '校官补给箱', officer_logistics_badge: '校官调度章', officer_logistics_coat: '校官军需服',
-    officer_knowledge_weapon: '校官战术罗盘', officer_knowledge_badge: '校官参谋章', officer_knowledge_coat: '校官参谋服',
-    marshal_military_weapon: '元帅佩剑', marshal_military_badge: '元帅将星', marshal_military_coat: '元帅礼服',
-    marshal_logistics_weapon: '元帅辎重车', marshal_logistics_badge: '元帅军需印', marshal_logistics_coat: '元帅长袍',
-    marshal_knowledge_weapon: '元帅望远镜', marshal_knowledge_badge: '元帅军师印', marshal_knowledge_coat: '元帅军礼服'
-  };
+  var EQUIPMENT_NAMES = G.Constants.equipmentNames;
 
   function itemLabel(key) {
     if (!key) return '';

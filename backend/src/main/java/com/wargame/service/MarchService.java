@@ -1801,7 +1801,7 @@ public class MarchService {
 
     /**
      * 结算某一真实玩家在战斗中的声望和民心，并把结果锁定到当前战报。
-     * 声望按双方作战单位的生产成本折算后的净损失计算；民心仍按胜负结算。
+     * 声望按双方作战单位的生产成本折算后的净损失计算；胜利方民心上升，守城失败方民心下降，进攻失败不影响出发城民心。
      * 城防损失不进入声望或伤兵计算，声望扣减不会使现有声望低于 0。
      * @param playerId 战报接收者的玩家 ID
      * @param march 当前行军；来袭防守战可能为空
@@ -1823,7 +1823,7 @@ public class MarchService {
             playerRepository.save(player);
         }
 
-        int moraleChange = won ? 1 : -2;
+        int moraleChange = attacker && !won ? 0 : (won ? 1 : -2);
         CityEconomy economy = battleEconomy(playerId, march, attacker);
         int moraleAfter = 0;
         if (economy != null) {

@@ -7,7 +7,7 @@ window.Game = window.Game || {};
   var D = G.DATA;
   var Core = G.Core;
 
-  var branchOrder = ['军事', '机动', '后勤', '侦察'];
+  var branchOrder = G.Constants.techBranches;
   var activeBranch = '军事';
   var timerId = null;
 
@@ -66,7 +66,7 @@ window.Game = window.Game || {};
   }
 
   function getEffectDiffText(t, lv) {
-    var pctMap = { cap: 10, load: 20, food_save: -5, train: 10, build: -5, medical: 5, range_all: 5 };
+    var pctMap = G.Constants.techEffectPercent;
     var pct = pctMap[t.affect] !== undefined ? pctMap[t.affect] : 5;
     var cur = lv * pct;
     var next = (lv + 1) * pct;

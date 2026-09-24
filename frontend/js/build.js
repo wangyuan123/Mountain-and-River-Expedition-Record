@@ -7,7 +7,7 @@ window.Game = window.Game || {};
   var D = G.DATA;
   var Core = G.Core;
   // 每城开局提供 6 支施工队，新建、升级与拆除共用；与后端 BuildService.MAX_CONCURRENT 保持一致。
-  var MAX_CONCURRENT = 6;
+  var MAX_CONCURRENT = G.Constants.buildMaxConcurrent;
 
   function buildCost(id, fromLevel) {
     var b = D.buildings[id];
@@ -209,7 +209,7 @@ window.Game = window.Game || {};
       var finishTimeStr = pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
 
       // 汇总加速符数量
-      var speedOrder = ['speedUp10m','speedUp1h','speedUp5h','speedUp12h','speedUp24h','speedUp36h','speedUp48h','speedUp72h'];
+      var speedOrder = G.Constants.speedUpOrder;
       var speedTotal = 0;
       for (var si = 0; si < speedOrder.length; si++) {
         speedTotal += (Core.state.items && Core.state.items[speedOrder[si]]) || 0;
@@ -326,7 +326,7 @@ window.Game = window.Game || {};
       var mask = document.createElement('div');
       mask.className = 'modal-mask';
 
-      var speedOrder = ['speedUp10m','speedUp1h','speedUp5h','speedUp12h','speedUp24h','speedUp36h','speedUp48h','speedUp72h'];
+      var speedOrder = G.Constants.speedUpOrder;
       var speedTotal = 0;
       for (var si = 0; si < speedOrder.length; si++) {
         speedTotal += (Core.state.items && Core.state.items[speedOrder[si]]) || 0;
@@ -830,7 +830,7 @@ window.Game = window.Game || {};
         var totalSec = Math.max(1, Math.ceil((job.finishesAt - job.startedAt) / 1000));
         var pct = Math.min(100, Math.max(0, Math.floor((1 - remSec / totalSec) * 100)));
         var speedTotal = 0;
-        var speedOrder = ['speedUp10m','speedUp1h','speedUp5h','speedUp12h','speedUp24h','speedUp36h','speedUp48h','speedUp72h'];
+        var speedOrder = G.Constants.speedUpOrder;
         for (var si = 0; si < speedOrder.length; si++) speedTotal += (s.items && s.items[speedOrder[si]]) || 0;
 
         opContent += '<div class="bdetail-job-box">' +
@@ -1685,7 +1685,7 @@ window.Game = window.Game || {};
     // 弹出加速符选择器(智能计算最少需要消耗数量)
     openSpeedUpPicker: function (jobOrIdx) {
       var s = Core.state;
-      var speedOrder = ['speedUp10m','speedUp1h','speedUp5h','speedUp12h','speedUp24h','speedUp36h','speedUp48h','speedUp72h'];
+      var speedOrder = G.Constants.speedUpOrder;
       var owned = [];
       for (var i = 0; i < speedOrder.length; i++) {
         var sid = speedOrder[i];
@@ -1795,7 +1795,7 @@ window.Game = window.Game || {};
           var targetLevel = job.targetLevel != null ? job.targetLevel : 0;
           // 汇总所有加速符数量,只显示一个主按钮
           var speedTotal = 0;
-          var speedOrder = ['speedUp10m','speedUp1h','speedUp5h','speedUp12h','speedUp24h','speedUp36h','speedUp48h','speedUp72h'];
+          var speedOrder = G.Constants.speedUpOrder;
           for (var si = 0; si < speedOrder.length; si++) {
             speedTotal += (s.items && s.items[speedOrder[si]]) || 0;
           }

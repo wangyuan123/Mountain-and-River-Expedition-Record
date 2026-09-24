@@ -28,6 +28,7 @@ function sandbox(extra = {}) {
 }
 
 function load(context, file) {
+  if (file !== 'js/constants.js') require('./load-constants.cjs')(context);
   vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), context, { filename: file });
 }
 

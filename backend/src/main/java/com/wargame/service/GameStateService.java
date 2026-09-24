@@ -22,6 +22,8 @@ public class GameStateService {
     private com.wargame.service.CityScope cityScope;
     @org.springframework.beans.factory.annotation.Autowired
     private WorldTerrainService terrain;
+    @org.springframework.beans.factory.annotation.Autowired
+    private IslandContentService islandContent;
 
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.quest.OnboardingService onboarding;
@@ -784,6 +786,10 @@ public class GameStateService {
                     .orElseThrow(() -> new IllegalArgumentException("World not found: " + queryWorldId));
         }
 
+        // Explicit world regeneration must reseed its island content after clearing targets.
+        worldMap.setIslandContentVersion(0);
+        worldMapRepository.save(worldMap);
+
         // Clear existing world entities for this world
         banditRepository.findByWorldId(worldId).forEach(banditRepository::delete);
         npcCityRepository.findByWorldId(worldId).forEach(npcCityRepository::delete);
@@ -839,6 +845,7 @@ public class GameStateService {
         }
 
         terrain.ensure();
+        islandContent.ensure(worldId);
         return worldMap;
     }
 

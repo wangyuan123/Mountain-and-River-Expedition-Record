@@ -6,7 +6,7 @@ window.Game = window.Game || {};
 
   var log = [];
   var listeners = [];
-  var MAX = 80;
+  var MAX = G.Constants.chatMax;
 
   function pad2(n) { return n < 10 ? '0' + n : '' + n; }
   function fmtTime(ts) {
@@ -135,7 +135,7 @@ window.Game = window.Game || {};
     return h;
   }
 
-  var COOLDOWN_SEC = 5;
+  var COOLDOWN_SEC = G.Constants.chatCooldownSec;
   var cdRemaining = 0;
   var cdTimer = null;
   var lastSentText = '';

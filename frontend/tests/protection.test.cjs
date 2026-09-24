@@ -25,6 +25,7 @@ function harness() {
   context.window = context;
   vm.createContext(context);
   const load = file => vm.runInContext(fs.readFileSync(path.join(__dirname, '../js', file), 'utf8'), context);
+  load('constants.js');
   load('api-client.js');
   const client = new context.Game.ApiClient('/api');
   context.Game.API = { client, getToken: () => client.getToken(), getUsername: () => 'alice', isLoggedIn: () => !!client.getToken() };

@@ -807,6 +807,35 @@ class MarchServiceTest extends BaseServiceTest {
     }
 
     @Test
+    @DisplayName("进攻失败不降低出发城民心，战报显示变化为零")
+    void failedAttackKeepsHomeMorale() {
+        Long defenderId = createTestPlayer("morale-defender", 30).getId();
+        PlayerCity city = playerCityRepository.save(createTestCity("防守城", defenderId, 20, 20));
+        March march = createMarch(playerId, "player", String.valueOf(city.getId()), city.getName(),
+                10, 10, 20, 20, Map.of("infantry", 1), "conquer",
+                System.currentTimeMillis() - 60_000L, System.currentTimeMillis() - 1L, false, false);
+        BattleResult result = new BattleResult(false,
+                Map.of(), Map.of("infantry", 10),
+                Map.of("infantry", 1), Map.of("infantry", 10),
+                Map.of(), 0, "进攻失败", false);
+        Object target = AopTestUtils.getTargetObject(marchService);
+
+        ReflectionTestUtils.invokeMethod(target, "settleBattleAwards", playerId, march, true, result);
+        ReflectionTestUtils.invokeMethod(target, "settleBattleAwards", defenderId, march, false, result);
+        ReflectionTestUtils.invokeMethod(target, "pushBattleReport", playerId, result, march, null, null);
+        ReflectionTestUtils.invokeMethod(target, "pushBattleReport", defenderId, result, march, null, null);
+
+        Map<String, Object> attackerReport = JsonUtil.parseObjMap(scoutReportRepository.findByPlayerId(playerId).get(0).getData());
+        Map<String, Object> defenderReport = JsonUtil.parseObjMap(scoutReportRepository.findByPlayerId(defenderId).get(0).getData());
+        assertEquals(0, ((Number) attackerReport.get("moraleChange")).intValue());
+        assertEquals(70, ((Number) attackerReport.get("moraleAfter")).intValue());
+        assertEquals(1, ((Number) defenderReport.get("moraleChange")).intValue());
+        assertEquals(71, ((Number) defenderReport.get("moraleAfter")).intValue());
+        assertEquals(70, playerRepository.findById(playerId).orElseThrow().getMorale());
+        assertEquals(71, playerCityRepository.findById(city.getId()).orElseThrow().getMorale());
+    }
+
+    @Test
     @DisplayName("战报按接收者视角记录胜负并保持攻守将领归属")
     void battleReportUsesRecipientPerspective() {
         Long defenderId = createTestPlayer("report-perspective-defender", 30).getId();

@@ -19,6 +19,12 @@ public class WorldMap {
     @Column(name = "terrain_data", columnDefinition = "longtext")
     private String terrainData;
 
+    @Column(name = "terrain_version", nullable = false)
+    private Integer terrainVersion = 2;
+
+    @Column(name = "island_content_version", nullable = false)
+    private Integer islandContentVersion = 0;
+
     @Column(name = "size")
     private Integer size;
 

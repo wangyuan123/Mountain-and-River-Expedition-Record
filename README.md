@@ -16,6 +16,7 @@
 
 - 后端：Java 17、Spring Boot 3.2.5、Spring Security/JWT、JPA、Flyway。
 - 前端：原生 HTML/CSS/JavaScript，按功能使用 `Game` 命名空间组织，无打包依赖。
+- 前端静态枚举与固定配置集中在 `frontend/js/constants.js`，新增页面常量时优先放入 `Game.Constants`，业务模块只引用配置，不重复维护同一份字典。
 - 数据库：MySQL 8+；`backend/src/main/resources/db/migration` 是数据库版本的唯一依据。
 - 通信：HTTP API + WebSocket；部署使用 Docker Compose + Nginx。
 - 玩法：城建、资源与税收、征兵、科技、军官与装备、行军战斗、野地、军团、任务、邮件、排行榜、商城。

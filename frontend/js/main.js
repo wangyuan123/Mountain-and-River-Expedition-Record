@@ -6,7 +6,7 @@ window.Game = window.Game || {};
 
   var Core = G.Core;
   var D = G.DATA;
-  var LANDSCAPE_NAV_STORAGE_KEY = 'wargame_landscape_nav_collapsed';
+  var LANDSCAPE_NAV_STORAGE_KEY = G.Constants.landscapeNavStorageKey;
 
   function landscapeNavigationEnabled() {
     return !!(window.matchMedia && window.matchMedia('(orientation: landscape) and (min-width: 480px)').matches);

@@ -2,30 +2,15 @@
   var Core = G.Core;
   var D = G.DATA;
 
-  var EQUIPMENT_NAMES = {
-    recruit_military_weapon: '列兵军刀', recruit_military_badge: '列兵臂章', recruit_military_coat: '列兵作训服',
-    recruit_logistics_weapon: '列兵工具包', recruit_logistics_badge: '列兵通行证', recruit_logistics_coat: '列兵工作服',
-    recruit_knowledge_weapon: '列兵笔记本', recruit_knowledge_badge: '列兵学员章', recruit_knowledge_coat: '列兵学员服',
-    officer_military_weapon: '校官军刀', officer_military_badge: '校官勋章', officer_military_coat: '校官军服',
-    officer_logistics_weapon: '校官补给箱', officer_logistics_badge: '校官调度章', officer_logistics_coat: '校官军需服',
-    officer_knowledge_weapon: '校官战术罗盘', officer_knowledge_badge: '校官参谋章', officer_knowledge_coat: '校官参谋服',
-    marshal_military_weapon: '元帅佩剑', marshal_military_badge: '元帅将星', marshal_military_coat: '元帅礼服',
-    marshal_logistics_weapon: '元帅辎重车', marshal_logistics_badge: '元帅军需印', marshal_logistics_coat: '元帅长袍',
-    marshal_knowledge_weapon: '元帅望远镜', marshal_knowledge_badge: '元帅军师印', marshal_knowledge_coat: '元帅军礼服'
-  };
-
-  var SLOT_ICONS = { weapon: '🗡️', badge: '🎖️', coat: '🦺' };
+  var EQUIPMENT_NAMES = G.Constants.equipmentNames;
+  var SLOT_ICONS = G.Constants.equipmentSlotIcons;
 
   function equipmentInfo(itemId) {
     var m = /^(recruit|officer|marshal)_(military|logistics|knowledge)_(weapon|badge|coat)$/.exec(itemId || '');
     if (!m) return null;
-    var tiers = {
-      recruit: { name: '列兵', level: 1, main: 5, sub: 1 },
-      officer: { name: '校官', level: 40, main: 15, sub: 3 },
-      marshal: { name: '元帅', level: 100, main: 30, sub: 5 }
-    };
-    var branchNames = { military: '军事', logistics: '后勤', knowledge: '学识' };
-    var slotNames = { weapon: '武器', badge: '徽章', coat: '外套' };
+    var tiers = G.Constants.equipmentTiers;
+    var branchNames = G.Constants.equipmentBranches;
+    var slotNames = G.Constants.equipmentSlots;
     var t = tiers[m[1]];
     var bName = branchNames[m[2]];
     var sName = slotNames[m[3]];
@@ -77,7 +62,7 @@
   var Depot = {
     /** 切换仓库物品分类（保存在当前状态，刷新后仍保持本次选择） */
     setTab: function (cat) {
-      var valid = ['jewelry', 'equipment', 'officer', 'resource', 'util'];
+      var valid = G.Constants.depotCategoryOrder;
       if (valid.indexOf(cat) < 0) cat = 'jewelry';
       Core.state._depotTab = cat;
       Core.render();
@@ -304,8 +289,8 @@
       }
       h += '</div>';
 
-      var cats = { jewelry: '珠宝珍品', equipment: '军官装备', officer: '军官道具', resource: '资源道具', util: '功能道具' };
-      var catOrder = ['jewelry', 'equipment', 'officer', 'resource', 'util'];
+      var cats = G.Constants.depotCategories;
+      var catOrder = G.Constants.depotCategoryOrder;
       var activeCat = catOrder.indexOf(s._depotTab) >= 0 ? s._depotTab : 'jewelry';
       h += '<div class="depot-tabs" role="tablist" aria-label="仓库物品分类">';
       for (var ti = 0; ti < catOrder.length; ti++) {
@@ -324,9 +309,9 @@
           var eqKeys = Object.keys(s.items || {}).filter(function (k) {
             return equipmentInfo(k) && (s.items[k] || 0) > 0;
           });
-          var tierOrder = { recruit: 1, officer: 2, marshal: 3 };
-          var branchOrder = { military: 1, logistics: 2, knowledge: 3 };
-          var slotOrder = { weapon: 1, badge: 2, coat: 3 };
+          var tierOrder = G.Constants.equipmentTierOrder;
+          var branchOrder = G.Constants.equipmentBranchOrder;
+          var slotOrder = G.Constants.equipmentSlotOrder;
           eqKeys.sort(function (a, b) {
             var infoA = equipmentInfo(a);
             var infoB = equipmentInfo(b);

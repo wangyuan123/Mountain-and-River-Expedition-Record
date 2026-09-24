@@ -14,7 +14,7 @@ window.Game = window.Game || {};
     listeners: {},  // type -> [callback]
 
     statusHtml: function () {
-      var label = { connected: '已连接', connecting: '连接中', reconnecting: '重连中', disconnected: '已断开' }[this.status];
+      var label = G.Constants.connectionStatusNames[this.status];
       return '<span class="connection-status" data-connection="' + this.status + '"><span class="online-dot"></span><span class="online-text">' + label + '</span></span>';
     },
 

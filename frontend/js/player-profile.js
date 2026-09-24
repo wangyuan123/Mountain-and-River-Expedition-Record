@@ -85,10 +85,10 @@ window.Game = window.Game || {};
         + '    <div class="drawer-section-title">军衔与资产</div>'
         + '    <div class="drawer-assets-card">'
         + '    <div class="drawer-stat-grid">'
-        + '      <div class="drawer-stat-box">'
+        + '      <button type="button" class="drawer-stat-box drawer-stat-action" onclick="Game.Main.showRankCapInfo()" aria-label="查看军衔与带兵上限说明">'
         + '        <div class="stat-k">统帅军衔</div>'
-        + '        <div class="stat-v highlight">' + rankTitle + '</div>'
-        + '      </div>'
+        + '        <div class="stat-v highlight drawer-rank-value">' + G.renderMilitaryRankIcon(rankInfo.tier) + G.escapeHtml(rankTitle) + '</div>'
+        + '      </button>'
         + '      <div class="drawer-stat-box">'
         + '        <div class="stat-k">声望值</div>'
         + '        <div class="stat-v">' + drawerAmount(prestige) + '</div>'
@@ -159,6 +159,56 @@ window.Game = window.Game || {};
       setTimeout(function () {
         if (mask && mask.parentNode) mask.parentNode.removeChild(mask);
       }, 250);
+    },
+
+    /** 展示各军衔的基础带兵上限，以及当前城市加成后的实际上限。 */
+    showRankCapInfo: function () {
+      var existing = document.getElementById('rankCapInfoMask');
+      if (existing) return;
+      var rankInfo = G.getMilitaryRankTierInfo((Core.state.player && Core.state.player.militaryRank) || 1);
+      var ranks = D.militaryRanks;
+      var wallLevel = Core.buildingLevel ? Core.buildingLevel('wall') : 0;
+      var wallBonus = wallLevel >= 10 ? 100000 : 0;
+      var skills = Core.getCommanderSkills ? Core.getCommanderSkills() : {};
+      var skillLevel = Math.max(skills.leadership || 0, skills.supply || 0);
+      var skillBonus = Core.skillBonus ? Math.max(Core.skillBonus('leadership'), Core.skillBonus('supply')) : 0;
+      var skillPercent = Math.round(skillBonus * 100);
+      var total = Core.armyCap();
+      var previousFocus = document.activeElement;
+      var rows = ranks.map(function (rank) {
+        var current = rank.tier === rankInfo.tier;
+        return '<tr' + (current ? ' class="rank-cap-current" aria-current="true"' : '') + '>'
+          + '<td>' + rank.tier + '</td><th scope="row"><span class="rank-cap-label">' + G.renderMilitaryRankIcon(rank.tier) + G.escapeHtml(rank.name) + (current ? ' <span>（当前）</span>' : '') + '</span></th>'
+          + '<td>' + G.fmt(rank.baseCap) + '</td></tr>';
+      }).join('');
+      var mask = document.createElement('div');
+      mask.id = 'rankCapInfoMask';
+      mask.className = 'modal-mask rank-cap-mask';
+      mask.setAttribute('role', 'dialog');
+      mask.setAttribute('aria-modal', 'true');
+      mask.setAttribute('aria-labelledby', 'rankCapInfoTitle');
+      mask.innerHTML = '<div class="modal-card rank-cap-dialog">'
+        + '<div class="rank-cap-header"><h2 id="rankCapInfoTitle">军衔与带兵上限</h2>'
+        + '<button type="button" class="rank-cap-close" aria-label="关闭军衔说明">✕</button></div>'
+        + '<div class="modal-body rank-cap-body">'
+        + '<div class="rank-cap-summary">当前军衔 <strong class="rank-cap-label">' + G.renderMilitaryRankIcon(rankInfo.tier) + G.escapeHtml(rankInfo.name) + '</strong> · 军衔基础上限 <strong>' + G.fmt(rankInfo.baseCap) + '</strong></div>'
+        + '<p>当前城市围墙 Lv.' + wallLevel + (wallBonus ? '（满级，+100,000）' : '（满级 Lv.10 后 +100,000）') + '；三军统帅 Lv.' + skillLevel + '（+' + skillPercent + '%）。</p>'
+        + '<p><strong>当前实际带兵上限：(' + G.fmt(rankInfo.baseCap) + ' + ' + G.fmt(wallBonus) + ') × (1 + ' + skillPercent + '%) = ' + G.fmt(total) + '</strong></p>'
+        + '<p>各军衔的基础上限如下；晋升后基础上限提高，实际出征仍需当前城市有足够驻军。</p>'
+        + '<table class="rank-cap-table"><thead><tr><th scope="col">等级</th><th scope="col">军衔</th><th scope="col">基础上限</th></tr></thead><tbody>' + rows + '</tbody></table>'
+        + '</div><div class="modal-foot"><button type="button" class="btn btn-primary rank-cap-done">知道了</button></div>'
+        + '</div>';
+      document.body.appendChild(mask);
+      var close = function () {
+        if (mask.parentNode) mask.parentNode.removeChild(mask);
+        if (previousFocus && previousFocus.isConnected) previousFocus.focus();
+      };
+      var closeButton = mask.querySelector('.rank-cap-close');
+      closeButton.onclick = close;
+      mask.querySelector('.rank-cap-done').onclick = close;
+      mask.onclick = function (event) { if (event.target === mask) close(); };
+      mask.onkeydown = function (event) { if (event.key === 'Escape') close(); };
+      closeButton.focus();
     },
 
     openAvatarPicker: function () {

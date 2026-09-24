@@ -128,6 +128,7 @@ function setup() {
   });
   context.window = context;
   const G = context.Game;
+  require('./load-constants.cjs')(context);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/build.js'), 'utf8'), context);
   return { G, context, state, timers };
 }

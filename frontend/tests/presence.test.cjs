@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
-function load(name, ctx) { vm.runInContext(fs.readFileSync(path.join(__dirname, '../js', name), 'utf8'), ctx); }
+function load(name, ctx) { require('./load-constants.cjs')(ctx); vm.runInContext(fs.readFileSync(path.join(__dirname, '../js', name), 'utf8'), ctx); }
 function wsSetup() {
   const nodes = [{ outerHTML: '' }, { outerHTML: '' }];
   const sockets = []; let heartbeat, retry;

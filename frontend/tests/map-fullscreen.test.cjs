@@ -9,6 +9,8 @@ function fixture({native=false,portrait=true,rejectLock=false}={}) {
   let locks=0,unlocks=0,exits=0;
   const c={console,document,Date,Map,Set,Promise,Math,screen:{orientation:{lock(){locks++;return rejectLock?Promise.reject(Error('unsupported')):Promise.resolve();},unlock(){unlocks++;}}},matchMedia:()=>({matches:portrait}),Game:{MapChunks:function(){}}};c.window=c;
   const source=fs.readFileSync(require('node:path').join(__dirname,'../js/world-map.js'),'utf8').replace('  G.WorldMap={','  G.TestMapView=MapView;\n  G.WorldMap={');
+  vm.createContext(c);
+  require('./load-constants.cjs')(c);
   vm.runInNewContext(source,c);
   const view=Object.create(c.Game.TestMapView.prototype);
   view.shell={classList:{add:v=>classes.add(v),remove:v=>classes.delete(v)},querySelector:s=>s.includes('exit-full')?close:button};
