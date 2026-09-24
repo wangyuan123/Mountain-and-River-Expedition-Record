@@ -2,8 +2,9 @@
 (function (G) {
   'use strict';
   function Camera(size, x, y, scale) {
-    this.size = size; this.x = x; this.y = y; this.scale = scale || 48;
-    this.minScale = this.scale;
+    this.size = size; this.x = x; this.y = y; this.scale = scale || 44;
+    // 初始视图可继续缩小至 50%，按钮、滚轮和双指手势共用该下限。
+    this.minScale = this.scale * 0.5;
     this.width = 1; this.height = 1;
   }
   // North stays up and south stays down: neither axis shifts the other.
@@ -17,8 +18,12 @@
     var a = this.delta(this.width / 2, this.height / 2), b = this.delta(this.width / 2, -this.height / 2);
     return { x:Math.max(Math.abs(a.x), Math.abs(b.x)), y:Math.max(Math.abs(a.y), Math.abs(b.y)) };
   };
+  Camera.prototype.minimumScale = function () {
+    // 仅当视口超过世界投影尺寸时提高下限，避免边缘露出地图外。
+    return Math.max(this.minScale, this.width / (2 * this.size), this.height / this.size);
+  };
   Camera.prototype.clamp = function () {
-    this.scale = Math.max(this.minScale, (this.width / 2 + this.height) / 80, this.scale);
+    this.scale = Math.max(this.minimumScale(), this.scale);
     var e = this.extents(), hx = Math.min(this.size / 2, e.x), hy = Math.min(this.size / 2, e.y);
     this.x = Math.max(hx, Math.min(this.size - hx, this.x));
     this.y = Math.max(hy, Math.min(this.size - hy, this.y));
@@ -44,10 +49,9 @@
     return points;
   };
   Camera.prototype.zoom = function (factor, px, py) {
-    // 所有缩放操作共用初始比例下限，可在范围内自由放大和缩小。
     if (!(factor > 0) || !Number.isFinite(factor)) return;
     var before = this.world(px, py);
-    this.scale = Math.max(this.minScale, (this.width / 2 + this.height) / 80, Math.min(88, this.scale * factor));
+    this.scale = Math.max(this.minimumScale(), Math.min(88, this.scale * factor));
     var after = this.world(px, py);
     this.x += before.x - after.x; this.y += before.y - after.y; this.clamp();
   };

@@ -478,7 +478,7 @@ public class ImportService {
                 npcCity.setLevel(ncNode.path("level").asInt(1));
                 npcCity.setX(ncNode.path("x").asInt(0));
                 npcCity.setY(ncNode.path("y").asInt(0));
-                npcCity.setArmy(jsonNodeToJson(ncNode.path("army")));
+                npcCity.setArmy(JsonUtil.toJson(WorldConfig.landOnlyArmy(JsonUtil.parseIntMap(jsonNodeToJson(ncNode.path("army"))))));
                 npcCity.setForts(jsonNodeToJson(ncNode.path("forts")));
                 npcCity.setResources(jsonNodeToJson(ncNode.path("reward")));
                 npcCity.setDefeated(ncNode.path("defeated").asBoolean(false));
@@ -517,7 +517,7 @@ public class ImportService {
                 bandit.setLevel(bNode.path("level").asInt(1));
                 bandit.setX(bNode.path("x").asInt(0));
                 bandit.setY(bNode.path("y").asInt(0));
-                bandit.setArmy(jsonNodeToJson(bNode.path("army")));
+                bandit.setArmy(JsonUtil.toJson(WorldConfig.landOnlyArmy(JsonUtil.parseIntMap(jsonNodeToJson(bNode.path("army"))))));
                 bandit.setDefeated(bNode.path("defeated").asBoolean(false));
                 banditRepository.save(bandit);
             }

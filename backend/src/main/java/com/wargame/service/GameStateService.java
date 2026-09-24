@@ -58,6 +58,7 @@ public class GameStateService {
 
     private final GuildRepository guildRepository;
     private final MailService mailService;
+    private final NpcCitySpawnService npcCitySpawnService;
 
     private static final Set<String> MULTI_SLOT = Set.of(
             "house", "farm", "refinery", "oilfield", "raremine", "factory", "depot"
@@ -86,7 +87,8 @@ public class GameStateService {
                             EquipmentService equipmentService,
                             GuildMemberRepository guildMemberRepository,
                             GuildRepository guildRepository,
-                            MailService mailService) {
+                            MailService mailService,
+                            NpcCitySpawnService npcCitySpawnService) {
         this.worldViewService = worldViewService;
         this.playerRepository = playerRepository;
         this.resourcesRepository = resourcesRepository;
@@ -113,6 +115,7 @@ public class GameStateService {
         this.guildMemberRepository = guildMemberRepository;
         this.guildRepository = guildRepository;
         this.mailService = mailService;
+        this.npcCitySpawnService = npcCitySpawnService;
     }
 
     @Transactional
@@ -806,6 +809,8 @@ public class GameStateService {
             bandit.setDefeated(false);
             banditRepository.save(bandit);
         }
+
+        npcCitySpawnService.ensurePopulation(worldId);
 
         // Generate 40 wild tiles
         List<String> wildTypes = new ArrayList<>(WildTypeDef.WILD_TYPES.keySet());

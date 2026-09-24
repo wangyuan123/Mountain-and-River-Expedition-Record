@@ -53,7 +53,7 @@
     var s = Core.state || {};
     var p = s.player || {};
     var rankTier = p.militaryRank || 1;
-    var rankInfo = G.getMilitaryRankTierInfo ? G.getMilitaryRankTierInfo(rankTier) : { name: '列兵', tier: 1, baseCap: 1000, isMax: false };
+    var rankInfo = G.getMilitaryRankTierInfo ? G.getMilitaryRankTierInfo(rankTier) : { name: '列兵', tier: 1, baseCap: 50000, isMax: false };
     var prestige = s.prestige != null ? s.prestige : (p.prestige != null ? p.prestige : 0);
     var items = s.items || {};
 
@@ -75,7 +75,7 @@
     }
     if (rankInfo.isMax) {
       h += '<div style="font-size:13px;color:var(--ok);padding:10px;background:rgba(82,196,26,0.1);border-radius:6px;margin-top:6px;display:flex;align-items:center;justify-content:space-between;">';
-      h += '  <span>⭐ 已晋升至终极统帅军衔【上将】！基础出兵上限 20,000，享集团军出征极限！</span>';
+      h += '  <span>⭐ 已晋升至终极统帅军衔【上将】！军衔基础出兵上限 850,000，围墙与三军统帅可额外提升！</span>';
       h += '  <span class="quest-badge ok">顶峰</span>';
       h += '</div>';
       h += '</div>';

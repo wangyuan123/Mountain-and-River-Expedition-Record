@@ -27,7 +27,7 @@ window.Game = window.Game || {};
       var faction = p.faction || 'allies';
       var factionName = (D.factions && D.factions[faction]) ? D.factions[faction].name : '同盟国';
       var rankTier = p.militaryRank || 1;
-      var rankInfo = G.getMilitaryRankTierInfo ? G.getMilitaryRankTierInfo(rankTier) : { name: '列兵', tier: 1, baseCap: 1000, isMax: false };
+      var rankInfo = G.getMilitaryRankTierInfo ? G.getMilitaryRankTierInfo(rankTier) : { name: '列兵', tier: 1, baseCap: 50000, isMax: false };
       var rankTitle = rankInfo.name;
       // 与首页保持一致，展示当前选中城市的名称与坐标。
       var cityName = G.escapeHtml(p.cityName || '新城市');

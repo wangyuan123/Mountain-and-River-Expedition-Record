@@ -7,6 +7,7 @@ window.Game = window.Game || {};
   var D = G.DATA;
   var Core = G.Core;
   var skillDetailModal = null;
+  var skillUpgradeModal = null;
 
   function starStr(star) {
     var s = '';
@@ -46,6 +47,15 @@ window.Game = window.Game || {};
   function closeSkillDetailModal() {
     if (skillDetailModal && skillDetailModal.parentNode) skillDetailModal.parentNode.removeChild(skillDetailModal);
     skillDetailModal = null;
+  }
+
+  /** 统一生成技能行，使废弃取消后仍保留升级入口及满级禁用状态。 */
+  function skillRowHtml(officerId, skillIdx, skill) {
+    var info = D.officerSkills[skill.id];
+    var upgrade = skill.lv >= info.max ? ' disabled title="技能已满级"' : ' onclick="Game.Officer.openSkillUpgrade(\'' + officerId + '\',' + skillIdx + ')"';
+    return '<button type="button" class="officer-skill-detail-trigger" onclick="Game.Officer.showSkillDetail(\'' + skill.id + '\',' + skill.lv + ')" title="查看技能详情">' + info.name + ' Lv.' + skill.lv + '/' + info.max + '</button>'
+      + ' <button type="button" class="btn depot-btn"' + upgrade + '>[升级]</button>'
+      + ' <button type="button" class="btn depot-btn warn" onclick="Game.Officer.forgetSkill(\'' + officerId + '\',' + skillIdx + ',\'ask\')">[废弃]</button>';
   }
 
   function findOfficer(officers, id) {
@@ -208,13 +218,64 @@ window.Game = window.Game || {};
       }
       if (action === 'cancel') {
         if (wrap) {
-          wrap.innerHTML = '<b style="color:var(--accent-dark)">' + skName + ' Lv.' + sk.lv + '/' + skInfo.max + '</b> <span class="d">' + skInfo.desc + '</span> <button type="button" class="btn depot-btn warn" onclick="Game.Officer.forgetSkill(\'' + officerId + '\',' + skillIdx + ',\'ask\')">[废弃]</button>';
+          wrap.innerHTML = skillRowHtml(officerId, skillIdx, sk);
         }
         return;
       }
       if (wrap) {
         wrap.innerHTML = '<b style="color:var(--accent-dark)">' + skName + ' Lv.' + sk.lv + '/' + skInfo.max + '</b> <span class="d">' + skInfo.desc + '</span> <button type="button" class="btn depot-btn warn" onclick="Game.Officer.forgetSkill(\'' + officerId + '\',' + skillIdx + ',\'confirm\')">[确认废弃]</button> <button type="button" class="btn depot-btn" onclick="Game.Officer.forgetSkill(\'' + officerId + '\',' + skillIdx + ',\'cancel\')">[取消]</button>';
       }
+    },
+
+    /**
+     * 打开技能升级选择框，仅展示当前技能对应的指定技能书。
+     * @param {number|string} officerId - 军官 ID
+     * @param {number} skillIdx - 技能在军官技能列表中的索引
+     */
+    openSkillUpgrade: function (officerId, skillIdx) {
+      var officer = findOfficer(Core.state && Core.state.officers, officerId);
+      var owned = officer && officer.skills && officer.skills[skillIdx];
+      var info = owned && D.officerSkills[owned.id];
+      if (!info) { G.toast('技能不存在'); return; }
+      if (owned.lv >= info.max) { G.toast('技能已满级'); return; }
+      var skillId = owned.id === 'supply' ? 'leadership' : owned.id;
+      var itemId = 'skillBook_' + skillId;
+      var book = D.items[itemId];
+      var count = (Core.state.items && Core.state.items[itemId]) || 0;
+      if (skillUpgradeModal) Officer.closeSkillUpgrade();
+      var mask = document.createElement('div');
+      mask.className = 'modal-mask';
+      mask.innerHTML = '<div class="modal-card" style="max-width:380px;width:92%">'
+        + '<h3>升级「' + info.name + '」</h3>'
+        + '<p>Lv.' + owned.lv + ' → Lv.' + (owned.lv + 1) + '，请选择一本同类型技能书：</p>'
+        + (book && count > 0 ? '<button type="button" class="btn ok skill-upgrade-book">' + book.icon + ' ' + book.name + ' ×' + count + ' (消耗1本)</button>' : '<p class="d">暂无' + info.name + '技能书，请前往商城获取。</p>')
+        + '<div class="btn-row"><button type="button" class="btn skill-upgrade-cancel">取消</button></div></div>';
+      document.body.appendChild(mask);
+      skillUpgradeModal = mask;
+      mask.querySelector('.skill-upgrade-cancel').onclick = Officer.closeSkillUpgrade;
+      mask.onclick = function (event) { if (event.target === mask) Officer.closeSkillUpgrade(); };
+      var select = mask.querySelector('.skill-upgrade-book');
+      if (select) select.onclick = function () {
+        select.disabled = true;
+        G.API.upgradeSkill(officerId, skillIdx, itemId).then(function (resp) {
+          if (resp && resp.success === false) {
+            G.toast(resp.message || '升级失败');
+            select.disabled = false;
+            return;
+          }
+          Officer.closeSkillUpgrade();
+          G.toast((resp && resp.message) || '技能升级成功');
+          Core.render();
+        }).catch(function (err) {
+          G.toast(err.message || '升级失败');
+          select.disabled = false;
+        });
+      };
+    },
+
+    closeSkillUpgrade: function () {
+      if (skillUpgradeModal && skillUpgradeModal.parentNode) skillUpgradeModal.parentNode.removeChild(skillUpgradeModal);
+      skillUpgradeModal = null;
     },
 
     learnSkill: function (officerId) {
@@ -954,7 +1015,7 @@ window.Game = window.Game || {};
         for (var si = 0; si < o.skills.length; si++) {
           var sk = D.officerSkills[o.skills[si].id];
           if (!sk) continue;
-          h += '<div id="skill-row-' + si + '" class="officer-skill-row"><button type="button" class="officer-skill-detail-trigger" onclick="Game.Officer.showSkillDetail(\'' + o.skills[si].id + '\',' + o.skills[si].lv + ')" title="查看技能详情">' + sk.name + ' Lv.' + o.skills[si].lv + '/' + sk.max + '</button> <button type="button" class="btn depot-btn warn" onclick="Game.Officer.forgetSkill(\'' + o.id + '\',' + si + ',\'ask\')">[废弃]</button></div>';
+          h += '<div id="skill-row-' + si + '" class="officer-skill-row">' + skillRowHtml(o.id, si, o.skills[si]) + '</div>';
         }
       }
       if (!o.skills || o.skills.length < 3) {

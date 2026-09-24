@@ -7,3 +7,80 @@
 .guild-member { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .guild-role { display: inline-block; margin-left: 5px; padding: 0 4px; border-radius: 3px; background: #d6e7f7; color: #245a8d; font-size: 11px; }
 .guild-create { margin-bottom: 10px; }
+
+/* 军团退出/解散确认沿用游戏模态框布局，但独立覆盖固定纸色以适配主题。 */
+.guild-confirm-mask {
+  --guild-surface: #ffffff;
+  --guild-soft: #f3f5f0;
+  --guild-ink: #263228;
+  --guild-muted: #697168;
+  --guild-line: #d6dccf;
+  --guild-danger: #a94b42;
+  --guild-danger-hover: #8e382f;
+  --guild-danger-ink: #ffffff;
+}
+[data-theme|="blue-white"] .guild-confirm-mask {
+  --guild-surface: #ffffff;
+  --guild-soft: #eff4fb;
+  --guild-ink: #253750;
+  --guild-muted: #64748b;
+  --guild-line: #d4dfed;
+  --guild-danger: #b03020;
+  --guild-danger-hover: #902818;
+}
+[data-theme="paper"] .guild-confirm-mask {
+  --guild-surface: #faf9f4;
+  --guild-soft: #efeee6;
+  --guild-ink: #273136;
+  --guild-muted: #626c61;
+  --guild-line: #dcd7cb;
+  --guild-danger: #a33a2b;
+  --guild-danger-hover: #832c20;
+}
+[data-theme="dark"] .guild-confirm-mask {
+  --guild-surface: #111724;
+  --guild-soft: #162032;
+  --guild-ink: #e2e8f0;
+  --guild-muted: #94a3b8;
+  --guild-line: #2b3b52;
+  --guild-danger: #f87171;
+  --guild-danger-hover: #fca5a5;
+  --guild-danger-ink: #231313;
+  color-scheme: dark;
+}
+[data-theme] .guild-confirm-mask .modal-card.guild-confirm,
+.guild-confirm-mask .modal-card.guild-confirm {
+  max-width: 380px;
+  background: var(--guild-surface) !important;
+  color: var(--guild-ink) !important;
+  border: 1px solid var(--guild-line) !important;
+  border-top: 3px solid var(--guild-danger) !important;
+  box-shadow: 0 18px 56px rgba(10, 20, 35, .24) !important;
+}
+[data-theme] .guild-confirm .modal-title,
+.guild-confirm .modal-title {
+  background: var(--guild-soft);
+  color: var(--guild-ink) !important;
+  border-color: var(--guild-line);
+  padding: 18px 20px 14px;
+}
+.guild-confirm .modal-body { padding: 18px 20px; color: var(--guild-ink); font-size: 14px; }
+.guild-confirm-name { font-weight: 700; overflow-wrap: anywhere; }
+.guild-confirm .guild-confirm-note { color: var(--guild-muted); font-size: 12px; }
+.guild-confirm .guild-confirm-error { color: var(--guild-danger); }
+.guild-confirm .guild-confirm-error[hidden] { display: none; }
+.guild-confirm .modal-foot { padding: 0 20px 20px; gap: 12px; border: 0; background: transparent; }
+#guildLeaveConfirm .modal-foot button { flex: 1; min-width: 0; min-height: 44px !important; border-radius: 7px !important; }
+#guildLeaveConfirm .guild-confirm-cancel {
+  border-color: var(--guild-line) !important;
+  background: var(--guild-surface) !important;
+  color: var(--guild-ink) !important;
+}
+#guildLeaveConfirm .guild-confirm-cancel:hover:not(:disabled) { background: var(--guild-soft) !important; border-color: var(--guild-line) !important; }
+#guildLeaveConfirm .guild-confirm-submit {
+  border-color: var(--guild-danger) !important;
+  background: var(--guild-danger) !important;
+  color: var(--guild-danger-ink) !important;
+}
+#guildLeaveConfirm .guild-confirm-submit:hover:not(:disabled) { background: var(--guild-danger-hover) !important; border-color: var(--guild-danger-hover) !important; }
+#guildLeaveConfirm button:focus-visible { outline: 2px solid var(--guild-danger); outline-offset: 3px; }

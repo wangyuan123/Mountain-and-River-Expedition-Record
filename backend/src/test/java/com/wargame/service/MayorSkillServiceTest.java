@@ -2,6 +2,7 @@ package com.wargame.service;
 
 import com.wargame.BaseServiceTest;
 import com.wargame.model.constants.OfficerSkillDef;
+import com.wargame.model.constants.MilitaryRankDef;
 import com.wargame.model.entity.Officer;
 import com.wargame.model.entity.Resources;
 import com.wargame.util.JsonUtil;
@@ -157,18 +158,32 @@ public class MayorSkillServiceTest extends BaseServiceTest {
     @Test
     void commanderLeadershipSkillIncreasesArmyCap() {
         Long playerId = createTestPlayer("lead-player", 30).getId();
-        createBuilding(playerId, "command", 1); // 1000 + 1000 = 2000
+        for (int tier = 1; tier <= MilitaryRankDef.MAX_RANK_TIER; tier++) {
+            assertEquals(tier * 50000, MilitaryRankDef.getRankBase(tier));
+        }
         int capWithoutOfficer = armyService.armyCap(playerId);
-        // cmdLv 默认为 1，2000 * (1 + 1 * 0.025) = 2050
-        assertEquals(2050, capWithoutOfficer);
+        assertEquals(50000, capWithoutOfficer);
 
-        // 指挥官无技能
+        createBuilding(playerId, "command", 10);
+        createBuilding(playerId, "staff", 10);
+        assertEquals(50000, armyService.armyCap(playerId));
+
+        var player = playerRepository.findById(playerId).orElseThrow();
+        player.setMilitaryRank(17);
+        playerRepository.save(player);
+        assertEquals(850000, armyService.armyCap(playerId));
+        var wall = createBuilding(playerId, "wall", 9);
+        assertEquals(850000, armyService.armyCap(playerId));
+        wall.setLevel(10);
+        buildingRepository.save(wall);
+        assertEquals(950000, armyService.armyCap(playerId));
+
         Officer cmd = new Officer();
         cmd.setPlayerId(playerId);
         cmd.setCitySlot(0);
         cmd.setName("普通指挥官");
         cmd.setRole("commander");
-        cmd.setLevel(1);
+        cmd.setLevel(100);
         cmd.setLogistics(0);
         cmd.setKnowledge(0);
         cmd.setMilitary(50);
@@ -177,21 +192,19 @@ public class MayorSkillServiceTest extends BaseServiceTest {
         officerRepository.save(cmd);
 
         int capWithNormalCmd = armyService.armyCap(playerId);
-        // base 2000 * (1 + 1 * 0.025) = 2050
-        assertEquals(2050, capWithNormalCmd);
+        assertEquals(950000, capWithNormalCmd);
 
         // 升级统帅技能 Lv.5 (+20%)
         cmd.setSkills(JsonUtil.toJson(List.of(Map.of("id", "leadership", "lv", 5))));
         officerRepository.save(cmd);
 
         int capWithLeadCmd = armyService.armyCap(playerId);
-        // 2050 * 1.2 = 2460
-        assertEquals(2460, capWithLeadCmd, "统帅Lv.5应提升20%带兵上限");
+        assertEquals(1140000, capWithLeadCmd, "统帅Lv.5应提升基础与围墙奖励之和的20%");
 
         // 兼容旧 supply 技能
         cmd.setSkills(JsonUtil.toJson(List.of(Map.of("id", "supply", "lv", 5))));
         officerRepository.save(cmd);
-        assertEquals(2460, armyService.armyCap(playerId), "旧supply技能应向后兼容统帅效果");
+        assertEquals(1140000, armyService.armyCap(playerId), "旧supply技能应向后兼容统帅效果");
     }
 
     @Test

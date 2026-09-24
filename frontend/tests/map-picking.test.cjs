@@ -73,6 +73,58 @@ test('march marker renders an enlarged transparent unit model without a circular
  const source=fs.readFileSync(path.join(__dirname,'../js/world-map.js'),'utf8');
  assert.doesNotMatch(source,/marker\.backdrop/);
 });
+test('marching models render above city artwork while routes and captions keep their layers',()=>{
+ const source=fs.readFileSync(path.join(__dirname,'../js/world-map.js'),'utf8');
+ const layers=source.match(/this\.app\.stage\.addChild\(([^;]+)\);/);
+ assert.ok(layers);
+ assert.deepEqual(layers[1].split(',').map(layer=>layer.trim()),[
+  'this.ground','this.groundDetails','this.terrain','this.routes',
+  'this.markerLayer','this.marchLayer','this.selectionOutline','this.captionLayer'
+ ]);
+});
+test('city name is shown beside city status instead of below the city artwork',()=>{
+ const source=fs.readFileSync(path.join(__dirname,'../js/world-map.js'),'utf8');
+ assert.doesNotMatch(source,/marker\.label/);
+ assert.match(source,/info = caption \+ '·' \+ status \+ '\\n' \+ coordinates;/);
+});
+test('marching models face the current route direction, including turns and returning marches',()=>{
+ const {v,c}=fixture();let now=500;
+ c.Date={now:()=>now};c.Game.UNIT_MODEL={truck:'truck.webp',rocket:'rocket.webp'};
+ c.Game.DATA={world:{size:200}};
+ c.Game.Core={state:{world:{marches:[]}}};
+ c.Game.MapChunks.prototype.targets=()=>[];
+ const position=()=>({x:0,y:0,set(x,y){this.x=x;this.y=y;}});
+ class Sprite {
+  constructor(texture){this.texture=texture;this.anchor={set(){}};this.position=position();this.scale={x:1,y:1};}
+  set width(value){this.scale.x=value/(this.texture.orig.width||1);}
+  set height(value){this.scale.y=value/(this.texture.orig.height||1);}
+ }
+ class Container {
+  constructor(){this.children=[];this.position=position();}
+  addChild(child){this.children.push(child);}
+  removeChild(child){this.children=this.children.filter(item=>item!==child);}
+ }
+ c.PIXI={Container,Sprite,Text:class extends Sprite {constructor(text,style){super(c.PIXI.Texture.EMPTY);this.text=text;this.style=style;}},
+  Texture:{EMPTY:{orig:{width:1,height:1}},from:()=>({orig:{width:100,height:100},baseTexture:{once(){}}})}};
+ v.routes={clear(){},lineStyle(){return this;},moveTo(){return this;},lineTo(){return this;}};
+ v.marchLayer=new Container();v.marchMarkers=new Map();v.wake=()=>{};
+ const march={id:1,fromX:100,fromY:100,targetX:104,targetY:102,targetKind:'player',
+  route:[[100,100],[102,100],[102,102],[104,102]],army:{truck:10,rocket:5},startAt:0,arriveAt:1000};
+ c.Game.Core.state.world.marches=[march];
+ v.drawRoutes();let marker=v.marchMarkers.get('1');
+ assert.ok(marker.icon.scale.x<0);assert.ok(marker.companions[0].scale.x<0);
+ now=750;v.drawRoutes();
+ assert.ok(marker.icon.scale.x<0,'north-south segment retains its previous horizontal direction');
+ now=900;v.drawRoutes();assert.ok(marker.icon.scale.x<0);
+ march.route[3]=[101,102];march.targetX=101;now=900;v.drawRoutes();
+ assert.ok(marker.icon.scale.x>0,'a leftward turn updates the facing before returning');
+ march.route.reverse();march.fromX=101;march.fromY=102;march.targetX=100;march.targetY=100;
+ march.returning=true;now=500;v.drawRoutes();
+ assert.ok(marker.icon.scale.x<0);assert.ok(marker.companions[0].scale.x<0);
+ now=900;v.drawRoutes();
+ assert.ok(marker.icon.scale.x>0);assert.ok(marker.companions[0].scale.x>0);
+ assert.ok(marker.countText.scale.x>0,'count badge must not be mirrored');
+});
 test('a visible resource rooftop outside its ground cell opens the resource instead of building a city',()=>{
  const {v,marker}=fixture();const t={kind:'wild',id:1,type:'ironworks',x:100,y:100};
  marker(t,[0,255,255,0,255,255,255,255,255,255,255,255,0,255,255,0]);

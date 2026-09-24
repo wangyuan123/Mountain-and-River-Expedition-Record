@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>首页资源微缩模型预览</title>
+  <link rel="stylesheet" href="../css/style.css?v=4.0-resource-models">
+  <link rel="stylesheet" href="../css/themes.css?v=3.1-chat-contrast">
+  <link rel="stylesheet" href="../css/classic-home.css?v=1.2-unit-models">
+  <style>
+    body { margin: 0; padding: 20px; background: #d9e2eb; }
+    .preview { width: min(360px, 100%); margin: 0 auto 24px; padding: 12px; box-sizing: border-box; background: #fff; }
+    .preview.dark { background: #172431; }
+  </style>
+</head>
+<body>
+  <section class="preview" data-theme="blue-white-classic">
+    <div class="zone-head"><span class="zone-title">资源</span></div>
+    <div class="res-grid" id="lightResources"></div>
+  </section>
+  <section class="preview dark">
+    <div class="zone-head"><span class="zone-title">资源</span></div>
+    <div class="res-grid" id="darkResources"></div>
+  </section>
+  <script>
+    var rows = [
+      ['food', '粮食', '0'], ['steel', '钢铁', '204298440'],
+      ['oil', '石油', '104565551'], ['rare', '稀矿', '104889500'],
+      ['gold', '黄金', '99959261'], ['pop', '平民', '24000/24000']
+    ];
+    var html = rows.map(function (row) {
+      return '<div class="res-card"><div class="res-summary"><img class="res-icon-img" src="../img/resources/models/' + row[0] + '.webp" alt="' + row[1] + '"><span class="res-name">' + row[1] + ':</span><span class="res-main"><span class="res-cur">' + row[2] + '</span></span></div></div>';
+    }).join('');
+    document.getElementById('lightResources').innerHTML = html;
+    document.getElementById('darkResources').innerHTML = html;
+  </script>
+</body>
+</html>

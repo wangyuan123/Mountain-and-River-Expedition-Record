@@ -50,7 +50,7 @@ public record BuildingDef(
                 Map.of("steel", 360, "oil", 160, "rare", 50), 1.7, "army", 1));
         m.put("academy", new BuildingDef("academy", "军校", "招募军官,等级提升整批五星概率",
                 Map.of("steel", 200, "food", 120, "gold", 200), 1.6, "core", 1));
-        m.put("staff", new BuildingDef("staff", "参谋部", "军官槽位与野地上限,带兵上限 +10%/级",
+        m.put("staff", new BuildingDef("staff", "参谋部", "军官槽位与野地上限",
                 Map.of("steel", 220, "food", 100), 1.6, "core", 1));
         m.put("farm", new BuildingDef("farm", "农田", "每小时产出粮食",
                 Map.of("steel", 80), 1.5, "res", GameConstants.GROUP_SLOTS_RES_MAX,
@@ -71,7 +71,7 @@ public record BuildingDef(
                 Map.of("steel", 200, "food", 100, "rare", 20), 1.6, "core", 1));
         m.put("radar", new BuildingDef("radar", "雷达站", "预警进犯敌军与探测兵力",
                 Map.of("steel", 180, "oil", 60, "rare", 20), 1.6, "core", 1));
-        m.put("wall", new BuildingDef("wall", "围墙", "城防,提升守城部队防御",
+        m.put("wall", new BuildingDef("wall", "围墙", "城防,提升守城部队防御,满级额外带兵上限+100000",
                 Map.of("steel", 200, "food", 80), 1.5, "def", 1,
                 null, null, null, null, null, 5, null, null));
         m.put("apron", new BuildingDef("apron", "停机坪", "空军调度,提升空军出击上限",

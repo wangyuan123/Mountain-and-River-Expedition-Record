@@ -142,6 +142,13 @@ public class Player extends VersionedEntity implements CityEconomy {
     @Column(name = "tutorial_dismissed")
     private Boolean tutorialDismissed = false;
 
+    /** 玩家按兵种设置的离线出城/守城战术；未设置的兵种沿用兵种默认值。 */
+    @Column(name = "outgoing_battle_actions", columnDefinition = "text")
+    private String outgoingBattleActions;
+
+    @Column(name = "defending_battle_actions", columnDefinition = "text")
+    private String defendingBattleActions;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 

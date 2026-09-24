@@ -109,6 +109,23 @@
     sprite.height = sourceHeight * scale;
   }
   /**
+   * 根据当前行军路段确定模型朝向；竖直路段沿用最近的水平行进方向。
+   * @param {Object[]} points - 路线的屏幕坐标。
+   * @param {number} segmentIndex - 当前所在路段，行军结束时可等于路段总数。
+   * @returns {number} 默认朝左的模型所需的水平缩放符号。
+   */
+  function marchFacing(points, segmentIndex) {
+    for (var index = Math.min(segmentIndex, points.length - 2); index >= 0; index--) {
+      var delta = points[index + 1].x - points[index].x;
+      if (delta !== 0) return delta > 0 ? -1 : 1;
+    }
+    for (var nextIndex = segmentIndex + 1; nextIndex < points.length - 1; nextIndex++) {
+      var nextDelta = points[nextIndex + 1].x - points[nextIndex].x;
+      if (nextDelta !== 0) return nextDelta > 0 ? -1 : 1;
+    }
+    return 1;
+  }
+  /**
    * 选择行军地图标记所代表的主力兵种，不影响服务端的行军速度或战斗结算。
    * @param {Object} march - 含 army 编队数据的行军记录。
    * @returns {string|null} 数量最多且有首页兵种模型或回退图标的兵种 ID；无有效兵种时返回 null。
@@ -174,7 +191,7 @@
     this.detailSeq = 0; this.vx = 0; this.vy = 0; this.lastLoad = 0; this.raf = 0; this.dirty = true;
     var cp = G.Core.state.world.cityPos || G.Core.state.world.pos || { x: 100, y: 100 };
     var homeCenter = markerCenter({ kind:'player', x:cp.x, y:cp.y });
-    if (!camera) camera = new G.MapCamera(G.DATA.world.size, homeCenter.x, homeCenter.y, 48);
+    if (!camera) camera = new G.MapCamera(G.DATA.world.size, homeCenter.x, homeCenter.y, 44);
     this.camera = camera;
     v.innerHTML = '<section class="world-map-shell">' +
       '<div class="world-map-toolbar"><strong>战略地图</strong><button class="world-map-button" data-map="list">列表</button><button class="world-map-button" data-map="full" aria-expanded="false">全屏</button></div>' +
@@ -211,7 +228,8 @@
     this.selectionOutline = new PIXI.Graphics();
     // All captions render after all map artwork, including neighboring markers.
     this.captionLayer = new PIXI.Container();
-    this.app.stage.addChild(this.ground, this.groundDetails, this.terrain, this.routes, this.marchLayer, this.markerLayer, this.selectionOutline, this.captionLayer);
+    // 行军模型绘制在城市图标之上，路线和城市文字仍分别位于图标下方与模型上方。
+    this.app.stage.addChild(this.ground, this.groundDetails, this.terrain, this.routes, this.markerLayer, this.marchLayer, this.selectionOutline, this.captionLayer);
     this.bind();
     this.initMinimap();
     var self = this;
@@ -454,8 +472,6 @@
         marker.ownershipPlate = new PIXI.Graphics(); marker.captions.addChild(marker.ownershipPlate);
         marker.ownershipText = new PIXI.Text('', { fontFamily:'-apple-system, PingFang SC, Microsoft YaHei, sans-serif', fontSize:11, fontWeight:'600' });
         marker.ownershipText.anchor.set(0,.5); marker.captions.addChild(marker.ownershipText);
-        marker.label = new PIXI.Text('', { fontFamily: '-apple-system, PingFang SC, Microsoft YaHei, sans-serif', fontSize: 11, fill: 0x304d43, stroke: 0xf5f7ee, strokeThickness: 3, fontWeight: '600', align: 'center' });
-        marker.label.anchor.set(.5, 0); marker.captions.addChild(marker.label);
         marker.info = new PIXI.Text('', { fontFamily: '-apple-system, PingFang SC, Microsoft YaHei, sans-serif', fontSize: 10, fill: 0x244665, stroke: 0xf5f7ee, strokeThickness: 3, fontWeight: '600', align: 'center', lineHeight: 12 });
         marker.info.anchor.set(.5, 1); marker.captions.addChild(marker.info);
         self.markerLayer.addChild(marker); self.markers.set(key, marker);
@@ -472,7 +488,6 @@
       var height = markerHeight(t, size);
       marker.sprite.width = size; marker.sprite.height = height;
       var isCity = t.kind !== 'wild';
-      marker.label.visible = isCity;
       var caption;
       if (!isCity) {
         // Only harvestable resource tiles display a level above the artwork.
@@ -502,13 +517,12 @@
         if (t.coolAt > now) status = '护盾';
         if (t.readyAt > now) status = '建设中';
         if (t.defeated) status = '已击败';
-        info = status + '\n' + coordinates;
+        // 城市名称与状态共用上方首行，坐标留在第二行。
+        info = caption + '·' + status + '\n' + coordinates;
       }
       if (marker.info.text !== info) marker.info.text = info;
       marker.info.y = -height/2-4;
       drawOwnership(marker, t, marker.info.y - (isCity ? marker.info.height+26 : 22));
-      if (marker.label.text !== caption) marker.label.text = caption;
-      marker.label.y = height/2+3;
     });
     this.markers.forEach(function (marker, key) { if (!keep.has(key)) { marker.captions.destroy({ children:true }); marker.destroy({ children:true }); self.markers.delete(key); } });
     this.drawRoutes();
@@ -612,6 +626,7 @@
         }
         travel -= lengths[segmentIndex];
       }
+      var facing = marchFacing(points, segmentIndex);
       var markerKey = String(march.id != null ? march.id : [fromX, fromY, march.targetX, march.targetY].join(':'));
       keep.add(markerKey);
       var formation = marchFormation(march), primary = formation.primary, iconPath = primary && primary.iconPath, marker = self.marchMarkers.get(markerKey);
@@ -632,10 +647,12 @@
       var iconSize = marchMarkerIconSize(camera.scale);
       marker.position.set(position.x, position.y); marker.visible = !!iconPath;
       sizeMarchSprite(marker.icon, iconSize);
+      marker.icon.scale.x = Math.abs(marker.icon.scale.x) * facing;
       formation.companions.forEach(function (companion, companionIndex) {
         var sprite = marker.companions[companionIndex], companionTexture = loadMarchTexture(companion.iconPath);
         if (sprite.texture !== companionTexture) sprite.texture = companionTexture;
         sizeMarchSprite(sprite, iconSize * .56);
+        sprite.scale.x = Math.abs(sprite.scale.x) * facing;
         sprite.position.set(companionIndex === 0 ? -iconSize * .42 : iconSize * .42, iconSize * .15);
         sprite.visible = true;
       });

@@ -814,38 +814,7 @@ body[data-theme|="blue-white"] {
   color: #004499 !important;
 }
 
-/* 晴空蓝白 待办事项与战情速递 */
-[data-theme|="blue-white"] .todo-list {
-  background: #ffffff !important;
-  border: 1px solid #dbe4ee !important;
-  box-shadow: none !important;
-  border-radius: 4px !important;
-}
-[data-theme|="blue-white"] .todo-item {
-  background: #fbfcfe !important;
-  border: 1px solid #e2e8f0 !important;
-  border-radius: 3px !important;
-  color: #334155 !important;
-}
-[data-theme|="blue-white"] .todo-item:hover {
-  background: #f0f5fb !important;
-  border-color: #4a7bb5 !important;
-}
-[data-theme|="blue-white"] .todo-item.urgent {
-  background: #fef2f2 !important;
-  border-color: #f87171 !important;
-  color: #991b1b !important;
-}
-[data-theme|="blue-white"] .todo-item .todo-text b {
-  color: #004499 !important;
-}
-[data-theme|="blue-white"] .todo-item .todo-arrow {
-  color: #94a3b8 !important;
-}
-[data-theme|="blue-white"] .todo-more {
-  color: #004499 !important;
-  font-weight: 600 !important;
-}
+/* 晴空蓝白 战情速递 */
 [data-theme|="blue-white"] .alert-grid .alert-cell {
   background: #ffffff !important;
   border: 1px solid #dbe4ee !important;
@@ -1406,6 +1375,9 @@ body[data-theme|="blue-white"] {
 [data-theme|="blue-white"] .report-board.lose {
   border-left-color: #dc2626 !important;
 }
+[data-theme|="blue-white"] .report-board.draw {
+  border-left-color: #b88a36 !important;
+}
 
 /* 主题标题 */
 [data-theme|="blue-white"] .rb-subject {
@@ -1459,6 +1431,11 @@ body[data-theme|="blue-white"] {
   background: #fef2f2 !important;
   color: #b91c1c !important;
   border: 1px solid #fecaca !important;
+}
+[data-theme|="blue-white"] .rb-res-badge.d {
+  background: #faf0d8 !important;
+  color: #6a4f24 !important;
+  border: 1px solid #c9b27a !important;
 }
 
 /* 分隔虚线 */
@@ -2122,17 +2099,6 @@ body[data-theme="paper"] {
   background: #ebe7df !important;
   color: #2b5435 !important;
 }
-[data-theme="paper"] .todo-list {
-  background: #ffffff !important;
-  border: 1px solid #e2ded5 !important;
-  border-radius: 4px !important;
-  box-shadow: none !important;
-}
-[data-theme="paper"] .todo-item {
-  background: #faf8f2 !important;
-  border: 1px solid #e2ded5 !important;
-  color: #1a1e21 !important;
-}
 [data-theme="paper"] .alert-cell {
   background: #ffffff !important;
   border: 1px solid #e2ded5 !important;
@@ -2492,17 +2458,6 @@ body[data-theme="dark"] {
 [data-theme="dark"] .home-officer-level {
   background: #162032 !important;
   color: #38bdf8 !important;
-}
-[data-theme="dark"] .todo-list {
-  background: #111827 !important;
-  border: 1px solid #1e293b !important;
-  border-radius: 4px !important;
-  box-shadow: none !important;
-}
-[data-theme="dark"] .todo-item {
-  background: #0b0f17 !important;
-  border: 1px solid #1e293b !important;
-  color: #e2e8f0 !important;
 }
 [data-theme="dark"] .alert-cell {
   background: #111827 !important;
@@ -3489,4 +3444,3 @@ body[data-theme="dark"] {
 .home-officer-name {
   font-size: 12px !important;
 }
-

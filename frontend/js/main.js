@@ -6,10 +6,48 @@ window.Game = window.Game || {};
 
   var Core = G.Core;
   var D = G.DATA;
+  var LANDSCAPE_NAV_STORAGE_KEY = 'wargame_landscape_nav_collapsed';
+
+  function landscapeNavigationEnabled() {
+    return !!(window.matchMedia && window.matchMedia('(orientation: landscape) and (min-width: 480px)').matches);
+  }
+
+  function readLandscapeNavigationState() {
+    try { return window.localStorage.getItem(LANDSCAPE_NAV_STORAGE_KEY) === '1'; } catch (e) { return false; }
+  }
+
+  function writeLandscapeNavigationState(collapsed) {
+    try { window.localStorage.setItem(LANDSCAPE_NAV_STORAGE_KEY, collapsed ? '1' : '0'); } catch (e) {}
+  }
 
   var Main = {
     guestMode: false,
     _selectedAvatar: null,
+    _landscapeNavCollapsed: readLandscapeNavigationState(),
+
+    syncLandscapeNavState: function () {
+      var screen = document.getElementById('screen');
+      if (!screen) return;
+      var collapsed = this._landscapeNavCollapsed;
+      screen.classList.toggle('nav-collapsed', collapsed);
+      var toggle = document.querySelector('[data-nav="collapse"]');
+      if (toggle) {
+        toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        toggle.setAttribute('aria-label', collapsed ? '展开导航' : '收起导航');
+        toggle.setAttribute('title', collapsed ? '展开导航' : '收起导航');
+        var label = toggle.querySelector('.nav-collapse-label');
+        if (label) label.textContent = collapsed ? '展开导航' : '收起导航';
+        var icon = toggle.querySelector('.nav-collapse-icon');
+        if (icon) icon.textContent = collapsed ? '›' : '‹';
+      }
+    },
+
+    toggleLandscapeNav: function () {
+      if (!landscapeNavigationEnabled()) return;
+      this._landscapeNavCollapsed = !this._landscapeNavCollapsed;
+      writeLandscapeNavigationState(this._landscapeNavCollapsed);
+      this.syncLandscapeNavState();
+    },
 
     showResourceDetail: function (key) {
       var s = Core.state || {};
@@ -297,15 +335,34 @@ window.Game = window.Game || {};
       var routeChanged = bar._navRoute !== Core.route;
       var previous = bar.querySelector('.nav-viewport');
       var page = previous && previous.clientWidth ? Math.round(previous.scrollLeft / previous.clientWidth) : 0;
+      var landscapeNav = landscapeNavigationEnabled();
+      var scrollTop = previous ? previous.scrollTop : 0;
+      this.syncLandscapeNavState();
       // 普通 tick 不重建导航，避免打断手势或把玩家正在浏览的分页拉回首页。
       if (bar._navHtml === html && !routeChanged) return;
       bar.innerHTML = html;
       bar._navHtml = html;
       bar._navRoute = Core.route;
+      var collapseButton = bar.querySelector('[data-nav="collapse"]');
+      if (collapseButton) collapseButton.onclick = function () { Main.toggleLandscapeNav(); };
+      this.syncLandscapeNavState();
       var viewport = bar.querySelector('.nav-viewport');
       if (!viewport) return;
       var pages = viewport.querySelectorAll('.nav-page');
       var dots = bar.querySelectorAll('.nav-page-dot');
+      if (landscapeNav) {
+        viewport.scrollTop = scrollTop;
+        if (routeChanged) {
+          var active = viewport.querySelector('.navitem.active');
+          if (active) {
+            var bounds = active.getBoundingClientRect();
+            var frame = viewport.getBoundingClientRect();
+            if (bounds.top < frame.top) viewport.scrollTop += bounds.top - frame.top;
+            else if (bounds.bottom > frame.bottom) viewport.scrollTop += bounds.bottom - frame.bottom;
+          }
+        }
+        return;
+      }
       if (routeChanged) {
         pages.forEach(function (el, index) {
           if (el.querySelector('.navitem.active')) page = index;

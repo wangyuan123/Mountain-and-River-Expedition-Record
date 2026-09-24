@@ -19,7 +19,7 @@ public final class WorldConfig {
 
     public static final List<String> BANDIT_NAMES = List.of(
             "日寇前哨", "日寇营地", "日寇炮楼", "日寇据点",
-            "日寇补给站", "日寇哨所", "日寇机场", "日寇舰队基地"
+            "日寇补给站", "雇佣兵营", "武装走私队", "雇佣兵基地"
     );
 
         public static final List<BanditLevel> BANDIT_LEVELS = createBanditLevels();
@@ -45,10 +45,10 @@ public final class WorldConfig {
                     Map.of("htank", 10, "rocket", 6, "bomber", 4),
                     Map.of("food", 440, "steel", 660, "oil", 400, "rare", 90, "gold", 100, "exp", 130)),
             new BanditLevel(7,
-                    Map.of("htank", 16, "rocket", 10, "fighter", 10, "sub", 4),
+                    Map.of("htank", 16, "rocket", 10, "fighter", 10, "assault", 8),
                     Map.of("food", 600, "steel", 900, "oil", 560, "rare", 130, "gold", 150, "exp", 180)),
             new BanditLevel(8,
-                    Map.of("battleship", 4, "carrier", 1, "fighter", 20),
+                    Map.of("htank", 20, "rocket", 12, "fighter", 20, "bomber", 6),
                     Map.of("food", 800, "steel", 1200, "oil", 760, "rare", 180, "gold", 220, "exp", 250))
         ));
 
@@ -59,9 +59,9 @@ public final class WorldConfig {
             if (level >= 12) army.put("assault", level / 2);
             if (level >= 15) army.put("fighter", level);
             if (level >= 18) army.put("bomber", level / 2);
-            if (level >= 21) army.put("sub", level / 3);
-            if (level >= 24) army.put("battleship", level / 4);
-            if (level >= 27) army.put("carrier", Math.max(1, level / 10));
+            if (level >= 21) army.put("special", level / 3);
+            if (level >= 24) army.put("armored", level);
+            if (level >= 27) army.put("ltank", level / 2);
 
             levels.add(new BanditLevel(level, army, Map.of(
                     "food", level * 120,
@@ -72,7 +72,15 @@ public final class WorldConfig {
                     "exp", level * 60
             )));
         }
-        return List.copyOf(levels);
+        // 只放大兵力和可掠夺物资；经验维持原值，避免强化据点变成刷级捷径。
+        return levels.stream().map(base -> {
+            Map<String, Integer> army = new LinkedHashMap<>();
+            base.army().forEach((unit, count) -> army.put(unit, count * 3));
+            Map<String, Integer> reward = new LinkedHashMap<>();
+            base.reward().forEach((resource, amount) ->
+                    reward.put(resource, "exp".equals(resource) ? amount : amount * 3));
+            return new BanditLevel(base.lv(), Map.copyOf(army), Map.copyOf(reward));
+        }).toList();
     }
 
     public static final List<String> NPC_CITY_NAMES = List.of(
@@ -86,4 +94,15 @@ public final class WorldConfig {
             Map<String, Integer> army,
             Map<String, Integer> reward
     ) {}
+
+    /** NPC 只能使用陆军和空军，移除存档或导入数据中的海军单位。 */
+    public static Map<String, Integer> landOnlyArmy(Map<String, Integer> army) {
+        Map<String, Integer> result = new LinkedHashMap<>();
+        if (army != null) result.putAll(army);
+        result.remove("destroyer");
+        result.remove("sub");
+        result.remove("battleship");
+        result.remove("carrier");
+        return result;
+    }
 }

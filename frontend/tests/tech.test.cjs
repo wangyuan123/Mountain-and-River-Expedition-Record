@@ -71,8 +71,8 @@ function setupTestEnvironment() {
       },
       DATA: {
         techs: {
-          attack_tech: { name: '攻击科技', branch: '军事', desc: '全军攻击 +5%/级', max: 10, labReq: 1, baseCost: { steel: 240, food: 120 }, growth: 1.7, affect: 'atk_all' },
-          defense_tech: { name: '防御科技', branch: '军事', desc: '全军防御 +5%/级', max: 10, labReq: 2, baseCost: { steel: 240, food: 120 }, growth: 1.7, affect: 'def_all' }
+          attack_tech: { name: '攻击科技', branch: '军事', desc: '全军攻击 +10%/级', max: 10, labReq: 1, baseCost: { steel: 240, food: 120 }, growth: 1.7, affect: 'atk_all' },
+          defense_tech: { name: '防御科技', branch: '军事', desc: '全军防御 +10%/级', max: 10, labReq: 2, baseCost: { steel: 240, food: 120 }, growth: 1.7, affect: 'def_all' }
         },
         resources: {
           steel: { name: '钢铁', icon: '🔩' },

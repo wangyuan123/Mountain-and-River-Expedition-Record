@@ -22,10 +22,11 @@ public class WorldViewService {
     private final WildTileRepository wildTileRepository;
     private final PlayerRepository playerRepository;
     private final MarchRepository marchRepository;
+    private final BattleSessionRepository battleSessionRepository;
     private final IncomingMarchRepository incomingMarchRepository;
     private final ArmyUnitRepository armyUnitRepository;
 
-    public WorldViewService(WorldMapRepository worldMapRepository, NpcCityRepository npcCityRepository, PlayerCityRepository playerCityRepository, BanditRepository banditRepository, WildTileRepository wildTileRepository, PlayerRepository playerRepository, MarchRepository marchRepository, IncomingMarchRepository incomingMarchRepository, ArmyUnitRepository armyUnitRepository) {
+    public WorldViewService(WorldMapRepository worldMapRepository, NpcCityRepository npcCityRepository, PlayerCityRepository playerCityRepository, BanditRepository banditRepository, WildTileRepository wildTileRepository, PlayerRepository playerRepository, MarchRepository marchRepository, BattleSessionRepository battleSessionRepository, IncomingMarchRepository incomingMarchRepository, ArmyUnitRepository armyUnitRepository) {
         this.worldMapRepository = worldMapRepository;
         this.npcCityRepository = npcCityRepository;
         this.playerCityRepository = playerCityRepository;
@@ -33,6 +34,7 @@ public class WorldViewService {
         this.wildTileRepository = wildTileRepository;
         this.playerRepository = playerRepository;
         this.marchRepository = marchRepository;
+        this.battleSessionRepository = battleSessionRepository;
         this.incomingMarchRepository = incomingMarchRepository;
         this.armyUnitRepository = armyUnitRepository;
     }
@@ -267,7 +269,16 @@ public class WorldViewService {
         List<PlayerCity> cities = playerCityRepository.findByOwnerId(playerId);
         if (!cities.isEmpty()) {
             List<String> cityIds = cities.stream().map(c -> String.valueOf(c.getId())).toList();
-            for (March march : marchRepository.findIncomingPlayerMarches(playerId, cityIds)) {
+            List<March> incomingMarches = marchRepository.findIncomingPlayerMarches(playerId, cityIds);
+            Set<String> activeCityIds = new HashSet<>();
+            incomingMarches.stream().filter(march -> march.getBattleId() != null)
+                    .forEach(march -> activeCityIds.add(march.getTargetId()));
+            Map<String, Long> nextBattleIds = new HashMap<>();
+            incomingMarches.stream()
+                    .filter(march -> march.getBattleId() == null && !"scout".equals(march.getAction())
+                            && now >= Objects.requireNonNullElse(march.getArriveAt(), Long.MAX_VALUE))
+                    .forEach(march -> nextBattleIds.putIfAbsent(march.getTargetId(), march.getId()));
+            for (March march : incomingMarches) {
                 Player attacker = playerRepository.findById(march.getPlayerId()).orElse(null);
                 Map<String, Object> info = new LinkedHashMap<>();
                 // 与旧版 IncomingMarch 的数字 ID 分开，避免前端误去重。
@@ -284,6 +295,12 @@ public class WorldViewService {
                 info.put("army", JsonUtil.parseObjMap(march.getArmy()));
                 info.put("arriveAt", march.getArriveAt());
                 info.put("action", march.getAction());
+                info.put("inBattle", march.getBattleId() != null);
+                info.put("waitingForBattle", march.getBattleId() == null
+                        && now >= Objects.requireNonNullElse(march.getArriveAt(), Long.MAX_VALUE)
+                        && !"scout".equals(march.getAction())
+                        && (activeCityIds.contains(march.getTargetId())
+                        || !march.getId().equals(nextBattleIds.get(march.getTargetId()))));
                 // 防守方可在抵达后直接进入同一战术会话，首次读取会由战斗接口补建会话。
                 info.put("arrived", march.getBattleId() != null
                         || now >= Objects.requireNonNullElse(march.getArriveAt(), Long.MAX_VALUE));
@@ -320,6 +337,15 @@ public class WorldViewService {
         mMap.put("gatherRes", m.getGatherRes());
         mMap.put("battleId", m.getBattleId());
         mMap.put("inBattle", m.getBattleId() != null);
+        boolean arrivedAttack = "player".equals(m.getTargetKind()) && !Boolean.TRUE.equals(m.getReturning())
+                && ("conquer".equals(m.getAction()) || "plunder".equals(m.getAction()))
+                && m.getBattleId() == null && now >= Objects.requireNonNullElse(m.getArriveAt(), Long.MAX_VALUE);
+        if (arrivedAttack) {
+            List<Long> waiting = marchRepository.findWaitingPlayerCityAttackIds(m.getTargetId(), now,
+                    org.springframework.data.domain.PageRequest.of(0, 1));
+            mMap.put("waitingForBattle", battleSessionRepository.existsByTargetKindAndTargetId("player", m.getTargetId())
+                    || (!waiting.isEmpty() && !m.getId().equals(waiting.get(0))));
+        }
         mMap.put("originName", m.getOriginName());
         mMap.put("originX", m.getOriginX());
         mMap.put("originY", m.getOriginY());

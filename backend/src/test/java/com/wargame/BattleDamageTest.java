@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.HashSet;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -20,10 +21,11 @@ class BattleDamageTest {
 
     @Test
     void exactFirepowerExhaustionStopsBeforeNextTarget() throws Exception {
-        Map<String, Integer> targets = army("htank", 25, "bunker", 10);
-        String report = act("rocket", 402, targets, 0, false, null, null);
+        Map<String, Integer> targets = army("htank", 8_000, "bunker", 10);
+        String report = act("rocket", 12_859, targets, 0, false, null, null);
         assertEquals(0, targets.get("htank"));
         assertEquals(10, targets.get("bunker"));
+        assertFalse(report.contains("余伤攻击"), report);
     }
 
     @Test
@@ -31,8 +33,9 @@ class BattleDamageTest {
         Map<String, Integer> targets = army("htank", 1, "bunker", 100);
         String report = act("rocket", 32, targets, 0, false, null, null);
         assertEquals(0, targets.get("htank"));
-        assertTrue(targets.get("bunker") == 95);
-        assertTrue(report.contains("余伤攻击敌碉堡(100) 对工事攻击179 伤害1296"), report);
+        assertTrue(targets.get("bunker") >= 90 && targets.get("bunker") <= 91);
+        assertTrue(report.contains("倍率×10.0 相克"), report);
+        assertTrue(report.contains("余伤攻击敌碉堡(100) 对工事攻击179 伤害2473"), report);
         assertEquals(1, report.lines().filter(line -> line.contains("本次原始火力")).count());
     }
 
@@ -50,8 +53,8 @@ class BattleDamageTest {
         Map<String, Integer> targets = army("fighter", 100);
         String report = act("rocket", 100, targets, 0, false,
                 context(Map.of("attack_tech", 10), Map.of("pierce", 5)), null);
-        assertTrue(report.contains("本次原始火力750 伤害366"), report);
-        assertTrue(targets.get("fighter") == 97);
+        assertTrue(report.contains("本次原始火力1000 伤害488"), report);
+        assertTrue(targets.get("fighter") == 96);
     }
 
     @Test
@@ -99,11 +102,11 @@ class BattleDamageTest {
         for (String fort : new String[]{"bunker", "howitzer", "antitank", "flak"}) {
             String report = act("special", 100, army(fort, 10000), 0, false, null, null);
             assertTrue(report.contains("对工事攻击188 本次原始火力18800"), report);
-            // 纯属性模式下无额外克制倍率，伤害完全由攻坚面板 188 与各工事防御减免决定
+            // 特种兵贴脸时获得 1.5 倍最终伤害；其余伤害仍由攻坚面板188与工事防御减免决定。
             assertTrue(report.contains("伤害" + switch (fort) {
-                case "bunker" -> 8545;
-                case "howitzer" -> 14462;
-                default -> 13429;
+                case "bunker" -> 12818;
+                case "howitzer" -> 21692;
+                default -> 20143;
             }), report);
         }
     }
@@ -146,11 +149,11 @@ class BattleDamageTest {
     }
 
     @Test
-    void movementStopsAtRangeAndDoesNotFireInSameAction() throws Exception {
+    void movementContinuesPastRangeWithoutFiringInSameAction() throws Exception {
         Map<String, Integer> targets = army("htank", 1);
         String report = act("rocket", 100, targets, 2001, false, null, null);
         assertEquals(1, targets.get("htank"));
-        assertTrue(report.contains("前进 1 距离->2000"), report);
+        assertTrue(report.contains("前进 250 距离->1751"), report);
         assertFalse(report.contains("伤害"), report);
     }
 
@@ -161,8 +164,27 @@ class BattleDamageTest {
         String closeLog = act(new BattleService(4096), "rocket", 168, close, 0, false, null, null);
         String farLog = act(new BattleService(4096), "rocket", 168, far, 2000, false, null, null);
         assertEquals(close, far);
-        assertTrue(closeLog.contains("伤害4024"));
-        assertTrue(farLog.contains("伤害4024"));
+        assertTrue(closeLog.contains("伤害38500"));
+        assertTrue(farLog.contains("伤害38500"));
+    }
+
+    @Test
+    void onlyDesignatedMeleeUnitsGainPointBlankDamageOnEitherSide() throws Exception {
+        for (boolean defending : new boolean[]{false, true}) {
+            for (String unit : new String[]{"infantry", "ltank", "htank", "special"}) {
+                String close = act(unit, 100, army("infantry", 100_000), 0, defending, null, null);
+                String far = act(unit, 100, army("infantry", 100_000), 1, defending, null, null);
+                assertTrue(close.contains("贴脸×1.5"), unit + close);
+                assertFalse(far.contains("贴脸×1.5"), unit + far);
+                assertEquals(1.5, (double) reportedDamage(close) / reportedDamage(far), 0.01, unit);
+            }
+            for (String unit : new String[]{"motor", "armored", "assault", "rocket", "fighter", "bomber", "howitzer"}) {
+                String close = act(unit, 100, army("infantry", 100_000), 0, defending, null, null);
+                String far = act(unit, 100, army("infantry", 100_000), 1, defending, null, null);
+                assertFalse(close.contains("贴脸×1.5"), unit + close);
+                assertEquals(reportedDamage(far), reportedDamage(close), unit);
+            }
+        }
     }
 
     @Test
@@ -170,7 +192,7 @@ class BattleDamageTest {
         Map<String, Integer> targets = army("htank", 1, "bunker", 100, "scout", 0);
         String report = act("rocket", 32, targets, 0, true, null, null);
         assertEquals(0, targets.get("htank"));
-        assertTrue(report.contains("余伤攻击我碉堡(100) 对工事攻击179 伤害1296"), report);
+        assertTrue(report.contains("余伤攻击我碉堡(100) 对工事攻击179 伤害2473"), report);
         assertFalse(report.contains("侦察机"), report);
     }
 
@@ -205,6 +227,12 @@ class BattleDamageTest {
         Constructor<?> constructor = contextClass.getDeclaredConstructor(Map.class, Map.class, int.class);
         constructor.setAccessible(true);
         return constructor.newInstance(tech, skills, 0);
+    }
+
+    private long reportedDamage(String report) {
+        var matcher = Pattern.compile(" 伤害(\\d+)").matcher(report);
+        assertTrue(matcher.find(), report);
+        return Long.parseLong(matcher.group(1));
     }
 
     private Map<String, Integer> army(Object... pairs) {

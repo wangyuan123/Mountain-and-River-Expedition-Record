@@ -155,7 +155,7 @@
   function draw(view) {
     if (!view) return;
     var data = state.data;
-    var h = '<div class="onboarding-view"><div class="ob-heading"><img src="img/res-food.svg" alt="" width="40" height="40">' +
+    var h = '<div class="onboarding-view"><div class="ob-heading"><img src="img/resources/models/food.webp" alt="" width="40" height="40">' +
       '<div><div class="title">前进基地行动</div><p>整备部队，控制附近的补给点，建立持续补给。</p></div></div>';
     if (state.error) h += '<p class="ob-error" role="alert">' + esc(state.error) + '</p>' + button('重新检查', 'refresh');
     if (!data) h += '<p>正在读取行动记录…</p>';

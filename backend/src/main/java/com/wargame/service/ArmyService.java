@@ -463,10 +463,8 @@ public class ArmyService {
 
     // ================================================================
     //  armyCap - 对应 JS Core.armyCap
-    //  base = rankBase (军衔基础: 1,000~20,000) + commandLv * 1,000 (市政厅: 1,000~10,000)
-    //  满级基础 = 20,000 + 10,000 = 30,000
-    //  return floor(base * (1 + staffLv * 0.10) * (1 + cmdLv * 0.025))
-    //  满级 (上将 + 市政厅10 + 参谋部10 + 指挥官100): 30,000 * 2.0 * 3.5 = 210,000
+    //  军衔基础每阶 +50,000；当前城市围墙满级（Lv.10）额外 +100,000。
+    //  三军统帅技能仍作用于基础与围墙奖励之和；市政厅、参谋部和指挥官等级不参与计算。
     // ================================================================
 
     public int armyCap(Long playerId) {
@@ -474,17 +472,11 @@ public class ArmyService {
         int rankTier = (player != null && player.getMilitaryRank() != null) ? player.getMilitaryRank() : 1;
         int rankBase = MilitaryRankDef.getRankBase(rankTier);
 
-        int commandLv = buildingLevel(playerId, "command");
-        if (commandLv < 1) commandLv = 1;
-        int staffLv = buildingLevel(playerId, "staff");
-
-        // Commander level & leadership skill
-        int cmdLv = 1;
+        int wallBonus = buildingLevel(playerId, "wall") >= 10 ? 100000 : 0;
         int leadershipLv = 0;
         List<Officer> commanders = officerRepository.findByPlayerIdAndCitySlotAndRole(playerId, cityScope.slot(playerId), "commander");
         if (commanders != null && !commanders.isEmpty()) {
             Officer cmd = commanders.get(0);
-            cmdLv = cmd.getLevel() != null ? cmd.getLevel() : 1;
             leadershipLv = getOfficerSkillLevel(cmd, "leadership");
             if (leadershipLv == 0) {
                 // 兼容历史老存档 supply
@@ -492,8 +484,7 @@ public class ArmyService {
             }
         }
 
-        int base = rankBase + commandLv * 1000;
-        double cap = base * (1 + staffLv * 0.10) * (1 + cmdLv * 0.025);
+        double cap = rankBase + wallBonus;
         if (leadershipLv > 0) {
             cap *= (1.0 + 0.04 * leadershipLv);
         }

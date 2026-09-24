@@ -14,11 +14,11 @@ window.Game = window.Game || {};
     },
 
     resources: {
-      food:  { name: '粮食', icon: 'img/res-food.svg', baseCap: 2000, capGrowth: 1.0 },
-      steel: { name: '钢铁', icon: 'img/res-steel.svg', baseCap: 2000, capGrowth: 1.0 },
-      oil:   { name: '石油', icon: 'img/res-oil.svg', baseCap: 1500, capGrowth: 0.9 },
-      rare:  { name: '稀矿', icon: 'img/res-rare.svg', baseCap: 800,  capGrowth: 0.7 },
-      gold:  { name: '黄金', icon: 'img/gold.svg', baseCap: 0,    capGrowth: 0 },
+      food:  { name: '粮食', icon: 'img/resources/models/food.webp', baseCap: 2000, capGrowth: 1.0 },
+      steel: { name: '钢铁', icon: 'img/resources/models/steel.webp', baseCap: 2000, capGrowth: 1.0 },
+      oil:   { name: '石油', icon: 'img/resources/models/oil.webp', baseCap: 1500, capGrowth: 0.9 },
+      rare:  { name: '稀矿', icon: 'img/resources/models/rare.webp', baseCap: 800,  capGrowth: 0.7 },
+      gold:  { name: '黄金', icon: 'img/resources/models/gold.webp', baseCap: 0,    capGrowth: 0 },
       diamond:{ name: '钻石', icon: '💎', baseCap: 0,   capGrowth: 0 }
     },
     // 资源成本/快捷显示用的 emoji 表
@@ -41,7 +41,7 @@ window.Game = window.Game || {};
       airport:      { name: '机场',     desc: '生产空军',                  baseCost: { steel: 280, oil: 120, rare: 30 },   growth: 1.6, cat: 'army', slots: 1 },
       port:         { name: '港口',     desc: '生产海军',                  baseCost: { steel: 360, oil: 160, rare: 50 },   growth: 1.7, cat: 'army', slots: 1 },
       academy:      { name: '军校',     desc: '招募军官,等级提升整批五星概率',                  baseCost: { steel: 200, food: 120, gold: 200 }, growth: 1.6, cat: 'core', slots: 1 },
-      staff:        { name: '参谋部',   desc: '军官槽位与野地上限,带兵上限 +10%/级', baseCost: { steel: 220, food: 100 },            growth: 1.6, cat: 'core', slots: 1 },
+      staff:        { name: '参谋部',   desc: '军官槽位与野地上限', baseCost: { steel: 220, food: 100 },            growth: 1.6, cat: 'core', slots: 1 },
       farm:         { name: '农田',     desc: '每小时产出粮食',            baseCost: { steel: 80 },                        growth: 1.5, cat: 'res', produces: 'food',  baseProduce: 40, slots: 32 },
       refinery:     { name: '炼钢厂',   desc: '每小时产出钢铁',            baseCost: { steel: 80 },                        growth: 1.5, cat: 'res', produces: 'steel', baseProduce: 40, slots: 32 },
       oilfield:     { name: '石油基地', desc: '每小时产出石油',            baseCost: { steel: 80 },                        growth: 1.5, cat: 'res', produces: 'oil',   baseProduce: 25, slots: 32 },
@@ -49,7 +49,7 @@ window.Game = window.Game || {};
       depot:        { name: '仓库',     desc: '提升资源上限,被掠夺时保护资源', baseCost: { steel: 100 },                  growth: 1.5, cat: 'res', capPer: 1500, protectPer: 1000, slots: 32 },
       lab:          { name: '科研中心', desc: '解锁与加速科技研究',        baseCost: { steel: 200, food: 100, rare: 20 },  growth: 1.6, cat: 'core', slots: 1 },
       radar:        { name: '雷达站',   desc: '预警进犯敌军与探测兵力',        baseCost: { steel: 180, oil: 60, rare: 20 },    growth: 1.6, cat: 'core', slots: 1 },
-      wall:         { name: '围墙',     desc: '城防,提升守城部队防御',     baseCost: { steel: 200, food: 80 },             growth: 1.5, cat: 'def', defBonus: 5, slots: 1 },
+      wall:         { name: '围墙',     desc: '城防,提升守城部队防御,满级额外带兵上限+100000', baseCost: { steel: 200, food: 80 },             growth: 1.5, cat: 'def', defBonus: 5, slots: 1 },
       apron:        { name: '停机坪',   desc: '空军调度,提升空军出击上限', baseCost: { steel: 220, oil: 80, rare: 20 },    growth: 1.6, cat: 'def', airCap: 20, slots: 1 },
       transit:      { name: '运输站',   desc: '资源调度,全资源产出 +3%/级', baseCost: { steel: 160, food: 80 },            growth: 1.6, cat: 'res', resBonus: 3, slots: 1 },
       liaison:      { name: '联络中心', desc: '外交联络',       baseCost: { steel: 200, food: 120, gold: 200 }, growth: 1.6, cat: 'core', slots: 1 },
@@ -68,11 +68,11 @@ window.Game = window.Game || {};
       infantry: '廉价步兵；适合数量压制，惧怕摩托兵与装甲车',
       motor: '机动反步兵；对步兵类×2，面对装甲火力减半',
       truck: '地面后勤；载重50，不主动冲锋',
-      armored: '反步兵与机动防空；对步兵类×1.75，惧怕轻坦',
+      armored: '反步兵与机动防空；对战斗机、轰炸机均×5，对步兵类无额外克制倍率，惧怕轻坦',
       ltank: '机动反炮兵；对火炮×2，对装甲车×1.5，正面遭遇火箭需空军支援',
-      htank: '前排盾牌；对轻坦×2.25，前置部署并掩护身后地面部队，惧怕火箭与轰炸机',
+      htank: '前排高速重装盾牌；移速提升至6，快速推进占领前沿阵地并掩护地面部队，惧怕火箭与轰炸机',
       assault: '远程多用途火力与攻坚支援，惧怕轻坦、特种兵和火箭',
-      rocket: '远程对地；对重坦×2.5，对装甲×1.75，对火炮×1.5，对特种兵×0.6，对空火力极弱',
+      rocket: '远程对地；对轻坦、重坦、装甲车、突击炮均×10，对其他目标无额外克制倍率，对空火力极弱',
       scout: '侦察与反侦察；对空自卫为主，其他火力极弱，不主动冲锋',
       special: '工事破袭；攻坚略高于火箭，可绕过重坦掩护，对火炮×2，惧怕装甲车与火箭远程压制',
       fighter: '制空拦截，可反制防空薄弱的火箭；对轰炸机额外×1.15',
@@ -96,7 +96,7 @@ window.Game = window.Game || {};
       truck:     { name: '卡车-十轮大卡（CCKW-353）', history: '美国｜GMC六轮驱动运输卡车，承担盟军兵员与物资运输。',     cat: 'inf',  atkGround: 2, atkAir: 1, atkSea: 1, atkFort: 1,   def: 5.5, hp: 150, spd: 6, range: 0,   food: 2,  marchOil: 2,  marchFood: 1,  pop: 1, build: 'factory',  cost: { steel: 50,  oil: 15,  rare: 0  }, strongVs: null,           branch: 'land', logistic: true, load: 50, autoAdvance: false },
       armored: { name: '装甲车-猎鹿犬防空型（T17E2）', history: '美国制造、英军使用｜猎鹿犬的双联重机枪防空型，为地面部队提供机动掩护。', cat: 'arm', atkGround: 18, atkAir: 33.5, atkSea: 45, atkFort: 36, def: 33, hp: 360, spd: 7, range: 300, food: 4, marchOil: 3, marchFood: 2, pop: 2, build: 'factory', cost: { steel: 180, oil: 60, rare: 20 }, strongVs: 'motor', branch: 'land' },
       ltank: { name: '轻型坦克-斯图亚特（M5A1）', history: '美国｜斯图亚特系列轻型坦克，以机动侦察与步兵支援为主要任务。', cat: 'arm', atkGround: 33, atkAir: 10, atkSea: 55, atkFort: 45, def: 53, hp: 270, spd: 6, range: 220, food: 5, marchOil: 4, marchFood: 2, pop: 2, build: 'lightfactory', cost: { steel: 240, oil: 80, rare: 25 }, strongVs: 'armored', branch: 'land' },
-      htank: { name: '重型坦克-斯大林（IS-2）', history: '苏联｜装备122毫米主炮的重型坦克，用于突破防线与支援进攻。', cat: 'arm', atkGround: 50, atkAir: 15, atkSea: 65, atkFort: 50, def: 63.5, hp: 385, spd: 4, range: 320, food: 8, marchOil: 7, marchFood: 3, pop: 4, build: 'heavyfactory', cost: { steel: 450, oil: 120, rare: 50 }, strongVs: 'ltank', branch: 'land' },
+      htank: { name: '重型坦克-斯大林（IS-2）', history: '苏联｜装备122毫米主炮的高机动重型坦克（速度6），用于快速突破防线与阵地掩护。', cat: 'arm', atkGround: 50, atkAir: 15, atkSea: 65, atkFort: 50, def: 63.5, hp: 385, spd: 6, range: 320, food: 8, marchOil: 7, marchFood: 3, pop: 4, build: 'heavyfactory', cost: { steel: 450, oil: 120, rare: 50 }, strongVs: 'ltank', branch: 'land' },
       assault: { name: '突击炮-自行加榴炮（ISU-152）', history: '苏联｜装备152毫米加榴炮的重型自行火炮，用于摧毁工事和提供突击支援。', cat: 'arm', atkGround: 34, atkAir: 30, atkSea: 65, atkFort: 167, def: 28, hp: 200, spd: 4, range: 750, food: 4, marchOil: 5, marchFood: 2, pop: 2, build: 'factory', cost: { steel: 200, oil: 50, rare: 25 }, strongVs: 'bunker', branch: 'land' },
       rocket: { name: '火箭-喀秋莎（BM-13）', history: '苏联｜车载多管火箭炮，1941年投入作战，以密集齐射实施火力覆盖。', cat: 'arm', atkGround: 100, atkAir: 5, atkSea: 25, atkFort: 179, def: 28, hp: 150, spd: 5, range: 2000, food: 5, marchOil: 4, marchFood: 3, pop: 3, build: 'factory', cost: { steel: 220, oil: 70, rare: 45 }, strongVs: 'htank', branch: 'land' },
       scout:     { name: '侦察机-闪电侦察型（F-5）', history: '美国｜由P-38闪电改装的照相侦察机，以航空摄影获取战场情报。',   cat: 'air',  atkGround: 1, atkAir: 4, atkSea: 1, atkFort: 1,   def: 13,  hp: 70.5,spd: 11,range: 200, food: 3,  marchOil: 8,  marchFood: 1,  pop: 1, build: 'factory',  cost: { steel: 60,  oil: 30,  rare: 10 }, strongVs: null,           branch: 'air', autoAdvance: false },
@@ -111,10 +111,10 @@ window.Game = window.Game || {};
     },
 
     techs: {
-      attack_tech:   { name: '攻击科技',   branch: '军事', desc: '全军攻击 +5%/级',       max: 10, labReq: 1, baseCost: { steel: 240, food: 120 }, growth: 1.7, affect: 'atk_all' },
-      defense_tech:  { name: '防御科技',   branch: '军事', desc: '全军防御 +5%/级',       max: 10, labReq: 1, baseCost: { steel: 240, food: 120 }, growth: 1.7, affect: 'def_all' },
-      weapon_range:  { name: '武器射程',   branch: '军事', desc: '全军武器射程 +5%/级',   max: 10, labReq: 2, baseCost: { steel: 280, food: 140, rare: 20 }, growth: 1.8, affect: 'range_all' },
-      cmd_hp:        { name: '军队生命',   branch: '军事', desc: '军队生命 +5%/级',       max: 10, labReq: 3, baseCost: { steel: 300, food: 160, rare: 30 }, growth: 1.8, affect: 'hp_all' },
+      attack_tech:   { name: '攻击科技',   branch: '军事', desc: '全军攻击 +10%/级',       max: 10, labReq: 1, baseCost: { steel: 240, food: 120 }, growth: 1.7, affect: 'atk_all' },
+      defense_tech:  { name: '防御科技',   branch: '军事', desc: '全军防御 +10%/级',       max: 10, labReq: 1, baseCost: { steel: 240, food: 120 }, growth: 1.7, affect: 'def_all' },
+      weapon_range:  { name: '武器射程',   branch: '军事', desc: '全军武器射程 +10%/级',   max: 10, labReq: 2, baseCost: { steel: 280, food: 140, rare: 20 }, growth: 1.8, affect: 'range_all' },
+      cmd_hp:        { name: '军队生命',   branch: '军事', desc: '军队生命 +10%/级',       max: 10, labReq: 3, baseCost: { steel: 300, food: 160, rare: 30 }, growth: 1.8, affect: 'hp_all' },
       inf_load:      { name: '步兵负重',   branch: '后勤', desc: '步兵负重 +20%/级(掠夺)', max: 5, labReq: 2, baseCost: { steel: 200, food: 100 }, growth: 1.6, affect: 'load' },
       arm_engine:    { name: '燃烧引擎',   branch: '机动', desc: '装甲系移动 +5%/级',     max: 10, labReq: 3, baseCost: { steel: 320, oil: 120, rare: 40 }, growth: 1.8, affect: 'spd_arm' },
       air_engine:    { name: '喷气推进',   branch: '机动', desc: '空军移动 +5%/级',         max: 10, labReq: 4, baseCost: { steel: 360, oil: 160, rare: 70 }, growth: 1.9, affect: 'spd_air' },
@@ -205,7 +205,7 @@ window.Game = window.Game || {};
       size: 200,
       viewRadius: 3,
       marchSecPerGrid: 9,
-      banditNames: ['流寇营地', '残兵游勇', '马匪哨所', '叛军据点', '山贼窝点', '溃兵残部', '武装走私队', '雇佣兵营'],
+      banditNames: ['日寇前哨', '日寇营地', '日寇炮楼', '日寇据点', '日寇补给站', '雇佣兵营', '武装走私队', '雇佣兵基地'],
       banditLevels: [
         { lv: 1, army: { infantry: 20 },                              reward: { food: 80,   steel: 120, oil: 60,  rare: 10, gold: 15, exp: 15 } },
         { lv: 2, army: { infantry: 30, motor: 8 },                    reward: { food: 120,  steel: 180, oil: 90,  rare: 15, gold: 20, exp: 25 } },
@@ -213,9 +213,17 @@ window.Game = window.Game || {};
         { lv: 4, army: { ltank: 10, armored: 8 },                     reward: { food: 240,  steel: 360, oil: 200, rare: 40, gold: 45, exp: 60 } },
         { lv: 5, army: { htank: 6, assault: 4, fighter: 4 },          reward: { food: 320,  steel: 480, oil: 280, rare: 60, gold: 70, exp: 90 } },
         { lv: 6, army: { htank: 10, rocket: 6, bomber: 4 },           reward: { food: 440,  steel: 660, oil: 400, rare: 90, gold: 100, exp: 130 } },
-        { lv: 7, army: { htank: 16, rocket: 10, fighter: 10, sub: 4 }, reward: { food: 600,  steel: 900, oil: 560, rare: 130, gold: 150, exp: 180 } },
-        { lv: 8, army: { battleship: 4, carrier: 1, fighter: 20 },    reward: { food: 800,  steel: 1200, oil: 760, rare: 180, gold: 220, exp: 250 } }
-      ],
+        { lv: 7, army: { htank: 16, rocket: 10, fighter: 10, assault: 8 }, reward: { food: 600,  steel: 900, oil: 560, rare: 130, gold: 150, exp: 180 } },
+        { lv: 8, army: { htank: 20, rocket: 12, fighter: 20, bomber: 6 }, reward: { food: 800,  steel: 1200, oil: 760, rare: 180, gold: 220, exp: 250 } }
+      ].map(function (level) {
+        // 与服务端一致：驻军、粮钢油稀金增加，经验保持原值。
+        var army = {}, reward = {};
+        Object.keys(level.army).forEach(function (unit) { army[unit] = level.army[unit] * 3; });
+        Object.keys(level.reward).forEach(function (resource) {
+          reward[resource] = resource === 'exp' ? level.reward[resource] : level.reward[resource] * 3;
+        });
+        return { lv: level.lv, army: army, reward: reward };
+      }),
       npcCityNames: ['汉堡', '华沙', '维也纳', '布鲁塞尔', '阿姆斯特丹', '斯德哥尔摩', '奥斯陆', '哥本哈根', '布拉格', '布达佩斯', '贝尔格莱德', '索菲亚', '布加勒斯特', '赫尔辛基', '都柏林', '里斯本'],
       playerCityNames: ['钢铁洪流', '虎式之巢', '苍穹之眼', '深海利剑', '雷霆要塞', '孤狼营地', '铁血堡垒', '风暴前线', '暗夜哨站', '烈焰军团']
     },
@@ -311,23 +319,23 @@ window.Game = window.Game || {};
     ],
 
     militaryRanks: [
-      { tier: 1,  name: '列兵',   prestige: 0,       baseCap: 1000,  reqGems: {} },
-      { tier: 2,  name: '上等兵', prestige: 200,     baseCap: 1500,  reqGems: { gem_pearl: 3 } },
-      { tier: 3,  name: '下士',   prestige: 500,     baseCap: 2000,  reqGems: { gem_pearl: 5, gem_coral: 2 } },
-      { tier: 4,  name: '中士',   prestige: 1000,    baseCap: 2600,  reqGems: { gem_pearl: 8, gem_coral: 4, gem_glaze: 2 } },
-      { tier: 5,  name: '上士',   prestige: 2000,    baseCap: 3300,  reqGems: { gem_coral: 6, gem_glaze: 4, gem_amber: 2 } },
-      { tier: 6,  name: '军士长', prestige: 3500,    baseCap: 4100,  reqGems: { gem_glaze: 8, gem_amber: 5, gem_agate: 2 } },
-      { tier: 7,  name: '准尉',   prestige: 5500,    baseCap: 5000,  reqGems: { gem_amber: 8, gem_agate: 5, gem_crystal: 2 } },
-      { tier: 8,  name: '少尉',   prestige: 8000,    baseCap: 6000,  reqGems: { gem_agate: 8, gem_crystal: 5, gem_jadeite: 2 } },
-      { tier: 9,  name: '中尉',   prestige: 15000,   baseCap: 7200,  reqGems: { gem_crystal: 8, gem_jadeite: 5, gem_jade: 2 } },
-      { tier: 10, name: '上尉',   prestige: 25000,   baseCap: 8600,  reqGems: { gem_jadeite: 8, gem_jade: 5, gem_nightpearl: 1 } },
-      { tier: 11, name: '少校',   prestige: 45000,   baseCap: 10200, reqGems: { gem_jade: 8, gem_nightpearl: 2, gem_pearl: 15 } },
-      { tier: 12, name: '中校',   prestige: 80000,   baseCap: 12000, reqGems: { gem_nightpearl: 4, gem_coral: 15, gem_glaze: 12 } },
-      { tier: 13, name: '上校',   prestige: 150000,  baseCap: 14000, reqGems: { gem_amber: 15, gem_agate: 12, gem_crystal: 10 } },
-      { tier: 14, name: '大校',   prestige: 300000,  baseCap: 16200, reqGems: { gem_crystal: 15, gem_jadeite: 12, gem_jade: 10 } },
-      { tier: 15, name: '少将',   prestige: 600000,  baseCap: 17500, reqGems: { gem_jadeite: 18, gem_jade: 15, gem_nightpearl: 6 } },
-      { tier: 16, name: '中将',   prestige: 1200000, baseCap: 18800, reqGems: { gem_jade: 20, gem_nightpearl: 10, gem_crystal: 15, gem_pearl: 20 } },
-      { tier: 17, name: '上将',   prestige: 2500000, baseCap: 20000, reqGems: { gem_nightpearl: 15, gem_jade: 25, gem_jadeite: 25, gem_agate: 20 } }
+      { tier: 1,  name: '列兵',   prestige: 0,       baseCap: 50000,  reqGems: {} },
+      { tier: 2,  name: '上等兵', prestige: 200,     baseCap: 100000, reqGems: { gem_pearl: 3 } },
+      { tier: 3,  name: '下士',   prestige: 500,     baseCap: 150000, reqGems: { gem_pearl: 5, gem_coral: 2 } },
+      { tier: 4,  name: '中士',   prestige: 1000,    baseCap: 200000, reqGems: { gem_pearl: 8, gem_coral: 4, gem_glaze: 2 } },
+      { tier: 5,  name: '上士',   prestige: 2000,    baseCap: 250000, reqGems: { gem_coral: 6, gem_glaze: 4, gem_amber: 2 } },
+      { tier: 6,  name: '军士长', prestige: 3500,    baseCap: 300000, reqGems: { gem_glaze: 8, gem_amber: 5, gem_agate: 2 } },
+      { tier: 7,  name: '准尉',   prestige: 5500,    baseCap: 350000, reqGems: { gem_amber: 8, gem_agate: 5, gem_crystal: 2 } },
+      { tier: 8,  name: '少尉',   prestige: 8000,    baseCap: 400000, reqGems: { gem_agate: 8, gem_crystal: 5, gem_jadeite: 2 } },
+      { tier: 9,  name: '中尉',   prestige: 15000,   baseCap: 450000, reqGems: { gem_crystal: 8, gem_jadeite: 5, gem_jade: 2 } },
+      { tier: 10, name: '上尉',   prestige: 25000,   baseCap: 500000, reqGems: { gem_jadeite: 8, gem_jade: 5, gem_nightpearl: 1 } },
+      { tier: 11, name: '少校',   prestige: 45000,   baseCap: 550000, reqGems: { gem_jade: 8, gem_nightpearl: 2, gem_pearl: 15 } },
+      { tier: 12, name: '中校',   prestige: 80000,   baseCap: 600000, reqGems: { gem_nightpearl: 4, gem_coral: 15, gem_glaze: 12 } },
+      { tier: 13, name: '上校',   prestige: 150000,  baseCap: 650000, reqGems: { gem_amber: 15, gem_agate: 12, gem_crystal: 10 } },
+      { tier: 14, name: '大校',   prestige: 300000,  baseCap: 700000, reqGems: { gem_crystal: 15, gem_jadeite: 12, gem_jade: 10 } },
+      { tier: 15, name: '少将',   prestige: 600000,  baseCap: 750000, reqGems: { gem_jadeite: 18, gem_jade: 15, gem_nightpearl: 6 } },
+      { tier: 16, name: '中将',   prestige: 1200000, baseCap: 800000, reqGems: { gem_jade: 20, gem_nightpearl: 10, gem_crystal: 15, gem_pearl: 20 } },
+      { tier: 17, name: '上将',   prestige: 2500000, baseCap: 850000, reqGems: { gem_nightpearl: 15, gem_jade: 25, gem_jadeite: 25, gem_agate: 20 } }
     ]
   };
 

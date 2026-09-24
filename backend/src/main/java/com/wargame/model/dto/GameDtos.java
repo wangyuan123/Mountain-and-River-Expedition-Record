@@ -54,6 +54,8 @@ public class GameDtos {
     public record OfficerAppointRequest(Long officerId, String role) {}
 
     public record OfficerAbandonSkillRequest(Long officerId, Integer skillIdx) {}
+
+    public record OfficerUpgradeSkillRequest(Long officerId, Integer skillIdx, String itemId) {}
     
     public record OfficerLevelUpRequest(Long officerId, Boolean all) {}
 

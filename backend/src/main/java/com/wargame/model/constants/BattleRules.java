@@ -5,10 +5,12 @@ import java.util.Set;
 
 /** 四类攻击决定能否交战和基础火力；倍率只描述同一攻击领域内的专项克制。 */
 public final class BattleRules {
-    public static final String VERSION = "balance-v8-pure-attributes-20260920";
+    public static final String VERSION = "balance-v9-rocket-counters-20260923";
     private static final Set<String> ARTILLERY = Set.of("assault", "rocket", "howitzer", "antitank", "flak");
-    /** 纯属性模式：彻底取消所有兵种克制倍率，交战结果完全由攻防血速射等属性面板决定。 */
-    private static final Map<String, Map<String, Double>> MATCHUPS = Map.of();
+    /** 火箭反装甲、装甲车防空获得专项克制，其余交战沿用纯属性倍率。 */
+    private static final Map<String, Map<String, Double>> MATCHUPS = Map.of(
+            "rocket", Map.of("ltank", 10.0, "htank", 10.0, "armored", 10.0, "assault", 10.0),
+            "armored", Map.of("fighter", 5.0, "bomber", 5.0));
 
     private BattleRules() {}
 
@@ -36,9 +38,9 @@ public final class BattleRules {
         };
     }
 
-    /** 纯属性模式：所有交战倍率恒为 1.0。 */
+    /** 仅指定兵种组合享受专项克制，其他交战仍为 1.0。 */
     public static double multiplier(String attacker, String target) {
-        return 1.0;
+        return MATCHUPS.getOrDefault(attacker, Map.of()).getOrDefault(target, 1.0);
     }
 
     public static boolean ground(String id) {
