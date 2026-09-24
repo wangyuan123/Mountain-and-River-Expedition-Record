@@ -1,10 +1,13 @@
 # Build output and local dependencies
 backend/target/
+target/
 node_modules/
 dist/
 coverage/
 *.class
 javac.*.args
+__pycache__/
+*.pyc
 
 # Credentials and machine-specific settings
 .env

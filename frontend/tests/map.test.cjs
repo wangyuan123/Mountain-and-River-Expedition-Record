@@ -15,7 +15,7 @@ test('camera zoom keeps finger anchor and camera never moves game coordinates',(
   cam.zoom(.8,120,200);const shrunk=cam.world(120,200);
   assert.ok(Math.abs(cam.scale-69.12)<1e-9);
   assert.ok(Math.abs(before.x-shrunk.x)<1e-9);assert.ok(Math.abs(before.y-shrunk.y)<1e-9);
-  cam.zoom(.0001,120,200);assert.equal(cam.scale,48);
+  cam.zoom(.0001,120,200);assert.equal(cam.scale,24);
   const initial=cam.world(120,200);
   assert.ok(Math.abs(before.x-initial.x)<1e-9);assert.ok(Math.abs(before.y-initial.y)<1e-9);
   cam.pan(99999,99999);let b=cam.bounds();assert.ok(b.minX>=0&&b.minY>=0);
@@ -24,6 +24,23 @@ test('camera zoom keeps finger anchor and camera never moves game coordinates',(
   cam.zoom(100,195,275);assert.equal(cam.scale,88);
   cam.x=199;cam.y=199;cam.clamp();const chunks=cam.chunks();assert.ok(chunks.every(v=>v.cx<=12&&v.cy<=12));
   const lastVisible=chunks.findIndex(v=>!v.visible);assert.ok(chunks.slice(lastVisible).every(v=>!v.visible));
+});
+test('map starts slightly smaller and button or pinch can zoom out to half the initial size',()=>{
+  const c=context();load(c,'map-camera.js');
+  for(const factor of [1/1.3,0.5]){
+    const cam=new c.Game.MapCamera(200,100,100);cam.width=1920;cam.height=1080;
+    assert.equal(cam.scale,44);
+    const anchor=cam.world(120,200);
+    for(let step=0;step<4;step++)cam.zoom(factor,120,200);
+    assert.equal(cam.scale,22);
+    const zoomedAnchor=cam.world(120,200);
+    assert.ok(Math.abs(zoomedAnchor.x-anchor.x)<1e-9);
+    assert.ok(Math.abs(zoomedAnchor.y-anchor.y)<1e-9);
+    cam.zoom(factor,120,200);
+    assert.equal(cam.scale,22);
+    cam.zoom(2,120,200);
+    assert.equal(cam.scale,44);
+  }
 });
 test('chunks deduplicate requests, limit concurrency, preserve cached regions on failure',async()=>{
   const c=context();load(c,'map-chunks.js');const resolvers=[];let calls=0;
@@ -73,11 +90,31 @@ test('wild map dispatch renders safely and excludes appointed mayor and commande
   const c=context({DATA:{wildTypes:{grainfield:{name:'粮田',res:'food',icon:'img/map/wild-grainfield.webp'}},resources:{food:{name:'粮食'}},units:{scout:{name:'侦察机'},infantry:{name:'步兵'}},starColor:{}},Core:{state,views:{},armyCap:()=>999999},go(){},toast(){},fmt:String});load(c,'world.js');
   c.Game.World.mapAction({kind:'wild',id:5,type:'grainfield',level:2,x:103,y:105},'conquer');
   const v={innerHTML:''};c.Game.World.renderDispatch(v);
+  assert.match(v.innerHTML,/<button type="button" class="dispatch-stat-item dispatch-cap-action" onclick="Game.World.showArmyCapInfo\(\)"/);
   assert.match(v.innerHTML,/id="dqty_scout"[^>]*value="1"/);
   assert.match(v.innerHTML,/name="dpOfficer" value="1" checked/);
   assert.doesNotMatch(v.innerHTML,/name="dpOfficer" value="2" checked/);
   assert.doesNotMatch(v.innerHTML,/name="dpOfficer" value="3"/);
   assert.doesNotMatch(v.innerHTML,/name="dpOfficer" value="4"/);
+});
+test('dispatch cap card opens a dismissible breakdown for the selected city',()=>{
+  const body={appendChild(mask){mask.parentNode=body;this.mask=mask;},removeChild(mask){mask.parentNode=null;this.mask=null;}};
+  const closeButton={focus(){this.focused=true;}};
+  const c=context({DATA:{},Core:{state:{player:{militaryRank:3}},views:{},buildingLevel:()=>10,getCommanderSkills:()=>({leadership:5}),skillBonus:id=>id==='leadership'?0.2:0,armyCap:()=>300000},fmt:String,getMilitaryRankTierInfo:()=>({name:'下士',baseCap:150000})});
+  c.document={body,createElement:()=>({setAttribute(){},querySelector:()=>closeButton})};
+  load(c,'world.js');
+  c.Game.World.showArmyCapInfo();
+  assert.match(body.mask.innerHTML,/下士/);
+  assert.match(body.mask.innerHTML,/围墙 Lv\.10/);
+  assert.match(body.mask.innerHTML,/三军统帅[^<]*当前 Lv\.5，加成 \+20%/);
+  assert.match(body.mask.innerHTML,/150000 \+ 100000\) × \(1 \+ 20%\) = 300000/);
+  assert.match(body.mask.innerHTML,/市政厅、参谋部和指挥官等级不直接增加上限/);
+  assert.equal(closeButton.focused,true);
+  closeButton.onclick();
+  assert.equal(body.mask,null);
+  c.Game.World.showArmyCapInfo();
+  body.mask.onkeydown({key:'Escape'});
+  assert.equal(body.mask,null);
 });
 test('only conquest and plunder preselect troops; owned wild dispatch starts empty',()=>{
   const state={world:{pos:{x:100,y:100},wildTiles:[]},tech:{},resources:{},reports:[],army:{scout:8,infantry:20},officers:[]};

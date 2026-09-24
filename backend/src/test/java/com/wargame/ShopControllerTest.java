@@ -310,4 +310,54 @@ public class ShopControllerTest extends BaseServiceTest {
         assertEquals(0, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "skillBook_frenzy").orElseThrow().getCount(), "使用后技能书应扣除");
         assertTrue(officerRepository.findById(officer.getId()).orElseThrow().getSkills().contains("\"frenzy\""), "军官应学习全军冲锋");
     }
+
+    @Test
+    @DisplayName("升级军官技能消耗同类型技能书并提升一级")
+    void testUpgradeSkillWithMatchingBook() {
+        Officer officer = createOfficer(player.getId(), "idle", 30, 30, 30);
+        officer.setSkills("[{\"id\":\"frenzy\",\"lv\":1}]");
+        officerRepository.save(officer);
+        long now = System.currentTimeMillis();
+        playerItemRepository.save(new PlayerItem(null, player.getId(), "skillBook_frenzy", 1, now));
+
+        Map<String, Object> result = officerService.upgradeSkill(player.getId(), officer.getId(), 0, "skillBook_frenzy");
+
+        assertTrue((Boolean) result.get("success"));
+        assertEquals(2, result.get("level"));
+        assertTrue(officerRepository.findById(officer.getId()).orElseThrow().getSkills().contains("\"lv\":2"));
+        assertEquals(0, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "skillBook_frenzy").orElseThrow().getCount());
+    }
+
+    @Test
+    @DisplayName("升级军官技能使用错误类型技能书时不扣道具")
+    void testUpgradeSkillRejectsMismatchedBook() {
+        Officer officer = createOfficer(player.getId(), "idle", 30, 30, 30);
+        officer.setSkills("[{\"id\":\"frenzy\",\"lv\":1}]");
+        officerRepository.save(officer);
+        long now = System.currentTimeMillis();
+        playerItemRepository.save(new PlayerItem(null, player.getId(), "skillBook_finance", 1, now));
+
+        Map<String, Object> result = officerService.upgradeSkill(player.getId(), officer.getId(), 0, "skillBook_finance");
+
+        assertFalse((Boolean) result.get("success"));
+        assertEquals(1, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "skillBook_finance").orElseThrow().getCount());
+    }
+
+    @Test
+    @DisplayName("满级技能和缺少技能书时不升级")
+    void testUpgradeSkillRejectsMaxLevelAndMissingBook() {
+        Officer officer = createOfficer(player.getId(), "idle", 30, 30, 30);
+        officer.setSkills("[{\"id\":\"frenzy\",\"lv\":5}]");
+        officerRepository.save(officer);
+        playerItemRepository.save(new PlayerItem(null, player.getId(), "skillBook_frenzy", 1, System.currentTimeMillis()));
+
+        assertFalse((Boolean) officerService.upgradeSkill(player.getId(), officer.getId(), 0, "skillBook_frenzy").get("success"));
+        assertEquals(1, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "skillBook_frenzy").orElseThrow().getCount());
+
+        officer.setSkills("[{\"id\":\"frenzy\",\"lv\":1}]");
+        officerRepository.save(officer);
+        playerItemRepository.tryConsume(player.getId(), "skillBook_frenzy", 1, System.currentTimeMillis());
+        assertFalse((Boolean) officerService.upgradeSkill(player.getId(), officer.getId(), 0, "skillBook_frenzy").get("success"));
+        assertTrue(officerRepository.findById(officer.getId()).orElseThrow().getSkills().contains("\"lv\":1"));
+    }
 }

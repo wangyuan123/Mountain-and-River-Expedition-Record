@@ -26,6 +26,30 @@ window.Game = window.Game || {};
     return m + '分' + (s > 0 ? s + '秒' : '');
   }
 
+  var BEIJING_TIME_FORMATTER = new Intl.DateTimeFormat('zh-CN', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+
+  /**
+   * 将时间固定格式化为北京时间，避免跟随玩家设备的本地时区变化。
+   * @param {Date} value - 要展示的时间点
+   * @returns {string} 中文年月日与 24 小时制时分秒
+   */
+  function formatBeijingTime(value) {
+    var parts = BEIJING_TIME_FORMATTER.formatToParts(value || new Date());
+    var fields = {};
+    parts.forEach(function (part) { fields[part.type] = part.value; });
+    return fields.year + '年' + fields.month + '月' + fields.day + '日 ' +
+      fields.hour + ':' + fields.minute + ':' + fields.second;
+  }
+
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
   function rand(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
 
@@ -52,6 +76,8 @@ window.Game = window.Game || {};
     state: null,
     route: 'home',
     history: [],
+    clockTimer: null,
+    formatBeijingTime: formatBeijingTime,
 
     init: function () {
       this.state = G.state;
@@ -323,23 +349,23 @@ window.Game = window.Game || {};
       var s = this.state;
       var cmd = this.getOfficerByRole('commander');
       var cmdMil = cmd ? cmd.military : 0;
-      var allMul = 1 + 0.05 * (s.tech.attack_tech || 0);
+      var allMul = 1 + 0.10 * (s.tech.attack_tech || 0);
       return allMul * (1 + cmdMil / 100);
     },
 
     defMul: function (cat, isMine) {
       var s = this.state;
-      var allMul = 1 + 0.05 * (s.tech.defense_tech || 0);
+      var allMul = 1 + 0.10 * (s.tech.defense_tech || 0);
       var catMul = 1;
       var wallMul = (isMine && cat !== 'air') ? (1 + 0.05 * (s.buildings.wall || 0)) : 1;
       return allMul * catMul * wallMul;
     },
 
-    rangeMul: function () { return 1 + 0.05 * (this.state.tech.weapon_range || 0); },
+    rangeMul: function () { return 1 + 0.10 * (this.state.tech.weapon_range || 0); },
 
     hpMul: function (cat) {
       var s = this.state;
-      var allMul = 1 + 0.05 * (s.tech.cmd_hp || 0);
+      var allMul = 1 + 0.10 * (s.tech.cmd_hp || 0);
       return allMul;
     },
 
@@ -370,19 +396,15 @@ window.Game = window.Game || {};
       var s = this.state || {};
       var p = s.player || {};
       var rankTier = p.militaryRank || 1;
-      var rankInfo = G.getMilitaryRankTierInfo ? G.getMilitaryRankTierInfo(rankTier) : { baseCap: 1000 };
-      var rankBase = rankInfo.baseCap || 1000;
-
-      var cmd = this.getOfficerByRole('commander');
-      var cmdLv = cmd ? (cmd.level || 1) : 1;
-      var commandLv = Math.max(1, this.buildingLevel('command'));
-      var staffLv = this.buildingLevel('staff');
-      var base = rankBase + commandLv * 1000;
+      var rankInfo = G.getMilitaryRankTierInfo ? G.getMilitaryRankTierInfo(rankTier) : { baseCap: 50000 };
+      var rankBase = rankInfo.baseCap || 50000;
+      // 只有当前城市围墙达到满级才一次性加成，统帅技能继续放大最终基础容量。
+      var wallBonus = this.buildingLevel('wall') >= 10 ? 100000 : 0;
       var leadBonus = 0;
       if (this.skillBonus) {
         leadBonus = Math.max(this.skillBonus('leadership'), this.skillBonus('supply'));
       }
-      return Math.floor(base * (1 + staffLv * 0.10) * (1 + cmdLv * 0.025) * (1 + leadBonus));
+      return Math.floor((rankBase + wallBonus) * (1 + leadBonus));
     },
 
     addExp: function () {},
@@ -507,7 +529,11 @@ window.Game = window.Game || {};
     },
 
     go: function (route) {
-      if (route !== this.route) this.history.push(this.route);
+      if (route !== this.route) {
+        this.history.push(this.route);
+        var view = $('view');
+        if (view) view.scrollTop = 0;
+      }
       this.route = route;
       // 每次重新进入世界地图都以玩家自己的城市为中心，不沿用上次搜索/移动的视角
       if (route === 'world' && this.state && this.state.world) {
@@ -526,6 +552,8 @@ window.Game = window.Game || {};
     back: function () {
       if (this.history.length) this.route = this.history.pop();
       else this.route = 'home';
+      var view = $('view');
+      if (view) view.scrollTop = 0;
       if (G.Main && G.Main.renderNavBar) G.Main.renderNavBar();
       this.render();
     },
@@ -599,8 +627,25 @@ window.Game = window.Game || {};
         if (this.route !== 'home' && this.route !== 'login' && this.route !== 'protection') this.renderBackButton(v);
       }
       var foot = $('footbar');
-      if (foot) foot.innerHTML = this.footer();
+      if (foot) {
+        foot.innerHTML = this.footer();
+        this.startBeijingClock();
+      }
       if (G.Onboarding) G.Onboarding.render();
+    },
+
+    updateBeijingClock: function () {
+      var time = $('beijingTime');
+      if (!time) return;
+      var now = new Date();
+      time.textContent = '北京时间：' + formatBeijingTime(now);
+      time.dateTime = now.toISOString();
+    },
+
+    startBeijingClock: function () {
+      this.updateBeijingClock();
+      if (this.clockTimer) return;
+      this.clockTimer = setInterval(function () { Core.updateBeijingClock(); }, 1000);
     },
 
     renderBackButton: function (view) {
@@ -680,7 +725,7 @@ window.Game = window.Game || {};
       var staticRoutes = {
         shop: 1, depot: 1, depotUse: 1, depotRename: 1,
         officer: 1, officerDetail: 1, academy: 1,
-        tech: 1, settings: 1,
+        tech: 1, settings: 1, battleDefaults: 1,
         reports: 1, reportDetail: 1, battle: 1, report: 1,
         mail: 1, recharge: 1, login: 1,
         guild: 1, map: 1, wild: 1, dispatch: 1
@@ -797,7 +842,8 @@ window.Game = window.Game || {};
         '<p>运营主体：' + escapeHtml(SITE_INFO.operator) + placeholder + '</p>' +
         '<p><a class="footer-icp" href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">' +
         escapeHtml(SITE_INFO.icpNumber) + placeholder + '</a></p>' +
-        (SITE_INFO.isPlaceholder ? '<p class="footer-placeholder">备案信息为演示占位，非真实备案</p>' : '') + '</div>';
+        (SITE_INFO.isPlaceholder ? '<p class="footer-placeholder">备案信息为演示占位，非真实备案</p>' : '') +
+        '<p class="footer-beijing-time-wrap"><time id="beijingTime" class="footer-beijing-time" datetime="">北京时间：加载中…</time></p></div>';
       return html;
     },
 

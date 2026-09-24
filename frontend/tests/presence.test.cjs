@@ -63,3 +63,64 @@ test('guild refresh patches only status, failed refresh is unknown, contact pref
   g.contact(1); assert.equal(composed, true); assert.equal(labels.mailTo.value, '团员');
   g.refreshPresence(); assert.equal(calls, 2);
 });
+
+test('guild leave uses themed confirmation with leader/member copy and submits only after confirmation', async () => {
+  const controls = {
+    '.guild-confirm-cancel': { focus() {} },
+    '.guild-confirm-submit': { focus() {}, disabled: false, textContent: '' },
+    '.guild-confirm-error': { hidden: true, textContent: '' }
+  };
+  let modal, calls = 0, reloads = 0;
+  const trigger = { isConnected: true, focus() {} };
+  const document = {
+    activeElement: trigger,
+    body: { appendChild(node) { modal = node; } },
+    getElementById(id) { return id === 'guildLeaveConfirm' && modal && !modal.removed ? modal : null; },
+    createElement() {
+      return { querySelector: selector => controls[selector], remove() { this.removed = true; } };
+    },
+    addEventListener() {}, removeEventListener() {}
+  };
+  const ctx = vm.createContext({ console, Date, document, setInterval() {},
+    Game: {
+      Core: { views: {} }, escapeHtml: String, toast() {},
+      API: { leaveGuild: async () => { calls++; return { message: '已完成' }; } }
+    }
+  });
+  ctx.window = ctx;
+  load('guild.js', ctx);
+  const guild = ctx.Game.Guild;
+  guild.reload = () => { reloads++; };
+  guild.mine = { joined: true, isLeader: true, name: '测试军团', members: [{}] };
+
+  guild.leave();
+  assert.match(modal.className, /guild-confirm-mask/);
+  assert.match(modal.innerHTML, /解散军团.*确认解散/);
+  assert.doesNotMatch(modal.innerHTML, /确定退出当前军团吗/);
+  guild.leave();
+  controls['.guild-confirm-cancel'].onclick();
+  assert.equal(calls, 0);
+  assert.equal(modal.removed, true);
+
+  guild.mine = { joined: true, isLeader: false, name: '测试军团' };
+  guild.leave();
+  assert.match(modal.innerHTML, /退出军团.*确认退出/);
+  controls['.guild-confirm-submit'].onclick();
+  controls['.guild-confirm-submit'].onclick();
+  await new Promise(setImmediate);
+  assert.equal(calls, 1);
+  assert.equal(reloads, 1);
+  assert.equal(modal.removed, true);
+
+  guild.mine = { joined: true, isLeader: true, name: '测试军团', members: [{}, {}] };
+  ctx.Game.API.leaveGuild = () => Promise.reject(new Error('请先移交团长或移出全部成员'));
+  guild.leave();
+  assert.match(modal.innerHTML, /请先移交团长或移出全部成员/);
+  controls['.guild-confirm-submit'].onclick();
+  await new Promise(setImmediate);
+  assert.equal(modal.removed, undefined);
+  assert.equal(controls['.guild-confirm-submit'].disabled, false);
+  assert.equal(controls['.guild-confirm-error'].hidden, false);
+  assert.match(controls['.guild-confirm-error'].textContent, /请先移交团长/);
+  controls['.guild-confirm-cancel'].onclick();
+});

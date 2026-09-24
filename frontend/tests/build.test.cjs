@@ -314,6 +314,21 @@ test('renderGroup 不再渲染下方冗余的手风琴卡片列表', () => {
   assert.doesNotMatch(dummyEl.innerHTML, /class="bcard"/);
 });
 
+test('资源区与军事区底部入口使用同款文字链接并正确跳转', () => {
+  const { G } = setup();
+  for (const [group, destination, label] of [
+    ['res', 'buildArmy', '军事区'],
+    ['army', 'buildRes', '资源区']
+  ]) {
+    const element = { innerHTML: '' };
+    G.Build.renderGroup(element, group);
+    assert.ok(element.innerHTML.includes('onclick="Game.go(\'' + destination + '\')"'));
+    assert.ok(element.innerHTML.includes('>' + label + ' &gt;</span>'));
+    assert.match(element.innerHTML, /class="build-zone-link zone-head-action" role="button" tabindex="0"/);
+    assert.doesNotMatch(element.innerHTML, /前往(?:资源|军事)/);
+  }
+});
+
 test('点击卡槽建筑弹出详情弹窗，包含资源产出、升级和拆除功能', () => {
   const { G, context } = setup();
   // 1. 测试 slot 1 (Lv.1，未满级，可升级到 Lv.2)
@@ -399,8 +414,8 @@ test('renderBuildingIcon 支持 WebP、SVG 图片路径及 emoji 降级', () => 
   const { G } = setup();
   const modelImg = G.Build.renderBuildingIcon(G.Build.BUILD_ICON.farm, '农田');
   assert.match(modelImg, /src="img\/buildings\/garden\/farm\.webp" alt="农田"/);
-  const svgImg = G.Build.renderBuildingIcon('img/res-steel.svg', '钢铁', 'custom-cls');
-  assert.equal(svgImg, '<img class="b-icon-img custom-cls" src="img/res-steel.svg" alt="钢铁" draggable="false"/>');
+  const svgImg = G.Build.renderBuildingIcon('img/shop.svg', '商城', 'custom-cls');
+  assert.equal(svgImg, '<img class="b-icon-img custom-cls" src="img/shop.svg" alt="商城" draggable="false"/>');
 
   const emojiText = G.Build.renderBuildingIcon('⚔️', '战斗');
   assert.equal(emojiText, '⚔️');

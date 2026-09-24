@@ -57,8 +57,10 @@ class BattleServiceTest {
                 Map.of("fighter", new BattleService.UnitOrder(BattleService.CommandAction.ADVANCE))
         );
 
-        assertEquals(2700, state.attackerPositions().get("fighter"),
-                "战斗机进入防空装甲车射程后必须停在防空封锁线前，不能继续穿越");
+        assertTrue(state.attackerPositions().get("fighter") > 2700,
+                "进入射程后仍应向封锁线前进");
+        assertTrue(state.attackerPositions().get("fighter") <= state.defenderPositions().get("armored"),
+                "战斗机不能越过防空封锁线");
     }
 
     @Test
@@ -89,8 +91,8 @@ class BattleServiceTest {
                 Map.of("fighter", new BattleService.UnitOrder(BattleService.CommandAction.ADVANCE, "fighter"))
         );
 
-        assertTrue(automatic.log().contains("空战敌装甲车"),
-                "未指定目标时，空军应攻击封锁线射程内最近的合法目标");
+        assertTrue(automatic.log().contains("空战敌战斗机"),
+                "未指定目标时，空军应攻击推进后最近的合法目标");
         assertTrue(focused.log().contains("空战敌战斗机"),
                 "玩家指定后，空军应可攻击射程内任意合法单位");
     }

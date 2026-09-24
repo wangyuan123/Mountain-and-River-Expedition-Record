@@ -66,7 +66,7 @@ public record UnitDef(
                 33, 10, 55, 45, 53, 270, 6, 220, 5, 4, 2, 2, "lightfactory",
                 Map.of("steel", 240, "oil", 80, "rare", 25), "armored", "land"));
         m.put("htank", new UnitDef("htank", "重型坦克-斯大林（IS-2）", "arm",
-                50, 15, 65, 50, 63.5, 385, 4, 320, 8, 7, 3, 4, "heavyfactory",
+                50, 15, 65, 50, 63.5, 385, 6, 320, 8, 7, 3, 4, "heavyfactory",
                 Map.of("steel", 450, "oil", 120, "rare", 50), "ltank", "land"));
         m.put("assault", new UnitDef("assault", "突击炮-自行加榴炮（ISU-152）", "arm",
                 34, 30, 65, 167, 28, 200, 4, 750, 4, 5, 2, 2, "factory",

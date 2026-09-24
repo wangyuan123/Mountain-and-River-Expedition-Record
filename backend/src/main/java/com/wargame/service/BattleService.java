@@ -22,6 +22,8 @@ import java.util.concurrent.ThreadLocalRandom;
 public class BattleService {
 
     public static final int MAX_ROUND = 30;
+    /** 仅步兵、轻重坦和特种兵在与当前目标重合时获得贴脸伤害加成。 */
+    private static final Set<String> POINT_BLANK_UNITS = Set.of("infantry", "ltank", "htank", "special");
     private final java.util.function.DoubleSupplier random;
 
     public BattleService() {
@@ -593,7 +595,7 @@ public class BattleService {
             TechCtx attackerCtx,
             TechCtx defenderCtx) {
 
-        // 快照移动前坐标，避免先后计算造成不对称
+        // 双方依据回合开始时的坐标同步机动，接触距离按各自速度分配，避免同回合互相穿越。
         Map<String, Integer> oldMinePos = new LinkedHashMap<>(minePos);
         Map<String, Integer> oldEnemyPos = new LinkedHashMap<>(enemyPos);
 
@@ -621,12 +623,12 @@ public class BattleService {
                 int minDist = advanceDistanceToLivingFoe(Side.MINE, unitId, enemy, oldMinePos, oldEnemyPos, initialDist);
                 if (minDist == Integer.MAX_VALUE) {
                     report.append("我方").append(u.name()).append("(").append(count)
-                            .append(") [前进] 无可攻击目标 原地待命 坐标").append(curX).append("\n");
+                            .append(") [前进] 无存活敌军，保持坐标").append(curX).append("\n");
                     continue;
                 }
-                int range = effectiveRange(unitId, attackerCtx);
-                int neededDist = Math.max(0, minDist - range);
-                int step = Math.min(rawStep, neededDist);
+                int step = Math.min(rawStep, minDist);
+                step = limitAdvanceAtContact(Side.MINE, unitId, step, rawStep, enemy,
+                        oldMinePos, oldEnemyPos, initialDist, defenderOrders, defenderCtx);
                 step = Math.min(step, Math.max(0, initialDist - curX));
                 int newX = curX + step;
                 minePos.put(unitId, newX);
@@ -636,7 +638,7 @@ public class BattleService {
                             .append(" (距敌").append(minDist - step).append(")\n");
                 } else {
                     report.append("我方").append(u.name()).append("(").append(count)
-                            .append(") [前进] 已进入射程(距敌").append(minDist).append(") 原地保持 坐标").append(newX).append("\n");
+                            .append(") [前进] 已贴脸 坐标").append(newX).append("\n");
                 }
             } else if (action == CommandAction.RETREAT) {
                 int step = Math.min(rawStep, curX);
@@ -679,12 +681,12 @@ public class BattleService {
                 int minDist = advanceDistanceToLivingFoe(Side.ENEMY, unitId, mine, oldMinePos, oldEnemyPos, initialDist);
                 if (minDist == Integer.MAX_VALUE) {
                     report.append("敌方").append(u.name()).append("(").append(count)
-                            .append(") [前进] 无可攻击目标 原地待命 坐标").append(curX).append("\n");
+                            .append(") [前进] 无存活敌军，保持坐标").append(curX).append("\n");
                     continue;
                 }
-                int range = effectiveRange(unitId, defenderCtx);
-                int neededDist = Math.max(0, minDist - range);
-                int step = Math.min(rawStep, neededDist);
+                int step = Math.min(rawStep, minDist);
+                step = limitAdvanceAtContact(Side.ENEMY, unitId, step, rawStep, mine,
+                        oldMinePos, oldEnemyPos, initialDist, attackerOrders, attackerCtx);
                 step = Math.min(step, curX);
                 int newX = curX - step;
                 enemyPos.put(unitId, newX);
@@ -694,7 +696,7 @@ public class BattleService {
                             .append(" (距我").append(minDist - step).append(")\n");
                 } else {
                     report.append("敌方").append(u.name()).append("(").append(count)
-                            .append(") [前进] 已进入射程(距我").append(minDist).append(") 原地保持 坐标").append(newX).append("\n");
+                            .append(") [前进] 已贴脸 坐标").append(newX).append("\n");
                 }
             } else if (action == CommandAction.RETREAT) {
                 int step = Math.min(rawStep, Math.max(0, initialDist - curX));
@@ -772,6 +774,7 @@ public class BattleService {
                     armorLearningActive, armorSources, counterArmorSources, focusTarget, false,
                     movementReportStart);
         }
+        reorderMovementLogsByCombatOrder(report, movementReportStart, order);
     }
 
     /**
@@ -855,8 +858,48 @@ public class BattleService {
         return true;
     }
 
+    private void reorderMovementLogsByCombatOrder(StringBuilder report, int movementReportStart,
+                                                  List<ActionEntry> order) {
+        if (movementReportStart < 0 || movementReportStart >= report.length() || order.isEmpty()) return;
+
+        String[] lines = report.substring(movementReportStart).split("\\n", -1);
+        List<Integer> movementLineIndexes = new ArrayList<>();
+        List<String> movementLines = new ArrayList<>();
+        for (int index = 0; index < lines.length; index++) {
+            if (isMovementLogLine(lines[index])) {
+                movementLineIndexes.add(index);
+                movementLines.add(lines[index]);
+            }
+        }
+        if (movementLines.size() < 2) return;
+
+        Map<String, Integer> combatRanks = new HashMap<>();
+        for (int index = 0; index < order.size(); index++) {
+            ActionEntry action = order.get(index);
+            UnitStats unit = getStats(action.id);
+            if (unit == null) continue;
+            String prefix = (action.side == Side.MINE ? "我方" : "敌方") + unit.name() + "(";
+            combatRanks.putIfAbsent(prefix, index);
+        }
+        movementLines.sort(Comparator.comparingInt(line -> combatRanks.getOrDefault(
+                movementLogPrefix(line), Integer.MAX_VALUE)));
+        for (int index = 0; index < movementLineIndexes.size(); index++) {
+            lines[movementLineIndexes.get(index)] = movementLines.get(index);
+        }
+        report.replace(movementReportStart, report.length(), String.join("\n", lines));
+    }
+
+    private boolean isMovementLogLine(String line) {
+        return line.contains(" [前进] ") || line.contains(" [后退] ") || line.contains(" [待命] ");
+    }
+
+    private String movementLogPrefix(String line) {
+        int countStart = line.indexOf('(');
+        return countStart < 0 ? line : line.substring(0, countStart + 1);
+    }
+
     /**
-     * 执行单个单位的交火逻辑。
+     * 执行单个单位的交火逻辑；贴脸加成按当前目标距离在最终直接伤害上结算，不影响反击。
      */
     private void fireUnitCombat(String unitId,
                                 Map<String, Integer> myArmy,
@@ -930,7 +973,10 @@ public class BattleService {
             double learnedAttack = learningBonus(unitId, target, actCtx, foeCtx,
                     learningActive, learningSources, isCounter);
             targetAttack += learnedAttack;
-            double damagePerAction = targetAttack * cm * 100.0 / (100.0 + 5 * def);
+            boolean pointBlank = POINT_BLANK_UNITS.contains(unitId)
+                    && getUnitDistToFoe(side, unitId, target, minePos, enemyPos, initialDist) == 0;
+            double damagePerAction = targetAttack * cm * 100.0 / (100.0 + 5 * def)
+                    * (pointBlank ? 1.5 : 1.0);
             double hpPer = Math.max(1, foeCtx == null ? tU.hp() : effHp(target, foeCtx.tech));
             int beforeKill = foeArmy.getOrDefault(target, 0);
             double targetHp = hpPer * beforeKill;
@@ -956,6 +1002,7 @@ public class BattleService {
             List<String> tags = new ArrayList<>();
             if (cm > 1.0001) tags.add("倍率×" + cm + " 相克");
             else if (cm < 0.9999) tags.add("倍率×" + cm + " 火力受限");
+            if (pointBlank) tags.add("贴脸×1.5");
             if ("htank".equals(target)) tags.add("前排承伤");
             if (firstTarget && focusTarget != null && focusTarget.equals(target)) tags.add("指定集火");
             if (pierce > 0) tags.add("破甲" + percent(pierce) + "%");
@@ -968,8 +1015,10 @@ public class BattleService {
             attackOutcome.append(" 伤害").append(Math.round(appliedDamage)).append(" 击毁").append(kills)
                     .append(" 剩余攻击额度").append(Math.round(100 * remainingActions / totalActions)).append("%");
             // 仅把前进后的首次开火接到移动行，余伤与反击仍按交火实际顺序单独记录。
+            String combatPrefix = sidePrefix + u.name() + "(" + count + ")";
+            String attackDetails = attackOutcome.substring(combatPrefix.length());
             if (!firstTarget || !appendCombatOutcomeToMovementLog(report, movementReportStart, side, u.name(),
-                    attackOutcome.toString(), true)) {
+                    attackDetails, true)) {
                 report.append(attackOutcome).append("\n");
             }
 
@@ -1085,11 +1134,11 @@ public class BattleService {
 
         String target = pickCombatTarget(unitId, side, foeArmy, minePos, enemyPos, initialDist, actCtx, null);
         if (target == null) {
-            int minDist = minDistanceToLivingFoe(side, unitId, foeArmy, minePos, enemyPos, initialDist);
+            int minDist = advanceDistanceToLivingFoe(side, unitId, foeArmy, minePos, enemyPos, initialDist);
             if (minDist == Integer.MAX_VALUE) return false;
             if (!u.autoAdvance()) return false;
             double spd = actCtx != null ? effSpd(unitId, actCtx.tech, actCtx.skills) : u.spd();
-            int step = Math.min((int) (spd * 50), Math.max(0, minDist - effectiveRange(unitId, actCtx)));
+            int step = Math.min((int) (spd * 50), minDist);
             if (step <= 0) return false;
             if (side == Side.MINE) {
                 minePos.put(unitId, minePos.getOrDefault(unitId, 0) + step);
@@ -1252,18 +1301,18 @@ public class BattleService {
     /**
      * 攻击倍率 - 对应 JS Core.atkMul(cat)
      * <p>
-     * (1 + 0.05*attack_tech) * (1 + cmdMil/100)
+     * (1 + 0.10*attack_tech) * (1 + cmdMil/100)，科技满级10级时提供100%基础攻击加成
      */
     private double atkMul(String cat, Map<String, Integer> tech, int commanderMil) {
         int cmdAttack = tech.getOrDefault("attack_tech", 0);
-        double allMul = 1 + 0.05 * cmdAttack;
+        double allMul = 1 + 0.10 * cmdAttack;
         return allMul * (1 + commanderMil / 100.0);
     }
 
     /**
      * 防御倍率 - 对应 JS Core.defMul(cat, isMine)
      * <p>
-     * (1 + 0.05*defense_tech) * (1 + cmdDef/100) * wallMul
+     * (1 + 0.10*defense_tech) * (1 + cmdDef/100) * wallMul
      * wallMul = (isMine && cat != 'air') ? (1 + 0.05*wall) : 1
      */
     private double defMul(String cat, Map<String, Integer> tech, int wallLevel, boolean isMine) {
@@ -1272,7 +1321,7 @@ public class BattleService {
 
     private double defMul(String cat, Map<String, Integer> tech, int wallLevel, boolean isMine, int commanderDef) {
         int cmdDefense = tech.getOrDefault("defense_tech", 0);
-        double allMul = 1 + 0.05 * cmdDefense;
+        double allMul = 1 + 0.10 * cmdDefense;
         if (commanderDef > 0) {
             allMul *= (1 + commanderDef / 100.0);
         }
@@ -1284,11 +1333,11 @@ public class BattleService {
     /**
      * 生命倍率 - 对应 JS Core.hpMul(cat)
      * <p>
-     * 1 + 0.05*cmd_hp
+     * 1 + 0.10*cmd_hp
      */
     private double hpMul(String cat, Map<String, Integer> tech) {
         int cmdHp = tech.getOrDefault("cmd_hp", 0);
-        return 1 + 0.05 * cmdHp;
+        return 1 + 0.10 * cmdHp;
     }
 
     /**
@@ -1505,8 +1554,8 @@ public class BattleService {
 
     /**
      * 计算单位本回合为机动而追逐的目标距离。
-     * 地面与海军向最近可攻击敌军接敌；空军优先停在敌方空军或防空装甲车的封锁线前，
-     * 未发现封锁线时改为向敌军纵深推进。
+     * 地面与海军向最近存活敌军接敌；空军向最近的空中封锁线推进，
+     * 未发现封锁线时改为向敌军纵深推进。射程只限制开火，不限制前进。
      *
      * @param side 当前行动方。
      * @param unitId 行动兵种 ID。
@@ -1514,17 +1563,59 @@ public class BattleService {
      * @param minePos 我方坐标。
      * @param enemyPos 敌方坐标。
      * @param initialDist 战场初始宽度。
-     * @return 本回合推进所依据的距离；无有效目标时返回 {@link Integer#MAX_VALUE}。
+     * @return 本回合推进所依据的距离；无存活敌军时返回 {@link Integer#MAX_VALUE}。
      */
     private int advanceDistanceToLivingFoe(Side side, String unitId, Map<String, Integer> foeArmy,
                                            Map<String, Integer> minePos, Map<String, Integer> enemyPos, int initialDist) {
         if (!isAirUnit(unitId)) {
-            return minDistanceToLivingFoe(side, unitId, foeArmy, minePos, enemyPos, initialDist);
+            return nearestLivingFoeDistance(side, unitId, foeArmy, minePos, enemyPos, initialDist);
         }
         int blockerDistance = nearestAirBlockerDistance(side, unitId, foeArmy, minePos, enemyPos, initialDist);
-        return blockerDistance != Integer.MAX_VALUE
-                ? blockerDistance
-                : maxDistanceToLivingFoe(side, unitId, foeArmy, minePos, enemyPos, initialDist);
+        if (blockerDistance != Integer.MAX_VALUE) return blockerDistance;
+        int distance = maxDistanceToLivingFoe(side, unitId, foeArmy, minePos, enemyPos, initialDist);
+        return distance != Integer.MAX_VALUE
+                ? distance
+                : nearestLivingFoeDistance(side, unitId, foeArmy, minePos, enemyPos, initialDist);
+    }
+
+    /** 双方同时前进时按速度分摊接触前的剩余距离；空军只被敌方空军与防空装甲车挡住。 */
+    private int limitAdvanceAtContact(Side side, String unitId, int step, int rawStep,
+                                      Map<String, Integer> foeArmy, Map<String, Integer> minePos,
+                                      Map<String, Integer> enemyPos, int initialDist,
+                                      Map<String, UnitOrder> foeOrders, TechCtx foeCtx) {
+        for (Map.Entry<String, Integer> entry : foeArmy.entrySet()) {
+            String foeId = entry.getKey();
+            if (entry.getValue() == null || entry.getValue() <= 0 || getStats(foeId) == null) continue;
+            if (isAirUnit(unitId) && !isAirBlocker(foeId)) continue;
+            int distance = getUnitDistToFoe(side, unitId, foeId, minePos, enemyPos, initialDist);
+            UnitOrder order = foeOrders != null ? foeOrders.get(foeId) : null;
+            CommandAction action = order != null ? order.action() : defaultAction(foeId);
+            int foeStep = action == CommandAction.ADVANCE
+                    ? (int) ((foeCtx != null
+                    ? effSpd(foeId, foeCtx.tech, foeCtx.skills) : getStats(foeId).spd()) * 50)
+                    : 0;
+            int limit = distance;
+            if (foeStep > 0 && rawStep > 0) {
+                long speedSum = (long) rawStep + foeStep;
+                long share = (long) distance * rawStep;
+                limit = (int) ((share + (side == Side.MINE ? speedSum - 1 : 0)) / speedSum);
+            }
+            step = Math.min(step, limit);
+        }
+        return step;
+    }
+
+    /** 默认前进单位即使没有当前可攻击领域，也继续向最近存活敌军接近。 */
+    private int nearestLivingFoeDistance(Side side, String unitId, Map<String, Integer> foeArmy,
+                                         Map<String, Integer> minePos, Map<String, Integer> enemyPos,
+                                         int initialDist) {
+        int minDist = Integer.MAX_VALUE;
+        for (Map.Entry<String, Integer> entry : foeArmy.entrySet()) {
+            if (entry.getValue() == null || entry.getValue() <= 0 || getStats(entry.getKey()) == null) continue;
+            int distance = getUnitDistToFoe(side, unitId, entry.getKey(), minePos, enemyPos, initialDist);
+            if (distance < minDist) minDist = distance;
+        }
+        return minDist;
     }
 
     /**
@@ -1613,7 +1704,7 @@ public class BattleService {
     private int effectiveRange(String id, TechCtx ctx) {
         UnitStats u = getStats(id);
         return u == null ? 0 : (int) Math.floor(u.range()
-                * (1 + 0.05 * (ctx == null ? 0 : ctx.tech.getOrDefault("weapon_range", 0))));
+                * (1 + 0.10 * (ctx == null ? 0 : ctx.tech.getOrDefault("weapon_range", 0))));
     }
 
     /**

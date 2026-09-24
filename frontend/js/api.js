@@ -300,6 +300,14 @@ window.Game = window.Game || {};
 
     // ==================== 军队 ====================
 
+    getBattleDefaults: function () {
+      return client.get('/game/army/battle-defaults', { noCache: true });
+    },
+
+    saveBattleDefaults: function (defaults) {
+      return client.post('/game/army/battle-defaults', defaults);
+    },
+
     recruit: function (unit, count) {
       return client.post('/game/army/recruit', { unit: unit, count: count })
         .then(function (data) {
@@ -402,6 +410,14 @@ window.Game = window.Game || {};
 
     abandonSkill: function (officerId, skillIdx) {
       return client.post('/game/officer/abandon-skill', { officerId: officerId, skillIdx: skillIdx })
+        .then(function (data) {
+          if (data && data.state) applyState(data.state);
+          return data;
+        });
+    },
+
+    upgradeSkill: function (officerId, skillIdx, itemId) {
+      return client.post('/game/officer/upgrade-skill', { officerId: officerId, skillIdx: skillIdx, itemId: itemId })
         .then(function (data) {
           if (data && data.state) applyState(data.state);
           return data;

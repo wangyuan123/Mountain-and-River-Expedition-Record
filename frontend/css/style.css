@@ -715,8 +715,8 @@ select.qty { width: 80px; cursor: pointer; }
   flex-shrink: 0;
 }
 .res-icon-img {
-  width: 16px;
-  height: 16px;
+  width: 24px;
+  height: 24px;
   object-fit: contain;
   vertical-align: middle;
   flex-shrink: 0;
@@ -773,6 +773,10 @@ select.qty { width: 80px; cursor: pointer; }
   text-shadow: none;
 }
 .res-rate.neg { color: #d36a4a; }
+
+@media (max-width: 380px) {
+  .res-grid { grid-template-columns: 1fr; }
+}
 
 /* 首页军队网格 */
 .army-grid {
@@ -973,7 +977,7 @@ select.qty { width: 80px; cursor: pointer; }
 /* 紧凑卡槽：手机一行容纳更多建筑，空地与已建地块保持同高。 */
 .slot-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(68px, 1fr));
   gap: 4px;
   margin-top: 4px;
 }
@@ -983,7 +987,7 @@ select.qty { width: 80px; cursor: pointer; }
   align-items: center;
   justify-content: flex-start;
   min-width: 0;
-  height: 108px;
+  height: 96px;
   padding: 4px 3px;
   border-radius: 6px;
   border: 1px solid #c9b27a;
@@ -1049,10 +1053,10 @@ select.qty { width: 80px; cursor: pointer; }
   box-shadow: 0 0 5px rgba(212, 136, 6, .35);
 }
 .slot-card-icon {
-  font-size: 20px;
+  font-size: 18px;
   line-height: 1;
-  width: 48px;
-  height: 48px;
+  width: 36px;
+  height: 36px;
   margin: 0;
   display: flex;
   align-items: center;
@@ -1060,8 +1064,8 @@ select.qty { width: 80px; cursor: pointer; }
   flex-shrink: 0;
 }
 .slot-card-icon .b-icon-img {
-  width: 48px;
-  height: 48px;
+  width: 36px;
+  height: 36px;
   object-fit: contain;
   display: block;
 }
@@ -1109,12 +1113,12 @@ select.qty { width: 80px; cursor: pointer; }
   border-style: solid;
 }
 .slot-card-plus {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 800;
   color: var(--accent, #526b4d);
-  line-height: 48px;
-  width: 48px;
-  height: 48px;
+  line-height: 36px;
+  width: 36px;
+  height: 36px;
   margin: 0;
   display: flex;
   align-items: center;
@@ -1754,6 +1758,27 @@ button.drawer-rank-tip:hover { border-color: var(--accent); }
   justify-content: center;
 }
 .nav-pages { display: flex; justify-content: center; gap: 4px; }
+
+.battle-defaults-panel { max-width: 880px; margin: 12px auto; }
+.battle-defaults-head, .battle-defaults-row {
+  display: grid;
+  grid-template-columns: minmax(170px, 2fr) repeat(2, minmax(120px, 1fr));
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+}
+.battle-defaults-head { font-weight: bold; color: var(--muted); }
+.battle-defaults-row { border-top: 1px solid var(--line); }
+.battle-defaults-name { overflow-wrap: anywhere; }
+.battle-defaults-row select { width: 100%; min-height: 36px; }
+.battle-defaults-mobile-label { display: none; }
+.battle-defaults-footer { display: flex; align-items: center; gap: 14px; margin: 16px 10px 4px; }
+@media (max-width: 560px) {
+  .battle-defaults-head { display: none; }
+  .battle-defaults-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .battle-defaults-name { grid-column: 1 / -1; }
+  .battle-defaults-mobile-label { display: block; font-size: 12px; color: var(--muted); }
+}
 
 /* 页面级返回入口：统一出现在每个功能 Tab 内容顶部，方便触屏操作（轻量文字超链接样式） */
 .page-backbar {
@@ -2690,6 +2715,19 @@ body.theme-classic .unit-card-details,
   flex-direction: column;
   gap: 2px;
 }
+.dispatch-cap-action {
+  appearance: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.dispatch-cap-action:hover,
+.dispatch-cap-action:focus-visible {
+  border-color: var(--accent, #2b6cb0);
+  outline: 2px solid var(--accent, #2b6cb0);
+  outline-offset: 1px;
+}
+.dispatch-cap-modal { max-width: 440px; }
 .dispatch-stat-item.highlight {
   background: rgba(49, 130, 206, 0.07);
   border-color: rgba(49, 130, 206, 0.28);
@@ -2875,6 +2913,7 @@ body.theme-classic .unit-card-details,
 .report-card { background: #fbf6ea; border: 1px solid #d8c890; border-left: 4px solid var(--accent); border-radius: 8px; }
 .report-card.win, .report-board.win { border-color: #9cb78f; }
 .report-card.lose, .report-board.lose { border-color: #d6a39d; }
+.report-card.draw, .report-board.draw { border-color: #c9b27a; }
 .report-card.unread { background: #fff8df; border-color: #c9a44a; box-shadow: inset 3px 0 0 #c9a44a, 0 2px 6px rgba(120,90,30,.10); }
 .report-card.unread.win, .report-card.unread.lose { box-shadow: inset 3px 0 0 #c9a44a, 0 2px 6px rgba(120,90,30,.10); }
 .report-board { background: #fbf6ea; border: 1px solid #d8c890; border-radius: 8px; }
@@ -2885,10 +2924,12 @@ body.theme-classic .unit-card-details,
 .rc-result.draw { color: #6a4f24; background: #faf0d8; border: 1px solid #c9b27a; }
 .rc-result.w { background: var(--accent-soft); color: var(--accent-dark); }
 .rc-result.l { background: var(--danger-soft); color: #914039; }
+.rb-res-badge.d { background: #faf0d8; color: #6a4f24; border: 1px solid #c9b27a; }
 .rc-line, .rb-line, .rb-narrative, .rb-unit { color: var(--muted); }
 .rb-subject, .rb-divider { border-color: var(--line); }
 .rb-side.w { color: var(--accent); }
 .rb-side.l { color: var(--danger); }
+.rb-side.d { color: #8a6b32; }
 .rb-unit.mine { color: var(--accent); }
 .rb-unit.enemy { color: var(--danger); }
 .rb-settlement { border-color: #c5d5e8; background: #f8fbff; }
@@ -3533,6 +3574,9 @@ body.theme-classic .unit-card-details,
   line-height: 1.2;
 }
 .army-dispatch-go { font-size: 11.5px; }
+.build-zone-link-wrap { display: flex; justify-content: flex-end; }
+.build-zone-link { margin: 0 4px 8px 0; color: var(--accent); font-size: 11.5px; }
+.build-zone-link:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 .zone-head-action:hover {
   text-decoration: underline;
   filter: brightness(1.15);
@@ -3572,13 +3616,15 @@ body.theme-classic .unit-card-details,
   border-radius: 8px;
   padding: 8px 10px;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px 12px;
-  max-height: 360px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
-  align-content: start;
+  grid-auto-flow: column;
+  grid-auto-columns: clamp(160px, 32vw, 220px);
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: auto;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
 }
 .army-summary-item {
   display: grid;
@@ -3594,6 +3640,7 @@ body.theme-classic .unit-card-details,
   border-bottom: 1px dashed var(--line, #e2e8f0);
   cursor: pointer;
   transition: background-color .12s ease;
+  scroll-snap-align: start;
 }
 .army-summary-item:hover,
 .army-summary-item:focus-visible {
@@ -3612,8 +3659,8 @@ body.theme-classic .unit-card-details,
   height: 64px;
 }
 .army-summary-icon-img {
-  width: 100%;
-  height: 100%;
+  width: 74%;
+  height: 74%;
   object-fit: contain;
   vertical-align: middle;
   display: block;
@@ -3637,7 +3684,6 @@ body.theme-classic .unit-card-details,
   font-size: 12px;
 }
 @media (max-width: 420px) {
-  .army-summary { gap: 6px 8px; }
   .army-summary-item { grid-template-columns: 56px minmax(0, 1fr); column-gap: 4px; }
   .army-summary-icon { width: 56px; height: 56px; }
 }
@@ -3775,53 +3821,10 @@ body.theme-classic .unit-card-details,
   transition: width .3s;
 }
 
-/* ===== 待办事项 ===== */
-.todo-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-bottom: 14px;
-  background: var(--surface, #ffffff);
-  border: 1px solid var(--line, #e2e8f0);
-  border-radius: 8px;
-  padding: 6px;
-}
-.todo-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 10px;
-  background: var(--surface, #ffffff);
-  border: 1px solid var(--line, #e2e8f0);
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 12px;
-  color: var(--ink, #1f2937);
-  transition: all .12s;
-}
-.todo-item:hover { background: var(--surface-muted, #f8fafc); border-color: var(--accent, #4a7bb5); }
-.todo-item.urgent {
-  background: #fef2f2;
-  border-color: #ef4444;
-  animation: todoPulse 1.5s ease-in-out infinite;
-}
 @keyframes todoPulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
   50%      { box-shadow: 0 0 0 4px rgba(239,68,68,.15); }
 }
-.todo-item .todo-icon { font-size: 16px; line-height: 1; flex-shrink: 0; }
-.todo-item .todo-text { flex: 1; line-height: 1.4; }
-.todo-item .todo-arrow { font-size: 14px; color: var(--muted, #94a3b8); flex-shrink: 0; }
-.todo-more {
-  text-align: center;
-  font-size: 11px;
-  color: var(--accent, #004499);
-  padding: 6px;
-  cursor: pointer;
-  font-weight: 600;
-}
-.todo-more:hover { filter: brightness(1.1); }
-
 /* ===== 战情速递 ===== */
 .alert-grid {
   display: grid;
@@ -6831,33 +6834,138 @@ body.theme-classic .unit-card-details,
   align-items: center;
   justify-content: center;
   gap: 1px;
-  width: 44px;
-  min-width: 44px;
-  height: 34px;
+  width: 50px;
+  min-width: 50px;
+  height: 35px;
   padding: 0;
   font-size: 9px;
   line-height: 1.2;
   transform: translateX(-50%);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.tactical-marker:hover {
+  z-index: 5;
+  transform: translateX(-50%) scale(1.08);
 }
 
-.tactical-marker .tactical-unit-icon { width: 16px; height: 16px; overflow: hidden; border-radius: 3px; }
+.tactical-marker .tactical-unit-icon { width: 15px; height: 15px; overflow: hidden; border-radius: 3px; }
 /* 模型原稿统一朝左；左侧我军水平镜像后，敌我车头与火力方向相向。 */
 .tactical-marker.mine .tactical-unit-icon .unit-icon-img {
   transform: scaleX(-1);
   transform-origin: center;
 }
 .tactical-marker b { width: 100%; color: #fff; font-size: 8px; font-variant-numeric: tabular-nums; letter-spacing: -0.25px; line-height: 1; text-align: center; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85); white-space: nowrap; }
+
+.tactical-marker-range {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  font-size: 7.5px;
+  line-height: 9px;
+  border-radius: 2px;
+  color: #f1f5f9;
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.2px;
+}
+.tactical-marker-range.in-range {
+  color: #bbf7d0;
+  background: rgba(22, 101, 52, 0.9);
+  border-color: #4ade80;
+  font-weight: 700;
+  box-shadow: 0 0 5px rgba(74, 222, 128, 0.55);
+}
+.tactical-marker.foe .tactical-marker-range.in-range {
+  color: #fecaca;
+  background: rgba(153, 27, 27, 0.9);
+  border-color: #f87171;
+  box-shadow: 0 0 5px rgba(248, 113, 113, 0.55);
+}
+.tactical-marker-range.no-range {
+  color: #94a3b8;
+  background: rgba(30, 41, 59, 0.6);
+  border-color: transparent;
+}
+
 /* 敌我使用同一顶部基线与行距，统一行号即可让同兵种横向对齐。 */
 .tactical-marker.mine,
 .tactical-marker.foe { top: calc(78px + var(--marker-row, 0) * 37px); }
-.tactical-distance { position: absolute; bottom: 8px; left: 50%; color: rgba(255, 255, 255, 0.9); font-size: 11px; transform: translateX(-50%); }
+
+.tactical-range-beam {
+  position: absolute;
+  z-index: 1;
+  height: 22px;
+  top: calc(78px + var(--marker-row, 0) * 37px + 6px);
+  border-radius: 4px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  pointer-events: auto;
+  transition: all 0.2s ease;
+}
+.tactical-range-beam.mine {
+  background: linear-gradient(90deg, rgba(37, 99, 235, 0.25) 0%, rgba(59, 130, 246, 0.12) 80%, rgba(96, 165, 250, 0.4) 100%);
+  border-top: 1px dashed rgba(96, 165, 250, 0.55);
+  border-bottom: 1px dashed rgba(96, 165, 250, 0.55);
+  border-right: 3px solid #60a5fa;
+  justify-content: flex-end;
+  padding-right: 5px;
+}
+.tactical-range-beam.mine.in-range {
+  background: linear-gradient(90deg, rgba(34, 197, 94, 0.32) 0%, rgba(74, 222, 128, 0.18) 80%, rgba(74, 222, 128, 0.5) 100%);
+  border-top: 1px solid rgba(74, 222, 128, 0.75);
+  border-bottom: 1px solid rgba(74, 222, 128, 0.75);
+  border-right: 3px solid #4ade80;
+  box-shadow: 0 0 8px rgba(74, 222, 128, 0.35);
+}
+.tactical-range-beam.foe {
+  background: linear-gradient(270deg, rgba(220, 38, 38, 0.25) 0%, rgba(239, 68, 68, 0.12) 80%, rgba(248, 113, 113, 0.4) 100%);
+  border-top: 1px dashed rgba(248, 113, 113, 0.55);
+  border-bottom: 1px dashed rgba(248, 113, 113, 0.55);
+  border-left: 3px solid #f87171;
+  justify-content: flex-start;
+  padding-left: 5px;
+}
+.tactical-range-beam.foe.in-range {
+  background: linear-gradient(270deg, rgba(220, 38, 38, 0.35) 0%, rgba(239, 68, 68, 0.2) 80%, rgba(248, 113, 113, 0.5) 100%);
+  border-top: 1px solid rgba(248, 113, 113, 0.75);
+  border-bottom: 1px solid rgba(248, 113, 113, 0.75);
+  border-left: 3px solid #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.35);
+}
+.range-beam-label {
+  font-size: 8px;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.tactical-distance { position: absolute; bottom: 8px; left: 50%; color: rgba(255, 255, 255, 0.9); font-size: 11px; transform: translateX(-50%); white-space: nowrap; }
 
 .tactical-command-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .tactical-command-shortcuts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 5px; }
 .tactical-command-shortcuts .btn { white-space: nowrap; }
 .tactical-orders { display: grid; grid-template-columns: repeat(auto-fill, minmax(236px, 1fr)); gap: 8px; }
 .tactical-order-card { padding: 9px; border: 1px solid #b9c8d8; border-radius: 8px; background: #f7faff; }
-.tactical-order-name { margin-bottom: 7px; color: #213f64; font-size: 13px; }
+.tactical-order-header { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 4px; }
+.tactical-order-header .tactical-order-name { margin-bottom: 0; }
+.tactical-order-name { color: #213f64; font-size: 13px; font-weight: 600; }
+.tactical-order-metrics { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
+.tactical-metric-pill { display: inline-flex; align-items: center; gap: 2px; padding: 1px 5px; font-size: 11px; border-radius: 4px; line-height: 1.2; }
+.tactical-metric-pill.range { background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; font-weight: 600; }
+.tactical-metric-pill.spd { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+.tactical-metric-pill .tech-tag { color: #0284c7; font-size: 10px; font-weight: 700; margin-left: 2px; }
+.tactical-metric-pill.spd .tech-tag { color: #059669; }
+.tactical-order-range-status { margin-bottom: 7px; padding: 3px 6px; border-radius: 4px; font-size: 11px; line-height: 1.3; }
+.tactical-order-range-status.in-range { background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 600; }
+.tactical-order-range-status.out-range { background: #f8fafc; color: #64748b; border: 1px solid #cbd5e1; }
+.tactical-order-range-status.none { background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; }
 .tactical-actions { display: flex; gap: 5px; margin-bottom: 8px; }
 .tactical-actions .btn { flex: 1; padding: 5px 3px; border: 1px solid #9fb0c3; background: #fff; color: #36516f; font-weight: 600; }
 .tactical-actions .btn.ok,
@@ -6880,9 +6988,10 @@ body.theme-classic .unit-card-details,
 @media (max-width: 520px) {
   .rb-settlement-grid { grid-template-columns: 1fr; }
   .tactical-map { min-height: 285px; }
-  .tactical-marker { width: 40px; min-width: 40px; height: 31px; }
-  .tactical-marker .tactical-unit-icon { width: 15px; height: 15px; }
-  .tactical-marker b { font-size: 8px; }
+  .tactical-marker { width: 44px; min-width: 44px; height: 33px; }
+  .tactical-marker .tactical-unit-icon { width: 14px; height: 14px; }
+  .tactical-marker b { font-size: 7.5px; }
+  .tactical-marker-range { font-size: 7px; line-height: 8px; padding: 0 1px; }
   .tactical-head { align-items: center; }
   .tactical-turn-status { display: block; }
   .tactical-turn-status > div + div { border-top: 1px solid #c7d4e5; border-left: 0; }

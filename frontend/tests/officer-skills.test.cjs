@@ -56,8 +56,11 @@ test('数据定义包含三军统帅和军屯自给，旧补给兼容指向三�
   }
 });
 
-test('Core.armyCap 受到指挥官统帅技能提升，且旧 supply 兼容生效', () => {
-  const { Core } = setupGame();
+test('Core.armyCap 仅受军衔、满级围墙和统帅技能影响，兼容旧 supply', () => {
+  const { Core, D } = setupGame();
+  D.militaryRanks.forEach((rank) => {
+    assert.equal(rank.baseCap, rank.tier * 50000);
+  });
   Core.state = {
     player: { militaryRank: 1 },
     buildings: { command: 1, staff: 0 },
@@ -66,17 +69,26 @@ test('Core.armyCap 受到指挥官统帅技能提升，且旧 supply 兼容生�
     ]
   };
 
-  // base = (1000 + 1000) * 1 * (1 + 0.025) = 2050
-  const baseCap = Core.armyCap();
-  assert.equal(baseCap, 2050);
+  assert.equal(Core.armyCap(), 50000);
+  Core.state.buildings.command = 10;
+  Core.state.buildings.staff = 10;
+  Core.state.officers[0].level = 100;
+  assert.equal(Core.armyCap(), 50000);
 
-  // 统帅 Lv.5 (+20%)
+  Core.state.player.militaryRank = 17;
+  assert.equal(Core.armyCap(), 850000);
+  Core.state.buildings.wall = 9;
+  assert.equal(Core.armyCap(), 850000);
+  Core.state.buildings.wall = 10;
+  assert.equal(Core.armyCap(), 950000);
+
   Core.state.officers[0].skills = [{ id: 'leadership', lv: 5 }];
-  assert.equal(Core.armyCap(), 2460);
+  assert.equal(Core.armyCap(), 1140000);
 
-  // 旧 supply Lv.5 (+20%)
   Core.state.officers[0].skills = [{ id: 'supply', lv: 5 }];
-  assert.equal(Core.armyCap(), 2460);
+  assert.equal(Core.armyCap(), 1140000);
+  Core.state.officers[0].role = 'mayor';
+  assert.equal(Core.armyCap(), 950000);
 });
 
 test('Core.foodPerHour 受到市长军屯技能降低', () => {
@@ -205,6 +217,7 @@ test('军官技能列表仅显示可点击的技能名称，详情在弹窗内�
   Game.Officer.renderDetail(view);
 
   assert.match(view.innerHTML, /class="officer-skill-detail-trigger"[^>]*>全军冲锋 Lv\.2\/5<\/button>/);
+  assert.match(view.innerHTML, /\[升级\]<\/button>.*\[废弃\]<\/button>/);
   assert.doesNotMatch(view.innerHTML, /攻击力额外\+10%\/级/);
 
   const modalNodes = { '.officer-skill-detail-close': {} };
@@ -219,4 +232,45 @@ test('军官技能列表仅显示可点击的技能名称，详情在弹窗内�
   assert.match(modal.innerHTML, /全军冲锋/);
   assert.match(modal.innerHTML, /当前等级 <b>Lv\.2<\/b>/);
   assert.match(modal.innerHTML, /攻击力额外\+10%\/级，第1、4、7…回合触发/);
+});
+
+test('军官技能升级只选择对应的指定技能书，满级禁用', async () => {
+  const context = setupOfficerGame();
+  const { Game } = context;
+  Game.escapeHtml = value => String(value);
+  Game.Core.state = {
+    _detailOfficerId: 7,
+    items: { skillBook_frenzy: 2, skillBook_finance: 3, skillBook: 4 },
+    officers: [{
+      id: 7, name: '军官', star: 1, level: 10, exp: 0, role: 'idle', loyalty: 100,
+      military: 30, logistics: 30, defense: 30, knowledge: 30,
+      skills: [{ id: 'frenzy', lv: 1 }]
+    }]
+  };
+  let modal;
+  const bookButton = { disabled: false };
+  context.document.createElement = () => ({
+    querySelector: selector => selector === '.skill-upgrade-book' ? bookButton : {},
+    parentNode: { removeChild: () => {} }
+  });
+  context.document.body = { appendChild: node => { modal = node; } };
+  let request;
+  let renders = 0;
+  Game.Core.render = () => { renders++; };
+  Game.API.upgradeSkill = (...args) => {
+    request = args;
+    return Promise.resolve({ success: true, message: '升级成功' });
+  };
+
+  Game.Officer.openSkillUpgrade(7, 0);
+  assert.match(modal.innerHTML, /全军冲锋技能书 ×2/);
+  assert.doesNotMatch(modal.innerHTML, /精明理财技能书|通用技能书/);
+  await bookButton.onclick();
+  assert.deepEqual(request, [7, 0, 'skillBook_frenzy']);
+  assert.equal(renders, 1);
+
+  Game.Core.state.officers[0].skills[0].lv = 5;
+  const view = { innerHTML: '' };
+  Game.Officer.renderDetail(view);
+  assert.match(view.innerHTML, /title="技能已满级">\[升级\]<\/button>/);
 });

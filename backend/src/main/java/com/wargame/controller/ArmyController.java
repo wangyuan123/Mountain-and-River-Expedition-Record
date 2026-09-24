@@ -3,6 +3,7 @@ package com.wargame.controller;
 import com.wargame.model.dto.GameDtos;
 import com.wargame.service.ArmyService;
 import com.wargame.service.AuthService;
+import com.wargame.service.BattleActionPreferences;
 import com.wargame.service.GameStateService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,11 +22,24 @@ public class ArmyController {
     private final AuthService authService;
     private final ArmyService armyService;
     private final GameStateService gameStateService;
+    private final BattleActionPreferences battleActionPreferences;
 
-    public ArmyController(AuthService authService, ArmyService armyService, GameStateService gameStateService) {
+    public ArmyController(AuthService authService, ArmyService armyService, GameStateService gameStateService,
+                          BattleActionPreferences battleActionPreferences) {
         this.authService = authService;
         this.armyService = armyService;
         this.gameStateService = gameStateService;
+        this.battleActionPreferences = battleActionPreferences;
+    }
+
+    @GetMapping("/battle-defaults")
+    public Map<String, Map<String, String>> battleDefaults() {
+        return battleActionPreferences.get(authService.getCurrentPlayer().getId());
+    }
+
+    @PostMapping("/battle-defaults")
+    public Map<String, Map<String, String>> saveBattleDefaults(@RequestBody Map<String, Map<String, String>> defaults) {
+        return battleActionPreferences.save(authService.getCurrentPlayer().getId(), defaults);
     }
 
     @PostMapping("/recruit")

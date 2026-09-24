@@ -153,12 +153,63 @@ window.Game = window.Game || {};
       }).catch(function (err) { G.toast(err.message || '操作失败'); });
     },
 
+    /** 团长与普通成员共用退出接口，二次确认需明确区分解散和退出。 */
     leave: function () {
-      if (!window.confirm('确定退出当前军团吗？')) return;
-      G.API.leaveGuild().then(function (data) {
-        G.toast(data.message || '已退出军团');
-        Guild.reload();
-      }).catch(function (err) { G.toast(err.message || '退出失败'); });
+      if (!this.mine || !this.mine.joined || document.getElementById('guildLeaveConfirm')) return;
+      var isLeader = this.mine.isLeader;
+      var trigger = document.activeElement;
+      var mask = document.createElement('div');
+      mask.id = 'guildLeaveConfirm';
+      mask.className = 'modal-mask guild-confirm-mask';
+      mask.innerHTML = '<section class="modal-card guild-confirm" role="dialog" aria-modal="true" aria-labelledby="guildConfirmTitle" aria-describedby="guildConfirmDesc">' +
+        '<div class="modal-title" id="guildConfirmTitle">' + (isLeader ? '解散军团' : '退出军团') + '</div>' +
+        '<div class="modal-body"><p class="guild-confirm-name">' + esc(this.mine.name || '当前军团') + '</p>' +
+        '<p id="guildConfirmDesc">' + (isLeader ? '确定解散该军团吗？解散后不可恢复。' : '确定退出该军团吗？退出后需要重新申请加入。') + '</p>' +
+        (isLeader && this.mine.members && this.mine.members.length > 1 ? '<p class="guild-confirm-note">请先移交团长或移出全部成员。</p>' : '') +
+        '<p class="guild-confirm-error" role="alert" hidden></p></div>' +
+        '<div class="modal-foot"><button type="button" class="guild-confirm-cancel">取消</button>' +
+        '<button type="button" class="guild-confirm-submit">' + (isLeader ? '确认解散' : '确认退出') + '</button></div></section>';
+      document.body.appendChild(mask);
+      var cancel = mask.querySelector('.guild-confirm-cancel');
+      var submit = mask.querySelector('.guild-confirm-submit');
+      var error = mask.querySelector('.guild-confirm-error');
+      var pending = false;
+      function close() {
+        if (pending) return;
+        document.removeEventListener('keydown', onKey, true);
+        mask.remove();
+        if (trigger && trigger.isConnected) trigger.focus();
+      }
+      function onKey(event) {
+        event.stopPropagation();
+        if (event.key === 'Escape') { event.preventDefault(); close(); }
+        if (event.key === 'Tab') {
+          event.preventDefault();
+          (document.activeElement === cancel ? submit : cancel).focus();
+        }
+      }
+      document.addEventListener('keydown', onKey, true);
+      mask.onclick = function (event) { if (event.target === mask) close(); };
+      cancel.onclick = close;
+      submit.onclick = function () {
+        if (pending) return;
+        pending = true;
+        submit.disabled = true;
+        submit.textContent = '处理中…';
+        G.API.leaveGuild().then(function (data) {
+          pending = false;
+          close();
+          G.toast(data.message || (isLeader ? '军团已解散' : '已退出军团'));
+          Guild.reload();
+        }).catch(function (err) {
+          pending = false;
+          submit.disabled = false;
+          submit.textContent = isLeader ? '确认解散' : '确认退出';
+          error.textContent = err.message || '操作失败';
+          error.hidden = false;
+        });
+      };
+      cancel.focus();
     },
 
     reload: function () {

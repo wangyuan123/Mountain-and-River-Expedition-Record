@@ -348,6 +348,46 @@ window.Game = window.Game || {};
       mask.onclick = function (e) { if (e.target === mask) cleanup(); };
     },
 
+    /** 展示出征城市的带兵上限构成，与 Core.armyCap 的实时规则保持一致。 */
+    showArmyCapInfo: function () {
+      var state = Core.state || {};
+      var tier = (state.player && state.player.militaryRank) || 1;
+      var rank = G.getMilitaryRankTierInfo ? G.getMilitaryRankTierInfo(tier) : { name: '列兵', baseCap: 50000 };
+      var rankBase = rank.baseCap || 50000;
+      var wallLevel = Core.buildingLevel ? Core.buildingLevel('wall') : 0;
+      var wallBonus = wallLevel >= 10 ? 100000 : 0;
+      var skills = Core.getCommanderSkills ? Core.getCommanderSkills() : {};
+      var skillLevel = Math.max(skills.leadership || 0, skills.supply || 0);
+      var skillBonus = Core.skillBonus ? Math.max(Core.skillBonus('leadership'), Core.skillBonus('supply')) : 0;
+      var skillPercent = Math.round(skillBonus * 100);
+      var total = Core.armyCap();
+      var mask = document.createElement('div');
+      mask.className = 'modal-mask';
+      mask.setAttribute('role', 'dialog');
+      mask.setAttribute('aria-modal', 'true');
+      mask.setAttribute('aria-labelledby', 'dispatchArmyCapTitle');
+      mask.innerHTML =
+        '<div class="modal-card dispatch-cap-modal">' +
+          '<div class="modal-title" id="dispatchArmyCapTitle">带兵上限说明</div>' +
+          '<div class="modal-body">' +
+            '<p>初始军衔基础上限为 50,000，每晋升一级增加 50,000；17 级上将的军衔基础上限为 850,000。</p>' +
+            '<p>当前军衔：' + esc(rank.name) + '，基础上限 ' + G.fmt(rankBase) + '。</p>' +
+            '<p>当前城市围墙 Lv.' + wallLevel + '：' + (wallBonus ? '满级，额外 +100,000' : '未满级，无额外加成（Lv.10 +100,000）') + '。</p>' +
+            '<p>三军统帅：任命指挥官后每级额外 +4%，最高 +20%；当前 Lv.' + skillLevel + '，加成 +' + skillPercent + '%。</p>' +
+            '<p><strong>当前上限 = (' + G.fmt(rankBase) + ' + ' + G.fmt(wallBonus) + ') × (1 + ' + skillPercent + '%) = ' + G.fmt(total) + '</strong></p>' +
+            '<p>市政厅、参谋部和指挥官等级不直接增加上限；单次出征还需有足够的当前城市可用驻军。</p>' +
+          '</div>' +
+          '<div class="modal-foot"><button type="button" class="btn btn-primary" id="dispatchCapClose">知道了</button></div>' +
+        '</div>';
+      document.body.appendChild(mask);
+      var close = function () { if (mask.parentNode) mask.parentNode.removeChild(mask); };
+      var closeButton = mask.querySelector('#dispatchCapClose');
+      closeButton.onclick = close;
+      mask.onclick = function (event) { if (event.target === mask) close(); };
+      mask.onkeydown = function (event) { if (event.key === 'Escape') close(); };
+      closeButton.focus();
+    },
+
     dispatchWild: function (idx, action) {
       var s = Core.state;
       var t = s.world.wildTiles[idx];
@@ -1134,10 +1174,10 @@ window.Game = window.Game || {};
       h += '      <span class="dispatch-stat-label">全军基准移速</span>';
       h += '      <strong class="dispatch-stat-val" id="estMarchSpeed">--</strong>';
       h += '    </div>';
-      h += '    <div class="dispatch-stat-item">';
+      h += '    <button type="button" class="dispatch-stat-item dispatch-cap-action" onclick="Game.World.showArmyCapInfo()" aria-label="查看带兵上限计算说明">';
       h += '      <span class="dispatch-stat-label">出征兵力 / 带兵上限</span>';
       h += '      <strong class="dispatch-stat-val" id="estDispatchTroops">' + G.fmt(Object.values(defaultArmy).reduce(function (total, count) { return total + count; }, 0)) + ' / ' + G.fmt(typeof Core.armyCap === 'function' ? Core.armyCap() : 0) + '</strong>';
-      h += '    </div>';
+      h += '    </button>';
       h += '    <div class="dispatch-stat-item highlight">';
       h += '      <span class="dispatch-stat-label">预计单程耗时</span>';
       h += '      <strong class="dispatch-stat-val highlight" id="estMarchTimeOneWay">--</strong>';
@@ -1803,7 +1843,9 @@ window.Game = window.Game || {};
           h += '<span class="n">' + kindName + '->' + G.escapeHtml(targetName) + (m.returning ? ' (撤自' + G.escapeHtml(originName || '原地') + ')' : '') + '</span>';
           h += '<span class="lv">距' + distance + '格 (' + fromX + ',' + fromY + '->' + toX + ',' + toY + ')</span>';
           h += '<div class="d">兵力: ' + armyText(m.army) + '</div>';
-          if (m.inBattle || m.battleId || canEnterBattle) {
+          if (m.waitingForBattle) {
+            h += '<div class="cost urgent">已到达，等待该城市上一场战斗结束</div>';
+          } else if (m.inBattle || m.battleId || canEnterBattle) {
             h += '<div class="cost urgent">已到达战场，等待你的战术指令</div>';
             h += '<div class="btn-row"><button class="btn ok sm" onclick="Game.Battle.openTactical(' + m.id + ')">进入战斗</button></div>';
           } else {
@@ -1836,7 +1878,9 @@ window.Game = window.Game || {};
           var targetName = G.escapeHtml(im.targetName || (s.player && (s.player.cityName || s.player.username)) || '我方主城');
           h += '<div class="menu-item ' + (isArrived ? 'ok' : 'lock') + '" style="cursor:pointer" onclick="Game.World.toggleIncomingExpand(' + ii + ')">';
           h += '<span class="n">' + attackerName + ' 来袭</span>';
-          if (isArrived) {
+          if (im.waitingForBattle) {
+            h += '<span class="lv" style="color:var(--danger);font-weight:bold">已到达，候战中</span>';
+          } else if (isArrived) {
             h += '<span class="lv" style="color:var(--danger);font-weight:bold">已到达！待迎战</span>';
           } else {
             h += '<span class="lv">到达: ' + tStr + '</span>';
@@ -1863,7 +1907,9 @@ window.Game = window.Game || {};
               armyTotal += im.army[auid];
             }
             h += '<div>总兵力: <b style="color:var(--danger)">' + G.fmt(armyTotal) + '</b></div>';
-            if (isArrived && im.marchId) {
+            if (im.waitingForBattle) {
+              h += '<div class="cost urgent">敌军已到达城下，等待本城上一场战斗结束。</div>';
+            } else if (isArrived && im.marchId) {
               h += '<div class="cost urgent" style="color:var(--danger)">敌军已到达城下！</div>';
               h += '<div class="btn-row" onclick="event.stopPropagation()"><button class="btn ok" onclick="Game.World.startIncomingBattle(' + ii + ')">进入战斗</button></div>';
             } else if (isArrived) {

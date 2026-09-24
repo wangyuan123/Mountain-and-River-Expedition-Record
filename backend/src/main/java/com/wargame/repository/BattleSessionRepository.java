@@ -17,6 +17,12 @@ public interface BattleSessionRepository extends JpaRepository<BattleSession, Lo
     Optional<BattleSession> findByMarchId(Long marchId);
     Optional<BattleSession> findByIdAndPlayerId(Long id, Long playerId);
 
+    @Lock(LockModeType.PESSIMISTIC_READ)
+    @Query("select s from BattleSession s where s.targetKind = 'player' and s.targetId = :cityId")
+    List<BattleSession> findActivePlayerCityBattles(@Param("cityId") String cityId);
+
+    boolean existsByTargetKindAndTargetId(String targetKind, String targetId);
+
     /**
      * 手动指挥与定时自动执行必须串行处理同一回合，避免重复结算或乐观锁异常。
      */

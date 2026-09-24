@@ -22,12 +22,12 @@ public record TechDef(
     static {
         Map<String, TechDef> m = new HashMap<>();
         // 指挥
-        m.put("attack_tech", new TechDef("attack_tech", "攻击科技", "军事", "全军攻击 +5%/级",
+        m.put("attack_tech", new TechDef("attack_tech", "攻击科技", "军事", "全军攻击 +10%/级",
                 10, 1, Map.of("steel", 240, "food", 120), 1.7, "atk_all"));
-        m.put("defense_tech", new TechDef("defense_tech", "防御科技", "军事", "全军防御 +5%/级",
+        m.put("defense_tech", new TechDef("defense_tech", "防御科技", "军事", "全军防御 +10%/级",
                 10, 2, Map.of("steel", 240, "food", 120), 1.7, "def_all"));
-        m.put("weapon_range", new TechDef("weapon_range", "武器射程", "军事", "全军武器射程 +5%/级", 10, 2, Map.of("steel", 280, "food", 140, "rare", 20), 1.8, "range_all"));
-        m.put("cmd_hp", new TechDef("cmd_hp", "军队生命", "军事", "军队生命 +5%/级",
+        m.put("weapon_range", new TechDef("weapon_range", "武器射程", "军事", "全军武器射程 +10%/级", 10, 2, Map.of("steel", 280, "food", 140, "rare", 20), 1.8, "range_all"));
+        m.put("cmd_hp", new TechDef("cmd_hp", "军队生命", "军事", "军队生命 +10%/级",
                 10, 3, Map.of("steel", 300, "food", 160, "rare", 30), 1.8, "hp_all"));
         // 步兵
         m.put("inf_load", new TechDef("inf_load", "步兵负重", "步兵", "步兵负重 +20%/级(掠夺)",

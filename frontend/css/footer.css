@@ -62,6 +62,8 @@
   overflow-wrap: anywhere;
 }
 #footbar .footer-site-info:first-child { border-top: 0; }
+#footbar .footer-beijing-time-wrap { margin-top: 5px; padding-top: 4px; border-top: 1px solid var(--footer-line); color: var(--footer-accent); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; text-align: center; }
+#footbar .footer-beijing-time { white-space: nowrap; }
 #footbar .footer-brand { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
 #footbar .footer-brand span { font-size: 11px; font-weight: 400; }
 #footbar .footer-icp { display: inline-block; padding: 2px 4px; color: inherit; text-underline-offset: 3px; }

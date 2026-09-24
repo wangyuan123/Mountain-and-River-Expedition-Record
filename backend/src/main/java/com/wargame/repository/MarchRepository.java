@@ -28,6 +28,21 @@ public interface MarchRepository extends JpaRepository<March, Long> {
             @org.springframework.data.repository.query.Param("defenderId") Long defenderId,
             @org.springframework.data.repository.query.Param("cityIds") List<String> cityIds);
 
+    @org.springframework.data.jpa.repository.Query("""
+            select m.id from March m
+            where m.targetKind = 'player' and m.targetId = :cityId
+              and m.battleId is null
+              and (m.returning = false or m.returning is null)
+              and (m.gathering = false or m.gathering is null)
+              and (m.action in ('conquer', 'plunder') or m.action like 'tactical%')
+              and m.arriveAt <= :now
+            order by m.arriveAt, m.id
+            """)
+    List<Long> findWaitingPlayerCityAttackIds(
+            @org.springframework.data.repository.query.Param("cityId") String cityId,
+            @org.springframework.data.repository.query.Param("now") long now,
+            org.springframework.data.domain.Pageable page);
+
     void deleteByPlayerId(Long playerId);
 
     List<March> findByPlayerIdAndCitySlot(Long playerId, Integer citySlot);

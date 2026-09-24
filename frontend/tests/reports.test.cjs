@@ -63,7 +63,7 @@ for (const legacy of [true, false]) {
 
 for (const intercepted of [true, false]) {
   test(`incoming scout report uses defender perspective: intercepted=${intercepted}`, () => {
-    const { G } = setup();
+    const { G, context } = setup();
     G.escapeHtml = value => String(value).replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const r = { id: 10, type: 'scout', time: Date.now(), readAt: 0, data: {
       perspective: 'defender', attackerName: '<敌人>', targetName: '我方主城',
@@ -82,6 +82,19 @@ for (const intercepted of [true, false]) {
     assert.match(board, intercepted ? /驻守: 500 架 ➔ 幸存: 495 架/ : /我方未驻防侦察机/);
     assert.match(board, intercepted ? /出动: 50 架 ➔ 幸存: 0 架/ : /出动: 50 架 ➔ 幸存: 50 架/);
     assert.doesNotMatch(board, /目标情报|侦查技术|侦测迷雾|<敌人>/);
+    G.state.reports.push(r);
+    const preview = { style: { display: 'none' }, innerHTML: '' };
+    const actionButton = { innerHTML: '查看完整战报' };
+    context.document.getElementById = id => {
+      if (id === 'rdetail_10') return preview;
+      if (id === 'rcta_10') return actionButton;
+      return null;
+    };
+    G.Battle.markOneRead = () => {};
+    G.Battle.toggleReport('10');
+    assert.equal(actionButton.innerHTML, '查看侦查详情');
+    G.Battle.toggleReport('10');
+    assert.equal(actionButton.innerHTML, '查看完整战报');
   });
 }
 
@@ -99,24 +112,31 @@ test('battle list uses action titles and keeps detailed results behind both deta
   G.state.reports.push(r);
   const card = G.Battle.renderReportCard(r);
   assert.match(card, /征服报告<\/span>/);
-  assert.match(card, /&lt;玩家&gt; → &lt;目标&gt; 103,105/);
+  assert.match(card, /&lt;玩家&gt; → &lt;目标&gt; \(103,105\)/);
   assert.match(card, /rc-head" onclick="Game.Battle.toggleReport\('21'\)/);
   assert.match(card, /id="rdetail_21" class="rc-expand" style="display:none"><\/div>/);
-  assert.match(card, /viewReportDetail\('21'\).*查看完整战报/);
+  assert.match(card, /id="rcta_21"[^>]*>查看完整战报/);
   assert.match(card, /unread-dot/);
   assert.doesNotMatch(card, /已征服|掠夺:|我军|敌军|粮300|infantry|战斗回合记录|<玩家>|<目标>/);
 
   const box = { style: { display: 'none' }, innerHTML: '' };
-  context.document.getElementById = id => id === 'rdetail_21' ? box : null;
+  const actionButton = { innerHTML: '查看完整战报' };
+  context.document.getElementById = id => {
+    if (id === 'rdetail_21') return box;
+    if (id === 'rcta_21') return actionButton;
+    return null;
+  };
   let marked = null;
   G.Battle.markOneRead = id => { marked = id; };
   G.Battle.toggleReport('21');
   assert.equal(box.style.display, 'block');
   assert.match(box.innerHTML, /掠夺资源:<\/b> 粮300/);
   assert.match(box.innerHTML, /【我方军队】/);
+  assert.equal(actionButton.innerHTML, '查看战斗详情');
   assert.equal(marked, '21');
   G.Battle.toggleReport('21');
   assert.equal(box.style.display, 'none');
+  assert.equal(actionButton.innerHTML, '查看完整战报');
 
   G.Core.history = [];
   G.Core.route = 'reports';
@@ -125,11 +145,11 @@ test('battle list uses action titles and keeps detailed results behind both deta
   const detail = { innerHTML: '' };
   G.Battle.renderReportDetail(detail);
   assert.match(detail.innerHTML, /掠夺资源:<\/b> 粮300/);
-  assert.match(detail.innerHTML, /id="battleDetailsBox" style="display:none/);
-  assert.match(detail.innerHTML, /id="btnBattleDetails".*查看战斗详情/);
+  assert.match(detail.innerHTML, /id="battleDetailsBox" style="display:block/);
+  assert.match(detail.innerHTML, /id="btnBattleDetails".*收起战斗详情/);
   assert.match(detail.innerHTML, /战斗回合记录/);
 
-  const battleBox = { style: { display: 'none' } };
+  const battleBox = { style: { display: 'block' } };
   const toggleBtn = {
     innerHTML: '',
     classList: { add: () => {}, remove: () => {} },
@@ -141,11 +161,29 @@ test('battle list uses action titles and keeps detailed results behind both deta
     return null;
   };
   G.Battle.toggleBattleDetails();
-  assert.equal(battleBox.style.display, 'block');
-  assert.match(toggleBtn.innerHTML, /收起战斗详情/);
-  G.Battle.toggleBattleDetails();
   assert.equal(battleBox.style.display, 'none');
   assert.match(toggleBtn.innerHTML, /查看战斗详情/);
+  G.Battle.toggleBattleDetails();
+  assert.equal(battleBox.style.display, 'block');
+  assert.match(toggleBtn.innerHTML, /收起战斗详情/);
+});
+
+test('battle details omit deployment instructions from saved reports', () => {
+  const { G } = setup();
+  G.escapeHtml = String;
+  G.Battle._viewReport = {
+    type: 'battle', win: true, roundLogs: [
+      '战场部署完成。请为每个兵种下达前进、后退、待命或集火命令。',
+      '战场部署完成。未下达指令的兵种按预设战术行动，可在当前回合临时指挥。',
+      '-- 第1回合 (军官加成生效) --',
+      '我方步兵前进'
+    ]
+  };
+  const detail = { innerHTML: '' };
+  G.Battle.renderReportDetail(detail);
+  assert.doesNotMatch(detail.innerHTML, /战场部署完成|请为每个兵种|未下达指令的兵种/);
+  assert.match(detail.innerHTML, /共 1 回合/);
+  assert.match(detail.innerHTML, /我方步兵前进/);
 });
 
 test('defender battle report maps the invader and commander to the enemy side', () => {
@@ -171,7 +209,7 @@ test('defender battle report maps the invader and commander to the enemy side', 
   assert.match(card, /rc-result w">胜/);
   assert.match(board, /防守成功/);
   assert.match(board, /敌方统帅:<\/b> 朱可夫/);
-  assert.match(board, /来袭玩家 对我方城市 我方主城 20,20 发起了掠夺/);
+  assert.match(board, /来袭玩家 对我方城市 我方主城 \(20,20\) 发起了掠夺/);
   assert.match(board, /我方防守成功，已击退来袭部队/);
   assert.doesNotMatch(board, /我方遭受强烈阻击/);
   assert.match(board, /损失资源:<\/b> 粮30/);
@@ -186,6 +224,29 @@ test('defender battle report maps the invader and commander to the enemy side', 
   assert.doesNotMatch(mineHtml, /朱可夫|重型坦克/);
   assert.match(enemyHtml, /朱可夫/);
   assert.match(enemyHtml, /重型坦克/);
+});
+
+test('battle report wraps coordinates and includes recorded rounds in both perspectives', () => {
+  const { G } = setup();
+  G.escapeHtml = value => String(value).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const report = {
+    time: Date.now(), win: false, targetType: 'player', action: 'conquer',
+    fromName: '新城市', fromCoord: '0,105', toName: '<太原城>', toCoord: '6,100',
+    roundLogs: ['战场部署完成。', '-- 第1回合 --', '我方进攻', '-- 第2回合 --']
+  };
+  const card = G.Battle.renderReportCard(report);
+  assert.match(card, /&lt;太原城&gt; \(6,100\)/);
+
+  const attackerBoard = G.Battle.renderReportBoard({ ...report, perspective: 'attacker' }, false);
+  assert.match(attackerBoard, /出发地:<\/b> 新城市 \(0,105\)/);
+  assert.match(attackerBoard, /目的地:<\/b> &lt;太原城&gt; \(6,100\)/);
+  assert.match(attackerBoard, /一支部队对 &lt;太原城&gt; \(6,100\) 进行了征服，历经2回合。/);
+
+  const defenderBoard = G.Battle.renderReportBoard({ ...report, perspective: 'defender', attackerName: '敌人' }, false);
+  assert.match(defenderBoard, /敌人 对我方城市 &lt;太原城&gt; \(6,100\) 发起了征服，历经2回合。/);
+
+  const oldBoard = G.Battle.renderReportBoard({ ...report, roundLogs: null, toCoord: null }, false);
+  assert.doesNotMatch(oldBoard, /历经|\(\)/);
 });
 
 test('battle commander skills show final bonuses instead of per-level rules', () => {
@@ -275,7 +336,7 @@ test('report titles distinguish actions and support historical subjects without 
     [{}, '战斗报告']
   ]) assert.equal(G.Battle.reportTitle(report), title);
   const card = G.Battle.renderReportCard({ time: Date.now(), fromName: '旧城名', toName: '目标', toCoord: '0,8' });
-  assert.match(card, /旧城名 → 目标 0,8/);
+  assert.match(card, /旧城名 → 目标 \(0,8\)/);
 });
 
 test('scout list shows route with zero coordinates and preserves click-to-expand details', () => {
@@ -294,7 +355,7 @@ test('scout list shows route with zero coordinates and preserves click-to-expand
   assert.match(card, /viewReportDetail\('22'\)/);
   assert.doesNotMatch(card, /侦察机|无拦截|我方军队|目标情报/);
   const box = { style: { display: 'none' }, innerHTML: '' };
-  context.document.getElementById = () => box;
+  context.document.getElementById = id => id === 'rdetail_22' ? box : null;
   G.Battle.toggleReport('22');
   assert.equal(box.style.display, 'block');
   assert.match(box.innerHTML, /侦查结果|侦察机/);
@@ -329,6 +390,31 @@ test('scout intelligence renders each defender unit type on its own line', () =>
   } });
   assert.match(html, /守军编制:<\/b> 潜艇x4<\/div><div class="rb-line">重型坦克x16<\/div><div class="rb-line">轰炸机x10<\/div>/);
   assert.doesNotMatch(html, /潜艇x4 重型坦克x16/);
+});
+
+test('scout draw appears for both sides and still shows earned intelligence', () => {
+  const { G } = setup();
+  G.fmt = String;
+  const attacker = { id: 30, time: Date.now(), data: {
+    targetName: '新城市', result: 'draw', showCityInfo: true,
+    myScouts: 66000, myLost: 37598, enemyScouts: 89517, enemyLost: 21297,
+    reconLevel: 2, resources: { food: 12000 }, army: { scout: 68220 }
+  } };
+  const card = G.Battle.renderScoutReportCard(attacker);
+  const board = G.Battle.renderScoutReportBoard(attacker);
+  assert.match(card, /report-card draw/);
+  assert.match(card, /rc-result draw">平/);
+  assert.match(board, /战平（双方侦察机均存活）/);
+  assert.match(board, /目标情报/);
+  assert.match(board, /守军编制/);
+  assert.doesNotMatch(board, /未能获取目标内部情报/);
+
+  const defender = { id: 31, time: Date.now(), data: {
+    perspective: 'defender', result: 'draw', intercepted: false,
+    myScouts: 89517, myLost: 21297, enemyScouts: 66000, enemyLost: 37598
+  } };
+  assert.match(G.Battle.renderScoutReportCard(defender), /rc-result draw">平/);
+  assert.match(G.Battle.renderScoutReportBoard(defender), /战平，敌方已获取情报/);
 });
 
 test('login shows the server total without opening reports, caps at 99+, and hides zero', () => {
@@ -481,7 +567,7 @@ test('wild reports keep combat and settlement outcomes separate in every detail 
     assert.ok(board.includes(explanation));
     assert.doesNotMatch(board, /可派兵采集或建立分城/);
     const box = { style: { display: 'none' }, innerHTML: '' };
-    context.document.getElementById = () => box;
+    context.document.getElementById = id => id === 'rdetail_101' ? box : null;
     G.Battle.markOneRead = () => {};
     G.Battle.toggleReport('101');
     assert.equal(box.innerHTML, board);

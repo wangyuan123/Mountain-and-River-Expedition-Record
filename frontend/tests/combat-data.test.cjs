@@ -40,6 +40,23 @@ test('all displayed unit stats and recruitment costs match server definitions', 
   assert.deepEqual(matched.sort(), Object.keys(data.units).sort());
 });
 
+test('military technology bonuses are 10% per level in server and client definitions', () => {
+  const serverTechs = source('TechDef');
+  const entries = [
+    ['attack_tech', '全军攻击 +10%/级'],
+    ['defense_tech', '全军防御 +10%/级'],
+    ['weapon_range', '全军武器射程 +10%/级'],
+    ['cmd_hp', '军队生命 +10%/级']
+  ];
+
+  for (const [key, description] of entries) {
+    assert.equal(data.techs[key].desc, description, key + ' client description');
+    assert.ok(serverTechs.split('\n').some((line) =>
+      line.includes('m.put("' + key + '"') && line.includes('"' + description + '"')), key + ' server description');
+    assert.equal(data.techs[key].max, 10, key + ' max level');
+  }
+});
+
 test('all displayed fort stats and costs match server definitions', () => {
   const pattern = /"([^"]+)", new FortDef\("[^"]+", "([^"]+)", "[^"]+",\s*([\d,\s]+),\s*Map\.of\(([^)]*)\)/g;
   const matched = [];
@@ -53,4 +70,15 @@ test('all displayed fort stats and costs match server definitions', () => {
     matched.push(id);
   }
   assert.deepEqual(matched.sort(), Object.keys(data.forts).sort());
+});
+
+test('rocket role names exactly the four tenfold counter targets', () => {
+  assert.match(data.combatRoles.rocket, /轻坦、重坦、装甲车、突击炮均×10/);
+  assert.match(data.combatRoles.rocket, /其他目标无额外克制倍率/);
+  assert.doesNotMatch(data.combatRoles.rocket, /特种兵×0\.6|对装甲×1\.75/);
+});
+
+test('armored role names its fivefold anti-air counters', () => {
+  assert.match(data.combatRoles.armored, /对战斗机、轰炸机均×5/);
+  assert.match(data.combatRoles.armored, /对步兵类无额外克制倍率/);
 });

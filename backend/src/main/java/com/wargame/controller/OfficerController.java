@@ -106,6 +106,18 @@ public class OfficerController {
         return ResponseEntity.ok(result);
     }
 
+    @PostMapping("/upgrade-skill")
+    public ResponseEntity<Map<String, Object>> upgradeSkill(@RequestBody GameDtos.OfficerUpgradeSkillRequest request) {
+        if (request.officerId() == null || request.skillIdx() == null || request.skillIdx() < 0
+                || request.itemId() == null || request.itemId().isBlank()) {
+            throw new IllegalArgumentException("军官、技能和技能书不能为空");
+        }
+        Long playerId = authService.getCurrentPlayer().getId();
+        Map<String, Object> result = officerService.upgradeSkill(playerId, request.officerId(), request.skillIdx(), request.itemId());
+        result.put("state", gameStateService.getGameState(playerId));
+        return ResponseEntity.ok(result);
+    }
+
     @PostMapping("/equip")
     public ResponseEntity<Map<String, Object>> equip(@RequestBody GameDtos.OfficerEquipmentRequest request) {
         if (request.officerId() == null || request.itemId() == null || request.itemId().isBlank()) {

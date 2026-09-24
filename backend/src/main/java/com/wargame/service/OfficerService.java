@@ -538,6 +538,61 @@ public class OfficerService {
         return result;
     }
 
+    /**
+     * 消耗一本当前技能对应的指定技能书，将已有技能提升一级；满级或书不匹配时不扣道具。
+     * 历史 supply 技能使用 leadership 的指定书升级，但保留原技能 ID。
+     *
+     * @param playerId 玩家 ID
+     * @param officerId 军官 ID
+     * @param skillIdx 技能在军官技能列表中的索引
+     * @param itemId 要消耗的指定技能书 ID
+     * @return 升级结果及升级后的等级
+     */
+    @Transactional
+    public Map<String, Object> upgradeSkill(Long playerId, Long officerId, int skillIdx, String itemId) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        Officer officer = findOfficer(playerId, officerId);
+        if (officer == null) {
+            result.put("success", false);
+            result.put("message", "军官不存在");
+            return result;
+        }
+
+        List<Map<String, Object>> skills = parseSkills(officer.getSkills());
+        if (skillIdx < 0 || skillIdx >= skills.size()) {
+            result.put("success", false);
+            result.put("message", "技能不存在");
+            return result;
+        }
+        Map<String, Object> owned = skills.get(skillIdx);
+        OfficerSkillDef skill = OfficerSkillDef.getSkill(String.valueOf(owned.get("id")));
+        if (skill == null || !("skillBook_" + skill.key()).equals(itemId)) {
+            result.put("success", false);
+            result.put("message", "请选择同类型的指定技能书");
+            return result;
+        }
+        Object levelValue = owned.get("lv");
+        int level = levelValue instanceof Number ? ((Number) levelValue).intValue() : 0;
+        if (level < 1 || level >= skill.max()) {
+            result.put("success", false);
+            result.put("message", level >= skill.max() ? "技能已满级" : "技能等级无效");
+            return result;
+        }
+        if (playerItemRepository.tryConsume(playerId, itemId, 1, System.currentTimeMillis()) == 0) {
+            result.put("success", false);
+            result.put("message", skill.name() + "技能书不足");
+            return result;
+        }
+
+        owned.put("lv", level + 1);
+        officer.setSkills(JsonUtil.toJson(skills));
+        officerRepository.save(officer);
+        result.put("success", true);
+        result.put("message", skill.name() + "升级至 Lv." + (level + 1) + " (消耗1本" + skill.name() + "技能书)");
+        result.put("level", level + 1);
+        return result;
+    }
+
     // ================================================================
     //  abandonSkill - 对应 JS G.Officer.forgetSkill (confirm action)
     // ================================================================

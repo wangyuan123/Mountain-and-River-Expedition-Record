@@ -24,7 +24,7 @@ window.Game = window.Game || {};
     if (!arr.length) {
       return '<div class="army-summary-empty">暂无可用部队，前往 <a onclick="Game.go(\'army\')">军队</a> 征召</div>';
     }
-    // 数量从大到小排序，全部兵种在首页总览中展示；超出视口时由容器纵向滚动。
+    // 数量从大到小排序，全部兵种在首页总览中展示；超出视口时由容器横向滚动。
     arr.sort(function (a, b) { return b.cnt - a.cnt; });
     var html = '';
     for (var i = 0; i < arr.length; i++) {
@@ -36,19 +36,19 @@ window.Game = window.Game || {};
       var displayName = (G && typeof G.unitDisplayName === 'function')
         ? G.unitDisplayName(u.name)
         : (function (name) {
-            var codeMatch = name.match(/[（(]([^）)]+)[）)]/);
-            var code = codeMatch ? codeMatch[1].trim() : '';
-            var base = name.indexOf('-') > 0 ? name.split('-')[0].trim() : name.replace(/[（(].*?[）)]/, '').trim();
-            return code ? base + '(' + code + ')' : base;
-          })(u.name);
+          var codeMatch = name.match(/[（(]([^）)]+)[）)]/);
+          var code = codeMatch ? codeMatch[1].trim() : '';
+          var base = name.indexOf('-') > 0 ? name.split('-')[0].trim() : name.replace(/[（(].*?[）)]/, '').trim();
+          return code ? base + '(' + code + ')' : base;
+        })(u.name);
       var unitClick = ' role="button" tabindex="0" title="' + G.escapeHtml(u.name) + ' × ' + G.fmt(u.cnt) + '" aria-label="查看' + G.escapeHtml(u.name) + '详情"' +
         ' onclick="Game.MainView.showUnitDetailModal(\'' + G.escapeHtml(u.id) + '\', event)"' +
         ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.MainView.showUnitDetailModal(\'' + G.escapeHtml(u.id) + '\', event);event.preventDefault();}"';
       html += '<div class="army-summary-item"' + unitClick + '>'
-            + '<span class="army-summary-icon">' + iconHtml + '</span>'
-            + '<span class="army-summary-name">' + G.escapeHtml(displayName) + '</span>'
-            + '<span class="army-summary-cnt">' + G.fmt(u.cnt) + '</span>'
-            + '</div>';
+        + '<span class="army-summary-icon">' + iconHtml + '</span>'
+        + '<span class="army-summary-name">' + G.escapeHtml(displayName) + '</span>'
+        + '<span class="army-summary-cnt">' + G.fmt(u.cnt) + '</span>'
+        + '</div>';
     }
     return html;
   }
@@ -80,13 +80,13 @@ window.Game = window.Game || {};
     modal.className = 'modal-mask unit-detail-mask';
     modal.innerHTML =
       '<section class="modal-card unit-detail-card" role="dialog" aria-modal="true" aria-labelledby="unitDetailTitle">' +
-        '<div class="modal-title unit-detail-title" id="unitDetailTitle"><span>兵种详情</span><button type="button" class="unit-detail-close" aria-label="关闭兵种详情">✕</button></div>' +
-        '<div class="modal-body unit-detail-body">' +
-          '<div class="unit-detail-overview">' + iconHtml + '<div class="unit-detail-overview-copy"><h2>' + esc(unit.name) + '</h2><div class="unit-detail-count">当前兵力：<b>' + G.fmt(count) + '</b></div></div></div>' +
-          '<div class="unit-detail-section"><h3>历史信息</h3><p>' + esc(unit.history || '暂无历史信息') + '</p></div>' +
-          '<div class="unit-detail-section"><h3>战斗定位</h3><p>' + esc(role) + '</p></div>' +
-          '<div class="unit-detail-section"><h3>属性信息</h3><div class="unit-detail-stats">' + statHtml + '</div></div>' +
-        '</div>' +
+      '<div class="modal-title unit-detail-title" id="unitDetailTitle"><span>兵种详情</span><button type="button" class="unit-detail-close" aria-label="关闭兵种详情">✕</button></div>' +
+      '<div class="modal-body unit-detail-body">' +
+      '<div class="unit-detail-overview">' + iconHtml + '<div class="unit-detail-overview-copy"><h2>' + esc(unit.name) + '</h2><div class="unit-detail-count">当前兵力：<b>' + G.fmt(count) + '</b></div></div></div>' +
+      '<div class="unit-detail-section"><h3>历史信息</h3><p>' + esc(unit.history || '暂无历史信息') + '</p></div>' +
+      '<div class="unit-detail-section"><h3>战斗定位</h3><p>' + esc(role) + '</p></div>' +
+      '<div class="unit-detail-section"><h3>属性信息</h3><div class="unit-detail-stats">' + statHtml + '</div></div>' +
+      '</div>' +
       '</section>';
     document.body.appendChild(modal);
 
@@ -116,21 +116,21 @@ window.Game = window.Game || {};
     var html = '';
 
     html += '<div class="zone-head">'
-          + '<span class="zone-title">🎖️ 军官将领</span>'
-          + '<span class="zone-sub">已招募 ' + totalCount + ' 名</span>'
-          + '<span class="home-officer-go zone-head-action" onclick="event.stopPropagation();Game.go(\'academy\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.stopPropagation();Game.go(\'academy\');event.preventDefault();}" role="button" tabindex="0" title="点击前往军校 · 招募将领">去招募 &gt;</span>'
-          + '</div>';
+      + '<span class="zone-title">🎖️ 军官将领</span>'
+      + '<span class="zone-sub">已招募 ' + totalCount + ' 名</span>'
+      + '<span class="home-officer-go zone-head-action" onclick="event.stopPropagation();Game.go(\'academy\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.stopPropagation();Game.go(\'academy\');event.preventDefault();}" role="button" tabindex="0" title="点击前往军校 · 招募将领">去招募 &gt;</span>'
+      + '</div>';
     html += '<div class="home-officer-card">';
 
     if (totalCount === 0) {
       html += '<div class="home-officer-empty">'
-            + '<span class="home-officer-empty-icon">🎖️</span>'
-            + '<div class="home-officer-empty-info">'
-            + '<div class="home-officer-empty-title">暂未招募将领</div>'
-            + '<div class="home-officer-empty-desc">前往军校招募名将，委任市长与指挥官以提升城防与产能</div>'
-            + '</div>'
-            + '<span class="home-officer-go">前往招募 &gt;</span>'
-            + '</div>';
+        + '<span class="home-officer-empty-icon">🎖️</span>'
+        + '<div class="home-officer-empty-info">'
+        + '<div class="home-officer-empty-title">暂未招募将领</div>'
+        + '<div class="home-officer-empty-desc">前往军校招募名将，委任市长与指挥官以提升城防与产能</div>'
+        + '</div>'
+        + '<span class="home-officer-go">前往招募 &gt;</span>'
+        + '</div>';
     } else {
       var displayCount = Math.min(3, totalCount);
       var topOfficers = officers.slice(0, displayCount);
@@ -229,6 +229,7 @@ window.Game = window.Game || {};
     { key: '1', label: '资源', route: 'buildRes' },
     { key: '2', label: '军事', route: 'buildArmy' },
     { key: '3', label: '军队', route: 'army' },
+    { key: '·', label: '战术', route: 'battleDefaults' },
     { key: '4', label: '地图', route: 'world' },
     { key: '5', label: '情报', route: 'alerts' },
     { key: '6', label: '战报', route: 'reports' },
@@ -271,7 +272,8 @@ window.Game = window.Game || {};
       pages.push('<div class="nav-page" role="group" aria-label="第' + (page + 1) + '组导航">' + items.slice(page * pageSize, (page + 1) * pageSize).join('') + '</div>');
       dots.push('<button type="button" class="nav-page-dot" data-nav-page="' + page + '" aria-label="切换到第' + (page + 1) + '组导航"></button>');
     }
-    return '<div class="nav-viewport" aria-label="' + (pages.length > 1 ? '左右滑动查看更多导航' : '功能导航') + '">' + pages.join('') + '</div>' +
+    return '<button type="button" class="nav-collapse-toggle" data-nav="collapse" aria-controls="gameNavViewport" aria-expanded="true" aria-label="收起导航" title="收起导航"><span class="nav-collapse-icon" aria-hidden="true">‹</span><span class="nav-collapse-label">收起导航</span></button>' +
+      '<div id="gameNavViewport" class="nav-viewport" aria-label="' + (pages.length > 1 ? '左右滑动查看更多导航' : '功能导航') + '">' + pages.join('') + '</div>' +
       (pages.length > 1 ? '<div class="nav-pages" aria-label="导航分页">' + dots.join('') + '</div>' : '');
   }
 
@@ -295,15 +297,15 @@ window.Game = window.Game || {};
       : (icon ? '<span style="margin-right:6px;">' + icon + '</span>' : '');
     modal.innerHTML =
       '<div class="modal-card" style="max-width:380px">' +
-        '<div class="modal-title" style="display:flex;align-items:center;justify-content:center;">' + titleIcon + name + '详情</div>' +
-        '<div class="modal-body">' +
-          '<div class="res-detail-value"><span>当前储量</span><b>' + G.fmt(current) + '</b></div>' +
-          '<div class="res-detail-value"><span>资源上限</span><b>' + G.fmt(cap) + '</b></div>' +
-          detail +
-          '<div class="res-detail-bar"><span style="width:' + percent + '%"></span></div>' +
-          '<div class="res-detail-percent">储量使用率 ' + percent + '%</div>' +
-        '</div>' +
-        '<div class="modal-foot"><button class="btn ok" id="closeResourceDetail">关闭</button></div>' +
+      '<div class="modal-title" style="display:flex;align-items:center;justify-content:center;">' + titleIcon + name + '详情</div>' +
+      '<div class="modal-body">' +
+      '<div class="res-detail-value"><span>当前储量</span><b>' + G.fmt(current) + '</b></div>' +
+      '<div class="res-detail-value"><span>资源上限</span><b>' + G.fmt(cap) + '</b></div>' +
+      detail +
+      '<div class="res-detail-bar"><span style="width:' + percent + '%"></span></div>' +
+      '<div class="res-detail-percent">储量使用率 ' + percent + '%</div>' +
+      '</div>' +
+      '<div class="modal-foot"><button class="btn ok" id="closeResourceDetail">关闭</button></div>' +
       '</div>';
     document.body.appendChild(modal);
     modal.querySelector('#closeResourceDetail').onclick = function () { modal.remove(); };
@@ -316,99 +318,99 @@ window.Game = window.Game || {};
 
     modal.innerHTML =
       '<div class="modal-card pop-detail-modal" style="max-width:440px">' +
-        '<div class="modal-title">👥 平民与民情政务</div>' +
-        '<div class="modal-body">' +
-          '<div class="pop-detail-summary">' +
-            '<div class="pop-stat-box">' +
-              '<div class="pop-stat-head">' +
-                '<span class="pop-stat-label">当前平民</span>' +
-                '<button class="btn ok sm pop-call-btn" id="popRecruitQuickBtn" title="消耗人口动员令立即召集平民">召集</button>' +
-              '</div>' +
-              '<span class="pop-stat-val" id="popCivilianVal">-</span>' +
-            '</div>' +
-            '<div class="pop-stat-box"><span class="pop-stat-label">民居标称容量</span><span class="pop-stat-val" id="popCapVal">-</span></div>' +
-            '<div class="pop-stat-box"><span class="pop-stat-label">民心容纳上限</span><span class="pop-stat-val highlight" id="popEffCapVal">-</span></div>' +
-            '<div class="pop-stat-box"><span class="pop-stat-label">自然增长速度</span><span class="pop-stat-val positive" id="popGrowthVal">-</span></div>' +
-          '</div>' +
+      '<div class="modal-title">👥 平民与民情政务</div>' +
+      '<div class="modal-body">' +
+      '<div class="pop-detail-summary">' +
+      '<div class="pop-stat-box">' +
+      '<div class="pop-stat-head">' +
+      '<span class="pop-stat-label">当前平民</span>' +
+      '<button class="btn ok sm pop-call-btn" id="popRecruitQuickBtn" title="消耗人口动员令立即召集平民">召集</button>' +
+      '</div>' +
+      '<span class="pop-stat-val" id="popCivilianVal">-</span>' +
+      '</div>' +
+      '<div class="pop-stat-box"><span class="pop-stat-label">民居标称容量</span><span class="pop-stat-val" id="popCapVal">-</span></div>' +
+      '<div class="pop-stat-box"><span class="pop-stat-label">民心容纳上限</span><span class="pop-stat-val highlight" id="popEffCapVal">-</span></div>' +
+      '<div class="pop-stat-box"><span class="pop-stat-label">自然增长速度</span><span class="pop-stat-val positive" id="popGrowthVal">-</span></div>' +
+      '</div>' +
 
-          '<div class="pop-recruit-section">' +
-            '<div class="pop-section-title">' +
-              '<span>👥 召集人口与平民动员</span>' +
-              '<span class="pop-recruit-badge" id="popOrderCountBadge">拥有动员令: 0 张</span>' +
-            '</div>' +
-            '<div class="pop-recruit-card">' +
-              '<div class="pop-recruit-info">' +
-                '<div class="pop-recruit-desc">消耗仓库中的【人口动员令】，立即自四方动员 <b class="positive">+500</b> 空闲平民进城（受民居容量限制）。</div>' +
-              '</div>' +
-              '<button class="btn ok pop-recruit-action-btn" id="popRecruitBtn">立即召集 (+500)</button>' +
-            '</div>' +
-          '</div>' +
+      '<div class="pop-recruit-section">' +
+      '<div class="pop-section-title">' +
+      '<span>👥 召集人口与平民动员</span>' +
+      '<span class="pop-recruit-badge" id="popOrderCountBadge">拥有动员令: 0 张</span>' +
+      '</div>' +
+      '<div class="pop-recruit-card">' +
+      '<div class="pop-recruit-info">' +
+      '<div class="pop-recruit-desc">消耗仓库中的【人口动员令】，立即自四方动员 <b class="positive">+500</b> 空闲平民进城（受民居容量限制）。</div>' +
+      '</div>' +
+      '<button class="btn ok pop-recruit-action-btn" id="popRecruitBtn">立即召集 (+500)</button>' +
+      '</div>' +
+      '</div>' +
 
-          '<div class="pop-sentiment-section">' +
-            '<div class="pop-bar-header">' +
-              '<span>❤️ 民心值：<b id="popMoraleNum">70</b> / 100</span>' +
-              '<span class="pop-status-badge" id="popMoraleBadge">安居乐业</span>' +
-            '</div>' +
-            '<div class="pop-progress-bar morale-bar"><div class="pop-progress-fill" id="popMoraleFill" style="width:70%"></div></div>' +
-            '<div class="pop-bar-header" style="margin-top:10px">' +
-              '<span>🔥 民怨值：<b id="popResentNum">0</b> / 100</span>' +
-              '<span class="pop-status-badge resentment-badge" id="popResentBadge">风平浪静</span>' +
-            '</div>' +
-            '<div class="pop-progress-bar resentment-bar"><div class="pop-progress-fill" id="popResentFill" style="width:0%"></div></div>' +
-            '<div class="pop-bar-hint">民心决定城市的实际人口容纳率与增长速度；长期重税(>50%)滋生民怨并压抑民心。</div>' +
-          '</div>' +
+      '<div class="pop-sentiment-section">' +
+      '<div class="pop-bar-header">' +
+      '<span>❤️ 民心值：<b id="popMoraleNum">70</b> / 100</span>' +
+      '<span class="pop-status-badge" id="popMoraleBadge">安居乐业</span>' +
+      '</div>' +
+      '<div class="pop-progress-bar morale-bar"><div class="pop-progress-fill" id="popMoraleFill" style="width:70%"></div></div>' +
+      '<div class="pop-bar-header" style="margin-top:10px">' +
+      '<span>🔥 民怨值：<b id="popResentNum">0</b> / 100</span>' +
+      '<span class="pop-status-badge resentment-badge" id="popResentBadge">风平浪静</span>' +
+      '</div>' +
+      '<div class="pop-progress-bar resentment-bar"><div class="pop-progress-fill" id="popResentFill" style="width:0%"></div></div>' +
+      '<div class="pop-bar-hint">民心决定城市的实际人口容纳率与增长速度；长期重税(>50%)滋生民怨并压抑民心。</div>' +
+      '</div>' +
 
-          '<div class="pop-tax-section">' +
-            '<div class="pop-section-title">' +
-              '<span>💰 调节城市税率</span>' +
-              '<span class="pop-current-tax">当前税率：<b id="popCurTaxText">30%</b></span>' +
-            '</div>' +
-            '<div class="pop-slider-container">' +
-              '<div class="pop-slider-labels">' +
-                '<span>0% (免税)</span>' +
-                '<span id="popSliderNum" class="slider-num-callout">30%</span>' +
-                '<span>100% (重税)</span>' +
-              '</div>' +
-              '<div class="recruit-slider-wrap">' +
-                '<input type="range" class="recruit-slider tax-range-slider" id="popTaxSlider" min="0" max="100" step="1" value="30">' +
-              '</div>' +
-            '</div>' +
-            '<div class="pop-tax-preview">' +
-              '<div class="pop-preview-row"><span>预计黄金税收：</span><b class="positive" id="popPrevGold">+60/h</b></div>' +
-              '<div class="pop-preview-row"><span>预期目标民心：</span><b id="popPrevMorale">70</b></div>' +
-              '<div class="pop-preview-row"><span>预期民心容纳：</span><b id="popPrevCap">100 / 100</b></div>' +
-              '<div class="pop-tax-warning" id="popTaxWarn">⚖️ 标准税赋：民心平稳，黄金与人口保持平衡发展。</div>' +
-            '</div>' +
-            '<button class="btn ok pop-action-btn" id="popSaveTaxBtn">应用税率 (30%)</button>' +
-          '</div>' +
+      '<div class="pop-tax-section">' +
+      '<div class="pop-section-title">' +
+      '<span>💰 调节城市税率</span>' +
+      '<span class="pop-current-tax">当前税率：<b id="popCurTaxText">30%</b></span>' +
+      '</div>' +
+      '<div class="pop-slider-container">' +
+      '<div class="pop-slider-labels">' +
+      '<span>0% (免税)</span>' +
+      '<span id="popSliderNum" class="slider-num-callout">30%</span>' +
+      '<span>100% (重税)</span>' +
+      '</div>' +
+      '<div class="recruit-slider-wrap">' +
+      '<input type="range" class="recruit-slider tax-range-slider" id="popTaxSlider" min="0" max="100" step="1" value="30">' +
+      '</div>' +
+      '</div>' +
+      '<div class="pop-tax-preview">' +
+      '<div class="pop-preview-row"><span>预计黄金税收：</span><b class="positive" id="popPrevGold">+60/h</b></div>' +
+      '<div class="pop-preview-row"><span>预期目标民心：</span><b id="popPrevMorale">70</b></div>' +
+      '<div class="pop-preview-row"><span>预期民心容纳：</span><b id="popPrevCap">100 / 100</b></div>' +
+      '<div class="pop-tax-warning" id="popTaxWarn">⚖️ 标准税赋：民心平稳，黄金与人口保持平衡发展。</div>' +
+      '</div>' +
+      '<button class="btn ok pop-action-btn" id="popSaveTaxBtn">应用税率 (30%)</button>' +
+      '</div>' +
 
-          '<div class="pop-appease-section">' +
-            '<div class="pop-section-title">🕊️ 开仓赈民与安抚民情</div>' +
-            '<div class="appease-card-grid">' +
-              '<div class="appease-card">' +
-                '<div class="appease-card-head">' +
-                  '<span class="appease-card-name">🌾 黄金赈民</span>' +
-                  '<span class="appease-card-effect">民心 +10 · 民怨 -5</span>' +
-                '</div>' +
-                '<div class="appease-card-desc">开仓放粮赈济平民，抚慰民情。</div>' +
-                '<div class="appease-card-cost">消耗：<span id="appeaseGoldCost">1,000</span> 黄金 <small id="appeaseGoldRemain"></small></div>' +
-                '<button class="btn sub appease-btn" id="popAppeaseGoldBtn">开仓赈灾</button>' +
-              '</div>' +
-              '<div class="appease-card highlight">' +
-                '<div class="appease-card-head">' +
-                  '<span class="appease-card-name">💎 钻石特赦</span>' +
-                  '<span class="appease-card-effect">民心 +25 · 民怨 -20</span>' +
-                '</div>' +
-                '<div class="appease-card-desc">大赦天下并重金赏赐，迅速平息怨愤。</div>' +
-                '<div class="appease-card-cost">消耗：<span>20</span> 钻石 <small id="appeaseDiamondRemain"></small></div>' +
-                '<button class="btn ok appease-btn" id="popAppeaseDiamondBtn">特赦犒赏</button>' +
-              '</div>' +
-            '</div>' +
-          '</div>' +
-        '</div>' +
-        '<div class="modal-foot">' +
-          '<button class="btn sub" id="closePopDetail">关闭</button>' +
-        '</div>' +
+      '<div class="pop-appease-section">' +
+      '<div class="pop-section-title">🕊️ 开仓赈民与安抚民情</div>' +
+      '<div class="appease-card-grid">' +
+      '<div class="appease-card">' +
+      '<div class="appease-card-head">' +
+      '<span class="appease-card-name">🌾 黄金赈民</span>' +
+      '<span class="appease-card-effect">民心 +10 · 民怨 -5</span>' +
+      '</div>' +
+      '<div class="appease-card-desc">开仓放粮赈济平民，抚慰民情。</div>' +
+      '<div class="appease-card-cost">消耗：<span id="appeaseGoldCost">1,000</span> 黄金 <small id="appeaseGoldRemain"></small></div>' +
+      '<button class="btn sub appease-btn" id="popAppeaseGoldBtn">开仓赈灾</button>' +
+      '</div>' +
+      '<div class="appease-card highlight">' +
+      '<div class="appease-card-head">' +
+      '<span class="appease-card-name">💎 钻石特赦</span>' +
+      '<span class="appease-card-effect">民心 +25 · 民怨 -20</span>' +
+      '</div>' +
+      '<div class="appease-card-desc">大赦天下并重金赏赐，迅速平息怨愤。</div>' +
+      '<div class="appease-card-cost">消耗：<span>20</span> 钻石 <small id="appeaseDiamondRemain"></small></div>' +
+      '<button class="btn ok appease-btn" id="popAppeaseDiamondBtn">特赦犒赏</button>' +
+      '</div>' +
+      '</div>' +
+      '</div>' +
+      '</div>' +
+      '<div class="modal-foot">' +
+      '<button class="btn sub" id="closePopDetail">关闭</button>' +
+      '</div>' +
       '</div>';
 
     document.body.appendChild(modal);
@@ -729,7 +731,7 @@ window.Game = window.Game || {};
 
     // 军队总览（活动与任务块已迁移到顶部菜单"任务"页内）
     h += '<div class="zone-head"><span class="zone-title">🪖 军队总览</span><span class="zone-sub">带兵上限 ' + G.fmt(Core.armyCap()) + '</span><span class="army-dispatch-go zone-head-action" role="button" tabindex="0" onclick="Game.go(\'world\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.go(\'world\');event.preventDefault();}">去出征 &gt;</span></div>';
-    h += '<div class="army-summary" role="region" aria-label="军队总览，向下滚动查看全部兵种">';
+    h += '<div class="army-summary" role="region" tabindex="0" aria-label="军队总览，左右滑动查看全部兵种">';
     h += renderArmySummaryList();
     h += '</div>';
     h += '<div class="army-summary-foot" onclick="Game.go(\'army\')">';
@@ -759,7 +761,7 @@ window.Game = window.Game || {};
       h += '<div class="res-summary">' + iconHtml + '<span class="res-name">' + rinfo.name + ':</span><span class="res-main"><span class="res-cur">' + G.fmt(cur) + '</span></span><span class="res-rate' + (net < 0 ? ' neg' : '') + '">' + sign + G.fmt(net) + '/h</span></div>';
       h += '</div>';
     }
-    var popIcon = '<img class="res-icon-img" src="img/res-pop.svg" alt="平民"/>';
+    var popIcon = '<img class="res-icon-img" src="img/resources/models/pop.webp" alt="平民"/>';
     var curMorale = Core.morale();
     var curResent = Core.resentment();
     h += '<div class="res-card" data-res-card="pop" role="button" tabindex="0" title="平民 当前: ' + G.fmt(Core.civilianPopulation()) + '/' + G.fmt(Core.populationCapacity()) + ' (+' + G.fmt(Core.populationGrowthPerHour()) + '/h)" onclick="Game.Main.showPopulationDetail()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.Main.showPopulationDetail();event.preventDefault();}">';
@@ -767,9 +769,6 @@ window.Game = window.Game || {};
     h += '<div class="d">可征召 ' + G.fmt(Core.popFree()) + ' · 民心 ' + curMorale + (curResent > 0 ? ' <span style="color:#d9534f">(怨' + curResent + ')</span>' : '') + '</div>';
     h += '</div>';
     h += '</div>';
-
-    // 待办事项
-    h += '<div id="homeTodosWrap">' + (G.Task ? G.Task.renderTodos(s) : '') + '</div>';
 
     // —— 世界聊天频道 ——
     h += '<div class="zone-head"><span class="zone-title">📡 世界频道</span><span class="zone-sub">实时通联</span></div>';
@@ -885,16 +884,16 @@ window.Game = window.Game || {};
       h += '</div>';
 
       if (!(G.Main && G.Main.guestMode) && (G.API.getUsername() || '').indexOf('游客_') !== 0) {
-      h += '<div class="zone-head" style="margin-top:18px;color:var(--danger)"><span class="zone-title">危险操作</span></div>';
-      h += '<div class="panel" style="border-left:3px solid var(--danger)">';
-      h += '<div class="d" style="color:var(--danger)">注销账号</div>';
-      h += '<div class="d" style="font-size:12px;color:var(--muted)">';
-      h += '申请后进入恢复期，到期将永久清理游戏进度。查看详情后需验证密码并确认操作。';
-      h += '</div>';
-      h += '<div class="btn-row" style="margin-top:6px">';
-      h += '<button class="btn sm account-delete-entry" onclick="Game.Main.openDisableAccount()">注销账号</button>';
-      h += '</div>';
-      h += '</div>';
+        h += '<div class="zone-head" style="margin-top:18px;color:var(--danger)"><span class="zone-title">危险操作</span></div>';
+        h += '<div class="panel" style="border-left:3px solid var(--danger)">';
+        h += '<div class="d" style="color:var(--danger)">注销账号</div>';
+        h += '<div class="d" style="font-size:12px;color:var(--muted)">';
+        h += '申请后进入恢复期，到期将永久清理游戏进度。查看详情后需验证密码并确认操作。';
+        h += '</div>';
+        h += '<div class="btn-row" style="margin-top:6px">';
+        h += '<button class="btn sm account-delete-entry" onclick="Game.Main.openDisableAccount()">注销账号</button>';
+        h += '</div>';
+        h += '</div>';
       }
     }
 
@@ -921,7 +920,7 @@ window.Game = window.Game || {};
     try {
       if (uname) localAvatar = localStorage.getItem('wargame_avatar_' + uname) || '';
       if (!localAvatar) localAvatar = localStorage.getItem('wargame_avatar_default') || '';
-    } catch (e) {}
+    } catch (e) { }
     return p.avatar || localAvatar || 'img/avatars/commander-8.svg';
   }
 
@@ -1058,16 +1057,7 @@ window.Game = window.Game || {};
       popCard.title = '平民 当前: ' + G.fmt(civ) + '/' + G.fmt(pCap) + ' (+' + G.fmt(growth) + '/h)';
     }
 
-    // 6. 待办事项增量更新 (仅替换内部局部容器，不破坏周边DOM)
-    var todosWrap = document.getElementById('homeTodosWrap');
-    if (todosWrap && G.Task && G.Task.renderTodos) {
-      var newTodos = G.Task.renderTodos(s);
-      if (todosWrap.innerHTML !== newTodos) {
-        todosWrap.innerHTML = newTodos;
-      }
-    }
-
-    // 7. 若民情政务弹窗正开着，同步更新弹窗内数值
+    // 6. 若民情政务弹窗正开着，同步更新弹窗内数值
     if (typeof window.__refreshPopDetailModal === 'function') {
       window.__refreshPopDetailModal();
     }
