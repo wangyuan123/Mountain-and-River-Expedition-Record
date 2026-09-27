@@ -2,6 +2,8 @@
 (function (G) {
   'use strict';
   var modes = {land:'陆路行军',sea:'海上航线',sea_supply:'海路 · 含补给段',air:'空中航线',airlift:'跨海空运'};
+  // 视口宽度加倍：显示宽度不变时，图的高度、路线和标注均等比缩小至原来的一半。
+  var mapWidth=840, mapHeight=232;
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) {
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
@@ -16,21 +18,21 @@
     var minX=Math.min.apply(null,xs), maxX=Math.max.apply(null,xs), minY=Math.min.apply(null,ys), maxY=Math.max.apply(null,ys);
     var scale=Math.min(292/Math.max(4,maxX-minX),132/Math.max(4,maxY-minY));
     var cx=(minX+maxX)/2, cy=(minY+maxY)/2;
-    function project(p){return [210+(p[0]-cx)*scale,116+(p[1]-cy)*scale];}
+    function project(p){return [mapWidth/2+(p[0]-cx)*scale,mapHeight/2+(p[1]-cy)*scale];}
     var dx=points[points.length-1][0]-points[0][0], dy=points[points.length-1][1]-points[0][1];
     var direction=dx===0&&dy===0?'同一坐标':['东','东南','南','西南','西','西北','北','东北'][(Math.round(Math.atan2(dy,dx)/(Math.PI/4))+8)%8]+'方向';
     return {points:points.map(project),project:project,scale:scale,cx:cx,cy:cy,direction:direction};
   }
   function terrainImage(l, terrain) {
     if (!terrain) return '';
-    var canvas=document.createElement('canvas');canvas.width=420;canvas.height=232;
+    var canvas=document.createElement('canvas');canvas.width=mapWidth;canvas.height=mapHeight;
     var ctx=canvas.getContext('2d');if(!ctx)return '';
-    var pixels=ctx.createImageData(420,232);
-    for(var y=0;y<232;y++)for(var x=0;x<420;x++) {
-      var wx=l.cx+(x-210)/l.scale+.5, wy=l.cy+(y-116)/l.scale+.5;
+    var pixels=ctx.createImageData(mapWidth,mapHeight);
+    for(var y=0;y<mapHeight;y++)for(var x=0;x<mapWidth;x++) {
+      var wx=l.cx+(x-mapWidth/2)/l.scale+.5, wy=l.cy+(y-mapHeight/2)/l.scale+.5;
       var d=terrain.sample?terrain.sample(wx,wy):(terrain.sea(wx,wy)?2:-2);
       var color=d>=0?(d<.65?[174,203,195]:[155,190,202]):(d>-.65?[211,211,180]:[220,228,205]);
-      var i=(y*420+x)*4;
+      var i=(y*mapWidth+x)*4;
       pixels.data[i]=color[0];pixels.data[i+1]=color[1];pixels.data[i+2]=color[2];pixels.data[i+3]=255;
     }
     ctx.putImageData(pixels,0,0);return canvas.toDataURL();
@@ -55,16 +57,16 @@
       var same=start[0]===end[0]&&start[1]===end[1];
       var color=route.mode==='land'?'#54734e':'#366f91';
       var description='从 '+(labels.start||'出发城市')+' ('+start.join(', ')+') 前往 '+(labels.end||'目标')+' ('+end.join(', ')+')，'+l.direction;
-      h+='<div class="dispatch-map-surface"><svg viewBox="0 0 420 232" role="img" aria-label="'+esc(description)+'" xmlns="http://www.w3.org/2000/svg">';
-      h+='<rect width="420" height="232" fill="#e4e9df"/>';
-      var bg=terrainImage(l,terrain);if(bg)h+='<image href="'+bg+'" width="420" height="232"/>';
+      h+='<div class="dispatch-map-surface"><svg viewBox="0 0 '+mapWidth+' '+mapHeight+'" role="img" aria-label="'+esc(description)+'" xmlns="http://www.w3.org/2000/svg">';
+      h+='<rect width="'+mapWidth+'" height="'+mapHeight+'" fill="#e4e9df"/>';
+      var bg=terrainImage(l,terrain);if(bg)h+='<image href="'+bg+'" width="'+mapWidth+'" height="'+mapHeight+'"/>';
       var step=Math.pow(10,Math.floor(Math.log10(48/l.scale))), ratio=48/l.scale/step;
       step*=ratio>5?10:ratio>2?5:2;
-      for(var gx=Math.ceil((l.cx-210/l.scale)/step)*step;gx<=l.cx+210/l.scale;gx+=step){
-        var px=l.project([gx,l.cy])[0];h+='<path d="M '+px+' 0 V 232" stroke="#738675" stroke-opacity=".17"/><text x="'+(px+4)+'" y="226" class="dispatch-map-grid-label">'+gx+'</text>';
+      for(var gx=Math.ceil((l.cx-mapWidth/2/l.scale)/step)*step;gx<=l.cx+mapWidth/2/l.scale;gx+=step){
+        var px=l.project([gx,l.cy])[0];h+='<path d="M '+px+' 0 V '+mapHeight+'" stroke="#738675" stroke-opacity=".17"/><text x="'+(px+4)+'" y="'+(mapHeight-6)+'" class="dispatch-map-grid-label">'+gx+'</text>';
       }
-      for(var gy=Math.ceil((l.cy-116/l.scale)/step)*step;gy<=l.cy+116/l.scale;gy+=step){
-        var py=l.project([l.cx,gy])[1];h+='<path d="M 0 '+py+' H 420" stroke="#738675" stroke-opacity=".17"/><text x="5" y="'+(py-4)+'" class="dispatch-map-grid-label">'+gy+'</text>';
+      for(var gy=Math.ceil((l.cy-mapHeight/2/l.scale)/step)*step;gy<=l.cy+mapHeight/2/l.scale;gy+=step){
+        var py=l.project([l.cx,gy])[1];h+='<path d="M 0 '+py+' H '+mapWidth+'" stroke="#738675" stroke-opacity=".17"/><text x="5" y="'+(py-4)+'" class="dispatch-map-grid-label">'+gy+'</text>';
       }
       var path=l.points.map(function(p){return p.join(',');}).join(' ');
       h+='<polyline points="'+path+'" fill="none" stroke="#fff" stroke-opacity=".8" stroke-width="7" stroke-linejoin="round"/>';
@@ -84,7 +86,7 @@
       h+=marker(sp,same?'起终':'起','#54734e');if(!same)h+=marker(ep,'终','#ac7445');
       function tag(p,coord,above){var y=p[1]+(above?-37:22);return '<g transform="translate('+(p[0]-48)+' '+y+')"><rect width="96" height="21" rx="5" fill="#fff" fill-opacity=".92"/><text x="48" y="14" text-anchor="middle" fill="#394e48" font-size="11">('+coord.join(', ')+')</text></g>';}
       h+=tag(sp,start,sp[1]<=ep[1]);if(!same)h+=tag(ep,end,ep[1]<sp[1]);
-      h+='<g transform="translate(388 25)"><text x="0" y="-9" text-anchor="middle" fill="#50655d" font-size="10">北</text><path d="M 0 -3 L -5 11 L 0 8 L 5 11 Z" fill="#50655d"/></g>';
+      h+='<g transform="translate('+(mapWidth-32)+' 25)"><text x="0" y="-9" text-anchor="middle" fill="#50655d" font-size="10">北</text><path d="M 0 -3 L -5 11 L 0 8 L 5 11 Z" fill="#50655d"/></g>';
       h+='</svg><span class="dispatch-map-direction">'+esc(l.direction)+'</span><span class="dispatch-map-caption">'+(terrain?'海陆地形 · 北向上':'坐标示意 · 地形未加载')+'</span></div>';
       h+='<div class="dispatch-map-endpoints"><div><i class="dispatch-map-dot start"></i><span><small>起点 · 出发城市</small><strong>'+esc(labels.start||'当前城市')+'</strong><code>('+start.join(', ')+')</code></span></div><span class="dispatch-map-to" aria-hidden="true">→</span><div><i class="dispatch-map-dot end"></i><span><small>终点 · 行军目标</small><strong>'+esc(labels.end||'目标位置')+'</strong><code>('+end.join(', ')+')</code></span></div></div>';
     }else h+='<p class="dispatch-map-empty">路线坐标暂不可用，请重新选择部队后重试。</p>';

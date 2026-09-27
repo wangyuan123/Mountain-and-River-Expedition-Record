@@ -43,6 +43,8 @@ test('军队总览三排浏览，全屏入口展示全部兵种并可关闭', ()
   const css = fs.readFileSync(path.join(__dirname, '../css/style.css'), 'utf8');
   const source = fs.readFileSync(path.join(__dirname, '../js/main-view.js'), 'utf8');
   assert.match(css, /\.army-summary\s*\{[^}]*grid-template-rows: repeat\(3, minmax\(64px, auto\)\)/s);
+  assert.match(css, /\.army-summary\s*\{[^}]*scrollbar-width:\s*thin;[^}]*scrollbar-color:\s*#a8afa4 #eeebe3;/s);
+  assert.match(css, /\.home-officer-list::-webkit-scrollbar,\s*\.army-summary::-webkit-scrollbar\s*\{[^}]*height:\s*6px;/s);
   assert.match(css, /\.army-summary-expanded\s*\{[^}]*grid-auto-flow: row;[^}]*grid-template-rows: none;/s);
   assert.match(source, /class="army-summary-expand"/);
   assert.match(source, /Game\.MainView\.showArmySummaryFullscreen\(\)/);

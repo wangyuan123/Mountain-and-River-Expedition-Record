@@ -257,14 +257,14 @@ test('battle commander skills show final bonuses instead of per-level rules', ()
     attacker: {
       name: '朱可夫', level: 100, military: 219,
       skills: [
-        { name: '全军冲锋', level: 5, description: '攻击力额外+10%/级，第1、4、7…回合触发' },
+        { name: '全军冲锋', level: 5, description: '首次交战回合及之后每隔2回合生效（如第4、7、10回合），全军攻击力额外+10%/级' },
         { name: '破甲打击', level: 5, description: '无视敌方防御6%/级' }
       ]
     },
     defender: null
   }, 'attacker');
 
-  assert.match(panel, /攻击力额外\+50%，第1、4、7…回合触发/);
+  assert.match(panel, /首次交战回合及之后每隔2回合生效（如第4、7、10回合），全军攻击力额外\+50%/);
   assert.match(panel, /无视敌方防御30%/);
   assert.doesNotMatch(panel, /%\/级/);
 });

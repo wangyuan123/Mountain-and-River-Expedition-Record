@@ -227,21 +227,34 @@
   cursor: not-allowed !important;
 }
 
-#switchAccountModal .account-confirm-cancel {
+#switchAccountModal .account-confirm-cancel,
+#renameCityModal .account-confirm-cancel,
+#officerRenameModal .account-confirm-cancel {
   border-color: var(--account-line) !important;
   background: var(--account-surface) !important;
   color: var(--account-ink) !important;
 }
-#switchAccountModal .account-confirm-cancel:hover:not(:disabled) {
+#switchAccountModal .account-confirm-cancel:hover:not(:disabled),
+#renameCityModal .account-confirm-cancel:hover:not(:disabled),
+#officerRenameModal .account-confirm-cancel:hover:not(:disabled) {
   border-color: var(--account-line) !important;
   background: var(--account-soft) !important;
 }
-#switchAccountModal .account-confirm-submit {
+#switchAccountModal .account-confirm-submit,
+#renameCityModal .account-confirm-submit,
+#officerRenameModal .account-confirm-submit {
   border-color: var(--account-accent) !important;
   background: var(--account-accent) !important;
   color: var(--account-button-ink) !important;
 }
-#switchAccountModal .account-confirm-submit:hover:not(:disabled) {
+#switchAccountModal .account-confirm-submit:hover:not(:disabled),
+#renameCityModal .account-confirm-submit:hover:not(:disabled),
+#officerRenameModal .account-confirm-submit:hover:not(:disabled) {
   border-color: var(--account-accent-hover) !important;
   background: var(--account-accent-hover) !important;
+}
+
+.officer-rename-dialog #officerRenameInput {
+  width: 100%;
+  box-sizing: border-box;
 }

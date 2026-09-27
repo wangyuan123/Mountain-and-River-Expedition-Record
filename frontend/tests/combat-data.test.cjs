@@ -40,6 +40,16 @@ test('all displayed unit stats and recruitment costs match server definitions', 
   assert.deepEqual(matched.sort(), Object.keys(data.units).sort());
 });
 
+test('rocket is the most expensive land unit for every recruitment resource', () => {
+  const landUnits = Object.values(data.units).filter((unit) => unit.branch === 'land');
+  const rocket = data.units.rocket;
+  for (const resource of ['food', 'steel', 'oil', 'rare']) {
+    // 火箭作为陆军珍贵远程火力，四项征召资源都必须高于其他陆军。
+    assert.equal(rocket.cost[resource], Math.max(...landUnits.map((unit) => unit.cost[resource] || 0)), resource);
+    assert.ok(landUnits.every((unit) => unit === rocket || rocket.cost[resource] > (unit.cost[resource] || 0)), resource);
+  }
+});
+
 test('military technology bonuses are 10% per level in server and client definitions', () => {
   const serverTechs = source('TechDef');
   const entries = [
@@ -72,8 +82,8 @@ test('all displayed fort stats and costs match server definitions', () => {
   assert.deepEqual(matched.sort(), Object.keys(data.forts).sort());
 });
 
-test('rocket role names exactly the four tenfold counter targets', () => {
-  assert.match(data.combatRoles.rocket, /轻坦、重坦、装甲车、突击炮均×10/);
+test('rocket role names exactly the four 5.5-fold counter targets', () => {
+  assert.match(data.combatRoles.rocket, /轻坦、重坦、装甲车、突击炮均×5\.5/);
   assert.match(data.combatRoles.rocket, /其他目标无额外克制倍率/);
   assert.doesNotMatch(data.combatRoles.rocket, /特种兵×0\.6|对装甲×1\.75/);
 });

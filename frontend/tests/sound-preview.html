@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>按钮音效试听 · 山河远征录</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/themes.css">
+  <link rel="stylesheet" href="../css/sound.css?v=1.2-sound-choice">
+  <style>
+    body { display: block; padding: 24px 16px; }
+    main { max-width: 640px; margin: auto; color: var(--ink); }
+    h1 { font-size: 22px; margin-bottom: 8px; }
+    .preview-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0; }
+    #audioStatus { display: block; margin: 16px 0; font-size: 13px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>按钮音效试听</h1>
+    <p>选择按钮声音后，点击下方按钮试听游戏中的反馈。</p>
+    <div class="preview-actions">
+      <button class="btn">查看建筑</button>
+      <button class="btn">确认升级</button>
+      <button class="btn">打开地图</button>
+      <button class="btn">返回</button>
+      <button class="btn" disabled>不可用按钮</button>
+    </div>
+    <output id="audioStatus" aria-live="polite">尚未播放；首次点击后启用音频。</output>
+    <div id="settings"></div>
+  </main>
+  <script src="../js/constants.js?v=2.0-sound-choice"></script>
+  <script src="../js/theme.js"></script>
+  <script>
+    // 仅试听页显示真实音源启动次数，便于检查一键一声和静音。
+    (function () {
+      var NativeAudio = window.AudioContext || window.webkitAudioContext;
+      var count = 0;
+      if (!NativeAudio) {
+        document.getElementById('audioStatus').textContent = '当前浏览器不支持 Web Audio，按钮仍可正常使用。';
+        return;
+      }
+      window.AudioContext = function () {
+        var audio = new NativeAudio();
+        var create = audio.createBufferSource.bind(audio);
+        audio.createBufferSource = function () {
+          var source = create();
+          var start = source.start.bind(source);
+          source.start = function () {
+            start();
+            count++;
+            document.getElementById('audioStatus').textContent = '已播放 ' + count + ' 次 · ' + Math.round(source.buffer.duration * 1000) + 'ms · 音频状态：' + audio.state;
+          };
+          return source;
+        };
+        return audio;
+      };
+    })();
+  </script>
+  <script src="../js/sound.js?v=1.4-sound-choice"></script>
+  <script>document.getElementById('settings').innerHTML = Game.Sound.renderSettings();</script>
+</body>
+</html>

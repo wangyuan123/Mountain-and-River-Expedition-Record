@@ -1,5 +1,6 @@
 package com.wargame.service;
 
+import com.wargame.model.constants.JapaneseOfficers;
 import com.wargame.model.constants.WildTypeDef;
 import com.wargame.model.constants.GameData;
 import com.wargame.model.entity.*;
@@ -274,7 +275,13 @@ public class MarchTargetService {
             Optional<Player> p = playerRepository.findById(pc.getOwnerId());
             return p.map(player -> player.getUsername() + " (城主亲督)").orElse("城防卫戍官");
         } else if (target instanceof NpcCity nc) {
-            return nc.getName() + "守备统领";
+            Officer cmd = JapaneseOfficers.buildOfficer(nc.getCommanderName(), nc.getLevel() != null ? nc.getLevel() : 1);
+            String starStr = cmd.getStar() != null && cmd.getStar() > 0 ? "★".repeat(cmd.getStar()) + " " : "";
+            return starStr + cmd.getName() + " (Lv." + (cmd.getLevel() != null ? cmd.getLevel() : 1) + ")";
+        } else if (target instanceof Bandit b) {
+            Officer cmd = JapaneseOfficers.buildOfficer(b.getCommanderName(), b.getLevel() != null ? b.getLevel() : 1);
+            String starStr = cmd.getStar() != null && cmd.getStar() > 0 ? "★".repeat(cmd.getStar()) + " " : "";
+            return starStr + cmd.getName() + " (Lv." + (cmd.getLevel() != null ? cmd.getLevel() : 1) + ")";
         }
         return "守军头目";
     }

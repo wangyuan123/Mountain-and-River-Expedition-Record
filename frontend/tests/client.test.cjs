@@ -32,6 +32,23 @@ function load(context, file) {
   vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), context, { filename: file });
 }
 
+test('academy ticks update quota and cooldown without replacing the candidate list', () => {
+  const region = { innerHTML: '' };
+  const context = sandbox({ document: { getElementById(id) { return id === 'academy-refresh-status' ? region : null; } } });
+  for (const file of ['js/data.js', 'js/core.js', 'js/officer.js']) load(context, file);
+  const core = context.Game.Core;
+  core.route = 'academy';
+  core.state = { academy: { refreshRoundCount: 30, refreshDailyCount: 60, refreshAt: Date.now() + 3600000 } };
+  core.refreshContent = () => assert.fail('must preserve candidate DOM');
+  core.silentUpdate({});
+  assert.ok(region.innerHTML.includes('刷新休整中'));
+  core.state.academy.refreshAt = Date.now() - 1;
+  core.silentUpdate({});
+  assert.ok(region.innerHTML.includes('本轮已刷新 0/30'));
+  assert.ok(region.innerHTML.includes('今日已刷新 60/100'));
+  assert.ok(region.innerHTML.includes('Game.Officer.onRefreshClick'));
+});
+
 test('page scripts initialize in HTML order and expose the extracted profile actions', () => {
   const context = sandbox();
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
@@ -91,6 +108,38 @@ test('a scout report reaches the existing UI handler and duplicate reports are i
   assert.equal(context.Game.state.reports.length, 1);
   assert.equal(context.Game.state.reports[0].readAt, 0);
   assert.equal(unreadRefreshes, 2);
+});
+
+test('construction ticks retain queue IDs when an older server payload omits them', () => {
+  const context = sandbox({ Game: {
+    state: { constructions: [{ id: 'lab', slot: null, queueId: 42, finishesAt: 1000 }] },
+    Core: { state: null, refreshTop() {}, silentUpdate() {} }
+  } });
+  context.Game.Core.state = context.Game.state;
+  load(context, 'js/ws-client.js');
+  load(context, 'js/ws-handlers.js');
+  context.Game.WS.handleMessage(JSON.stringify({ type: 'tick', data: {
+    constructions: [{ id: 'lab', slot: null, finishesAt: 900 }]
+  } }));
+  assert.equal(context.Game.state.constructions[0].queueId, 42);
+});
+
+test('completed research ticks refresh the onboarding guide only after completion', () => {
+  let refreshes = 0;
+  const context = sandbox({ Game: {
+    state: { research: { techType: 'recon_level' } },
+    Core: { state: null, refreshTop() {}, refreshContent() {}, silentUpdate() {} },
+    Onboarding: { refresh() { refreshes++; } },
+    Tech: {},
+    toast() {}
+  } });
+  context.Game.Core.state = context.Game.state;
+  load(context, 'js/ws-client.js');
+  load(context, 'js/ws-handlers.js');
+  context.Game.WS.handleMessage(JSON.stringify({ type: 'tick', data: {
+    completedResearch: ['侦察技术已完成'], research: null
+  } }));
+  assert.equal(refreshes, 1);
 });
 
 test('changing map position discards an older response and keeps newer marching state', async () => {
@@ -365,7 +414,7 @@ test('军情倒计时每秒更新，延迟后按真实时间校正，重新渲�
   assert.equal(timers.size, 0);
 });
 
-test('导航栏将科技和切换置于末尾，军情显示为情报', () => {
+test('导航栏最后显示文字商城，顶部不再显示商城图标', () => {
   const context = sandbox();
   for (const file of ['js/data.js', 'js/core.js', 'js/cities.js', 'js/main-view.js']) load(context, file);
   const G = context.Game;
@@ -376,7 +425,51 @@ test('导航栏将科技和切换置于末尾，军情显示为情报', () => {
 
   const labels = [...navHtml.matchAll(/class="navlabel">([^<]+)<\/span>/g)].map(m => m[1]);
   assert.deepEqual(labels, [
-    '首页', '资源', '军事', '军队', '战术', '地图', '情报', '战报', '邮件', '任务', '军团', '仓库', '科技', '切换'
+    '首页', '资源', '军事', '军官', '军队', '地图', '情报', '战报', '邮件', '任务', '军团', '仓库', '科技', '切换', '战术', '商城'
   ]);
+  assert.match(navHtml, /class="navitem" data-route="officer" onclick="Game\.go\('officer'\)"/);
   assert.doesNotMatch(navHtml, /军情/);
+  assert.doesNotMatch(navHtml, /class="nav-pages"/);
+  const topbar = { innerHTML: '' };
+  context.document.getElementById = id => id === 'topbar' ? topbar : null;
+  G.WS = { statusHtml: () => '' };
+  G.Core.renderTop();
+  assert.doesNotMatch(topbar.innerHTML, /topbar-shop-btn|img\/shop\.svg/);
+});
+
+test('导航栏军事后包含军官Tab，点击直达军官列表并在军官和军官详情页保持高亮', () => {
+  const context = sandbox();
+  for (const file of ['js/save.js', 'js/data.js', 'js/core.js', 'js/cities.js', 'js/officer.js', 'js/main-view.js']) load(context, file);
+  const G = context.Game;
+  G.state = {
+    player: { id: 1, cityName: '主城' },
+    world: { incoming: [] },
+    officers: [
+      { id: 'off_1', name: '李云龙', star: 3, level: 5, exp: 200, role: 'idle', logistics: 20, military: 80, defense: 40, knowledge: 30, loyalty: 90, salary: 100 }
+    ]
+  };
+  G.Core.state = G.state;
+  G.Core.route = 'home';
+
+  // 1. 验证首页下军官导航未处于激活态
+  let navHtml = G.MainView.navBar();
+  assert.match(navHtml, /class="navitem" data-route="officer" onclick="Game\.go\('officer'\)"/);
+  assert.doesNotMatch(navHtml, /class="navitem active" data-route="officer"/);
+
+  // 2. 模拟 Game.go('officer')
+  G.Core.go('officer');
+  assert.equal(G.Core.route, 'officer');
+  navHtml = G.MainView.navBar();
+  assert.match(navHtml, /class="navitem active" data-route="officer"/);
+
+  // 3. 验证 officer 视图渲染军官列表
+  const view = { innerHTML: '' };
+  G.Core.views.officer(view);
+  assert.match(view.innerHTML, /我的军官/);
+  assert.match(view.innerHTML, /李云龙/);
+
+  // 4. 验证在军官详情页 officerDetail 下，军官Tab同样保持激活态
+  G.Core.route = 'officerDetail';
+  navHtml = G.MainView.navBar();
+  assert.match(navHtml, /class="navitem active" data-route="officer"/);
 });

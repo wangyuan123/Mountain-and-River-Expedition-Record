@@ -14,7 +14,11 @@ function loadConstants() {
 test('shared catalogs keep stable IDs and ordered navigation', () => {
   const constants = loadConstants();
   const routes = constants.navItems.map(item => item.route);
-  assert.equal(routes[routes.indexOf('army') + 1], 'battleDefaults');
+  const armyIndex = routes.indexOf('buildArmy');
+  assert.equal(routes[armyIndex + 1], 'officer');
+  assert.equal(constants.navItems[armyIndex + 1].label, '军官');
+  assert.equal(routes.at(-2), 'battleDefaults');
+  assert.equal(routes.at(-1), 'shop');
   assert.equal(new Set(constants.shopItems.map(item => item.id)).size, constants.shopItems.length);
   assert.equal(new Set(constants.rechargePackages.map(item => item.id)).size, constants.rechargePackages.length);
   assert.equal(constants.mapRadiusOptions.at(-1).v, 0);

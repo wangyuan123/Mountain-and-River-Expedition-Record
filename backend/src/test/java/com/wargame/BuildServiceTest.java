@@ -4,6 +4,10 @@ import com.wargame.model.entity.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import com.wargame.service.PrerequisiteService;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 import java.util.List;
 import java.util.Map;
@@ -13,10 +17,15 @@ import static org.junit.jupiter.api.Assertions.*;
 @DisplayName("BuildService 单元测试")
 class BuildServiceTest extends BaseServiceTest {
 
+    // These legacy tests isolate construction capacity and queues; prerequisites have their own integration tests.
+    @MockBean private PrerequisiteService prerequisiteService;
+
     private Long playerId;
 
     @BeforeEach
     void setUp() {
+        when(prerequisiteService.unmet(anyLong(), anyInt(), anyString(), anyString(), anyInt()))
+                .thenReturn(List.of());
         Player player = createTestPlayer("buildplayer", 30);
         playerId = player.getId();
     }
@@ -129,7 +138,7 @@ class BuildServiceTest extends BaseServiceTest {
         Map<String, Object> result = buildService.upgrade(playerId, "farm", 0);
 
         assertEquals(false, result.get("success"));
-        assertEquals("已达当前市政厅上限", result.get("message"));
+        assertEquals("已达当前前线指挥部上限", result.get("message"));
 
         // Verify no construction was created
         List<Construction> constructions = constructionRepository.findByPlayerId(playerId);
@@ -349,7 +358,7 @@ class BuildServiceTest extends BaseServiceTest {
         createBuilding(playerId, "command", 2);
         Map<String, Object> result = buildService.dismantle(playerId, "command", 0);
         assertEquals(false, result.get("success"));
-        assertEquals("市政厅为核心枢纽，不可拆除", result.get("message"));
+        assertEquals("前线指挥部为核心枢纽，不可拆除", result.get("message"));
     }
 
     @Test

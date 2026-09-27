@@ -75,13 +75,12 @@ function setupTestEnvironment() {
           defense_tech: { name: '防御科技', branch: '军事', desc: '全军防御 +10%/级', max: 10, labReq: 2, baseCost: { steel: 240, food: 120 }, growth: 1.7, affect: 'def_all' }
         },
         resources: {
-          steel: { name: '钢铁', icon: '🔩' },
-          food: { name: '粮食', icon: '🌾' },
-          oil: { name: '石油', icon: '🛢️' },
-          rare: { name: '稀矿', icon: '💎' },
-          gold: { name: '黄金', icon: '🪙' }
+          steel: { name: '钢铁', icon: 'img/resources/models/steel.webp' },
+          food: { name: '粮食', icon: 'img/resources/models/food.webp' },
+          oil: { name: '石油', icon: 'img/resources/models/oil.webp' },
+          rare: { name: '稀矿', icon: 'img/resources/models/rare.webp' },
+          gold: { name: '黄金', icon: 'img/resources/models/gold.webp' }
         },
-        resEmoji: { steel: '🔩', food: '🌾' }
       },
       API: {
         techUpgrade: (tech) => Promise.resolve({ success: true, message: '已开始研发' }),
@@ -125,6 +124,9 @@ test('confirmResearch creates a confirmation modal card instead of instantly upg
   assert.ok(modal.innerHTML.includes('开始研发'));
   assert.ok(modal.innerHTML.includes('加成效果'));
   assert.ok(modal.innerHTML.includes('研发工期'));
+  for (const key of ['steel', 'food']) {
+    assert.ok(modal.innerHTML.includes(G.resourceIconHtml(key)));
+  }
 });
 
 test('renderActiveResearchCard renders progress bar when active research exists', () => {

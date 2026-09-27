@@ -1,5 +1,6 @@
 package com.wargame.service;
 
+import com.wargame.model.constants.JapaneseOfficers;
 import com.wargame.model.constants.WorldConfig;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
@@ -93,6 +94,8 @@ public class WorldViewService {
                 ncMap.put("army", JsonUtil.parseObjMap(nc.getArmy()));
                 ncMap.put("forts", JsonUtil.parseObjMap(nc.getForts()));
                 ncMap.put("reward", JsonUtil.parseObjMap(nc.getResources()));
+                ncMap.put("commanderName", nc.getCommanderName() != null ? nc.getCommanderName()
+                        : JapaneseOfficers.getCommanderForLevel(nc.getLevel() != null ? nc.getLevel() : 1));
                 ncMap.put("defeated", nc.getDefeated() != null && nc.getDefeated());
                 npcCities.add(ncMap);
             }
@@ -179,6 +182,8 @@ public class WorldViewService {
                 bMap.put("y", b.getY());
                 bMap.put("level", b.getLevel());
                 bMap.put("army", JsonUtil.parseObjMap(b.getArmy()));
+                bMap.put("commanderName", b.getCommanderName() != null ? b.getCommanderName()
+                        : JapaneseOfficers.getCommanderForLevel(b.getLevel() != null ? b.getLevel() : 1));
                 bMap.put("defeated", b.getDefeated() != null && b.getDefeated());
                 bandits.add(bMap);
             }
@@ -215,6 +220,8 @@ public class WorldViewService {
                     wtMap.put("gatherEndAt", wt.getGatherEndAt() != null ? wt.getGatherEndAt() : 0L);
                     wtMap.put("gatherLoad", wt.getGatherLoad() != null ? wt.getGatherLoad() : 0);
                     wtMap.put("gatherRes", wt.getGatherRes());
+                    wtMap.put("gatherMode", wt.getGatherMode());
+                    wtMap.put("gatherHarvested", wt.getGatherHarvested());
                 }
                 wildTiles.add(wtMap);
             }
@@ -325,6 +332,7 @@ public class WorldViewService {
         mMap.put("routeMode", m.getRouteMode());
         mMap.put("route", JsonUtil.parseTree(m.getRouteData()));
         mMap.put("action", m.getAction());
+        mMap.put("battleMode", m.getBattleMode());
         mMap.put("army", JsonUtil.parseObjMap(m.getArmy()));
         mMap.put("commanderId", m.getCommanderId());
         mMap.put("carryRes", JsonUtil.parseObjMap(m.getCarryRes()));
@@ -332,6 +340,9 @@ public class WorldViewService {
         mMap.put("arriveAt", m.getArriveAt());
         mMap.put("returning", Boolean.TRUE.equals(m.getReturning()));
         mMap.put("gathering", Boolean.TRUE.equals(m.getGathering()));
+        mMap.put("gatherMode", Objects.requireNonNullElse(m.getGatherMode(), "auto"));
+        mMap.put("gatherStartAt", m.getGatherStartAt());
+        mMap.put("gatherStopped", Boolean.TRUE.equals(m.getGatherStopped()));
         mMap.put("gatherEndAt", m.getGatherEndAt());
         mMap.put("gatherAmount", m.getGatherAmount());
         mMap.put("gatherRes", m.getGatherRes());
@@ -354,7 +365,8 @@ public class WorldViewService {
         long arrive = m.getArriveAt() != null ? m.getArriveAt() : now;
         if (Boolean.TRUE.equals(m.getGathering())) {
             long gatherEnd = m.getGatherEndAt() != null ? m.getGatherEndAt() : now;
-            mMap.put("progress", calcProgress(start, gatherEnd, now));
+            long gatherStart = m.getGatherStartAt() != null ? m.getGatherStartAt() : arrive;
+            mMap.put("progress", calcProgress(gatherStart, gatherEnd, now));
         } else {
             mMap.put("progress", calcProgress(start, arrive, now));
         }

@@ -18,6 +18,29 @@ window.Game = window.Game || {};
       mail: 1, recharge: 1, login: 1,
       guild: 1, map: 1, wild: 1, dispatch: 1
     },
+    // 按钮音效是当前设备的听觉偏好，不随游戏账号或服务端存档变化。
+    uiSound: {
+      storageKey: 'wargame_ui_sound_v1',
+      defaultVolume: 0.4,
+      defaultSound: 'confirm',
+      cooldownMs: 65,
+      maxDelayMs: 250,
+      maxVoices: 3,
+      cues: {
+        confirm: { label: '确认', layers: [
+          { wave: 'metal', at: 0, duration: 0.07, from: 280, to: 210, gain: 0.26 },
+          { wave: 'sine', at: 0.065, duration: 0.11, from: 720, to: 690, gain: 0.17 }
+        ] },
+        // 硬质零件碰撞的锐利起音，加少量非整数倍金属泛音与轻回弹，余响快速收住。
+        mechanicalImpact: { label: '清脆机械碰撞', layers: [
+          { wave: 'noise', at: 0, duration: 0.018, from: 5600, to: 2400, gain: 0.32 },
+          { wave: 'metal', at: 0, duration: 0.13, from: 1480, to: 1460, gain: 0.24 },
+          { wave: 'sine', at: 0, duration: 0.2, from: 920, to: 920, gain: 0.1 },
+          { wave: 'sine', at: 0, duration: 0.065, from: 3650, to: 3650, gain: 0.075 },
+          { wave: 'metal', at: 0.02, duration: 0.06, from: 2140, to: 2110, gain: 0.11 }
+        ] }
+      }
+    },
     themeStorageKey: 'wargame_theme_pref',
     defaultTheme: 'blue-white-classic',
     themes: [
@@ -28,8 +51,8 @@ window.Game = window.Game || {};
     navItems: [
       { key: '1', label: '资源', route: 'buildRes' },
       { key: '2', label: '军事', route: 'buildArmy' },
+      { key: '·', label: '军官', route: 'officer' },
       { key: '3', label: '军队', route: 'army' },
-      { key: '·', label: '战术', route: 'battleDefaults' },
       { key: '4', label: '地图', route: 'world' },
       { key: '5', label: '情报', route: 'alerts' },
       { key: '6', label: '战报', route: 'reports' },
@@ -37,7 +60,9 @@ window.Game = window.Game || {};
       { key: '8', label: '任务', route: 'mainQuest' },
       { key: '9', label: '军团', route: 'guild' },
       { key: '0', label: '仓库', route: 'depot' },
-      { key: '·', label: '科技', route: 'tech' }
+      { key: '·', label: '科技', route: 'tech' },
+      { key: '·', label: '战术', route: 'battleDefaults' },
+      { key: '·', label: '商城', route: 'shop' }
     ],
     footerHints: {
       // TODO：恢复防沉迷后改回“实名注册 · 健康游戏”。
@@ -77,14 +102,14 @@ window.Game = window.Game || {};
       'destroyer', 'sub', 'battleship', 'carrier'
     ],
     presetAvatars: [
-      { id: 'commander-8', name: '萌系指挥官', role: '休闲', src: 'img/avatars/commander-8.svg' },
-      { id: 'commander-1', name: '陆军上将', role: '全军统帅', src: 'img/avatars/commander-1.svg' },
-      { id: 'commander-2', name: '装甲指挥官', role: '装甲先锋', src: 'img/avatars/commander-2.svg' },
-      { id: 'commander-3', name: '王牌飞行员', role: '空中制霸', src: 'img/avatars/commander-3.svg' },
-      { id: 'commander-4', name: '海军提督', role: '深海巨舰', src: 'img/avatars/commander-4.svg' },
-      { id: 'commander-5', name: '战术参谋长', role: '战役规划', src: 'img/avatars/commander-5.svg' },
-      { id: 'commander-6', name: '特战先锋', role: '敌后奇袭', src: 'img/avatars/commander-6.svg' },
-      { id: 'commander-7', name: '最高元帅', role: '荣誉勋章', src: 'img/avatars/commander-7.svg' }
+      { id: 'rank-private', name: '列兵', src: 'img/avatars/historical/rank-private-v1.webp' },
+      { id: 'rank-corporal', name: '下士', src: 'img/avatars/historical/rank-corporal-v1.webp' },
+      { id: 'rank-sergeant', name: '中士', src: 'img/avatars/historical/rank-sergeant-v1.webp' },
+      { id: 'rank-lieutenant', name: '中尉', src: 'img/avatars/historical/rank-lieutenant-v1.webp' },
+      { id: 'rank-captain', name: '上尉', src: 'img/avatars/historical/rank-captain-v1.webp' },
+      { id: 'rank-major', name: '少校', src: 'img/avatars/historical/rank-major-v1.webp' },
+      { id: 'rank-colonel', name: '上校', src: 'img/avatars/historical/rank-colonel-v1.webp' },
+      { id: 'rank-general', name: '将军', src: 'img/avatars/historical/rank-general-v1.webp' }
     ],
     equipmentNames: {
       recruit_military_weapon: '列兵军刀', recruit_military_badge: '列兵臂章', recruit_military_coat: '列兵作训服',
@@ -118,7 +143,7 @@ window.Game = window.Game || {};
     resourceNames: { food: '粮食', steel: '钢铁', oil: '石油', rare: '稀矿', gold: '黄金' },
     connectionStatusNames: { connected: '已连接', connecting: '连接中', reconnecting: '重连中', disconnected: '已断开' },
     battleReportTitles: { conquer: '征服报告', plunder: '掠夺报告', scout: '侦查报告' },
-    battleResourceNames: { food: '粮', steel: '钢', oil: '油', rare: '稀矿', gold: '金' },
+    battleResourceNames: { food: '粮', steel: '钢', oil: '油', rare: '稀矿', gold: '金', diamond: '钻' },
     unitTechKeys: { inf: null, arm: 'arm_engine', air: 'air_engine', nav: 'nav_engine' },
     resourceKeys: ['food', 'steel', 'oil', 'rare'],
     resourceKeysWithGold: ['food', 'steel', 'oil', 'rare', 'gold'],
@@ -147,9 +172,12 @@ window.Game = window.Game || {};
     mailHistoryMax: 20,
     chatMax: 80,
     chatCooldownSec: 5,
+    chatMinPrestige: 10000,
     buildMaxConcurrent: 6,
     saveAttrMax: 219,
     officerMaxLevel: 100,
+    // 当前星级 1～4 升到下一星的失败率；失败仍消耗一枚星耀符。
+    starUpFailureRates: [10, 20, 30, 60],
     shopCategories: [
       { id: 'all',     name: '全部' },
       { id: 'jewelry', name: '珠宝' },
@@ -173,9 +201,9 @@ window.Game = window.Game || {};
       { id: 'expBookMax', cat: 'officer',  name: '满级经验书', icon: '📙', desc: '军官使用,直接升至满级(Lv.100)',   price: 1000, stock: null, tag: '极品' },
       { id: 'skillBook',  cat: 'officer',  name: '通用技能书', icon: '📗', desc: '选择军官使用，随机学习一个未掌握技能', price: 80, stock: null, tag: '随机' },
       { id: 'loyaltyBox', cat: 'officer',  name: '忠诚宝箱',   icon: '🎁', desc: '军官忠诚度+20,提升留任意愿',     price: 50,   stock: null, tag: '' },
-      { id: 'renameCard', cat: 'officer',  name: '改名卡',     icon: '🏷️', desc: '为军官更换新名字',               price: 60,   stock: null, tag: '' },
-      { id: 'recruitOrd', cat: 'officer',  name: '征募令',     icon: '🎖️', desc: '刷新军校,保底出现一名五星军官',   price: 500,  stock: 3,    tag: '稀有' },
-      { id: 'starUp',     cat: 'officer',  name: '星耀符',     icon: '✨', desc: '军官升星,属性大幅成长',          price: 300,  stock: null, tag: '' },
+      { id: 'renameCard', cat: 'officer',  name: '军官改名卡', icon: '🏷️', desc: '为军官更换新名字',               price: 60,   stock: null, tag: '' },
+      { id: 'recruitOrd', cat: 'officer',  name: '征募令',     icon: '🎖️', desc: '刷新陆军讲武堂,保底出现一名五星军官',   price: 500,  stock: 3,    tag: '稀有' },
+      { id: 'starUp',     cat: 'officer',  name: '星耀符',     icon: '✨', desc: '升2/3/4/5星失败率10/20/30/60%，失败也消耗1枚', price: 300, stock: null, tag: '' },
 
       // —— 军官装备宝箱（整套装备，打开直接获得3件装备并激活套装属性）——
       { id: 'box_recruit_military',  cat: 'officer', name: '列兵军事装备箱', icon: '📦', desc: '开启获得整套列兵军事装备(军刀/臂章/作训服)，激活军事+3', price: 200,  stock: null, tag: '低级套装' },
@@ -189,10 +217,10 @@ window.Game = window.Game || {};
       { id: 'box_marshal_knowledge', cat: 'officer', name: '元帅学识装备箱', icon: '👑', desc: '开启获得整套元帅学识装备(望远镜/军师印/军礼服)，激活学识+30+全属性+5', price: 5000, stock: null, tag: '满级套装' },
 
       // —— 资源道具 ——
-      { id: 'goldBox',    cat: 'resource', name: '黄金箱',     icon: '🪙', desc: '开启获得1000~5000黄金',        price: 80,   stock: null, tag: '' },
+      { id: 'goldBox',    cat: 'resource', name: '黄金箱',     icon: 'img/resources/models/gold.webp', desc: '开启获得1000~5000黄金',        price: 80,   stock: null, tag: '' },
       { id: 'resBox',     cat: 'resource', name: '资源箱',     icon: '📦', desc: '开启获得粮钢油稀各500',        price: 120,  stock: null, tag: '热销' },
-      { id: 'steelPack',  cat: 'resource', name: '钢铁大礼包', icon: '🔩', desc: '立即获得20000钢铁',            price: 200,  stock: null, tag: '' },
-      { id: 'supplyPack', cat: 'resource', name: '战备补给包', icon: '🌾', desc: '粮钢油稀各8000,适合长期发展',  price: 350,  stock: null, tag: '超值' },
+      { id: 'steelPack',  cat: 'resource', name: '钢铁大礼包', icon: 'img/resources/models/steel.webp', desc: '立即获得20000钢铁',            price: 200,  stock: null, tag: '' },
+      { id: 'supplyPack', cat: 'resource', name: '战备补给包', icon: 'img/resources/models/food.webp', desc: '粮钢油稀各8000,适合长期发展',  price: 350,  stock: null, tag: '超值' },
       { id: 'resourcePack500w', cat: 'resource', name: '资源大礼包', icon: '🎁', desc: '粮食/钢铁/石油/稀矿各500万', price: 5000, stock: null, tag: '豪华' },
 
       // —— 功能道具 - 加速符（建筑施工 / 军队生产通用）——
@@ -221,8 +249,8 @@ window.Game = window.Game || {};
     ],
     rechargePackages: [
       { id: 'p6', cat: 'diamond', name: '试玩补给', icon: '💎', rmb: 6, diamond: 60, desc: '适合首次体验充值' },
-      { id: 'p30', cat: 'diamond', name: '少将补给', icon: '💠', rmb: 30, diamond: 330, desc: '额外赠送30钻石', bonus: '赠30' },
-      { id: 'p98', cat: 'diamond', name: '中将补给', icon: '💠', rmb: 98, diamond: 1080, desc: '额外赠送100钻石', bonus: '赠100' },
+      { id: 'p30', cat: 'diamond', name: '少将补给', icon: '💎', rmb: 30, diamond: 330, desc: '额外赠送30钻石', bonus: '赠30' },
+      { id: 'p98', cat: 'diamond', name: '中将补给', icon: '💎', rmb: 98, diamond: 1080, desc: '额外赠送100钻石', bonus: '赠100' },
       { id: 'p198', cat: 'diamond', name: '上将补给', icon: '💎', rmb: 198, diamond: 2230, desc: '额外赠送250钻石', bonus: '赠250' },
       { id: 'p328', cat: 'diamond', name: '大将补给', icon: '💎', rmb: 328, diamond: 3780, desc: '额外赠送500钻石', bonus: '赠500' },
       { id: 'p648', cat: 'diamond', name: '统帅补给', icon: '💎', rmb: 648, diamond: 7680, desc: '额外赠送1200钻石', bonus: '赠1200' },

@@ -526,10 +526,13 @@ public class ImportService {
         // Import wild tiles (with migration: generate if missing)
         JsonNode wildTilesNode = worldNode.path("wildTiles");
         if (wildTilesNode.isArray()) {
+            Set<String> northernSnow = retainedNorthernSnow(wildTilesNode);
             for (JsonNode wtNode : wildTilesNode) {
                 WildTile wildTile = new WildTile();
                 wildTile.setWorldId(worldId);
-                wildTile.setType(wtNode.path("type").asText("forest"));
+                String type = wtNode.path("type").asText("forest");
+                String coordinate = wtNode.path("x").asInt(0) + "," + wtNode.path("y").asInt(0);
+                wildTile.setType("snow".equals(type) && !northernSnow.contains(coordinate) ? "plains" : type);
                 wildTile.setX(wtNode.path("x").asInt(0));
                 wildTile.setY(wtNode.path("y").asInt(0));
                 wildTile.setLevel(wtNode.path("level").asInt(1));
@@ -542,6 +545,30 @@ public class ImportService {
                 wildTileRepository.save(wildTile);
             }
         }
+    }
+
+    /** Preserve imported snow only when it belongs to a full 3x3 field in the far north. */
+    private Set<String> retainedNorthernSnow(JsonNode wildTiles) {
+        Set<String> snow = new HashSet<>(), retained = new HashSet<>();
+        for (JsonNode tile : wildTiles) {
+            int y = tile.path("y").asInt(-1);
+            if ("snow".equals(tile.path("type").asText()) && y >= 0 && y <= 26) {
+                snow.add(tile.path("x").asInt(-1) + "," + y);
+            }
+        }
+        for (JsonNode tile : wildTiles) {
+            if (!"snow".equals(tile.path("type").asText())) continue;
+            int x = tile.path("x").asInt(-1), y = tile.path("y").asInt(-1);
+            if (y < 1 || y > 25) continue;
+            boolean complete = true;
+            for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++) {
+                if (!snow.contains((x + dx) + "," + (y + dy))) complete = false;
+            }
+            if (complete) for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++) {
+                retained.add((x + dx) + "," + (y + dy));
+            }
+        }
+        return retained;
     }
 
     private void importMarches(Long playerId, JsonNode root) {

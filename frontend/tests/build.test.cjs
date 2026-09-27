@@ -52,22 +52,21 @@ function setup() {
       state,
       DATA: {
         buildings: {
-          command:  { name: '市政厅', desc: '主城', baseCost: { steel: 400, food: 200 }, growth: 1.6, slots: 1 },
+          command:  { name: '前线指挥部', desc: '主城', baseCost: { steel: 400, food: 200 }, growth: 1.6, slots: 1 },
           farm:     { name: '农田', desc: '粮食', baseCost: { steel: 80 }, growth: 1.5, produces: 'food', baseProduce: 40, slots: 32 },
           refinery: { name: '炼钢厂', desc: '钢铁', baseCost: { steel: 80 }, growth: 1.5, produces: 'steel', slots: 32 },
           oilfield: { name: '石油基地', desc: '石油', baseCost: { steel: 80 }, growth: 1.5, produces: 'oil', slots: 32 },
           raremine: { name: '稀矿厂', desc: '稀矿', baseCost: { steel: 120, oil: 40 }, growth: 1.6, produces: 'rare', slots: 32 },
-          radar:    { name: '雷达站', desc: '侦察', baseCost: { steel: 180, oil: 60, rare: 20 }, growth: 1.6, produces: '', slots: 1 }
+          radar:    { name: '防空雷达站', desc: '侦察', baseCost: { steel: 180, oil: 60, rare: 20 }, growth: 1.6, produces: '', slots: 1 }
         },
         groupSlots: { res: 12, army: 10 },
         resources: {
-          food: { name: '粮食', icon: '🌾' },
-          steel: { name: '钢铁', icon: '🏭' },
-          oil: { name: '石油', icon: '🛢️' },
-          rare: { name: '稀矿', icon: '⛏️' },
-          gold: { name: '黄金', icon: '🪙' }
+          food: { name: '粮食', icon: 'img/resources/models/food.webp' },
+          steel: { name: '钢铁', icon: 'img/resources/models/steel.webp' },
+          oil: { name: '石油', icon: 'img/resources/models/oil.webp' },
+          rare: { name: '稀矿', icon: 'img/resources/models/rare.webp' },
+          gold: { name: '黄金', icon: 'img/resources/models/gold.webp' }
         },
-        resEmoji: { food: '🌾', steel: '🏭', oil: '🛢️', rare: '⛏️', gold: '🪙' }
       },
       Core: {
         state,
@@ -133,6 +132,18 @@ function setup() {
   return { G, context, state, timers };
 }
 
+test('建筑与升级入口使用全局按钮音效，弹窗保留可点击按钮', () => {
+  const { G, context } = setup();
+  G.Build.onSlotClick('farm', 1);
+  const detail = context.document.body.appended.at(-1);
+  assert.match(detail.innerHTML, /id="bdetailClose"/);
+  detail.querySelector('#bdetailUpBtn').onclick();
+  const confirmation = context.document.body.appended.at(-1);
+  assert.match(confirmation.innerHTML, /id="cuOk"/);
+  assert.match(confirmation.innerHTML, /id="cuCancel"/);
+  assert.doesNotMatch(confirmation.innerHTML, /data-ui-sound/);
+});
+
 test('免费加速按钮在无道具时仍可用，超过门槛仍需道具', () => {
   const { G, state, context } = setup();
   context.Date = class extends Date { static now() { return 1000000; } };
@@ -197,6 +208,20 @@ test('免费加速精确定位队列，连点只发一次请求，失败后可�
   assert.equal(calls, 2);
 });
 
+test('成功下达升级命令后通知新手指引，失败升级不重新弹出', async () => {
+  const { G } = setup();
+  const resumed = [];
+  G.Core.route = 'buildArmy';
+  G.Onboarding = { actionStarted(route, building) { resumed.push([route, building]); } };
+  G.Build.upgrade('command', 0);
+  await new Promise(setImmediate);
+  assert.deepEqual(resumed, [['buildArmy', 'command']]);
+  G.API.buildUpgrade = async () => ({ success: false, message: '资源不足' });
+  G.Build.upgrade('command', 0);
+  await new Promise(setImmediate);
+  assert.deepEqual(resumed, [['buildArmy', 'command']]);
+});
+
 test('免费加速接口发送队列ID并立即应用完工后的服务端状态', async () => {
   const { G, state, context } = setup();
   const completedState = { ...state, buildings: { ...state.buildings, command: 3 },
@@ -247,10 +272,10 @@ test('建筑卡片渲染拆除按钮', () => {
   assert.match(farmCardHtml, /Game\.Build\.confirmDismantle\('farm',1\)/);
 });
 
-test('市政厅不可被拆除', () => {
+test('前线指挥部不可被拆除', () => {
   const { G } = setup();
   G.Build.confirmDismantle('command', null);
-  assert.equal(G._lastToast, '市政厅为核心枢纽，不可拆除');
+  assert.equal(G._lastToast, '前线指挥部为核心枢纽，不可拆除');
 });
 
 test('队列渲染显示拆除中状态', () => {
@@ -289,6 +314,7 @@ test('不足六项工程可确认升级和拆除，六项时显示满员提示',
       if (count < 6) {
         assert.doesNotMatch(html, /施工队全忙/);
         assert.match(html, action === 'confirmUpgrade' ? /升级确认/ : /拆除建筑确认/);
+        assert.ok(html.includes(G.resourceIconHtml('steel')));
       } else {
         assert.match(html, /施工队全忙/);
         assert.match(html, /6 支施工队均在作业中/);
@@ -348,22 +374,22 @@ test('点击卡槽建筑弹出详情弹窗，包含资源产出、升级和拆�
   assert.match(modalHtml, /id="bdetailDisBtn"/);
   assert.match(modalHtml, /拆除完成后建筑彻底消失，并释放该卡槽地块/);
 
-  // 2. 测试 slot 0 (Lv.2，达市政厅上限，拆除降为 Lv.1)
+  // 2. 测试 slot 0 (Lv.2，达前线指挥部上限，拆除降为 Lv.1)
   G.Build.onSlotClick('farm', 0);
   const modalHtml2 = appended[appended.length - 1].innerHTML;
   assert.match(modalHtml2, /#1 农田/);
-  assert.match(modalHtml2, /已达当前市政厅限制上限/);
+  assert.match(modalHtml2, /已达当前前线指挥部限制上限/);
   assert.match(modalHtml2, /拆除完成后建筑等级降为 Lv\.1/);
 });
 
-test('市政厅详情弹窗中显示防拆提示且无拆除按钮', () => {
+test('前线指挥部详情弹窗中显示防拆提示且无拆除按钮', () => {
   const { G, context } = setup();
   G.Build.onSlotClick('command', null);
   const appended = context.document.body.appended;
   const modalHtml = appended[appended.length - 1].innerHTML;
 
-  assert.match(modalHtml, /市政厅/);
-  assert.match(modalHtml, /市政厅为主城核心枢纽，不可拆除/);
+  assert.match(modalHtml, /前线指挥部/);
+  assert.match(modalHtml, /前线指挥部为主城核心枢纽，不可拆除/);
   assert.doesNotMatch(modalHtml, /id="bdetailDisBtn"/);
 });
 
@@ -407,8 +433,8 @@ test('军事建筑显示花园卫城模型，全部 21 个映射都有实际素�
     assert.ok(fs.existsSync(path.join(__dirname, '..', asset)), `缺少建筑素材：${asset}`);
   }
   const armyGridHtml = G.Build.renderSlotGrid('army', [], state);
-  assert.match(armyGridHtml, /<img class="b-icon-img" src="img\/buildings\/garden\/command\.webp" alt="市政厅"/);
-  assert.match(armyGridHtml, /<img class="b-icon-img" src="img\/buildings\/garden\/radar\.webp" alt="雷达站"/);
+  assert.match(armyGridHtml, /<img class="b-icon-img" src="img\/buildings\/garden\/command\.webp" alt="前线指挥部"/);
+  assert.match(armyGridHtml, /<img class="b-icon-img" src="img\/buildings\/garden\/radar\.webp" alt="防空雷达站"/);
 });
 
 test('renderBuildingIcon 支持 WebP、SVG 图片路径及 emoji 降级', () => {

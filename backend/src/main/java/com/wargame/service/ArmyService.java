@@ -194,6 +194,7 @@ public class ArmyService {
         queue.setPlayerId(playerId);
         queue.setCitySlot(cityScope.slot(playerId));
         queue.setUnitType(unitType);
+        queue.setBuildingType(u.build());
         queue.setUnitCount(n);
         queue.setStartedAt(startsAt);
         queue.setFinishesAt(startsAt + duration * 1000L);
@@ -412,7 +413,9 @@ public class ArmyService {
         for (int i = 0; i < parallel; i++) laneAvailableAt.add(now);
         for (ArmyProductionQueue q : armyProductionQueueRepository.findByPlayerIdAndCitySlotOrderByStartedAtAscIdAsc(playerId, cityScope.slot(playerId))) {
             UnitDef queuedUnit = GameData.UNITS.get(q.getUnitType());
-            if (queuedUnit == null || !buildingType.equals(queuedUnit.build())) continue;
+            String queueBuilding = q.getBuildingType() != null ? q.getBuildingType()
+                    : queuedUnit != null ? queuedUnit.build() : null;
+            if (!buildingType.equals(queueBuilding)) continue;
             int lane = 0;
             for (int i = 1; i < laneAvailableAt.size(); i++) if (laneAvailableAt.get(i) < laneAvailableAt.get(lane)) lane = i;
             laneAvailableAt.set(lane, Math.max(laneAvailableAt.get(lane), q.getFinishesAt()));
@@ -463,7 +466,7 @@ public class ArmyService {
 
     // ================================================================
     //  armyCap - 对应 JS Core.armyCap
-    //  军衔基础每阶 +50,000；当前城市围墙满级（Lv.10）额外 +100,000。
+    //  少校基础 300,000，此后每阶 +50,000，上将 600,000；当前城市满级围墙额外 +100,000。
     //  三军统帅技能仍作用于基础与围墙奖励之和；市政厅、参谋部和指挥官等级不参与计算。
     // ================================================================
 
@@ -489,6 +492,13 @@ public class ArmyService {
             cap *= (1.0 + 0.04 * leadershipLv);
         }
         return (int) Math.floor(cap);
+    }
+
+    /** 出城迎战只将军衔基础放大至 1.5 倍，围墙与统帅加成保持与攻击相同的数额。 */
+    public int sortieCap(Long playerId) {
+        Player player = playerRepository.findById(playerId).orElse(null);
+        int rankBase = MilitaryRankDef.getRankBase(player != null ? player.getMilitaryRank() : 1);
+        return armyCap(playerId) + rankBase / 2;
     }
 
     private int getOfficerSkillLevel(Officer officer, String skillId) {

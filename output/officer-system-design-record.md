@@ -2,6 +2,8 @@
 
 - **记录日期**：2026-09-20
 - **版本标识**：`officer-system-rebalance-20260920`
+- **当前规则补充（2026-09-26）**：本记录保留四维属性设计背景。军官军事、防御属性直接加成己方攻防时，仍在固定第 3、6、9…回合生效；五项周期技能从首次交战回合 E 起，在 E、E+3、E+6…回合生效。战斗使用的综合属性包含已穿戴装备和已激活套装。师夷长技的敌方攻击参考值计入综合军事属性，不受固定属性回合限制，也不复制全军冲锋等技能。具体公式、叠加顺序和实现差异以 [军官技能池设计记录](officer-skills-design-record.md) 为准。
+- **出兵容量规则补充**：少校基础上限为 300,000，此后每阶增加 50,000，上将为 600,000；迎战上限为基础的 1.5 倍加各类加成。军官后勤属性不直接增加带兵上限，围墙与三军统帅的计算口径见 [军衔出兵上限与出城迎战配置记录](troop-capacity-design-record.md)。
 - **关联代码与资源**：
   - 后端实体与服务：[`Officer.java`](file:///Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/model/entity/Officer.java)、[`OfficerEquipment.java`](file:///Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/model/entity/OfficerEquipment.java)、[`OfficerEquipmentDef.java`](file:///Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/model/constants/OfficerEquipmentDef.java)、[`OfficerService.java`](file:///Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/OfficerService.java)、[`EquipmentService.java`](file:///Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/EquipmentService.java)、[`BattleService.java`](file:///Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/BattleService.java)、[`MarchService.java`](file:///Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/MarchService.java)
   - 数据库迁移：[`V38__officer_defense_attribute.sql`](file:///Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/resources/db/migration/V38__officer_defense_attribute.sql)
@@ -16,9 +18,9 @@
 本次重构旨在解决原军官体系中“重攻轻守、属性失衡、缺乏技能回合博弈”的问题，确立了完整的四维属性对等体系：
 
 1. **确立四维独立属性体系**：
-   - **军事（Military）**：进攻核心。在技能回合提供全军百分比攻击力爆发。
-   - **防御（Defense）**：守御核心。与军事属性形成镜像对抗，在技能回合提升全军基础防御力百分比，直接吸收并对冲敌方的技能爆发伤害。
-   - **后勤（Logistics）**：统御与战备。增加部队带兵上限并降低行军机动耗时。
+   - **军事（Military）**：进攻核心。在固定第 3、6、9…回合提供全军百分比攻击力加成。
+   - **防御（Defense）**：守御核心。与军事属性形成镜像对抗，在固定第 3、6、9…回合提升全军基础防御力百分比。
+   - **后勤（Logistics）**：统御与战备。降低行军机动耗时；当前不直接增加带兵上限，容量由军衔基础、满级围墙和已任命指挥官的三军统帅技能计算。
    - **学识（Knowledge）**：政略与战策。担任市长时提升黄金税收与科研效率，出征时影响部分战法判定与战斗经验获取。
 
 2. **严谨的极限数值边界（219 单项上限）**：
@@ -26,8 +28,8 @@
    - 彻底废除旧版升级自动多点随机膨胀机制，采用**每升 1 级固定获得 1 点自由属性点**（1级至100级满级共获得 **99 点**）。
    - 5 星极品军官初始专精主属性上限为 **120**，满级加满单项主属性：$120 + 99 = 219$，恰好契合系统天花板；优秀 5 星主属性初始下限为 **111**，满级可达 $111 + 99 = 210$。实现满级 5 星军官主属性稳定落在 **210 ～ 219** 黄金区间。
 
-3. **技能回合攻防对冲闭环（第 3、6、9... 回合）**：
-   - 军官战法在第 $3n$ 回合（$n \ge 1$）爆发。
+3. **属性回合攻防对冲闭环（第 3、6、9…回合）**：
+   - 指挥官军事、防御属性在第 $3n$ 回合（$n \ge 1$）生效；五项周期技能另从首次交战回合起算。
    - 攻方指挥官军事属性转化为“全军攻击力加成”，守方指挥官防御属性转化为“全军防御力加成”。
    - 守方的强化防御值直接带入非线性有效减伤公式，有效遏制纯攻极端秒杀，实现深度的排兵布阵与将领搭配策略。
 
@@ -94,24 +96,26 @@ $$\begin{aligned}
 
 ---
 
-## 四、 军官技能回合战斗对冲机制（第 3、6、9... 回合）
+## 四、 军官属性回合战斗对冲机制（第 3、6、9…回合）
 
 ### 1. 触发时机与环境上下文
 在战斗结算引擎 [`BattleService.java`](file:///Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/BattleService.java) 中：
 - 战斗每轮推进一个回合（$Round = 1, 2, 3 \dots 30$）。
-- 当 $Round \pmod 3 == 0$ 时判定为**军官战法/技能生效回合**。
+- 当 $Round \pmod 3 == 0$ 时，指挥官军事、防御属性生效。五项周期技能以首次实际交战回合 $E$ 为起点，在 $E$、$E+3$、$E+6$…回合进入生效窗口。例如第 4 回合首次交战，技能在第 4、7、10、13…回合生效；两种周期可重合，也可错开。
 
 ### 2. 攻守双向数值计算公式
 
-在技能回合中，攻守双方指挥官属性全面激活：
+在固定属性回合中，攻守双方指挥官属性全面激活；下列公式仅说明属性加成，不代表技能也在该回合触发。这里的军事、防御均为 `EquipmentService.attributes()` 汇总后的综合属性，即军官自身属性加已穿戴装备、已激活套装的对应加成；不是仅取军官自身裸值。
+
+师夷长技另按 `同名兵种对应领域基础攻击 × (1 + 0.10 × 敌方攻击科技等级) × (1 + 敌方综合军事 / 100)` 计算学习基准，且在它自己的技能回合中始终读取综合军事；借甲御敌的防御参考值则只计基础防御和敌方防御科技，不含敌方综合防御属性。
 
 1. **攻方攻击倍率（$AtkMul$）**：
    $$AtkMul = 1.0 + \frac{\text{攻方指挥官军事属性}}{100}$$
-   *(例：攻方军官军事 150，技能回合全军攻击提升 +150%，即 $AtkMul = 2.5$)*
+   *(例：攻方军官军事 150，属性回合全军攻击提升 +150%，即 $AtkMul = 2.5$)*
 
 2. **守方基础防御倍率（$DefMul$）**：
    $$DefMul = 1.0 + \frac{\text{守方指挥官防御属性}}{100}$$
-   *(例：守方军官防御 120，技能回合全军基础防御力提升 +120%，即 $DefMul = 2.2$)*
+   *(例：守方军官防御 120，属性回合全军基础防御力提升 +120%，即 $DefMul = 2.2$)*
 
 3. **有效防御力计算（$EffDef$）**：
    $$EffDef = BaseDef \times (\text{科技加成}) \times DefMul$$
@@ -121,46 +125,50 @@ $$\begin{aligned}
 
 ### 3. 攻防博弈对冲案例分析
 
-以重型坦克（Base HP=385, Base DEF=63.5）对抗为例，在技能回合遭受等效 100,000 面板爆发伤害时：
+以重型坦克（Base HP=385, Base DEF=63.5）对抗为例，在属性回合遭受等效 100,000 面板爆发伤害时：
 - **无防守军官（$DefMul = 1.0$）**：
   $$EffDef = 63.5 \implies \text{减伤分母} = 100 + 5 \times 63.5 = 417.5 \implies \text{伤害承受} = \frac{100,000 \times 100}{417.5} \approx \mathbf{23,952}$$
-- **配备高防御将领（防御 180，技能回合 $DefMul = 2.8$）**：
+- **配备高防御将领（防御 180，属性回合 $DefMul = 2.8$）**：
   $$EffDef = 63.5 \times 2.8 = 177.8 \implies \text{减伤分母} = 100 + 5 \times 177.8 = 989 \implies \text{伤害承受} = \frac{100,000 \times 100}{989} \approx \mathbf{10,111}$$
 - **对冲效果**：高防御军官直接将攻方的毁灭性技能爆发削减了 **57.8%**，实现了真正意义上的战术对冲。
 
 ### 4. 战报日志表现
-在技能回合战报中输出结构化提示：
+属性与技能回合可能不同。当前战报分别展示本回合生效的属性和技能，例如第 4 回合首次交战时：
 ```text
-第 3 回合【军官技能发动】攻方出征将领军事属性生效 (+180%攻击) | 守方驻防将领防御属性生效 (+150%防御)，技能爆发伤害大幅对冲！
+-- 第4回合 --
+我方将领加成：全军冲锋 +50%攻击
+敌方将领加成：坚守阵地 +50%防御
 ```
 
 ---
 
 ## 五、 装备系统与套装共鸣扩展
 
-为与四维属性体系完全对称，军官装备系统在保留原军事、后勤、学识分支的基础上，完整构建了 9 件防御专属装备与三阶套装：
+军官装备分为军事、防御、后勤、学识四个分支，每个分支有列兵、校官、元帅三阶，槽位为武器、徽章、外套。以下按当前 `OfficerEquipmentDef` 与 `EquipmentService.attributes()` 更新，替换早期设计中的名称与数值。每件装备除主属性外，也为其余三项属性提供副属性加成。
 
 ### 1. 防御分支装备明细表
 
 | 品阶 | 部位 | 装备名称 | 基础属性加成 |
 | :---: | :---: | :---: | :---: |
-| **新兵阶 (Recruit)** | 头盔 | 复合装甲片 | 防御 +5 |
-| **新兵阶 (Recruit)** | 胸甲 | 合金护胸板 | 防御 +5 |
-| **新兵阶 (Recruit)** | 武器 | 步兵重盾 | 防御 +5 |
-| **军官阶 (Officer)** | 头盔 | 钛金防弹面罩 | 防御 +10 |
-| **军官阶 (Officer)** | 胸甲 | 纳米强化背心 | 防御 +10 |
-| **军官阶 (Officer)** | 武器 | 近卫反击力场 | 防御 +10 |
-| **元帅阶 (Marshal)** | 头盔 | 离子护盾头盔 | 防御 +18 |
-| **元帅阶 (Marshal)** | 胸甲 | 装甲要塞胸甲 | 防御 +18 |
-| **元帅阶 (Marshal)** | 武器 | 堡垒守护核心 | 防御 +18 |
+| **列兵阶 (Recruit)** | 武器 | 列兵护身盾 | 防御 +5，其余三项各 +1 |
+| **列兵阶 (Recruit)** | 徽章 | 列兵坚守勋章 | 防御 +5，其余三项各 +1 |
+| **列兵阶 (Recruit)** | 外套 | 列兵防弹背心 | 防御 +5，其余三项各 +1 |
+| **校官阶 (Officer)** | 武器 | 校官防暴盾 | 防御 +15，其余三项各 +3 |
+| **校官阶 (Officer)** | 徽章 | 校官铁壁勋章 | 防御 +15，其余三项各 +3 |
+| **校官阶 (Officer)** | 外套 | 校官重装防弹甲 | 防御 +15，其余三项各 +3 |
+| **元帅阶 (Marshal)** | 武器 | 元帅重装盾 | 防御 +30，其余三项各 +5 |
+| **元帅阶 (Marshal)** | 徽章 | 元帅不屈之星 | 防御 +30，其余三项各 +5 |
+| **元帅阶 (Marshal)** | 外套 | 元帅钛金铠 | 防御 +30，其余三项各 +5 |
 
-### 2. 四维套装共鸣属性（3 件同阶激活）
+### 2. 四维套装共鸣属性（同一阶、同一分支的 3 件装备激活）
 
 | 套装品阶 | 套装件数 | 激活共鸣效果（按装备分支专精） |
 | :---: | :---: | :--- |
-| **新兵套装 (Recruit Set)** | 3 件 | **对应专精属性 +6**（军事+6 / 防御+6 / 后勤+6 / 学识+6） |
-| **军官套装 (Officer Set)** | 3 件 | **对应专精属性 +12**（军事+12 / 防御+12 / 后勤+12 / 学识+12） |
-| **元帅套装 (Marshal Set)** | 3 件 | **对应专精属性 +20**（军事+20 / 防御+20 / 后勤+20 / 学识+20） |
+| **列兵套装 (Recruit Set)** | 3 件 | 对应专精属性额外 +3 |
+| **校官套装 (Officer Set)** | 3 件 | 对应专精属性额外 +15 |
+| **元帅套装 (Marshal Set)** | 3 件 | 对应专精属性额外 +30，并额外全属性 +5（专精属性合计 +35） |
+
+套装效果在单件装备属性之上叠加。例如元帅军事三件套为军事提供 `3 × 30 + 30 + 5 = 125`，其他三项属性各提供 `3 × 5 + 5 = 20`。这些军事加成会进入师夷长技读取的敌方综合军事属性；背包中未穿戴的装备不计入。前文 219 的成长上限指军官自身属性，不限制叠加装备、套装后的综合属性。
 
 ---
 
@@ -198,7 +206,7 @@ UPDATE officers SET defense = 75 WHERE star = 5 AND defense = 50;
    - `testFiveStarWashReset`：验证 5 星军官洗点后主属性为 120、其余 3 项均为 75，且返还全部未分配点数。
 2. **军校抽取机制测试** ([`AcademyRecruitmentTest.java`](file:///Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/test/java/com/wargame/AcademyRecruitmentTest.java))：
    - 验证五星将领生成时四维中恰有 1 项在 $[111, 120]$，其余 3 项在 $[50, 100]$。
-3. **战斗技能回合对冲测试** ([`BattleServiceTest.java`](file:///Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/test/java/com/wargame/BattleServiceTest.java))：
+3. **战斗属性回合对冲测试** ([`BattleServiceTest.java`](file:///Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/test/java/com/wargame/BattleServiceTest.java))：
    - `testCommanderDefenseAttributeMitigation`：验证第 3 回合守方防御加成正确参与减伤运算，并产出对应的日志标记。
 4. **前端测试套件**：
    - 运行 `node --test frontend/tests/*.test.cjs`，167 项用例全绿通过。

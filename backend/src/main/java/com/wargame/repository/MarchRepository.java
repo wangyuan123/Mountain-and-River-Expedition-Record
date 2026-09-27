@@ -15,6 +15,16 @@ public interface MarchRepository extends JpaRepository<March, Long> {
 
     List<March> findByPlayerIdAndGathering(Long playerId, Boolean gathering);
 
+    /** 仅进攻出征与战斗占用战术；侦察、采集和返程不占用。 */
+    @org.springframework.data.jpa.repository.Query("""
+            select (count(m) > 0) from March m
+            where m.playerId = :playerId
+              and (m.returning = false or m.returning is null)
+              and (m.gathering = false or m.gathering is null)
+              and (m.action in ('conquer', 'plunder') or m.action like 'tactical%' or m.action is null)
+            """)
+    boolean existsActiveAttack(@org.springframework.data.repository.query.Param("playerId") Long playerId);
+
     @org.springframework.data.jpa.repository.Query("""
             select m from March m
             where m.targetKind = 'player' and m.targetId in :cityIds

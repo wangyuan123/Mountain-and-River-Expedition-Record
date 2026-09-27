@@ -53,7 +53,7 @@
     var s = Core.state || {};
     var p = s.player || {};
     var rankTier = p.militaryRank || 1;
-    var rankInfo = G.getMilitaryRankTierInfo ? G.getMilitaryRankTierInfo(rankTier) : { name: '列兵', tier: 1, baseCap: 50000, isMax: false };
+    var rankInfo = G.getMilitaryRankTierInfo ? G.getMilitaryRankTierInfo(rankTier) : { name: '列兵', tier: 1, baseCap: 25000, isMax: false };
     var prestige = s.prestige != null ? s.prestige : (p.prestige != null ? p.prestige : 0);
     var items = s.items || {};
 
@@ -75,7 +75,7 @@
     }
     if (rankInfo.isMax) {
       h += '<div style="font-size:13px;color:var(--ok);padding:10px;background:rgba(82,196,26,0.1);border-radius:6px;margin-top:6px;display:flex;align-items:center;justify-content:space-between;">';
-      h += '  <span>⭐ 已晋升至终极统帅军衔【上将】！军衔基础出兵上限 850,000，围墙与三军统帅可额外提升！</span>';
+      h += '  <span>⭐ 已晋升至终极统帅军衔【上将】！军衔基础出兵上限 600,000，围墙与三军统帅可额外提升！</span>';
       h += '  <span class="quest-badge ok">顶峰</span>';
       h += '</div>';
       h += '</div>';
@@ -166,9 +166,6 @@
 
     // 军衔晋升专区
     h += renderRankQuestCard();
-
-    // 活动与任务（原首页"活动与任务"块迁到这里）
-    h += (G.Task && G.Task.renderActivities) ? G.Task.renderActivities() : '';
 
     h += '<div class="zone-head"><span class="zone-title">📜 主线任务</span><span class="zone-sub">章节挑战</span></div>';
     for (var ci = 0; ci < state.chapters.length; ci++) {

@@ -14,12 +14,12 @@ test('preview preserves route turns, centres axis-aligned routes and labels dire
     const l=g.DispatchRoute.layout(points);
     assert.equal(l.points.length,points.length);
     l.points.forEach((p,i)=>{
-      assert.ok(p[0]>=64&&p[0]<=356&&p[1]>=50&&p[1]<=182);
-      assert.ok(Math.abs((p[0]-210)/l.scale+l.cx-points[i][0])<1e-9);
+      assert.ok(p[0]>=274&&p[0]<=566&&p[1]>=50&&p[1]<=182);
+      assert.ok(Math.abs((p[0]-420)/l.scale+l.cx-points[i][0])<1e-9);
       assert.ok(Math.abs((p[1]-116)/l.scale+l.cy-points[i][1])<1e-9);
     });
   }
-  assert.equal(g.DispatchRoute.layout([[20,30],[20,80]]).points[0][0],210);
+  assert.equal(g.DispatchRoute.layout([[20,30],[20,80]]).points[0][0],420);
   assert.equal(g.DispatchRoute.layout([[20,30],[20,80]]).direction,'南方向');
   assert.equal(g.DispatchRoute.layout([[20,30],[10,20]]).direction,'西北方向');
   assert.equal(g.DispatchRoute.layout([[20,30]]).direction,'同一坐标');

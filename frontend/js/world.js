@@ -17,10 +17,10 @@ window.Game = window.Game || {};
     return Math.abs(x1 - x2) + Math.abs(y1 - y2);
   }
 
-  function armyText(army) {
+  function armyText(army, isJapanese) {
     var arr = [];
     for (var id in army) {
-      var u = D.units[id] || (D.forts && D.forts[id]);
+      var u = (isJapanese && D.japaneseUnits && D.japaneseUnits[id]) || D.units[id] || (D.forts && D.forts[id]);
       arr.push((u ? u.name : id) + 'x' + army[id]);
     }
     return arr.join(' ') || '无';
@@ -62,6 +62,7 @@ window.Game = window.Game || {};
       if (target.kind === 'wild') {
         if (action === 'scout') this.scoutWild(idx);
         else if (action === 'station') this.dispatchWild(idx, 'station');
+        else if (action === 'gatherDispatch') this.dispatchWild(idx, 'gather');
         else if (action === 'gather') this.startGatherWild(idx);
         else if (action === 'harvest') this.harvestWild(idx);
         else if (action === 'recall') this.recallWild(idx);
@@ -328,12 +329,12 @@ window.Game = window.Game || {};
       var cancelText = esc(opts.cancelText || '取消');
       var okClass = opts.danger ? 'btn btn-danger' : 'btn btn-primary';
       mask.innerHTML =
-        '<div class="modal-card" style="max-width:380px;width:92%;text-align:center;box-shadow:0 12px 36px rgba(0,0,0,.35);">' +
+        '<div class="modal-card confirm-dialog" style="max-width:380px;width:92%;text-align:center;box-shadow:0 12px 36px rgba(0,0,0,.35);">' +
           '<div class="modal-title" style="font-size:16px;font-weight:bold;margin-bottom:12px;">' + title + '</div>' +
-          '<div style="font-size:14px;color:var(--ink-sec, #555);line-height:1.6;margin-bottom:20px;text-align:left;padding:0 4px;">' +
+          '<div class="confirm-dialog-message" style="font-size:14px;color:var(--ink-sec, #555);line-height:1.6;margin-bottom:20px;text-align:left;padding:0 4px;">' +
             msg + sub +
           '</div>' +
-          '<div style="display:flex;gap:12px;justify-content:flex-end;">' +
+          '<div class="confirm-dialog-actions" style="display:flex;gap:12px;justify-content:flex-end;">' +
             '<button class="btn btn-secondary" id="confirmCancelBtn">' + cancelText + '</button>' +
             '<button class="' + okClass + '" id="confirmOkBtn">' + okText + '</button>' +
           '</div>' +
@@ -352,8 +353,8 @@ window.Game = window.Game || {};
     showArmyCapInfo: function () {
       var state = Core.state || {};
       var tier = (state.player && state.player.militaryRank) || 1;
-      var rank = G.getMilitaryRankTierInfo ? G.getMilitaryRankTierInfo(tier) : { name: '列兵', baseCap: 50000 };
-      var rankBase = rank.baseCap || 50000;
+      var rank = G.getMilitaryRankTierInfo ? G.getMilitaryRankTierInfo(tier) : { name: '列兵', baseCap: 25000 };
+      var rankBase = rank.baseCap || 25000;
       var wallLevel = Core.buildingLevel ? Core.buildingLevel('wall') : 0;
       var wallBonus = wallLevel >= 10 ? 100000 : 0;
       var skills = Core.getCommanderSkills ? Core.getCommanderSkills() : {};
@@ -370,12 +371,12 @@ window.Game = window.Game || {};
         '<div class="modal-card dispatch-cap-modal">' +
           '<div class="modal-title" id="dispatchArmyCapTitle">带兵上限说明</div>' +
           '<div class="modal-body">' +
-            '<p>初始军衔基础上限为 50,000，每晋升一级增加 50,000；17 级上将的军衔基础上限为 850,000。</p>' +
+            '<p>列兵基础上限为 25,000，上尉及以下每阶增加 25,000；少校为 300,000，此后每阶增加 50,000，上将为 600,000。</p>' +
             '<p>当前军衔：' + esc(rank.name) + '，基础上限 ' + G.fmt(rankBase) + '。</p>' +
-            '<p>当前城市围墙 Lv.' + wallLevel + '：' + (wallBonus ? '满级，额外 +100,000' : '未满级，无额外加成（Lv.10 +100,000）') + '。</p>' +
+            '<p>当前城市要塞防线 Lv.' + wallLevel + '：' + (wallBonus ? '满级，额外 +100,000' : '未满级，无额外加成（Lv.10 +100,000）') + '。</p>' +
             '<p>三军统帅：任命指挥官后每级额外 +4%，最高 +20%；当前 Lv.' + skillLevel + '，加成 +' + skillPercent + '%。</p>' +
             '<p><strong>当前上限 = (' + G.fmt(rankBase) + ' + ' + G.fmt(wallBonus) + ') × (1 + ' + skillPercent + '%) = ' + G.fmt(total) + '</strong></p>' +
-            '<p>市政厅、参谋部和指挥官等级不直接增加上限；单次出征还需有足够的当前城市可用驻军。</p>' +
+            '<p>前线指挥部、作战参谋部和指挥官等级不直接增加上限；单次出征还需有足够的当前城市可用驻军。</p>' +
           '</div>' +
           '<div class="modal-foot"><button type="button" class="btn btn-primary" id="dispatchCapClose">知道了</button></div>' +
         '</div>';
@@ -392,7 +393,7 @@ window.Game = window.Game || {};
       var s = Core.state;
       var t = s.world.wildTiles[idx];
       if (!t) return;
-      s.world._dispatchTarget = { kind: 'wild', idx: idx, action: action || 'station', target: t };
+      s.world._dispatchTarget = { kind: action === 'gather' ? 'wild_gather' : 'wild', idx: idx, action: action || 'station', target: t };
       G.go('dispatch');
     },
 
@@ -434,11 +435,11 @@ window.Game = window.Game || {};
         okText: '确认撤回',
         cancelText: '取消',
         message: '确定要撤回驻扎在【' + wtName + ' (' + t.x + ', ' + t.y + ')】的部队吗？',
-        subMessage: '驻扎部队将撤回并返回主城，野地保留您的占领归属，您可随时重新派遣部队进驻。',
+        subMessage: '驻军将按原路线返回各自出发城市，抵达后部队与采集资源入库。军情页可查看返城进度，野地仍保留您的占领归属。',
         onConfirm: function () {
           G.API.wildRecall(t.id).then(function (res) {
             if (G.WorldMap) G.WorldMap.invalidate();
-            G.toast(res && res.message ? res.message : '驻军已撤回主城');
+            G.toast(res && res.message ? res.message : '驻军已开始返城');
             Core.render();
           }).catch(function (err) {
             G.toast(err.message || '操作失败');
@@ -451,6 +452,7 @@ window.Game = window.Game || {};
       var s = Core.state;
       var t = s.world.wildTiles[idx];
       if (!t || !t.occupied) return;
+      if (t.gathering || t.gatherHarvested != null) { G.toast('驻军已有采集任务，请先完成收获和回城'); return; }
       var wt = G.DATA.wildTypes[t.type];
       if (!wt || !wt.res) { G.toast('该野地无资源可采集'); return; }
       var remaining = (t.totalRes || 0) - (t.mined || 0);
@@ -460,13 +462,47 @@ window.Game = window.Game || {};
         G.toast('野地暂无驻军，请先【派遣】部队进驻');
         return;
       }
-      G.API.wildStartGather(t.id).then(function (res) {
-        if (G.WorldMap) G.WorldMap.invalidate();
-        G.toast(res && res.message ? res.message : '已开始就地采集');
-        Core.render();
-      }).catch(function (err) {
-        G.toast(err.message || '开启采集失败');
-      });
+      if (document.getElementById('stationedGatherModal')) return;
+      var tileId = t.id;
+      var mask = document.createElement('div');
+      mask.id = 'stationedGatherModal';
+      mask.className = 'modal-mask';
+      mask.setAttribute('role', 'dialog');
+      mask.setAttribute('aria-modal', 'true');
+      mask.setAttribute('aria-labelledby', 'stationedGatherTitle');
+      mask.innerHTML = '<div class="modal-card stationed-gather-modal" style="max-width:480px;width:92%;">' +
+        '<div class="modal-title" id="stationedGatherTitle">驻军采集准备 · ' + esc(wt.name || '野地') + '</div>' +
+        '<fieldset class="panel dispatch-gather-modes"><legend>采集模式</legend>' +
+        '<label class="dispatch-gather-mode"><input type="radio" name="stationedGatherMode" value="auto" checked />' +
+          '<span><strong>采集全自动</strong><span>采集完成后自动收获并自动按原路线回城</span></span></label>' +
+        '<label class="dispatch-gather-mode"><input type="radio" name="stationedGatherMode" value="manual" />' +
+          '<span><strong>采集全手动</strong><span>需要玩家自主终止采集任务，需要亲自下达命令选择部队回城</span></span></label>' +
+        '<div class="desc">全手动点击“收获”终止采集，之后点击“部队回城”。资源抵达城市后入库，返城不改变野地归属。</div></fieldset>' +
+        '<div class="modal-foot"><button class="btn btn-secondary" data-gather-cancel>取消</button>' +
+        '<button class="btn btn-primary" data-gather-start>开始采集</button></div></div>';
+      document.body.appendChild(mask);
+      var pending = false;
+      var startButton = mask.querySelector('[data-gather-start]');
+      var cancelButton = mask.querySelector('[data-gather-cancel]');
+      var close = function () { if (!pending && mask.parentNode) mask.parentNode.removeChild(mask); };
+      cancelButton.onclick = close;
+      mask.onclick = function (event) { if (event.target === mask) close(); };
+      mask.onkeydown = function (event) { if (event.key === 'Escape') close(); };
+      startButton.onclick = function () {
+        if (pending) return;
+        var selected = mask.querySelector('input[name="stationedGatherMode"]:checked');
+        pending = true; startButton.disabled = true; cancelButton.disabled = true;
+        G.API.wildStartGather(tileId, selected ? selected.value : 'auto').then(function (res) {
+          pending = false; close();
+          if (G.WorldMap) G.WorldMap.invalidate();
+          G.toast(res && res.message ? res.message : '已开始就地采集');
+          Core.render();
+        }).catch(function (err) {
+          pending = false; startButton.disabled = false; cancelButton.disabled = false;
+          G.toast(err.message || '开启采集失败');
+        });
+      };
+      startButton.focus();
     },
 
     harvestWild: function (idx) {
@@ -475,7 +511,7 @@ window.Game = window.Game || {};
       if (!t || !t.occupied) return;
       G.API.wildHarvest(t.id).then(function (res) {
         if (G.WorldMap) G.WorldMap.invalidate();
-        G.toast(res && res.message ? res.message : '收获成功');
+        G.toast(res && res.message ? res.message : '已收获，部队留守等待回城命令');
         Core.render();
       }).catch(function (err) {
         G.toast(err.message || '收获失败');
@@ -987,6 +1023,15 @@ window.Game = window.Game || {};
         commanderId: commanderId,
         carryRes: carryRes
       };
+      if (dt.kind === 'wild_gather') {
+        var gatherModeEl = document.querySelector('input[name="dpGatherMode"]:checked');
+        // 引导采集在提交时也固定全自动，防止旧表单选择或重绘残留导致部队无法自动返城。
+        dispatchRequest.gatherMode = dt.onboardingGather ? 'auto' : (gatherModeEl ? gatherModeEl.value : (dt.gatherMode || 'auto'));
+      }
+      if (!['player', 'wild_gather'].includes(dt.kind) && dispatchRequest.action !== 'scout' && dispatchRequest.action !== 'station') {
+        var battleModeEl = document.querySelector('input[name="dpBattleMode"]:checked');
+        dispatchRequest.battleMode = battleModeEl ? battleModeEl.value : (dt.battleMode || (dt.kind === 'wild' ? 'auto' : 'manual'));
+      }
 
       if(this._launching)return;this._launching=true;
       G.API.worldDispatch(dispatchRequest).then(function () {
@@ -1001,6 +1046,70 @@ window.Game = window.Game || {};
       }).catch(function (err) {
         G.toast(err.message || '出征失败');
       }).finally(function(){G.World._launching=false;});
+    },
+
+    /** 普通采集记住玩家选择；从新手指引发起的采集始终保持全自动。 */
+    setGatherMode: function (mode) {
+      var target = Core.state.world._dispatchTarget;
+      if (target && target.kind === 'wild_gather') target.gatherMode = !target.onboardingGather && mode === 'manual' ? 'manual' : 'auto';
+    },
+
+    /** 保留当前出征的 PvE 战斗方式，界面重新渲染后仍展示玩家选择。 */
+    setBattleMode: function (mode) {
+      var target = Core.state.world._dispatchTarget;
+      if (target) target.battleMode = mode === 'auto' ? 'auto' : 'manual';
+    },
+
+    /** 全手动终止仅保留当前收获，部队继续在野地等待独立的回城命令。 */
+    stopGatherMarch: function (marchId) {
+      return G.API.stopGatherMarch(marchId).then(function () {
+        G.toast('已终止采集，部队原地待命，请下达回城命令');
+        if (G.WorldMap) G.WorldMap.invalidate();
+        Core.render();
+      }).catch(function (err) {
+        G.toast(err.message || '终止采集失败');
+      });
+    },
+
+    returnGatherMarch: function (marchId) {
+      return G.API.cancelMarch(marchId).then(function () {
+        G.toast('部队已按原路线返城，抵达后资源入库');
+        if (G.WorldMap) G.WorldMap.invalidate();
+        Core.render();
+      }).catch(function (err) {
+        G.toast(err.message || '下达回城命令失败');
+      });
+    },
+
+    gatherMarchStatus: function (march) {
+      var modeName = march.gatherMode === 'manual' ? '采集全手动' : '采集全自动';
+      if (march.returning) return modeName + ' · 正在返城';
+      if (march.gatherStopped) return modeName + ' · 已终止采集，等待回城命令';
+      if (march.gathering) {
+        if (Date.now() >= march.gatherEndAt) return modeName + (march.gatherMode === 'manual'
+          ? ' · 已采满，等待手动终止' : ' · 采集完成，等待返城');
+        return modeName + ' · 采集中，距采满 ' + this.fmtMarchTime(march.gatherEndAt);
+      }
+      return modeName + ' · 前往野地 ' + this.fmtMarchTime(march.arriveAt);
+    },
+
+    gatherMarchActions: function (march, className) {
+      if (march.gatherMode !== 'manual' || march.returning) return '';
+      var handler = march.gatherStopped ? 'returnGatherMarch' : march.gathering ? 'stopGatherMarch' : null;
+      if (!handler) return '';
+      return '<button type="button" class="' + esc(className || 'btn ok sm') + '" onclick="Game.World.' + handler + '(' + Number(march.id) + ')">' +
+        (march.gatherStopped ? '部队回城' : '终止采集') + '</button>';
+    },
+
+    renderGatherMarches: function (tileId, className) {
+      var self = this;
+      return (Core.state.world.marches || []).filter(function (march) {
+        return march.targetKind === 'wild_gather' && String(march.targetId) === String(tileId) && !march.returning;
+      }).map(function (march) {
+        return '<div class="wild-gather-march"><div data-gather-march-id="' + Number(march.id) + '">' + esc(self.gatherMarchStatus(march)) + '</div>' +
+          '<div class="d">部队 #' + Number(march.id) + '：' + esc(armyText(march.army)) + '</div>' +
+          self.gatherMarchActions(march, className) + '</div>';
+      }).join('');
     },
 
     cancelMarch: function (marchId) {
@@ -1040,6 +1149,7 @@ window.Game = window.Game || {};
 
       var isWildConquer = dt.kind === 'wild';
       var isGather = dt.kind === 'wild_gather';
+      var guidedGather = isGather && dt.onboardingGather;
       var isScout = dt.action === 'scout';
       var isStation = dt.action === 'station';
       var actionNames = G.Constants.dispatchActionNames;
@@ -1049,7 +1159,8 @@ window.Game = window.Game || {};
         : isStation
         ? '派遣部队行军进驻已占领野地，进驻后可驻防防守并就地开启资源采集。'
         : isGather
-        ? '派遣部队前往已占领野地采集资源，采集量取决于部队负重，采集完成后自动返城。'
+        ? (guidedGather ? '新手引导使用全自动采集：部队抵达野地后开始采集，采满自动回城，资源入库后继续指引。'
+          : '派遣部队前往已占领野地采集资源，采集量取决于部队负重；可选择全自动或全手动，资源返城后入库。')
         : isWildConquer
           ? (dt.action === 'plunder'
             ? '击败野地守军后掠夺资源，根据幸存部队负重夺取野地资源，不占领该野地。'
@@ -1092,7 +1203,8 @@ window.Game = window.Game || {};
       } else {
       var scouted = getScouted(target.x, target.y);
       if (scouted) {
-        h += '<div class="d">守军: ' + armyText(scouted.data.army) + '</div>';
+        var isJpn = dt.kind === 'npc' || dt.kind === 'bandit' || dt.kind === 'simulated_npc' || (target.name && (target.name.indexOf('日寇') >= 0 || target.name.indexOf('据点') >= 0));
+        h += '<div class="d">守军: ' + armyText(scouted.data.army, isJpn) + '</div>';
         var ft2 = fortText(scouted.data.forts);
         if (ft2) h += '<div class="d">城防: ' + ft2 + '</div>';
         if (scouted.data.resources) {
@@ -1200,6 +1312,25 @@ window.Game = window.Game || {};
       }
       h += '</div>';
       h += '</div>';
+
+      if (isGather) {
+        var gatherMode = !guidedGather && dt.gatherMode === 'manual' ? 'manual' : 'auto';
+        h += '<fieldset class="panel dispatch-gather-modes"><legend>采集模式</legend>';
+        h += '<label class="dispatch-gather-mode"><input type="radio" name="dpGatherMode" value="auto"' + (gatherMode === 'auto' ? ' checked' : '') + ' onchange="Game.World.setGatherMode(this.value)" />';
+        h += '<span><strong>采集全自动</strong><span>采集完成后自动收获并自动按原路线回城</span></span></label>';
+        h += '<label class="dispatch-gather-mode' + (guidedGather ? ' is-disabled' : '') + '"><input type="radio" name="dpGatherMode" value="manual"' + (gatherMode === 'manual' ? ' checked' : '') + (guidedGather ? ' disabled' : '') + ' onchange="Game.World.setGatherMode(this.value)" />';
+        h += '<span><strong>采集全手动</strong><span>需要玩家自主终止采集任务，需要亲自下达命令选择部队回城</span></span></label>';
+        h += '<div class="desc">' + (guidedGather ? '新手采集固定为全自动，采集完成后自动回城；资源入库后继续指引。'
+          : '全手动采满后仍在野地等待；可提前终止并保留已采资源，再点击“部队回城”。返城不改变野地归属。') + '</div></fieldset>';
+      }
+      if (!isGather && !isScout && !isStation && dt.kind !== 'player') {
+        var battleMode = dt.battleMode || (dt.kind === 'wild' ? 'auto' : 'manual');
+        h += '<fieldset class="panel dispatch-gather-modes"><legend>战斗方式</legend>';
+        h += '<label class="dispatch-gather-mode"><input type="radio" name="dpBattleMode" value="manual"' + (battleMode === 'manual' ? ' checked' : '') + ' onchange="Game.World.setBattleMode(this.value)" />';
+        h += '<span><strong>手动指挥</strong><span>可以手动进入战场指挥战斗</span></span></label>';
+        h += '<label class="dispatch-gather-mode"><input type="radio" name="dpBattleMode" value="auto"' + (battleMode === 'auto' ? ' checked' : '') + ' onchange="Game.World.setBattleMode(this.value)" />';
+        h += '<span><strong>自动结算</strong><span>进入战斗后系统直接完成战斗结算</span></span></label></fieldset>';
+      }
 
       // 任何行军(侦查/征服/掠夺/采集)都可以带指挥官
       //  侦查: 减少遭遇战损失, 获得军官经验
@@ -1462,15 +1593,20 @@ window.Game = window.Game || {};
           var actions = '';
 
           if (isGathering) {
-            statusHtml = '<div class="tcard-status tcard-status-busy">⛏ 采集中 ' + (t.gatherEndAt ? World.fmtMarchTime(t.gatherEndAt) : '') + '</div>';
-            actions = '<button class="tcard-btn tcard-btn-ok" onclick="Game.World.harvestWild(' + it.i + ')">收获</button>';
+            var autoGather = t.gatherMode === 'auto';
+            var gatherTip = Date.now() >= t.gatherEndAt ? (autoGather ? '等待自动收获返城' : '已采满，请收获') : '采集中 ' + (t.gatherEndAt ? World.fmtMarchTime(t.gatherEndAt) : '');
+            statusHtml = '<div class="tcard-status tcard-status-busy">' + G.resourceIconHtml(t.gatherRes || wt.res) + ' ' + (autoGather ? '采集全自动' : '采集全手动') + ' · ' + gatherTip + '</div>';
+            actions = autoGather ? '' : '<button class="tcard-btn tcard-btn-ok" onclick="Game.World.harvestWild(' + it.i + ')">收获</button>';
+          } else if (t.gatherHarvested != null && hasGarrison) {
+            statusHtml = '<div class="tcard-status">已收获 ' + G.fmt(t.gatherHarvested) + ' 资源 · 等待回城命令，抵达后入库</div>';
+            actions = '<button class="tcard-btn tcard-btn-ok" onclick="Game.World.recallWild(' + it.i + ')">部队回城</button>';
           } else if (hasGarrison) {
             statusHtml = '<div class="tcard-status" style="color:var(--good,#4caf50);font-size:11px;">🛡 驻守中 · 守军 ' + armyText(t.garrison) + '</div>';
             actions = (wt.res && remain > 0 ? '<button class="tcard-btn tcard-btn-ok" onclick="Game.World.startGatherWild(' + it.i + ')">采集</button>' : '') +
                       '<button class="tcard-btn" onclick="Game.World.recallWild(' + it.i + ')">撤回</button>' +
                       '<button class="tcard-btn tcard-btn-warn" onclick="Game.World.abandonWild(' + it.i + ')">放弃</button>';
           } else {
-            var im = (s.world.marches || []).find(function(m){ return String(m.targetId) === String(t.id) && !m.returning; });
+            var im = (s.world.marches || []).find(function(m){ return m.targetKind === 'wild' && m.action === 'station' && String(m.targetId) === String(t.id) && !m.returning; });
             if (im) {
               statusHtml = '<div class="tcard-status tcard-status-busy">进驻行军中 ' + World.fmtMarchTime(im.arriveAt) + '</div>';
             } else {
@@ -1478,6 +1614,10 @@ window.Game = window.Game || {};
             }
             actions = '<button class="tcard-btn tcard-btn-ok" onclick="Game.World.dispatchWild(' + it.i + ',\'station\')">派遣</button>' +
                       '<button class="tcard-btn tcard-btn-warn" onclick="Game.World.abandonWild(' + it.i + ')">放弃</button>';
+          }
+          statusHtml = World.renderGatherMarches(t.id, 'tcard-btn tcard-btn-ok') + statusHtml;
+          if (wt.res && remain > 0) {
+            actions = '<button class="tcard-btn tcard-btn-ok" onclick="Game.World.dispatchWild(' + it.i + ',\'gather\')">派兵采集</button>' + actions;
           }
           return '<div class="tcard tcard-owned">' +
             '<div class="tcard-head">' + icon +
@@ -1514,7 +1654,7 @@ window.Game = window.Game || {};
         var n = it.n;
         var nScouted = getScouted(n.x, n.y);
         var info = nScouted
-          ? '<div class="tcard-meta">守军 ' + armyText(nScouted.data.army) + '</div>' +
+          ? '<div class="tcard-meta">守军 ' + armyText(nScouted.data.army, true) + '</div>' +
             (nScouted.data.resources ? '<div class="tcard-meta tcard-res">资源 ' + G.fmt(nScouted.data.resources.gold || 0) + '金 ' + G.fmt(nScouted.data.resources.food || 0) + '粮</div>' : '')
           : '<div class="tcard-meta tcard-muted">敌情未知 · 需侦查</div>';
         var actions = n.defeated
@@ -1522,12 +1662,16 @@ window.Game = window.Game || {};
           : '<button class="tcard-btn tcard-btn-ok" onclick="Game.World.attack(\'' + it.kind + '\',' + it.i + ',\'conquer\')">征服</button>' +
             '<button class="tcard-btn tcard-btn-warn" onclick="Game.World.attack(\'' + it.kind + '\',' + it.i + ',\'plunder\')">掠夺</button>' +
             '<button class="tcard-btn" onclick="Game.World.attack(\'' + it.kind + '\',' + it.i + ',\'scout\')">侦察</button>';
+        var cmdLine = n.commanderName
+          ? '<div class="tcard-meta">敌将 <b style="color:var(--accent,#e0a040)">' + esc(n.commanderName) + '</b></div>'
+          : '';
         return '<div class="tcard tcard-npc' + (n.defeated ? ' tcard-done' : '') + '">' +
           '<div class="tcard-head">' +
             '<span class="tcard-emoji">⚔</span>' +
             '<div class="tcard-title"><span class="npc-mark">日寇</span> ' + esc(n.name) + ' <span class="tcard-lv">Lv.' + n.level + '</span></div>' +
             '<div class="tcard-dist">📍 ' + it.d + '格</div>' +
           '</div>' +
+          cmdLine +
           info +
           '<div class="tcard-actions">' + actions + '</div>' +
         '</div>';
@@ -1746,7 +1890,7 @@ window.Game = window.Game || {};
            '</div>';
 
       v.innerHTML = h;
-      if (G.WorldMap) v.insertAdjacentHTML('afterbegin', '<div class="world-map-list-switch"><button class="world-map-button" onclick="Game.WorldMap.setMode(\'map\')">返回大地图</button></div>');
+      if (G.WorldMap) v.insertAdjacentHTML('afterbegin', '<div class="world-map-list-switch"><button type="button" class="page-back-button" onclick="Game.WorldMap.setMode(\'map\')"><span>› 返回大地图</span></button></div>');
       var hasWar = false;
       for (var wi = 0; wi < s.world.playerCities.length; wi++) {
         var wp = s.world.playerCities[wi];
@@ -1787,7 +1931,7 @@ window.Game = window.Game || {};
 
     startAlertTimer: function (view) {
       this.stopAlertTimer();
-      if (!view.querySelectorAll || !view.querySelectorAll('[data-arrive-at]').length) return;
+      if (!view.querySelectorAll || (!view.querySelectorAll('[data-arrive-at]').length && !view.querySelectorAll('[data-gather-march-id]').length)) return;
       var self = this;
       this._alertTimer = setInterval(function () {
         if (Core.route !== 'alerts' || view.isConnected === false) {
@@ -1799,6 +1943,12 @@ window.Game = window.Game || {};
           var deadline = Number(el.getAttribute('data-arrive-at'));
           var text = deadline <= now ? '已到达，等待战斗结果' : self.fmtMarchTime(deadline);
           if (el.textContent !== text) el.textContent = text;
+        });
+        view.querySelectorAll('[data-gather-march-id]').forEach(function (el) {
+          var march = (Core.state.world.marches || []).find(function (item) {
+            return String(item.id) === el.getAttribute('data-gather-march-id');
+          });
+          if (march) el.textContent = self.gatherMarchStatus(march);
         });
       }, 1000);
     },
@@ -1821,7 +1971,8 @@ window.Game = window.Game || {};
           var m = marches[mi];
           var remain = Math.max(0, Math.ceil((m.arriveAt - now) / 1000));
           var timeStr = this.alertCountdown(m.arriveAt);
-          var kindName = m.returning ? '返城' : ({ conquer: '征服', plunder: '掠夺', scout: '侦查', transport: '运输', rebase: '调遣' }[m.action] || '出征');
+          var isGather = m.targetKind === 'wild_gather';
+          var kindName = m.returning ? '返城' : isGather ? '采集' : ({ conquer: '征服', plunder: '掠夺', scout: '侦查', transport: '运输', rebase: '调遣' }[m.action] || '出征');
           var urgent = remain <= 10 ? 'urgent' : '';
           // 兼容字段缺失: 老存档/老推送可能没带 distance/originName 等
           var fromX = m.fromX != null ? m.fromX : '?';
@@ -1832,12 +1983,20 @@ window.Game = window.Game || {};
           var targetName = m.targetName || '目标';
           var originName = m.originName || '';
           // 到达时间已过时，即使状态刷新尚未带回 battleId，也允许玩家点击进入并由接口补建会话。
-          var canEnterBattle = !m.returning && remain <= 0 && m.action !== 'scout' && m.action !== 'transport' && m.action !== 'rebase';
+          var autoBattle = m.targetKind !== 'player' && (m.battleMode === 'auto' || (m.battleMode == null && m.targetKind === 'wild'));
+          var canEnterBattle = !autoBattle && !isGather && !m.returning && remain <= 0 && m.action !== 'scout' && m.action !== 'transport' && m.action !== 'rebase';
           h += '<div class="menu-item ' + (m.returning ? 'lock' : 'ok') + '">';
           h += '<span class="n">' + kindName + '->' + G.escapeHtml(targetName) + (m.returning ? ' (撤自' + G.escapeHtml(originName || '原地') + ')' : '') + '</span>';
           h += '<span class="lv">距' + distance + '格 (' + fromX + ',' + fromY + '->' + toX + ',' + toY + ')</span>';
           h += '<div class="d">兵力: ' + armyText(m.army) + '</div>';
-          if (m.waitingForBattle) {
+          if (isGather && !m.returning) {
+            h += '<div class="cost" data-gather-march-id="' + Number(m.id) + '">' + esc(this.gatherMarchStatus(m)) + '</div>';
+            if (m.gathering || m.gatherStopped) {
+              var gatherResource = (D.resources[m.gatherRes] || {}).name || '资源';
+              h += '<div class="d">' + (m.gatherStopped ? '已收获：' : '本次采集上限：') + G.fmt(m.gatherAmount || 0) + ' ' + esc(gatherResource) + '，返城后入库</div>';
+            }
+            h += '<div class="btn-row">' + this.gatherMarchActions(m) + '</div>';
+          } else if (m.waitingForBattle) {
             h += '<div class="cost urgent">已到达，等待该城市上一场战斗结束</div>';
           } else if (m.inBattle || m.battleId || canEnterBattle) {
             h += '<div class="cost urgent">已到达战场，等待你的战术指令</div>';
@@ -1845,7 +2004,7 @@ window.Game = window.Game || {};
           } else {
             h += '<div class="cost ' + urgent + '">剩余: ' + timeStr + '</div>';
           }
-          if (remain > 0 && !m.returning && !(m.inBattle || m.battleId)) {
+          if (remain > 0 && !m.returning && !m.gathering && !m.gatherStopped && !(m.inBattle || m.battleId)) {
             h += '<div class="btn-row"><button class="btn warn sm" onclick="Game.World.cancelMarch(\'' + m.id + '\')">撤回</button></div>';
           }
           h += '</div>';

@@ -7,6 +7,35 @@ window.Game = window.Game || {};
 
   function esc(value) { return G.escapeHtml(String(value == null ? '' : value)); }
 
+  var iconPresets = [
+    { id: 'g01', name: '苍鹰', file: 'eagle.svg' },
+    { id: 'g02', name: '山河', file: 'mountain.svg' },
+    { id: 'g03', name: '星芒', file: 'compass.svg' },
+    { id: 'g04', name: '海卫', file: 'anchor.svg' },
+    { id: 'g05', name: '铁翼', file: 'wings.svg' },
+    { id: 'g06', name: '烽火', file: 'flame.svg' }
+  ];
+
+  function presetFor(icon) { return iconPresets.find(function (preset) { return preset.id === icon; }); }
+
+  function iconHtml(icon) {
+    var preset = presetFor(icon);
+    if (preset) return '<img class="guild-emblem" src="img/guild/' + preset.file + '" alt="' + preset.name + '徽章">';
+    return '<span class="guild-emblem-legacy">' + esc(icon || '⚑') + '</span>';
+  }
+
+  function iconPicker(fieldId, icon) {
+    var selected = icon || 'g01';
+    var html = '<div class="edit-row guild-icon-row"><label>军团图标</label><input type="hidden" id="' + fieldId + '" value="' + esc(selected) + '">' +
+      '<div class="guild-icon-picker" role="group" aria-label="军团图标预设">';
+    iconPresets.forEach(function (preset) {
+      html += '<button type="button" class="guild-icon-option" data-icon="' + preset.id + '" aria-pressed="' + (selected === preset.id) + '" aria-label="' + preset.name + '徽章" title="' + preset.name + '" onclick="Game.Guild.selectIcon(\'' + fieldId + '\',\'' + preset.id + '\')">' +
+        iconHtml(preset.id) + '<span>' + preset.name + '</span></button>';
+    });
+    return html + '</div><label class="guild-custom-label" for="' + fieldId + 'Custom">自定义字符</label>' +
+      '<input id="' + fieldId + 'Custom" class="qty guild-custom-input" maxlength="4" placeholder="最多 4 字符" value="' + (presetFor(selected) ? '' : esc(selected)) + '" oninput="Game.Guild.customIcon(\'' + fieldId + '\')"></div>';
+  }
+
   var Guild = {
     mine: null,
     list: [],
@@ -82,7 +111,8 @@ window.Game = window.Game || {};
     create: function () {
       var input = document.getElementById('guildName');
       var name = input ? input.value.trim() : '';
-      G.API.createGuild(name).then(function () {
+      var icon = document.getElementById('guildCreateIcon');
+      G.API.createGuild(name, icon ? icon.value : 'g01').then(function () {
         G.toast('军团创建成功');
         Guild.reload();
       }).catch(function (err) { G.toast(err.message || '创建失败'); });
@@ -116,6 +146,27 @@ window.Game = window.Game || {};
         G.toast('军团设置已保存');
         Guild.reload();
       }).catch(function (err) { G.toast(err.message || '保存失败'); });
+    },
+
+    selectIcon: function (fieldId, icon) {
+      var field = document.getElementById(fieldId);
+      if (!field || !presetFor(icon)) return;
+      field.value = icon;
+      var picker = field.parentNode;
+      picker.querySelectorAll('.guild-icon-option').forEach(function (button) {
+        button.setAttribute('aria-pressed', String(button.dataset.icon === icon));
+      });
+      picker.querySelector('.guild-custom-input').value = '';
+    },
+
+    customIcon: function (fieldId) {
+      var field = document.getElementById(fieldId);
+      var input = document.getElementById(fieldId + 'Custom');
+      if (!field || !input) return;
+      field.value = input.value.trim();
+      field.parentNode.querySelectorAll('.guild-icon-option').forEach(function (button) {
+        button.setAttribute('aria-pressed', 'false');
+      });
     },
 
     updateRelation: function (guildId, status) {
@@ -237,12 +288,13 @@ window.Game = window.Game || {};
     renderRecruitment: function () {
       var h = '<div class="panel guild-create"><div class="zone-head">创建军团</div>';
       h += '<div class="edit-row"><label>军团名称</label><input id="guildName" class="qty" maxlength="16" placeholder="2-16 个字符"></div>';
+      h += iconPicker('guildCreateIcon', 'g01');
       h += '<div class="btn-row"><button class="btn ok" onclick="Game.Guild.create()">创建军团</button></div></div>';
       h += '<div class="zone-head">=== 可申请军团 ===</div><div class="guild-list">';
       if (!this.list.length) h += '<div class="panel">暂无军团，成为第一位团长吧。</div>';
       for (var i = 0; i < this.list.length; i++) {
         var g = this.list[i];
-        h += '<div class="guild-card"><div class="guild-card-head"><b>' + esc(g.icon || '⚑') + ' ' + esc(g.name) + '</b><span>★' + G.fmt(g.prestige || 0) + '</span></div>';
+        h += '<div class="guild-card"><div class="guild-card-head"><b>' + iconHtml(g.icon) + ' ' + esc(g.name) + '</b><span>★' + G.fmt(g.prestige || 0) + '</span></div>';
         h += '<div class="guild-muted">团长：' + esc(g.leaderName) + ' · ' + g.members + '/' + g.maxMembers + ' 人</div>';
         h += '<div class="guild-notice">' + esc(g.notice || '暂无公告') + '</div>';
         h += '<button class="tcard-btn tcard-btn-ok" onclick="Game.Guild.apply(' + g.id + ')">申请加入</button></div>';
@@ -252,11 +304,11 @@ window.Game = window.Game || {};
 
     renderMine: function () {
       var g = this.mine;
-      var h = '<div class="panel guild-overview"><div class="guild-card-head"><b>' + esc(g.icon || '⚑') + ' ' + esc(g.name) + '</b><span>★' + G.fmt(g.prestige || 0) + '</span></div>';
+      var h = '<div class="panel guild-overview"><div class="guild-card-head"><b>' + iconHtml(g.icon) + ' ' + esc(g.name) + '</b><span>★' + G.fmt(g.prestige || 0) + '</span></div>';
       h += '<div class="guild-muted">团长：' + esc(g.leaderName) + ' · 成员 ' + ((g.members && g.members.length) || 0) + '/' + g.maxMembers + '</div>';
       if (g.isManager) {
         h += '<div class="edit-row"><label>军团名称</label><input id="guildCustomName" class="qty" maxlength="16" value="' + esc(g.name || '') + '"></div>';
-        h += '<div class="edit-row"><label>军团图标</label><input id="guildIcon" class="qty" maxlength="4" value="' + esc(g.icon || '⚑') + '"></div>';
+        h += iconPicker('guildIcon', g.icon || '⚑');
         h += '<div class="edit-row"><label>军团公告</label><input id="guildNotice" class="qty" maxlength="200" value="' + esc(g.notice || '') + '"></div>';
         h += '<div class="btn-row"><button class="btn ok sm" onclick="Game.Guild.saveSettings()">保存名称/图标</button><button class="btn ok sm" onclick="Game.Guild.saveNotice()">保存公告</button></div>';
       } else h += '<div class="guild-notice">' + esc(g.notice || '暂无公告') + '</div>';
@@ -284,7 +336,7 @@ window.Game = window.Game || {};
         if (other.id === g.id) continue;
         var status = relationByGuild[other.id] || 'neutral';
         var statusText = status === 'hostile' ? '敌对' : (status === 'friendly' ? '友好' : '中立');
-        h += '<div class="guild-member"><div><b>' + esc(other.icon || '⚑') + ' ' + esc(other.name) + '</b><div class="guild-muted">当前关系：' + statusText + '</div></div>';
+        h += '<div class="guild-member"><div><b class="guild-relation-name">' + iconHtml(other.icon) + ' ' + esc(other.name) + '</b><div class="guild-muted">当前关系：' + statusText + '</div></div>';
         if (g.isManager) {
           h += '<div><button class="tcard-btn tcard-btn-warn" onclick="Game.Guild.updateRelation(' + other.id + ',\'hostile\')">设为敌对</button> <button class="tcard-btn tcard-btn-ok" onclick="Game.Guild.updateRelation(' + other.id + ',\'friendly\')">设为友好</button> <button class="tcard-btn" onclick="Game.Guild.updateRelation(' + other.id + ',\'neutral\')">设为中立</button></div>';
         }

@@ -198,4 +198,19 @@ public class OfficerController {
         result.put("state", gameStateService.getGameState(playerId));
         return ResponseEntity.ok(result);
     }
+
+    @PostMapping("/rename")
+    public ResponseEntity<Map<String, Object>> rename(@RequestBody GameDtos.OfficerRenameRequest request) {
+        if (request.officerId() == null) {
+            throw new IllegalArgumentException("军官ID不能为空");
+        }
+        if (request.name() == null || request.name().isBlank()) {
+            throw new IllegalArgumentException("新名字不能为空");
+        }
+        Long playerId = authService.getCurrentPlayer().getId();
+        Map<String, Object> result = officerService.rename(playerId, request.officerId(), request.name());
+        result.put("state", gameStateService.getGameState(playerId));
+        return ResponseEntity.ok(result);
+    }
 }
+

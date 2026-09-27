@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentMap;
 public class ChatService {
 
     public static final int MAX_LENGTH = 80;
+    public static final int MIN_WORLD_CHAT_PRESTIGE = 10000;
     public static final long COOLDOWN_MS = 5000L; // 5 秒单次发言冷却
     public static final long BURST_WINDOW_MS = 60000L; // 1 分钟滑动窗口
     public static final int BURST_MAX_COUNT = 5; // 1 分钟内最多发言 5 次
@@ -39,15 +40,18 @@ public class ChatService {
     private final PlayerRepository playerRepository;
     private final RateLimiter rateLimiter;
     private final WebSocketPushService pushService;
+    private final PoliticalWordFilter politicalWordFilter;
 
     public ChatService(ChatMessageRepository chatMessageRepository,
                        PlayerRepository playerRepository,
                        RateLimiter rateLimiter,
-                       WebSocketPushService pushService) {
+                       WebSocketPushService pushService,
+                       PoliticalWordFilter politicalWordFilter) {
         this.chatMessageRepository = chatMessageRepository;
         this.playerRepository = playerRepository;
         this.rateLimiter = rateLimiter;
         this.pushService = pushService;
+        this.politicalWordFilter = politicalWordFilter;
     }
 
     public List<ChatDtos.MessageResponse> history() {
@@ -62,6 +66,13 @@ public class ChatService {
         String content = normalize(rawContent);
         if (content.isEmpty()) throw new IllegalArgumentException("消息不能为空");
         if (content.length() > MAX_LENGTH) throw new IllegalArgumentException("消息不能超过 " + MAX_LENGTH + " 字");
+
+        // 只限制玩家发言；世界频道历史和系统广播仍对新手开放。
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
+        if (player.getPrestige() == null || player.getPrestige() < MIN_WORLD_CHAT_PRESTIGE) {
+            throw new IllegalArgumentException("声望达到 10000 后才能在世界频道发言");
+        }
 
         long now = System.currentTimeMillis();
 
@@ -91,14 +102,13 @@ public class ChatService {
             throw new IllegalArgumentException("发言过于频繁，请 " + waitSec + " 秒后再试");
         }
 
-        content = filterSensitiveWords(content);
-        Player player = playerRepository.findById(playerId)
-                .orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
+        String originalContent = content;
+        content = politicalWordFilter.filter(filterSensitiveWords(content));
         ChatMessage message = new ChatMessage(null, playerId, player.getUsername(), content, now);
         ChatDtos.MessageResponse response = toDto(chatMessageRepository.save(message));
 
-        // 记录最后发送内容与时间戳
-        lastMessages.put(playerId, new LastMessage(content, now));
+        // 重复发言按原文判断，避免敏感词被打码后绕过相同内容拦截。
+        lastMessages.put(playerId, new LastMessage(originalContent, now));
 
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("id", response.id());

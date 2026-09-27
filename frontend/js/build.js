@@ -33,14 +33,10 @@ window.Game = window.Game || {};
     return Math.min(86400, Math.ceil(sec * techMul));
   }
 
-  function costText(cost) {
+  function costHtml(cost) {
     var arr = [];
-    var emojiMap = (G.DATA && G.DATA.resEmoji) || {};
     for (var k in cost) {
-      // 纯文本按钮场景: 统一用 emoji, 不再用 icon 字段(可能是图片路径),
-      // 否则会把图片路径拼接进纯文本。
-      var ico = emojiMap[k] || G.DATA.resources[k].icon || k;
-      arr.push(ico + cost[k]);
+      arr.push(G.resourceIconHtml(k) + cost[k]);
     }
     return arr.join(' ');
   }
@@ -117,6 +113,7 @@ window.Game = window.Game || {};
         G.toast(resp.message || '免费加速成功，工程已完成！');
         if (G.MainQuest && G.MainQuest.refresh) G.MainQuest.refresh();
         Core.render();
+        if (G.Onboarding && G.Onboarding.refresh) G.Onboarding.refresh();
       }).catch(function (err) {
         G.toast(err.message || '免费加速失败');
       }).finally(function () {
@@ -153,6 +150,7 @@ window.Game = window.Game || {};
         if (G.Task && G.Task.Quests) G.Task.Quests.onEvent('BUILD_START');
         if (G.MainQuest && G.MainQuest.refresh) G.MainQuest.refresh();
         Core.render();
+        if (G.Onboarding && G.Onboarding.actionStarted) G.Onboarding.actionStarted(Core.route, id);
       }).catch(function (err) {
         G.toast(err.message || '升级失败');
       });
@@ -452,10 +450,12 @@ window.Game = window.Game || {};
       }
       var groupKey = Core.buildingGroup(id);
       if (fromLv === 0 && groupKey && Core.groupSlotsRemaining(groupKey) <= 0) {
-        G.toast(this.GROUPS[groupKey].name + '建筑已达当前上限' + Core.groupSlotsCap(groupKey) + '栋（含新建中），可升级市政厅扩容（最高32栋），或拆除建筑、取消新建');
+        G.toast(this.GROUPS[groupKey].name + '建筑已达当前上限' + Core.groupSlotsCap(groupKey) + '栋（含新建中），可升级前线指挥部扩容（最高32栋），或拆除建筑、取消新建');
         return;
       }
       var toLv = fromLv + 1;
+      var prereq = G.Prerequisites && G.Prerequisites.check('buildings', id, toLv);
+      var prereqBlocked = prereq && prereq.missing.length > 0;
       var max = buildMaxLevel(id);
       if (fromLv >= max) {
         G.toast(b.name + ' 已达最大等级');
@@ -467,18 +467,18 @@ window.Game = window.Game || {};
       var enough = Core.costEnough(cost);
 
       // 当前资源快照,用于在弹窗里给玩家做"够/不够"的直观对比
-      var emojiMap = (G.DATA && G.DATA.resEmoji) || {};
       var costRows = '';
       var cur = Core.state.resources || {};
       for (var k in cost) {
-        var resName = (G.DATA.resources[k] && G.DATA.resources[k].name) || k;
-        var ico = emojiMap[k] || (G.DATA.resources[k] && G.DATA.resources[k].icon) || k;
+        var resource = G.DATA.resources[k] || {};
+        var resName = resource.name || k;
+        var iconHtml = G.resourceIconHtml(k);
         var need = cost[k];
         var have = cur[k] || 0;
         var ok = have >= need;
         costRows +=
           '<div class="cu-row">' +
-            '<span class="cu-ico">' + ico + '</span>' +
+            '<span class="cu-ico">' + iconHtml + '</span>' +
             '<span class="cu-name">' + resName + '</span>' +
             '<span class="cu-val' + (ok ? '' : ' cu-short') + '">需 ' + G.fmt(need) +
               ' <span class="cu-sub">(现 ' + G.fmt(have) + ')</span>' +
@@ -508,14 +508,16 @@ window.Game = window.Game || {};
               '<span class="cu-name">' + headText + '</span>' +
             '</div>' +
             costRows +
+            (G.Prerequisites ? G.Prerequisites.html('buildings', id, toLv) : '') +
             durHtml +
+            (prereqBlocked ? '<div class="cu-warn">' + G.Prerequisites.missingText(prereq.missing[0]) + '</div>' : '') +
             (enough ? '' :
               '<div class="cu-warn">' + warnText + '</div>'
             ) +
           '</div>' +
           '<div class="modal-foot">' +
             '<button class="btn" id="cuCancel">取消</button>' +
-            '<button class="btn ok" id="cuOk"' + (enough ? '' : ' disabled') + '>' + okText + '</button>' +
+            '<button class="btn ok" id="cuOk"' + (enough && !prereqBlocked ? '' : ' disabled') + '>' + okText + '</button>' +
           '</div>' +
         '</div>';
       document.body.appendChild(mask);
@@ -561,7 +563,7 @@ window.Game = window.Game || {};
       if (!b) return;
 
       if (id === 'command') {
-        G.toast('市政厅为核心枢纽，不可拆除');
+        G.toast('前线指挥部为核心枢纽，不可拆除');
         return;
       }
 
@@ -594,11 +596,10 @@ window.Game = window.Game || {};
       var toLv = curLv - 1;
       var duration = buildDuration(id, curLv - 1);
       var cost = buildCost(id, toLv);
-      var emojiMap = (G.DATA && G.DATA.resEmoji) || {};
       var refundRows = '';
       for (var k in cost) {
         var resName = (G.DATA.resources[k] && G.DATA.resources[k].name) || k;
-        var ico = emojiMap[k] || (G.DATA.resources[k] && G.DATA.resources[k].icon) || k;
+        var ico = G.resourceIconHtml(k);
         var refundAmt = Math.floor(cost[k] * 0.3);
         if (refundAmt > 0) {
           refundRows +=
@@ -721,7 +722,7 @@ window.Game = window.Game || {};
       var statsRows = '';
       if (b.produces) {
         var resName = G.DATA.resources[b.produces] ? G.DATA.resources[b.produces].name : b.produces;
-        var resIco = (D.resEmoji && D.resEmoji[b.produces]) || '📦';
+        var resIco = G.resourceIconHtml(b.produces);
         var mul = (Core.resBonusMul ? Core.resBonusMul() : 1);
         var singleProduce = 0;
         var baseProd = b.baseProduce || 0;
@@ -777,10 +778,10 @@ window.Game = window.Game || {};
           '<span class="bdetail-stat-val">+' + (curLv * b.defBonus) + '%</span>' +
         '</div>';
       }
-      if (b.airCap) {
+      if (b.airSpdBonus) {
         statsRows += '<div class="bdetail-stat-row">' +
-          '<span class="bdetail-stat-lbl">空军出击上限</span>' +
-          '<span class="bdetail-stat-val">+' + (curLv * b.airCap) + '</span>' +
+          '<span class="bdetail-stat-lbl">空军飞行航速</span>' +
+          '<span class="bdetail-stat-val">+' + (curLv * b.airSpdBonus) + '%</span>' +
         '</div>';
       }
       if (b.resBonus) {
@@ -807,6 +808,29 @@ window.Game = window.Game || {};
           '<span class="bdetail-stat-val">决定全城各建筑等级上限 (Lv.' + curLv + ')</span>' +
         '</div>';
       }
+      if (id === 'exchange') {
+        var exRate = (0.50 + curLv * 0.04) * 100;
+        var nextExRate = (0.50 + (curLv + 1) * 0.04) * 100;
+        var depotLevels = Core.buildingLevels('depot');
+        var depotCount = depotLevels.filter(function (lv) { return lv > 0; }).length;
+        var slotCap = 2 + Math.floor(curLv / 2) + depotCount;
+        var nextSlotCap = 2 + Math.floor((curLv + 1) / 2) + depotCount;
+        var taxRate = Math.max(5, 10 - (curLv - 1) * 0.5);
+        var nextTaxRate = Math.max(5, 10 - curLv * 0.5);
+
+        statsRows += '<div class="bdetail-stat-row">' +
+          '<span class="bdetail-stat-lbl">战略调配比率</span>' +
+          '<span class="bdetail-stat-val">' + exRate.toFixed(0) + '%' + (curLv < max ? (' (下级 ' + nextExRate.toFixed(0) + '%)') : '') + '</span>' +
+        '</div>';
+        statsRows += '<div class="bdetail-stat-row">' +
+          '<span class="bdetail-stat-lbl">货架挂单槽位</span>' +
+          '<span class="bdetail-stat-val">' + slotCap + ' 槽' + (curLv < max && nextSlotCap > slotCap ? (' (下级 ' + nextSlotCap + ' 槽)') : '') + '</span>' +
+        '</div>';
+        statsRows += '<div class="bdetail-stat-row">' +
+          '<span class="bdetail-stat-lbl">市场交易税率</span>' +
+          '<span class="bdetail-stat-val">' + taxRate.toFixed(1) + '%' + (curLv < max ? (' (下级 ' + nextTaxRate.toFixed(1) + '%)') : '') + '</span>' +
+        '</div>';
+      }
 
       // 快捷入口
       var shortcutHtml = '';
@@ -814,12 +838,15 @@ window.Game = window.Game || {};
       if (spRoute && s.buildings[id]) {
         var routeName = ({
           army: '兵种招募', academy: '军官招募', officer: '军官管理',
-          tech: '科技研究', fort: '城防系统'
+          tech: '科技研究', fort: '城防系统', exchange: '交易所大厅'
         })[spRoute] || spRoute;
         shortcutHtml = '<div style="margin-top:8px"><button class="btn sm ok" style="width:100%" id="bdetailRouteBtn">→ 前往 ' + routeName + '</button></div>';
       }
       if (id === 'exchange' && (s.buildings[id] || 0) > 0) {
-        shortcutHtml = '<div style="margin-top:8px"><button class="btn sm" style="width:100%" id="bdetailExchangeBtn">→ 进入 资源互换</button></div>';
+        shortcutHtml = '<div style="margin-top:8px"><button class="btn sm ok" style="width:100%" id="bdetailExchangeBtn">→ 进入 交易所大厅</button></div>';
+      }
+      if (G.Prerequisites) {
+        shortcutHtml += '<div style="margin-top:8px"><button type="button" class="btn sm" id="bdetailRequirementsBtn">查看各级要求</button></div>';
       }
 
       // 2. 施工中板块 vs 空闲可操作板块
@@ -858,33 +885,34 @@ window.Game = window.Game || {};
         var upHtml = '';
         if (curLv >= max) {
           if (id !== 'command' && cmdLv < 10) {
-            upHtml = '<div class="bdetail-limit-tip">⚠ 已达当前市政厅限制上限 (Lv.' + max + ')，需先升级市政厅</div>';
+            upHtml = '<div class="bdetail-limit-tip">⚠ 已达当前前线指挥部限制上限 (Lv.' + max + ')，需先升级前线指挥部</div>';
           } else {
             upHtml = '<div class="bdetail-max-tip">⭐ 建筑已达最高等级 (Lv.10)</div>';
           }
         } else {
           var toLv = curLv + 1;
+          var prereq = G.Prerequisites && G.Prerequisites.check('buildings', id, toLv);
+          var prereqBlocked = prereq && prereq.missing.length > 0;
           var uCost = buildCost(id, curLv);
           var uDur = buildDuration(id, curLv);
           var canAfford = Core.costEnough(uCost);
           var isBusy = jobs.length >= MAX_CONCURRENT;
 
           var costItems = '';
-          var resEmoji = D.resEmoji || {};
           for (var rk in uCost) {
             var need = uCost[rk];
             var have = (s.resources && s.resources[rk]) || 0;
             var ok = have >= need;
             var rName = G.DATA.resources[rk] ? G.DATA.resources[rk].name : rk;
-            var rIco = resEmoji[rk] || rName;
+            var rIco = G.resourceIconHtml(rk);
             costItems += '<div class="bdetail-cost-item ' + (ok ? 'enough' : 'lack') + '">' +
               '<span>' + rIco + ' ' + rName + '</span>' +
               '<span>' + have + '/' + need + '</span>' +
             '</div>';
           }
 
-          var upBtnText = isBusy ? ('施工队全忙 (' + jobs.length + '/' + MAX_CONCURRENT + ')') : (canAfford ? ('🚀 升级至 Lv.' + toLv) : '资源不足无法升级');
-          var upBtnDisabled = (!canAfford && !isBusy) ? ' disabled' : '';
+          var upBtnText = prereqBlocked ? '前置未满足' : (isBusy ? ('施工队全忙 (' + jobs.length + '/' + MAX_CONCURRENT + ')') : (canAfford ? ('🚀 升级至 Lv.' + toLv) : '资源不足无法升级'));
+          var upBtnDisabled = prereqBlocked || (!canAfford && !isBusy) ? ' disabled' : '';
 
           upHtml = '<div class="bdetail-action-card">' +
             '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
@@ -892,6 +920,7 @@ window.Game = window.Game || {};
               '<span style="font-size:12px;color:#777">⏱ 耗时: ' + timeText(uDur) + '</span>' +
             '</div>' +
             '<div class="bdetail-cost-grid">' + costItems + '</div>' +
+            (G.Prerequisites ? G.Prerequisites.html('buildings', id, toLv) : '') +
             '<div style="margin-top:6px">' +
               '<button class="btn ok" style="width:100%" id="bdetailUpBtn"' + upBtnDisabled + '>' + upBtnText + '</button>' +
             '</div>' +
@@ -901,17 +930,15 @@ window.Game = window.Game || {};
         // B. 拆除板块
         var disHtml = '';
         if (id === 'command') {
-          disHtml = '<div class="bdetail-nodismantle">🛡 市政厅为主城核心枢纽，不可拆除</div>';
+          disHtml = '<div class="bdetail-nodismantle">🛡 前线指挥部为主城核心枢纽，不可拆除</div>';
         } else if (curLv > 0) {
           var dDur = buildDuration(id, curLv - 1);
           var curCost = buildCost(id, curLv - 1);
           var refundStrs = [];
-          var resEmoji2 = D.resEmoji || {};
           for (var dk in curCost) {
             var rfAmt = Math.floor(curCost[dk] * 0.3);
             if (rfAmt > 0) {
-              var dkName = G.DATA.resources[dk] ? G.DATA.resources[dk].name : dk;
-              var dkIco = resEmoji2[dk] || dkName;
+              var dkIco = G.resourceIconHtml(dk);
               refundStrs.push(dkIco + rfAmt);
             }
           }
@@ -992,7 +1019,14 @@ window.Game = window.Game || {};
       if (exchBtn) {
         exchBtn.onclick = function () {
           close();
-          Game.Build.exchangePanel();
+          Game.go('exchange');
+        };
+      }
+      var requirementsBtn = mask.querySelector('#bdetailRequirementsBtn');
+      if (requirementsBtn) {
+        requirementsBtn.onclick = function () {
+          close();
+          G.Prerequisites.preview('buildings', id, Math.min(10, curLv + 1));
         };
       }
 
@@ -1102,7 +1136,7 @@ window.Game = window.Game || {};
           var enough = Core.costEnough(bcost);
           var icon = renderBuildingIcon(self.BUILD_ICON[id] || '🏗', b.name);
 
-          var costStr = costText(bcost);
+          var costStr = costHtml(bcost);
           var durStr = timeText(bdur);
 
           var btnHtml = isBusy
@@ -1162,122 +1196,13 @@ window.Game = window.Game || {};
     },
 
     exchange: function () {
-      var s = Core.state;
-      var lv = s.buildings.exchange || 0;
-      var rate = 0.5 + lv * 0.05;
-      var fromEl = document.getElementById('exFrom');
-      var toEl = document.getElementById('exTo');
-      var amtEl = document.getElementById('exAmt');
-      if (!fromEl || !toEl || !amtEl) { G.toast('请填写兑换信息'); return; }
-      var fromKey = fromEl.value;
-      var toKey = toEl.value;
-      if (fromKey === toKey) { G.toast('源与目标相同'); return; }
-      var amt = parseInt(amtEl.value, 10);
-      if (isNaN(amt) || amt <= 0) { G.toast('数量无效'); return; }
-      if ((s.resources[fromKey] || 0) < amt) { G.toast(G.DATA.resources[fromKey].name + '不足'); return; }
-      var gain = Math.floor(amt * rate);
-      s.resources[fromKey] -= amt;
-      s.resources[toKey] = (s.resources[toKey] || 0) + gain;
-      G.toast('转换: ' + G.DATA.resources[fromKey].name + amt + ' -> ' + G.DATA.resources[toKey].name + gain);
-      Core.render();
+      Game.go('exchange');
     },
 
     exchangePanel: function () {
-      var s = Core.state;
-      var lv = s.buildings.exchange || 0;
-      var rate = (0.5 + lv * 0.05).toFixed(2);
-      var h = '<div class="menu-item ok"><span class="n">资源互换</span> <span class="d">兑换比 ' + rate + '</span>';
-      h += '<div class="btn-row" style="flex-wrap:wrap">';
-      h += '<select class="qty" id="exFrom"><option value="food">粮</option><option value="steel">钢</option><option value="oil">油</option><option value="rare">稀</option></select>';
-      h += '<span style="color:#ffe14a;padding:0 4px">-></span>';
-      h += '<select class="qty" id="exTo"><option value="steel">钢</option><option value="food">粮</option><option value="oil">油</option><option value="rare">稀</option></select>';
-      h += '</div>';
-      h += '<div class="btn-row" style="margin-top:6px">';
-      h += '<input class="qty" id="exAmt" type="number" min="1" value="100" />';
-      h += '<button class="btn" onclick="Game.Build.exchange()">兑换</button>';
-      h += '</div>';
-      h += '</div>';
-
-      h += '<div class="zone-head">上架资源到交易所</div>';
-      h += '<div class="menu-item ok">';
-      var depotLevels = Core.buildingLevels('depot');
-      var depotSlots = depotLevels.filter(function(lv){ return lv > 0; }).length;
-      var listCap = depotSlots + 1;
-      s.exchangeList = s.exchangeList || [];
-      var usedSlots = s.exchangeList.length;
-      h += '<div class="d">上架资源供其他玩家购买，可设置出售数量和单价(黄金)</div>';
-      h += '<div class="d" style="color:var(--gold)">上架槽位: ' + usedSlots + '/' + listCap + ' (仓库已建' + depotSlots + '槽，基础1+每槽+1)</div>';
-      var canList = usedSlots < listCap;
-      h += '<div class="btn-row" style="flex-wrap:wrap">';
-      h += '<select class="qty" id="listRes"' + (canList ? '' : ' disabled') + '><option value="food">粮</option><option value="steel">钢</option><option value="oil">油</option><option value="rare">稀</option></select>';
-      h += '<input class="qty" id="listAmt" type="number" min="1" value="100" placeholder="数量" style="width:70px"' + (canList ? '' : ' disabled') + ' />';
-      h += '<input class="qty" id="listPrice" type="number" min="1" value="50" placeholder="单价" style="width:70px"' + (canList ? '' : ' disabled') + ' />';
-      h += '<button class="btn sm"' + (canList ? '' : ' disabled') + ' onclick="Game.Build.listResource()">' + (canList ? '上架' : '槽位已满') + '</button>';
-      h += '</div>';
-      h += '</div>';
-
-      s.exchangeList = s.exchangeList || [];
-      h += '<div class="zone-head">我的上架列表 (' + s.exchangeList.length + ')</div>';
-      h += '<div class="menu">';
-      if (!s.exchangeList.length) {
-        h += '<div class="desc">暂无上架资源</div>';
-      } else {
-        for (var i = 0; i < s.exchangeList.length; i++) {
-          var item = s.exchangeList[i];
-          var resName = G.DATA.resources[item.resKey] ? G.DATA.resources[item.resKey].name : item.resKey;
-          h += '<div class="menu-item ok">';
-          h += '<span class="n">' + resName + ' x' + item.amount + '</span> <span class="lv">单价' + item.price + '金</span>';
-          h += '<div class="d">总价: ' + (item.amount * item.price) + '黄金  上架时间: ' + new Date(item.time).toLocaleString() + '</div>';
-          h += '<div class="btn-row"><button class="btn sm warn" onclick="Game.Build.unlistResource(' + i + ')">下架</button></div>';
-          h += '</div>';
-        }
-      }
-      h += '</div>';
-
-      var box = document.getElementById('exPanel');
-      if (box) box.innerHTML = h; else G.toast('面板异常');
+      Game.go('exchange');
     },
 
-    listResource: function () {
-      var s = Core.state;
-      var depotLevels = Core.buildingLevels('depot');
-      var depotSlots = depotLevels.filter(function(lv){ return lv > 0; }).length;
-      var listCap = depotSlots + 1;
-      s.exchangeList = s.exchangeList || [];
-      if (s.exchangeList.length >= listCap) { G.toast('上架槽位已满(仓库已建' + depotSlots + '槽，上限' + listCap + ')'); return; }
-      var resEl = document.getElementById('listRes');
-      var amtEl = document.getElementById('listAmt');
-      var priceEl = document.getElementById('listPrice');
-      if (!resEl || !amtEl || !priceEl) { G.toast('请填写上架信息'); return; }
-      var resKey = resEl.value;
-      var amt = parseInt(amtEl.value, 10);
-      var price = parseInt(priceEl.value, 10);
-      if (isNaN(amt) || amt <= 0) { G.toast('数量无效'); return; }
-      if (isNaN(price) || price <= 0) { G.toast('单价无效'); return; }
-      if ((s.resources[resKey] || 0) < amt) { G.toast(G.DATA.resources[resKey].name + '不足'); return; }
-      s.resources[resKey] -= amt;
-      s.exchangeList = s.exchangeList || [];
-      s.exchangeList.push({
-        id: 'ex_' + Date.now() + '_' + Math.floor(Math.random() * 9999),
-        resKey: resKey,
-        amount: amt,
-        price: price,
-        time: Date.now()
-      });
-      G.toast('已上架 ' + G.DATA.resources[resKey].name + ' x' + amt + ' 单价' + price + '金');
-      this.exchangePanel();
-    },
-
-    unlistResource: function (idx) {
-      var s = Core.state;
-      s.exchangeList = s.exchangeList || [];
-      if (idx < 0 || idx >= s.exchangeList.length) return;
-      var item = s.exchangeList[idx];
-      s.resources[item.resKey] = (s.resources[item.resKey] || 0) + item.amount;
-      s.exchangeList.splice(idx, 1);
-      G.toast('已下架，资源返还');
-      this.exchangePanel();
-    },
 
     isBuilding: function (jobs, id, slot) {
       for (var i = 0; i < jobs.length; i++) {
@@ -1301,15 +1226,16 @@ window.Game = window.Game || {};
      * 满足 lv > 0 时才生效, 否则点空白处应触发升级弹窗 (无新内容则 noop)。
      */
     SPECIAL_ROUTES: {
-      factory:  'army',     // 军工厂 → 兵种招募
-      academy:  'academy',  // 军校   → 军官招募
-      staff:    'officer',  // 参谋部 → 军官管理
-      lab:      'tech',     // 研究所 → 科技
-      wall:     'fort',     // 围墙   → 城防
-      lightfactory: 'army', // 轻工厂/重工厂/机场/港口 也走 army 页 (兵种面板支持按 build 过滤)
+      factory:  'army',     // 战地兵工厂 → 兵种招募
+      academy:  'academy',  // 陆军讲武堂 → 军官招募
+      staff:    'officer',  // 作战参谋部 → 军官管理
+      lab:      'tech',     // 国防研究所 → 科技
+      wall:     'fort',     // 要塞防线   → 城防
+      lightfactory: 'army', // 轻装战车厂/重装战车厂/空军基地/军港船坞 也走 army 页 (兵种面板支持按 build 过滤)
       heavyfactory: 'army',
       airport:     'army',
-      port:        'army'
+      port:        'army',
+      exchange:    'exchange'
     },
 
     /** 建筑统一使用 A「花园卫城」透明模型；资源数量栏继续使用资源符号。 */
@@ -1410,7 +1336,7 @@ window.Game = window.Game || {};
       // 关键属性（图标 + 名称 + 数值）
       var stats = '';
       if (b.produces) {
-        stats += '<div class="bcard-stat"><span class="bcard-stat-ico">⛏</span><span class="bcard-stat-name">产出</span><span class="bcard-stat-val">' + G.DATA.resources[b.produces].name + ' ' + G.fmt(Core.produceOf(id)) + '/h</span></div>';
+        stats += '<div class="bcard-stat"><span class="bcard-stat-ico">' + G.resourceIconHtml(b.produces) + '</span><span class="bcard-stat-name">产出</span><span class="bcard-stat-val">' + G.DATA.resources[b.produces].name + ' ' + G.fmt(Core.produceOf(id)) + '/h</span></div>';
       }
       if (b.produces && b.slots && multi) stats += '<div class="bcard-stat"><span class="bcard-stat-ico">📦</span><span class="bcard-stat-name">资源上限</span><span class="bcard-stat-val">' + G.fmt(totalLv * 200000) + '</span></div>';
       if (b.produces && !multi) stats += '<div class="bcard-stat"><span class="bcard-stat-ico">📦</span><span class="bcard-stat-name">资源上限</span><span class="bcard-stat-val">' + G.fmt((s.buildings[id] || 0) * 200000) + '</span></div>';
@@ -1425,7 +1351,7 @@ window.Game = window.Game || {};
         stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🛡</span><span class="bcard-stat-name">掠夺保护</span><span class="bcard-stat-val">每资源保 ' + protect + '</span></div>';
       }
       if (b.defBonus) stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🛡</span><span class="bcard-stat-name">守城防御</span><span class="bcard-stat-val">+' + ((s.buildings[id] || 0) * b.defBonus) + '%</span></div>';
-      if (b.airCap) stats += '<div class="bcard-stat"><span class="bcard-stat-ico">✈</span><span class="bcard-stat-name">空军出击上限</span><span class="bcard-stat-val">' + ((s.buildings[id] || 0) * b.airCap) + '</span></div>';
+      if (b.airSpdBonus) stats += '<div class="bcard-stat"><span class="bcard-stat-ico">✈</span><span class="bcard-stat-name">空军飞行航速</span><span class="bcard-stat-val">+' + ((s.buildings[id] || 0) * b.airSpdBonus) + '%</span></div>';
       if (b.resBonus) stats += '<div class="bcard-stat"><span class="bcard-stat-ico">📈</span><span class="bcard-stat-name">全资源产出</span><span class="bcard-stat-val">+' + ((s.buildings[id] || 0) * b.resBonus) + '%</span></div>';
       if (id === 'staff') stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🎖</span><span class="bcard-stat-name">带兵容量加成</span><span class="bcard-stat-val">+' + ((s.buildings[id] || 0) * 10) + '%</span></div>';
       if (id === 'liaison') stats += '<div class="bcard-stat"><span class="bcard-stat-ico">⭐</span><span class="bcard-stat-name">军官刷新</span><span class="bcard-stat-val">偏向高星 (Lv.' + (s.buildings[id] || 0) + ')</span></div>';
@@ -1436,13 +1362,11 @@ window.Game = window.Game || {};
       if (spRoute && s.buildings[id]) {
         var routeName = ({
           army: '兵种招募', academy: '军官招募', officer: '军官管理',
-          tech: '科技研究', fort: '城防'
+          tech: '科技研究', fort: '城防', exchange: '交易所'
         })[spRoute] || spRoute;
         shortcuts += '<button class="btn sm ok bcard-shortcut" onclick="Game.go(\'' + spRoute + '\')">→ ' + routeName + '</button>';
       }
-      if (id === 'exchange' && (s.buildings[id] || 0) > 0) {
-        shortcuts += '<button class="btn sm bcard-shortcut" onclick="Game.Build.exchangePanel()">资源互换</button>';
-      }
+
       if (shortcuts) expand += '<div class="bcard-shortcuts">' + shortcuts + '</div>';
 
       // 多槽位：每栋操作行
@@ -1663,9 +1587,9 @@ window.Game = window.Game || {};
       var groupCap = Core.groupSlotsCap(groupKey);
       if (groupKey === 'res') {
         h += '<div class="desc">资源建筑: ' + groupUsed + '/' + groupCap + ' 栋（含新建中） | 四类建筑共享额度，自由分配</div>';
-        h += '<div class="desc">基础12栋 + 市政厅每级2栋，满级32栋 | 市政厅限制建筑等级上限' + (buildDisc > 0 ? ' | 建筑加速 -' + buildDisc.toFixed(0) + '%' : '') + '</div>';
+        h += '<div class="desc">基础12栋 + 前线指挥部每级2栋，满级32栋 | 前线指挥部限制建筑等级上限' + (buildDisc > 0 ? ' | 建筑加速 -' + buildDisc.toFixed(0) + '%' : '') + '</div>';
       } else {
-        h += '<div class="desc">军事建筑: ' + groupUsed + '/' + groupCap + ' 栋（含新建中） | 基础12栋 + 市政厅每级2栋，满级32栋 | 民居、仓库、军工厂自由分配，其余建筑限1栋 | 市政厅限制建筑等级上限' + (buildDisc > 0 ? ' | 建筑加速 -' + buildDisc.toFixed(0) + '%' : '') + '</div>';
+        h += '<div class="desc">军事建筑: ' + groupUsed + '/' + groupCap + ' 栋（含新建中） | 基础12栋 + 前线指挥部每级2栋，满级32栋 | 集结兵舍、军需物资库、战地兵工厂自由分配，其余建筑限1栋 | 前线指挥部限制建筑等级上限' + (buildDisc > 0 ? ' | 建筑加速 -' + buildDisc.toFixed(0) + '%' : '') + '</div>';
       }
       h += '<div id="buildQueueBar">' + this.renderQueueHtml(jobs, s) + '</div>';
       h += this.renderSlotGrid(groupKey, jobs, s);
@@ -1778,6 +1702,7 @@ window.Game = window.Game || {};
         G.toast(resp.message || ('⚡ ' + info.name + ' ×' + actualCount + ' 使用成功'));
         if (G.MainQuest && G.MainQuest.refresh) G.MainQuest.refresh();
         Core.render();
+        if (G.Onboarding && G.Onboarding.refresh) G.Onboarding.refresh();
       }).catch(function (err) {
         G.toast(err.message || '加速失败');
       });

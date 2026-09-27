@@ -7,6 +7,13 @@ window.Game = window.Game || {};
   var log = [];
   var listeners = [];
   var MAX = G.Constants.chatMax;
+  var MIN_WORLD_CHAT_PRESTIGE = G.Constants.chatMinPrestige;
+
+  /** 世界频道发言按当前玩家声望开放，历史消息始终可读。 */
+  function canSend() {
+    var state = G.state || (G.Core && G.Core.state);
+    return !!state && Number(state.prestige) >= MIN_WORLD_CHAT_PRESTIGE;
+  }
 
   function pad2(n) { return n < 10 ? '0' + n : '' + n; }
   function fmtTime(ts) {
@@ -144,7 +151,11 @@ window.Game = window.Game || {};
   function updateSendBtnUI() {
     var btn = document.getElementById('worldChatSendBtn');
     if (!btn) return;
-    if (cdRemaining > 0) {
+    if (!canSend()) {
+      btn.disabled = true;
+      btn.classList.add('disabled');
+      btn.textContent = '只读';
+    } else if (cdRemaining > 0) {
       btn.disabled = true;
       btn.classList.add('disabled');
       btn.textContent = cdRemaining + 's';
@@ -197,8 +208,10 @@ window.Game = window.Game || {};
   var Chat = {
     log: log,
     MAX: MAX,
+    MIN_WORLD_CHAT_PRESTIGE: MIN_WORLD_CHAT_PRESTIGE,
     COOLDOWN_SEC: COOLDOWN_SEC,
 
+    canSend: canSend,
     getCooldown: getCooldown,
     isSpamDuplicate: isSpamDuplicate,
     recordSent: recordSent,
@@ -229,6 +242,7 @@ window.Game = window.Game || {};
     },
 
     send: function (content) {
+      if (!canSend()) return Promise.reject(new Error('声望达到 10000 后才能在世界频道发言'));
       content = String(content == null ? '' : content)
         .replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200F\uFEFF]/g, '')
         .replace(/^\s+|\s+$/g, '');

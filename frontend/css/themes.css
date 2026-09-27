@@ -84,8 +84,6 @@ body[data-theme|="blue-white"] {
   border: 1px solid rgba(255, 255, 255, 0.25) !important;
 }
 
-[data-theme|="blue-white"] #topbar .player-bar-right .shop-btn,
-[data-theme|="blue-white"] #topbar .player-bar-right .icon-btn,
 [data-theme|="blue-white"] #topbar .theme-switch-btn {
   background: rgba(255, 255, 255, 0.2) !important;
   border: 1px solid rgba(255, 255, 255, 0.35) !important;
@@ -98,8 +96,6 @@ body[data-theme|="blue-white"] {
   justify-content: center !important;
 }
 
-[data-theme|="blue-white"] #topbar .player-bar-right .shop-btn:hover,
-[data-theme|="blue-white"] #topbar .player-bar-right .icon-btn:hover,
 [data-theme|="blue-white"] #topbar .theme-switch-btn:hover {
   background: rgba(255, 255, 255, 0.35) !important;
   border-color: rgba(255, 255, 255, 0.5) !important;
@@ -1932,16 +1928,12 @@ body[data-theme="paper"] {
 [data-theme="paper"] #topbar .player-bar .name {
   color: #eceee9 !important;
 }
-[data-theme="paper"] #topbar .player-bar-right .shop-btn,
-[data-theme="paper"] #topbar .player-bar-right .icon-btn,
 [data-theme="paper"] #topbar .theme-switch-btn {
   background: #364249 !important;
   border: 1px solid #4a5a63 !important;
   border-radius: 3px !important;
   box-shadow: none !important;
 }
-[data-theme="paper"] #topbar .player-bar-right .shop-btn:hover,
-[data-theme="paper"] #topbar .player-bar-right .icon-btn:hover,
 [data-theme="paper"] #topbar .theme-switch-btn:hover {
   background: #415159 !important;
 }
@@ -2284,16 +2276,12 @@ body[data-theme="dark"] {
   border-bottom: 1px solid #1e293b !important;
   color: #38bdf8 !important;
 }
-[data-theme="dark"] #topbar .player-bar-right .shop-btn,
-[data-theme="dark"] #topbar .player-bar-right .icon-btn,
 [data-theme="dark"] #topbar .theme-switch-btn {
   background: #162032 !important;
   border: 1px solid #1f2d45 !important;
   border-radius: 3px !important;
   box-shadow: none !important;
 }
-[data-theme="dark"] #topbar .player-bar-right .shop-btn:hover,
-[data-theme="dark"] #topbar .player-bar-right .icon-btn:hover,
 [data-theme="dark"] #topbar .theme-switch-btn:hover {
   background: #1e2d47 !important;
 }
@@ -2736,14 +2724,6 @@ body[data-theme="dark"] {
 [data-theme|="blue-white"] .topbar-online-status .online-text {
   color: #86efac !important;
 }
-[data-theme|="blue-white"] .topbar-shop-btn {
-  background: rgba(255, 255, 255, 0.22) !important;
-  border: 1px solid rgba(255, 255, 255, 0.4) !important;
-  width: 28px !important;
-  height: 28px !important;
-  padding: 0 !important;
-}
-
 [data-theme="dark"] .topbar-player-name {
   color: #38bdf8 !important;
 }
@@ -2781,12 +2761,6 @@ body[data-theme="dark"] {
 [data-theme="dark"] .avatar-preset-name {
   color: #94a3b8 !important;
 }
-[data-theme="dark"] .avatar-custom-input {
-  background: #0e1422 !important;
-  border-color: #1e293b !important;
-  color: #f8fafc !important;
-}
-
 /* 主题世界频道自己发言靠右展示 */
 [data-theme|="blue-white"] .chat-msg.chat-msg-self,
 [data-theme="paper"] .chat-msg.chat-msg-self,
@@ -3073,6 +3047,20 @@ body[data-theme="dark"] {
 .account-confirm-submit { background: var(--account-accent); border: 1px solid var(--account-accent); color: var(--account-button-ink); }
 .account-confirm-submit:hover { background: var(--account-accent-hover); border-color: var(--account-accent-hover); }
 .account-confirm button:focus-visible { outline: 2px solid var(--account-accent); outline-offset: 3px; }
+.city-rename-dialog .modal-body label { display: block; margin-bottom: 8px; font-weight: 600; }
+.city-rename-dialog #renameCityInput {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--account-line) !important;
+  border-radius: 7px !important;
+  background: var(--account-surface) !important;
+  color: var(--account-ink) !important;
+  font: inherit;
+}
+.city-rename-dialog #renameCityInput:focus-visible { outline: 2px solid var(--account-accent); outline-offset: 2px; }
+.city-rename-dialog #renameCityHint { margin: 8px 0 0; color: var(--account-muted); font-size: 12px; }
 @media (prefers-reduced-motion: reduce) {
   .account-confirm-mask, .account-confirm-mask .modal-card { animation: none; }
 }

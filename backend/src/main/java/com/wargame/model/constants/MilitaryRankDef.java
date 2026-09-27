@@ -33,24 +33,25 @@ public final class MilitaryRankDef {
 
     public static final int MAX_RANK_TIER = 17;
 
+    // 保留全部 17 阶军衔；上尉及以下每阶增加 25,000；少校基础 300,000，此后每阶增加 50,000，上将为 600,000。
     public static final List<RankInfo> RANKS = List.of(
-            new RankInfo(1,  "列兵",   0,       50000,  Map.of()),
-            new RankInfo(2,  "上等兵", 200,     100000, Map.of("gem_pearl", 3)),
-            new RankInfo(3,  "下士",   500,     150000, Map.of("gem_pearl", 5, "gem_coral", 2)),
-            new RankInfo(4,  "中士",   1000,    200000, Map.of("gem_pearl", 8, "gem_coral", 4, "gem_glaze", 2)),
-            new RankInfo(5,  "上士",   2000,    250000, Map.of("gem_coral", 6, "gem_glaze", 4, "gem_amber", 2)),
-            new RankInfo(6,  "军士长", 3500,    300000, Map.of("gem_glaze", 8, "gem_amber", 5, "gem_agate", 2)),
-            new RankInfo(7,  "准尉",   5500,    350000, Map.of("gem_amber", 8, "gem_agate", 5, "gem_crystal", 2)),
-            new RankInfo(8,  "少尉",   8000,    400000, Map.of("gem_agate", 8, "gem_crystal", 5, "gem_jadeite", 2)),
-            new RankInfo(9,  "中尉",   15000,   450000, Map.of("gem_crystal", 8, "gem_jadeite", 5, "gem_jade", 2)),
-            new RankInfo(10, "上尉",   25000,   500000, Map.of("gem_jadeite", 8, "gem_jade", 5, "gem_nightpearl", 1)),
-            new RankInfo(11, "少校",   45000,   550000, Map.of("gem_jade", 8, "gem_nightpearl", 2, "gem_pearl", 15)),
-            new RankInfo(12, "中校",   80000,   600000, Map.of("gem_nightpearl", 4, "gem_coral", 15, "gem_glaze", 12)),
-            new RankInfo(13, "上校",   150000,  650000, Map.of("gem_amber", 15, "gem_agate", 12, "gem_crystal", 10)),
-            new RankInfo(14, "大校",   300000,  700000, Map.of("gem_crystal", 15, "gem_jadeite", 12, "gem_jade", 10)),
-            new RankInfo(15, "少将",   600000,  750000, Map.of("gem_jadeite", 18, "gem_jade", 15, "gem_nightpearl", 6)),
-            new RankInfo(16, "中将",   1200000, 800000, Map.of("gem_jade", 20, "gem_nightpearl", 10, "gem_crystal", 15, "gem_pearl", 20)),
-            new RankInfo(17, "上将",   2500000, 850000, Map.of("gem_nightpearl", 15, "gem_jade", 25, "gem_jadeite", 25, "gem_agate", 20))
+            new RankInfo(1,  "列兵",   0,       25000,  Map.of()),
+            new RankInfo(2,  "上等兵", 200,     50000, Map.of("gem_pearl", 3)),
+            new RankInfo(3,  "下士",   500,     75000, Map.of("gem_pearl", 5, "gem_coral", 2)),
+            new RankInfo(4,  "中士",   1000,    100000, Map.of("gem_pearl", 8, "gem_coral", 4, "gem_glaze", 2)),
+            new RankInfo(5,  "上士",   2000,    125000, Map.of("gem_coral", 6, "gem_glaze", 4, "gem_amber", 2)),
+            new RankInfo(6,  "军士长", 3500,    150000, Map.of("gem_glaze", 8, "gem_amber", 5, "gem_agate", 2)),
+            new RankInfo(7,  "准尉",   5500,    175000, Map.of("gem_amber", 8, "gem_agate", 5, "gem_crystal", 2)),
+            new RankInfo(8,  "少尉",   8000,    200000, Map.of("gem_agate", 8, "gem_crystal", 5, "gem_jadeite", 2)),
+            new RankInfo(9,  "中尉",   15000,   225000, Map.of("gem_crystal", 8, "gem_jadeite", 5, "gem_jade", 2)),
+            new RankInfo(10, "上尉",   25000,   250000, Map.of("gem_jadeite", 8, "gem_jade", 5, "gem_nightpearl", 1)),
+            new RankInfo(11, "少校",   45000,   300000, Map.of("gem_jade", 8, "gem_nightpearl", 2, "gem_pearl", 15)),
+            new RankInfo(12, "中校",   80000,   350000, Map.of("gem_nightpearl", 4, "gem_coral", 15, "gem_glaze", 12)),
+            new RankInfo(13, "上校",   150000,  400000, Map.of("gem_amber", 15, "gem_agate", 12, "gem_crystal", 10)),
+            new RankInfo(14, "大校",   300000,  450000, Map.of("gem_crystal", 15, "gem_jadeite", 12, "gem_jade", 10)),
+            new RankInfo(15, "少将",   600000,  500000, Map.of("gem_jadeite", 18, "gem_jade", 15, "gem_nightpearl", 6)),
+            new RankInfo(16, "中将",   1200000, 550000, Map.of("gem_jade", 20, "gem_nightpearl", 10, "gem_crystal", 15, "gem_pearl", 20)),
+            new RankInfo(17, "上将",   2500000, 600000, Map.of("gem_nightpearl", 15, "gem_jade", 25, "gem_jadeite", 25, "gem_agate", 20))
     );
 
     public static int getCityCap(int tier) {

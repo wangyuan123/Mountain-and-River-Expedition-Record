@@ -18,8 +18,50 @@ function fixture({native=false,portrait=true,rejectLock=false}={}) {
   view.on=(node,event,fn)=>{events[event]=fn;};
   if(native)view.shell.requestFullscreen=()=>{document.fullscreenElement=view.shell;return Promise.resolve();};
   document.exitFullscreen=()=>{exits++;document.fullscreenElement=null;return Promise.resolve();};
-  return {c,view,document,classes,button,close,counts:()=>({locks,unlocks,exits})};
+  return {c,view,document,events,classes,button,close,counts:()=>({locks,unlocks,exits})};
 }
+test('map toolbar keeps search and all actions together, without a title',()=>{
+  const {c}=fixture();
+  c.Game.Core={state:{world:{cityPos:{x:100,y:100}}}};
+  c.Game.DATA={world:{size:200}};
+  c.Game.MapLayout={bounds:()=>({cx:101,cy:101,span:2})};
+  c.Game.MapCamera=function(){};
+  const stop=new Error('markup captured');
+  const container={innerHTML:'',querySelector(){throw stop;}};
+  assert.throws(()=>new c.Game.TestMapView(container),error=>error===stop);
+  const toolbar=container.innerHTML.match(/<div class="world-map-toolbar page-backbar">(.*?)<\/div>/);
+  assert.ok(toolbar);
+  assert.match(toolbar[1], /data-map="back"[^>]*><span>‹ 返回上一步<\/span><\/button>/);
+  assert.doesNotMatch(toolbar[1], /data-map="back"[^>]*><span>\[‹ 返回上一步\]<\/span>/);
+  assert.match(toolbar[1],/data-map="back".*<form class="world-map-search">.*class="page-back-button" type="submit"><span>\[定位\]<\/span><\/button>.*class="page-back-button" data-map="refresh"><span>\[刷新\]<\/span><\/button><\/form>.*class="page-back-button" data-map="list"><span>\[列表\]<\/span><\/button>.*data-map="full"/);
+  assert.doesNotMatch(toolbar[1],/战略地图/);
+  assert.equal(container.innerHTML.match(/class="world-map-search"/g).length,1);
+  assert.match(container.innerHTML,/<aside class="world-map-minimap collapsed"><button class="minimap-toggle" type="button" aria-expanded="false" aria-label="展开世界缩略图"><span>世界缩略图<\/span><span class="minimap-toggle-icon">\+<\/span><\/button>/);
+  const expand=toolbar[1].match(/<button[^>]*data-map="full"[^>]*>(.*?)<\/button>/);
+  const collapse=container.innerHTML.match(/<button[^>]*data-map="exit-full"[^>]*>(.*?)<\/button>/);
+  assert.match(expand[0],/aria-label="全屏显示地图" title="全屏显示地图"/);
+  assert.match(collapse[0],/aria-label="收起全屏地图" title="收起全屏地图"/);
+  assert.match(expand[1],/<svg[^>]*aria-hidden="true"[^>]*><path d="[^"]+"\/><\/svg>/);
+  assert.match(collapse[1],/<svg[^>]*aria-hidden="true"[^>]*><path d="[^"]+"\/><\/svg>/);
+  assert.equal(expand[1].replace(/<[^>]+>/g,''),'');
+  assert.equal(collapse[1].replace(/<[^>]+>/g,''),'');
+  assert.notEqual(expand[1],collapse[1]);
+});
+test('map toolbar back and view buttons retain their actions',()=>{
+  const {c,view,events}=fixture();
+  let backs=0,lists=0,fulls=0,exits=0;
+  c.Game.Core={back(){backs++;}};
+  c.Game.WorldMap.setMode=mode=>{if(mode==='list')lists++;};
+  view.app={view:{}};
+  view.shell.querySelector=()=>({});
+  view.enterFullscreen=()=>{fulls++;};
+  view.exitFullscreen=()=>{exits++;};
+  view.bind();
+  for(const action of ['back','list','full','exit-full']){
+    events.click({target:{closest:selector=>selector==='[data-map]'?{dataset:{map:action}}:null}});
+  }
+  assert.deepEqual([backs,lists,fulls,exits],[1,1,1,1]);
+});
 test('unsupported fullscreen still opens landscape overlay and restores scroll/focus on exit',()=>{
   const f=fixture();f.view.enterFullscreen();
   assert.equal(f.view.fullscreen,true);assert.ok(f.classes.has('world-map-full'));assert.equal(f.close.focused,true);

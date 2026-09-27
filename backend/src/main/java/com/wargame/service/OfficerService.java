@@ -5,6 +5,7 @@ import com.wargame.model.constants.GameData;
 import com.wargame.model.constants.OfficerEquipmentDef;
 import com.wargame.model.constants.OfficerSkillDef;
 import com.wargame.model.constants.HistoricalOfficers;
+import com.wargame.model.constants.OfficerNameGenerator;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
 import com.wargame.util.JsonUtil;
@@ -33,12 +34,16 @@ import java.util.random.RandomGenerator;
 @Service
 public class OfficerService {
 
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
+
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
 
     @org.springframework.beans.factory.annotation.Autowired private com.wargame.repository.MarchRepository marches;
     private final OfficerRepository officerRepository;
     private final AcademyRepository academyRepository;
+    private final PlayerRepository playerRepository;
     private final ResourcesRepository resourcesRepository;
     private final BuildingRepository buildingRepository;
     private final PlayerItemRepository playerItemRepository;
@@ -51,10 +56,8 @@ public class OfficerService {
     private static final int OFFICER_MAX_LEVEL = 100;
     /** 军校刷新费用 - 对应 JS refreshAcademy 中 var cost = 200（约 6.7 小时黄金产出） */
     private static final int ACADEMY_REFRESH_COST = 200;
-    /** 军校刷新冷却 (1小时) - 对应 JS 60 * 60 * 1000 */
-    private static final long ACADEMY_REFRESH_COOLDOWN = 60 * 60 * 1000L;
-    /** 军校候选人数量 - 对应 JS var count = 7 */
-    private static final int ACADEMY_COUNT = 7;
+    /** 每次军校刷新生成的候选人数量；五星概率仍按整批只判定一次。 */
+    public static final int ACADEMY_CANDIDATE_COUNT = 10;
     /** 招募费用系数 - 对应 JS var cost = o.star * 80 */
     private static final int RECRUIT_COST_PER_STAR = 80;
     /** 解雇返还系数 - 对应 JS s.resources.gold += o.star * 20 */
@@ -79,9 +82,11 @@ public class OfficerService {
                           BuildingRepository buildingRepository,
                           PlayerItemRepository playerItemRepository,
                           OfficerEquipmentRepository equipmentRepository,
-                          com.wargame.service.quest.QuestService questService) {
+                          com.wargame.service.quest.QuestService questService,
+                          PlayerRepository playerRepository) {
         this.officerRepository = officerRepository;
         this.academyRepository = academyRepository;
+        this.playerRepository = playerRepository;
         this.resourcesRepository = resourcesRepository;
         this.buildingRepository = buildingRepository;
         this.playerItemRepository = playerItemRepository;
@@ -97,21 +102,28 @@ public class OfficerService {
     public Map<String, Object> refreshAcademy(Long playerId) {
         Map<String, Object> result = new LinkedHashMap<>();
 
-        long now = System.currentTimeMillis();
         int academyLv = buildingLevel(playerId, "academy");
         if (academyLv <= 0) {
             result.put("success", false);
             result.put("message", "请先建造军校");
             return result;
         }
-        Academy academy = getOrCreateAcademy(playerId);
-        long refreshAt = academy.getRefreshAt() != null ? academy.getRefreshAt() : 0L;
-
-        // JS: if (!force && s.academy.refreshAt > now) - 冷却中
-        if (refreshAt > now) {
-            long mins = (long) Math.ceil((refreshAt - now) / 60000.0);
+        // 鉴权可能已缓存旧玩家版本；先落库本事务变更，再加锁重新读取，避免旧版本锁升级失败。
+        Player player = playerRepository.findById(playerId).orElseThrow();
+        entityManager.flush();
+        entityManager.refresh(player, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+        long now = System.currentTimeMillis();
+        AcademyRefreshPolicy.Snapshot quota = AcademyRefreshPolicy.snapshot(player, now);
+        result.putAll(quota.toState());
+        if (quota.dailyCount() >= AcademyRefreshPolicy.DAILY_LIMIT) {
             result.put("success", false);
-            result.put("message", "军校 " + mins + " 分钟后可再次刷新");
+            result.put("message", "今日军校刷新已达100次，请于北京时间次日0点后再刷新");
+            return result;
+        }
+        if (quota.refreshAt() > now) {
+            long mins = (long) Math.ceil((quota.refreshAt() - now) / 60000.0);
+            result.put("success", false);
+            result.put("message", "本轮已刷新30次，军校 " + mins + " 分钟后可再次刷新");
             return result;
         }
 
@@ -127,14 +139,17 @@ public class OfficerService {
 
         List<Map<String, Object>> list = genAcademyCandidates(academyLv, ThreadLocalRandom.current());
 
+        AcademyRefreshPolicy.recordSuccess(player, quota, now);
+        playerRepository.save(player);
+        Academy academy = getOrCreateAcademy(playerId);
         academy.setOfficers(JsonUtil.toJson(list));
-        academy.setRefreshAt(now + ACADEMY_REFRESH_COOLDOWN);
+        academy.setRefreshAt(player.getAcademyRefreshAt());
         academyRepository.save(academy);
 
         result.put("success", true);
         result.put("message", "军校已刷新");
         result.put("list", list);
-        result.put("refreshAt", academy.getRefreshAt());
+        result.putAll(AcademyRefreshPolicy.snapshot(player, now).toState());
         return result;
     }
 
@@ -957,6 +972,70 @@ public class OfficerService {
     }
 
     @Transactional
+    public Map<String, Object> rename(Long playerId, Long officerId, String rawName) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        Officer officer = findOfficer(playerId, officerId);
+        if (officer == null) {
+            result.put("success", false);
+            result.put("message", "军官不存在");
+            return result;
+        }
+
+        if (rawName == null || rawName.isBlank()) {
+            result.put("success", false);
+            result.put("message", "军官名称不能为空");
+            return result;
+        }
+
+        String newName = rawName.trim();
+        if (newName.length() > 12) {
+            result.put("success", false);
+            result.put("message", "军官名称最多12个字符");
+            return result;
+        }
+
+        if (!newName.matches("^[A-Za-z0-9_\\u4e00-\\u9fa5·\\s]{1,12}$")) {
+            result.put("success", false);
+            result.put("message", "军官名称仅限中英文、数字、下划线和间隔号");
+            return result;
+        }
+
+        if (newName.equals(officer.getName())) {
+            result.put("success", false);
+            result.put("message", "新名称与当前军官名称相同");
+            return result;
+        }
+
+        // 消耗判定：优先消耗军官改名卡，若无军官改名卡则尝试消耗 60 黄金
+        int consumedCard = playerItemRepository.tryConsume(playerId, "renameCard", 1, System.currentTimeMillis());
+        boolean usedCard = consumedCard > 0;
+        int goldCost = 60;
+        if (!usedCard) {
+            Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
+            if (res == null || getGold(res) < goldCost) {
+                result.put("success", false);
+                result.put("message", "军官改名卡或黄金不足（需 1 张军官改名卡或 " + goldCost + " 黄金）");
+                return result;
+            }
+            setGold(res, getGold(res) - goldCost);
+            resourcesRepository.save(res);
+        }
+
+        String oldName = officer.getName();
+        officer.setName(newName);
+        officerRepository.save(officer);
+
+        result.put("success", true);
+        result.put("message", usedCard
+                ? "消耗 1 张军官改名卡，改名成功: " + oldName + " → " + newName
+                : "消耗 " + goldCost + " 黄金，改名成功: " + oldName + " → " + newName);
+        result.put("usedCard", usedCard);
+        result.put("officerId", officer.getId());
+        result.put("name", newName);
+        return result;
+    }
+
+    @Transactional
     public Map<String, Object> equip(Long playerId, Long officerId, String itemId) {
         Officer officer = findOfficer(playerId, officerId);
         OfficerEquipmentDef def = OfficerEquipmentDef.ITEMS.get(itemId);
@@ -1127,16 +1206,17 @@ public class OfficerService {
     /** 整批只判定一次五星；命中后随机放入一个位置，其余候选人仅生成 1～4 星。 */
     List<Map<String, Object>> genAcademyCandidates(int academyLevel, RandomGenerator rng) {
         boolean hasFiveStar = rng.nextDouble() < academyFiveStarBatchChance(academyLevel);
-        int fiveStarSlot = hasFiveStar ? rng.nextInt(ACADEMY_COUNT) : -1;
+        int fiveStarSlot = hasFiveStar ? rng.nextInt(ACADEMY_CANDIDATE_COUNT) : -1;
         List<Map<String, Object>> list = new ArrayList<>();
-        for (int i = 0; i < ACADEMY_COUNT; i++) {
+        Set<String> batchNames = new HashSet<>();
+        for (int i = 0; i < ACADEMY_CANDIDATE_COUNT; i++) {
             int star = 5;
             if (i != fiveStarSlot) {
                 // 保留旧普通招募中 1～4 星的相对权重，排除再次独立抽出五星。
                 double roll = rng.nextDouble() * 0.985;
                 star = roll < 0.5 ? 1 : roll < 0.78 ? 2 : roll < 0.92 ? 3 : 4;
             }
-            list.add(genOfficerWithStar(star));
+            list.add(genOfficerWithStar(star, ThreadLocalRandom.current(), batchNames));
         }
         return list;
     }
@@ -1157,14 +1237,19 @@ public class OfficerService {
         else if (starRoll < 0.985) star = 4;
         else star = 5;
 
-        return genOfficerWithStar(star);
+        return genOfficerWithStar(star, rng, null);
     }
 
-    /** 先确定星级，再生成对应初始属性与技能，避免仅改星标导致品质不匹配。 */
-    private Map<String, Object> genOfficerWithStar(int star) {
-        ThreadLocalRandom rng = ThreadLocalRandom.current();
-        List<String> names = GameConstants.OFFICER_NAMES;
-        String name = names.get(rng.nextInt(names.size()));
+    public Map<String, Object> genOfficerWithStar(int star) {
+        return genOfficerWithStar(star, ThreadLocalRandom.current(), null);
+    }
+
+    /** 先确定星级，再生成对应初始属性与技能。五星军官必然使用名将姓名，非五星随机生成 */
+    public Map<String, Object> genOfficerWithStar(int star, RandomGenerator rng, Set<String> excludeNames) {
+        String name = OfficerNameGenerator.generateOfficerName(star, rng, excludeNames);
+        if (excludeNames != null) {
+            excludeNames.add(name);
+        }
 
         int military;
         int defense;
@@ -1213,7 +1298,7 @@ public class OfficerService {
         }
 
         // JS: genSkills(star)
-        List<Map<String, Object>> skills = genSkills(star);
+        List<Map<String, Object>> skills = genSkills(star, rng);
 
         // JS: loyalty = 60 + Math.floor(Math.random() * 40)
         int loyalty = 60 + rng.nextInt(40);
@@ -1244,8 +1329,7 @@ public class OfficerService {
     //  genSkills - 1-5星军官默认都带1个技能，在当前技能库中随机挑选一个
     // ================================================================
 
-    private List<Map<String, Object>> genSkills(int star) {
-        ThreadLocalRandom rng = ThreadLocalRandom.current();
+    private List<Map<String, Object>> genSkills(int star, RandomGenerator rng) {
         List<String> pool = new ArrayList<>(GameData.OFFICER_SKILLS.keySet());
         if (pool.isEmpty()) {
             return new ArrayList<>();

@@ -11,5 +11,17 @@ public record DispatchRequest(
         String action,
         Map<String, Integer> army,
         Long commanderId,
-        Map<String, Integer> carryRes
-) {}
+        Map<String, Integer> carryRes,
+        String gatherMode,
+        String battleMode
+) {
+    public DispatchRequest(String targetKind, Long targetId, String action, Map<String, Integer> army,
+                           Long commanderId, Map<String, Integer> carryRes) {
+        this(targetKind, targetId, action, army, commanderId, carryRes, null, null);
+    }
+
+    public DispatchRequest(String targetKind, Long targetId, String action, Map<String, Integer> army,
+                           Long commanderId, Map<String, Integer> carryRes, String gatherMode) {
+        this(targetKind, targetId, action, army, commanderId, carryRes, gatherMode, null);
+    }
+}

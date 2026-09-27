@@ -19,6 +19,8 @@ public class ArmyProductionQueue extends CityOwnedEntity {
     private Long playerId;
     @Column(name = "unit_type", nullable = false, length = 50)
     private String unitType;
+    @Column(name = "building_type", length = 50)
+    private String buildingType;
     @Column(name = "unit_count", nullable = false)
     private Integer unitCount;
     @Column(name = "started_at", nullable = false)

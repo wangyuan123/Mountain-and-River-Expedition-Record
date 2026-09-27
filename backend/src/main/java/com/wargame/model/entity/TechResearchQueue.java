@@ -49,4 +49,10 @@ public class TechResearchQueue extends CityOwnedEntity {
 
     @Column(name = "cost_gold", nullable = false)
     private Integer costGold = 0;
+
+    @Column(name = "prerequisite_version", length = 80)
+    private String prerequisiteVersion;
+
+    @Column(name = "prerequisite_requirements", columnDefinition = "TEXT")
+    private String prerequisiteRequirements;
 }

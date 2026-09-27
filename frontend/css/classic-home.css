@@ -47,8 +47,7 @@ body[data-theme="blue-white-classic"] {
 [data-theme="blue-white-classic"] #topbar .topbar-online-status .online-text {
   color: #687580 !important;
 }
-[data-theme="blue-white-classic"] #topbar .player-bar-right .diamond,
-[data-theme="blue-white-classic"] #topbar .player-bar-right .shop-btn {
+[data-theme="blue-white-classic"] #topbar .player-bar-right .diamond {
   background: #edf4fb !important;
   color: #2457a5 !important;
   border: 1px solid #b2cdef !important;

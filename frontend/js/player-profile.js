@@ -27,7 +27,7 @@ window.Game = window.Game || {};
       var faction = p.faction || 'allies';
       var factionName = (D.factions && D.factions[faction]) ? D.factions[faction].name : '同盟国';
       var rankTier = p.militaryRank || 1;
-      var rankInfo = G.getMilitaryRankTierInfo ? G.getMilitaryRankTierInfo(rankTier) : { name: '列兵', tier: 1, baseCap: 50000, isMax: false };
+      var rankInfo = G.getMilitaryRankTierInfo ? G.getMilitaryRankTierInfo(rankTier) : { name: '列兵', tier: 1, baseCap: 25000, isMax: false };
       var rankTitle = rankInfo.name;
       // 与首页保持一致，展示当前选中城市的名称与坐标。
       var cityName = G.escapeHtml(p.cityName || '新城市');
@@ -69,7 +69,7 @@ window.Game = window.Game || {};
         + '<div class="drawer-body">'
         + '  <div class="drawer-profile-card">'
         + '    <button type="button" class="drawer-avatar-wrap" onclick="Game.Main.openAvatarPicker()" aria-label="更换头像">'
-        + '      <img class="drawer-avatar" id="drawerAvatarImg" src="' + currentAvatar + '" alt="头像" onerror="this.src=\'img/avatars/commander-8.svg\'"/>'
+        + '      <img class="drawer-avatar" id="drawerAvatarImg" src="' + currentAvatar + '" alt="头像" onerror="this.onerror=null;this.src=Game.Constants.presetAvatars[0].src"/>'
         + '      <span class="avatar-edit-badge">更换</span>'
         + '    </button>'
         + '    <div class="drawer-profile-meta">'
@@ -194,7 +194,7 @@ window.Game = window.Game || {};
         + '<div class="rank-cap-summary">当前军衔 <strong class="rank-cap-label">' + G.renderMilitaryRankIcon(rankInfo.tier) + G.escapeHtml(rankInfo.name) + '</strong> · 军衔基础上限 <strong>' + G.fmt(rankInfo.baseCap) + '</strong></div>'
         + '<p>当前城市围墙 Lv.' + wallLevel + (wallBonus ? '（满级，+100,000）' : '（满级 Lv.10 后 +100,000）') + '；三军统帅 Lv.' + skillLevel + '（+' + skillPercent + '%）。</p>'
         + '<p><strong>当前实际带兵上限：(' + G.fmt(rankInfo.baseCap) + ' + ' + G.fmt(wallBonus) + ') × (1 + ' + skillPercent + '%) = ' + G.fmt(total) + '</strong></p>'
-        + '<p>各军衔的基础上限如下；晋升后基础上限提高，实际出征仍需当前城市有足够驻军。</p>'
+        + '<p>各军衔的基础上限如下；上尉及以下每阶增加 25,000；少校为 300,000，此后每阶增加 50,000，上将为 600,000。实际出征仍需当前城市有足够驻军。</p>'
         + '<table class="rank-cap-table"><thead><tr><th scope="col">等级</th><th scope="col">军衔</th><th scope="col">基础上限</th></tr></thead><tbody>' + rows + '</tbody></table>'
         + '</div><div class="modal-foot"><button type="button" class="btn btn-primary rank-cap-done">知道了</button></div>'
         + '</div>';
@@ -216,6 +216,10 @@ window.Game = window.Game || {};
       if (existing) existing.remove();
 
       var curAvatar = G.MainView.getCurrentAvatar();
+      // 旧版 SVG 和网络头像不再可选，选择器与首页共用 historical 头像库。
+      if (!G.MainView.presetAvatars.some(function (avatar) { return avatar.src === curAvatar; })) {
+        curAvatar = G.MainView.presetAvatars[0].src;
+      }
       var modal = document.createElement('div');
       modal.id = 'avatarPickerMask';
       modal.className = 'modal-mask avatar-picker-mask';
@@ -223,15 +227,15 @@ window.Game = window.Game || {};
 
       var html = '<div class="modal-dialog avatar-picker-dialog" onclick="event.stopPropagation()">'
         + '<div class="modal-header">'
-        + '  <div class="modal-title">自定义指挥官头像</div>'
+        + '  <div class="modal-title">选择指挥官头像</div>'
         + '  <button class="modal-close-btn" onclick="Game.Main.closeAvatarPicker()">✕</button>'
         + '</div>'
         + '<div class="modal-body">'
         + '  <div class="avatar-preview-box">'
-        + '    <img id="avatarPreviewImg" class="avatar-preview-img" src="' + curAvatar + '" alt="头像预览" onerror="this.src=\'img/avatars/commander-8.svg\'"/>'
+        + '    <img id="avatarPreviewImg" class="avatar-preview-img" src="' + curAvatar + '" alt="头像预览" onerror="this.onerror=null;this.src=Game.Constants.presetAvatars[0].src"/>'
         + '    <div class="avatar-preview-hint">当前选择的头像</div>'
         + '  </div>'
-        + '  <div class="avatar-picker-subtitle">🎖️ 预设军事指挥官头像</div>'
+        + '  <div class="avatar-picker-subtitle">历史军人预设头像</div>'
         + '  <div class="avatar-presets-grid" id="avatarPresetsGrid">';
 
       for (var i = 0; i < G.MainView.presetAvatars.length; i++) {
@@ -244,11 +248,6 @@ window.Game = window.Game || {};
       }
 
       html += '  </div>'
-        + '  <div class="avatar-picker-subtitle" style="margin-top:14px;">🌐 或输入自定义图片网络 URL</div>'
-        + '  <div class="avatar-custom-input-row">'
-        + '    <input type="text" id="customAvatarInput" class="avatar-custom-input" placeholder="输入 https://... 图片地址" value="' + (curAvatar.indexOf('http') === 0 ? curAvatar : '') + '"/>'
-        + '    <button class="btn sm" onclick="Game.Main.previewCustomAvatar()">预览</button>'
-        + '  </div>'
         + '</div>'
         + '<div class="modal-footer" style="display:flex;justify-content:flex-end;gap:10px;">'
         + '  <button class="btn" onclick="Game.Main.closeAvatarPicker()">取消</button>'
@@ -265,11 +264,10 @@ window.Game = window.Game || {};
     },
 
     selectPresetAvatar: function (src) {
+      if (!G.MainView.presetAvatars.some(function (avatar) { return avatar.src === src; })) return;
       Game.Main._selectedAvatar = src;
       var pImg = document.getElementById('avatarPreviewImg');
       if (pImg) pImg.src = src;
-      var ipt = document.getElementById('customAvatarInput');
-      if (ipt) ipt.value = '';
       var grid = document.getElementById('avatarPresetsGrid');
       if (grid) {
         var items = grid.querySelectorAll('.avatar-preset-item');
@@ -283,27 +281,9 @@ window.Game = window.Game || {};
       }
     },
 
-    previewCustomAvatar: function () {
-      var ipt = document.getElementById('customAvatarInput');
-      var val = ipt ? ipt.value.trim() : '';
-      if (!val) { G.toast('请输入有效的图片链接'); return; }
-      Game.Main._selectedAvatar = val;
-      var pImg = document.getElementById('avatarPreviewImg');
-      if (pImg) pImg.src = val;
-      var grid = document.getElementById('avatarPresetsGrid');
-      if (grid) {
-        var items = grid.querySelectorAll('.avatar-preset-item');
-        for (var i = 0; i < items.length; i++) items[i].classList.remove('selected');
-      }
-    },
-
     saveSelectedAvatar: function () {
       var target = Game.Main._selectedAvatar;
-      var ipt = document.getElementById('customAvatarInput');
-      if (ipt && ipt.value.trim()) {
-        target = ipt.value.trim();
-      }
-      if (!target) target = 'img/avatars/commander-8.svg';
+      if (!G.MainView.presetAvatars.some(function (avatar) { return avatar.src === target; })) return;
 
       var s = Core.state || {};
       var p = s.player || {};
@@ -311,7 +291,6 @@ window.Game = window.Game || {};
 
       try {
         if (uname) localStorage.setItem('wargame_avatar_' + uname, target);
-        localStorage.setItem('wargame_avatar_default', target);
       } catch (e) {}
 
       if (p) p.avatar = target;
@@ -338,31 +317,78 @@ window.Game = window.Game || {};
     },
 
     promptRenameCityInDrawer: function () {
+      if (document.getElementById('renameCityModal')) return;
       var s = Core.state || {};
       var p = s.player || {};
       var oldName = p.cityName || '';
-      var newName = prompt('请输入新城市名称 (最多12字):', oldName);
-      if (newName === null) return;
-      newName = newName.trim();
-      if (!newName) { G.toast('城市名不能为空'); return; }
-      var safeRe = /^[A-Za-z0-9_\u4e00-\u9fa5·\s]{1,12}$/;
-      if (!safeRe.test(newName)) { G.toast('城市名仅限中英文/数字/下划线，最多12字'); return; }
+      var trigger = document.activeElement;
+      var mask = document.createElement('div');
+      mask.id = 'renameCityModal';
+      mask.className = 'modal-mask account-confirm-mask';
+      mask.innerHTML = '<div class="modal-card account-confirm city-rename-dialog" role="dialog" aria-modal="true" aria-labelledby="renameCityTitle">'
+        + '<div class="modal-title" id="renameCityTitle">修改城市名称</div>'
+        + '<form id="renameCityForm">'
+        + '<div class="modal-body"><label for="renameCityInput">新城市名称</label>'
+        + '<input id="renameCityInput" name="cityName" type="text" maxlength="12" aria-required="true" autocomplete="off" aria-describedby="renameCityHint">'
+        + '<p id="renameCityHint">最多12字，支持中英文、数字、下划线和间隔号。</p></div>'
+        + '<div class="modal-foot"><button type="button" class="account-confirm-cancel">取消</button>'
+        + '<button type="submit" class="account-confirm-submit">保存名称</button></div>'
+        + '</form></div>';
+      var input = mask.querySelector('#renameCityInput');
+      var cancel = mask.querySelector('.account-confirm-cancel');
+      var submit = mask.querySelector('.account-confirm-submit');
+      var saving = false;
+      input.value = oldName;
 
-      if (G.API && G.API.setCityName) {
-        G.API.setCityName(newName).then(function () {
+      function close(restoreFocus) {
+        if (saving) return;
+        document.removeEventListener('keydown', onKey, true);
+        mask.remove();
+        if (restoreFocus && trigger && trigger.isConnected) trigger.focus();
+      }
+      function onKey(event) {
+        event.stopPropagation();
+        if (event.key === 'Escape') { event.preventDefault(); close(true); }
+        if (event.key === 'Tab') {
+          var controls = [input, cancel, submit].filter(function (control) { return !control.disabled; });
+          if (event.shiftKey && document.activeElement === controls[0]) {
+            event.preventDefault(); controls[controls.length - 1].focus();
+          } else if (!event.shiftKey && document.activeElement === controls[controls.length - 1]) {
+            event.preventDefault(); controls[0].focus();
+          }
+        }
+      }
+      cancel.onclick = function () { close(true); };
+      mask.onclick = function (event) { if (event.target === mask) close(true); };
+      mask.querySelector('#renameCityForm').onsubmit = function (event) {
+        event.preventDefault();
+        if (saving) return;
+        var newName = input.value.trim();
+        if (!newName) { G.toast('城市名不能为空'); input.focus(); return; }
+        var safeRe = /^[A-Za-z0-9_\u4e00-\u9fa5·\s]{1,12}$/;
+        if (!safeRe.test(newName)) { G.toast('城市名仅限中英文/数字/下划线，最多12字'); input.focus(); return; }
+
+        function saved() {
+          saving = false;
           p.cityName = newName;
+          close(false);
           G.toast('城市名称已修改');
           Game.Main.closePlayerDrawer();
           Core.render();
-        }).catch(function (err) {
+        }
+        if (!G.API || !G.API.setCityName) { saved(); return; }
+        saving = true;
+        submit.disabled = true;
+        G.API.setCityName(newName).then(saved).catch(function (err) {
+          saving = false;
+          submit.disabled = false;
           G.toast(err.message || '城市名称修改失败');
+          input.focus();
         });
-      } else {
-        p.cityName = newName;
-        G.toast('城市名称已修改');
-        Game.Main.closePlayerDrawer();
-        Core.render();
-      }
+      };
+      document.body.appendChild(mask);
+      document.addEventListener('keydown', onKey, true);
+      input.focus();
     },
 
   };

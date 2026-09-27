@@ -98,14 +98,15 @@ window.Game = window.Game || {};
 
     pressNumber: function (n) {
       if (n === 0) { G.back(); return; }
+      // 数字快捷键走真实 click，让按钮行为与委托音效共享同一用户手势。
       var links = document.querySelectorAll('#view .menu-item');
       if (links.length > 0) {
         var el = links[n - 1];
-        if (el && typeof el.onclick === 'function') { el.onclick(); return; }
+        if (el && typeof el.onclick === 'function') { if (el.click) el.click(); else el.onclick(); return; }
       }
       var navs = document.querySelectorAll('#navbar .navitem');
       var nv = navs[n - 1];
-      if (nv && typeof nv.onclick === 'function') { nv.onclick(); return; }
+      if (nv && typeof nv.onclick === 'function') { if (nv.click) nv.click(); else nv.onclick(); return; }
     },
 
     tick: function () {},
@@ -283,8 +284,52 @@ window.Game = window.Game || {};
     popFree: function () { return this.civilianPopulation(); },
 
     populationGrowthPerHour: function () {
+      var civ = this.civilianPopulation();
+      var effCap = this.effectiveCapacity();
+      if (civ >= effCap) return 0;
       return (this.state.population && this.state.population.growthPerHour != null)
-        ? this.state.population.growthPerHour : this.populationCapacity() * 0.03;
+        ? this.state.population.growthPerHour : Math.round(this.populationCapacity() * 0.03 * Math.max(0.2, this.morale() / 70));
+    },
+
+    officerSalaryPerHour: function () {
+      var offs = (this.state && this.state.officers) || [];
+      var sum = 0;
+      for (var i = 0; i < offs.length; i++) {
+        sum += (offs[i].salary || 0);
+      }
+      return sum;
+    },
+
+    resourceNetRate: function (key) {
+      var s = this.state || {};
+      var r = s.resources || {};
+      var cur = r[key] || 0;
+      var caps = this.capacity ? this.capacity() : {};
+      var cap = (caps && caps[key] != null) ? caps[key] : (key === 'gold' ? 999999 : 0);
+      if (key === 'food') {
+        var foodProd = this.produceOf('farm');
+        var foodUse = this.foodPerHour();
+        if (cur >= cap) {
+          return foodProd >= foodUse ? 0 : foodProd - foodUse;
+        }
+        return foodProd - foodUse;
+      }
+      if (key === 'steel' || key === 'oil' || key === 'rare') {
+        var bType = key === 'steel' ? 'refinery' : (key === 'oil' ? 'oilfield' : 'raremine');
+        if (cur >= cap) return 0;
+        return this.produceOf(bType);
+      }
+      if (key === 'gold') {
+        var mayor = this.getOfficerByRole('mayor');
+        var financeBonus = this.mayorSkillBonus ? this.mayorSkillBonus('finance') : 0;
+        var taxRate = Math.floor(this.civilianPopulation() * ((s.tax != null ? s.tax : 30) / 100) * (1 + (mayor ? mayor.knowledge / 100 : 0)) * (1 + financeBonus) * 2);
+        var salary = this.officerSalaryPerHour();
+        if (cur >= 999999) {
+          return taxRate >= salary ? 0 : -salary;
+        }
+        return taxRate - salary;
+      }
+      return 0;
     },
 
     morale: function () {
@@ -367,8 +412,12 @@ window.Game = window.Game || {};
     spdMul: function (cat) {
       var s = this.state;
       var catKey = G.Constants.unitTechKeys[cat];
-      if (!catKey) return 1;
-      return 1 + 0.05 * (s.tech[catKey] || 0);
+      var techBonus = catKey ? 0.05 * (s.tech[catKey] || 0) : 0;
+      var buildingBonus = 0;
+      if (cat === 'air' && s.buildings && s.buildings.apron) {
+        buildingBonus = 0.03 * s.buildings.apron;
+      }
+      return 1 + techBonus + buildingBonus;
     },
 
     trainMul: function () {
@@ -391,8 +440,8 @@ window.Game = window.Game || {};
       var s = this.state || {};
       var p = s.player || {};
       var rankTier = p.militaryRank || 1;
-      var rankInfo = G.getMilitaryRankTierInfo ? G.getMilitaryRankTierInfo(rankTier) : { baseCap: 50000 };
-      var rankBase = rankInfo.baseCap || 50000;
+      var rankInfo = G.getMilitaryRankTierInfo ? G.getMilitaryRankTierInfo(rankTier) : { baseCap: 25000 };
+      var rankBase = rankInfo.baseCap || 25000;
       // 只有当前城市围墙达到满级才一次性加成，统帅技能继续放大最终基础容量。
       var wallBonus = this.buildingLevel('wall') >= 10 ? 100000 : 0;
       var leadBonus = 0;
@@ -400,6 +449,13 @@ window.Game = window.Game || {};
         leadBonus = Math.max(this.skillBonus('leadership'), this.skillBonus('supply'));
       }
       return Math.floor((rankBase + wallBonus) * (1 + leadBonus));
+    },
+
+    /** 迎战仅额外增加半份军衔基础，攻击已有的各类加成不再乘以 1.5。 */
+    sortieCap: function () {
+      var tier = (this.state && this.state.player && this.state.player.militaryRank) || 1;
+      var rank = G.getMilitaryRankTierInfo ? G.getMilitaryRankTierInfo(tier) : { baseCap: 25000 };
+      return this.armyCap() + Math.floor(rank.baseCap / 2);
     },
 
     addExp: function () {},
@@ -486,7 +542,7 @@ window.Game = window.Game || {};
       var lv = skills[skillId] || 0;
       if (lv <= 0) return 0;
       if (skillId === 'counter') {
-        return 0.10 * Math.min(5, lv);
+        return 0.20 * Math.min(5, lv);
       }
       var rates = {
         frenzy: 0.10, bulwark: 0.10, blitz: 0.06, suppress: 0.06,
@@ -553,6 +609,19 @@ window.Game = window.Game || {};
       this.render();
     },
 
+    /** 以服务端持久化头像为准；旧缓存仅可回退到当前账号有效的新预设。 */
+    getCurrentAvatar: function () {
+      var p = (this.state || {}).player || {};
+      var presets = G.Constants.presetAvatars;
+      if (presets.some(function (preset) { return preset.src === p.avatar; })) return p.avatar;
+      var localAvatar = '';
+      try {
+        if (p.username) localAvatar = localStorage.getItem('wargame_avatar_' + p.username) || '';
+      } catch (e) {}
+      // 旧账号的随机分配由数据库迁移一次性完成，展示层不重复随机或加载已删除的 SVG。
+      return presets.some(function (preset) { return preset.src === localAvatar; }) ? localAvatar : presets[0].src;
+    },
+
     renderTop: function () {
       var top = $('topbar');
       if (!top) return;
@@ -561,20 +630,14 @@ window.Game = window.Game || {};
       var p = s.player || {};
       var r = s.resources || {};
       var diamond = r.diamond != null ? r.diamond : 0;
-      var uname = p.username || '';
-      var localAvatar = '';
-      try {
-        if (uname) localAvatar = localStorage.getItem('wargame_avatar_' + uname) || '';
-        if (!localAvatar) localAvatar = localStorage.getItem('wargame_avatar_default') || '';
-      } catch (e) {}
-      var avatarUrl = p.avatar || localAvatar || 'img/avatars/commander-8.svg';
+      var avatarUrl = this.getCurrentAvatar();
       var nameStr = escapeHtml(p.name || p.username || '指挥官');
 
       var html = '';
       html += '<div class="top-row">' +
         '<div class="topbar-player-entry" role="button" tabindex="0" onclick="if(Game.Main&&Game.Main.openPlayerDrawer)Game.Main.openPlayerDrawer();" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){if(Game.Main&&Game.Main.openPlayerDrawer)Game.Main.openPlayerDrawer();event.preventDefault();}" title="点击展开指挥官档案、主题与设置">' +
         '<div class="topbar-avatar-wrap">' +
-        '<img class="topbar-avatar" src="' + avatarUrl + '" alt="头像" onerror="this.src=\'img/avatars/commander-8.svg\'"/>' +
+        '<img class="topbar-avatar" src="' + avatarUrl + '" alt="头像" onerror="this.onerror=null;this.src=Game.Constants.presetAvatars[0].src"/>' +
         '</div>' +
         '<div class="topbar-player-meta">' +
         '<div class="topbar-player-name">' + nameStr + '</div>' +
@@ -585,9 +648,6 @@ window.Game = window.Game || {};
         '</div>' +
         '<div class="player-bar-right">' +
         '<span class="diamond" title="充值" onclick="Game.go(\'recharge\')">💎 ' + fmt(diamond) + '</span>' +
-        '<button class="icon-btn shop-btn topbar-shop-btn" title="商城" onclick="Game.go(\'shop\')">' +
-        '<img class="icon-btn-img" src="img/shop.svg" alt="商城"/>' +
-        '</button>' +
         '</div>' +
         '</div>';
       var marches = s.world.marches || [];
@@ -651,9 +711,11 @@ window.Game = window.Game || {};
       button.type = 'button';
       button.className = 'page-back-button';
       button.setAttribute('aria-label', '返回上一步');
-      button.innerHTML = '<span>[‹ 返回上一步]</span>';
+      button.innerHTML = '<span>‹ 返回上一步</span>';
       button.addEventListener('click', function () { Core.back(); });
       bar.appendChild(button);
+      var mapSwitch = view.querySelector('.world-map-list-switch');
+      if (mapSwitch) bar.appendChild(mapSwitch);
       view.insertBefore(bar, view.firstChild);
     },
 
@@ -714,6 +776,11 @@ window.Game = window.Game || {};
     silentUpdate: function (tickData) {
       if (!this.state) return;
       var route = this.route || 'home';
+
+      if (route === 'academy' && G.Officer && G.Officer.updateAcademyRefresh) {
+        G.Officer.updateAcademyRefresh();
+        return;
+      }
 
       // 1. Static / transactional pages: skip DOM updates completely.
       // Data is already synced in G.state, topbar resources are updated by refreshTop.

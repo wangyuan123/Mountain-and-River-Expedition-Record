@@ -26,7 +26,7 @@ public class GuildController {
     public ResponseEntity<List<Map<String, Object>>> list() { return ResponseEntity.ok(guildService.browse()); }
 
     @PostMapping
-    public ResponseEntity<Map<String, Object>> create(@RequestBody Map<String, Object> body) { return ResponseEntity.ok(guildService.create(playerId(), (String) body.get("name"))); }
+    public ResponseEntity<Map<String, Object>> create(@RequestBody Map<String, Object> body) { return ResponseEntity.ok(guildService.create(playerId(), (String) body.get("name"), (String) body.get("icon"))); }
     @PostMapping("/{guildId}/apply")
     public ResponseEntity<Map<String, Object>> apply(@PathVariable Long guildId) { return ResponseEntity.ok(guildService.apply(playerId(), guildId)); }
     @PostMapping("/applications/{id}/review")

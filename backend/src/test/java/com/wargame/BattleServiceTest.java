@@ -77,7 +77,7 @@ class BattleServiceTest {
     }
 
     @Test
-    @DisplayName("战术空域: 空中封锁下未指定目标攻击最近单位，玩家可指定其他射程内目标")
+    @DisplayName("战术空域: 空中封锁下默认优先攻击同兵种，玩家可指定其他射程内目标")
     void tacticalAirDefaultsToNearestTargetAtBlockadeLine() {
         Map<String, Integer> defenderArmy = Map.of("armored", 10, "fighter", 1);
         Map<String, Integer> defenderPositions = Map.of("armored", 3000, "fighter", 3030);
@@ -92,7 +92,7 @@ class BattleServiceTest {
         );
 
         assertTrue(automatic.log().contains("空战敌战斗机"),
-                "未指定目标时，空军应攻击推进后最近的合法目标");
+                "未指定目标时，空军应优先攻击射程内的同兵种");
         assertTrue(focused.log().contains("空战敌战斗机"),
                 "玩家指定后，空军应可攻击射程内任意合法单位");
     }
@@ -282,19 +282,49 @@ class BattleServiceTest {
     }
 
     @Test
-    @DisplayName("战术指令: 指定集火目标与重坦掩护机制")
-    void testCommandFocusTargetWithTankCover() {
-        // 守方有重坦与火炮
-        Map<String, Integer> garrison = Map.of("htank", 5, "howitzer", 5);
-        // 攻方步兵指定集火后排榴弹炮，但受重坦前排掩护阻挡
-        Map<String, BattleService.UnitOrder> attackerOrders = Map.of(
-                "infantry", new BattleService.UnitOrder(BattleService.CommandAction.ADVANCE, "howitzer")
+    @DisplayName("默认索敌: 同兵种优先，不在射程内时改攻最近目标")
+    void defaultTargetPrefersSameUnitThenNearestInRange() {
+        Map<String, Integer> enemies = Map.of("rocket", 100, "armored", 100);
+        BattleRoundState sameInRange = resolveTacticalRound(
+                Map.of("rocket", 1000), enemies,
+                Map.of("rocket", 0), Map.of("rocket", 1000, "armored", 200), 3000,
+                Map.of("rocket", new BattleService.UnitOrder(BattleService.CommandAction.HOLD))
+        );
+        BattleRoundState sameOutOfRange = resolveTacticalRound(
+                Map.of("rocket", 1000), enemies,
+                Map.of("rocket", 0), Map.of("rocket", 2500, "armored", 200), 3000,
+                Map.of("rocket", new BattleService.UnitOrder(BattleService.CommandAction.HOLD))
+        );
+        BattleRoundState sameAbsent = resolveTacticalRound(
+                Map.of("rocket", 1000), Map.of("armored", 100),
+                Map.of("rocket", 0), Map.of("armored", 200), 3000,
+                Map.of("rocket", new BattleService.UnitOrder(BattleService.CommandAction.HOLD))
         );
 
-        BattleResult result = battleService.resolveWild(garrison, Map.of("infantry", 100), attackerOrders, null);
-        String report = result.getReport();
-        // 步兵无法穿透重坦掩护直接打榴弹炮，应优先攻击前排重坦
-        assertTrue(report.contains("敌重型坦克"), "步兵面对重坦掩护应优先承伤攻击重坦");
+        assertTrue(sameInRange.log().matches("(?s).*我方火箭[^\\n]*?敌火箭.*"), sameInRange.log());
+        assertTrue(sameOutOfRange.log().matches("(?s).*我方火箭[^\\n]*?敌装甲车.*"), sameOutOfRange.log());
+        assertTrue(sameAbsent.log().matches("(?s).*我方火箭[^\\n]*?敌装甲车.*"), sameAbsent.log());
+    }
+
+    @Test
+    @DisplayName("在线指挥: 可集火射程内任意敌军，超出射程时按默认索敌")
+    void focusCanOverrideSameUnitAndTankCoverWithinRange() {
+        Map<String, Integer> enemies = Map.of("rocket", 100, "htank", 100, "howitzer", 100);
+        Map<String, Integer> positions = Map.of("rocket", 1000, "htank", 200, "howitzer", 400);
+        BattleRoundState focused = resolveTacticalRound(
+                Map.of("rocket", 1000), enemies,
+                Map.of("rocket", 0), positions, 3000,
+                Map.of("rocket", new BattleService.UnitOrder(BattleService.CommandAction.HOLD, "howitzer"))
+        );
+        BattleRoundState outOfRange = resolveTacticalRound(
+                Map.of("rocket", 1000), enemies,
+                Map.of("rocket", 0), Map.of("rocket", 1000, "htank", 200, "howitzer", 2500), 3000,
+                Map.of("rocket", new BattleService.UnitOrder(BattleService.CommandAction.HOLD, "howitzer"))
+        );
+
+        assertTrue(focused.log().matches("(?s).*我方火箭[^\\n]*?敌榴弹炮.*"), focused.log());
+        assertTrue(focused.log().contains("指定集火"), focused.log());
+        assertTrue(outOfRange.log().matches("(?s).*我方火箭[^\\n]*?敌火箭.*"), outOfRange.log());
     }
 
     @Test
@@ -322,7 +352,7 @@ class BattleServiceTest {
     @Test
     @DisplayName("军官技能: 绝境反击受击存活后以100%火力反击")
     void testCounterSkillTriggersCounterattack() {
-        // 守方拥有 绝境反击 Lv.5 (触发概率 52%，100% 火力反击)
+        // 守方拥有绝境反击 Lv.5，在交战技能回合以受击后剩余兵力的 100% 总伤害反击。
         BattleResult result = battleService.startWorldDispatch(
                 Map.of("infantry", 100),
                 Map.of("infantry", 100),

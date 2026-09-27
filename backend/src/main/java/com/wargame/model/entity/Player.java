@@ -1,11 +1,13 @@
 package com.wargame.model.entity;
 
+import com.wargame.model.constants.AvatarDef;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @lombok.EqualsAndHashCode(callSuper = false)
 @Data
@@ -39,7 +41,7 @@ public class Player extends VersionedEntity implements CityEconomy {
     private String cityName = "";
 
     @Column(name = "avatar", length = 255)
-    private String avatar = "";
+    private String avatar = AvatarDef.randomAvatar();
 
     @Column(name = "pos_x")
     private Integer posX = 0;
@@ -79,6 +81,20 @@ public class Player extends VersionedEntity implements CityEconomy {
 
     @Column(name = "last_tick")
     private Long lastTick = 0L;
+
+    /** 军校刷新额度按账号共享，切换城市不能重新获得次数。 */
+    @Column(name = "academy_refresh_round_count", nullable = false)
+    private int academyRefreshRoundCount = 0;
+
+    @Column(name = "academy_refresh_daily_count", nullable = false)
+    private int academyRefreshDailyCount = 0;
+
+    @Column(name = "academy_refresh_day")
+    private LocalDate academyRefreshDay;
+
+    /** 仅本轮用满30次时设置冷却结束时间，跨日不提前解除冷却。 */
+    @Column(name = "academy_refresh_at", nullable = false)
+    private long academyRefreshAt = 0L;
 
     @Column(name = "civilian_population")
     private Integer civilianPopulation = 0;
@@ -148,6 +164,10 @@ public class Player extends VersionedEntity implements CityEconomy {
 
     @Column(name = "defending_battle_actions", columnDefinition = "text")
     private String defendingBattleActions;
+
+    /** 账号级迎战编队；null 为按驻军比例自动选兵，空对象为不派野战部队。 */
+    @Column(name = "sortie_army", columnDefinition = "text")
+    private String sortieArmy;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

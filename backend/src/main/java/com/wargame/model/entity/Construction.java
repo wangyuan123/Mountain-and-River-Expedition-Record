@@ -34,4 +34,10 @@ public class Construction extends CityOwnedEntity {
 
     @Column(name = "slot")
     private Integer slot;
+
+    @Column(name = "prerequisite_version", length = 80)
+    private String prerequisiteVersion;
+
+    @Column(name = "prerequisite_requirements", columnDefinition = "TEXT")
+    private String prerequisiteRequirements;
 }

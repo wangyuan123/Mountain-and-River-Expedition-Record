@@ -20,7 +20,7 @@ function setup(initial) {
   const nodes = new Map();
   let nextTimer = 1;
   let reads = 0;
-  const view = { parentNode: { insertBefore(node) { nodes.set(node.id, node); } } };
+  const view = { innerHTML: '', querySelectorAll: () => [], insertBefore(node) { nodes.set(node.id, node); } };
   const G = {
     Core: { state: { player: { id: 1 } }, route: 'home', views: {} },
     API: {
@@ -33,20 +33,20 @@ function setup(initial) {
     window: { Game: G },
     document: {
       getElementById: id => id === 'view' ? view : nodes.get(id),
-      createElement: () => ({ querySelectorAll: () => [], remove() { nodes.delete(this.id); } })
+      createElement: () => ({ setAttribute() {}, querySelectorAll: () => [], remove() { nodes.delete(this.id); } })
     },
     setInterval(callback, delay) { const id = nextTimer++; timers.set(id, { callback, delay }); return id; },
     clearInterval(id) { timers.delete(id); }
   });
   require('./load-constants.cjs')(context);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/onboarding.js'), 'utf8'), context);
-  return { G, timers, nodes, reads: () => reads };
+  return { G, timers, nodes, view, reads: () => reads };
 }
 
 test('未参加、暂停和完成的引导只做首次读取，不开启轮询', async () => {
   for (const data of [
     snapshot({ enrolled: false }), snapshot({ paused: true }), snapshot({ done: true }),
-    snapshot({ done: true, supplies: [{ available: true, claimed: false }] })
+    snapshot({ done: true, supplies: [{ available: true, claimed: false, title: '整备补给', resources: { food: 4000, steel: 4000, oil: 1200, rare: 200, gold: 500 } }] })
   ]) {
     const { G, timers, reads } = setup(data);
     await G.Onboarding.init();
@@ -56,8 +56,10 @@ test('未参加、暂停和完成的引导只做首次读取，不开启轮询',
 });
 
 test('参加中的引导每五秒刷新，重复刷新不叠加定时器或在途请求', async () => {
-  const { G, timers } = setup(snapshot());
+  const { G, timers, nodes } = setup(snapshot({ current: { id: 'base', title: '整备前进基地', body: '升级前线指挥部' }, objectives: [{}] }));
   await G.Onboarding.init();
+  assert.match(nodes.get('onboardingBar').innerHTML, /新手战役 · 前进基地行动/);
+  assert.match(nodes.get('onboardingBar').innerHTML, /先升级资源建筑与军工设施/);
   assert.equal(timers.size, 1);
   const timer = [...timers.values()][0];
   assert.equal(timer.delay, 5000);
@@ -71,6 +73,41 @@ test('参加中的引导每五秒刷新，重复刷新不叠加定时器或在�
   pending.resolve(snapshot());
   await first;
   assert.equal(timers.size, 1);
+});
+
+test('毕业页面明确引导主线任务和资源奖励', async () => {
+  const { G, view } = setup(snapshot({ done: true, completed: 9, objectives: Array(9).fill({}), plan: 'economy' }));
+  await G.Onboarding.init();
+  G.Core.route = 'onboarding';
+  G.Onboarding.render();
+  assert.match(view.innerHTML, /主线章节任务/);
+  assert.match(view.innerHTML, /data-ob-value="mainQuest:"/);
+});
+
+test('首次引导读取失败时显示可重试入口而非静默消失', async () => {
+  const { G, nodes } = setup(snapshot());
+  G.API.client.get = async () => { throw new Error('连接中断'); };
+  await G.Onboarding.init();
+  assert.match(nodes.get('onboardingBar').innerHTML, /连接中断/);
+  assert.match(nodes.get('onboardingBar').innerHTML, /重新检查/);
+});
+
+test('当前目标提供资源建造、军工造兵和采集的对应入口', async () => {
+  const { G, nodes } = setup(snapshot({ objectives: [{ id: 'base', complete: false }], current: { id: 'base', title: '整备基地', body: '升级建筑' }, checks: {} }));
+  await G.Onboarding.init();
+  assert.match(nodes.get('onboardingBar').innerHTML, /升级前线指挥部/);
+  G.Onboarding.state.data.current = { id: 'farm', title: '建设农田', body: '升级农田' };
+  G.Onboarding.render();
+  assert.match(nodes.get('onboardingBar').innerHTML, /升级农田/);
+  G.Onboarding.state.data.current = { id: 'factory', title: '建造战地兵工厂', body: '建造设施' };
+  G.Onboarding.render();
+  assert.match(nodes.get('onboardingBar').innerHTML, /建造战地兵工厂/);
+  G.Onboarding.state.data.current = { id: 'train', title: '组织小队', body: '生产部队' };
+  G.Onboarding.render();
+  assert.match(nodes.get('onboardingBar').innerHTML, /前往生产卡车/);
+  G.Onboarding.state.data.current = { id: 'gather', title: '运回补给', body: '采集资源' };
+  G.Onboarding.render();
+  assert.match(nodes.get('onboardingBar').innerHTML, /派出采集队/);
 });
 
 test('轮询发现未参加、暂停或完成时停止后续请求并移除提示', async () => {

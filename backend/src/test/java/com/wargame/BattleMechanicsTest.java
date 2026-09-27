@@ -106,7 +106,7 @@ class BattleMechanicsTest {
         Object learning = context(Map.of(), Map.of("learn", 5));
         Object strongerEnemy = context(Map.of("attack_tech", 20), Map.of());
 
-        assertEquals(343, damage(false, learning, empty, 0, false), "非第3/6/9回合不应触发师夷长技");
+        assertEquals(343, damage(false, learning, empty, 0, false), "非交战技能回合不应触发师夷长技");
         assertEquals(446, damage(false, learning, empty, 0, true), "同名敌军存在时，满级应学习敌军攻击的30%");
         assertEquals(651, damage(false, learning, strongerEnemy, 0, true), "敌军攻击更高时，应获得更高的学习收益");
         String bonusLog = ReflectionTestUtils.invokeMethod(new BattleService(4096), "buildCommanderBonusLog",
@@ -130,7 +130,7 @@ class BattleMechanicsTest {
 
         long base = damage(false, empty, empty, 0, true);
         long borrowed = damage(false, empty, borrowedArmor, 0, true);
-        assertEquals(base, damage(false, empty, borrowedArmor, 0, false), "非第2/5/8回合不应触发借甲御敌");
+        assertEquals(base, damage(false, empty, borrowedArmor, 0, false), "非交战技能回合不应触发借甲御敌");
         assertTrue(borrowed < base, "同名敌军存在时，借甲御敌应降低受到的伤害");
         assertTrue(damage(false, strongerEnemy, borrowedArmor, 0, true) < borrowed,
                 "敌军防御更高时，应获得更高的借甲收益");

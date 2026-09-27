@@ -167,11 +167,11 @@ class TacticalBattleRoundTest {
     @Test
     void rocketCountersOnlyFourArmoredTargetsInDamageCalculation() {
         for (String target : new String[]{"ltank", "htank", "armored", "assault"}) {
-            assertEquals(10.0, BattleRules.multiplier("rocket", target), target);
+            assertEquals(5.5, BattleRules.multiplier("rocket", target), target);
 
             var unit = UnitDef.UNITS.get(target);
             double defense = unit.def() * 2 * 1.5;
-            long expectedDamage = Math.round(10_000 * 200.0 * 10.0 * 100.0 / (100.0 + 5 * defense));
+            long expectedDamage = Math.round(10_000 * 200.0 * 5.5 * 100.0 / (100.0 + 5 * defense));
             BattleRoundState state = new BattleService(0).resolveWorldRound(
                     Map.of("rocket", 10_000), Map.of(target, 100_000),
                     Map.of("rocket", 0), Map.of(target, 2_000), 2_000,
@@ -180,7 +180,7 @@ class TacticalBattleRoundTest {
                     Map.of("rocket", new BattleService.UnitOrder(BattleService.CommandAction.HOLD)),
                     Map.of(target, new BattleService.UnitOrder(BattleService.CommandAction.HOLD)));
 
-            assertTrue(state.log().contains("倍率×10.0 相克"), target + ": " + state.log());
+            assertTrue(state.log().contains("倍率×5.5 相克"), target + ": " + state.log());
             assertTrue(state.log().contains("对地攻击200 本次原始火力2000000 伤害" + expectedDamage),
                     target + ": " + state.log());
         }

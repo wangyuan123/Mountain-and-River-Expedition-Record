@@ -80,7 +80,7 @@ public class WildController {
         Long playerId = authService.getCurrentPlayer().getId();
         Map<String, Object> result;
         if (request.army() == null || request.army().isEmpty()) {
-            result = marchService.startWildGather(playerId, request.wildTileId());
+            result = marchService.startWildGather(playerId, request.wildTileId(), request.gatherMode());
         } else {
             DispatchRequest dispatch = new DispatchRequest(
                     "wild_gather",
@@ -88,7 +88,8 @@ public class WildController {
                     "gather",
                     request.army(),
                     request.commanderId(),
-                    request.carryRes()
+                    request.carryRes(),
+                    request.gatherMode()
             );
             marchService.createDispatch(playerId, dispatch);
             result = new LinkedHashMap<>();

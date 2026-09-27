@@ -52,12 +52,11 @@ window.Game = window.Game || {};
     return cost;
   }
 
-  function costText(cost) {
+  function costHtml(cost) {
     var arr = [];
-    var emojiMap = (G.DATA && G.DATA.resEmoji) || {};
     for (var k in cost) {
       if (k === 'pop') arr.push('人' + cost[k]);
-      else arr.push((emojiMap[k] || G.DATA.resources[k].icon || k) + cost[k]);
+      else arr.push(G.resourceIconHtml(k) + cost[k]);
     }
     return arr.join(' ');
   }
@@ -154,7 +153,7 @@ window.Game = window.Game || {};
     if (!queue.length) {
       el.innerHTML = '<div class="desc" style="text-align:center;padding:24px 0;">' +
         '<div style="font-size:14px;color:var(--muted);margin-bottom:12px;">' + (syncError || '暂无进行中的生产队列') + '</div>' +
-        '<button type="button" class="btn ok sm" onclick="Game.Army.setTab(\'units\')">[前往征召部队]</button>' +
+        '<button type="button" class="btn ok sm" onclick="Game.Army.setTab(\'units\')">前往征召部队</button>' +
       '</div>';
       return;
     }
@@ -177,9 +176,9 @@ window.Game = window.Game || {};
       // 加速按钮：拥有任意加速符时可点击；否则显示禁用提示，文字精简避免折行
       var speedBtn;
       if (totalSpeed > 0) {
-        speedBtn = '<button type="button" class="btn ok sm army-queue-btn" title="加速生产" onclick="Game.Army.openSpeedUpPicker(' + item.id + ')">[⚡加速]</button>';
+        speedBtn = '<button type="button" class="btn ok sm army-queue-btn" title="加速生产" onclick="Game.Army.openSpeedUpPicker(' + item.id + ')">⚡加速</button>';
       } else {
-        speedBtn = '<button type="button" class="btn sm army-queue-btn disabled" disabled title="背包暂无加速符">[⚡加速]</button>';
+        speedBtn = '<button type="button" class="btn sm army-queue-btn disabled" disabled title="背包暂无加速符">⚡加速</button>';
       }
       var iconHtml = (G && typeof G.getUnitModelIconHtml === 'function')
         ? G.getUnitModelIconHtml(item.unitType, unit.name, 'army-queue-icon')
@@ -194,7 +193,7 @@ window.Game = window.Game || {};
         '</div>' +
         '<div class="army-queue-actions">' +
           speedBtn +
-          '<button type="button" class="btn warn sm army-queue-btn" title="取消生产" onclick="Game.Army.cancelProduction(' + item.id + ')">[取消]</button>' +
+          '<button type="button" class="btn warn sm army-queue-btn" title="取消生产" onclick="Game.Army.cancelProduction(' + item.id + ')">取消</button>' +
         '</div>' +
       '</div>';
     });
@@ -229,7 +228,7 @@ window.Game = window.Game || {};
       + '<div class="spicker-head">⚡ 选择加速符 <span class="spicker-close" onclick="Game.Army.closeSpeedUpPicker()">×</span></div>'
       + '<div class="spicker-sub">目标: ' + G.escapeHtml(unitLabel) + ' · 剩余 ' + remText + '</div>'
       + '<div class="spicker-list"></div>'
-      + '<div class="spicker-foot"><button type="button" class="btn sm" onclick="Game.Army.closeSpeedUpPicker()">[取消]</button></div>'
+      + '<div class="spicker-foot"><button type="button" class="btn sm" onclick="Game.Army.closeSpeedUpPicker()">取消</button></div>'
       + '</div>';
     document.body.appendChild(mask);
 
@@ -350,11 +349,13 @@ window.Game = window.Game || {};
         // 先立即显示本次订单；随后与后端队列同步，避免用户感到点击无反馈。
         renderQueue();
         if (Core.route === 'army') Core.render();
+        if (G.Onboarding && G.Onboarding.actionStarted) G.Onboarding.actionStarted('army', id);
         return updateQueue(false);
       }).catch(function (err) { G.toast(err.message || '征召失败'); });
     },
 
     cancelProduction: function (queueId) {
+      if (!window.confirm('确定要取消这项生产吗？取消后将返还资源与平民。')) return;
       G.API.cancelArmyQueue(queueId).then(function () {
         G.toast('生产已取消，资源与平民已返还');
         return updateQueue(true);
@@ -551,13 +552,13 @@ window.Game = window.Game || {};
         h += '<div class="d">行军补给：油耗' + (u.marchOil || 0) + '/100格，粮耗' + (u.marchFood || 0) + '/5分钟</div>';
         if (can) {
           var parallel = stats.parallel;
-          h += '<div class="d unit-prod-stat">生产: 基础 ' + (30 + Math.floor((u.cost.steel + u.cost.oil + u.cost.rare) / 10)) + '秒/个，并行 ' + parallel + ' 条 (按栋独立), 平均速度 ×' + stats.avgSpeed.toFixed(2) + '</div>';
+          h += '<div class="d unit-prod-stat">生产: 基础 ' + (30 + Math.floor(((u.cost.food || 0) + u.cost.steel + u.cost.oil + u.cost.rare) / 10)) + '秒/个，并行 ' + parallel + ' 条 (按栋独立), 平均速度 ×' + stats.avgSpeed.toFixed(2) + '</div>';
           h += '<div class="desc batch-hint">当前最多可征召 ' + maxRecruit + ' 个（受可用平民和资源限制）；兵工厂等级与训练科技只影响生产速度和并行数。</div>';
         }
         h += '</div>';
 
         // 常驻展示的单价与征召解散操作行
-        h += '<div class="cost">单价: ' + costText(Object.assign({ pop: u.pop }, u.cost)) + '</div>';
+        h += '<div class="cost">单价: ' + costHtml(Object.assign({ pop: u.pop }, u.cost)) + '</div>';
         if (can) {
           var sliderId = 'slider_' + id;
           var initialVal = maxRecruit > 0 ? 1 : 0;

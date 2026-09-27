@@ -5,11 +5,11 @@ import java.util.Set;
 
 /** 四类攻击决定能否交战和基础火力；倍率只描述同一攻击领域内的专项克制。 */
 public final class BattleRules {
-    public static final String VERSION = "balance-v9-rocket-counters-20260923";
+    public static final String VERSION = "balance-v10-rocket-counters-20260925";
     private static final Set<String> ARTILLERY = Set.of("assault", "rocket", "howitzer", "antitank", "flak");
     /** 火箭反装甲、装甲车防空获得专项克制，其余交战沿用纯属性倍率。 */
     private static final Map<String, Map<String, Double>> MATCHUPS = Map.of(
-            "rocket", Map.of("ltank", 10.0, "htank", 10.0, "armored", 10.0, "assault", 10.0),
+            "rocket", Map.of("ltank", 5.5, "htank", 5.5, "armored", 5.5, "assault", 5.5),
             "armored", Map.of("fighter", 5.0, "bomber", 5.0));
 
     private BattleRules() {}

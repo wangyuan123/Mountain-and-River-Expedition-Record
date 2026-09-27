@@ -46,4 +46,7 @@ public class NpcCity extends VersionedEntity {
 
     @Column(name = "scouted_by", columnDefinition = "text")
     private String scoutedBy;
+
+    @Column(name = "commander_name", length = 100)
+    private String commanderName;
 }

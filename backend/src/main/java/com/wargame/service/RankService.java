@@ -148,7 +148,7 @@ public class RankService {
         result.put("tier", nextTier);
         result.put("rankName", nextRank.name());
         result.put("cityCap", MilitaryRankDef.getCityCap(nextTier));
-        result.put("message", "恭喜您晋升为【" + nextRank.name() + "】！基础出兵上限增加，最多可拥有 " + MilitaryRankDef.getCityCap(nextTier) + " 座城市。");
+        result.put("message", "恭喜您晋升为【" + nextRank.name() + "】！军衔权益已更新，最多可拥有 " + MilitaryRankDef.getCityCap(nextTier) + " 座城市。");
 
         return result;
     }

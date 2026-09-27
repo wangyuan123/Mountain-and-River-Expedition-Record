@@ -60,7 +60,7 @@ test('数据定义包含三军统帅和军屯自给，旧补给兼容指向三�
 test('Core.armyCap 仅受军衔、满级围墙和统帅技能影响，兼容旧 supply', () => {
   const { Core, D } = setupGame();
   D.militaryRanks.forEach((rank) => {
-    assert.equal(rank.baseCap, rank.tier * 50000);
+    assert.equal(rank.baseCap, [25000, 50000, 75000, 100000, 125000, 150000, 175000, 200000, 225000, 250000, 300000, 350000, 400000, 450000, 500000, 550000, 600000][rank.tier - 1]);
   });
   Core.state = {
     player: { militaryRank: 1 },
@@ -70,26 +70,30 @@ test('Core.armyCap 仅受军衔、满级围墙和统帅技能影响，兼容旧 
     ]
   };
 
-  assert.equal(Core.armyCap(), 50000);
+  assert.equal(Core.armyCap(), 25000);
+  assert.equal(Core.sortieCap(), 37500);
   Core.state.buildings.command = 10;
   Core.state.buildings.staff = 10;
   Core.state.officers[0].level = 100;
-  assert.equal(Core.armyCap(), 50000);
+  assert.equal(Core.armyCap(), 25000);
+  assert.equal(Core.sortieCap(), 37500);
 
   Core.state.player.militaryRank = 17;
-  assert.equal(Core.armyCap(), 850000);
+  assert.equal(Core.armyCap(), 600000);
   Core.state.buildings.wall = 9;
-  assert.equal(Core.armyCap(), 850000);
+  assert.equal(Core.armyCap(), 600000);
   Core.state.buildings.wall = 10;
-  assert.equal(Core.armyCap(), 950000);
+  assert.equal(Core.armyCap(), 700000);
 
   Core.state.officers[0].skills = [{ id: 'leadership', lv: 5 }];
-  assert.equal(Core.armyCap(), 1140000);
+  assert.equal(Core.armyCap(), 840000);
+  assert.equal(Core.sortieCap(), 1140000);
 
   Core.state.officers[0].skills = [{ id: 'supply', lv: 5 }];
-  assert.equal(Core.armyCap(), 1140000);
+  assert.equal(Core.armyCap(), 840000);
+  assert.equal(Core.sortieCap(), 1140000);
   Core.state.officers[0].role = 'mayor';
-  assert.equal(Core.armyCap(), 950000);
+  assert.equal(Core.armyCap(), 700000);
 });
 
 test('Core.foodPerHour 受到市长军屯技能降低', () => {
@@ -120,19 +124,22 @@ test('数据定义包含绝境反击 counter，且 skillBonus 正常生效', () 
       { id: 1, role: 'commander', level: 1, skills: [{ id: 'counter', lv: 5 }] }
     ]
   };
-  // 5级反击伤害系数为 50% (0.10 * 5)
-  assert.equal(Math.round(Core.skillBonus('counter') * 100) / 100, 0.50);
-
-  // 1级反击伤害系数为 10%
-  Core.state.officers[0].skills = [{ id: 'counter', lv: 1 }];
-  assert.equal(Math.round(Core.skillBonus('counter') * 100) / 100, 0.10);
+  // 与服务端一致：每级增加 20 个百分点，满级按剩余兵力总伤害的 100% 反击。
+  for (let level = 1; level <= 5; level++) {
+    Core.state.officers[0].skills = [{ id: 'counter', lv: level }];
+    assert.equal(Math.round(Core.skillBonus('counter') * 100), level * 20);
+  }
+  assert.match(D.officerSkills.counter.desc, /当前剩余兵力总伤害的20%\/级反击，最高100%/);
+  for (const id of ['frenzy', 'bulwark', 'counter', 'learn', 'borrow_armor']) {
+    assert.match(D.officerSkills[id].desc, /首次交战回合及之后每隔2回合生效（如第4、7、10回合）/);
+  }
 });
 
 test('数据定义包含师夷长技 learn，且每级攻击参考系数为6%', () => {
   const { Core, D } = setupGame();
   assert.ok(D.officerSkills.learn, '应有 learn 技能');
   assert.equal(D.officerSkills.learn.name, '师夷长技');
-  assert.match(D.officerSkills.learn.desc, /单次最高敌方同名兵种攻击30%/);
+  assert.match(D.officerSkills.learn.desc, /单次最高为敌军对应攻击的30%/);
 
   Core.state = {
     officers: [
@@ -146,7 +153,7 @@ test('数据定义包含借甲御敌 borrow_armor，且每级防御参考系数�
   const { Core, D } = setupGame();
   assert.ok(D.officerSkills.borrow_armor, '应有 borrow_armor 技能');
   assert.equal(D.officerSkills.borrow_armor.name, '借甲御敌');
-  assert.match(D.officerSkills.borrow_armor.desc, /单次最高敌方同名兵种防御30%/);
+  assert.match(D.officerSkills.borrow_armor.desc, /单次最高为敌军同名兵种防御的30%/);
 
   Core.state = {
     officers: [
@@ -232,7 +239,7 @@ test('军官技能列表仅显示可点击的技能名称，详情在弹窗内�
 
   assert.match(modal.innerHTML, /全军冲锋/);
   assert.match(modal.innerHTML, /当前等级 <b>Lv\.2<\/b>/);
-  assert.match(modal.innerHTML, /攻击力额外\+10%\/级，第1、4、7…回合触发/);
+  assert.match(modal.innerHTML, /首次交战回合及之后每隔2回合生效（如第4、7、10回合），全军攻击力额外\+10%\/级/);
 });
 
 test('军官技能升级只选择对应的指定技能书，满级禁用', async () => {
@@ -274,4 +281,62 @@ test('军官技能升级只选择对应的指定技能书，满级禁用', async
   const view = { innerHTML: '' };
   Game.Officer.renderDetail(view);
   assert.match(view.innerHTML, /title="技能已满级">\[升级\]<\/button>/);
+});
+
+test('军官详情使用星耀符升星，并处理库存不足和满星状态', async () => {
+  const { Game } = setupOfficerGame();
+  const officer = {
+    id: 7, name: '军官', star: 2, level: 10, exp: 0, role: 'idle', loyalty: 100,
+    military: 30, logistics: 30, defense: 30, knowledge: 30, skills: []
+  };
+  Game.Core.state = { _detailOfficerId: 7, items: { starUp: 1 }, officers: [officer] };
+  let renders = 0;
+  const toasts = [];
+  Game.Core.render = () => { renders++; };
+  Game.toast = message => { toasts.push(message); };
+  const view = { innerHTML: '' };
+  Game.Officer.renderDetail(view);
+  assert.match(view.innerHTML, /星耀符: 1枚 · 升星失败率20% · 每次消耗1枚/);
+  assert.match(view.innerHTML, /Game\.Officer\.upgradeStar\('7',this\).*\[升星至3★\]/);
+  assert.match(view.innerHTML, /\[商城购买星耀符\]/);
+  for (const [star, rate] of [[1, 10], [2, 20], [3, 30], [4, 60]]) {
+    officer.star = star;
+    Game.Officer.renderDetail(view);
+    assert.match(view.innerHTML, new RegExp(`升星失败率${rate}%`));
+  }
+  officer.star = 2;
+
+  let requests = 0;
+  let complete;
+  Game.API.depotUse = (itemId, officerId) => {
+    assert.equal(itemId, 'starUp');
+    assert.equal(officerId, 7);
+    requests++;
+    return new Promise(resolve => { complete = resolve; });
+  };
+  const button = { disabled: false };
+  const pending = Game.Officer.upgradeStar(7, button);
+  await Game.Officer.upgradeStar(7, button);
+  assert.equal(requests, 1);
+  assert.equal(button.disabled, true);
+  complete({ success: true, upgraded: false, message: '升星失败，已消耗1枚星耀符' });
+  await pending;
+  assert.equal(button.disabled, false);
+  assert.equal(renders, 1);
+  assert.equal(toasts.at(-1), '升星失败，已消耗1枚星耀符');
+
+  Game.Core.state.items.starUp = 0;
+  Game.Officer.renderDetail(view);
+  assert.match(view.innerHTML, /disabled title="星耀符不足">\[升星至3★\]/);
+  Game.Shop = { curCat: 'all' };
+  let route;
+  Game.go = value => { route = value; };
+  Game.Officer.openStarUpShop();
+  assert.equal(Game.Shop.curCat, 'officer');
+  assert.equal(route, 'shop');
+
+  officer.star = 5;
+  Game.Officer.renderDetail(view);
+  assert.match(view.innerHTML, /已达5星上限/);
+  assert.doesNotMatch(view.innerHTML, /\[升星至|\[商城购买星耀符\]/);
 });

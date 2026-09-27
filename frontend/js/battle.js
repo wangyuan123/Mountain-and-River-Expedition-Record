@@ -7,7 +7,8 @@ window.Game = window.Game || {};
   var D = G.DATA;
   var Core = G.Core;
 
-  function U(id) {
+  function U(id, isJapanese) {
+    if (isJapanese && D.japaneseUnits && D.japaneseUnits[id]) return D.japaneseUnits[id];
     if (D.units[id]) return D.units[id];
     if (D.forts && D.forts[id]) return D.forts[id];
     return null;
@@ -415,14 +416,17 @@ window.Game = window.Game || {};
         if (pl) h += '<div class="rb-line"><b>' + (defense ? '损失资源' : '掠夺资源') + ':</b> ' + pl + '</div>';
         if (!defense && r.exp > 0) h += '<div class="rb-line"><b>获得经验:</b> ' + G.fmt(r.exp) + '</div>';
       }
+      var enemyName = defense ? (r.attackerName || '') : (r.toName || r.defenderName || '');
+      var enemyIsJapanese = r.targetType === 'bandit' || r.targetType === 'npc' ||
+        (enemyName && (enemyName.indexOf('日寇') >= 0 || enemyName.indexOf('流寇') >= 0 || enemyName.indexOf('据点') >= 0));
       h += '<div class="rb-divider"></div>';
       h += '<div class="rb-side w">【我方军队】</div>';
       h += this.renderTroopCommander('mine', r.commanders && r.commanders[defense ? 'defender' : 'attacker']);
-      h += this.renderArmyUnits('mine', r[defense ? 'initialDefender' : 'initialAttacker'], r[defense ? 'survivorDefender' : 'survivorAttacker'], r.roundLogs, defense ? 'enemy' : 'mine');
+      h += this.renderArmyUnits('mine', r[defense ? 'initialDefender' : 'initialAttacker'], r[defense ? 'survivorDefender' : 'survivorAttacker'], r.roundLogs, defense ? 'enemy' : 'mine', false);
       h += '<div class="rb-divider"></div>';
       h += '<div class="rb-side l">【敌方军队】</div>';
       h += this.renderTroopCommander('enemy', r.commanders && r.commanders[defense ? 'attacker' : 'defender']);
-      h += this.renderArmyUnits('enemy', r[defense ? 'initialAttacker' : 'initialDefender'], r[defense ? 'survivorAttacker' : 'survivorDefender'], r.roundLogs, defense ? 'mine' : 'enemy');
+      h += this.renderArmyUnits('enemy', r[defense ? 'initialAttacker' : 'initialDefender'], r[defense ? 'survivorAttacker' : 'survivorDefender'], r.roundLogs, defense ? 'mine' : 'enemy', enemyIsJapanese);
       h += '</div>';
       return h;
     },
@@ -471,7 +475,7 @@ window.Game = window.Game || {};
      * @param {string} [logSide] - 日志中的对应侧 mine/enemy
      * @returns {string} 兵力 HTML
      */
-    renderArmyUnits: function (side, initMap, survMap, roundLogs, logSide) {
+    renderArmyUnits: function (side, initMap, survMap, roundLogs, logSide, isJapanese) {
       var esc = G.escapeHtml;
       var h = '';
       var has = false;
@@ -484,6 +488,12 @@ window.Game = window.Game || {};
           var unit = D.units[k];
           // 历史战报只存旧类别名；完整名称首个“-”前保留该类别，兼容旧日志的兵力与战损反查。
           if (unit && (unit.name === name || unit.name.split('-')[0] === name)) return k;
+        }
+        if (D.japaneseUnits) {
+          for (var jk in D.japaneseUnits) {
+            var junit = D.japaneseUnits[jk];
+            if (junit && (junit.name === name || junit.name.split('-')[0] === name)) return jk;
+          }
         }
         if (D.forts) {
           for (var fk in D.forts) {
@@ -568,7 +578,7 @@ window.Game = window.Game || {};
       // 3. 渲染每个兵种: 例如 卡车: 1000 -> 1000 (-0) 或 轻型坦克: 11 -> 3 (-8)
       for (var j = 0; j < unitKeys.length; j++) {
         var uid = unitKeys[j];
-        var u = U(uid);
+        var u = U(uid, isJapanese);
         if (!u) continue;
         has = true;
 
@@ -732,11 +742,13 @@ window.Game = window.Game || {};
         }
 
         // 守军兵力 (Lv.0 模糊 / Lv.2+ 精确)
+        var isJpnTarget = data.targetKind === 'npc' || data.targetKind === 'bandit' ||
+          (data.targetName && (data.targetName.indexOf('日寇') >= 0 || data.targetName.indexOf('流寇') >= 0 || data.targetName.indexOf('据点') >= 0));
         if (data.army) {
           var armyUnits = [];
           for (var aid in data.army) {
             if (data.army[aid] > 0) {
-              var au = U(aid);
+              var au = U(aid, isJpnTarget);
               armyUnits.push(esc((au ? au.name : aid) + 'x' + data.army[aid]));
             }
           }
@@ -1123,9 +1135,12 @@ window.Game = window.Game || {};
       var defenderTech = battle.defenderTech || {};
       var attackerSkills = battle.attackerSkills || {};
       var defenderSkills = battle.defenderSkills || {};
+      var foeIsJapanese = battle.targetKind === 'npc' || battle.targetKind === 'bandit' ||
+        (battle.targetName && (battle.targetName.indexOf('日寇') >= 0 || battle.targetName.indexOf('流寇') >= 0 || battle.targetName.indexOf('据点') >= 0));
       var h = '<div class="tactical-battle">';
       h += '<div class="tactical-head"><div><div class="title">' + (battle.side === 'defender' ? '防守战术指挥：' : '战术指挥：') + esc(battle.targetName || '敌军') + '</div>';
-      h += '<div class="desc">地面部队接敌后不可越线；空军受敌方空军与防空装甲车封锁，空域开放后可突进纵深。未集火的受封锁空军默认攻击最近目标。</div></div>';
+      h += '<div class="desc">地面部队接敌后不可越线；空军受敌方空军与防空装甲车封锁，空域开放后可突进纵深。</div>';
+      h += '<div class="desc">未指定目标时优先攻击射程内的敌方同类型兵种，否则攻击射程内最近的敌军；也可手动指定射程内的任意敌军。</div></div>';
       h += '<div class="tactical-head-actions"><button class="btn sm" onclick="Game.go(\'alerts\')">返回军情</button></div></div>';
       if (this._tacticalAutoExecuteFailed) {
         h += '<div class="tactical-turn-status failed"><span>本回合自动执行失败：' + esc(this._tacticalAutoExecuteError || '请求未完成')
@@ -1136,9 +1151,9 @@ window.Game = window.Game || {};
         h += '<div><span class="tactical-turn-label">本回合倒计时</span><b id="tacticalCountdown" class="tactical-countdown">15 秒</b><small>已选命令在倒计时结束后提交，也可点击下方执行按钮</small></div></div>';
       }
       h += '<div class="tactical-map" style="--tactical-map-height:' + mapHeight + 'px"><div class="tactical-base mine-base">我军阵地</div><div class="tactical-base foe-base">敌军阵地</div><div class="tactical-axis"></div>';
-      h += this.renderTacticalRangeBeams(attacker, attackerPositions, defender, defenderPositions, distance, markerRowIndexes, attackerTech, defenderTech);
-      h += this.renderTacticalMarkers(attacker, attackerPositions, distance, 'mine', markerRowIndexes, defender, defenderPositions, attackerTech);
-      h += this.renderTacticalMarkers(defender, defenderPositions, distance, 'foe', markerRowIndexes, attacker, attackerPositions, defenderTech);
+      h += this.renderTacticalRangeBeams(attacker, attackerPositions, defender, defenderPositions, distance, markerRowIndexes, attackerTech, defenderTech, foeIsJapanese);
+      h += this.renderTacticalMarkers(attacker, attackerPositions, distance, 'mine', markerRowIndexes, defender, defenderPositions, attackerTech, false);
+      h += this.renderTacticalMarkers(defender, defenderPositions, distance, 'foe', markerRowIndexes, attacker, attackerPositions, defenderTech, foeIsJapanese);
       h += '<div class="tactical-distance">战场宽度 ' + distance + ' · 🎯 绿色光带为有效射程已接敌</div></div>';
       if (battle.finished) {
         var result = battle.result || {};
@@ -1202,10 +1217,10 @@ window.Game = window.Game || {};
             h += '<button class="btn sm' + (selected ? ' ok' : '') + '" aria-pressed="' + selected + '" onclick="Game.Battle.setTacticalAction(' + encodedId + ',\'' + choice[0] + '\')">' + choice[1] + '</button>';
           });
           h += '</div><label class="tactical-focus">集火 <select onchange="Game.Battle.setTacticalFocus(' + encodedId + ',this.value)">';
-          h += '<option value="">常规索敌（空中封锁时优先最近目标）</option>';
+          h += '<option value="">默认索敌（同兵种优先，否则最近）</option>';
           Object.keys(defender).forEach(function (targetId) {
             if (defender[targetId] <= 0) return;
-            var target = U(targetId) || {};
+            var target = U(targetId, foeIsJapanese) || {};
             var tPos = defenderPositions[targetId] != null ? Number(defenderPositions[targetId]) : distance;
             var tDist = Math.abs(tPos - myPos);
             var tInRange = range > 0 && tDist <= range;
@@ -1282,7 +1297,7 @@ window.Game = window.Game || {};
     /**
      * 绘制战场各兵种的有效射程覆盖光带，直观展示双方火力范围与接敌状态。
      */
-    renderTacticalRangeBeams: function (attacker, attackerPositions, defender, defenderPositions, distance, rowIndexes, attackerTech, defenderTech) {
+    renderTacticalRangeBeams: function (attacker, attackerPositions, defender, defenderPositions, distance, rowIndexes, attackerTech, defenderTech, foeIsJapanese) {
       var self = this;
       var esc = G.escapeHtml;
       var html = '';
@@ -1328,6 +1343,7 @@ window.Game = window.Game || {};
         // 2. 敌军射程光带 (向左延伸，含科技加成)
         var foeCount = defender && defender[unitId];
         if (foeCount > 0) {
+          var foeUnit = U(unitId, foeIsJapanese) || unit;
           var foeRange = self.getEffectiveRange(unitId, defenderTech);
           var foePos = (defenderPositions && defenderPositions[unitId] != null) ? Number(defenderPositions[unitId]) : dist;
           var foeReach = Math.max(0, foePos - foeRange);
@@ -1347,7 +1363,7 @@ window.Game = window.Game || {};
             }
           });
 
-          var foeTitle = esc(unit.name || unitId) + ' 敌军射程: ' + foeRange + '（覆盖至坐标 ' + foeReach + '）'
+          var foeTitle = esc(foeUnit.name || unitId) + ' 敌军射程: ' + foeRange + '（覆盖至坐标 ' + foeReach + '）'
             + (nearestMineDist != null ? '，距最近我军 ' + nearestMineDist + (foeInRange ? ' [⚠️已覆盖我军]' : ' [未覆盖我军]') : '');
 
           html += '<div class="tactical-range-beam foe' + (foeInRange ? ' in-range' : '') + '" style="left:' + foeLeftPct + '%;width:' + foeWidthPct + '%;--marker-row:' + rowIndex + '" title="' + foeTitle + '">'
@@ -1370,14 +1386,14 @@ window.Game = window.Game || {};
      * @param {Object} [techMap] - 科技加成字典（用于计算实际射程）。
      * @returns {string} 战场单位徽标的 HTML。
      */
-    renderTacticalMarkers: function (army, positions, distance, side, rowIndexes, opponentArmy, opponentPositions, techMap) {
+    renderTacticalMarkers: function (army, positions, distance, side, rowIndexes, opponentArmy, opponentPositions, techMap, isJapanese) {
       var esc = G.escapeHtml;
       var html = '';
       var markers = [];
       var dist = Math.max(1, Number(distance) || 1);
       Object.keys(army || {}).forEach(function (unitId) {
         if (!army[unitId] || army[unitId] <= 0) return;
-        var unit = U(unitId) || {};
+        var unit = U(unitId, isJapanese) || {};
         var position = positions && positions[unitId] != null ? positions[unitId] : (side === 'mine' ? 0 : dist);
         markers.push({ unitId: unitId, unit: unit, position: position, count: army[unitId] });
       });

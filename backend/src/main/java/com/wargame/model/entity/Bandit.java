@@ -37,4 +37,7 @@ public class Bandit extends VersionedEntity {
 
     @Column(name = "defeated")
     private Boolean defeated;
+
+    @Column(name = "commander_name", length = 100)
+    private String commanderName;
 }

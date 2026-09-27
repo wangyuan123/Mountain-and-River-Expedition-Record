@@ -62,6 +62,13 @@ public class EquipmentService {
     }
 
     public Attributes attributes(Officer officer) {
+        if (officer == null) {
+            return new Attributes(0, 0, 0, 0, List.of(), List.of());
+        }
+        if (officer.getPlayerId() == null || officer.getId() == null || officer.getId() < 0) {
+            return new Attributes(value(officer.getMilitary()), value(officer.getDefense()),
+                    value(officer.getLogistics()), value(officer.getKnowledge()), List.of(), List.of());
+        }
         List<OfficerEquipment> equipped = equipmentRepository.findByPlayerIdAndOfficerId(officer.getPlayerId(), officer.getId());
         int military = value(officer.getMilitary()), defense = value(officer.getDefense()), logistics = value(officer.getLogistics()), knowledge = value(officer.getKnowledge());
         Map<String, List<OfficerEquipment>> sets = new HashMap<>();

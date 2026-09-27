@@ -35,8 +35,6 @@ window.Game = window.Game || {};
         toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
         toggle.setAttribute('aria-label', collapsed ? '展开导航' : '收起导航');
         toggle.setAttribute('title', collapsed ? '展开导航' : '收起导航');
-        var label = toggle.querySelector('.nav-collapse-label');
-        if (label) label.textContent = collapsed ? '展开导航' : '收起导航';
         var icon = toggle.querySelector('.nav-collapse-icon');
         if (icon) icon.textContent = collapsed ? '›' : '‹';
       }
@@ -52,21 +50,14 @@ window.Game = window.Game || {};
     showResourceDetail: function (key) {
       var s = Core.state || {};
       var r = s.resources || {};
-      var mayor = Core.getOfficerByRole('mayor');
       var cap = Core.capacity();
       var foodProduction = Core.produceOf('farm');
       var foodConsumption = Core.foodPerHour();
-      var rates = {
-        food: foodProduction - foodConsumption,
-        steel: Core.produceOf('refinery'),
-        oil: Core.produceOf('oilfield'),
-        rare: Core.produceOf('raremine'),
-        gold: Math.floor(Core.civilianPopulation() * (s.tax / 100) * (1 + (mayor ? mayor.knowledge / 100 : 0)) * (1 + (Core.mayorSkillBonus ? Core.mayorSkillBonus('finance') : 0)) * 2)
-      };
       var caps = { food: cap.food, steel: cap.steel, oil: cap.oil, rare: cap.rare, gold: 999999 };
+      var rate = Core.resourceNetRate ? Core.resourceNetRate(key) : 0;
       var info = D.resources[key];
       if (!info) return;
-      G.MainView.showResourceDetail(key, info.name, info.icon, r[key] || 0, caps[key] || 999999, rates[key] || 0, foodProduction, foodConsumption);
+      G.MainView.showResourceDetail(key, info.name, info.icon, r[key] || 0, caps[key] || 999999, rate, foodProduction, foodConsumption);
     },
 
     showPopulationDetail: function () {
@@ -77,7 +68,7 @@ window.Game = window.Game || {};
       var el = document.getElementById('loginMsg');
       if (!el) return;
       el.textContent = msg;
-      el.style.color = isError ? '#ff5a5a' : '#7fc4ff';
+      el.dataset.state = isError ? 'error' : 'info';
     },
 
     doLogin: function () {
@@ -136,7 +127,10 @@ window.Game = window.Game || {};
       var permit = G.Protection ? G.Protection.enter() : Promise.resolve(true);
       return permit.then(function (allowed) {
         if (!allowed) return null;
-        return G.load();
+        var rulesRequest = G.API.getPrerequisites ? G.API.getPrerequisites().then(function (rules) {
+          if (G.Prerequisites) G.Prerequisites.setRules(rules);
+        }).catch(function () { return null; }) : Promise.resolve(null);
+        return Promise.all([G.load(), rulesRequest]).then(function (values) { return values[0]; });
       }).then(function (state) {
         if (!state || (G.Protection && !G.Protection.canRequest())) return;
         G.state = state;
@@ -277,6 +271,10 @@ window.Game = window.Game || {};
     openDisableAccount: function () { G.Account.open(); },
 
     sendChat: function () {
+      if (G.Chat && G.Chat.canSend && !G.Chat.canSend()) {
+        G.toast('声望达到 10000 后才能在世界频道发言');
+        return;
+      }
       var el = document.getElementById('worldChatInput');
       if (!el) return;
       var text = (el.value || '').trim();

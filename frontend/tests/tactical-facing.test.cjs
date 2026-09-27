@@ -293,6 +293,9 @@ test('战术地图与单位徽标展示兵种射程与接敌状态', () => {
   Battle.renderTacticalBattle(view);
 
   // 1. 地图上渲染了射程覆盖光带 (tactical-range-beam)
+  assert.match(view.innerHTML, /未指定目标时优先攻击射程内的敌方同类型兵种，否则攻击射程内最近的敌军/);
+  assert.match(view.innerHTML, /也可手动指定射程内的任意敌军/);
+  assert.match(view.innerHTML, /默认索敌（同兵种优先，否则最近）/);
   assert.match(view.innerHTML, /class="tactical-range-beam mine in-range"/);
   assert.match(view.innerHTML, /title="火箭 我军射程: 2000（覆盖至坐标 2500）/);
   assert.match(view.innerHTML, /title="重型坦克 我军射程: 320（覆盖至坐标 620）/);

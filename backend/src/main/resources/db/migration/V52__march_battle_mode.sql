@@ -1,0 +1,1 @@
+ALTER TABLE marches ADD COLUMN battle_mode VARCHAR(10) NULL;

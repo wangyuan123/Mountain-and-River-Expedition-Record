@@ -17,6 +17,11 @@ public interface BattleSessionRepository extends JpaRepository<BattleSession, Lo
     Optional<BattleSession> findByMarchId(Long marchId);
     Optional<BattleSession> findByIdAndPlayerId(Long id, Long playerId);
 
+    boolean existsByPlayerId(Long playerId);
+
+    @Query("select (count(s) > 0) from BattleSession s where s.targetKind = 'player' and s.targetId in :cityIds")
+    boolean existsDefendingCityBattle(@Param("cityIds") List<String> cityIds);
+
     @Lock(LockModeType.PESSIMISTIC_READ)
     @Query("select s from BattleSession s where s.targetKind = 'player' and s.targetId = :cityId")
     List<BattleSession> findActivePlayerCityBattles(@Param("cityId") String cityId);

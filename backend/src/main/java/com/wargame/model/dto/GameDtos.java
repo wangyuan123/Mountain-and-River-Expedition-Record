@@ -63,6 +63,8 @@ public class GameDtos {
 
     public record OfficerAssignAttrRequest(Long officerId, String attr, Integer points) {}
 
+    public record OfficerRenameRequest(Long officerId, String name) {}
+
     // ===== 城防 =====
 
     public record FortRequest(String fort, Integer count) {}
@@ -97,8 +99,13 @@ public class GameDtos {
             Long wildTileId,
             Map<String, Integer> army,
             Long commanderId,
-            Map<String, Integer> carryRes
-    ) {}
+            Map<String, Integer> carryRes,
+            String gatherMode
+    ) {
+        public WildDispatchRequest(Long wildTileId, Map<String, Integer> army, Long commanderId, Map<String, Integer> carryRes) {
+            this(wildTileId, army, commanderId, carryRes, null);
+        }
+    }
 
     // ===== 商城 =====
 
@@ -113,4 +120,10 @@ public class GameDtos {
     // ===== 内政民心 =====
 
     public record AppeaseRequest(String type) {}
+
+    // ===== 交易所 / 市场 =====
+    public record MarketCreateOrderRequest(String resourceType, Integer amount, Integer pricePerUnit) {}
+    public record MarketBuyOrderRequest(Long orderId) {}
+    public record MarketCancelOrderRequest(Long orderId) {}
+    public record MarketExchangeRequest(String fromRes, String toRes, Integer amount) {}
 }

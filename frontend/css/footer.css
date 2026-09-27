@@ -69,3 +69,8 @@
 #footbar .footer-icp { display: inline-block; padding: 2px 4px; color: inherit; text-underline-offset: 3px; }
 #footbar .footer-icp:hover { color: var(--footer-accent); }
 #footbar .footer-placeholder { font-size: 10px; }
+
+@media (orientation: portrait) {
+  #footbar .footer-site-info > p:not(.footer-beijing-time-wrap) { display: none; }
+  #footbar .footer-beijing-time-wrap { margin-top: 0; padding-top: 0; border-top: 0; }
+}

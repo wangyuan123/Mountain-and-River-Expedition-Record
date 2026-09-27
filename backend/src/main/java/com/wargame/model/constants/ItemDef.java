@@ -49,9 +49,9 @@ public record ItemDef(
             Map.entry("skillBook_learn", new ItemDef("skillBook_learn", "师夷长技技能书", "📗", CAT_OFFICER, "军官使用，直接学习师夷长技 Lv.1", 0)),
             Map.entry("skillBook_borrow_armor", new ItemDef("skillBook_borrow_armor", "借甲御敌技能书", "📗", CAT_OFFICER, "军官使用，直接学习借甲御敌 Lv.1", 0)),
             Map.entry("loyaltyBox", new ItemDef("loyaltyBox", "忠诚宝箱",    "🎁", CAT_OFFICER, "军官忠诚度+20", 0)),
-            Map.entry("renameCard", new ItemDef("renameCard", "改名卡",      "🏷️", CAT_OFFICER, "为军官更换新名字", 0)),
+            Map.entry("renameCard", new ItemDef("renameCard", "军官改名卡",  "🏷️", CAT_OFFICER, "为军官更换新名字", 0)),
             Map.entry("recruitOrd", new ItemDef("recruitOrd", "征募令",      "🎖️", CAT_OFFICER, "刷新军校,保底出现一名五星军官", 0)),
-            Map.entry("starUp",     new ItemDef("starUp",     "星耀符",      "✨", CAT_OFFICER, "军官升星,属性大幅成长", 0)),
+            Map.entry("starUp",     new ItemDef("starUp",     "星耀符",      "✨", CAT_OFFICER, "升2/3/4/5星失败率10/20/30/60%，失败也消耗1枚", 0)),
             // —— 军官装备宝箱（9 套专属整套装备宝箱）——
             Map.entry("box_recruit_military",  new ItemDef("box_recruit_military",  "列兵军事装备箱", "📦", CAT_OFFICER, "开启获得整套列兵军事装备(军刀/臂章/作训服)", 0)),
             Map.entry("box_recruit_logistics", new ItemDef("box_recruit_logistics", "列兵后勤装备箱", "📦", CAT_OFFICER, "开启获得整套列兵后勤装备(工具包/通行证/工作服)", 0)),
@@ -97,10 +97,10 @@ public record ItemDef(
             Map.entry("marshal_knowledge_coat",  new ItemDef("marshal_knowledge_coat",  "元帅军礼服",   "👔", CAT_OFFICER, "元帅学识套装·外套：学识+30，其余+5，集齐3件学识+30+全属性+5", 0)),
 
             // —— 资源道具 ——
-            Map.entry("goldBox",    new ItemDef("goldBox",    "黄金箱",      "🪙", CAT_RESOURCE, "开启获得1000-5000黄金", 0)),
+            Map.entry("goldBox",    new ItemDef("goldBox",    "黄金箱",      "img/resources/models/gold.webp", CAT_RESOURCE, "开启获得1000-5000黄金", 0)),
             Map.entry("resBox",     new ItemDef("resBox",     "资源箱",      "📦", CAT_RESOURCE, "开启获得粮钢油稀各500", 0)),
-            Map.entry("steelPack",  new ItemDef("steelPack",  "钢铁大礼包",  "🔩", CAT_RESOURCE, "立即获得20000钢铁", 0)),
-            Map.entry("supplyPack", new ItemDef("supplyPack", "战备补给包",  "🌾", CAT_RESOURCE, "粮钢油稀各8000,适合长期发展", 0)),
+            Map.entry("steelPack",  new ItemDef("steelPack",  "钢铁大礼包",  "img/resources/models/steel.webp", CAT_RESOURCE, "立即获得20000钢铁", 0)),
+            Map.entry("supplyPack", new ItemDef("supplyPack", "战备补给包",  "img/resources/models/food.webp", CAT_RESOURCE, "粮钢油稀各8000,适合长期发展", 0)),
             Map.entry("resourcePack500w", new ItemDef("resourcePack500w", "资源大礼包", "🎁", CAT_RESOURCE, "粮食/钢铁/石油/稀矿各500万", 0)),
 
             // —— 功能道具 - 加速符（8 种时长）- 建筑施工/军队生产通用 ——

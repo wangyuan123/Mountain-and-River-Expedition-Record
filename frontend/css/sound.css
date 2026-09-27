@@ -1,0 +1,9 @@
+.sound-settings .sound-setting-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.sound-settings .sound-setting-row > span:first-child { flex: 1; }
+.sound-settings .sound-setting-row label { min-width: 4em; }
+.sound-settings select { max-width: 70%; min-width: 0; padding: 5px 8px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 4px; font: inherit; }
+.sound-settings input[type=range] { flex: 1; min-width: 60px; min-height: 32px; accent-color: var(--accent); cursor: pointer; }
+.sound-settings input:disabled { cursor: default; opacity: 0.5; }
+.sound-settings output { min-width: 4ch; text-align: right; font-variant-numeric: tabular-nums; color: var(--ink); }
+.sound-settings .sound-previews { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.sound-settings button:focus-visible, .sound-settings input:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }

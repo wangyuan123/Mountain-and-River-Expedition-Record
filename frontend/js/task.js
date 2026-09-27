@@ -16,12 +16,7 @@ window.Game = window.Game || {};
     return ss + '秒';
   }
 
-  // —— 1. 活动与任务 ——
-  function renderActivities() {
-    return '<div class="zone-head"><span class="zone-title">🎁 活动与任务</span><span class="zone-sub">暂无数据</span></div><div class="empty-hint">暂无活动与任务数据</div>';
-  }
-
-  // —— 2. 战情速递 ——
+  // —— 1. 战情速递 ——
   function renderAlerts(s) {
     var world = s.world || {};
     var cityState = s.cityState || {};
@@ -41,13 +36,12 @@ window.Game = window.Game || {};
     return html;
   }
 
-  // —— 3. 今日战果 ——
+  // —— 2. 今日战果 ——
   function renderTodayStats() {
     return '<div class="zone-head"><span class="zone-title">🏆 今日战果</span><span class="zone-sub">暂无数据</span></div><div class="empty-hint">暂无今日战果数据</div>';
   }
 
   G.Task = G.Task || {};
-  G.Task.renderActivities = renderActivities;
   G.Task.renderAlerts = renderAlerts;
   G.Task.renderTodayStats = renderTodayStats;
 })(window.Game);

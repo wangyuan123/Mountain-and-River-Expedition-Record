@@ -1,0 +1,86 @@
+{
+  "status": "completed",
+  "style": "3D_game_cg_commander_asset",
+  "mode": "HandAI gpt-image-2 batch generation",
+  "model": "gpt-image-2",
+  "date": "2026-09-27",
+  "aestheticSummary": "3D stylized game commander character portraits, smooth CG shading, non-photorealistic, dark hexagonal mesh background, strict zero infringement risk",
+  "assets": [
+    {
+      "id": "rank-private-v1",
+      "name": "列兵",
+      "rankTier": 1,
+      "insignia": "plain steel helmet, utilitarian field collar",
+      "sourceFile": "rank-private-v1.png",
+      "plannedGameFile": "frontend/img/avatars/historical/rank-private-v1.webp",
+      "status": "completed"
+    },
+    {
+      "id": "rank-corporal-v1",
+      "name": "下士",
+      "rankTier": 3,
+      "insignia": "chevron on helmet, junior collar tabs",
+      "sourceFile": "rank-corporal-v1.png",
+      "plannedGameFile": "frontend/img/avatars/historical/rank-corporal-v1.webp",
+      "status": "completed"
+    },
+    {
+      "id": "rank-sergeant-v1",
+      "name": "上士",
+      "rankTier": 5,
+      "insignia": "triple chevrons on helmet, sergeant collar tabs, leather strap",
+      "sourceFile": "rank-sergeant-v1.png",
+      "plannedGameFile": "frontend/img/avatars/historical/rank-sergeant-v1.webp",
+      "status": "completed"
+    },
+    {
+      "id": "rank-lieutenant-v1",
+      "name": "少尉",
+      "rankTier": 8,
+      "insignia": "single silver bar on helmet, officer dress shirt & tie",
+      "sourceFile": "rank-lieutenant-v1.png",
+      "plannedGameFile": "frontend/img/avatars/historical/rank-lieutenant-v1.webp",
+      "status": "completed"
+    },
+    {
+      "id": "rank-captain-v1",
+      "name": "上尉",
+      "rankTier": 10,
+      "insignia": "double silver bars on helmet, captain collar tabs & service tunic",
+      "sourceFile": "rank-captain-v1.png",
+      "plannedGameFile": "frontend/img/avatars/historical/rank-captain-v1.webp",
+      "status": "completed"
+    },
+    {
+      "id": "rank-major-v1",
+      "name": "少校",
+      "rankTier": 11,
+      "insignia": "gold oak leaf on helmet and collar, tailored service dress",
+      "sourceFile": "rank-major-v1.png",
+      "plannedGameFile": "frontend/img/avatars/historical/rank-major-v1.webp",
+      "status": "completed"
+    },
+    {
+      "id": "rank-colonel-v1",
+      "name": "上校",
+      "rankTier": 13,
+      "insignia": "silver eagle on helmet, silver leaf collar tabs, formal coat",
+      "sourceFile": "rank-colonel-v1.png",
+      "plannedGameFile": "frontend/img/avatars/historical/rank-colonel-v1.webp",
+      "status": "completed"
+    },
+    {
+      "id": "rank-general-v1",
+      "name": "上将",
+      "rankTier": 17,
+      "insignia": "three silver stars on helmet, collar stars and epaulets",
+      "sourceFile": "rank-general-v1.png",
+      "plannedGameFile": "frontend/img/avatars/historical/rank-general-v1.webp",
+      "status": "completed"
+    }
+  ],
+  "blockers": [],
+  "credentialsConfigured": true,
+  "imagesGenerated": 8,
+  "dryRunValidated": true
+}

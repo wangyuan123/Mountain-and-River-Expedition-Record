@@ -1,11 +1,15 @@
 #navbar .nav-collapse-toggle { display: none; }
 
+@media (orientation: landscape) {
+  #footbar .footer-site-info { display: none; }
+}
+
 @media (orientation: landscape) and (min-width: 480px) {
   #screen,
   [data-theme="blue-white-classic"] #screen {
     display: grid;
     grid-template-columns: clamp(118px, 15vw, 160px) minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr);
     width: 100%;
     max-width: 1440px;
     height: 100vh;
@@ -29,8 +33,10 @@
     flex-direction: column;
     grid-column: 1;
     grid-row: 2;
+    position: relative;
+    z-index: 2;
     min-height: 0;
-    overflow: hidden;
+    overflow: visible !important;
     border-right: 1px solid var(--line);
   }
 
@@ -59,31 +65,30 @@
   #navbar .nav-collapse-toggle {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 6px;
-    width: 100%;
-    min-height: 40px;
-    flex: 0 0 auto;
-    margin-bottom: 4px;
-    border: 1px solid currentColor;
-    border-radius: 4px;
-    background: rgba(255, 255, 255, .12);
+    justify-content: flex-start;
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    z-index: 1;
+    width: 24px;
+    height: 48px;
+    padding: 0;
+    transform: translateY(-50%);
+    border: 0;
+    background: transparent;
     color: var(--accent-dark, #244665);
     font: inherit;
-    font-size: 12px;
     cursor: pointer;
   }
-  #navbar .nav-collapse-toggle:hover { background: rgba(255, 255, 255, .22); }
-  #navbar .nav-collapse-toggle:focus-visible { outline: 2px solid currentColor; outline-offset: -3px; }
-  #navbar .nav-collapse-icon { font-size: 24px; line-height: 1; }
-  [data-theme|="blue-white"] #navbar .nav-collapse-toggle { color: #fff; }
+  #navbar .nav-collapse-toggle:hover { opacity: .65; }
+  #navbar .nav-collapse-toggle:focus-visible { outline: 2px solid currentColor; outline-offset: -2px; }
+  #navbar .nav-collapse-icon { display: block; width: 24px; font-size: 30px; line-height: 1; text-align: left; }
+  [data-theme|="blue-white"] #navbar .nav-collapse-toggle { color: #4a7bb5; }
   [data-theme="paper"] #navbar .nav-collapse-toggle { color: #2b5435; }
   [data-theme="dark"] #navbar .nav-collapse-toggle { color: #9bd4f5; }
 
   #screen.nav-collapsed { grid-template-columns: 48px minmax(0, 1fr); }
   #screen.nav-collapsed #navbar .nav-page { grid-template-columns: minmax(0, 1fr); }
-  #screen.nav-collapsed #navbar .nav-collapse-toggle { min-height: 44px; margin-bottom: 0; }
-  #screen.nav-collapsed #navbar .nav-collapse-label { display: none; }
   #screen.nav-collapsed #navbar .navitem { min-height: 44px; }
   #screen.nav-collapsed #navbar .navlabel { font-size: 12px !important; }
 
@@ -97,41 +102,14 @@
     padding: 12px clamp(12px, 2vw, 24px);
   }
 
-  #screen:has(#navbar:empty) #view,
-  #screen:has(#navbar:empty) #footbar { grid-column: 1 / -1; }
+  #screen:has(#navbar:empty) #view { grid-column: 1 / -1; }
   #screen:has(#navbar:empty) #view { width: min(100%, 720px); justify-self: center; }
 
-  #footbar {
-    grid-column: 1 / -1;
-    grid-row: 3;
-    padding: 3px max(12px, env(safe-area-inset-right))
-      max(3px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
-  }
+  #footbar { display: none; }
 
-  #footbar .footer-nav,
-  #footbar .footer-hint { display: none; }
-
-  #footbar .footer-site-info {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 2px 12px;
-    padding: 0;
-    border: 0;
-    line-height: 1.25;
-  }
-
-  #footbar .footer-beijing-time-wrap {
-    flex-basis: 100%;
-    margin-top: 2px;
-    padding-top: 2px;
-    font-size: 11px;
-  }
-
-  #footbar .footer-brand { margin: 0; }
-  #footbar .footer-icp { padding: 0; }
-  [data-theme="blue-white-classic"] #footbar { padding: 3px 12px !important; }
+  .world-map-toolbar > .page-back-button:first-child { margin-right:0; }
+  .world-map-toolbar .world-map-search { order:0; flex:0 0 auto; min-width:0; }
+  .world-map-toolbar [data-map="list"] { margin-left:auto; }
 
   [data-theme="blue-white-classic"] .res-grid { display: grid !important; }
 

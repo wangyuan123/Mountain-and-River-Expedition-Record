@@ -119,6 +119,7 @@ public class MayorSkillServiceTest extends BaseServiceTest {
 
         // 升级建筑验证工期
         createBuilding(playerId, "command", 1);
+        createBuilding(playerId, "farm", 1);
         createBuilding(playerId, "house", 0);
         Map<String, Object> res = buildService.upgrade(playerId, "house", 0);
         assertTrue((Boolean) res.get("success"));
@@ -159,24 +160,26 @@ public class MayorSkillServiceTest extends BaseServiceTest {
     void commanderLeadershipSkillIncreasesArmyCap() {
         Long playerId = createTestPlayer("lead-player", 30).getId();
         for (int tier = 1; tier <= MilitaryRankDef.MAX_RANK_TIER; tier++) {
-            assertEquals(tier * 50000, MilitaryRankDef.getRankBase(tier));
+            assertEquals(new int[]{25000, 50000, 75000, 100000, 125000, 150000, 175000, 200000, 225000, 250000, 300000, 350000, 400000, 450000, 500000, 550000, 600000}[tier - 1], MilitaryRankDef.getRankBase(tier));
         }
         int capWithoutOfficer = armyService.armyCap(playerId);
-        assertEquals(50000, capWithoutOfficer);
+        assertEquals(25000, capWithoutOfficer);
+        assertEquals(37500, armyService.sortieCap(playerId));
 
         createBuilding(playerId, "command", 10);
         createBuilding(playerId, "staff", 10);
-        assertEquals(50000, armyService.armyCap(playerId));
+        assertEquals(25000, armyService.armyCap(playerId));
 
         var player = playerRepository.findById(playerId).orElseThrow();
         player.setMilitaryRank(17);
         playerRepository.save(player);
-        assertEquals(850000, armyService.armyCap(playerId));
+        assertEquals(600000, armyService.armyCap(playerId));
         var wall = createBuilding(playerId, "wall", 9);
-        assertEquals(850000, armyService.armyCap(playerId));
+        assertEquals(600000, armyService.armyCap(playerId));
         wall.setLevel(10);
         buildingRepository.save(wall);
-        assertEquals(950000, armyService.armyCap(playerId));
+        assertEquals(700000, armyService.armyCap(playerId));
+        assertEquals(1000000, armyService.sortieCap(playerId));
 
         Officer cmd = new Officer();
         cmd.setPlayerId(playerId);
@@ -192,19 +195,21 @@ public class MayorSkillServiceTest extends BaseServiceTest {
         officerRepository.save(cmd);
 
         int capWithNormalCmd = armyService.armyCap(playerId);
-        assertEquals(950000, capWithNormalCmd);
+        assertEquals(700000, capWithNormalCmd);
 
         // 升级统帅技能 Lv.5 (+20%)
         cmd.setSkills(JsonUtil.toJson(List.of(Map.of("id", "leadership", "lv", 5))));
         officerRepository.save(cmd);
 
         int capWithLeadCmd = armyService.armyCap(playerId);
-        assertEquals(1140000, capWithLeadCmd, "统帅Lv.5应提升基础与围墙奖励之和的20%");
+        assertEquals(840000, capWithLeadCmd, "统帅Lv.5应提升基础与围墙奖励之和的20%");
+
+        assertEquals(1140000, armyService.sortieCap(playerId), "迎战仅将基础放大至1.5倍，不放大加成");
 
         // 兼容旧 supply 技能
         cmd.setSkills(JsonUtil.toJson(List.of(Map.of("id", "supply", "lv", 5))));
         officerRepository.save(cmd);
-        assertEquals(1140000, armyService.armyCap(playerId), "旧supply技能应向后兼容统帅效果");
+        assertEquals(840000, armyService.armyCap(playerId), "旧supply技能应向后兼容统帅效果");
     }
 
     @Test

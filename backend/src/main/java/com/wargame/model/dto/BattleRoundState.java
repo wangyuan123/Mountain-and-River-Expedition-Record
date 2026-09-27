@@ -11,5 +11,6 @@ public record BattleRoundState(
         Map<String, Integer> defenderArmy,
         Map<String, Integer> attackerPositions,
         Map<String, Integer> defenderPositions,
-        String log
+        String log,
+        int firstCombatRound
 ) {}

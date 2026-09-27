@@ -37,6 +37,10 @@ public class BattleSession extends VersionedEntity {
     @Column(name = "round_no", nullable = false)
     private Integer roundNo;
 
+    /** 双方首次实际开火的回合；0 表示尚未交战，历史会话的 null 从战报恢复。 */
+    @Column(name = "first_combat_round")
+    private Integer firstCombatRound = 0;
+
     @Column(name = "round_deadline_at", nullable = false)
     private Long roundDeadlineAt;
 

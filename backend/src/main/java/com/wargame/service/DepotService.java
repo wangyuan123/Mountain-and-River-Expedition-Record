@@ -46,6 +46,9 @@ import java.util.concurrent.ThreadLocalRandom;
 @Service
 public class DepotService {
 
+    /** 当前星级 1～4 对应升到下一星的失败率，抽签范围为 0～99。 */
+    private static final int[] STAR_UP_FAILURE_PERCENT = {10, 20, 30, 60};
+
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
 
@@ -276,20 +279,10 @@ public class DepotService {
         int consumed = playerItemRepository.tryConsume(playerId, "recruitOrd", 1, System.currentTimeMillis());
         if (consumed == 0) return error("征募令数量不足");
 
-        // 复用 OfficerService.genOfficer 生成 5 星数据
-        Map<String, Object> o = officerService.genOfficer(0);
-        // genOfficer 内置概率是 0~1 加权，这里需要强制 5 星：重新 roll 到 star=5
-        // 简化做法：直接复用星级判定函数。OfficerService 已暴露 genOfficer 公开方法，
-        // 但其内部 star 随机不可控，这里走一次循环重 roll 直到 star=5（最多 50 次）
-        for (int i = 0; i < 50 && ((Integer) o.get("star")) < 5; i++) {
-            o = officerService.genOfficer(5); // 传高 liaison 提升 5 星概率
-        }
+        // 直接生成 5 星极品军官（名将）
+        Map<String, Object> o = officerService.genOfficerWithStar(5);
         int star = (Integer) o.get("star");
-        if (star < 5) {
-            o.put("star", 5);
-            // 重新计算 base
-            star = 5;
-        }
+
         // 与 recruit() 一致落库
         Officer officer = new Officer();
         officer.setPlayerId(playerId);
@@ -299,6 +292,7 @@ public class DepotService {
         officer.setLevel(1);
         officer.setLogistics(getInt(o, "logistics"));
         officer.setMilitary(getInt(o, "military"));
+        officer.setDefense(getInt(o, "defense"));
         officer.setKnowledge(getInt(o, "knowledge"));
         officer.setLoyalty(getInt(o, "loyalty"));
         officer.setSalary(getInt(o, "salary"));
@@ -427,7 +421,7 @@ public class DepotService {
         if (newName == null || newName.isBlank()) return error("新名字不能为空");
         if (newName.length() > 12) return error("名字不超过 12 字符");
         int consumed = playerItemRepository.tryConsume(playerId, "renameCard", 1, System.currentTimeMillis());
-        if (consumed == 0) return error("改名卡不足");
+        if (consumed == 0) return error("军官改名卡不足");
         String old = officer.getName();
         officer.setName(newName);
         officerRepository.save(officer);
@@ -438,15 +432,29 @@ public class DepotService {
     }
 
     private Map<String, Object> useStarUp(Long playerId, Long officerId) {
+        return useStarUp(playerId, officerId, ThreadLocalRandom.current().nextInt(100));
+    }
+
+    /**
+     * 按当前星级判定升星；失败仍消耗一枚星耀符，仅成功时增加星级与属性。
+     * @param roll 0～99 的抽签值；显式传入以验证各档失败率边界
+     * @return 请求处理结果，upgraded 区分升星成功与已扣道具的失败结果
+     */
+    Map<String, Object> useStarUp(Long playerId, Long officerId, int roll) {
         Officer officer = requireOfficer(playerId, officerId);
         if (officer == null) return error("请先选择军官");
+        int star = officer.getStar() != null ? officer.getStar() : 1;
+        if (star >= 5) return error("该军官已满星(5★)");
         int consumed = playerItemRepository.tryConsume(playerId, "starUp", 1, System.currentTimeMillis());
         if (consumed == 0) return error("星耀符不足");
-        int star = officer.getStar() != null ? officer.getStar() : 1;
-        if (star >= 5) {
-            // 退还
-            playerItemRepository.tryConsume(playerId, "starUp", -1, System.currentTimeMillis());
-            return error("该军官已满星(5★)");
+        int failurePercent = STAR_UP_FAILURE_PERCENT[star - 1];
+        if (roll < failurePercent) {
+            Map<String, Object> result = new LinkedHashMap<>();
+            result.put("success", true);
+            result.put("upgraded", false);
+            result.put("message", "升星失败，已消耗1枚星耀符");
+            result.put("star", star);
+            return result;
         }
         officer.setStar(star + 1);
         int level = officer.getLevel() != null ? officer.getLevel() : 1;
@@ -457,6 +465,7 @@ public class DepotService {
         officerRepository.save(officer);
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("success", true);
+        result.put("upgraded", true);
         result.put("message", "✨ " + officer.getName() + " 升为 " + officer.getStar() + "★ !");
         result.put("star", officer.getStar());
         return result;

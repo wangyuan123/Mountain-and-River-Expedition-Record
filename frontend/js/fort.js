@@ -7,12 +7,10 @@ window.Game = window.Game || {};
   var D = G.DATA;
   var Core = G.Core;
 
-  function costText(cost) {
+  function costHtml(cost) {
     var arr = [];
-    var emojiMap = (G.DATA && G.DATA.resEmoji) || {};
     for (var k in cost) {
-      var ico = emojiMap[k] || G.DATA.resources[k].icon || k;
-      arr.push(ico + cost[k]);
+      arr.push(G.resourceIconHtml(k) + cost[k]);
     }
     return arr.join(' ');
   }
@@ -77,7 +75,7 @@ window.Game = window.Game || {};
         h += '<div class="d">对地' + f.atkGround + ' 对空' + f.atkAir + ' 对海' + f.atkSea + ' 对工事' + f.atkFort + ' 防' + f.def + ' 血' + f.hp + ' 射程' + f.range + '</div>';
         h += '<div class="d">' + f.desc + '</div>';
         if (D.combatRoles && D.combatRoles[id]) h += '<div class="d">' + G.escapeHtml(D.combatRoles[id]) + '</div>';
-        h += '<div class="cost">单价: ' + costText(f.cost) + '</div>';
+        h += '<div class="cost">单价: ' + costHtml(f.cost) + '</div>';
         h += '<div class="btn-row">';
         h += '<input class="qty" id="' + inpId + '" type="number" min="1" value="10" style="width:70px" />';
         h += '<button class="btn" onclick="Game.Fort.build(\'' + id + '\',\'' + inpId + '\')">修筑</button>';

@@ -2,11 +2,13 @@ package com.wargame.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.wargame.model.constants.AvatarDef;
 import com.wargame.model.dto.GameDtos;
 import com.wargame.model.entity.ScoutReport;
 import com.wargame.repository.ScoutReportRepository;
 import com.wargame.service.AuthService;
 import com.wargame.service.GameStateService;
+import com.wargame.service.PrerequisiteService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,6 +28,7 @@ public class GameController {
 
     private final AuthService authService;
     private final GameStateService gameStateService;
+    @org.springframework.beans.factory.annotation.Autowired private PrerequisiteService prerequisiteService;
     private final ScoutReportRepository scoutReportRepository;
     @org.springframework.beans.factory.annotation.Autowired private com.wargame.service.ReportPrivacyService reportPrivacy;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -40,6 +43,13 @@ public class GameController {
     public ResponseEntity<Map<String, Object>> getState() {
         Long playerId = authService.getCurrentPlayer().getId();
         return ResponseEntity.ok(gameStateService.getGameState(playerId));
+    }
+
+    /** Versioned prerequisites are served from the same rules used by build and research validation. */
+    @GetMapping("/prerequisites")
+    public ResponseEntity<com.fasterxml.jackson.databind.JsonNode> getPrerequisites() {
+        authService.getCurrentPlayer();
+        return ResponseEntity.ok(prerequisiteService.rules());
     }
 
     /**
@@ -174,8 +184,9 @@ public class GameController {
     @PostMapping("/settings/avatar")
     public ResponseEntity<Map<String, Object>> setAvatar(@RequestBody GameDtos.AvatarRequest request) {
         String avatar = request.avatar() == null ? "" : request.avatar().trim();
-        if (avatar.length() > 500) {
-            throw new IllegalArgumentException("头像链接过长，限制在500字符以内");
+        // 保存接口与新头像库共用白名单，旧版 SVG 已下线。
+        if (!AvatarDef.isPreset(avatar)) {
+            throw new IllegalArgumentException("请选择预设指挥官头像");
         }
         Long playerId = authService.getCurrentPlayer().getId();
         gameStateService.setAvatar(playerId, avatar);

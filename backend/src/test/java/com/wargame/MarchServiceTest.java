@@ -62,6 +62,7 @@ class MarchServiceTest extends BaseServiceTest {
         assertEquals("wild", march.getTargetKind());
         assertEquals(String.valueOf(wildTile.getId()), march.getTargetId());
         assertEquals("conquer", march.getAction());
+        assertEquals("auto", march.getBattleMode(), "旧客户端的野地出征沿用自动结算");
         assertFalse(march.getReturning());
 
         // Verify army was deducted
@@ -71,6 +72,62 @@ class MarchServiceTest extends BaseServiceTest {
         // Verify march army is correct
         Map<String, Integer> marchArmy = JsonUtil.parseIntMap(march.getArmy());
         assertEquals(50, marchArmy.get("infantry"), "行军部队应为50步兵");
+    }
+
+    @Test
+    void battleModeIsRestrictedToPveAttacks() {
+        createArmyUnit(playerId, "infantry", 10);
+        assertEquals("无效战斗方式", assertThrows(IllegalArgumentException.class, () ->
+                marchService.createDispatch(playerId, new DispatchRequest("wild", wildTile.getId(), "conquer",
+                        Map.of("infantry", 1), null, null, null, "instant"))).getMessage());
+        assertEquals("只有对 NPC 或野地的攻击可以选择战斗方式", assertThrows(IllegalArgumentException.class, () ->
+                marchService.createDispatch(playerId, new DispatchRequest("wild", wildTile.getId(), "scout",
+                        Map.of("infantry", 1), null, null, null, "auto"))).getMessage());
+    }
+
+    @Test
+    void manualWildBattleUsesTacticalSessionAndSettlesOccupation() {
+        createArmyUnit(playerId, "infantry", 100);
+        March march = marchService.createDispatch(playerId, new DispatchRequest("wild", wildTile.getId(),
+                "conquer", Map.of("infantry", 100), null, null, null, "manual"));
+        long arrival = march.getArriveAt();
+        marchService.processMarches(playerId, arrival);
+        BattleSession session = battleSessionRepository.findByMarchId(march.getId()).orElseThrow();
+        assertEquals("manual", marchRepository.findById(march.getId()).orElseThrow().getBattleMode());
+        assertEquals(0, ((Number) marchService.getTacticalBattle(playerId, march.getId()).get("round")).intValue());
+
+        for (int round = 1; round <= 30 && battleSessionRepository.findByMarchId(march.getId()).isPresent(); round++) {
+            marchService.processTimedOutTacticalBattle(session.getId(), arrival + round * 15_000L);
+        }
+        March settled = marchRepository.findById(march.getId()).orElseThrow();
+        assertTrue(settled.getReturning());
+        assertNull(settled.getBattleId());
+        assertTrue(wildTileRepository.findById(wildTile.getId()).orElseThrow().getOccupied());
+        assertTrue(scoutReportRepository.findByPlayerId(playerId).stream()
+                .anyMatch(report -> report.getData().contains("\"wildConquered\":true")));
+    }
+
+    @Test
+    void automaticNpcBattleSettlesAtArrivalWithoutTacticalSession() {
+        NpcCity npc = new NpcCity();
+        npc.setWorldId(worldId);
+        npc.setName("自动结算营地");
+        npc.setLevel(1);
+        npc.setX(20);
+        npc.setY(20);
+        npc.setArmy(JsonUtil.toJson(Map.of("infantry", 1)));
+        npc.setForts("{}");
+        npc.setResources("{}");
+        npc.setDefeated(false);
+        npc = npcCityRepository.save(npc);
+        createArmyUnit(playerId, "infantry", 100);
+        March march = marchService.createDispatch(playerId, new DispatchRequest("npc", npc.getId(),
+                "conquer", Map.of("infantry", 100), null, null, null, "auto"));
+        marchService.processMarches(playerId, march.getArriveAt());
+
+        assertTrue(battleSessionRepository.findByMarchId(march.getId()).isEmpty());
+        assertTrue(marchRepository.findById(march.getId()).orElseThrow().getReturning());
+        assertFalse(scoutReportRepository.findByPlayerId(playerId).isEmpty());
     }
 
     @Test
@@ -148,6 +205,7 @@ class MarchServiceTest extends BaseServiceTest {
         marchService.processMarches(playerId, arrival);
 
         Map<String, Object> initial = marchService.getTacticalBattle(playerId, march.getId());
+        assertEquals("manual", marchRepository.findById(march.getId()).orElseThrow().getBattleMode());
         assertEquals(0, ((Number) initial.get("round")).intValue());
         assertEquals(arrival + 15_000L, ((Number) initial.get("roundDeadlineAt")).longValue());
 
@@ -719,6 +777,11 @@ class MarchServiceTest extends BaseServiceTest {
         city.setResources(JsonUtil.toJson(Map.of("food", 100)));
         playerCityRepository.save(city);
         long now = System.currentTimeMillis();
+        Player attacker = playerRepository.findById(playerId).orElseThrow();
+        attacker.setWarAgainstId(defenderId);
+        attacker.setWarAt(now - 1L);
+        attacker.setWarEndAt(now + 600_000L);
+        playerRepository.save(attacker);
         March march = createMarch(playerId, "player", String.valueOf(city.getId()), city.getName(),
                 10, 10, 20, 20, Map.of("infantry", 1000), "conquer",
                 now - 60000, now - 1, false, false);
@@ -793,6 +856,11 @@ class MarchServiceTest extends BaseServiceTest {
         city.setResources(JsonUtil.toJson(Map.of("food", 100)));
         playerCityRepository.save(city);
         long now = System.currentTimeMillis();
+        Player attacker = playerRepository.findById(playerId).orElseThrow();
+        attacker.setWarAgainstId(defenderId);
+        attacker.setWarAt(now - 1L);
+        attacker.setWarEndAt(now + 600_000L);
+        playerRepository.save(attacker);
         March march = createMarch(playerId, "player", String.valueOf(city.getId()), city.getName(),
                 10, 10, 20, 20, Map.of("infantry", 1), "plunder",
                 now - 60000, now - 1, false, false);
@@ -874,7 +942,7 @@ class MarchServiceTest extends BaseServiceTest {
         assertEquals("朱可夫", ((Map<?, ?>) ((Map<?, ?>) defenderReport.get("commanders")).get("attacker")).get("name"));
         assertNull(((Map<?, ?>) defenderReport.get("commanders")).get("defender"));
         java.util.List<?> skills = (java.util.List<?>) ((Map<?, ?>) ((Map<?, ?>) defenderReport.get("commanders")).get("attacker")).get("skills");
-        assertEquals("攻击力额外+50%，第1、4、7…回合触发", ((Map<?, ?>) skills.get(0)).get("description"));
+        assertEquals("首次交战回合及之后每隔2回合生效（如第4、7、10回合），全军攻击力额外+50%", ((Map<?, ?>) skills.get(0)).get("description"));
         assertEquals("无视敌方防御30%", ((Map<?, ?>) skills.get(1)).get("description"));
     }
 
@@ -900,14 +968,14 @@ class MarchServiceTest extends BaseServiceTest {
         assertEquals("battle", scoutReportRepository.findByPlayerId(playerId).get(0).getType());
     }
 
-    /** 模拟攻击方不打开指挥界面时，服务端以 15 秒为间隔结算默认战术回合。 */
+    /** 模拟独立战术调度器每 15 秒推进一回合，经济 Tick 不负责推进战斗会话。 */
     private void settleWithDefaultTactics(March march, long roundTime) {
         marchService.processMarches(playerId, roundTime);
         for (int round = 0; round < 30 && marchRepository.findById(march.getId()).isPresent(); round++) {
             March activeMarch = marchRepository.findById(march.getId()).orElseThrow();
             if (activeMarch.getBattleId() == null) break;
             roundTime += 15_000L;
-            marchService.processMarches(playerId, roundTime);
+            marchService.processTimedOutTacticalBattle(activeMarch.getBattleId(), roundTime);
         }
     }
 
@@ -1282,6 +1350,12 @@ class MarchServiceTest extends BaseServiceTest {
         WildTile recalledTile = wildTileRepository.findById(tile.getId()).orElseThrow();
         assertTrue(recalledTile.getOccupied(), "撤回驻军后野地仍应属于我方占领");
         assertEquals("{}", recalledTile.getGarrison(), "撤军后野地驻军应清空");
+        assertEquals(infBefore, armyUnitRepository.findByPlayerIdAndType(playerId, "infantry").get(0).getCount());
+        assertEquals(steelBefore, getResources(playerId).getSteel());
+        March returning = marchRepository.findByPlayerId(playerId).get(0);
+        assertTrue(returning.getReturning());
+        marchService.processMarches(playerId, returning.getArriveAt());
+        assertEquals(steelBefore + harvestAmount, getResources(playerId).getSteel());
         int infAfter = armyUnitRepository.findByPlayerIdAndType(playerId, "infantry").get(0).getCount();
         assertEquals(infBefore + 20, infAfter, "撤回后步兵应归还主城军营");
 
@@ -1292,4 +1366,27 @@ class MarchServiceTest extends BaseServiceTest {
         assertFalse(abandonedTile.getOccupied(), "放弃后野地不再被占领");
         assertNull(abandonedTile.getOccupiedBy(), "放弃后占领者应为null");
     }
+
+    @Test
+    @DisplayName("采集返程到达时资源入库不超过资源上限")
+    void testGatherReturnCappedAtCapacity() {
+        // refinery Lv 1 -> cap = 200,000
+        createBuilding(playerId, "refinery", 1);
+        giveResources(playerId, 1000, 199_000, 1000, 500, 500);
+
+        long now = System.currentTimeMillis();
+        // Returning march carrying 5000 steel
+        March returningMarch = createMarch(playerId, "wild_gather", "1", "铁矿", 10, 10, 15, 15,
+                Map.of("truck", 10), "gather", now - 5000, now + 1000, true, false);
+        returningMarch.setGatherRes("steel");
+        returningMarch.setGatherAmount(5000);
+        returningMarch.setCarryRes(JsonUtil.toJson(Map.of("steel", 5000)));
+        marchRepository.save(returningMarch);
+
+        marchService.processMarches(playerId, now + 2000);
+
+        Resources res = getResources(playerId);
+        assertEquals(200_000, res.getSteel(), "钢铁入库后应截断于上限200,000，不应溢出至204,000");
+    }
 }
+

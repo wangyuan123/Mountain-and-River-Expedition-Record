@@ -1,0 +1,12 @@
+Use case: historical-scene
+Asset type: square player avatar for the WWII strategy game 山河远征录, a coordinated series of historically grounded miniature military busts.
+Primary request: ONE lifelike painted resin military miniature bust inspired by Chinese soldiers and officers in the China-Burma theater, 1942–1945. Fictional individual, not a portrait of a named historical person.
+Style/medium: premium museum-quality 1:10 scale hand-painted collectible bust photographed in a studio. Real adult anatomy, natural head-to-shoulder proportions, believable facial planes, subtle sculpted skin and fabric texture, matte paint, restrained weathering. Photoreal miniature product photography, visibly crafted but not toy-like.
+Composition/framing: square 1024x1024. One head and upper torso with a very slight three-quarter turn, eyes looking near the camera. Entire cap, both shoulders and collar inside frame; top margin about 8 percent. Face large and legible at 44px. Crop at upper chest; no pedestal or hands. Match portrait scale throughout the series.
+Scene/backdrop: plain warm gray studio background, softly graduated, no scenery or props behind the figure.
+Lighting/mood: soft broad key light from upper left, gentle fill, subtle background separation. Quiet resolve, dignified expression. Face, cap and collar sharply focused; no cinematic darkness.
+Color palette/materials: faded khaki and subdued olive cotton twill, worn brown leather, muted dark metal hardware, natural skin colors. Plausible 1940s uniform cuts and materials; modest, field-worn appearance.
+Constraints: distinguish seniority through specified uniform, equipment and portrait character. Subtle period-style collar tabs only; do not invent prominent decorative insignia or mix rank systems from different armies. No readable labels, spectacular medals, modern camouflage, MOLLE, tactical vest, radio headset, modern helmet, sunglasses, fantasy equipment, crown, marshal baton or modern cap ornament.
+Avoid: chibi, cartoon, anime, caricature, oversized head or eyes, childlike face, low-poly, flat vector art, illustration outlines, glossy plastic skin, colorful toy aesthetic, excessive saturation, glamour retouching, oversized medals, weapons pointed at viewer, multiple people, contact sheet, image border, UI frame, text, logos, watermark.
+
+Subject: A Chinese platoon officer, about 28, clean-shaven and focused. Neat but used khaki stand-collar field tunic, modest period cloth officer field cap, restrained collar tabs, narrow brown leather map-case strap. Practical field dress.

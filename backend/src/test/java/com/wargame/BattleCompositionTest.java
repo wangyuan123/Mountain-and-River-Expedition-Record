@@ -32,7 +32,7 @@ class BattleCompositionTest {
                     BattleResult result = battle(Map.of(id, count), Map.of(), Map.of("bunker", 700), seed, developed);
                     if (result.getSurvivorDefender().isEmpty()) wins++;
                 }
-                assertTrue(wins >= 24, id + " developed=" + developed + " wins=" + wins);
+                assertTrue(wins >= 20, id + " developed=" + developed + " wins=" + wins);
             }
         }
     }

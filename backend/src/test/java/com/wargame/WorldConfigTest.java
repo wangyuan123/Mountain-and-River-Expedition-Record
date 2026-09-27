@@ -16,8 +16,12 @@ class WorldConfigTest {
 
         var high = WorldConfig.BANDIT_LEVELS.get(29);
         assertEquals(180, high.army().get("htank"));
-        assertEquals(10800, high.reward().get("food"));
+        assertEquals(540, high.army().get("infantry"));
+        assertEquals(90, high.army().get("rocket"));
+        assertEquals(45, high.army().get("special"));
+        assertEquals(14400, high.reward().get("food"));
         assertEquals(1800, high.reward().get("exp"));
+        assertEquals(20, high.reward().get("diamond"));
         assertTrue(WorldConfig.BANDIT_NAMES.stream().anyMatch(name -> name.contains("雇佣兵")));
         for (var tier : WorldConfig.BANDIT_LEVELS) {
             assertFalse(tier.army().keySet().stream().anyMatch(key -> java.util.Set.of("destroyer", "sub", "battleship", "carrier").contains(key)));

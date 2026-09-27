@@ -65,9 +65,9 @@ function setupArmy() {
         motor: '机动反步兵'
       },
       resources: {
-        steel: { icon: '🔧' },
-        oil: { icon: '🛢' },
-        rare: { icon: '💠' }
+        steel: { icon: 'img/resources/models/steel.webp' },
+        oil: { icon: 'img/resources/models/oil.webp' },
+        rare: { icon: 'img/resources/models/rare.webp' }
       }
     },
     fmt: String,

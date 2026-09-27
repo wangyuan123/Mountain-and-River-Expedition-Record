@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <base href="../">
+  <title>军团徽章预览</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/themes.css">
+  <link rel="stylesheet" href="css/guild.css">
+  <style>body { padding: 24px; } #screen { max-width: 860px; min-height: 0; padding: 20px; } #view { padding: 0; }</style>
+</head>
+<body data-theme="blue-white-classic">
+  <main id="screen"><div id="view"></div></main>
+  <script>
+    window.Game = {
+      Core: { route: 'guild', views: {} },
+      escapeHtml: function (value) { return value.replace(/[&<>"']/g, function (char) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]; }); },
+      fmt: String
+    };
+  </script>
+  <script src="js/guild.js"></script>
+  <script>document.getElementById('view').innerHTML = Game.Guild.renderRecruitment();</script>
+</body>
+</html>

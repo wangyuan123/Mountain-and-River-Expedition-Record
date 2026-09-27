@@ -179,6 +179,7 @@
             }
             G.toast(resp.message || ('⚡ ' + D.items[itemId].name + ' 使用成功'));
             Core.render();
+            if (G.Onboarding && G.Onboarding.refresh) G.Onboarding.refresh();
           }).catch(function (err) {
             G.toast(err.message || '加速失败');
           });
@@ -355,7 +356,7 @@
             }
             h += '<div class="' + cls + '">';
             h += '<div class="depot-item-head">' +
-              '<div class="depot-item-title"><span class="n">' + info.icon + ' ' + info.name + '</span> <span class="lv">×' + cnt + '</span></div>' +
+              '<div class="depot-item-title"><span class="n">' + G.iconHtml(info.icon, info.name) + ' ' + info.name + '</span> <span class="lv">×' + cnt + '</span></div>' +
               btnHtml +
             '</div>';
             h += '<div class="d">' + info.desc + '</div>';
@@ -389,12 +390,12 @@
       var h = '';
       h += '<div class="title">- ' + (isEquip ? '选择穿戴军官' : '选择军官') + ' -</div>';
       h += '<div class="panel">';
-      h += '<div class="d">' + (isEquip ? '穿戴 ' : '使用 ') + '<b>' + info.icon + ' ' + info.name + '</b> (剩余 <b>' + ((s.items && s.items[itemId]) || 0) + '</b> 个)</div>';
+      h += '<div class="d">' + (isEquip ? '穿戴 ' : '使用 ') + '<b>' + G.iconHtml(info.icon, info.name) + ' ' + info.name + '</b> (剩余 <b>' + ((s.items && s.items[itemId]) || 0) + '</b> 个)</div>';
       h += '<div class="d" style="color:var(--muted)">' + info.desc + '</div>';
       h += '</div>';
       h += '<div class="menu">';
       if (!s.officers || !s.officers.length) {
-        h += '<div class="desc">暂无军官,请前往【军事】→【军校】招募</div>';
+        h += '<div class="desc">暂无军官,请前往【军事】→【陆军讲武堂】招募</div>';
       }
       for (var i = 0; i < (s.officers || []).length; i++) {
         var o = s.officers[i];
@@ -460,8 +461,8 @@
       h += '<div class="panel">';
       h += '<div class="d">为 <b>' + o.name + '</b> 更换新名字</div>';
       h += '<div class="edit-row" style="margin-top:6px"><label>新名字</label><input id="renameInput" class="qty" style="width:100%" maxlength="12" value="' + o.name + '" /></div>';
-      h += '<div class="d" style="color:var(--muted);margin-top:4px">改名后将消耗 1 张【改名卡】,不可撤销</div>';
-      h += '<div class="btn-row" style="margin-top:6px"><button type="button" class="btn depot-btn" onclick="Game.Depot.confirmRename()">[确认改名]</button><button type="button" class="btn depot-btn warn" onclick="Game.Depot.cancelRename()">[取消(退回改名卡)]</button></div>';
+      h += '<div class="d" style="color:var(--muted);margin-top:4px">改名后将消耗 1 张【军官改名卡】,不可撤销</div>';
+      h += '<div class="btn-row" style="margin-top:6px"><button type="button" class="btn depot-btn" onclick="Game.Depot.confirmRename()">[确认改名]</button><button type="button" class="btn depot-btn warn" onclick="Game.Depot.cancelRename()">[取消(退回军官改名卡)]</button></div>';
       h += '</div>';
       h += '<div class="menu-item back" onclick="Game.Depot.cancelRename()">[0] 返回</div>';
       v.innerHTML = h;

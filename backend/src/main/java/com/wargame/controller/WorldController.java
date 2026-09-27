@@ -77,6 +77,20 @@ public class WorldController {
         return ResponseEntity.ok(result);
     }
 
+    @PostMapping("/stop-gather")
+    public ResponseEntity<Map<String, Object>> stopGather(@RequestBody GameDtos.CancelMarchRequest request) {
+        if (request.marchId() == null) {
+            throw new IllegalArgumentException("行军ID不能为空");
+        }
+        Long playerId = authService.getCurrentPlayer().getId();
+        marchService.stopGatherMarch(playerId, request.marchId());
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("success", true);
+        result.put("message", "已终止采集，部队原地待命，请下达回城命令");
+        result.put("state", gameStateService.getGameState(playerId));
+        return ResponseEntity.ok(result);
+    }
+
     @PostMapping("/cancel-march")
     public ResponseEntity<Map<String, Object>> cancelMarch(@RequestBody GameDtos.CancelMarchRequest request) {
         if (request.marchId() == null) {

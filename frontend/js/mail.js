@@ -71,7 +71,7 @@ window.Game = window.Game || {};
     });
   }
   function attachIcon(type) {
-    return { gold: '🪙', diamond: '💎', food: '🌾', steel: '🔩', oil: '🛢️', rare: '💠' }[type] || '🎁';
+    return G.DATA && G.DATA.resources && G.DATA.resources[type] ? G.resourceIconHtml(type) : '🎁';
   }
   function attachLabel(type) {
     return { gold: '黄金', diamond: '钻石', food: '粮食', steel: '钢铁', oil: '石油', rare: '稀矿' }[type] || type;

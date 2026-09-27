@@ -53,6 +53,20 @@ public class WildTile extends VersionedEntity {
     @Column(name = "gathering")
     private Boolean gathering;
 
+    @Column(name = "gather_mode", nullable = false, length = 10)
+    private String gatherMode = "manual";
+
+    @Column(name = "gather_city_slot", nullable = false)
+    private Integer gatherCitySlot = 0;
+
+    /** null 表示无待返城任务；0 也表示已终止，必须等待玩家下达回城命令。 */
+    @Column(name = "gather_harvested")
+    private Integer gatherHarvested;
+
+    /** 分批保存驻军的原始进驻路线、出发城市及兵力，返程不得凭旧编制恢复损失兵力。 */
+    @Column(name = "garrison_routes", columnDefinition = "longtext")
+    private String garrisonRoutes;
+
     @Column(name = "gather_start_at")
     private Long gatherStartAt;
 

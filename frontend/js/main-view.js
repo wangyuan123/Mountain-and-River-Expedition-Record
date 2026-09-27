@@ -143,7 +143,7 @@ window.Game = window.Game || {};
     html += '<div class="zone-head">'
       + '<span class="zone-title">🎖️ 军官将领</span>'
       + '<span class="zone-sub">已招募 ' + totalCount + ' 名</span>'
-      + '<span class="home-officer-go zone-head-action" onclick="event.stopPropagation();Game.go(\'academy\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.stopPropagation();Game.go(\'academy\');event.preventDefault();}" role="button" tabindex="0" title="点击前往军校 · 招募将领">去招募 &gt;</span>'
+      + '<span class="home-officer-go zone-head-action" onclick="event.stopPropagation();Game.go(\'academy\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.stopPropagation();Game.go(\'academy\');event.preventDefault();}" role="button" tabindex="0" title="点击前往陆军讲武堂 · 招募将领">去招募 &gt;</span>'
       + '</div>';
     html += '<div class="home-officer-card">';
 
@@ -152,17 +152,14 @@ window.Game = window.Game || {};
         + '<span class="home-officer-empty-icon">🎖️</span>'
         + '<div class="home-officer-empty-info">'
         + '<div class="home-officer-empty-title">暂未招募将领</div>'
-        + '<div class="home-officer-empty-desc">前往军校招募名将，委任市长与指挥官以提升城防与产能</div>'
+        + '<div class="home-officer-empty-desc">前往陆军讲武堂招募将领，委任市长与指挥官以提升城防与产能</div>'
         + '</div>'
-        + '<span class="home-officer-go">前往招募 &gt;</span>'
+        + '<span class="home-officer-go" onclick="Game.go(\'academy\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.go(\'academy\');event.preventDefault();}" role="button" tabindex="0" title="前往陆军讲武堂 · 招募将领">去讲武堂招募 &gt;</span>'
         + '</div>';
     } else {
-      var displayCount = Math.min(3, totalCount);
-      var topOfficers = officers.slice(0, displayCount);
-
       html += '<div class="home-officer-list">';
-      for (var i = 0; i < topOfficers.length; i++) {
-        var o = topOfficers[i];
+      for (var i = 0; i < officers.length; i++) {
+        var o = officers[i];
         var starColor = (D.starColor && D.starColor[o.star]) || '#ffe14a';
 
         // 星级显示
@@ -215,11 +212,7 @@ window.Game = window.Game || {};
       var cmd = Core.getOfficerByRole('commander');
       html += '<div class="home-officer-foot">';
       html += '<div class="home-officer-foot-text">';
-      if (totalCount > 3) {
-        html += '拥有 <b>' + totalCount + '</b> 名将领 (展示等级最高前3名) · 市长: <b>' + (mayor ? G.escapeHtml(mayor.name) : '未任命') + '</b> · 指挥官: <b>' + (cmd ? G.escapeHtml(cmd.name) : '未任命') + '</b>';
-      } else {
-        html += '共 <b>' + totalCount + '</b> 名将领 · 市长: <b>' + (mayor ? G.escapeHtml(mayor.name) : '未任命') + '</b> · 指挥官: <b>' + (cmd ? G.escapeHtml(cmd.name) : '未任命') + '</b>';
-      }
+      html += '共 <b>' + totalCount + '</b> 名将领 · 市长: <b>' + (mayor ? G.escapeHtml(mayor.name) : '未任命') + '</b> · 指挥官: <b>' + (cmd ? G.escapeHtml(cmd.name) : '未任命') + '</b>';
       html += '</div>';
       html += '<span class="home-officer-go" onclick="Game.go(\'officer\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.go(\'officer\');event.preventDefault();}" role="button" tabindex="0" title="前往参谋部 · 军官管理">参谋部 &gt;</span>';
       html += '</div>';
@@ -230,20 +223,39 @@ window.Game = window.Game || {};
   }
 
   Core.views.login = function (v) {
-    if (G.Account && G.Account.recovery) { v.innerHTML = G.Account.recoveryPanel(); return; }
     var h = '';
-    h += '<div class="title">- 山河远征录 -</div>';
-    if (G.Account) h += G.Account.loginPanel();
-    h += '<div class="desc">请登录或注册，游戏进度由服务器自动保存</div>';
-    h += '<div class="panel">';
-    h += '<div class="edit-row"><label>用户名</label><input id="loginUser" class="qty" style="width:100%" maxlength="32" placeholder="3-32位字符"></div>';
-    h += '<div class="edit-row"><label>密码</label><input id="loginPass" class="qty" style="width:100%" type="password" maxlength="64" placeholder="6-64位"></div>';
-    h += '<div class="btn-row" style="margin-top:8px">';
-    h += '<button class="btn ok" onclick="Game.Main.doLogin()">登录</button>';
-    h += '<button class="btn" onclick="Game.Main.doRegister()">注册</button>';
-    h += '</div>';
-    h += '<div id="loginMsg" style="margin-top:6px;font-size:13px"></div>';
-    h += '</div>';
+    h += '<main class="login-page"><div class="login-shell">';
+    h += '<section class="login-hero" aria-labelledby="loginTitle">';
+    h += '<div class="login-hero-art" aria-hidden="true"><img class="login-hero-tank" src="img/units/models/htank.webp" alt="">';
+    h += '<img class="login-hero-infantry login-hero-infantry-left" src="img/units/models/infantry.webp" alt="">';
+    h += '<img class="login-hero-infantry login-hero-infantry-rear" src="img/units/models/infantry.webp" alt="">';
+    h += '<img class="login-hero-infantry login-hero-infantry-right" src="img/units/models/infantry.webp" alt="">';
+    h += '<img class="login-hero-fighter login-hero-fighter-front" src="img/units/models/fighter.webp" alt="">';
+    h += '<img class="login-hero-fighter login-hero-fighter-back" src="img/units/models/fighter.webp" alt=""></div>';
+    h += '<div class="login-hero-top"><span class="login-emblem" aria-hidden="true">✦</span><span>山河远征录 <span class="login-hero-divider">/</span> 战地档案</span><span class="login-hero-serial">NO. 001 — FRONTLINE</span></div>';
+    h += '<div class="login-hero-copy"><span class="login-kicker">STRATEGY · COMMAND · CONQUEST</span>';
+    h += '<h1 id="loginTitle">山河远征录</h1><p class="login-hero-subtitle">烽烟已起，等待你的指令。</p>';
+    h += '<div class="login-hero-rule" aria-hidden="true"><span></span><span></span><span></span></div>';
+    h += '<p class="login-hero-description">建立防线，调度军团，争夺每一寸山河。<br>从这里开始，书写属于你的战役。</p></div>';
+    h += '<div class="login-hero-bottom"><span>战区指挥部 · 作战终端</span><span>◆ &nbsp; 全线待命</span></div>';
+    h += '</section>';
+    h += '<section class="login-access" aria-label="账号登录与注册"><div class="login-access-inner">';
+    h += '<div class="login-access-heading"><span class="login-access-index">01 / ACCOUNT ACCESS</span><span class="login-access-mark" aria-hidden="true">✦</span></div>';
+    if (G.Account && G.Account.recovery) {
+      h += G.Account.recoveryPanel();
+    } else {
+      h += '<div class="login-access-title"><span class="login-access-eyebrow">指挥官身份验证</span><h2>进入战场</h2><p>登录或建立账号，继续你的远征。</p></div>';
+      if (G.Account) h += G.Account.loginPanel();
+      h += '<form class="login-form" onsubmit="Game.Main.doLogin(); return false;">';
+      h += '<div class="edit-row"><label for="loginUser">用户名 <span>CALLSIGN</span></label><input id="loginUser" class="qty" name="username" autocomplete="username" maxlength="32" placeholder="输入指挥官代号 · 3-32 位"></div>';
+      h += '<div class="edit-row"><label for="loginPass">密码 <span>ACCESS CODE</span></label><input id="loginPass" class="qty" name="password" autocomplete="current-password" type="password" maxlength="64" placeholder="输入通行密码 · 6-64 位"></div>';
+      h += '<div class="login-actions"><button class="btn ok login-submit" type="submit">登 录 <span aria-hidden="true">→</span></button>';
+      h += '<button class="btn login-register" type="button" onclick="Game.Main.doRegister()">注 册 <span aria-hidden="true">＋</span></button></div>';
+      h += '<div id="loginMsg" class="login-feedback" role="status" aria-live="polite"></div>';
+      h += '</form>';
+      h += '<div class="login-access-foot"><span class="login-signal" aria-hidden="true"></span>战局进度由服务器自动保存</div>';
+    }
+    h += '</div></section></div></main>';
     // TODO：恢复防沉迷后取消以下登录页说明与入口的注释。
     // h += '<p>进入游戏前须完成实名认证。未成年人仅在规定日期的20:00—21:00游戏。</p>';
     // h += '<p><a href="privacy.html" target="_blank" rel="noopener">实名与儿童个人信息说明</a> · <button class="btn" onclick="Game.go(\'protection\')">防沉迷与帮助</button></p>';
@@ -262,7 +274,7 @@ window.Game = window.Game || {};
     for (var i = 0; i < NAV_ITEMS.length; i++) {
       var it = NAV_ITEMS[i];
       var action = 'Game.go(\'' + it.route + '\')';
-      var active = (Core.route === it.route || (Core.route === 'wounded' && it.route === 'army')) ? ' active' : '';
+      var active = (Core.route === it.route || (Core.route === 'wounded' && it.route === 'army') || (Core.route === 'officerDetail' && it.route === 'officer')) ? ' active' : '';
       var alertCls = (it.route === 'alerts' && hasIncoming) ? ' alert' : '';
       var mailUnread = (it.route === 'mail' && G.Mail && G.Mail.unread && G.Mail.unread() > 0) ? G.Mail.unread() : 0;
       var mailBadge = mailUnread ? '<span class="nav-badge">' + mailUnread + '</span>' : '';
@@ -275,16 +287,16 @@ window.Game = window.Game || {};
       }
       items.push('<div class="navitem' + active + alertCls + '" data-route="' + it.route + '" onclick="' + action + '"><span class="navnum">[' + it.key + ']</span><span class="navlabel">' + (it.icon ? '<img class="nav-icon" src="' + it.icon + '" alt="' + it.label + '"/>' : it.label) + '</span>' + mailBadge + reportsBadge + questBadge + '</div>');
     }
-    if (G.Cities) items.push(G.Cities.nav());
-    // 每页两排七列，超过十四个入口才分页。
-    var pageSize = 14;
+    if (G.Cities) items.splice(items.length - 2, 0, G.Cities.nav());
+    // 每页两排八列，超过十六个入口才分页。
+    var pageSize = 16;
     var pages = [];
     var dots = [];
     for (var page = 0; page < Math.ceil(items.length / pageSize); page++) {
       pages.push('<div class="nav-page" role="group" aria-label="第' + (page + 1) + '组导航">' + items.slice(page * pageSize, (page + 1) * pageSize).join('') + '</div>');
       dots.push('<button type="button" class="nav-page-dot" data-nav-page="' + page + '" aria-label="切换到第' + (page + 1) + '组导航"></button>');
     }
-    return '<button type="button" class="nav-collapse-toggle" data-nav="collapse" aria-controls="gameNavViewport" aria-expanded="true" aria-label="收起导航" title="收起导航"><span class="nav-collapse-icon" aria-hidden="true">‹</span><span class="nav-collapse-label">收起导航</span></button>' +
+    return '<button type="button" class="nav-collapse-toggle" data-nav="collapse" aria-controls="gameNavViewport" aria-expanded="true" aria-label="收起导航" title="收起导航"><span class="nav-collapse-icon" aria-hidden="true">‹</span></button>' +
       '<div id="gameNavViewport" class="nav-viewport" aria-label="' + (pages.length > 1 ? '左右滑动查看更多导航' : '功能导航') + '">' + pages.join('') + '</div>' +
       (pages.length > 1 ? '<div class="nav-pages" aria-label="导航分页">' + dots.join('') + '</div>' : '');
   }
@@ -293,16 +305,38 @@ window.Game = window.Game || {};
     var modal = document.createElement('div');
     modal.className = 'modal-mask';
     var percent = cap > 0 ? Math.min(100, Math.floor(current / cap * 100)) : 0;
+    var isCapped = current >= cap;
     var detail = '';
     if (key === 'food') {
       detail =
         '<div class="res-detail-section-title">粮食流向</div>' +
-        '<div class="res-detail-value"><span>农田生产</span><b class="positive">+' + G.fmt(production) + '/小时</b></div>' +
+        '<div class="res-detail-value"><span>农田生产</span><b class="positive">+' + G.fmt(production) + '/小时' + (isCapped ? ' (已达上限暂停增产)' : '') + '</b></div>' +
         '<div class="res-detail-value"><span>军队消耗</span><b class="neg">-' + G.fmt(consumption) + '/小时</b></div>' +
-        '<div class="res-detail-net"><span>每小时净变化</span><b class="' + (rate < 0 ? 'neg' : 'positive') + '">' + (rate >= 0 ? '+' : '') + G.fmt(rate) + '/小时</b></div>' +
-        '<div class="res-detail-tip">粮食净变化 = 农田生产 − 军队消耗。净变化为负时，储量会持续减少。</div>';
+        '<div class="res-detail-net"><span>实际每小时净变化</span><b class="' + (rate < 0 ? 'neg' : 'positive') + '">' + (rate >= 0 ? '+' : '') + G.fmt(rate) + '/小时</b></div>' +
+        '<div class="res-detail-tip">' + (isCapped ? '粮食储量已达上限，农田暂停额外增产并维持满额。若军队消耗大于产能，储量将持续减少。' : '粮食净变化 = 农田生产 − 军队消耗。净变化为负时，储量会持续减少。') + '</div>';
+    } else if (key === 'gold') {
+      var s = Core.state || {};
+      var mayor = Core.getOfficerByRole ? Core.getOfficerByRole('mayor') : null;
+      var financeBonus = Core.mayorSkillBonus ? Core.mayorSkillBonus('finance') : 0;
+      var taxRate = Math.floor(Core.civilianPopulation() * ((s.tax != null ? s.tax : 30) / 100) * (1 + (mayor ? mayor.knowledge / 100 : 0)) * (1 + financeBonus) * 2);
+      var salary = Core.officerSalaryPerHour ? Core.officerSalaryPerHour() : 0;
+      detail =
+        '<div class="res-detail-section-title">黄金收支</div>' +
+        '<div class="res-detail-value"><span>平民税收</span><b class="positive">+' + G.fmt(taxRate) + '/小时' + (isCapped ? ' (已达上限暂停增加)' : '') + '</b></div>' +
+        (salary > 0 ? '<div class="res-detail-value"><span>军官薪资</span><b class="neg">-' + G.fmt(salary) + '/小时</b></div>' : '') +
+        '<div class="res-detail-net"><span>实际每小时净变化</span><b class="' + (rate < 0 ? 'neg' : 'positive') + '">' + (rate >= 0 ? '+' : '') + G.fmt(rate) + '/小时</b></div>' +
+        '<div class="res-detail-tip">' + (isCapped ? '黄金已达储量上限（999,999），税收停止增加并维持满额。' : '黄金主要来源于平民税收，受税率与市长知识、理财技能影响。') + '</div>';
     } else {
-      detail = '<div class="res-detail-value"><span>每小时净产出</span><b class="' + (rate < 0 ? 'neg' : '') + '">' + (rate >= 0 ? '+' : '') + G.fmt(rate) + '/小时</b></div>';
+      var bType = key === 'steel' ? 'refinery' : (key === 'oil' ? 'oilfield' : 'raremine');
+      var baseProd = Core.produceOf ? Core.produceOf(bType) : (production || 0);
+      if (isCapped) {
+        detail =
+          '<div class="res-detail-value"><span>理论产能</span><b>+' + G.fmt(baseProd) + '/小时</b></div>' +
+          '<div class="res-detail-value"><span>实际每小时净产出</span><b class="highlight">0/小时 (储量已满)</b></div>' +
+          '<div class="res-detail-tip">当前储量已达上限，建筑已暂停生产。升级资源建筑可提高储量上限与产量。</div>';
+      } else {
+        detail = '<div class="res-detail-value"><span>每小时净产出</span><b class="' + (rate < 0 ? 'neg' : '') + '">' + (rate >= 0 ? '+' : '') + G.fmt(rate) + '/小时</b></div>';
+      }
     }
     var titleIcon = /\.svg$|\.png$|\.jpg$|\.gif$|\.webp$/i.test(icon)
       ? '<img class="res-icon-img" src="' + icon + '" alt="' + name + '" style="width:20px;height:20px;margin-right:6px;vertical-align:middle;display:inline-block;" />'
@@ -340,7 +374,7 @@ window.Game = window.Game || {};
       '</div>' +
       '<span class="pop-stat-val" id="popCivilianVal">-</span>' +
       '</div>' +
-      '<div class="pop-stat-box"><span class="pop-stat-label">民居标称容量</span><span class="pop-stat-val" id="popCapVal">-</span></div>' +
+      '<div class="pop-stat-box"><span class="pop-stat-label">兵舍标称容量</span><span class="pop-stat-val" id="popCapVal">-</span></div>' +
       '<div class="pop-stat-box"><span class="pop-stat-label">民心容纳上限</span><span class="pop-stat-val highlight" id="popEffCapVal">-</span></div>' +
       '<div class="pop-stat-box"><span class="pop-stat-label">自然增长速度</span><span class="pop-stat-val positive" id="popGrowthVal">-</span></div>' +
       '</div>' +
@@ -352,7 +386,7 @@ window.Game = window.Game || {};
       '</div>' +
       '<div class="pop-recruit-card">' +
       '<div class="pop-recruit-info">' +
-      '<div class="pop-recruit-desc">消耗仓库中的【人口动员令】，立即自四方动员 <b class="positive">+500</b> 空闲平民进城（受民居容量限制）。</div>' +
+      '<div class="pop-recruit-desc">消耗军需物资库中的【人口动员令】，立即自四方动员 <b class="positive">+500</b> 空闲平民进城（受集结兵舍容量限制）。</div>' +
       '</div>' +
       '<button class="btn ok pop-recruit-action-btn" id="popRecruitBtn">立即召集 (+500)</button>' +
       '</div>' +
@@ -401,7 +435,7 @@ window.Game = window.Game || {};
       '<div class="appease-card-grid">' +
       '<div class="appease-card">' +
       '<div class="appease-card-head">' +
-      '<span class="appease-card-name">🌾 黄金赈民</span>' +
+      '<span class="appease-card-name">' + G.resourceIconHtml('gold') + ' 黄金赈民</span>' +
       '<span class="appease-card-effect">民心 +10 · 民怨 -5</span>' +
       '</div>' +
       '<div class="appease-card-desc">开仓放粮赈济平民，抚慰民情。</div>' +
@@ -455,7 +489,7 @@ window.Game = window.Game || {};
         warnEl.textContent = '⚠️ 重税苛敛：民心将持续下挫，每小时滋生民怨，平民将逃离城市！';
       } else if (taxVal <= 20) {
         warnEl.className = 'pop-tax-warning positive';
-        warnEl.textContent = '🌾 轻徭薄赋：民心大幅上升，民怨加速消退，平民快速增长！';
+        warnEl.innerHTML = G.resourceIconHtml('food') + ' 轻徭薄赋：民心大幅上升，民怨加速消退，平民快速增长！';
       } else {
         warnEl.className = 'pop-tax-warning';
         warnEl.textContent = '⚖️ 标准税赋：民心平稳，黄金税收与人口保持平衡发展。';
@@ -480,8 +514,16 @@ window.Game = window.Game || {};
 
       modal.querySelector('#popCivilianVal').textContent = G.fmt(civ);
       modal.querySelector('#popCapVal').textContent = G.fmt(cap);
-      modal.querySelector('#popEffCapVal').textContent = G.fmt(effCap);
-      modal.querySelector('#popGrowthVal').textContent = '+' + G.fmt(growth) + '/h';
+      var growthEl = modal.querySelector('#popGrowthVal');
+      if (growthEl) {
+        if (civ >= effCap && growth === 0) {
+          growthEl.textContent = '+0/h (已达上限)';
+          growthEl.className = 'pop-stat-val';
+        } else {
+          growthEl.textContent = (growth >= 0 ? '+' : '') + G.fmt(growth) + '/h';
+          growthEl.className = 'pop-stat-val positive';
+        }
+      }
 
       // Morale
       modal.querySelector('#popMoraleNum').textContent = morale;
@@ -584,7 +626,7 @@ window.Game = window.Game || {};
       var civ = Core.civilianPopulation();
       var cap = Core.populationCapacity();
       if (civ >= cap) {
-        G.toast('民居容量已达上限 (' + G.fmt(civ) + '/' + G.fmt(cap) + ')，请先扩建民居！');
+        G.toast('集结兵舍容量已达上限 (' + G.fmt(civ) + '/' + G.fmt(cap) + ')，请先扩建集结兵舍！');
         return;
       }
       var s = Core.state || {};
@@ -764,20 +806,31 @@ window.Game = window.Game || {};
       var rinfo = D.resources[rk];
       var cur = r[rk] || 0;
       var maxR = caps[rk] || 999999;
-      var net = nets[rk] || 0;
+      var net = Core.resourceNetRate ? Core.resourceNetRate(rk) : (nets[rk] || 0);
       var sign = net >= 0 ? '+' : '';
-      h += '<div class="res-card" data-res-card="' + rk + '" role="button" tabindex="0" title="' + rinfo.name + ' 当前: ' + G.fmt(cur) + ' (' + sign + G.fmt(net) + '/h)" onclick="Game.Main.showResourceDetail(\'' + rk + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.Main.showResourceDetail(\'' + rk + '\');event.preventDefault();}">';
+      var isCapped = cur >= maxR;
+      var titleText = (rinfo.name || rk) + ' 当前: ' + G.fmt(cur) + (isCapped ? ' (已达上限' + (net === 0 ? '，停止产出' : '，' + sign + G.fmt(net) + '/h') + ')' : ' (' + sign + G.fmt(net) + '/h)');
+      var rateClass = net < 0 ? ' neg' : (isCapped && net === 0 ? ' capped' : '');
+      h += '<div class="res-card" data-res-card="' + rk + '" role="button" tabindex="0" title="' + titleText + '" onclick="Game.Main.showResourceDetail(\'' + rk + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.Main.showResourceDetail(\'' + rk + '\');event.preventDefault();}">';
       var iconHtml = /\.svg$|\.png$|\.jpg$|\.gif$|\.webp$/i.test(rinfo.icon)
         ? '<img class="res-icon-img" src="' + rinfo.icon + '" alt="' + rinfo.name + '"/>'
         : '<span class="res-icon ri-' + rk + '">' + rinfo.icon + '</span>';
-      h += '<div class="res-summary">' + iconHtml + '<span class="res-name">' + rinfo.name + ':</span><span class="res-main"><span class="res-cur">' + G.fmt(cur) + '</span></span><span class="res-rate' + (net < 0 ? ' neg' : '') + '">' + sign + G.fmt(net) + '/h</span></div>';
+      h += '<div class="res-summary">' + iconHtml + '<span class="res-name">' + rinfo.name + ':</span><span class="res-main"><span class="res-cur">' + G.fmt(cur) + '</span></span><span class="res-rate' + rateClass + '">' + sign + G.fmt(net) + '/h</span></div>';
       h += '</div>';
     }
     var popIcon = '<img class="res-icon-img" src="img/resources/models/pop.webp" alt="平民"/>';
     var curMorale = Core.morale();
     var curResent = Core.resentment();
-    h += '<div class="res-card" data-res-card="pop" role="button" tabindex="0" title="平民 当前: ' + G.fmt(Core.civilianPopulation()) + '/' + G.fmt(Core.populationCapacity()) + ' (+' + G.fmt(Core.populationGrowthPerHour()) + '/h)" onclick="Game.Main.showPopulationDetail()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.Main.showPopulationDetail();event.preventDefault();}">';
-    h += '<div class="res-summary">' + popIcon + '<span class="res-name">平民:</span><span class="res-main"><span class="res-cur">' + G.fmt(Core.civilianPopulation()) + '</span><span class="res-slash">/</span><span class="res-max">' + G.fmt(Core.populationCapacity()) + '</span></span><span class="res-rate">+' + G.fmt(Core.populationGrowthPerHour()) + '/h</span></div>';
+    var civPop = Core.civilianPopulation();
+    var popCap = Core.populationCapacity();
+    var effCap = Core.effectiveCapacity ? Core.effectiveCapacity() : popCap;
+    var popGrowth = Core.populationGrowthPerHour();
+    var isPopCapped = civPop >= effCap;
+    var popRateText = (popGrowth >= 0 ? '+' : '') + G.fmt(popGrowth) + '/h';
+    var popRateClass = popGrowth < 0 ? ' neg' : (isPopCapped && popGrowth === 0 ? ' capped' : '');
+    var popTitle = '平民 当前: ' + G.fmt(civPop) + '/' + G.fmt(popCap) + (isPopCapped ? ' (已达上限' + (popGrowth === 0 ? '，停止增长' : '，' + popRateText) + ')' : ' (' + popRateText + ')');
+    h += '<div class="res-card" data-res-card="pop" role="button" tabindex="0" title="' + popTitle + '" onclick="Game.Main.showPopulationDetail()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.Main.showPopulationDetail();event.preventDefault();}">';
+    h += '<div class="res-summary">' + popIcon + '<span class="res-name">平民:</span><span class="res-main"><span class="res-cur">' + G.fmt(civPop) + '</span><span class="res-slash">/</span><span class="res-max">' + G.fmt(popCap) + '</span></span><span class="res-rate' + popRateClass + '">' + popRateText + '</span></div>';
     h += '<div class="d">可征召 ' + G.fmt(Core.popFree()) + ' · 民心 ' + curMorale + (curResent > 0 ? ' <span style="color:#d9534f">(怨' + curResent + ')</span>' : '') + '</div>';
     h += '</div>';
     h += '</div>';
@@ -822,10 +875,11 @@ window.Game = window.Game || {};
     h += '</div>';
 
     var cd = (G.Chat && G.Chat.getCooldown) ? G.Chat.getCooldown() : 0;
+    var chatReadOnly = !G.Chat || !G.Chat.canSend || !G.Chat.canSend();
     h += '<div class="chat-input-bar">';
     h += '<span class="chat-prompt">&gt;</span>';
-    h += '<input class="chat-input" id="worldChatInput" type="text" maxlength="80" placeholder="输入电报简讯... (最多 80 字，Enter 发送)" autocomplete="off" onkeydown="if(event.key===&quot;Enter&quot;){Game.Main.sendChat();}"/>';
-    h += '<button class="chat-send' + (cd > 0 ? ' disabled' : '') + '" id="worldChatSendBtn"' + (cd > 0 ? ' disabled' : '') + ' onclick="Game.Main.sendChat()">' + (cd > 0 ? cd + 's' : '发送') + '</button>';
+    h += '<input class="chat-input" id="worldChatInput" type="text" maxlength="80" placeholder="' + (chatReadOnly ? '声望达到 10,000 后可发言' : '输入电报简讯... (最多 80 字，Enter 发送)') + '"' + (chatReadOnly ? ' disabled' : '') + ' autocomplete="off" onkeydown="if(event.key===&quot;Enter&quot;){Game.Main.sendChat();}"/>';
+    h += '<button class="chat-send' + (chatReadOnly || cd > 0 ? ' disabled' : '') + '" id="worldChatSendBtn"' + (chatReadOnly || cd > 0 ? ' disabled' : '') + ' onclick="Game.Main.sendChat()">' + (chatReadOnly ? '只读' : (cd > 0 ? cd + 's' : '发送')) + '</button>';
     h += '</div>';
     h += '</div>';
 
@@ -858,6 +912,8 @@ window.Game = window.Game || {};
     h += '</select>';
     h += '</div>';
     h += '</div>';
+
+    if (G.Sound) h += G.Sound.renderSettings();
 
     h += '<div class="zone-head"><span class="zone-title">账号与安全</span></div>';
     h += '<div class="panel">';
@@ -916,15 +972,7 @@ window.Game = window.Game || {};
   var PRESET_AVATARS = G.Constants.presetAvatars;
 
   function getCurrentAvatar() {
-    var s = Core.state || {};
-    var p = s.player || {};
-    var uname = p.username || '';
-    var localAvatar = '';
-    try {
-      if (uname) localAvatar = localStorage.getItem('wargame_avatar_' + uname) || '';
-      if (!localAvatar) localAvatar = localStorage.getItem('wargame_avatar_default') || '';
-    } catch (e) { }
-    return p.avatar || localAvatar || 'img/avatars/commander-8.svg';
+    return Core.getCurrentAvatar();
   }
 
   function getMilitaryRankTitle(prestige) {
@@ -1000,8 +1048,10 @@ window.Game = window.Game || {};
       var card = v.querySelector('.res-card[data-res-card="' + rk + '"]');
       if (!card) continue;
       var cur = r[rk] || 0;
-      var net = nets[rk] || 0;
+      var maxR = caps[rk] || 999999;
+      var net = Core.resourceNetRate ? Core.resourceNetRate(rk) : (nets[rk] || 0);
       var sign = net >= 0 ? '+' : '';
+      var isCapped = cur >= maxR;
 
       var curEl = card.querySelector('.res-cur');
       if (curEl) {
@@ -1015,13 +1065,18 @@ window.Game = window.Game || {};
         if (rateEl.textContent !== rateText) rateEl.textContent = rateText;
         if (net < 0) {
           if (!rateEl.classList.contains('neg')) rateEl.classList.add('neg');
+          if (rateEl.classList.contains('capped')) rateEl.classList.remove('capped');
+        } else if (isCapped && net === 0) {
+          if (rateEl.classList.contains('neg')) rateEl.classList.remove('neg');
+          if (!rateEl.classList.contains('capped')) rateEl.classList.add('capped');
         } else {
           if (rateEl.classList.contains('neg')) rateEl.classList.remove('neg');
+          if (rateEl.classList.contains('capped')) rateEl.classList.remove('capped');
         }
       }
 
       var rinfo = D.resources[rk] || {};
-      card.title = (rinfo.name || rk) + ' 当前: ' + G.fmt(cur) + ' (' + sign + G.fmt(net) + '/h)';
+      card.title = (rinfo.name || rk) + ' 当前: ' + G.fmt(cur) + (isCapped ? ' (已达上限' + (net === 0 ? '，停止产出' : '，' + sign + G.fmt(net) + '/h') + ')' : ' (' + sign + G.fmt(net) + '/h)');
     }
 
     // 5. 平民卡片更新
@@ -1029,9 +1084,11 @@ window.Game = window.Game || {};
     if (popCard) {
       var civ = Core.civilianPopulation();
       var pCap = Core.populationCapacity();
+      var effCap = Core.effectiveCapacity ? Core.effectiveCapacity() : pCap;
       var growth = Core.populationGrowthPerHour();
       var curMorale = Core.morale();
       var curResent = Core.resentment();
+      var isPopCapped = civ >= effCap;
 
       var popCur = popCard.querySelector('.res-cur');
       if (popCur) {
@@ -1045,10 +1102,20 @@ window.Game = window.Game || {};
         if (popMax.textContent !== formattedCap) popMax.textContent = formattedCap;
       }
 
+      var popRateText = (growth >= 0 ? '+' : '') + G.fmt(growth) + '/h';
       var popRate = popCard.querySelector('.res-rate');
       if (popRate) {
-        var popRateText = '+' + G.fmt(growth) + '/h';
         if (popRate.textContent !== popRateText) popRate.textContent = popRateText;
+        if (growth < 0) {
+          if (!popRate.classList.contains('neg')) popRate.classList.add('neg');
+          if (popRate.classList.contains('capped')) popRate.classList.remove('capped');
+        } else if (isPopCapped && growth === 0) {
+          if (popRate.classList.contains('neg')) popRate.classList.remove('neg');
+          if (!popRate.classList.contains('capped')) popRate.classList.add('capped');
+        } else {
+          if (popRate.classList.contains('neg')) popRate.classList.remove('neg');
+          if (popRate.classList.contains('capped')) popRate.classList.remove('capped');
+        }
       }
 
       var popDesc = popCard.querySelector('.d');
@@ -1057,7 +1124,7 @@ window.Game = window.Game || {};
         if (popDesc.innerHTML !== newPopDesc) popDesc.innerHTML = newPopDesc;
       }
 
-      popCard.title = '平民 当前: ' + G.fmt(civ) + '/' + G.fmt(pCap) + ' (+' + G.fmt(growth) + '/h)';
+      popCard.title = '平民 当前: ' + G.fmt(civ) + '/' + G.fmt(pCap) + (isPopCapped ? ' (已达上限' + (growth === 0 ? '，停止增长' : '，' + popRateText) + ')' : ' (' + popRateText + ')');
     }
 
     // 6. 若民情政务弹窗正开着，同步更新弹窗内数值

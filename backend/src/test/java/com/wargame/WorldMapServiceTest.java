@@ -19,6 +19,7 @@ class WorldMapServiceTest extends BaseServiceTest {
         var targets=(List<Map<String,Object>>)maps.chunk(viewer.getId(),0,0).get("targets");
         assertEquals(1,targets.size());assertEquals(first.getId(),targets.get(0).get("id"));
         assertFalse(targets.get(0).containsKey("garrison"));assertFalse(targets.get(0).containsKey("totalRes"));
+        assertFalse(targets.get(0).containsKey("hasGarrison"));
         var detail=maps.target(viewer.getId(),"wild",first.getId());
         assertFalse(detail.containsKey("garrison"),"A global scouted flag must not reveal another player's report");
         assertFalse(detail.containsKey("totalRes"));
@@ -33,6 +34,7 @@ class WorldMapServiceTest extends BaseServiceTest {
         t.setOccupied(true);t.setOccupiedBy(a.getId());t.setMined(200);
         t.setGathering(true);t.setGatherEndAt(123456L);wildTileRepository.save(t);
         var ownChunk=(List<Map<String,Object>>)maps.chunk(a.getId(),12,12).get("targets");
+        assertEquals(true,ownChunk.get(0).get("hasGarrison"));
         assertEquals(true,ownChunk.get(0).get("gathering"));
         assertEquals(123456L,ownChunk.get(0).get("gatherEndAt"));
         var own=maps.target(a.getId(),"wild",t.getId());assertEquals(true,own.get("occupied"));assertEquals(1000,own.get("totalRes"));assertEquals(200,own.get("mined"));
@@ -44,9 +46,14 @@ class WorldMapServiceTest extends BaseServiceTest {
         assertFalse(edge.get(0).containsKey("garrison"));assertFalse(edge.get(0).containsKey("totalRes"));
         assertFalse(edge.get(0).containsKey("gathering"));assertFalse(edge.get(0).containsKey("gatherEndAt"));
         assertFalse(other.containsKey("gathering"));
+        assertFalse(other.containsKey("hasGarrison"));assertFalse(edge.get(0).containsKey("hasGarrison"));
         t.setGathering(false);t.setGatherEndAt(0L);wildTileRepository.save(t);
         var harvested=(List<Map<String,Object>>)maps.chunk(a.getId(),12,12).get("targets");
         assertEquals(false,harvested.get(0).get("gathering"));assertEquals(0L,harvested.get(0).get("gatherEndAt"));
+        assertEquals(true,harvested.get(0).get("hasGarrison"),"停止采集后驻军标记仍应保留");
+        t.setGarrison("{\"infantry\":0}");wildTileRepository.save(t);
+        var recalled=(List<Map<String,Object>>)maps.chunk(a.getId(),12,12).get("targets");
+        assertEquals(false,recalled.get(0).get("hasGarrison"),"部队回城后不能残留驻扎标记");
         t.setOccupiedBy(b.getId());wildTileRepository.save(t);
         assertEquals(b.getUsername(),maps.target(a.getId(),"wild",t.getId()).get("ownerName"));
         var changed=(List<Map<String,Object>>)maps.chunk(a.getId(),12,12).get("targets");
@@ -57,6 +64,7 @@ class WorldMapServiceTest extends BaseServiceTest {
         assertEquals(false,unclaimed.get("claimed"));assertFalse(unclaimed.containsKey("ownerId"));assertFalse(unclaimed.containsKey("ownerName"));
         var released=(List<Map<String,Object>>)maps.chunk(a.getId(),12,12).get("targets");
         assertFalse(released.get(0).containsKey("ownerName"));
+        assertFalse(released.get(0).containsKey("hasGarrison"));
         assertThrows(IllegalArgumentException.class,()->maps.target(a.getId(),"invalid",t.getId()));
     }
     @Test

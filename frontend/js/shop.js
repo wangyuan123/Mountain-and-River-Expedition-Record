@@ -62,9 +62,9 @@ window.Game = window.Game || {};
           return;
         }
         if (it.cat === 'gift') {
-          G.toast('已购买 ' + it.icon + ' ' + it.name + ',请在邮件中查收');
+          G.toast('已购买 ' + it.name + ',请在邮件中查收');
         } else {
-          G.toast('已购买 ' + it.icon + ' ' + it.name + ' ×1');
+          G.toast('已购买 ' + it.name + ' ×1');
         }
         Core.render();
       }).catch(function (err) {
@@ -111,7 +111,7 @@ window.Game = window.Game || {};
           stockHtml = '<span class="shop-stock">无限购</span>';
         }
         h += '<div class="shop-card">';
-        h += '<div class="shop-card-head">' + tagHtml + '<div class="shop-icon">' + it.icon + '</div></div>';
+        h += '<div class="shop-card-head">' + tagHtml + '<div class="shop-icon">' + G.iconHtml(it.icon, it.name) + '</div></div>';
         h += '<div class="shop-card-name">' + it.name + '</div>';
         h += '<div class="shop-card-desc">' + it.desc + '</div>';
         h += '<div class="shop-card-foot">';

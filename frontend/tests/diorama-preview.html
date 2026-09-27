@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>首页真实战场微缩模型图 · 远征军步坦协同沙盘预览</title>
+<link rel="stylesheet" href="../css/login.css?v=1.6-diorama-model">
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+    background: #141b18;
+    color: #ded7c2;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
+  }
+  .preview-header {
+    background: #0f1614;
+    border-bottom: 1px solid #2a3832;
+    padding: 16px 28px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .preview-header h1 {
+    margin: 0;
+    font-size: 19px;
+    color: #f2e9d2;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .preview-header .tag {
+    font-size: 11px;
+    background: #475438;
+    color: #e5edd6;
+    padding: 2px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+  }
+  .preview-nav {
+    display: flex;
+    gap: 8px;
+  }
+  .preview-nav a, .preview-nav button {
+    background: #1e2b26;
+    border: 1px solid #3d4f47;
+    color: #ded8c5;
+    padding: 6px 14px;
+    font-size: 13px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .preview-nav a:hover, .preview-nav button:hover {
+    background: #2a3c35;
+    border-color: #637d71;
+  }
+  .section-title {
+    padding: 24px 28px 12px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #ebd7a2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .diorama-switch-btns {
+    display: flex;
+    gap: 6px;
+  }
+  .diorama-switch-btns button {
+    background: #212e28;
+    border: 1px solid #3d5246;
+    color: #e3dbc5;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .diorama-switch-btns button.active {
+    background: #4a5c3e;
+    border-color: #8da374;
+    color: #fff;
+    font-weight: 600;
+  }
+  .full-diorama-box {
+    margin: 0 28px 28px;
+    background: #090e0c;
+    border: 1px solid #2d3d36;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+    max-height: 720px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .full-diorama-box img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 720px;
+    object-fit: contain;
+  }
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin: 0 28px 36px;
+  }
+  .feature-card {
+    background: #18221e;
+    border: 1px solid #283730;
+    border-radius: 6px;
+    padding: 16px;
+  }
+  .feature-card h3 {
+    margin: 0 0 8px;
+    font-size: 15px;
+    color: #f0dfb3;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .feature-card p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #aeb8ab;
+  }
+  .login-preview-container {
+    padding: 20px 28px 50px;
+  }
+</style>
+</head>
+<body>
+
+<header class="preview-header">
+  <h1>
+    <span>山河远征录 · 首页背景真实战场微缩模型图</span>
+    <span class="tag">1:35 / 1:72 SCALE DIORAMA</span>
+  </h1>
+  <nav class="preview-nav">
+    <a href="../index.html">打开游戏首页 &gt;</a>
+    <button onclick="window.scrollTo({top: document.getElementById('loginSection').offsetTop, behavior: 'smooth'})">查看登录整合效果</button>
+  </nav>
+</header>
+
+<div class="section-title">
+  <span>🖼️ 全景微缩模型图展示 (高精材质与移轴景深实拍质感)</span>
+  <div class="diorama-switch-btns">
+    <button id="btnWebp" class="active" onclick="switchDiorama('webp')">写真沙盘主稿 (WebP)</button>
+    <button id="btnV2" onclick="switchDiorama('v2')">伏击迫击炮版 (V2)</button>
+    <button id="btnSvg" onclick="switchDiorama('svg')">矢量沙盘版 (SVG)</button>
+  </div>
+</div>
+
+<div class="full-diorama-box">
+  <img id="mainDioramaImg" src="../img/login-battlefield-diorama.webp" alt="中国远征军步坦协同山地攻坚沙盘">
+</div>
+
+<div class="section-title">
+  <span>🎯 画面要素与战场设定严谨对应</span>
+</div>
+
+<div class="feature-grid">
+  <div class="feature-card">
+    <h3>🧭 坦克·步兵·战鹰 全员同向突击</h3>
+    <p>采用斜后方战场纵深视角，先导 M4 坦克、后方跟随的远征军步兵班、以及低空俯冲的 P-40 战鹰机群，全员严格朝向正前方同一进攻矢量，彻底解决各单位朝向不一致的问题，气势磅礴统一。</p>
+  </div>
+  <div class="feature-card">
+    <h3>🛡️ 坦克在前 · 强力引路突破</h3>
+    <p>M4 谢尔曼中型战车（炮塔白色战星清晰可见）沿泥泞山道正面向前推进，主炮平伸锁定前方敌阵，碾碎崎岖道路作为突击箭头。</p>
+  </div>
+  <div class="feature-card">
+    <h3>🪖 步兵在后 · 紧跟战车掩护跃进</h3>
+    <p>身着美械土黄军服、头戴 M1 钢盔的远征军步兵班全员位于战车后方，同向端枪前冲、压低重心跃进，利用战车坚实尾部与侧后装甲掩体推进，步坦协同战术严密规范。</p>
+  </div>
+  <div class="feature-card">
+    <h3>✈️ 战鹰俯冲 · 同向近距离空中掩护</h3>
+    <p>三架 P-40 飞虎战鹰战机自后上方朝前方山谷同向俯冲，机翼机枪炽烈喷火，曳光弹幕穿透低云直击彼岸高地。</p>
+  </div>
+  <div class="feature-card">
+    <h3>💥 前方山巅 · 日军阵地崩塌</h3>
+    <p>跨过河谷铁桥的前方山巅之上，日军盘踞的坚固碉堡群正遭遇空地炮火毁灭性打击，剧烈橘红火球与冲天黑烟连续升腾。</p>
+  </div>
+  <div class="feature-card">
+    <h3>📐 顶级 1:35 军事沙盘微缩质感</h3>
+    <p>泥泞黏稠的车辙反光、树脂士兵装具与头盔反光、战车装甲旧化涂装分毫毕现，真实呈现硬核二战军事模型沙盘实拍质感。</p>
+  </div>
+</div>
+
+<div id="loginSection" class="section-title">
+  <span>📱 首页登录界面实际运行效果 (已结合文字与表单)</span>
+</div>
+
+<div class="login-preview-container">
+  <div class="login-page" style="min-height: auto; padding: 0;">
+    <div class="login-shell">
+      <section id="previewHero" class="login-hero" aria-labelledby="loginTitle">
+        <div class="login-hero-top">
+          <span class="login-emblem" aria-hidden="true">✦</span>
+          <span>山河远征录 <span class="login-hero-divider">/</span> 战地档案</span>
+          <span class="login-hero-serial">NO. 001 — FRONTLINE</span>
+        </div>
+        <div class="login-hero-copy">
+          <span class="login-kicker">STRATEGY · COMMAND · CONQUEST</span>
+          <h1 id="loginTitle">山河远征录</h1>
+          <p class="login-hero-subtitle">烽烟已起，等待你的指令。</p>
+          <div class="login-hero-rule" aria-hidden="true"><span></span><span></span><span></span></div>
+          <p class="login-hero-description">建立防线，调度军团，争夺每一寸山河。<br>从这里开始，书写属于你的战役。</p>
+        </div>
+        <div class="login-hero-bottom">
+          <span>战区指挥部 · 作战终端</span>
+          <span>◆ &nbsp; 全线待命</span>
+        </div>
+      </section>
+      <section class="login-access">
+        <div class="login-access-inner">
+          <div class="login-access-heading">
+            <span class="login-access-index">01 / ACCOUNT ACCESS</span>
+            <span class="login-access-mark">✦</span>
+          </div>
+          <div class="login-access-title">
+            <span class="login-access-eyebrow">指挥官身份验证</span>
+            <h2>进入战场</h2>
+            <p>登录或建立账号，继续你的远征。</p>
+          </div>
+          <form class="login-form" onsubmit="return false;">
+            <div class="edit-row">
+              <label>用户名 <span>CALLSIGN</span></label>
+              <input class="qty" placeholder="输入指挥官代号 · 3-32 位" value="远征军特勤组">
+            </div>
+            <div class="edit-row">
+              <label>通行密码 <span>PASSPHRASE</span></label>
+              <input class="qty" type="password" value="••••••••">
+            </div>
+            <div class="login-actions">
+              <button class="btn ok" type="submit">登入战区</button>
+              <button class="btn" type="button">注册新指挥官</button>
+            </div>
+          </form>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchDiorama(type) {
+  var img = document.getElementById('mainDioramaImg');
+  var hero = document.getElementById('previewHero');
+  document.getElementById('btnWebp').classList.remove('active');
+  document.getElementById('btnV2').classList.remove('active');
+  document.getElementById('btnSvg').classList.remove('active');
+
+  if (type === 'webp') {
+    img.src = '../img/login-battlefield-diorama.webp';
+    hero.style.background = "linear-gradient(90deg, rgba(14, 22, 20, .78) 0%, rgba(14, 22, 20, .46) 45%, rgba(14, 22, 20, .12) 100%), url('../img/login-battlefield-diorama.webp') center center / cover no-repeat";
+    document.getElementById('btnWebp').classList.add('active');
+  } else if (type === 'v2') {
+    img.src = '../img/login-battlefield-diorama-v2.webp';
+    hero.style.background = "linear-gradient(90deg, rgba(14, 22, 20, .78) 0%, rgba(14, 22, 20, .46) 45%, rgba(14, 22, 20, .12) 100%), url('../img/login-battlefield-diorama-v2.webp') center center / cover no-repeat";
+    document.getElementById('btnV2').classList.add('active');
+  } else {
+    img.src = '../img/login-frontline.svg';
+    hero.style.background = "linear-gradient(90deg, rgba(14, 22, 20, .68) 0%, rgba(14, 22, 20, .42) 42%, rgba(14, 22, 20, .1) 100%), url('../img/login-frontline.svg') center center / cover no-repeat";
+    document.getElementById('btnSvg').classList.add('active');
+  }
+}
+</script>
+
+</body>
+</html>

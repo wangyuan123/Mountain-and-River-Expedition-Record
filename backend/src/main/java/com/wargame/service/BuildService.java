@@ -37,6 +37,8 @@ public class BuildService {
     private WorldTerrainService terrain;
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.repository.OfficerRepository officerRepository;
+    @org.springframework.beans.factory.annotation.Autowired
+    private PrerequisiteService prerequisiteService;
 
     private final BuildingRepository buildingRepository;
     private final ConstructionRepository constructionRepository;
@@ -62,7 +64,7 @@ public class BuildService {
     /** 建筑分组 - 对应 JS G.Build.GROUPS */
     private static final Map<String, List<String>> GROUPS = Map.of(
             "res",  List.of("farm", "refinery", "oilfield", "raremine"),
-            "army", List.of("command", "house", "factory", "lightfactory", "heavyfactory", "port",
+            "army", List.of("command", "house", "factory", "lightfactory", "heavyfactory", "airport", "port",
                             "academy", "staff", "lab", "radar", "wall", "apron", "liaison", "depot", "transit", "exchange")
     );
 
@@ -105,6 +107,7 @@ public class BuildService {
     @Transactional
     public Map<String, Object> upgrade(Long playerId, String buildingType, int slot) {
         Map<String, Object> result = new LinkedHashMap<>();
+        playerRepository.lockById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
 
         // 1. 校验建筑类型
         BuildingDef b = GameData.BUILDINGS.get(buildingType);
@@ -157,12 +160,12 @@ public class BuildService {
             }
         }
 
-        // 5. 新建非基础建筑需要市政厅 >= 1（JS: curLv===0 && id not in basic list）
+        // 5. 新建非基础建筑需要前线指挥部 >= 1（JS: curLv===0 && id not in basic list）
         if (curLv == 0 && !BASIC_BUILDINGS.contains(buildingType)) {
             int commandLv = buildingLevel(playerId, "command");
             if (commandLv < 1) {
                 result.put("success", false);
-                result.put("message", "需先升级市政厅");
+                result.put("message", "需先升级前线指挥部");
                 return result;
             }
         }
@@ -176,7 +179,17 @@ public class BuildService {
         }
         if (curLv >= max) {
             result.put("success", false);
-            result.put("message", "已达当前市政厅上限");
+            result.put("message", "已达当前前线指挥部上限");
+            return result;
+        }
+
+        // Evaluate the target level before charging resources; construction in progress never satisfies a prerequisite.
+        List<Map<String, Object>> missing = prerequisiteService.unmet(
+                playerId, cityScope.slot(playerId), "buildings", buildingType, curLv + 1);
+        if (!missing.isEmpty()) {
+            result.put("success", false);
+            result.put("message", prerequisiteService.message(missing));
+            result.put("missingPrerequisites", missing);
             return result;
         }
 
@@ -197,8 +210,8 @@ public class BuildService {
                 if (remaining <= 0) {
                     result.put("success", false);
                     result.put("message", "res".equals(groupKey)
-                            ? "资源建筑已达当前上限(" + groupSlotsCap(playerId, groupKey) + "栋，含新建中)，可升级市政厅扩容（最高32栋），或拆除建筑、取消新建"
-                            : "军事建筑已达当前上限(" + groupSlotsCap(playerId, groupKey) + "栋，含新建中)，请升级市政厅、拆除建筑或取消新建");
+                            ? "资源建筑已达当前上限(" + groupSlotsCap(playerId, groupKey) + "栋，含新建中)，可升级前线指挥部扩容（最高32栋），或拆除建筑、取消新建"
+                            : "军事建筑已达当前上限(" + groupSlotsCap(playerId, groupKey) + "栋，含新建中)，请升级前线指挥部、拆除建筑或取消新建");
                     return result;
                 }
             }
@@ -247,6 +260,8 @@ public class BuildService {
         construction.setStartAt(now);
         construction.setFinishAt(now + duration * 1000L);
         construction.setSlot(slotKey);
+        construction.setPrerequisiteVersion(prerequisiteService.version());
+        construction.setPrerequisiteRequirements(prerequisiteService.snapshot("buildings", buildingType, curLv + 1));
         constructionRepository.save(construction);
 
         // 14. 返回结果
@@ -272,6 +287,7 @@ public class BuildService {
     @Transactional
     public Map<String, Object> dismantle(Long playerId, String buildingType, int slot) {
         Map<String, Object> result = new LinkedHashMap<>();
+        playerRepository.lockById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
 
         // 1. 校验建筑类型
         BuildingDef b = GameData.BUILDINGS.get(buildingType);
@@ -281,10 +297,10 @@ public class BuildService {
             return result;
         }
 
-        // 2. 市政厅为核心枢纽，不可拆除
+        // 2. 前线指挥部为核心枢纽，不可拆除
         if ("command".equals(buildingType)) {
             result.put("success", false);
-            result.put("message", "市政厅为核心枢纽，不可拆除");
+            result.put("message", "前线指挥部为核心枢纽，不可拆除");
             return result;
         }
 
@@ -336,6 +352,13 @@ public class BuildService {
 
         // 7. 目标等级：curLv - 1 (如 2级拆除后为1级，1级拆除后为0级即彻底消失)
         int targetLevel = curLv - 1;
+        String affected = prerequisiteService.affectedTask(playerId, cityScope.slot(playerId),
+                buildingType, slotKey, targetLevel);
+        if (affected != null) {
+            result.put("success", false);
+            result.put("message", "无法拆除：" + affected + "仍需此建筑等级");
+            return result;
+        }
 
         // 8. 创建施工记录
         long now = System.currentTimeMillis();

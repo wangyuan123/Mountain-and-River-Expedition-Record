@@ -64,6 +64,8 @@ public class TechService {
 
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.repository.OfficerRepository officerRepository;
+    @org.springframework.beans.factory.annotation.Autowired
+    private PrerequisiteService prerequisiteService;
 
     // ================================================================
     //  upgrade / startResearch - 开始研发科技
@@ -85,6 +87,7 @@ public class TechService {
             result.put("message", "无效的科技类型: " + techType);
             return result;
         }
+        playerRepository.lockById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
 
         // 2. 先结算可能已到期的科研
         long now = System.currentTimeMillis();
@@ -97,23 +100,24 @@ public class TechService {
             TechDef curDef = GameData.TECHS.get(current.getTechType());
             String curName = curDef != null ? curDef.name() : current.getTechType();
             result.put("success", false);
-            result.put("message", "科研中心正在研发【" + curName + " Lv." + current.getTargetLevel() + "】，请等待完成或使用加速符");
+            result.put("message", "国防研究所正在研发【" + curName + " Lv." + current.getTargetLevel() + "】，请等待完成或使用加速符");
             return result;
         }
 
-        // 3. 检查科研中心等级 (JS: labLv < t.labReq)
-        int labLv = buildingLevel(playerId, "lab");
-        if (labLv < t.labReq()) {
-            result.put("success", false);
-            result.put("message", "需科研中心 Lv." + t.labReq());
-            return result;
-        }
-
-        // 4. 检查是否满级 (JS: lv >= t.max)
+        // 3. Check the next technology level, including its research-city facilities.
         int lv = getTechLevel(playerId, techType);
         if (lv >= t.maxLevel()) {
             result.put("success", false);
             result.put("message", "已满级");
+            return result;
+        }
+        int labLv = buildingLevel(playerId, "lab");
+        List<Map<String, Object>> missing = prerequisiteService.unmet(
+                playerId, cityScope.slot(playerId), "technologies", techType, lv + 1);
+        if (!missing.isEmpty()) {
+            result.put("success", false);
+            result.put("message", prerequisiteService.message(missing));
+            result.put("missingPrerequisites", missing);
             return result;
         }
 
@@ -137,6 +141,8 @@ public class TechService {
         queue.setCitySlot(cityScope.slot(playerId));
         queue.setTechType(techType);
         queue.setTargetLevel(lv + 1);
+        queue.setPrerequisiteVersion(prerequisiteService.version());
+        queue.setPrerequisiteRequirements(prerequisiteService.snapshot("technologies", techType, lv + 1));
         queue.setStartedAt(now);
         queue.setFinishesAt(now + duration * 1000L);
         queue.setDurationSeconds(duration);

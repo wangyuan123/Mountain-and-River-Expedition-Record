@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" aria-hidden="true">
+  <defs>
+    <linearGradient id="gem" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e8fcff"/>
+      <stop offset=".24" stop-color="#8cdeff"/>
+      <stop offset=".58" stop-color="#2475c8"/>
+      <stop offset="1" stop-color="#173f99"/>
+    </linearGradient>
+    <path id="star" d="M20 2.5 25.4 13.6 37.5 15.4 28.7 24.1 30.8 36.5 20 30.7 9.2 36.5 11.3 24.1 2.5 15.4 14.6 13.6Z"/>
+    <clipPath id="shape"><use href="#star"/></clipPath>
+  </defs>
+  <use href="#star" fill="url(#gem)" stroke="#255aaf" stroke-width="1.5" stroke-linejoin="round"/>
+  <g clip-path="url(#shape)">
+    <path d="M20 2.5 14.6 13.6 20 19 25.4 13.6Z" fill="#c5f5ff"/>
+    <path d="M2.5 15.4 14.6 13.6 20 19 11.3 24.1Z" fill="#6cc9f3"/>
+    <path d="M37.5 15.4 25.4 13.6 20 19 28.7 24.1Z" fill="#2b87d3"/>
+    <path d="M11.3 24.1 20 19 20 30.7 9.2 36.5Z" fill="#2c79c6"/>
+    <path d="M28.7 24.1 20 19 20 30.7 30.8 36.5Z" fill="#174aab"/>
+    <path d="M20 19 11.3 24.1 20 30.7 28.7 24.1Z" fill="#80d6f8" opacity=".6"/>
+    <path d="M14.6 13.6 20 19 25.4 13.6M11.3 24.1 20 19 28.7 24.1M20 19v11.7" fill="none" stroke="#e7fbff" stroke-width=".7" opacity=".8"/>
+  </g>
+  <path d="M17.8 7.5 20 4.4 21 9 18.8 12.6Z" fill="#fff" opacity=".95"/>
+</svg>

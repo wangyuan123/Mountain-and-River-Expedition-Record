@@ -36,6 +36,14 @@ public class OnboardingController {
         return result;
     }
 
+    @PostMapping("/skip")
+    public Map<String, Object> skip() {
+        Long id = id();
+        Map<String, Object> result = onboarding.skip(id);
+        result.put("state", game.getGameState(id));
+        return result;
+    }
+
     @PostMapping("/plan")
     public Map<String, Object> plan(@RequestBody Map<String, String> body) { return onboarding.choosePlan(id(), body.get("plan")); }
 

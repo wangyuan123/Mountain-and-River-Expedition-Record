@@ -1,0 +1,990 @@
+/* ========================================================================== */
+/* 参谋部 · 军官管理与王者荣耀段位边框样式 (Officer Management & Rank Frames)  */
+/* ========================================================================== */
+
+.officer-mgmt-wrap {
+  width: 100%;
+  padding: 4px 2px 24px;
+  box-sizing: border-box;
+  --officer-name: var(--accent, #526b4d);
+}
+
+[data-theme|="blue-white"] .officer-mgmt-wrap { --officer-name: #2457a5; }
+[data-theme="dark"] .officer-mgmt-wrap { --officer-name: #9bc9ec; }
+
+/* 页面顶部标题与描述 */
+.officer-mgmt-header {
+  margin-bottom: 12px;
+}
+
+.officer-mgmt-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.officer-mgmt-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink, #1f2937);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 0.5px;
+}
+
+.officer-mgmt-recruit-btn {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(29, 78, 216, 0.25);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.officer-mgmt-recruit-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.officer-mgmt-desc {
+  font-size: 12px;
+  color: var(--muted, #64748b);
+  margin-top: 4px;
+  line-height: 1.45;
+}
+
+/* 顶部任职看板 (执政市长 / 全军指挥官 双台) */
+.officer-board-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.officer-board-slot {
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.officer-board-slot::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+}
+
+.officer-board-slot.slot-mayor::before {
+  background: linear-gradient(180deg, #f59e0b, #d97706);
+}
+
+.officer-board-slot.slot-commander::before {
+  background: linear-gradient(180deg, #ef4444, #b91c1c);
+}
+
+.board-slot-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.board-slot-role {
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.slot-mayor .board-slot-role {
+  background: var(--accent-soft, #e4ecdf);
+  color: var(--accent-dark, #3d5239);
+}
+
+.slot-commander .board-slot-role {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+}
+
+.board-slot-officer {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink, #1f2937);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.board-slot-officer > span:first-child { color: var(--officer-name); }
+
+.board-slot-vacant {
+  color: var(--muted, #94a3b8);
+  font-style: italic;
+  font-size: 13px;
+}
+
+.board-slot-detail {
+  font-size: 11px;
+  color: var(--muted, #64748b);
+  line-height: 1.4;
+}
+
+/* 列表区域标题 */
+.officer-mgmt-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 14px 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line, #e2e8f0);
+}
+
+.officer-mgmt-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink, #1f2937);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.officer-mgmt-count-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 10px;
+  background: rgba(59, 130, 246, 0.12);
+  color: #2563eb;
+}
+
+/* 军官卡片列表容器 */
+.officer-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* 基础军官卡片 (Base Card) */
+.officer-card {
+  position: relative;
+  background: var(--surface, #ffffff);
+  border-radius: 10px;
+  box-sizing: border-box;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  user-select: none;
+}
+
+.officer-card:hover {
+  transform: translateY(-2px);
+}
+
+.officer-card-inner {
+  padding: 12px 14px;
+  position: relative;
+  z-index: 2;
+  cursor: pointer;
+}
+
+/* ========================================================================== */
+/* 段位边框规范：                                                             */
+/* 1, 2, 3 星: 干净极简独立卡片，不展示段位边框与角饰                            */
+/* ========================================================================== */
+.officer-card.tier-normal {
+  border: 1px solid var(--line, #e2e8f0);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.officer-card.tier-normal:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* ========================================================================== */
+/* 四星金色边框 */
+/* ========================================================================== */
+.officer-card.tier-gold {
+  border: 2px solid #ffd700;
+  background-image: linear-gradient(175deg, rgba(255, 230, 120, 0.08) 0%, rgba(255, 195, 30, 0.03) 100%),
+                    linear-gradient(var(--surface, #ffffff), var(--surface, #ffffff));
+  box-shadow: 0 0 14px rgba(255, 215, 0, 0.35), 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.officer-card.tier-gold:hover {
+  box-shadow: 0 0 22px rgba(255, 215, 0, 0.5), 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* 4星黄金包角 (King of Glory Golden Wings / Brackets) */
+.officer-card.tier-gold .card-corner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.officer-card.tier-gold .corner-tl {
+  top: -2px;
+  left: -2px;
+  border-top: 3px solid #ffea79;
+  border-left: 3px solid #ffea79;
+  border-top-left-radius: 6px;
+  filter: drop-shadow(0 0 3px #ffd700);
+}
+
+.officer-card.tier-gold .corner-tr {
+  top: -2px;
+  right: -2px;
+  border-top: 3px solid #ffea79;
+  border-right: 3px solid #ffea79;
+  border-top-right-radius: 6px;
+  filter: drop-shadow(0 0 3px #ffd700);
+}
+
+.officer-card.tier-gold .corner-bl {
+  bottom: -2px;
+  left: -2px;
+  border-bottom: 3px solid #e5a700;
+  border-left: 3px solid #e5a700;
+  border-bottom-left-radius: 6px;
+  filter: drop-shadow(0 0 3px #ffd700);
+}
+
+.officer-card.tier-gold .corner-br {
+  bottom: -2px;
+  right: -2px;
+  border-bottom: 3px solid #e5a700;
+  border-right: 3px solid #e5a700;
+  border-bottom-right-radius: 6px;
+  filter: drop-shadow(0 0 3px #ffd700);
+}
+
+/* 黄金角标铆钉 */
+.officer-card.tier-gold .card-corner::after {
+  content: '';
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 4px #ffd700;
+}
+.officer-card.tier-gold .corner-tl::after { top: 2px; left: 2px; }
+.officer-card.tier-gold .corner-tr::after { top: 2px; right: 2px; }
+.officer-card.tier-gold .corner-bl::after { bottom: 2px; left: 2px; }
+.officer-card.tier-gold .corner-br::after { bottom: 2px; right: 2px; }
+
+/* ========================================================================== */
+/* 五星彩色边框 */
+/* ========================================================================== */
+.officer-card.tier-diamond {
+  border: 2px solid transparent;
+  background-image: linear-gradient(var(--surface, #ffffff), var(--surface, #ffffff)),
+                    linear-gradient(135deg, #7c4dff 0%, #00e5ff 40%, #c084fc 70%, #3b82f6 100%);
+  background-origin: padding-box, border-box;
+  background-clip: padding-box, border-box;
+  box-shadow: 0 0 18px rgba(124, 77, 255, 0.42), 0 0 8px rgba(0, 229, 255, 0.35), 0 4px 14px rgba(0, 0, 0, 0.1);
+}
+
+.officer-card.tier-diamond:hover {
+  box-shadow: 0 0 26px rgba(124, 77, 255, 0.55), 0 0 14px rgba(0, 229, 255, 0.5), 0 6px 18px rgba(0, 0, 0, 0.15);
+}
+
+/* 5星钻石包角 (King of Glory Diamond Prismatic Facets) */
+.officer-card.tier-diamond .card-corner {
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.officer-card.tier-diamond .corner-tl {
+  top: -2px;
+  left: -2px;
+  border-top: 3px solid #00e5ff;
+  border-left: 3px solid #00e5ff;
+  border-top-left-radius: 6px;
+  filter: drop-shadow(0 0 4px #00e5ff);
+}
+
+.officer-card.tier-diamond .corner-tr {
+  top: -2px;
+  right: -2px;
+  border-top: 3px solid #c084fc;
+  border-right: 3px solid #c084fc;
+  border-top-right-radius: 6px;
+  filter: drop-shadow(0 0 4px #7c4dff);
+}
+
+.officer-card.tier-diamond .corner-bl {
+  bottom: -2px;
+  left: -2px;
+  border-bottom: 3px solid #3b82f6;
+  border-left: 3px solid #3b82f6;
+  border-bottom-left-radius: 6px;
+  filter: drop-shadow(0 0 4px #3b82f6);
+}
+
+.officer-card.tier-diamond .corner-br {
+  bottom: -2px;
+  right: -2px;
+  border-bottom: 3px solid #00e5ff;
+  border-right: 3px solid #00e5ff;
+  border-bottom-right-radius: 6px;
+  filter: drop-shadow(0 0 4px #00e5ff);
+}
+
+/* 钻石晶体星芒 */
+.officer-card.tier-diamond .card-corner::after {
+  content: '';
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  background: #ffffff;
+  transform: rotate(45deg);
+  box-shadow: 0 0 5px #00e5ff;
+}
+.officer-card.tier-diamond .corner-tl::after { top: 2px; left: 2px; }
+.officer-card.tier-diamond .corner-tr::after { top: 2px; right: 2px; }
+.officer-card.tier-diamond .corner-bl::after { bottom: 2px; left: 2px; }
+.officer-card.tier-diamond .corner-br::after { bottom: 2px; right: 2px; }
+
+/* 五星属性稀有度标签 */
+.officer-card.tier-diamond .tier-ribbon {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+  padding: 2px 7px;
+  border-radius: 3px;
+  border: 1px solid transparent;
+}
+
+.officer-card.tier-diamond .rarity-ur { background: #a32f42; border-color: #cf6975; }
+.officer-card.tier-diamond .rarity-ssr { background: #643e9e; border-color: #9a77c7; }
+.officer-card.tier-diamond .rarity-sr { background: #286b8c; border-color: #66a9c6; }
+
+/* 军校候选人沿用正式军官卡片的边框，同时保持名单的紧凑信息密度。 */
+.academy-candidate-rarity {
+  display: inline-block;
+  margin: 4px 0 2px;
+}
+
+.academy-candidate-rarity .tier-ribbon {
+  display: inline-flex;
+}
+
+/* ========================================================================== */
+/* 卡片内部结构与信息排版                                                     */
+/* ========================================================================== */
+
+/* 顶部将领身份行 */
+.card-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.card-officer-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.card-officer-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--officer-name, var(--accent, #526b4d));
+}
+
+.officer-gem-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  vertical-align: -3px;
+  white-space: nowrap;
+}
+
+.officer-gem-star {
+  display: inline-block;
+  flex: 0 0 17px;
+  width: 17px;
+  height: 17px;
+  background: url('../img/officer-gem-star.svg') center / contain no-repeat;
+  filter: drop-shadow(0 1px 1px rgba(25, 76, 145, .22));
+}
+
+.officer-gem-star.is-empty {
+  opacity: .42;
+  filter: grayscale(1);
+}
+
+.board-slot-officer .officer-gem-star {
+  flex-basis: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+.card-badge-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.card-role-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.card-role-badge.role-mayor {
+  background: var(--accent-soft, #e4ecdf);
+  color: var(--accent-dark, #3d5239);
+  border: 1px solid var(--line, #d7d2c7);
+}
+
+.card-role-badge.role-commander {
+  background: rgba(239, 68, 68, 0.15);
+  color: #b91c1c;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.card-role-badge.role-idle {
+  background: rgba(148, 163, 184, 0.15);
+  color: #475569;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.card-level-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--surface-muted, #f1f5f9);
+  color: var(--ink, #1e293b);
+  border: 1px solid var(--line, #cbd5e1);
+}
+
+.card-level-badge.is-max {
+  background: var(--accent-soft, #e4ecdf);
+  color: var(--ink, #202521);
+  border: 1px solid var(--line, #d7d2c7);
+  font-weight: 700;
+}
+
+/* 四维属性矩阵 (4-Stat Grid) */
+.card-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.card-stat-pill {
+  background: var(--surface-muted, #f8fafc);
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 6px;
+  padding: 4px 6px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.stat-pill-label {
+  font-size: 10px;
+  color: var(--muted, #64748b);
+  line-height: 1.2;
+}
+
+.stat-pill-value {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.card-stat-pill.pill-mil .stat-pill-value { color: #dc2626; }
+.card-stat-pill.pill-def .stat-pill-value { color: #2563eb; }
+.card-stat-pill.pill-log .stat-pill-value { color: #16a34a; }
+.card-stat-pill.pill-kno .stat-pill-value { color: #9333ea; }
+
+/* 忠诚与俸禄副信息行 */
+.card-sub-info-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--muted, #64748b);
+  margin-bottom: 6px;
+}
+
+.card-sub-info-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 技能特长标签区 */
+.card-skills-section {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 6px 0;
+  font-size: 11px;
+}
+
+.card-skills-title {
+  color: var(--muted, #64748b);
+  font-size: 11px;
+  margin-right: 2px;
+}
+
+.card-skill-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.card-skill-tag-empty {
+  color: var(--muted, #94a3b8);
+  font-style: italic;
+}
+
+/* 经验进度条 */
+.card-exp-row {
+  margin: 6px 0 8px;
+}
+
+.card-exp-track {
+  height: 6px;
+  background: var(--line, #e2e8f0);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.card-exp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #06b6d4);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.tier-gold .card-exp-fill {
+  background: linear-gradient(90deg, #eab308, #f59e0b);
+}
+
+.tier-diamond .card-exp-fill {
+  background: linear-gradient(90deg, #8b5cf6, #06b6d4);
+}
+
+.card-exp-text {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  color: var(--muted, #64748b);
+  margin-top: 2px;
+}
+
+.card-exp-max-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent-dark, #3d5239);
+  text-align: right;
+}
+
+/* 卡片底部操作行 */
+.card-footer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line, #e2e8f0);
+}
+
+.card-action-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-card-action {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--line, #cbd5e1);
+  background: var(--surface, #ffffff);
+  color: var(--ink, #1e293b);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-card-action:hover {
+  background: var(--surface-muted, #f1f5f9);
+  border-color: #94a3b8;
+}
+
+.btn-card-action.btn-appoint-mayor:hover {
+  border-color: var(--accent, #526b4d);
+  color: var(--accent-dark, #3d5239);
+  background: var(--accent-soft, #e4ecdf);
+}
+
+.btn-card-action.btn-appoint-commander:hover {
+  border-color: #ef4444;
+  color: #b91c1c;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.btn-card-action.btn-dismiss {
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #dc2626;
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.btn-card-action.btn-dismiss:hover {
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.card-detail-hint {
+  font-size: 11px;
+  color: var(--accent, #3b82f6);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  transition: gap 0.15s ease;
+}
+
+.officer-card:hover .card-detail-hint {
+  gap: 5px;
+}
+
+/* ========================================================================== */
+/* 主题深色与纸质适配 (Dark & Paper Theme Overrides)                           */
+/* ========================================================================== */
+
+/* 暗色主题 */
+[data-theme="dark"] .officer-card.tier-normal {
+  background: #151d2a;
+  border-color: #273549;
+}
+
+[data-theme="dark"] .officer-card.tier-gold {
+  background-image: linear-gradient(175deg, rgba(255, 230, 120, 0.05) 0%, rgba(255, 195, 30, 0.01) 100%),
+                    linear-gradient(#151d2a, #151d2a);
+  border-color: #ffd700;
+}
+
+[data-theme="dark"] .officer-card.tier-diamond {
+  background-image: linear-gradient(#131724, #131724),
+                    linear-gradient(135deg, #7c4dff 0%, #00e5ff 40%, #c084fc 70%, #3b82f6 100%);
+}
+
+[data-theme="dark"] .card-stat-pill {
+  background: #1c2637;
+  border-color: #2b394f;
+}
+
+[data-theme="dark"] .card-level-badge {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .btn-card-action {
+  background: #1e293b;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .btn-card-action:hover {
+  background: #273549;
+}
+
+[data-theme="dark"] .officer-board-slot {
+  background: #151d2a;
+  border-color: #273549;
+}
+
+[data-theme="dark"] .card-skill-tag {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #93c5fd;
+}
+
+/* 军官档案颜色沿用当前主题，避免浅色页面出现固定的深绿身份区。 */
+.officer-detail {
+  --od-ink: var(--ink);
+  --od-muted: var(--muted);
+  --od-line: var(--line);
+  --od-soft: var(--surface-muted);
+  --od-surface: var(--surface);
+  --od-hero: var(--accent-soft);
+  --od-accent: var(--accent);
+  --od-gold: var(--gold);
+  --od-danger: var(--danger);
+  --od-action-ink: #fff;
+  color: var(--od-ink);
+  padding: 0 1px 24px;
+  font-size: 13px;
+}
+
+.officer-detail-topline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  margin-bottom: 8px;
+  color: var(--od-muted);
+  font-size: 11px;
+}
+
+.officer-detail-back,
+.officer-detail-bottom-back {
+  appearance: none;
+  border: 0;
+  background: none;
+  color: var(--od-accent);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.officer-detail-back { font-size: 22px; line-height: 1; }
+.officer-detail-back span { font-size: 12px; vertical-align: 3px; }
+.officer-detail-back:hover,
+.officer-detail-bottom-back:hover { text-decoration: underline; }
+
+.officer-detail-hero {
+  min-height: 0;
+  padding: 14px;
+  border: 1px solid var(--od-line);
+  border-left: 3px solid var(--od-accent);
+  border-radius: 3px;
+  background: var(--od-hero);
+  color: var(--od-ink);
+  overflow: hidden;
+}
+
+.officer-detail-identity { min-width: 0; }
+.officer-detail-kicker {
+  color: var(--od-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+.officer-detail-name-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 5px;
+}
+.officer-detail-name-row h1 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--od-accent);
+  font-size: 23px;
+  line-height: 1.25;
+  font-weight: 750;
+  letter-spacing: 0;
+}
+.officer-rename-trigger {
+  flex: 0 0 auto;
+  border: 0;
+  padding: 3px 0;
+  background: none;
+  color: var(--od-accent);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+}
+.officer-rename-trigger:hover { text-decoration: underline; }
+.officer-detail-stars { margin: 7px 0 8px; line-height: 1; }
+.officer-detail-stars .officer-gem-star { flex-basis: 19px; width: 19px; height: 19px; }
+.officer-detail-meta { display: flex; align-items: center; gap: 9px; color: var(--od-muted); font-size: 11px; }
+.officer-detail-role { border-left: 1px solid var(--od-line); padding-left: 9px; }
+
+.officer-detail-promotion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin: 0 0 6px;
+  padding: 10px 12px;
+  background: var(--od-surface);
+  border-bottom: 1px solid var(--od-line);
+}
+.officer-detail-promotion strong,
+.officer-detail-promotion small { display: block; }
+.officer-detail-promotion strong { font-size: 12px; color: var(--od-accent); }
+.officer-detail-promotion small { margin-top: 2px; color: var(--od-muted); font-size: 10px; line-height: 1.4; }
+
+.officer-detail-section { padding: 16px 2px 17px; border-bottom: 1px solid var(--od-line); }
+.officer-detail-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 3px 8px;
+  margin-bottom: 11px;
+}
+.officer-detail-section-head h2 {
+  color: var(--od-accent);
+  font-size: 14px;
+  line-height: 1.3;
+  font-weight: 750;
+  letter-spacing: 0;
+}
+.officer-detail-section-head h2::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 13px;
+  margin-right: 7px;
+  background: var(--od-accent);
+  vertical-align: -2px;
+}
+.officer-detail-section-head h2 small { color: var(--od-muted); font-size: 11px; font-weight: 500; }
+.officer-detail-section-head > span { color: var(--od-muted); font-size: 10px; }
+
+.officer-record-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--od-line); border: 1px solid var(--od-line); }
+.officer-record-grid > div { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 9px 2px; background: var(--od-soft); text-align: center; }
+.officer-record-grid strong { color: var(--od-accent); font-size: 17px; line-height: 1.1; }
+.officer-record-grid span { color: var(--od-muted); font-size: 10px; }
+
+.officer-attr-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 18px; }
+.officer-attr-row { min-width: 0; }
+.officer-attr-main { display: flex; align-items: baseline; min-height: 23px; gap: 4px; }
+.officer-attr-main > span:first-child { margin-right: auto; color: var(--od-accent); font-weight: 700; }
+.officer-attr-main strong { color: var(--od-accent); font-size: 18px; line-height: 1; font-variant-numeric: tabular-nums; font-weight: 700; }
+.officer-attr-main small { color: var(--od-muted); font-size: 10px; }
+.officer-attr-add { width: 21px; height: 21px; margin-left: 2px; border: 1px solid var(--od-accent); border-radius: 3px; background: var(--od-accent); color: var(--od-action-ink); cursor: pointer; font: inherit; line-height: 1; }
+.officer-attr-add:hover { filter: brightness(1.12); }
+.officer-attr-editor:not(:empty) { display: block; margin-top: 6px; }
+.officer-attr-editor > span { display: flex !important; flex-wrap: wrap; gap: 4px !important; margin-left: 0 !important; }
+.officer-attr-track,
+.officer-detail-progress { height: 5px; overflow: hidden; background: var(--od-line); }
+.officer-attr-track span,
+.officer-detail-progress span { display: block; height: 100%; background: var(--od-accent); }
+.officer-attr-effect { display: block; min-height: 16px; margin-top: 3px; color: var(--od-accent); font-size: 10px; }
+.officer-wash-row { justify-content: flex-end; margin-top: 8px; }
+
+.officer-equipment-list { border-top: 1px solid var(--od-line); }
+.officer-equipment-row { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 7px 2px; border-bottom: 1px solid var(--od-line); }
+.officer-equipment-slot { flex: 0 0 35px; color: var(--od-muted); font-size: 11px; }
+.officer-equipment-info { flex: 1; min-width: 0; }
+.officer-equipment-info strong,
+.officer-equipment-info small { display: block; }
+.officer-equipment-info strong { overflow-wrap: anywhere; font-size: 12px; }
+.officer-equipment-info small { color: var(--od-muted); font-size: 10px; line-height: 1.4; }
+.officer-equipment-empty { color: var(--od-muted); font-size: 11px; }
+.officer-set-bonus { margin-top: 9px; padding: 6px 8px; border-left: 2px solid var(--od-gold); background: var(--od-soft); color: var(--od-ink); font-size: 11px; }
+.officer-detail-subhead { margin: 12px 0 5px; color: var(--od-muted); font-size: 11px; }
+
+.officer-exp-caption { display: flex; align-items: baseline; justify-content: space-between; gap: 5px; margin-bottom: 6px; font-size: 11px; }
+.officer-exp-caption strong { color: var(--od-accent); }
+.officer-exp-caption > span { color: var(--od-muted); text-align: center; }
+.officer-detail-progress { height: 7px; }
+.officer-detail-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; margin-top: 9px; }
+.officer-detail .btn:not(.depot-btn) { min-height: 29px; border-color: var(--od-accent); border-radius: 3px; background: var(--od-accent); color: var(--od-action-ink); box-shadow: none; font-size: 11px; }
+.officer-detail .btn:not(.depot-btn):hover { filter: brightness(1.1); }
+.officer-detail .btn:not(.depot-btn):disabled { border-color: var(--od-line); background: var(--od-soft); color: var(--od-muted); filter: none; }
+.officer-detail .depot-btn { color: var(--od-accent) !important; font-size: 11px !important; }
+.officer-detail .depot-btn.warn { color: var(--od-danger) !important; }
+.officer-detail-note { color: var(--od-muted); font-size: 10px; line-height: 1.5; }
+.officer-detail-skills .officer-skill-row { flex-wrap: wrap; gap: 6px 10px; margin: 0; padding: 9px 2px; border-bottom: 1px solid var(--od-line); }
+.officer-detail-skills .officer-skill-detail-trigger { flex: 1; min-width: 110px; text-align: left; color: var(--od-accent); font-size: 12px; }
+
+.officer-loyalty-heading { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 9px; }
+.officer-loyalty-heading > div { display: flex; flex-direction: column; gap: 1px; }
+.officer-loyalty-heading small { color: var(--od-muted); font-size: 10px; }
+.officer-loyalty-heading strong { color: var(--od-accent); font-size: 19px; line-height: 1.2; }
+.officer-loyalty-heading strong span { margin-left: 3px; color: var(--od-muted); font-size: 10px; font-weight: 500; }
+.officer-loyalty-heading .is-mid { color: #a4782f; }
+.officer-loyalty-heading .is-low { color: var(--od-danger); }
+.officer-detail-progress.loyalty { height: 6px; margin-bottom: 6px; }
+.officer-detail-progress.loyalty span { background: var(--od-accent); }
+.officer-detail-last { border-bottom: 0; }
+.officer-detail-bottom-back { display: block; margin: 5px auto 0; padding: 7px; font-size: 11px; }
+
+[data-theme|="blue-white"] .officer-detail {
+  --od-ink: #1e3a5f;
+  --od-muted: #5e7a9c;
+  --od-line: #d4e0ee;
+  --od-soft: #f0f5fb;
+  --od-surface: #ffffff;
+  --od-hero: #e8f0fa;
+  --od-accent: #2b5f9e;
+  --od-gold: #c98818;
+  --od-danger: #c0392b;
+  --od-action-ink: #ffffff;
+}
+
+[data-theme="paper"] .officer-detail {
+  --od-ink: #273136;
+  --od-muted: #626c61;
+  --od-line: #dcded2;
+  --od-soft: #f0eee6;
+  --od-surface: #f6f5f0;
+  --od-hero: #e8ece3;
+  --od-accent: #3f5e4d;
+  --od-danger: #a33a2b;
+}
+[data-theme="dark"] .officer-detail {
+  --od-ink: #e2e8f0;
+  --od-muted: #9aabc0;
+  --od-line: #2b3b52;
+  --od-soft: #162032;
+  --od-surface: #111724;
+  --od-hero: #192d40;
+  --od-accent: #7cc7ec;
+  --od-gold: #d1ab70;
+  --od-danger: #f87171;
+  --od-action-ink: #0e1726;
+}
+
+@media (max-width: 380px) {
+  .officer-detail-hero { padding: 10px; }
+  .officer-detail-name-row { flex-wrap: wrap; gap: 2px 8px; }
+  .officer-detail-name-row h1 { font-size: 20px; }
+  .officer-detail-kicker { font-size: 9px; }
+  .officer-attr-grid { gap: 12px; }
+}

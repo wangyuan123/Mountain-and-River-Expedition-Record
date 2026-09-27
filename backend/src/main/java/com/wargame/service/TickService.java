@@ -398,7 +398,14 @@ public class TickService {
         population.put("capacity", populationCap);
         population.put("effectiveCapacity", effectiveCap);
         population.put("recruitable", civilians);
-        population.put("growthPerHour", populationCap * 0.03 * Math.max(0.2, morale / 70.0));
+        double popGrowth = 0.0;
+        if (civilians < effectiveCap) {
+            popGrowth = populationCap * 0.03 * Math.max(0.2, morale / 70.0);
+        } else if (civilians > effectiveCap) {
+            double excess = civilians - effectiveCap;
+            popGrowth = -Math.max(2.0, excess * 0.10);
+        }
+        population.put("growthPerHour", popGrowth);
         stateChanges.put("population", population);
 
         playerRepository.findById(playerId).ifPresent(player ->
@@ -417,6 +424,7 @@ public class TickService {
         List<Map<String, Object>> buildList = new ArrayList<>();
         for (Construction c : constructions) {
             Map<String, Object> buildInfo = new LinkedHashMap<>();
+            buildInfo.put("queueId", c.getId());
             buildInfo.put("id", c.getBuildingType());
             buildInfo.put("slot", c.getSlot());
             int targetLv = c.getTargetLevel() != null ? c.getTargetLevel() : 0;

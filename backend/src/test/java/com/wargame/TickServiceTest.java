@@ -323,4 +323,40 @@ class TickServiceTest extends BaseServiceTest {
         Map<String, Object> army = (Map<String, Object>) m.get("army");
         assertEquals(100, army.get("fighter"), "兵力应包含 fighter=100");
     }
+
+    @Test
+    @DisplayName("施工队列实时推送包含队列ID，保证免费加速能定位工程")
+    void testTickConstructionsIncludeQueueId() {
+        long now = System.currentTimeMillis();
+        Construction construction = createConstruction(playerId, "lab", 1, now - 1000, now + 60000, null);
+
+        Map<String, Object> changes = tickService.pushStateChanges(playerId);
+
+        @SuppressWarnings("unchecked")
+        java.util.List<Map<String, Object>> constructions =
+                (java.util.List<Map<String, Object>>) changes.get("constructions");
+        assertNotNull(constructions);
+        assertEquals(1, constructions.size());
+        assertEquals(construction.getId(), constructions.get(0).get("queueId"));
+    }
+
+    @Test
+    @DisplayName("平民达到或超过有效容量上限时，Tick推送中的自然增长速度归零")
+    void testTickPopulationGrowthZeroAtCapacity() {
+        createBuilding(playerId, "house", 2); // capacity = 2400
+        Player p = playerRepository.findById(playerId).orElseThrow();
+        p.setCivilianPopulation(2400);
+        p.setMorale(70);
+        playerRepository.save(p);
+
+        Map<String, Object> changes = tickService.pushStateChanges(playerId);
+        assertNotNull(changes);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> pop = (Map<String, Object>) changes.get("population");
+        assertNotNull(pop);
+        assertEquals(2400, pop.get("civilian"));
+        assertEquals(2400, pop.get("effectiveCapacity"));
+        assertEquals(0.0, (Double) pop.get("growthPerHour"), 0.001, "平民满额时增长速度必须为0");
+    }
 }
+

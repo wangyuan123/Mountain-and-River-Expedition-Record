@@ -1,0 +1,12 @@
+Use case: stylized-concept
+Asset type: square 1940s strategy-game officer detail portrait, one asset in a coordinated character set.
+Primary request: ONE wholly fictional military character represented as a premium hand-painted 3D game miniature bust. This is an original invented person, not a depiction, likeness, recreation, or face study of any real officer. Do not use historical photos as a reference.
+Style/medium: high-quality 3D game character render with tactile sculpted surfaces and matte painted materials. Adult human proportions, individualized facial structure, legible expression, restrained stylization; unmistakably game CG rather than live-action photography, while avoiding cartoon exaggeration.
+Composition/framing: square 1024x1024; face and upper chest centered in a consistent three-quarter bust crop, with entire cap, shoulders, and collar inside frame. Head large enough to read clearly at 112px. No hands, weapons, pedestal, scenery, or extra characters.
+Scene/backdrop: dark olive-charcoal studio backdrop with a very subtle dark hexagonal texture, matching the existing rank-avatar family. The backdrop should stay behind the head rather than becoming a UI frame.
+Lighting/mood: soft upper-left key light, restrained fill, sharp clear face, dignified military bearing, varied expression and bearing according to the individual brief. No shadow obscuring the eyes.
+Materials/textures: period-inspired cotton twill, wool, worn leather, simple metal fastenings. Period-inspired rather than documentary uniform reconstruction. No exact decorations or historically distinctive personal accessories.
+Constraints: All faces in this set must look different. Follow this asset's distinctive facial silhouette, age, headgear, collar, pose, and accent colors. No resemblance to a named or recognizable real person. No readable text, numbers, names, flags, national emblems, political symbols, swastikas, SS runes, medals, insignia, logos, or watermark.
+Avoid: real-person portrait, photo realism, celebrity or historical likeness, propaganda, anime, chibi, caricature, identical generic faces, giant eyes or head, low-poly toy, modern camouflage, tactical headset, multiple people, contact sheet, illustrated border.
+Role reference: Chinese army.
+Distinctive fictional character design: East Asian man in his late fifties; full face, arched brows and graying short hair; restrained senior-service cap and neat dark khaki tunic; measured direct gaze; deep olive and antique brass accents

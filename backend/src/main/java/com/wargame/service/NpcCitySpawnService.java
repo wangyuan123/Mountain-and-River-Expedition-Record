@@ -1,5 +1,6 @@
 package com.wargame.service;
 
+import com.wargame.model.constants.JapaneseOfficers;
 import com.wargame.model.constants.WorldConfig;
 import com.wargame.model.entity.NpcCity;
 import com.wargame.repository.NpcCityRepository;
@@ -69,6 +70,7 @@ public class NpcCitySpawnService {
         Map<String, Integer> supplies = new LinkedHashMap<>(tier.reward());
         supplies.remove("exp");
         city.setResources(JsonUtil.toJson(supplies));
+        city.setCommanderName(JapaneseOfficers.getCommanderForLevel(level));
         city.setDefeated(false);
         city.setScoutedBy("[]");
         return cities.save(city);

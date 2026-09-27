@@ -7,6 +7,7 @@ import com.wargame.repository.*;
 import com.wargame.service.CityScope;
 import com.wargame.service.SpeedUpSupport;
 import com.wargame.service.TechService;
+import com.wargame.service.PrerequisiteService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -40,6 +41,7 @@ class TechServiceTest {
         cityScope = mock(CityScope.class);
 
         when(cityScope.slot(anyLong())).thenReturn(0);
+        when(playerRepository.lockById(anyLong())).thenReturn(Optional.of(new Player()));
 
         techService = new TechService(technologyRepository, resourcesRepository, buildingRepository,
                 playerRepository, techResearchQueueRepository, speedUpSupport);
@@ -48,6 +50,12 @@ class TechServiceTest {
         Field csField = TechService.class.getDeclaredField("cityScope");
         csField.setAccessible(true);
         csField.set(techService, cityScope);
+        PrerequisiteService prerequisites = mock(PrerequisiteService.class);
+        when(prerequisites.unmet(anyLong(), anyInt(), anyString(), anyString(), anyInt()))
+                .thenReturn(Collections.emptyList());
+        Field rulesField = TechService.class.getDeclaredField("prerequisiteService");
+        rulesField.setAccessible(true);
+        rulesField.set(techService, prerequisites);
     }
 
     @Test

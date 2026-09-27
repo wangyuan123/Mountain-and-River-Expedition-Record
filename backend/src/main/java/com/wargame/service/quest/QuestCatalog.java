@@ -23,7 +23,7 @@ public final class QuestCatalog {
 
     public static final List<Chapter> CHAPTERS = List.of(
         new Chapter("ch1", "第一章 · 开荒奠基", "建设主城根基，建立第一支部队。", List.of(
-            q("q1_1", "ch1", "升级民居", "把民居升到 2 级，提升人口上限", "BUILD_UPGRADE_DONE", "house", 2, r(0,0,0,0,200), null),
+            q("q1_1", "ch1", "升级集结兵舍", "把集结兵舍升到 2 级，提升人口上限", "BUILD_UPGRADE_DONE", "house", 2, r(0,0,0,0,200), null),
             q("q1_2", "ch1", "扩建农田", "建造第 2 座农田，保障粮食供应", "BUILD_COUNT", "farm", 2, r(3000,0,0,0,200), "q1_1"),
             q("q1_3", "ch1", "炼钢起步", "把炼钢厂升到 2 级", "BUILD_UPGRADE_DONE", "refinery", 2, r(0,3000,0,0,250), "q1_2"),
             q("q1_4", "ch1", "招兵买马", "训练 30 个步兵", "ARMY_RECRUIT", "infantry", 30, r(3000,0,0,0,300), "q1_3"),
@@ -31,7 +31,7 @@ public final class QuestCatalog {
             q("q1_6", "ch1", "委以重任", "任命一名军官为市长或指挥官", "OFFICER_APPOINT", null, 1, r(2000,2000,1000,0,300), "q1_5")
         )),
         new Chapter("ch2", "第二章 · 站稳脚跟", "走出主城，侦察、采集并清理周边威胁。", List.of(
-            q("q2_1", "ch2", "扩建民居", "民居总等级达到 5", "BUILD_LEVEL_SUM", "house", 5, r(4000,2000,0,0,500), "q1_6"),
+            q("q2_1", "ch2", "扩建集结兵舍", "集结兵舍总等级达到 5", "BUILD_LEVEL_SUM", "house", 5, r(4000,2000,0,0,500), "q1_6"),
             q("q2_2", "ch2", "炮兵连", "训练 20 个炮兵", "ARMY_RECRUIT", "artillery", 20, r(0,3000,1000,0,500), "q2_1"),
             q("q2_3", "ch2", "前线侦察", "派出侦察兵完成 1 次侦查", "SCOUT_COMPLETE", null, 1, r(1000,1000,500,0,400), "q2_2"),
             q("q2_4", "ch2", "远征采集", "完成 1 次野外资源采集并运回主城", "GATHER_COMPLETE", null, 1, r(3000,2000,1000,200,500), "q2_3"),
@@ -42,11 +42,11 @@ public final class QuestCatalog {
             q("q3_1", "ch3", "稀矿起步", "将稀有矿升到 2 级", "BUILD_UPGRADE_DONE", "raremine", 2, r(0,0,0,500,600), "q2_6"),
             q("q3_2", "ch3", "油田上马", "将油田升到 2 级", "BUILD_UPGRADE_DONE", "oilfield", 2, r(0,0,1000,500,700), "q3_1"),
             q("q3_3", "ch3", "兵强马壮", "总兵力达到 100", "ARMY_TOTAL", null, 100, r(5000,3000,2000,0,800), "q3_2"),
-            q("q3_4", "ch3", "城防初具", "将城墙升到 2 级", "BUILD_UPGRADE_DONE", "wall", 2, r(0,3000,0,0,600), "q3_3"),
+            q("q3_4", "ch3", "城防初具", "将要塞防线升到 2 级", "BUILD_UPGRADE_DONE", "wall", 2, r(0,3000,0,0,600), "q3_3"),
             q("q3_5", "ch3", "名将加盟", "招募 1 名 3 星或以上军官", "OFFICER_RECRUIT_STAR", null, 3, new Reward(0,0,0,0,1500,0,"1","1",null,0), "q3_4")
         )),
         new Chapter("ch4", "第四章 · 阵营争锋", "完成从备战到宣战的第一次战争循环。", List.of(
-            q("q4_1", "ch4", "高级兵工厂", "军工厂总等级达到 4", "BUILD_LEVEL_SUM", "factory", 4, r(0,5000,2000,0,1000), "q3_5"),
+            q("q4_1", "ch4", "高级兵工厂", "战地兵工厂总等级达到 4", "BUILD_LEVEL_SUM", "factory", 4, r(0,5000,2000,0,1000), "q3_5"),
             q("q4_2", "ch4", "雄狮之师", "总兵力达到 300", "ARMY_TOTAL", null, 300, new Reward(5000,5000,3000,500,1500,0,null,"1",null,0), "q4_1"),
             q("q4_3", "ch4", "正式宣战", "向其他玩家主城宣战", "WAR_DECLARE", null, 1, new Reward(0,0,0,0,2000,0,"2",null,"shield",1), "q4_2"),
             q("q4_4", "ch4", "首战告捷", "赢得 1 场玩家城战斗", "PLAYER_WIN", null, 1, new Reward(10000,5000,2000,500,3000,0,"2","1","renameCard",1), "q4_3")

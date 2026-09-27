@@ -56,6 +56,10 @@ public class March extends CityOwnedEntity {
     @Column(name = "action", length = 50)
     private String action;
 
+    /** PvE 攻击的出征选择；旧行军为 null 时按目标类型沿用原有行为。 */
+    @Column(name = "battle_mode", length = 10)
+    private String battleMode;
+
     @Column(name = "army", columnDefinition = "text")
     private String army;
 
@@ -76,6 +80,15 @@ public class March extends CityOwnedEntity {
 
     @Column(name = "gathering")
     private Boolean gathering;
+
+    @Column(name = "gather_mode", nullable = false, length = 10)
+    private String gatherMode = "auto";
+
+    @Column(name = "gather_start_at")
+    private Long gatherStartAt;
+
+    @Column(name = "gather_stopped", nullable = false)
+    private Boolean gatherStopped = false;
 
     @Column(name = "gather_end_at")
     private Long gatherEndAt;

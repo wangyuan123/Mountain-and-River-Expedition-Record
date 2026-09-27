@@ -33,12 +33,12 @@ public class ArmyController {
     }
 
     @GetMapping("/battle-defaults")
-    public Map<String, Map<String, String>> battleDefaults() {
+    public BattleActionPreferences.View battleDefaults() {
         return battleActionPreferences.get(authService.getCurrentPlayer().getId());
     }
 
     @PostMapping("/battle-defaults")
-    public Map<String, Map<String, String>> saveBattleDefaults(@RequestBody Map<String, Map<String, String>> defaults) {
+    public BattleActionPreferences.View saveBattleDefaults(@RequestBody BattleActionPreferences.Preferences defaults) {
         return battleActionPreferences.save(authService.getCurrentPlayer().getId(), defaults);
     }
 

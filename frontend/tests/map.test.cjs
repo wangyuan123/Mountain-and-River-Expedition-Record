@@ -100,15 +100,15 @@ test('wild map dispatch renders safely and excludes appointed mayor and commande
 test('dispatch cap card opens a dismissible breakdown for the selected city',()=>{
   const body={appendChild(mask){mask.parentNode=body;this.mask=mask;},removeChild(mask){mask.parentNode=null;this.mask=null;}};
   const closeButton={focus(){this.focused=true;}};
-  const c=context({DATA:{},Core:{state:{player:{militaryRank:3}},views:{},buildingLevel:()=>10,getCommanderSkills:()=>({leadership:5}),skillBonus:id=>id==='leadership'?0.2:0,armyCap:()=>300000},fmt:String,getMilitaryRankTierInfo:()=>({name:'下士',baseCap:150000})});
+  const c=context({DATA:{},Core:{state:{player:{militaryRank:3}},views:{},buildingLevel:()=>10,getCommanderSkills:()=>({leadership:5}),skillBonus:id=>id==='leadership'?0.2:0,armyCap:()=>210000},fmt:String,getMilitaryRankTierInfo:()=>({name:'下士',baseCap:75000})});
   c.document={body,createElement:()=>({setAttribute(){},querySelector:()=>closeButton})};
   load(c,'world.js');
   c.Game.World.showArmyCapInfo();
   assert.match(body.mask.innerHTML,/下士/);
-  assert.match(body.mask.innerHTML,/围墙 Lv\.10/);
+  assert.match(body.mask.innerHTML,/要塞防线 Lv\.10/);
   assert.match(body.mask.innerHTML,/三军统帅[^<]*当前 Lv\.5，加成 \+20%/);
-  assert.match(body.mask.innerHTML,/150000 \+ 100000\) × \(1 \+ 20%\) = 300000/);
-  assert.match(body.mask.innerHTML,/市政厅、参谋部和指挥官等级不直接增加上限/);
+  assert.match(body.mask.innerHTML,/75000 \+ 100000\) × \(1 \+ 20%\) = 210000/);
+  assert.match(body.mask.innerHTML,/前线指挥部、作战参谋部和指挥官等级不直接增加上限/);
   assert.equal(closeButton.focused,true);
   closeButton.onclick();
   assert.equal(body.mask,null);

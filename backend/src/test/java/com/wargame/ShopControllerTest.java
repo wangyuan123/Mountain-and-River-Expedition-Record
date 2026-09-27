@@ -360,4 +360,37 @@ public class ShopControllerTest extends BaseServiceTest {
         assertFalse((Boolean) officerService.upgradeSkill(player.getId(), officer.getId(), 0, "skillBook_frenzy").get("success"));
         assertTrue(officerRepository.findById(officer.getId()).orElseThrow().getSkills().contains("\"lv\":1"));
     }
+
+    @Test
+    @DisplayName("商城星耀符用于军官升星尝试，满星时不扣道具")
+    void testBuyAndUseStarUp() {
+        assertEquals("星耀符", ItemDef.ITEMS.get("starUp").name());
+        Resources res = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
+        res.setDiamond(300);
+        resourcesRepository.save(res);
+
+        Map<String, Object> buy = shopController.buy(new GameDtos.ShopBuyRequest("starUp")).getBody();
+        assertNotNull(buy);
+        assertEquals(true, buy.get("success"));
+        assertEquals("已购买 星耀符", buy.get("message"));
+        assertEquals(0, resourcesRepository.findByPlayerId(player.getId()).orElseThrow().getDiamond());
+        PlayerItem item = playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "starUp").orElseThrow();
+        assertEquals(1, item.getCount());
+
+        Officer officer = createOfficer(player.getId(), "idle", 30, 30, 30);
+        Map<String, Object> attempt = depotService.useItem(player.getId(), "starUp", officer.getId(), null);
+        assertEquals(true, attempt.get("success"));
+        assertEquals(Boolean.TRUE.equals(attempt.get("upgraded")) ? 2 : 1,
+                officerRepository.findById(officer.getId()).orElseThrow().getStar());
+        assertEquals(0, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "starUp").orElseThrow().getCount());
+
+        item.setCount(1);
+        playerItemRepository.save(item);
+        officer.setStar(5);
+        officerRepository.save(officer);
+        Map<String, Object> full = depotService.useItem(player.getId(), "starUp", officer.getId(), null);
+        assertEquals(false, full.get("success"));
+        assertEquals("该军官已满星(5★)", full.get("message"));
+        assertEquals(1, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "starUp").orElseThrow().getCount());
+    }
 }

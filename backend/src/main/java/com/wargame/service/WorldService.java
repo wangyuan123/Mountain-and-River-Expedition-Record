@@ -771,7 +771,8 @@ public class WorldService {
         int marchDist = manhattanDist(px, py, targetX, targetY);
         UnitDef scoutDef = GameData.UNITS.get("scout");
         int airLv = getTechLevel(playerId, "air_engine");
-        double spd = (scoutDef != null ? Math.max(1, scoutDef.spd()) : 1) * (1.0 + 0.05 * airLv);
+        int apronLv = buildingLevel(playerId, "apron");
+        double spd = (scoutDef != null ? Math.max(1, scoutDef.spd()) : 1) * (1.0 + 0.05 * airLv + 0.03 * apronLv);
         int marchSec = (int) Math.ceil((double) marchDist * WorldConfig.MARCH_SEC_PER_GRID / spd);
         if (marchSec < 1) marchSec = 1;
 
@@ -846,6 +847,10 @@ public class WorldService {
                 int remaining = (wt.getTotalRes() != null ? wt.getTotalRes() : 0)
                         - (wt.getMined() != null ? wt.getMined() : 0);
                 m.put("remaining", remaining);
+                m.put("gathering", Boolean.TRUE.equals(wt.getGathering()));
+                m.put("gatherMode", wt.getGatherMode());
+                m.put("gatherHarvested", wt.getGatherHarvested());
+                m.put("gatherRes", wt.getGatherRes());
                 owned.add(m);
             }
         }
@@ -862,7 +867,8 @@ public class WorldService {
     public Map<String, Object> abandonWild(Long playerId, Long wildTileId) {
         Map<String, Object> result = new LinkedHashMap<>();
 
-        WildTile wt = wildTileRepository.findById(wildTileId).orElse(null);
+        playerRepository.lockById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
+        WildTile wt = wildTileRepository.lockById(wildTileId).orElse(null);
         if (wt == null) {
             result.put("success", false);
             result.put("message", "野地不存在");
@@ -872,6 +878,12 @@ public class WorldService {
         if (!Boolean.TRUE.equals(wt.getOccupied()) || !playerId.equals(wt.getOccupiedBy())) {
             result.put("success", false);
             result.put("message", "该野地未被你占领");
+            return result;
+        }
+
+        if (Boolean.TRUE.equals(wt.getGathering()) || wt.getGatherHarvested() != null) {
+            result.put("success", false);
+            result.put("message", "请先完成采集并下达部队回城命令，再放弃领地");
             return result;
         }
 
@@ -891,6 +903,10 @@ public class WorldService {
         wt.setGatherEndAt(0L);
         wt.setGatherLoad(0);
         wt.setGatherRes(null);
+        wt.setGatherMode("manual");
+        wt.setGatherCitySlot(0);
+        wt.setGatherHarvested(null);
+        wt.setGarrisonRoutes(null);
         wildTileRepository.save(wt);
 
         result.put("success", true);

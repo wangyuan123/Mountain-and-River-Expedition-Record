@@ -91,6 +91,10 @@ window.Game = window.Game || {};
     // 工具：用最新状态整体替换 G.state
     applyState: applyState,
 
+    getPrerequisites: function () {
+      return client.get('/game/prerequisites');
+    },
+
     // ==================== 鉴权 ====================
 
     register: function (username, password) {
@@ -243,7 +247,7 @@ window.Game = window.Game || {};
 
     getMyGuild: function () { return client.get('/game/guild/mine', { noCache: true }); },
     getGuilds: function () { return client.get('/game/guild/list', { noCache: true }); },
-    createGuild: function (name) { return client.post('/game/guild', { name: name }); },
+    createGuild: function (name, icon) { return client.post('/game/guild', { name: name, icon: icon }); },
     applyGuild: function (guildId) { return client.post('/game/guild/' + guildId + '/apply', {}); },
     reviewGuildApplication: function (id, approved) { return client.post('/game/guild/applications/' + id + '/review', { approved: approved }); },
     updateGuildNotice: function (notice) { return client.post('/game/guild/notice', { notice: notice }); },
@@ -459,6 +463,14 @@ window.Game = window.Game || {};
         });
     },
 
+    renameOfficer: function (officerId, name) {
+      return client.post('/game/officer/rename', { officerId: officerId, name: name })
+        .then(function (data) {
+          if (data && data.state) applyState(data.state);
+          return data;
+        });
+    },
+
     equipOfficer: function (officerId, itemId) {
       return client.post('/game/officer/equip', { officerId: officerId, itemId: itemId })
         .then(function (data) {
@@ -509,6 +521,11 @@ window.Game = window.Game || {};
 
     worldDispatch: function (dispatchRequest) {
       return client.post('/game/world/dispatch', dispatchRequest)
+        .then(extractState).then(applyState);
+    },
+
+    stopGatherMarch: function (marchId) {
+      return client.post('/game/world/stop-gather', { marchId: marchId })
         .then(extractState).then(applyState);
     },
 
@@ -634,8 +651,8 @@ window.Game = window.Game || {};
         .then(extractState).then(applyState);
     },
 
-    wildStartGather: function (wildTileId) {
-      return client.post('/game/wild/gather', { wildTileId: wildTileId })
+    wildStartGather: function (wildTileId, gatherMode) {
+      return client.post('/game/wild/gather', { wildTileId: wildTileId, gatherMode: gatherMode })
         .then(extractState).then(applyState);
     },
 
@@ -734,6 +751,56 @@ window.Game = window.Game || {};
     // 删除一封 (仅收件人)
     deleteMail: function (mailId) {
       return client.delete('/game/mail/' + mailId, { silent: true });
+    },
+
+    // ===== 交易所 / 市场 API =====
+    getMarketOverview: function (resType, page, size) {
+      var query = '?resourceType=' + encodeURIComponent(resType || 'all') +
+                  '&page=' + (page || 0) +
+                  '&size=' + (size || 20);
+      return client.get('/game/market/overview' + query);
+    },
+
+    getMyMarketOrders: function () {
+      return client.get('/game/market/my-orders');
+    },
+
+    createMarketOrder: function (resourceType, amount, pricePerUnit) {
+      return client.post('/game/market/order/create', {
+        resourceType: resourceType,
+        amount: amount,
+        pricePerUnit: pricePerUnit
+      }).then(function (data) {
+        if (data && data.state) applyState(data.state);
+        return data;
+      });
+    },
+
+    buyMarketOrder: function (orderId) {
+      return client.post('/game/market/order/buy', { orderId: orderId })
+        .then(function (data) {
+          if (data && data.state) applyState(data.state);
+          return data;
+        });
+    },
+
+    cancelMarketOrder: function (orderId) {
+      return client.post('/game/market/order/cancel', { orderId: orderId })
+        .then(function (data) {
+          if (data && data.state) applyState(data.state);
+          return data;
+        });
+    },
+
+    systemExchange: function (fromRes, toRes, amount) {
+      return client.post('/game/market/exchange', {
+        fromRes: fromRes,
+        toRes: toRes,
+        amount: amount
+      }).then(function (data) {
+        if (data && data.state) applyState(data.state);
+        return data;
+      });
     }
   };
 

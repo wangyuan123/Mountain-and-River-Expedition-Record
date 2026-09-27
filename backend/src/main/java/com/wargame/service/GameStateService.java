@@ -1,5 +1,6 @@
 package com.wargame.service;
 
+import com.wargame.model.constants.JapaneseOfficers;
 import com.wargame.model.constants.MilitaryRankDef;
 import com.wargame.model.constants.WorldConfig;
 import com.wargame.model.constants.WildTypeDef;
@@ -31,6 +32,7 @@ public class GameStateService {
     @org.springframework.beans.factory.annotation.Autowired private CityService cityService;
     @org.springframework.beans.factory.annotation.Autowired private ArmyProductionQueueRepository armyQueues;
     @org.springframework.beans.factory.annotation.Autowired private TechService techService;
+    @org.springframework.beans.factory.annotation.Autowired private PrerequisiteService prerequisiteService;
     @org.springframework.beans.factory.annotation.Autowired private TechResearchQueueRepository techResearchQueueRepository;
 
     private final WorldViewService worldViewService;
@@ -209,6 +211,7 @@ public class GameStateService {
         // --- buildings ---
         List<Building> buildings = buildingRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         state.put("buildings", buildBuildingsMap(buildings));
+        state.put("coastalPortLevel", prerequisiteService.coastalPortLevel(playerId));
 
         int populationCapacity = buildings.stream()
                 .filter(b -> "house".equals(b.getType()))
@@ -356,13 +359,13 @@ public class GameStateService {
         Map<String, Object> academyMap = new LinkedHashMap<>();
         if (academy != null) {
             academyMap.put("list", JsonUtil.parseList(academy.getOfficers()));
-            academyMap.put("refreshAt", academy.getRefreshAt() != null ? academy.getRefreshAt() : 0);
         } else {
             academyMap.put("list", new ArrayList<>());
-            academyMap.put("refreshAt", 0);
         }
+        academyMap.putAll(AcademyRefreshPolicy.snapshot(player, System.currentTimeMillis()).toState());
         int academyLevel = buildings.stream().filter(b -> "academy".equals(b.getType()))
                 .mapToInt(b -> b.getLevel() != null ? b.getLevel() : 0).sum();
+        academyMap.put("candidateCount", OfficerService.ACADEMY_CANDIDATE_COUNT);
         academyMap.put("fiveStarBatchChance", OfficerService.academyFiveStarBatchChance(academyLevel));
         state.put("academy", academyMap);
 
@@ -799,6 +802,10 @@ public class GameStateService {
         Set<String> used = collectRealPlayerCoordinates();
         int center = WorldConfig.SIZE / 2;
         used.add(center + "," + center);
+        int[] snowOrigin = reserveNorthernSnowfield(used);
+        for (int dy = 0; dy < 3; dy++) for (int dx = 0; dx < 3; dx++) {
+            saveGeneratedWild(worldId, "snow", snowOrigin[0] + dx, snowOrigin[1] + dy);
+        }
 
         // Generate 60 bandits
         for (int i = 0; i < 60; i++) {
@@ -812,36 +819,21 @@ public class GameStateService {
             bandit.setX(coord[0]);
             bandit.setY(coord[1]);
             bandit.setArmy(JsonUtil.toJson(bl.army()));
+            bandit.setCommanderName(JapaneseOfficers.getCommanderForLevel(bl.lv()));
             bandit.setDefeated(false);
             banditRepository.save(bandit);
         }
 
         npcCitySpawnService.ensurePopulation(worldId);
 
-        // Generate 40 wild tiles
+        // Keep snow in the northern field; the remaining wilds can be scattered.
         List<String> wildTypes = new ArrayList<>(WildTypeDef.WILD_TYPES.keySet());
-        List<String> wDefUnits = List.of("infantry", "motor", "armored", "ltank");
+        wildTypes.remove("snow");
 
-        for (int w = 0; w < 40; w++) {
+        for (int w = 0; w < 31; w++) {
             int[] coord = freeCoord(used);
-            int wLv = rand(1, WorldConfig.MAX_NPC_LEVEL);
             String wType = wildTypes.get(rand(0, wildTypes.size() - 1));
-            Map<String, Integer> wGarrison = new LinkedHashMap<>();
-            wGarrison.put(wDefUnits.get(rand(0, wDefUnits.size() - 1)), 5 * wLv);
-
-            WildTile wildTile = new WildTile();
-            wildTile.setWorldId(worldId);
-            wildTile.setType(wType);
-            wildTile.setX(coord[0]);
-            wildTile.setY(coord[1]);
-            wildTile.setLevel(wLv);
-            wildTile.setGarrison(JsonUtil.toJson(wGarrison));
-            wildTile.setScouted(false);
-            wildTile.setOccupied(false);
-            wildTile.setOccupiedBy(null);
-            wildTile.setTotalRes(wLv * 800);
-            wildTile.setMined(0);
-            wildTileRepository.save(wildTile);
+            saveGeneratedWild(worldId, wType, coord[0], coord[1]);
         }
 
         terrain.ensure();
@@ -883,6 +875,43 @@ public class GameStateService {
     // ================================================================
     // Private helpers - world generation
     // ================================================================
+
+    /** Reserve a contiguous northern snowfield before other generated targets claim its cells. */
+    private int[] reserveNorthernSnowfield(Set<String> used) {
+        String mask = terrain.current();
+        if (mask == null) mask = WorldTerrainService.generate();
+        for (int y = 12; y <= 24; y++) for (int offset = 0; offset < 80; offset++) {
+            int x = WorldConfig.SIZE / 2 - 1 + (offset % 2 == 0 ? offset / 2 : -(offset + 1) / 2);
+            boolean free = true;
+            for (int dy = 0; dy < 3; dy++) for (int dx = 0; dx < 3; dx++) {
+                int px = x + dx, py = y + dy;
+                if (used.contains(px + "," + py) || WorldTerrainService.sea(mask, px, py)) free = false;
+            }
+            if (!free) continue;
+            for (int dy = 0; dy < 3; dy++) for (int dx = 0; dx < 3; dx++) used.add((x + dx) + "," + (y + dy));
+            return new int[]{x, y};
+        }
+        throw new IllegalStateException("地图北方没有足够的连续陆地生成雪地");
+    }
+
+    private void saveGeneratedWild(Long worldId, String type, int x, int y) {
+        int level = rand(1, WorldConfig.MAX_NPC_LEVEL);
+        List<String> units = List.of("infantry", "motor", "armored", "ltank");
+        Map<String, Integer> garrison = Map.of(units.get(rand(0, units.size() - 1)), 5 * level);
+        WildTile tile = new WildTile();
+        tile.setWorldId(worldId);
+        tile.setType(type);
+        tile.setX(x);
+        tile.setY(y);
+        tile.setLevel(level);
+        tile.setGarrison(JsonUtil.toJson(garrison));
+        tile.setScouted(false);
+        tile.setOccupied(false);
+        tile.setOccupiedBy(null);
+        tile.setTotalRes(level * 800);
+        tile.setMined(0);
+        wildTileRepository.save(tile);
+    }
 
     private int[] freeCoord(Set<String> used) {
         return freeCoord(used,1);

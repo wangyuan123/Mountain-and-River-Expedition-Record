@@ -1,5 +1,6 @@
 package com.wargame.service;
 
+import com.wargame.model.constants.JapaneseOfficers;
 import com.wargame.model.constants.WorldConfig;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
@@ -47,11 +48,15 @@ public class WorldMapService {
                     .forEach(c -> targets.add(city(viewer, c, owners.get(c.getOwnerId()))));
             npcs.findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(world, x, maxX, y, maxY).forEach(n -> {
                 Map<String, Object> t = base("npc", n.getId(), n.getX(), n.getY(), n.getName(), n.getLevel());
-                t.put("defeated", Boolean.TRUE.equals(n.getDefeated())); targets.add(t);
+                t.put("defeated", Boolean.TRUE.equals(n.getDefeated()));
+                t.put("commanderName", n.getCommanderName() != null ? n.getCommanderName() : JapaneseOfficers.getCommanderForLevel(n.getLevel() != null ? n.getLevel() : 1));
+                targets.add(t);
             });
             bandits.findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(world, x, maxX, y, maxY).forEach(b -> {
                 Map<String, Object> t = base("bandit", b.getId(), b.getX(), b.getY(), b.getName(), b.getLevel());
-                t.put("defeated", Boolean.TRUE.equals(b.getDefeated())); targets.add(t);
+                t.put("defeated", Boolean.TRUE.equals(b.getDefeated()));
+                t.put("commanderName", b.getCommanderName() != null ? b.getCommanderName() : JapaneseOfficers.getCommanderForLevel(b.getLevel() != null ? b.getLevel() : 1));
+                targets.add(t);
             });
             wildList.forEach(w -> targets.add(wild(viewer, w, owners.get(w.getOccupiedBy()))));
         }
@@ -74,12 +79,16 @@ public class WorldMapService {
             case "npc" -> {
                 NpcCity n = npcs.findById(id).filter(v -> world.equals(v.getWorldId())).orElseThrow(this::missing);
                 Map<String, Object> t = base(kind, id, n.getX(), n.getY(), n.getName(), n.getLevel());
-                t.put("defeated", Boolean.TRUE.equals(n.getDefeated())); return t;
+                t.put("defeated", Boolean.TRUE.equals(n.getDefeated()));
+                t.put("commanderName", n.getCommanderName() != null ? n.getCommanderName() : JapaneseOfficers.getCommanderForLevel(n.getLevel() != null ? n.getLevel() : 1));
+                return t;
             }
             case "bandit" -> {
                 Bandit b = bandits.findById(id).filter(v -> world.equals(v.getWorldId())).orElseThrow(this::missing);
                 Map<String, Object> t = base(kind, id, b.getX(), b.getY(), b.getName(), b.getLevel());
-                t.put("defeated", Boolean.TRUE.equals(b.getDefeated())); return t;
+                t.put("defeated", Boolean.TRUE.equals(b.getDefeated()));
+                t.put("commanderName", b.getCommanderName() != null ? b.getCommanderName() : JapaneseOfficers.getCommanderForLevel(b.getLevel() != null ? b.getLevel() : 1));
+                return t;
             }
             case "wild" -> {
                 WildTile w = wilds.findById(id).filter(v -> world.equals(v.getWorldId())).orElseThrow(this::missing);
@@ -132,10 +141,13 @@ public class WorldMapService {
         t.put("type", w.getType());
         t.put("occupied", Boolean.TRUE.equals(w.getOccupied()) && viewer.equals(w.getOccupiedBy()));
         t.put("claimed", Boolean.TRUE.equals(w.getOccupied()));
-        // 地图概览仅向领地主人提供采集状态，不暴露其他玩家的生产情报。
+        // 地图概览仅向领地主人提供采集与驻扎状态；进驻行军删除后仍可显示驻军标记。
         if (Boolean.TRUE.equals(t.get("occupied"))) {
+            t.put("hasGarrison", JsonUtil.parseIntMap(w.getGarrison()).values().stream().anyMatch(count -> count != null && count > 0));
             t.put("gathering", Boolean.TRUE.equals(w.getGathering()));
             t.put("gatherEndAt", w.getGatherEndAt() == null ? 0L : w.getGatherEndAt());
+            t.put("gatherMode", w.getGatherMode());
+            t.put("gatherHarvested", w.getGatherHarvested());
         }
         if (Boolean.TRUE.equals(w.getOccupied()) && w.getOccupiedBy() != null) {
             t.put("ownerId", w.getOccupiedBy());

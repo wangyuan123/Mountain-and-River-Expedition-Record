@@ -34,7 +34,7 @@ class BattleDamageTest {
         String report = act("rocket", 32, targets, 0, false, null, null);
         assertEquals(0, targets.get("htank"));
         assertTrue(targets.get("bunker") >= 90 && targets.get("bunker") <= 91);
-        assertTrue(report.contains("倍率×10.0 相克"), report);
+        assertTrue(report.contains("倍率×5.5 相克"), report);
         assertTrue(report.contains("余伤攻击敌碉堡(100) 对工事攻击179 伤害2473"), report);
         assertEquals(1, report.lines().filter(line -> line.contains("本次原始火力")).count());
         String rocketName = UnitDef.UNITS.get("rocket").name();
@@ -166,8 +166,8 @@ class BattleDamageTest {
         String closeLog = act(new BattleService(4096), "rocket", 168, close, 0, false, null, null);
         String farLog = act(new BattleService(4096), "rocket", 168, far, 2000, false, null, null);
         assertEquals(close, far);
-        assertTrue(closeLog.contains("伤害38500"));
-        assertTrue(farLog.contains("伤害38500"));
+        assertTrue(closeLog.contains("伤害22132"));
+        assertTrue(farLog.contains("伤害22132"));
     }
 
     @Test

@@ -52,7 +52,7 @@ function setupTest(officers = []) {
   return context.Game;
 }
 
-test('首页军官将领栏目标题包含【去招募>】按钮，点击跳转至军校招募', () => {
+test('首页军官将领栏目标题包含【去招募>】按钮，点击跳转至陆军讲武堂招募', () => {
   const officers = [
     { name: '古德里安', level: 10, star: 5, military: 90, logistics: 80, knowledge: 70, role: 'idle' }
   ];
@@ -61,10 +61,10 @@ test('首页军官将领栏目标题包含【去招募>】按钮，点击跳转�
 
   // 验证包含 去招募 按钮及样式类
   assert.match(html, /<span class="home-officer-go zone-head-action"[^>]*>去招募 &gt;<\/span>/);
-  // 验证点击事件跳转到 academy (军校)
+  // 验证点击事件跳转到 academy (讲武堂)
   assert.match(html, /onclick="event\.stopPropagation\(\);Game\.go\('academy'\)"/);
   // 验证带有 title 提示
-  assert.match(html, /title="点击前往军校 · 招募将领"/);
+  assert.match(html, /title="点击前往陆军讲武堂 · 招募将领"/);
 });
 
 test('首页在无军官时标题栏依然展示【去招募>】按钮', () => {
@@ -73,6 +73,31 @@ test('首页在无军官时标题栏依然展示【去招募>】按钮', () => {
 
   assert.match(html, /<span class="home-officer-go zone-head-action"[^>]*>去招募 &gt;<\/span>/);
   assert.match(html, /Game\.go\('academy'\)/);
+  assert.match(html, /去讲武堂招募 &gt;<\/span>/);
+  assert.match(html, /暂未招募将领/);
+});
+
+test('首页军官列表完整展示，并由样式控制为三排横向滚动', () => {
+  const officers = Array.from({ length: 7 }, (_, index) => ({
+    id: index + 1,
+    name: '将领' + (index + 1),
+    level: 10 - index,
+    star: 5,
+    military: 90,
+    logistics: 80,
+    knowledge: 70,
+    role: 'idle'
+  }));
+  const G = setupTest(officers);
+  const html = G.MainView.renderOfficerSummaryCard();
+
+  assert.equal((html.match(/class="home-officer-item home-officer-item-action"/g) || []).length, 7);
+  assert.match(html, /共 <b>7<\/b> 名将领/);
+  assert.match(html, /class="home-officer-list"/);
+
+  const css = fs.readFileSync(path.join(__dirname, '../css/style.css'), 'utf8');
+  assert.match(css, /\.home-officer-list\s*\{[^}]*grid-auto-flow:\s*column;[^}]*grid-template-rows:\s*repeat\(3,/s);
+  assert.match(css, /\.home-officer-list\s*\{[^}]*overflow-x:\s*auto;/s);
 });
 
 test('首页点击将领进入详情，只有底部参谋部入口跳转至军官管理', () => {

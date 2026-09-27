@@ -34,6 +34,8 @@
       line-height: 1.6;
     }
 
+    .game-icon-img { display: inline-block; width: 1.35em; height: 1.35em; object-fit: contain; vertical-align: middle; }
+
     /* Style Switcher Bar */
     .style-switcher {
       display: flex;
@@ -764,7 +766,7 @@
             + '    <a ' + navActive.army + ' onclick="switchView(\'army\')">⚔️ 军事</a>'
             + '    <a ' + navActive.officer + ' onclick="switchView(\'officer\')">🎖️ 军官</a>'
             + '    <a ' + navActive.alerts + ' onclick="switchView(\'alerts\')">🚨 军情</a>'
-            + '    <a href="javascript:void(0)">🌾 农田</a>'
+            + '    <a href="javascript:void(0)"><img class="game-icon-img" src="img/resources/models/food.webp" alt="粮食"/> 农田</a>'
             + '    <a href="javascript:void(0)">🗺️ 世界</a>'
             + '    <a href="javascript:void(0)">✉️ 邮件(2)</a>'
             + '    <a href="javascript:void(0)">💎 商城</a>'
@@ -917,10 +919,10 @@
                + '    <span>★ 声望: 18,920 · 💎 680</span>'
                + '  </div>'
                + '  <div class="paper-res-grid">'
-               + '    <div>🌾 粮 <b>84.2k</b></div>'
-               + '    <div>🔩 钢 <b>65.1k</b></div>'
-               + '    <div>🛢️ 油 <b>42.0k</b></div>'
-               + '    <div>🪙 金 <b>45.2k</b></div>'
+               + '    <div><img class="game-icon-img" src="img/resources/models/food.webp" alt="粮食"/> 粮 <b>84.2k</b></div>'
+               + '    <div><img class="game-icon-img" src="img/resources/models/steel.webp" alt="钢铁"/> 钢 <b>65.1k</b></div>'
+               + '    <div><img class="game-icon-img" src="img/resources/models/oil.webp" alt="石油"/> 油 <b>42.0k</b></div>'
+               + '    <div><img class="game-icon-img" src="img/resources/models/gold.webp" alt="黄金"/> 金 <b>45.2k</b></div>'
                + '  </div>'
                + '</div>'
                + '<div class="paper-nav">'
@@ -960,10 +962,10 @@
                + '    <span style="color:#2563eb;font-size:11px;">声望 18,920</span>'
                + '  </div>'
                + '  <div class="modern-chips">'
-               + '    <span class="chip">🌾 84.2k</span>'
-               + '    <span class="chip">🔩 65.1k</span>'
-               + '    <span class="chip">🛢️ 42.0k</span>'
-               + '    <span class="chip">🪙 45.2k</span>'
+               + '    <span class="chip"><img class="game-icon-img" src="img/resources/models/food.webp" alt="粮食"/> 84.2k</span>'
+               + '    <span class="chip"><img class="game-icon-img" src="img/resources/models/steel.webp" alt="钢铁"/> 65.1k</span>'
+               + '    <span class="chip"><img class="game-icon-img" src="img/resources/models/oil.webp" alt="石油"/> 42.0k</span>'
+               + '    <span class="chip"><img class="game-icon-img" src="img/resources/models/gold.webp" alt="黄金"/> 45.2k</span>'
                + '  </div>'
                + '</div>'
                + '<div class="modern-nav">'

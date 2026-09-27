@@ -55,12 +55,10 @@ window.Game = window.Game || {};
     return h + '时' + (remM > 0 ? (remM + '分') : '');
   }
 
-  function costText(cost) {
+  function costHtml(cost) {
     var arr = [];
-    var emojiMap = (G.DATA && G.DATA.resEmoji) || {};
     for (var k in cost) {
-      var ico = emojiMap[k] || G.DATA.resources[k].icon || k;
-      arr.push(ico + cost[k]);
+      arr.push(G.resourceIconHtml(k) + cost[k]);
     }
     return arr.join(' ');
   }
@@ -113,13 +111,14 @@ window.Game = window.Game || {};
 
       // 2. 如果其他科技正在研发中
       if (activeRes) {
-        G.toast('科研中心正在研发【' + activeRes.name + '】，请等待完成或使用加速符');
+        G.toast('国防研究所正在研发【' + activeRes.name + '】，请等待完成或使用加速符');
         return;
       }
 
-      // 3. 检查科研中心等级
-      if (labLv < t.labReq) {
-        G.toast('需科研中心 Lv.' + t.labReq);
+      // 3. 检查国防研究所等级
+      var missing = G.Prerequisites && G.Prerequisites.firstMissing('technologies', id, lv + 1);
+      if (missing || labLv < t.labReq) {
+        G.toast(missing ? G.Prerequisites.missingText(missing) : '需国防研究所 Lv.' + t.labReq);
         return;
       }
 
@@ -134,12 +133,11 @@ window.Game = window.Game || {};
       var duration = techDuration(id, lv, labLv);
       var enough = Core.costEnough(cost);
 
-      var emojiMap = (G.DATA && G.DATA.resEmoji) || {};
       var cur = s.resources || {};
       var costRows = '';
       for (var k in cost) {
         var resName = (G.DATA.resources[k] && G.DATA.resources[k].name) || k;
-        var ico = emojiMap[k] || (G.DATA.resources[k] && G.DATA.resources[k].icon) || k;
+        var ico = G.resourceIconHtml(k);
         var need = cost[k];
         var have = cur[k] || 0;
         var ok = have >= need;
@@ -161,7 +159,7 @@ window.Game = window.Game || {};
           '<span class="cu-val" style="color:var(--accent);font-weight:bold;">' + diff.curStr + ' → ' + diff.nextStr + '</span>' +
         '</div>';
 
-      var labDiscount = labLv > 1 ? (' (科研中心 Lv.' + labLv + ' 加速 -' + Math.min(80, (labLv - 1) * 10) + '%)') : '';
+      var labDiscount = labLv > 1 ? (' (国防研究所 Lv.' + labLv + ' 加速 -' + Math.min(80, (labLv - 1) * 10) + '%)') : '';
       var durHtml = '<div class="cu-row"><span class="cu-ico">⏱</span><span class="cu-name">研发工期</span>' +
                     '<span class="cu-val">' + timeText(duration) + '<span class="cu-sub">' + labDiscount + '</span></span></div>';
 
@@ -210,6 +208,7 @@ window.Game = window.Game || {};
         }
         G.toast(resp.message || (D.techs[id].name + ' 已开始研发'));
         Core.render();
+        if (G.Onboarding && G.Onboarding.actionStarted) G.Onboarding.actionStarted('tech', id);
       }).catch(function (err) {
         G.toast(err.message || '研发失败');
       });
@@ -301,6 +300,7 @@ window.Game = window.Game || {};
             }
             G.toast(resp.message || '加速成功');
             Core.render();
+            if (G.Onboarding && G.Onboarding.refresh) G.Onboarding.refresh();
           }).catch(function (err) {
             G.toast(err.message || '加速失败');
           });
@@ -356,7 +356,7 @@ window.Game = window.Game || {};
       var res = s.research;
       if (!res) {
         return '<div class="panel" style="margin-bottom:12px;padding:8px 12px;border:1px dashed rgba(212,163,89,0.3);background:rgba(212,163,89,0.03);border-radius:6px;font-size:12px;color:var(--muted);">' +
-               '💡 科研中心空闲中：可自主选择一项战略科技开展研发' +
+               '💡 国防研究所空闲中：可自主选择一项战略科技开展研发' +
                '</div>';
       }
 
@@ -393,8 +393,8 @@ window.Game = window.Game || {};
       var activeRes = s.research;
 
       var h = '';
-      h += '<div class="title">- 科研中心 -</div>';
-      h += '<div class="desc">科研中心 Lv.' + labLv + ' · ' + branchOrder.length + ' 类科技，共 ' + Object.keys(D.techs).length + ' 项。科研中心等级越高，研发耗时越短。</div>';
+      h += '<div class="title">- 国防研究所 -</div>';
+      h += '<div class="desc">国防研究所 Lv.' + labLv + ' · ' + branchOrder.length + ' 类科技，共 ' + Object.keys(D.techs).length + ' 项。国防研究所等级越高，研发耗时越短。</div>';
 
       // 1. 顶部正在研发卡片
       h += this.renderActiveResearchCard(s);
@@ -418,7 +418,9 @@ window.Game = window.Game || {};
           if (branch !== activeBranch) return;
 
           var lv = (s.tech && s.tech[id]) || 0;
-          var locked = labLv < t.labReq;
+          var missing = G.Prerequisites && G.Prerequisites.firstMissing('technologies', id, lv + 1);
+          var locked = !!missing || labLv < t.labReq;
+          var lockText = missing ? G.Prerequisites.missingText(missing) : '需国防研究所 Lv.' + t.labReq;
           var maxed = lv >= t.max;
           var cost = techCost(id, lv);
           var duration = techDuration(id, lv, labLv);
@@ -452,9 +454,9 @@ window.Game = window.Game || {};
           } else if (maxed) {
             h += '    <span class="quest-badge ok">✓ 已满级</span>';
           } else if (locked) {
-            h += '    <span class="quest-badge" style="opacity:0.6;">需科研中心 Lv.' + t.labReq + '</span>';
+            h += '    <span class="quest-badge" style="opacity:0.6;">前置未满足</span>';
           } else if (isBusy) {
-            h += '    <button class="btn sm" disabled style="opacity:0.6;padding:2px 8px;font-size:12px;" title="科研中心正忙">正忙</button>';
+            h += '    <button class="btn sm" disabled style="opacity:0.6;padding:2px 8px;font-size:12px;" title="国防研究所正忙">正忙</button>';
           } else if (enough) {
             h += '    <button class="btn sm ok" style="padding:3px 12px;font-size:12px;font-weight:bold;" onclick="event.stopPropagation();Game.Tech.confirmResearch(\'' + id + '\')">🔬 研发</button>';
           } else {
@@ -467,14 +469,24 @@ window.Game = window.Game || {};
 
           // 费用与耗时展示
           if (locked) {
-            h += '  <div class="cost" style="color:var(--danger);font-size:12px;">需科研中心升级至 Lv.' + t.labReq + '</div>';
+            h += '  <div class="cost" style="color:var(--danger);font-size:12px;">' + lockText + '</div>';
           } else if (maxed) {
             h += '  <div class="cost" style="color:var(--ok);font-size:12px;">已达到终极科技上限</div>';
           } else {
             h += '  <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);">';
-            h += '    <span>下一级: ' + costText(cost) + '</span>';
+            h += '    <span>下一级: ' + costHtml(cost) + '</span>';
             h += '    <span>⏱ 耗时: ' + timeText(duration) + '</span>';
             h += '  </div>';
+          }
+
+          if (!maxed && G.Prerequisites) {
+            h += '<details class="prereq-details"' + (locked ? ' open' : '') +
+              ' onclick="event.stopPropagation()"><summary>Lv.' + (lv + 1) + ' 建筑要求</summary>' +
+              G.Prerequisites.html('technologies', id, lv + 1) + '</details>';
+          }
+          if (G.Prerequisites) {
+            h += '<button type="button" class="btn sm" onclick="event.stopPropagation();Game.Prerequisites.preview(\'technologies\',\'' +
+              id + '\',' + Math.min(t.max, lv + 1) + ')">查看各级要求</button>';
           }
 
           h += '</div>';

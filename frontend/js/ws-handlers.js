@@ -65,7 +65,18 @@ window.Game = window.Game || {};
       G.state.population = data.population;
     }
     if (data.constructions) {
-      G.state.constructions = data.constructions;
+      var previousConstructions = G.state.constructions || [];
+      var previousBySlot = {};
+      previousConstructions.forEach(function (job) {
+        var key = String(job.id) + ':' + (job.slot == null ? '' : job.slot);
+        previousBySlot[key] = job;
+      });
+      G.state.constructions = data.constructions.map(function (job) {
+        if (job.queueId != null) return job;
+        var key = String(job.id) + ':' + (job.slot == null ? '' : job.slot);
+        var previous = previousBySlot[key];
+        return previous && previous.queueId != null ? Object.assign({}, previous, job, { queueId: previous.queueId }) : job;
+      });
     }
     if (data.marches && G.state.world) {
       var prevMap = {};
@@ -107,6 +118,7 @@ window.Game = window.Game || {};
       if (G.Tech && G.Core && G.Core.route === 'tech') {
         G.Core.refreshContent();
       }
+      if (G.Onboarding && G.Onboarding.refresh) G.Onboarding.refresh();
     }
     // 本 tick 内刚刚完成的建筑(后端在建筑倒计时归零时通过 tick 推送)
     if (data.completedBuilds && G.Task && G.Task.Quests && G.Task.Quests.onEvent) {
@@ -115,6 +127,9 @@ window.Game = window.Game || {};
         // 避免"刚点升级就提示可领奖"的体验割裂。
         G.Task.Quests.onEvent('BUILD_DONE', data.completedBuilds[bi]);
       }
+    }
+    if (data.completedBuilds && data.completedBuilds.length && G.Onboarding && G.Onboarding.refresh) {
+      G.Onboarding.refresh();
     }
     // Re-render affected areas using silent/zero-flash update for seamless experience
     // Skip content refresh if user is editing (mail compose / reply / profile edit / focused input)
@@ -136,7 +151,9 @@ window.Game = window.Game || {};
     var messages = {
       arrived: '部队已到达目标: ' + (data.targetName || ''),
       scoutComplete: '侦查完成，情报已送达',
-      gatherComplete: '采集完成! 获得' + (data.amount || 0) + ' ' + (data.resource || ''),
+      gatherComplete: '采集完成，部队已自动按原路线返城，资源抵达后入库',
+      gatherStopped: '采集已终止，部队原地待命，请下达回城命令',
+      returning: '部队已开始按原路线返城，抵达后部队与资源入库',
       returned: '部队已返回城市' + (data.amount ? '，带回' + data.amount + ' ' + (data.resource || '') : '')
     };
     if (messages[data.event]) G.toast(messages[data.event]);

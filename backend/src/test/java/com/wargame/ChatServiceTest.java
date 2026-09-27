@@ -7,6 +7,7 @@ import com.wargame.repository.ChatMessageRepository;
 import com.wargame.repository.PlayerRepository;
 import com.wargame.security.RateLimiter;
 import com.wargame.service.ChatService;
+import com.wargame.service.PoliticalWordFilter;
 import com.wargame.service.WebSocketPushService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,18 +24,20 @@ public class ChatServiceTest {
     private ChatService chatService;
     private RateLimiter rateLimiter;
     private Player player;
+    private ChatMessageRepository chatRepo;
 
     @BeforeEach
     public void setUp() {
-        ChatMessageRepository chatRepo = Mockito.mock(ChatMessageRepository.class);
+        chatRepo = Mockito.mock(ChatMessageRepository.class);
         PlayerRepository playerRepo = Mockito.mock(PlayerRepository.class);
         WebSocketPushService pushService = Mockito.mock(WebSocketPushService.class);
         rateLimiter = new RateLimiter();
-        chatService = new ChatService(chatRepo, playerRepo, rateLimiter, pushService);
+        chatService = new ChatService(chatRepo, playerRepo, rateLimiter, pushService, new PoliticalWordFilter());
 
         player = new Player();
         player.setId(999L);
         player.setUsername("TestCommander");
+        player.setPrestige(10000);
         when(playerRepo.findById(999L)).thenReturn(Optional.of(player));
         when(chatRepo.save(any(ChatMessage.class))).thenAnswer(inv -> {
             ChatMessage m = inv.getArgument(0);
@@ -48,6 +51,27 @@ public class ChatServiceTest {
         assertNotNull(res);
         assertEquals("指挥部全员就绪！", res.content());
         assertEquals("TestCommander", res.username());
+    }
+
+    @Test
+    public void testPrestigeBelowThresholdCannotSend() {
+        player.setPrestige(9999);
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> chatService.send(player.getId(), "新手发言"));
+        assertTrue(ex.getMessage().contains("声望达到 10000"));
+        Mockito.verify(chatRepo, Mockito.never()).save(any(ChatMessage.class));
+
+        // 被拒绝的发言不应占用次数或冷却时间。
+        player.setPrestige(10000);
+        assertNotNull(chatService.send(player.getId(), "达标发言"));
+    }
+
+    @Test
+    public void testNullPrestigeCannotSend() {
+        player.setPrestige(null);
+        assertThrows(IllegalArgumentException.class,
+                () -> chatService.send(player.getId(), "新手发言"));
+        Mockito.verify(chatRepo, Mockito.never()).save(any(ChatMessage.class));
     }
 
     @Test
@@ -91,6 +115,20 @@ public class ChatServiceTest {
         ChatDtos.MessageResponse res = chatService.send(player.getId(), "管理员不要搞事");
         assertNotNull(res);
         assertTrue(res.content().contains("***"));
+    }
+
+    @Test
+    public void testPoliticalWordsFilterBeforeSaving() {
+        ChatDtos.MessageResponse res = chatService.send(player.getId(), "台-独内容");
+        assertEquals("*-*内容", res.content());
+    }
+
+    @Test
+    public void testPoliticalWordCannotBypassDuplicateLimit() {
+        chatService.send(player.getId(), "台-独内容");
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> chatService.send(player.getId(), "台-独内容"));
+        assertTrue(ex.getMessage().contains("请勿连续发送相同内容"));
     }
 
     @Test

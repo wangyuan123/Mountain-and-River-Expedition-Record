@@ -44,12 +44,11 @@ test('landscape navigation preserves its scroll and reveals the active entry', (
 test('landscape sidebar toggle persists and updates its accessible label', () => {
   const classes = new Set();
   const screen = { classList: { toggle(name, enabled) { if (enabled) classes.add(name); else classes.delete(name); } } };
-  const label = { textContent: '' };
   const icon = { textContent: '' };
   const attributes = {};
   const button = {
     setAttribute(name, value) { attributes[name] = value; },
-    querySelector(selector) { return selector === '.nav-collapse-label' ? label : icon; }
+    querySelector(selector) { return selector === '.nav-collapse-icon' ? icon : null; }
   };
   const storage = new Map();
   const context = {
@@ -71,7 +70,6 @@ test('landscape sidebar toggle persists and updates its accessible label', () =>
   assert.ok(classes.has('nav-collapsed'));
   assert.equal(attributes['aria-expanded'], 'false');
   assert.equal(attributes['aria-label'], '展开导航');
-  assert.equal(label.textContent, '展开导航');
   assert.equal(icon.textContent, '›');
   assert.equal(storage.get('wargame_landscape_nav_collapsed'), '1');
   main.toggleLandscapeNav();
@@ -91,7 +89,33 @@ test('game navigation renders an accessible landscape collapse control', () => {
   context.Game.Core.state = { world: { incoming: [] } };
   const html = context.Game.MainView.navBar();
   assert.match(html, /aria-controls="gameNavViewport" aria-expanded="true" aria-label="收起导航"/);
+  assert.match(html, /class="nav-collapse-icon" aria-hidden="true">‹<\/span><\/button>/);
+  assert.doesNotMatch(html, /nav-collapse-label/);
   assert.match(html, /id="gameNavViewport" class="nav-viewport"/);
+});
+
+test('map list return shares the page backbar without duplicating it', () => {
+  const context = { Game: {}, document: {
+    createElement(tag) {
+      return { tag, children: [], appendChild(node) { this.children.push(node); }, setAttribute() {}, addEventListener() {} };
+    }
+  } };
+  context.window = context;
+  vm.createContext(context);
+  require('./load-constants.cjs')(context);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/core.js'), 'utf8'), context);
+  const mapSwitch = { className: 'world-map-list-switch' };
+  let bar;
+  const view = { firstChild: mapSwitch,
+    querySelector(selector) { return selector === '.page-backbar' ? bar : selector === '.world-map-list-switch' ? mapSwitch : null; },
+    insertBefore(node) { bar = node; }
+  };
+  context.Game.Core.renderBackButton(view);
+  assert.equal(bar.className, 'page-backbar');
+  assert.equal(bar.children[0].className, 'page-back-button');
+  assert.equal(bar.children[1], mapSwitch);
+  context.Game.Core.renderBackButton(view);
+  assert.equal(bar.children.length, 2);
 });
 
 test('changing or returning to a route resets the independently scrolling view', () => {

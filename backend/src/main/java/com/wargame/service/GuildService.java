@@ -55,7 +55,8 @@ public class GuildService {
     }
 
     @Transactional
-    public Map<String, Object> create(Long playerId, String rawName) {
+    /** 创建时保存选定徽章；旧客户端未传 icon 时沿用旗帜默认值。 */
+    public Map<String, Object> create(Long playerId, String rawName, String rawIcon) {
         requireNoGuild(playerId);
         String name = normalizeName(rawName);
         if (guildRepository.existsByName(name)) throw new IllegalArgumentException("军团名称已被占用");
@@ -63,7 +64,7 @@ public class GuildService {
         Guild guild = new Guild();
         guild.setName(name);
         guild.setNotice("欢迎加入「" + name + "」");
-        guild.setIcon("⚑");
+        guild.setIcon(normalizeIcon(rawIcon));
         guild.setLeaderPlayerId(playerId);
         guild.setCreatedAt(now);
         guild = guildRepository.save(guild);
@@ -120,8 +121,7 @@ public class GuildService {
         Guild guild = requireManager(playerId, member.getGuildId());
         String newName = normalizeName(name);
         if (!newName.equals(guild.getName()) && guildRepository.existsByName(newName)) throw new IllegalArgumentException("军团名称已被占用");
-        String newIcon = icon == null ? "⚑" : icon.trim();
-        if (newIcon.length() < 1 || newIcon.length() > 4) throw new IllegalArgumentException("军团图标需为1-4个字符");
+        String newIcon = normalizeIcon(icon);
         guild.setName(newName);
         guild.setIcon(newIcon);
         guildRepository.save(guild);
@@ -266,4 +266,9 @@ public class GuildService {
     private boolean isManager(GuildMember member) { return member != null && (LEADER.equals(member.getRole()) || ADMIN.equals(member.getRole())); }
     private Player player(Long playerId) { return playerRepository.findById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在")); }
     private String normalizeName(String name) { String value = name == null ? "" : name.trim(); if (value.length() < 2 || value.length() > 16) throw new IllegalArgumentException("军团名称需为 2-16 个字符"); return value; }
+    private String normalizeIcon(String icon) {
+        String value = icon == null ? "⚑" : icon.trim();
+        if (value.length() < 1 || value.length() > 4) throw new IllegalArgumentException("军团图标需为1-4个字符");
+        return value;
+    }
 }
