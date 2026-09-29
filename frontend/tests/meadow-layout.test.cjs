@@ -62,6 +62,7 @@ test('meadow and woodland artwork avoids resource footprints, including tile-edg
   for(let cy=20;cy<=23;cy++)for(let cx=24;cx<=27;cx++) {
     const canvas=t.createTile(cx,cy,200);tiles.push({cx,cy,canvas});
     for(const image of canvas.images) {
+      assert.ok(!image.url.includes('grass-lush'),'lush grass must not be rendered on the map');
       if(image.url.includes('grass-'))grass++;else if(image.url.includes('wild-forest'))forest++;
       const x=(cx*t.tileSpan*t.density-t.padding+image.x)/t.density;
       const y=(cy*t.tileSpan*t.density-t.padding+image.y)/t.density;

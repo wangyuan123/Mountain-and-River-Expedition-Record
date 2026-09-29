@@ -34,7 +34,7 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<AuthDtos.AuthResponse> register(@RequestBody AuthDtos.RegisterRequest request,
                                                            HttpServletRequest httpRequest) {
-        AuthService.AuthResult result = authService.register(request.username(), request.password(), httpRequest);
+        AuthService.AuthResult result = authService.register(request.username(), request.password(), request.agreementVersion(), httpRequest);
         return ResponseEntity.ok(new AuthDtos.AuthResponse(result.token(), result.username(), result.playerId()));
     }
 

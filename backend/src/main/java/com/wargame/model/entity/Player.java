@@ -43,6 +43,10 @@ public class Player extends VersionedEntity implements CityEconomy {
     @Column(name = "avatar", length = 255)
     private String avatar = AvatarDef.randomAvatar();
 
+    /** 首页四个模块的账号级顺序，JSON 数组；null 表示尚未自定义。 */
+    @Column(name = "home_module_order", length = 128)
+    private String homeModuleOrder;
+
     @Column(name = "pos_x")
     private Integer posX = 0;
 

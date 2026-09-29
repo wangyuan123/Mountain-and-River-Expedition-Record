@@ -58,7 +58,7 @@
       if(north>.72)depth='thick';else if(north>.38&&depth==='thin')depth='medium';
       return 'img/map/snow-'+depth+'.webp';
     }
-    if (t.kind === 'wild' && t.type === 'grassland') return 'img/map/grass-' + ['lush','medium','sparse'][Math.abs(t.x*17+t.y*31)%3] + '.webp';
+    if (t.kind === 'wild' && t.type === 'grassland') return 'img/map/grass-' + ['medium','sparse','plain'][Math.abs(t.x*17+t.y*31)%3] + '.webp';
     if (t.kind === 'wild') return (G.DATA.wildTypes[t.type] || {}).icon || 'img/map/wild-forest.webp';
     return 'img/map/npc-fortress.webp';
   }

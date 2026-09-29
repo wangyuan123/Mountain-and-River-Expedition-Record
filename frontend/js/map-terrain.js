@@ -30,7 +30,7 @@
     return amount;
   }
   function loadMeadows() {
-    if (!meadowLoading) meadowLoading = Promise.all(['lush','medium','sparse','plain'].map(function(variant, i) {
+    if (!meadowLoading) meadowLoading = Promise.all(['medium','sparse','plain'].map(function(variant, i) {
       return new Promise(function(resolve) {
         var image = new Image();
         image.onload = function() { meadowImages[i] = image; resolve(); };
@@ -238,8 +238,8 @@
           var greenery = sample(wxm/density,wym/density,size).grass;
           if (greenery < .45 || clearance(wxm/density,wym/density,reach/density/2) < .12 || (G.MapOcean && G.MapOcean.sample(wxm/density,wym/density)>-1.4)) continue;
           var localDensity = greenery + (hash(mx+811,my+29)-.5)*.18;
-          // Favor lush lawns within existing patches while retaining sparse edges.
-          var variant = localDensity > .65 ? 0 : localDensity > .56 ? 1 : localDensity > .45 ? 2 : 3;
+          // Keep meadow patches at medium density or below; lush grass is intentionally excluded.
+          var variant = localDensity > .56 ? 0 : localDensity > .45 ? 1 : 2;
           var model = meadowImages[variant];
           if (!model) continue;
           ctx.globalAlpha = smooth(.45,.6,greenery)*.78;

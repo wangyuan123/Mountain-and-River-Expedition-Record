@@ -1266,7 +1266,7 @@ window.Game = window.Game || {};
         equippedBySlot[equipped[i].slot] = equipped[i];
         used[equipped[i].slot] = true;
       }
-      h += '<div class="officer-equipment-list">';
+      h += '<div class="officer-equipment-list' + (equipped.length ? '' : ' is-empty') + '">';
       var slotKeys = ['weapon', 'badge', 'coat'];
       for (var si = 0; si < slotKeys.length; si++) {
         var slot = slotKeys[si];
@@ -1321,7 +1321,6 @@ window.Game = window.Game || {};
       var rarity = officerRarity(o);
       var h = '';
       h += '<div class="officer-detail">';
-      h += '<div class="officer-detail-topline"><button type="button" class="officer-detail-back" onclick="Game.go(\'officer\')" aria-label="返回军官列表">‹ <span>军官列表</span></button><span>军官档案 / ' + esc(roleText(o.role)) + '</span></div>';
       h += '<header class="officer-detail-hero">';
       h += '<div class="officer-detail-identity">';
       h += '<div class="officer-detail-kicker">' + (rarity ? esc(rarity.label) : '山河远征录 · 军官档案') + '</div>';

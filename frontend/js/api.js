@@ -97,8 +97,8 @@ window.Game = window.Game || {};
 
     // ==================== 鉴权 ====================
 
-    register: function (username, password) {
-      return client.post('/auth/register', { username: username, password: password })
+    register: function (username, password, agreementVersion) {
+      return client.post('/auth/register', { username: username, password: password, agreementVersion: agreementVersion })
         .then(function (data) {
           if (data.token) client.setToken(data.token, data.username);
           client.invalidateStateCache();
@@ -241,6 +241,10 @@ window.Game = window.Game || {};
     setAvatar: function (avatar) {
       return client.post('/game/settings/avatar', { avatar: avatar })
         .then(extractState).then(applyState);
+    },
+
+    setHomeModuleOrder: function (order) {
+      return client.post('/game/settings/home-modules', { order: order });
     },
 
     // ==================== 军团 ====================

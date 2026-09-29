@@ -766,18 +766,6 @@
   font-size: 13px;
 }
 
-.officer-detail-topline {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  min-height: 34px;
-  margin-bottom: 8px;
-  color: var(--od-muted);
-  font-size: 11px;
-}
-
-.officer-detail-back,
 .officer-detail-bottom-back {
   appearance: none;
   border: 0;
@@ -788,9 +776,6 @@
   cursor: pointer;
 }
 
-.officer-detail-back { font-size: 22px; line-height: 1; }
-.officer-detail-back span { font-size: 12px; vertical-align: 3px; }
-.officer-detail-back:hover,
 .officer-detail-bottom-back:hover { text-decoration: underline; }
 
 .officer-detail-hero {
@@ -981,10 +966,125 @@
   --od-action-ink: #0e1726;
 }
 
+/* 经典家园档案沿用文字栏目与浅蓝分隔线，并压缩连续信息的行高。 */
+[data-theme="blue-white-classic"] .officer-detail {
+  --od-ink: #151515;
+  --od-muted: #687580;
+  --od-line: #cbd7e3;
+  --od-soft: #edf4fb;
+  --od-surface: #fff;
+  --od-accent: #2457a5;
+  padding: 0 4px 12px;
+}
+[data-theme="blue-white-classic"] .officer-detail-hero {
+  padding: 5px 2px 8px;
+  border: 0;
+  border-bottom: 2px solid #acc9ed;
+  border-radius: 0;
+  background: #fff;
+}
+[data-theme="blue-white-classic"] .officer-detail-identity {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px 10px;
+}
+[data-theme="blue-white-classic"] .officer-detail-kicker { grid-column: 1; grid-row: 1; font-size: 11px; }
+[data-theme="blue-white-classic"] .officer-detail-meta { grid-column: 2; grid-row: 1; font-size: 11px; }
+[data-theme="blue-white-classic"] .officer-detail-name-row {
+  grid-column: 1;
+  grid-row: 2;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1px 7px;
+  margin: 0;
+}
+[data-theme="blue-white-classic"] .officer-detail-name-row h1 { font-size: 20px; line-height: 1.2; }
+[data-theme="blue-white-classic"] .officer-detail-stars { grid-column: 2; grid-row: 2; margin: 0; }
+[data-theme="blue-white-classic"] .officer-detail-stars .officer-gem-star { flex-basis: 17px; width: 17px; height: 17px; }
+[data-theme="blue-white-classic"] .officer-detail-promotion {
+  justify-content: flex-start;
+  gap: 2px 10px;
+  margin: 0;
+  padding: 5px 2px;
+  border-bottom: 1px dotted var(--od-line);
+}
+[data-theme="blue-white-classic"] .officer-detail-promotion > div:first-child {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 9px;
+}
+[data-theme="blue-white-classic"] .officer-detail-promotion small { margin: 0; font-size: 11px; }
+[data-theme="blue-white-classic"] .officer-detail-promotion .officer-detail-actions { margin: 0; }
+[data-theme="blue-white-classic"] .officer-detail-section {
+  padding: 8px 2px 9px;
+  border-bottom: 1px dotted var(--od-line);
+}
+[data-theme="blue-white-classic"] .officer-detail-section-head {
+  align-items: center;
+  margin-bottom: 5px;
+  padding-bottom: 2px;
+  border-bottom: 2px solid #d8e8f8;
+}
+[data-theme="blue-white-classic"] .officer-detail-section-head h2 { font-size: 14px; }
+[data-theme="blue-white-classic"] .officer-detail-section-head h2::before { display: none; }
+[data-theme="blue-white-classic"] .officer-detail-section-head > span { font-size: 11px; }
+[data-theme="blue-white-classic"] .officer-attr-grid { gap: 5px 14px; }
+[data-theme="blue-white-classic"] .officer-attr-main { min-height: 20px; }
+[data-theme="blue-white-classic"] .officer-attr-main strong,
+[data-theme="blue-white-classic"] .officer-attr-main small { color: var(--od-muted); }
+[data-theme="blue-white-classic"] .officer-attr-main strong { font-size: 17px; }
+[data-theme="blue-white-classic"] .officer-attr-track { height: 4px; }
+[data-theme="blue-white-classic"] .officer-attr-effect { min-height: 0; margin-top: 2px; font-size: 11px; }
+[data-theme="blue-white-classic"] .officer-wash-row { margin-top: 2px; }
+[data-theme="blue-white-classic"] .officer-equipment-list { border-top: 0; }
+[data-theme="blue-white-classic"] .officer-equipment-row { min-height: 0; padding: 5px 2px; }
+[data-theme="blue-white-classic"] .officer-equipment-list.is-empty {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  border-bottom: 1px dotted var(--od-line);
+}
+[data-theme="blue-white-classic"] .officer-equipment-list.is-empty .officer-equipment-row {
+  gap: 4px;
+  border-bottom: 0;
+  white-space: nowrap;
+}
+[data-theme="blue-white-classic"] .officer-equipment-list.is-empty .officer-equipment-slot { flex-basis: auto; }
+[data-theme="blue-white-classic"] .officer-detail-subhead { margin: 6px 0 2px; }
+[data-theme="blue-white-classic"] .officer-exp-caption { margin-bottom: 3px; }
+[data-theme="blue-white-classic"] .officer-detail-progress { height: 5px; }
+[data-theme="blue-white-classic"] .officer-detail-actions { gap: 3px 8px; margin-top: 5px; }
+[data-theme="blue-white-classic"] .officer-detail .btn:not(.depot-btn) {
+  min-height: 26px;
+  padding: 3px 7px;
+  border-color: #c4d7ec;
+  border-radius: 2px;
+  background: #edf4fb;
+  color: #2457a5;
+}
+[data-theme="blue-white-classic"] .officer-detail .btn:not(.depot-btn):disabled {
+  border-color: var(--od-line);
+  background: #f4f6f8;
+  color: var(--od-muted);
+}
+[data-theme="blue-white-classic"] .officer-detail-note { font-size: 11px; line-height: 1.35; }
+[data-theme="blue-white-classic"] .officer-detail-skills .officer-skill-row { padding: 5px 2px; }
+[data-theme="blue-white-classic"] .officer-loyalty-heading { margin-bottom: 4px; }
+[data-theme="blue-white-classic"] .officer-loyalty-heading strong { font-size: 17px; }
+[data-theme="blue-white-classic"] .officer-detail-progress.loyalty { height: 5px; margin-bottom: 4px; }
+[data-theme="blue-white-classic"] .officer-detail-bottom-back { margin-top: 2px; padding: 4px; }
+
 @media (max-width: 380px) {
   .officer-detail-hero { padding: 10px; }
   .officer-detail-name-row { flex-wrap: wrap; gap: 2px 8px; }
   .officer-detail-name-row h1 { font-size: 20px; }
   .officer-detail-kicker { font-size: 9px; }
   .officer-attr-grid { gap: 12px; }
+
+  [data-theme="blue-white-classic"] .officer-detail-hero { padding: 5px 2px 8px; }
+  [data-theme="blue-white-classic"] .officer-detail-name-row { gap: 1px 7px; }
+  [data-theme="blue-white-classic"] .officer-detail-kicker { font-size: 11px; }
+  [data-theme="blue-white-classic"] .officer-attr-grid { gap: 5px 10px; }
 }

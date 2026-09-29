@@ -1,6 +1,7 @@
 package com.wargame.model.dto;
 
 import java.util.Map;
+import java.util.List;
 
 /**
  * 游戏 API 请求 DTO 集合 - 对应各控制器的请求体。
@@ -15,6 +16,7 @@ public class GameDtos {
 
     public record CityNameRequest(String cityName) {}
     public record AvatarRequest(String avatar) {}
+    public record HomeModuleOrderRequest(List<String> order) {}
 
     public record GuildSettingsRequest(String name, String icon) {}
 

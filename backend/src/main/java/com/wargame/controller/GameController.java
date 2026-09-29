@@ -197,6 +197,13 @@ public class GameController {
         return ResponseEntity.ok(result);
     }
 
+    @PostMapping("/settings/home-modules")
+    public ResponseEntity<Map<String, Object>> setHomeModuleOrder(@RequestBody GameDtos.HomeModuleOrderRequest request) {
+        Long playerId = authService.getCurrentPlayer().getId();
+        List<String> order = gameStateService.setHomeModuleOrder(playerId, request == null ? null : request.order());
+        return ResponseEntity.ok(Map.of("success", true, "homeModuleOrder", order));
+    }
+
     @PostMapping("/settings/tax")
     public ResponseEntity<Map<String, Object>> setTax(@RequestBody GameDtos.TaxRequest request) {
         if (request.tax() == null) {

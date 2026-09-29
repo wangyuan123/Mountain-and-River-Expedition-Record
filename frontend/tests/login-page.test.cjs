@@ -23,7 +23,7 @@ function renderLogin(recovery) {
   return view.innerHTML;
 }
 
-test('login page keeps credential fields, account notice and both auth actions', () => {
+test('login page uses one primary action with register and password recovery links', () => {
   const html = renderLogin(false);
   assert.match(html, /class="login-page"/);
   assert.match(html, /class="login-hero"/);
@@ -34,8 +34,13 @@ test('login page keeps credential fields, account notice and both auth actions',
   assert.match(html, /for="loginUser"/);
   assert.match(html, /id="loginUser"[^>]*autocomplete="username"/);
   assert.match(html, /id="loginPass"[^>]*type="password"/);
-  assert.match(html, /onsubmit="Game\.Main\.doLogin\(\); return false;"/);
-  assert.match(html, /onclick="Game\.Main\.doRegister\(\)"/);
+  assert.match(html, /id="loginForm"[^>]*data-auth-mode="login"[^>]*onsubmit="Game\.Main\.submitAuth\(\); return false;"/);
+  assert.match(html, /id="loginPrimaryAction"[^>]*type="submit">登 录/);
+  assert.match(html, /id="loginConfirmRow" hidden/);
+  assert.match(html, /id="loginPassConfirm"[^>]*autocomplete="new-password"/);
+  assert.match(html, /id="authModeSwitch"[^>]*Game\.Main\.toggleAuthMode\(\)">注册账号/);
+  assert.match(html, /Game\.Main\.showForgotPassword\(\)">忘记密码/);
+  assert.equal((html.match(/id="loginPrimaryAction"/g) || []).length, 1);
   assert.match(html, /id="loginMsg"[^>]*role="status"/);
   assert.match(html, /账号提示/);
 });

@@ -16,6 +16,9 @@ import java.util.concurrent.ThreadLocalRandom;
 @Service
 public class AuthService {
 
+    /** 变更协议正文时递增版本，旧页面提交会被服务端拒绝并要求重新确认。 */
+    public static final String CURRENT_REGISTRATION_AGREEMENT_VERSION = "2026-09-28-v1";
+
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.compliance.AntiAddictionService protection;
 
@@ -48,6 +51,13 @@ public class AuthService {
     }
 
     public AuthResult register(String username, String password, HttpServletRequest req) {
+        return register(username, password, CURRENT_REGISTRATION_AGREEMENT_VERSION, req);
+    }
+
+    public AuthResult register(String username, String password, String agreementVersion, HttpServletRequest req) {
+        if (!CURRENT_REGISTRATION_AGREEMENT_VERSION.equals(agreementVersion)) {
+            throw new IllegalArgumentException("请先阅读并同意最新的免责声明与用户协议");
+        }
         if (username == null || username.isBlank()) {
             throw new IllegalArgumentException("用户名不能为空");
         }

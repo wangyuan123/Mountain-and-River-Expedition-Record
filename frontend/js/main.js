@@ -21,6 +21,7 @@ window.Game = window.Game || {};
   }
 
   var Main = {
+    registrationAgreementVersion: '2026-09-28-v1',
     guestMode: false,
     _selectedAvatar: null,
     _landscapeNavCollapsed: readLandscapeNavigationState(),
@@ -71,6 +72,47 @@ window.Game = window.Game || {};
       el.dataset.state = isError ? 'error' : 'info';
     },
 
+    submitAuth: function () {
+      var form = document.getElementById('loginForm');
+      if (form && form.dataset.authMode === 'register') this.doRegister();
+      else this.doLogin();
+    },
+
+    toggleAuthMode: function () {
+      var form = document.getElementById('loginForm');
+      this.setAuthMode(form && form.dataset.authMode === 'register' ? 'login' : 'register');
+    },
+
+    setAuthMode: function (mode) {
+      var form = document.getElementById('loginForm');
+      if (!form) return;
+      var registering = mode === 'register';
+      var confirmRow = document.getElementById('loginConfirmRow');
+      var confirmInput = document.getElementById('loginPassConfirm');
+      var usernameInput = document.getElementById('loginUser');
+      var passwordInput = document.getElementById('loginPass');
+      var primary = document.getElementById('loginPrimaryAction');
+      var switchButton = document.getElementById('authModeSwitch');
+      form.dataset.authMode = registering ? 'register' : 'login';
+      if (confirmRow) confirmRow.hidden = !registering;
+      if (confirmInput && !registering) confirmInput.value = '';
+      if (passwordInput) passwordInput.setAttribute('autocomplete', registering ? 'new-password' : 'current-password');
+      if (document.getElementById('loginModeEyebrow')) document.getElementById('loginModeEyebrow').textContent = registering ? '建立指挥官档案' : '指挥官身份验证';
+      if (document.getElementById('loginModeTitle')) document.getElementById('loginModeTitle').textContent = registering ? '注册账号' : '账号登录';
+      if (document.getElementById('loginModeDescription')) document.getElementById('loginModeDescription').textContent = registering ? '创建账号，开启你的远征。' : '使用指挥官账号继续你的远征。';
+      if (primary) primary.innerHTML = registering ? '注 册 <span aria-hidden="true">＋</span>' : '登 录 <span aria-hidden="true">→</span>';
+      if (switchButton) switchButton.textContent = registering ? '返回登录' : '注册账号';
+      this.showLoginMsg('', false);
+      if (registering && usernameInput && !usernameInput.value) usernameInput.focus();
+      else if (registering && passwordInput && !passwordInput.value) passwordInput.focus();
+      else if (registering && confirmInput) confirmInput.focus();
+      else if (passwordInput) passwordInput.focus();
+    },
+
+    showForgotPassword: function () {
+      this.showLoginMsg('忘记密码功能正在建设中，暂未开放。', false);
+    },
+
     doLogin: function () {
       if (this._loginBusy) return;
       var self = this;
@@ -94,20 +136,76 @@ window.Game = window.Game || {};
     },
 
     doRegister: function () {
-      var self = this;
+      if (this._registerBusy) return;
       var u = (document.getElementById('loginUser').value || '').trim();
       var p = document.getElementById('loginPass').value || '';
+      var confirmInput = document.getElementById('loginPassConfirm');
       if (!u || !p) { this.showLoginMsg('请输入用户名和密码', true); return; }
       if (u.length < 3) { this.showLoginMsg('用户名至少3位', true); return; }
       if (p.length < 6) { this.showLoginMsg('密码至少6位', true); return; }
-      this.showLoginMsg('注册中...', false);
-      G.API.register(u, p).then(function () {
+      if (confirmInput && !confirmInput.value) { this.showLoginMsg('请再次输入密码', true); return; }
+      if (confirmInput && p !== confirmInput.value) { this.showLoginMsg('两次输入的密码不一致', true); return; }
+      this.openRegistrationAgreement(u, p);
+    },
+
+    openRegistrationAgreement: function (username, password) {
+      if (document.getElementById('registrationAgreementModal')) return;
+      var self = this;
+      var trigger = document.activeElement;
+      var mask = document.createElement('div');
+      mask.id = 'registrationAgreementModal';
+      mask.className = 'modal-mask registration-agreement-mask';
+      mask.innerHTML = '<div class="modal-card registration-agreement-card" role="dialog" aria-modal="true" aria-labelledby="registrationAgreementTitle" aria-describedby="registrationAgreementIntro">' +
+        '<div class="modal-title" id="registrationAgreementTitle">注册前请阅读并确认</div>' +
+        '<div class="modal-body registration-agreement-body">' +
+        '<p id="registrationAgreementIntro" class="registration-agreement-intro">注册《山河远征录》前，请完整阅读以下免责声明与用户协议。协议版本：<b>' + this.registrationAgreementVersion + '</b></p>' +
+        '<section><h3>一、重要提示与免责声明</h3><p>游戏内城池、资源、军队、军官、战斗结果和排名均为虚拟数据，不构成现实财产或收益承诺。因不可抗力、网络故障、系统维护、第三方服务故障或恶意攻击造成的服务中断、延迟或数据丢失，运营方将在合理范围内修复和补救；法律法规禁止免责的情形除外。请合理安排游戏时间，避免沉迷。</p></section>' +
+        '<section><h3>二、账号注册与安全</h3><p>你应使用本人可以合法使用的真实、准确信息注册，并妥善保管账号和密码。不得出租、出借、买卖或共享账号，不得冒用他人身份。发现异常登录或密码泄露时，请立即修改密码并联系官方渠道。</p></section>' +
+        '<section><h3>三、游戏行为规范</h3><p>不得利用外挂、脚本、自动化工具、数据抓取、恶意刷量、伪造请求、攻击服务器或其他技术手段破坏公平性和服务稳定性；不得发布违法、侵权、骚扰、欺诈、赌博、暴力或其他违反公序良俗的内容。违反约定时，运营方可按影响程度采取限制功能、回收异常收益、冻结或注销账号等措施。</p></section>' +
+        '<section><h3>四、隐私、实名与未成年人保护</h3><p>运营方会按照隐私政策处理账号、设备、日志、游戏行为和安全风控信息，用于提供服务、维护安全、改进产品及履行法定义务。游戏可能依法接入实名认证、防沉迷和未成年人保护服务；未完成核验或达到时间限制时，可能无法进入游戏。未成年人应在监护人同意和指导下使用服务。</p><p><a href="privacy.html" target="_blank" rel="noopener">查看实名与儿童个人信息说明</a></p></section>' +
+        '<section><h3>五、协议变更与终止</h3><p>运营方会根据业务、安全或合规需要更新本协议，重大变更会通过游戏内公告或登录页面提示。你可以停止使用服务或按页面流程注销账号。</p></section>' +
+        '<label class="registration-agreement-check"><input id="registrationAgreementCheck" type="checkbox"><span>我已阅读、理解并同意以上免责声明、用户协议及隐私政策，并确认具备相应民事行为能力；如为未成年人，已获得监护人同意和指导。</span></label>' +
+        '<p id="registrationAgreementError" class="registration-agreement-error" role="alert" aria-live="polite"></p>' +
+        '</div><div class="modal-foot"><button type="button" class="btn" id="registrationAgreementCancel">暂不注册</button><button type="button" class="btn ok" id="registrationAgreementSubmit" disabled>同意并注册</button></div></div>';
+      document.body.appendChild(mask);
+      var check = document.getElementById('registrationAgreementCheck');
+      var submit = document.getElementById('registrationAgreementSubmit');
+      check.onchange = function () { submit.disabled = !check.checked || !!self._registerBusy; };
+      document.getElementById('registrationAgreementCancel').onclick = function () { self.closeRegistrationAgreement(); };
+      submit.onclick = function () {
+        if (!check.checked || self._registerBusy) return;
+        self._registerBusy = true;
+        submit.disabled = true;
+        document.getElementById('registrationAgreementCancel').disabled = true;
+        self.closeRegistrationAgreement();
+        self.showLoginMsg('注册中...', false);
+        G.API.register(username, password, self.registrationAgreementVersion).then(function () {
         self.showLoginMsg('注册成功,加载游戏...', false);
         self.guestMode = false;
         return self.startGame();
-      }).catch(function (err) {
-        self.showLoginMsg(err && err.message ? err.message : '注册失败', true);
+        }).catch(function (err) {
+          self.showLoginMsg(err && err.message ? err.message : '注册失败', true);
+        }).finally(function () { self._registerBusy = false; });
+      };
+      mask.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') { event.preventDefault(); self.closeRegistrationAgreement(); }
+        if (event.key === 'Tab') {
+          var items = mask.querySelectorAll('button:not(:disabled), input:not(:disabled)');
+          if (!items.length) return;
+          var first = items[0], last = items[items.length - 1];
+          if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+          else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+        }
       });
+      mask._registrationTrigger = trigger;
+      check.focus();
+    },
+
+    closeRegistrationAgreement: function () {
+      var mask = document.getElementById('registrationAgreementModal');
+      var trigger = mask && mask._registrationTrigger;
+      if (mask) mask.remove();
+      if (trigger && trigger.isConnected) trigger.focus();
     },
 
     guestPlay: function () {

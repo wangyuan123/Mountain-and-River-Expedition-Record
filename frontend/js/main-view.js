@@ -7,6 +7,181 @@ window.Game = window.Game || {};
 
   // 首页总览与军队页共用写实武器模型；没有模型时回退到通用图标。
   var UNIT_MODEL = G.UNIT_MODEL || {};
+  var HOME_MODULE_IDS = ['officers', 'army', 'resources', 'chat'];
+  var HOME_MODULE_NAMES = { officers: '军官将领', army: '军队总览', resources: '资源', chat: '世界聊天' };
+  var homeModulePending = null;
+  var homeModuleSaveQueue = Promise.resolve();
+
+  function homeModuleStorageKey() {
+    var username = G.API && G.API.getUsername ? G.API.getUsername() : '';
+    return 'wargame_home_modules_' + (username || (Core.state && Core.state.player && Core.state.player.username) || 'guest');
+  }
+
+  function normalizeHomeModuleOrder(saved) {
+    if (!Array.isArray(saved)) saved = [];
+    var order = [];
+    saved.concat(HOME_MODULE_IDS).forEach(function (id) {
+      if (HOME_MODULE_IDS.indexOf(id) !== -1 && order.indexOf(id) === -1) order.push(id);
+    });
+    return order;
+  }
+
+  function legacyHomeModuleOrder() {
+    var saved;
+    try { saved = JSON.parse(window.localStorage.getItem(homeModuleStorageKey())); } catch (e) { return null; }
+    return Array.isArray(saved) && saved.length ? normalizeHomeModuleOrder(saved) : null;
+  }
+
+  function homeModuleOrder() {
+    var player = Core.state && Core.state.player;
+    if (player && homeModulePending && homeModulePending.playerId === player.id) return homeModulePending.order;
+    if (player && Array.isArray(player.homeModuleOrder)) return normalizeHomeModuleOrder(player.homeModuleOrder);
+    return legacyHomeModuleOrder() || HOME_MODULE_IDS.slice();
+  }
+
+  function persistHomeModuleOrder(order) {
+    var player = Core.state && Core.state.player;
+    if (!player || !G.API || !G.API.setHomeModuleOrder) return;
+    var playerId = player.id;
+    var username = G.API.getUsername ? G.API.getUsername() : '';
+    var savedOrder = order.slice();
+    var legacyKey = homeModuleStorageKey();
+    homeModulePending = { playerId: playerId, order: savedOrder };
+    homeModuleSaveQueue = homeModuleSaveQueue.catch(function () {}).then(function () {
+      if (!Core.state || !Core.state.player || Core.state.player.id !== playerId ||
+          (G.API.getUsername && G.API.getUsername() !== username)) {
+        if (homeModulePending && homeModulePending.playerId === playerId &&
+            homeModulePending.order.join(',') === savedOrder.join(',')) homeModulePending = null;
+        return;
+      }
+      return G.API.setHomeModuleOrder(savedOrder).then(function (response) {
+        if (Core.state && Core.state.player && Core.state.player.id === playerId) {
+          Core.state.player.homeModuleOrder = normalizeHomeModuleOrder(response.homeModuleOrder);
+        }
+        if (Core.state && Core.state.player && Core.state.player.id === playerId &&
+            homeModulePending && homeModulePending.playerId === playerId &&
+            homeModulePending.order.join(',') === savedOrder.join(',')) {
+          homeModulePending = null;
+        }
+        try { window.localStorage.removeItem(legacyKey); } catch (e) { /* 旧版缓存可留待下次清理。 */ }
+      }).catch(function (error) {
+        if (homeModulePending && homeModulePending.playerId === playerId &&
+            homeModulePending.order.join(',') === savedOrder.join(',')) {
+          homeModulePending = null;
+          if (G.toast) G.toast('首页排序保存失败，请重新调整后重试');
+        }
+      });
+    });
+  }
+
+  function homeModuleHandle(id) {
+    return '<button type="button" class="home-module-handle" aria-label="调整' + HOME_MODULE_NAMES[id] + '顺序" title="拖动排序，或用上下方向键移动">⠿</button>';
+  }
+
+  function renderHomeModules(modules) {
+    return '<div id="homeModuleList" class="home-module-list">' + homeModuleOrder().map(function (id) {
+      return '<section class="home-module" data-home-module="' + id + '">' + modules[id] + '</section>';
+    }).join('') + '<span class="home-module-status" role="status" aria-live="polite"></span></div>';
+  }
+
+  function setupHomeModuleSorting(root) {
+    if (!root || !root.addEventListener) return;
+    var drag = null;
+    var scrollFrame = null;
+    var view = root.closest && root.closest('#view');
+
+    function currentOrder() {
+      return Array.prototype.map.call(root.querySelectorAll('[data-home-module]'), function (section) {
+        return section.getAttribute('data-home-module');
+      });
+    }
+
+    function saveOrder() {
+      persistHomeModuleOrder(currentOrder());
+    }
+
+    function announce(section) {
+      var status = root.querySelector('.home-module-status');
+      if (status) status.textContent = HOME_MODULE_NAMES[section.getAttribute('data-home-module')] + '已移至第 ' + (currentOrder().indexOf(section.getAttribute('data-home-module')) + 1) + ' 位';
+    }
+
+    function reorderAtPoint(x, y) {
+      var hit = document.elementFromPoint(x, y);
+      var target = hit && hit.closest ? hit.closest('[data-home-module]') : null;
+      if (!target || !root.contains(target) || target === drag.section) return;
+      var rect = target.getBoundingClientRect();
+      root.insertBefore(drag.section, y < rect.top + rect.height / 2 ? target : target.nextSibling);
+    }
+
+    function autoScroll() {
+      scrollFrame = null;
+      if (!drag || !drag.active) return;
+      var scrollView = view && view.scrollHeight > view.clientHeight ? view : null;
+      var bounds = scrollView ? scrollView.getBoundingClientRect() : { top: 0, bottom: window.innerHeight };
+      var edge = 64;
+      var speed = drag.y < bounds.top + edge ? -14 : (drag.y > bounds.bottom - edge ? 14 : 0);
+      if (!speed) return;
+      if (scrollView) scrollView.scrollTop += speed;
+      else if (window.scrollBy) window.scrollBy(0, speed);
+      reorderAtPoint(drag.x, drag.y);
+      if (window.requestAnimationFrame) scrollFrame = window.requestAnimationFrame(autoScroll);
+    }
+
+    function onPointerMove(event) {
+      if (!drag || event.pointerId !== drag.pointerId) return;
+      drag.x = event.clientX;
+      drag.y = event.clientY;
+      if (!drag.active && Math.hypot(drag.x - drag.startX, drag.y - drag.startY) < 6) return;
+      drag.active = true;
+      drag.section.classList.add('home-module-dragging');
+      reorderAtPoint(drag.x, drag.y);
+      if (scrollFrame === null && window.requestAnimationFrame) scrollFrame = window.requestAnimationFrame(autoScroll);
+      event.preventDefault();
+    }
+
+    function onPointerEnd(event) {
+      if (!drag || event.pointerId !== drag.pointerId) return;
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerEnd);
+      document.removeEventListener('pointercancel', onPointerEnd);
+      if (scrollFrame !== null && window.cancelAnimationFrame) window.cancelAnimationFrame(scrollFrame);
+      drag.section.classList.remove('home-module-dragging');
+      if (event.type === 'pointercancel') {
+        drag.originalOrder.forEach(function (id) {
+          root.insertBefore(root.querySelector('[data-home-module="' + id + '"]'), root.querySelector('.home-module-status'));
+        });
+      } else if (drag.active && currentOrder().join(',') !== drag.originalOrder.join(',')) {
+        saveOrder();
+        announce(drag.section);
+      }
+      drag = null;
+      scrollFrame = null;
+    }
+
+    root.addEventListener('pointerdown', function (event) {
+      var handle = event.target.closest && event.target.closest('.home-module-handle');
+      if (!handle || (event.pointerType === 'mouse' && event.button !== 0)) return;
+      var section = handle.closest('[data-home-module]');
+      drag = { section: section, pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, x: event.clientX, y: event.clientY, active: false, originalOrder: currentOrder() };
+      document.addEventListener('pointermove', onPointerMove, { passive: false });
+      document.addEventListener('pointerup', onPointerEnd);
+      document.addEventListener('pointercancel', onPointerEnd);
+      event.preventDefault();
+    });
+
+    root.addEventListener('keydown', function (event) {
+      var handle = event.target.closest && event.target.closest('.home-module-handle');
+      if (!handle || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) return;
+      var section = handle.closest('[data-home-module]');
+      var sibling = event.key === 'ArrowUp' ? section.previousElementSibling : section.nextElementSibling;
+      if (!sibling || !sibling.hasAttribute('data-home-module')) return;
+      event.preventDefault();
+      root.insertBefore(section, event.key === 'ArrowUp' ? sibling : sibling.nextSibling);
+      saveOrder();
+      announce(section);
+      handle.focus();
+    });
+  }
 
   function renderArmySummaryList() {
     var s = Core.state || {};
@@ -140,7 +315,7 @@ window.Game = window.Game || {};
     var totalCount = officers.length;
     var html = '';
 
-    html += '<div class="zone-head">'
+    html += '<div class="zone-head">' + homeModuleHandle('officers')
       + '<span class="zone-title">🎖️ 军官将领</span>'
       + '<span class="zone-sub">已招募 ' + totalCount + ' 名</span>'
       + '<span class="home-officer-go zone-head-action" onclick="event.stopPropagation();Game.go(\'academy\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.stopPropagation();Game.go(\'academy\');event.preventDefault();}" role="button" tabindex="0" title="点击前往陆军讲武堂 · 招募将领">去招募 &gt;</span>'
@@ -162,11 +337,9 @@ window.Game = window.Game || {};
         var o = officers[i];
         var starColor = (D.starColor && D.starColor[o.star]) || '#ffe14a';
 
-        // 星级显示
-        var starsHtml = '';
         var starNum = Math.min(5, Math.max(1, o.star || 1));
-        for (var sIdx = 0; sIdx < starNum; sIdx++) starsHtml += '★';
-        for (var sIdx2 = starNum; sIdx2 < 5; sIdx2++) starsHtml += '☆';
+        var starsHtml = '<span class="home-officer-stars-filled">' + '⭐️'.repeat(starNum) + '</span>';
+        if (starNum < 5) starsHtml += '<span class="home-officer-stars-empty">' + '⭐️'.repeat(5 - starNum) + '</span>';
 
         // 职位显示
         var roleTag = '';
@@ -188,7 +361,7 @@ window.Game = window.Game || {};
         html += '<div class="home-officer-identity">';
         html += roleTag;
         html += '<span class="home-officer-name" style="color:' + starColor + '">' + G.escapeHtml(o.name || '军官') + '</span>';
-        html += '<span class="home-officer-stars" style="color:' + starColor + '">' + starsHtml + '</span>';
+        html += '<span class="home-officer-stars" role="img" aria-label="' + starNum + '星">' + starsHtml + '</span>';
         html += '</div>';
         html += '<span class="home-officer-level">Lv.' + (o.level || 1) + (o.level >= (G.OFFICER_MAX_LEVEL || 100) ? '<small>(满)</small>' : '') + '</span>';
         html += '</div>';
@@ -244,14 +417,15 @@ window.Game = window.Game || {};
     if (G.Account && G.Account.recovery) {
       h += G.Account.recoveryPanel();
     } else {
-      h += '<div class="login-access-title"><span class="login-access-eyebrow">指挥官身份验证</span><h2>进入战场</h2><p>登录或建立账号，继续你的远征。</p></div>';
+      h += '<div class="login-access-title"><span class="login-access-eyebrow" id="loginModeEyebrow">指挥官身份验证</span><h2 id="loginModeTitle">账号登录</h2><p id="loginModeDescription">使用指挥官账号继续你的远征。</p></div>';
       if (G.Account) h += G.Account.loginPanel();
-      h += '<form class="login-form" onsubmit="Game.Main.doLogin(); return false;">';
+      h += '<form class="login-form" id="loginForm" data-auth-mode="login" onsubmit="Game.Main.submitAuth(); return false;">';
       h += '<div class="edit-row"><label for="loginUser">用户名 <span>CALLSIGN</span></label><input id="loginUser" class="qty" name="username" autocomplete="username" maxlength="32" placeholder="输入指挥官代号 · 3-32 位"></div>';
       h += '<div class="edit-row"><label for="loginPass">密码 <span>ACCESS CODE</span></label><input id="loginPass" class="qty" name="password" autocomplete="current-password" type="password" maxlength="64" placeholder="输入通行密码 · 6-64 位"></div>';
-      h += '<div class="login-actions"><button class="btn ok login-submit" type="submit">登 录 <span aria-hidden="true">→</span></button>';
-      h += '<button class="btn login-register" type="button" onclick="Game.Main.doRegister()">注 册 <span aria-hidden="true">＋</span></button></div>';
+      h += '<div class="edit-row login-register-only" id="loginConfirmRow" hidden><label for="loginPassConfirm">确认密码 <span>CONFIRM CODE</span></label><input id="loginPassConfirm" class="qty" name="passwordConfirm" autocomplete="new-password" type="password" maxlength="64" placeholder="再次输入通行密码"></div>';
+      h += '<div class="login-actions"><button class="btn ok login-submit" id="loginPrimaryAction" type="submit">登 录 <span aria-hidden="true">→</span></button></div>';
       h += '<div id="loginMsg" class="login-feedback" role="status" aria-live="polite"></div>';
+      h += '<nav class="login-account-links" aria-label="账号操作"><button type="button" id="authModeSwitch" onclick="Game.Main.toggleAuthMode()">注册账号</button><span aria-hidden="true"></span><button type="button" onclick="Game.Main.showForgotPassword()">忘记密码</button></nav>';
       h += '</form>';
       h += '<div class="login-access-foot"><span class="login-signal" aria-hidden="true"></span>战局进度由服务器自动保存</div>';
     }
@@ -780,11 +954,16 @@ window.Game = window.Game || {};
     var caps = { food: cap.food, steel: cap.steel, oil: cap.oil, rare: cap.rare, gold: 999999 };
     var nets = { food: netFood, steel: netSteel, oil: netOil, rare: netRare, gold: goldRate };
 
-    // 军官将领卡片（展示等级最高的1-3个军官，点击跳转参谋部军官管理）
+    // 各模块单独生成，再按当前玩家保存的顺序组合。
+    var fixedHtml = h;
+    var modules = {};
+    h = '';
     h += renderOfficerSummaryCard();
+    modules.officers = h;
+    h = '';
 
     // 军队总览（活动与任务块已迁移到顶部菜单"任务"页内）
-    h += '<div class="zone-head"><span class="zone-title">🪖 军队总览</span><span class="zone-sub">带兵上限 ' + G.fmt(Core.armyCap()) + '</span><button type="button" class="army-summary-expand" title="全屏展开军队总览" aria-label="全屏展开军队总览" onclick="Game.MainView.showArmySummaryFullscreen()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg></button><span class="army-dispatch-go zone-head-action" role="button" tabindex="0" onclick="Game.go(\'world\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.go(\'world\');event.preventDefault();}">去出征 &gt;</span></div>';
+    h += '<div class="zone-head">' + homeModuleHandle('army') + '<span class="zone-title">🪖 军队总览</span><span class="zone-sub">带兵上限 ' + G.fmt(Core.armyCap()) + '</span><button type="button" class="army-summary-expand" title="全屏展开军队总览" aria-label="全屏展开军队总览" onclick="Game.MainView.showArmySummaryFullscreen()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg></button><span class="army-dispatch-go zone-head-action" role="button" tabindex="0" onclick="Game.go(\'world\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.go(\'world\');event.preventDefault();}">去出征 &gt;</span></div>';
     h += '<div class="army-summary" role="region" tabindex="0" aria-label="军队总览，三排排列，左右滑动查看全部兵种">';
     h += renderArmySummaryList();
     h += '</div>';
@@ -797,8 +976,10 @@ window.Game = window.Game || {};
     h += '  ·  指挥官: <b>' + (cmd2 ? G.escapeHtml(cmd2.name) : '未任命') + '</b>';
     h += '  <span class="army-go">详情 ></span>';
     h += '</div>';
+    modules.army = h;
+    h = '';
 
-    h += '<div class="zone-head"><span class="zone-title">资源</span></div>';
+    h += '<div class="zone-head">' + homeModuleHandle('resources') + '<span class="zone-title">资源</span></div>';
     h += '<div class="res-grid">';
     var resKeys = G.Constants.resourceKeysWithGold;
     for (var ri = 0; ri < resKeys.length; ri++) {
@@ -834,9 +1015,11 @@ window.Game = window.Game || {};
     h += '<div class="d">可征召 ' + G.fmt(Core.popFree()) + ' · 民心 ' + curMorale + (curResent > 0 ? ' <span style="color:#d9534f">(怨' + curResent + ')</span>' : '') + '</div>';
     h += '</div>';
     h += '</div>';
+    modules.resources = h;
+    h = '';
 
     // —— 世界聊天频道 ——
-    h += '<div class="zone-head"><span class="zone-title">📡 世界频道</span><span class="zone-sub">实时通联</span></div>';
+    h += '<div class="zone-head">' + homeModuleHandle('chat') + '<span class="zone-title">📡 世界聊天</span><span class="zone-sub">实时通联</span></div>';
     h += '<div class="chat-terminal">';
     h += '<div class="chat-term-header">';
     h += '<div class="term-header-left">';
@@ -883,7 +1066,14 @@ window.Game = window.Game || {};
     h += '</div>';
     h += '</div>';
 
-    v.innerHTML = h;
+    modules.chat = h;
+    v.innerHTML = fixedHtml + renderHomeModules(modules);
+    setupHomeModuleSorting(v.querySelector && v.querySelector('#homeModuleList'));
+    if (s.player && s.player.homeModuleOrder == null &&
+        !(homeModulePending && homeModulePending.playerId === s.player.id)) {
+      var legacyOrder = legacyHomeModuleOrder();
+      if (legacyOrder) persistHomeModuleOrder(legacyOrder);
+    }
     var chatBoxEl = document.getElementById('worldChatBox');
     if (chatBoxEl) chatBoxEl.scrollTop = chatBoxEl.scrollHeight;
   };

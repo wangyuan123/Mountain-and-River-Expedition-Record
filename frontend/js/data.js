@@ -159,7 +159,7 @@ window.Game = window.Game || {};
       forest:     { name: '森林',   res: null,     icon: 'img/map/wild-forest.webp' },
       hill:       { name: '丘陵',   res: null,     icon: 'img/map/wild-hill.webp' },
       swamp:      { name: '沼泽',   res: null,     icon: 'img/map/wild-swamp.webp' },
-      grassland:  { name: '草原',   res: null,     icon: 'img/map/grass-lush.webp' },
+      grassland:  { name: '草原',   res: null,     icon: 'img/map/grass-medium.webp' },
       plains:     { name: '平原',   res: null,     icon: 'img/map/grass-plain.webp' },
       snow:       { name: '雪地',   res: null,     icon: 'img/map/wild-snow.webp' },
       rock:       { name: '岩石',   res: null,     icon: 'img/map/wild-rock.webp' },

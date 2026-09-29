@@ -8,6 +8,7 @@ import com.wargame.model.constants.TechDef;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
 import com.wargame.util.JsonUtil;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.context.event.EventListener;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.stereotype.Service;
@@ -67,6 +68,7 @@ public class GameStateService {
     private static final Set<String> MULTI_SLOT = Set.of(
             "house", "farm", "refinery", "oilfield", "raremine", "factory", "depot"
     );
+    private static final Set<String> HOME_MODULES = Set.of("officers", "army", "resources", "chat");
 
     public GameStateService(WorldViewService worldViewService, PlayerRepository playerRepository,
                             ResourcesRepository resourcesRepository,
@@ -144,6 +146,28 @@ public class GameStateService {
         cityScope.saveEconomy(playerId);
     }
 
+    /** 完整排列由服务端校验并按玩家保存，不能借此增删首页模块。 */
+    @Transactional
+    public List<String> setHomeModuleOrder(Long playerId, List<String> order) {
+        if (order == null || order.size() != HOME_MODULES.size() || !HOME_MODULES.equals(new HashSet<>(order))) {
+            throw new IllegalArgumentException("首页模块顺序无效");
+        }
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
+        player.setHomeModuleOrder(JsonUtil.toJson(order));
+        playerRepository.save(player);
+        return List.copyOf(order);
+    }
+
+    private List<String> homeModuleOrder(Player player) {
+        if (player.getHomeModuleOrder() == null) return null;
+        JsonNode tree = JsonUtil.parseTree(player.getHomeModuleOrder());
+        if (!tree.isArray() || tree.size() != HOME_MODULES.size()) return null;
+        List<String> order = new ArrayList<>();
+        tree.forEach(node -> { if (node.isTextual()) order.add(node.asText()); });
+        return HOME_MODULES.equals(new HashSet<>(order)) ? order : null;
+    }
+
     // ================================================================
     // getGameState
     // ================================================================
@@ -166,6 +190,7 @@ public class GameStateService {
         playerInfo.put("cityName", cityScope.economy(playerId).getCityName() == null || cityScope.economy(playerId).getCityName().isBlank()
                 ? "新城市" : cityScope.economy(playerId).getCityName());
         playerInfo.put("avatar", player.getAvatar() != null ? player.getAvatar() : "");
+        playerInfo.put("homeModuleOrder", homeModuleOrder(player));
         int rankTier = player.getMilitaryRank() != null ? player.getMilitaryRank() : 1;
         playerInfo.put("militaryRank", rankTier);
         playerInfo.put("militaryRankName", MilitaryRankDef.getRankName(rankTier));
