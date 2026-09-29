@@ -73,8 +73,8 @@ public class CityService {
     @Transactional
     public Map<String,Object> site(Long playerId,int x,int y) {
         WorldMap world=terrain.lockWorld(); String mask=terrain.ensure();
-        // Coordinate founding on empty land requires coastal 2x2 land.
-        String reason=terrain.siteReason(world.getId(),mask,x,y,null,true);
+        // 地图空地允许内陆建城，预览与提交共用四格占地校验。
+        String reason=terrain.siteReason(world.getId(),mask,x,y,null);
         var player=players.findById(playerId).orElseThrow();
         if(reason.isEmpty()&&cities.findByOwnerIdAndCitySlotIsNotNullOrderByCitySlotAsc(playerId).size()>=MilitaryRankDef.getCityCap(player.getMilitaryRank()))reason="城市数量已达军衔上限";
         boolean coastal=WorldTerrainService.coastal(mask,x,y,2);
@@ -101,7 +101,7 @@ public class CityService {
             if(marches.existsByTargetIdAndTargetKindIn(wildId.toString(),List.of("wild","wild_gather")))throw new IllegalArgumentException("该地块仍有行军，请等待部队返城后建城");
         }
         if(x==null||y==null)throw new IllegalArgumentException("请选择建城坐标");
-        String reason=terrain.siteReason(world.getId(),mask,x,y,wildId,wildId==null);
+        String reason=terrain.siteReason(world.getId(),mask,x,y,wildId);
         if(!reason.isEmpty())throw new IllegalArgumentException(reason);
         Resources balance = resources.findCityForTreatment(playerId, scope.slot(playerId)).orElseThrow();
         for (var cost : BUILD_COST.entrySet()) if (amount(balance, cost.getKey()) < cost.getValue()) throw new IllegalArgumentException("建城资源不足");

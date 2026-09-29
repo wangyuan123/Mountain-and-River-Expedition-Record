@@ -113,6 +113,83 @@ window.Game = window.Game || {};
       this.showLoginMsg('忘记密码功能正在建设中，暂未开放。', false);
     },
 
+    selectServer: function (id) {
+      try { G.Servers.select(id); this.showLoginMsg('', false); }
+      catch (error) { this.showLoginMsg(error.message, true); }
+    },
+
+    toggleServerMenu: function (button) {
+      var picker = button.closest('.login-server-picker');
+      if (this._serverPicker === picker) { this.closeServerMenu(); return; }
+      this.closeServerMenu();
+      var menu = picker.querySelector('.login-server-options');
+      this._serverPicker = picker;
+      menu.style.maxHeight = '';
+      menu.hidden = false;
+      button.setAttribute('aria-expanded', 'true');
+      var bounds = button.getBoundingClientRect();
+      var scrollArea = picker.closest('.login-access-inner');
+      var frame = scrollArea ? scrollArea.getBoundingClientRect() : { top: 0, bottom: window.innerHeight };
+      var below = Math.min(window.innerHeight, frame.bottom) - bounds.bottom;
+      var above = bounds.top - Math.max(0, frame.top);
+      var openAbove = below < menu.offsetHeight + 4 && above > below;
+      picker.classList.toggle('opens-above', openAbove);
+      menu.style.maxHeight = Math.min(220, Math.max(38, (openAbove ? above : below) - 8)) + 'px';
+      (menu.querySelector('[aria-selected="true"]') || menu.firstElementChild).focus({ preventScroll: true });
+      document.addEventListener('pointerdown', this.dismissServerMenu);
+      window.addEventListener('resize', this.dismissServerMenu);
+    },
+
+    closeServerMenu: function (restoreFocus) {
+      var picker = this._serverPicker;
+      if (!picker) return;
+      this._serverPicker = null;
+      picker.querySelector('.login-server-options').hidden = true;
+      picker.classList.remove('opens-above');
+      var button = picker.querySelector('.login-server-trigger');
+      button.setAttribute('aria-expanded', 'false');
+      document.removeEventListener('pointerdown', this.dismissServerMenu);
+      window.removeEventListener('resize', this.dismissServerMenu);
+      if (restoreFocus) button.focus({ preventScroll: true });
+    },
+
+    dismissServerMenu: function (event) {
+      if (Main._serverPicker && (event.type === 'resize' || !Main._serverPicker.contains(event.target))) Main.closeServerMenu();
+    },
+
+    leaveServerMenu: function (event) {
+      if (this._serverPicker && !this._serverPicker.contains(event.relatedTarget)) this.closeServerMenu();
+    },
+
+    handleServerKey: function (event) {
+      var picker = event.currentTarget;
+      if (event.key === 'Escape' && this._serverPicker === picker) {
+        event.preventDefault();
+        this.closeServerMenu(true);
+        return;
+      }
+      if (['ArrowDown', 'ArrowUp', 'Home', 'End'].indexOf(event.key) < 0) return;
+      event.preventDefault();
+      var wasOpen = this._serverPicker === picker;
+      if (!wasOpen) this.toggleServerMenu(picker.querySelector('.login-server-trigger'));
+      var options = Array.prototype.slice.call(picker.querySelectorAll('[role="option"]'));
+      var index = options.indexOf(document.activeElement);
+      if (event.key === 'Home') index = 0;
+      else if (event.key === 'End') index = options.length - 1;
+      else if (wasOpen) index = (index + (event.key === 'ArrowDown' ? 1 : -1) + options.length) % options.length;
+      if (options[index]) options[index].focus({ preventScroll: true });
+    },
+
+    chooseServer: function (option) {
+      this.selectServer(option.dataset.serverId);
+      var picker = option.closest('.login-server-picker');
+      picker.querySelector('#loginServerValue').textContent = option.textContent;
+      picker.querySelectorAll('[role="option"]').forEach(function (item) {
+        item.setAttribute('aria-selected', item === option ? 'true' : 'false');
+      });
+      this.closeServerMenu(true);
+    },
+
     doLogin: function () {
       if (this._loginBusy) return;
       var self = this;
@@ -336,16 +413,20 @@ window.Game = window.Game || {};
     },
 
     saveCommander: function () {
-      var s = Core.state;
       var cmdEl = document.getElementById('epCommander');
-      var cmdName = cmdEl ? cmdEl.value.trim() : '';
-      if (!cmdName) { G.toast('统帅名不能为空'); return; }
-      if (cmdName.length > 8) { G.toast('统帅名最多8个字'); return; }
-      if (!/^[A-Za-z0-9_\u4e00-\u9fa5·]{1,8}$/.test(cmdName)) { G.toast('统帅名仅限中英文/数字/下划线'); return; }
-      s.player.name = cmdName;
-      G.toast('统帅名已保存');
-      document.getElementById('editCommanderBox').style.display = 'none';
-      Core.render();
+      var cmdName;
+      try {
+        cmdName = G.normalizeDisplayName(cmdEl ? cmdEl.value : '', 8, '统帅名');
+      } catch (error) {
+        G.toast(error.message);
+        return;
+      }
+      G.API.setDisplayName(cmdName).then(function () {
+        G.toast('统帅名已保存');
+        var box = document.getElementById('editCommanderBox');
+        if (box) box.style.display = 'none';
+        Core.render();
+      }).catch(function (error) { G.toast(error.message || '统帅名保存失败'); });
     },
 
     toggleEditDesc: function () {

@@ -22,18 +22,25 @@ public class AuthController {
     private final AuthService authService;
     private final JwtUtil jwtUtil;
     private final AccountService accountService;
+    private final com.wargame.config.GameServerIdentity server;
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.compliance.AntiAddictionService protection;
 
-    public AuthController(AuthService authService, JwtUtil jwtUtil, AccountService accountService) {
+    public AuthController(AuthService authService, JwtUtil jwtUtil, AccountService accountService,
+                          com.wargame.config.GameServerIdentity server) {
         this.authService = authService;
         this.jwtUtil = jwtUtil;
         this.accountService = accountService;
+        this.server = server;
     }
+
+    @GetMapping("/server")
+    public Map<String, String> server() { return Map.of("id", server.id(), "name", server.name()); }
 
     @PostMapping("/register")
     public ResponseEntity<AuthDtos.AuthResponse> register(@RequestBody AuthDtos.RegisterRequest request,
                                                            HttpServletRequest httpRequest) {
+        server.requireSelected(request.serverId());
         AuthService.AuthResult result = authService.register(request.username(), request.password(), request.agreementVersion(), httpRequest);
         return ResponseEntity.ok(new AuthDtos.AuthResponse(result.token(), result.username(), result.playerId()));
     }
@@ -41,6 +48,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<Map<String, Object>> login(@RequestBody AuthDtos.LoginRequest request,
                                                         HttpServletRequest httpRequest) {
+        server.requireSelected(request.serverId());
         return ResponseEntity.ok(authService.login(request.username(), request.password(), httpRequest));
     }
 
@@ -98,6 +106,7 @@ public class AuthController {
     @PostMapping("/deletion-status")
     public ResponseEntity<Map<String, Object>> deletionStatus(@RequestBody AuthDtos.LoginRequest request,
                                                              HttpServletRequest httpRequest) {
+        server.requireSelected(request.serverId());
         return ResponseEntity.ok(authService.deletionStatus(request.username(), request.password(), httpRequest));
     }
 }

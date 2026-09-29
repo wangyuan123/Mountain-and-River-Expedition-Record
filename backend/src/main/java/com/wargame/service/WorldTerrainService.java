@@ -161,10 +161,14 @@ public class WorldTerrainService {
         occupants(WildTile.class,world,0,SIZE-1,0,SIZE-1).forEach(c->used.add(c.getX()+","+c.getY()));
         return used;
     }
-    public String siteReason(Long world, String mask,int x,int y,Long consumedWild,boolean requireCoast) {
+    /**
+     * 校验新城的四格陆地及占用规则，内陆和沿海均可建城。
+     * consumedWild 是建城时可替换的已占领野地 ID；普通空地传 null。
+     * 返回空字符串表示选址通过，否则返回具体原因。
+     */
+    public String siteReason(Long world, String mask,int x,int y,Long consumedWild) {
         if(x<0||y<0||x+1>=SIZE||y+1>=SIZE)return "城市需要完整的 2×2 地块，不能超出地图";
         for(int yy=y;yy<y+2;yy++)for(int xx=x;xx<x+2;xx++)if(sea(mask,xx,yy))return "城市四格占地必须全部位于陆地";
-        if(requireCoast&&!coastal(mask,x,y,2))return "请选择至少一侧临海的 2×2 陆地";
         for(PlayerCity c:occupants(PlayerCity.class,world,Math.max(0,x-1),x+2,Math.max(0,y-1),y+2)){
             int span=citySpan(c), cx=anchor(c.getX(),span),cy=anchor(c.getY(),span);
             if(cx<x+2&&cx+span>x&&cy<y+2&&cy+span>y)return "该范围与现有城市占地重叠";

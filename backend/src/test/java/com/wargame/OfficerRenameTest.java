@@ -106,15 +106,20 @@ public class OfficerRenameTest extends BaseServiceTest {
         assertFalse((Boolean) longRes.get("success"));
         assertTrue(((String) longRes.get("message")).contains("最多12个字符"));
 
-        // 特殊非法字符
-        Map<String, Object> illegalRes = officerService.rename(player.getId(), officer.getId(), "张三<script>");
-        assertFalse((Boolean) illegalRes.get("success"));
-        assertTrue(((String) illegalRes.get("message")).contains("仅限"));
-
         // 与原名相同
         Map<String, Object> sameRes = officerService.rename(player.getId(), officer.getId(), "现有名字");
         assertFalse((Boolean) sameRes.get("success"));
         assertTrue(((String) sameRes.get("message")).contains("与当前军官名称相同"));
+
+        // 可见符号允许使用，危险标记由页面输出端做 HTML 转义。
+        Map<String, Object> symbolRes = officerService.rename(player.getId(), officer.getId(), "李白·天上来☆");
+        assertTrue((Boolean) symbolRes.get("success"));
+        assertEquals("李白·天上来☆", symbolRes.get("name"));
+
+        Map<String, Object> controlRes = officerService.rename(player.getId(), officer.getId(), "张三\n将军");
+        assertFalse((Boolean) controlRes.get("success"));
+        assertTrue(((String) controlRes.get("message")).contains("不可见字符"));
+
     }
 
     @Test

@@ -26,7 +26,10 @@ window.Game = window.Game || {};
           baseURL = '/api';
         }
       }
-      this.baseURL = baseURL;
+      var region = G.Servers ? G.Servers.current() : { id: 'jiangsu-1' };
+      this.baseURL = region.apiBase || baseURL;
+      this.serverId = region.id;
+      this.serverKey = 'wargame_token_server';
       this.tokenKey = 'wargame_token';
       this.userKey = 'wargame_user';
       this._loadingCount = 0;
@@ -41,12 +44,15 @@ window.Game = window.Game || {};
 
     // ===== Token 管理 =====
     getToken() {
+      var savedServer = localStorage.getItem(this.serverKey);
+      if (savedServer ? savedServer !== this.serverId : this.serverId !== 'jiangsu-1') return '';
       return localStorage.getItem(this.tokenKey) || '';
     }
 
     setToken(token, username) {
       this.cityId = null; this.invalidateCityRequests();
       localStorage.setItem(this.tokenKey, token);
+      localStorage.setItem(this.serverKey, this.serverId);
       if (username) localStorage.setItem(this.userKey, username);
     }
 
@@ -54,6 +60,7 @@ window.Game = window.Game || {};
       if (G.Protection) G.Protection.reset();
       this.cityId = null; this.invalidateCityRequests();
       localStorage.removeItem(this.tokenKey);
+      localStorage.removeItem(this.serverKey);
       localStorage.removeItem(this.userKey);
     }
 
@@ -63,6 +70,19 @@ window.Game = window.Game || {};
 
     getUsername() {
       return localStorage.getItem(this.userKey) || '';
+    }
+
+    /** 切换大区后令旧请求失效；入口由部署配置指定，不能从用户输入拼接。 */
+    setServer(region) {
+      this.invalidateCityRequests();
+      this.cityId = null;
+      this.serverId = region.id;
+      if (region.apiBase) this.baseURL = region.apiBase;
+      else {
+        var port = parseInt(window.location.port, 10);
+        this.baseURL = port && port !== 8080 && port !== 80
+          ? 'http://' + window.location.hostname + ':8080/api' : '/api';
+      }
     }
 
     // ===== 加载指示器 =====
@@ -179,6 +199,7 @@ window.Game = window.Game || {};
       var self = this;
       var url = this.baseURL + path;
       var headers = { 'Content-Type': 'application/json' };
+      headers['X-Game-Server'] = self.serverId;
       var token = context.token;
       if (token) headers['Authorization'] = 'Bearer ' + token;
       if (context.playSession) headers['X-Play-Session'] = context.playSession;

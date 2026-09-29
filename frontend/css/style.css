@@ -1502,7 +1502,9 @@ html, body {
 .drawer-avatar { width: 100%; height: 100%; object-fit: cover; display: block; }
 .avatar-edit-badge { position: absolute; inset: auto 0 0; background: rgba(15, 23, 42, .8); color: #fff; font-size: 10px; text-align: center; padding: 2px 0; }
 .drawer-profile-meta { display: flex; flex-direction: column; min-width: 0; gap: 4px; }
+.drawer-profile-name-row { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; }
 .drawer-profile-name { font-size: 16px; font-weight: 700; color: var(--ink); overflow-wrap: anywhere; line-height: 1.4; }
+.drawer-profile-name-row .drawer-link-btn { min-height: 0; padding: 1px 5px; }
 .drawer-online-status { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); }
 .drawer-badge-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
 .drawer-faction-tag { font-size: 12px; padding: 0 5px; border: 1px solid var(--line); border-radius: 4px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
@@ -3410,19 +3412,6 @@ body.theme-classic .unit-card-details,
   text-shadow: none;
 }
 
-.home-officer-stars {
-  display: inline-flex;
-  align-items: center;
-  font-size: 12px;
-  line-height: 1;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.home-officer-stars-empty {
-  filter: grayscale(1);
-  opacity: .25;
-}
-
 .home-officer-level {
   font-size: 11px;
   font-weight: 700;
@@ -3782,22 +3771,34 @@ body.theme-classic .unit-card-details,
   text-decoration: underline;
 }
 .army-summary-foot {
-  display: flex;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
   align-items: center;
-  gap: 6px;
+  gap: 6px 12px;
   font-size: 12px;
   color: var(--muted, #64748b);
   margin-top: 6px;
   padding: 0 4px;
   cursor: pointer;
 }
+.army-summary-strength,
+.army-summary-commander { min-width: 0; overflow-wrap: anywhere; }
+.army-summary-strength { font-variant-numeric: tabular-nums; }
+.army-summary-commander-label { white-space: nowrap; }
 .army-summary-foot b {
   color: var(--ink, #1f2937);
 }
 .army-go {
-  margin-left: auto;
+  justify-self: end;
+  white-space: nowrap;
   color: var(--accent, #004499);
   font-weight: 600;
+}
+@media (max-width: 480px) {
+  .army-summary-foot { grid-template-columns: minmax(0, 1fr) max-content; }
+  .army-summary-strength,
+  .army-summary-commander { grid-column: 1; }
+  .army-go { grid-column: 2; grid-row: 1 / 3; }
 }
 
 .modal-mask.army-summary-mask { padding: 0; }
@@ -6052,16 +6053,26 @@ body.theme-classic .unit-card-details,
 .tcard-badge-shield { background: var(--accent-soft); color: var(--accent-dark); }
 .tcard-badge-done { background: #b8b6ad; color: #fff; }
 
-/* ===== 玩家紧凑行卡 (点开展开) ===== */
-.tcard-player-mini { padding: 6px 10px; gap: 4px; cursor: pointer; }
-.tcard-player-mini .tcard-mini-row {
+/* ===== 地图目标紧凑行卡 (点开展开) ===== */
+.tcard-collapsible { padding: 6px 10px; gap: 4px; }
+.tcard-collapsible .tcard-mini-row {
   display: flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
-.tcard-player-mini .tcard-emoji { font-size: 16px; }
-.tcard-player-mini .tcard-mini-name {
+.tcard-collapsible .tcard-mini-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tcard-collapsible .tcard-emoji { font-size: 16px; }
+.tcard-collapsible .tcard-icon { width: 20px; height: 20px; }
+.tcard-collapsible .tcard-mini-name {
   font-weight: 700;
   color: var(--text);
   font-size: 13px;
@@ -6091,7 +6102,7 @@ body.theme-classic .unit-card-details,
   filter: none;
   box-shadow: 0 0 0 2px #ffe4df;
 }
-.tcard-player-mini .tcard-mini-prestige {
+.tcard-collapsible .tcard-mini-prestige {
   color: var(--muted);
   font-size: 11px;
   font-weight: 400;
@@ -6100,24 +6111,24 @@ body.theme-classic .unit-card-details,
   font-variant-numeric: tabular-nums;
   line-height: 1.4;
 }
-.tcard-player-mini .tcard-mini-coord {
+.tcard-collapsible .tcard-mini-coord {
   color: #6e7c8a;
   font-size: 11px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   white-space: nowrap;
 }
-.tcard-player-mini .tcard-mini-dist {
+.tcard-collapsible .tcard-mini-dist {
   color: #98968c;
   font-size: 11px;
   white-space: nowrap;
 }
-.tcard-player-mini .tcard-mini-caret {
+.tcard-collapsible .tcard-mini-caret {
   color: #b8b6ad;
   font-size: 11px;
   transition: transform 0.18s;
   display: inline-block;
 }
-.tcard-player-mini .tcard-expand {
+.tcard-collapsible .tcard-expand {
   display: none;
   margin-top: 4px;
   padding-top: 6px;
@@ -6125,8 +6136,8 @@ body.theme-classic .unit-card-details,
   flex-direction: column;
   gap: 3px;
 }
-.tcard-player-mini.tcard-expanded .tcard-expand { display: flex; }
-.tcard-player-mini.tcard-expanded .tcard-mini-caret { transform: rotate(180deg); }
+.tcard-collapsible.tcard-expanded .tcard-expand { display: flex; }
+.tcard-collapsible.tcard-expanded .tcard-mini-caret { transform: rotate(180deg); }
 .tcard-mini-badge {
   display: inline-block;
   font-size: 10px;

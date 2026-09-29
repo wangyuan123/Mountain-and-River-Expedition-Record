@@ -185,6 +185,8 @@ public class WorldViewService {
                 bMap.put("commanderName", b.getCommanderName() != null ? b.getCommanderName()
                         : JapaneseOfficers.getCommanderForLevel(b.getLevel() != null ? b.getLevel() : 1));
                 bMap.put("defeated", b.getDefeated() != null && b.getDefeated());
+                bMap.put("sea", worldMap.getTerrainData() != null
+                        && WorldTerrainService.sea(worldMap.getTerrainData(), b.getX(), b.getY()));
                 bandits.add(bMap);
             }
         }

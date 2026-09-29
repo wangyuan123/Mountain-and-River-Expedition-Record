@@ -737,8 +737,8 @@ window.Game = window.Game || {};
         + '<div class="d" style="margin-bottom:8px">当前军官: <b style="color:' + (D.starColor[o.star] || 'inherit') + '">' + esc(o.name) + ' ' + starIcons(o.star) + '</b> (Lv.' + o.level + ')</div>'
         + '<div class="d" style="margin-bottom:10px">' + costTip + '</div>'
         + '<label for="officerRenameInput" style="font-size:13px;font-weight:bold;margin-bottom:4px;display:block">新军官名称</label>'
-        + '<input id="officerRenameInput" name="officerName" class="qty" type="text" maxlength="12" style="width:100%;box-sizing:border-box;margin-bottom:6px" aria-required="true" autocomplete="off" aria-describedby="officerRenameHint" value="' + esc(o.name) + '">'
-        + '<p id="officerRenameHint" style="margin:4px 0 0;font-size:12px;color:var(--muted)">最多12字，支持中英文、数字、下划线和间隔号。</p>'
+        + '<input id="officerRenameInput" name="officerName" class="qty" type="text" style="width:100%;box-sizing:border-box;margin-bottom:6px" aria-required="true" autocomplete="off" aria-describedby="officerRenameHint" value="' + esc(o.name) + '">'
+        + '<p id="officerRenameHint" style="margin:4px 0 0;font-size:12px;color:var(--muted)">最多12个字符，可用标点、符号和 emoji；不能换行。</p>'
         + '</div>'
         + '<div class="modal-foot" style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">'
         + '<button type="button" class="btn depot-btn account-confirm-cancel">取消</button>'
@@ -786,20 +786,11 @@ window.Game = window.Game || {};
       form.onsubmit = function (event) {
         event.preventDefault();
         if (saving) return;
-        var newName = input.value.trim();
-        if (!newName) {
-          G.toast('军官名称不能为空');
-          if (input.focus) input.focus();
-          return;
-        }
-        if (newName.length > 12) {
-          G.toast('军官名称最多12个字符');
-          if (input.focus) input.focus();
-          return;
-        }
-        var safeRe = /^[A-Za-z0-9_\u4e00-\u9fa5·\s]{1,12}$/;
-        if (!safeRe.test(newName)) {
-          G.toast('军官名称仅限中英文/数字/下划线/间隔号');
+        var newName;
+        try {
+          newName = G.normalizeDisplayName(input.value, 12, '军官名称');
+        } catch (error) {
+          G.toast(error.message);
           if (input.focus) input.focus();
           return;
         }
@@ -1004,7 +995,7 @@ window.Game = window.Game || {};
             var frame = officerFrame(o);
             var cls = (can ? 'menu-item ok' : 'menu-item lock') + ' officer-card ' + frame.tierClass;
             h += '<div class="' + cls + '">' + frame.corners;
-            h += '<span class="n" style="color:' + D.starColor[o.star] + '">' + o.name + '</span> ';
+            h += '<span class="n" style="color:' + D.starColor[o.star] + '">' + G.escapeHtml(o.name) + '</span> ';
             h += '<span class="stars">' + starIcons(o.star) + '</span>';
             if (frame.ribbon) h += '<div class="academy-candidate-rarity">' + frame.ribbon + '</div>';
             h += '<div class="d">后勤' + o.logistics + ' 军事' + o.military + ' 防御' + (o.defense || 0) + ' 学识' + o.knowledge + skillText(o) + '</div>';
@@ -1053,7 +1044,8 @@ window.Game = window.Game || {};
       h += '<div class="officer-board-grid">';
 
       // 市长看板
-      h += '<div class="officer-board-slot slot-mayor">';
+      h += '<div class="officer-board-slot slot-mayor' + (mayor ? ' is-clickable' : '') + '"' +
+        (mayor ? ' onclick="Game.Officer.showDetail(\'' + mayor.id + '\')" onkeydown="Game.Officer.activateBoardSlot(event,\'' + mayor.id + '\')" role="button" tabindex="0" title="点击查看 ' + esc(mayor.name) + ' 详情"' : '') + '>';
       h += '<div class="board-slot-head">';
       h += '<span class="board-slot-role">👑 执政市长</span>';
       if (mayor) {
@@ -1074,7 +1066,8 @@ window.Game = window.Game || {};
       h += '</div>';
 
       // 指挥官看板
-      h += '<div class="officer-board-slot slot-commander">';
+      h += '<div class="officer-board-slot slot-commander' + (cmd ? ' is-clickable' : '') + '"' +
+        (cmd ? ' onclick="Game.Officer.showDetail(\'' + cmd.id + '\')" onkeydown="Game.Officer.activateBoardSlot(event,\'' + cmd.id + '\')" role="button" tabindex="0" title="点击查看 ' + esc(cmd.name) + ' 详情"' : '') + '>';
       h += '<div class="board-slot-head">';
       h += '<span class="board-slot-role">⚔️ 作战指挥官</span>';
       if (cmd) {
@@ -1232,6 +1225,12 @@ window.Game = window.Game || {};
       Officer._detailOfficerId = officerId;
       if (Core.state) Core.state._detailOfficerId = officerId;
       Core.go('officerDetail');
+    },
+
+    activateBoardSlot: function (event, officerId) {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      this.showDetail(officerId);
     },
 
     equip: function (officerId, itemId) {

@@ -121,6 +121,14 @@ test('player art follows actual coast status for own and other cities, including
   assert.equal(icon({kind:'player',selfCity}),'img/cities/garden-citadel.webp');
  }
  assert.equal(icon({kind:'npc',coastal:true}),'img/map/npc-fortress.webp');
+ for(const [name,vessel] of [
+  ['日寇第1舰队','battleship'],['日寇第4航母编队','carrier'],
+  ['日寇第5潜艇支队','sub'],['日寇第6驱逐舰队','destroyer']
+ ]){
+  const image=icon({kind:'bandit',sea:true,name});
+  assert.equal(image,'img/npc/japanese-navy/'+vessel+'.webp');
+  assert.ok(fs.existsSync(path.join(__dirname,'..',image)));
+ }
 });
 test('march marker uses the home-page unit model for its largest represented unit',()=>{
  const {c}=fixture();c.Game.UNIT_ICON={infantry:'img/units/infantry.svg',ltank:'img/units/ltank.svg'};c.Game.UNIT_MODEL={infantry:'img/units/models/infantry.webp'};

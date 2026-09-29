@@ -90,13 +90,18 @@ window.Game = window.Game || {};
     // 撤回挂单
     cancelOrder: function (orderId) {
       var self = this;
-      if (!confirm('确认下架此挂单吗？上架资源将如数返还。')) return;
-
-      G.API.cancelMarketOrder(orderId).then(function (resp) {
-        G.toast('挂单已成功下架，资源已返还');
-        self.refresh();
-      }).catch(function (err) {
-        G.toast(err && err.message ? err.message : '下架失败');
+      G.World.showConfirm({
+        title: '下架挂单',
+        message: '确认下架此挂单吗？上架资源将如数返还。',
+        okText: '确认下架',
+        onConfirm: function () {
+          G.API.cancelMarketOrder(orderId).then(function () {
+            G.toast('挂单已成功下架，资源已返还');
+            self.refresh();
+          }).catch(function (err) {
+            G.toast(err && err.message ? err.message : '下架失败');
+          });
+        }
       });
     },
 

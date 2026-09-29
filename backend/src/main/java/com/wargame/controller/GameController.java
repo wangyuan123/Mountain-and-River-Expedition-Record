@@ -181,6 +181,13 @@ public class GameController {
         return ResponseEntity.ok(result);
     }
 
+    @PostMapping("/settings/display-name")
+    public ResponseEntity<Map<String, Object>> setDisplayName(@RequestBody GameDtos.DisplayNameRequest request) {
+        Long playerId = authService.getCurrentPlayer().getId();
+        gameStateService.setDisplayName(playerId, request.name());
+        return ResponseEntity.ok(Map.of("success", true, "state", gameStateService.getGameState(playerId)));
+    }
+
     @PostMapping("/settings/avatar")
     public ResponseEntity<Map<String, Object>> setAvatar(@RequestBody GameDtos.AvatarRequest request) {
         String avatar = request.avatar() == null ? "" : request.avatar().trim();

@@ -24,6 +24,11 @@ test('shared catalogs keep stable IDs and ordered navigation', () => {
   assert.equal(constants.mapRadiusOptions.at(-1).v, 0);
   assert.equal(constants.speedUpOrder.at(-1), 'speedUp72h');
   assert.equal(constants.equipmentNames.recruit_defense_weapon, '列兵护身盾');
+  assert.equal(constants.equipmentBranchOrder.defense, 2);
+  const shopItemIds = new Set(constants.shopItems.map(item => item.id));
+  assert.ok(shopItemIds.has('box_recruit_defense'), '商城应包含列兵防御装备箱');
+  assert.ok(shopItemIds.has('box_officer_defense'), '商城应包含校官防御装备箱');
+  assert.ok(shopItemIds.has('box_marshal_defense'), '商城应包含元帅防御装备箱');
 });
 
 test('pages load constants before dependent scripts', () => {

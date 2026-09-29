@@ -144,12 +144,12 @@ public class ShopControllerTest extends BaseServiceTest {
     }
 
     @Test
-    @DisplayName("9套装备宝箱均在ItemDef与价格表中正确注册")
-    void testAllNineEquipmentBoxesRegistered() {
+    @DisplayName("12套装备宝箱均在ItemDef与价格表中正确注册")
+    void testAllTwelveEquipmentBoxesRegistered() {
         String[] boxKeys = {
-            "box_recruit_military", "box_recruit_logistics", "box_recruit_knowledge",
-            "box_officer_military", "box_officer_logistics", "box_officer_knowledge",
-            "box_marshal_military", "box_marshal_logistics", "box_marshal_knowledge"
+            "box_recruit_military", "box_recruit_defense", "box_recruit_logistics", "box_recruit_knowledge",
+            "box_officer_military", "box_officer_defense", "box_officer_logistics", "box_officer_knowledge",
+            "box_marshal_military", "box_marshal_defense", "box_marshal_logistics", "box_marshal_knowledge"
         };
         for (String key : boxKeys) {
             ItemDef def = ItemDef.ITEMS.get(key);
@@ -157,6 +157,38 @@ public class ShopControllerTest extends BaseServiceTest {
             assertEquals("officer", def.cat(), "宝箱分类应为 officer");
             assertTrue(def.name().contains("装备箱"), "名称应包含装备箱: " + def.name());
         }
+    }
+
+    @Test
+    @DisplayName("购买并开启防御装备宝箱：扣除钻石，入仓并开出整套3件防御装备")
+    void testBuyAndOpenDefenseEquipmentBox() {
+        Resources res = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
+        res.setDiamond(1000);
+        resourcesRepository.save(res);
+
+        ResponseEntity<Map<String, Object>> buyResp = shopController.buy(new GameDtos.ShopBuyRequest("box_recruit_defense"));
+        assertNotNull(buyResp.getBody());
+        assertTrue((Boolean) buyResp.getBody().get("success"), "购买列兵防御装备箱应成功");
+        assertEquals("已购买 列兵防御装备箱", buyResp.getBody().get("message"));
+        assertEquals(800, resourcesRepository.findByPlayerId(player.getId()).orElseThrow().getDiamond(), "应扣除200钻石");
+
+        PlayerItem boxItem = playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "box_recruit_defense").orElseThrow();
+        assertEquals(1, boxItem.getCount(), "背包应有1个列兵防御装备箱");
+
+        Map<String, Object> openResp = depotService.useItem(player.getId(), "box_recruit_defense", null, null);
+        assertTrue((Boolean) openResp.get("success"), "开启装备箱应成功");
+        assertTrue(openResp.get("message").toString().contains("列兵护身盾"), "开启消息应包含获得的装备");
+
+        PlayerItem afterOpenBox = playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "box_recruit_defense").orElseThrow();
+        assertEquals(0, afterOpenBox.getCount(), "开启后宝箱数量应为0");
+
+        PlayerItem weapon = playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "recruit_defense_weapon").orElseThrow();
+        PlayerItem badge = playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "recruit_defense_badge").orElseThrow();
+        PlayerItem coat = playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "recruit_defense_coat").orElseThrow();
+
+        assertEquals(1, weapon.getCount(), "应获得武器 列兵护身盾×1");
+        assertEquals(1, badge.getCount(), "应获得徽章 列兵坚守勋章×1");
+        assertEquals(1, coat.getCount(), "应获得外套 列兵防弹背心×1");
     }
 
     @Test

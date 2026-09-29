@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import com.wargame.config.GameServerIdentity;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -28,6 +29,9 @@ public class JwtUtil {
 
     @Value("${jwt.expiration}")
     private long expiration;
+
+    @Value("${game.server.id:jiangsu-1}")
+    private String serverId;
 
     /** Revoked tokens (logout / account compromised). Keyed by token id (jti). */
     private final ConcurrentMap<String, Long> revokedJtis = new ConcurrentHashMap<>();
@@ -61,6 +65,7 @@ public class JwtUtil {
                 .subject(username)
                 .claim("playerId", playerId)
                 .claim("authVersion", authVersion)
+                .claim("serverId", serverId)
                 .id(java.util.UUID.randomUUID().toString())  // jti for revocation
                 .issuedAt(now)
                 .expiration(expiryDate)
@@ -80,6 +85,9 @@ public class JwtUtil {
     public boolean validateToken(String token) {
         try {
             Claims claims = parseClaims(token);
+            // 历史令牌没有大区声明，只允许在原江苏一区过渡使用。
+            String tokenServer = claims.get("serverId", String.class);
+            if (!serverId.equals(tokenServer == null ? GameServerIdentity.DEFAULT_ID : tokenServer)) return false;
             String jti = claims.getId();
             if (jti != null && revokedJtis.containsKey(jti)) {
                 return false;

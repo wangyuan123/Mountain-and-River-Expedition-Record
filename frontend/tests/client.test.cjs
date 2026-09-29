@@ -110,6 +110,24 @@ test('a scout report reaches the existing UI handler and duplicate reports are i
   assert.equal(unreadRefreshes, 2);
 });
 
+test('battle victory toast shows occupation and only resources actually gained', () => {
+  const messages = [];
+  const context = sandbox({ Game: {
+    toast(message) { messages.push(message); },
+    fmt: number => String(number)
+  } });
+  load(context, 'js/ws-client.js');
+  load(context, 'js/ws-handlers.js');
+  context.Game.WS.handleMessage(JSON.stringify({ type: 'battle', data: {
+    win: true, targetType: 'wild', wildConquered: true,
+    plunder: { food: 0, steel: 0, oil: 0, rare: 0, gold: 0 }
+  } }));
+  context.Game.WS.handleMessage(JSON.stringify({ type: 'battle', data: {
+    win: true, plunder: { food: 1200, steel: 0, oil: 80, rare: 0, gold: 0 }
+  } }));
+  assert.deepEqual(messages, ['战斗胜利，野地已占领', '战斗胜利，获得资源：粮 1200、油 80']);
+});
+
 test('construction ticks retain queue IDs when an older server payload omits them', () => {
   const context = sandbox({ Game: {
     state: { constructions: [{ id: 'lab', slot: null, queueId: 42, finishesAt: 1000 }] },

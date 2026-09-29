@@ -15,6 +15,7 @@ public class GameDtos {
     public record ResetRequest(Boolean confirm) {}
 
     public record CityNameRequest(String cityName) {}
+    public record DisplayNameRequest(String name) {}
     public record AvatarRequest(String avatar) {}
     public record HomeModuleOrderRequest(List<String> order) {}
 

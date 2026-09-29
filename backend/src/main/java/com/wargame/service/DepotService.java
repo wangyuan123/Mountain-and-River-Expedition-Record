@@ -418,8 +418,11 @@ public class DepotService {
     private Map<String, Object> useRenameCard(Long playerId, Long officerId, String newName) {
         Officer officer = requireOfficer(playerId, officerId);
         if (officer == null) return error("请先选择军官");
-        if (newName == null || newName.isBlank()) return error("新名字不能为空");
-        if (newName.length() > 12) return error("名字不超过 12 字符");
+        try {
+            newName = com.wargame.model.constants.DisplayNamePolicy.validate(newName, 12, "军官名称");
+        } catch (IllegalArgumentException error) {
+            return error(error.getMessage());
+        }
         int consumed = playerItemRepository.tryConsume(playerId, "renameCard", 1, System.currentTimeMillis());
         if (consumed == 0) return error("军官改名卡不足");
         String old = officer.getName();
@@ -477,25 +480,31 @@ public class DepotService {
 
     private record EquipmentBoxDef(String boxName, List<String> equipmentKeys, String setBonusDesc) {}
 
-    private static final Map<String, EquipmentBoxDef> EQUIPMENT_BOXES = Map.of(
-        "box_recruit_military", new EquipmentBoxDef("列兵军事装备箱",
-            List.of("recruit_military_weapon", "recruit_military_badge", "recruit_military_coat"), "军事+3"),
-        "box_recruit_logistics", new EquipmentBoxDef("列兵后勤装备箱",
-            List.of("recruit_logistics_weapon", "recruit_logistics_badge", "recruit_logistics_coat"), "后勤+3"),
-        "box_recruit_knowledge", new EquipmentBoxDef("列兵学识装备箱",
-            List.of("recruit_knowledge_weapon", "recruit_knowledge_badge", "recruit_knowledge_coat"), "学识+3"),
-        "box_officer_military", new EquipmentBoxDef("校官军事装备箱",
-            List.of("officer_military_weapon", "officer_military_badge", "officer_military_coat"), "军事+15"),
-        "box_officer_logistics", new EquipmentBoxDef("校官后勤装备箱",
-            List.of("officer_logistics_weapon", "officer_logistics_badge", "officer_logistics_coat"), "后勤+15"),
-        "box_officer_knowledge", new EquipmentBoxDef("校官学识装备箱",
-            List.of("officer_knowledge_weapon", "officer_knowledge_badge", "officer_knowledge_coat"), "学识+15"),
-        "box_marshal_military", new EquipmentBoxDef("元帅军事装备箱",
-            List.of("marshal_military_weapon", "marshal_military_badge", "marshal_military_coat"), "军事+30，全属性+5"),
-        "box_marshal_logistics", new EquipmentBoxDef("元帅后勤装备箱",
-            List.of("marshal_logistics_weapon", "marshal_logistics_badge", "marshal_logistics_coat"), "后勤+30，全属性+5"),
-        "box_marshal_knowledge", new EquipmentBoxDef("元帅学识装备箱",
-            List.of("marshal_knowledge_weapon", "marshal_knowledge_badge", "marshal_knowledge_coat"), "学识+30，全属性+5")
+    private static final Map<String, EquipmentBoxDef> EQUIPMENT_BOXES = Map.ofEntries(
+        Map.entry("box_recruit_military", new EquipmentBoxDef("列兵军事装备箱",
+            List.of("recruit_military_weapon", "recruit_military_badge", "recruit_military_coat"), "军事+3")),
+        Map.entry("box_recruit_defense", new EquipmentBoxDef("列兵防御装备箱",
+            List.of("recruit_defense_weapon", "recruit_defense_badge", "recruit_defense_coat"), "防御+3")),
+        Map.entry("box_recruit_logistics", new EquipmentBoxDef("列兵后勤装备箱",
+            List.of("recruit_logistics_weapon", "recruit_logistics_badge", "recruit_logistics_coat"), "后勤+3")),
+        Map.entry("box_recruit_knowledge", new EquipmentBoxDef("列兵学识装备箱",
+            List.of("recruit_knowledge_weapon", "recruit_knowledge_badge", "recruit_knowledge_coat"), "学识+3")),
+        Map.entry("box_officer_military", new EquipmentBoxDef("校官军事装备箱",
+            List.of("officer_military_weapon", "officer_military_badge", "officer_military_coat"), "军事+15")),
+        Map.entry("box_officer_defense", new EquipmentBoxDef("校官防御装备箱",
+            List.of("officer_defense_weapon", "officer_defense_badge", "officer_defense_coat"), "防御+15")),
+        Map.entry("box_officer_logistics", new EquipmentBoxDef("校官后勤装备箱",
+            List.of("officer_logistics_weapon", "officer_logistics_badge", "officer_logistics_coat"), "后勤+15")),
+        Map.entry("box_officer_knowledge", new EquipmentBoxDef("校官学识装备箱",
+            List.of("officer_knowledge_weapon", "officer_knowledge_badge", "officer_knowledge_coat"), "学识+15")),
+        Map.entry("box_marshal_military", new EquipmentBoxDef("元帅军事装备箱",
+            List.of("marshal_military_weapon", "marshal_military_badge", "marshal_military_coat"), "军事+30，全属性+5")),
+        Map.entry("box_marshal_defense", new EquipmentBoxDef("元帅防御装备箱",
+            List.of("marshal_defense_weapon", "marshal_defense_badge", "marshal_defense_coat"), "防御+30，全属性+5")),
+        Map.entry("box_marshal_logistics", new EquipmentBoxDef("元帅后勤装备箱",
+            List.of("marshal_logistics_weapon", "marshal_logistics_badge", "marshal_logistics_coat"), "后勤+30，全属性+5")),
+        Map.entry("box_marshal_knowledge", new EquipmentBoxDef("元帅学识装备箱",
+            List.of("marshal_knowledge_weapon", "marshal_knowledge_badge", "marshal_knowledge_coat"), "学识+30，全属性+5"))
     );
 
     private static boolean isEquipmentBox(String itemId) {

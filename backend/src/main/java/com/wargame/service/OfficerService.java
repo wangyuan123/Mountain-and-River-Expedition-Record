@@ -987,16 +987,12 @@ public class OfficerService {
             return result;
         }
 
-        String newName = rawName.trim();
-        if (newName.length() > 12) {
+        String newName;
+        try {
+            newName = com.wargame.model.constants.DisplayNamePolicy.validate(rawName, 12, "军官名称");
+        } catch (IllegalArgumentException error) {
             result.put("success", false);
-            result.put("message", "军官名称最多12个字符");
-            return result;
-        }
-
-        if (!newName.matches("^[A-Za-z0-9_\\u4e00-\\u9fa5·\\s]{1,12}$")) {
-            result.put("success", false);
-            result.put("message", "军官名称仅限中英文、数字、下划线和间隔号");
+            result.put("message", error.getMessage());
             return result;
         }
 

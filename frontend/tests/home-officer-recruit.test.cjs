@@ -112,3 +112,27 @@ test('首页点击将领进入详情，只有底部参谋部入口跳转至军�
   assert.match(html, /参谋部 &gt;<\/span>/);
   assert.match(html, /onclick="Game\.go\('officer'\)"[^>]*title="前往参谋部 · 军官管理"/);
 });
+
+test('首页军官技能显示各自图标，未知技能使用默认符号', () => {
+  const G = setupTest([
+    { id: 1, name: '市长', level: 10, star: 5, role: 'mayor', skills: [{ id: 'finance', lv: 5 }] },
+    { id: 2, name: '指挥官', level: 10, star: 5, role: 'commander', skills: [{ id: 'leadership', lv: 5 }] },
+    { id: 3, name: '侦察官', level: 10, star: 5, role: 'idle', skills: [{ id: 'blitz', lv: 5 }] },
+    { id: 4, name: '旧技能', level: 10, star: 5, role: 'idle', skills: ['legacy'] }
+  ]);
+  G.DATA.officerSkills = {
+    finance: { name: '精明理财', icon: '🪙' },
+    leadership: { name: '三军统帅', icon: '🎖️' },
+    blitz: { name: '闪电突击', icon: '⚡' }
+  };
+  G.Core.formatSkills = skills => skills.map(skill => {
+    const id = typeof skill === 'string' ? skill : skill.id;
+    return (G.DATA.officerSkills[id] || { name: id }).name;
+  }).join('/');
+
+  const html = G.MainView.renderOfficerSummaryCard();
+  assert.match(html, /title="精明理财"><span aria-hidden="true">🪙<\/span> 精明理财/);
+  assert.match(html, /title="三军统帅"><span aria-hidden="true">🎖️<\/span> 三军统帅/);
+  assert.match(html, /title="闪电突击"><span aria-hidden="true">⚡<\/span> 闪电突击/);
+  assert.match(html, /title="legacy"><span aria-hidden="true">✦<\/span> legacy/);
+});

@@ -199,7 +199,16 @@ window.Game = window.Game || {};
   G.WS.on('battle', function (data) {
     if (!data) return;
     if (data.win) {
-      G.toast('战斗胜利! 掠夺资源' + JSON.stringify(data.plunder || {}));
+      var plunder = data.plunder || {};
+      var names = G.Constants.battleResourceNames;
+      var resources = Object.keys(names).filter(function (key) {
+        return Number(plunder[key]) > 0;
+      }).map(function (key) {
+        return names[key] + ' ' + G.fmt(plunder[key]);
+      });
+      var message = data.wildConquered ? '战斗胜利，野地已占领' : '战斗胜利';
+      if (resources.length) message += '，获得资源：' + resources.join('、');
+      G.toast(message);
     } else {
       G.toast('战斗失利');
     }

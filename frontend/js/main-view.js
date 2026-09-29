@@ -337,10 +337,6 @@ window.Game = window.Game || {};
         var o = officers[i];
         var starColor = (D.starColor && D.starColor[o.star]) || '#ffe14a';
 
-        var starNum = Math.min(5, Math.max(1, o.star || 1));
-        var starsHtml = '<span class="home-officer-stars-filled">' + '⭐️'.repeat(starNum) + '</span>';
-        if (starNum < 5) starsHtml += '<span class="home-officer-stars-empty">' + '⭐️'.repeat(5 - starNum) + '</span>';
-
         // 职位显示
         var roleTag = '';
         if (o.role === 'mayor') {
@@ -355,13 +351,16 @@ window.Game = window.Game || {};
 
         // 技能摘要
         var skillSummary = Core.formatSkills ? Core.formatSkills(o.skills) : '';
+        var firstSkill = o.skills && o.skills.find(function (skill) { return skill; });
+        var skillId = typeof firstSkill === 'string' ? firstSkill : firstSkill && firstSkill.id;
+        var skillDef = D.officerSkills && D.officerSkills[skillId];
+        var skillIcon = skillDef && skillDef.icon || '✦';
 
         html += '<div class="home-officer-item home-officer-item-action" role="button" tabindex="0" title="查看' + G.escapeHtml(o.name || '军官') + '详情" aria-label="查看' + G.escapeHtml(o.name || '军官') + '详情" onclick="Game.Officer.showDetail(\'' + o.id + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.Officer.showDetail(\'' + o.id + '\');event.preventDefault();}">';
         html += '<div class="home-officer-top-row">';
         html += '<div class="home-officer-identity">';
         html += roleTag;
         html += '<span class="home-officer-name" style="color:' + starColor + '">' + G.escapeHtml(o.name || '军官') + '</span>';
-        html += '<span class="home-officer-stars" role="img" aria-label="' + starNum + '星">' + starsHtml + '</span>';
         html += '</div>';
         html += '<span class="home-officer-level">Lv.' + (o.level || 1) + (o.level >= (G.OFFICER_MAX_LEVEL || 100) ? '<small>(满)</small>' : '') + '</span>';
         html += '</div>';
@@ -373,7 +372,7 @@ window.Game = window.Game || {};
         html += '<span class="home-officer-stat"><span class="stat-lbl">学识</span><b class="stat-val kno">' + (o.knowledge || 0) + '</b></span>';
         html += '</div>';
         if (skillSummary) {
-          html += '<div class="home-officer-skill" title="' + G.escapeHtml(skillSummary) + '">⚡ ' + G.escapeHtml(skillSummary) + '</div>';
+          html += '<div class="home-officer-skill" title="' + G.escapeHtml(skillSummary) + '"><span aria-hidden="true">' + G.escapeHtml(skillIcon) + '</span> ' + G.escapeHtml(skillSummary) + '</div>';
         }
         html += '</div>';
 
@@ -420,6 +419,15 @@ window.Game = window.Game || {};
       h += '<div class="login-access-title"><span class="login-access-eyebrow" id="loginModeEyebrow">指挥官身份验证</span><h2 id="loginModeTitle">账号登录</h2><p id="loginModeDescription">使用指挥官账号继续你的远征。</p></div>';
       if (G.Account) h += G.Account.loginPanel();
       h += '<form class="login-form" id="loginForm" data-auth-mode="login" onsubmit="Game.Main.submitAuth(); return false;">';
+      var servers = G.Servers ? G.Servers.list : [{ id: 'jiangsu-1', name: '江苏一区' }];
+      var selectedServer = G.Servers ? G.Servers.current().id : 'jiangsu-1';
+      var selectedName = (servers.find(function (server) { return server.id === selectedServer; }) || servers[0]).name;
+      h += '<div class="edit-row"><label id="loginServerLabel" for="loginServer">服务器大区</label>';
+      h += '<div class="login-server-picker" onkeydown="Game.Main.handleServerKey(event)" onfocusout="Game.Main.leaveServerMenu(event)">';
+      h += '<button type="button" id="loginServer" class="login-server-trigger" aria-labelledby="loginServerLabel loginServerValue" aria-haspopup="listbox" aria-expanded="false" aria-controls="loginServerOptions" onclick="Game.Main.toggleServerMenu(this)"><span id="loginServerValue">' + G.escapeHtml(selectedName) + '</span><span class="login-server-chevron" aria-hidden="true"></span></button>';
+      h += '<div id="loginServerOptions" class="login-server-options" role="listbox" aria-labelledby="loginServerLabel" hidden>';
+      servers.forEach(function (server) { h += '<button type="button" role="option" tabindex="-1" aria-selected="' + (server.id === selectedServer ? 'true' : 'false') + '" data-server-id="' + G.escapeHtml(server.id) + '" onclick="Game.Main.chooseServer(this)">' + G.escapeHtml(server.name) + '</button>'; });
+      h += '</div></div></div>';
       h += '<div class="edit-row"><label for="loginUser">用户名 <span>CALLSIGN</span></label><input id="loginUser" class="qty" name="username" autocomplete="username" maxlength="32" placeholder="输入指挥官代号 · 3-32 位"></div>';
       h += '<div class="edit-row"><label for="loginPass">密码 <span>ACCESS CODE</span></label><input id="loginPass" class="qty" name="password" autocomplete="current-password" type="password" maxlength="64" placeholder="输入通行密码 · 6-64 位"></div>';
       h += '<div class="edit-row login-register-only" id="loginConfirmRow" hidden><label for="loginPassConfirm">确认密码 <span>CONFIRM CODE</span></label><input id="loginPassConfirm" class="qty" name="passwordConfirm" autocomplete="new-password" type="password" maxlength="64" placeholder="再次输入通行密码"></div>';
@@ -972,9 +980,9 @@ window.Game = window.Game || {};
     var sArmy = (Core.state && Core.state.army) || {};
     for (var ak in sArmy) totArmy += sArmy[ak] || 0;
     var cmd2 = Core.getOfficerByRole('commander');
-    h += '总兵力 <b class="home-army-tot" style="color:var(--accent)">' + G.fmt(totArmy) + '</b> / ' + G.fmt(Core.armyCap());
-    h += '  ·  指挥官: <b>' + (cmd2 ? G.escapeHtml(cmd2.name) : '未任命') + '</b>';
-    h += '  <span class="army-go">详情 ></span>';
+    h += '<span class="army-summary-strength">总兵力 <b class="home-army-tot" style="color:var(--accent)">' + G.fmt(totArmy) + '</b> / ' + G.fmt(Core.armyCap()) + '</span>';
+    h += '<span class="army-summary-commander"><span class="army-summary-commander-label">指挥官:</span> <b>' + (cmd2 ? G.escapeHtml(cmd2.name) : '未任命') + '</b></span>';
+    h += '<span class="army-go">详情 &gt;</span>';
     h += '</div>';
     modules.army = h;
     h = '';

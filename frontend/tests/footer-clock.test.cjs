@@ -58,3 +58,15 @@ test('footer clock updates every second without creating timers on repeated rend
   assert.equal(clock.nodes.beijingTime.textContent, '北京时间：2026年10月1日 00:00:00');
   assert.equal(clock.intervalCount(), 1);
 });
+
+test('footer omits a return hint on pages without one', () => {
+  const { core } = setupClock();
+  core.state = { player: { id: 1 } };
+  core.route = 'mainQuest';
+  const footer = core.footer();
+  assert.match(footer, /footer-nav/);
+  assert.doesNotMatch(footer, /footer-hint|\[0\]返回/);
+
+  core.route = 'buildArmy';
+  assert.match(core.footer(), /\[1-9\]升级 \[0\]返回/);
+});

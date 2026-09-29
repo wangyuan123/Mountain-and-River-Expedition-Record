@@ -4,6 +4,7 @@ import com.wargame.repository.WorldMapRepository;
 import com.wargame.service.GameStateService;
 import com.wargame.service.NpcCitySpawnService;
 import com.wargame.service.IslandContentService;
+import com.wargame.service.WorldContentService;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
@@ -24,14 +25,16 @@ public class WorldBootstrap implements ApplicationRunner {
     private final com.wargame.service.WorldTerrainService terrain;
     private final NpcCitySpawnService npcCitySpawnService;
     private final IslandContentService islandContentService;
+    private final WorldContentService worldContentService;
 
     public WorldBootstrap(WorldMapRepository worldMapRepository, GameStateService gameStateService,
                           com.wargame.service.WorldTerrainService terrain, NpcCitySpawnService npcCitySpawnService,
-                          IslandContentService islandContentService) {
+                          IslandContentService islandContentService, WorldContentService worldContentService) {
         this.worldMapRepository = worldMapRepository;
         this.gameStateService = gameStateService; this.terrain = terrain;
         this.npcCitySpawnService = npcCitySpawnService;
         this.islandContentService = islandContentService;
+        this.worldContentService = worldContentService;
     }
 
     @Override
@@ -43,6 +46,7 @@ public class WorldBootstrap implements ApplicationRunner {
         worldMapRepository.findFirstByOrderByIdAsc().ifPresent(world -> {
             npcCitySpawnService.ensurePopulation(world.getId());
             islandContentService.ensure(world.getId());
+            worldContentService.ensure(world.getId());
         });
     }
 }

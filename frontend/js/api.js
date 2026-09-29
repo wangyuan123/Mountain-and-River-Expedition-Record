@@ -98,7 +98,7 @@ window.Game = window.Game || {};
     // ==================== 鉴权 ====================
 
     register: function (username, password, agreementVersion) {
-      return client.post('/auth/register', { username: username, password: password, agreementVersion: agreementVersion })
+      return client.post('/auth/register', { username: username, password: password, agreementVersion: agreementVersion, serverId: client.serverId })
         .then(function (data) {
           if (data.token) client.setToken(data.token, data.username);
           client.invalidateStateCache();
@@ -107,7 +107,7 @@ window.Game = window.Game || {};
     },
 
     login: function (username, password) {
-      return client.post('/auth/login', { username: username, password: password })
+      return client.post('/auth/login', { username: username, password: password, serverId: client.serverId })
         .then(function (data) {
           if (data.token) client.setToken(data.token, data.username);
           client.invalidateStateCache();
@@ -150,7 +150,7 @@ window.Game = window.Game || {};
     },
 
     deletionStatus: function (username, password) {
-      return client.post('/auth/deletion-status', { username: username, password: password },
+      return client.post('/auth/deletion-status', { username: username, password: password, serverId: client.serverId },
         { timeout: 15000, preserveSession: true });
     },
 
@@ -235,6 +235,11 @@ window.Game = window.Game || {};
 
     setCityName: function (cityName) {
       return client.post('/game/settings/city-name', { cityName: cityName })
+        .then(extractState).then(applyState);
+    },
+
+    setDisplayName: function (name) {
+      return client.post('/game/settings/display-name', { name: name })
         .then(extractState).then(applyState);
     },
 

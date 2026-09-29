@@ -73,7 +73,7 @@ window.Game = window.Game || {};
         + '      <span class="avatar-edit-badge">更换</span>'
         + '    </button>'
         + '    <div class="drawer-profile-meta">'
-        + '      <div class="drawer-profile-name">' + nameStr + '</div>'
+        + '      <div class="drawer-profile-name-row"><div class="drawer-profile-name">' + nameStr + '</div><button type="button" class="drawer-link-btn" onclick="Game.Main.promptRenameCommander()">改名</button></div>'
         + '      <div class="drawer-online-status">' + G.WS.statusHtml() + '</div>'
         + '      <div class="drawer-badge-row">'
         + '        <span class="drawer-faction-tag ' + faction + '">' + factionName + '</span>'
@@ -314,6 +314,80 @@ window.Game = window.Game || {};
     closeAvatarPicker: function () {
       var modal = document.getElementById('avatarPickerMask');
       if (modal) modal.remove();
+    },
+
+    /** 统帅名是游戏内展示名，改名不会更改登录用户名或邮件收件人地址。 */
+    promptRenameCommander: function () {
+      if (document.getElementById('renameCommanderModal')) return;
+      var p = (Core.state && Core.state.player) || {};
+      var trigger = document.activeElement;
+      var mask = document.createElement('div');
+      mask.id = 'renameCommanderModal';
+      mask.className = 'modal-mask account-confirm-mask';
+      mask.innerHTML = '<div class="modal-card account-confirm city-rename-dialog" role="dialog" aria-modal="true" aria-labelledby="renameCommanderTitle">'
+        + '<div class="modal-title" id="renameCommanderTitle">修改统帅名</div>'
+        + '<form id="renameCommanderForm"><div class="modal-body">'
+        + '<label for="renameCommanderInput">游戏内统帅名</label>'
+        + '<input id="renameCommanderInput" name="name" type="text" aria-required="true" autocomplete="off" aria-describedby="renameCommanderHint">'
+        + '<p id="renameCommanderHint">最多8个字符，可用标点、符号和 emoji；登录用户名不变。</p></div>'
+        + '<div class="modal-foot"><button type="button" class="account-confirm-cancel">取消</button>'
+        + '<button type="submit" class="account-confirm-submit">保存名称</button></div></form></div>';
+      var input = mask.querySelector('#renameCommanderInput');
+      var cancel = mask.querySelector('.account-confirm-cancel');
+      var submit = mask.querySelector('.account-confirm-submit');
+      var saving = false;
+      input.value = p.name || p.username || '';
+
+      function close(restoreFocus) {
+        if (saving) return;
+        document.removeEventListener('keydown', onKey, true);
+        mask.remove();
+        if (restoreFocus && trigger && trigger.isConnected) trigger.focus();
+      }
+      function onKey(event) {
+        event.stopPropagation();
+        if (event.key === 'Escape') { event.preventDefault(); close(true); }
+        if (event.key === 'Tab') {
+          var controls = [input, cancel, submit].filter(function (control) { return !control.disabled; });
+          if (event.shiftKey && document.activeElement === controls[0]) {
+            event.preventDefault(); controls[controls.length - 1].focus();
+          } else if (!event.shiftKey && document.activeElement === controls[controls.length - 1]) {
+            event.preventDefault(); controls[0].focus();
+          }
+        }
+      }
+      cancel.onclick = function () { close(true); };
+      mask.onclick = function (event) { if (event.target === mask) close(true); };
+      mask.querySelector('#renameCommanderForm').onsubmit = function (event) {
+        event.preventDefault();
+        if (saving) return;
+        var name;
+        try {
+          name = G.normalizeDisplayName(input.value, 8, '统帅名');
+        } catch (error) {
+          G.toast(error.message);
+          input.focus();
+          return;
+        }
+        if (name === p.name) { G.toast('新名称与当前统帅名相同'); return; }
+        saving = true;
+        submit.disabled = true;
+        G.API.setDisplayName(name).then(function () {
+          saving = false;
+          close(false);
+          Game.Main.closePlayerDrawer();
+          G.toast('统帅名已保存');
+          Core.render();
+        }).catch(function (error) {
+          saving = false;
+          submit.disabled = false;
+          G.toast(error.message || '统帅名保存失败');
+          input.focus();
+        });
+      };
+      document.body.appendChild(mask);
+      document.addEventListener('keydown', onKey, true);
+      input.focus();
     },
 
     promptRenameCityInDrawer: function () {

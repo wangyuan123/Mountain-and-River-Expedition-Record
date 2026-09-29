@@ -754,9 +754,6 @@ body[data-theme|="blue-white"] {
   background: #eef4fb !important;
   border: 1px solid #d3e2f2 !important;
 }
-[data-theme|="blue-white"] .home-officer-stars {
-  color: #f59e0b !important;
-}
 [data-theme|="blue-white"] .home-officer-stat .stat-lbl {
   color: #64748b !important;
 }

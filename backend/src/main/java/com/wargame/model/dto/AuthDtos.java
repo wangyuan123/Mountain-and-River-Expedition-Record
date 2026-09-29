@@ -3,9 +3,9 @@ package com.wargame.model.dto;
 public class AuthDtos {
 
     /** 注册时必须明确确认当前发布版本的用户协议。 */
-    public record RegisterRequest(String username, String password, String agreementVersion) {}
+    public record RegisterRequest(String username, String password, String agreementVersion, String serverId) {}
 
-    public record LoginRequest(String username, String password) {}
+    public record LoginRequest(String username, String password, String serverId) {}
 
     public record AuthResponse(String token, String username, Long playerId) {}
 

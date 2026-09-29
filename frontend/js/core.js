@@ -58,6 +58,27 @@ window.Game = window.Game || {};
       .replace(/'/g, '&#39;');
   }
 
+  /**
+   * 校验游戏内展示名；允许可见符号，并与服务端统一按 Unicode 字符数计数。
+   * @param {string} raw - 玩家输入的原始名称
+   * @param {number} maxChars - 允许的最大字符数
+   * @param {string} label - 错误提示中的名称类型
+   * @returns {string} 规范化后的展示名
+   */
+  function normalizeDisplayName(raw, maxChars, label) {
+    // 只移除首尾普通空格，避免将换行或制表符当成无害空白吞掉。
+    var name = String(raw == null ? '' : raw).normalize('NFC').replace(/^ +| +$/g, '');
+    if (!name) throw new Error(label + '不能为空');
+    if (Array.from(name).length > maxChars) throw new Error(label + '最多' + maxChars + '个字符');
+    // 普通空格可用于分词，其他分隔符和控制字符会产生换行、隐藏文字或方向伪装。
+    if (/[\p{C}\p{Z}]/u.test(name.replace(/ /g, ''))) {
+      throw new Error(label + '不能包含换行或不可见字符');
+    }
+    return name;
+  }
+
+  G.normalizeDisplayName = normalizeDisplayName;
+
   function unitDisplayName(val) {
     if (!val) return '';
     var name = typeof val === 'object' && val.name ? val.name : String(val);
@@ -858,7 +879,7 @@ window.Game = window.Game || {};
         html += '<button type="button" class="footer-nav-item" aria-label="返回顶部" onclick="Game.Core.footerNavigate()">' +
           '<span class="footer-nav-icon" aria-hidden="true">↑</span><span>顶部</span></button></nav>';
       }
-      var hint = Object.prototype.hasOwnProperty.call(map, this.route) ? map[this.route] : '[0]返回';
+      var hint = Object.prototype.hasOwnProperty.call(map, this.route) ? map[this.route] : '';
       if (hint) html += '<p class="footer-hint">' + escapeHtml(hint) + '</p>';
       var placeholder = SITE_INFO.isPlaceholder ? '（模拟）' : '';
       html += '<div class="footer-site-info">' +

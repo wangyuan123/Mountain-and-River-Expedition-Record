@@ -34,6 +34,7 @@ public class WorldMapService {
         int maxX = Math.min(x + CHUNK_SIZE - 1, WorldConfig.SIZE - 1);
         int maxY = Math.min(y + CHUNK_SIZE - 1, WorldConfig.SIZE - 1);
         if (world != null) {
+            String mask = terrain.current();
             List<PlayerCity> cityList = cities.findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(world, x, maxX, y, maxY);
             List<WildTile> wildList = wilds.findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(world, x, maxX, y, maxY);
             Map<Long, Player> owners = new HashMap<>();
@@ -55,6 +56,7 @@ public class WorldMapService {
             bandits.findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(world, x, maxX, y, maxY).forEach(b -> {
                 Map<String, Object> t = base("bandit", b.getId(), b.getX(), b.getY(), b.getName(), b.getLevel());
                 t.put("defeated", Boolean.TRUE.equals(b.getDefeated()));
+                t.put("sea", isSea(mask, b));
                 t.put("commanderName", b.getCommanderName() != null ? b.getCommanderName() : JapaneseOfficers.getCommanderForLevel(b.getLevel() != null ? b.getLevel() : 1));
                 targets.add(t);
             });
@@ -87,6 +89,7 @@ public class WorldMapService {
                 Bandit b = bandits.findById(id).filter(v -> world.equals(v.getWorldId())).orElseThrow(this::missing);
                 Map<String, Object> t = base(kind, id, b.getX(), b.getY(), b.getName(), b.getLevel());
                 t.put("defeated", Boolean.TRUE.equals(b.getDefeated()));
+                t.put("sea", isSea(terrain.current(), b));
                 t.put("commanderName", b.getCommanderName() != null ? b.getCommanderName() : JapaneseOfficers.getCommanderForLevel(b.getLevel() != null ? b.getLevel() : 1));
                 return t;
             }
@@ -111,6 +114,10 @@ public class WorldMapService {
             }
             default -> throw new IllegalArgumentException("无效的地图目标类型");
         }
+    }
+
+    private static boolean isSea(String mask, Bandit bandit) {
+        return mask != null && WorldTerrainService.sea(mask, bandit.getX(), bandit.getY());
     }
 
     private Map<String, Object> city(Long viewer, PlayerCity c, Player owner) {

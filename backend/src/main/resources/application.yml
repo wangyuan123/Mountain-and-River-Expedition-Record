@@ -32,6 +32,9 @@ jwt:
   expiration: ${WARGAME_JWT_EXPIRATION:86400000}  # 24 hours in milliseconds
 
 game:
+  server:
+    id: ${WARGAME_SERVER_ID:jiangsu-1}
+    name: ${WARGAME_SERVER_NAME:江苏一区}
   compliance:
     # 暂停防沉迷；产品完善后可显式设为 true，并按实施说明恢复默认值与校验。
     enabled: ${WARGAME_COMPLIANCE_ENABLED:false}

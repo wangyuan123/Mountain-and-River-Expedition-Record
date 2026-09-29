@@ -42,6 +42,7 @@
     return { x:b.cx, y:b.cy, footprint:b.span };
   }
   function markerHeight(t, width) {
+    if (t.sea && t.kind === 'bandit') return width;
     if (t.kind === 'wild') return width;
     // Ground diamond depth/width measured in the source art (exclude building
     // height): garden .90, harbor .60, fortress .75. Use the wild/terrain
@@ -52,6 +53,12 @@
     return width * groundDepth / sourceDepth;
   }
   function icon(t, snowCells) {
+    if (t.sea && t.kind === 'bandit') {
+      var vessel = t.name && t.name.indexOf('航母') >= 0 ? 'carrier'
+        : t.name && t.name.indexOf('潜艇') >= 0 ? 'sub'
+        : t.name && t.name.indexOf('驱逐舰') >= 0 ? 'destroyer' : 'battleship';
+      return 'img/npc/japanese-navy/' + vessel + '.webp';
+    }
     if (t.selfCity || t.kind === 'player') return t.coastal === true ? 'img/cities/harbor.webp' : 'img/cities/garden-citadel.webp';
     if (t.kind === 'wild' && t.type === 'snow' && snowCells) {
       var depth=G.MapTerrain.snowVariant(t.x,t.y,snowCells), north=G.MapTerrain.northernSnow(t.x,t.y,G.DATA.world.size);
@@ -228,7 +235,7 @@
   function MapView(v) {
     this.view = v; this.destroyed = false; this.pointers = new Map(); this.listeners = [];
     this.markers = new Map(); this.visible = []; this.filter = 'all'; this.selected = null;
-    this.detailSeq = 0; this.vx = 0; this.vy = 0; this.lastLoad = 0; this.raf = 0; this.dirty = true;
+    this.detailSeq = 0; this.vx = 0; this.vy = 0; this.lastLoad = 0; this.raf = 0; this.dirty = true; this.animatingMarches = false;
     var cp = G.Core.state.world.cityPos || G.Core.state.world.pos || { x: 100, y: 100 };
     var homeCenter = markerCenter({ kind:'player', x:cp.x, y:cp.y });
     if (!camera) camera = new G.MapCamera(G.DATA.world.size, homeCenter.x, homeCenter.y, 44);
@@ -280,10 +287,13 @@
       self.requestChunks(); self.wake();
       if (self.selected && self.selected.kind!=='site') self.loadDetail(self.selected, true);
     }, 15000);
-    this.marchTimer = setInterval(function () {
-      if (!document.hidden && ((G.Core.state.world.marches || []).length || (self.visibleSea&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches))) self.wake();
-    }, 250);
     this.gatherTimer = setInterval(function () { self.updateGathering(); }, 1000);
+    // 海面波纹仍需低频重绘；在途行军由 requestAnimationFrame 单独驱动。
+    this.marchTimer = setInterval(function () {
+      if (document.hidden) return;
+      var reduced = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (reduced ? (G.Core.state.world.marches || []).length : self.visibleSea) self.wake();
+    }, 1000);
     cache.changed = function () {
       if (self.destroyed) return;
       if(G.MapTerrain.updateChunk)cache.entries.forEach(function(e){
@@ -380,6 +390,10 @@
   MapView.prototype.wake = function () {
     if (this.destroyed) return;
     this.dirty = true;
+    this.scheduleFrame();
+  };
+  MapView.prototype.scheduleFrame = function () {
+    if (this.destroyed) return;
     if (!this.raf) { var self = this; this.raf = requestAnimationFrame(function (time) { self.frame(time); }); }
   };
   MapView.prototype.frame = function (time) {
@@ -391,8 +405,12 @@
     if (this.dirty) {
       this.draw(); this.dirty = false;
       if (Date.now() - this.lastLoad > 150) this.requestChunks();
+    } else if (this.animatingMarches) {
+      // 行军动画只更新路线和编队图层，避免每帧重绘静态地形与所有据点。
+      this.drawRoutes(); this.app.renderer.render(this.app.stage);
     }
     if (this.terrainPending || (!this.pointers.size && (this.vx || this.vy))) this.wake();
+    else if (this.animatingMarches) this.scheduleFrame();
   };
   MapView.prototype.allowed = function (t) {
     if (this.filter === 'all') return true;
@@ -465,19 +483,7 @@
       var wave=c.screen(wx+.45,wy+.5+phase*.025);
       g.lineStyle(1,0xc2e5dc,.10+phase*.025).moveTo(wave.x-5,wave.y).lineTo(wave.x+5,wave.y+1);
     }
-    // Resource icons and authoritative terrain remain separate layers.
-    if (c.scale >= 36) {
-      g.lineStyle(1, 0x53634d, .10);
-      for (var y = Math.floor(b.minY); y <= Math.ceil(b.maxY) + 1; y++) {
-        var rowStart = c.screen(b.minX, y), rowEnd = c.screen(b.maxX+1, y);
-        g.moveTo(rowStart.x, rowStart.y).lineTo(rowEnd.x, rowEnd.y);
-      }
-      for (var x = Math.floor(b.minX); x <= Math.ceil(b.maxX) + 1; x++) {
-        var colStart = c.screen(x, b.minY), colEnd = c.screen(x, b.maxY+1);
-        g.moveTo(colStart.x, colStart.y).lineTo(colEnd.x, colEnd.y);
-      }
-      g.lineStyle(0);
-    }
+
     var cells = c.chunks(), pending = 0, errors = 0;
     cells.forEach(function (cell) {
       if (!cell.visible) return;
@@ -503,7 +509,8 @@
     this.visible.forEach(function (t) {
       var key = t.kind + ':' + t.id, marker = self.markers.get(key);
       keep.add(key);
-      var path = icon(t,snowCells).replace(/\.webp$/, '-map-embedded.png') + '?v=4.8-city-angle';
+      var art = icon(t,snowCells);
+      var path = (t.sea && t.kind === 'bandit' ? art : art.replace(/\.webp$/, '-map-embedded.png')) + '?v=4.8-city-angle';
       if (!textures[path]) { textures[path] = PIXI.Texture.from(path); textures[path].baseTexture.once('loaded', function () { self.wake(); }); }
       if (!marker) {
         marker = new PIXI.Container(); marker.badge = new PIXI.Graphics(); marker.addChild(marker.badge);
@@ -546,7 +553,7 @@
       var coordinates = '(' + t.x + ', ' + t.y + ')';
       var info = '';
       if (isCity) {
-        var now = Date.now(), status = '日寇据点';
+        var now = Date.now(), status = t.sea && t.kind === 'bandit' ? '日寇舰队' : '日寇据点';
         if (t.kind === 'player' || t.selfCity) {
           var cp = G.Core.state.world.cityPos || G.Core.state.world.pos || {};
           var ownState = t.selfCity && t.x === cp.x && t.y === cp.y && G.Core.getCityStatus ? G.Core.getCityStatus() : '';
@@ -632,7 +639,9 @@
   };
   /** 在途绘制路线与移动编队，抵达后汇总为目标下方的状态标记，返城抵达即清除。 */
   MapView.prototype.drawRoutes = function () {
-    var self = this, camera = this.camera, routeGraphics = this.routes, now = Date.now(); routeGraphics.clear();
+    var self = this, camera = this.camera, routeGraphics = this.routes, now = Date.now(), animating = false;
+    var reducedMotion = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    routeGraphics.clear();
     var targets = cache.targets({ minX:0, minY:0, maxX:camera.size-1, maxY:camera.size-1 }), keep = new Set(), statuses = new Map();
     function addStatus(x, y, kind, state) {
       var key = x + ':' + y, status = statuses.get(key);
@@ -660,6 +669,7 @@
         addStatus(march.targetX, march.targetY, march.targetKind === 'wild_gather' ? 'wild' : march.targetKind, state);
         return;
       }
+      animating = !reducedMotion;
       var fromX = march.fromX != null ? march.fromX : march.originX, fromY = march.fromY != null ? march.fromY : march.originY;
       if (fromX == null || fromY == null || march.targetX == null || march.targetY == null) return;
       var start = endpoint(fromX, fromY, 'player'), end = endpoint(march.targetX, march.targetY, march.targetKind === 'player' ? 'player' : null);
@@ -750,6 +760,7 @@
       if (keep.has(markerKey)) return;
       self.marchLayer.removeChild(marker); marker.destroy({children:true}); self.marchMarkers.delete(markerKey);
     });
+    this.animatingMarches = animating;
   };
   MapView.prototype.local = function (event) {
     if (this.inputCorners) {
@@ -884,21 +895,44 @@
   MapView.prototype.loadSite = function(x,y) {
     if(x<0||y<0||x>=this.camera.size||y>=this.camera.size)return;
     var self=this,seq=++this.detailSeq;this.selected={kind:'site',x:x,y:y,valid:false};this.detail.hidden=false;
-    this.detail.innerHTML='<button class="world-map-detail-close" data-map="close">×</button><p>正在检查建城位置…</p>';this.wake();
+    this.detail.innerHTML='<button class="world-map-detail-close" data-map="close" aria-label="关闭">×</button><p>正在检查选址 ('+x+', '+y+')…</p>';this.wake();
     G.API.client.get('/game/cities/site?x='+x+'&y='+y,{silent:true,timeout:10000}).then(function(site){
       if(self.destroyed||seq!==self.detailSeq||identity()!==owner)return;
       self.selected=Object.assign({kind:'site'},site);
-        var terrainType=site.cityType || (site.coastal?'海岸':'平原');
-        var buildType=site.coastal?'海城':terrainType==='丘陵'?'山城':'平原城市';
-        self.detail.innerHTML='<button class="world-map-detail-close" data-map="close" aria-label="取消选址">×</button><b>'+esc(terrainType)+' · ('+x+', '+y+')</b><p>'+(site.valid?'可建造'+esc(buildType)+' · 2×2 地块（共4格） · '+(site.coastal?'临海，可建设港口':'陆地建城'):esc(site.reason))+'</p><p>粮 5,000 · 钢 10,000 · 油 5,000 · 稀 2,000 · 金 10,000<br>建设需 30 分钟，费用从当前城市扣除。</p>'+(site.valid?'<form class="coastal-found-form"><input class="qty" name="name" maxlength="12" required aria-label="新城名称" placeholder="输入城市名称"><button class="world-map-button primary" type="submit">支付资源并建城</button></form>':'');
-      var form=self.detail.querySelector('form');
-      if(form)form.onsubmit=function(e){
-        e.preventDefault();var button=form.querySelector('button');if(button.disabled)return;button.disabled=true;
+      var terrainType=site.cityType || (site.coastal?'海岸':'平原');
+      var html = '<button class="world-map-detail-close" data-map="close" aria-label="关闭">×</button>' +
+        '<div style="display:flex;align-items:center;gap:10px;padding-right:24px;margin-bottom:6px;flex-wrap:wrap;">' +
+        '<b style="font-size:15px;">' + esc(terrainType) + ' · (' + x + ', ' + y + ')</b>' +
+        (site.valid ? '<button type="button" class="page-back-button" data-map="found-city"><span>[建立城市]</span></button>' : '') +
+        '</div>' +
+        (!site.valid && site.reason ? '<p class="world-map-site-reason" style="margin:4px 0 2px;font-size:12px;color:#c0392b;font-weight:600;">当前不可建城：' + esc(site.reason) + '</p>' : '') +
+        '<p class="world-map-site-rule" style="margin:4px 0 0;font-size:12px;color:var(--map-muted,#596e79);line-height:1.5;">建城判断条件：以当前格为左上角的 2×2 四格均为未占用陆地，且城市名额未满；内陆也可建城。</p>' +
+        (site.valid ? '<form class="coastal-found-form" style="display:none;margin-top:8px;">' +
+          '<div style="display:flex;gap:6px;align-items:center;">' +
+          '<input class="qty" name="name" maxlength="12" required aria-label="新城名称" placeholder="输入城市名称（最多12字）" style="flex:1;min-width:0;height:30px;padding:3px 8px;border:1px solid var(--map-line,#cad7db);border-radius:4px;background:var(--map-panel,#fff);color:var(--map-ink,#2c3e50);">' +
+          '<button class="world-map-button primary" type="submit" style="white-space:nowrap;min-height:30px;padding:4px 10px;">支付资源并建城</button>' +
+          '</div></form>' : '');
+      self.detail.innerHTML = html;
+      var foundBtn = self.detail.querySelector('[data-map="found-city"]');
+      var form = self.detail.querySelector('form');
+      if (foundBtn && form) {
+        foundBtn.onclick = function (e) {
+          e.preventDefault();
+          form.style.display = form.style.display === 'none' ? 'block' : 'none';
+          if (form.style.display !== 'none') {
+            var input = form.querySelector('input[name="name"]');
+            if (input) input.focus();
+          }
+        };
+      }
+      if (form) form.onsubmit = function(e){
+        e.preventDefault();var button=form.querySelector('button[type="submit"]');if(button.disabled)return;button.disabled=true;
         G.API.client.post('/game/cities',{x:x,y:y,name:form.elements.name.value.trim()}).then(function(data){
           G.API.applyState(data.state);cache.invalidate();if(G.WorldView)G.WorldView.invalidate();
           if(!self.destroyed){self.closeDetail();self.requestChunks();}G.Core.refreshTop();G.toast(data.message);
         }).catch(function(e){button.disabled=false;G.toast(e.message||'建城失败');});
-      };self.wake();
+      };
+      self.wake();
     }).catch(function(e){if(!self.destroyed&&seq===self.detailSeq)self.detail.innerHTML='<button class="world-map-detail-close" data-map="close">×</button><p>'+esc(e.message||'选址检查失败，请重试')+'</p>';});
   };
   MapView.prototype.closeDetail = function() { this.detailSeq++;this.renderedDetail=null;this.selected=null;this.pendingCoordinate=null;this.detail.hidden=true;this.wake(); };
@@ -928,7 +962,7 @@
     this.renderedDetail=JSON.stringify(t);
     var self=this, cp=G.Core.state.world.cityPos||G.Core.state.world.pos, distance=Math.abs(cp.x-t.x)+Math.abs(cp.y-t.y);
     var meta='('+t.x+', '+t.y+') · 距城市 '+distance+' 格（实际行程见出征准备）'+(t.level!=null?' · Lv.'+t.level:'');
-    var text=t.kind==='wild'?(t.occupied?'我的野地':(t.claimed?'占领者：'+(t.ownerName||'未知玩家'):name(t))):(t.selfCity?'我的城市':(t.ownerName?'城主：'+t.ownerName:'流寇据点'));
+    var text=t.kind==='wild'?(t.occupied?'我的野地':(t.claimed?'占领者：'+(t.ownerName||'未知玩家'):name(t))):(t.selfCity?'我的城市':(t.ownerName?'城主：'+t.ownerName:(t.sea?'日寇海上编队':'流寇据点')));
     var now=Date.now();
     if(t.coastal)text+=' · 沿海城市';
     else if(t.legacyNaval)text+=' · 保留海军补给通道';

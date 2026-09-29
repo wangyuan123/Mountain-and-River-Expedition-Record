@@ -99,6 +99,29 @@ test('交易所视图正确注册到 Core.views.exchange', () => {
   assert.equal(typeof G.Market.doSystemExchange, 'function');
 });
 
+test('撤销挂单经主题确认弹窗，确认后才发送下架请求', async () => {
+  const { G } = setup();
+  let dialog;
+  let canceledId;
+  let refreshCount = 0;
+  G.World = { showConfirm(options) { dialog = options; } };
+  G.API.cancelMarketOrder = (id) => {
+    canceledId = id;
+    return Promise.resolve({ success: true });
+  };
+  G.Market.refresh = () => { refreshCount++; };
+
+  G.Market.cancelOrder(42);
+  assert.match(dialog.message, /上架资源将如数返还/);
+  assert.equal(dialog.okText, '确认下架');
+  assert.equal(canceledId, undefined);
+
+  dialog.onConfirm();
+  await Promise.resolve();
+  assert.equal(canceledId, 42);
+  assert.equal(refreshCount, 1);
+});
+
 test('未建造交易所时 renderView 提示尚未建造', () => {
   const { G } = setup({ exchange: 0 });
   const viewEl = { innerHTML: '' };

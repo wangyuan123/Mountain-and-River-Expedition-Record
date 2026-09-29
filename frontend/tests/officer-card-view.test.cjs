@@ -168,14 +168,34 @@ test('参谋部看板正确渲染市长与指挥官的双司令台', () => {
   const html = container.innerHTML;
 
   assert.match(html, /slot-mayor/);
+  assert.match(html, /class="officer-board-slot slot-mayor is-clickable" onclick="Game\.Officer\.showDetail\('m1'\)" onkeydown="Game\.Officer\.activateBoardSlot\(event,'m1'\)" role="button" tabindex="0"/);
   assert.match(html, /👑 执政市长/);
   assert.match(html, /艾森豪威尔/);
   assert.match(html, /后勤 <b>219<\/b> · 学识 <b>210<\/b>/);
 
   assert.match(html, /slot-commander/);
+  assert.match(html, /class="officer-board-slot slot-commander is-clickable" onclick="Game\.Officer\.showDetail\('c1'\)" onkeydown="Game\.Officer\.activateBoardSlot\(event,'c1'\)" role="button" tabindex="0"/);
   assert.match(html, /⚔️ 作战指挥官/);
   assert.match(html, /宫本武藏/);
   assert.match(html, /军事 <b>160<\/b>/);
+
+  let route;
+  let prevented = 0;
+  context.Game.Core.go = value => { route = value; };
+  context.Game.Officer.activateBoardSlot({ key: 'Enter', preventDefault: () => { prevented++; } }, 'm1');
+  assert.equal(route, 'officerDetail');
+  assert.equal(context.Game.Core.state._detailOfficerId, 'm1');
+  context.Game.Officer.activateBoardSlot({ key: ' ', preventDefault: () => { prevented++; } }, 'c1');
+  assert.equal(context.Game.Core.state._detailOfficerId, 'c1');
+  assert.equal(prevented, 2);
+  context.Game.Officer.activateBoardSlot({ key: 'ArrowDown', preventDefault: () => { prevented++; } }, 'm1');
+  assert.equal(prevented, 2);
+
+  const vacant = setupTestEnvironment([]);
+  const vacantContainer = { innerHTML: '' };
+  vacant.Game.Officer.renderView(vacantContainer);
+  assert.match(vacantContainer.innerHTML, /class="officer-board-slot slot-mayor">/);
+  assert.match(vacantContainer.innerHTML, /class="officer-board-slot slot-commander">/);
 });
 
 test('军官卡片点击与任命按钮事件绑定正常', () => {

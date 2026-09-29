@@ -26,6 +26,8 @@ public class GameStateService {
     private WorldTerrainService terrain;
     @org.springframework.beans.factory.annotation.Autowired
     private IslandContentService islandContent;
+    @org.springframework.beans.factory.annotation.Autowired
+    private WorldContentService worldContent;
 
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.quest.OnboardingService onboarding;
@@ -137,6 +139,17 @@ public class GameStateService {
         });
     }
 
+    /** 保存独立于登录用户名的统帅展示名。 */
+    @Transactional
+    public String setDisplayName(Long playerId, String rawName) {
+        String name = com.wargame.model.constants.DisplayNamePolicy.validate(rawName, 8, "统帅名");
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
+        player.setDisplayName(name);
+        playerRepository.save(player);
+        return name;
+    }
+
     @Transactional
     public void setAvatar(Long playerId, String avatar) {
         Player player = playerRepository.findById(playerId)
@@ -186,6 +199,8 @@ public class GameStateService {
         Map<String, Object> playerInfo = new LinkedHashMap<>();
         playerInfo.put("id", player.getId());
         playerInfo.put("username", player.getUsername());
+        playerInfo.put("name", player.getDisplayName() == null || player.getDisplayName().isBlank()
+                ? player.getUsername() : player.getDisplayName());
         playerInfo.put("faction", player.getFaction());
         playerInfo.put("cityName", cityScope.economy(playerId).getCityName() == null || cityScope.economy(playerId).getCityName().isBlank()
                 ? "新城市" : cityScope.economy(playerId).getCityName());
@@ -672,6 +687,7 @@ public class GameStateService {
         player.setLastTick(System.currentTimeMillis());
         playerRepository.save(player);
         ensureRealPlayerCity(player);
+        worldContent.ensureAround(placementWorld.getId(), cityCoord[0], cityCoord[1]);
 
         // 初始储备覆盖基础建设与小批征兵，后续发展仍需生产和出征补给。
         resourcesRepository.deleteByPlayerId(playerId);
@@ -816,6 +832,7 @@ public class GameStateService {
 
         // Explicit world regeneration must reseed its island content after clearing targets.
         worldMap.setIslandContentVersion(0);
+        worldMap.setWorldContentVersion(0);
         worldMapRepository.save(worldMap);
 
         // Clear existing world entities for this world
@@ -863,6 +880,7 @@ public class GameStateService {
 
         terrain.ensure();
         islandContent.ensure(worldId);
+        worldContent.ensure(worldId);
         return worldMap;
     }
 

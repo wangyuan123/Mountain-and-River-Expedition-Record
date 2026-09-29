@@ -10,6 +10,7 @@ function renderLogin(recovery) {
   context.Game = {
     DATA: {},
     Core: { views: {} },
+    escapeHtml: s => String(s == null ? '' : s),
     Account: {
       recovery: recovery ? { username: 'commander' } : null,
       loginPanel: () => '<div class="account-result">账号提示</div>',
@@ -32,6 +33,10 @@ test('login page uses one primary action with register and password recovery lin
   assert.match(html, /class="login-hero-infantry login-hero-infantry-left" src="img\/units\/models\/infantry\.webp"/);
   assert.match(html, /class="login-hero-infantry login-hero-infantry-right" src="img\/units\/models\/infantry\.webp"/);
   assert.match(html, /for="loginUser"/);
+  assert.match(html, /id="loginServer"[^>]*aria-haspopup="listbox"/);
+  assert.match(html, /id="loginServerValue">江苏一区<\/span>/);
+  assert.match(html, /role="option"[^>]*aria-selected="true"[^>]*data-server-id="jiangsu-1"/);
+  assert.doesNotMatch(html, /<select[^>]*id="loginServer"/);
   assert.match(html, /id="loginUser"[^>]*autocomplete="username"/);
   assert.match(html, /id="loginPass"[^>]*type="password"/);
   assert.match(html, /id="loginForm"[^>]*data-auth-mode="login"[^>]*onsubmit="Game\.Main\.submitAuth\(\); return false;"/);

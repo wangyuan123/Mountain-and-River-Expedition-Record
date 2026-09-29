@@ -134,7 +134,7 @@ window.Game = window.Game || {};
     equipmentBranches: { military: '军事', defense: '防御', logistics: '后勤', knowledge: '学识' },
     equipmentSlots: { weapon: '武器', badge: '徽章', coat: '外套' },
     equipmentTierOrder: { recruit: 1, officer: 2, marshal: 3 },
-    equipmentBranchOrder: { military: 1, logistics: 2, knowledge: 3 },
+    equipmentBranchOrder: { military: 1, defense: 2, logistics: 3, knowledge: 4 },
     equipmentSlotOrder: { weapon: 1, badge: 2, coat: 3 },
     depotCategories: { jewelry: '珠宝珍品', equipment: '军官装备', officer: '军官道具', resource: '资源道具', util: '功能道具' },
     depotCategoryOrder: ['jewelry', 'equipment', 'officer', 'resource', 'util'],
@@ -207,12 +207,15 @@ window.Game = window.Game || {};
 
       // —— 军官装备宝箱（整套装备，打开直接获得3件装备并激活套装属性）——
       { id: 'box_recruit_military',  cat: 'officer', name: '列兵军事装备箱', icon: '📦', desc: '开启获得整套列兵军事装备(军刀/臂章/作训服)，激活军事+3', price: 200,  stock: null, tag: '低级套装' },
+      { id: 'box_recruit_defense',   cat: 'officer', name: '列兵防御装备箱', icon: '📦', desc: '开启获得整套列兵防御装备(护身盾/坚守勋章/防弹背心)，激活防御+3', price: 200,  stock: null, tag: '低级套装' },
       { id: 'box_recruit_logistics', cat: 'officer', name: '列兵后勤装备箱', icon: '📦', desc: '开启获得整套列兵后勤装备(工具包/通行证/工作服)，激活后勤+3', price: 200,  stock: null, tag: '低级套装' },
       { id: 'box_recruit_knowledge', cat: 'officer', name: '列兵学识装备箱', icon: '📦', desc: '开启获得整套列兵学识装备(笔记本/学员章/学员服)，激活学识+3', price: 200,  stock: null, tag: '低级套装' },
       { id: 'box_officer_military',  cat: 'officer', name: '校官军事装备箱', icon: '🎁', desc: '开启获得整套校官军事装备(军刀/勋章/军服)，激活军事+15',     price: 1200, stock: null, tag: '中级套装' },
+      { id: 'box_officer_defense',   cat: 'officer', name: '校官防御装备箱', icon: '🎁', desc: '开启获得整套校官防御装备(防暴盾/铁壁勋章/重装防弹甲)，激活防御+15', price: 1200, stock: null, tag: '中级套装' },
       { id: 'box_officer_logistics', cat: 'officer', name: '校官后勤装备箱', icon: '🎁', desc: '开启获得整套校官后勤装备(补给箱/调度章/军需服)，激活后勤+15', price: 1200, stock: null, tag: '中级套装' },
       { id: 'box_officer_knowledge', cat: 'officer', name: '校官学识装备箱', icon: '🎁', desc: '开启获得整套校官学识装备(战术罗盘/参谋章/参谋服)，激活学识+15', price: 1200, stock: null, tag: '中级套装' },
       { id: 'box_marshal_military',  cat: 'officer', name: '元帅军事装备箱', icon: '👑', desc: '开启获得整套元帅军事装备(佩剑/将星/礼服)，激活军事+30+全属性+5', price: 5000, stock: null, tag: '满级套装' },
+      { id: 'box_marshal_defense',   cat: 'officer', name: '元帅防御装备箱', icon: '👑', desc: '开启获得整套元帅防御装备(重装盾/不屈之星/钛金铠)，激活防御+30+全属性+5', price: 5000, stock: null, tag: '满级套装' },
       { id: 'box_marshal_logistics', cat: 'officer', name: '元帅后勤装备箱', icon: '👑', desc: '开启获得整套元帅后勤装备(辎重车/军需印/长袍)，激活后勤+30+全属性+5', price: 5000, stock: null, tag: '满级套装' },
       { id: 'box_marshal_knowledge', cat: 'officer', name: '元帅学识装备箱', icon: '👑', desc: '开启获得整套元帅学识装备(望远镜/军师印/军礼服)，激活学识+30+全属性+5', price: 5000, stock: null, tag: '满级套装' },
 

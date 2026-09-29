@@ -25,6 +25,9 @@ public class WorldMap {
     @Column(name = "island_content_version", nullable = false)
     private Integer islandContentVersion = 0;
 
+    @Column(name = "world_content_version", nullable = false)
+    private Integer worldContentVersion = 0;
+
     @Column(name = "size")
     private Integer size;
 

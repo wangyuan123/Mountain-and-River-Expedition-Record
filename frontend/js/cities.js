@@ -115,12 +115,12 @@ window.Game = window.Game || {};
       panelMode = 'found';
       var info = overview();
       if (info.count >= info.cap) return;
-      var html = '<p class="city-hint">平原、草原可建平原城市，丘陵可建山城；靠近海岸的平原、丘陵、沙滩可建海城。每次建城必须有连续完整的 2×2（共4格）可建地块，建设期间占用名额。</p>';
-      html += '<button class="btn ok city-wide" onclick="Game.Cities.close();Game.go(\'world\');Game.WorldMap.setMode(\'map\')">前往地图选择沿海空地</button>';
+      var html = '<p class="city-hint">地图空地建城无需临海，必须有连续完整的 2×2（共4格）未占用陆地；沿海城市可建港口，内陆城市不可建港口。已占领的丘陵野地也可建城，建设期间占用名额。</p>';
+      html += '<button class="btn ok city-wide" onclick="Game.Cities.close();Game.go(\'world\');Game.WorldMap.setMode(\'map\')">前往地图选择空地</button>';
       html += '<p>建城费用：粮食 5,000 · 钢铁 10,000 · 石油 5,000 · 稀矿 2,000 · 黄金 10,000。建设需 30 分钟，费用从当前城市扣除。</p>';
       html += '<p class="city-hint">建成后拥有1级前线指挥部、集结兵舍、农田和炼钢厂，50人口，以及五种资源各1,000；驻军需自行训练或调遣。</p>';
       if (!(info.sites || []).length) {
-        html += '<p class="city-hint">尚无合适地块，请先在地图占领森林或丘陵。</p><button class="btn ok" onclick="Game.Cities.close();Game.go(\'world\')">前往地图</button>';
+        html += '<p class="city-hint">尚无已占领的丘陵野地，也可直接在地图选择空地建城。</p><button class="btn ok" onclick="Game.Cities.close();Game.go(\'world\')">前往地图</button>';
       } else {
         html += '<form id="cityFoundForm"><label>城市名称<input name="name" class="qty" maxlength="12" required placeholder="1—12个中英文、数字或下划线"></label><label>建城位置<select name="wildId">';
         info.sites.forEach(function (site) { html += '<option value="' + site.id + '">' + (site.type === 'forest' ? '森林' : '丘陵') + ' (' + site.x + ',' + site.y + ')</option>'; });

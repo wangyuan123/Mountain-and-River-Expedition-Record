@@ -35,9 +35,10 @@ public class MarchRouteService {
             if("land".equals(u.branch())){land=true;population+=(long)u.pop()*entry.getValue();}
         }
         int source=sy*SIZE+sx,dest=ty*SIZE+tx;
+        boolean seaTarget = sea(mask, tx, ty);
         if(navy){
             var city=scope.selected(playerId);
-            List<Integer> starts=shores(mask,sx,sy,2),ends=shores(mask,tx,ty,span);
+            List<Integer> starts=shores(mask,sx,sy,2),ends=seaTarget ? List.of(dest) : shores(mask,tx,ty,span);
             boolean legacy=false;
             if(city.isPresent()&&!city.get().isLegacyNaval()&&!hasPort(playerId,scope.slot(playerId)))throw new IllegalArgumentException("请先在出发城市建设港口");
             if(transfer&&target instanceof PlayerCity c&&!c.isLegacyNaval()&&!hasPort(c.getOwnerId(),c.getCitySlot()))throw new IllegalArgumentException("目标城市需要先建设港口才能接收舰队");
@@ -48,10 +49,15 @@ public class MarchRouteService {
             requireLift(population,capacity);
             List<Integer> path=path(mask,starts,ends,true);
             if(path.isEmpty())throw new IllegalArgumentException("两地之间没有连通海域");
-            path.add(0,source);path.add(dest);
+            path.add(0,source);
+            if (!seaTarget) path.add(dest);
             return route(legacy?"sea_supply":"sea",path,(int)population,(int)Math.min(Integer.MAX_VALUE,capacity-population));
         }
         if(land){
+            if (seaTarget) {
+                requireLift(population,capacity);
+                return route("airlift",List.of(source,dest),(int)population,(int)Math.min(Integer.MAX_VALUE,capacity-population));
+            }
             List<Integer> path=path(mask,List.of(source),List.of(dest),false);
             if(!path.isEmpty())return route("land",path,0,Integer.MAX_VALUE);
             requireLift(population,capacity);

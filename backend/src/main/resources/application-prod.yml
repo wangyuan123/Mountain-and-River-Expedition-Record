@@ -32,5 +32,8 @@ jwt:
   expiration: ${WARGAME_JWT_EXPIRATION:86400000}
 
 game:
+  server:
+    id: ${WARGAME_SERVER_ID:jiangsu-1}
+    name: ${WARGAME_SERVER_NAME:江苏一区}
   tick-interval: 5000
   max-offline-hours: 8

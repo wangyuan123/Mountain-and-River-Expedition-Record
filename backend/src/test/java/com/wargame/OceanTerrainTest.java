@@ -54,17 +54,19 @@ class OceanTerrainTest extends BaseServiceTest {
         assertEquals(2,worldMapRepository.findById(world.getId()).orElseThrow().getTerrainVersion());
         assertEquals(upgraded,terrain.ensure());
     }
-    @Test void coastalFoundingReservesFourCellsAndKeepsResourceRules(){
+    @Test void coastalAndInlandFoundingReserveFourCellsAndKeepResourceRules(){
         WorldMap w=coastWorld();Player p=player("coastal-founder");city(p,w,98,40);
         assertEquals(true,cities.site(p.getId(),98,45).get("valid"));
         PlayerCity c=cities.foundAt(p.getId(),null,98,45,"海湾城");assertEquals(98,c.getX());assertTrue(terrain.coastal(c));assertFalse(c.isLegacyNaval());
         assertEquals(90000,resourcesRepository.findByPlayerIdAndCitySlot(p.getId(),0).orElseThrow().getGold());
         assertEquals(false,cities.site(p.getId(),98,46).get("valid"));
-        assertFalse(terrain.siteReason(w.getId(),w.getTerrainData(),97,44,null,false).isEmpty());
+        assertFalse(terrain.siteReason(w.getId(),w.getTerrainData(),97,44,null).isEmpty());
         assertThrows(IllegalArgumentException.class,()->cities.foundAt(p.getId(),null,99,48,"海中"));
-        assertThrows(IllegalArgumentException.class,()->cities.foundAt(p.getId(),null,70,48,"内陆"));
+        assertEquals(true,cities.site(p.getId(),70,48).get("valid"));
+        PlayerCity inland=cities.foundAt(p.getId(),null,70,48,"内陆城");
+        assertFalse(terrain.coastal(inland));
         assertThrows(IllegalArgumentException.class,()->cities.foundAt(p.getId(),null,199,199,"边界"));
-        assertEquals(90000,resourcesRepository.findByPlayerIdAndCitySlot(p.getId(),0).orElseThrow().getGold());
+        assertEquals(80000,resourcesRepository.findByPlayerIdAndCitySlot(p.getId(),0).orElseThrow().getGold());
     }
     @Test void foundingRejectsWildNpcAndEdgeCityOverlap(){
         WorldMap w=coastWorld();Player p=player("coastal-obstacles");city(p,w,98,40);
@@ -87,6 +89,17 @@ class OceanTerrainTest extends BaseServiceTest {
         var mixed=routes.plan(p.getId(),target,Map.of("infantry",10,"transport",1,"destroyer",1),false);assertEquals("sea",mixed.mode());assertEquals(70,mixed.cargoLimit());
         assertEquals("land",routes.plan(p.getId(),inland,Map.of("infantry",1),false).mode());
         assertEquals("air",routes.plan(p.getId(),inland,Map.of("scout",1),false).mode());
+    }
+    @Test void navalTargetsAcceptShipsAndAircraftButLandTroopsNeedAirlift(){
+        WorldMap w=coastWorld();Player p=player("sea-target-route");city(p,w,98,40);createBuilding(p.getId(),"port",1);
+        Bandit fleet=new Bandit();fleet.setWorldId(w.getId());fleet.setName("日寇第1舰队");fleet.setX(110);fleet.setY(40);
+        fleet.setLevel(3);fleet.setArmy(JsonUtil.toJson(Map.of("destroyer",3,"fighter",4)));fleet.setDefeated(false);
+        banditRepository.save(fleet);
+        var ship=routes.plan(p.getId(),fleet,Map.of("destroyer",1),false);
+        assertEquals("sea",ship.mode());assertEquals(110,ship.points().get(ship.points().size()-1).get(0));
+        assertEquals("air",routes.plan(p.getId(),fleet,Map.of("fighter",1),false).mode());
+        assertThrows(IllegalArgumentException.class,()->routes.plan(p.getId(),fleet,Map.of("infantry",1),false));
+        assertEquals("airlift",routes.plan(p.getId(),fleet,Map.of("infantry",1,"transport",1),false).mode());
     }
     @Test void legacyInlandFleetRetainsAnOutletButNewInlandPortIsRejected(){
         WorldMap w=coastWorld();Player p=player("legacy-fleet");p.setCityPosX(20);playerRepository.save(p);PlayerCity c=city(p,w,20,40);

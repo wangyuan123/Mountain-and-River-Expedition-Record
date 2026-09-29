@@ -1371,7 +1371,7 @@ window.Game = window.Game || {};
           h += '<div class="btn-row" style="margin-bottom:4px">';
           h += '<label style="font-size:14px;cursor:pointer">';
           h += '<input type="radio" name="dpOfficer" value="' + o.id + '"' + checked + ' /> ';
-          h += o.name + ' <span style="color:' + (D.starColor[o.star] || '#bbb') + '">' + starStr + '</span>';
+          h += esc(o.name) + ' <span style="color:' + (D.starColor[o.star] || '#bbb') + '">' + starStr + '</span>';
           h += ' Lv.' + o.level + ' 将' + o.military + ' 军' + o.logistics + ' 智' + o.knowledge;
           h += extraHint;
           h += '</label>';
@@ -1569,6 +1569,14 @@ window.Game = window.Game || {};
       playersNearby = sortArr(playersNearby);
       owned = sortArr(owned);
 
+      function targetCardKey(kind, target) {
+        return kind + ':' + (target.id != null ? target.id : target.x + ',' + target.y);
+      }
+
+      function targetCardExpanded(key) {
+        return Object.prototype.hasOwnProperty.call(s.world._expandedTargetIds || {}, key);
+      }
+
       // 野地卡
       function renderWildCard(it, ownedView) {
         var t = it.t;
@@ -1619,39 +1627,52 @@ window.Game = window.Game || {};
           if (wt.res && remain > 0) {
             actions = '<button class="tcard-btn tcard-btn-ok" onclick="Game.World.dispatchWild(' + it.i + ',\'gather\')">派兵采集</button>' + actions;
           }
-          return '<div class="tcard tcard-owned">' +
-            '<div class="tcard-head">' + icon +
-              '<div class="tcard-title">' + esc(wt.name) + ' <span class="tcard-lv">Lv.' + t.level + '</span></div>' +
-              '<div class="tcard-dist" title="坐标">🏠 ' + t.x + ',' + t.y + '</div>' +
+          var ownedKey = targetCardKey('wild', t);
+          return '<div class="tcard tcard-owned tcard-collapsible' + (targetCardExpanded(ownedKey) ? ' tcard-expanded' : '') + '" data-target-key="' + esc(ownedKey) + '">' +
+            '<button type="button" class="tcard-mini-row" aria-expanded="' + targetCardExpanded(ownedKey) + '" onclick="Game.World.toggleTargetCard(this.parentElement)">' + icon +
+              '<span class="tcard-mini-name">' + esc(wt.name) + ' <span class="tcard-lv">Lv.' + t.level + '</span></span>' +
+              '<span class="tcard-mini-dist">🏠 ' + t.x + ',' + t.y + '</span>' +
+              (isGathering ? '<span class="tcard-mini-badge tcard-mini-shield">' + (t.gatherMode !== 'auto' && t.gatherEndAt && Date.now() >= t.gatherEndAt ? '待收获' : '采集中') + '</span>' : (t.gatherHarvested != null && hasGarrison ? '<span class="tcard-mini-badge tcard-mini-warn">待回城</span>' : '')) +
+              '<span class="tcard-mini-caret">▾</span>' +
+            '</button>' +
+            '<div class="tcard-expand">' +
+              resLine + statusHtml +
+              '<div class="tcard-actions">' + actions + '</div>' +
             '</div>' +
-            resLine + statusHtml +
-            '<div class="tcard-actions">' + actions + '</div>' +
           '</div>';
         }
 
         var acts = '';
         // 侦察只是获取守军情报, 不应作为行动的前置门槛 —— 玩家可选择盲打
         if (wt.res) {
-          acts = '<button class="tcard-btn tcard-btn-ok" onclick="Game.World.attackWild(' + it.i + ',\'conquer\')">征服</button>' +
+          acts = '<button class="tcard-btn tcard-btn-warn" onclick="Game.World.attackWild(' + it.i + ',\'conquer\')">征服</button>' +
                  '<button class="tcard-btn tcard-btn-warn" onclick="Game.World.attackWild(' + it.i + ',\'plunder\')">掠夺</button>' +
                  '<button class="tcard-btn" onclick="Game.World.scoutWild(' + it.i + ')">' + (t.scouted ? '再侦察' : '侦察') + '</button>';
         } else {
-          acts = '<button class="tcard-btn tcard-btn-ok" onclick="Game.World.attackWild(' + it.i + ',\'conquer\')">征服</button>' +
+          acts = '<button class="tcard-btn tcard-btn-warn" onclick="Game.World.attackWild(' + it.i + ',\'conquer\')">征服</button>' +
                  '<button class="tcard-btn" onclick="Game.World.scoutWild(' + it.i + ')">' + (t.scouted ? '再侦察' : '侦察') + '</button>';
         }
-        return '<div class="tcard tcard-wild">' +
-          '<div class="tcard-head">' + icon +
-            '<div class="tcard-title">' + esc(wt.name) + ' <span class="tcard-lv">Lv.' + t.level + '</span></div>' +
-            '<div class="tcard-dist" title="距离 ' + it.d + ' 格">📍 ' + it.d + '格</div>' +
+        var wildKey = targetCardKey('wild', t);
+        return '<div class="tcard tcard-wild tcard-collapsible' + (targetCardExpanded(wildKey) ? ' tcard-expanded' : '') + '" data-target-key="' + esc(wildKey) + '">' +
+          '<button type="button" class="tcard-mini-row" aria-expanded="' + targetCardExpanded(wildKey) + '" onclick="Game.World.toggleTargetCard(this.parentElement)">' + icon +
+            '<span class="tcard-mini-name">' + esc(wt.name) + ' <span class="tcard-lv">Lv.' + t.level + '</span></span>' +
+            '<span class="tcard-mini-dist">📍 ' + it.d + '格</span>' +
+            '<span class="tcard-mini-caret">▾</span>' +
+          '</button>' +
+          '<div class="tcard-expand">' +
+            guardLine + resLine +
+            '<div class="tcard-actions">' + acts + '</div>' +
           '</div>' +
-          guardLine + resLine +
-          '<div class="tcard-actions">' + acts + '</div>' +
         '</div>';
       }
 
       // 日寇据点卡：不需要宣战，可直接进攻或侦察
       function renderNpcCard(it) {
         var n = it.n;
+        var seaNpc = !!n.sea;
+        var vessel = n.name.indexOf('航母') >= 0 ? 'carrier'
+          : n.name.indexOf('潜艇') >= 0 ? 'sub'
+          : n.name.indexOf('驱逐舰') >= 0 ? 'destroyer' : 'battleship';
         var nScouted = getScouted(n.x, n.y);
         var info = nScouted
           ? '<div class="tcard-meta">守军 ' + armyText(nScouted.data.army, true) + '</div>' +
@@ -1659,21 +1680,24 @@ window.Game = window.Game || {};
           : '<div class="tcard-meta tcard-muted">敌情未知 · 需侦查</div>';
         var actions = n.defeated
           ? '<span class="tcard-badge tcard-badge-done">已征服</span>'
-          : '<button class="tcard-btn tcard-btn-ok" onclick="Game.World.attack(\'' + it.kind + '\',' + it.i + ',\'conquer\')">征服</button>' +
+          : '<button class="tcard-btn tcard-btn-warn" onclick="Game.World.attack(\'' + it.kind + '\',' + it.i + ',\'conquer\')">征服</button>' +
             '<button class="tcard-btn tcard-btn-warn" onclick="Game.World.attack(\'' + it.kind + '\',' + it.i + ',\'plunder\')">掠夺</button>' +
             '<button class="tcard-btn" onclick="Game.World.attack(\'' + it.kind + '\',' + it.i + ',\'scout\')">侦察</button>';
         var cmdLine = n.commanderName
           ? '<div class="tcard-meta">敌将 <b style="color:var(--accent,#e0a040)">' + esc(n.commanderName) + '</b></div>'
           : '';
-        return '<div class="tcard tcard-npc' + (n.defeated ? ' tcard-done' : '') + '">' +
-          '<div class="tcard-head">' +
-            '<span class="tcard-emoji">⚔</span>' +
-            '<div class="tcard-title"><span class="npc-mark">日寇</span> ' + esc(n.name) + ' <span class="tcard-lv">Lv.' + n.level + '</span></div>' +
-            '<div class="tcard-dist">📍 ' + it.d + '格</div>' +
+        var npcKey = targetCardKey('bandit', n);
+        return '<div class="tcard tcard-npc tcard-collapsible' + (n.defeated ? ' tcard-done' : '') + (targetCardExpanded(npcKey) ? ' tcard-expanded' : '') + '" data-target-key="' + esc(npcKey) + '">' +
+          '<button type="button" class="tcard-mini-row" aria-expanded="' + targetCardExpanded(npcKey) + '" onclick="Game.World.toggleTargetCard(this.parentElement)">' +
+            (seaNpc ? '<img class="tcard-icon" src="img/npc/japanese-navy/' + vessel + '.webp" alt="">' : '<span class="tcard-emoji">⚔</span>') +
+            '<span class="tcard-mini-name">' + (n.name.indexOf('日寇') === 0 ? '' : '<span class="npc-mark">日寇</span> ') + esc(n.name) + ' <span class="tcard-lv">Lv.' + n.level + '</span></span>' +
+            '<span class="tcard-mini-dist">📍 ' + it.d + '格</span>' +
+            '<span class="tcard-mini-caret">▾</span>' +
+          '</button>' +
+          '<div class="tcard-expand">' +
+            cmdLine + info +
+            '<div class="tcard-actions">' + actions + '</div>' +
           '</div>' +
-          cmdLine +
-          info +
-          '<div class="tcard-actions">' + actions + '</div>' +
         '</div>';
       }
 
@@ -1740,7 +1764,7 @@ window.Game = window.Game || {};
         // 展开状态用对象存储: Object[pid] = true; 渲染时用 in / hasOwnProperty 判断
         var exp = s.world._expandedPlayerIds || {};
         var isExp = Object.prototype.hasOwnProperty.call(exp, String(p.id));
-        return '<div class="tcard tcard-player tcard-player-mini' + (isExp ? ' tcard-expanded' : '') + '" data-player-id="' + p.id + '">' +
+        return '<div class="tcard tcard-player tcard-player-mini tcard-collapsible' + (isExp ? ' tcard-expanded' : '') + '" data-player-id="' + p.id + '">' +
           '<div class="tcard-mini-row" onclick="Game.World.togglePlayerCard(this.parentElement)">' +
             '<span class="tcard-emoji">🏰</span>' +
             '<span class="tcard-mini-name">' + esc(p.name) + '</span>' +
@@ -1769,7 +1793,7 @@ window.Game = window.Game || {};
         if (cooling) {
           return '<button class="tcard-btn" onclick="event.stopPropagation();Game.World.attack(\'player\',' + it.i + ',\'scout\')">侦察</button>';
         } else if (warActive) {
-          return '<button class="tcard-btn tcard-btn-ok" onclick="event.stopPropagation();Game.World.attack(\'player\',' + it.i + ',\'conquer\')">征服</button>' +
+          return '<button class="tcard-btn tcard-btn-warn" onclick="event.stopPropagation();Game.World.attack(\'player\',' + it.i + ',\'conquer\')">征服</button>' +
                  '<button class="tcard-btn tcard-btn-warn" onclick="event.stopPropagation();Game.World.attack(\'player\',' + it.i + ',\'plunder\')">掠夺</button>' +
                  '<button class="tcard-btn" onclick="event.stopPropagation();Game.World.attack(\'player\',' + it.i + ',\'scout\')">侦察</button>';
         } else if (preWar) {
@@ -1917,6 +1941,18 @@ window.Game = window.Game || {};
       }
     },
 
+    toggleTargetCard: function (rowEl) {
+      if (!rowEl) return;
+      var key = rowEl.getAttribute('data-target-key');
+      if (!key) return;
+      var world = Core.state.world;
+      if (!world._expandedTargetIds) world._expandedTargetIds = {};
+      var expanded = rowEl.classList.toggle('tcard-expanded');
+      if (expanded) world._expandedTargetIds[key] = true;
+      else delete world._expandedTargetIds[key];
+      rowEl.querySelector('.tcard-mini-row').setAttribute('aria-expanded', String(expanded));
+    },
+
     alertCountdown: function (arriveAt) {
       var deadline = Number(arriveAt);
       if (!Number.isFinite(deadline)) return '<b>时间未知</b>';
@@ -2044,7 +2080,7 @@ window.Game = window.Game || {};
             h += '<div>来袭玩家: <b>' + attackerName + '</b></div>';
             h += '<div>出发地: (' + (im.fromX != null ? im.fromX : '?') + ',' + (im.fromY != null ? im.fromY : '?') + ')</div>';
             h += '<div>目的地: (' + targetX + ',' + targetY + ') ' + targetName + '</div>';
-            h += '<div>统帅: <b>' + (im.commander || '未知') + '</b>';
+            h += '<div>统帅: <b>' + esc(im.commander || '未知') + '</b>';
             if (im.commanderStar) {
               var starStr2 = '';
               for (var si2 = 0; si2 < im.commanderStar; si2++) starStr2 += '★';

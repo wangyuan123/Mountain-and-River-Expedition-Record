@@ -42,7 +42,9 @@ window.Game = window.Game || {};
       if (port && port !== 8080 && port !== 80) {
         wsHost = location.hostname + ':8080';
       }
-      var wsUrl = protocol + '//' + wsHost + '/ws/game?token=' + encodeURIComponent(token);
+      var wsBase = G.Servers && G.Servers.current().wsBase || '/ws';
+      if (G.Servers && G.Servers.current().wsBase) wsHost = location.host;
+      var wsUrl = protocol + '//' + wsHost + wsBase + '/game?token=' + encodeURIComponent(token);
       if (G.Protection) wsUrl += '&playSession=' + encodeURIComponent(G.Protection.session());
 
       var socket = this.socket = new WebSocket(wsUrl);

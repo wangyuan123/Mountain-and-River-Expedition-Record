@@ -6,7 +6,7 @@
   var SLOT_ICONS = G.Constants.equipmentSlotIcons;
 
   function equipmentInfo(itemId) {
-    var m = /^(recruit|officer|marshal)_(military|logistics|knowledge)_(weapon|badge|coat)$/.exec(itemId || '');
+    var m = /^(recruit|officer|marshal)_(military|defense|logistics|knowledge)_(weapon|badge|coat)$/.exec(itemId || '');
     if (!m) return null;
     var tiers = G.Constants.equipmentTiers;
     var branchNames = G.Constants.equipmentBranches;
@@ -255,9 +255,13 @@
       var o = Depot._pendingOfficer;
       if (!o) { G.go('depot'); return; }
       var el = document.getElementById('renameInput');
-      var name = el ? el.value.trim() : '';
-      if (!name) { G.toast('请输入新名字'); return; }
-      if (name.length > 12) { G.toast('名字不超过 12 字符'); return; }
+      var name;
+      try {
+        name = G.normalizeDisplayName(el ? el.value : '', 12, '军官名称');
+      } catch (error) {
+        G.toast(error.message);
+        return;
+      }
       // 后端原子：扣改名卡 + 改名字 + 返回最新 state
       Depot._callBackend('renameCard', o.id, name);
       Depot._pendingOfficer = null;
@@ -441,7 +445,7 @@
         }
 
         h += '<div class="' + itemCls + '" style="cursor:pointer" ' + clickAttr + '>';
-        h += '<span class="n" style="color:' + (D.starColor[o.star] || '#bbb') + '">' + o.name + '</span> ';
+        h += '<span class="n" style="color:' + (D.starColor[o.star] || '#bbb') + '">' + G.escapeHtml(o.name) + '</span> ';
         h += '<span class="stars">' + starStr + '</span> ';
         h += '<span class="lv">Lv.' + o.level + (o.role === 'mayor' ? ' [市长]' : (o.role === 'commander' ? ' [司令]' : '')) + equipTip + '</span> ';
         h += '<div class="d">将' + o.military + ' 军' + o.logistics + ' 智' + o.knowledge + ' 忠' + (o.loyalty || 0) + skillStr + '</div>';
@@ -459,8 +463,9 @@
       var h = '';
       h += '<div class="title">- 军官改名 -</div>';
       h += '<div class="panel">';
-      h += '<div class="d">为 <b>' + o.name + '</b> 更换新名字</div>';
-      h += '<div class="edit-row" style="margin-top:6px"><label>新名字</label><input id="renameInput" class="qty" style="width:100%" maxlength="12" value="' + o.name + '" /></div>';
+      h += '<div class="d">为 <b>' + G.escapeHtml(o.name) + '</b> 更换新名字</div>';
+      h += '<div class="edit-row" style="margin-top:6px"><label>新名字</label><input id="renameInput" class="qty" style="width:100%" value="' + G.escapeHtml(o.name) + '" /></div>';
+      h += '<div class="d" style="color:var(--muted);margin-top:4px">最多12个字符，可用标点、符号和 emoji；不能换行。</div>';
       h += '<div class="d" style="color:var(--muted);margin-top:4px">改名后将消耗 1 张【军官改名卡】,不可撤销</div>';
       h += '<div class="btn-row" style="margin-top:6px"><button type="button" class="btn depot-btn" onclick="Game.Depot.confirmRename()">[确认改名]</button><button type="button" class="btn depot-btn warn" onclick="Game.Depot.cancelRename()">[取消(退回军官改名卡)]</button></div>';
       h += '</div>';

@@ -243,3 +243,49 @@ test('军官改名前端表单校验及提交成功交互', async () => {
   assert.equal(context.elements.officerRenameModal, undefined, '改名成功后弹窗应已移除');
   assert.equal(rendered, true, '改名成功后应重新渲染视图');
 });
+
+test('展示名支持标点和 emoji，拒绝不可见字符，军官名称输出经过转义', () => {
+  const context = setupTestEnvironment();
+  assert.equal(context.Game.normalizeDisplayName(' 大河之剑天上来-李白☆ ', 12, '军官名称'), '大河之剑天上来-李白☆');
+  assert.equal(context.Game.normalizeDisplayName('剑客🎖️', 8, '统帅名'), '剑客🎖️');
+  assert.throws(() => context.Game.normalizeDisplayName('张三\n将军', 12, '军官名称'), /不可见字符/);
+  assert.throws(() => context.Game.normalizeDisplayName('张三\n', 12, '军官名称'), /不可见字符/);
+  assert.throws(() => context.Game.normalizeDisplayName('\t张三', 12, '军官名称'), /不可见字符/);
+  assert.throws(() => context.Game.normalizeDisplayName('张三\u202e将军', 12, '军官名称'), /不可见字符/);
+  assert.throws(() => context.Game.normalizeDisplayName('😀'.repeat(9), 8, '统帅名'), /最多8个字符/);
+
+  context.Game.Core.state = {
+    officers: [{ id: 'safe', name: '<勇者>☆', star: 5, level: 100, role: 'idle' }],
+    _detailOfficerId: 'safe', items: {}, resources: { gold: 500 }
+  };
+  const view = { innerHTML: '' };
+  context.Game.Officer.renderDetail(view);
+  assert.match(view.innerHTML, /&lt;勇者&gt;☆/);
+  assert.doesNotMatch(view.innerHTML, /<勇者>/);
+});
+
+test('统帅名改名从玩家档案提交，用户名保持独立', async () => {
+  const context = setupTestEnvironment();
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/player-profile.js'), 'utf8'), context);
+  context.Game.Core.state = { player: { id: 1, username: 'login-user', name: 'login-user' } };
+  context.Game.Core.render = () => {};
+  context.Game.Main = { closePlayerDrawer() {} };
+  const calls = [];
+  context.Game.API.setDisplayName = async (name) => {
+    calls.push(name);
+    context.Game.Core.state.player.name = name;
+  };
+
+  context.Game.PlayerProfile.promptRenameCommander();
+  const modal = context.elements.renameCommanderModal;
+  assert.ok(modal);
+  const input = modal.querySelector('#renameCommanderInput');
+  const form = modal.querySelector('#renameCommanderForm');
+  input.value = '剑客☆';
+  form.onsubmit({ preventDefault() {} });
+  await new Promise(resolve => setTimeout(resolve, 0));
+
+  assert.deepEqual(calls, ['剑客☆']);
+  assert.equal(context.Game.Core.state.player.username, 'login-user');
+  assert.equal(context.Game.Core.state.player.name, '剑客☆');
+});

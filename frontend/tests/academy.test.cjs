@@ -10,7 +10,8 @@ function setup(chance, refreshAt = 0, quota = {}, list = []) {
       refreshRoundLimit: 30, refreshDailyLimit: 100, ...quota } };
   const context = vm.createContext({ Date, console, window: null, Game: {
     DATA: { starColor: { 1: '#fff', 2: '#4a90e2', 3: '#9013fe', 4: '#f5a623', 5: '#ffe14a' } }, Core: { state, views: {}, render() {} },
-    API: {}, toast(message) { this.message = message; }
+    API: {}, escapeHtml(value) { return String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]); },
+    toast(message) { this.message = message; }
   } });
   context.window = context;
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/officer.js'), 'utf8'), context);
@@ -92,13 +93,15 @@ test('后端拒绝刷新时显示失败原因', async () => {
 
 test('军校候选五星显示钻石边框、包角和属性稀有度，四星及以下为普通卡片不显示金色边框', () => {
   const G = setup(0.03, 0, {}, [
-    { id: 'five', name: '五星候选', star: 5, military: 219, defense: 180, logistics: 160, knowledge: 150, skills: [] },
+    { id: 'five', name: '<五星候选>', star: 5, military: 219, defense: 180, logistics: 160, knowledge: 150, skills: [] },
     { id: 'four', name: '四星候选', star: 4, military: 140, defense: 130, logistics: 120, knowledge: 110, skills: [] }
   ]);
   const view = { innerHTML: '' };
   G.Officer.renderAcademyView(view);
   const html = view.innerHTML;
   assert.match(html, /menu-item ok officer-card tier-diamond/);
+  assert.match(html, /&lt;五星候选&gt;/);
+  assert.doesNotMatch(html, /<五星候选>/);
   assert.match(html, /class="tier-ribbon rarity-ur">极度稀有（UR）<\/span>/);
   assert.match(html, /corner-tl/);
   assert.match(html, /menu-item ok officer-card tier-normal/);

@@ -21,16 +21,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
     private final CustomUserDetailsService userDetailsService;
+    private final GameServerIdentity server;
 
-    public JwtAuthenticationFilter(JwtUtil jwtUtil, CustomUserDetailsService userDetailsService) {
+    public JwtAuthenticationFilter(JwtUtil jwtUtil, CustomUserDetailsService userDetailsService,
+                                   GameServerIdentity server) {
         this.jwtUtil = jwtUtil;
         this.userDetailsService = userDetailsService;
+        this.server = server;
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
+        if (request.getRequestURI().startsWith("/api/") && !"OPTIONS".equals(request.getMethod())) {
+            try { server.requireSelected(request.getHeader("X-Game-Server")); }
+            catch (IllegalArgumentException error) {
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST, error.getMessage());
+                return;
+            }
+        }
         String token = extractToken(request);
         if (StringUtils.hasText(token) && jwtUtil.validateToken(token)) {
             try {

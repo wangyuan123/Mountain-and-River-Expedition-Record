@@ -31,6 +31,10 @@ public class Player extends VersionedEntity implements CityEconomy {
     @Column(name = "username", unique = true, nullable = false, length = 50)
     private String username;
 
+    /** 玩家在游戏内展示的统帅名；登录和收件人查找仍使用 username。 */
+    @Column(name = "display_name", length = 100)
+    private String displayName;
+
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 

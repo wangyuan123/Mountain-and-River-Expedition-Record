@@ -25,7 +25,7 @@ function fixture(){
   endFill(){return this;}
  }
  const texture={orig:{width:100,height:100},baseTexture:{once(){}}};
- const c={console,Date:{now:()=>now},Map,Set,WeakMap,Uint8Array,Game:{MapChunks:function(){this.targets=()=>targets;}}};
+ const c={console,Date:{now:()=>now},Map,Set,WeakMap,Uint8Array,document:{hidden:false},Game:{MapChunks:function(){this.targets=()=>targets;}}};
  c.PIXI={Container,Sprite,Graphics,Texture:{EMPTY:texture,from:()=>texture},Text:class extends Sprite {
   constructor(text,style){super(texture);this.text=text;this.style=style;}
   get width(){return this.text.length*11;}
@@ -50,8 +50,10 @@ test('arrival replaces the moving model and route with gathering, then return re
  const f=fixture(),{view,march,marches,status}=f;marches.push(march);
  view.drawRoutes();const moving=view.marchMarkers.get('1');
  assert.equal(view.routes.lines.length,2);assert.equal(view.routes.color,0x467da5);assert.ok(moving.icon);assert.equal(status(),undefined);
+ assert.equal(view.animatingMarches,true,'在途行军应开启连续帧动画');
  f.setNow(1000);view.drawRoutes();
  assert.equal(view.routes.lines.length,0);assert.equal(moving.destroyed,true);assert.equal(view.marchMarkers.has('1'),false);
+ assert.equal(view.animatingMarches,false,'行军抵达后应停止连续帧动画');
  assert.equal(status().statusText.text,'采集');assert.equal(status().icon,undefined);
  march.gathering=true;f.setNow(2000);view.drawRoutes();assert.equal(status().statusText.text,'采集');
  march.gatherStopped=true;view.drawRoutes();assert.equal(status().statusText.text,'驻扎');
@@ -62,6 +64,25 @@ test('arrival replaces the moving model and route with gathering, then return re
  assert.equal(view.routes.lines.length,2);assert.equal(view.routes.color,0x578657);
  f.setNow(3000);view.drawRoutes();
  assert.equal(view.routes.lines.length,0);assert.equal(view.marchMarkers.size,0);assert.equal(view.marchLayer.children.length,0);
+});
+
+test('animation frames move the march without redrawing the map and stop at arrival',()=>{
+ const f=fixture(),{view,march,marches}=f;marches.push(march);view.drawRoutes();
+ const initialX=view.marchMarkers.get('1').position.x;
+ let fullDraws=0,renders=0,scheduled=0;
+ view.dirty=false;view.pointers=new Map();view.vx=view.vy=0;view.lastLoad=0;
+ view.app={stage:{},renderer:{render(){renders++;}}};
+ view.draw=function(){fullDraws++;this.drawRoutes();};view.requestChunks=()=>{};
+ view.scheduleFrame=()=>{scheduled++;};
+ f.setNow(600);view.frame(16);
+ assert.equal(fullDraws,0);assert.equal(renders,1);
+ assert.ok(view.marchMarkers.get('1').position.x>initialX);
+ assert.equal(view.dirty,false);
+ assert.equal(scheduled,1);
+ f.setNow(1000);view.frame(32);
+ assert.equal(fullDraws,0);assert.equal(renders,2);assert.equal(view.animatingMarches,false);
+ assert.equal(view.marchMarkers.has('1'),false);
+ assert.equal(scheduled,1);
 });
 
 test('arrival labels reflect stationing, combat, waiting and scouting instead of leaving a route behind',()=>{
