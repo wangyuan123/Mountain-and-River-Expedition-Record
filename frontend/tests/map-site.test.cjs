@@ -25,7 +25,7 @@ function setup() {
   require('./load-constants.cjs')(c);
   for (const file of ['map-camera.js', 'map-layout.js', 'world-map.js']) {
     let source = fs.readFileSync(path.join(__dirname, '../js', file), 'utf8');
-    source = source.replace('  var instance = null, camera = null, owner = \'\', mode = \'map\'', '  var instance = null, camera = null, owner = \'token:1\', mode = \'map\'');
+    source = source.replace('  var instance = null, camera = null, owner = \'\', mode = \'list\'', '  var instance = null, camera = null, owner = \'token:1\', mode = \'map\'');
     source = source.replace('  G.WorldMap={', '  G.TestMapView=MapView;\n  G.WorldMap={');
     vm.runInContext(source, c);
   }

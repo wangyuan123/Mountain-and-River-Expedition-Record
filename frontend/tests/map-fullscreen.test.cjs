@@ -62,6 +62,35 @@ test('map toolbar back and view buttons retain their actions',()=>{
   }
   assert.deepEqual([backs,lists,fulls,exits],[1,1,1,1]);
 });
+test('landscape map toolbar moves between the commander row and map without losing actions',()=>{
+  const {c,view}=fixture();
+  let landscape=true,backs=0,lists=0,fulls=0;
+  const right={},listeners=new Map(),classes=new Set();
+  const row={querySelector:()=>right,insertBefore(node,before){assert.equal(before,right);node.parentNode=this;}};
+  const shell=view.shell;
+  shell.firstChild={};
+  shell.insertBefore=(node,before)=>{assert.equal(before,shell.firstChild);node.parentNode=shell;};
+  shell.classList.toggle=(name,enabled)=>{if(enabled)classes.add(name);else classes.delete(name);};
+  shell.querySelector=()=>({});
+  const toolbar={parentNode:shell,querySelector:()=>({})};
+  view.toolbar=toolbar;view.app={view:{}};view.destroyed=false;
+  view.on=(node,event,fn)=>{if(!listeners.has(node))listeners.set(node,{});listeners.get(node)[event]=fn;};
+  c.document.querySelector=()=>row;
+  c.matchMedia=()=>({matches:landscape});
+  c.Game.Core={back(){backs++;}};
+  c.Game.WorldMap.setMode=()=>{lists++;};
+  view.enterFullscreen=()=>{fulls++;};
+  view.bind();
+  view.syncToolbar();
+  assert.equal(toolbar.parentNode,row);
+  assert.ok(classes.has('map-toolbar-in-topbar'));
+  const click=action=>listeners.get(toolbar).click({target:{closest:selector=>selector==='[data-map]'?{dataset:{map:action}}:null}});
+  click('back');click('list');click('full');
+  assert.deepEqual([backs,lists,fulls],[1,1,1]);
+  landscape=false;view.syncToolbar();
+  assert.equal(toolbar.parentNode,shell);
+  assert.ok(!classes.has('map-toolbar-in-topbar'));
+});
 test('unsupported fullscreen still opens landscape overlay and restores scroll/focus on exit',()=>{
   const f=fixture();f.view.enterFullscreen();
   assert.equal(f.view.fullscreen,true);assert.ok(f.classes.has('world-map-full'));assert.equal(f.close.focused,true);

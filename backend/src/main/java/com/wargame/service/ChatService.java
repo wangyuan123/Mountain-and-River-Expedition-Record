@@ -56,8 +56,21 @@ public class ChatService {
 
     public List<ChatDtos.MessageResponse> history() {
         List<ChatMessage> messages = chatMessageRepository.findTop50ByOrderByCreatedAtDesc();
+        Map<Long, String> avatars = new LinkedHashMap<>();
+        List<Long> playerIds = messages.stream()
+                .map(ChatMessage::getPlayerId)
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .toList();
+        List<Player> players = playerRepository.findAllById(playerIds);
+        if (players != null) {
+            for (Player player : players) avatars.put(player.getId(), player.getAvatar());
+        }
         List<ChatDtos.MessageResponse> result = new ArrayList<>();
-        for (int i = messages.size() - 1; i >= 0; i--) result.add(toDto(messages.get(i)));
+        for (int i = messages.size() - 1; i >= 0; i--) {
+            ChatMessage message = messages.get(i);
+            result.add(toDto(message, avatars.get(message.getPlayerId())));
+        }
         return result;
     }
 
@@ -105,7 +118,7 @@ public class ChatService {
         String originalContent = content;
         content = politicalWordFilter.filter(filterSensitiveWords(content));
         ChatMessage message = new ChatMessage(null, playerId, player.getUsername(), content, now);
-        ChatDtos.MessageResponse response = toDto(chatMessageRepository.save(message));
+        ChatDtos.MessageResponse response = toDto(chatMessageRepository.save(message), player.getAvatar());
 
         // 重复发言按原文判断，避免敏感词被打码后绕过相同内容拦截。
         lastMessages.put(playerId, new LastMessage(originalContent, now));
@@ -114,6 +127,7 @@ public class ChatService {
         data.put("id", response.id());
         data.put("playerId", response.playerId());
         data.put("username", response.username());
+        data.put("avatar", response.avatar());
         data.put("content", response.content());
         data.put("ts", response.ts());
         pushService.broadcast("chat", data);
@@ -151,11 +165,12 @@ public class ChatService {
         long now = System.currentTimeMillis();
         // 系统消息持久化到聊天历史，重启或断线后仍可显示
         ChatMessage message = new ChatMessage(null, null, "系统", content, now);
-        ChatDtos.MessageResponse saved = toDto(chatMessageRepository.save(message));
+        ChatDtos.MessageResponse saved = toDto(chatMessageRepository.save(message), null);
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("id", saved.id());
         data.put("playerId", null);
         data.put("username", "系统");
+        data.put("avatar", null);
         data.put("type", "system");
         data.put("content", content);
         data.put("ts", saved.ts());
@@ -163,7 +178,7 @@ public class ChatService {
         return saved;
     }
 
-    private ChatDtos.MessageResponse toDto(ChatMessage message) {
-        return new ChatDtos.MessageResponse(message.getId(), message.getPlayerId(), message.getUsername(), message.getContent(), message.getCreatedAt());
+    private ChatDtos.MessageResponse toDto(ChatMessage message, String avatar) {
+        return new ChatDtos.MessageResponse(message.getId(), message.getPlayerId(), message.getUsername(), message.getContent(), message.getCreatedAt(), avatar);
     }
 }

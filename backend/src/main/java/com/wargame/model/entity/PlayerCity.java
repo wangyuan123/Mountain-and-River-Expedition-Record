@@ -26,6 +26,9 @@ public class PlayerCity extends VersionedEntity implements CityEconomy {
     @Column(name = "name", nullable = false, length = 100)
     private String name;
 
+    @Column(name = "city_name_renamed_at", nullable = false)
+    private long cityNameRenamedAt = 0L;
+
     @Column(name = "owner_id")
     private Long ownerId;
 

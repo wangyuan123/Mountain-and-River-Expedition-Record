@@ -15,8 +15,8 @@ window.Game = window.Game || {};
       officer: 1, officerDetail: 1, academy: 1,
       tech: 1, settings: 1, battleDefaults: 1,
       reports: 1, reportDetail: 1, battle: 1, report: 1,
-      mail: 1, recharge: 1, login: 1,
-      guild: 1, map: 1, wild: 1, dispatch: 1
+      mail: 1, chat: 1, recharge: 1, login: 1,
+      guild: 1, rankings: 1, map: 1, wild: 1, dispatch: 1
     },
     // 按钮音效是当前设备的听觉偏好，不随游戏账号或服务端存档变化。
     uiSound: {
@@ -56,14 +56,26 @@ window.Game = window.Game || {};
       { key: '4', label: '地图', route: 'world' },
       { key: '5', label: '情报', route: 'alerts' },
       { key: '6', label: '战报', route: 'reports' },
+      { key: '·', label: '聊天', route: 'chat' },
       { key: '7', label: '邮件', route: 'mail' },
       { key: '8', label: '任务', route: 'mainQuest' },
       { key: '9', label: '军团', route: 'guild' },
       { key: '0', label: '仓库', route: 'depot' },
       { key: '·', label: '科技', route: 'tech' },
       { key: '·', label: '战术', route: 'battleDefaults' },
+      { key: '·', label: '排名', route: 'rankings' },
       { key: '·', label: '商城', route: 'shop' }
     ],
+    rankingBoards: {
+      players: { label: '玩家排名', metrics: [
+        { id: 'prestige', label: '声望榜' },
+        { id: 'militaryRank', label: '军衔榜' }
+      ] },
+      guilds: { label: '军团排名', metrics: [
+        { id: 'prestige', label: '总声望榜' },
+        { id: 'members', label: '人数榜' }
+      ] }
+    },
     footerHints: {
       // TODO：恢复防沉迷后改回“实名注册 · 健康游戏”。
       login: '登录账号 · 开启远征',
@@ -202,7 +214,7 @@ window.Game = window.Game || {};
       { id: 'skillBook',  cat: 'officer',  name: '通用技能书', icon: '📗', desc: '选择军官使用，随机学习一个未掌握技能', price: 80, stock: null, tag: '随机' },
       { id: 'loyaltyBox', cat: 'officer',  name: '忠诚宝箱',   icon: '🎁', desc: '军官忠诚度+20,提升留任意愿',     price: 50,   stock: null, tag: '' },
       { id: 'renameCard', cat: 'officer',  name: '军官改名卡', icon: '🏷️', desc: '为军官更换新名字',               price: 60,   stock: null, tag: '' },
-      { id: 'recruitOrd', cat: 'officer',  name: '征募令',     icon: '🎖️', desc: '刷新陆军讲武堂,保底出现一名五星军官',   price: 500,  stock: 3,    tag: '稀有' },
+      { id: 'recruitOrd', cat: 'officer',  name: '征募令',     icon: '🎖️', desc: '刷新军校,保底出现一名五星军官',   price: 500,  stock: 3,    tag: '稀有' },
       { id: 'starUp',     cat: 'officer',  name: '星耀符',     icon: '✨', desc: '升2/3/4/5星失败率10/20/30/60%，失败也消耗1枚', price: 300, stock: null, tag: '' },
 
       // —— 军官装备宝箱（整套装备，打开直接获得3件装备并激活套装属性）——
@@ -238,6 +250,7 @@ window.Game = window.Game || {};
       { id: 'shield',    cat: 'util', name: '护盾',     icon: '🛡️', desc: '使用后8小时免受玩家攻击',         price: 200,  stock: null, tag: '' },
       { id: 'marchOrd',  cat: 'util', name: '行军令',   icon: '🚩', desc: '行军速度+50%,持续1小时',          price: 100,  stock: null, tag: '' },
       { id: 'populationOrder', cat: 'util', name: '人口动员令', icon: '👥', desc: '使用后立即增加500空闲人口,不超过人口上限', price: 100, stock: null, tag: '推荐' },
+      { id: 'cityRenameCard', cat: 'util', name: '城市改名卡', icon: '🏷️', desc: '为一座城市更换新名字', price: 60, stock: null, tag: '' },
 
       // —— 礼包 ——
       { id: 'newbiePack', cat: 'gift', name: '新手礼包',   icon: '🎁', desc: '开7倍:粮20000/钢20000/油10000/稀5000/金3000', price: 99,   stock: 1, tag: '限时' },

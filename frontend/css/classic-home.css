@@ -47,7 +47,8 @@ body[data-theme="blue-white-classic"] {
 [data-theme="blue-white-classic"] #topbar .topbar-online-status .online-text {
   color: #687580 !important;
 }
-[data-theme="blue-white-classic"] #topbar .player-bar-right .diamond {
+[data-theme="blue-white-classic"] #topbar .player-bar-right .diamond,
+[data-theme="blue-white-classic"] #topbar .player-bar-right .forum-entry-btn {
   background: #edf4fb !important;
   color: #2457a5 !important;
   border: 1px solid #b2cdef !important;
@@ -184,7 +185,6 @@ body[data-theme="blue-white-classic"] {
 [data-theme="blue-white-classic"] .btn,
 [data-theme="blue-white-classic"] .qty { border-radius: 2px !important; }
 [data-theme="blue-white-classic"] .home-alert { border-radius: 0 !important; box-shadow: none !important; }
-[data-theme="blue-white-classic"] .chat-term-header { display: none !important; }
 /* 世界频道沿用公共黑底浅字配色，经典主题仅调整排版。 */
 [data-theme="blue-white-classic"] .chat-box { padding: 4px 5px !important; }
 [data-theme="blue-white-classic"] .chat-msg { font-size: 14px !important; }

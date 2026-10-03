@@ -83,6 +83,22 @@ public class ShopControllerTest extends BaseServiceTest {
     }
 
     @Test
+    @DisplayName("购买城市改名卡成功，扣除60钻石并入仓")
+    void buyCityRenameCard() {
+        Resources resources = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
+        resources.setDiamond(100);
+        resourcesRepository.save(resources);
+
+        Map<String, Object> response = shopController.buy(new GameDtos.ShopBuyRequest("cityRenameCard")).getBody();
+        assertNotNull(response);
+        assertEquals(true, response.get("success"));
+        assertEquals("已购买 城市改名卡", response.get("message"));
+        assertEquals(40, resourcesRepository.findByPlayerId(player.getId()).orElseThrow().getDiamond());
+        assertEquals(1, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "cityRenameCard").orElseThrow().getCount());
+        assertEquals("util", ItemDef.ITEMS.get("cityRenameCard").cat());
+    }
+
+    @Test
     @DisplayName("钻石不足时购买人口动员令失败")
     void testBuyPopulationOrder_insufficientDiamonds() {
         Resources res = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();

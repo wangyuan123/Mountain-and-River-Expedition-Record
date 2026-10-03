@@ -65,6 +65,24 @@ class TacticalBattleRoundTest {
     }
 
     @Test
+    void defeatedUnitMovementPrecedesTheAttackThatEliminatesItInReport() {
+        BattleRoundState state = new BattleService(0).resolveWorldRound(
+                Map.of("fighter", 1_000), Map.of("infantry", 35),
+                Map.of("fighter", 1_000), Map.of("infantry", 2_000), 2_300,
+                Map.of(), Map.of(), Map.of(), Map.of(),
+                0, 0, 0, 0, 0, 0, 3,
+                Map.of(), Map.of());
+
+        String report = state.log();
+        int movement = report.indexOf("敌方步兵");
+        int kill = report.indexOf(" 击毁35");
+        assertTrue(movement >= 0 && kill >= 0, report);
+        assertTrue(movement < kill, report);
+        assertFalse(report.substring(kill).contains("敌方步兵"), report);
+        assertTrue(state.defenderArmy().isEmpty(), report);
+    }
+
+    @Test
     void combinesAdvanceWithItsFirstAttackWhenTheEnemyEntersRange() {
         BattleService service = new BattleService(0);
         BattleRoundState state = service.resolveWorldRound(

@@ -52,7 +52,7 @@ function setup() {
       state,
       DATA: {
         buildings: {
-          command:  { name: '前线指挥部', desc: '主城', baseCost: { steel: 400, food: 200 }, growth: 1.6, slots: 1 },
+          command:  { name: '市政厅', desc: '主城', baseCost: { steel: 400, food: 200 }, growth: 1.6, slots: 1 },
           farm:     { name: '农田', desc: '粮食', baseCost: { steel: 80 }, growth: 1.5, produces: 'food', baseProduce: 40, slots: 32 },
           refinery: { name: '炼钢厂', desc: '钢铁', baseCost: { steel: 80 }, growth: 1.5, produces: 'steel', slots: 32 },
           oilfield: { name: '石油基地', desc: '石油', baseCost: { steel: 80 }, growth: 1.5, produces: 'oil', slots: 32 },
@@ -272,10 +272,10 @@ test('建筑卡片渲染拆除按钮', () => {
   assert.match(farmCardHtml, /Game\.Build\.confirmDismantle\('farm',1\)/);
 });
 
-test('前线指挥部不可被拆除', () => {
+test('市政厅不可被拆除', () => {
   const { G } = setup();
   G.Build.confirmDismantle('command', null);
-  assert.equal(G._lastToast, '前线指挥部为核心枢纽，不可拆除');
+  assert.equal(G._lastToast, '市政厅为核心枢纽，不可拆除');
 });
 
 test('队列渲染显示拆除中状态', () => {
@@ -374,22 +374,22 @@ test('点击卡槽建筑弹出详情弹窗，包含资源产出、升级和拆�
   assert.match(modalHtml, /id="bdetailDisBtn"/);
   assert.match(modalHtml, /拆除完成后建筑彻底消失，并释放该卡槽地块/);
 
-  // 2. 测试 slot 0 (Lv.2，达前线指挥部上限，拆除降为 Lv.1)
+  // 2. 测试 slot 0 (Lv.2，达市政厅上限，拆除降为 Lv.1)
   G.Build.onSlotClick('farm', 0);
   const modalHtml2 = appended[appended.length - 1].innerHTML;
   assert.match(modalHtml2, /#1 农田/);
-  assert.match(modalHtml2, /已达当前前线指挥部限制上限/);
+  assert.match(modalHtml2, /已达当前市政厅限制上限/);
   assert.match(modalHtml2, /拆除完成后建筑等级降为 Lv\.1/);
 });
 
-test('前线指挥部详情弹窗中显示防拆提示且无拆除按钮', () => {
+test('市政厅详情弹窗中显示防拆提示且无拆除按钮', () => {
   const { G, context } = setup();
   G.Build.onSlotClick('command', null);
   const appended = context.document.body.appended;
   const modalHtml = appended[appended.length - 1].innerHTML;
 
-  assert.match(modalHtml, /前线指挥部/);
-  assert.match(modalHtml, /前线指挥部为主城核心枢纽，不可拆除/);
+  assert.match(modalHtml, /市政厅/);
+  assert.match(modalHtml, /市政厅为主城核心枢纽，不可拆除/);
   assert.doesNotMatch(modalHtml, /id="bdetailDisBtn"/);
 });
 
@@ -433,7 +433,7 @@ test('军事建筑显示花园卫城模型，全部 21 个映射都有实际素�
     assert.ok(fs.existsSync(path.join(__dirname, '..', asset)), `缺少建筑素材：${asset}`);
   }
   const armyGridHtml = G.Build.renderSlotGrid('army', [], state);
-  assert.match(armyGridHtml, /<img class="b-icon-img" src="img\/buildings\/garden\/command\.webp" alt="前线指挥部"/);
+  assert.match(armyGridHtml, /<img class="b-icon-img" src="img\/buildings\/garden\/command\.webp" alt="市政厅"/);
   assert.match(armyGridHtml, /<img class="b-icon-img" src="img\/buildings\/garden\/radar\.webp" alt="防空雷达站"/);
 });
 
@@ -459,3 +459,55 @@ test('单栋建筑与多栋建筑卡槽头部标签行高保持一致不塌陷',
   // 多栋建筑或空闲卡槽应当包含 # 编号
   assert.match(armyGridHtml, /<span class="slot-card-tag">#\d+<\/span>/);
 });
+
+test('openBuildPicker 在资源不足时显示缺口提示并支持点击置灰按钮获得明确引导', () => {
+  const { G, state, context } = setup();
+  G.DATA.buildings.house = {
+    name: '民居',
+    desc: '驻扎战备部队,提供人口与兵员上限,每级+1200',
+    baseCost: { steel: 120, food: 60 },
+    growth: 1.5,
+    slots: 32
+  };
+  G.Build.GROUPS.army.order.push('house');
+
+  // 模拟当前玩家：钢铁充足(1000)，但粮食不足(10 < 60)
+  state.resources.steel = 1000;
+  state.resources.food = 10;
+  state.buildings.house = [];
+
+  const toasts = [];
+  G.toast = (msg) => toasts.push(msg);
+
+  G.Build.openBuildPicker('army');
+
+  const modalEl = context.document.body.appended.at(-1);
+  const html = modalEl.innerHTML;
+
+  // 1. 标题与建筑存在
+  assert.match(html, /选择建筑建造/);
+  assert.match(html, /民居/);
+
+  // 2. 粮食不足被醒目标红并注明缺少数量
+  assert.match(html, /class="bcost-item bcost-lack"/);
+  assert.match(html, /缺50/);
+
+  // 3. 展现缺少粮食的提示条
+  assert.match(html, /build-picker-tip lack/);
+  assert.match(html, /缺少粮食 50/);
+
+  // 4. 按钮为置灰样式（带 disabled 类名），但保留点击能力（不包含原生 disabled 属性）
+  assert.match(html, /class="btn sm ok disabled"/);
+  assert.match(html, /title="资源不足：粮食缺少50"/);
+  assert.match(html, /onclick="Game\.Build\._pickBlocked\('house', 'resource'\)"/);
+
+  // 5. 点击置灰按钮触发 _pickBlocked，给出明确 Toast 提示并打开确认弹窗供对照
+  G.Build._pickBlocked('house', 'resource');
+  assert.ok(toasts.some(t => t.includes('无法建造【民居】') && t.includes('粮食缺 50')));
+
+  // 确认弹窗被呼出
+  const confirmModal = context.document.body.appended.at(-1);
+  assert.match(confirmModal.innerHTML, /新建确认/);
+  assert.match(confirmModal.innerHTML, /民居/);
+});
+

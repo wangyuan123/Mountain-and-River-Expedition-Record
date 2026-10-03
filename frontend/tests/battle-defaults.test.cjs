@@ -271,13 +271,15 @@ test('保存过程中重新渲染按钮后恢复可用，并保留后续编辑�
   assert.equal(nodes['battle-defaults-message'].textContent, '已保存；仍有未保存的修改');
 });
 
-test('导航栏末尾的商城前展示独立默认战术入口', () => {
+test('导航栏末尾依次展示独立战术、排名与商城入口', () => {
   const context = vm.createContext({ window: null });
   context.window = context;
   require('./load-constants.cjs')(context);
   const navItems = context.Game.Constants.navItems;
-  assert.equal(navItems.at(-2).route, 'battleDefaults');
-  assert.match(navItems.at(-2).label, /^(?:默认)?战术$/);
+  assert.equal(navItems.at(-3).route, 'battleDefaults');
+  assert.match(navItems.at(-3).label, /^(?:默认)?战术$/);
+  assert.equal(navItems.at(-2).route, 'rankings');
+  assert.equal(navItems.at(-1).route, 'shop');
 });
 
 test('分别编辑攻守兵种，只在保存时提交两套完整预设', async () => {

@@ -67,3 +67,55 @@ test('quantity changes keep the existing preview; unit changes reject stale prev
   requests[3].resolve({distance:33});await new Promise(setImmediate);
   assert.deepEqual(rendered,[22]);
 });
+
+test('empty dispatch selections do not request an invalid route preview', () => {
+  const timers = [];
+  let requests = 0;
+  const c = setup({
+    setTimeout: fn => (timers.push(fn), timers.length),
+    clearTimeout() {},
+  });
+  c.Game.DispatchRoute.loadTerrain = () => Promise.resolve(null);
+  c.Game.API = { client: { post: () => (requests++, Promise.resolve({})) } };
+  const hint = { isConnected: true, textContent: '', setAttribute() {}, querySelector() {} };
+  c.Game.World.bindRoutePreview({ addEventListener() {} }, hint, () => ({ army: {} }), {});
+  assert.equal(timers.length, 0);
+  assert.equal(requests, 0);
+  assert.equal(hint.textContent, '选择兵力后计算实际路线和时间');
+});
+
+test('dispatch with default selected units requests route preview immediately', () => {
+  const timers = [];
+  let requests = [];
+  const c = setup({
+    setTimeout: fn => (timers.push(fn), timers.length),
+    clearTimeout() {},
+  });
+  c.Game.DispatchRoute.loadTerrain = () => Promise.resolve(null);
+  c.Game.API = { client: { post: (url, payload) => (requests.push(payload), Promise.resolve({ distance: 10, seconds: 15 })) } };
+  const hint = { isConnected: true, textContent: '', innerHTML: '', setAttribute() {}, querySelector() {} };
+  c.Game.World.bindRoutePreview({ addEventListener() {} }, hint, () => ({ army: { scout: 1 } }), { start: '主城', end: '野地' });
+  assert.equal(timers.length, 1, '应设置路线请求防抖计时器');
+  timers.pop()();
+  assert.equal(requests.length, 1, '应发出路线计算请求');
+  assert.deepEqual(requests[0].army, { scout: 1 }, '应携带已选中的兵力');
+});
+
+test('onDispatchInputChange and slider change refresh route preview', () => {
+  const timers = [];
+  let refreshed = 0;
+  const c = setup();
+  c.Game.World._refreshDispatchRoute = () => { refreshed++; };
+  c.document = {
+    getElementById: (id) => {
+      if (id.startsWith('dslider_')) return { max: '100', value: '0', style: { setProperty() {} } };
+      if (id.startsWith('dqty_')) return { max: '100', value: '0' };
+      return null;
+    }
+  };
+  c.Game.World.onDispatchInputChange('scout', 1);
+  assert.equal(refreshed, 1, '修改数量输入框应刷新行军路线');
+  c.Game.World.onDispatchSliderChange('scout', 2);
+  assert.equal(refreshed, 2, '滑动滑块应刷新行军路线');
+});
+

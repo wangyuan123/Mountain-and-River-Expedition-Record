@@ -56,7 +56,7 @@ test('未参加、暂停和完成的引导只做首次读取，不开启轮询',
 });
 
 test('参加中的引导每五秒刷新，重复刷新不叠加定时器或在途请求', async () => {
-  const { G, timers, nodes } = setup(snapshot({ current: { id: 'base', title: '整备前进基地', body: '升级前线指挥部' }, objectives: [{}] }));
+  const { G, timers, nodes } = setup(snapshot({ current: { id: 'base', title: '整备前进基地', body: '升级市政厅' }, objectives: [{}] }));
   await G.Onboarding.init();
   assert.match(nodes.get('onboardingBar').innerHTML, /新手战役 · 前进基地行动/);
   assert.match(nodes.get('onboardingBar').innerHTML, /先升级资源建筑与军工设施/);
@@ -95,13 +95,13 @@ test('首次引导读取失败时显示可重试入口而非静默消失', async
 test('当前目标提供资源建造、军工造兵和采集的对应入口', async () => {
   const { G, nodes } = setup(snapshot({ objectives: [{ id: 'base', complete: false }], current: { id: 'base', title: '整备基地', body: '升级建筑' }, checks: {} }));
   await G.Onboarding.init();
-  assert.match(nodes.get('onboardingBar').innerHTML, /升级前线指挥部/);
+  assert.match(nodes.get('onboardingBar').innerHTML, /升级市政厅/);
   G.Onboarding.state.data.current = { id: 'farm', title: '建设农田', body: '升级农田' };
   G.Onboarding.render();
   assert.match(nodes.get('onboardingBar').innerHTML, /升级农田/);
-  G.Onboarding.state.data.current = { id: 'factory', title: '建造战地兵工厂', body: '建造设施' };
+  G.Onboarding.state.data.current = { id: 'factory', title: '建造军工厂', body: '建造设施' };
   G.Onboarding.render();
-  assert.match(nodes.get('onboardingBar').innerHTML, /建造战地兵工厂/);
+  assert.match(nodes.get('onboardingBar').innerHTML, /建造军工厂/);
   G.Onboarding.state.data.current = { id: 'train', title: '组织小队', body: '生产部队' };
   G.Onboarding.render();
   assert.match(nodes.get('onboardingBar').innerHTML, /前往生产卡车/);
@@ -146,14 +146,14 @@ test('暂停停止轮询，延迟旧响应不能恢复轮询，恢复提示后�
   assert.equal(timers.size, 1);
 });
 
-test('主动开启行动会启动轮询，选择发展方向完成后停止', async () => {
+test('主动开启行动会启动轮询，确认完成引导后停止', async () => {
   const { G, timers } = setup(snapshot({ enrolled: false }));
   await G.Onboarding.init();
   G.API.client.post = async () => snapshot();
   await G.Onboarding.mutate('start');
   assert.equal(timers.size, 1);
-  G.API.client.post = async () => snapshot({ done: true, plan: 'economy' });
-  await G.Onboarding.mutate('plan', { plan: 'economy' });
+  G.API.client.post = async () => snapshot({ done: true, plan: 'explore' });
+  await G.Onboarding.mutate('finish');
   assert.equal(timers.size, 0);
 });
 

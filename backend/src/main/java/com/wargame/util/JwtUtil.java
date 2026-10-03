@@ -73,6 +73,22 @@ public class JwtUtil {
                 .compact();
     }
 
+    public String generateAdminToken(String username, Long adminId, String role) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + expiration);
+        return Jwts.builder()
+                .subject(username)
+                .claim("adminId", adminId)
+                .claim("role", role)
+                .claim("isAdmin", true)
+                .claim("serverId", serverId)
+                .id(java.util.UUID.randomUUID().toString())
+                .issuedAt(now)
+                .expiration(expiryDate)
+                .signWith(getKey())
+                .compact();
+    }
+
     /** Parse claims or throw. Callers should catch JwtException. */
     public Claims parseClaims(String token) {
         return Jwts.parser()
@@ -109,6 +125,23 @@ public class JwtUtil {
 
     public Long getPlayerIdFromToken(String token) {
         return parseClaims(token).get("playerId", Long.class);
+    }
+
+    public boolean isAdminToken(String token) {
+        try {
+            return Boolean.TRUE.equals(parseClaims(token).get("isAdmin", Boolean.class));
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public Long getAdminIdFromToken(String token) {
+        Number id = parseClaims(token).get("adminId", Number.class);
+        return id == null ? null : id.longValue();
+    }
+
+    public String getRoleFromToken(String token) {
+        return parseClaims(token).get("role", String.class);
     }
 
     /** Revoke a token (logout / forced sign-out). */

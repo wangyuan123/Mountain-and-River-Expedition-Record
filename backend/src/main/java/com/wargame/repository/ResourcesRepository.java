@@ -11,6 +11,8 @@ public interface ResourcesRepository extends JpaRepository<Resources, Long> {
 
     Optional<Resources> findByPlayerId(Long playerId);
 
+    Optional<Resources> findFirstByPlayerIdOrderByCitySlotAsc(Long playerId);
+
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @org.springframework.data.jpa.repository.Query("select r from Resources r where r.playerId = :playerId")
     Optional<Resources> findForTreatment(@org.springframework.data.repository.query.Param("playerId") Long playerId);

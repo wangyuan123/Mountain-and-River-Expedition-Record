@@ -111,14 +111,14 @@ window.Game = window.Game || {};
 
       // 2. 如果其他科技正在研发中
       if (activeRes) {
-        G.toast('国防研究所正在研发【' + activeRes.name + '】，请等待完成或使用加速符');
+        G.toast('军工科技研发中心正在研发【' + activeRes.name + '】，请等待完成或使用加速符');
         return;
       }
 
-      // 3. 检查国防研究所等级
+      // 3. 检查军工科技研发中心等级
       var missing = G.Prerequisites && G.Prerequisites.firstMissing('technologies', id, lv + 1);
       if (missing || labLv < t.labReq) {
-        G.toast(missing ? G.Prerequisites.missingText(missing) : '需国防研究所 Lv.' + t.labReq);
+        G.toast(missing ? G.Prerequisites.missingText(missing) : '需军工科技研发中心 Lv.' + t.labReq);
         return;
       }
 
@@ -159,7 +159,7 @@ window.Game = window.Game || {};
           '<span class="cu-val" style="color:var(--accent);font-weight:bold;">' + diff.curStr + ' → ' + diff.nextStr + '</span>' +
         '</div>';
 
-      var labDiscount = labLv > 1 ? (' (国防研究所 Lv.' + labLv + ' 加速 -' + Math.min(80, (labLv - 1) * 10) + '%)') : '';
+      var labDiscount = labLv > 1 ? (' (军工科技研发中心 Lv.' + labLv + ' 加速 -' + Math.min(80, (labLv - 1) * 10) + '%)') : '';
       var durHtml = '<div class="cu-row"><span class="cu-ico">⏱</span><span class="cu-name">研发工期</span>' +
                     '<span class="cu-val">' + timeText(duration) + '<span class="cu-sub">' + labDiscount + '</span></span></div>';
 
@@ -284,6 +284,18 @@ window.Game = window.Game || {};
       document.body.appendChild(mask);
 
       var close = function () { if (mask.parentNode) mask.parentNode.removeChild(mask); };
+      // 必须在真正的加速选择器内切换目标，不能继续镂空背景中的研发加速按钮。
+      var guidedPicker = G.Onboarding && G.Onboarding.state && G.Onboarding.state.snoozedFor === 'reconTech' && G.Onboarding.showSpotlight;
+      if (guidedPicker) {
+        mask.className += ' ob-guided-picker';
+        var guideSpeedRow = mask.querySelector('.spicker-row[data-sid="speedUp1h"]') || mask.querySelector('.spicker-row');
+        if (guideSpeedRow) G.Onboarding.showSpotlight(guideSpeedRow);
+        var removePicker = close;
+        close = function () {
+          if (G.Onboarding.clearSpotlight) G.Onboarding.clearSpotlight();
+          removePicker();
+        };
+      }
       mask.querySelector('#spClose').onclick = close;
       mask.addEventListener('click', function (e) { if (e.target === mask) close(); });
 
@@ -356,7 +368,7 @@ window.Game = window.Game || {};
       var res = s.research;
       if (!res) {
         return '<div class="panel" style="margin-bottom:12px;padding:8px 12px;border:1px dashed rgba(212,163,89,0.3);background:rgba(212,163,89,0.03);border-radius:6px;font-size:12px;color:var(--muted);">' +
-               '💡 国防研究所空闲中：可自主选择一项战略科技开展研发' +
+               '💡 军工科技研发中心空闲中：可自主选择一项战略科技开展研发' +
                '</div>';
       }
 
@@ -393,8 +405,8 @@ window.Game = window.Game || {};
       var activeRes = s.research;
 
       var h = '';
-      h += '<div class="title">- 国防研究所 -</div>';
-      h += '<div class="desc">国防研究所 Lv.' + labLv + ' · ' + branchOrder.length + ' 类科技，共 ' + Object.keys(D.techs).length + ' 项。国防研究所等级越高，研发耗时越短。</div>';
+      h += '<div class="title">- 军工科技研发中心 -</div>';
+      h += '<div class="desc">军工科技研发中心 Lv.' + labLv + ' · ' + branchOrder.length + ' 类科技，共 ' + Object.keys(D.techs).length + ' 项。军工科技研发中心等级越高，研发耗时越短。</div>';
 
       // 1. 顶部正在研发卡片
       h += this.renderActiveResearchCard(s);
@@ -420,7 +432,7 @@ window.Game = window.Game || {};
           var lv = (s.tech && s.tech[id]) || 0;
           var missing = G.Prerequisites && G.Prerequisites.firstMissing('technologies', id, lv + 1);
           var locked = !!missing || labLv < t.labReq;
-          var lockText = missing ? G.Prerequisites.missingText(missing) : '需国防研究所 Lv.' + t.labReq;
+          var lockText = missing ? G.Prerequisites.missingText(missing) : '需军工科技研发中心 Lv.' + t.labReq;
           var maxed = lv >= t.max;
           var cost = techCost(id, lv);
           var duration = techDuration(id, lv, labLv);
@@ -436,7 +448,7 @@ window.Game = window.Game || {};
 
           var diff = getEffectDiffText(t, lv);
 
-          h += '<div class="' + cls + '" onclick="Game.Tech.confirmResearch(\'' + id + '\')" style="display:flex;flex-direction:column;gap:4px;cursor:pointer;">';
+          h += '<div class="' + cls + '" data-tech="' + id + '" id="tech-card-' + id + '" onclick="Game.Tech.confirmResearch(\'' + id + '\')" style="display:flex;flex-direction:column;gap:4px;cursor:pointer;">';
           h += '  <div style="display:flex;justify-content:space-between;align-items:center;">';
           h += '    <div>';
           h += '      <span class="num">[' + idx + ']</span> ';
@@ -456,7 +468,7 @@ window.Game = window.Game || {};
           } else if (locked) {
             h += '    <span class="quest-badge" style="opacity:0.6;">前置未满足</span>';
           } else if (isBusy) {
-            h += '    <button class="btn sm" disabled style="opacity:0.6;padding:2px 8px;font-size:12px;" title="国防研究所正忙">正忙</button>';
+            h += '    <button class="btn sm" disabled style="opacity:0.6;padding:2px 8px;font-size:12px;" title="军工科技研发中心正忙">正忙</button>';
           } else if (enough) {
             h += '    <button class="btn sm ok" style="padding:3px 12px;font-size:12px;font-weight:bold;" onclick="event.stopPropagation();Game.Tech.confirmResearch(\'' + id + '\')">🔬 研发</button>';
           } else {

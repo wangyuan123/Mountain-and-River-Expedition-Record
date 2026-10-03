@@ -29,7 +29,7 @@ function loadFrontendContext() {
   return context;
 }
 
-test('战备起飞场定义校验: airSpdBonus 为 3，移除 airCap', () => {
+test('战备机场定义校验: airSpdBonus 为 3，移除 airCap', () => {
   const ctx = loadFrontendContext();
   const D = ctx.window.Game.DATA;
   const apron = D.buildings.apron;
@@ -40,7 +40,7 @@ test('战备起飞场定义校验: airSpdBonus 为 3，移除 airCap', () => {
   assert.match(apron.desc, /航速/, '描述中应包含航速加成信息');
 });
 
-test('Core.spdMul 计算: 战备起飞场为空军提供每级 +3% 航速加成，与其他军种隔离', () => {
+test('Core.spdMul 计算: 战备机场为空军提供每级 +3% 航速加成，与其他军种隔离', () => {
   const ctx = loadFrontendContext();
   const Core = ctx.window.Game.Core;
 

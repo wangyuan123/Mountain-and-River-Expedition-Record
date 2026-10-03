@@ -138,7 +138,7 @@ class BuildServiceTest extends BaseServiceTest {
         Map<String, Object> result = buildService.upgrade(playerId, "farm", 0);
 
         assertEquals(false, result.get("success"));
-        assertEquals("已达当前前线指挥部上限", result.get("message"));
+        assertEquals("已达当前市政厅上限", result.get("message"));
 
         // Verify no construction was created
         List<Construction> constructions = constructionRepository.findByPlayerId(playerId);
@@ -358,7 +358,7 @@ class BuildServiceTest extends BaseServiceTest {
         createBuilding(playerId, "command", 2);
         Map<String, Object> result = buildService.dismantle(playerId, "command", 0);
         assertEquals(false, result.get("success"));
-        assertEquals("前线指挥部为核心枢纽，不可拆除", result.get("message"));
+        assertEquals("市政厅为核心枢纽，不可拆除", result.get("message"));
     }
 
     @Test

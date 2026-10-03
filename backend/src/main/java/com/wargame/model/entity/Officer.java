@@ -23,6 +23,9 @@ public class Officer extends CityOwnedEntity {
     @Column(name = "name", nullable = false, length = 100)
     private String name;
 
+    @Column(name = "name_renamed_at", nullable = false)
+    private long nameRenamedAt = 0L;
+
     @Column(name = "star")
     private Integer star;
 

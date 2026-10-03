@@ -109,7 +109,34 @@ window.Game = window.Game || {};
         y: G.clamp(y, 0, D.world.size - 1)
       };
       s.world._scan = { r: D.world.viewRadius, at: Date.now() };
+      if (G.WorldMap && typeof G.WorldMap.focusCoordinate === 'function') {
+        G.WorldMap.focusCoordinate(x, y);
+      }
       Core.render();
+    },
+
+    locateTarget: function (x, y) {
+      var nx = Number(x), ny = Number(y);
+      if (!Number.isFinite(nx) || !Number.isFinite(ny)) return;
+      var size = (D.world && D.world.size) || 200;
+      nx = G.clamp(Math.round(nx), 0, size - 1);
+      ny = G.clamp(Math.round(ny), 0, size - 1);
+      var s = Core.state;
+      if (s && s.world) {
+        s.world._searchTarget = null;
+        s.world._searchCoord = nx + ',' + ny;
+        s.world._mapPos = { x: nx, y: ny };
+        s.world._scan = { r: D.world.viewRadius, at: Date.now() };
+      }
+      if (G.WorldMap && typeof G.WorldMap.focusCoordinate === 'function') {
+        G.WorldMap.focusCoordinate(nx, ny);
+      }
+      if (Core.route !== 'world') {
+        Game.go('world');
+      } else if (!G.WorldMap || !G.WorldMap.isMap()) {
+        Core.render();
+      }
+      G.toast('已定位至 (' + nx + ',' + ny + ')');
     },
 
     jumpToMyCity: function () {
@@ -376,7 +403,7 @@ window.Game = window.Game || {};
             '<p>当前城市要塞防线 Lv.' + wallLevel + '：' + (wallBonus ? '满级，额外 +100,000' : '未满级，无额外加成（Lv.10 +100,000）') + '。</p>' +
             '<p>三军统帅：任命指挥官后每级额外 +4%，最高 +20%；当前 Lv.' + skillLevel + '，加成 +' + skillPercent + '%。</p>' +
             '<p><strong>当前上限 = (' + G.fmt(rankBase) + ' + ' + G.fmt(wallBonus) + ') × (1 + ' + skillPercent + '%) = ' + G.fmt(total) + '</strong></p>' +
-            '<p>前线指挥部、作战参谋部和指挥官等级不直接增加上限；单次出征还需有足够的当前城市可用驻军。</p>' +
+            '<p>市政厅、作战参谋部和指挥官等级不直接增加上限；单次出征还需有足够的当前城市可用驻军。</p>' +
           '</div>' +
           '<div class="modal-foot"><button type="button" class="btn btn-primary" id="dispatchCapClose">知道了</button></div>' +
         '</div>';
@@ -803,10 +830,43 @@ window.Game = window.Game || {};
       var sliderEl = document.getElementById('dslider_' + uid);
       if (sliderEl) {
         var max = parseInt(sliderEl.max, 10) || 0;
+        sliderEl.value = num;
         var pct = max > 0 ? Math.min(100, Math.max(0, (num / max) * 100)) : 0;
         sliderEl.style.setProperty('--p', pct.toFixed(1) + '%');
       }
       this.updateDispatchStats();
+      if (typeof this._refreshDispatchRoute === 'function') this._refreshDispatchRoute();
+    },
+
+    /**
+     * 将当前出征界面展示的所有兵种设置为 1 个单位。
+     * 只处理有库存且当前可出征的兵种，侦查任务因此只会设置侦察机。
+     * @returns {void}
+     */
+    setAllDispatchUnitsToOne: function () {
+      for (var uid in D.units) {
+        var inputEl = document.getElementById('dqty_' + uid);
+        if (!inputEl) continue;
+        var max = parseInt(inputEl.max, 10) || 0;
+        if (max > 0) this.onDispatchSliderChange(uid, 1);
+      }
+      this.updateDispatchStats();
+      if (typeof this._refreshDispatchRoute === 'function') this._refreshDispatchRoute();
+    },
+
+    /**
+     * 将当前出征界面展示的所有兵种重置为 0 个单位。
+     * @returns {void}
+     */
+    resetDispatchUnits: function () {
+      for (var uid in D.units) {
+        var inputEl = document.getElementById('dqty_' + uid);
+        if (!inputEl) continue;
+        var max = parseInt(inputEl.max, 10) || 0;
+        if (max > 0) this.onDispatchSliderChange(uid, 0);
+      }
+      this.updateDispatchStats();
+      if (typeof this._refreshDispatchRoute === 'function') this._refreshDispatchRoute();
     },
 
     onDispatchInputChange: function (uid, val) {
@@ -817,6 +877,7 @@ window.Game = window.Game || {};
         sliderEl.value = 0;
         sliderEl.style.setProperty('--p', '0%');
         this.updateDispatchStats();
+        if (typeof this._refreshDispatchRoute === 'function') this._refreshDispatchRoute();
         return;
       }
       var num = parseInt(val, 10);
@@ -826,6 +887,7 @@ window.Game = window.Game || {};
       var pct = max > 0 ? Math.min(100, Math.max(0, (clamped / max) * 100)) : 0;
       sliderEl.style.setProperty('--p', pct.toFixed(1) + '%');
       this.updateDispatchStats();
+      if (typeof this._refreshDispatchRoute === 'function') this._refreshDispatchRoute();
     },
 
     /**
@@ -1004,6 +1066,22 @@ window.Game = window.Game || {};
       if (commEl && commEl.value && commEl.value !== 'none') {
         commanderId = parseInt(commEl.value, 10);
         if (isNaN(commanderId)) commanderId = null;
+      }
+      if (commanderId != null) {
+        var s = Core.state;
+        var busyOfficerIds = new Set();
+        var marchesList = (s.world && s.world.marches) || (Core.state && Core.state.world && Core.state.world.marches) || [];
+        marchesList.forEach(function (m) {
+          if (m.commanderId != null) {
+            busyOfficerIds.add(Number(m.commanderId));
+            busyOfficerIds.add(String(m.commanderId));
+          }
+        });
+        var targetOfficer = (s.officers || []).find(function (o) { return Number(o.id) === commanderId; });
+        if (targetOfficer && (targetOfficer.role === 'march' || targetOfficer.role === 'mayor' || targetOfficer.role === 'commander' || busyOfficerIds.has(commanderId) || busyOfficerIds.has(String(commanderId)))) {
+          G.toast('该军官正在执行行军任务或已任要职，无法出征');
+          return;
+        }
       }
 
       var carryRes = {};
@@ -1220,17 +1298,12 @@ window.Game = window.Game || {};
       h += '<div class="d" style="color:var(--gold);margin-top:4px">' + actionDesc + '</div>';
       h += '</div>';
 
-      h += '<div class="zone-head">-- 兵种配置 (选择出征数量) --</div>';
+      h += '<div class="zone-head"><span>-- 兵种配置 (选择出征数量) --</span><span class="dispatch-unit-actions">';
+      h += '<button type="button" class="btn dispatch-set-all" onclick="Game.World.setAllDispatchUnitsToOne()">全部设置1单位</button>';
+      h += '<button type="button" class="btn dispatch-reset" onclick="Game.World.resetDispatchUnits()">重置</button>';
+      h += '</span></div>';
       h += '<div class="panel">';
-      var defaultArmy = {};
-      // 仅征服、掠夺预选每种兵力 1；进驻、采集和侦查由玩家自行配置。
-      var preselectUnits = dt.action === 'conquer' || dt.action === 'plunder';
-      for (var uid in D.units) {
-        var have = s.army[uid] || 0;
-        if (have <= 0) continue;
-        if (isScout && uid !== 'scout') continue;
-        if (preselectUnits) defaultArmy[uid] = Math.min(have, 1);
-      }
+      var defaultArmy = (dt && dt.defaultArmy) ? Object.assign({}, dt.defaultArmy) : {};
       var defaultLoad = this.calcDispatchLoad(defaultArmy);
       var hasAny = false;
       for (var uid in D.units) {
@@ -1248,8 +1321,8 @@ window.Game = window.Game || {};
         var spdBadge = techBonus > 0
           ? ' <span class="dispatch-unit-spd has-tech" title="基础移速 ' + u.spd + '，科技加成 +' + techBonus + '%">移速 ' + effSpd + ' <small class="tech-tag">⚡+' + techBonus + '%</small></span>'
           : ' <span class="dispatch-unit-spd" title="基础移速 ' + u.spd + '">移速 ' + effSpd + '</span>';
-        var initialVal = defaultArmy[uid] || '';
-        var sliderVal = defaultArmy[uid] || 0;
+        var initialVal = Math.min(have, Math.max(0, parseInt(defaultArmy[uid], 10) || 0));
+        var sliderVal = initialVal;
         var pct = have > 0 ? ((sliderVal / have) * 100).toFixed(1) : 0;
         var sliderId = 'dslider_' + uid;
         h += '<div class="dispatch-unit-row">';
@@ -1339,25 +1412,39 @@ window.Game = window.Game || {};
       if (true) {
         h += '<div class="zone-head">-- 指挥官选择 --</div>';
         h += '<div class="panel">';
-        var officers = s.officers;
-        // 默认选择军事属性最高的指挥官；属性相同则选择列表中的第一位。
+        var marchingCommanderIds = new Set();
+        var activeMarches = (s.world && s.world.marches) || (Core.state && Core.state.world && Core.state.world.marches) || [];
+        activeMarches.forEach(function (m) {
+          if (m.commanderId != null) {
+            marchingCommanderIds.add(Number(m.commanderId));
+            marchingCommanderIds.add(String(m.commanderId));
+          }
+        });
+
+        // 仅展示未出征、未担任市长或防守指挥官的空闲将领；已出征军官不再提供选择，防止误选后提示失败
+        var availableOfficers = (s.officers || []).filter(function (o) {
+          if (!o) return false;
+          if (o.role === 'mayor' || o.role === 'commander' || o.role === 'march') return false;
+          if (marchingCommanderIds.has(Number(o.id)) || marchingCommanderIds.has(String(o.id))) return false;
+          return true;
+        });
+
+        // 默认选择可用将领中军事属性最高者；属性相同则选择列表中的第一位。
         var bestOfficerIndex = -1;
         var bestMilitary = -Infinity;
-        for (var bi = 0; bi < officers.length; bi++) {
-          if (officers[bi].role === 'mayor' || officers[bi].role === 'commander') continue;
-          var military = Number(officers[bi].military) || 0;
+        for (var bi = 0; bi < availableOfficers.length; bi++) {
+          var military = Number(availableOfficers[bi].military) || 0;
           if (bestOfficerIndex < 0 || military > bestMilitary) {
             bestOfficerIndex = bi;
             bestMilitary = military;
           }
         }
         var foundC = bestOfficerIndex >= 0;
-        if (!officers.length) {
-          h += '<div class="desc">无军官可用</div>';
+        if (!availableOfficers.length) {
+          h += '<div class="desc">' + ((s.officers && s.officers.length) ? '暂无空闲将领可选（其他将领正在出征或已任要职）' : '无军官可用') + '</div>';
         }
-        for (var oi = 0; oi < officers.length; oi++) {
-          var o = officers[oi];
-          if (o.role === 'mayor' || o.role === 'commander') continue;
+        for (var oi = 0; oi < availableOfficers.length; oi++) {
+          var o = availableOfficers[oi];
           var checked = oi === bestOfficerIndex ? ' checked' : '';
           var starStr = '';
           for (var si = 0; si < o.star; si++) starStr += '★';
@@ -1383,7 +1470,7 @@ window.Game = window.Game || {};
         h += '不派遣将领 (无加成)';
         h += '</label>';
         h += '</div>';
-        if (!foundC) h += '<div class="desc">(当前未任命司令,建议招募或选择将领出征以获得战力与经验加成)</div>';
+        if (!foundC) h += '<div class="desc">(当前无空闲将领可选，建议招募将领或等待出征队伍返城以获得战力与经验加成)</div>';
         h += '</div>';
 
         h += '<div class="zone-head">-- 携带资源 (货辎队负重内) --</div>';
@@ -1412,6 +1499,7 @@ window.Game = window.Game || {};
       h += '</div>';
       v.innerHTML = h;
       this._currentRoute = null;
+      this._refreshDispatchRoute = null;
       this.updateDispatchStats();
       if(G.API&&G.API.client&&v.querySelector)this.bindRoutePreview(v,v.querySelector('#dispatchRoute'),function(){
         var army={};v.querySelectorAll('[id^="dqty_"]').forEach(function(el){army[el.id.slice(5)]=Math.max(0,parseInt(el.value,10)||0);});
@@ -1447,6 +1535,22 @@ window.Game = window.Game || {};
        */
       function update(force){
         var payload=request(),nextRouteKey=routeKey(payload);
+        var hasArmy = Object.keys(payload.army || {}).some(function(uid){
+          return Math.max(0, parseInt(payload.army[uid], 10) || 0) > 0;
+        });
+        if (!hasArmy) {
+          clearTimeout(timer);
+          sequence++;
+          lastRouteKey=nextRouteKey;
+          isLoading=false;
+          lastRouteFailed=false;
+          currentRoute=null;
+          self._currentRoute=null;
+          hint.setAttribute('aria-busy','false');
+          hint.textContent='选择兵力后计算实际路线和时间';
+          self.updateDispatchStats();
+          return;
+        }
         if(!force&&nextRouteKey===lastRouteKey&&(!lastRouteFailed||isLoading)){
           self.updateDispatchStats();
           return;
@@ -1482,6 +1586,7 @@ window.Game = window.Game || {};
           });
         },300);
       }
+      self._refreshDispatchRoute = function(){ update(false); };
       // 数量输入的 input 事件只更新统计；change 事件用于检查兵种集合是否真的变化。
       container.addEventListener('change',function(){update(false);});
       update(true);
@@ -1582,10 +1687,11 @@ window.Game = window.Game || {};
         var t = it.t;
         // 后端 wild_tiles.type 历史上可能写入过 D.wildTypes 里没有的旧值, 找不到时回退到通用占位
         var wt = D.wildTypes[t.type] || { name: '野地', res: null, icon: '🪨' };
-        var isImg = /\.svg$|\.png$|\.jpg$|\.gif$|\.webp$/i.test(wt.icon);
+        var iconPath = (G.WorldMap && typeof G.WorldMap.icon === 'function') ? G.WorldMap.icon(t) : wt.icon;
+        var isImg = /\.svg$|\.png$|\.jpg$|\.gif$|\.webp$/i.test(iconPath);
         var icon = isImg
-          ? '<img class="tcard-icon" src="' + wt.icon + '" alt="' + wt.name + '"/>'
-          : '<span class="tcard-emoji">' + wt.icon + '</span>';
+          ? '<img class="tcard-icon" src="' + iconPath + '" alt="' + wt.name + '"/>'
+          : '<span class="tcard-emoji">' + iconPath + '</span>';
         var remain = (t.totalRes || 0) - (t.mined || 0);
         var resLine = wt.res
           ? '<div class="tcard-meta">' + D.resources[wt.res].name + ' <b>' + G.fmt(remain) + '</b>/' + G.fmt(t.totalRes || 0) + '</div>'
@@ -1785,7 +1891,11 @@ window.Game = window.Game || {};
           (s.player && p.ownerId && String(p.ownerId) === String(s.player.id));
         if (selfCity) {
           if (p.readyAt > Date.now()) return '<button class="tcard-btn" disabled>城市建设中</button>';
-          return '<button class="tcard-btn tcard-btn-ok" onclick="event.stopPropagation();Game.Cities.enter(' + p.id + ')">进入城市</button>';
+          var currentCity = String((s.player || {}).activeCityId) === String(p.id) ||
+            (s.cityOverview && s.cityOverview.cities || []).some(function (city) { return city.current && String(city.id) === String(p.id); });
+          return '<button class="tcard-btn tcard-btn-ok" onclick="event.stopPropagation();Game.Cities.enter(' + p.id + ')">进入城市</button>' +
+            (currentCity ? '' : '<button class="tcard-btn" onclick="event.stopPropagation();Game.Cities.openTransfer(' + p.id + ',\'transport\')">运输</button>' +
+              '<button class="tcard-btn" onclick="event.stopPropagation();Game.Cities.openTransfer(' + p.id + ',\'rebase\')">派遣</button>');
         }
         if (p._readonlyTarget) {
           return '<button class="tcard-btn" disabled>需靠近后侦察</button>';
@@ -1914,7 +2024,7 @@ window.Game = window.Game || {};
            '</div>';
 
       v.innerHTML = h;
-      if (G.WorldMap) v.insertAdjacentHTML('afterbegin', '<div class="world-map-list-switch"><button type="button" class="page-back-button" onclick="Game.WorldMap.setMode(\'map\')"><span>› 返回大地图</span></button></div>');
+      if (G.WorldMap) v.insertAdjacentHTML('afterbegin', '<div class="world-map-list-switch"><button type="button" class="page-back-button" onclick="Game.WorldMap.setMode(\'map\')"><span>查看大地图 ›</span></button></div>');
       var hasWar = false;
       for (var wi = 0; wi < s.world.playerCities.length; wi++) {
         var wp = s.world.playerCities[wi];
@@ -1989,7 +2099,85 @@ window.Game = window.Game || {};
       }, 1000);
     },
 
+    hasBattleAlert: function () {
+      var s = Core.state && Core.state.world;
+      if (!s) return false;
+      if (s._newBattleAlert) return true;
+      var marches = s.marches || [];
+      if (!marches.length) return false;
+      var now = Date.now();
+      var ack = s._acknowledgedMarchArrivals || {};
+      for (var i = 0; i < marches.length; i++) {
+        var m = marches[i];
+        if (!m || m.returning) continue;
+        var arrived = m.arriveAt != null && isFinite(Number(m.arriveAt)) && now >= Number(m.arriveAt);
+        var inBattleOrWaiting = m.inBattle || m.battleId != null || m.waitingForBattle;
+        if (arrived || inBattleOrWaiting) {
+          var idKey = String(m.id != null ? m.id : (m.fromX + ':' + m.fromY + '->' + m.targetX + ':' + m.targetY));
+          if (!ack[idKey]) return true;
+        }
+      }
+      return false;
+    },
+
+    triggerBattleAlert: function (march) {
+      var s = Core.state && Core.state.world;
+      if (!s) return;
+      s._newBattleAlert = true;
+      if (march && march.id != null) march._arrivalAlerted = true;
+      if (G.Main && G.Main.renderNavBar) G.Main.renderNavBar();
+    },
+
+    acknowledgeAlerts: function () {
+      var s = Core.state && Core.state.world;
+      if (!s) return;
+      s._newBattleAlert = false;
+      s._alertsViewedAt = Date.now();
+      s.alertsViewed = true;
+      var marches = s.marches || [];
+      var ack = s._acknowledgedMarchArrivals || (s._acknowledgedMarchArrivals = {});
+      var now = Date.now();
+      for (var i = 0; i < marches.length; i++) {
+        var m = marches[i];
+        if (!m) continue;
+        var arrived = m.arriveAt != null && isFinite(Number(m.arriveAt)) && now >= Number(m.arriveAt);
+        if (arrived || m.inBattle || m.battleId != null || m.waitingForBattle) {
+          var idKey = String(m.id != null ? m.id : (m.fromX + ':' + m.fromY + '->' + m.targetX + ':' + m.targetY));
+          ack[idKey] = true;
+        }
+      }
+      if (G.Main && G.Main.renderNavBar) G.Main.renderNavBar();
+    },
+
+    checkMarchArrivals: function () {
+      var s = Core.state && Core.state.world;
+      if (!s) return false;
+      var marches = s.marches || [];
+      var now = Date.now();
+      var ack = s._acknowledgedMarchArrivals || {};
+      var hasNew = false;
+      for (var i = 0; i < marches.length; i++) {
+        var m = marches[i];
+        if (!m || m.returning) continue;
+        var arrived = m.arriveAt != null && isFinite(Number(m.arriveAt)) && now >= Number(m.arriveAt);
+        var inBattleOrWaiting = m.inBattle || m.battleId != null || m.waitingForBattle;
+        if (arrived || inBattleOrWaiting) {
+          var idKey = String(m.id != null ? m.id : (m.fromX + ':' + m.fromY + '->' + m.targetX + ':' + m.targetY));
+          if (!ack[idKey] && !m._arrivalAlerted) {
+            m._arrivalAlerted = true;
+            hasNew = true;
+          }
+        }
+      }
+      if (hasNew) {
+        s._newBattleAlert = true;
+        if (G.Main && G.Main.renderNavBar) G.Main.renderNavBar();
+      }
+      return hasNew;
+    },
+
     renderAlerts: function (v) {
+      this.acknowledgeAlerts();
       var s = Core.state;
       var marches = s.world.marches || [];
       var incoming = s.world.incoming || [];
@@ -2021,27 +2209,39 @@ window.Game = window.Game || {};
           // 到达时间已过时，即使状态刷新尚未带回 battleId，也允许玩家点击进入并由接口补建会话。
           var autoBattle = m.targetKind !== 'player' && (m.battleMode === 'auto' || (m.battleMode == null && m.targetKind === 'wild'));
           var canEnterBattle = !autoBattle && !isGather && !m.returning && remain <= 0 && m.action !== 'scout' && m.action !== 'transport' && m.action !== 'rebase';
+          var canLocate = m.targetX != null && m.targetY != null && !isNaN(Number(m.targetX)) && !isNaN(Number(m.targetY));
           h += '<div class="menu-item ' + (m.returning ? 'lock' : 'ok') + '">';
           h += '<span class="n">' + kindName + '->' + G.escapeHtml(targetName) + (m.returning ? ' (撤自' + G.escapeHtml(originName || '原地') + ')' : '') + '</span>';
-          h += '<span class="lv">距' + distance + '格 (' + fromX + ',' + fromY + '->' + toX + ',' + toY + ')</span>';
+          var destCoordHtml = canLocate
+            ? '<a href="javascript:void(0)" class="coord-link" onclick="Game.World.locateTarget(' + m.targetX + ',' + m.targetY + ')" title="点击定位目的地" style="color:var(--accent);text-decoration:underline">' + toX + ',' + toY + '</a>'
+            : (toX + ',' + toY);
+          h += '<span class="lv">距' + distance + '格 (' + fromX + ',' + fromY + '->' + destCoordHtml + ')</span>';
           h += '<div class="d">兵力: ' + armyText(m.army) + '</div>';
+          var actions = [];
+          if (canLocate) {
+            actions.push('<button type="button" class="btn sm" onclick="Game.World.locateTarget(' + m.targetX + ',' + m.targetY + ')">定位</button>');
+          }
           if (isGather && !m.returning) {
             h += '<div class="cost" data-gather-march-id="' + Number(m.id) + '">' + esc(this.gatherMarchStatus(m)) + '</div>';
             if (m.gathering || m.gatherStopped) {
               var gatherResource = (D.resources[m.gatherRes] || {}).name || '资源';
               h += '<div class="d">' + (m.gatherStopped ? '已收获：' : '本次采集上限：') + G.fmt(m.gatherAmount || 0) + ' ' + esc(gatherResource) + '，返城后入库</div>';
             }
-            h += '<div class="btn-row">' + this.gatherMarchActions(m) + '</div>';
+            var gatherActs = this.gatherMarchActions(m);
+            if (gatherActs) actions.push(gatherActs);
           } else if (m.waitingForBattle) {
             h += '<div class="cost urgent">已到达，等待该城市上一场战斗结束</div>';
           } else if (m.inBattle || m.battleId || canEnterBattle) {
             h += '<div class="cost urgent">已到达战场，等待你的战术指令</div>';
-            h += '<div class="btn-row"><button class="btn ok sm" onclick="Game.Battle.openTactical(' + m.id + ')">进入战斗</button></div>';
+            actions.push('<button type="button" class="btn ok sm" onclick="Game.Battle.openTactical(' + m.id + ')">进入战斗</button>');
           } else {
             h += '<div class="cost ' + urgent + '">剩余: ' + timeStr + '</div>';
           }
           if (remain > 0 && !m.returning && !m.gathering && !m.gatherStopped && !(m.inBattle || m.battleId)) {
-            h += '<div class="btn-row"><button class="btn warn sm" onclick="Game.World.cancelMarch(\'' + m.id + '\')">撤回</button></div>';
+            actions.push('<button type="button" class="btn warn sm" onclick="Game.World.cancelMarch(\'' + m.id + '\')">撤回</button>');
+          }
+          if (actions.length) {
+            h += '<div class="btn-row">' + actions.join(' ') + '</div>';
           }
           h += '</div>';
         }

@@ -180,8 +180,15 @@ window.Game = window.Game || {};
         case 'chat':
           this.emit('chat', msg.data);
           break;
+        case 'guild_chat':
+          this.emit('guild_chat', msg.data);
+          break;
         default:
-          console.log('Unknown WS message type:', msg.type);
+          if (msg.type) {
+            this.emit(msg.type, msg.data);
+          } else {
+            console.log('Unknown WS message type:', msg.type);
+          }
       }
     },
 

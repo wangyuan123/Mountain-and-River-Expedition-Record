@@ -100,6 +100,28 @@ function setupTestEnvironment() {
   return { G: context.Game, appendedElements, context };
 }
 
+test('recon onboarding focuses the speed-up item in the actual picker and clears it on close', () => {
+  const { G, context } = setupTestEnvironment();
+  const row = {};
+  const cancel = {};
+  const focused = [];
+  let cleared = 0;
+  const createElement = context.document.createElement;
+  context.document.createElement = tag => {
+    const el = createElement(tag);
+    el.querySelector = selector => selector === '#spClose' ? cancel :
+      selector === '.spicker-row[data-sid="speedUp1h"]' ? row : null;
+    return el;
+  };
+  G.Core.state.research = { name: '侦察技术', targetLevel: 1, finishesAt: 1029000, queueId: 1 };
+  G.DATA.items = { speedUp10m: { seconds: 600 }, speedUp1h: { seconds: 3600 } };
+  G.Onboarding = { state: { snoozedFor: 'reconTech' }, showSpotlight: target => focused.push(target), clearSpotlight: () => cleared++ };
+  G.Tech.openSpeedUpPicker();
+  assert.equal(focused[0], row, '加速弹窗必须把背景按钮的聚光灯切换到加速符');
+  cancel.onclick();
+  assert.equal(cleared, 1, '关闭加速弹窗后不能留下已移除选项的聚光灯');
+});
+
 test('techDuration scales with level and is reduced by lab level', () => {
   const { G } = setupTestEnvironment();
   const d0 = G.techDuration('attack_tech', 0, 1);

@@ -7,8 +7,9 @@ function fixture(){
  require('./load-constants.cjs')(c);
  for(const file of ['map-camera.js','map-layout.js','world-map.js']){
   let source=fs.readFileSync(path.join(__dirname,'../js',file),'utf8');
+  source=source.replace('  function marchHeading(', '  G.TestMarchHeading=marchHeading;\n  function marchHeading(');
   source=source.replace('  var cache = new G.MapChunks','  G.TestGatherCountdown=gatherCountdown; var cache = new G.MapChunks');
-  source=source.replace('  G.WorldMap={','  G.TestMapView=MapView; G.TestMapIcon=icon; G.TestOwnershipCaption=ownershipCaption; G.TestDrawOwnership=drawOwnership; G.TestMarchUnitIcon=marchUnitIcon; G.TestMarchFormation=marchFormation; G.TestPrimaryMarchUnit=primaryMarchUnit; G.TestMarchMarkerIconSize=marchMarkerIconSize;\n  G.WorldMap={');vm.runInContext(source,c);
+  source=source.replace('  G.WorldMap={','  G.TestMapView=MapView; G.TestMapIcon=icon; G.TestMarkerHeight=markerHeight; G.TestOwnershipCaption=ownershipCaption; G.TestDrawOwnership=drawOwnership; G.TestMarchUnitIcon=marchUnitIcon; G.TestMarchFormation=marchFormation; G.TestPrimaryMarchUnit=primaryMarchUnit; G.TestMarchMarkerIconSize=marchMarkerIconSize;\n  G.WorldMap={');vm.runInContext(source,c);
  }
  const v=Object.create(c.Game.TestMapView.prototype);v.camera=new c.Game.MapCamera(200,100.5,100.5,48);v.camera.width=390;v.camera.height=550;
  v.markerLayer={children:[]};v.visible=[];v.loadDetail=t=>{v.result={target:t};};v.loadSite=(x,y)=>{v.result={site:[x,y]};};
@@ -87,6 +88,40 @@ test('model-top countdown combines the correct gathering teams and excludes unre
  assert.equal(c.Game.TestGatherCountdown({...stationed,gathering:false},now),'');
 });
 
+test('own city detail enters the selected city instead of routing directly home',()=>{
+ const {c,v}=fixture();const buttons=[],entered=[];
+ c.Game.escapeHtml=String;c.Game.Core={state:{player:{activeCityId:11},world:{cityPos:{x:4,y:105}}}};
+ c.Game.DATA={};c.Game.Cities={enter:id=>entered.push(id)};
+ c.Game.go=()=>assert.fail('must switch to the selected city before opening its home');
+ c.document.createElement=()=>({});
+ v.detail={innerHTML:'',querySelector:()=>({appendChild:button=>buttons.push(button)})};
+ for(const id of [22,33,11]){
+  buttons.length=0;
+  const target={kind:'player',id,selfCity:true,name:'我的城市',x:5,y:108,readyAt:0};
+  v.selected=target;v.renderDetail(target);
+  assert.deepEqual(buttons.map(button=>button.textContent), id === 11 ? ['进入城市'] : ['进入城市', '运输', '派遣']);
+  assert.equal(buttons[0].disabled,false);
+  buttons[0].onclick();
+  assert.equal(entered.at(-1),id);
+ }
+ assert.deepEqual(entered,[22,33,11]);
+});
+
+test('unfinished or non-owned cities cannot invoke city entry',()=>{
+ const {c,v}=fixture();const buttons=[];
+ c.Game.escapeHtml=String;c.Game.Core={state:{world:{cityPos:{x:4,y:105}}}};c.Game.DATA={};
+ c.Game.Cities={enter:()=>assert.fail('unavailable city must not be entered')};
+ c.document.createElement=()=>({});
+ v.detail={innerHTML:'',querySelector:()=>({appendChild:button=>buttons.push(button)})};
+ v.selected={kind:'player',id:22,selfCity:true,name:'建设中的分城',x:5,y:108,readyAt:Date.now()+60000};
+ v.renderDetail(v.selected);
+ assert.equal(buttons[0].textContent,'城市建设中');
+ assert.equal(buttons[0].disabled,true);
+ v.act('enterCity',buttons[0]);
+ v.selected={...v.selected,selfCity:false,readyAt:0};
+ v.act('enterCity',{});
+});
+
 test('stationed gathering details expose only the controls appropriate to the mode',()=>{
  const {c,v}=fixture();const buttons=[],panels=[];
  c.Game.fmt=String;c.Game.escapeHtml=String;c.Game.Core={state:{world:{pos:{x:10,y:10},marches:[]}}};
@@ -130,6 +165,15 @@ test('player art follows actual coast status for own and other cities, including
   assert.ok(fs.existsSync(path.join(__dirname,'..',image)));
  }
 });
+test('player cities extend their ground depth by 28% at every map zoom',()=>{
+ const {c}=fixture(),height=c.Game.TestMarkerHeight;
+ for(const width of [96,176,352]){
+  assert.equal(height({kind:'wild'},width),width);
+  assert.ok(Math.abs(height({kind:'player',coastal:false},width)*.90/width-.64)<1e-9);
+  assert.ok(Math.abs(height({kind:'player',coastal:true},width)*.60/width-.64)<1e-9);
+  assert.ok(Math.abs(height({kind:'npc'},width)*.75/width-.5)<1e-9);
+ }
+});
 test('march marker uses the home-page unit model for its largest represented unit',()=>{
  const {c}=fixture();c.Game.UNIT_ICON={infantry:'img/units/infantry.svg',ltank:'img/units/ltank.svg'};c.Game.UNIT_MODEL={infantry:'img/units/models/infantry.webp'};
  const primary=c.Game.TestPrimaryMarchUnit;
@@ -149,39 +193,53 @@ test('march marker represents a mixed formation with a main model, two companion
 });
 test('march marker renders an enlarged transparent unit model without a circular backdrop',()=>{
  const {c}=fixture();
- assert.equal(c.Game.TestMarchMarkerIconSize(48),36);
- assert.equal(c.Game.TestMarchMarkerIconSize(80),56);
+ assert.equal(c.Game.TestMarchMarkerIconSize(48),48);
+ assert.equal(c.Game.TestMarchMarkerIconSize(80),72);
  const source=fs.readFileSync(path.join(__dirname,'../js/world-map.js'),'utf8');
  assert.doesNotMatch(source,/marker\.backdrop/);
 });
-test('marching models render above city artwork while routes and captions keep their layers',()=>{
+test('march routes render above cities, clouds and captions while shadows stay on the sea',()=>{
  const source=fs.readFileSync(path.join(__dirname,'../js/world-map.js'),'utf8');
  const layers=source.match(/this\.app\.stage\.addChild\(([^;]+)\);/);
  assert.ok(layers);
  assert.deepEqual(layers[1].split(',').map(layer=>layer.trim()),[
-  'this.ground','this.groundDetails','this.terrain','this.routes',
-  'this.markerLayer','this.marchLayer','this.selectionOutline','this.captionLayer'
+  'this.mapShadow','this.ground','this.groundQ2','this.groundQ3','this.groundQ4','this.groundDetails','this.terrain','this.mapBorder','this.cloudShadowLayer',
+  'this.markerLayer','this.marchLayer','this.cloudLayer','this.selectionOutline','this.captionLayer','this.routes'
  ]);
+ assert.match(source,/this\.routes\.addChild\(this\.routeFlow\);/,'路线流动效果应随路线保持在最上层');
 });
 test('city name is shown beside city status instead of below the city artwork',()=>{
  const source=fs.readFileSync(path.join(__dirname,'../js/world-map.js'),'utf8');
  assert.doesNotMatch(source,/marker\.label/);
  assert.match(source,/info = caption \+ '·' \+ status \+ '\\n' \+ coordinates;/);
 });
-test('marching models face the current route direction, including turns and returning marches',()=>{
- const {v,c}=fixture();let now=500;
+test('all unit models remain upright (rotation = 0) and face left or right based on route direction',()=>{
+ const {c}=fixture();
+ const units=['fighter','bomber','transport','scout','truck','motor','armored','ltank','htank','assault','rocket','destroyer','sub','battleship','carrier','infantry','special'];
+ for(const unit of units) {
+  for(const [dx,dy] of [[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]]) {
+   const heading=c.Game.TestMarchHeading([{x:0,y:0},{x:dx,y:dy}],0,unit);
+   assert.equal(heading.rotation, 0, unit+' must remain upright without 2D plane tilt');
+   const expectedScaleX = unit === 'special' ? (dx > 0 ? 1 : -1) : (dx > 0 ? -1 : 1);
+   assert.equal(heading.scaleX, expectedScaleX, unit+' horizontal facing on '+dx+','+dy);
+  }
+ }
+});
+
+test('truck headings follow route segments and reverse with the return route',()=>{
+ const {v,c}=fixture();let now=100;
  c.Date={now:()=>now};c.Game.UNIT_MODEL={truck:'truck.webp',rocket:'rocket.webp'};
  c.Game.DATA={world:{size:200}};
  c.Game.Core={state:{world:{marches:[]}}};
  c.Game.MapChunks.prototype.targets=()=>[];
  const position=()=>({x:0,y:0,set(x,y){this.x=x;this.y=y;}});
  class Sprite {
-  constructor(texture){this.texture=texture;this.anchor={set(){}};this.position=position();this.scale={x:1,y:1};}
+  constructor(texture){this.texture=texture;this.anchor={set(){}};this.position=position();this.scale={x:1,y:1};this.rotation=0;}
   set width(value){this.scale.x=value/(this.texture.orig.width||1);}
   set height(value){this.scale.y=value/(this.texture.orig.height||1);}
  }
  class Container {
-  constructor(){this.children=[];this.position=position();}
+  constructor(){this.children=[];this.position=position();this.scale={x:1,y:1};this.rotation=0;}
   addChild(child){this.children.push(child);}
   removeChild(child){this.children=this.children.filter(item=>item!==child);}
  }
@@ -192,19 +250,84 @@ test('marching models face the current route direction, including turns and retu
  const march={id:1,fromX:100,fromY:100,targetX:104,targetY:102,targetKind:'player',
   route:[[100,100],[102,100],[102,102],[104,102]],army:{truck:10,rocket:5},startAt:0,arriveAt:1000};
  c.Game.Core.state.world.marches=[march];
+ function assertHeading(marker,expectedScaleX){
+  assert.equal(marker.models.rotation, 0, 'truck heading should remain upright on every route segment');
+  assert.equal(marker.models.scale.x, expectedScaleX, 'model should face left/right by horizontal scale');
+  assert.ok(marker.icon.scale.x>0 && marker.companions[0].scale.x>0,'models keep their own positive scale');
+  assert.ok(marker.countText.scale.x>0,'count badge remains readable');
+ }
  v.drawRoutes();let marker=v.marchMarkers.get('1');
- assert.ok(marker.icon.scale.x<0);assert.ok(marker.companions[0].scale.x<0);
- now=750;v.drawRoutes();
- assert.ok(marker.icon.scale.x<0,'north-south segment retains its previous horizontal direction');
- now=900;v.drawRoutes();assert.ok(marker.icon.scale.x<0);
+ assertHeading(marker, -1);
+ now=500;v.drawRoutes();assertHeading(marker, -1);
+ now=900;v.drawRoutes();assertHeading(marker, -1);
  march.route[3]=[101,102];march.targetX=101;now=900;v.drawRoutes();
- assert.ok(marker.icon.scale.x>0,'a leftward turn updates the facing before returning');
+ assertHeading(marker, 1);
  march.route.reverse();march.fromX=101;march.fromY=102;march.targetX=100;march.targetY=100;
- march.returning=true;now=500;v.drawRoutes();
- assert.ok(marker.icon.scale.x<0);assert.ok(marker.companions[0].scale.x<0);
- now=900;v.drawRoutes();
- assert.ok(marker.icon.scale.x>0);assert.ok(marker.companions[0].scale.x>0);
- assert.ok(marker.countText.scale.x>0,'count badge must not be mirrored');
+ march.returning=true;now=100;v.drawRoutes();assertHeading(marker, -1);
+ now=500;v.drawRoutes();assertHeading(marker, -1);
+ now=900;v.drawRoutes();assertHeading(marker, 1);
+ Object.assign(march,{returning:false,fromX:100,fromY:100,targetX:102,targetY:100,route:[[100,100],[102,100]]});
+ now=500;v.drawRoutes();assertHeading(marker, -1);
+ assert.equal(marker.models.rotation, 0, 'rightward truck remains upright');
+ march.route.reverse();Object.assign(march,{returning:true,fromX:102,fromY:100,targetX:100,targetY:100});
+ v.drawRoutes();assertHeading(marker, 1);
+ assert.equal(marker.models.rotation, 0, 'returning truck remains upright');
+ march.returning=false;march.fromX=100;march.fromY=100;
+ march.route=[[100,100],[100,100],[100,98]];march.targetX=100;now=0;
+ v.drawRoutes();assertHeading(marker, 1);
+});
+test('humanoid units follow route heading while retaining their standing artwork',()=>{
+ const {v,c}=fixture();let now=100;
+ c.Date={now:()=>now};c.Game.UNIT_MODEL={infantry:'infantry.webp',special:'special.webp',truck:'truck.webp'};
+ c.Game.DATA={world:{size:200}};
+ c.Game.Core={state:{world:{marches:[]}}};
+ c.Game.MapChunks.prototype.targets=()=>[];
+ const position=()=>({x:0,y:0,set(x,y){this.x=x;this.y=y;}});
+ class Sprite {
+  constructor(texture){this.texture=texture;this.anchor={set(){}};this.position=position();this.scale={x:1,y:1};this.rotation=0;}
+  set width(value){this.scale.x=value/(this.texture.orig.width||1);}
+  set height(value){this.scale.y=value/(this.texture.orig.height||1);}
+ }
+ class Container {
+  constructor(){this.children=[];this.position=position();this.scale={x:1,y:1};this.rotation=0;}
+  addChild(child){this.children.push(child);}
+  removeChild(child){this.children=this.children.filter(item=>item!==child);}
+ }
+ c.PIXI={Container,Sprite,Text:class extends Sprite {constructor(text,style){super(c.PIXI.Texture.EMPTY);this.text=text;this.style=style;}},
+  Texture:{EMPTY:{orig:{width:1,height:1}},from:()=>({orig:{width:100,height:100},baseTexture:{once(){}}})}};
+ v.routes={clear(){},lineStyle(){return this;},moveTo(){return this;},lineTo(){return this;}};
+ v.marchLayer=new Container();v.marchMarkers=new Map();v.wake=()=>{};
+ const march={id:2,fromX:100,fromY:100,targetX:104,targetY:102,targetKind:'player',
+  route:[[100,100],[104,100],[104,102]],army:{infantry:50},startAt:0,arriveAt:1000};
+ c.Game.Core.state.world.marches=[march];
+ now=100;v.drawRoutes();
+ let marker=v.marchMarkers.get('2');
+ assert.equal(marker.models.rotation, 0, 'infantry remains vertically upright');
+ assert.equal(marker.models.scale.x, -1, 'infantry should mirror horizontally when marching right');
+
+ now=700;v.drawRoutes();
+ assert.equal(marker.models.rotation, 0, 'infantry remains vertically upright on vertical routes');
+ assert.equal(marker.models.scale.x, -1, 'infantry keeps facing right when turning down');
+
+ march.route=[[104,100],[100,100]];march.fromX=104;march.targetX=100;march.targetY=100;
+ now=100;v.drawRoutes();
+ assert.equal(marker.models.rotation, 0, 'infantry remains vertically upright on return');
+ assert.equal(marker.models.scale.x, 1, 'infantry should face left when marching left');
+
+ march.army={special:50};v.drawRoutes();
+ assert.equal(marker.models.rotation, 0, 'special remains vertically upright');
+ assert.equal(marker.models.scale.x, -1, 'right-facing special artwork must mirror for leftward travel');
+ march.route=[[100,100],[104,100]];v.drawRoutes();
+ assert.equal(marker.models.scale.x, 1, 'special should use its original right-facing artwork for rightward travel');
+ march.army={infantry:50,special:10};v.drawRoutes();
+ assert.equal(marker.models.scale.x, -1);
+ assert.ok(marker.companions[0].scale.x<0, 'special companion cancels the left-facing infantry parent mirror');
+ assert.ok(Number.isFinite(marker.companions[0].rotation));
+
+ march.army={truck:20,infantry:10};
+ march.route=[[100,100],[100,104]];
+ assert.equal(marker.models.rotation, 0, 'truck remains upright on a vertical route');
+ assert.ok(Number.isFinite(marker.companions[0].rotation), 'infantry companion heading remains finite alongside truck');
 });
 test('a visible resource rooftop outside its ground cell opens the resource instead of building a city',()=>{
  const {v,marker}=fixture();const t={kind:'wild',id:1,type:'ironworks',x:100,y:100};

@@ -25,6 +25,15 @@ public class GuildRelationService {
     private final GuildMemberRepository guildMemberRepository;
     private final GuildRelationRepository guildRelationRepository;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private ChatService chatService;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private GuildChatService guildChatService;
+
+    public void setChatService(ChatService chatService) { this.chatService = chatService; }
+    public void setGuildChatService(GuildChatService guildChatService) { this.guildChatService = guildChatService; }
+
     public GuildRelationService(GuildRepository guildRepository, GuildMemberRepository guildMemberRepository,
                                 GuildRelationRepository guildRelationRepository) {
         this.guildRepository = guildRepository;
@@ -48,12 +57,17 @@ public class GuildRelationService {
             throw new IllegalArgumentException("请选择其他军团");
         }
         Guild target = guildRepository.findById(targetGuildId).orElseThrow(() -> new IllegalArgumentException("目标军团不存在"));
+        Guild myGuild = guildRepository.findById(member.getGuildId()).orElse(null);
+        String myName = myGuild != null ? myGuild.getName() : "本军团";
+        String targetName = target.getName();
+
         String status = normalizeStatus(rawStatus);
         Long low = Math.min(member.getGuildId(), target.getId());
         Long high = Math.max(member.getGuildId(), target.getId());
         GuildRelation relation = guildRelationRepository.findByGuildLowIdAndGuildHighId(low, high).orElse(null);
         if (NEUTRAL.equals(status)) {
             if (relation != null) guildRelationRepository.delete(relation);
+            broadcastRelationNotice(member.getGuildId(), target.getId(), myName, targetName, NEUTRAL);
             return Map.of("success", true, "message", "已设为中立", "status", NEUTRAL);
         }
         if (relation == null) relation = new GuildRelation();
@@ -63,7 +77,37 @@ public class GuildRelationService {
         relation.setUpdatedByPlayerId(playerId);
         relation.setUpdatedAt(System.currentTimeMillis());
         guildRelationRepository.save(relation);
+
+        broadcastRelationNotice(member.getGuildId(), target.getId(), myName, targetName, status);
         return Map.of("success", true, "message", HOSTILE.equals(status) ? "已设为敌对军团" : "已设为友好军团", "status", status);
+    }
+
+    private void broadcastRelationNotice(Long myGuildId, Long targetGuildId, String myName, String targetName, String status) {
+        String worldMsg;
+        String myGuildMsg;
+        String targetGuildMsg;
+
+        if (HOSTILE.equals(status)) {
+            worldMsg = "【外交公告】「" + myName + "」已将「" + targetName + "」设定为敌对阵营！烽烟四起！";
+            myGuildMsg = "【军团外交】我团已将「" + targetName + "」设定为敌对阵营！全军进入战备状态！";
+            targetGuildMsg = "【军团外交】「" + myName + "」已将我团设定为敌对阵营！请全体成员提高警惕！";
+        } else if (FRIENDLY.equals(status)) {
+            worldMsg = "【外交公告】「" + myName + "」与「" + targetName + "」缔结友好同盟！守望相助！";
+            myGuildMsg = "【军团外交】我团与「" + targetName + "」正式结为友好同盟！";
+            targetGuildMsg = "【军团外交】「" + myName + "」与我团正式结为友好同盟！";
+        } else {
+            worldMsg = "【外交公告】「" + myName + "」与「" + targetName + "」解除了外交立场，恢复中立。";
+            myGuildMsg = "【军团外交】我团与「" + targetName + "」已恢复中立关系。";
+            targetGuildMsg = "【军团外交】「" + myName + "」与我团已恢复中立关系。";
+        }
+
+        if (chatService != null) {
+            chatService.sendSystem(worldMsg);
+        }
+        if (guildChatService != null) {
+            guildChatService.sendSystem(myGuildId, myGuildMsg);
+            guildChatService.sendSystem(targetGuildId, targetGuildMsg);
+        }
     }
 
     /** 返回两名玩家所属军团的关系；同军团成员默认视为友好。 */

@@ -7,9 +7,8 @@
     this.minScale = this.scale * 0.5;
     this.width = 1; this.height = 1;
   }
-  // North stays up and south stays down: neither axis shifts the other.
-  // Keep the previous cell's displayed width/depth so artwork retains its size.
-  Camera.projection = { a:2, b:0, c:0, d:1 };
+  // Orthogonal square grid at 0 degrees.
+  Camera.projection = { a: 1, b: 0, c: 0, d: 1 };
   Camera.prototype.delta = function (x, y) {
     var p = Camera.projection, det = (p.a*p.d-p.b*p.c)*this.scale;
     return { x:(p.d*x-p.c*y)/det, y:(p.a*y-p.b*x)/det };
@@ -22,11 +21,13 @@
     // 仅当视口超过世界投影尺寸时提高下限，避免边缘露出地图外。
     return Math.max(this.minScale, this.width / (2 * this.size), this.height / this.size);
   };
+  Camera.overflow = 6;
   Camera.prototype.clamp = function () {
     this.scale = Math.max(this.minimumScale(), this.scale);
     var e = this.extents(), hx = Math.min(this.size / 2, e.x), hy = Math.min(this.size / 2, e.y);
-    this.x = Math.max(hx, Math.min(this.size - hx, this.x));
-    this.y = Math.max(hy, Math.min(this.size - hy, this.y));
+    var overflow = Camera.overflow;
+    this.x = Math.max(hx - overflow, Math.min(this.size - hx + overflow, this.x));
+    this.y = Math.max(hy - overflow, Math.min(this.size - hy + overflow, this.y));
   };
   Camera.prototype.world = function (x, y) {
     var d = this.delta(x - this.width / 2, y - this.height / 2);
@@ -55,9 +56,17 @@
     var after = this.world(px, py);
     this.x += before.x - after.x; this.y += before.y - after.y; this.clamp();
   };
-  Camera.prototype.bounds = function (padding) {
+  Camera.prototype.bounds = function (padding, raw) {
     padding = padding || 0;
     var e = this.extents();
+    if (raw) {
+      return {
+        minX: this.x - e.x - padding,
+        maxX: this.x + e.x + padding,
+        minY: this.y - e.y - padding,
+        maxY: this.y + e.y + padding
+      };
+    }
     return { minX:Math.max(0, this.x-e.x-padding), maxX:Math.min(this.size-1, this.x+e.x+padding),
       minY:Math.max(0, this.y-e.y-padding), maxY:Math.min(this.size-1, this.y+e.y+padding) };
   };

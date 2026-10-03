@@ -59,7 +59,7 @@ public record UnitDef(
         m.put("truck", new UnitDef("truck", "卡车-十轮大卡（CCKW-353）", "inf",
                 2, 1, 1, 1, 5.5, 150, 6, 0, 2, 2, 1, 1, "factory",
                 Map.of("food", 20, "steel", 50, "oil", 15, "rare", 0), null, "land",
-                true, 50, false));
+                true, 500, false));
         m.put("armored", new UnitDef("armored", "装甲车-猎鹿犬防空型（T17E2）", "arm",
                 18, 33.5, 45, 36, 33, 360, 7, 300, 4, 3, 2, 2, "factory",
                 Map.of("food", 40, "steel", 180, "oil", 60, "rare", 20), "motor", "land"));
@@ -91,7 +91,7 @@ public record UnitDef(
         m.put("transport", new UnitDef("transport", "运输机-空中列车（C-47）", "air",
                 1, 1, 1, 1, 10, 220, 8, 0, 5, 16, 3, 2, "airport",
                 Map.of("food", 50, "steel", 180, "oil", 80, "rare", 20), null, "air",
-                true, 80, false));
+                true, 800, false));
         m.put("destroyer", new UnitDef("destroyer", "驱逐舰-弗莱彻级（Fletcher）", "nav",
                 44, 59, 47, 35, 50, 555, 7, 400, 7, 15, 6, 3, "port",
                 Map.of("food", 70, "steel", 450, "oil", 160, "rare", 80), "sub", "sea"));

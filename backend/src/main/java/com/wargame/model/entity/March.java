@@ -112,4 +112,8 @@ public class March extends CityOwnedEntity {
     /** 已到达且等待玩家逐回合指挥的战斗会话。 */
     @Column(name = "battle_id")
     private Long battleId;
+
+    /** 进攻战斗是否胜利，用于返程路线颜色与战况展示 */
+    @Column(name = "battle_won")
+    private Boolean battleWon;
 }

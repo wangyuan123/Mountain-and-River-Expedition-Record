@@ -17,7 +17,8 @@ test('shared catalogs keep stable IDs and ordered navigation', () => {
   const armyIndex = routes.indexOf('buildArmy');
   assert.equal(routes[armyIndex + 1], 'officer');
   assert.equal(constants.navItems[armyIndex + 1].label, '军官');
-  assert.equal(routes.at(-2), 'battleDefaults');
+  assert.equal(routes.at(-3), 'battleDefaults');
+  assert.equal(routes.at(-2), 'rankings');
   assert.equal(routes.at(-1), 'shop');
   assert.equal(new Set(constants.shopItems.map(item => item.id)).size, constants.shopItems.length);
   assert.equal(new Set(constants.rechargePackages.map(item => item.id)).size, constants.rechargePackages.length);
@@ -29,6 +30,9 @@ test('shared catalogs keep stable IDs and ordered navigation', () => {
   assert.ok(shopItemIds.has('box_recruit_defense'), '商城应包含列兵防御装备箱');
   assert.ok(shopItemIds.has('box_officer_defense'), '商城应包含校官防御装备箱');
   assert.ok(shopItemIds.has('box_marshal_defense'), '商城应包含元帅防御装备箱');
+  const cityRenameCard = constants.shopItems.find(item => item.id === 'cityRenameCard');
+  assert.equal(cityRenameCard.price, 60);
+  assert.equal(cityRenameCard.cat, 'util');
 });
 
 test('pages load constants before dependent scripts', () => {

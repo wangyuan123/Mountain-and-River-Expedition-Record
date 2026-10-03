@@ -6,21 +6,23 @@
   <meta name="theme-color" content="#f4f1ea">
   <meta name="description" content="山河远征录：经营城池、统筹资源、协同军团，在共享世界中制定你的战争策略。">
   <title>山河远征录 - 文字战争策略游戏</title>
-  <link rel="stylesheet" href="css/style.css?v=4.17-army-footer">
+  <link rel="stylesheet" href="css/style.css?v=4.18-report-distance">
   <link rel="stylesheet" href="css/guild.css?v=1.2-emblem-presets">
-  <link rel="stylesheet" href="css/world-map.css?v=4.24-icon-only-controls">
+  <link rel="stylesheet" href="css/world-map.css?v=4.30-overscan-canvas">
   <link rel="stylesheet" href="css/dispatch-route.css?v=1.3-guided-gather">
-  <link rel="stylesheet" href="css/themes.css?v=3.3-shop-nav">
+  <link rel="stylesheet" href="css/themes.css?v=3.4-city-rename-cost">
   <link rel="stylesheet" href="css/classic-home.css?v=1.3-shop-nav">
-  <link rel="stylesheet" href="css/onboarding.css?v=1.5-report-return">
+  <link rel="stylesheet" href="css/onboarding.css?v=1.7-gather-countdown-right">
   <link rel="stylesheet" href="css/footer.css?v=1.2-portrait-info">
   <link rel="stylesheet" href="css/protection.css?v=1.0">
   <link rel="stylesheet" href="css/text-actions.css?v=1.3-rename-city">
-  <link rel="stylesheet" href="css/landscape.css?v=1.10-edge-icon-color">
-  <link rel="stylesheet" href="css/login.css?v=1.19-server-option-height">
+  <link rel="stylesheet" href="css/landscape.css?v=1.16-nav-pages">
+  <link rel="stylesheet" href="css/login.css?v=1.20-password-eye-state">
   <link rel="stylesheet" href="css/sound.css?v=1.2-sound-choice">
   <link rel="stylesheet" href="css/prerequisites.css?v=1">
   <link rel="stylesheet" href="css/officer.css?v=1.7-classic-attr-muted">
+  <link rel="stylesheet" href="css/chat-page.css?v=1.1-forum-embed">
+  <link rel="stylesheet" href="css/rankings.css?v=1.0">
 </head>
 <body>
   <div id="loadingOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;justify-content:center;align-items:center;">
@@ -42,18 +44,18 @@
   </div>
   <div id="toast"></div>
 
-  <script src="js/constants.js?v=2.0-sound-choice"></script>
+  <script src="js/constants.js?v=2.3-rankings-tab"></script>
   <script src="js/sound.js?v=1.4-sound-choice"></script>
   <script src="js/theme.js?v=1.2-classic-home-constants"></script>
-  <script src="js/data.js?v=4.18-no-lush-grass"></script>
+  <script src="js/data.js?v=4.19-city-rename-card"></script>
   <script src="js/icons.js?v=1.0-resource-images"></script>
   <script src="js/servers.js?v=1"></script>
   <script src="js/api-client.js?v=3.1-server-regions"></script>
-  <script src="js/api.js?v=3.10-server-regions"></script>
+  <script src="js/api.js?v=3.11-leaderboard"></script>
   <script src="js/ws-client.js?v=3.1-server-regions"></script>
   <script src="js/ws-handlers.js?v=1.7-battle-toast"></script>
   <script src="js/save.js?v=1.1-constants"></script>
-  <script src="js/core.js?v=3.13-footer-hint"></script>
+  <script src="js/core.js?v=3.16-forum-embed"></script>
   <script src="js/prerequisites.js?v=1"></script>
   <script src="js/build.js?v=1.11-sound-choice"></script>
   <script src="js/fort.js?v=1.5-positive-attacks"></script>
@@ -61,34 +63,35 @@
   <script src="js/battle-defaults.js?v=1.6-direct-tactics-save"></script>
   <script src="js/wounded.js?v=1.0"></script>
   <script src="js/officer.js?v=3.3-display-names"></script>
-  <script src="js/tech.js?v=3.1-onboarding-return"></script>
+  <script src="js/tech.js?v=3.2-tech-picker-spotlight"></script>
   <script src="js/map.js?v=1.1"></script>
   <script src="js/world-view.js?v=2.2-cities"></script>
   <script src="js/dispatch-route.js?v=1.1-compact-map"></script>
-  <script src="js/world.js?v=3.15-display-names"></script>
-  <script src="js/map-camera.js?v=1.4-half-zoom"></script>
+  <script src="js/world.js?v=3.16-filter-marching-officer"></script>
+  <script src="js/map-camera.js?v=1.7-orthogonal-square"></script>
   <script src="js/map-chunks.js?v=1.0"></script>
   <script src="js/map-layout.js?v=4.0-hit-test"></script>
-  <script src="js/map-ocean.js?v=1.0"></script>
+  <script src="js/map-ocean.js?v=1.4-cloud-variety"></script>
   <script src="js/map-terrain.js?v=4.12-no-lush-grass"></script>
-  <script src="js/world-map.js?v=4.35-no-lush-grass"></script>
-  <script src="js/depot.js?v=1.7-display-names"></script>
+  <script src="js/world-map.js?v=4.54-upright-all-units"></script>
+  <script src="js/depot.js?v=1.8-city-rename-card"></script>
   <script src="js/shop.js?v=1.2-constants"></script>
   <script src="js/market.js?v=1.1-themed-confirm"></script>
-  <script src="js/chat.js?v=1.1-constants"></script>
+  <script src="js/chat.js?v=1.3-forum-embed"></script>
   <script src="js/mail.js?v=1.1-constants"></script>
-  <script src="js/guild.js?v=2.2-emblem-presets"></script>
+  <script src="js/guild.js?v=2.3-shared-emblem"></script>
+  <script src="js/rankings.js?v=1.0"></script>
   <script src="js/recharge.js?v=3.0-protection-constants"></script>
-  <script src="js/battle.js?v=1.20-battle-defaults-constants"></script>
+  <script src="js/battle.js?v=1.23-report-distance"></script>
   <script src="js/task-quests.js?v=1.1"></script>
   <script src="js/task.js?v=2.3-remove-activities"></script>
-  <script src="js/onboarding.js?v=1.7-guided-gather"></script>
+  <script src="js/onboarding.js?v=1.9-graduation-auto-rewards"></script>
   <script src="js/main-quest.js?v=3.1-remove-activities"></script>
   <script src="js/cities.js?v=3.1-route-preview"></script>
-  <script src="js/main-view.js?v=4.13-army-footer"></script>
-  <script src="js/player-profile.js?v=3.4-display-names"></script>
+  <script src="js/main-view.js?v=4.17-rankings-nav"></script>
+  <script src="js/player-profile.js?v=3.5-city-rename-cost"></script>
   <script src="js/protection.js?v=1.0"></script>
-  <script src="js/main.js?v=3.6-server-menu"></script>
+  <script src="js/main.js?v=3.8-nav-pages"></script>
   <script src="js/account.js?v=3.0-protection"></script>
 </body>
 </html>

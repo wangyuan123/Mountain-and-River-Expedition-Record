@@ -1,0 +1,853 @@
+/* ========================================================================== */
+/* 山河远征录 - 统帅排行榜 (Military Leaderboard System)                      */
+/* 兼顾晴空蓝白、夜航暗黑、公文米白多套战术主题                                 */
+/* ========================================================================== */
+
+.rankings-page {
+  width: 100%;
+  max-width: 1060px;
+  margin: 0 auto;
+  color: var(--ink, #1e293b);
+  letter-spacing: 0;
+  padding: 4px 6px 32px;
+  box-sizing: border-box;
+}
+
+/* 晴空蓝白 / 默认主题配色 */
+.rankings-page {
+  --surface: #ffffff;
+  --surface-sub: #f8fafc;
+  --ink: #0f172a;
+  --muted: #64748b;
+  --line: #e2e8f0;
+  --accent: #0284c7;
+  --accent-soft: #f0f9ff;
+  --accent-glow: rgba(2, 132, 199, 0.2);
+  --danger: #ef4444;
+}
+
+/* 夜航暗黑主题配色覆盖 */
+[data-theme="dark"] .rankings-page {
+  --surface: #111827;
+  --surface-sub: #1f2937;
+  --ink: #f3f4f6;
+  --muted: #9ca3af;
+  --line: #374151;
+  --accent: #38bdf8;
+  --accent-soft: rgba(56, 189, 248, 0.12);
+  --accent-glow: rgba(56, 189, 248, 0.25);
+  --danger: #f87171;
+  color-scheme: dark;
+}
+
+/* 纸质公文主题配色覆盖 */
+[data-theme="paper"] .rankings-page {
+  --surface: #f7f6f0;
+  --surface-sub: #eceae1;
+  --ink: #292524;
+  --muted: #78716c;
+  --line: #d6d3c7;
+  --accent: #3f6212;
+  --accent-soft: rgba(63, 98, 18, 0.12);
+  --accent-glow: rgba(63, 98, 18, 0.2);
+  color-scheme: light;
+}
+
+/* ========================================================================== */
+/* 1. 顶部 Header 战区荣誉殿堂标头                                            */
+/* ========================================================================== */
+.rankings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+.rankings-header-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.rankings-title-badge {
+  font-size: 26px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  background: linear-gradient(135deg, rgba(254, 240, 138, 0.4), rgba(253, 224, 71, 0.15));
+  border: 1px solid rgba(234, 179, 8, 0.35);
+  border-radius: 8px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+.rankings-header h1 {
+  font-size: 19px;
+  line-height: 1.3;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rankings-title-badge-text {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 1px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(2, 132, 199, 0.2);
+}
+.rankings-subtitle {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.rankings-server-tag {
+  background: var(--surface-sub);
+  border: 1px solid var(--line);
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+.rankings-total-tag {
+  font-variant-numeric: tabular-nums;
+}
+.ranking-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--accent);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.ranking-icon-button:hover:not(:disabled) {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+.ranking-refresh-icon {
+  font-size: 16px;
+  line-height: 1;
+  display: inline-block;
+}
+.ranking-icon-button:hover:not(:disabled) .ranking-refresh-icon {
+  transform: rotate(90deg);
+  transition: transform 0.25s ease;
+}
+.ranking-refresh-text {
+  font-size: 12px;
+}
+
+/* ========================================================================== */
+/* 2. 一级 Tab 与 二级筛选器（Tabs & Metric Pills）                           */
+/* ========================================================================== */
+.rankings-nav-group {
+  margin-bottom: 12px;
+}
+.ranking-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 2px solid var(--line);
+  padding-bottom: 0;
+}
+.ranking-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 18px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-bottom: -2px;
+}
+.ranking-tab:hover {
+  color: var(--ink);
+  background: var(--surface-sub);
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+}
+.ranking-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  background: var(--surface);
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+}
+
+.ranking-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 6px 2px 12px;
+}
+.ranking-toolbar-filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ranking-toolbar label {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+.ranking-dropdown-wrap {
+  position: relative;
+  display: inline-block;
+}
+.ranking-dropdown-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 130px;
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.ranking-dropdown-trigger:hover {
+  border-color: var(--accent);
+  background: var(--surface-sub);
+}
+.ranking-dropdown-wrap.open .ranking-dropdown-trigger {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+.ranking-dropdown-current-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1;
+}
+.ranking-dropdown-arrow {
+  font-size: 12px;
+  color: var(--muted);
+  transition: transform 0.2s ease;
+  line-height: 1;
+}
+.ranking-dropdown-wrap.open .ranking-dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+/* 下拉菜单浮层：牢牢绝对定位在下拉框正下方！ */
+.ranking-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 100%;
+  width: max-content;
+  max-width: 220px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  padding: 4px;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-sizing: border-box;
+}
+.ranking-dropdown-menu[hidden] {
+  display: none !important;
+}
+
+.ranking-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+  user-select: none;
+}
+.ranking-dropdown-item:hover {
+  background: var(--surface-sub);
+  color: var(--accent);
+}
+.ranking-dropdown-item.selected {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+.dropdown-item-check {
+  width: 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  display: inline-block;
+  text-align: center;
+}
+.dropdown-item-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ranking-total {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ========================================================================== */
+/* 3. “我的战位” 指挥官荣誉专属档案卡                                          */
+/* ========================================================================== */
+.ranking-mine {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  min-height: 82px;
+  padding: 14px 20px;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 5px solid var(--accent);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  margin-bottom: 14px;
+  position: relative;
+  overflow: hidden;
+}
+.ranking-mine-identity, .ranking-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.ranking-mine-identity {
+  flex: 1 1 220px;
+}
+.ranking-mine-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+.ranking-mine-avatar-wrap .ranking-avatar,
+.ranking-mine-avatar-wrap .guild-emblem,
+.ranking-mine-avatar-wrap .guild-emblem-legacy {
+  width: 46px;
+  height: 46px;
+  border-radius: 8px;
+  border: 2px solid var(--accent);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+.ranking-mine-identity strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.ranking-mine-identity span {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  margin-bottom: 3px;
+  font-weight: 500;
+}
+.ranking-mine-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 0 0 auto;
+}
+.ranking-mine-stat > span {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+.ranking-mine-stat strong {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.ranking-mine-rank-val.top-gold {
+  color: #b45309;
+}
+.ranking-mine-rank-val.top-silver {
+  color: #334155;
+}
+.ranking-mine-rank-val.top-bronze {
+  color: #c2410c;
+}
+.ranking-mine-score-val {
+  color: var(--accent);
+}
+.ranking-mine-placeholder {
+  color: var(--muted);
+  font-size: 13px;
+}
+.ranking-locate-btn, .ranking-text-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  margin-left: auto;
+}
+.ranking-locate-btn:hover:not(:disabled), .ranking-text-button:hover:not(:disabled) {
+  background: var(--accent);
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* ========================================================================== */
+/* 4. 排行榜表格与行设计（Podium Top 3, Badges & Mine Row）                    */
+/* ========================================================================== */
+.ranking-results {
+  min-height: 240px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+.ranking-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 13px;
+}
+.ranking-table th {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  padding: 12px 14px;
+  background: var(--surface-sub);
+  border-bottom: 1px solid var(--line);
+  letter-spacing: 0.5px;
+}
+.ranking-table th:first-child {
+  width: 78px;
+  text-align: center;
+}
+.ranking-table th:nth-child(3) {
+  width: 170px;
+  text-align: right;
+}
+.ranking-table th:last-child {
+  width: 150px;
+  text-align: right;
+}
+.ranking-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+  transition: background 0.12s ease;
+}
+.ranking-table td:first-child {
+  text-align: center;
+}
+.ranking-table td:last-child {
+  text-align: right;
+  color: var(--muted);
+}
+.ranking-row:hover {
+  background: var(--surface-sub);
+}
+
+/* 冠亚季军领奖台专属尊荣行视觉 (Top 3 Rows) */
+.ranking-row-top1 {
+  background: linear-gradient(90deg, rgba(254, 243, 199, 0.6) 0%, rgba(255, 255, 255, 0.25) 100%);
+}
+.ranking-row-top1:hover {
+  background: linear-gradient(90deg, rgba(254, 243, 199, 0.85) 0%, rgba(255, 255, 255, 0.45) 100%);
+}
+.ranking-row-top2 {
+  background: linear-gradient(90deg, rgba(241, 245, 249, 0.85) 0%, rgba(255, 255, 255, 0.3) 100%);
+}
+.ranking-row-top2:hover {
+  background: linear-gradient(90deg, rgba(241, 245, 249, 1) 0%, rgba(255, 255, 255, 0.5) 100%);
+}
+.ranking-row-top3 {
+  background: linear-gradient(90deg, rgba(254, 237, 222, 0.55) 0%, rgba(255, 255, 255, 0.25) 100%);
+}
+.ranking-row-top3:hover {
+  background: linear-gradient(90deg, rgba(254, 237, 222, 0.8) 0%, rgba(255, 255, 255, 0.45) 100%);
+}
+
+/* 暗黑主题下的领奖台色彩适配 */
+[data-theme="dark"] .ranking-row-top1 {
+  background: linear-gradient(90deg, rgba(234, 179, 8, 0.16) 0%, rgba(17, 24, 39, 0.25) 100%);
+}
+[data-theme="dark"] .ranking-row-top1:hover {
+  background: linear-gradient(90deg, rgba(234, 179, 8, 0.24) 0%, rgba(17, 24, 39, 0.4) 100%);
+}
+[data-theme="dark"] .ranking-row-top2 {
+  background: linear-gradient(90deg, rgba(148, 163, 184, 0.16) 0%, rgba(17, 24, 39, 0.25) 100%);
+}
+[data-theme="dark"] .ranking-row-top2:hover {
+  background: linear-gradient(90deg, rgba(148, 163, 184, 0.24) 0%, rgba(17, 24, 39, 0.4) 100%);
+}
+[data-theme="dark"] .ranking-row-top3 {
+  background: linear-gradient(90deg, rgba(249, 115, 22, 0.16) 0%, rgba(17, 24, 39, 0.25) 100%);
+}
+[data-theme="dark"] .ranking-row-top3:hover {
+  background: linear-gradient(90deg, rgba(249, 115, 22, 0.24) 0%, rgba(17, 24, 39, 0.4) 100%);
+}
+
+/* 当前玩家自身所在行高亮 */
+.ranking-row-mine {
+  background: var(--accent-soft) !important;
+  position: relative;
+}
+.ranking-row-mine td:first-child {
+  position: relative;
+}
+.ranking-row-mine td:first-child::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 4px;
+  background: var(--accent);
+  border-radius: 0 4px 4px 0;
+  box-shadow: 1px 0 4px var(--accent-glow);
+}
+
+/* 名次徽章 (Rank Badges) */
+.ranking-position {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 32px;
+  height: 28px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--surface-sub);
+  border: 1px solid var(--line);
+  box-sizing: border-box;
+}
+.ranking-medal {
+  font-size: 14px;
+  line-height: 1;
+}
+.ranking-num {
+  line-height: 1;
+}
+
+.ranking-top-1 {
+  border-radius: 6px;
+  color: #78350f !important;
+  background: linear-gradient(135deg, #fef08a 0%, #fde047 100%) !important;
+  border: 1px solid #eab308 !important;
+  box-shadow: 0 1px 4px rgba(202, 138, 4, 0.35);
+}
+.ranking-top-2 {
+  border-radius: 6px;
+  color: #1e293b !important;
+  background: linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%) !important;
+  border: 1px solid #94a3b8 !important;
+  box-shadow: 0 1px 4px rgba(100, 116, 139, 0.25);
+}
+.ranking-top-3 {
+  border-radius: 6px;
+  color: #7c2d12 !important;
+  background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%) !important;
+  border: 1px solid #f97316 !important;
+  box-shadow: 0 1px 4px rgba(234, 88, 12, 0.25);
+}
+
+/* 玩家头像与身份信息 */
+.ranking-avatar, .rankings-page .guild-emblem, .rankings-page .guild-emblem-legacy {
+  display: block;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--surface-sub);
+}
+.rankings-page .guild-emblem {
+  object-fit: contain;
+}
+.rankings-page .guild-emblem-legacy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  overflow: hidden;
+}
+.ranking-name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.ranking-you {
+  background: var(--accent);
+  color: #ffffff !important;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 10px;
+  line-height: 1.4;
+  letter-spacing: 0.5px;
+  box-shadow: 0 1px 2px var(--accent-glow);
+}
+.ranking-detail {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 3px;
+  overflow-wrap: anywhere;
+}
+
+/* 核心数值展示 (Score) */
+.ranking-score {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.ranking-score strong {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0.3px;
+}
+.ranking-mobile-secondary {
+  display: none;
+  color: var(--muted);
+  font-size: 10px;
+  margin-top: 3px;
+}
+
+/* 军衔徽章胶囊 (Military Rank Badge) */
+.ranking-rank-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--surface-sub);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+.ranking-rank-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: var(--accent);
+}
+.ranking-rank-ico svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+/* 状态提示 */
+.ranking-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 240px;
+  padding: 32px 24px;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.ranking-status.error {
+  color: var(--danger);
+}
+
+/* ========================================================================== */
+/* 5. 分页与规则折叠                                                         */
+/* ========================================================================== */
+.ranking-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 4px 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.ranking-pagination {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.ranking-pagination > span {
+  min-width: 54px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.ranking-rules {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 18px;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.8;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+.ranking-rules summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-weight: 600;
+  outline: none;
+}
+.ranking-rules p {
+  margin: 6px 0 0;
+}
+
+.rankings-page button:disabled {
+  opacity: .45;
+  cursor: default;
+}
+.rankings-page button:focus-visible,
+.ranking-toolbar select:focus-visible,
+.ranking-row-mine:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.ranking-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ========================================================================== */
+/* 6. 移动端窄屏响应式适配                                                   */
+/* ========================================================================== */
+@media (max-width: 700px) {
+  .ranking-table .ranking-secondary {
+    display: none;
+  }
+  .ranking-mobile-secondary {
+    display: block;
+  }
+  .ranking-table th:first-child {
+    width: 48px;
+    padding: 10px 4px;
+  }
+  .ranking-table th:nth-child(3) {
+    width: 110px;
+  }
+  .ranking-table th, .ranking-table td {
+    padding: 10px 6px;
+  }
+  .ranking-mine {
+    gap: 12px 16px;
+    padding: 12px 14px;
+  }
+  .ranking-mine-identity {
+    flex-basis: 100%;
+  }
+  .ranking-mine-stat strong {
+    font-size: 14px;
+  }
+  .ranking-identity {
+    gap: 8px;
+  }
+  .ranking-avatar, .rankings-page .guild-emblem, .rankings-page .guild-emblem-legacy {
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
+  }
+  .ranking-header {
+    padding: 10px 14px;
+  }
+  .rankings-title-badge {
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+  }
+  .rankings-header h1 {
+    font-size: 16px;
+  }
+  .ranking-tab {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+}

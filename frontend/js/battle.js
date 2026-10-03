@@ -210,6 +210,46 @@ window.Game = window.Game || {};
       }).length;
     },
 
+    /** 每回合整理敌我记录；含击杀的回合先展示交火前机动，避免历史日志误示阵亡后行动。 */
+    groupRoundSideLogs: function (logs) {
+      var grouped = [];
+      var mine = [];
+      var enemy = [];
+      var pending = [];
+      function flushSides() {
+        if (pending.some(function (line) { return line.indexOf(' 击毁') >= 0; })) {
+          // 历史战报可能把击杀记录排在敌方机动前；先展示未开火的机动，再保留交火顺序。
+          var movement = [];
+          var combat = [];
+          for (var j = 0; j < pending.length; j++) {
+            var entry = pending[j];
+            (entry.indexOf(' 击毁') >= 0 ? combat : movement).push(entry);
+          }
+          grouped.push.apply(grouped, movement);
+          grouped.push.apply(grouped, combat);
+        } else {
+          grouped.push.apply(grouped, mine);
+          grouped.push.apply(grouped, enemy);
+        }
+        mine = [];
+        enemy = [];
+        pending = [];
+      }
+      for (var i = 0; i < logs.length; i++) {
+        var line = String(logs[i] || '');
+        var side = /^(我方|敌方)/.exec(line);
+        if (side) {
+          (side[1] === '我方' ? mine : enemy).push(line);
+          pending.push(line);
+        } else {
+          flushSides();
+          grouped.push(line);
+        }
+      }
+      flushSides();
+      return grouped;
+    },
+
     wildOccupation: function (r) {
       var subject = r.subject || '';
       var legacyWild = /^(占领野地|掠夺野地)/.test(subject);
@@ -228,6 +268,20 @@ window.Game = window.Game || {};
         detail: r.win === false ? '本次战斗未获胜，未能占领该野地。' : '本次战斗获胜，但结算记录为未占领；战报未记录具体原因。'
       };
       return { text: '占领结果未记录', detail: '该历史战报仅记录战斗胜负，无法确认当时是否占领；可前往野地查看当前归属。', tone: '' };
+    },
+
+    /**
+     * 根据目标类型选择征服结果文案，海上编队和陆上据点均不应显示为城市。
+     * @param {Object} r - 战报数据
+     * @returns {{result: string, detail: string}} 结果徽章与战报详情文案
+     */
+    conquestOutcome: function (r) {
+      var targetName = String(r.toName || r.targetName || '');
+      var isFleet = r.targetSea === true || r.sea === true ||
+        /舰队|航母编队|潜艇支队|驱逐舰队/.test(targetName);
+      if (isFleet) return { result: '击溃成功', detail: '★ 已成功击溃该舰队' };
+      if (r.targetType === 'bandit') return { result: '剿寇成功', detail: '★ 已成功击溃该据点' };
+      return { result: '征服成功', detail: '★ 已成功征服该城市' };
     },
 
     /**
@@ -284,7 +338,7 @@ window.Game = window.Game || {};
       if (occupation) h += '<div class="rc-line"><b>占领结果:</b> ' + occupation.text + '</div>';
       h += '</div>';
       h += '<div id="rdetail_' + r.id + '" class="rc-expand" style="display:none"></div>';
-      h += '<div class="btn-row" style="margin-top:4px"><button id="rcta_' + r.id + '" class="btn sm" onclick="Game.Battle.viewReportDetail(\'' + r.id + '\')">查看完整战报</button></div>';
+      h += '<div class="btn-row" style="margin-top:4px"><button id="rcta_' + r.id + '" class="btn sm" onclick="Game.Battle.viewReportDetail(\'' + r.id + '\')">查看完整战报</button><button class="btn sm" onclick="Game.Core.openForum({ shareReportId: \'' + r.id + '\' })" style="margin-left:6px;background:var(--accent,#8c6d3b);color:#fff">🎖️ 分享到论坛</button></div>';
       h += '</div>';
       return h;
     },
@@ -380,8 +434,9 @@ window.Game = window.Game || {};
       h += '<div class="rb-line"><b>时　间:</b> ' + ts + '</div>';
       var occupation = defense ? null : this.wildOccupation(r);
 
+      var conquestOutcome = this.conquestOutcome(r);
       var resText = defense ? (won ? '防守成功' : '防守失败') : (won ? '战斗大捷' : '战斗失利');
-      if (!defense && r.cityConquered) resText = '征服成功';
+      if (!defense && r.cityConquered) resText = conquestOutcome.result;
 
       h += '<div class="rb-line"><b>' + (occupation ? '战斗结果' : '结　果') + ':</b> <span class="rb-res-badge ' + (won ? 'w' : 'l') + '">' + resText + '</span></div>';
       if (occupation) {
@@ -408,7 +463,7 @@ window.Game = window.Game || {};
         narrative += won ? ' 我方攻势势如破竹，战役获得胜利！' : ' 我方遭受强烈阻击，战役未能获胜。';
       }
       h += '<div class="rb-narrative">' + narrative + '</div>';
-      if (!defense && r.cityConquered) h += '<div class="rb-line" style="color:#d97706;font-weight:600">★ 已成功征服该城市</div>';
+      if (!defense && r.cityConquered) h += '<div class="rb-line" style="color:#d97706;font-weight:600">' + conquestOutcome.detail + '</div>';
       var pl = this._formatRes(r.plunder);
       var settlement = this.renderBattleSettlement(r, defense, pl);
       if (settlement) h += settlement;
@@ -1457,8 +1512,15 @@ window.Game = window.Game || {};
         h += '</div>';
       } else {
         h += this.renderReportBoard(r, false);
+        // 规则版本保留在原始战报中供复盘，页面只展示与战场相关的初始距离。
+        var initialDistance = '';
         var logs = Array.isArray(r.roundLogs) ? r.roundLogs.filter(function (line) {
-          return String(line || '').trim().indexOf('战场部署完成。') !== 0;
+          var text = String(line || '').trim();
+          if (/^战场初始距离\s*[:：]/.test(text)) {
+            if (!initialDistance) initialDistance = text;
+            return false;
+          }
+          return !/^规则版本\s*[:：]/.test(text) && text.indexOf('战场部署完成。') !== 0;
         }) : [];
         var roundCount = this.reportRoundCount(logs);
         var countText = roundCount > 0 ? ('共 ' + roundCount + ' 回合') : (logs.length > 0 ? (logs.length + ' 条记录') : '');
@@ -1473,9 +1535,11 @@ window.Game = window.Game || {};
         h += '<div id="battleDetailsBox" style="display:block;margin-top:8px;">';
         h += '<div class="zone-head">【回合战斗细节】</div>';
         h += this.renderCommanderPanel(r.commanders, this.isDefenderReport(r) ? 'defender' : 'attacker');
+        if (initialDistance) h += '<div class="rb-initial-distance">' + G.escapeHtml(initialDistance) + '</div>';
         h += '<div class="blog" style="max-height:480px;overflow-y:auto;">';
-        for (var j = 0; j < logs.length; j++) {
-          var line = String(logs[j] || '');
+        var displayLogs = this.groupRoundSideLogs(logs);
+        for (var j = 0; j < displayLogs.length; j++) {
+          var line = displayLogs[j];
           var lineCls = 'logline';
           if (line.indexOf('我方将领加成：') === 0) lineCls += ' mine commander-bonus';
           else if (line.indexOf('敌方将领加成：') === 0) lineCls += ' enemy commander-bonus';

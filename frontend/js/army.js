@@ -173,17 +173,19 @@ window.Game = window.Game || {};
     queue.forEach(function (item) {
       var unit = D.units[item.unitType] || { name: item.unitType };
       var left = Math.max(0, Math.ceil((item.finishesAt - now) / 1000));
-      // 加速按钮：拥有任意加速符时可点击；否则显示禁用提示，文字精简避免折行
+      // 只有剩余时间不超过 5 分钟时才显示免费加速；其余情况统一走普通加速流程。
       var speedBtn;
-      if (totalSpeed > 0) {
+      if (canFreeSpeedUp(item)) {
+        speedBtn = '<button type="button" class="btn ok sm army-queue-btn army-free-speedup-btn" title="免费加速" onclick="Game.Army.freeSpeedUp(' + item.id + ')">⚡ 免费加速</button>';
+      } else if (totalSpeed > 0) {
         speedBtn = '<button type="button" class="btn ok sm army-queue-btn" title="加速生产" onclick="Game.Army.openSpeedUpPicker(' + item.id + ')">⚡加速</button>';
       } else {
-        speedBtn = '<button type="button" class="btn sm army-queue-btn disabled" disabled title="背包暂无加速符">⚡加速</button>';
+        speedBtn = '<button type="button" class="btn sm army-queue-btn" title="加速生产" onclick="Game.Army.openSpeedUpPicker(' + item.id + ')">⚡加速</button>';
       }
       var iconHtml = (G && typeof G.getUnitModelIconHtml === 'function')
         ? G.getUnitModelIconHtml(item.unitType, unit.name, 'army-queue-icon')
         : (G && typeof G.getUnitIconHtml === 'function' ? G.getUnitIconHtml(item.unitType, unit.name, 'army-queue-icon') : '');
-      h += '<div class="menu-item ok army-queue-item">' +
+      h += '<div class="menu-item ok army-queue-item" data-unit="' + item.unitType + '" id="army-queue-item-' + item.id + '">' +
         '<div class="army-queue-info">' +
           iconHtml +
           '<div class="army-queue-text">' +
@@ -198,6 +200,56 @@ window.Game = window.Game || {};
       '</div>';
     });
     el.innerHTML = h;
+
+    var ob = G.Onboarding && G.Onboarding.state;
+    var obBar = typeof document !== 'undefined' && document.getElementById ? document.getElementById('onboardingBar') : null;
+    if (currentTab === 'queue' && !obBar && ob && !ob.guidedAction && ob.snoozedFor && ob.data && ob.data.current && ob.data.current.id === ob.snoozedFor) {
+      var unitType = ob.snoozedFor === 'train' ? 'truck' : (ob.snoozedFor === 'recon' ? 'scout' : ob.snoozedFor);
+      var currentItem = el.querySelector('.army-queue-item[data-unit="' + unitType + '"]');
+      var speedEl = currentItem ? (currentItem.querySelector('.army-free-speedup-btn') || currentItem.querySelector('.army-queue-btn')) : null;
+      if (speedEl && G.Onboarding.showSpotlight) {
+        G.Onboarding.showSpotlight(speedEl);
+      }
+    } else if (currentTab === 'units' && !obBar && ob && ob.guidedAction && ob.guidedAction.route === 'army' && ob.guidedAction.building) {
+      var uCard = document.getElementById('unit-card-' + ob.guidedAction.building);
+      if (uCard) {
+        var rBtn = uCard.querySelector('.recruit-btn:not(.warn)') || uCard.querySelector('button.recruit-btn');
+        var curTarget = G.Onboarding.getCurrentSpotlightTarget && G.Onboarding.getCurrentSpotlightTarget();
+        if (rBtn && curTarget !== rBtn && G.Onboarding.showSpotlight) {
+          G.Onboarding.showSpotlight(rBtn);
+        }
+      }
+    } else if (obBar && G.Onboarding && G.Onboarding.clearSpotlight) {
+      G.Onboarding.clearSpotlight();
+    }
+  }
+
+  function canFreeSpeedUp(item) {
+    if (!item || !item.finishesAt) return false;
+    var rem = Math.max(0, Math.ceil((item.finishesAt - Date.now()) / 1000));
+    return rem <= 300;
+  }
+
+  var freeSpeedUpPending = {};
+  function freeSpeedUp(queueId) {
+    if (freeSpeedUpPending[queueId]) return Promise.resolve(null);
+    freeSpeedUpPending[queueId] = true;
+    return G.API.freeArmySpeedUp(queueId).then(function (resp) {
+      if (!resp || !resp.success) {
+        G.toast((resp && resp.message) || '免费加速失败');
+        return;
+      }
+      G.toast(resp.message || '⚡ 免费加速成功，部队生产完成！');
+      if (G.Onboarding && G.Onboarding.clearSpotlight) G.Onboarding.clearSpotlight();
+      if (G.MainQuest && G.MainQuest.refresh) G.MainQuest.refresh();
+      if (G.Onboarding && G.Onboarding.refresh) G.Onboarding.refresh();
+      updateQueue(false);
+      if (Core.route === 'army') Core.render();
+    }).catch(function (err) {
+      G.toast(err.message || '免费加速失败');
+    }).finally(function () {
+      delete freeSpeedUpPending[queueId];
+    });
   }
 
   // 弹出加速符选择面板
@@ -286,6 +338,8 @@ window.Game = window.Game || {};
 
   var Army = {
     setTab: setTab,
+    canFreeSpeedUp: canFreeSpeedUp,
+    freeSpeedUp: freeSpeedUp,
     onSliderChange: function (id, val) {
       var num = parseInt(val, 10);
       if (isNaN(num)) num = 0;
@@ -490,6 +544,26 @@ window.Game = window.Game || {};
 
     setUnitExpanded: function (id, val) {
       expandedUnits[id] = !!val;
+      var card = typeof document !== 'undefined' && document.getElementById ? document.getElementById('unit-card-' + id) : null;
+      if (card) {
+        var details = card.querySelector('.unit-card-details');
+        var toggle = card.querySelector('.unit-card-toggle');
+        if (expandedUnits[id]) {
+          card.classList.add('expanded');
+          if (details) details.style.display = 'block';
+          if (toggle) {
+            toggle.innerHTML = '收起 &#9652;';
+            toggle.classList.add('active');
+          }
+        } else {
+          card.classList.remove('expanded');
+          if (details) details.style.display = 'none';
+          if (toggle) {
+            toggle.innerHTML = '详情 &#9662;';
+            toggle.classList.remove('active');
+          }
+        }
+      }
     },
 
     renderView: function (v) {

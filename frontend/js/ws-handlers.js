@@ -87,6 +87,7 @@ window.Game = window.Game || {};
         var prev = prevMap[String(m.id)];
         return prev ? Object.assign({}, prev, m) : m;
       });
+      if (G.World && G.World.checkMarchArrivals) G.World.checkMarchArrivals();
     }
     if (Array.isArray(data.incoming) && G.state.world) {
       var previousIncoming = G.state.world.incoming || [];
@@ -147,6 +148,9 @@ window.Game = window.Game || {};
 
   // march handler - march arrived, gathering complete, return arrived
   G.WS.on('march', function (data) {
+    if (data && (data.event === 'arrived' || data.event === 'scoutComplete')) {
+      if (G.World && G.World.triggerBattleAlert) G.World.triggerBattleAlert(data);
+    }
     // Show toast notification
     var messages = {
       arrived: '部队已到达目标: ' + (data.targetName || ''),
@@ -198,6 +202,19 @@ window.Game = window.Game || {};
   // battle handler - battle report
   G.WS.on('battle', function (data) {
     if (!data) return;
+    if (G.World && G.World.triggerBattleAlert) G.World.triggerBattleAlert(data);
+    if (data.win && G.state && G.state.world && Array.isArray(G.state.world.marches)) {
+      var toX = data.toX != null ? data.toX : data.targetX;
+      var toY = data.toY != null ? data.toY : data.targetY;
+      G.state.world.marches.forEach(function (m) {
+        if (m && m.returning) {
+          if ((toX != null && m.originX === toX && m.originY === toY) || (data.marchId && String(m.id) === String(data.marchId))) {
+            m.win = true;
+            m.battleWon = true;
+          }
+        }
+      });
+    }
     if (data.win) {
       var plunder = data.plunder || {};
       var names = G.Constants.battleResourceNames;
@@ -291,6 +308,10 @@ window.Game = window.Game || {};
 
   G.WS.on('chat', function (data) {
     if (G.Chat && G.Chat.receive) G.Chat.receive(data);
+  });
+
+  G.WS.on('guild_chat', function (data) {
+    if (G.Chat && G.Chat.receiveGuild) G.Chat.receiveGuild(data);
   });
 
   // mail handler - 收到新邮件时刷新未读

@@ -329,6 +329,38 @@ public class ArmyService {
         }
     }
 
+    /** 免费完成当前城市的指定部队生产任务，沿用正常完工的入库和任务结算。 */
+    @Transactional
+    public Map<String, Object> freeSpeedUp(Long playerId, Long queueId) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("success", false);
+        playerRepository.lockById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
+        ArmyProductionQueue target = null;
+        if (queueId != null) {
+            target = armyProductionQueueRepository.findById(queueId).orElse(null);
+        } else {
+            List<ArmyProductionQueue> list = armyProductionQueueRepository.findByPlayerIdAndCitySlotOrderByStartedAtAscIdAsc(playerId, cityScope.slot(playerId));
+            if (!list.isEmpty()) target = list.get(0);
+        }
+        if (target == null || !playerId.equals(target.getPlayerId()) || target.getCitySlot() != cityScope.slot(playerId)) {
+            result.put("message", "指定的生产任务不存在或已完成");
+            return result;
+        }
+        long now = System.currentTimeMillis();
+        if (target.getFinishesAt() != null && target.getFinishesAt() - now > 300 * 1000L) {
+            result.put("message", "剩余生产时间不超过5分钟时才可免费加速");
+            return result;
+        }
+        target.setFinishesAt(now);
+        armyProductionQueueRepository.save(target);
+        completeProduction(playerId, now);
+        result.put("success", true);
+        result.put("completed", true);
+        result.put("queueId", target.getId());
+        result.put("message", "⚡ 免费加速成功，部队生产完成！");
+        return result;
+    }
+
     // ================================================================
     //  useSpeedUp - 使用加速符对指定生产订单立即完成或缩短时间
     // ================================================================

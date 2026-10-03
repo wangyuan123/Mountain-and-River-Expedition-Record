@@ -78,6 +78,11 @@
       var info = D.items[itemId] || equipmentInfo(itemId);
       if (!info) return;
 
+      if (itemId === 'cityRenameCard') {
+        G.Main.promptRenameCityInDrawer();
+        return;
+      }
+
       if (info.cat === 'equipment') {
         Depot._depotItem = itemId;
         s._depotSelectOfficer = itemId;
@@ -254,6 +259,10 @@
     confirmRename: function () {
       var o = Depot._pendingOfficer;
       if (!o) { G.go('depot'); return; }
+      if (Number(o.nameRenameAvailableAt) > Date.now()) {
+        G.toast('这名军官今天已改名，请明日 0:00 后再试');
+        return;
+      }
       var el = document.getElementById('renameInput');
       var name;
       try {
@@ -354,7 +363,7 @@
               if (info.cat === 'jewelry' && !info.isBox && iid.indexOf('box_') !== 0) {
                 btnHtml = '<button type="button" class="btn depot-btn" onclick="Game.go(\'mainQuest\')">[前往晋升军衔]</button>';
               } else {
-                var btnLabel = (info.isBox || iid.indexOf('box_') === 0) ? '开启宝箱' : (iid === 'expBook' || iid === 'expBookAdv' || iid === 'expBookMax' || iid === 'loyaltyBox' || iid === 'renameCard' || iid === 'skillBook' || iid.indexOf('skillBook_') === 0 || iid === 'starUp') ? '选择军官使用' : '使用';
+                var btnLabel = iid === 'cityRenameCard' ? '修改城市名' : (info.isBox || iid.indexOf('box_') === 0) ? '开启宝箱' : (iid === 'expBook' || iid === 'expBookAdv' || iid === 'expBookMax' || iid === 'loyaltyBox' || iid === 'renameCard' || iid === 'skillBook' || iid.indexOf('skillBook_') === 0 || iid === 'starUp') ? '选择军官使用' : '使用';
                 btnHtml = '<button type="button" class="btn depot-btn" onclick="Game.Depot.useItem(\'' + iid + '\')">[' + btnLabel + ']</button>';
               }
             }
@@ -399,7 +408,7 @@
       h += '</div>';
       h += '<div class="menu">';
       if (!s.officers || !s.officers.length) {
-        h += '<div class="desc">暂无军官,请前往【军事】→【陆军讲武堂】招募</div>';
+        h += '<div class="desc">暂无军官,请前往【军事】→【军校】招募</div>';
       }
       for (var i = 0; i < (s.officers || []).length; i++) {
         var o = s.officers[i];
@@ -466,6 +475,7 @@
       h += '<div class="d">为 <b>' + G.escapeHtml(o.name) + '</b> 更换新名字</div>';
       h += '<div class="edit-row" style="margin-top:6px"><label>新名字</label><input id="renameInput" class="qty" style="width:100%" value="' + G.escapeHtml(o.name) + '" /></div>';
       h += '<div class="d" style="color:var(--muted);margin-top:4px">最多12个字符，可用标点、符号和 emoji；不能换行。</div>';
+      h += '<div class="d" style="color:var(--muted);margin-top:4px">每天可修改一次，北京时间 0:00 重置。' + (Number(o.nameRenameAvailableAt) > Date.now() ? '这名军官今日已修改。' : '') + '</div>';
       h += '<div class="d" style="color:var(--muted);margin-top:4px">改名后将消耗 1 张【军官改名卡】,不可撤销</div>';
       h += '<div class="btn-row" style="margin-top:6px"><button type="button" class="btn depot-btn" onclick="Game.Depot.confirmRename()">[确认改名]</button><button type="button" class="btn depot-btn warn" onclick="Game.Depot.cancelRename()">[取消(退回军官改名卡)]</button></div>';
       h += '</div>';

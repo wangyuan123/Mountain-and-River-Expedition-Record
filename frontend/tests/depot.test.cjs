@@ -90,3 +90,27 @@ test('军官装备分类正确识别与渲染防御装备', () => {
   assert.match(html, /onclick="Game\.Depot\.useItem\('recruit_defense_weapon'\)"/);
 });
 
+test('改名卡对当天已改名军官不发送使用请求', () => {
+  const G = setup();
+  const messages = [];
+  G.toast = message => messages.push(message);
+  G.escapeHtml = value => String(value);
+  G.Depot._pendingOfficer = { id: 1, name: '张辽', nameRenameAvailableAt: Date.now() + 60000 };
+  G.API = { depotUse() { throw Error('不应使用改名卡'); } };
+  const view = { innerHTML: '' };
+  G.Depot.renderRename(view);
+  assert.match(view.innerHTML, /北京时间 0:00 重置/);
+  G.Depot.confirmRename();
+  assert.match(messages[0], /请明日 0:00 后再试/);
+});
+
+test('城市改名卡从仓库打开城市改名窗口', () => {
+  const G = setup();
+  let opened = 0;
+  G.DATA.items.cityRenameCard = { cat: 'util', name: '城市改名卡', icon: '🏷️' };
+  G.state.items.cityRenameCard = 1;
+  G.Main = { promptRenameCityInDrawer() { opened++; } };
+  G.API = { depotUse() { throw Error('改名卡应由城市改名接口消耗'); } };
+  G.Depot.useItem('cityRenameCard');
+  assert.equal(opened, 1);
+});

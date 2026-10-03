@@ -63,28 +63,31 @@ test('expanded view finds a city anchored across a chunk boundary', () => {
   assert.equal(layout.pick(targets,16.8,16.8,200),city);
   assert.ok(camera.chunks().some(chunk=>chunk.cx===0&&chunk.cy===0));
 });
-test('north-up cells select their full displayed footprint with no diagonal offset', () => {
+test('orthogonal square cells select their full displayed footprint', () => {
   const cam=new c.Game.MapCamera(200,100.5,100.5,48);cam.width=390;cam.height=550;
   const npc={kind:'npc',id:5,x:100,y:100};
   const points=cam.polygon(100,100,1);
-  assert.deepEqual(Array.from(points),[147,251,243,251,243,299,147,299]);
-  const empty=cam.world(146,252);
+  const expected=[171, 251, 219, 251, 219, 299, 171, 299];
+  for(let i=0;i<points.length;i++) assert.ok(Math.abs(points[i]-expected[i])<1e-9);
+  const empty=cam.world(170,250);
   assert.equal(layout.pick([npc],empty.x,empty.y,200),null);
-  for(const [sx,sy] of [[148,252],[242,252],[242,298],[148,298],[195,275]]) {
+  for(const [sx,sy] of [[195,275],[175,255],[215,255],[215,295],[175,295]]) {
     const p=cam.world(sx,sy);assert.equal(layout.pick([npc],p.x,p.y,200),npc);
   }
 });
-test('cardinal neighbors stay aligned on screen at every zoom and map location',()=>{
+test('cardinal neighbors stay aligned along orthogonal axes at every zoom and map location',()=>{
  const cam=new c.Game.MapCamera(200,100,100,48);cam.width=390;cam.height=550;
  for(const scale of [48,64,88])for(const [x,y] of [[1,1],[100,100],[198,198]]){
   cam.scale=scale;
   const center=cam.screen(x,y),north=cam.screen(x,y-1),south=cam.screen(x,y+1),east=cam.screen(x+1,y),west=cam.screen(x-1,y);
-  assert.equal(north.x,center.x);assert.equal(south.x,center.x);
-  assert.ok(north.y<center.y&&south.y>center.y);
-  assert.equal(east.y,center.y);assert.equal(west.y,center.y);
-  assert.ok(east.x>center.x&&west.x<center.x);
+  assert.ok(east.x>center.x && Math.abs(east.y-center.y)<1e-9);
+  assert.ok(west.x<center.x && Math.abs(west.y-center.y)<1e-9);
+  assert.ok(Math.abs(south.x-center.x)<1e-9 && south.y>center.y);
+  assert.ok(Math.abs(north.x-center.x)<1e-9 && north.y<center.y);
   for(const [actual,expected] of [[north,[x,y-1]],[south,[x,y+1]],[east,[x+1,y]],[west,[x-1,y]]]){
-   const world=cam.world(actual.x,actual.y);assert.equal(world.x,expected[0]);assert.equal(world.y,expected[1]);
+   const world=cam.world(actual.x,actual.y);
+   assert.ok(Math.abs(world.x-expected[0])<1e-9);
+   assert.ok(Math.abs(world.y-expected[1])<1e-9);
   }
  }
 });
@@ -92,13 +95,15 @@ test('drag follows the pointer and all viewport corners stay covered at world ed
   const cam=new c.Game.MapCamera(200,100,100,48);cam.width=920;cam.height=660;
   const before=cam.screen(101,102);cam.pan(70,-40);const after=cam.screen(101,102);
   assert.ok(Math.abs(after.x-before.x-70)<1e-9);assert.ok(Math.abs(after.y-before.y+40)<1e-9);
+  const overflow = c.Game.MapCamera.overflow || 0;
+  assert.equal(overflow, 6);
   for(const [x,y] of [[0,0],[200,0],[0,200],[200,200]]) {
     cam.x=x;cam.y=y;cam.clamp();const bounds=cam.bounds(2);
     for(const [sx,sy] of [[0,0],[920,0],[0,660],[920,660]]) {
       const p=cam.world(sx,sy);
-      assert.ok(p.x>=-1e-9&&p.y>=-1e-9&&p.x<=200+1e-9&&p.y<=200+1e-9);
-      assert.ok(Math.floor(p.x+1e-9)>=bounds.minX&&Math.min(199,Math.floor(p.x))<=bounds.maxX);
-      assert.ok(Math.floor(p.y+1e-9)>=bounds.minY&&Math.min(199,Math.floor(p.y))<=bounds.maxY);
+      assert.ok(p.x>=-overflow-1e-9&&p.y>=-overflow-1e-9&&p.x<=200+overflow+1e-9&&p.y<=200+overflow+1e-9);
+      assert.ok(Math.min(199,Math.max(0,Math.floor(p.x+1e-9)))>=bounds.minX&&Math.min(199,Math.max(0,Math.floor(p.x)))<=bounds.maxX);
+      assert.ok(Math.min(199,Math.max(0,Math.floor(p.y+1e-9)))>=bounds.minY&&Math.min(199,Math.max(0,Math.floor(p.y)))<=bounds.maxY);
     }
   }
 });

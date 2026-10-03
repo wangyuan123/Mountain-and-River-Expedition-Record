@@ -52,7 +52,7 @@ function setupTest(officers = []) {
   return context.Game;
 }
 
-test('首页军官将领栏目标题包含【去招募>】按钮，点击跳转至陆军讲武堂招募', () => {
+test('首页军官将领栏目标题包含【去招募>】按钮，点击跳转至军校招募', () => {
   const officers = [
     { name: '古德里安', level: 10, star: 5, military: 90, logistics: 80, knowledge: 70, role: 'idle' }
   ];
@@ -61,10 +61,10 @@ test('首页军官将领栏目标题包含【去招募>】按钮，点击跳转�
 
   // 验证包含 去招募 按钮及样式类
   assert.match(html, /<span class="home-officer-go zone-head-action"[^>]*>去招募 &gt;<\/span>/);
-  // 验证点击事件跳转到 academy (讲武堂)
+  // 验证点击事件跳转到 academy (军校)
   assert.match(html, /onclick="event\.stopPropagation\(\);Game\.go\('academy'\)"/);
   // 验证带有 title 提示
-  assert.match(html, /title="点击前往陆军讲武堂 · 招募将领"/);
+  assert.match(html, /title="点击前往军校 · 招募将领"/);
 });
 
 test('首页在无军官时标题栏依然展示【去招募>】按钮', () => {
@@ -73,7 +73,7 @@ test('首页在无军官时标题栏依然展示【去招募>】按钮', () => {
 
   assert.match(html, /<span class="home-officer-go zone-head-action"[^>]*>去招募 &gt;<\/span>/);
   assert.match(html, /Game\.go\('academy'\)/);
-  assert.match(html, /去讲武堂招募 &gt;<\/span>/);
+  assert.match(html, /去军校招募 &gt;<\/span>/);
   assert.match(html, /暂未招募将领/);
 });
 

@@ -18,6 +18,8 @@ public interface CityEconomy {
     void setLastTick(Long value);
     String getCityName();
     void setCityName(String value);
+    long getCityNameRenamedAt();
+    void setCityNameRenamedAt(long value);
     Integer getCityPosX();
     void setCityPosX(Integer value);
     Integer getCityPosY();

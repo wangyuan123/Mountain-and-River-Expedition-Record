@@ -1,0 +1,166 @@
+/* 聊天页占满可用视口，仅消息列表滚动，输入框和底部导航始终可见。 */
+#screen.chat-open {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  overflow: hidden;
+}
+#screen.chat-open #view {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  padding: 0 !important;
+  overflow: hidden;
+}
+#screen.chat-open #footbar { display: none; }
+
+@media (orientation: portrait), (max-width: 479px) {
+  #screen.chat-open { display: flex; flex-direction: column; }
+  #screen.chat-open #header { flex: 0 0 auto; }
+}
+
+.chat-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  background: var(--surface);
+}
+.chat-page-header {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  margin: 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+}
+.chat-page-header h1 { font-size: 15px; font-weight: 600; }
+.chat-page-header > span { margin-left: auto; color: var(--muted); font-size: 11px; }
+.chat-back-button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: 28px/1 Arial, sans-serif;
+  cursor: pointer;
+}
+.chat-tab-panel {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+/* 显式覆盖面板的 flex，保证隐藏时不占用另一频道的高度。 */
+.chat-tab-panel[hidden] { display: none; }
+.chat-forum-frame {
+  display: block;
+  flex: 1 1 0;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+  background: var(--surface);
+}
+.chat-page .chat-terminal {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  margin: 0;
+  border: 0 !important;
+  border-radius: 0;
+  box-shadow: none !important;
+}
+.chat-page .chat-term-header { flex: 0 0 auto; flex-wrap: wrap; gap: 4px; }
+#screen.chat-open .chat-page .chat-box {
+  flex: 1 1 0;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 10px 12px !important;
+  overscroll-behavior-y: contain;
+}
+.chat-page .chat-input-bar { flex: 0 0 auto; padding: 10px 12px; }
+.chat-page .chat-input { min-width: 0; min-height: 36px; font-size: 16px; }
+.chat-page .chat-send { min-height: 36px; }
+.chat-bottom-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  flex: 0 0 auto;
+  border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--surface);
+}
+.chat-bottom-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 56px;
+  padding: 6px 4px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.chat-bottom-tab > span { font-size: 20px; line-height: 1; }
+.chat-bottom-tab.active { color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+.chat-bottom-tab:disabled { opacity: .5; cursor: default; }
+.chat-bottom-tab:focus-visible,
+.chat-back-button:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+
+/* 军团频道与角色徽标 */
+.chat-tag.tag-guild-leader {
+  background: rgba(234, 179, 8, 0.15);
+  color: #ca8a04;
+  border: 1px solid rgba(234, 179, 8, 0.3);
+}
+.chat-tag.tag-guild-admin {
+  background: rgba(59, 130, 246, 0.15);
+  color: #2563eb;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+.chat-tag.tag-guild-member {
+  background: rgba(100, 116, 139, 0.15);
+  color: #64748b;
+  border: 1px solid rgba(100, 116, 139, 0.3);
+}
+
+.chat-channel-switcher {
+  display: flex;
+  background: var(--surface-muted, #f1f5f9);
+  padding: 3px;
+  gap: 4px;
+  border-bottom: 1px solid var(--line, #e2e8f0);
+}
+.chat-channel-btn {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted, #64748b);
+  cursor: pointer;
+  text-align: center;
+}
+.chat-channel-btn.active {
+  background: var(--surface, #ffffff);
+  color: var(--accent, #2563eb);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+

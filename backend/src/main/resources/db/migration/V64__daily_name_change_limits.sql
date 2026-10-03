@@ -1,0 +1,3 @@
+ALTER TABLE players ADD COLUMN city_name_renamed_at BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE player_cities ADD COLUMN city_name_renamed_at BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE officers ADD COLUMN name_renamed_at BIGINT NOT NULL DEFAULT 0;

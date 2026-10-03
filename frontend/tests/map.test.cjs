@@ -85,17 +85,36 @@ test('map requests abort on timeout so loading slots can recover',async()=>{
   const req=client.get('/game/world/map/chunk?cx=0&cy=0',{silent:true,timeout:10000});timeout();
   await assert.rejects(req,/加载超时/);
 });
-test('wild map dispatch renders safely and excludes appointed mayor and commander',()=>{
-  const state={world:{pos:{x:100,y:100},wildTiles:[],_dispatchTarget:null},tech:{},resources:{},reports:[],army:{scout:687,infantry:20},officers:[{id:1,name:'first',military:330,star:1,level:1},{id:2,name:'second',military:330,star:1,level:1},{id:3,name:'mayor',role:'mayor',military:500},{id:4,name:'commander',role:'commander',military:900}]};
+test('wild map dispatch renders safely with zero troop defaults and excludes appointed mayor, commander and marching officers',()=>{
+  const state={
+    world:{
+      pos:{x:100,y:100},
+      wildTiles:[],
+      _dispatchTarget:null,
+      marches:[{id:99,commanderId:6,returning:false}]
+    },
+    tech:{},resources:{},reports:[],
+    army:{scout:687,infantry:20},
+    officers:[
+      {id:1,name:'first',military:330,star:1,level:1},
+      {id:2,name:'second',military:330,star:1,level:1},
+      {id:3,name:'mayor',role:'mayor',military:500},
+      {id:4,name:'commander',role:'commander',military:900},
+      {id:5,name:'marching_role',role:'march',military:1000},
+      {id:6,name:'marching_active',military:1200}
+    ]
+  };
   const c=context({DATA:{wildTypes:{grainfield:{name:'粮田',res:'food',icon:'img/map/wild-grainfield.webp'}},resources:{food:{name:'粮食'}},units:{scout:{name:'侦察机'},infantry:{name:'步兵'}},starColor:{}},Core:{state,views:{},armyCap:()=>999999},go(){},toast(){},fmt:String});load(c,'world.js');
   c.Game.World.mapAction({kind:'wild',id:5,type:'grainfield',level:2,x:103,y:105},'conquer');
   const v={innerHTML:''};c.Game.World.renderDispatch(v);
   assert.match(v.innerHTML,/<button type="button" class="dispatch-stat-item dispatch-cap-action" onclick="Game.World.showArmyCapInfo\(\)"/);
-  assert.match(v.innerHTML,/id="dqty_scout"[^>]*value="1"/);
+  assert.match(v.innerHTML,/id="dqty_scout"[^>]*value="0"/);
   assert.match(v.innerHTML,/name="dpOfficer" value="1" checked/);
   assert.doesNotMatch(v.innerHTML,/name="dpOfficer" value="2" checked/);
   assert.doesNotMatch(v.innerHTML,/name="dpOfficer" value="3"/);
   assert.doesNotMatch(v.innerHTML,/name="dpOfficer" value="4"/);
+  assert.doesNotMatch(v.innerHTML,/name="dpOfficer" value="5"/);
+  assert.doesNotMatch(v.innerHTML,/name="dpOfficer" value="6"/);
 });
 test('dispatch cap card opens a dismissible breakdown for the selected city',()=>{
   const body={appendChild(mask){mask.parentNode=body;this.mask=mask;},removeChild(mask){mask.parentNode=null;this.mask=null;}};
@@ -108,7 +127,7 @@ test('dispatch cap card opens a dismissible breakdown for the selected city',()=
   assert.match(body.mask.innerHTML,/要塞防线 Lv\.10/);
   assert.match(body.mask.innerHTML,/三军统帅[^<]*当前 Lv\.5，加成 \+20%/);
   assert.match(body.mask.innerHTML,/75000 \+ 100000\) × \(1 \+ 20%\) = 210000/);
-  assert.match(body.mask.innerHTML,/前线指挥部、作战参谋部和指挥官等级不直接增加上限/);
+  assert.match(body.mask.innerHTML,/市政厅、作战参谋部和指挥官等级不直接增加上限/);
   assert.equal(closeButton.focused,true);
   closeButton.onclick();
   assert.equal(body.mask,null);
@@ -116,7 +135,7 @@ test('dispatch cap card opens a dismissible breakdown for the selected city',()=
   body.mask.onkeydown({key:'Escape'});
   assert.equal(body.mask,null);
 });
-test('only conquest and plunder preselect troops; owned wild dispatch starts empty',()=>{
+test('all dispatch actions start empty; players can configure troops explicitly',()=>{
   const state={world:{pos:{x:100,y:100},wildTiles:[]},tech:{},resources:{},reports:[],army:{scout:8,infantry:20},officers:[]};
   const messages=[];
   const c=context({DATA:{wildTypes:{oil:{name:'油田',res:'oil'}},resources:{oil:{name:'石油'}},units:{scout:{name:'侦察机',load:1},infantry:{name:'步兵',load:10}},starColor:{}},Core:{state,views:{},armyCap:()=>999999},go(){},toast:m=>messages.push(m),fmt:String});load(c,'world.js');
@@ -124,11 +143,10 @@ test('only conquest and plunder preselect troops; owned wild dispatch starts emp
   for(const action of ['station','gather','scout','conquer','plunder']){
     state.world._dispatchTarget={kind:action==='gather'?'wild_gather':'wild',action,target};
     const v={innerHTML:''};c.Game.World.renderDispatch(v);
-    const selected=action==='conquer'||action==='plunder';
     const inputs=[...v.innerHTML.matchAll(/id="dqty_([^"]+)"[^>]*value="([^"]*)"/g)];
     assert.equal(inputs.length,action==='scout'?1:2);
-    for(const input of inputs) assert.equal(input[2],selected?'1':'',action);
-    for(const slider of v.innerHTML.matchAll(/id="dslider_[^"]+"[^>]*value="([^"]*)"/g)) assert.equal(slider[1],selected?'1':'0',action);
+    for(const input of inputs) assert.equal(input[2],'0',action);
+    for(const slider of v.innerHTML.matchAll(/id="dslider_[^"]+"[^>]*value="([^"]*)"/g)) assert.equal(slider[1],'0',action);
   }
   state.world._dispatchTarget={kind:'wild',action:'station',target};
   c.document={getElementById:()=>({value:''}),querySelector:()=>null};
@@ -147,7 +165,7 @@ test('wild scouting opens preparation and submits a scout march only after launc
   assert.equal(messages.length,0);
   assert.equal(target.scouted,undefined);
   const v={innerHTML:''};c.Game.World.renderDispatch(v);
-  assert.match(v.innerHTML,/id="dqty_scout"[^>]*value=""/);
+  assert.match(v.innerHTML,/id="dqty_scout"[^>]*value="0"/);
   assert.doesNotMatch(v.innerHTML,/id="dqty_infantry"|征服野地守军后/);
   assert.match(v.innerHTML,/抵达后进行侦查并生成情报报告/);
   state.world.wildTiles=[];

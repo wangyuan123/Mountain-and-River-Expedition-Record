@@ -244,6 +244,22 @@ test('军官改名前端表单校验及提交成功交互', async () => {
   assert.equal(rendered, true, '改名成功后应重新渲染视图');
 });
 
+test('军官当天已改名时提示重置时间且不发送请求', () => {
+  const context = setupTestEnvironment();
+  const officer = { id: 'daily', name: '张辽', star: 3, level: 1, nameRenameAvailableAt: Date.now() + 60000 };
+  context.Game.Core.state = { officers: [officer], items: { renameCard: 1 }, resources: { gold: 500 } };
+  const messages = [];
+  context.Game.toast = message => messages.push(message);
+  context.Game.API.renameOfficer = () => { throw Error('不应发送改名请求'); };
+
+  context.Game.Officer.promptRename('daily');
+  const modal = context.elements.officerRenameModal;
+  assert.match(modal.innerHTML, /北京时间 0:00 重置/);
+  assert.match(modal.innerHTML, /这名军官今日已修改/);
+  modal.querySelector('#officerRenameForm').onsubmit({ preventDefault() {} });
+  assert.match(messages[0], /请明日 0:00 后再试/);
+});
+
 test('展示名支持标点和 emoji，拒绝不可见字符，军官名称输出经过转义', () => {
   const context = setupTestEnvironment();
   assert.equal(context.Game.normalizeDisplayName(' 大河之剑天上来-李白☆ ', 12, '军官名称'), '大河之剑天上来-李白☆');

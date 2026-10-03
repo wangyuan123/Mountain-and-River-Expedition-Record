@@ -129,6 +129,7 @@ public record ItemDef(
             Map.entry("shield",    new ItemDef("shield",    "护盾",     "🛡️", CAT_UTIL, "使用后8小时免受玩家攻击", 0)),
             Map.entry("marchOrd",  new ItemDef("marchOrd",  "行军令",   "🚩", CAT_UTIL, "行军速度+50%,持续1小时", 0)),
             Map.entry("populationOrder", new ItemDef("populationOrder", "人口动员令", "👥", CAT_UTIL, "使用后立即增加500空闲人口,不超过人口上限", 0)),
+            Map.entry("cityRenameCard", new ItemDef("cityRenameCard", "城市改名卡", "🏷️", CAT_UTIL, "为一座城市更换新名字", 0)),
 
             // —— 军衔珠宝宝箱 ——
             Map.entry("box_gem",          new ItemDef("box_gem",          "军衔珠宝宝箱",   "🗃️", CAT_JEWELRY, "开启获得晋升必备珠宝：珍珠×5、珊瑚×3、琉璃×3、琥珀×2、玛瑙×2", 0)),

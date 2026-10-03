@@ -80,6 +80,14 @@ public class ArmyController {
         return ResponseEntity.ok(result);
     }
 
+    @PostMapping("/queue/{queueId}/free-speedup")
+    public ResponseEntity<Map<String, Object>> freeSpeedUp(@PathVariable Long queueId) {
+        Long playerId = authService.getCurrentPlayer().getId();
+        Map<String, Object> result = armyService.freeSpeedUp(playerId, queueId);
+        result.put("state", gameStateService.getGameState(playerId));
+        return ResponseEntity.ok(result);
+    }
+
     @PostMapping("/dismiss")
     public ResponseEntity<Map<String, Object>> dismiss(@RequestBody GameDtos.ArmyRequest request) {
         if (request.unit() == null || request.unit().isBlank()) {

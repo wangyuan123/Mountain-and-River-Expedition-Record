@@ -42,9 +42,9 @@ function setup(initialBuildings = {}) {
           gold: { name: '黄金' }
         },
         buildings: {
-          command: { name: '前线指挥部', desc: '核心中枢', slots: 1 },
-          exchange: { name: '交易所', desc: '战备物资调配,按比例转换资源', slots: 1 },
-          depot: { name: '军需物资库', desc: '提升战备物资上限', slots: 32 }
+          command: { name: '市政厅', desc: '核心中枢', slots: 1 },
+          exchange: { name: '军需物资中转站', desc: '战备物资调配,按比例转换资源', slots: 1 },
+          depot: { name: '军需仓库', desc: '提升战备物资上限', slots: 32 }
         }
       },
       fmt(n) { return String(n); },

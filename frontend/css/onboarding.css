@@ -23,14 +23,15 @@
 .ob-checks { display: flex; gap: 8px 16px; flex-wrap: wrap; padding: 0; margin: 8px 0; list-style: none; font-size: 12px; }
 .ob-complete, .ob-success { color: var(--ok, #26774a); }
 .ob-error { color: var(--danger, #ac3434); }
-.ob-target { outline: 2px solid var(--accent); outline-offset: 3px; }
+.ob-target { outline: 2px solid var(--accent); outline-offset: 3px; animation: obTargetPulse 1.2s ease-in-out infinite alternate; }
+@keyframes obTargetPulse { 0% { box-shadow: 0 0 0 0 rgba(117, 134, 105, 0.7); } 100% { box-shadow: 0 0 12px 4px rgba(117, 134, 105, 0.9); } }
 .ob-roadmap { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 16px; }
 .ob-roadmap span { padding: 5px 8px; border: 1px solid var(--line, #c7ccca); border-radius: 4px; background: var(--surface, #fff); color: var(--ink); font-size: 12px; }
 .ob-graduation { padding: 14px; border: 1px solid var(--line, #c7ccca); border-left: 4px solid var(--ok, #26774a); border-radius: 6px; background: var(--surface, #fff); }
 .ob-graduation h2 { margin-top: 0; }
 .ob-mask { z-index: 21000; background: rgba(10, 18, 22, .78); padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom)); }
 .ob-dialog { width: min(100%, 590px); max-height: min(88dvh, 760px); overflow-y: auto; padding: 28px; border: 1px solid var(--accent, #758669); border-top: 5px solid var(--accent, #758669); border-radius: 8px; background: var(--surface, #252d2b); color: var(--ink, #fff); box-shadow: 0 24px 80px rgba(0, 0, 0, .6), inset 0 0 0 1px var(--line, #58665e); }
-.ob-dialog::before { content: '前线指挥部  /  FIELD BRIEFING'; display: block; padding-bottom: 12px; margin-bottom: 18px; border-bottom: 1px solid var(--line, #58665e); color: var(--muted, #adb5ac); font-size: 11px; font-weight: 700; letter-spacing: .18em; }
+.ob-dialog::before { content: '市政厅  /  CITY BRIEFING'; display: block; padding-bottom: 12px; margin-bottom: 18px; border-bottom: 1px solid var(--line, #58665e); color: var(--muted, #adb5ac); font-size: 11px; font-weight: 700; letter-spacing: .18em; }
 .ob-dialog .ob-bar-heading strong { font-size: clamp(20px, 4vw, 27px); line-height: 1.3; }
 .ob-dialog .ob-eyebrow { margin-bottom: 8px; letter-spacing: .14em; }
 .ob-dialog .ob-progress { height: 7px; margin: 20px 0; }
@@ -48,19 +49,85 @@
 .ob-modal-roadmap > div { display: flex; justify-content: space-between; gap: 12px; padding: 7px 10px; font-size: 12px; border-bottom: 1px solid var(--line, #58665e); }
 .ob-modal-roadmap > div:last-child { border-bottom: 0; }
 .ob-modal-roadmap > div > span:last-child { flex: 0 0 auto; color: var(--muted); }
-.ob-report-countdown { position: fixed; right: max(16px, env(safe-area-inset-right)); bottom: calc(84px + env(safe-area-inset-bottom)); z-index: 20900; max-width: calc(100vw - 32px); box-sizing: border-box; padding: 12px 16px; border: 1px solid var(--accent, #758669); border-left-width: 4px; border-radius: 6px; background: var(--surface, #252d2b); color: var(--ink, #fff); box-shadow: 0 8px 24px rgba(0, 0, 0, .3); pointer-events: none; }
+.ob-report-countdown, .ob-gather-countdown { position: fixed; right: max(16px, env(safe-area-inset-right)); bottom: calc(84px + env(safe-area-inset-bottom)); z-index: 20900; max-width: calc(100vw - 32px); box-sizing: border-box; padding: 12px 16px; border: 1px solid var(--accent, #758669); border-left-width: 4px; border-radius: 6px; background: var(--surface, #252d2b); color: var(--ink, #fff); box-shadow: 0 8px 24px rgba(0, 0, 0, .3); pointer-events: none; }
+/* 采集进行时右侧仍需露出出征和底部导航操作，因此卡片垂直居中停靠在右边。 */
+.ob-gather-countdown { top: 50%; bottom: auto; transform: translateY(-50%); max-width: min(420px, calc(100vw - 32px)); }
 .ob-report-countdown-body { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 13px; line-height: 1.5; }
 .ob-report-seconds { min-width: 3ch; color: var(--accent, #758669); font-size: 24px; font-variant-numeric: tabular-nums; }
 .ob-report-return { flex-shrink: 0; min-height: 36px; margin: 0; padding: 6px 10px; font-size: 12px; white-space: nowrap; pointer-events: auto; }
-[data-theme|="blue-white"] .ob-mask, [data-theme|="blue-white"] .ob-report-countdown { --surface: #fff; --ink: #283b50; --muted: #61748a; --line: #dce5ef; --accent: #3d6fa7; --ok: #26774a; --danger: #b03020; color-scheme: light; }
-[data-theme="paper"] .ob-mask, [data-theme="paper"] .ob-report-countdown { --surface: #f6f5f0; --ink: #273136; --muted: #626c61; --line: #dcded2; --accent: #3f5e4d; --ok: #26774a; --danger: #a33a2b; color-scheme: light; }
-[data-theme="dark"] .ob-mask, [data-theme="dark"] .ob-report-countdown { --surface: #111724; --ink: #e2e8f0; --muted: #9aabc0; --line: #2b3b52; --accent: #7cc7ec; --ok: #86d3a3; --danger: #f87171; color-scheme: dark; }
+.ob-gather-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.ob-gather-finish, .ob-gather-return { pointer-events: auto; }
+.ob-gather-finish { background: var(--accent, #758669) !important; color: #fff !important; }
+[data-theme|="blue-white"] .ob-mask, [data-theme|="blue-white"] .ob-report-countdown, [data-theme|="blue-white"] .ob-gather-countdown { --surface: #fff; --ink: #283b50; --muted: #61748a; --line: #dce5ef; --accent: #3d6fa7; --ok: #26774a; --danger: #b03020; color-scheme: light; }
+[data-theme="paper"] .ob-mask, [data-theme="paper"] .ob-report-countdown, [data-theme="paper"] .ob-gather-countdown { --surface: #f6f5f0; --ink: #273136; --muted: #626c61; --line: #dcded2; --accent: #3f5e4d; --ok: #26774a; --danger: #a33a2b; color-scheme: light; }
+[data-theme="dark"] .ob-mask, [data-theme="dark"] .ob-report-countdown, [data-theme="dark"] .ob-gather-countdown { --surface: #111724; --ink: #e2e8f0; --muted: #9aabc0; --line: #2b3b52; --accent: #7cc7ec; --ok: #86d3a3; --danger: #f87171; color-scheme: dark; }
 [data-theme="dark"] .ob-mask button { color: #0b1725 !important; }
 @media (max-width: 480px) {
+  .ob-gather-countdown { right: max(8px, env(safe-area-inset-right)); max-width: min(330px, calc(100vw - 16px)); padding: 10px 12px; }
   .ob-dialog .btn { padding: 6px 9px; font-size: 12px; }
   .ob-overview { flex-wrap: wrap; }
   .ob-supply { align-items: flex-start; }
   .ob-supply .btn { max-width: 94px; }
   .ob-dialog { padding: 18px; max-height: 92dvh; }
   .ob-dialog .ob-actions [data-ob-action="skip"] { margin-left: 0; }
+}
+
+/* 聚光灯遮罩与高亮交互 */
+/* 引导加速弹窗先以最终几何尺寸展示，避免入场缩放期间测得的镂空位置偏移。 */
+.ob-guided-picker,
+.ob-guided-picker .modal-card {
+  animation: none;
+}
+.ob-spotlight-mask {
+  position: fixed;
+  z-index: 21995;
+  pointer-events: none;
+  border-radius: 6px;
+  box-shadow: 0 0 0 9999px rgba(10, 20, 32, 0.42), 0 0 18px var(--accent, rgba(61, 111, 167, 0.6));
+  outline: 3px solid var(--accent, #3d6fa7);
+  outline-offset: 2px;
+  animation: obSpotlightPulse 1.4s ease-in-out infinite alternate;
+  box-sizing: border-box;
+  transition: width 0.15s ease, height 0.15s ease;
+}
+.ob-spotlight-mask::before,
+.ob-spotlight-mask::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  border: 2px solid var(--accent, #3d6fa7);
+  box-shadow: 0 0 8px var(--accent, rgba(61, 111, 167, 0.5));
+  pointer-events: none;
+  animation: obSpotlightWave 2s cubic-bezier(0.1, 0.7, 0.3, 1) infinite;
+}
+.ob-spotlight-mask::after {
+  animation-delay: 1s;
+}
+.ob-spotlight-focus {
+  outline: 3px solid var(--accent, #3d6fa7) !important;
+  outline-offset: 2px !important;
+}
+@keyframes obSpotlightPulse {
+  0% {
+    box-shadow: 0 0 0 9999px rgba(10, 20, 32, 0.42), 0 0 8px var(--accent, rgba(61, 111, 167, 0.4));
+  }
+  100% {
+    box-shadow: 0 0 0 9999px rgba(10, 20, 32, 0.42), 0 0 20px var(--accent, rgba(61, 111, 167, 0.8));
+  }
+}
+@keyframes obSpotlightWave {
+  0% {
+    inset: -2px;
+    opacity: 0.95;
+    box-shadow: 0 0 4px var(--accent, rgba(61, 111, 167, 0.6));
+  }
+  60% {
+    opacity: 0.45;
+  }
+  100% {
+    inset: -16px;
+    opacity: 0;
+    box-shadow: 0 0 16px 2px var(--accent, rgba(61, 111, 167, 0));
+  }
 }

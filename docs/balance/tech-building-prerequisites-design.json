@@ -7,7 +7,7 @@
   "sameRowOperator": "AND",
   "buildings": {
     "command": {
-      "name": "前线指挥部",
+      "name": "市政厅",
       "maxLevel": 10,
       "levels": [
         {
@@ -207,7 +207,7 @@
       ]
     },
     "house": {
-      "name": "集结兵舍",
+      "name": "民居",
       "maxLevel": 10,
       "levels": [
         {
@@ -373,7 +373,7 @@
       ]
     },
     "factory": {
-      "name": "战地兵工厂",
+      "name": "军工厂",
       "maxLevel": 10,
       "levels": [
         {
@@ -1493,7 +1493,7 @@
       ]
     },
     "academy": {
-      "name": "陆军讲武堂",
+      "name": "军校",
       "maxLevel": 10,
       "levels": [
         {
@@ -2489,7 +2489,7 @@
       ]
     },
     "depot": {
-      "name": "军需物资库",
+      "name": "军需仓库",
       "maxLevel": 10,
       "levels": [
         {
@@ -2655,7 +2655,7 @@
       ]
     },
     "lab": {
-      "name": "国防研究所",
+      "name": "军工科技研发中心",
       "maxLevel": 10,
       "levels": [
         {
@@ -3293,7 +3293,7 @@
       ]
     },
     "apron": {
-      "name": "战备起飞场",
+      "name": "战备机场",
       "maxLevel": 10,
       "levels": [
         {
@@ -3941,7 +3941,7 @@
       ]
     },
     "exchange": {
-      "name": "交易所",
+      "name": "军需物资中转站",
       "maxLevel": 10,
       "levels": [
         {

@@ -47,6 +47,15 @@ public class OnboardingController {
     @PostMapping("/plan")
     public Map<String, Object> plan(@RequestBody Map<String, String> body) { return onboarding.choosePlan(id(), body.get("plan")); }
 
+    /** 确认收尾并返回最新余额，完成奖励沿用一次性发放规则。 */
+    @PostMapping("/finish")
+    public Map<String, Object> finish() {
+        Long id = id();
+        Map<String, Object> result = onboarding.choosePlan(id, "explore");
+        result.put("state", game.getGameState(id));
+        return result;
+    }
+
     @PostMapping("/recover")
     public Map<String, Object> recover() {
         Long id = id();
@@ -58,6 +67,14 @@ public class OnboardingController {
     @PostMapping("/target")
     public Map<String, Object> target(@RequestBody Map<String, Boolean> body) {
         return onboarding.target(id(), Boolean.TRUE.equals(body.get("gather")));
+    }
+
+    @PostMapping("/finish-gather")
+    public Map<String, Object> finishGather() {
+        Long id = id();
+        Map<String, Object> result = onboarding.finishGather(id);
+        result.put("state", game.getGameState(id));
+        return result;
     }
 
     private Long id() { return auth.getCurrentPlayer().getId(); }

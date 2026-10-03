@@ -38,7 +38,7 @@ Game.API={getToken:function(){return 'preview:'+previewGeneration;},getMapChunk:
 Game.Core.route='world';Game.Core.renderTop=function(){};Game.Core.footer=function(){return '';};Game.Core.render=function(){var v=document.getElementById('view');if(!Game.WorldMap.mounted(v))v.innerHTML='';if(Game.WorldMap.isMap())Game.WorldMap.render(v);else v.innerHTML='<button onclick="Game.WorldMap.setMode(\'map\')">返回大地图</button>';};
 Game.toast=function(t){log.textContent=t;};Game.go=function(r){log.textContent='进入：'+r;};Game.World={renderGatherMarches:function(){return '';},mapAction:function(t,action){log.textContent='目标 '+t.kind+':'+t.id+'，操作 '+action;}};
 window.addEventListener('error',function(e){log.textContent='ERROR: '+e.message;});
-</script><script src="js/map-camera.js?v=1.2-north-up"></script><script src="js/map-chunks.js"></script><script src="js/map-layout.js?v=4.0-hit-test"></script><script src="js/map-terrain.js?v=4.11-northern-snow"></script><script src="js/world-map.js?v=4.17-north-up"></script><script>
+</script><script src="js/map-camera.js?v=1.5-isometric-diamond"></script><script src="js/map-chunks.js"></script><script src="js/map-layout.js?v=4.0-hit-test"></script><script src="js/map-terrain.js?v=4.11-northern-snow"></script><script src="js/world-map.js?v=4.43-seamless-grass"></script><script>
 if(new URLSearchParams(location.search).has('showcase')){document.querySelector('.fixture-tools').hidden=true;document.getElementById('fixture-log').hidden=true;}
 // A repeatable mixed meadow scene, with resource clearings across a chunk boundary.
 if(new URLSearchParams(location.search).has('meadow')){

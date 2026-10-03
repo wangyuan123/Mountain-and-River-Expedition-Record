@@ -46,6 +46,9 @@ import java.util.concurrent.ThreadLocalRandom;
 @Service
 public class DepotService {
 
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
+
     /** 当前星级 1～4 对应升到下一星的失败率，抽签范围为 0～99。 */
     private static final int[] STAR_UP_FAILURE_PERCENT = {10, 20, 30, 60};
 
@@ -423,10 +426,17 @@ public class DepotService {
         } catch (IllegalArgumentException error) {
             return error(error.getMessage());
         }
+        // 与军官界面的改名共用同一冷却，失败时不扣改名卡。
+        entityManager.refresh(officer, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+        if (newName.equals(officer.getName())) return error("新名称与当前军官名称相同");
+        long now = System.currentTimeMillis();
+        if (NameChangePolicy.nextAllowedAt(officer.getNameRenamedAt(), now) > now)
+            return error("这名军官今天已改名，请明日 0:00 后再试");
         int consumed = playerItemRepository.tryConsume(playerId, "renameCard", 1, System.currentTimeMillis());
         if (consumed == 0) return error("军官改名卡不足");
         String old = officer.getName();
         officer.setName(newName);
+        officer.setNameRenamedAt(now);
         officerRepository.save(officer);
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("success", true);

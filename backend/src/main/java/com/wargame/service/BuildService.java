@@ -160,12 +160,12 @@ public class BuildService {
             }
         }
 
-        // 5. 新建非基础建筑需要前线指挥部 >= 1（JS: curLv===0 && id not in basic list）
+        // 5. 新建非基础建筑需要市政厅 >= 1（JS: curLv===0 && id not in basic list）
         if (curLv == 0 && !BASIC_BUILDINGS.contains(buildingType)) {
             int commandLv = buildingLevel(playerId, "command");
             if (commandLv < 1) {
                 result.put("success", false);
-                result.put("message", "需先升级前线指挥部");
+                result.put("message", "需先升级市政厅");
                 return result;
             }
         }
@@ -179,7 +179,7 @@ public class BuildService {
         }
         if (curLv >= max) {
             result.put("success", false);
-            result.put("message", "已达当前前线指挥部上限");
+            result.put("message", "已达当前市政厅上限");
             return result;
         }
 
@@ -210,8 +210,8 @@ public class BuildService {
                 if (remaining <= 0) {
                     result.put("success", false);
                     result.put("message", "res".equals(groupKey)
-                            ? "资源建筑已达当前上限(" + groupSlotsCap(playerId, groupKey) + "栋，含新建中)，可升级前线指挥部扩容（最高32栋），或拆除建筑、取消新建"
-                            : "军事建筑已达当前上限(" + groupSlotsCap(playerId, groupKey) + "栋，含新建中)，请升级前线指挥部、拆除建筑或取消新建");
+                            ? "资源建筑已达当前上限(" + groupSlotsCap(playerId, groupKey) + "栋，含新建中），可升级市政厅扩容（最高32栋），或拆除建筑、取消新建"
+                            : "军事建筑已达当前上限(" + groupSlotsCap(playerId, groupKey) + "栋，含新建中），请升级市政厅、拆除建筑或取消新建");
                     return result;
                 }
             }
@@ -297,10 +297,10 @@ public class BuildService {
             return result;
         }
 
-        // 2. 前线指挥部为核心枢纽，不可拆除
+        // 2. 市政厅为核心枢纽，不可拆除
         if ("command".equals(buildingType)) {
             result.put("success", false);
-            result.put("message", "前线指挥部为核心枢纽，不可拆除");
+            result.put("message", "市政厅为核心枢纽，不可拆除");
             return result;
         }
 

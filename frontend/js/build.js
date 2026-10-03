@@ -33,10 +33,52 @@ window.Game = window.Game || {};
     return Math.min(86400, Math.ceil(sec * techMul));
   }
 
-  function costHtml(cost) {
-    var arr = [];
+  function fmtVal(val) {
+    return (G && typeof G.fmt === 'function') ? G.fmt(val) : String(val);
+  }
+
+  function getLackResources(cost) {
+    var cur = (Core.state && Core.state.resources) || {};
+    var list = [];
     for (var k in cost) {
-      arr.push(G.resourceIconHtml(k) + cost[k]);
+      if (k === 'pop') continue;
+      var need = cost[k];
+      var have = (cur[k] != null) ? cur[k] : 0;
+      if (have < need) {
+        var rName = (D.resources && D.resources[k] && D.resources[k].name) || k;
+        list.push({
+          key: k,
+          name: rName,
+          need: need,
+          have: have,
+          short: need - have
+        });
+      }
+    }
+    return list;
+  }
+
+  function costHtml(cost, checkAfford) {
+    var arr = [];
+    var cur = (checkAfford && Core.state && Core.state.resources) ? Core.state.resources : null;
+    for (var k in cost) {
+      var need = cost[k];
+      var ico = G.resourceIconHtml(k);
+      if (cur) {
+        var have = (cur[k] != null) ? cur[k] : 0;
+        var rName = (D.resources && D.resources[k] && D.resources[k].name) || k;
+        if (have < need) {
+          var short = need - have;
+          arr.push(
+            '<span class="bcost-item bcost-lack" title="' + rName + '不足：需 ' + fmtVal(need) + '，现有 ' + fmtVal(have) + '，缺少 ' + fmtVal(short) + '">' +
+              ico + '<span class="bcost-val-lack">' + fmtVal(need) + '</span>' +
+              '<span class="bcost-short-tag">(缺' + fmtVal(short) + ')</span>' +
+            '</span>'
+          );
+          continue;
+        }
+      }
+      arr.push('<span class="bcost-item">' + ico + fmtVal(need) + '</span>');
     }
     return arr.join(' ');
   }
@@ -450,7 +492,7 @@ window.Game = window.Game || {};
       }
       var groupKey = Core.buildingGroup(id);
       if (fromLv === 0 && groupKey && Core.groupSlotsRemaining(groupKey) <= 0) {
-        G.toast(this.GROUPS[groupKey].name + '建筑已达当前上限' + Core.groupSlotsCap(groupKey) + '栋（含新建中），可升级前线指挥部扩容（最高32栋），或拆除建筑、取消新建');
+        G.toast(this.GROUPS[groupKey].name + '建筑已达当前上限' + Core.groupSlotsCap(groupKey) + '栋（含新建中），可升级市政厅扩容（最高32栋），或拆除建筑、取消新建');
         return;
       }
       var toLv = fromLv + 1;
@@ -563,7 +605,7 @@ window.Game = window.Game || {};
       if (!b) return;
 
       if (id === 'command') {
-        G.toast('前线指挥部为核心枢纽，不可拆除');
+        G.toast('市政厅为核心枢纽，不可拆除');
         return;
       }
 
@@ -885,7 +927,7 @@ window.Game = window.Game || {};
         var upHtml = '';
         if (curLv >= max) {
           if (id !== 'command' && cmdLv < 10) {
-            upHtml = '<div class="bdetail-limit-tip">⚠ 已达当前前线指挥部限制上限 (Lv.' + max + ')，需先升级前线指挥部</div>';
+            upHtml = '<div class="bdetail-limit-tip">⚠ 已达当前市政厅限制上限 (Lv.' + max + ')，需先升级市政厅</div>';
           } else {
             upHtml = '<div class="bdetail-max-tip">⭐ 建筑已达最高等级 (Lv.10)</div>';
           }
@@ -930,7 +972,7 @@ window.Game = window.Game || {};
         // B. 拆除板块
         var disHtml = '';
         if (id === 'command') {
-          disHtml = '<div class="bdetail-nodismantle">🛡 前线指挥部为主城核心枢纽，不可拆除</div>';
+          disHtml = '<div class="bdetail-nodismantle">🛡 市政厅为主城核心枢纽，不可拆除</div>';
         } else if (curLv > 0) {
           var dDur = buildDuration(id, curLv - 1);
           var curCost = buildCost(id, curLv - 1);
@@ -1133,23 +1175,52 @@ window.Game = window.Game || {};
           var b = D.buildings[id];
           var bcost = buildCost(id, 0);
           var bdur = buildDuration(id, 0);
-          var enough = Core.costEnough(bcost);
-          var icon = renderBuildingIcon(self.BUILD_ICON[id] || '🏗', b.name);
+          var lackList = getLackResources(bcost);
+          var enough = lackList.length === 0;
+          var prereq = G.Prerequisites && G.Prerequisites.check('buildings', id, 1);
+          var prereqBlocked = prereq && prereq.missing && prereq.missing.length > 0;
+          var missingPrereqText = prereqBlocked ? G.Prerequisites.missingText(prereq.missing[0]) : '';
 
-          var costStr = costHtml(bcost);
+          var icon = renderBuildingIcon(self.BUILD_ICON[id] || '🏗', b.name);
+          var costStr = costHtml(bcost, true);
           var durStr = timeText(bdur);
 
-          var btnHtml = isBusy
-            ? '<button class="btn sm" onclick="Game.Build.showBusyJobs()">队忙</button>'
-            : ('<button class="btn sm ok"' + (enough ? '' : ' disabled') + ' onclick="Game.Build._pickAndBuild(\'' + id + '\')">建造</button>');
+          var tipHtml = '';
+          if (isBusy) {
+            tipHtml = '<div class="build-picker-tip busy">⏱ 施工队全忙 (' + jobs.length + '/' + MAX_CONCURRENT + ')</div>';
+          } else if (prereqBlocked) {
+            tipHtml = '<div class="build-picker-tip prereq">⚠ 前置未达成：需 ' + missingPrereqText + '</div>';
+          } else if (!enough) {
+            if (lackList.length === 1) {
+              tipHtml = '<div class="build-picker-tip lack">⚠ 缺少' + lackList[0].name + ' ' + fmtVal(lackList[0].short) + ' (现 ' + fmtVal(lackList[0].have) + ' / 需 ' + fmtVal(lackList[0].need) + ')</div>';
+            } else {
+              var lackStr = lackList.map(function (it) {
+                return it.name + '缺' + fmtVal(it.short);
+              }).join('、');
+              tipHtml = '<div class="build-picker-tip lack">⚠ 资源不足：' + lackStr + '</div>';
+            }
+          }
+
+          var btnHtml = '';
+          if (isBusy) {
+            btnHtml = '<button class="btn sm" onclick="Game.Build.showBusyJobs()">队忙</button>';
+          } else if (prereqBlocked) {
+            btnHtml = '<button class="btn sm ok disabled" title="前置未达成：需 ' + missingPrereqText + '" onclick="Game.Build._pickBlocked(\'' + id + '\', \'prereq\')">建造</button>';
+          } else if (!enough) {
+            var lackTitle = '资源不足：' + lackList.map(function (it) { return it.name + '缺少' + fmtVal(it.short); }).join('，');
+            btnHtml = '<button class="btn sm ok disabled" title="' + lackTitle + '" onclick="Game.Build._pickBlocked(\'' + id + '\', \'resource\')">建造</button>';
+          } else {
+            btnHtml = '<button class="btn sm ok" onclick="Game.Build._pickAndBuild(\'' + id + '\')">建造</button>';
+          }
 
           itemsHtml +=
-            '<div class="build-picker-item">' +
+            '<div class="build-picker-item' + (!enough || prereqBlocked ? ' item-disabled' : '') + '" data-building="' + id + '" id="build-picker-' + id + '">' +
               '<div class="build-picker-icon">' + icon + '</div>' +
               '<div class="build-picker-info">' +
                 '<div class="build-picker-name">' + b.name + '</div>' +
                 '<div class="build-picker-desc">' + b.desc + '</div>' +
                 '<div class="build-picker-cost">' + costStr + ' · ⏱ ' + durStr + '</div>' +
+                tipHtml +
               '</div>' +
               '<div class="build-picker-action">' + btnHtml + '</div>' +
             '</div>';
@@ -1157,7 +1228,7 @@ window.Game = window.Game || {};
       }
 
       mask.innerHTML =
-        '<div class="modal-card" style="max-width:380px">' +
+        '<div class="modal-card" style="max-width:400px;width:94vw">' +
           '<div class="modal-title">🏗 选择建筑建造</div>' +
           '<div class="modal-body" style="max-height:60vh;overflow-y:auto;font-size:13px">' +
             itemsHtml +
@@ -1174,6 +1245,30 @@ window.Game = window.Game || {};
       };
       mask.querySelector('#pickerClose').onclick = close;
       mask.addEventListener('click', function (e) { if (e.target === mask) close(); });
+    },
+
+    _pickBlocked: function (id, reason) {
+      var b = D.buildings[id];
+      var name = (b && b.name) || id;
+      if (reason === 'prereq') {
+        var prereq = G.Prerequisites && G.Prerequisites.check('buildings', id, 1);
+        var missingText = (prereq && prereq.missing && prereq.missing.length > 0)
+          ? G.Prerequisites.missingText(prereq.missing[0])
+          : '前置条件未满足';
+        if (G.toast) G.toast('无法建造【' + name + '】：需前置建筑【' + missingText + '】');
+      } else if (reason === 'resource') {
+        var bcost = buildCost(id, 0);
+        var lackList = getLackResources(bcost);
+        var lackDetails = lackList.map(function (it) {
+          return it.name + '缺 ' + fmtVal(it.short) + ' (现 ' + fmtVal(it.have) + ' / 需 ' + fmtVal(it.need) + ')';
+        });
+        var msg = lackDetails.length > 0 ? ('缺少 ' + lackDetails.join('、')) : '资源不足';
+        if (G.toast) G.toast('无法建造【' + name + '】：' + msg);
+        // 打开确认弹窗供玩家核对详细收支
+        this._pickAndBuild(id);
+      } else {
+        if (G.toast) G.toast('暂不可建造【' + name + '】');
+      }
     },
 
     _pickAndBuild: function (id) {
@@ -1226,10 +1321,10 @@ window.Game = window.Game || {};
      * 满足 lv > 0 时才生效, 否则点空白处应触发升级弹窗 (无新内容则 noop)。
      */
     SPECIAL_ROUTES: {
-      factory:  'army',     // 战地兵工厂 → 兵种招募
-      academy:  'academy',  // 陆军讲武堂 → 军官招募
+      factory:  'army',     // 军工厂 → 兵种招募
+      academy:  'academy',  // 军校 → 军官招募
       staff:    'officer',  // 作战参谋部 → 军官管理
-      lab:      'tech',     // 国防研究所 → 科技
+      lab:      'tech',     // 军工科技研发中心 → 科技
       wall:     'fort',     // 要塞防线   → 城防
       lightfactory: 'army', // 轻装战车厂/重装战车厂/空军基地/军港船坞 也走 army 页 (兵种面板支持按 build 过滤)
       heavyfactory: 'army',
@@ -1587,9 +1682,9 @@ window.Game = window.Game || {};
       var groupCap = Core.groupSlotsCap(groupKey);
       if (groupKey === 'res') {
         h += '<div class="desc">资源建筑: ' + groupUsed + '/' + groupCap + ' 栋（含新建中） | 四类建筑共享额度，自由分配</div>';
-        h += '<div class="desc">基础12栋 + 前线指挥部每级2栋，满级32栋 | 前线指挥部限制建筑等级上限' + (buildDisc > 0 ? ' | 建筑加速 -' + buildDisc.toFixed(0) + '%' : '') + '</div>';
+        h += '<div class="desc">基础12栋 + 市政厅每级2栋，满级32栋 | 市政厅限制建筑等级上限' + (buildDisc > 0 ? ' | 建筑加速 -' + buildDisc.toFixed(0) + '%' : '') + '</div>';
       } else {
-        h += '<div class="desc">军事建筑: ' + groupUsed + '/' + groupCap + ' 栋（含新建中） | 基础12栋 + 前线指挥部每级2栋，满级32栋 | 集结兵舍、军需物资库、战地兵工厂自由分配，其余建筑限1栋 | 前线指挥部限制建筑等级上限' + (buildDisc > 0 ? ' | 建筑加速 -' + buildDisc.toFixed(0) + '%' : '') + '</div>';
+        h += '<div class="desc">军事建筑: ' + groupUsed + '/' + groupCap + ' 栋（含新建中） | 基础12栋 + 市政厅每级2栋，满级32栋 | 民居、军需仓库、军工厂自由分配，其余建筑限1栋 | 市政厅限制建筑等级上限' + (buildDisc > 0 ? ' | 建筑加速 -' + buildDisc.toFixed(0) + '%' : '') + '</div>';
       }
       h += '<div id="buildQueueBar">' + this.renderQueueHtml(jobs, s) + '</div>';
       h += this.renderSlotGrid(groupKey, jobs, s);

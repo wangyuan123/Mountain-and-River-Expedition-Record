@@ -187,6 +187,7 @@ public class ShopController {
             Map.entry("skillBook", 80),
             Map.entry("loyaltyBox", 50),
             Map.entry("renameCard", 60),
+            Map.entry("cityRenameCard", 60),
             Map.entry("recruitOrd", 500),
             Map.entry("starUp", 300),
             // 军官装备宝箱
@@ -280,6 +281,7 @@ public class ShopController {
             Map.entry("skillBook", "通用技能书"),
             Map.entry("loyaltyBox", "忠诚宝箱"),
             Map.entry("renameCard", "军官改名卡"),
+            Map.entry("cityRenameCard", "城市改名卡"),
             Map.entry("recruitOrd", "征募令"),
             Map.entry("starUp", "星耀符"),
             // 军官装备宝箱

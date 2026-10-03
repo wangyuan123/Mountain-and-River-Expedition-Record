@@ -987,8 +987,10 @@ public class BattleService {
             String prefix = (action.side == Side.MINE ? "我方" : "敌方") + unitName(action.id, action.side, defenderIsJapanese) + "(";
             combatRanks.putIfAbsent(prefix, index);
         }
-        movementLines.sort(Comparator.comparingInt(line -> combatRanks.getOrDefault(
-                movementLogPrefix(line), Integer.MAX_VALUE)));
+        // 未开火单位的机动发生在交火前，不能排到击毁它的攻击记录之后。
+        movementLines.sort(Comparator.comparingInt((String line) -> line.contains(" 击毁") ? 1 : 0)
+                .thenComparingInt(line -> combatRanks.getOrDefault(
+                        movementLogPrefix(line), Integer.MAX_VALUE)));
         for (int index = 0; index < movementLineIndexes.size(); index++) {
             lines[movementLineIndexes.get(index)] = movementLines.get(index);
         }

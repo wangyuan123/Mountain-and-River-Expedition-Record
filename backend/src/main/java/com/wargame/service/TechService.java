@@ -100,7 +100,7 @@ public class TechService {
             TechDef curDef = GameData.TECHS.get(current.getTechType());
             String curName = curDef != null ? curDef.name() : current.getTechType();
             result.put("success", false);
-            result.put("message", "国防研究所正在研发【" + curName + " Lv." + current.getTargetLevel() + "】，请等待完成或使用加速符");
+            result.put("message", "军工科技研发中心正在研发【" + curName + " Lv." + current.getTargetLevel() + "】，请等待完成或使用加速符");
             return result;
         }
 

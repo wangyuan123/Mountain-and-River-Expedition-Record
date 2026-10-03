@@ -51,6 +51,7 @@ public class ChatServiceTest {
         assertNotNull(res);
         assertEquals("指挥部全员就绪！", res.content());
         assertEquals("TestCommander", res.username());
+        assertEquals(player.getAvatar(), res.avatar());
     }
 
     @Test

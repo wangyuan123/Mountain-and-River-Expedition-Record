@@ -28,7 +28,8 @@ public class MarchRouteService {
         else if(target instanceof WildTile c){tx=c.getX();ty=c.getY();}
         else throw new IllegalArgumentException("无效行军目标");
         if(!inside(sx,sy)||!inside(tx,ty))throw new IllegalArgumentException("出征坐标超出地图");
-        boolean navy=false,land=false;long population=0,capacity=(long)army.getOrDefault("transport",0)*80;
+        // 跨海运兵容量与运输机兵种载重共用同一数值，避免路线校验沿用旧上限。
+        boolean navy=false,land=false;long population=0,capacity=(long)army.getOrDefault("transport",0)*GameData.UNITS.get("transport").load();
         for(var entry:army.entrySet()){
             var u=GameData.UNITS.get(entry.getKey());if(u==null||entry.getValue()<=0)continue;
             if("sea".equals(u.branch()))navy=true;
@@ -67,7 +68,7 @@ public class MarchRouteService {
     }
     private boolean hasPort(Long owner,Integer slot){return buildings.findByPlayerIdAndCitySlotAndType(owner,slot,"port").stream().anyMatch(b->b.getLevel()!=null&&b.getLevel()>0);}
     private static void requireLift(long population,long capacity){
-        if(population>capacity)throw new IllegalArgumentException("跨海陆军需要运输机：所需运力 "+population+"，当前 "+capacity+"（每架80）");
+        if(population>capacity)throw new IllegalArgumentException("跨海陆军需要运输机：所需运力 "+population+"，当前 "+capacity+"（每架"+GameData.UNITS.get("transport").load()+"）");
     }
     private static int nearestSea(String mask,int x,int y){
         int found=-1,best=Integer.MAX_VALUE;

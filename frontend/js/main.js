@@ -83,6 +83,17 @@ window.Game = window.Game || {};
       this.setAuthMode(form && form.dataset.authMode === 'register' ? 'login' : 'register');
     },
 
+    togglePasswordVisibility: function (inputId, button) {
+      var input = document.getElementById(inputId);
+      if (!input) return;
+      var visible = input.type === 'text';
+      input.type = visible ? 'password' : 'text';
+      if (button) {
+        button.setAttribute('aria-pressed', visible ? 'false' : 'true');
+        button.setAttribute('aria-label', visible ? '显示密码' : '隐藏密码');
+      }
+    },
+
     setAuthMode: function (mode) {
       var form = document.getElementById('loginForm');
       if (!form) return;
@@ -206,6 +217,7 @@ window.Game = window.Game || {};
         if (G.Account) G.Account.clearNotice();
         self.showLoginMsg('登录成功,加载游戏...', false);
         self.guestMode = false;
+        self._showWelcomeAfterStart = true;
         return self.startGame();
       }).catch(function (err) {
         self.showLoginMsg(err && err.message ? err.message : '登录失败', true);
@@ -318,6 +330,10 @@ window.Game = window.Game || {};
         if (G.Chat) G.Chat.loadHistory();
         if (G.Mail) G.Mail.seed();
         if (G.Task && G.Task.Quests) { G.Task.Quests.init(); G.Task.Quests.onEvent('login', 1, true); }
+        if (Main._showWelcomeAfterStart) {
+          Main._showWelcomeAfterStart = false;
+          Main.showWelcomeIntro();
+        }
         // Connect WebSocket for real-time updates (skip guest mode - no valid JWT)
         if (G.WS && !Main.guestMode) {
           G.WS.connect();
@@ -327,6 +343,23 @@ window.Game = window.Game || {};
         if (G.toast && !(G.Protection && G.Protection.blocked)) G.toast('加载游戏状态失败');
         console.warn('[Main] startGame load failed:', err);
       });
+    },
+
+    showWelcomeIntro: function () {
+      if (document.getElementById('welcomeIntroModal')) return;
+      var mask = document.createElement('div');
+      mask.id = 'welcomeIntroModal'; mask.className = 'modal-mask welcome-intro-mask';
+      mask.innerHTML = '<div class="welcome-intro-card" role="dialog" aria-modal="true" aria-labelledby="welcomeIntroTitle">' +
+        '<div class="welcome-intro-kicker">前进基地 · 作战简报</div>' +
+        '<h2 id="welcomeIntroTitle">指挥官，欢迎来到《山河远征录》</h2>' +
+        '<p>烽烟席卷山河，你奉命接管一座尚待发展的前线基地。建设资源设施、组建部队、侦察周边，并将野地资源运回城内，让这里成为远征的起点。</p>' +
+        '<p>市政厅已经准备好第一批行动指引，现在由你下达第一道命令。</p>' +
+        '<div class="welcome-intro-actions"><button type="button" class="btn ok" id="welcomeStart">接管基地 · 开始指引</button><button type="button" class="btn" id="welcomeExplore">自行探索</button></div>' +
+        '</div>';
+      document.body.appendChild(mask);
+      var close = function () { if (mask.parentNode) mask.parentNode.removeChild(mask); };
+      mask.querySelector('#welcomeStart').onclick = close;
+      mask.querySelector('#welcomeExplore').onclick = function () { close(); if (G.Onboarding && G.Onboarding.mutate) G.Onboarding.mutate('skip'); };
     },
 
     logout: function (mode) {
@@ -392,6 +425,14 @@ window.Game = window.Game || {};
 
     saveCity: function () {
       var s = Core.state;
+      if (Number(s.player.cityNameRenameAvailableAt) > Date.now()) {
+        G.toast('这座城市今天已改名，请明日 0:00 后再试');
+        return;
+      }
+      if ((Number(s.items && s.items.cityRenameCard) || 0) <= 0 && (Number(s.resources && s.resources.gold) || 0) < 60) {
+        G.toast('城市改名卡或黄金不足（需 1 张改名卡或 60 黄金）');
+        return;
+      }
       var cityEl = document.getElementById('epCityName');
       var cityName = cityEl ? cityEl.value.trim() : '';
       var safeRe = /^[A-Za-z0-9_\u4e00-\u9fa5·\s]{1,12}$/;
@@ -505,6 +546,43 @@ window.Game = window.Game || {};
       });
     },
 
+    sendGuildChat: function (inputId, btnId) {
+      var inId = inputId || 'guildChatInput';
+      var el = document.getElementById(inId);
+      if (!el) return;
+      var text = (el.value || '').trim();
+      if (!text) {
+        G.toast('消息不能为空');
+        return;
+      }
+      if (text.length > 80) {
+        G.toast('消息不能超过 80 字');
+        return;
+      }
+      if (G.Chat && G.Chat.getGuildCooldown && G.Chat.getGuildCooldown() > 0) {
+        G.toast('发言冷却中，请等待 ' + G.Chat.getGuildCooldown() + ' 秒');
+        return;
+      }
+      if (!G.Chat || typeof G.Chat.sendGuild !== 'function') {
+        G.toast('军团聊天服务暂未就绪');
+        return;
+      }
+
+      var btn = document.getElementById(btnId || 'guildChatSendBtn');
+      if (btn) {
+        btn.disabled = true;
+        btn.classList.add('disabled');
+      }
+
+      G.Chat.sendGuild(text).then(function () {
+        el.value = '';
+        if (G.Chat && G.Chat.updateGuildSendBtnUI) G.Chat.updateGuildSendBtnUI();
+      }).catch(function (err) {
+        G.toast(err.message || '发送失败');
+        if (G.Chat && G.Chat.updateGuildSendBtnUI) G.Chat.updateGuildSendBtnUI();
+      });
+    },
+
     renderNavBar: function () {
       var bar = G.$('navbar');
       if (!bar) return;
@@ -513,7 +591,8 @@ window.Game = window.Game || {};
       var previous = bar.querySelector('.nav-viewport');
       var page = previous && previous.clientWidth ? Math.round(previous.scrollLeft / previous.clientWidth) : 0;
       var landscapeNav = landscapeNavigationEnabled();
-      var scrollTop = previous ? previous.scrollTop : 0;
+      var previousPages = previous ? previous.querySelectorAll('.nav-page') : [];
+      var pageScrolls = Array.prototype.map.call(previousPages, function (el) { return el.scrollTop; });
       this.syncLandscapeNavState();
       // 普通 tick 不重建导航，避免打断手势或把玩家正在浏览的分页拉回首页。
       if (bar._navHtml === html && !routeChanged) return;
@@ -527,22 +606,21 @@ window.Game = window.Game || {};
       if (!viewport) return;
       var pages = viewport.querySelectorAll('.nav-page');
       var dots = bar.querySelectorAll('.nav-page-dot');
-      if (landscapeNav) {
-        viewport.scrollTop = scrollTop;
-        if (routeChanged) {
-          var active = viewport.querySelector('.navitem.active');
-          if (active) {
-            var bounds = active.getBoundingClientRect();
-            var frame = viewport.getBoundingClientRect();
-            if (bounds.top < frame.top) viewport.scrollTop += bounds.top - frame.top;
-            else if (bounds.bottom > frame.bottom) viewport.scrollTop += bounds.bottom - frame.bottom;
-          }
-        }
-        return;
-      }
       if (routeChanged) {
         pages.forEach(function (el, index) {
           if (el.querySelector('.navitem.active')) page = index;
+        });
+      }
+      // 横屏与竖屏均横向分页；横屏每页单独保留纵向滚动位置。
+      if (landscapeNav) {
+        pages.forEach(function (el, index) {
+          el.scrollTop = pageScrolls[index] || 0;
+          var active = routeChanged && el.querySelector('.navitem.active');
+          if (!active) return;
+          var bounds = active.getBoundingClientRect();
+          var frame = el.getBoundingClientRect();
+          if (bounds.top < frame.top) el.scrollTop += bounds.top - frame.top;
+          else if (bounds.bottom > frame.bottom) el.scrollTop += bounds.bottom - frame.bottom;
         });
       }
       function updateDots() {

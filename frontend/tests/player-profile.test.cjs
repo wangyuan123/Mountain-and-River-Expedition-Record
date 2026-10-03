@@ -244,7 +244,7 @@ test('city rename validates, retries failed saves, and updates the city after su
   const context = vm.createContext({ console, document });
   context.window = context;
   context.Game = {
-    Core: { state: { player }, render() { renders++; } },
+    Core: { state: { player, resources: { gold: 120 } }, render() { renders++; } },
     API: { setCityName(name) { calls.push(name); return fail ? Promise.reject(new Error('网络错误')) : Promise.resolve(); } },
     toast(message) { messages.push(message); }
   };
@@ -253,6 +253,7 @@ test('city rename validates, retries failed saves, and updates the city after su
   context.Game.Main.closePlayerDrawer = () => { drawerCloses++; };
   context.Game.Main.promptRenameCityInDrawer();
   const modal = elements.renameCityModal;
+  assert.match(modal.innerHTML, /未持有城市改名卡，将消耗 60 黄金/);
   const input = modal.controls['#renameCityInput'];
   const submit = modal.controls['.account-confirm-submit'];
   const form = modal.controls['#renameCityForm'];
@@ -276,4 +277,36 @@ test('city rename validates, retries failed saves, and updates the city after su
   assert.equal(elements.renameCityModal, undefined);
   assert.equal(drawerCloses, 1);
   assert.equal(renders, 1);
+});
+
+test('city rename shows daily reset and blocks another request that day', () => {
+  const elements = {};
+  const messages = [];
+  const document = {
+    getElementById(id) { return elements[id] || null; },
+    addEventListener() {}, removeEventListener() {},
+    createElement() {
+      const controls = {};
+      for (const selector of ['#renameCityInput', '.account-confirm-cancel', '.account-confirm-submit', '#renameCityForm']) {
+        controls[selector] = { focus() {} };
+      }
+      return { controls, querySelector(selector) { return controls[selector]; }, remove() { delete elements[this.id]; } };
+    },
+    body: { appendChild(element) { elements[element.id] = element; } }
+  };
+  const context = vm.createContext({ console, document, Date });
+  context.window = context;
+  context.Game = {
+    Core: { state: { player: { cityName: '北城', cityNameRenameAvailableAt: Date.now() + 60000 } } },
+    API: { setCityName() { throw Error('不应发送改名请求'); } },
+    toast(message) { messages.push(message); }
+  };
+  load(context, 'player-profile.js');
+  context.Game.PlayerProfile.promptRenameCityInDrawer();
+  const modal = elements.renameCityModal;
+  assert.match(modal.innerHTML, /北京时间 0:00 重置/);
+  assert.match(modal.innerHTML, /这座城市今日已修改/);
+  assert.match(modal.innerHTML, /城市改名卡或黄金不足/);
+  modal.controls['#renameCityForm'].onsubmit({ preventDefault() {} });
+  assert.match(messages[0], /请明日 0:00 后再试/);
 });

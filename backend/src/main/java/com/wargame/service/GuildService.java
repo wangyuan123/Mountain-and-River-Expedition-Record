@@ -7,8 +7,10 @@ import com.wargame.model.entity.GuildMember;
 import com.wargame.model.entity.Player;
 import com.wargame.repository.GuildApplicationRepository;
 import com.wargame.repository.GuildMemberRepository;
+import com.wargame.model.entity.Resources;
 import com.wargame.repository.GuildRepository;
 import com.wargame.repository.PlayerRepository;
+import com.wargame.repository.ResourcesRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,8 +23,15 @@ import java.util.Map;
 @Service
 public class GuildService {
 
+    public static final int CREATE_GUILD_GOLD_COST = 10000;
+
     @org.springframework.beans.factory.annotation.Autowired private AccountService accounts;
     @org.springframework.beans.factory.annotation.Autowired private GuildRelationService guildRelations;
+    @org.springframework.beans.factory.annotation.Autowired(required = false) private ResourcesRepository resourcesRepository;
+    @org.springframework.beans.factory.annotation.Autowired(required = false) private CityScope cityScope;
+
+    public void setResourcesRepository(ResourcesRepository resourcesRepository) { this.resourcesRepository = resourcesRepository; }
+    public void setCityScope(CityScope cityScope) { this.cityScope = cityScope; }
 
     private static final int MAX_MEMBERS = 30;
     private static final String LEADER = "leader";
@@ -55,11 +64,25 @@ public class GuildService {
     }
 
     @Transactional
-    /** 创建时保存选定徽章；旧客户端未传 icon 时沿用旗帜默认值。 */
+    /** 创建时保存选定徽章并扣除 10000 黄金；旧客户端未传 icon 时沿用旗帜默认值。 */
     public Map<String, Object> create(Long playerId, String rawName, String rawIcon) {
         requireNoGuild(playerId);
         String name = normalizeName(rawName);
         if (guildRepository.existsByName(name)) throw new IllegalArgumentException("军团名称已被占用");
+
+        if (resourcesRepository != null) {
+            int slot = cityScope != null ? cityScope.slot(playerId) : 0;
+            Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, slot)
+                    .or(() -> resourcesRepository.findFirstByPlayerIdOrderByCitySlotAsc(playerId))
+                    .orElseThrow(() -> new IllegalArgumentException("未找到资源库，无法创建军团"));
+            int currentGold = res.getGold() != null ? res.getGold() : 0;
+            if (currentGold < CREATE_GUILD_GOLD_COST) {
+                throw new IllegalArgumentException("创建军团需要消耗 " + CREATE_GUILD_GOLD_COST + " 黄金，当前黄金不足(拥有 " + currentGold + ")");
+            }
+            res.setGold(currentGold - CREATE_GUILD_GOLD_COST);
+            resourcesRepository.save(res);
+        }
+
         long now = System.currentTimeMillis();
         Guild guild = new Guild();
         guild.setName(name);

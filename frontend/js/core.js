@@ -600,7 +600,34 @@ window.Game = window.Game || {};
       }, 3000);
     },
 
+    /**
+     * 嵌入论坛与独立论坛入口共用登录及战报分享参数。
+     * @param {Object} [options] - 可选的 shareReportId、boardId
+     * @returns {string} 论坛访问地址
+     */
+    getForumUrl: function (options) {
+      options = options || {};
+      var token = localStorage.getItem('wargame_token') || (G.API && G.API.getToken ? G.API.getToken() : '');
+      var base = (window.location.protocol + '//' + window.location.hostname + ':5174');
+      var url = base;
+      var params = [];
+      if (token) params.push('token=' + encodeURIComponent(token));
+      if (options.shareReportId) params.push('share_report_id=' + encodeURIComponent(options.shareReportId));
+      if (options.boardId) params.push('boardId=' + encodeURIComponent(options.boardId));
+      if (params.length) url += (url.indexOf('?') >= 0 ? '&' : '?') + params.join('&');
+      return url;
+    },
+
+    openForum: function (options) {
+      window.open(this.getForumUrl(options), '_blank');
+    },
+
     go: function (route) {
+      if (route === 'forum') {
+        this.openForum();
+        return;
+      }
+      if (route === 'world' && G.WorldMap) G.WorldMap.prepareEntry();
       if (route !== this.route) {
         this.history.push(this.route);
         var view = $('view');
@@ -624,6 +651,7 @@ window.Game = window.Game || {};
     back: function () {
       if (this.history.length) this.route = this.history.pop();
       else this.route = 'home';
+      if (this.route === 'world' && G.WorldMap) G.WorldMap.prepareEntry();
       var view = $('view');
       if (view) view.scrollTop = 0;
       if (G.Main && G.Main.renderNavBar) G.Main.renderNavBar();
@@ -668,6 +696,7 @@ window.Game = window.Game || {};
         '</div>' +
         '</div>' +
         '<div class="player-bar-right">' +
+        '<span class="forum-entry-btn" title="进入战术参谋论坛" onclick="Game.Core.openForum()">🎖️ 论坛</span>' +
         '<span class="diamond" title="充值" onclick="Game.go(\'recharge\')">💎 ' + fmt(diamond) + '</span>' +
         '</div>' +
         '</div>';
@@ -679,6 +708,8 @@ window.Game = window.Game || {};
       }
       if (G.Protection) html += G.Protection.banner();
       top.innerHTML = html;
+      // 地图按钮可能挂在旧顶栏中，重绘后重新接回当前玩家栏。
+      if (G.WorldMap && G.WorldMap.syncToolbar) G.WorldMap.syncToolbar();
     },
 
     render: function () {
@@ -691,12 +722,15 @@ window.Game = window.Game || {};
       if (this.route !== 'battle' && G.Battle && G.Battle.stopTacticalTimer) G.Battle.stopTacticalTimer();
       if (this.route !== 'wounded' && G.Wounded) G.Wounded.stop();
       if (this.route !== 'tech' && G.Tech && G.Tech.stopTimer) G.Tech.stopTimer();
+      var screen = $('screen');
+      if (screen && screen.classList) screen.classList.toggle('chat-open', this.route === 'chat');
       this.renderTop();
       if (G.Main && G.Main.renderNavBar) G.Main.renderNavBar();
       var v = $('view');
       var fn = this.views[this.route] || this.views.home;
       if (v) {
-        if (!(this.route === 'world' && G.WorldMap && G.WorldMap.isMap() && G.WorldMap.mounted(v))) v.innerHTML = '';
+        var chatMounted = this.route === 'chat' && v.querySelector('.chat-page');
+        if (!chatMounted && !(this.route === 'world' && G.WorldMap && G.WorldMap.isMap() && G.WorldMap.mounted(v))) v.innerHTML = '';
         fn.call(this, v);
         // 每个功能页提供一致的返回入口。按钮放在页面渲染完成后插入，
         // 因此不会覆盖各模块自己的标题、筛选器或地图容器。
@@ -725,7 +759,7 @@ window.Game = window.Game || {};
     },
 
     renderBackButton: function (view) {
-      if (!view || view.querySelector('.page-backbar')) return;
+      if (!view || view.querySelector('.page-backbar') || view.querySelector('.world-map-shell')) return;
       var bar = document.createElement('div');
       bar.className = 'page-backbar';
       var button = document.createElement('button');
@@ -745,8 +779,9 @@ window.Game = window.Game || {};
       var top = $('topbar');
       if (!top) return;
       if (!this.state) { top.innerHTML = ''; return; }
-      var diamondEl = top.querySelector('.diamond');
-      if (!diamondEl) {
+      var diamondEl = top.querySelector('.player-bar-right .diamond') || top.querySelector('.diamond');
+      var forumBtn = top.querySelector('.forum-entry-btn');
+      if (!diamondEl || !forumBtn) {
         this.renderTop();
         return;
       }
@@ -797,6 +832,11 @@ window.Game = window.Game || {};
     silentUpdate: function (tickData) {
       if (!this.state) return;
       var route = this.route || 'home';
+
+      if (route === 'chat' && G.Chat) {
+        G.Chat.updateSendBtnUI();
+        return;
+      }
 
       if (route === 'academy' && G.Officer && G.Officer.updateAcademyRefresh) {
         G.Officer.updateAcademyRefresh();

@@ -6,10 +6,13 @@ import com.wargame.model.entity.PlayerItem;
 import com.wargame.model.entity.Resources;
 import com.wargame.repository.PlayerItemRepository;
 import com.wargame.service.OfficerService;
+import com.wargame.service.DepotService;
+import com.wargame.service.NameChangePolicy;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Map;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -17,6 +20,9 @@ public class OfficerRenameTest extends BaseServiceTest {
 
     @Autowired
     private OfficerService officerService;
+
+    @Autowired
+    private DepotService depotService;
 
     @Autowired
     private PlayerItemRepository playerItemRepository;
@@ -132,5 +138,40 @@ public class OfficerRenameTest extends BaseServiceTest {
         Map<String, Object> result = officerService.rename(player1.getId(), officer2.getId(), "抢名字");
         assertFalse((Boolean) result.get("success"));
         assertEquals("军官不存在", result.get("message"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void dailyLimitIsSharedByDirectRenameAndRenameCardWithoutChargingAgain() {
+        Player player = createTestPlayer();
+        Officer first = createOfficer(player.getId(), "idle", 50, 40, 30);
+        Officer second = createOfficer(player.getId(), "idle", 50, 40, 30);
+        PlayerItem card = new PlayerItem();
+        card.setPlayerId(player.getId());
+        card.setItemKey("renameCard");
+        card.setCount(2);
+        card.setUpdatedAt(System.currentTimeMillis());
+        playerItemRepository.save(card);
+
+        assertEquals(true, officerService.rename(player.getId(), first.getId(), "新将领一").get("success"));
+        List<Map<String, Object>> officers = (List<Map<String, Object>>) gameStateService.getGameState(player.getId()).get("officers");
+        Map<String, Object> firstState = officers.stream().filter(o -> first.getId().equals(o.get("id"))).findFirst().orElseThrow();
+        assertTrue(((Number) firstState.get("nameRenameAvailableAt")).longValue() > System.currentTimeMillis());
+
+        int goldBefore = resourcesRepository.findByPlayerIdAndCitySlot(player.getId(), 0).orElseThrow().getGold();
+        assertEquals(false, officerService.rename(player.getId(), first.getId(), "再次改名").get("success"));
+        assertEquals(false, depotService.useItem(player.getId(), "renameCard", first.getId(), "改名卡重试").get("success"));
+        assertEquals(goldBefore, resourcesRepository.findByPlayerIdAndCitySlot(player.getId(), 0).orElseThrow().getGold());
+        assertEquals(1, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "renameCard").orElseThrow().getCount());
+
+        assertEquals(true, depotService.useItem(player.getId(), "renameCard", second.getId(), "另一将领").get("success"));
+        assertEquals(0, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "renameCard").orElseThrow().getCount());
+
+        Officer storedFirst = officerRepository.findById(first.getId()).orElseThrow();
+        storedFirst.setNameRenamedAt(System.currentTimeMillis() - 24 * 60 * 60 * 1000L);
+        officerRepository.saveAndFlush(storedFirst);
+        assertEquals(0L, NameChangePolicy.nextAllowedAt(storedFirst.getNameRenamedAt(), System.currentTimeMillis()));
+        assertEquals(true, officerService.rename(player.getId(), first.getId(), "次日改名").get("success"));
+        assertEquals(goldBefore - 60, resourcesRepository.findByPlayerIdAndCitySlot(player.getId(), 0).orElseThrow().getGold());
     }
 }

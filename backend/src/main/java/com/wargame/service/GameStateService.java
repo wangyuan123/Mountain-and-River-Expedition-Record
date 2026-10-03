@@ -20,6 +20,9 @@ import java.util.concurrent.ThreadLocalRandom;
 @Service
 public class GameStateService {
 
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
+
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
     @org.springframework.beans.factory.annotation.Autowired
@@ -71,6 +74,7 @@ public class GameStateService {
             "house", "farm", "refinery", "oilfield", "raremine", "factory", "depot"
     );
     private static final Set<String> HOME_MODULES = Set.of("officers", "army", "resources", "chat");
+    private static final int CITY_RENAME_GOLD_COST = 60;
 
     public GameStateService(WorldViewService worldViewService, PlayerRepository playerRepository,
                             ResourcesRepository resourcesRepository,
@@ -126,15 +130,35 @@ public class GameStateService {
         this.npcCitySpawnService = npcCitySpawnService;
     }
 
+    /** 当前城市每天只可改名一次；主城额度记在玩家行，分城额度记在对应城市行。 */
     @Transactional
     public void setCityName(Long playerId, String cityName) {
-        Player player = playerRepository.findById(playerId)
-                .orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
-        cityScope.economy(playerId).setCityName(cityName);
-        playerRepository.save(player);
+        CityEconomy economy = cityScope.economy(playerId);
+        entityManager.flush();
+        entityManager.refresh(economy, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+        long now = System.currentTimeMillis();
+        if (cityName.equals(economy.getCityName())) throw new IllegalArgumentException("新城市名称与当前名称相同");
+        if (NameChangePolicy.nextAllowedAt(economy.getCityNameRenamedAt(), now) > now)
+            throw new IllegalArgumentException("这座城市今天已改名，请明日 0:00 后再试");
+        // 扣卡会清空 JPA 缓存，后续必须重新读取当前城市。
+        int consumedCard = playerItemRepository.tryConsume(playerId, "cityRenameCard", 1, now);
+        if (consumedCard == 0) {
+            Resources resources = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId))
+                    .orElseThrow(() -> new IllegalArgumentException("玩家资源数据不存在"));
+            entityManager.refresh(resources, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+            int gold = Objects.requireNonNullElse(resources.getGold(), 0);
+            if (gold < CITY_RENAME_GOLD_COST)
+                throw new IllegalArgumentException("城市改名卡或黄金不足（需 1 张城市改名卡或 60 黄金）");
+            resources.setGold(gold - CITY_RENAME_GOLD_COST);
+            resourcesRepository.save(resources);
+        }
+        economy = cityScope.economy(playerId);
+        economy.setCityName(cityName);
+        economy.setCityNameRenamedAt(now);
         cityScope.saveEconomy(playerId);
         cityScope.selected(playerId).ifPresent(city -> {
             city.setName(cityName);
+            city.setCityNameRenamedAt(now);
             playerCityRepository.save(city);
         });
     }
@@ -194,6 +218,7 @@ public class GameStateService {
                 .orElseThrow(() -> new IllegalArgumentException("Player not found: " + playerId));
 
         Map<String, Object> state = new LinkedHashMap<>();
+        long stateNow = System.currentTimeMillis();
 
         // --- player ---
         Map<String, Object> playerInfo = new LinkedHashMap<>();
@@ -202,8 +227,10 @@ public class GameStateService {
         playerInfo.put("name", player.getDisplayName() == null || player.getDisplayName().isBlank()
                 ? player.getUsername() : player.getDisplayName());
         playerInfo.put("faction", player.getFaction());
-        playerInfo.put("cityName", cityScope.economy(playerId).getCityName() == null || cityScope.economy(playerId).getCityName().isBlank()
-                ? "新城市" : cityScope.economy(playerId).getCityName());
+        CityEconomy currentCity = cityScope.economy(playerId);
+        playerInfo.put("cityName", currentCity.getCityName() == null || currentCity.getCityName().isBlank()
+                ? "新城市" : currentCity.getCityName());
+        playerInfo.put("cityNameRenameAvailableAt", NameChangePolicy.nextAllowedAt(currentCity.getCityNameRenamedAt(), stateNow));
         playerInfo.put("avatar", player.getAvatar() != null ? player.getAvatar() : "");
         playerInfo.put("homeModuleOrder", homeModuleOrder(player));
         int rankTier = player.getMilitaryRank() != null ? player.getMilitaryRank() : 1;
@@ -317,6 +344,7 @@ public class GameStateService {
             // 不能包装成 "o_1" 这类前端显示标识，否则任命/解雇等接口无法反序列化。
             offMap.put("id", o.getId());
             offMap.put("name", o.getName());
+            offMap.put("nameRenameAvailableAt", NameChangePolicy.nextAllowedAt(o.getNameRenamedAt(), stateNow));
             offMap.put("star", o.getStar() != null ? o.getStar() : 1);
             offMap.put("level", o.getLevel() != null ? o.getLevel() : 1);
             offMap.put("bio", o.getBio() != null ? o.getBio() : "");

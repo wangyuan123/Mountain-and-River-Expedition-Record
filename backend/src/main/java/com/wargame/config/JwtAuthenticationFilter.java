@@ -44,19 +44,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = extractToken(request);
         if (StringUtils.hasText(token) && jwtUtil.validateToken(token)) {
             try {
-                String username = jwtUtil.getUsernameFromToken(token);
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                if (!(userDetails instanceof com.wargame.model.UserPrincipal principal)
-                        || !userDetails.isEnabled() || !userDetails.isAccountNonLocked()
-                        || principal.getAuthVersion() != jwtUtil.getAuthVersion(token)
-                        || !principal.getPlayerId().equals(jwtUtil.getPlayerIdFromToken(token))) {
-                    // 账号已被注销，禁止继续访问
-                    SecurityContextHolder.clearContext();
-                } else {
+                if (jwtUtil.isAdminToken(token)) {
+                    String username = jwtUtil.getUsernameFromToken(token);
+                    Long adminId = jwtUtil.getAdminIdFromToken(token);
+                    String role = jwtUtil.getRoleFromToken(token);
+                    com.wargame.model.AdminPrincipal principal = new com.wargame.model.AdminPrincipal(adminId, username, "", role, false);
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                            userDetails, null, userDetails.getAuthorities());
+                            principal, null, principal.getAuthorities());
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
+                } else {
+                    String username = jwtUtil.getUsernameFromToken(token);
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                    if (!(userDetails instanceof com.wargame.model.UserPrincipal principal)
+                            || !userDetails.isEnabled() || !userDetails.isAccountNonLocked()
+                            || principal.getAuthVersion() != jwtUtil.getAuthVersion(token)
+                            || !principal.getPlayerId().equals(jwtUtil.getPlayerIdFromToken(token))) {
+                        // 账号已被注销或封号，禁止继续访问
+                        SecurityContextHolder.clearContext();
+                    } else {
+                        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                                userDetails, null, userDetails.getAuthorities());
+                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                    }
                 }
             } catch (Exception e) {
                 SecurityContextHolder.clearContext();

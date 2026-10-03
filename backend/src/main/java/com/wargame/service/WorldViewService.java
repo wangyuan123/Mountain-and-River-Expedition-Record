@@ -341,6 +341,8 @@ public class WorldViewService {
         mMap.put("startAt", m.getStartAt());
         mMap.put("arriveAt", m.getArriveAt());
         mMap.put("returning", Boolean.TRUE.equals(m.getReturning()));
+        mMap.put("battleWon", Boolean.TRUE.equals(m.getBattleWon()));
+        mMap.put("win", Boolean.TRUE.equals(m.getBattleWon()));
         mMap.put("gathering", Boolean.TRUE.equals(m.getGathering()));
         mMap.put("gatherMode", Objects.requireNonNullElse(m.getGatherMode(), "auto"));
         mMap.put("gatherStartAt", m.getGatherStartAt());

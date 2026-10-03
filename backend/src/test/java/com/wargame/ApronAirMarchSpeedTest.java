@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@DisplayName("战备起飞场空军全图航速加成测试")
+@DisplayName("战备机场空军全图航速加成测试")
 class ApronAirMarchSpeedTest extends BaseServiceTest {
 
     private Long playerId;
@@ -22,7 +22,7 @@ class ApronAirMarchSpeedTest extends BaseServiceTest {
     }
 
     @Test
-    @DisplayName("战备起飞场定义校验: airSpdBonus 为 3，移除 airCap")
+    @DisplayName("战备机场定义校验: airSpdBonus 为 3，移除 airCap")
     void testBuildingDefProperties() {
         BuildingDef apronDef = BuildingDef.BUILDINGS.get("apron");
         assertNotNull(apronDef);
@@ -31,16 +31,16 @@ class ApronAirMarchSpeedTest extends BaseServiceTest {
     }
 
     @Test
-    @DisplayName("战备起飞场航速加成: Lv.0 -> 1.0, Lv.5 -> 1.15, Lv.10 -> 1.30")
+    @DisplayName("战备机场航速加成: Lv.0 -> 1.0, Lv.5 -> 1.15, Lv.10 -> 1.30")
     void testApronSpeedMultiplier() {
-        // 无起飞场
+        // 无战备机场
         assertEquals(1.0, marchService.getUnitTechSpdMul(playerId, "air"), 1e-4);
 
-        // 建造 Lv.5 战备起飞场
+        // 建造 Lv.5 战备机场
         Building apron = createBuilding(playerId, "apron", 5);
         assertEquals(1.15, marchService.getUnitTechSpdMul(playerId, "air"), 1e-4);
 
-        // 升级到 Lv.10 战备起飞场
+        // 升级到 Lv.10 战备机场
         apron.setLevel(10);
         buildingRepository.save(apron);
         assertEquals(1.30, marchService.getUnitTechSpdMul(playerId, "air"), 1e-4);
@@ -55,7 +55,7 @@ class ApronAirMarchSpeedTest extends BaseServiceTest {
     }
 
     @Test
-    @DisplayName("战备起飞场仅影响空军，不影响步兵、装甲车或舰船的大地图航速")
+    @DisplayName("战备机场仅影响空军，不影响步兵、装甲车或舰船的大地图航速")
     void testNonAirUnitsUnaffectedByApron() {
         createBuilding(playerId, "apron", 10);
 

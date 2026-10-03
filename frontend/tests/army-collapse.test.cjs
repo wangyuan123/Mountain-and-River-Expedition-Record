@@ -311,7 +311,7 @@ test('dispatch unit selection displays compact [兵种名](编号) format with t
   assert.match(html, /class="qty recruit-qty"/);
   assert.match(html, /class="recruit-slider"/);
   assert.match(html, /出征兵力 \/ 带兵上限/);
-  assert.match(html, /id="estDispatchTroops">2 \/ 200/);
+  assert.match(html, /id="estDispatchTroops">0 \/ 200/);
 });
 
 test('compact css styles define 24px height controls and reduced margins', () => {
@@ -325,3 +325,22 @@ test('compact css styles define 24px height controls and reduced margins', () =>
   // compact unit cards
   assert.match(css, /\.unit-card\s*\{[^}]*padding:\s*5px 8px/);
 });
+
+test('army queue renders free speedup button and executes freeSpeedUp', async () => {
+  const { G, c } = setupArmy();
+  let calledQueueId = null;
+  G.API.freeArmySpeedUp = async (queueId) => {
+    calledQueueId = queueId;
+    return { success: true, message: '⚡ 免费加速成功，部队生产完成！' };
+  };
+
+  const itemWithin5m = { id: 101, unitType: 'infantry', finishesAt: Date.now() + 200000 };
+  const itemOver5m = { id: 102, unitType: 'tank', finishesAt: Date.now() + 600000 };
+
+  assert.ok(G.Army.canFreeSpeedUp(itemWithin5m), '5分钟内的生产任务应可免费加速');
+  assert.equal(G.Army.canFreeSpeedUp(itemOver5m), false, '超过5分钟且非引导任务不可免费加速');
+
+  await G.Army.freeSpeedUp(101);
+  assert.equal(calledQueueId, 101, '应调用 freeArmySpeedUp 并传入正确的 queueId');
+});
+

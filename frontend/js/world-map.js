@@ -1,7 +1,7 @@
 /* global window, document, PIXI, requestAnimationFrame, cancelAnimationFrame */
 (function (G) {
   'use strict';
-  var instance = null, camera = null, owner = '', mode = 'map', enginePromise = null;
+  var instance = null, camera = null, owner = '', mode = 'list', enginePromise = null, pendingFocus = null;
   function loadEngine() {
     if (window.PIXI) return Promise.resolve();
     if (enginePromise) return enginePromise;
@@ -15,7 +15,7 @@
     return enginePromise;
   }
   var hitMasks = new WeakMap();
-  var textures = {}, terrainTexture = null, terrainLoading = null, terrainVersion = -1;
+  var textures = {}, terrainTexture = null, terrainTextureNoSnow = null, terrainLoading = null, terrainWorldSize = -1;
   function hitMask(texture) {
     if (hitMasks.has(texture)) return hitMasks.get(texture);
     if (!texture.baseTexture.valid) return null;
@@ -35,7 +35,12 @@
     // Fill the projected footprint: player cities span 2×2 cells, other targets one.
     var span = G.MapLayout.isPlayer(t) ? 2 : 1;
     var projection = G.MapCamera.projection;
-    return span * scale * (Math.abs(projection.a) + Math.abs(projection.c));
+    var size = span * scale * (Math.abs(projection.a) + Math.abs(projection.c));
+    if (t.kind === 'wild') {
+      if (t.type === 'snow') return size * 1.035;
+      if (t.type === 'grassland' || t.type === 'plains') return size * 1.18;
+    }
+    return size;
   }
   function markerCenter(t) {
     var b = G.MapLayout.bounds(t, G.DATA.world.size);
@@ -45,12 +50,11 @@
     if (t.sea && t.kind === 'bandit') return width;
     if (t.kind === 'wild') return width;
     // Ground diamond depth/width measured in the source art (exclude building
-    // height): garden .90, harbor .60, fortress .75. Use the wild/terrain
-    // projection as the baseline; keep the original textures intact.
+    // height): garden .90, harbor .60, fortress .75. Extend the player city
+    // ground depth relative to the baseline projection to match wild resources.
     var sourceDepth = G.MapLayout.isPlayer(t) ? (t.coastal === true ? .60 : .90) : .75;
-    var p = G.MapCamera.projection;
-    var groundDepth = (Math.abs(p.b) + Math.abs(p.d)) / (Math.abs(p.a) + Math.abs(p.c));
-    return width * groundDepth / sourceDepth;
+    var groundDepth = 0.5;
+    return width * groundDepth / sourceDepth * (G.MapLayout.isPlayer(t) ? 1.28 : 1);
   }
   function icon(t, snowCells) {
     if (t.sea && t.kind === 'bandit') {
@@ -66,6 +70,21 @@
       return 'img/map/snow-'+depth+'.webp';
     }
     if (t.kind === 'wild' && t.type === 'grassland') return 'img/map/grass-' + ['medium','sparse','plain'][Math.abs(t.x*17+t.y*31)%3] + '.webp';
+    if (t.kind === 'wild' && t.type === 'forest') {
+      var fVariants = ['dense', 'ridge', 'edge'];
+      var fi = (typeof t.x === 'number' && typeof t.y === 'number') ? Math.abs(t.x + t.y * 2) % 3 : 0;
+      return 'img/map/wild-forest-' + fVariants[fi] + '.webp';
+    }
+    if (t.kind === 'wild' && t.type === 'hill') {
+      var hVariants = ['peak', 'ridge', 'foothill'];
+      var hi = (typeof t.x === 'number' && typeof t.y === 'number') ? Math.abs(t.x * 2 + t.y) % 3 : 0;
+      return 'img/map/wild-hill-' + hVariants[hi] + '.webp';
+    }
+    if (t.kind === 'wild' && t.type === 'swamp') {
+      var sVariants = ['deep', 'creek', 'marsh'];
+      var si = (typeof t.x === 'number' && typeof t.y === 'number') ? Math.abs(t.x * 2 + t.y * 2 + 1) % 3 : 0;
+      return 'img/map/wild-swamp-' + sVariants[si] + '.webp';
+    }
     if (t.kind === 'wild') return (G.DATA.wildTypes[t.type] || {}).icon || 'img/map/wild-forest.webp';
     return 'img/map/npc-fortress.webp';
   }
@@ -79,7 +98,7 @@
    * @returns {number} 兵种模型的像素尺寸。
    */
   function marchMarkerIconSize(cameraScale) {
-    return Math.max(36, Math.min(56, cameraScale * .7));
+    return Math.max(48, Math.min(72, Math.round(cameraScale * .9)));
   }
   /**
    * 将行军编队整理为地图可读的主力、伴随兵种和规模信息。
@@ -116,21 +135,57 @@
     sprite.height = sourceHeight * scale;
   }
   /**
-   * 根据当前行军路段确定模型朝向；竖直路段沿用最近的水平行进方向。
+   * 判断是否为人形站立兵种（步兵、特种兵等）。
+   * 人形兵种在地图上为立绘站立姿态，前进时必须始终保持垂直直立，禁止车头式平面旋转倾斜。
+  /**
+   * 判断是否为立绘/沙盘模型兵种。所有兵种均保持正立姿态，避免在斜视透视下发生侧翻或倒立。
+   * @param {string} [unitId] - 兵种 ID。
+   * @returns {boolean} 是否为正立兵种。
+   */
+  function isUprightUnit(unitId) {
+    return true;
+  }
+  // 方案1（沙盘兵棋统一正立模式）：保留空对象以兼容外部调用。
+  var marchForwardVectors = {};
+  /**
+   * 按当前路段确定朝向：所有沙盘兵棋模型均保持正立姿态（rotation = 0），避免俯视侧翻或倒立；
+   * 仅根据水平移动方向进行左右转身镜像，具体行军方向由地面高亮箭头与行军虚线指示。
    * @param {Object[]} points - 路线的屏幕坐标。
    * @param {number} segmentIndex - 当前所在路段，行军结束时可等于路段总数。
-   * @returns {number} 默认朝左的模型所需的水平缩放符号。
+   * @param {string} [unitId] - 主力兵种 ID。
+   * @returns {Object} 兵种模型相对于原图的旋转弧度与水平镜像符号。
    */
-  function marchFacing(points, segmentIndex) {
+  function marchHeading(points, segmentIndex, unitId) {
+    var direction = null;
     for (var index = Math.min(segmentIndex, points.length - 2); index >= 0; index--) {
-      var delta = points[index + 1].x - points[index].x;
-      if (delta !== 0) return delta > 0 ? -1 : 1;
+      var dx = points[index + 1].x - points[index].x, dy = points[index + 1].y - points[index].y;
+      if (dx !== 0 || dy !== 0) { direction = {dx:dx,dy:dy}; break; }
     }
-    for (var nextIndex = segmentIndex + 1; nextIndex < points.length - 1; nextIndex++) {
-      var nextDelta = points[nextIndex + 1].x - points[nextIndex].x;
-      if (nextDelta !== 0) return nextDelta > 0 ? -1 : 1;
+    for (var nextIndex = segmentIndex + 1; !direction && nextIndex < points.length - 1; nextIndex++) {
+      var nextDx = points[nextIndex + 1].x - points[nextIndex].x, nextDy = points[nextIndex + 1].y - points[nextIndex].y;
+      if (nextDx !== 0 || nextDy !== 0) direction = {dx:nextDx,dy:nextDy};
     }
-    return 1;
+    if (!direction) return {rotation:0,scaleX:1,depthScale:1};
+    // 特种兵原图面朝右，其余所有载具、舰机与步兵原图前端均朝左；镜像以各自正面朝向为准。
+    // 若当前为纯垂直移动（dx === 0），回溯寻找上一有效水平方向，保持前进转身朝向。
+    var horizontalDx = direction.dx;
+    if (horizontalDx === 0) {
+      for (var hi = Math.min(segmentIndex, points.length - 2); hi >= 0; hi--) {
+        var hdx = points[hi + 1].x - points[hi].x;
+        if (hdx !== 0) { horizontalDx = hdx; break; }
+      }
+      if (horizontalDx === 0) {
+        for (var ni = segmentIndex + 1; ni < points.length - 1; ni++) {
+          var ndx = points[ni + 1].x - points[ni].x;
+          if (ndx !== 0) { horizontalDx = ndx; break; }
+        }
+      }
+    }
+    var scaleX = horizontalDx > 0 ? -1 : 1;
+    if (unitId === 'special') scaleX = -scaleX;
+    // 方案1（沙盘兵棋统一正立模式）：所有兵种模型永远保持垂直正立（rotation = 0），
+    // 绝不做破坏2.5D立体透视的平面大角度旋转，彻底杜绝侧翻、倒立与垂直爬墙。
+    return { rotation: 0, scaleX: scaleX, depthScale: 1 };
   }
   /**
    * 选择行军地图标记所代表的主力兵种，不影响服务端的行军速度或战斗结算。
@@ -231,15 +286,25 @@
     }
     marker.ownershipHit = {x:x,y:y,width:w,height:h};
   }
-  var cache = new G.MapChunks(function (x, y) { return G.API.getMapChunk(x, y); }, { limit: 96 });
+  var cache = new G.MapChunks(function (x, y) { return G.API.getMapChunk(x, y); }, { limit: 96, ttl: 15000 });
   function MapView(v) {
     this.view = v; this.destroyed = false; this.pointers = new Map(); this.listeners = [];
     this.markers = new Map(); this.visible = []; this.filter = 'all'; this.selected = null;
     this.detailSeq = 0; this.vx = 0; this.vy = 0; this.lastLoad = 0; this.raf = 0; this.dirty = true; this.animatingMarches = false;
     var cp = G.Core.state.world.cityPos || G.Core.state.world.pos || { x: 100, y: 100 };
     var homeCenter = markerCenter({ kind:'player', x:cp.x, y:cp.y });
-    if (!camera) camera = new G.MapCamera(G.DATA.world.size, homeCenter.x, homeCenter.y, 44);
-    this.camera = camera;
+    if (pendingFocus) {
+      var pf = pendingFocus;
+      pendingFocus = null;
+      var initCenter = markerCenter({ kind: 'wild', x: pf.x, y: pf.y });
+      if (!camera) camera = new G.MapCamera(G.DATA.world.size, initCenter.x, initCenter.y, 44);
+      else { camera.x = initCenter.x; camera.y = initCenter.y; camera.clamp(); }
+      this.camera = camera;
+      this.pendingCoordinate = { x: pf.x, y: pf.y };
+    } else {
+      if (!camera) camera = new G.MapCamera(G.DATA.world.size, homeCenter.x, homeCenter.y, 44);
+      this.camera = camera;
+    }
     v.innerHTML = '<section class="world-map-shell">' +
       '<div class="world-map-toolbar page-backbar"><button type="button" class="page-back-button" data-map="back" aria-label="返回上一步"><span>‹ 返回上一步</span></button>' +
       '<form class="world-map-search"><input aria-label="定位坐标" placeholder="例如 100,100" inputmode="text"><button class="page-back-button" type="submit"><span>[定位]</span></button><button type="button" class="page-back-button" data-map="refresh"><span>[刷新]</span></button></form>' +
@@ -249,11 +314,12 @@
       '<div class="world-map-controls"><button class="world-map-button" data-map="plus" aria-label="放大地图">+</button><button class="world-map-button" data-map="minus" aria-label="缩小地图">−</button><button class="world-map-button home" data-map="home">主城</button><button class="world-map-button" data-map="coast">海岸</button></div>' +
       '<div class="world-map-loading" role="status"></div><div class="world-map-crosshair"></div>' +
       '<div class="world-map-legend"><span class="own"><i class="map-key-shield" aria-hidden="true">✓</i> 我的城市 / 野地</span><span class="other">◆ 其他玩家</span><span class="neutral">◇ 无主野地</span><span class="map-legend-hint">点击标识或目标查看详情</span></div>' +
-      '<div class="world-map-detail" hidden></div></div><div class="world-map-hint">上北下南 · 左西右东 · 单指拖动 · 双指、滚轮或加减按钮缩放 · 拖动仅浏览，不改变出征起点</div></section>';
+      '<div class="world-map-detail" hidden></div></div></section>';
     this.shell = v.querySelector('.world-map-shell'); this.stageEl = v.querySelector('.world-map-stage');
+    this.toolbar = this.shell.querySelector('.world-map-toolbar');
     this.host = v.querySelector('.world-map-canvas'); this.detail = v.querySelector('.world-map-detail');
     this.statusEl = v.querySelector('.world-map-loading'); this.coordEl = v.querySelector('.map-coordinate'); this.regionEl = v.querySelector('.map-terrain-region');
-    this.app = new PIXI.Application({ width: 1, height: 1, backgroundColor: 0xe0e7d8, antialias: true, autoStart: false, resolution: Math.min(window.devicePixelRatio || 1, 2), autoDensity: true });
+    this.app = new PIXI.Application({ width: 1, height: 1, backgroundColor: 0x7dbceb, backgroundAlpha: 0, antialias: true, autoStart: false, resolution: Math.min(window.devicePixelRatio || 1, 2), autoDensity: true });
     this.app.stop();
     this.host.appendChild(this.app.view);
     // Zero-size probes share the canvas bounds, including portrait fullscreen rotation.
@@ -263,22 +329,36 @@
     });
     this.host.appendChild(plane);
     this.app.view.tabIndex = 0; this.app.view.setAttribute('aria-label', '世界地图，拖动浏览，双指、滚轮或加减按钮缩放，最小为初始大小，也可用方向键浏览');
-    var version=G.MapTerrain.revision?G.MapTerrain.revision():0;
-    if (!terrainTexture || terrainVersion!==version) {
-      if(terrainTexture)terrainTexture.destroy(true);
-      terrainTexture = PIXI.Texture.from(G.MapTerrain.create(G.DATA.world.size)); terrainVersion=version;
+    var worldSize = (G.DATA && G.DATA.world && G.DATA.world.size) || 200;
+    var baseTerrainSize = 200;
+    if (!terrainTexture || !terrainTextureNoSnow || terrainWorldSize !== baseTerrainSize) {
+      if (terrainTexture) terrainTexture.destroy(true);
+      if (terrainTextureNoSnow) terrainTextureNoSnow.destroy(true);
+      terrainTexture = PIXI.Texture.from(G.MapTerrain.create(baseTerrainSize, false));
+      terrainTextureNoSnow = PIXI.Texture.from(G.MapTerrain.create(baseTerrainSize, true));
+      terrainWorldSize = baseTerrainSize;
     }
-    this.terrainVersion=version;
+    this.groundSize = worldSize;
     this.ground = new PIXI.Sprite(terrainTexture);
+    this.groundQ2 = new PIXI.Sprite(terrainTexture);
+    this.groundQ3 = new PIXI.Sprite(terrainTextureNoSnow);
+    this.groundQ4 = new PIXI.Sprite(terrainTextureNoSnow);
     this.groundDetails = new PIXI.Container(); this.groundTiles = new Map();
-    this.terrain = new PIXI.Graphics(); this.routes = new PIXI.Graphics();
+    this.mapShadow = new PIXI.Graphics(); this.mapBorder = new PIXI.Graphics();
+    this.terrain = new PIXI.Graphics(); this.routes = new PIXI.Graphics(); this.routeFlow = new PIXI.Graphics();
+    this.routes.addChild(this.routeFlow);
+    this.cloudShadowLayer = new PIXI.Container(); this.cloudLayer = new PIXI.Container();
+    this.cloudShadowLayer.eventMode = this.cloudLayer.eventMode = 'none';
+    this.cloudSprites = new Map(); this.cloudTextures = []; this.cloudStartedAt = Date.now();
     this.marchLayer = new PIXI.Container(); this.marchMarkers = new Map(); this.markerLayer = new PIXI.Container();
     this.selectionOutline = new PIXI.Graphics();
-    // All captions render after all map artwork, including neighboring markers.
+    // All captions render after map artwork, including neighboring markers, but below march routes.
     this.captionLayer = new PIXI.Container();
-    // 行军模型绘制在城市图标之上，路线和城市文字仍分别位于图标下方与模型上方。
-    this.app.stage.addChild(this.ground, this.groundDetails, this.terrain, this.routes, this.markerLayer, this.marchLayer, this.selectionOutline, this.captionLayer);
+    // 沙盘底层阴影位于地表之下；四个象限地表并列；边缘线位于地表之上；云体与行军路线层级分明。
+    this.app.stage.addChild(this.mapShadow, this.ground, this.groundQ2, this.groundQ3, this.groundQ4, this.groundDetails, this.terrain, this.mapBorder, this.cloudShadowLayer, this.markerLayer, this.marchLayer, this.cloudLayer, this.selectionOutline, this.captionLayer, this.routes);
     this.bind();
+    this.on(window, 'resize', this.syncToolbar.bind(this));
+    this.syncToolbar();
     this.initMinimap();
     var self = this;
     this.resizeObserver = new ResizeObserver(function () { self.resize(); }); this.resizeObserver.observe(this.host);
@@ -296,14 +376,45 @@
     }, 1000);
     cache.changed = function () {
       if (self.destroyed) return;
-      if(G.MapTerrain.updateChunk)cache.entries.forEach(function(e){
-        if(e.data)G.MapTerrain.updateChunk(e.cx,e.cy,e.data.targets);
-      });
+      if (G.MapTerrain.updateChunk) {
+        cache.entries.forEach(function (e) {
+          if (e.data && G.MapTerrain.updateChunk(e.cx, e.cy, e.data.targets)) {
+            var span = G.MapTerrain.tileSpan || 4;
+            var minTx = Math.floor((e.cx * 16 - 2) / span), maxTx = Math.floor(((e.cx + 1) * 16 + 2) / span);
+            var minTy = Math.floor((e.cy * 16 - 2) / span), maxTy = Math.floor(((e.cy + 1) * 16 + 2) / span);
+            for (var ty = minTy; ty <= maxTy; ty++) {
+              for (var tx = minTx; tx <= maxTx; tx++) {
+                var k = tx + ',' + ty, tile = self.groundTiles.get(k);
+                if (tile) {
+                  self.groundDetails.removeChild(tile);
+                  tile.destroy({ texture: true, baseTexture: true });
+                  self.groundTiles.delete(k);
+                }
+              }
+            }
+          }
+        });
+      }
       self.resolveCoordinate(); self.wake();
     };
     this.resize();
+    if (this.pendingCoordinate) {
+      var searchInput = (this.toolbar || this.shell) && (this.toolbar || this.shell).querySelector('form.world-map-search input');
+      if (searchInput) searchInput.value = this.pendingCoordinate.x + ',' + this.pendingCoordinate.y;
+      this.resolveCoordinate();
+      this.requestChunks();
+      this.wake();
+    }
   }
   MapView.prototype.on = function (node, event, fn, opts) { node.addEventListener(event, fn, opts); this.listeners.push(function () { node.removeEventListener(event, fn, opts); }); };
+  MapView.prototype.syncToolbar = function () {
+    if (!this.toolbar || this.destroyed) return;
+    var topRow = document.querySelector('#topbar .top-row');
+    var inTopbar = !!topRow && window.matchMedia('(orientation: landscape) and (min-width: 720px)').matches;
+    var parent = inTopbar ? topRow : this.shell;
+    if (this.toolbar.parentNode !== parent) parent.insertBefore(this.toolbar, inTopbar ? topRow.querySelector('.player-bar-right') : this.shell.firstChild);
+    this.shell.classList.toggle('map-toolbar-in-topbar', inTopbar);
+  };
   MapView.prototype.updateGathering = function () {
     if (this.destroyed || document.hidden) return;
     var target = this.selected;
@@ -334,7 +445,7 @@
     this.pageOverflow = [document.documentElement.style.overflow, document.body.style.overflow];
     document.documentElement.style.overflow = document.body.style.overflow = 'hidden';
     this.shell.classList.add('world-map-full');
-    this.shell.querySelector('[data-map="full"]').setAttribute('aria-expanded', 'true');
+    (this.toolbar || this.shell).querySelector('[data-map="full"]').setAttribute('aria-expanded', 'true');
     this.vx = this.vy = 0; this.pointers.clear(); this.closeDetail(); this.resize();
     this.shell.querySelector('[data-map="exit-full"]').focus({preventScroll:true});
     // iOS and embedded browsers can reject fullscreen/orientation; the CSS landscape view remains usable.
@@ -375,7 +486,7 @@
     this.shell.classList.remove('world-map-full');
     document.documentElement.style.overflow = this.pageOverflow[0];
     document.body.style.overflow = this.pageOverflow[1];
-    var button = this.shell.querySelector('[data-map="full"]');
+    var button = (this.toolbar || this.shell).querySelector('[data-map="full"]');
     button.setAttribute('aria-expanded', 'false');
     this.vx = this.vy = 0; this.pointers.clear();
     if (!this.destroyed) { this.resize(); button.focus({preventScroll:true}); }
@@ -386,7 +497,14 @@
     return rotated ? {x:(event.clientY-r.top)/r.height, y:(r.right-event.clientX)/r.width} :
       {x:(event.clientX-r.left)/r.width, y:(event.clientY-r.top)/r.height};
   };
-  MapView.prototype.requestChunks = function () { this.lastLoad = Date.now(); cache.request(this.camera.chunks()); };
+  MapView.prototype.requestChunks = function () {
+    this.lastLoad = Date.now();
+    var chunks = this.camera.chunks();
+    if (this.camera.size > 200) {
+      chunks = chunks.filter(function (cell) { return cell.cx < 13 && cell.cy < 13; });
+    }
+    if (chunks.length) cache.request(chunks);
+  };
   MapView.prototype.wake = function () {
     if (this.destroyed) return;
     this.dirty = true;
@@ -405,12 +523,14 @@
     if (this.dirty) {
       this.draw(); this.dirty = false;
       if (Date.now() - this.lastLoad > 150) this.requestChunks();
-    } else if (this.animatingMarches) {
-      // 行军动画只更新路线和编队图层，避免每帧重绘静态地形与所有据点。
-      this.drawRoutes(); this.app.renderer.render(this.app.stage);
+    } else if (this.animatingMarches || this.animatingClouds) {
+      // 动画只更新行军与云层，避免每帧重绘静态地形与所有据点。
+      if (this.animatingMarches) this.drawRoutes();
+      if (this.animatingClouds) this.drawClouds();
+      this.app.renderer.render(this.app.stage);
     }
     if (this.terrainPending || (!this.pointers.size && (this.vx || this.vy))) this.wake();
-    else if (this.animatingMarches) this.scheduleFrame();
+    else if (this.animatingMarches || this.animatingClouds) this.scheduleFrame();
   };
   MapView.prototype.allowed = function (t) {
     if (this.filter === 'all') return true;
@@ -418,10 +538,11 @@
     if (this.filter === 'npc') return ['npc', 'bandit', 'simulated_npc'].indexOf(t.kind) >= 0;
     return t.kind === this.filter;
   };
-  function projectGround(sprite, camera, x, y, span) {
-    var p = camera.screen(x, y), basis = G.MapCamera.projection;
-    var sx = span * camera.scale / sprite.texture.orig.width;
-    var sy = span * camera.scale / sprite.texture.orig.height;
+  function projectGround(sprite, camera, x, y, span, flipX, flipY) {
+    if (!sprite || !sprite.texture) return;
+    var p = camera.screen(x + (flipX ? span : 0), y + (flipY ? span : 0)), basis = G.MapCamera.projection;
+    var sx = (flipX ? -span : span) * camera.scale / sprite.texture.orig.width;
+    var sy = (flipY ? -span : span) * camera.scale / sprite.texture.orig.height;
     sprite.transform.setFromMatrix(new PIXI.Matrix(basis.a*sx, basis.b*sx, basis.c*sy, basis.d*sy, p.x, p.y));
   }
   function footprint(camera, target, inset) {
@@ -429,39 +550,105 @@
     return camera.polygon(b.x+gap, b.y+gap, b.span-gap*2);
   }
   MapView.prototype.drawGround = function () {
-    var c = this.camera, b = c.bounds(0), span = G.MapTerrain.tileSpan, tiles = this.groundTiles;
+    var c = this.camera, b = c.bounds(0, true), span = G.MapTerrain.tileSpan, tiles = this.groundTiles;
     var keep = new Set(), created = 0, self = this;
+    var halo = G.MapTerrain.padding / G.MapTerrain.density;
     this.terrainPending = false;
+
+    // 地表细化瓦片限定在第一象限沙盘地图范围内，其他象限通过镜像地表层呈现
+    var maxTx = Math.min(Math.floor(199 / span), Math.floor((c.size - 1) / span));
+    var minX = Math.max(0, Math.floor(b.minX / span)), maxX = Math.min(maxTx, Math.floor(b.maxX / span));
+    var minY = Math.max(0, Math.floor(b.minY / span)), maxY = Math.min(maxTx, Math.floor(b.maxY / span));
+    var missing = [];
+
     tiles.forEach(function (tile) { tile.visible = false; });
-    for (var y = Math.floor(b.minY/span); y <= Math.floor(b.maxY/span); y++) {
-      for (var x = Math.floor(b.minX/span); x <= Math.floor(b.maxX/span); x++) {
-        var key = x + ',' + y, tile = tiles.get(key); keep.add(key);
-        if (!tile) {
-          // Populate progressively so dragging does not wait for a whole viewport of textures.
-          if (created >= 2) { this.terrainPending = true; continue; }
-          tile = new PIXI.Sprite(PIXI.Texture.from(G.MapTerrain.createTile(x, y, c.size)));
-          tiles.set(key, tile); this.groundDetails.addChild(tile); created++;
-        } else { tiles.delete(key); tiles.set(key, tile); }
-        var halo = G.MapTerrain.padding / G.MapTerrain.density;
-        projectGround(tile, c, x*span-halo, y*span-halo, span+halo*2); tile.visible = true;
+    for (var y = minY; y <= maxY; y++) {
+      for (var x = minX; x <= maxX; x++) {
+        var key = x + ',' + y, tile = tiles.get(key);
+        keep.add(key);
+        if (tile) {
+          tiles.delete(key);
+          tiles.set(key, tile);
+          projectGround(tile, c, x * span - halo, y * span - halo, span + halo * 2);
+          tile.visible = true;
+        } else {
+          missing.push({ x: x, y: y, dist: Math.hypot(x + 0.5 - c.x / span, y + 0.5 - c.y / span) });
+        }
       }
     }
+
+    if (missing.length > 0) {
+      // Prioritize tiles closest to camera focus so the center area directly under view renders first
+      missing.sort(function (a, b) { return a.dist - b.dist; });
+      var isMoving = (this.pointers && this.pointers.size > 0) || Math.hypot(this.vx, this.vy) > 0.025;
+      var maxCreated = isMoving ? 2 : 6;
+      var startTime = typeof performance !== 'undefined' ? performance.now() : Date.now();
+      for (var i = 0; i < missing.length; i++) {
+        var m = missing[i], mKey = m.x + ',' + m.y;
+        if (created >= maxCreated || (created >= 2 && ((typeof performance !== 'undefined' ? performance.now() : Date.now()) - startTime) > 12)) {
+          this.terrainPending = true;
+          break;
+        }
+        var newTile = new PIXI.Sprite(PIXI.Texture.from(G.MapTerrain.createTile(m.x, m.y, c.size)));
+        tiles.set(mKey, newTile);
+        this.groundDetails.addChild(newTile);
+        created++;
+        projectGround(newTile, c, m.x * span - halo, m.y * span - halo, span + halo * 2);
+        newTile.visible = true;
+      }
+      if (i < missing.length) this.terrainPending = true;
+    }
+
+    var cacheLimit = Math.max(128, keep.size * 2);
     tiles.forEach(function (tile, key) {
-      if (tiles.size > Math.max(48, keep.size) && !keep.has(key)) {
-        self.groundDetails.removeChild(tile); tile.destroy({texture:true,baseTexture:true}); tiles.delete(key);
+      if (tiles.size > cacheLimit && !keep.has(key)) {
+        self.groundDetails.removeChild(tile);
+        tile.destroy({ texture: true, baseTexture: true });
+        tiles.delete(key);
       }
     });
   };
+  /** 绘制海洋上空的薄云与柔和投影；云体位于据点和行军模型上方、文字下方，不参与点击。 */
+  MapView.prototype.drawClouds = function () {
+    if (!G.MapOcean || !G.MapOcean.clouds) return;
+    var self=this, c=this.camera, keep=new Set();
+    var reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var seconds=reduced?0:(Date.now()-this.cloudStartedAt)/1000;
+    G.MapOcean.clouds(c.bounds(0),seconds).forEach(function(cloud){
+      var point=c.screen(cloud.x,cloud.y), width=cloud.width*c.scale*2, height=width*.5;
+      var elevation=c.scale*.65;
+      if(point.x+width/2<0||point.x-width/2>c.width||point.y-elevation+height/2<0||point.y-elevation-height/2>c.height)return;
+      keep.add(cloud.key);
+      var pair=self.cloudSprites.get(cloud.key);
+      if(!pair){
+        var texture=self.cloudTextures[cloud.variant];
+        if(!texture)texture=self.cloudTextures[cloud.variant]=PIXI.Texture.from(G.MapOcean.createCloud(cloud.variant));
+        pair={body:new PIXI.Sprite(texture),shadow:new PIXI.Sprite(texture)};
+        pair.body.anchor.set(.5);pair.shadow.anchor.set(.5);pair.shadow.tint=0x163d50;
+        self.cloudLayer.addChild(pair.body);self.cloudShadowLayer.addChild(pair.shadow);self.cloudSprites.set(cloud.key,pair);
+      }
+      pair.body.position.set(point.x,point.y-elevation);pair.body.width=width;pair.body.height=height;pair.body.alpha=cloud.alpha;
+      pair.shadow.position.set(point.x+c.scale*.2,point.y+c.scale*.3);pair.shadow.width=width*.86;pair.shadow.height=height*.32;pair.shadow.alpha=cloud.alpha*.16;
+    });
+    this.cloudSprites.forEach(function(pair,key){if(!keep.has(key)){pair.body.destroy();pair.shadow.destroy();self.cloudSprites.delete(key);}});
+    this.animatingClouds=!reduced&&this.cloudSprites.size>0;
+  };
   MapView.prototype.draw = function () {
     var c = this.camera, b = c.bounds(2), g = this.terrain, self = this;
-    var version=G.MapTerrain.revision?G.MapTerrain.revision():0;
-    if(this.terrainVersion!==version){
-      // Rebuild before displaying new targets; filtering never changes these constraints.
-      var previous=terrainTexture;
-      terrainTexture=PIXI.Texture.from(G.MapTerrain.create(c.size));this.ground.texture=terrainTexture;
-      if(previous)previous.destroy(true);
-      this.groundTiles.forEach(function(tile){self.groundDetails.removeChild(tile);tile.destroy({texture:true,baseTexture:true});});
-      this.groundTiles.clear();this.terrainVersion=terrainVersion=version;
+    if (this.groundSize !== c.size || !this.ground || !this.ground.texture || (this.groundQ3 && !this.groundQ3.texture)) {
+      this.groundSize = c.size;
+      if (terrainTexture) terrainTexture.destroy(true);
+      if (terrainTextureNoSnow) terrainTextureNoSnow.destroy(true);
+      terrainTexture = PIXI.Texture.from(G.MapTerrain.create(200, false));
+      terrainTextureNoSnow = PIXI.Texture.from(G.MapTerrain.create(200, true));
+      terrainWorldSize = 200;
+      this.ground.texture = terrainTexture;
+      if (this.groundQ2) this.groundQ2.texture = terrainTexture;
+      if (this.groundQ3) this.groundQ3.texture = terrainTextureNoSnow;
+      if (this.groundQ4) this.groundQ4.texture = terrainTextureNoSnow;
+    }
+    if (this.minimap && this.minimapSize !== c.size) {
+      this.minimapSize = c.size;
       this.buildMinimapGround();
     }
     g.clear();
@@ -472,11 +659,51 @@
       this.selectionOutline.lineStyle(3,0x35483b,.22).drawPolygon(selectedCell);
       this.selectionOutline.lineStyle(1.25,0xd6dfc6,.85).drawPolygon(selectedCell);
     }
-    projectGround(this.ground, c, 0, 0, c.size);
+    if (c.size > 200) {
+      var qs = 200;
+      projectGround(this.ground, c, 0, 0, qs, false, false);
+      projectGround(this.groundQ2, c, qs, 0, qs, true, false);
+      projectGround(this.groundQ3, c, 0, qs, qs, false, true);
+      projectGround(this.groundQ4, c, qs, qs, qs, true, true);
+      if (this.mapShadow && this.mapBorder) {
+        this.mapShadow.clear();
+        this.mapBorder.clear();
+        var worldPoly = c.polygon(0, 0, qs * 2);
+        this.mapShadow.lineStyle(12, 0x163852, 0.22).drawPolygon(worldPoly);
+        this.mapShadow.lineStyle(6, 0x142c40, 0.35).drawPolygon(worldPoly);
+        this.mapShadow.lineStyle(2, 0x0f2030, 0.45).drawPolygon(worldPoly);
+        this.mapBorder.lineStyle(1.5, 0x9bc7e8, 0.4).drawPolygon(worldPoly);
+      }
+    } else {
+      projectGround(this.ground, c, 0, 0, c.size);
+      if (this.mapShadow && this.mapBorder) {
+        this.mapShadow.clear();
+        this.mapBorder.clear();
+        var worldPoly = c.polygon(0, 0, c.size);
+        this.mapShadow.lineStyle(12, 0x163852, 0.22).drawPolygon(worldPoly);
+        this.mapShadow.lineStyle(6, 0x142c40, 0.35).drawPolygon(worldPoly);
+        this.mapShadow.lineStyle(2, 0x0f2030, 0.45).drawPolygon(worldPoly);
+        this.mapBorder.lineStyle(1.5, 0x9bc7e8, 0.4).drawPolygon(worldPoly);
+      }
+    }
     this.drawGround();
     this.visibleSea=false;
+    function isSeaCell(x, y) {
+      if (!G.MapOcean) return false;
+      var lx = x, ly = y;
+      if (c.size > 200) {
+        if (x >= 0 && x < 200) lx = x;
+        else if (x >= 200 && x < 400) lx = 399 - x;
+        else return false;
+
+        if (y >= 0 && y < 200) ly = y;
+        else if (y >= 200 && y < 400) ly = 399 - y;
+        else return false;
+      }
+      return G.MapOcean.sea(lx, ly);
+    }
     if(G.MapOcean)for(var wy=Math.floor(b.minY);wy<=b.maxY;wy++)for(var wx=Math.floor(b.minX);wx<=b.maxX;wx++){
-      if(!G.MapOcean.sea(wx+.5,wy+.5))continue;this.visibleSea=true;
+      if(!isSeaCell(wx+.5,wy+.5))continue;this.visibleSea=true;
       if((wx*7+wy*3)%5!==0)continue;
       var calm=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       var phase=calm?0:Math.sin(Date.now()/1500+wx*.8+wy);
@@ -510,7 +737,7 @@
       var key = t.kind + ':' + t.id, marker = self.markers.get(key);
       keep.add(key);
       var art = icon(t,snowCells);
-      var path = (t.sea && t.kind === 'bandit' ? art : art.replace(/\.webp$/, '-map-embedded.png')) + '?v=4.8-city-angle';
+      var path = (t.sea && t.kind === 'bandit' ? art : art.replace(/\.webp$/, '-map-embedded.png')) + '?v=5.1-seamless-orthogonal';
       if (!textures[path]) { textures[path] = PIXI.Texture.from(path); textures[path].baseTexture.once('loaded', function () { self.wake(); }); }
       if (!marker) {
         marker = new PIXI.Container(); marker.badge = new PIXI.Graphics(); marker.addChild(marker.badge);
@@ -526,7 +753,6 @@
       }
       if (marker.sprite.texture !== textures[path]) marker.sprite.texture = textures[path];
       var center = markerCenter(t), pos = c.screen(center.x, center.y), size = markerSize(t, c.scale);
-      if(t.kind==='wild'&&t.type==='snow')size*=1.035;
       marker.target = t;
       marker.position.set(pos.x, pos.y); marker.captions.position.set(pos.x, pos.y); marker.alpha = 1; marker.sprite.alpha = t.defeated ? .42 : 1;
       self.markerLayer.addChild(marker);
@@ -574,6 +800,7 @@
       drawOwnership(marker, t, marker.info.y - (marker.info.visible ? marker.info.height+26 : 22));
     });
     this.markers.forEach(function (marker, key) { if (!keep.has(key)) { marker.captions.destroy({ children:true }); marker.destroy({ children:true }); self.markers.delete(key); } });
+    this.drawClouds();
     this.drawRoutes();
     this.drawMinimap();
     this.app.renderer.render(this.app.stage);
@@ -582,14 +809,37 @@
     var ground=document.createElement('canvas'), size=this.camera.size;
     ground.width=ground.height=size;
     var ctx=ground.getContext('2d'), pixels=ctx.createImageData(size,size);
+    var isFourQuads = size > 200;
     for(var y=0;y<size;y++)for(var x=0;x<size;x++){
-      var terrain=G.MapTerrain.sample(x+.5,y+.5,size), depth=G.MapOcean?G.MapOcean.sample(x+.5,y+.5):-1000;
-      var land=[131+terrain.grass*29,137+terrain.grass*31,103+terrain.grass*24], offset=(y*size+x)*4;
+      var offset=(y*size+x)*4;
+      var lx = x, ly = y;
+      var inSouth = false;
+      if (isFourQuads) {
+        if (x >= 200) lx = 399 - x;
+        if (y >= 200) {
+          ly = 399 - y;
+          inSouth = true;
+        }
+      }
+      var terrain=G.MapTerrain.sample(lx+.5,ly+.5,200,inSouth), depth=G.MapOcean?G.MapOcean.sample(lx+.5,ly+.5):-1000;
+      var land=[131+terrain.grass*29,137+terrain.grass*31,103+terrain.grass*24];
       for(var channel=0;channel<3;channel++){var surface=land[channel]+([226,234,237][channel]-land[channel])*(terrain.snow||0);pixels.data[offset+channel]=G.MapOcean?G.MapOcean.paint(channel,surface,depth,0):surface;}
       pixels.data[offset+3]=255;
     }
     ctx.putImageData(pixels,0,0);this.minimapGround=ground;
   };
+  function minimapPoint(x, y, size, side) {
+    return {
+      x: (x / size) * side,
+      y: (y / size) * side
+    };
+  }
+  function minimapWorld(u, v, size) {
+    return {
+      x: Math.max(0, Math.min(size, Math.round(u * size * 1e4) / 1e4)),
+      y: Math.max(0, Math.min(size, Math.round(v * size * 1e4) / 1e4))
+    };
+  }
   MapView.prototype.initMinimap = function () {
     var self=this, panel=this.shell.querySelector('.world-map-minimap');
     var canvas=panel.querySelector('canvas'), toggle=panel.querySelector('button');
@@ -603,8 +853,10 @@
     function move(e){
       var rect=canvas.getBoundingClientRect();if(!rect.width||!rect.height)return;
       var point=self.elementPoint(canvas,e), size=self.camera.size;
-      self.vx=self.vy=0;self.camera.x=Math.max(0,Math.min(size,point.x*size));
-      self.camera.y=Math.max(0,Math.min(size,point.y*size));
+      var world=minimapWorld(point.x, point.y, size);
+      self.vx=self.vy=0;
+      self.camera.x=world.x;
+      self.camera.y=world.y;
       self.camera.clamp();self.closeDetail();self.wake();
     }
     this.on(canvas,'pointerdown',function(e){
@@ -621,27 +873,42 @@
   };
   MapView.prototype.drawMinimap = function () {
     if(!this.minimap||this.minimap.closest('.world-map-minimap').classList.contains('collapsed'))return;
-    var c=this.camera, ctx=this.minimapContext, side=this.minimap.width, scale=side/c.size;
+    var c=this.camera, ctx=this.minimapContext, side=this.minimap.width;
     var world=G.Core.state.world||{}, current=world.cityPos||world.pos;
     var cities=((G.Core.state.cityOverview||{}).cities||[]).map(function(city){var center=markerCenter({kind:'player',x:city.x,y:city.y});return {x:center.x,y:center.y,current:city.current,main:city.main};});
     if(!cities.length&&current){var center=markerCenter({kind:'player',x:current.x,y:current.y});cities.push({x:center.x,y:center.y,current:true});}
     var stamp=[c.x,c.y,c.scale,c.width,c.height,JSON.stringify(cities)].join(':');if(stamp===this.minimapStamp)return;this.minimapStamp=stamp;
-    ctx.clearRect(0,0,side,side);ctx.drawImage(this.minimapGround,0,0,side,side);
+    ctx.clearRect(0,0,side,side);
+
+    ctx.fillStyle = '#22382e';
+    ctx.fillRect(0, 0, side, side);
+    if (this.minimapGround) ctx.drawImage(this.minimapGround, 0, 0, side, side);
+    ctx.strokeStyle = 'rgba(70, 104, 86, 0.7)';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(0, 0, side, side);
+
     cities.forEach(function(city){
-      var x=city.x*scale,y=city.y*scale,r=city.current?5:3.5;
-      ctx.beginPath();ctx.moveTo(x,y-r);ctx.lineTo(x+r,y);ctx.lineTo(x,y+r);ctx.lineTo(x-r,y);ctx.closePath();
+      var pt=minimapPoint(city.x, city.y, c.size, side);
+      var x=pt.x, y=pt.y, r=city.current?4.5:3;
+      ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
       ctx.fillStyle=city.current?'#ffe4a0':'#eaf4e1';ctx.fill();ctx.strokeStyle='#334f43';ctx.lineWidth=1.5;ctx.stroke();
     });
-    var corners=[[0,0],[c.width,0],[c.width,c.height],[0,c.height]].map(function(p){return c.world(p[0],p[1]);});
-    ctx.beginPath();corners.forEach(function(p,i){if(i)ctx.lineTo(p.x*scale,p.y*scale);else ctx.moveTo(p.x*scale,p.y*scale);});ctx.closePath();
+    var corners=[[0,0],[c.width,0],[c.width,c.height],[0,c.height]].map(function(p){
+      var w=c.world(p[0],p[1]);
+      return minimapPoint(w.x, w.y, c.size, side);
+    });
+    ctx.beginPath();corners.forEach(function(p,i){if(i)ctx.lineTo(p.x,p.y);else ctx.moveTo(p.x,p.y);});ctx.closePath();
     ctx.fillStyle='rgba(255,255,255,.16)';ctx.fill();ctx.lineWidth=4;ctx.strokeStyle='rgba(27,54,50,.65)';ctx.stroke();ctx.lineWidth=2;ctx.strokeStyle='#fff5cd';ctx.stroke();
-    ctx.beginPath();ctx.arc(c.x*scale,c.y*scale,2,0,Math.PI*2);ctx.fillStyle='#fff9e5';ctx.fill();
+    var centerPt=minimapPoint(c.x, c.y, c.size, side);
+    ctx.beginPath();ctx.arc(centerPt.x,centerPt.y,2.5,0,Math.PI*2);ctx.fillStyle='#fff9e5';ctx.fill();
   };
   /** 在途绘制路线与移动编队，抵达后汇总为目标下方的状态标记，返城抵达即清除。 */
   MapView.prototype.drawRoutes = function () {
     var self = this, camera = this.camera, routeGraphics = this.routes, now = Date.now(), animating = false;
+    var flowGraphics = this.routeFlow;
     var reducedMotion = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     routeGraphics.clear();
+    if (flowGraphics) flowGraphics.clear();
     var targets = cache.targets({ minX:0, minY:0, maxX:camera.size-1, maxY:camera.size-1 }), keep = new Set(), statuses = new Map();
     function addStatus(x, y, kind, state) {
       var key = x + ':' + y, status = statuses.get(key);
@@ -661,26 +928,115 @@
       var center = t ? markerCenter(t) : {x:x+.5,y:y+.5};
       return camera.screen(center.x, center.y);
     }
+    function drawDashedPolyline(graphics, points, dashLen, gapLen) {
+      if (!graphics || !points || points.length < 2) return;
+      dashLen = dashLen || 8;
+      gapLen = gapLen || 5;
+      var patternLen = dashLen + gapLen;
+      var currentPatternDist = 0;
+      for (var i = 0; i < points.length - 1; i++) {
+        var p1 = points[i], p2 = points[i + 1];
+        var dx = p2.x - p1.x, dy = p2.y - p1.y;
+        var dist = Math.hypot(dx, dy);
+        if (dist <= 0.0001) continue;
+        var ux = dx / dist, uy = dy / dist;
+        var covered = 0;
+        while (covered < dist) {
+          var inDash = currentPatternDist < dashLen;
+          var remainingInState = inDash ? (dashLen - currentPatternDist) : (patternLen - currentPatternDist);
+          var segLen = Math.min(remainingInState, dist - covered);
+          if (inDash) {
+            graphics.moveTo(p1.x + ux * covered, p1.y + uy * covered);
+            graphics.lineTo(p1.x + ux * (covered + segLen), p1.y + uy * (covered + segLen));
+          }
+          covered += segLen;
+          currentPatternDist = (currentPatternDist + segLen) % patternLen;
+        }
+      }
+    }
     (G.Core.state.world.marches || []).forEach(function (march) {
       if (march.targetX == null || march.targetY == null) return;
       var state = marchMapState(march, now);
       if (state === 'home') return;
       if (state !== 'moving') {
+        if (!march.returning && !march._arrivalAlerted) {
+          march._arrivalAlerted = true;
+          if (G.World && G.World.triggerBattleAlert) {
+            G.World.triggerBattleAlert(march);
+          }
+        }
         addStatus(march.targetX, march.targetY, march.targetKind === 'wild_gather' ? 'wild' : march.targetKind, state);
         return;
       }
       animating = !reducedMotion;
       var fromX = march.fromX != null ? march.fromX : march.originX, fromY = march.fromY != null ? march.fromY : march.originY;
       if (fromX == null || fromY == null || march.targetX == null || march.targetY == null) return;
-      var start = endpoint(fromX, fromY, 'player'), end = endpoint(march.targetX, march.targetY, march.targetKind === 'player' ? 'player' : null);
-      var tint = march.returning ? 0x578657 : 0x467da5;
+      var isTransport = march.action === 'transport' || march.action === 'rebase';
+      var isOffensive = march.action === 'conquer' || march.action === 'plunder' ||
+        march.targetKind === 'bandit' || march.targetKind === 'npc' || march.targetKind === 'simulated_npc' ||
+        (march.targetKind === 'player' && !isTransport) ||
+        (!isTransport && march.action !== 'gather' && march.action !== 'scout' && march.targetKind !== 'wild_gather');
+      var isVictory = Boolean(
+        march.returning && (
+          march.win === true || march.battleWon === true || march.victory === true ||
+          (march.carryRes && typeof march.carryRes === 'object' && Object.keys(march.carryRes).some(function (k) { return Number(march.carryRes[k]) > 0; }))
+        )
+      );
+      var tint = isVictory ? 0x578657 : isOffensive ? 0xd9383a : (isTransport || march.returning) ? 0x578657 : 0x467da5;
       var points = Array.isArray(march.route) && march.route.length > 1 ? march.route.map(function (point) { return camera.screen(point[0]+.5,point[1]+.5); }) : [start,end];
-      routeGraphics.lineStyle(2, tint, .6).moveTo(points[0].x,points[0].y);
+      routeGraphics.lineStyle(2, tint, .85);
+      drawDashedPolyline(routeGraphics, points, 8, 5);
       var lengths = [], total = 0;
       for (var pointIndex = 1; pointIndex < points.length; pointIndex++) {
-        routeGraphics.lineTo(points[pointIndex].x,points[pointIndex].y);
         var segment = Array.isArray(march.route) ? Math.abs(march.route[pointIndex][0]-march.route[pointIndex-1][0])+Math.abs(march.route[pointIndex][1]-march.route[pointIndex-1][1]) : 1;
         lengths.push(segment); total += segment;
+      }
+      if (flowGraphics && points.length >= 2) {
+        var arrowColor = 0xffffff;
+        var step = 32;
+        var flowSpeed = reducedMotion ? 0 : 0.038;
+        var phase = reducedMotion ? 0 : ((now * flowSpeed) % step);
+        var distAccum = 0;
+        for (var pi = 0; pi < points.length - 1; pi++) {
+          var p1 = points[pi], p2 = points[pi + 1];
+          var dx = p2.x - p1.x, dy = p2.y - p1.y;
+          var segDist = Math.hypot(dx, dy);
+          if (segDist < 0.001) continue;
+          var ux = dx / segDist, uy = dy / segDist;
+          var nx = -uy, ny = ux;
+          var offset = (step - ((distAccum - phase) % step)) % step;
+          for (var d = offset; d < segDist; d += step) {
+            var cx = p1.x + ux * d, cy = p1.y + uy * d;
+            var tailLen = Math.min(10, d);
+            flowGraphics.lineStyle(2, arrowColor, 0.75)
+              .moveTo(cx - ux * tailLen, cy - uy * tailLen)
+              .lineTo(cx, cy);
+            var tipX = cx + ux * 4.5, tipY = cy + uy * 4.5;
+            var leftX = cx - ux * 2 + nx * 4.2, leftY = cy - uy * 2 + ny * 4.2;
+            var rightX = cx - ux * 2 - nx * 4.2, rightY = cy - uy * 2 - ny * 4.2;
+            flowGraphics.lineStyle(2, arrowColor, 0.95)
+              .moveTo(leftX, leftY)
+              .lineTo(tipX, tipY)
+              .lineTo(rightX, rightY);
+          }
+          distAccum += segDist;
+        }
+        if (distAccum >= 12) {
+          var lastP = points[points.length - 1], prevP = points[points.length - 2];
+          var ldx = lastP.x - prevP.x, ldy = lastP.y - prevP.y;
+          var ldist = Math.hypot(ldx, ldy);
+          if (ldist > 0.001) {
+            var lux = ldx / ldist, luy = ldy / ldist;
+            var lnx = -luy, lny = lux;
+            var targetTipX = lastP.x - lux * 2, targetTipY = lastP.y - luy * 2;
+            var targetLeftX = targetTipX - lux * 6 + lnx * 5.5, targetLeftY = targetTipY - luy * 6 + lny * 5.5;
+            var targetRightX = targetTipX - lux * 6 - lnx * 5.5, targetRightY = targetTipY - luy * 6 - lny * 5.5;
+            flowGraphics.lineStyle(2.5, arrowColor, 0.95)
+              .moveTo(targetLeftX, targetLeftY)
+              .lineTo(targetTipX, targetTipY)
+              .lineTo(targetRightX, targetRightY);
+          }
+        }
       }
       var duration = march.arriveAt-march.startAt, ratio = duration > 0 ? Math.max(0,Math.min(1,(now-march.startAt)/duration)) : 1, travel = ratio*total, position = points[points.length-1];
       for (var segmentIndex = 0; segmentIndex < lengths.length; segmentIndex++) {
@@ -691,15 +1047,17 @@
         }
         travel -= lengths[segmentIndex];
       }
-      var facing = marchFacing(points, segmentIndex);
+      var formation = marchFormation(march), primary = formation.primary, iconPath = primary && primary.iconPath;
+      var heading = marchHeading(points, segmentIndex, primary && primary.id);
       var markerKey = String(march.id != null ? march.id : [fromX, fromY, march.targetX, march.targetY].join(':'));
       keep.add(markerKey);
-      var formation = marchFormation(march), primary = formation.primary, iconPath = primary && primary.iconPath, marker = self.marchMarkers.get(markerKey);
+      var marker = self.marchMarkers.get(markerKey);
       if (!marker) {
         marker = new PIXI.Container();
+        marker.models = new PIXI.Container(); marker.addChild(marker.models);
         marker.companions = [new PIXI.Sprite(PIXI.Texture.EMPTY), new PIXI.Sprite(PIXI.Texture.EMPTY)];
-        marker.companions.forEach(function (sprite) { sprite.anchor.set(.5); marker.addChild(sprite); });
-        marker.icon = new PIXI.Sprite(PIXI.Texture.EMPTY); marker.icon.anchor.set(.5); marker.addChild(marker.icon);
+        marker.companions.forEach(function (sprite) { sprite.anchor.set(.5); marker.models.addChild(sprite); });
+        marker.icon = new PIXI.Sprite(PIXI.Texture.EMPTY); marker.icon.anchor.set(.5); marker.models.addChild(marker.icon);
         marker.countText = new PIXI.Text('', { fontFamily:'-apple-system, PingFang SC, Microsoft YaHei, sans-serif', fontSize:10, fill:0xffffff, stroke:0x172a25, strokeThickness:3, fontWeight:'700' });
         marker.countText.anchor.set(0, 1); marker.addChild(marker.countText);
         self.marchLayer.addChild(marker); self.marchMarkers.set(markerKey, marker);
@@ -708,17 +1066,24 @@
         var texture = loadMarchTexture(iconPath);
         if (marker.icon.texture !== texture) marker.icon.texture = texture;
       }
-      // 主力模型居中，最多两种伴随模型缩小排在两侧，表现混编大部队但不遮挡路线。
+      // 数量角标留在外层，避免跟随卡车车头转向。
       var iconSize = marchMarkerIconSize(camera.scale);
       marker.position.set(position.x, position.y); marker.visible = !!iconPath;
+      marker.models.visible = !!iconPath;
+      marker.icon.visible = !!iconPath;
+      marker.models.rotation = heading.rotation;
+      marker.models.scale.x = heading.scaleX * (heading.depthScale || 1);
       sizeMarchSprite(marker.icon, iconSize);
-      marker.icon.scale.x = Math.abs(marker.icon.scale.x) * facing;
       formation.companions.forEach(function (companion, companionIndex) {
         var sprite = marker.companions[companionIndex], companionTexture = loadMarchTexture(companion.iconPath);
         if (sprite.texture !== companionTexture) sprite.texture = companionTexture;
         sizeMarchSprite(sprite, iconSize * .56);
-        sprite.scale.x = Math.abs(sprite.scale.x) * facing;
+        // 伴随兵种的面部方向可能与主力原图相反，抵消父容器镜像后单独朝向路线。
+        var companionHeading = marchHeading(points, segmentIndex, companion.id);
+        sprite.scale.x = Math.abs(sprite.scale.x) * companionHeading.scaleX / heading.scaleX;
         sprite.position.set(companionIndex === 0 ? -iconSize * .42 : iconSize * .42, iconSize * .15);
+        // 父容器镜像会反转子精灵的旋转方向，抵消后让每种兵独立使用自己的朝向。
+        sprite.rotation = (companionHeading.rotation - heading.rotation) / heading.scaleX || 0;
         sprite.visible = true;
       });
       for (var companionIndex = formation.companions.length; companionIndex < marker.companions.length; companionIndex++) marker.companions[companionIndex].visible = false;
@@ -777,7 +1142,7 @@
   };
   MapView.prototype.bind = function () {
     var self = this, canvas = this.app.view;
-    this.on(this.shell, 'click', function (e) {
+    function handleClick(e) {
       var filter = e.target.closest('[data-filter]'), button = e.target.closest('[data-map]');
       if (filter) { self.filter = filter.dataset.filter; self.shell.querySelectorAll('[data-filter]').forEach(function (b) { b.setAttribute('aria-pressed', String(b === filter)); }); self.closeDetail(); self.wake(); }
       if (!button) return;
@@ -791,9 +1156,11 @@
       else if (action === 'home') { var cp = G.Core.state.world.cityPos || G.Core.state.world.pos; self.focus(cp.x, cp.y, 'player'); }
       else if (action === 'refresh') { cache.invalidate(); self.requestChunks(); if (self.selected) {if(self.selected.kind==='site')self.loadSite(self.selected.x,self.selected.y);else self.loadDetail(self.selected);} self.wake(); }
       else if (action === 'close') self.closeDetail();
-    });
-    this.on(this.shell.querySelector('form'), 'submit', function (e) {
-      e.preventDefault(); var input = self.shell.querySelector('form input'), m = input.value.trim().match(/^(\d+)\s*[,，\s]\s*(\d+)$/);
+    }
+    this.on(this.shell, 'click', handleClick);
+    if (this.toolbar) this.on(this.toolbar, 'click', function (e) { if (self.toolbar.parentNode !== self.shell) handleClick(e); });
+    this.on((this.toolbar || this.shell).querySelector('form'), 'submit', function (e) {
+      e.preventDefault(); var input = (self.toolbar || self.shell).querySelector('form input'), m = input.value.trim().match(/^(\d+)\s*[,，\s]\s*(\d+)$/);
       if (!m || +m[1] >= self.camera.size || +m[2] >= self.camera.size) { G.toast('请输入范围内坐标，例如 100,100'); return; }
       self.filter = 'all'; self.shell.querySelectorAll('[data-filter]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.filter === 'all')); });
       self.focus(+m[1], +m[2]); self.pendingCoordinate = { x:+m[1], y:+m[2] }; self.resolveCoordinate();
@@ -894,7 +1261,21 @@
   };
   MapView.prototype.loadSite = function(x,y) {
     if(x<0||y<0||x>=this.camera.size||y>=this.camera.size)return;
-    var self=this,seq=++this.detailSeq;this.selected={kind:'site',x:x,y:y,valid:false};this.detail.hidden=false;
+    var self=this,seq=++this.detailSeq;
+    if (this.camera.size > 200) {
+      var fx = Math.floor(x), fy = Math.floor(y);
+      if (fx >= 200 || fy >= 200) {
+        this.selected = { kind: 'site', x: x, y: y, valid: false };
+        this.detail.hidden = false;
+        this.detail.innerHTML = '<button class="world-map-detail-close" data-map="close" aria-label="关闭">×</button>' +
+          '<div style="display:flex;align-items:center;gap:10px;padding-right:24px;margin-bottom:6px;flex-wrap:wrap;">' +
+          '<b style="font-size:15px;">未开辟战区 · (' + x + ', ' + y + ')</b></div>' +
+          '<p class="world-map-site-reason" style="margin:4px 0 2px;font-size:12px;color:#e67e22;font-weight:600;">当前不可建城：此大陆尚未开辟，暂不支持建城与部队调度。</p>';
+        this.wake();
+        return;
+      }
+    }
+    this.selected={kind:'site',x:x,y:y,valid:false};this.detail.hidden=false;
     this.detail.innerHTML='<button class="world-map-detail-close" data-map="close" aria-label="关闭">×</button><p>正在检查选址 ('+x+', '+y+')…</p>';this.wake();
     G.API.client.get('/game/cities/site?x='+x+'&y='+y,{silent:true,timeout:10000}).then(function(site){
       if(self.destroyed||seq!==self.detailSeq||identity()!==owner)return;
@@ -975,8 +1356,14 @@
     if(t.occupied)text+=' · 剩余资源 '+G.fmt(Math.max(0,(t.totalRes||0)-(t.mined||0)));
     this.detail.innerHTML='<button class="world-map-detail-close" data-map="close" aria-label="关闭详情">×</button><div class="world-map-detail-head"><img'+' class="world-map-city-model"'+' src="'+esc(icon(t))+'" alt=""><div><b>'+esc(name(t))+'</b><div class="world-map-detail-meta">'+esc(meta)+'</div></div></div><p>'+esc(text)+'</p>'+(!t.occupied&&!t.selfCity?'<p>守军和资源情报请通过侦察获取。</p>':'')+'<div class="world-map-actions"></div>';
     var actions=this.detail.querySelector('.world-map-actions');
-    function button(label, action, primary) { var b=document.createElement('button');b.className='world-map-button'+(primary?' primary':'');b.textContent=label;b.onclick=function(){self.act(action,b);};actions.appendChild(b); }
-    if(t.selfCity){button('返回城市','home',true);return;}
+    function button(label, action, primary, disabled) { var b=document.createElement('button');b.className='world-map-button'+(primary?' primary':'');b.textContent=label;b.disabled=!!disabled;b.onclick=function(){self.act(action,b);};actions.appendChild(b); }
+    if(t.selfCity){
+      button(t.readyAt>now?'城市建设中':'进入城市','enterCity',true,t.readyAt>now);
+      var currentCity = String((G.Core.state.player || {}).activeCityId)===String(t.id) ||
+        ((G.Core.state.cityOverview || {}).cities || []).some(function(city){return city.current && String(city.id)===String(t.id);});
+      if(!currentCity && !(t.readyAt>now)){button('运输','transport');button('派遣','rebase');}
+      return;
+    }
     if(t.defeated||t.readyAt>now)return;
     if(t.kind==='wild'&&t.occupied){
       var garrisonUnits = t.garrison || {};
@@ -1078,7 +1465,9 @@
   };
   MapView.prototype.act = function(action, button) {
     var self=this,t=this.selected,seq=this.detailSeq;if(!t)return;
-    if(action==='home'){G.go('home');return;}
+    // selfCity 表示归属自己，不等于当前城市；先按所选城市 ID 切换，再进入该城首页。
+    if(action==='enterCity'){if(t.kind==='player'&&t.selfCity&&!(t.readyAt>Date.now()))G.Cities.enter(t.id);return;}
+    if(action==='transport'||action==='rebase'){G.Cities.openTransfer(t.id,action);return;}
     button.disabled=true;
     G.API.getMapTarget(t.kind,t.id).then(function(fresh){
       if(self.destroyed||seq!==self.detailSeq||identity()!==owner)return;
@@ -1088,20 +1477,45 @@
   };
   MapView.prototype.destroy = function() {
     this.destroyed=true;this.exitFullscreen();this.detailSeq++;this.vx=this.vy=0;
+    if(this.toolbar&&this.toolbar.parentNode!==this.shell)this.shell.insertBefore(this.toolbar,this.shell.firstChild);
     if(this.raf)cancelAnimationFrame(this.raf);clearInterval(this.refreshTimer);clearInterval(this.marchTimer);clearInterval(this.gatherTimer);
     this.resizeObserver.disconnect();this.listeners.forEach(function(off){off();});
     cache.changed=function(){};cache.queue=[];cache.wanted.clear();
     this.groundTiles.forEach(function(tile){tile.destroy({texture:true,baseTexture:true});}); this.groundTiles.clear();
     this.marchMarkers.clear();
     this.app.destroy(true,{children:true,texture:false,baseTexture:false});
+    this.cloudSprites.clear();this.cloudTextures.forEach(function(texture){texture.destroy(true);});
   };
   G.WorldMap={
+    icon:icon,
     isMap:function(){return mode==='map';},
+    // 每次从其他页面进入世界地图，默认先展示可操作的目标列表。
+    prepareEntry:function(){mode='list';this.unmount();},
     mounted:function(v){return !!instance&&instance.view===v&&!instance.destroyed&&owner===identity();},
+    syncToolbar:function(){if(instance)instance.syncToolbar();},
     render:function(v){
       var key=identity();
-      if(owner!==key){this.unmount();owner=key;camera=null;cache.reset(key);if(G.MapTerrain.clearTargets)G.MapTerrain.clearTargets();}
-      if(instance){instance.requestChunks();instance.wake();return;}
+      if(owner!==key){this.unmount();owner=key;camera=null;pendingFocus=null;cache.reset(key);if(G.MapTerrain.clearTargets)G.MapTerrain.clearTargets();}
+      if(instance){
+        if (pendingFocus) {
+          var pf = pendingFocus;
+          pendingFocus = null;
+          instance.filter = 'all';
+          if (instance.shell) {
+            instance.shell.querySelectorAll('[data-filter]').forEach(function (b) {
+              b.setAttribute('aria-pressed', String(b.dataset.filter === 'all'));
+            });
+          }
+          var searchInput = (instance.toolbar || instance.shell) && (instance.toolbar || instance.shell).querySelector('form.world-map-search input');
+          if (searchInput) searchInput.value = pf.x + ',' + pf.y;
+          instance.focus(pf.x, pf.y);
+          instance.pendingCoordinate = { x: pf.x, y: pf.y };
+          instance.resolveCoordinate();
+        }
+        instance.requestChunks();
+        instance.wake();
+        return;
+      }
       if(G.MapTerrain.loadMeadows&&!G.MapTerrain.meadowsReady()){
         v.innerHTML='<div class="panel">正在载入草原地形…</div>';
         G.MapTerrain.loadMeadows().then(function(){if(G.Core.route==='world'&&mode==='map'&&identity()===key)G.WorldMap.render(v);});return;
@@ -1123,11 +1537,37 @@
       }
       try{instance=new MapView(v);}catch(e){console.error(e);v.innerHTML='<div class="panel">暂时无法打开地图画布。<button class="btn" onclick="Game.WorldMap.setMode(\'list\')">使用列表</button></div>';}
     },
-    unmount:function(){if(instance){instance.destroy();instance=null;}},
+    unmount:function(){if(instance){instance.destroy();instance=null;}if(terrainTexture){terrainTexture.destroy(true);terrainTexture=null;}if(terrainTextureNoSnow){terrainTextureNoSnow.destroy(true);terrainTextureNoSnow=null;}terrainWorldSize=-1;},
     setMode:function(next){mode=next;this.unmount();if(next==='map'&&G.Core.state.world){G.Core.state.world._activeTab='all';}if(camera&&G.Core.state.world){G.Core.state.world._mapPos={x:Math.floor(camera.x),y:Math.floor(camera.y)};G.Core.state.world._scan={r:8,at:Date.now()};}G.Core.render();},
     invalidate:function(){cache.invalidate();if(instance){instance.requestChunks();if(instance.selected){if(instance.selected.kind==='site')instance.loadSite(instance.selected.x,instance.selected.y);else instance.loadDetail(instance.selected,true);}instance.wake();}},
     // Exposed camera/cache metrics are useful for automated interaction and load checks.
-    metrics:function(){return { mounted:!!instance,x:camera&&camera.x,y:camera&&camera.y,scale:camera&&camera.scale,chunks:cache.entries.size,pending:cache.active,markers:instance?instance.markers.size:0 };}
+    metrics:function(){return { mounted:!!instance,x:camera&&camera.x,y:camera&&camera.y,scale:camera&&camera.scale,chunks:cache.entries.size,pending:cache.active,markers:instance?instance.markers.size:0 };},
+    focusCoordinate: function (x, y) {
+      var size = (G.DATA && G.DATA.world && G.DATA.world.size) || 200;
+      x = G.clamp(Math.round(Number(x)), 0, size - 1);
+      y = G.clamp(Math.round(Number(y)), 0, size - 1);
+      pendingFocus = { x: x, y: y };
+      if (camera) {
+        var center = markerCenter({ kind: 'wild', x: x, y: y });
+        camera.x = center.x;
+        camera.y = center.y;
+        camera.clamp();
+      }
+      if (instance && !instance.destroyed) {
+        pendingFocus = null;
+        instance.filter = 'all';
+        if (instance.shell) {
+          instance.shell.querySelectorAll('[data-filter]').forEach(function (b) {
+            b.setAttribute('aria-pressed', String(b.dataset.filter === 'all'));
+          });
+        }
+        var searchInput = (instance.toolbar || instance.shell) && (instance.toolbar || instance.shell).querySelector('form.world-map-search input');
+        if (searchInput) searchInput.value = x + ',' + y;
+        instance.focus(x, y);
+        instance.pendingCoordinate = { x: x, y: y };
+        instance.resolveCoordinate();
+      }
+    }
   };
-  if(G.WS){G.WS.on('battle',function(){G.WorldMap.invalidate();});G.WS.on('march',function(){G.WorldMap.invalidate();});}
+  if(G.WS){G.WS.on('battle',function(){G.WorldMap.invalidate();});G.WS.on('march',function(){G.WorldMap.invalidate();});G.WS.on('connected',function(){G.WorldMap.invalidate();});}
 })(window.Game=window.Game||{});

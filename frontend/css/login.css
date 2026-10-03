@@ -3,6 +3,13 @@ body:has(.login-page),
   background: #202c29 !important;
 }
 
+.welcome-intro-mask { z-index: 22000; background: rgba(8, 18, 24, .78); }
+.welcome-intro-card { width: min(560px, calc(100vw - 32px)); padding: 30px 32px; border: 1px solid #ba9b67; border-top-width: 5px; border-radius: 8px; background: #f6f2e9; color: #283b50; box-shadow: 0 24px 80px rgba(0,0,0,.45); }
+.welcome-intro-kicker { color: #8b6b3d; font-size: 12px; letter-spacing: .12em; }
+.welcome-intro-card h2 { margin: 10px 0 14px; font-size: 25px; }
+.welcome-intro-card p { line-height: 1.8; margin: 10px 0; }
+.welcome-intro-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
+
 #screen:has(.login-page) {
   display: flex;
   flex-direction: column;
@@ -49,7 +56,9 @@ body:has(.login-page),
   grid-template-columns: minmax(0, 1.15fr) minmax(390px, .85fr);
   width: min(100%, 1110px);
   min-height: 650px;
+  background: #18231f url('../img/login-battlefield-diorama.webp?v=3') center center / cover no-repeat;
   box-shadow: 0 28px 80px rgba(4, 14, 13, .45);
+  overflow: hidden;
 }
 
 .login-hero {
@@ -238,8 +247,11 @@ body:has(.login-page),
 .login-access {
   display: flex;
   align-items: center;
-  background: radial-gradient(circle at 100% 0, rgba(199, 172, 121, .14), transparent 45%),
-    repeating-linear-gradient(0deg, rgba(80, 67, 46, .017) 0 1px, transparent 1px 4px), #f0ebdd;
+  background: radial-gradient(circle at 100% 0, rgba(199, 172, 121, .2), transparent 45%),
+    repeating-linear-gradient(0deg, rgba(80, 67, 46, .015) 0 1px, transparent 1px 4px),
+    linear-gradient(180deg, rgba(246, 242, 233, 0.62) 0%, rgba(238, 231, 218, 0.54) 100%);
+  backdrop-filter: blur(4px) saturate(110%);
+  -webkit-backdrop-filter: blur(4px);
   border-top: 6px solid #ba9b67;
 }
 
@@ -317,6 +329,12 @@ body:has(.login-page),
   font-weight: 600;
   letter-spacing: .13em;
 }
+.login-password-wrap { position: relative; display: flex; align-items: center; }
+.login-password-wrap input { flex: 1; min-width: 0; padding-right: 42px; }
+.login-password-toggle { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); border: 0; padding: 4px; background: transparent; color: #526b4d; cursor: pointer; font-size: 17px; line-height: 1; }
+/* 图标跟随明文开关状态：密文时加斜杠，明文时保留睁眼。 */
+.login-password-toggle[aria-pressed="false"]::after { content: ''; position: absolute; left: 50%; top: 50%; width: 21px; height: 2px; background: currentColor; box-shadow: 0 1px 0 #fff, 0 -1px 0 #fff; transform: translate(-50%, -50%) rotate(-45deg); pointer-events: none; }
+.login-password-toggle:focus-visible { outline: 2px solid #3d6fa7; outline-offset: 2px; border-radius: 4px; }
 
 #screen .login-form input.qty,
 #screen .login-server-trigger {
@@ -890,35 +908,183 @@ body:has(.login-page),
   .login-shell {
     display: flex;
     flex-direction: column;
-    min-height: 0;
+    min-height: calc(100vh - 55px);
+    min-height: calc(100dvh - 55px);
     width: min(100%, 560px);
+    background: #18231f url('../img/login-battlefield-diorama.webp?v=3') 34% center / cover no-repeat;
   }
 
   .login-hero {
-    min-height: 315px;
-    padding: 27px 38px;
-    background: linear-gradient(180deg, rgba(14, 22, 20, .78) 0%, rgba(14, 22, 20, .45) 55%, rgba(14, 22, 20, .15) 100%),
-      url('../img/login-battlefield-diorama.webp?v=3') center 35% / cover no-repeat;
+    min-height: auto;
+    padding: 14px 22px 10px;
+    background: linear-gradient(180deg, rgba(14, 22, 20, .78) 0%, rgba(14, 22, 20, .45) 60%, rgba(14, 22, 20, .15) 100%);
+  }
+
+  .login-hero-top {
+    font-size: 10px;
+    gap: 8px;
+  }
+
+  .login-emblem {
+    font-size: 20px;
+  }
+
+  .login-hero-serial {
+    display: none;
   }
 
   .login-hero-copy {
-    margin: 32px 0 20px;
+    margin: 8px 0 4px;
+  }
+
+  .login-kicker {
+    font-size: 10px;
+    letter-spacing: .18em;
   }
 
   .login-hero h1 {
-    font-size: 41px;
+    margin: 3px 0 2px;
+    font-size: 24px;
+    line-height: 1.2;
+  }
+
+  .login-hero-subtitle {
+    font-size: 13px;
+    letter-spacing: .15em;
   }
 
   .login-hero-rule {
-    margin: 14px 0 11px;
+    margin: 6px 0 4px;
+    width: 72px;
+  }
+
+  .login-hero-rule span {
+    height: 2px;
   }
 
   .login-hero-description {
-    font-size: 12px;
+    display: none;
   }
 
   .login-hero-bottom {
     display: none;
+  }
+
+  .login-access {
+    flex: 1 0 auto;
+    background: radial-gradient(circle at 100% 0, rgba(199, 172, 121, .15), transparent 45%),
+      linear-gradient(180deg, rgba(246, 242, 233, 0.50) 0%, rgba(238, 231, 218, 0.42) 100%);
+    backdrop-filter: blur(1px) saturate(115%);
+    -webkit-backdrop-filter: blur(1px);
+    border-top: 3px solid rgba(186, 155, 103, 0.8);
+  }
+
+  .login-access-inner {
+    padding: 12px 22px 18px;
+  }
+
+  .login-access-heading {
+    margin-bottom: 2px;
+  }
+
+  .login-access-index {
+    font-size: 10px;
+  }
+
+  .login-access-mark {
+    font-size: 18px;
+  }
+
+  .login-access-title {
+    margin: 4px 0 10px;
+  }
+
+  .login-access-eyebrow {
+    color: #8b3c26;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .18em;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.9);
+  }
+
+  .login-access-title h2,
+  .login-access .title {
+    margin: 2px 0 3px;
+    color: #1c261e;
+    font-size: 22px;
+    line-height: 1.2;
+    text-shadow: 0 1px 3px rgba(255, 255, 255, 0.9), 0 0 8px rgba(255, 255, 255, 0.7);
+  }
+
+  .login-access-title p {
+    color: #262e24;
+    font-size: 12px;
+    font-weight: 600;
+    margin: 0;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.9);
+  }
+
+  .login-form .edit-row {
+    margin: 0 0 10px;
+  }
+
+  .login-form .edit-row label {
+    margin-bottom: 3px;
+    color: #1a221c;
+    font-size: 13px;
+    font-weight: 800;
+    gap: 8px;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.9), 0 0 5px rgba(255, 255, 255, 0.8);
+  }
+
+  .login-form .edit-row label span {
+    font-size: 9px;
+  }
+
+  #screen .login-form input.qty,
+  #screen .login-server-trigger {
+    height: 34px;
+    font-size: 13px;
+    background: rgba(253, 251, 246, 0.92);
+    border-color: rgba(168, 173, 157, 0.9);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  }
+
+  .login-actions {
+    margin-top: 12px;
+    gap: 8px;
+  }
+
+  #screen .login-page #loginPrimaryAction {
+    height: 34px !important;
+    min-height: 34px !important;
+    font-size: 14px !important;
+  }
+
+  .login-feedback {
+    min-height: 16px;
+    margin-top: 4px;
+    font-size: 12px;
+  }
+
+  .login-account-links {
+    margin-top: 6px;
+    font-size: 13px;
+  }
+
+  .login-account-links button {
+    color: #0b589e;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.9);
+  }
+
+  .login-access-foot {
+    color: #20271e;
+    font-weight: 600;
+    margin-top: 10px;
+    padding-top: 8px;
+    font-size: 11px;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.9);
   }
 
   .login-hero-tank {
@@ -959,28 +1125,20 @@ body:has(.login-page),
     right: 25%;
     width: 11%;
   }
-
-  .login-access-inner {
-    padding: 32px 38px 36px;
-  }
-
-  .login-access-title {
-    margin: 27px 0 25px;
-  }
 }
 
 @media (max-width: 480px) {
   .login-hero {
-    min-height: 260px;
-    padding: 25px 30px;
+    min-height: auto;
+    padding: 10px 16px 6px;
   }
 
   .login-hero::after {
-    inset: 10px;
+    inset: 6px;
   }
 
   .login-hero-top {
-    font-size: 10px;
+    font-size: 9px;
   }
 
   .login-hero-serial {
@@ -988,16 +1146,16 @@ body:has(.login-page),
   }
 
   .login-hero-copy {
-    margin: 28px 0 8px;
+    margin: 4px 0 2px;
   }
 
   .login-hero h1 {
-    margin-top: 8px;
-    font-size: clamp(31px, 9vw, 40px);
+    margin-top: 2px;
+    font-size: clamp(20px, 6.5vw, 24px);
   }
 
   .login-hero-subtitle {
-    font-size: 14px;
+    font-size: 11px;
   }
 
   .login-hero-description {
@@ -1022,22 +1180,38 @@ body:has(.login-page),
     right: 2%;
   }
 
+  .login-access {
+    background: radial-gradient(circle at 100% 0, rgba(199, 172, 121, .15), transparent 45%),
+      linear-gradient(180deg, rgba(246, 242, 233, 0.48) 0%, rgba(238, 231, 218, 0.40) 100%);
+    backdrop-filter: blur(1px) saturate(115%);
+    -webkit-backdrop-filter: blur(1px);
+  }
+
   .login-access-inner {
-    padding: 26px 26px 34px;
+    padding: 10px 16px 14px;
+  }
+
+  .login-access-title {
+    margin: 2px 0 8px;
   }
 
   .login-access-title h2,
   .login-access .title {
-    font-size: 30px;
+    font-size: 19px;
+  }
+
+  .login-form .edit-row {
+    margin-bottom: 8px;
   }
 
   .login-actions {
-    gap: 9px;
+    margin-top: 10px;
+    gap: 8px;
   }
 
   #screen .login-page button.btn {
     gap: 7px;
-    padding: 10px 8px !important;
+    padding: 8px 8px !important;
   }
 }
 

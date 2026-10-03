@@ -4,7 +4,7 @@
 作者：汪渊
 生成方式：AI 生成
 登记范围：frontend/img 下当前随游戏交付的图片资源；不含 output 中的候选、原稿和预览图
-资源总数：155
+资源总数：186
 
 ## 日期与声明依据
 
@@ -25,7 +25,9 @@ creationDate 为资源文件最后修改时间换算的北京时间日期，仅�
 | 2026-09-22 | 17 | `frontend/img/units/models/` |
 | 2026-09-23 | 6 | `frontend/img/resources/models/` |
 | 2026-09-26 | 6 | `frontend/img/guild/` |
-| 2026-09-27 | 13 | `frontend/img/avatars/historical/`、`frontend/img/` |
+| 2026-09-27 | 5 | `frontend/img/` |
+| 2026-09-29 | 4 | `frontend/img/npc/japanese-navy/` |
+| 2026-10-01 | 35 | `frontend/img/avatars/historical/`、`frontend/img/map/` |
 
 ## 逐文件清单
 
@@ -33,14 +35,14 @@ creationDate 为资源文件最后修改时间换算的北京时间日期，仅�
 
 | 文件 | 格式 | 作者 | 创作日期参考 | 生成方式 | 相关记录 |
 | --- | --- | --- | --- | --- | --- |
-| `frontend/img/avatars/historical/rank-captain-v1.webp` | webp | 汪渊 | 2026-09-27 | AI 生成 | `output/imagegen/historical-rank-avatars-20260926/README.md` |
-| `frontend/img/avatars/historical/rank-colonel-v1.webp` | webp | 汪渊 | 2026-09-27 | AI 生成 | `output/imagegen/historical-rank-avatars-20260926/README.md` |
-| `frontend/img/avatars/historical/rank-corporal-v1.webp` | webp | 汪渊 | 2026-09-27 | AI 生成 | `output/imagegen/historical-rank-avatars-20260926/README.md` |
-| `frontend/img/avatars/historical/rank-general-v1.webp` | webp | 汪渊 | 2026-09-27 | AI 生成 | `output/imagegen/historical-rank-avatars-20260926/README.md` |
-| `frontend/img/avatars/historical/rank-lieutenant-v1.webp` | webp | 汪渊 | 2026-09-27 | AI 生成 | `output/imagegen/historical-rank-avatars-20260926/README.md` |
-| `frontend/img/avatars/historical/rank-major-v1.webp` | webp | 汪渊 | 2026-09-27 | AI 生成 | `output/imagegen/historical-rank-avatars-20260926/README.md` |
-| `frontend/img/avatars/historical/rank-private-v1.webp` | webp | 汪渊 | 2026-09-27 | AI 生成 | `output/imagegen/historical-rank-avatars-20260926/README.md` |
-| `frontend/img/avatars/historical/rank-sergeant-v1.webp` | webp | 汪渊 | 2026-09-27 | AI 生成 | `output/imagegen/historical-rank-avatars-20260926/README.md` |
+| `frontend/img/avatars/historical/rank-captain-v1.webp` | webp | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/historical-rank-avatars-20260926/README.md` |
+| `frontend/img/avatars/historical/rank-colonel-v1.webp` | webp | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/historical-rank-avatars-20260926/README.md` |
+| `frontend/img/avatars/historical/rank-corporal-v1.webp` | webp | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/historical-rank-avatars-20260926/README.md` |
+| `frontend/img/avatars/historical/rank-general-v1.webp` | webp | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/historical-rank-avatars-20260926/README.md` |
+| `frontend/img/avatars/historical/rank-lieutenant-v1.webp` | webp | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/historical-rank-avatars-20260926/README.md` |
+| `frontend/img/avatars/historical/rank-major-v1.webp` | webp | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/historical-rank-avatars-20260926/README.md` |
+| `frontend/img/avatars/historical/rank-private-v1.webp` | webp | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/historical-rank-avatars-20260926/README.md` |
+| `frontend/img/avatars/historical/rank-sergeant-v1.webp` | webp | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/historical-rank-avatars-20260926/README.md` |
 | `frontend/img/buildings/garden/academy.webp` | webp | 汪渊 | 2026-09-17 | AI 生成 | `output/imagegen/realistic-buildings-20260917/README.md` |
 | `frontend/img/buildings/garden/airport.webp` | webp | 汪渊 | 2026-09-17 | AI 生成 | `output/imagegen/realistic-buildings-20260917/README.md` |
 | `frontend/img/buildings/garden/apron.webp` | webp | 汪渊 | 2026-09-17 | AI 生成 | `output/imagegen/realistic-buildings-20260917/README.md` |
@@ -101,8 +103,17 @@ creationDate 为资源文件最后修改时间换算的北京时间日期，仅�
 | `frontend/img/map/snow-thin-ground.png` | png | 汪渊 | 2026-09-16 | AI 生成 | `output/imagegen/snow-depth/README.md` |
 | `frontend/img/map/snow-thin-map-embedded.png` | png | 汪渊 | 2026-09-16 | AI 生成 | `output/imagegen/snow-depth/README.md` |
 | `frontend/img/map/snow-thin.webp` | webp | 汪渊 | 2026-09-16 | AI 生成 | `output/imagegen/snow-depth/README.md` |
+| `frontend/img/map/wild-forest-dense-map-embedded.png` | png | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/map-icons/README.md` |
+| `frontend/img/map/wild-forest-dense-map.webp` | webp | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/map-icons/README.md` |
+| `frontend/img/map/wild-forest-dense.webp` | webp | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/map-icons/README.md` |
+| `frontend/img/map/wild-forest-edge-map-embedded.png` | png | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/map-icons/README.md` |
+| `frontend/img/map/wild-forest-edge-map.webp` | webp | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/map-icons/README.md` |
+| `frontend/img/map/wild-forest-edge.webp` | webp | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/map-icons/README.md` |
 | `frontend/img/map/wild-forest-map-embedded.png` | png | 汪渊 | 2026-09-16 | AI 生成 | `output/imagegen/map-icons/README.md` |
 | `frontend/img/map/wild-forest-map.webp` | webp | 汪渊 | 2026-09-16 | AI 生成 | `output/imagegen/map-icons/README.md` |
+| `frontend/img/map/wild-forest-ridge-map-embedded.png` | png | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/map-icons/README.md` |
+| `frontend/img/map/wild-forest-ridge-map.webp` | webp | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/map-icons/README.md` |
+| `frontend/img/map/wild-forest-ridge.webp` | webp | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/map-icons/README.md` |
 | `frontend/img/map/wild-forest.webp` | webp | 汪渊 | 2026-09-16 | AI 生成 | `output/imagegen/map-icons/README.md` |
 | `frontend/img/map/wild-grainfield-map-embedded.png` | png | 汪渊 | 2026-09-16 | AI 生成 | `output/imagegen/map-icons/README.md` |
 | `frontend/img/map/wild-grainfield-map.webp` | webp | 汪渊 | 2026-09-16 | AI 生成 | `output/imagegen/map-icons/README.md` |
@@ -110,8 +121,17 @@ creationDate 为资源文件最后修改时间换算的北京时间日期，仅�
 | `frontend/img/map/wild-grassland-map-embedded.png` | png | 汪渊 | 2026-09-16 | AI 生成 | 暂无逐文件记录 |
 | `frontend/img/map/wild-grassland-map.webp` | webp | 汪渊 | 2026-09-16 | AI 生成 | 暂无逐文件记录 |
 | `frontend/img/map/wild-grassland.webp` | webp | 汪渊 | 2026-09-16 | AI 生成 | 暂无逐文件记录 |
+| `frontend/img/map/wild-hill-foothill-map-embedded.png` | png | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/map-icons/README.md` |
+| `frontend/img/map/wild-hill-foothill-map.webp` | webp | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/map-icons/README.md` |
+| `frontend/img/map/wild-hill-foothill.webp` | webp | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/map-icons/README.md` |
 | `frontend/img/map/wild-hill-map-embedded.png` | png | 汪渊 | 2026-09-16 | AI 生成 | `output/imagegen/map-icons/README.md` |
 | `frontend/img/map/wild-hill-map.webp` | webp | 汪渊 | 2026-09-16 | AI 生成 | `output/imagegen/map-icons/README.md` |
+| `frontend/img/map/wild-hill-peak-map-embedded.png` | png | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/map-icons/README.md` |
+| `frontend/img/map/wild-hill-peak-map.webp` | webp | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/map-icons/README.md` |
+| `frontend/img/map/wild-hill-peak.webp` | webp | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/map-icons/README.md` |
+| `frontend/img/map/wild-hill-ridge-map-embedded.png` | png | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/map-icons/README.md` |
+| `frontend/img/map/wild-hill-ridge-map.webp` | webp | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/map-icons/README.md` |
+| `frontend/img/map/wild-hill-ridge.webp` | webp | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/map-icons/README.md` |
 | `frontend/img/map/wild-hill.webp` | webp | 汪渊 | 2026-09-16 | AI 生成 | `output/imagegen/map-icons/README.md` |
 | `frontend/img/map/wild-ironworks-map-embedded.png` | png | 汪渊 | 2026-09-16 | AI 生成 | `output/imagegen/map-icons/README.md` |
 | `frontend/img/map/wild-ironworks-map.webp` | webp | 汪渊 | 2026-09-16 | AI 生成 | `output/imagegen/map-icons/README.md` |
@@ -131,9 +151,22 @@ creationDate 为资源文件最后修改时间换算的北京时间日期，仅�
 | `frontend/img/map/wild-snow-map-embedded.png` | png | 汪渊 | 2026-09-16 | AI 生成 | 暂无逐文件记录 |
 | `frontend/img/map/wild-snow-map.webp` | webp | 汪渊 | 2026-09-16 | AI 生成 | 暂无逐文件记录 |
 | `frontend/img/map/wild-snow.webp` | webp | 汪渊 | 2026-09-16 | AI 生成 | 暂无逐文件记录 |
+| `frontend/img/map/wild-swamp-creek-map-embedded.png` | png | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/map-icons/README.md` |
+| `frontend/img/map/wild-swamp-creek-map.webp` | webp | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/map-icons/README.md` |
+| `frontend/img/map/wild-swamp-creek.webp` | webp | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/map-icons/README.md` |
+| `frontend/img/map/wild-swamp-deep-map-embedded.png` | png | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/map-icons/README.md` |
+| `frontend/img/map/wild-swamp-deep-map.webp` | webp | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/map-icons/README.md` |
+| `frontend/img/map/wild-swamp-deep.webp` | webp | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/map-icons/README.md` |
 | `frontend/img/map/wild-swamp-map-embedded.png` | png | 汪渊 | 2026-09-16 | AI 生成 | `output/imagegen/map-icons/README.md` |
 | `frontend/img/map/wild-swamp-map.webp` | webp | 汪渊 | 2026-09-16 | AI 生成 | `output/imagegen/map-icons/README.md` |
+| `frontend/img/map/wild-swamp-marsh-map-embedded.png` | png | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/map-icons/README.md` |
+| `frontend/img/map/wild-swamp-marsh-map.webp` | webp | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/map-icons/README.md` |
+| `frontend/img/map/wild-swamp-marsh.webp` | webp | 汪渊 | 2026-10-01 | AI 生成 | `output/imagegen/map-icons/README.md` |
 | `frontend/img/map/wild-swamp.webp` | webp | 汪渊 | 2026-09-16 | AI 生成 | `output/imagegen/map-icons/README.md` |
+| `frontend/img/npc/japanese-navy/battleship.webp` | webp | 汪渊 | 2026-09-29 | AI 生成 | 暂无逐文件记录 |
+| `frontend/img/npc/japanese-navy/carrier.webp` | webp | 汪渊 | 2026-09-29 | AI 生成 | 暂无逐文件记录 |
+| `frontend/img/npc/japanese-navy/destroyer.webp` | webp | 汪渊 | 2026-09-29 | AI 生成 | 暂无逐文件记录 |
+| `frontend/img/npc/japanese-navy/sub.webp` | webp | 汪渊 | 2026-09-29 | AI 生成 | 暂无逐文件记录 |
 | `frontend/img/officer-gem-star.svg` | svg | 汪渊 | 2026-09-27 | AI 生成 | 暂无逐文件记录 |
 | `frontend/img/resources/models/food.webp` | webp | 汪渊 | 2026-09-23 | AI 生成 | `output/imagegen/resource-models-20260923/batch.jsonl` |
 | `frontend/img/resources/models/gold.webp` | webp | 汪渊 | 2026-09-23 | AI 生成 | `output/imagegen/resource-models-20260923/batch.jsonl` |

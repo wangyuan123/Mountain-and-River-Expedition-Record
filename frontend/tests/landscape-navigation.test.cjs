@@ -6,13 +6,17 @@ const vm = require('node:vm');
 
 test('landscape navigation preserves its scroll and reveals the active entry', () => {
   const screen = { classList: { toggle() {} } };
-  const previous = { clientWidth: 120, scrollLeft: 0, scrollTop: 120 };
+  const previous = { clientWidth: 120, scrollLeft: 0, querySelectorAll: () => [{ scrollTop: 120 }] };
   const active = { getBoundingClientRect: () => ({ top: 250, bottom: 280 }) };
-  const viewport = {
+  const navPage = {
     scrollTop: 0,
     querySelector: () => active,
-    querySelectorAll: () => [],
     getBoundingClientRect: () => ({ top: 0, bottom: 240 })
+  };
+  const viewport = {
+    clientWidth: 120, scrollLeft: 0,
+    querySelectorAll: () => [navPage],
+    addEventListener() {}
   };
   let current = previous;
   const bar = {
@@ -37,7 +41,7 @@ test('landscape navigation preserves its scroll and reveals the active entry', (
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/main.js'), 'utf8'), context);
 
   context.Game.Main.renderNavBar();
-  assert.equal(viewport.scrollTop, 160);
+  assert.equal(navPage.scrollTop, 160);
   assert.equal(bar._navRoute, 'world');
 });
 
@@ -116,6 +120,19 @@ test('map list return shares the page backbar without duplicating it', () => {
   assert.equal(bar.children[1], mapSwitch);
   context.Game.Core.renderBackButton(view);
   assert.equal(bar.children.length, 2);
+});
+
+test('portaled map toolbar does not create a second return button in the view', () => {
+  const context = { Game: {}, document: {} };
+  context.window = context;
+  vm.createContext(context);
+  require('./load-constants.cjs')(context);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/core.js'), 'utf8'), context);
+  const view = {
+    querySelector(selector) { return selector === '.world-map-shell' ? {} : null; },
+    insertBefore() { assert.fail('map already owns its return button'); }
+  };
+  context.Game.Core.renderBackButton(view);
 });
 
 test('changing or returning to a route resets the independently scrolling view', () => {

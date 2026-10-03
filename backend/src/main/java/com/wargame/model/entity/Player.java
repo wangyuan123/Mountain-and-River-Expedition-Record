@@ -44,6 +44,9 @@ public class Player extends VersionedEntity implements CityEconomy {
     @Column(name = "city_name", length = 100)
     private String cityName = "";
 
+    @Column(name = "city_name_renamed_at", nullable = false)
+    private long cityNameRenamedAt = 0L;
+
     @Column(name = "avatar", length = 255)
     private String avatar = AvatarDef.randomAvatar();
 
@@ -153,8 +156,26 @@ public class Player extends VersionedEntity implements CityEconomy {
     @Column(name = "recovery_token_expires_at", nullable = false)
     private Long recoveryTokenExpiresAt = 0L;
 
+    /** 封禁状态：NORMAL / BANNED */
+    @Column(name = "ban_status", nullable = false, length = 20)
+    private String banStatus = "NORMAL";
+
+    /** 封号原因 */
+    @Column(name = "ban_reason", length = 255)
+    private String banReason;
+
+    /** 解封时间戳 (毫秒)，0 或 NULL 表示永久封禁 */
+    @Column(name = "banned_until")
+    private Long bannedUntil;
+
+    public boolean isBanned(long now) {
+        if (!"BANNED".equalsIgnoreCase(banStatus)) return false;
+        if (bannedUntil == null || bannedUntil <= 0L) return true;
+        return now < bannedUntil;
+    }
+
     public boolean accountActive() {
-        return "ACTIVE".equals(accountStatus) && !Integer.valueOf(1).equals(disabled);
+        return "ACTIVE".equals(accountStatus) && !Integer.valueOf(1).equals(disabled) && !isBanned(System.currentTimeMillis());
     }
 
     public boolean deletionDue(long now) {

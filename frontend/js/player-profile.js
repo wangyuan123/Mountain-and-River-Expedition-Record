@@ -395,6 +395,11 @@ window.Game = window.Game || {};
       var s = Core.state || {};
       var p = s.player || {};
       var oldName = p.cityName || '';
+      var availableAt = Number(p.cityNameRenameAvailableAt) || 0;
+      var cardCount = Number(s.items && s.items.cityRenameCard) || 0;
+      var goldCount = Number(s.resources && s.resources.gold) || 0;
+      var costTip = cardCount > 0 ? '持有城市改名卡 ×' + cardCount + '，将优先消耗 1 张。'
+        : goldCount >= 60 ? '未持有城市改名卡，将消耗 60 黄金。' : '城市改名卡或黄金不足（需 1 张改名卡或 60 黄金）。';
       var trigger = document.activeElement;
       var mask = document.createElement('div');
       mask.id = 'renameCityModal';
@@ -404,9 +409,11 @@ window.Game = window.Game || {};
         + '<form id="renameCityForm">'
         + '<div class="modal-body"><label for="renameCityInput">新城市名称</label>'
         + '<input id="renameCityInput" name="cityName" type="text" maxlength="12" aria-required="true" autocomplete="off" aria-describedby="renameCityHint">'
-        + '<p id="renameCityHint">最多12字，支持中英文、数字、下划线和间隔号。</p></div>'
+        + '<p id="renameCityHint">最多12字，支持中英文、数字、下划线和间隔号。每天可修改一次，北京时间 0:00 重置。'
+        + (availableAt > Date.now() ? '这座城市今日已修改，请明日再试。' : '') + '</p>'
+        + '<p class="city-rename-cost">' + costTip + '</p></div>'
         + '<div class="modal-foot"><button type="button" class="account-confirm-cancel">取消</button>'
-        + '<button type="submit" class="account-confirm-submit">保存名称</button></div>'
+        + '<button type="submit" class="account-confirm-submit"' + (cardCount <= 0 && goldCount < 60 ? ' disabled title="城市改名卡或黄金不足"' : '') + '>保存名称</button></div>'
         + '</form></div>';
       var input = mask.querySelector('#renameCityInput');
       var cancel = mask.querySelector('.account-confirm-cancel');
@@ -437,6 +444,8 @@ window.Game = window.Game || {};
       mask.querySelector('#renameCityForm').onsubmit = function (event) {
         event.preventDefault();
         if (saving) return;
+        if (availableAt > Date.now()) { G.toast('这座城市今天已改名，请明日 0:00 后再试'); return; }
+        if (cardCount <= 0 && goldCount < 60) { G.toast('城市改名卡或黄金不足（需 1 张改名卡或 60 黄金）'); return; }
         var newName = input.value.trim();
         if (!newName) { G.toast('城市名不能为空'); input.focus(); return; }
         var safeRe = /^[A-Za-z0-9_\u4e00-\u9fa5·\s]{1,12}$/;

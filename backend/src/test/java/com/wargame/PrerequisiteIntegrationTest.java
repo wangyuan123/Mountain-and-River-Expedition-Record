@@ -171,7 +171,7 @@ class PrerequisiteIntegrationTest extends BaseServiceTest {
 
         assertTrue(prerequisites.unmet(playerId, 0, "buildings", "lab", 10).stream()
                 .noneMatch(requirement -> "port".equals(requirement.get("building"))));
-        assertEquals("施工中的国防研究所", prerequisites.affectedTask(playerId, 1, "port", null, 7));
+        assertEquals("施工中的军工科技研发中心", prerequisites.affectedTask(playerId, 1, "port", null, 7));
 
         PlayerCity alternateCoast = new PlayerCity();
         alternateCoast.setWorldId(world.getId());

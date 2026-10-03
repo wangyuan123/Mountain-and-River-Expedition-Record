@@ -162,7 +162,7 @@ test('fmtDuration formats duration nicely', () => {
   assert.equal(g.World.fmtDuration(3665), '1 小时 1 分 5 秒');
 });
 
-test('renderDispatch defaults all available units to 1', () => {
+test('renderDispatch defaults all available units to 0 and exposes a one-unit shortcut', () => {
   const c = setup();
   c.Game.Core.state.world = { pos: { x: 10, y: 10 }, wildTiles: [] };
   c.Game.Core.state.army = { scout: 10, infantry: 50, ltank: 5, truck: 20 };
@@ -172,10 +172,46 @@ test('renderDispatch defaults all available units to 1', () => {
   const v = { innerHTML: '' };
   c.Game.World.renderDispatch(v);
 
-  assert.match(v.innerHTML, /id="dqty_scout"[^>]*value="1"/);
-  assert.match(v.innerHTML, /id="dqty_infantry"[^>]*value="1"/);
-  assert.match(v.innerHTML, /id="dqty_ltank"[^>]*value="1"/);
-  assert.match(v.innerHTML, /id="dqty_truck"[^>]*value="1"/);
+  assert.match(v.innerHTML, /id="dqty_scout"[^>]*value="0"/);
+  assert.match(v.innerHTML, /id="dqty_infantry"[^>]*value="0"/);
+  assert.match(v.innerHTML, /id="dqty_ltank"[^>]*value="0"/);
+  assert.match(v.innerHTML, /id="dqty_truck"[^>]*value="0"/);
+  assert.match(v.innerHTML, /全部设置1单位/);
+  assert.match(v.innerHTML, /重置/);
   assert.match(v.innerHTML, /行军油耗/);
   assert.doesNotMatch(v.innerHTML, /行军粮耗|每5分钟粮耗/);
+});
+
+test('setAllDispatchUnitsToOne updates visible unit inputs and sliders', () => {
+  const c = setup();
+  const elements = {};
+  for (const [uid, max] of [['scout', 10], ['infantry', 50], ['ltank', 5], ['truck', 20]]) {
+    elements['dqty_' + uid] = { value: '0', max: String(max) };
+    elements['dslider_' + uid] = { value: '0', max: String(max), style: { setProperty() {} } };
+  }
+  c.document = { getElementById: id => elements[id] || null };
+
+  c.Game.World.setAllDispatchUnitsToOne();
+
+  for (const uid of ['scout', 'infantry', 'ltank', 'truck']) {
+    assert.equal(elements['dqty_' + uid].value, 1);
+    assert.equal(elements['dslider_' + uid].value, 1);
+  }
+});
+
+test('resetDispatchUnits clears visible unit inputs and sliders', () => {
+  const c = setup();
+  const elements = {};
+  for (const [uid, max] of [['scout', 10], ['infantry', 50], ['ltank', 5], ['truck', 20]]) {
+    elements['dqty_' + uid] = { value: '1', max: String(max) };
+    elements['dslider_' + uid] = { value: '1', max: String(max), style: { setProperty() {} } };
+  }
+  c.document = { getElementById: id => elements[id] || null };
+
+  c.Game.World.resetDispatchUnits();
+
+  for (const uid of ['scout', 'infantry', 'ltank', 'truck']) {
+    assert.equal(elements['dqty_' + uid].value, 0);
+    assert.equal(elements['dslider_' + uid].value, 0);
+  }
 });

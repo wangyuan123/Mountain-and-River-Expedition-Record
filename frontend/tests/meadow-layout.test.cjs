@@ -76,6 +76,7 @@ test('meadow and woodland artwork avoids resource footprints, including tile-edg
   const right=tiles.find(t=>t.cx===26&&t.cy===21).canvas;
   const side=left.width,interior=t.tileSpan*t.density;
   for(let row=0;row<side;row++)assert.deepEqual(left.pixels.slice((row*side+interior)*4,(row*side+side)*4),right.pixels.slice(row*side*4,(row*side+side-interior)*4));
-  const edgeImages=(canvas,cx)=>canvas.images.map(i=>({...i,x:i.x+cx*interior-t.padding})).filter(i=>i.x<26*interior+t.padding&&i.x+i.w>26*interior-t.padding);
+  const round=v=>Math.round(v*1e4)/1e4;
+  const edgeImages=(canvas,cx)=>canvas.images.map(i=>({url:i.url,x:round(i.x+cx*interior-t.padding),y:round(i.y),w:round(i.w),h:round(i.h)})).filter(i=>i.x<26*interior+t.padding&&i.x+i.w>26*interior-t.padding);
   assert.deepEqual(edgeImages(left,25),edgeImages(right,26),'shared-edge grass and trees use identical world positions and draw order');
 });

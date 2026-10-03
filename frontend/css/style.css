@@ -1204,6 +1204,50 @@ select.qty { width: 80px; cursor: pointer; }
   font-size: 11px;
   color: #6a4f24;
 }
+.build-picker-item.item-disabled {
+  background: #faf8f2;
+  border-color: #ded6bf;
+}
+.build-picker-cost .bcost-item {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 6px;
+}
+.build-picker-cost .bcost-lack {
+  color: #c0392b;
+  font-weight: 600;
+}
+.build-picker-cost .bcost-val-lack {
+  color: #c0392b;
+}
+.build-picker-cost .bcost-short-tag {
+  color: #c0392b;
+  font-size: 10px;
+  margin-left: 2px;
+  background: rgba(192, 57, 43, 0.1);
+  padding: 0 4px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+.build-picker-tip {
+  font-size: 11px;
+  margin-top: 4px;
+  line-height: 1.35;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.build-picker-tip.lack {
+  color: #c0392b;
+  font-weight: 600;
+}
+.build-picker-tip.prereq {
+  color: #b45309;
+  font-weight: 600;
+}
+.build-picker-tip.busy {
+  color: #64748b;
+}
 .build-picker-action {
   flex-shrink: 0;
 }
@@ -1399,7 +1443,8 @@ html, body {
   gap: 6px;
   flex-shrink: 0;
 }
-#topbar .player-bar-right .diamond {
+#topbar .player-bar-right .diamond,
+#topbar .player-bar-right .forum-entry-btn {
   display: inline-flex;
   align-items: center;
   gap: 2px;
@@ -1415,8 +1460,10 @@ html, body {
   flex-shrink: 0;
   line-height: 1.4;
 }
-#topbar .player-bar-right .diamond:hover { filter: brightness(1.05); transform: translateY(-1px); }
-#topbar .player-bar-right .diamond:active { transform: translateY(0); }
+#topbar .player-bar-right .diamond:hover,
+#topbar .player-bar-right .forum-entry-btn:hover { filter: brightness(1.05); transform: translateY(-1px); }
+#topbar .player-bar-right .diamond:active,
+#topbar .player-bar-right .forum-entry-btn:active { transform: translateY(0); }
 
 /* ===== 指挥官档案：资料、军衔资产、当前城市 ===== */
 .player-drawer-mask {
@@ -1931,6 +1978,23 @@ button.drawer-rank-tip:hover { border-color: var(--accent); }
   height: 14px;
   border-radius: 4px;
   background: var(--accent);
+}
+.dispatch-set-all {
+  padding: 4px 9px;
+  font-size: 12px;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.dispatch-unit-actions {
+  display: inline-flex;
+  gap: 6px;
+  margin-left: auto;
+}
+.dispatch-reset {
+  padding: 4px 9px;
+  font-size: 12px;
+  line-height: 1.3;
+  white-space: nowrap;
 }
 
 .home-module { display: flow-root; }
@@ -3013,6 +3077,13 @@ body.theme-classic .unit-card-details,
 .rb-settlement-item span { color: #65788f; }
 .rb-settlement-item b { color: #253f5d; }
 .rb-settlement-item b small, .rb-settlement-note { color: #718197; }
+
+.rb-initial-distance {
+  margin: 8px 0 4px;
+  color: #111827;
+  font-size: 13px;
+}
+[data-theme="dark"] .rb-initial-distance { color: #e2e8f0; }
 
 .report-details-toggle-wrap {
   margin: 12px 0 6px;
@@ -4338,6 +4409,7 @@ body.theme-classic .unit-card-details,
 .chat-msg {
   display: flex;
   align-items: baseline;
+  flex-wrap: wrap;
   gap: 6px;
   padding: 2.5px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.035);
@@ -4345,6 +4417,40 @@ body.theme-classic .unit-card-details,
   word-break: break-all;
 }
 .chat-msg:last-child { border-bottom: 0; }
+.chat-time-separator {
+  flex: 0 0 100%;
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.4;
+  text-align: center;
+  user-select: none;
+  order: 0;
+}
+.chat-avatar {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  align-self: flex-start;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  border-radius: 50%;
+  object-fit: cover;
+  background: #1e293b;
+  order: 1;
+}
+.chat-msg-body {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  order: 2;
+}
+.chat-msg-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
 @keyframes chatFade {
   from { opacity: 0; transform: translateY(-3px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -4369,11 +4475,13 @@ body.theme-classic .unit-card-details,
 .chat-msg .chat-sender {
   flex-shrink: 0;
   color: #93c5fd;
+  font-size: 10px;
   font-weight: 600;
+  line-height: 1.25;
 }
 .chat-msg .chat-content,
 .chat-msg .chat-text {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   color: #e2e8f0;
   word-break: break-word;
 }
@@ -4396,15 +4504,30 @@ body.theme-classic .unit-card-details,
   justify-content: flex-end;
   text-align: right;
   border-right: 2px solid #38bdf8;
+  border-left: none;
   padding-right: 6px;
   background: rgba(56, 189, 248, 0.05);
   margin: 1px 0;
+}
+.chat-msg.chat-msg-self .chat-avatar {
+  order: 2;
+  margin-left: 6px;
+  margin-right: 0;
+}
+.chat-msg.chat-msg-self .chat-msg-body {
+  order: 1;
+  align-items: flex-end;
+  text-align: right;
+}
+.chat-msg.chat-msg-self .chat-msg-header {
+  justify-content: flex-end;
 }
 .chat-msg.chat-msg-self .chat-content {
   flex: 0 1 auto;
   min-width: 0;
   max-width: 80%;
   color: #f8fafc;
+  text-align: right;
 }
 .chat-msg.chat-msg-self .chat-sender {
   color: #38bdf8;
@@ -6734,8 +6857,8 @@ body.theme-classic .unit-card-details,
   justify-content: center;
 }
 .bdetail-icon .b-icon-img {
-  width: 88px;
-  height: 88px;
+  width: 64px;
+  height: 64px;
   object-fit: contain;
   display: block;
 }
@@ -6908,6 +7031,7 @@ body.theme-classic .unit-card-details,
 .city-list-row.selected{background:var(--accent-soft)}
 .city-list-row.selected .city-ready-label{color:var(--accent);font-weight:600}
 .city-choice:not(:disabled):hover{background:var(--accent-soft);border-radius:4px}
+.city-transfer-resource,.city-transfer-unit{min-width:0;padding-bottom:8px}.city-transfer-resource label,.city-transfer-unit label{margin:6px 0 2px}.city-transfer-stock{display:block;color:var(--muted);font-size:11px;white-space:nowrap}.city-transfer-resource-controls{display:flex;align-items:center;gap:8px;margin-top:5px}.city-dialog .city-transfer-resource-controls .recruit-qty{width:76px;min-width:76px;flex:0 0 76px}.city-dialog .city-transfer-resource-controls .recruit-slider{width:100%;height:24px;min-height:24px;margin:0;padding:0;border:0;background:transparent}
 .city-dialog button:focus-visible,.city-dialog input:focus-visible,.city-dialog select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 @media(max-width:600px){.city-dialog-mask{align-items:flex-end;padding:0}.city-dialog{width:100%;max-height:85dvh;border-radius:14px 14px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}.city-choice{min-height:64px}}
 

@@ -266,6 +266,8 @@ window.Game = window.Game || {};
     removeGuildMember: function (playerId) { return client.post('/game/guild/members/' + playerId + '/remove', {}); },
     transferGuildLeadership: function (playerId) { return client.post('/game/guild/members/' + playerId + '/transfer', {}); },
     leaveGuild: function () { return client.post('/game/guild/leave', {}); },
+    getGuildChatHistory: function () { return client.get('/game/guild/chat/history', { noCache: true }); },
+    sendGuildChat: function (content) { return client.post('/game/guild/chat/send', { content: content }); },
     // ==================== 建筑 ====================
 
     buildUpgrade: function (building, slot) {
@@ -364,6 +366,14 @@ window.Game = window.Game || {};
       if (count != null && count > 0) payload.count = count;
       return client.post('/game/army/queue/' + queueId + '/speedup', payload)
         .then(extractState).then(applyState);
+    },
+
+    freeArmySpeedUp: function (queueId) {
+      return client.post('/game/army/queue/' + queueId + '/free-speedup', {})
+        .then(function (data) {
+          if (data && data.state) applyState(data.state);
+          return data;
+        });
     },
 
     // ==================== 科技 ====================
@@ -610,6 +620,13 @@ window.Game = window.Game || {};
     },
 
     // ==================== 主线任务 + 新手引导 + 军衔任务 ====================
+
+    /** 获取当前大区的分页排行榜及当前玩家或军团的全榜名次。 */
+    getLeaderboard: function (type, metric, page) {
+      return client.get('/game/leaderboard?type=' + encodeURIComponent(type) +
+        '&metric=' + encodeURIComponent(metric) + '&page=' + encodeURIComponent(page),
+        { silent: true, noCache: true });
+    },
 
     getRankInfo: function () {
       return client.get('/game/rank/info');

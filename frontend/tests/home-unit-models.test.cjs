@@ -39,6 +39,14 @@ test('首页总览按数量排序显示全部兵种，零兵力不显示', () =>
   assert.match(G.MainView.renderArmySummaryList(), /army-summary-empty/);
 });
 
+test('首页后勤兵种说明与运输载重保持一致', () => {
+  const G = setup();
+  assert.equal(G.DATA.units.truck.load, 500);
+  assert.equal(G.DATA.units.transport.load, 800);
+  assert.match(G.DATA.combatRoles.truck, /载重500/);
+  assert.match(G.DATA.combatRoles.transport, /载重800/);
+});
+
 test('军队总览三排浏览，全屏入口展示全部兵种并可关闭', () => {
   const css = fs.readFileSync(path.join(__dirname, '../css/style.css'), 'utf8');
   const source = fs.readFileSync(path.join(__dirname, '../js/main-view.js'), 'utf8');

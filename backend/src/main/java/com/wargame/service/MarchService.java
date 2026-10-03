@@ -449,6 +449,7 @@ public class MarchService {
             wildTileRepository.save(cTile);
         }
         pushBattleReport(playerId, result, m, commander, null, wildConquered);
+        m.setBattleWon(result.isWin());
         m.setBattleId(null);
         startReturnMarch(m, now);
         marchRepository.save(m);
@@ -1324,6 +1325,10 @@ public class MarchService {
             if (effectiveSpd < slowestSpd) slowestSpd = effectiveSpd;
         }
         if (customArmy.isEmpty()) throw new IllegalArgumentException("请至少选择一种兵种出征");
+        // 城市间运输只允许后勤载具执行往返；任意其他兵种应使用单程派遣。
+        if ("transport".equals(action) && customArmy.keySet().stream().anyMatch(uid -> !"truck".equals(uid) && !"transport".equals(uid))) {
+            throw new IllegalArgumentException("运输只能派遣卡车或运输机");
+        }
 
         // 出征编队受当前城市带兵上限约束，不能仅依赖前端拦截。
         long selectedTroops = customArmy.values().stream().mapToLong(Integer::longValue).sum();
@@ -1372,7 +1377,7 @@ public class MarchService {
         }
         int marchSec = Math.max(1, (int) Math.ceil((double) marchDist * secPerGrid / (spd * speedMul)));
         // 出征仅预扣油耗；进驻无返程，其他任务预扣往返油耗以保证返程不受库存变化影响。
-        int marchFuel = calcMarchFuel(customArmy, marchDist, isStation ? 1 : 2);
+        int marchFuel = calcMarchFuel(customArmy, marchDist, isStation || "rebase".equals(action) ? 1 : 2);
 
         // 4. 验证携带资源与行军油耗，并在出发前一次性扣除。
         Map<String, Integer> carryRes = new LinkedHashMap<>();
@@ -1389,6 +1394,7 @@ public class MarchService {
             }
             int load = Math.min(calcArmyLoad(customArmy),route.cargoLimit());
             long totalCarry = carryRes.values().stream().mapToLong(Integer::longValue).sum();
+            if ("transport".equals(action) && totalCarry == 0) throw new IllegalArgumentException("请填写要运输的物资");
             if (totalCarry > load) throw new IllegalArgumentException("携带资源超出负重上限 " + load);
         }
 
@@ -1629,6 +1635,7 @@ public class MarchService {
         }
 
         // 有幸存者则开始返程，否则删除；清空会话标记后行军才可重新由 Tick 处理返程。
+        m.setBattleWon(result.isWin());
         m.setBattleId(null);
         if (survivors.isEmpty()) {
             marchRepository.delete(m);
@@ -2205,6 +2212,10 @@ public class MarchService {
             act = "出征";
         }
         if (conquered) {
+            // 日寇舰队与陆上据点被击溃后不会产生城市归属，战报应使用击溃语义。
+            if ("bandit".equals(targetKind)) {
+                return "剿寇胜利·已击溃 " + targetName;
+            }
             if ("wild".equals(targetKind)) {
                 return "占领野地胜利·已占领 " + targetName;
             }
@@ -2415,7 +2426,7 @@ public class MarchService {
 
     // ===== 资源/部队操作 =====
 
-    private void returnArmy(Long playerId, Map<String, Integer> army) {
+    public void returnArmy(Long playerId, Map<String, Integer> army) {
         if (army == null || army.isEmpty()) return;
         for (Map.Entry<String, Integer> entry : army.entrySet()) {
             String type = entry.getKey();
@@ -2452,7 +2463,7 @@ public class MarchService {
         return level > 0 ? (long) level * 200000L : 200000L;
     }
 
-    private void addResources(Long playerId, Map<String, Integer> resMap) {
+    public void addResources(Long playerId, Map<String, Integer> resMap) {
         if (resMap == null || resMap.isEmpty()) return;
         Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (res == null) {

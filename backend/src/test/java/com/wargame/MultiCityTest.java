@@ -4,6 +4,7 @@ import com.wargame.model.constants.MilitaryRankDef;
 import com.wargame.model.dto.DispatchRequest;
 import com.wargame.model.entity.*;
 import com.wargame.repository.ArmyProductionQueueRepository;
+import com.wargame.repository.PlayerItemRepository;
 import com.wargame.service.*;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,7 @@ class MultiCityTest extends BaseServiceTest {
     @Autowired ArmyService army;
     @Autowired ArmyProductionQueueRepository queues;
     @Autowired WoundedService wounded;
+    @Autowired PlayerItemRepository playerItems;
     private Player player;
     private PlayerCity main;
     private WorldMap world;
@@ -80,18 +82,60 @@ class MultiCityTest extends BaseServiceTest {
         gameStateService.setTax(player.getId(), 10);
         gameStateService.setCityName(player.getId(), "新北山城");
         Map<String, Object> state = gameStateService.getGameState(player.getId());
-        assertEquals(1000, ((Map<String,Object>)state.get("resources")).get("gold"));
+        assertEquals(940, ((Map<String,Object>)state.get("resources")).get("gold"));
         assertEquals(987, ((Map<String,Object>)state.get("resources")).get("diamond"));
         assertEquals(3, ((Map<String,Object>)state.get("tech")).get("log_food"));
         assertEquals(10, branch.getTax()); assertEquals(30, player.getTax());
         assertEquals("TestCity", player.getCityName()); assertEquals(10, player.getCityPosX());
-        assertEquals("新北山城", branch.getName());
+        assertEquals("新北山城", playerCityRepository.findById(branch.getId()).orElseThrow().getName());
         assertThrows(IllegalArgumentException.class, () -> cities.select(999L, branch.getId()));
         try (var ignored = scope.enter(player.getId(), 0)) {
             assertEquals(0, scope.slot(player.getId()));
             assertEquals(30, scope.economy(player.getId()).getTax());
         }
         assertEquals(1, scope.slot(player.getId()));
+    }
+
+    @Test @SuppressWarnings("unchecked") void cityRenamesHaveIndependentDailyLimits() {
+        PlayerCity other = branch();
+        playerItems.save(new PlayerItem(null, player.getId(), "cityRenameCard", 1, System.currentTimeMillis()));
+        int mainGold = balance(0).getGold();
+        gameStateService.setCityName(player.getId(), "今日主城");
+        assertEquals(0, playerItems.findByPlayerIdAndItemKey(player.getId(), "cityRenameCard").orElseThrow().getCount());
+        assertEquals(mainGold, balance(0).getGold());
+        assertThrows(IllegalArgumentException.class, () -> gameStateService.setCityName(player.getId(), "主城再改"));
+        assertEquals("今日主城", playerRepository.findById(player.getId()).orElseThrow().getCityName());
+
+        cities.select(player.getId(), other.getId());
+        int branchGold = balance(1).getGold();
+        gameStateService.setCityName(player.getId(), "今日分城");
+        assertEquals(branchGold - 60, balance(1).getGold());
+        assertThrows(IllegalArgumentException.class, () -> gameStateService.setCityName(player.getId(), "分城再改"));
+        assertEquals(branchGold - 60, balance(1).getGold());
+        assertEquals("今日分城", playerCityRepository.findById(other.getId()).orElseThrow().getName());
+        Map<String, Object> state = gameStateService.getGameState(player.getId());
+        Map<String, Object> current = (Map<String, Object>) state.get("player");
+        assertTrue(((Number) current.get("cityNameRenameAvailableAt")).longValue() > System.currentTimeMillis());
+
+        PlayerCity storedOther = playerCityRepository.findById(other.getId()).orElseThrow();
+        storedOther.setCityNameRenamedAt(System.currentTimeMillis() - 24 * 60 * 60 * 1000L);
+        playerCityRepository.saveAndFlush(storedOther);
+        gameStateService.setCityName(player.getId(), "次日分城");
+        assertEquals(branchGold - 120, balance(1).getGold());
+        assertEquals("次日分城", playerCityRepository.findById(other.getId()).orElseThrow().getName());
+        assertEquals("今日主城", playerRepository.findById(player.getId()).orElseThrow().getCityName());
+    }
+
+    @Test void cityRenameRejectsInsufficientFundsWithoutUsingDailyAllowance() {
+        Resources resources = balance(0);
+        resources.setGold(59);
+        resourcesRepository.saveAndFlush(resources);
+
+        assertThrows(IllegalArgumentException.class, () -> gameStateService.setCityName(player.getId(), "无法支付"));
+        Player unchanged = playerRepository.findById(player.getId()).orElseThrow();
+        assertEquals("TestCity", unchanged.getCityName());
+        assertEquals(0L, unchanged.getCityNameRenamedAt());
+        assertEquals(59, balance(0).getGold());
     }
 
     @Test void ticksAdvanceEveryReadyCityAndKeepProductionAndPopulationSeparate() {
@@ -147,13 +191,25 @@ class MultiCityTest extends BaseServiceTest {
 
     @Test void transportDeliversCargoThenReturnsTroopsToOrigin() {
         PlayerCity branch = branch(); createArmyUnit(player.getId(), "infantry", 20); createArmyUnit(player.getId(), "truck", 2);
-        March march = marchService.createDispatch(player.getId(), new DispatchRequest("player", branch.getId(), "transport", Map.of("infantry",10,"truck",1), null, Map.of("gold",5)));
+        assertThrows(IllegalArgumentException.class, () -> marchService.createDispatch(player.getId(), new DispatchRequest("player", branch.getId(), "transport", Map.of("infantry",10,"truck",1), null, Map.of("gold",5))));
+        assertThrows(IllegalArgumentException.class, () -> marchService.createDispatch(player.getId(), new DispatchRequest("player", branch.getId(), "transport", Map.of("truck",1), null, Map.of())));
+        March march = marchService.createDispatch(player.getId(), new DispatchRequest("player", branch.getId(), "transport", Map.of("truck",1), null, Map.of("gold",450)));
         march.setArriveAt(0L); marchService.processMarches(player.getId(), System.currentTimeMillis());
-        assertEquals(1005, balance(1).getGold()); assertEquals(0, troop(1)); assertTrue(march.getReturning());
+        assertEquals(1450, balance(1).getGold()); assertEquals(0, troop(1)); assertTrue(march.getReturning());
         cities.select(player.getId(), branch.getId());
         march.setArriveAt(0L);
         try (var ignored = scope.enter(player.getId(), 0)) { marchService.processMarches(player.getId(), System.currentTimeMillis()); }
-        assertEquals(20, troop(0)); assertEquals(0, troop(1)); assertEquals(1005, balance(1).getGold());
+        assertEquals(20, troop(0)); assertEquals(0, troop(1)); assertEquals(1450, balance(1).getGold());
+    }
+
+    @Test void transportPlaneCanDeliverCargoAndReturn() {
+        PlayerCity branch = branch(); createArmyUnit(player.getId(), "transport", 1);
+        March march = marchService.createDispatch(player.getId(), new DispatchRequest("player", branch.getId(), "transport", Map.of("transport", 1), null, Map.of("gold", 700)));
+        march.setArriveAt(0L); marchService.processMarches(player.getId(), System.currentTimeMillis());
+        assertEquals(1700, balance(1).getGold());
+        assertTrue(march.getReturning());
+        march.setArriveAt(0L); marchService.processMarches(player.getId(), System.currentTimeMillis());
+        assertEquals(1, armyUnitRepository.findByPlayerIdAndCitySlotAndType(player.getId(), 0, "transport").get(0).getCount());
     }
 
     @Test void scoutingAndTreatmentUseActualTargetCityNotDefenderSelection() {

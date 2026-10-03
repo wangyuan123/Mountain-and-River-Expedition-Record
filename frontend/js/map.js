@@ -108,9 +108,10 @@ window.Game = window.Game || {};
       if (!s.wilds.owned.length) h += '<div class="desc">暂无野地。</div>';
       s.wilds.owned.forEach(function (w, i) {
         var wt = D.wildTypes[w.type];
-        var wtOwnedIcon = /\.svg$|\.png$|\.jpg$|\.gif$|\.webp$/i.test(wt.icon)
-          ? '<img class="wt-icon" src="' + wt.icon + '" alt="' + wt.name + '"/>'
-          : wt.icon;
+        var iconPath = (G.WorldMap && typeof G.WorldMap.icon === 'function') ? G.WorldMap.icon(w) : wt.icon;
+        var wtOwnedIcon = /\.svg$|\.png$|\.jpg$|\.gif$|\.webp$/i.test(iconPath)
+          ? '<img class="wt-icon" src="' + iconPath + '" alt="' + wt.name + '"/>'
+          : iconPath;
         h += '<div class="menu-item ok">';
         h += '<span class="n">' + wtOwnedIcon + ' ' + wt.name + ' Lv.' + w.level + '</span>';
         if (wt.res) {
@@ -128,9 +129,10 @@ window.Game = window.Game || {};
       if (s.wilds._scout) {
         var sc = s.wilds._scout;
         var wt = D.wildTypes[sc.type];
-        var wtScoutIcon = /\.svg$|\.png$|\.jpg$|\.gif$|\.webp$/i.test(wt.icon)
-          ? '<img class="wt-icon" src="' + wt.icon + '" alt="' + wt.name + '"/>'
-          : wt.icon;
+        var scIconPath = (G.WorldMap && typeof G.WorldMap.icon === 'function') ? G.WorldMap.icon(sc) : wt.icon;
+        var wtScoutIcon = /\.svg$|\.png$|\.jpg$|\.gif$|\.webp$/i.test(scIconPath)
+          ? '<img class="wt-icon" src="' + scIconPath + '" alt="' + wt.name + '"/>'
+          : scIconPath;
         h += '<div class="menu-item ok">';
         h += '<span class="n">' + wtScoutIcon + ' ' + wt.name + ' Lv.' + sc.level + '</span>';
         h += '<div class="d">守军: ' + enemyText(sc.garrison) + '</div>';

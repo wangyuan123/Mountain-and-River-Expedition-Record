@@ -996,9 +996,17 @@ public class OfficerService {
             return result;
         }
 
+        // 行锁让两个同时到达的改名请求共用同一份当日额度。
+        entityManager.refresh(officer, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
         if (newName.equals(officer.getName())) {
             result.put("success", false);
             result.put("message", "新名称与当前军官名称相同");
+            return result;
+        }
+        long now = System.currentTimeMillis();
+        if (NameChangePolicy.nextAllowedAt(officer.getNameRenamedAt(), now) > now) {
+            result.put("success", false);
+            result.put("message", "这名军官今天已改名，请明日 0:00 后再试");
             return result;
         }
 
@@ -1019,6 +1027,7 @@ public class OfficerService {
 
         String oldName = officer.getName();
         officer.setName(newName);
+        officer.setNameRenamedAt(now);
         officerRepository.save(officer);
 
         result.put("success", true);

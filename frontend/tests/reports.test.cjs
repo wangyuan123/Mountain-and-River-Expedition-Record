@@ -187,6 +187,67 @@ test('battle details omit deployment instructions from saved reports', () => {
   assert.match(detail.innerHTML, /我方步兵前进/);
 });
 
+test('battle details keep each side together within its round', () => {
+  const { G } = setup();
+  G.fmt = String;
+  const roundLogs = [
+    '规则版本：balance-v10-rocket-counters-20260925',
+    '战场初始距离: 4000',
+    '-- 第1回合 --',
+    '敌方将领加成：本回合生效',
+    '敌方战列舰(1)前进并炮击',
+    '我方战斗机(500)前进并攻击',
+    '敌方驱逐舰(5)前进',
+    '我方轰炸机(200)前进',
+    '-- 第2回合 --',
+    '敌方战列舰(1)开火',
+    '我方战斗机(500)攻击',
+    '★ 全歼敌军,胜利!'
+  ];
+  G.Battle._viewReport = { type: 'battle', time: Date.now(), win: true, roundLogs };
+  const detail = { innerHTML: '' };
+  G.Battle.renderReportDetail(detail);
+  const lines = [...detail.innerHTML.matchAll(/<div class="logline[^\"]*">([^<]*)<\/div>/g)]
+    .map(match => match[1]);
+  assert.match(detail.innerHTML, /class="rb-initial-distance">战场初始距离: 4000<\/div>/);
+  assert.doesNotMatch(detail.innerHTML, /规则版本|balance-v10-rocket-counters-20260925/);
+  assert.deepEqual(lines, [
+    '-- 第1回合 --',
+    '我方战斗机(500)前进并攻击',
+    '我方轰炸机(200)前进',
+    '敌方将领加成：本回合生效',
+    '敌方战列舰(1)前进并炮击',
+    '敌方驱逐舰(5)前进',
+    '-- 第2回合 --',
+    '我方战斗机(500)攻击',
+    '敌方战列舰(1)开火',
+    '★ 全歼敌军,胜利!'
+  ]);
+  assert.deepEqual(roundLogs.slice(0, 5), [
+    '规则版本：balance-v10-rocket-counters-20260925',
+    '战场初始距离: 4000', '-- 第1回合 --',
+    '敌方将领加成：本回合生效', '敌方战列舰(1)前进并炮击'
+  ]);
+  assert.match(detail.innerHTML, /共 2 回合/);
+});
+
+test('battle details show the defeated enemy movement before the finishing attack', () => {
+  const { G } = setup();
+  G.fmt = String;
+  G.Battle._viewReport = { type: 'battle', time: Date.now(), win: true, roundLogs: [
+    '-- 第3回合 --',
+    '我方战斗机(1000) [前进] 推进500 -> 坐标1500；空战敌步兵(35) 伤害4200 击毁35',
+    '敌方步兵(35) [前进] 推进150 -> 坐标1850',
+    '★ 全歼敌军，胜利！'
+  ] };
+  const detail = { innerHTML: '' };
+  G.Battle.renderReportDetail(detail);
+  assert.ok(detail.innerHTML.indexOf('敌方步兵(35) [前进]') <
+    detail.innerHTML.indexOf('我方战斗机(1000) [前进]'));
+  assert.ok(detail.innerHTML.indexOf('我方战斗机(1000) [前进]') <
+    detail.innerHTML.indexOf('★ 全歼敌军'));
+});
+
 test('defender battle report maps the invader and commander to the enemy side', () => {
   const { G } = setup();
   G.fmt = String;
@@ -321,6 +382,31 @@ test('new battle reports show a recipient settlement snapshot', () => {
   assert.match(board, /本方战损/);
   assert.match(board, /伤兵回收/);
   assert.match(board, /25% <small>入营 10<\/small>/);
+});
+
+test('fleet conquest reports describe defeating a fleet instead of conquering a city', () => {
+  const { G } = setup();
+  G.fmt = String;
+  const board = G.Battle.renderReportBoard({
+    time: Date.now(), perspective: 'attacker', win: true, action: 'conquer', targetType: 'bandit',
+    toName: '日寇第18舰队', cityConquered: true
+  }, false);
+
+  assert.match(board, /击溃成功/);
+  assert.match(board, /★ 已成功击溃该舰队/);
+  assert.doesNotMatch(board, /已成功征服该城市|征服成功/);
+});
+
+test('land NPC conquest keeps city wording', () => {
+  const { G } = setup();
+  G.fmt = String;
+  const board = G.Battle.renderReportBoard({
+    time: Date.now(), perspective: 'attacker', win: true, action: 'conquer', targetType: 'npc',
+    toName: '日寇据点', cityConquered: true
+  }, false);
+
+  assert.match(board, /征服成功/);
+  assert.match(board, /★ 已成功征服该城市/);
 });
 
 test('report titles distinguish actions and support historical subjects without matching target names', () => {
