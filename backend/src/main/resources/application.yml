@@ -32,6 +32,8 @@ jwt:
   expiration: ${WARGAME_JWT_EXPIRATION:86400000}  # 24 hours in milliseconds
 
 game:
+  security:
+    allowed-origins: ${WARGAME_ALLOWED_ORIGINS:http://localhost:8081,http://127.0.0.1:8081,http://localhost:5174,http://127.0.0.1:5174}
   server:
     id: ${WARGAME_SERVER_ID:jiangsu-1}
     name: ${WARGAME_SERVER_NAME:江苏一区}

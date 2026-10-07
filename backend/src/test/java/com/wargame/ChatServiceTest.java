@@ -7,7 +7,7 @@ import com.wargame.repository.ChatMessageRepository;
 import com.wargame.repository.PlayerRepository;
 import com.wargame.security.RateLimiter;
 import com.wargame.service.ChatService;
-import com.wargame.service.PoliticalWordFilter;
+import com.wargame.service.ChatKeywordFilter;
 import com.wargame.service.WebSocketPushService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,7 +32,7 @@ public class ChatServiceTest {
         PlayerRepository playerRepo = Mockito.mock(PlayerRepository.class);
         WebSocketPushService pushService = Mockito.mock(WebSocketPushService.class);
         rateLimiter = new RateLimiter();
-        chatService = new ChatService(chatRepo, playerRepo, rateLimiter, pushService, new PoliticalWordFilter());
+        chatService = new ChatService(chatRepo, playerRepo, rateLimiter, pushService, new ChatKeywordFilter());
 
         player = new Player();
         player.setId(999L);
@@ -116,6 +116,16 @@ public class ChatServiceTest {
         ChatDtos.MessageResponse res = chatService.send(player.getId(), "管理员不要搞事");
         assertNotNull(res);
         assertTrue(res.content().contains("***"));
+    }
+
+    @Test
+    public void masksContactAndTradeTermsBeforePersistenceAndInOldHistory() {
+        var response = chatService.send(player.getId(), "加V.X卖号");
+        assertEquals("**.***", response.content());
+        Mockito.verify(chatRepo).save(org.mockito.ArgumentMatchers.argThat(m -> m.getContent().equals("**.***")));
+        when(chatRepo.findTop50ByOrderByCreatedAtDesc()).thenReturn(java.util.List.of(
+                new ChatMessage(2L, player.getId(), "TestCommander", "q_q收金币", 1L)));
+        assertEquals("*_****", chatService.history().get(0).content());
     }
 
     @Test

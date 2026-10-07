@@ -238,7 +238,7 @@ window.Game = window.Game || {};
         G.toast('当前没有正在研发的科技');
         return;
       }
-      var speedOrder = ['speedUp10m','speedUp1h','speedUp5h','speedUp12h','speedUp24h','speedUp36h','speedUp48h','speedUp72h'];
+      var speedOrder = G.Constants.speedUpOrder;
       var owned = [];
       for (var i = 0; i < speedOrder.length; i++) {
         var sid = speedOrder[i];

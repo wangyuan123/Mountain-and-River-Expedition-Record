@@ -2,6 +2,8 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
+  <!-- 静态开发服务器也启用基础 CSP；内联事件和 Pixi 动态着色器暂保留，输入仍须逐处转义。 -->
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'self'">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#f4f1ea">
   <meta name="description" content="山河远征录：经营城池、统筹资源、协同军团，在共享世界中制定你的战争策略。">

@@ -79,7 +79,7 @@ class GuildRelationBroadcastTest {
         PlayerRepository playerRepo = mock(PlayerRepository.class);
         RateLimiter rateLimiter = mock(RateLimiter.class);
         WebSocketPushService pushService = mock(WebSocketPushService.class);
-        PoliticalWordFilter filter = new PoliticalWordFilter();
+        ChatKeywordFilter filter = new ChatKeywordFilter();
 
         GuildChatService chatService = new GuildChatService(
                 chatRepo, memberRepo, playerRepo, rateLimiter, pushService, filter
@@ -119,5 +119,13 @@ class GuildRelationBroadcastTest {
         assertEquals(1, history.size());
         assertEquals("admin", history.get(0).role());
         assertEquals("avatar1.png", history.get(0).avatar());
+
+        // 入库与旧历史均使用共用词库，军团聊天没有独立的漏过滤路径。
+        var filtered = chatService.send(100L, "q_q卖号");
+        assertEquals("*_***", filtered.content());
+        verify(chatRepo).save(argThat(m -> m.getContent().equals("*_***")));
+        when(chatRepo.findTop50ByGuildIdOrderByCreatedAtDesc(10L)).thenReturn(List.of(
+                new GuildChatMessage(1000L, 10L, 100L, "指挥官赵", "V.X代充", 3000L)));
+        assertEquals("*.***", chatService.history(100L).get(0).content());
     }
 }

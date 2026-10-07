@@ -16,13 +16,14 @@ class PrivateChatServiceTest {
     WebSocketPushService push;
     PrivateChatService service;
     Player recipient;
+    ChatService chat;
     PrivateChatConversationRepository sessions;
     GameWebSocketHandler presence;
     @BeforeEach void setup() {
         messages = mock(PrivateChatMessageRepository.class);
         players = mock(PlayerRepository.class);
         push = mock(WebSocketPushService.class);
-        var chat = mock(ChatService.class);
+        chat = mock(ChatService.class);
         when(chat.filterContent(anyString())).thenReturn("filtered");
         sessions = mock(PrivateChatConversationRepository.class);
         presence = mock(GameWebSocketHandler.class);
@@ -33,6 +34,18 @@ class PrivateChatServiceTest {
         when(players.lockById(1L)).thenReturn(Optional.of(sender));
         when(players.findById(2L)).thenReturn(Optional.of(recipient));
         when(messages.save(any())).thenAnswer(inv -> { PrivateChatMessage m = inv.getArgument(0); m.setId(10L); return m; });
+    }
+    @Test void keywordsAreMaskedBeforeSavingAndInExistingConversationPreviews() {
+        var filter = new ChatKeywordFilter();
+        when(chat.filterContent(anyString())).thenAnswer(inv -> filter.filter(inv.getArgument(0)));
+        var sent = service.send(1L, 2L, "V.X卖号");
+        assertEquals("*.***", sent.content());
+        verify(messages).save(argThat(m -> m.getContent().equals("*.***")));
+        verify(push).pushToPlayer(eq(2L), eq("private_chat"), argThat(value ->
+                ((com.wargame.model.dto.PrivateChatDtos.Message) value).content().equals("*.***")));
+        when(messages.history(eq(1L), eq(2L), any())).thenReturn(java.util.List.of(
+                new PrivateChatMessage(11L, 1L, 2L, "q_q卖号", 1L, false)));
+        assertEquals("*_***", service.history(1L, 2L).get(0).content());
     }
     @Test void openingEmptyConversationPersistsOnlyForOwnerAndReportsPresence() {
         when(presence.isPlayerOnline(2L)).thenReturn(true);

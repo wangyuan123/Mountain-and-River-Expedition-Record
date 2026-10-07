@@ -1227,7 +1227,7 @@ window.Game = window.Game || {};
         (battle.targetName && (battle.targetName.indexOf('日寇') >= 0 || battle.targetName.indexOf('流寇') >= 0 || battle.targetName.indexOf('据点') >= 0));
       var h = '<div class="tactical-battle">';
       h += '<div class="tactical-head"><div><div class="title">' + (battle.side === 'defender' ? '防守战术指挥：' : '战术指挥：') + esc(battle.targetName || '敌军') + '</div>';
-      h += '<div class="desc">地面部队接敌后不可越线；空军受敌方空军与防空装甲车封锁，空域开放后可突进纵深。</div>';
+      h += '<div class="desc">所有兵种接敌后不可越线，空军也必须消灭敌方前排后才能继续向后推进。</div>';
       h += '<div class="desc">未指定目标时优先攻击射程内的敌方同类型兵种，否则攻击射程内最近的敌军；也可手动指定射程内的任意敌军。</div></div>';
       h += '<div class="tactical-head-actions"><button class="btn sm" onclick="Game.go(\'alerts\')">返回军情</button></div></div>';
       if (this._tacticalAutoExecuteFailed) {

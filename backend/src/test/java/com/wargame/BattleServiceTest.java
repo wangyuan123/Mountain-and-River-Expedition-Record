@@ -64,16 +64,47 @@ class BattleServiceTest {
     }
 
     @Test
-    @DisplayName("战术空域: 敌方无空军和防空装甲车时，空军可越过地面前排进入纵深")
-    void tacticalAirCanBypassGroundLineWhenAirspaceIsOpen() {
+    @DisplayName("战术推进: 无防空单位时，空军仍不能越过存活地面前排")
+    void tacticalAirCannotBypassLivingGroundLine() {
         BattleRoundState state = resolveTacticalRound(
                 Map.of("fighter", 1), Map.of("infantry", 100, "rocket", 1),
                 Map.of("fighter", 1400), Map.of("infantry", 1500, "rocket", 4000), 5000,
                 Map.of("fighter", new BattleService.UnitOrder(BattleService.CommandAction.ADVANCE))
         );
 
-        assertEquals(1900, state.attackerPositions().get("fighter"),
-                "空域开放后，战斗机应越过普通地面前排并继续向敌方纵深推进");
+        assertTrue(state.defenderArmy().getOrDefault("infantry", 0) > 0,
+                "前排仍有存活兵力");
+        assertTrue(state.attackerPositions().get("fighter") <= state.defenderPositions().get("infantry"),
+                "没有防空单位时，战斗机也不能越过存活步兵前排");
+    }
+
+    @Test
+    @DisplayName("战术推进: 地面前排被消灭后，空军可以继续向后排推进")
+    void tacticalAirAdvancesAfterGroundLineIsDestroyed() {
+        BattleRoundState state = resolveTacticalRound(
+                Map.of("fighter", 1), Map.of("infantry", 0, "rocket", 1),
+                Map.of("fighter", 1400), Map.of("infantry", 1500, "rocket", 4000), 5000,
+                Map.of("fighter", new BattleService.UnitOrder(BattleService.CommandAction.ADVANCE))
+        );
+
+        assertEquals(1400 + UnitDef.UNITS.get("fighter").spd() * 50, state.attackerPositions().get("fighter"),
+                "已消灭的前排不能继续阻挡空军推进");
+    }
+
+    @Test
+    @DisplayName("战术推进: 双方空军均不能越过无法攻击的海军前排")
+    void tacticalAirCannotBypassNavalLineOnEitherSide() {
+        BattleRoundState state = resolveTacticalRound(
+                Map.of("fighter", 1, "sub", 100), Map.of("fighter", 1, "sub", 100),
+                Map.of("fighter", 1400, "sub", 1700),
+                Map.of("fighter", 1900, "sub", 1500), 5000,
+                Map.of("fighter", new BattleService.UnitOrder(BattleService.CommandAction.ADVANCE))
+        );
+
+        assertTrue(state.attackerPositions().get("fighter") <= state.defenderPositions().get("sub"),
+                "攻方空军不能越过敌方潜艇");
+        assertTrue(state.defenderPositions().get("fighter") >= state.attackerPositions().get("sub"),
+                "守方空军不能越过敌方潜艇");
     }
 
     @Test

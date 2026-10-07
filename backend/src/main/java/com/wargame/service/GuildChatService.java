@@ -21,7 +21,6 @@ public class GuildChatService {
     public static final int MAX_LENGTH = 80;
     public static final long COOLDOWN_MS = 5000L; // 5 秒单次发言冷却
     private static final long REPEAT_BLOCK_MS = 60000L; // 60 秒内禁止连续发送相同内容
-    private static final List<String> SENSITIVE_WORDS = List.of("傻逼", "操你", "草你", "fuck", "shit", "管理员", "gm");
 
     private record LastMessage(String content, long timestamp) {}
     private final ConcurrentMap<Long, LastMessage> lastMessages = new ConcurrentHashMap<>();
@@ -31,20 +30,20 @@ public class GuildChatService {
     private final PlayerRepository playerRepository;
     private final RateLimiter rateLimiter;
     private final WebSocketPushService pushService;
-    private final PoliticalWordFilter politicalWordFilter;
+    private final ChatKeywordFilter keywordFilter;
 
     public GuildChatService(GuildChatMessageRepository guildChatMessageRepository,
                             GuildMemberRepository guildMemberRepository,
                             PlayerRepository playerRepository,
                             RateLimiter rateLimiter,
                             WebSocketPushService pushService,
-                            PoliticalWordFilter politicalWordFilter) {
+                            ChatKeywordFilter keywordFilter) {
         this.guildChatMessageRepository = guildChatMessageRepository;
         this.guildMemberRepository = guildMemberRepository;
         this.playerRepository = playerRepository;
         this.rateLimiter = rateLimiter;
         this.pushService = pushService;
-        this.politicalWordFilter = politicalWordFilter;
+        this.keywordFilter = keywordFilter;
     }
 
     public List<ChatDtos.GuildMessageResponse> history(Long playerId) {
@@ -84,7 +83,7 @@ public class GuildChatService {
                     msg.getPlayerId(),
                     msg.getUsername(),
                     role,
-                    msg.getContent(),
+                    msg.getPlayerId() == null ? msg.getContent() : keywordFilter.filter(msg.getContent()),
                     msg.getCreatedAt(),
                     avatar,
                     type
@@ -120,7 +119,7 @@ public class GuildChatService {
         }
 
         String originalContent = content;
-        content = politicalWordFilter.filter(filterSensitiveWords(content));
+        content = keywordFilter.filter(content);
         GuildChatMessage message = new GuildChatMessage(null, member.getGuildId(), playerId, player.getUsername(), content, now);
         message = guildChatMessageRepository.save(message);
 
@@ -192,19 +191,5 @@ public class GuildChatService {
         return content.replaceAll("[\\u0000-\\u001F\\u007F-\\u009F\\u200B-\\u200F\\uFEFF]", "").trim();
     }
 
-    private String filterSensitiveWords(String content) {
-        String result = content;
-        String lower = result.toLowerCase(Locale.ROOT);
-        for (String word : SENSITIVE_WORDS) {
-            String target = word.toLowerCase(Locale.ROOT);
-            int index;
-            while ((index = lower.indexOf(target)) >= 0) {
-                StringBuilder replacement = new StringBuilder();
-                for (int i = 0; i < target.length(); i++) replacement.append('*');
-                result = result.substring(0, index) + replacement + result.substring(index + target.length());
-                lower = result.toLowerCase(Locale.ROOT);
-            }
-        }
-        return result;
-    }
+
 }

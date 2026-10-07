@@ -17,7 +17,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * 服务端战斗结算：针对目标领域的线性攻击 × 专项克制 × 100/(100 + 5×有效防御)。
  * 每次行动共享一份攻击额度；跨地空海及工事切换目标时按剩余额度使用对应武器，不能重新打一轮。
  * 重坦前置且掩护身后的地面单位，特种兵可绕过掩护；空海目标不受地面掩护影响。
- * 空军只能被敌方存活空军或防空装甲车阻拦；两类封锁均不存在时，空军可越过地面前排进入纵深。
+ * 所有兵种均被敌方存活部队阻挡，必须消灭前排后才能继续向后推进。
  */
 @Service
 public class BattleService {
@@ -1671,7 +1671,6 @@ public class BattleService {
                                 Map<String, Integer> minePos, Map<String, Integer> enemyPos, int initialDist) {
         int mineX = (side == Side.MINE) ? minePos.getOrDefault(myUnitId, 0) : minePos.getOrDefault(foeUnitId, 0);
         int enemyX = (side == Side.MINE) ? enemyPos.getOrDefault(foeUnitId, initialDist) : enemyPos.getOrDefault(myUnitId, initialDist);
-        // 空军允许越过地面前排，越线后仍须按绝对距离计算其对前后两侧单位的射程。
         return Math.abs(enemyX - mineX);
     }
 
@@ -1692,8 +1691,8 @@ public class BattleService {
 
     /**
      * 计算单位本回合为机动而追逐的目标距离。
-     * 地面与海军向最近存活敌军接敌；空军向最近的空中封锁线推进，
-     * 未发现封锁线时改为向敌军纵深推进。射程只限制开火，不限制前进。
+     * 所有兵种向最近存活敌军接敌，空军也不能越过任何敌方兵种。
+     * 射程只限制开火，不限制前进；前排全灭后才向后续敌军推进。
      *
      * @param side 当前行动方。
      * @param unitId 行动兵种 ID。
@@ -1705,18 +1704,10 @@ public class BattleService {
      */
     private int advanceDistanceToLivingFoe(Side side, String unitId, Map<String, Integer> foeArmy,
                                            Map<String, Integer> minePos, Map<String, Integer> enemyPos, int initialDist) {
-        if (!isAirUnit(unitId)) {
-            return nearestLivingFoeDistance(side, unitId, foeArmy, minePos, enemyPos, initialDist);
-        }
-        int blockerDistance = nearestAirBlockerDistance(side, unitId, foeArmy, minePos, enemyPos, initialDist);
-        if (blockerDistance != Integer.MAX_VALUE) return blockerDistance;
-        int distance = maxDistanceToLivingFoe(side, unitId, foeArmy, minePos, enemyPos, initialDist);
-        return distance != Integer.MAX_VALUE
-                ? distance
-                : nearestLivingFoeDistance(side, unitId, foeArmy, minePos, enemyPos, initialDist);
+        return nearestLivingFoeDistance(side, unitId, foeArmy, minePos, enemyPos, initialDist);
     }
 
-    /** 双方同时前进时按速度分摊接触前的剩余距离；空军只被敌方空军与防空装甲车挡住。 */
+    /** 双方同时前进时按速度分摊接触前的剩余距离，确保所有兵种都不能越过存活敌军。 */
     private int limitAdvanceAtContact(Side side, String unitId, int step, int rawStep,
                                       Map<String, Integer> foeArmy, Map<String, Integer> minePos,
                                       Map<String, Integer> enemyPos, int initialDist,
@@ -1724,7 +1715,6 @@ public class BattleService {
         for (Map.Entry<String, Integer> entry : foeArmy.entrySet()) {
             String foeId = entry.getKey();
             if (entry.getValue() == null || entry.getValue() <= 0 || getStats(foeId) == null) continue;
-            if (isAirUnit(unitId) && !isAirBlocker(foeId)) continue;
             int distance = getUnitDistToFoe(side, unitId, foeId, minePos, enemyPos, initialDist);
             UnitOrder order = foeOrders != null ? foeOrders.get(foeId) : null;
             CommandAction action = order != null ? order.action() : defaultAction(foeId);
@@ -1754,84 +1744,6 @@ public class BattleService {
             if (distance < minDist) minDist = distance;
         }
         return minDist;
-    }
-
-    /**
-     * 判断兵种是否属于空军；空军适用独立于地面接触线的纵深推进规则。
-     *
-     * @param unitId 兵种 ID。
-     * @return 空军时返回 {@code true}。
-     */
-    private boolean isAirUnit(String unitId) {
-        return "air".equals(BattleRules.domain(unitId));
-    }
-
-    /**
-     * 判断敌方兵种能否阻止空军进入纵深。
-     * 存活空军提供空中拦截线，防空装甲车提供防空封锁线；普通地面单位不阻挡空军。
-     *
-     * @param unitId 敌方兵种 ID。
-     * @return 可形成空中封锁线时返回 {@code true}。
-     */
-    private boolean isAirBlocker(String unitId) {
-        return isAirUnit(unitId) || "armored".equals(unitId);
-    }
-
-    /**
-     * 判断敌方是否仍有空中封锁力量。
-     *
-     * @param foeArmy 敌方兵力。
-     * @return 至少有一支存活空军或防空装甲车时返回 {@code true}。
-     */
-    private boolean hasLivingAirBlocker(Map<String, Integer> foeArmy) {
-        for (Map.Entry<String, Integer> entry : foeArmy.entrySet()) {
-            if (entry.getValue() != null && entry.getValue() > 0 && isAirBlocker(entry.getKey())) return true;
-        }
-        return false;
-    }
-
-    /**
-     * 取得当前空军到最近敌方空中封锁线的距离。
-     *
-     * @param side 当前行动方。
-     * @param unitId 空军兵种 ID。
-     * @param foeArmy 敌方兵力。
-     * @param minePos 我方坐标。
-     * @param enemyPos 敌方坐标。
-     * @param initialDist 战场初始宽度。
-     * @return 最近空中封锁单位的距离；无封锁单位时返回 {@link Integer#MAX_VALUE}。
-     */
-    private int nearestAirBlockerDistance(Side side, String unitId, Map<String, Integer> foeArmy,
-                                          Map<String, Integer> minePos, Map<String, Integer> enemyPos, int initialDist) {
-        int minDist = Integer.MAX_VALUE;
-        for (Map.Entry<String, Integer> entry : foeArmy.entrySet()) {
-            if (entry.getValue() == null || entry.getValue() <= 0 || !isAirBlocker(entry.getKey())) continue;
-            int distance = getUnitDistToFoe(side, unitId, entry.getKey(), minePos, enemyPos, initialDist);
-            if (distance < minDist) minDist = distance;
-        }
-        return minDist;
-    }
-
-    /**
-     * 取得空军进入敌方纵深时最远可攻击目标的距离。
-     *
-     * @param side 当前行动方。
-     * @param unitId 空军兵种 ID。
-     * @param foeArmy 敌方兵力。
-     * @param minePos 我方坐标。
-     * @param enemyPos 敌方坐标。
-     * @param initialDist 战场初始宽度。
-     * @return 最远可攻击目标距离；无有效目标时返回 {@link Integer#MAX_VALUE}。
-     */
-    private int maxDistanceToLivingFoe(Side side, String unitId, Map<String, Integer> foeArmy,
-                                       Map<String, Integer> minePos, Map<String, Integer> enemyPos, int initialDist) {
-        int maxDist = -1;
-        for (Map.Entry<String, Integer> entry : foeArmy.entrySet()) {
-            if (entry.getValue() == null || entry.getValue() <= 0 || baseAttack(unitId, entry.getKey()) <= 0) continue;
-            int distance = getUnitDistToFoe(side, unitId, entry.getKey(), minePos, enemyPos, initialDist);
-            if (distance > maxDist) maxDist = distance;
-        }
-        return maxDist < 0 ? Integer.MAX_VALUE : maxDist;
     }
 
     /** 开局前置机制已取消，所有单位开局均从阵地底线出发 (攻方0 / 守方initialDist)。 */

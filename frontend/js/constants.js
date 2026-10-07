@@ -187,6 +187,14 @@ window.Game = window.Game || {};
     chatMax: 80,
     chatCooldownSec: 5,
     chatMinPrestige: 10000,
+    chatTimeGapMs: 5 * 60 * 1000,
+    homeModuleIds: ['officers', 'army', 'resources', 'chat'],
+    homeModuleNames: { officers: '军官将领', army: '军队总览', resources: '资源', chat: '世界聊天' },
+    protectionAccessErrorCodes: [
+      'REAL_NAME_REQUIRED', 'IDENTITY_UNAVAILABLE', 'GUARDIAN_CONSENT_REQUIRED', 'GUARDIAN_RESTRICTED',
+      'CALENDAR_UNAVAILABLE', 'PLAY_WINDOW_CLOSED', 'PLAY_TIME_EXHAUSTED', 'PLAY_SESSION_EXPIRED'
+    ],
+    identityStatusNames: { VERIFIED: '已核验', EXPIRED: '需要重新核验', UNVERIFIED: '未核验' },
     buildMaxConcurrent: 6,
     saveAttrMax: 219,
     officerMaxLevel: 100,

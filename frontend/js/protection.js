@@ -13,8 +13,7 @@
     adopt: function (data) { this.data = data; this.serverTime = data.serverNow; this.syncedAt = performance.now(); },
     isGamePath: function (path) { return path.indexOf('/game/') === 0 || path === '/auth/tutorial/dismiss'; },
     isAccessError: function (code) {
-      return ['REAL_NAME_REQUIRED', 'IDENTITY_UNAVAILABLE', 'GUARDIAN_CONSENT_REQUIRED', 'GUARDIAN_RESTRICTED',
-        'CALENDAR_UNAVAILABLE', 'PLAY_WINDOW_CLOSED', 'PLAY_TIME_EXHAUSTED', 'PLAY_SESSION_EXPIRED'].indexOf(code) !== -1;
+      return G.Constants.protectionAccessErrorCodes.indexOf(code) !== -1;
     },
     error: function () { var e = new Error('当前游戏会话已结束'); e.code = 'PLAY_SESSION_EXPIRED'; return e; },
     canRequest: function () {
@@ -176,7 +175,7 @@
       if (this.message) h += '<p class="protection-message" role="status">' + esc(this.message) + '</p>';
       if (logged) {
         h += '<div class="panel"><b>' + esc(G.API.getUsername()) + '</b><p>' + esc(d.message || '正在确认游戏许可，请刷新状态。') + '</p>';
-        h += '<p>实名状态：' + esc({ VERIFIED: '已核验', EXPIRED: '需要重新核验', UNVERIFIED: '未核验' }[d.identityStatus] || '待确认') + '</p>';
+        h += '<p>实名状态：' + esc((G.Constants.identityStatusNames || {})[d.identityStatus] || '待确认') + '</p>';
         if (d.minor) h += '<p>下次开放：' + esc(stamp(d.nextWindowStart)) + '</p>';
         h += '<div class="btn-row"><button class="btn" onclick="Game.Protection.refresh()">刷新状态</button>';
         if (d.canPlay) h += '<button class="btn ok" onclick="Game.Main.startGame()">进入游戏</button>';

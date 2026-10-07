@@ -32,6 +32,9 @@ jwt:
   expiration: ${WARGAME_JWT_EXPIRATION:86400000}
 
 game:
+  security:
+    # 默认仅同源；独立域名的客户端必须通过环境变量明确授权。
+    allowed-origins: ${WARGAME_ALLOWED_ORIGINS:}
   server:
     id: ${WARGAME_SERVER_ID:jiangsu-1}
     name: ${WARGAME_SERVER_NAME:江苏一区}

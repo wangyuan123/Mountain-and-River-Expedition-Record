@@ -103,3 +103,17 @@ mvn -f backend/pom.xml -Dtest=MySqlMigrationTest test
 | 请求鉴权、重试与错误提示       | `api-client.js`                                   |
 
 项目设计见 [docs/DESIGN.md](docs/DESIGN.md)，维护约定见 [HANDOVER.md](HANDOVER.md)。
+
+## 安全来源配置
+
+生产环境默认只允许同源 API 和 WebSocket。跨域客户端需设置 `WARGAME_ALLOWED_ORIGINS`，如 `https://game.example.com,https://forum.example.com`，必须包含协议和非默认端口，不含路径、末尾斜杠或通配符。HTTP 与 WebSocket 共用白名单，修改后重启后端。本地默认允许 localhost / 127.0.0.1 的 8081、5174 端口；局域网调试需显式加入前端来源。独立论坛若需要跨域访问现有 API，应把其来源加入白名单，论坛实现本次不修改。
+
+API 使用显式 Authorization Bearer Token，不接受 Cookie 登录凭据，因此保持无状态并关闭 CSRF token 校验；将来引入 Cookie 登录时必须重新设计 CSRF 防护。CORS 不允许跨域 Cookie 凭据。
+
+游戏首页的 CSP meta 与 Nginx 响应头限制脚本来源、插件、基址和表单提交；Nginx 另外限制连接来源与页面嵌入。现有大量内联事件仍需 `unsafe-inline`，Pixi 7 WebGL 着色器生成仍需 `unsafe-eval`，因此这是基础加固，不能替代所有用户文本的输出转义。严格禁止内联脚本和动态执行需要先迁移内联事件并更换兼容严格 CSP 的渲染器；本次不修改论坛页面或其 Token 传递方式。部署后重载 Nginx 并刷新页面。
+
+## 玩家聊天关键词过滤
+
+世界聊天（含首页预览）、军团聊天、私聊（含会话预览）在服务端入库和读取历史时统一遮盖命中词，原文分隔符保留，命中字符替换为 `*`。词库位于 `backend/src/main/resources/chat/chat-sensitive-words.txt`，政治类沿用 `political-sensitive-words.txt`；每行一个明确词条，更新后重新构建并重启后端，无需修改数据库。历史玩家消息读取时过滤，不批量改写历史数据。
+
+匹配使用启动时构建的 Aho-Corasick Trie 自动机，支持重叠词、失败转移、大小写混写、全角字符及插入空格/标点/emoji/不可见字符。谐音采用已列出的明确变体，不声称能自动识别全部谐音或语义违规；政治不当称呼、民族/宗教歧视和低俗露骨内容等概括类别需补充具体词条才能覆盖。短英文缩写按子串匹配，“私聊、辅助、弹药”等正常游戏词汇也按指定列表遮盖。系统生成通知和严格 UUID 战报凭证保留。过滤不替代 XSS 输出转义；论坛本次仍不处理。

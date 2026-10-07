@@ -154,6 +154,6 @@ public class PrivateChatService {
     private PrivateChatDtos.Message dto(PrivateChatMessage m) {
         Player sender = players.findById(m.getSenderId()).orElseThrow();
         return new PrivateChatDtos.Message(m.getId(), m.getSenderId(), m.getRecipientId(),
-                sender.getUsername(), sender.getAvatar(), m.getContent(), m.getCreatedAt());
+                sender.getUsername(), sender.getAvatar(), chat.filterContent(m.getContent()), m.getCreatedAt());
     }
 }

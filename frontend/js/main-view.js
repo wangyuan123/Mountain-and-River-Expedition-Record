@@ -7,8 +7,8 @@ window.Game = window.Game || {};
 
   // 首页总览与军队页共用写实武器模型；没有模型时回退到通用图标。
   var UNIT_MODEL = G.UNIT_MODEL || {};
-  var HOME_MODULE_IDS = ['officers', 'army', 'resources', 'chat'];
-  var HOME_MODULE_NAMES = { officers: '军官将领', army: '军队总览', resources: '资源', chat: '世界聊天' };
+  var HOME_MODULE_IDS = G.Constants.homeModuleIds;
+  var HOME_MODULE_NAMES = G.Constants.homeModuleNames;
   var homeModulePending = null;
   var homeModuleSaveQueue = Promise.resolve();
 

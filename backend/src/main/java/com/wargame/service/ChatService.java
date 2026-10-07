@@ -14,7 +14,6 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -31,7 +30,6 @@ public class ChatService {
     public static final int DAILY_MAX_COUNT = 100; // 每天最多发言 100 次
     private static final long REPEAT_BLOCK_MS = 60000L; // 60 秒内禁止连续发送相同内容
 
-    private static final List<String> SENSITIVE_WORDS = List.of("傻逼", "操你", "草你", "fuck", "shit", "管理员", "gm");
 
     private record LastMessage(String content, long timestamp) {}
     private final ConcurrentMap<Long, LastMessage> lastMessages = new ConcurrentHashMap<>();
@@ -40,18 +38,18 @@ public class ChatService {
     private final PlayerRepository playerRepository;
     private final RateLimiter rateLimiter;
     private final WebSocketPushService pushService;
-    private final PoliticalWordFilter politicalWordFilter;
+    private final ChatKeywordFilter keywordFilter;
 
     public ChatService(ChatMessageRepository chatMessageRepository,
                        PlayerRepository playerRepository,
                        RateLimiter rateLimiter,
                        WebSocketPushService pushService,
-                       PoliticalWordFilter politicalWordFilter) {
+                       ChatKeywordFilter keywordFilter) {
         this.chatMessageRepository = chatMessageRepository;
         this.playerRepository = playerRepository;
         this.rateLimiter = rateLimiter;
         this.pushService = pushService;
-        this.politicalWordFilter = politicalWordFilter;
+        this.keywordFilter = keywordFilter;
     }
 
     public List<ChatDtos.MessageResponse> history() {
@@ -136,7 +134,7 @@ public class ChatService {
 
     /** 各聊天频道共用内容过滤，不共享发言资格限制。 */
     public String filterContent(String content) {
-        return politicalWordFilter.filter(filterSensitiveWords(content));
+        return keywordFilter.filter(content);
     }
 
     private String normalize(String content) {
@@ -144,21 +142,7 @@ public class ChatService {
         return content.replaceAll("[\\u0000-\\u001F\\u007F-\\u009F\\u200B-\\u200F\\uFEFF]", "").trim();
     }
 
-    private String filterSensitiveWords(String content) {
-        String result = content;
-        String lower = result.toLowerCase(Locale.ROOT);
-        for (String word : SENSITIVE_WORDS) {
-            String target = word.toLowerCase(Locale.ROOT);
-            int index;
-            while ((index = lower.indexOf(target)) >= 0) {
-                StringBuilder replacement = new StringBuilder();
-                for (int i = 0; i < target.length(); i++) replacement.append('*');
-                result = result.substring(0, index) + replacement + result.substring(index + target.length());
-                lower = result.toLowerCase(Locale.ROOT);
-            }
-        }
-        return result;
-    }
+
 
     /**
      * 发送系统消息: 玩家 A 对玩家 B 宣战 / 某玩家被打败 / 公告 等。
@@ -184,6 +168,6 @@ public class ChatService {
     }
 
     private ChatDtos.MessageResponse toDto(ChatMessage message, String avatar) {
-        return new ChatDtos.MessageResponse(message.getId(), message.getPlayerId(), message.getUsername(), message.getContent(), message.getCreatedAt(), avatar);
+        return new ChatDtos.MessageResponse(message.getId(), message.getPlayerId(), message.getUsername(), message.getPlayerId() == null ? message.getContent() : filterContent(message.getContent()), message.getCreatedAt(), avatar);
     }
 }

@@ -160,7 +160,7 @@ window.Game = window.Game || {};
     // 汇总玩家拥有的加速符
     var s = Core.state || {};
     var owned = [];
-    ['speedUp10m','speedUp1h','speedUp5h','speedUp12h','speedUp24h','speedUp36h','speedUp48h','speedUp72h'].forEach(function (k) {
+    G.Constants.speedUpOrder.forEach(function (k) {
       var cnt = (s.items && s.items[k]) || 0;
       if (cnt > 0) {
         var info = (D.items && D.items[k]) || {};
@@ -256,7 +256,7 @@ window.Game = window.Game || {};
   function openSpeedUpPicker(queueId) {
     var s = Core.state || {};
     var owned = [];
-    ['speedUp10m','speedUp1h','speedUp5h','speedUp12h','speedUp24h','speedUp36h','speedUp48h','speedUp72h'].forEach(function (k) {
+    G.Constants.speedUpOrder.forEach(function (k) {
       var cnt = (s.items && s.items[k]) || 0;
       if (cnt > 0) {
         var info = (D.items && D.items[k]) || {};
