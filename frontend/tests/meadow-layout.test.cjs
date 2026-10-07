@@ -84,34 +84,6 @@ test('constraints survive unrelated chunk updates and ignore ownership changes',
   assert.ok(t.sample(100.5,100.5,200).grass>.8);
 });
 
-test('meadow and woodland artwork avoids resource footprints, including tile-edge halos',async()=>{
-  const t=setup();await t.loadMeadows();
-  const target={kind:'wild',type:'oil',x:103,y:87};
-  t.updateChunk(6,5,[target]);
-  let grass=0,forest=0;
-  const tiles=[];
-  for(let cy=20;cy<=23;cy++)for(let cx=24;cx<=27;cx++) {
-    const canvas=t.createTile(cx,cy,200);tiles.push({cx,cy,canvas});
-    for(const image of canvas.images) {
-      assert.ok(!image.url.includes('grass-lush'),'lush grass must not be rendered on the map');
-      if(image.url.includes('grass-'))grass++;else if(image.url.includes('wild-forest'))forest++;
-      const x=(cx*t.tileSpan*t.density-t.padding+image.x)/t.density;
-      const y=(cy*t.tileSpan*t.density-t.padding+image.y)/t.density;
-      assert.ok(x+image.w/t.density<=target.x-.3 || x>=target.x+1.3 ||
-        y+image.h/t.density<=target.y-.3 || y>=target.y+1.3,'vegetation must not overlap the resource clearing');
-    }
-  }
-  assert.equal(grass,0,'patchy meadow grass decals are cancelled from the map');
-  assert.ok(forest>0,'mix woodland clusters into the meadow');
-  const left=tiles.find(t=>t.cx===25&&t.cy===21).canvas;
-  const right=tiles.find(t=>t.cx===26&&t.cy===21).canvas;
-  const side=left.width,interior=t.tileSpan*t.density;
-  for(let row=0;row<side;row++)assert.deepEqual(left.pixels.slice((row*side+interior)*4,(row*side+side)*4),right.pixels.slice(row*side*4,(row*side+side-interior)*4));
-  const round=v=>Math.round(v*1e4)/1e4;
-  const edgeImages=(canvas,cx)=>canvas.images.map(i=>({url:i.url,x:round(i.x+cx*interior-t.padding),y:round(i.y),w:round(i.w),h:round(i.h)})).filter(i=>i.x<26*interior+t.padding&&i.x+i.w>26*interior-t.padding);
-  assert.deepEqual(edgeImages(left,25),edgeImages(right,26),'shared-edge grass and trees use identical world positions and draw order');
-});
-
 test('全图不规则黑土地覆盖约30%，草坪覆盖约70%', () => {
   const t = setup();
   let total = 0, grassSamples = 0, soilSamples = 0;

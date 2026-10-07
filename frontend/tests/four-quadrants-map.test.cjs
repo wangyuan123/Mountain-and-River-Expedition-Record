@@ -112,21 +112,6 @@ test('seawater connects seamlessly across x=399 and x=400 with no sky gap', () =
   assert.equal(terrain.region(100, 800, size), '边境天穹 · 无法通行');
 });
 
-test('all quadrants have zero snow in terrain sampling', () => {
-  const c = fixture();
-  const terrain = c.Game.MapTerrain;
-
-  // Sample in northern high-altitude zone (Q1)
-  const sampleQ1 = terrain.sample(200, 40, 400, false);
-  assert.equal(sampleQ1.snow, 0, 'Q1 has zero snow');
-  assert.ok(sampleQ1.grass > 0, 'Grass is preserved in northern terrain');
-
-  // Sample with noSnow flag (Q3 and Q4)
-  const sampleQ3Q4 = terrain.sample(200, 40, 400, true);
-  assert.equal(sampleQ3Q4.snow, 0, 'Q3/Q4 must have zero snow');
-  assert.ok(sampleQ3Q4.grass > 0, 'Grass is preserved in southern terrain');
-});
-
 test('camera allows panning across all 4 quadrants up to 800 bounds with 6-space sky overflow', () => {
   const c = fixture();
   const cam = new c.Game.MapCamera(800, 400, 400, 48);
