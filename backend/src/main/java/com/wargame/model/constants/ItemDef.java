@@ -126,7 +126,7 @@ public record ItemDef(
             Map.entry("speedUp72h",  new ItemDef("speedUp72h",  "72时加速符",  "⚡", CAT_UTIL, "立即缩短72小时建筑/造兵时间",    72 * 60 * 60)),
 
             // —— 其他功能道具 ——
-            Map.entry("shield",    new ItemDef("shield",    "护盾",     "🛡️", CAT_UTIL, "使用后8小时免受玩家攻击", 0)),
+            Map.entry("shield",    new ItemDef("shield",    "护盾",     "🛡️", CAT_UTIL, "每次使用增加8小时免受玩家攻击时间，可叠加", 0)),
             Map.entry("marchOrd",  new ItemDef("marchOrd",  "行军令",   "🚩", CAT_UTIL, "行军速度+50%,持续1小时", 0)),
             Map.entry("populationOrder", new ItemDef("populationOrder", "人口动员令", "👥", CAT_UTIL, "使用后立即增加500空闲人口,不超过人口上限", 0)),
             Map.entry("cityRenameCard", new ItemDef("cityRenameCard", "城市改名卡", "🏷️", CAT_UTIL, "为一座城市更换新名字", 0)),

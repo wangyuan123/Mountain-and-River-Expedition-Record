@@ -107,6 +107,23 @@
   content: ']';
 }
 
+/* 指挥命令保留文字按钮形态，但选中项必须有稳定的视觉反馈。 */
+#screen .tactical-actions button.btn.ok,
+#screen .tactical-command-shortcuts button.btn.ok {
+  padding: 0 7px !important;
+  border: 1px solid var(--accent, #176db7) !important;
+  border-radius: 4px !important;
+  background: var(--accent-soft, #e0f2fe) !important;
+  color: var(--accent-dark, #004499) !important;
+  font-weight: 800 !important;
+  box-shadow: 0 1px 3px rgba(15, 93, 167, 0.25) !important;
+}
+
+#screen .tactical-actions button.btn.ok::before,
+#screen .tactical-command-shortcuts button.btn.ok::before {
+  content: '✓ [' !important;
+}
+
 #screen button.btn.warn,
 #screen button.btn.warn2,
 #screen button.btn.danger,

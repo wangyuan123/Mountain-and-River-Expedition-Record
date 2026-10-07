@@ -133,14 +133,14 @@ body[data-theme="blue-white-classic"] {
 }
 [data-theme="blue-white-classic"] .home-officer-card { padding: 2px 5px !important; }
 [data-theme="blue-white-classic"] .home-officer-item { padding: 7px 0 !important; border-bottom: 1px dotted #cbd7e3 !important; }
-[data-theme="blue-white-classic"] .home-officer-name { font-size: 12px !important; }
+[data-theme="blue-white-classic"] .home-officer-name { font-size: 15px !important; }
 [data-theme="blue-white-classic"] .home-officer-go,
 [data-theme="blue-white-classic"] .army-go,
 [data-theme="blue-white-classic"] .zone-head-action { color: #2457a5 !important; }
 [data-theme="blue-white-classic"] .army-summary { gap: 0 !important; padding: 3px 5px !important; }
 [data-theme="blue-white-classic"] .army-summary-item { padding: 5px 3px !important; }
-[data-theme="blue-white-classic"] .army-summary-name { color: #2457a5 !important; font-size: 12px !important; }
-[data-theme="blue-white-classic"] .army-summary-cnt { margin-left: 0 !important; flex-shrink: 0 !important; font-size: 12px !important; }
+[data-theme="blue-white-classic"] .army-summary-name { color: #2457a5 !important; font-size: 15px !important; }
+[data-theme="blue-white-classic"] .army-summary-cnt { margin-left: 0 !important; flex-shrink: 0 !important; font-size: 15px !important; }
 [data-theme="blue-white-classic"] .army-summary-foot { padding: 5px !important; }
 
 [data-theme="blue-white-classic"] .res-grid { display: block !important; }

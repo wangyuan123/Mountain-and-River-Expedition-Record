@@ -75,10 +75,10 @@ public class IslandContentService {
         wild.setX(x);
         wild.setY(y);
         wild.setLevel(level);
-        wild.setGarrison(JsonUtil.toJson(Map.of("infantry", 5 * level)));
+        wild.setGarrison(JsonUtil.toJson(WorldConfig.wildGarrison(level, WorldTerrainService.sea(terrain.current(), x, y))));
         wild.setScouted(false);
         wild.setOccupied(false);
-        wild.setTotalRes(level * 800);
+        wild.setTotalRes(level * com.wargame.model.constants.WorldConfig.RES_PER_WILD_LEVEL);
         wild.setMined(0);
         wilds.save(wild);
     }

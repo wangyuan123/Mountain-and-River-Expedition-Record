@@ -18,10 +18,11 @@
 .world-map-filters { display:none !important; }
 .world-map-filters button { flex:1 0 auto; padding:5px 8px; background:var(--map-panel); border:1px solid var(--map-line); color:var(--map-muted); border-radius:5px; font-size:12px; }
 .world-map-filters button[aria-pressed="true"] { color:#fff; background:var(--map-blue); border-color:var(--map-blue); }
-.world-map-stage { height:clamp(360px,65vh,740px); height:clamp(360px,65dvh,740px); position:relative; overflow:hidden; border:1px solid #7da6c2; border-radius:10px; background:radial-gradient(ellipse at 50% 30%, #5ea5db 0%, #7dbceb 55%, #9dd1f5 100%); isolation:isolate; }
-.world-map-stage::before { content:''; position:absolute; inset:0; pointer-events:none; background:radial-gradient(ellipse 260px 80px at 15% 18%, rgba(255,255,255,.38) 0%, transparent 70%), radial-gradient(ellipse 340px 100px at 85% 75%, rgba(255,255,255,.32) 0%, transparent 70%), radial-gradient(ellipse 220px 65px at 78% 22%, rgba(255,255,255,.28) 0%, transparent 70%), radial-gradient(ellipse 280px 90px at 25% 82%, rgba(255,255,255,.25) 0%, transparent 70%); z-index:0; }
-.world-map-canvas { position:absolute; inset:0; overflow:hidden; }
-.world-map-canvas canvas, .world-map-input-plane { display:block; width:100%; height:100%; touch-action:none; outline-offset:-3px; cursor:grab; }
+/* 首页封面与标题置于透明地图画布下方，仅在地图边界外露出。 */
+.world-map-stage { height:clamp(360px,65vh,740px); height:clamp(360px,65dvh,740px); position:relative; overflow:hidden; border:1px solid #7da6c2; border-radius:10px; background:linear-gradient(90deg, rgba(14,22,20,.68), rgba(14,22,20,.15)), #18231f url('../img/login-battlefield-diorama.webp?v=3') center center / cover no-repeat; isolation:isolate; }
+.world-map-stage::before { content:'山河远征录'; position:absolute; top:82px; left:clamp(24px,4vw,58px); pointer-events:none; color:#eee6d2; font-family:'Noto Serif SC','Songti SC','SimSun',serif; font-size:clamp(28px,4vw,56px); font-weight:900; letter-spacing:.12em; text-shadow:0 3px 12px rgba(0,0,0,.65); z-index:0; }
+.world-map-canvas { position:absolute; inset:0; overflow:hidden; perspective:none !important; }
+.world-map-canvas canvas, .world-map-input-plane { display:block; width:100%; height:100%; touch-action:none; outline-offset:-3px; cursor:grab; perspective:none !important; transform:none !important; }
 .world-map-input-plane { position:absolute; inset:0; pointer-events:none; }
 .world-map-input-plane i { position:absolute; width:0; height:0; }
 .world-map-canvas canvas:active { cursor:grabbing; }
@@ -33,6 +34,11 @@
 .minimap-surface canvas { display:block; width:100%; height:auto; aspect-ratio:1; touch-action:none; cursor:crosshair; }
 .minimap-surface canvas:focus-visible { outline:2px solid #ffe4a0; outline-offset:-3px; }
 .minimap-north { position:absolute; top:3px; right:4px; font-size:9px; color:#f5f4dc; text-shadow:0 1px 3px #193d43; pointer-events:none; }
+.minimap-region { position:absolute; transform:translate(-50%,-50%); font-size:9px; line-height:1.2; white-space:nowrap; color:#f5f4dc; text-shadow:0 1px 3px #193d43, 0 0 2px #193d43; pointer-events:none; }
+.minimap-region-nw { left:25%; top:25%; }
+.minimap-region-ne { left:75%; top:25%; }
+.minimap-region-sw { left:25%; top:75%; }
+.minimap-region-se { left:75%; top:75%; }
 .minimap-key { display:flex; justify-content:space-between; padding:4px 8px 0; color:var(--map-muted); font-size:9px; }
 .world-map-hud { padding:5px 8px 7px; font-size:10px; color:var(--map-muted); pointer-events:none; }
 .world-map-hud b { display:block; font-size:11px; color:var(--map-ink); font-variant-numeric:tabular-nums; }

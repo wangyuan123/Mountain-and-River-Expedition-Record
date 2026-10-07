@@ -69,3 +69,16 @@ test('Core.spdMul 计算: 战备机场为空军提供每级 +3% 航速加成，�
   // arm_engine 2 级 -> 1 + 2 * 0.05 = 1.10
   assert.equal(Math.round(Core.spdMul('arm') * 100) / 100, 1.10);
 });
+
+test('摩托兵与卡车使用燃烧引擎，步兵与特种兵不受影响', () => {
+  const ctx = loadFrontendContext();
+  const G = ctx.window.Game;
+  G.Core.state = { tech: { arm_engine: 10 }, buildings: {} };
+  vm.runInContext(fs.readFileSync(path.join(root, 'frontend/js/battle.js'), 'utf8'), ctx);
+  for (const [id, base, effective] of [['motor', 5, 7.5], ['truck', 4, 6], ['infantry', 2, 2], ['special', 6, 6]]) {
+    assert.equal(G.DATA.units[id].spd, base);
+    assert.equal(base * G.Core.spdMul(G.DATA.units[id].cat, id), effective);
+    assert.equal(G.Battle.getEffectiveSpeed(id, { arm_engine: 10 }, {}), effective);
+    assert.equal(G.DATA.units[id].cat, 'inf');
+  }
+});

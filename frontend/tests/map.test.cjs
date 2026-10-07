@@ -15,7 +15,7 @@ test('camera zoom keeps finger anchor and camera never moves game coordinates',(
   cam.zoom(.8,120,200);const shrunk=cam.world(120,200);
   assert.ok(Math.abs(cam.scale-69.12)<1e-9);
   assert.ok(Math.abs(before.x-shrunk.x)<1e-9);assert.ok(Math.abs(before.y-shrunk.y)<1e-9);
-  cam.zoom(.0001,120,200);assert.equal(cam.scale,24);
+  cam.zoom(.0001,120,200);assert.equal(cam.scale,48);
   const initial=cam.world(120,200);
   assert.ok(Math.abs(before.x-initial.x)<1e-9);assert.ok(Math.abs(before.y-initial.y)<1e-9);
   cam.pan(99999,99999);let b=cam.bounds();assert.ok(b.minX>=0&&b.minY>=0);
@@ -25,21 +25,21 @@ test('camera zoom keeps finger anchor and camera never moves game coordinates',(
   cam.x=199;cam.y=199;cam.clamp();const chunks=cam.chunks();assert.ok(chunks.every(v=>v.cx<=12&&v.cy<=12));
   const lastVisible=chunks.findIndex(v=>!v.visible);assert.ok(chunks.slice(lastVisible).every(v=>!v.visible));
 });
-test('map starts slightly smaller and button or pinch can zoom out to half the initial size',()=>{
+test('map starts at its minimum scale and zoom-out input cannot go below it',()=>{
   const c=context();load(c,'map-camera.js');
   for(const factor of [1/1.3,0.5]){
     const cam=new c.Game.MapCamera(200,100,100);cam.width=1920;cam.height=1080;
     assert.equal(cam.scale,44);
     const anchor=cam.world(120,200);
     for(let step=0;step<4;step++)cam.zoom(factor,120,200);
-    assert.equal(cam.scale,22);
+    assert.equal(cam.scale,44);
     const zoomedAnchor=cam.world(120,200);
     assert.ok(Math.abs(zoomedAnchor.x-anchor.x)<1e-9);
     assert.ok(Math.abs(zoomedAnchor.y-anchor.y)<1e-9);
     cam.zoom(factor,120,200);
-    assert.equal(cam.scale,22);
-    cam.zoom(2,120,200);
     assert.equal(cam.scale,44);
+    cam.zoom(2,120,200);
+    assert.equal(cam.scale,88);
   }
 });
 test('chunks deduplicate requests, limit concurrency, preserve cached regions on failure',async()=>{
@@ -215,15 +215,33 @@ test('connected snowfield grades from thick center through medium to thin bounda
   assert.equal(variant(90,90,new Set(['90,90'])),'thin');
 });
 
-test('northern snow increases toward north with a snow-free central and southern world',()=>{
+test('all snow terrain is cancelled from the map without snow remnants',()=>{
  const c=context();load(c,'map-terrain.js');const t=c.Game.MapTerrain;
- for(const size of [100,200])for(const x of [0,size*.25,size*.5,size-1]){
-  assert.equal(t.northernSnow(x,0,size),1);
+ for(const size of [100,200,400])for(const x of [0,size*.25,size*.5,size-1]){
+  assert.equal(t.northernSnow(x,0,size),0);
   assert.equal(t.northernSnow(x,size*.5,size),0);
-  let last=1;
-  for(let y=0;y<size;y++){const next=t.northernSnow(x,y,size);assert(next<=last);last=next;}
+  for(let y=0;y<size;y+=20){
+   assert.equal(t.northernSnow(x,y,size),0);
+   assert.equal(t.sample(x,y,size).snow,0);
+  }
  }
- assert.match(t.region(100,5,200),/厚雪地/);
- assert.match(t.region(100,28,200),/中等雪地/);
+ assert.match(t.region(100,5,200),/^(浅草地|黑土地)$/);
+ assert.match(t.region(100,28,200),/^(浅草地|黑土地)$/);
  assert.equal(t.sample(100,100,200).snow,0);
+});
+
+test('snow and grass terrain are strictly mutually exclusive without overlapping coverage',()=>{
+  const c=context();load(c,'map-terrain.js');const t=c.Game.MapTerrain;
+  const size=400;
+  for(let x=0;x<size;x+=20){
+    for(let y=0;y<size;y+=20){
+      const p=t.sample(x,y,size);
+      if(p.snow>0){
+        assert.equal(p.grass,0,'snow terrain must not have grass');
+      }
+      if(p.grass>0){
+        assert.equal(p.snow,0,'grass terrain must not have snow');
+      }
+    }
+  }
 });

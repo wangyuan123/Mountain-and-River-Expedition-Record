@@ -1,6 +1,7 @@
 package com.wargame;
 
 import com.wargame.model.constants.GameData;
+import com.wargame.model.constants.WorldConfig;
 import com.wargame.model.entity.Bandit;
 import com.wargame.service.WorldContentService;
 import com.wargame.service.WorldTerrainService;
@@ -49,17 +50,18 @@ class WorldContentServiceTest extends BaseServiceTest {
 
         var fleets = allNpcs.stream().filter(b -> WorldTerrainService.sea(mask, b.getX(), b.getY())).toList();
         assertTrue(fleets.size() >= 20);
-        assertTrue(fleets.stream().anyMatch(b -> b.getName().contains("舰队")));
-        assertTrue(fleets.stream().anyMatch(b -> b.getName().contains("航母编队")));
-        assertTrue(fleets.stream().anyMatch(b -> b.getName().contains("潜艇支队")));
-        assertTrue(fleets.stream().anyMatch(b -> b.getName().contains("驱逐舰队")));
+        assertTrue(fleets.stream().allMatch(b -> b.getName().startsWith("日寇海域守军 Lv.")));
+        assertTrue(fleets.stream().map(Bandit::getLevel).collect(Collectors.toSet()).containsAll(
+                java.util.stream.IntStream.rangeClosed(1, 30).boxed().collect(Collectors.toSet())));
         fleets.forEach(fleet -> {
             assertTrue(fleet.getName().startsWith("日寇"));
+            assertEquals(com.wargame.model.constants.WorldConfig.seaNpcGarrison(fleet.getLevel()),
+                    JsonUtil.parseIntMap(fleet.getArmy()));
             assertTrue(JsonUtil.parseIntMap(fleet.getArmy()).keySet().stream()
                     .allMatch(unit -> Set.of("sea", "air").contains(GameData.UNITS.get(unit).branch())));
         });
         assertTrue(allWilds.stream().noneMatch(w -> WorldTerrainService.sea(mask, w.getX(), w.getY())));
-        assertEquals(2, worldMapRepository.findById(world.getId()).orElseThrow().getWorldContentVersion());
+        assertEquals(3, worldMapRepository.findById(world.getId()).orElseThrow().getWorldContentVersion());
         content.ensure(world.getId());
         assertEquals(allWilds.size(), wildTileRepository.findByWorldId(world.getId()).size());
         assertEquals(allNpcs.size(), banditRepository.findByWorldId(world.getId()).size());
@@ -82,14 +84,41 @@ class WorldContentServiceTest extends BaseServiceTest {
         content.ensure(world.getId());
         var fleets = banditRepository.findByWorldId(world.getId());
         assertTrue(fleets.size() > 20);
-        assertTrue(fleets.stream().anyMatch(b -> b.getName().contains("潜艇支队")));
-        assertTrue(fleets.stream().anyMatch(b -> b.getName().contains("驱逐舰队")));
+        assertTrue(fleets.stream().filter(b -> !b.getId().equals(defeatedId))
+                .allMatch(b -> b.getName().startsWith("日寇海域守军 Lv.")));
         assertTrue(fleets.stream().filter(b -> !b.getId().equals(defeatedId))
                 .allMatch(b -> WorldTerrainService.sea(mask, b.getX(), b.getY())));
         assertTrue(wildTileRepository.findByWorldId(world.getId()).isEmpty());
         assertTrue(banditRepository.findById(defeatedId).orElseThrow().getDefeated());
-        assertEquals(2, worldMapRepository.findById(world.getId()).orElseThrow().getWorldContentVersion());
+        assertEquals(Map.of("battleship", 1), JsonUtil.parseIntMap(banditRepository.findById(defeatedId).orElseThrow().getArmy()));
+        assertEquals(3, worldMapRepository.findById(world.getId()).orElseThrow().getWorldContentVersion());
         content.ensure(world.getId());
         assertEquals(fleets.size(), banditRepository.findByWorldId(world.getId()).size());
+    }
+
+    @Test void upgradesVersionTwoWithoutAddingTargetsOrRevivingDefeatedFleets() {
+        var world = createTestWorld();
+        world.setWorldContentVersion(2);
+        worldMapRepository.save(world);
+        String mask = terrain.ensure();
+        int cell = mask.indexOf('1');
+        Bandit active = new Bandit();
+        active.setWorldId(world.getId()); active.setName("日寇第4航母编队");
+        active.setX(cell % WorldTerrainService.SIZE); active.setY(cell / WorldTerrainService.SIZE);
+        active.setLevel(6); active.setArmy(JsonUtil.toJson(Map.of("carrier", 1)));
+        active.setDefeated(false); banditRepository.save(active);
+        int nextCell = mask.indexOf('1', cell + 1);
+        Bandit defeated = new Bandit();
+        defeated.setWorldId(world.getId()); defeated.setName("日寇第5潜艇支队");
+        defeated.setX(nextCell % WorldTerrainService.SIZE); defeated.setY(nextCell / WorldTerrainService.SIZE);
+        defeated.setLevel(3); defeated.setArmy("{}"); defeated.setDefeated(true);
+        banditRepository.save(defeated);
+
+        content.ensure(world.getId());
+        assertEquals(2, banditRepository.findByWorldId(world.getId()).size());
+        assertEquals(WorldConfig.seaNpcGarrison(1), JsonUtil.parseIntMap(banditRepository.findById(active.getId()).orElseThrow().getArmy()));
+        assertTrue(banditRepository.findById(defeated.getId()).orElseThrow().getDefeated());
+        assertEquals(Map.of(), JsonUtil.parseIntMap(banditRepository.findById(defeated.getId()).orElseThrow().getArmy()));
+        assertEquals(3, worldMapRepository.findById(world.getId()).orElseThrow().getWorldContentVersion());
     }
 }

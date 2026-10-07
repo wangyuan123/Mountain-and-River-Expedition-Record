@@ -31,6 +31,8 @@ public class GameStateService {
     private IslandContentService islandContent;
     @org.springframework.beans.factory.annotation.Autowired
     private WorldContentService worldContent;
+    @org.springframework.beans.factory.annotation.Autowired
+    private LandBanditPopulationService landBandits;
 
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.quest.OnboardingService onboarding;
@@ -715,7 +717,6 @@ public class GameStateService {
         player.setLastTick(System.currentTimeMillis());
         playerRepository.save(player);
         ensureRealPlayerCity(player);
-        worldContent.ensureAround(placementWorld.getId(), cityCoord[0], cityCoord[1]);
 
         // 初始储备覆盖基础建设与小批征兵，后续发展仍需生产和出征补给。
         resourcesRepository.deleteByPlayerId(playerId);
@@ -846,7 +847,7 @@ public class GameStateService {
         WorldMap worldMap;
         if (worldId == null) {
             worldMap = new WorldMap();
-            worldMap.setSize(WorldConfig.SIZE);
+            worldMap.setSize(WorldConfig.WORLD_SIZE);
             worldMap.setScanRadius(WorldConfig.VIEW_RADIUS);
             worldMap.setPosX(WorldConfig.SIZE / 2);
             worldMap.setPosY(WorldConfig.SIZE / 2);
@@ -909,6 +910,7 @@ public class GameStateService {
         terrain.ensure();
         islandContent.ensure(worldId);
         worldContent.ensure(worldId);
+        landBandits.ensure(worldId);
         return worldMap;
     }
 
@@ -967,8 +969,7 @@ public class GameStateService {
 
     private void saveGeneratedWild(Long worldId, String type, int x, int y) {
         int level = rand(1, WorldConfig.MAX_NPC_LEVEL);
-        List<String> units = List.of("infantry", "motor", "armored", "ltank");
-        Map<String, Integer> garrison = Map.of(units.get(rand(0, units.size() - 1)), 5 * level);
+        Map<String, Integer> garrison = WorldConfig.wildGarrison(level, WorldTerrainService.sea(terrain.current(), x, y));
         WildTile tile = new WildTile();
         tile.setWorldId(worldId);
         tile.setType(type);
@@ -979,7 +980,7 @@ public class GameStateService {
         tile.setScouted(false);
         tile.setOccupied(false);
         tile.setOccupiedBy(null);
-        tile.setTotalRes(level * 800);
+        tile.setTotalRes(level * WorldConfig.RES_PER_WILD_LEVEL);
         tile.setMined(0);
         wildTileRepository.save(tile);
     }

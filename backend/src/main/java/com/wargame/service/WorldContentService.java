@@ -15,8 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
@@ -35,7 +35,7 @@ public class WorldContentService {
     public void ensure(Long worldId) {
         var world = worlds.lockById(worldId).orElseThrow();
         int version = world.getWorldContentVersion() == null ? 0 : world.getWorldContentVersion();
-        if (version >= 2) return;
+        if (version >= 3) return;
         String mask = terrain.ensure();
         Set<String> used = terrain.occupiedCoordinates(worldId);
         reservePlayerCities(used);
@@ -63,23 +63,36 @@ public class WorldContentService {
                 if (cells.isEmpty()) continue;
                 int cell = cells.get(0), x = cell % WorldConfig.SIZE, y = cell / WorldConfig.SIZE;
                 used.add(x + "," + y);
-                seedFleet(worldId, x, y, ++fleet);
+                seedSeaNpc(worldId, x, y, ++fleet);
             }
         }
         }
-        // Version 2 adds a distinct small-vessel target to each usable sea region.
-        for (int gy = 0; gy < WorldConfig.SIZE; gy += 16) {
-            for (int gx = 0; gx < WorldConfig.SIZE; gx += 16) {
-                List<Integer> cells = cells(gx, gy, 16, mask, used, true, gy * 1217L + gx);
-                if (cells.isEmpty()) continue;
-                int cell = cells.get(0), x = cell % WorldConfig.SIZE, y = cell / WorldConfig.SIZE;
-                used.add(x + "," + y);
-                boolean submarine = ((gx + gy) / 16) % 2 == 0;
-                int number = gy / 16 * 13 + gx / 16 + 1;
-                seedSmallFleet(worldId, x, y, number, submarine);
+        // 旧版第二轮海域目标只补一次；版本 2 升级时不能重复布点。
+        if (version < 2) {
+            for (int gy = 0; gy < WorldConfig.SIZE; gy += 16) {
+                for (int gx = 0; gx < WorldConfig.SIZE; gx += 16) {
+                    List<Integer> cells = cells(gx, gy, 16, mask, used, true, gy * 1217L + gx);
+                    if (cells.isEmpty()) continue;
+                    int cell = cells.get(0), x = cell % WorldConfig.SIZE, y = cell / WorldConfig.SIZE;
+                    used.add(x + "," + y);
+                    int number = gy / 16 * 13 + gx / 16 + 1;
+                    seedSeaNpc(worldId, x, y, number + WorldConfig.MAX_NPC_LEVEL);
+                }
             }
         }
-        world.setWorldContentVersion(2);
+        // 旧世界只升级现存海洋目标；击败状态与空兵力不回填，避免重启复活。
+        int seaIndex = 0;
+        for (Bandit npc : bandits.findByWorldId(worldId).stream()
+                .filter(b -> WorldTerrainService.sea(mask, b.getX(), b.getY()))
+                .sorted(Comparator.comparing(Bandit::getId)).toList()) {
+            int level = 1 + seaIndex++ % WorldConfig.MAX_NPC_LEVEL;
+            npc.setLevel(level);
+            npc.setName("日寇海域守军 Lv." + level);
+            if (!Boolean.TRUE.equals(npc.getDefeated()))
+                npc.setArmy(JsonUtil.toJson(WorldConfig.seaNpcGarrison(level)));
+            bandits.save(npc);
+        }
+        world.setWorldContentVersion(3);
         worlds.save(world);
     }
 
@@ -149,11 +162,11 @@ public class WorldContentService {
     }
 
     private void seedWild(Long worldId, int x, int y, String type, int seed) {
-        int level = 1 + Math.floorMod(seed, 8);
+        int level = 1 + Math.floorMod(seed, WorldConfig.MAX_WILD_LEVEL);
         WildTile wild = new WildTile();
         wild.setWorldId(worldId); wild.setX(x); wild.setY(y); wild.setType(type); wild.setLevel(level);
-        wild.setGarrison(JsonUtil.toJson(Map.of("infantry", 5 * level)));
-        wild.setScouted(false); wild.setOccupied(false); wild.setTotalRes(level * 800); wild.setMined(0);
+        wild.setGarrison(JsonUtil.toJson(WorldConfig.wildGarrison(level, WorldTerrainService.sea(terrain.ensure(), x, y))));
+        wild.setScouted(false); wild.setOccupied(false); wild.setTotalRes(level * WorldConfig.RES_PER_WILD_LEVEL); wild.setMined(0);
         wilds.save(wild);
     }
 
@@ -167,29 +180,14 @@ public class WorldContentService {
         bandits.save(npc);
     }
 
-    private void seedFleet(Long worldId, int x, int y, int number) {
-        boolean carrier = number % 4 == 0;
-        int level = carrier ? 6 + number % 5 : 2 + number % 7;
+    /** 两轮海域布点共用等级 1～30 与同一套守军，不再区分舰队类型。 */
+    private void seedSeaNpc(Long worldId, int x, int y, int number) {
+        int level = 1 + Math.floorMod(number - 1, WorldConfig.MAX_NPC_LEVEL);
         Bandit npc = new Bandit();
         npc.setWorldId(worldId); npc.setX(x); npc.setY(y); npc.setLevel(level);
-        npc.setName("日寇第" + number + (carrier ? "航母编队" : "舰队"));
-        // Sea targets use only naval vessels and aircraft; land NPC tiers are never reused here.
-        npc.setArmy(JsonUtil.toJson(carrier
-                ? Map.of("carrier", 1 + level / 8, "destroyer", 2 + level / 3, "fighter", level * 2, "bomber", level)
-                : Map.of("battleship", Math.max(1, level / 4), "destroyer", 2 + level / 2, "sub", Math.max(1, level / 3), "fighter", level)));
-        npc.setCommanderName(carrier ? "南云忠一" : "山本五十六"); npc.setDefeated(false);
-        bandits.save(npc);
-    }
-
-    private void seedSmallFleet(Long worldId, int x, int y, int number, boolean submarine) {
-        int level = 2 + number % 6;
-        Bandit npc = new Bandit();
-        npc.setWorldId(worldId); npc.setX(x); npc.setY(y); npc.setLevel(level);
-        npc.setName("日寇第" + number + (submarine ? "潜艇支队" : "驱逐舰队"));
-        npc.setArmy(JsonUtil.toJson(submarine
-                ? Map.of("sub", 2 + level / 2)
-                : Map.of("destroyer", 2 + level, "fighter", level)));
-        npc.setCommanderName(submarine ? "山本五十六" : "小泽治三郎");
+        npc.setName("日寇海域守军 Lv." + level);
+        npc.setArmy(JsonUtil.toJson(WorldConfig.seaNpcGarrison(level)));
+        npc.setCommanderName("山本五十六");
         npc.setDefeated(false);
         bandits.save(npc);
     }

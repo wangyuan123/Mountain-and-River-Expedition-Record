@@ -230,15 +230,18 @@ public class DepotService {
         });
     }
 
+    /** 每个护盾增加 8 小时保护，未到期时顺延，已到期时从当前时间起算。 */
     private Map<String, Object> useShield(Long playerId) {
+        // 与敌军出征/抵达使用同一玩家锁，确定开盾与开战的先后并避免并发续盾丢失时长。
+        if (playerRepository.lockById(playerId).isEmpty()) return error("玩家不存在");
         int consumed = playerItemRepository.tryConsume(playerId, "shield", 1, System.currentTimeMillis());
         if (consumed == 0) return error("护盾数量不足");
         CityState cs = getOrCreateCityState(playerId);
-        long until = System.currentTimeMillis() + 8L * 3600 * 1000;
+        long now = System.currentTimeMillis();
         long cur = cs.getShieldUntil() != null ? cs.getShieldUntil() : 0L;
-        cs.setShieldUntil(Math.max(cur, until));
+        cs.setShieldUntil(Math.max(cur, now) + 8L * 3600 * 1000);
         cityStateRepository.save(cs);
-        return success("🛡️ 护盾启用,8 小时内免受玩家攻击", Map.of("shieldUntil", cs.getShieldUntil()));
+        return success("🛡️ 护盾时间已增加 8 小时,免受玩家攻击", Map.of("shieldUntil", cs.getShieldUntil()));
     }
 
     private Map<String, Object> useMarchOrd(Long playerId) {

@@ -65,7 +65,7 @@ public class MarchTargetService {
         switch (kind) {
             case "wild":
             case "wild_gather":
-                return wildTileRepository.findById(id).orElse(null);
+                return wildTileRepository.findById(id).filter(tile -> !tile.isDormant()).orElse(null);
             case "bandit":
                 return banditRepository.findById(id).orElse(null);
             case "npc":

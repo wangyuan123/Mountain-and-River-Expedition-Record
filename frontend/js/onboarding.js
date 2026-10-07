@@ -264,13 +264,23 @@
     return 'farm';
   }
 
+  /** 仅在当前账号仍参与引导时高亮确认按钮，延迟检查也必须遵守跳过状态。 */
+  function canSpotlightConfirm(key) {
+    var data = state.data;
+    return key === context() && Core.state && G.API.isLoggedIn() &&
+      data && data.enrolled === true && !data.paused && !data.done && !state.busy;
+  }
+
   function hookBuildConfirm() {
     if (!G.Build || !G.Build.confirmUpgrade || G.Build._onboardingHooked) return;
     G.Build._onboardingHooked = true;
     var origConfirm = G.Build.confirmUpgrade;
     G.Build.confirmUpgrade = function (id, slotIdx) {
       var res = origConfirm.apply(this, arguments);
+      var key = context();
+      if (!canSpotlightConfirm(key)) return res;
       var checkOkBtn = function () {
+        if (!canSpotlightConfirm(key)) return;
         var cuOk = document.getElementById ? document.getElementById('cuOk') : null;
         if (cuOk && !cuOk.disabled) {
           showSpotlight(cuOk);
@@ -289,7 +299,10 @@
     var origConfirm = G.Tech.confirmResearch;
     G.Tech.confirmResearch = function (id) {
       var res = origConfirm.apply(this, arguments);
+      var key = context();
+      if (!canSpotlightConfirm(key)) return res;
       var checkOkBtn = function () {
+        if (!canSpotlightConfirm(key)) return;
         var cuOk = document.getElementById ? document.getElementById('cuOk') : null;
         if (cuOk && !cuOk.disabled) {
           showSpotlight(cuOk);

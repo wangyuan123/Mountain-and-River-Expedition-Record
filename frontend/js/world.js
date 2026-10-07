@@ -744,7 +744,7 @@ window.Game = window.Game || {};
         totalTroops += count;
 
         var baseSpd = u.spd || 1;
-        var techMul = (typeof Core !== 'undefined' && Core.spdMul) ? Core.spdMul(u.cat) : 1;
+        var techMul = (typeof Core !== 'undefined' && Core.spdMul) ? Core.spdMul(u.cat, uid) : 1;
         var effSpd = baseSpd * techMul;
 
         unitsInfo.push({
@@ -1314,7 +1314,7 @@ window.Game = window.Game || {};
         var u = D.units[uid];
         var isLogi = u.logistic ? ' (辎重' + u.load + '/辆)' : '';
         var supplyBadge = ' <span class="dispatch-unit-supply" title="每100格油耗 ' + (u.marchOil || 0) + '">油耗 ' + (u.marchOil || 0) + '</span>';
-        var techMul = (typeof Core !== 'undefined' && Core.spdMul) ? Core.spdMul(u.cat) : 1;
+        var techMul = (typeof Core !== 'undefined' && Core.spdMul) ? Core.spdMul(u.cat, uid) : 1;
         var techBonus = Math.round((techMul - 1) * 100);
         var effSpd = (u.spd * techMul).toFixed(1);
         if (effSpd.endsWith('.0')) effSpd = effSpd.slice(0, -2);
@@ -1648,6 +1648,9 @@ window.Game = window.Game || {};
           p: {
             id: 'self-city', name: (s.player && (s.player.cityName || s.player.name || s.player.username)) || '我的城市',
             x: cityPos.x, y: cityPos.y,
+            commanderName: (s.player && (s.player.name || s.player.username)) || '',
+            militaryRank: s.player && s.player.militaryRank,
+            militaryRankName: s.player && s.player.militaryRankName,
             prestige: (s.player && s.player.prestige) || 0, _selfCity: true
           }
         });
@@ -1687,7 +1690,8 @@ window.Game = window.Game || {};
         var t = it.t;
         // 后端 wild_tiles.type 历史上可能写入过 D.wildTypes 里没有的旧值, 找不到时回退到通用占位
         var wt = D.wildTypes[t.type] || { name: '野地', res: null, icon: '🪨' };
-        var iconPath = (G.WorldMap && typeof G.WorldMap.icon === 'function') ? G.WorldMap.icon(t) : wt.icon;
+        // 列表野地没有 kind；补齐地图目标类型，无模型地块仍使用类型图标。
+        var iconPath = (G.WorldMap && typeof G.WorldMap.icon === 'function') ? G.WorldMap.icon(Object.assign({}, t, { kind: 'wild' })) || wt.icon : wt.icon;
         var isImg = /\.svg$|\.png$|\.jpg$|\.gif$|\.webp$/i.test(iconPath);
         var icon = isImg
           ? '<img class="tcard-icon" src="' + iconPath + '" alt="' + wt.name + '"/>'
@@ -1696,9 +1700,13 @@ window.Game = window.Game || {};
         var resLine = wt.res
           ? '<div class="tcard-meta">' + D.resources[wt.res].name + ' <b>' + G.fmt(remain) + '</b>/' + G.fmt(t.totalRes || 0) + '</div>'
           : '<div class="tcard-meta tcard-muted">无资源 · 仅供占领</div>';
-        var guardLine = t.scouted
-          ? '<div class="tcard-meta">守军 ' + armyText(t.garrison) + '</div>'
-          : '<div class="tcard-meta tcard-muted">守军未知</div>';
+        // 守军属于侦察隐私，列表地图不展示；只有侦察流程会返回相关情报。
+        var coordinateLine = '<div class="tcard-meta">坐标：(' + t.x + ',' + t.y + ')</div>';
+        var occupantLine = t.occupiedByName
+          ? '<div class="tcard-meta">统帅：<b>' + esc(t.occupiedByName) + '</b></div>' +
+            '<div class="tcard-meta">军衔：<b>' + esc(t.occupiedByRankName || '列兵') + '</b></div>' +
+            '<div class="tcard-meta">玩家声望：' + G.fmt(t.occupiedByPrestige || 0) + '</div>'
+          : '';
 
         if (ownedView) {
           var hasGarrison = t.garrison && Object.values(t.garrison).some(function(v){ return v > 0; });
@@ -1715,7 +1723,7 @@ window.Game = window.Game || {};
             statusHtml = '<div class="tcard-status">已收获 ' + G.fmt(t.gatherHarvested) + ' 资源 · 等待回城命令，抵达后入库</div>';
             actions = '<button class="tcard-btn tcard-btn-ok" onclick="Game.World.recallWild(' + it.i + ')">部队回城</button>';
           } else if (hasGarrison) {
-            statusHtml = '<div class="tcard-status" style="color:var(--good,#4caf50);font-size:11px;">🛡 驻守中 · 守军 ' + armyText(t.garrison) + '</div>';
+            statusHtml = '<div class="tcard-status" style="color:var(--good,#4caf50);font-size:11px;">🛡 驻守中</div>';
             actions = (wt.res && remain > 0 ? '<button class="tcard-btn tcard-btn-ok" onclick="Game.World.startGatherWild(' + it.i + ')">采集</button>' : '') +
                       '<button class="tcard-btn" onclick="Game.World.recallWild(' + it.i + ')">撤回</button>' +
                       '<button class="tcard-btn tcard-btn-warn" onclick="Game.World.abandonWild(' + it.i + ')">放弃</button>';
@@ -1724,7 +1732,7 @@ window.Game = window.Game || {};
             if (im) {
               statusHtml = '<div class="tcard-status tcard-status-busy">进驻行军中 ' + World.fmtMarchTime(im.arriveAt) + '</div>';
             } else {
-              statusHtml = '<div class="tcard-status tcard-muted">暂无驻军</div>';
+              statusHtml = '<div class="tcard-status tcard-muted">暂无驻守任务</div>';
             }
             actions = '<button class="tcard-btn tcard-btn-ok" onclick="Game.World.dispatchWild(' + it.i + ',\'station\')">派遣</button>' +
                       '<button class="tcard-btn tcard-btn-warn" onclick="Game.World.abandonWild(' + it.i + ')">放弃</button>';
@@ -1742,7 +1750,7 @@ window.Game = window.Game || {};
               '<span class="tcard-mini-caret">▾</span>' +
             '</button>' +
             '<div class="tcard-expand">' +
-              resLine + statusHtml +
+              coordinateLine + occupantLine + resLine + statusHtml +
               '<div class="tcard-actions">' + actions + '</div>' +
             '</div>' +
           '</div>';
@@ -1766,7 +1774,7 @@ window.Game = window.Game || {};
             '<span class="tcard-mini-caret">▾</span>' +
           '</button>' +
           '<div class="tcard-expand">' +
-            guardLine + resLine +
+            coordinateLine + occupantLine + resLine +
             '<div class="tcard-actions">' + acts + '</div>' +
           '</div>' +
         '</div>';
@@ -1776,7 +1784,10 @@ window.Game = window.Game || {};
       function renderNpcCard(it) {
         var n = it.n;
         var seaNpc = !!n.sea;
-        var vessel = n.name.indexOf('航母') >= 0 ? 'carrier'
+        var vessel = n.level >= 21 || n.name.indexOf('航母') >= 0 ? 'carrier'
+          : n.level >= 11 && n.name.indexOf('海域守军') >= 0 ? 'battleship'
+          : n.level >= 4 && n.name.indexOf('海域守军') >= 0 ? 'destroyer'
+          : n.name.indexOf('海域守军') >= 0 ? 'sub'
           : n.name.indexOf('潜艇') >= 0 ? 'sub'
           : n.name.indexOf('驱逐舰') >= 0 ? 'destroyer' : 'battleship';
         var nScouted = getScouted(n.x, n.y);
@@ -1796,7 +1807,7 @@ window.Game = window.Game || {};
         return '<div class="tcard tcard-npc tcard-collapsible' + (n.defeated ? ' tcard-done' : '') + (targetCardExpanded(npcKey) ? ' tcard-expanded' : '') + '" data-target-key="' + esc(npcKey) + '">' +
           '<button type="button" class="tcard-mini-row" aria-expanded="' + targetCardExpanded(npcKey) + '" onclick="Game.World.toggleTargetCard(this.parentElement)">' +
             (seaNpc ? '<img class="tcard-icon" src="img/npc/japanese-navy/' + vessel + '.webp" alt="">' : '<span class="tcard-emoji">⚔</span>') +
-            '<span class="tcard-mini-name">' + (n.name.indexOf('日寇') === 0 ? '' : '<span class="npc-mark">日寇</span> ') + esc(n.name) + ' <span class="tcard-lv">Lv.' + n.level + '</span></span>' +
+            '<span class="tcard-mini-name">寇据点 · L' + esc(n.level) + '</span>' +
             '<span class="tcard-mini-dist">📍 ' + it.d + '格</span>' +
             '<span class="tcard-mini-caret">▾</span>' +
           '</button>' +
@@ -1812,11 +1823,17 @@ window.Game = window.Game || {};
       // 点击整行展开为完整卡 (含统帅、状态、驻军、行动按钮)
       function renderPlayerCard(it) {
         var p = it.p;
+        // 列表城市记录没有 kind；使用大地图的城市图标映射，保持两种视图一致。
+        var cityIconPath = (G.WorldMap && typeof G.WorldMap.icon === 'function')
+          ? G.WorldMap.icon(Object.assign({}, p, { kind: 'player' }))
+          : 'img/cities/player-city-preview-map.png';
         var now = Date.now();
         // 主城坐标是本城的最终判定，避免旧 player_cities.ownerId 残留造成误判。
         var isSelfCity = p._selfCity || p.selfCity ||
           (cityPos.x != null && p.x === cityPos.x && p.y === cityPos.y) ||
           (s.player && p.ownerId && String(p.ownerId) === String(s.player.id));
+        var cityShielded = p.shieldUntil != null ? p.shieldUntil > now : p.cityState === 'shield';
+        if (isSelfCity && G.Core.getCityStatus) cityShielded = G.Core.getCityStatus() === 'shield';
         var cooling = p.coolAt > now;
         var warDeclared = !isSelfCity && p.warAt && p.warAt > 0;
         var warActive = warDeclared && now >= p.warAt && (!p.warEndAt || now < p.warEndAt);
@@ -1859,6 +1876,8 @@ window.Game = window.Game || {};
         var expandHtml =
           '<div class="tcard-expand">' +
             '<div class="tcard-meta">城市 ' + esc(p.name || '未知城市') + '</div>' +
+            '<div class="tcard-meta">统帅：<b>' + esc(p.commanderName || p.playerName || '未知') + '</b></div>' +
+            '<div class="tcard-meta">军衔：<b>' + esc(p.militaryRankName || (G.getMilitaryRankTierInfo ? G.getMilitaryRankTierInfo(p.militaryRank || 1).name : '列兵')) + '</b></div>' +
             '<div class="tcard-meta">状态 <b>' + (stateMap[p.cityState] || '和平') + '</b></div>' +
             '<div class="tcard-meta">声望：' + G.fmt(p.prestige || 0) + '</div>' +
             (warActive ? '<div class="tcard-meta">剩余 ' + remStr + '</div>' : '') +
@@ -1872,7 +1891,7 @@ window.Game = window.Game || {};
         var isExp = Object.prototype.hasOwnProperty.call(exp, String(p.id));
         return '<div class="tcard tcard-player tcard-player-mini tcard-collapsible' + (isExp ? ' tcard-expanded' : '') + '" data-player-id="' + p.id + '">' +
           '<div class="tcard-mini-row" onclick="Game.World.togglePlayerCard(this.parentElement)">' +
-            '<span class="tcard-emoji">🏰</span>' +
+            '<span class="tcard-city-icon' + (cityShielded ? ' is-shielded' : '') + '"><img class="tcard-icon" src="' + cityIconPath + '" alt="城市"/>' + (cityShielded ? '<span class="tcard-city-shield" title="护盾生效">盾</span>' : '') + '</span>' +
             '<span class="tcard-mini-name">' + esc(p.name) + '</span>' +
             combatIcon +
             '<span class="tcard-mini-prestige">声望：' + G.fmt(p.prestige || 0) + '</span>' +

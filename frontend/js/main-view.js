@@ -459,6 +459,8 @@ window.Game = window.Game || {};
       var active = (Core.route === it.route || (Core.route === 'wounded' && it.route === 'army') || (Core.route === 'officerDetail' && it.route === 'officer')) ? ' active' : '';
       var hasBattleAlert = G.World && G.World.hasBattleAlert ? G.World.hasBattleAlert() : false;
       var alertCls = (it.route === 'alerts' && (hasIncoming || hasBattleAlert)) ? ' alert' : '';
+      var chatUnread = it.route === 'chat' && G.PrivateChat && G.PrivateChat.unread ? G.PrivateChat.unread() : 0;
+      var chatBadge = chatUnread > 0 ? '<span class="nav-badge">' + chatUnread + '</span>' : '';
       var mailUnread = (it.route === 'mail' && G.Mail && G.Mail.unread && G.Mail.unread() > 0) ? G.Mail.unread() : 0;
       var mailBadge = mailUnread ? '<span class="nav-badge">' + mailUnread + '</span>' : '';
       var reportsUnread = (it.route === 'reports' && G.Battle && G.Battle.unreadCount && G.Battle.unreadCount() > 0) ? G.Battle.unreadCount() : 0;
@@ -472,7 +474,7 @@ window.Game = window.Game || {};
       if (it.route === 'alerts' && (hasIncoming || hasBattleAlert)) {
         alertBadge = '<span class="nav-badge alert-dot">!</span>';
       }
-      items.push('<div class="navitem' + active + alertCls + '" data-route="' + it.route + '" onclick="' + action + '"><span class="navnum">[' + it.key + ']</span><span class="navlabel">' + (it.icon ? '<img class="nav-icon" src="' + it.icon + '" alt="' + it.label + '"/>' : it.label) + '</span>' + mailBadge + reportsBadge + questBadge + alertBadge + '</div>');
+      items.push('<div class="navitem' + active + alertCls + '" data-route="' + it.route + '" onclick="' + action + '"><span class="navnum">[' + it.key + ']</span><span class="navlabel">' + (it.icon ? '<img class="nav-icon" src="' + it.icon + '" alt="' + it.label + '"/>' : it.label) + '</span>' + chatBadge + mailBadge + reportsBadge + questBadge + alertBadge + '</div>');
     }
     if (G.Cities) items.splice(items.length - 3, 0, G.Cities.nav());
     // 排名与商城固定相邻放在第二组；缺少城市切换模块也不前移这两个入口。
@@ -1143,8 +1145,9 @@ window.Game = window.Game || {};
     if (tab === 'messages' && box) {
       box.scrollTop = messages._chatAtBottom ? box.scrollHeight : (messages._chatScrollTop || 0);
     }
-    page.querySelector('#chatPageTitle').textContent = tab === 'forum' ? '山河论坛' : '世界频道';
-    page.querySelector('#chatPageSubtitle').textContent = tab === 'forum' ? '玩家交流' : '实时通联';
+    page.querySelector('#chatPageTitle').textContent = tab === 'forum' ? '山河论坛' : (selectedChatChannel === 'private' ? '玩家私聊' : selectedChatChannel === 'guild' ? '军团频道' : '世界频道');
+    page.querySelector('#chatPageSubtitle').textContent = tab === 'forum' ? '玩家交流' : (selectedChatChannel === 'private' ? '仅双方可见' : selectedChatChannel === 'guild' ? '战术内频' : '实时通联');
+    if (tab === 'messages' && G.PrivateChat && G.PrivateChat.active) G.PrivateChat.refresh();
     var tabs = page.querySelectorAll('[data-chat-tab]');
     for (var i = 0; i < tabs.length; i++) {
       var active = tabs[i].getAttribute('data-chat-tab') === tab;
@@ -1154,9 +1157,32 @@ window.Game = window.Game || {};
     }
   }
 
+  /** 游戏状态直接携带 player.guild，无需先访问军团大厅加载详情缓存。 */
+  function chatGuild() {
+    var player = Core.state && Core.state.player;
+    if (player && player.guild && player.guild.id) return player.guild;
+    if (player && player.guildId) return { id: player.guildId };
+    // 有完整玩家状态时，缺少 guild 即表示未加入，不能沿用已退出的缓存。
+    if (player) return null;
+    return G.Guild && G.Guild.mine && G.Guild.mine.joined ? G.Guild.mine : null;
+  }
+
+  /** 仅军团身份变化时重建频道，普通状态刷新保留草稿、消息节点和滚动位置。 */
+  function syncGuildChatPanel() {
+    var box = document.getElementById('chatGuildChannelWrap');
+    if (!box) return;
+    var guild = chatGuild();
+    var id = guild ? String(guild.id) : '';
+    if (box.getAttribute('data-chat-guild-id') === id) return;
+    if (G.Chat && G.Chat.guildLog) G.Chat.guildLog.length = 0;
+    box.setAttribute('data-chat-guild-id', id);
+    box.innerHTML = renderGuildChatInPage();
+    if (guild && selectedChatChannel === 'guild' && G.Chat) G.Chat.loadGuildHistory();
+  }
+
   function renderGuildChatInPage() {
-    var hasGuild = (G.Guild && G.Guild.mine && G.Guild.mine.joined) || (Core.state && Core.state.player && Core.state.player.guildId);
-    var g = (G.Guild && G.Guild.mine) || {};
+    var g = chatGuild();
+    var hasGuild = !!g;
     var h = '';
     if (!hasGuild) {
       h += '<div style="flex:1 1 0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;color:var(--muted);min-height:0;">';
@@ -1202,14 +1228,37 @@ window.Game = window.Game || {};
     h += '<div class="chat-channel-switcher">';
     h += '<button type="button" id="chatChanBtn_world" class="chat-channel-btn active" onclick="Game.MainView.selectChatChannel(\'world\')">🌐 公频 · 世界</button>';
     h += '<button type="button" id="chatChanBtn_guild" class="chat-channel-btn" onclick="Game.MainView.selectChatChannel(\'guild\')">🪖 内频 · 军团</button>';
+    h += '<button type="button" id="chatChanBtn_private" class="chat-channel-btn" onclick="Game.MainView.selectChatChannel(\'private\')">✉ 私聊<span id="privateChatUnread"></span></button>';
     h += '</div>';
     h += '<div id="chatWorldChannelWrap" style="display:flex;flex:1 1 0;flex-direction:column;min-height:0;min-width:0;">' + renderWorldChat(50) + '</div>';
-    h += '<div id="chatGuildChannelWrap" style="display:none;flex:1 1 0;flex-direction:column;min-height:0;min-width:0;">' + renderGuildChatInPage() + '</div>';
+    h += '<div id="chatGuildChannelWrap" data-chat-guild-id="' + (chatGuild() ? Number(chatGuild().id) : '') + '" style="display:none;flex:1 1 0;flex-direction:column;min-height:0;min-width:0;">' + renderGuildChatInPage() + '</div>';
+    h += '<div id="chatPrivateChannelWrap" style="display:none;flex:1 1 0;flex-direction:column;min-height:0;">' + (G.PrivateChat ? G.PrivateChat.render() : '') + '</div>';
     h += '</div>';
     return h;
   }
 
+  var selectedChatChannel = 'world';
+
   function selectChatChannel(channel) {
+    selectedChatChannel = channel;
+    syncGuildChatPanel();
+    var privateBox = document.getElementById('chatPrivateChannelWrap');
+    var privateButton = document.getElementById('chatChanBtn_private');
+    if (privateBox) privateBox.style.display = channel === 'private' ? 'flex' : 'none';
+    if (privateButton) privateButton.classList.toggle('active', channel === 'private');
+    if (G.PrivateChat) G.PrivateChat.active = channel === 'private';
+    if (channel === 'private') {
+      ['chatWorldChannelWrap', 'chatGuildChannelWrap'].forEach(function (id) {
+        var el = document.getElementById(id); if (el) el.style.display = 'none';
+      });
+      ['chatChanBtn_world', 'chatChanBtn_guild'].forEach(function (id) {
+        var el = document.getElementById(id); if (el) el.classList.remove('active');
+      });
+      document.getElementById('chatPageTitle').textContent = '玩家私聊';
+      document.getElementById('chatPageSubtitle').textContent = '仅双方可见';
+      if (G.PrivateChat) G.PrivateChat.showList();
+      return;
+    }
     var worldBox = document.getElementById('chatWorldChannelWrap');
     var guildBox = document.getElementById('chatGuildChannelWrap');
     var btnWorld = document.getElementById('chatChanBtn_world');
@@ -1238,6 +1287,7 @@ window.Game = window.Game || {};
   Core.views.chat = function (v) {
     // 后台状态刷新保留聊天输入和滚动位置，实时消息由 Chat 增量追加。
     if (v.querySelector && v.querySelector('.chat-page')) {
+      syncGuildChatPanel();
       if (G.Chat) G.Chat.updateSendBtnUI();
       if (G.Chat) G.Chat.updateGuildSendBtnUI();
       return;
@@ -1255,6 +1305,8 @@ window.Game = window.Game || {};
       '</nav></section>';
     var box = document.getElementById('worldChatBox');
     if (box) box.scrollTop = box.scrollHeight;
+    selectedChatChannel = 'world';
+    if (G.PrivateChat) { G.PrivateChat.active = false; G.PrivateChat.refresh(); }
   };
 
   Core.views.settings = function (v) {

@@ -28,13 +28,44 @@ function setup() {
   return c.Game.MapTerrain;
 }
 
-test('resources get bare clearings, while forest and grassland can share a meadow',()=>{
+test('cell edges softly mix meadow with soil on all four sides, leaving interiors untouched',()=>{
+  const t=setup(), canvas=t.createTile(25,25,200), side=canvas.width;
+  const start=100*t.density-t.padding;
+  function hash(x,y) {
+    let n=Math.imul(x,374761393)+Math.imul(y,668265263);
+    n=Math.imul(n^(n>>>13),1274126177);
+    return ((n^(n>>>16))>>>0)/4294967295;
+  }
+  function noise(x,y) {
+    const ix=Math.floor(x),iy=Math.floor(y);let fx=x-ix,fy=y-iy;
+    fx=fx*fx*(3-2*fx);fy=fy*fy*(3-2*fy);
+    return (hash(ix,iy)*(1-fx)+hash(ix+1,iy)*fx)*(1-fy)+
+      (hash(ix,iy+1)*(1-fx)+hash(ix+1,iy+1)*fx)*fy;
+  }
+  function originalGreen(px,py) {
+    const wx=start+px,wy=start+py;
+    const patch=Math.fround(noise(wx/54,wy/54)*.7+noise(wx/11+37,wy/11+71)*.3);
+    const gx=Math.floor(px/16)*16,gy=Math.floor(py/16)*16,tx=(px-gx)/16,ty=(py-gy)/16;
+    const s=(x,y)=>t.sample((start+x)/64,(start+y)/64,200).grass;
+    const grass=(s(gx,gy)*(1-tx)+s(gx+16,gy)*tx)*(1-ty)+(s(gx,gy+16)*(1-tx)+s(gx+16,gy+16)*tx)*ty;
+    return Math.round(81+Math.max(0,Math.min(1,grass*.52+(patch-.45)*.12))*51+(patch-.5)*22+(hash(wx,wy)-.5)*14);
+  }
+  for(const [x,y] of [[2,34],[66,34],[34,2],[34,66]]) {
+    const green=canvas.pixels[(y*side+x)*4+1];
+    assert.ok(originalGreen(x,y)-green>=1,'each edge must retain a faint soil blend');
+  }
+  const fade=[2,5,8,12].map(x=>originalGreen(x,34)-canvas.pixels[(34*side+x)*4+1]);
+  assert.ok(fade[0]>=fade[1] && fade[1]>=fade[2] && fade[2]>=fade[3] && fade[0]>fade[3], 'edge wear must gradually fade into grass');
+  assert.equal(canvas.pixels[(34*side+34)*4+1],originalGreen(34,34),'cell center retains its original grass color');
+});
+
+test('resource footprints do not remove the base grass cover',()=>{
   const t=setup(), before=t.sample(100.5,100.5,200).grass;
   assert.ok(before>.8);
   const wild=type=>({kind:'wild',type,x:100,y:100});
   for(const type of ['grainfield','ironworks','oil','rarefactory','hill','swamp','plains','snow']) {
     t.updateChunk(6,6,[wild(type)]);
-    for(let y=100;y<=101;y+=.25)for(let x=100;x<=101;x+=.25)assert.equal(t.sample(x,y,200).grass,0);
+    for(let y=100;y<=101;y+=.25)for(let x=100;x<=101;x+=.25)assert.ok(t.sample(x,y,200).grass>.8);
   }
   t.updateChunk(6,6,[wild('forest'),wild('grassland')]);
   assert.equal(t.sample(100.5,100.5,200).grass,before);
@@ -46,7 +77,7 @@ test('constraints survive unrelated chunk updates and ignore ownership changes',
   assert.equal(t.updateChunk(6,6,[{...oil,occupied:true,level:9}]),false);
   assert.equal(t.revision(),revision);
   t.updateChunk(0,0,[{...oil,x:1,y:1}]);
-  assert.equal(t.sample(100.5,100.5,200).grass,0);
+  assert.ok(t.sample(100.5,100.5,200).grass>.8);
   t.updateChunk(6,6,[]);
   assert.ok(t.sample(100.5,100.5,200).grass>.8);
   t.updateChunk(6,6,[oil]);t.clearTargets();
@@ -70,7 +101,7 @@ test('meadow and woodland artwork avoids resource footprints, including tile-edg
         y+image.h/t.density<=target.y-.3 || y>=target.y+1.3,'vegetation must not overlap the resource clearing');
     }
   }
-  assert.ok(grass>0,'retain connected meadow patches');
+  assert.equal(grass,0,'patchy meadow grass decals are cancelled from the map');
   assert.ok(forest>0,'mix woodland clusters into the meadow');
   const left=tiles.find(t=>t.cx===25&&t.cy===21).canvas;
   const right=tiles.find(t=>t.cx===26&&t.cy===21).canvas;
@@ -79,4 +110,25 @@ test('meadow and woodland artwork avoids resource footprints, including tile-edg
   const round=v=>Math.round(v*1e4)/1e4;
   const edgeImages=(canvas,cx)=>canvas.images.map(i=>({url:i.url,x:round(i.x+cx*interior-t.padding),y:round(i.y),w:round(i.w),h:round(i.h)})).filter(i=>i.x<26*interior+t.padding&&i.x+i.w>26*interior-t.padding);
   assert.deepEqual(edgeImages(left,25),edgeImages(right,26),'shared-edge grass and trees use identical world positions and draw order');
+});
+
+test('全图不规则黑土地覆盖约30%，草坪覆盖约70%', () => {
+  const t = setup();
+  let total = 0, grassSamples = 0, soilSamples = 0;
+  // 采样 400x400 地图的大规模陆地网格点
+  for (let y = 0.5; y < 400; y += 2) {
+    for (let x = 0.5; x < 400; x += 2) {
+      total++;
+      const s = t.sample(x, y, 400);
+      if (s.grass >= 0.5) grassSamples++;
+      else soilSamples++;
+    }
+  }
+  const grassRatio = grassSamples / total;
+  // 与地图地貌标签使用相同的草量阈值。
+  assert.ok(grassRatio >= 0.67 && grassRatio <= 0.73, `全图草坪覆盖率预期约70%，实际为 ${(grassRatio * 100).toFixed(1)}%`);
+  // 裸土随机覆盖约三成，其余保持浅色草坪。
+  assert.ok(soilSamples > 0, '土地必须保留部分自然散布空间');
+  const soilRatio = soilSamples / total;
+  assert.ok(soilRatio >= 0.27 && soilRatio <= 0.33, `土地覆盖率预期约30%，实际为 ${(soilRatio * 100).toFixed(1)}%`);
 });

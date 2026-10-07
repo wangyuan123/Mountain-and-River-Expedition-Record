@@ -164,3 +164,34 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
+
+/* 昵称提供直接私聊入口；会话摘要在窄屏单行截断。 */
+.chat-sender[data-private-username] { cursor: pointer; text-decoration: underline dotted; }
+.chat-sender[data-private-username]:focus-visible { outline: 2px solid var(--accent); }
+
+
+/* 私聊列表和对话分层，列表可容纳多个玩家，不挤占单人对话的消息区。 */
+.private-chat-panel { display: flex; flex: 1 1 0; flex-direction: column; min-height: 0; }
+.private-chat-panel[hidden] { display: none; }
+.private-conversations { flex: 1; min-height: 0; overflow-y: auto; padding: 8px; }
+.private-conversation { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px; border: 0; border-bottom: 1px solid var(--line); background: var(--surface); color: var(--ink); text-align: left; cursor: pointer; font: inherit; }
+.private-conversation:hover { background: var(--accent-soft); }
+/* 覆盖消息头像的浮动规则，列表头像固定在名称左侧。 */
+.private-conversation > .chat-avatar { float: none; order: 0; position: static; margin: 0; flex: 0 0 36px; width: 36px; height: 36px; }
+.private-conversation-row { position: relative; overflow: hidden; }
+.private-conversation-row .private-conversation { position: relative; transition: transform .18s; touch-action: pan-y; }
+.private-conversation-row.swiped .private-conversation { transform: translateX(-72px); }
+.private-conversation-delete { position: absolute; inset: 0 0 0 auto; width: 72px; border: 0; background: #c43a3a; color: #fff; cursor: pointer; }
+.private-conversation-delete:focus-visible { z-index: 1; outline: 2px solid var(--accent); outline-offset: -2px; }
+.private-conversation-body { flex: 1; min-width: 0; }
+.private-conversation-name { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.private-peer-status { font-size: 12px; color: var(--muted); font-weight: 400; }
+.private-conversation-preview { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--muted); margin-top: 5px; }
+.private-unread-badge { border-radius: 12px; padding: 2px 7px; background: var(--accent); color: var(--surface); font-size: 12px; }
+.private-dialog-header { display: flex; align-items: center; gap: 8px; flex-shrink: 0; padding: 6px 12px; border-bottom: 1px solid var(--line); }
+.private-dialog-header h2 { margin: 0; font-size: 15px; }
+.chat-avatar[data-private-username] { cursor: pointer; }
+.chat-avatar[data-private-username]:focus-visible { outline: 2px solid var(--accent); }
+#reportShareDialog { width: min(400px, calc(100% - 32px)); box-sizing: border-box; border: 1px solid var(--line); border-radius: 6px; padding: 16px; background: var(--surface); color: var(--ink); }
+#reportShareDialog::backdrop { background: rgba(0, 0, 0, .4); }
+#reportShareDialog input, #reportShareDialog select { display: block; box-sizing: border-box; width: 100%; margin: 10px 0; padding: 8px; }

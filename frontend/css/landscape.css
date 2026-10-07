@@ -173,7 +173,8 @@
   .world-map-shell:not(.world-map-full) .world-map-controls { top: 60px; }
   .world-map-shell.map-toolbar-in-topbar:not(.world-map-full) .world-map-minimap,
   .world-map-shell.map-toolbar-in-topbar:not(.world-map-full) .world-map-controls { top: 12px; }
-  .tactical-map { min-height: clamp(240px, 48dvh, 520px); }
+  /* 横屏也保留全部兵种行，避免后排单位被战场 overflow 裁掉。 */
+  .tactical-map { min-height: max(var(--tactical-map-height, 250px), clamp(240px, 48dvh, 520px)); }
 
   .modal-mask,
   .city-dialog-mask { padding: 12px; align-items: center; }
@@ -212,7 +213,7 @@
   #topbar .res { max-height: 28px; overflow-y: auto; }
   #view { padding-top: 8px; padding-bottom: 8px; }
   [data-theme|="blue-white"] #view { padding: 8px 12px !important; }
-  .tactical-map { min-height: 220px; }
+  .tactical-map { min-height: max(220px, var(--tactical-map-height, 250px)); }
 }
 
 @media (orientation: landscape) and (min-width: 1000px) {

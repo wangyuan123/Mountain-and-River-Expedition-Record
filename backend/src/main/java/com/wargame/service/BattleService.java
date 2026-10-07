@@ -1434,7 +1434,9 @@ public class BattleService {
     private double effSpd(String unitId, Map<String, Integer> tech, Map<String, Integer> skills) {
         UnitStats u = getStats(unitId);
         if (u == null) return 0;
-        double base = u.spd() * spdMul(u.cat(), tech);
+        // 摩托兵和卡车仅在机动科技上归入装甲，攻击、防御等仍按原类别计算。
+        String speedCat = "motor".equals(unitId) || "truck".equals(unitId) ? "arm" : u.cat();
+        double base = u.spd() * spdMul(speedCat, tech);
         double blitz = skillBonus(skills, "blitz");
         return base * (1 + blitz);
     }

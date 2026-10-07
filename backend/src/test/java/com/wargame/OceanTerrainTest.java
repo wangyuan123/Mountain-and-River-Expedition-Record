@@ -28,10 +28,38 @@ class OceanTerrainTest extends BaseServiceTest {
     private NpcCity createNpcCity(Long world,String name,int x,int y,int level,Map<String,Integer> army){
         NpcCity c=new NpcCity();c.setWorldId(world);c.setName(name);c.setX(x);c.setY(y);c.setLevel(level);c.setArmy(JsonUtil.toJson(army));c.setForts("{}");c.setResources("{}");c.setDefeated(false);return npcCityRepository.save(c);
     }
+    @Test void expandedQuadrantSupportsFoundingAndRoutesPastOldBoundary() {
+        WorldMap w=createTestWorld();
+        w.setTerrainData("0".repeat(SIZE*SIZE));w.setTerrainVersion(2);worldMapRepository.save(w);
+        Player p=player("expanded-founder");city(p,w,320,118);
+        assertEquals(true,cities.site(p.getId(),322,118).get("valid"));
+        PlayerCity founded=cities.foundAt(p.getId(),null,322,118,"扩容城");
+        assertEquals(322,founded.getX());
+        assertFalse(terrain.siteReason(w.getId(),terrain.ensure(),323,119,null).isEmpty());
+        assertEquals("",terrain.siteReason(w.getId(),terrain.ensure(),398,398,null));
+        assertFalse(terrain.siteReason(w.getId(),terrain.ensure(),399,118,null).isEmpty());
+        assertFalse(terrain.siteReason(w.getId(),terrain.ensure(),400,118,null).isEmpty());
+        var path=MarchRouteService.path(terrain.ensure(),List.of(118*SIZE+322),List.of(118*SIZE+325),false);
+        assertEquals(List.of(118*SIZE+322,118*SIZE+323,118*SIZE+324,118*SIZE+325),path);
+        assertEquals(800,worldMapRepository.findById(w.getId()).orElseThrow().getSize());
+        // 镜像象限的海格不能编码为活动战区路径的下一行。
+        char[] edgeMask="0".repeat(SIZE*SIZE).toCharArray();edgeMask[118*SIZE+399]='1';
+        assertTrue(shores(new String(edgeMask),398,118,2).isEmpty());
+    }
+    @Test void legacyTerrainExpandsWithoutMovingExistingCoordinates() {
+        WorldMap w=createTestWorld();
+        w.setTerrainData("0".repeat(200*200));w.setTerrainVersion(2);worldMapRepository.save(w);
+        Player p=player("legacy-expansion");PlayerCity c=city(p,w,190,110);
+        String mask=terrain.ensure();
+        assertEquals(400*400,mask.length());
+        assertFalse(sea(mask,190,110));assertFalse(sea(mask,199,118));
+        assertEquals(190,playerCityRepository.findById(c.getId()).orElseThrow().getX());
+        assertEquals(mask,terrain.ensure());
+    }
     @Test void generatedOceanIsStableAndProtectsEveryExistingAsset(){
         WorldMap w=createTestWorld();Player p=player("ocean-legacy");PlayerCity c=city(p,w,190,110);
         createWildTile(w.getId(),"forest",185,112,1,Map.of(),100);
-        String base=generate();long count=base.chars().filter(v->v=='1').count();assertTrue(count>SIZE*SIZE*.20&&count<SIZE*SIZE*.27,"sea ratio "+count/40000.0);
+        String base=generate();long count=base.chars().filter(v->v=='1').count();assertTrue(count>SIZE*SIZE*.20&&count<SIZE*SIZE*.27,"sea ratio "+count/(double)(SIZE*SIZE));
         String mask=terrain.ensure();assertFalse(sea(mask,190,110));assertFalse(sea(mask,191,111));assertFalse(sea(mask,185,112));
         assertEquals(mask,terrain.ensure());assertEquals(mask,worldMapRepository.findById(w.getId()).orElseThrow().getTerrainData());
         assertEquals(190,playerCityRepository.findById(c.getId()).orElseThrow().getX());
@@ -44,13 +72,13 @@ class OceanTerrainTest extends BaseServiceTest {
         char[] old=generate().toCharArray();
         int islandCell=islandCells(new String(old)).get(3).get(0);
         old[islandCell]='1';
-        old[42*SIZE+198]='1';
+        old[84*SIZE+398]='1';
         world.setTerrainData(new String(old));
         world.setTerrainVersion(1);
         worldMapRepository.save(world);
         String upgraded=terrain.ensure();
         assertEquals('0',upgraded.charAt(islandCell));
-        assertEquals('1',upgraded.charAt(42*SIZE+198));
+        assertEquals('1',upgraded.charAt(84*SIZE+398));
         assertEquals(2,worldMapRepository.findById(world.getId()).orElseThrow().getTerrainVersion());
         assertEquals(upgraded,terrain.ensure());
     }
@@ -65,7 +93,7 @@ class OceanTerrainTest extends BaseServiceTest {
         assertEquals(true,cities.site(p.getId(),70,48).get("valid"));
         PlayerCity inland=cities.foundAt(p.getId(),null,70,48,"内陆城");
         assertFalse(terrain.coastal(inland));
-        assertThrows(IllegalArgumentException.class,()->cities.foundAt(p.getId(),null,199,199,"边界"));
+        assertThrows(IllegalArgumentException.class,()->cities.foundAt(p.getId(),null,SIZE-1,SIZE-1,"边界"));
         assertEquals(80000,resourcesRepository.findByPlayerIdAndCitySlot(p.getId(),0).orElseThrow().getGold());
     }
     @Test void foundingRejectsWildNpcAndEdgeCityOverlap(){
@@ -84,9 +112,9 @@ class OceanTerrainTest extends BaseServiceTest {
         assertEquals(52,route.distance());assertTrue(route.points().size()>=2);
         NpcCity inland=createNpcCity(w.getId(),"内陆",50,40,1,Map.of());
         assertThrows(IllegalArgumentException.class,()->routes.plan(p.getId(),inland,Map.of("destroyer",1),false));
-        assertThrows(IllegalArgumentException.class,()->routes.plan(p.getId(),target,Map.of("infantry",81,"transport",1),false));
-        var lift=routes.plan(p.getId(),target,Map.of("infantry",80,"transport",1),false);assertEquals("airlift",lift.mode());assertEquals(0,lift.cargoLimit());
-        var mixed=routes.plan(p.getId(),target,Map.of("infantry",10,"transport",1,"destroyer",1),false);assertEquals("sea",mixed.mode());assertEquals(70,mixed.cargoLimit());
+        assertThrows(IllegalArgumentException.class,()->routes.plan(p.getId(),target,Map.of("infantry",801,"transport",1),false));
+        var lift=routes.plan(p.getId(),target,Map.of("infantry",800,"transport",1),false);assertEquals("airlift",lift.mode());assertEquals(0,lift.cargoLimit());
+        var mixed=routes.plan(p.getId(),target,Map.of("infantry",10,"transport",1,"destroyer",1),false);assertEquals("sea",mixed.mode());assertEquals(790,mixed.cargoLimit());
         assertEquals("land",routes.plan(p.getId(),inland,Map.of("infantry",1),false).mode());
         assertEquals("air",routes.plan(p.getId(),inland,Map.of("scout",1),false).mode());
     }

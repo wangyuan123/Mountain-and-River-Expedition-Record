@@ -732,9 +732,37 @@ window.Game = window.Game || {};
     worldChatHistory: function () {
       return client.get('/game/chat/history', { silent: true });
     },
+    shareBattleReport: function (id, channel, recipientId) {
+      return client.post('/game/reports/' + encodeURIComponent(id) + '/share', { channel: channel, recipientId: recipientId });
+    },
+    sharedBattleReport: function (token) {
+      return client.get('/game/reports/shared/' + encodeURIComponent(token));
+    },
 
     sendWorldChat: function (content) {
       return client.post('/game/chat/send', { content: content }, { silent: true });
+    },
+
+    privateChatPlayer: function (username) {
+      return client.get('/game/chat/private/player?username=' + encodeURIComponent(username), { silent: true });
+    },
+    privateChatConversations: function () {
+      return client.get('/game/chat/private/conversations', { silent: true });
+    },
+    privateChatOpen: function (peerId) {
+      return client.post('/game/chat/private/' + peerId + '/open', {}, { silent: true });
+    },
+    privateChatDelete: function (peerId) {
+      return client.delete('/game/chat/private/' + peerId, { silent: true });
+    },
+    privateChatHistory: function (peerId) {
+      return client.get('/game/chat/private/' + peerId + '/history', { silent: true });
+    },
+    privateChatRead: function (peerId, throughId) {
+      return client.post('/game/chat/private/' + peerId + '/read', { throughId: throughId }, { silent: true });
+    },
+    sendPrivateChat: function (peerId, content) {
+      return client.post('/game/chat/private/send', { recipientId: peerId, content: content }, { silent: true });
     },
 
     // ==================== 邮件 ====================

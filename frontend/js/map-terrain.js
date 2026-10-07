@@ -3,7 +3,7 @@
   'use strict';
   // Fixed world-space fields keep the same terrain under every zoom and viewport.
   var palette = G.Constants.terrainPalette;
-  var snowImages = [], meadowImages = [], meadowLoading = null, meadowReady = false, forestImage = null, forestImages = [], snowRGB = [226, 234, 237];
+  var snowImages = [], meadowImages = [], meadowLoading = null, meadowReady = false, forestImage = null, forestImages = [], shrubImage = null, snowRGB = [226, 234, 237];
   var targetChunks = new Map(), clearings = new Map(), terrainRevision = 0;
   function updateChunk(cx, cy, targets) {
     // Retain constraints after display-cache eviction; filters and ownership do not affect terrain.
@@ -29,27 +29,23 @@
     }
     return amount;
   }
+  /**
+   * Load terrain decoration textures before map chunks are generated.
+   * @returns {Promise<void>} Resolves after woodland and shrub textures are ready.
+   */
   function loadMeadows() {
-    if (!meadowLoading) meadowLoading = Promise.all(['medium','sparse','plain'].map(function(variant, i) {
+    if (!meadowLoading) meadowLoading = Promise.all(['dense', 'ridge', 'edge', 'shrub'].map(function(variant, i) {
       return new Promise(function(resolve) {
         var image = new Image();
-        image.onload = function() { meadowImages[i] = image; resolve(); };
+        image.onload = function() {
+          if (variant === 'shrub') shrubImage = image;
+          else { forestImages[i] = image; if (i === 0) forestImage = image; }
+          resolve();
+        };
         image.onerror = function() { resolve(); };
-        image.src = 'img/map/grass-' + variant + '-ground.png?v=1';
+        image.src = variant === 'shrub' ? 'img/map/wild-shrub-grass-patch.webp' : 'img/map/wild-forest-' + variant + '-integrated.webp';
       });
-    }).concat(['dense', 'ridge', 'edge'].map(function(variant, i) {
-      return new Promise(function(resolve) {
-        var image = new Image();
-        image.onload = function() { forestImages[i] = image; if (i === 0) forestImage = image; resolve(); };
-        image.onerror = function() { resolve(); };
-        image.src = 'img/map/wild-forest-' + variant + '.webp';
-      });
-    })).concat(['thick','medium','thin'].map(function(variant,i){
-      return new Promise(function(resolve){
-        var image=new Image();image.onload=function(){snowImages[i]=image;resolve();};image.onerror=resolve;
-        image.src='img/map/snow-'+variant+'-ground.png?v=2';
-      });
-    }))).then(function() { meadowReady = true; });
+    })).then(function() { meadowReady = true; });
     return meadowLoading;
   }
   function clamp(v) { return Math.max(0, Math.min(1, v)); }
@@ -66,30 +62,38 @@
     return (a + (b - a) * fx) * (1 - fy) + (c + (d - c) * fx) * fy;
   }
   function northernSnow(x,y,size) {
-    // Geographic north is decreasing world Y, also up on the north-up minimap.
-    // Vary the southern snowline by longitude, preserving northward increase.
-    var edge=size*(.32+.035*Math.sin(x/size*19)+.02*Math.sin(x/size*43));
-    return 1-smooth(size*.025,edge,y);
+    // 地图已取消所有雪地地形，全图统一为温带平原、草地、森林与土壤地貌
+    return 0;
   }
   function sample(x, y, size, noSnow) {
     var u = clamp(x / size), v = clamp(y / size);
     var broad = noise(u * 7 + 13, v * 7 + 41);
     var detail = noise(u * 43 + 71, v * 43 + 17);
-    var grass = smooth(.38, .82, noise(u * 12 + 9, v * 12 + 3) * .75 + detail * .25);
-    var snow = noSnow ? 0 : northernSnow(x,y,size);
-    return { grass: grass * clearance(x,y)*(1-snow), relief: detail * .65 + broad * .35, snow:snow };
+    // 全图以浅色稀疏草坪为底；局部双尺度噪声挖出约30%大小不一的不规则裸土斑块。
+    // 使用世界坐标而非象限比例，避免地图左侧或资源密集区出现大面积缺草。
+    var soilPatch = Math.max(
+      smooth(.6835, .7635, noise(x / 4 + 109, y / 4 + 307)),
+      smooth(.7135, .7935, noise(x / 11 + 503, y / 11 + 811))
+    );
+    var rawGrass = (.94 + detail * .06) * (1 - soilPatch);
+    var rawSnow = noSnow ? 0 : northernSnow(x,y,size);
+    var isSnow = rawSnow > 0.12;
+    var grass = isSnow ? 0 : rawGrass;
+    var snow = isSnow ? rawSnow : 0;
+    return { grass: grass, relief: detail * .65 + broad * .35, snow: snow };
   }
   function region(x, y, size) {
-    if (size > 200) {
+    var qs = (G.DATA && G.DATA.world && G.DATA.world.quadrantSize) || 400;
+    if (size > qs) {
       if (x < 0 || y < 0 || x >= size || y >= size) return '边境天穹 · 无法通行';
       var fx = Math.floor(x), fy = Math.floor(y);
-      if (fx >= 200 || fy >= 200) {
-        var lx = fx >= 200 ? 399 - x : x;
-        var ly = fy >= 200 ? 399 - y : y;
+      if (fx >= qs || fy >= qs) {
+        var lx = fx >= qs ? (qs * 2 - 1) - fx : fx;
+        var ly = fy >= qs ? (qs * 2 - 1) - fy : fy;
         var isSea2 = G.MapOcean && G.MapOcean.sea(lx, ly);
         return isSea2 ? '未开辟海域 · 无法通行' : '未开辟战区 · 无法通行';
       }
-      return region(x, y, 200);
+      return region(x, y, qs);
     }
     if (x < 0 || y < 0 || x >= size || y >= size) {
       var isSea = G.MapOcean && (typeof G.MapOcean.isOcean === 'function' ? G.MapOcean.isOcean(x, y) : (typeof G.MapOcean.sea === 'function' && G.MapOcean.sea(Math.max(0, Math.min(size - 1, Math.floor(x))), Math.max(0, Math.min(size - 1, Math.floor(y))))));
@@ -116,6 +120,12 @@
     }
     return 'thick';
   }
+  /**
+   * Rasterize the base terrain and its mirrored-world vegetation texture.
+   * @param {number} size - World width represented by the terrain canvas.
+   * @param {boolean} noSnow - Whether this texture suppresses snow cover.
+   * @returns {HTMLCanvasElement} Base terrain canvas used by the map quadrants.
+   */
   function create(size, noSnow) {
     var canvas = document.createElement('canvas'), resolution = 2048, fieldSize = 257;
     canvas.width = canvas.height = resolution;
@@ -139,16 +149,55 @@
       var offset = (py * resolution + px) * 4;
       var depth = G.MapOcean ? G.MapOcean.sample(px/resolution*size,py/resolution*size) : -1000;
       for (var c = 0; c < 3; c++) {
-        var land = palette.soil[c] + (palette.grass[c] - palette.soil[c]) * values[0];
-        var surface=land+shade; surface+=(snowRGB[c]+shade*.3-surface)*values[2];
+        var land = palette.soil[c] + (palette.grass[c] - palette.soil[c]) * values[0] * .52;
+        var isSnow = values[2] > 0.12;
+        var surface = isSnow ? (snowRGB[c] + shade * .3) : (land + shade);
         pixels.data[offset + c] = Math.round(G.MapOcean?G.MapOcean.paint(c,surface,depth,grain):surface);
       }
       pixels.data[offset + 3] = 255;
     }
     ctx.putImageData(pixels, 0, 0);
+    // The base terrain is mirrored into unopened quadrants, so keep shrub coverage here as well.
+    if (ctx.drawImage && shrubImage) {
+      var shrubStep = 26;
+      for (var sy = 0; sy < resolution; sy += shrubStep) {
+        for (var sx = 0; sx < resolution; sx += shrubStep) {
+          var shrubSeed = hash(sx + 1201, sy + 4099);
+          if (shrubSeed > .24) continue;
+          var shrubX = sx + hash(sx + 211, sy + 743) * shrubStep;
+          var shrubY = sy + hash(sx + 877, sy + 317) * shrubStep;
+          var worldX = shrubX / resolution * size, worldY = shrubY / resolution * size;
+          if (sample(worldX, worldY, size, noSnow).grass < .3) continue;
+          if (G.MapOcean && G.MapOcean.sample(worldX, worldY) > -.9) continue;
+          var shrubSize = 9 + hash(sx + 41, sy + 149) * 7;
+          ctx.globalAlpha = .28 + hash(sx + 577, sy + 601) * .16;
+          ctx.drawImage(shrubImage, shrubX - shrubSize / 2, shrubY - shrubSize / 2, shrubSize, shrubSize);
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
     return canvas;
   }
   var tileSpan = 4, density = 64, padding = 2;
+  /**
+   * World-anchored wear along all four cell edges, fading into untouched grass.
+   * @param {number} x - World pixel x coordinate.
+   * @param {number} y - World pixel y coordinate.
+   * @returns {number} Soil blend strength, with no doubled wear at corners.
+   */
+  function edgeWear(x, y) {
+    var fx = ((x % density) + density) % density, fy = ((y % density) + density) % density;
+    var distance = Math.min(fx, density - fx, fy, density - fy);
+    var variation = noise(x / 13 + 113, y / 13 + 197);
+    return (1 - smooth(0, 7 + variation * 3, distance)) * (.10 + variation * .05);
+  }
+  /**
+   * Create one terrain detail tile with world-anchored grass, clearings, and vegetation.
+   * @param {number} cx - Tile column in world space.
+   * @param {number} cy - Tile row in world space.
+   * @param {number} size - Current world dimension.
+   * @returns {HTMLCanvasElement} Rasterized terrain tile.
+   */
   function createTile(cx, cy, size) {
     var side = tileSpan * density + padding * 2, stride = side + 2;
     var startX = cx * tileSpan * density - padding, startY = cy * tileSpan * density - padding;
@@ -176,17 +225,25 @@
       var p = weather(px, py), at = (py + 1) * stride + px + 1;
       var patch = patches[at];
       var grain = hash(startX + px, startY + py) - .5;
-      // A softer meadow blend with visible soil clearings, inspired by the reference map.
-      var grass = clamp(p.grass * .68 + (patch - .42) * .42);
+      // 草地占主导，低草量的随机斑块仍露出黑土地；草叶保持稀疏。
+      var grass = clamp(p.grass * .52 + (patch - .45) * .12);
+      // Blend toward this texture's existing bare-soil color, not a painted grid line.
+      grass *= 1 - edgeWear(startX + px, startY + py);
       var soilShade = (patch - .5) * 22 + grain * 14;
       var land0 = 96 + grass * 23, land1 = 81 + grass * 51, land2 = 61 + grass * 18;
       var offset = (py * side + px) * 4;
       var depth = G.MapOcean ? G.MapOcean.sample((startX+px)/density,(startY+py)/density) : -1000;
       var snow=northernSnow((startX+px)/density,(startY+py)/density,size);
+      var isSnow = snow > 0.12;
       for (var c = 0; c < 3; c++) {
-        var baseLand = c === 0 ? land0 : (c === 1 ? land1 : land2);
-        var ground = baseLand + soilShade;
-        ground+=(snowRGB[c]+soilShade*.25-ground)*snow;
+        var ground;
+        if (isSnow) {
+          var snowShade = (patch - .5) * 16 + grain * 10;
+          ground = snowRGB[c] + snowShade * .3;
+        } else {
+          var baseLand = c === 0 ? land0 : (c === 1 ? land1 : land2);
+          ground = baseLand + soilShade;
+        }
         pixels.data[offset + c] = Math.round(G.MapOcean?G.MapOcean.paint(c,ground,depth,grain):ground);
       }
       pixels.data[offset + 3] = 255;
@@ -198,7 +255,10 @@
       for (var bx = Math.floor((startX - 8) / 5); bx <= Math.ceil((startX + side + 8) / 5); bx++) {
         var r = hash(bx + 931, by + 407), xx = bx * 5 + r * 5, yy = by * 5 + hash(bx, by + 23) * 5;
         var cl = sample(xx / density, yy / density, size);
-        if (r > (1-cl.snow)*(.08 + cl.grass * .3) * clearance(xx/density,yy/density,.1) || (G.MapOcean&&G.MapOcean.sample(xx/density,yy/density)>-.9)) continue;
+        if (cl.snow > 0 || cl.grass <= 0) continue;
+        var bladeDensity = cl.grass > .25 ? (cl.grass * .22) : (cl.grass * .12);
+        bladeDensity *= 1 - edgeWear(xx, yy);
+        if (r > bladeDensity * clearance(xx/density,yy/density,.1) || (G.MapOcean&&G.MapOcean.sample(xx/density,yy/density)>-.9)) continue;
         var dx = xx - startX, dy = yy - startY;
         for (var blade = 0; blade < 3; blade++) {
           var seed = hash(bx + blade * 103, by + 791), angle = seed * Math.PI * 2;
@@ -217,7 +277,7 @@
       var seed2 = hash(Math.floor((startX + gx2) / 52) + 1701, Math.floor((startY + gy2) / 52) + 2309);
       var ox = (hash(gx2 + cx * 19, gy2 + cy * 23) - .5) * 22, oy = (hash(gx2 + 71, gy2 + 113) - .5) * 22;
       var dx2 = gx2 + ox, dy2 = gy2 + oy;
-      if(northernSnow((startX+dx2)/density,(startY+dy2)/density,size)>.25)continue;
+      if(northernSnow((startX+dx2)/density,(startY+dy2)/density,size)>0.12)continue;
       if(clearance((startX+dx2)/density,(startY+dy2)/density,.6)<.12)continue;
       if(G.MapOcean&&G.MapOcean.sample((startX+dx2)/density,(startY+dy2)/density)>-1.4)continue;
       if(sample((startX+dx2)/density,(startY+dy2)/density,size).grass > .34)continue;
@@ -250,26 +310,29 @@
         }
       }
     }
-    // World-anchored patches share a broad density field rather than isolated
-    // random tiles. Draw a halo so neighboring textures have identical edges.
-    if (ctx.drawImage && meadowImages.length) {
-      var step = 36, reach = 88;
-      for (var my = Math.floor((startY-reach)/step); my <= Math.ceil((startY+side+reach)/step); my++) {
-        for (var mx = Math.floor((startX-reach)/step); mx <= Math.ceil((startX+side+reach)/step); mx++) {
-          var wxm = mx*step + hash(mx+119,my)*24, wym = my*step + hash(mx,my+319)*24;
-          var greenery = sample(wxm/density,wym/density,size).grass;
-          if (greenery < .45 || clearance(wxm/density,wym/density,reach/density/2) < .12 || (G.MapOcean && G.MapOcean.sample(wxm/density,wym/density)>-1.4)) continue;
-          var localDensity = greenery + (hash(mx+811,my+29)-.5)*.18;
-          // Keep meadow patches at medium density or below; lush grass is intentionally excluded.
-          var variant = localDensity > .56 ? 0 : localDensity > .45 ? 1 : 2;
-          var model = meadowImages[variant];
-          if (!model) continue;
-          ctx.globalAlpha = smooth(.45,.6,greenery)*.78;
-          ctx.drawImage(model,wxm-startX-reach/2,wym-startY-reach/2,reach,reach);
+
+    // Shrub patches use a world-space lattice so adjacent terrain chunks redraw the same clipped plant.
+    if (ctx.drawImage && shrubImage) {
+      var shrubStep = 88, shrubReach = 42;
+      for (var sy = Math.floor((startY - shrubReach) / shrubStep); sy <= Math.ceil((startY + side + shrubReach) / shrubStep); sy++) {
+        for (var sx = Math.floor((startX - shrubReach) / shrubStep); sx <= Math.ceil((startX + side + shrubReach) / shrubStep); sx++) {
+          var shrubSeed = hash(sx + 1201, sy + 4099);
+          if (shrubSeed > .23) continue;
+          var shrubX = sx * shrubStep + hash(sx + 211, sy + 743) * shrubStep;
+          var shrubY = sy * shrubStep + hash(sx + 877, sy + 317) * shrubStep;
+          var worldX = shrubX / density, worldY = shrubY / density;
+          if (sample(worldX, worldY, size).grass < .34) continue;
+          if (clearance(worldX, worldY, .8) < .12) continue;
+          if (G.MapOcean && G.MapOcean.sample(worldX, worldY) > -1.4) continue;
+          var shrubWidth = 38 + hash(sx + 41, sy + 149) * 18;
+          var shrubHeight = shrubWidth * (.72 + hash(sx + 359, sy + 83) * .24);
+          ctx.globalAlpha = .58 + hash(sx + 577, sy + 601) * .22;
+          ctx.drawImage(shrubImage, shrubX - startX - shrubWidth / 2, shrubY - startY - shrubHeight / 2, shrubWidth, shrubHeight);
+          ctx.globalAlpha = 1;
         }
       }
-      ctx.globalAlpha = 1;
     }
+
     // Woodland shares the meadow field and resource clearings. A world-space halo
     // keeps each cluster intact across texture boundaries and while zooming.
     if (ctx.drawImage && (forestImages.length || forestImage)) {
@@ -281,6 +344,8 @@
       for (var fy=Math.floor((startY-forestReach)/forestStep);fy<=Math.ceil((startY+side+forestReach)/forestStep);fy++) {
         for (var fx=Math.floor((startX-forestReach)/forestStep);fx<=Math.ceil((startX+side+forestReach)/forestStep);fx++) {
           var treeX=fx*forestStep+hash(fx+317,fy)*48, treeY=fy*forestStep+hash(fx,fy+613)*48;
+          if (northernSnow(treeX/density, treeY/density, size) > 0.12) continue;
+          if (northernSnow(treeX/density, (treeY - forestReach * 0.45)/density, size) > 0.12) continue;
           var green=sample(treeX/density,treeY/density,size).grass;
           var woodland=noise(treeX/240+31,treeY/240+71);
           if (green<.25 || hash(fx+719,fy+911)>.18+smooth(.4,.72,woodland)*.55) continue;
@@ -293,22 +358,7 @@
         }
       }
     }
-    // Stamp the three existing snow models over a continuous white ground field.
-    // World-space jitter and a halo avoid seams between cached terrain tiles.
-    if(ctx.drawImage && snowImages.length){
-      var snowStep=68,snowReach=106;
-      for(var sy=Math.floor((startY-snowReach)/snowStep);sy<=Math.ceil((startY+side+snowReach)/snowStep);sy++){
-        for(var sx=Math.floor((startX-snowReach)/snowStep);sx<=Math.ceil((startX+side+snowReach)/snowStep);sx++){
-          var nx=sx*snowStep+hash(sx+203,sy)*24,ny=sy*snowStep+hash(sx,sy+617)*24;
-          var cover=northernSnow(nx/density,ny/density,size);
-          if(cover<.06 || (G.MapOcean&&G.MapOcean.sample(nx/density,ny/density)>-1.5))continue;
-          var model=snowImages[cover>.72?0:cover>.38?1:2];if(!model)continue;
-          ctx.globalAlpha=smooth(.06,.3,cover)*.85;
-          ctx.drawImage(model,nx-startX-snowReach/2,ny-startY-snowReach/2,snowReach,snowReach);
-        }
-      }
-      ctx.globalAlpha=1;
-    }
+
     return canvas;
   }
   G.MapTerrain = { northernSnow:northernSnow, updateChunk:updateChunk, clearTargets:clearTargets, revision:function(){return terrainRevision;}, snowVariant:snowVariant, loadMeadows:loadMeadows, meadowsReady:function(){return meadowReady;}, create: create, createTile: createTile, tileSpan: tileSpan, density: density, padding: padding, region: region, sample: sample };

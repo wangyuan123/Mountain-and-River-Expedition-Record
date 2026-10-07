@@ -3563,7 +3563,7 @@ body.theme-classic .unit-card-details,
   color: var(--accent, #526b4d);
   font-weight: 700;
   white-space: nowrap;
-  font-size: 11.5px;
+  font-size: 15px;
   cursor: pointer;
 }
 
@@ -3692,7 +3692,7 @@ body.theme-classic .unit-card-details,
   user-select: none;
   line-height: 1.2;
 }
-.army-dispatch-go { font-size: 11.5px; }
+.army-dispatch-go { font-size: 15px; }
 .build-zone-link-wrap { display: flex; justify-content: flex-end; }
 .build-zone-link { margin: 0 4px 8px 0; color: var(--accent); font-size: 11.5px; }
 .build-zone-link:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
@@ -3813,7 +3813,7 @@ body.theme-classic .unit-card-details,
   white-space: normal;
   overflow-wrap: anywhere;
   line-height: 1.35;
-  font-size: 12px;
+  font-size: 15px;
 }
 .army-summary-cnt {
   color: var(--accent, #004499);
@@ -3823,7 +3823,7 @@ body.theme-classic .unit-card-details,
   justify-self: start;
   margin-left: 0;
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: 15px;
 }
 @media (max-width: 420px) {
   .army-summary-item { grid-template-columns: 56px minmax(0, 1fr); column-gap: 4px; }
@@ -3846,7 +3846,7 @@ body.theme-classic .unit-card-details,
   grid-template-columns: max-content minmax(0, 1fr) max-content;
   align-items: center;
   gap: 6px 12px;
-  font-size: 12px;
+  font-size: 15px;
   color: var(--muted, #64748b);
   margin-top: 6px;
   padding: 0 4px;
@@ -6195,6 +6195,10 @@ body.theme-classic .unit-card-details,
 .tcard-collapsible .tcard-mini-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .tcard-collapsible .tcard-emoji { font-size: 16px; }
 .tcard-collapsible .tcard-icon { width: 20px; height: 20px; }
+.tcard-city-icon { position:relative; display:inline-flex; flex:0 0 20px; width:20px; height:20px; align-items:center; justify-content:center; }
+.tcard-city-icon.is-shielded::before { content:''; position:absolute; inset:-3px; border:2px solid #4eb7e8; border-radius:50%; box-shadow:0 0 6px rgba(78,183,232,.75); pointer-events:none; }
+.tcard-city-icon.is-shielded .tcard-icon { filter:drop-shadow(0 0 3px rgba(78,183,232,.9)); }
+.tcard-city-shield { position:absolute; right:-8px; top:-8px; width:12px; height:14px; display:flex; align-items:center; justify-content:center; background:#2b86b4; color:#fff; font-size:8px; font-weight:700; line-height:1; clip-path:polygon(0 0,100% 0,100% 62%,50% 100%,0 62%); }
 .tcard-collapsible .tcard-mini-name {
   font-weight: 700;
   color: var(--text);
@@ -7255,10 +7259,17 @@ body.theme-classic .unit-card-details,
 }
 
 .tactical-marker .tactical-unit-icon { width: 15px; height: 15px; overflow: hidden; border-radius: 3px; }
-/* 模型原稿统一朝左；左侧我军水平镜像后，敌我车头与火力方向相向。 */
+/* 多数模型原稿朝左；左侧我军水平镜像后，敌我火力方向相向。 */
 .tactical-marker.mine .tactical-unit-icon .unit-icon-img {
   transform: scaleX(-1);
   transform-origin: center;
+}
+/* 特种兵原稿朝右，与其他模型相反：我军保留原向，敌军镜像。 */
+.tactical-marker.mine[data-unit-id="special"] .tactical-unit-icon .unit-icon-img {
+  transform: scaleX(1);
+}
+.tactical-marker.foe[data-unit-id="special"] .tactical-unit-icon .unit-icon-img {
+  transform: scaleX(-1);
 }
 .tactical-marker b { width: 100%; color: #fff; font-size: 8px; font-variant-numeric: tabular-nums; letter-spacing: -0.25px; line-height: 1; text-align: center; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85); white-space: nowrap; }
 

@@ -4,6 +4,16 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
+test('shared report links render in world and guild messages while ordinary text stays escaped', () => {
+  const { game } = setup();
+  const token = '12345678-1234-1234-1234-123456789abc';
+  const message = { id: 1, playerId: 2, username: 'bob', ts: Date.now(), content: '[战报:' + token + ']' };
+  assert.match(game.Chat.renderMessageHtml(message), /Game.Battle.viewSharedReport/);
+  assert.match(game.Chat.renderGuildMessageHtml(message), /Game.Battle.viewSharedReport/);
+  message.content = '<script>alert(1)</script>';
+  assert.doesNotMatch(game.Chat.renderMessageHtml(message), /<script>/);
+});
+
 function setup() {
   const input = { value: '尚未发送的草稿', disabled: false };
   const button = { classList: { add() {}, remove() {} } };
@@ -52,14 +62,14 @@ function setup() {
   });
   context.window = context;
   context.location = { protocol: 'http:', hostname: 'localhost' };
-  for (const name of ['constants', 'core', 'chat', 'main-view']) {
+  for (const name of ['constants', 'core', 'chat', 'private-chat', 'main-view']) {
     vm.runInContext(fs.readFileSync(path.join(__dirname, '../js', name + '.js'), 'utf8'), context);
   }
   const game = context.Game;
   game.Core.renderTop = () => {};
   game.state = game.Core.state = { player: { id: 1, username: 'alice' }, prestige: 10000, world: { incoming: [] } };
   game.Core.route = 'chat';
-  return { game, view, box, input, button, classes, messages, forum, messageTab, forumTab, title, subtitle };
+  return { game, view, box, input, button, classes, messages, forum, messageTab, forumTab, title, subtitle, nodes };
 }
 
 test('chat route renders world messages and preserves the draft and scroll during background updates', () => {
@@ -135,4 +145,77 @@ test('navigation keeps chat immediately before mail and shop on page two with or
     assert.match(pages[1], /data-route="shop"/);
     assert.match(html, /data-nav-page="1"/);
   }
+});
+
+test('chat page includes private channel, player lookup, conversations and composer', () => {
+  const { game, view } = setup();
+  game.Core.views.chat(view);
+  for (const id of ['chatChanBtn_private', 'chatPrivateChannelWrap', 'privateChatPlayer', 'privateChatConversations', 'privateChatInput']) {
+    assert.ok(view.html.includes('id="' + id + '"'));
+  }
+});
+
+test('world and guild player avatars offer direct private dialog entry with stable player ID', () => {
+  const { game } = setup();
+  const message = { id: 1, playerId: 2, username: 'bob', content: 'hello', ts: Date.now() };
+  for (const html of [game.Chat.renderMessageHtml(message), game.Chat.renderGuildMessageHtml(message)]) {
+    assert.match(html, /<img[^>]+data-private-player-id="2"[^>]+data-private-username="bob"/);
+  }
+  const own = game.Chat.renderMessageHtml({ ...message, playerId: 1, username: 'alice' });
+  assert.doesNotMatch(own, /data-private-player-id/);
+});
+
+test('chat navigation shows the same red numeric badge as mail and hides it at zero', () => {
+  const { game } = setup();
+  game.PrivateChat.unread = () => 7;
+  game.Mail = { unread: () => 2 };
+  let html = game.MainView.navBar();
+  assert.match(html, /data-route="chat"[^]*?<span class="nav-badge">7<\/span>/);
+  assert.match(html, /data-route="mail"[^]*?<span class="nav-badge">2<\/span>/);
+  game.PrivateChat.unread = () => 0;
+  html = game.MainView.navBar();
+  const chatItem = html.split('data-route="chat"')[1].split('data-route="mail"')[0];
+  assert.doesNotMatch(chatItem, /nav-badge/);
+});
+
+test('guild chat reads player.guild without visiting the guild hall first', () => {
+  const { game, view } = setup();
+  game.Core.state.player.guild = { id: 42, name: 'test guild', role: 'member' };
+  game.Guild = { mine: null };
+  game.Core.views.chat(view);
+  assert.match(view.html, /id="chatPageGuildBox"/);
+  assert.match(view.html, /FREQ: GUILD-42/);
+  assert.doesNotMatch(view.html, /尚未加入任何军团/);
+});
+
+test('guild chat still displays the invitation when no membership exists', () => {
+  const { game, view } = setup();
+  game.Guild = { mine: null };
+  game.Core.views.chat(view);
+  assert.match(view.html, /尚未加入任何军团/);
+  assert.doesNotMatch(view.html, /id="chatPageGuildBox"/);
+});
+
+test('membership changes update only the guild panel while unchanged membership preserves draft', () => {
+  const { game, view, nodes } = setup();
+  game.Core.views.chat(view);
+  let id = '';
+  let writes = 0;
+  let html = '';
+  nodes.chatGuildChannelWrap = {
+    getAttribute: () => id,
+    setAttribute: (name, value) => { id = value; },
+    set innerHTML(value) { writes++; html = value; }
+  };
+  game.Core.state.player.guild = { id: 42 };
+  game.Core.views.chat(view);
+  assert.match(html, /id="chatPageGuildInput"/);
+  assert.equal(writes, 1);
+  game.Core.views.chat(view);
+  assert.equal(writes, 1);
+  game.Guild = { mine: { id: 42, joined: true } };
+  delete game.Core.state.player.guild;
+  game.Core.views.chat(view);
+  assert.match(html, /尚未加入任何军团/);
+  assert.equal(writes, 2);
 });

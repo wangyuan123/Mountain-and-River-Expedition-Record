@@ -27,11 +27,7 @@ function setup(extra = {}) {
           cityState: {}
         },
         views: {},
-        spdMul: function (cat) {
-          var catKey = { inf: null, arm: 'arm_engine', air: 'air_engine', nav: 'nav_engine' }[cat];
-          if (!catKey) return 1;
-          return 1 + 0.05 * (this.state.tech[catKey] || 0);
-        }
+
       }
     },
     ...extra
@@ -39,34 +35,35 @@ function setup(extra = {}) {
   c.window = c;
   c.Core = c.Game.Core;
 
-  // Load data.js and world.js
-  for (const file of ['constants.js', 'data.js', 'world.js']) {
+  // 使用真实 Core 移速计算，验证出征页面传入兵种 ID。
+  for (const file of ['constants.js', 'data.js', 'core.js', 'world.js']) {
     vm.runInContext(fs.readFileSync(path.join(__dirname, '../js', file), 'utf8'), c);
   }
+  c.Game.Core.state = { officers: [], army: {}, tech: {}, buildings: {}, world: { pos: { x: 10, y: 10 } }, cityState: {} };
   return c;
 }
 
 test('calcDispatchSpeed selects slowest unit speed among multiple unit types', () => {
   const { Game: g } = setup();
 
-  // Single unit: scout (base speed 11)
+  // Single unit: scout (base speed 9)
   const res1 = g.World.calcDispatchSpeed({ scout: 5 });
-  assert.equal(res1.slowestSpd, 11);
+  assert.equal(res1.slowestSpd, 9);
   assert.equal(res1.slowestUnitId, 'scout');
   assert.equal(res1.slowestUnitName, g.DATA.units.scout.name);
   assert.equal(res1.unitCount, 1);
 
-  // Mixed units: scout (11) and infantry (3)
-  // Army always travels together, so slowest speed (3) must be chosen
+  // Mixed units: scout (9) and infantry (2)
+  // Army always travels together, so slowest speed (2) must be chosen
   const res2 = g.World.calcDispatchSpeed({ scout: 10, infantry: 50 });
-  assert.equal(res2.slowestSpd, 3);
+  assert.equal(res2.slowestSpd, 2);
   assert.equal(res2.slowestUnitId, 'infantry');
   assert.equal(res2.slowestUnitName, g.DATA.units.infantry.name);
   assert.equal(res2.unitCount, 2);
 
-  // Mixed units: ltank (6), motor (7), truck (6) -> slowest is ltank (6)
+  // Mixed units: ltank (4), motor (5), truck (4) -> slowest is ltank (4)
   const res3 = g.World.calcDispatchSpeed({ ltank: 20, motor: 30, truck: 10 });
-  assert.equal(res3.slowestSpd, 6);
+  assert.equal(res3.slowestSpd, 4);
   assert.equal(res3.slowestUnitId, 'ltank');
   assert.equal(res3.slowestUnitName, g.DATA.units.ltank.name);
 
@@ -88,22 +85,22 @@ test('calcDispatchSpeed factors in engine technology speed bonuses', () => {
   g.Core.state.tech.arm_engine = 2; // +10%
   g.Core.state.tech.air_engine = 4; // +20%
 
-  // ltank base speed = 6. With arm_engine lv 2 (1.10x) -> effective speed = 6.6
+  // ltank base speed = 4. With arm_engine lv 2 (1.10x) -> effective speed = 4.4
   const resArm = g.World.calcDispatchSpeed({ ltank: 10 });
-  assert.ok(Math.abs(resArm.slowestSpd - 6.6) < 1e-6);
+  assert.ok(Math.abs(resArm.slowestSpd - 4.4) < 1e-6);
 
-  // scout base speed = 11. With air_engine lv 4 (1.20x) -> effective speed = 13.2
+  // scout base speed = 9. With air_engine lv 4 (1.20x) -> effective speed = 10.8
   const resAir = g.World.calcDispatchSpeed({ scout: 5 });
-  assert.ok(Math.abs(resAir.slowestSpd - 13.2) < 1e-6);
+  assert.ok(Math.abs(resAir.slowestSpd - 10.8) < 1e-6);
 
-  // Combination: ltank (6.6) + scout (13.2) -> slowest is ltank (6.6)
+  // Combination: ltank (4.4) + scout (10.8) -> slowest is ltank (4.4)
   const resMixed = g.World.calcDispatchSpeed({ ltank: 10, scout: 5 });
-  assert.ok(Math.abs(resMixed.slowestSpd - 6.6) < 1e-6);
+  assert.ok(Math.abs(resMixed.slowestSpd - 4.4) < 1e-6);
   assert.equal(resMixed.slowestUnitId, 'ltank');
 
-  // Infantry has no engine tech, remains base speed 3
+  // Infantry has no engine tech, remains base speed 2
   const resWithInf = g.World.calcDispatchSpeed({ ltank: 10, scout: 5, infantry: 20 });
-  assert.equal(resWithInf.slowestSpd, 3);
+  assert.equal(resWithInf.slowestSpd, 2);
   assert.equal(resWithInf.slowestUnitId, 'infantry');
 });
 

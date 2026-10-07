@@ -34,7 +34,18 @@ public class WorldTerrainService {
 
     public static boolean inside(int x, int y) { return x >= 0 && y >= 0 && x < SIZE && y < SIZE; }
     public static int anchor(int n, int span) { return Math.min(n, SIZE - span); }
-    public static boolean sea(String mask, int x, int y) { return inside(x,y) && mask.charAt(y*SIZE+x) == '1'; }
+    public static boolean sea(String mask, int x, int y) {
+        if (mask == null || mask.isEmpty() || x < 0 || y < 0) return false;
+        int base = (int) Math.round(Math.sqrt(mask.length()));
+        if (base <= 0) return false;
+        if (x < base && y < base) {
+            return mask.charAt(y * base + x) == '1';
+        }
+        int lx = (x >= base && x < base * 2) ? (base * 2 - 1 - x) : x;
+        int ly = (y >= base && y < base * 2) ? (base * 2 - 1 - y) : y;
+        if (lx < 0 || ly < 0 || lx >= base || ly >= base) return false;
+        return mask.charAt(ly * base + lx) == '1';
+    }
     /** Generate the stable world mask with a coastal mainland and varied offshore islands. */
     public static String generate() {
         char[] mask = new char[SIZE*SIZE];
@@ -46,13 +57,15 @@ public class WorldTerrainService {
         return new String(mask);
     }
     private static boolean baseWater(int x, int y) {
-        double coast = 162 + 12*Math.sin(y*.065) + 6*Math.sin(y*.19) - 28*Math.exp(-Math.pow((y-105)/27.0,2));
-        return x > coast || (x > 95 && y > 186 + 6*Math.sin(x*.07));
+        // 海岸公式使用旧版 200 格参考坐标，按活动战区尺寸等比例生成。
+        double px = x * 200.0 / SIZE, py = y * 200.0 / SIZE;
+        double coast = 162 + 12*Math.sin(py*.065) + 6*Math.sin(py*.19) - 28*Math.exp(-Math.pow((py-105)/27.0,2));
+        return px > coast || (px > 95 && py > 186 + 6*Math.sin(px*.07));
     }
     private static boolean island(int x, int y) {
         for (int[] island : ISLANDS) {
-            double dx = (x - island[0]) / (double) island[2];
-            double dy = (y - island[1]) / (double) island[3];
+            double dx = (x * 200.0 / SIZE - island[0]) / (double) island[2];
+            double dy = (y * 200.0 / SIZE - island[1]) / (double) island[3];
             double angle = Math.atan2(dy, dx);
             double edge = 1 + .13 * Math.sin(angle * 3 + island[0]) + .08 * Math.sin(angle * 5 + island[1]);
             if (dx * dx + dy * dy < edge * edge) return true;
@@ -71,8 +84,8 @@ public class WorldTerrainService {
         List<List<Integer>> islands = new ArrayList<>();
         for (int[] island : ISLANDS) {
             List<Integer> cells = new ArrayList<>();
-            for (int y = Math.max(0, island[1] - island[3] - 2); y <= Math.min(SIZE - 1, island[1] + island[3] + 2); y++) {
-                for (int x = Math.max(0, island[0] - island[2] - 2); x <= Math.min(SIZE - 1, island[0] + island[2] + 2); x++) {
+            for (int y = Math.max(0, (island[1] - island[3] - 2) * (SIZE / 200)); y <= Math.min(SIZE - 1, (island[1] + island[3] + 2) * (SIZE / 200)); y++) {
+                for (int x = Math.max(0, (island[0] - island[2] - 2) * (SIZE / 200)); x <= Math.min(SIZE - 1, (island[0] + island[2] + 2) * (SIZE / 200)); x++) {
                     if (baseWater(x, y) && island(x, y) && !sea(mask, x, y)) cells.add(y * SIZE + x);
                 }
             }
@@ -89,13 +102,33 @@ public class WorldTerrainService {
         Long id=worlds.findFirstByOrderByIdAsc().map(WorldMap::getId).orElseThrow(()->new IllegalArgumentException("世界尚未初始化"));
         return worlds.lockById(id).orElseThrow();
     }
+    /** 统一世界展示尺寸和活动地形尺寸，兼容旧地图且保留已有坐标。 */
     @Transactional
     public String ensure() {
         WorldMap world=worlds.findFirstByOrderByIdAsc().orElseThrow(()->new IllegalArgumentException("世界尚未初始化"));
-        if(world.getTerrainData()!=null && world.getTerrainVersion() != null && world.getTerrainVersion() >= TERRAIN_VERSION) return world.getTerrainData();
+        if(world.getSize()!=null && world.getSize()==WorldConfig.WORLD_SIZE && world.getTerrainData()!=null && world.getTerrainData().length()==SIZE*SIZE && world.getTerrainVersion() != null && world.getTerrainVersion() >= TERRAIN_VERSION) return world.getTerrainData();
         world=worlds.lockById(world.getId()).orElseThrow();
-        if(world.getTerrainData()!=null && world.getTerrainVersion() != null && world.getTerrainVersion() >= TERRAIN_VERSION) return world.getTerrainData();
-        char[] mask=(world.getTerrainData() == null ? generate() : mergeIslands(world.getTerrainData())).toCharArray(); Long id=world.getId();
+        if(world.getSize()!=null && world.getSize()==WorldConfig.WORLD_SIZE && world.getTerrainData()!=null && world.getTerrainData().length()==SIZE*SIZE && world.getTerrainVersion() != null && world.getTerrainVersion() >= TERRAIN_VERSION) return world.getTerrainData();
+        String stored = world.getTerrainData();
+        char[] mask;
+        if (stored == null) mask = generate().toCharArray();
+        else if (stored.length() == SIZE * SIZE) {
+            // 已扩容且版本有效的地形保持原样，不能用旧海岸规则覆盖。
+            if (world.getTerrainVersion() != null && world.getTerrainVersion() >= TERRAIN_VERSION) {
+                world.setSize(WorldConfig.WORLD_SIZE);
+                worlds.saveAndFlush(world);
+                return stored;
+            }
+            mask = mergeIslands(stored).toCharArray();
+        } else {
+            int oldSize = (int) Math.sqrt(stored.length());
+            if (oldSize != 200 || oldSize * oldSize != stored.length())
+                throw new IllegalArgumentException("不支持的地形尺寸");
+            // 旧战区逐行保留在原坐标，新增区域补地形，不移动城市或野地。
+            mask = generate().toCharArray();
+            for (int y = 0; y < oldSize; y++) stored.getChars(y * oldSize, (y + 1) * oldSize, mask, y * SIZE);
+        }
+        Long id=world.getId();
         cities.findByWorldId(id).forEach(c->protect(mask,c.getX(),c.getY(),citySpan(c)));
         npcs.findByWorldId(id).forEach(c->protect(mask,c.getX(),c.getY(),1));
         bandits.findByWorldId(id).forEach(c->protect(mask,c.getX(),c.getY(),1));
@@ -106,14 +139,15 @@ public class WorldTerrainService {
         for(int i=0;i<mask.length;i++) if(mask[i]=='1'&&(i%SIZE==0||i%SIZE==SIZE-1||i/SIZE==0||i/SIZE==SIZE-1)){visited[i]=true;q.add(i);}
         while(!q.isEmpty()){int p=q.remove();for(int n:neighbors(p))if(!visited[n]&&mask[n]=='1'){visited[n]=true;q.add(n);}}
         for(int i=0;i<mask.length;i++)if(mask[i]=='1'&&!visited[i])mask[i]='0';
-        world.setTerrainData(new String(mask)); world.setTerrainVersion(TERRAIN_VERSION); worlds.saveAndFlush(world); return world.getTerrainData();
+        world.setSize(WorldConfig.WORLD_SIZE); world.setTerrainData(new String(mask)); world.setTerrainVersion(TERRAIN_VERSION); worlds.saveAndFlush(world); return world.getTerrainData();
     }
     /** Read-only callers never initialize terrain during state assembly. */
     public String current() { return worlds.findFirstByOrderByIdAsc().map(WorldMap::getTerrainData).orElse(null); }
     @Transactional
     public Map<String,Object> descriptor() {
         String data=ensure();
-        return Map.of("version",TERRAIN_VERSION,"size",SIZE,"cells",data,"seaCells",data.chars().filter(c->c=='1').count());
+        int size = data != null && !data.isEmpty() ? (int) Math.round(Math.sqrt(data.length())) : SIZE;
+        return Map.of("version",TERRAIN_VERSION,"size",size,"cells",data,"seaCells",data.chars().filter(c->c=='1').count());
     }
     public static List<Integer> neighbors(int p) {
         List<Integer> out=new ArrayList<>(4);int x=p%SIZE,y=p/SIZE;
@@ -122,10 +156,10 @@ public class WorldTerrainService {
     public static List<Integer> shores(String mask,int x,int y,int span) {
         List<Integer> out=new ArrayList<>(); x=anchor(x,span);y=anchor(y,span);
         for(int i=0;i<span;i++){
-            if(sea(mask,x+i,y-1))out.add((y-1)*SIZE+x+i);
-            if(sea(mask,x+i,y+span))out.add((y+span)*SIZE+x+i);
-            if(sea(mask,x-1,y+i))out.add((y+i)*SIZE+x-1);
-            if(sea(mask,x+span,y+i))out.add((y+i)*SIZE+x+span);
+            if(inside(x+i,y-1)&&sea(mask,x+i,y-1))out.add((y-1)*SIZE+x+i);
+            if(inside(x+i,y+span)&&sea(mask,x+i,y+span))out.add((y+span)*SIZE+x+i);
+            if(inside(x-1,y+i)&&sea(mask,x-1,y+i))out.add((y+i)*SIZE+x-1);
+            if(inside(x+span,y+i)&&sea(mask,x+span,y+i))out.add((y+i)*SIZE+x+span);
         }return out;
     }
     public static boolean coastal(String mask,int x,int y,int span) { return mask!=null&&!shores(mask,x,y,span).isEmpty(); }
@@ -150,14 +184,28 @@ public class WorldTerrainService {
                 .setParameter("w",world).setParameter("x0",x0).setParameter("x1",x1).setParameter("y0",y0).setParameter("y1",y1)
                 .setLockMode(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE).getResultList();
     }
+    /** 据点四格必须全部处于开放边界内、同类地形且无占用。 */
+    public static boolean vacantFootprint(String mask, int size, boolean water, Set<String> used, int x, int y, int span) {
+        if (x < 0 || y < 0 || x + span > size || y + span > size) return false;
+        for (int dy = 0; dy < span; dy++) for (int dx = 0; dx < span; dx++)
+            if (used.contains((x + dx) + "," + (y + dy)) || sea(mask, x + dx, y + dy) != water) return false;
+        return true;
+    }
+
+    /** 预留全部格子，防止同批新增或迁移目标重叠。 */
+    public static void reserveFootprint(Set<String> used, int x, int y, int span) {
+        for (int dy = 0; dy < span; dy++) for (int dx = 0; dx < span; dx++)
+            used.add((x + dx) + "," + (y + dy));
+    }
+
     public Set<String> occupiedCoordinates(Long world) {
         Set<String> used=new HashSet<>();
         for(PlayerCity c:occupants(PlayerCity.class,world,0,SIZE-1,0,SIZE-1)){
             int span=citySpan(c),x=anchor(c.getX(),span),y=anchor(c.getY(),span);
             for(int yy=y;yy<y+span;yy++)for(int xx=x;xx<x+span;xx++)used.add(xx+","+yy);
         }
-        occupants(NpcCity.class,world,0,SIZE-1,0,SIZE-1).forEach(c->used.add(c.getX()+","+c.getY()));
-        occupants(Bandit.class,world,0,SIZE-1,0,SIZE-1).forEach(c->used.add(c.getX()+","+c.getY()));
+        occupants(NpcCity.class,world,0,SIZE-1,0,SIZE-1).forEach(c->reserveFootprint(used,c.getX(),c.getY(),2));
+        occupants(Bandit.class,world,0,SIZE-1,0,SIZE-1).forEach(c->reserveFootprint(used,c.getX(),c.getY(),2));
         occupants(WildTile.class,world,0,SIZE-1,0,SIZE-1).forEach(c->used.add(c.getX()+","+c.getY()));
         return used;
     }

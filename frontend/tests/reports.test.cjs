@@ -231,20 +231,26 @@ test('battle details keep each side together within its round', () => {
   assert.match(detail.innerHTML, /共 2 回合/);
 });
 
-test('battle details show the defeated enemy movement before the finishing attack', () => {
+test('battle details keep movement and finishing attacks together for both sides', () => {
   const { G } = setup();
   G.fmt = String;
   G.Battle._viewReport = { type: 'battle', time: Date.now(), win: true, roundLogs: [
     '-- 第3回合 --',
+    '我方轰炸机(200) [前进] 推进600 -> 坐标1200',
     '我方战斗机(1000) [前进] 推进500 -> 坐标1500；空战敌步兵(35) 伤害4200 击毁35',
     '敌方步兵(35) [前进] 推进150 -> 坐标1850',
+    '敌方火箭(20) [前进] 推进375 -> 坐标2000；齐射我方轰炸机(200) 伤害100 击毁1',
     '★ 全歼敌军，胜利！'
   ] };
   const detail = { innerHTML: '' };
   G.Battle.renderReportDetail(detail);
-  assert.ok(detail.innerHTML.indexOf('敌方步兵(35) [前进]') <
+  assert.ok(detail.innerHTML.indexOf('我方轰炸机(200) [前进]') <
     detail.innerHTML.indexOf('我方战斗机(1000) [前进]'));
   assert.ok(detail.innerHTML.indexOf('我方战斗机(1000) [前进]') <
+    detail.innerHTML.indexOf('敌方步兵(35) [前进]'));
+  assert.ok(detail.innerHTML.indexOf('敌方步兵(35) [前进]') <
+    detail.innerHTML.indexOf('敌方火箭(20) [前进]'));
+  assert.ok(detail.innerHTML.indexOf('敌方火箭(20) [前进]') <
     detail.innerHTML.indexOf('★ 全歼敌军'));
 });
 

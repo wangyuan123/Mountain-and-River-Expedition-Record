@@ -50,6 +50,16 @@ public class WildTile extends VersionedEntity {
     @Column(name = "mined")
     private Integer mined;
 
+    /** 资源耗尽的时间戳；无主时在下一次固定刷新点异地重生。 */
+    @Column(name = "depleted_at")
+    private Long depletedAt;
+
+    /** 已耗尽且无主的野地只保留待刷新记录，不再作为地图目标出现。 */
+    @Transient
+    public boolean isDormant() {
+        return !Boolean.TRUE.equals(occupied) && depletedAt != null;
+    }
+
     @Column(name = "gathering")
     private Boolean gathering;
 

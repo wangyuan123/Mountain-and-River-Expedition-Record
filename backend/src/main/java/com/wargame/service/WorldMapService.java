@@ -22,17 +22,19 @@ public class WorldMapService {
     private final BanditRepository bandits;
     private final WildTileRepository wilds;
     private final PlayerRepository players;
+    private final CityStateRepository cityStates;
     private final WorldTerrainService terrain;
     @org.springframework.beans.factory.annotation.Autowired private GuildRelationService guildRelations;
 
     public Map<String, Object> chunk(Long viewer, int cx, int cy) {
-        int count = (WorldConfig.SIZE + CHUNK_SIZE - 1) / CHUNK_SIZE;
-        if (cx < 0 || cy < 0 || cx >= count || cy >= count) throw new IllegalArgumentException("地图区域超出范围");
         Long world = worldId();
+        int worldSize = world != null ? worlds.findById(world).map(w -> w.getSize() != null ? w.getSize() : WorldConfig.WORLD_SIZE).orElse(WorldConfig.WORLD_SIZE) : WorldConfig.WORLD_SIZE;
+        int count = (worldSize + CHUNK_SIZE - 1) / CHUNK_SIZE;
+        if (cx < 0 || cy < 0 || cx >= count || cy >= count) throw new IllegalArgumentException("地图区域超出范围");
         List<Map<String, Object>> targets = new ArrayList<>();
         int x = cx * CHUNK_SIZE, y = cy * CHUNK_SIZE;
-        int maxX = Math.min(x + CHUNK_SIZE - 1, WorldConfig.SIZE - 1);
-        int maxY = Math.min(y + CHUNK_SIZE - 1, WorldConfig.SIZE - 1);
+        int maxX = Math.min(x + CHUNK_SIZE - 1, worldSize - 1);
+        int maxY = Math.min(y + CHUNK_SIZE - 1, worldSize - 1);
         if (world != null) {
             String mask = terrain.current();
             List<PlayerCity> cityList = cities.findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(world, x, maxX, y, maxY);
@@ -53,16 +55,19 @@ public class WorldMapService {
                 t.put("commanderName", n.getCommanderName() != null ? n.getCommanderName() : JapaneseOfficers.getCommanderForLevel(n.getLevel() != null ? n.getLevel() : 1));
                 targets.add(t);
             });
-            bandits.findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(world, x, maxX, y, maxY).forEach(b -> {
+            // 已击败据点与休眠野地一样从地图隐藏，固定刷新后重新出现。
+            bandits.findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(world, x, maxX, y, maxY).stream()
+                    .filter(b -> !Boolean.TRUE.equals(b.getDefeated())).forEach(b -> {
                 Map<String, Object> t = base("bandit", b.getId(), b.getX(), b.getY(), b.getName(), b.getLevel());
                 t.put("defeated", Boolean.TRUE.equals(b.getDefeated()));
                 t.put("sea", isSea(mask, b));
                 t.put("commanderName", b.getCommanderName() != null ? b.getCommanderName() : JapaneseOfficers.getCommanderForLevel(b.getLevel() != null ? b.getLevel() : 1));
                 targets.add(t);
             });
-            wildList.forEach(w -> targets.add(wild(viewer, w, owners.get(w.getOccupiedBy()))));
+            wildList.stream().filter(w -> !w.isDormant())
+                    .forEach(w -> targets.add(wild(viewer, w, owners.get(w.getOccupiedBy()))));
         }
-        return Map.of("cx", cx, "cy", cy, "size", CHUNK_SIZE, "worldSize", WorldConfig.SIZE,
+        return Map.of("cx", cx, "cy", cy, "size", CHUNK_SIZE, "worldSize", worldSize,
                 "targets", targets, "updatedAt", System.currentTimeMillis());
     }
 
@@ -86,7 +91,9 @@ public class WorldMapService {
                 return t;
             }
             case "bandit" -> {
-                Bandit b = bandits.findById(id).filter(v -> world.equals(v.getWorldId())).orElseThrow(this::missing);
+                Bandit b = bandits.findById(id)
+                        .filter(v -> world.equals(v.getWorldId()) && !Boolean.TRUE.equals(v.getDefeated()))
+                        .orElseThrow(this::missing);
                 Map<String, Object> t = base(kind, id, b.getX(), b.getY(), b.getName(), b.getLevel());
                 t.put("defeated", Boolean.TRUE.equals(b.getDefeated()));
                 t.put("sea", isSea(terrain.current(), b));
@@ -94,7 +101,8 @@ public class WorldMapService {
                 return t;
             }
             case "wild" -> {
-                WildTile w = wilds.findById(id).filter(v -> world.equals(v.getWorldId())).orElseThrow(this::missing);
+                WildTile w = wilds.findById(id)
+                        .filter(v -> world.equals(v.getWorldId()) && !v.isDormant()).orElseThrow(this::missing);
                 Player owner = Boolean.TRUE.equals(w.getOccupied()) && w.getOccupiedBy() != null
                         ? players.findById(w.getOccupiedBy()).orElse(null) : null;
                 Map<String, Object> t = wild(viewer, w, owner);
@@ -139,6 +147,14 @@ public class WorldMapService {
             long warEnd = related && owner.getWarEndAt() != null ? owner.getWarEndAt() : 0L;
             t.put("warAt", warAt); t.put("warEndAt", warEnd);
             t.put("coolAt", warAt == 0 ? warEnd : 0L);
+            // 护盾是城市可见状态；只返回是否生效及截止时间，不暴露其他城市数据。
+            cityStates.findByPlayerIdAndCitySlot(owner.getId(), c.getCitySlot()).ifPresent(cs -> {
+                long shieldUntil = cs.getShieldUntil() == null ? 0L : cs.getShieldUntil();
+                if (shieldUntil > System.currentTimeMillis()) {
+                    t.put("cityState", "shield");
+                    t.put("shieldUntil", shieldUntil);
+                }
+            });
         }
         return t;
     }

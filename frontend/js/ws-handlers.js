@@ -157,6 +157,7 @@ window.Game = window.Game || {};
       scoutComplete: '侦查完成，情报已送达',
       gatherComplete: '采集完成，部队已自动按原路线返城，资源抵达后入库',
       gatherStopped: '采集已终止，部队原地待命，请下达回城命令',
+      shieldBlocked: '目标城市护盾生效，部队正在返程',
       returning: '部队已开始按原路线返城，抵达后部队与资源入库',
       returned: '部队已返回城市' + (data.amount ? '，带回' + data.amount + ' ' + (data.resource || '') : '')
     };
@@ -293,6 +294,7 @@ window.Game = window.Game || {};
 
   // connected handler - WebSocket reconnected
   G.WS.on('connected', function () {
+    if (G.PrivateChat) G.PrivateChat.refresh();
     if (G.Battle) G.Battle._reportsHistoryLoaded = null;
     // Hide the disconnect banner and show a brief "reconnected" confirmation
     hideWsBanner();
@@ -308,6 +310,10 @@ window.Game = window.Game || {};
 
   G.WS.on('chat', function (data) {
     if (G.Chat && G.Chat.receive) G.Chat.receive(data);
+  });
+
+  G.WS.on('private_chat', function (data) {
+    if (G.PrivateChat) G.PrivateChat.receive(data);
   });
 
   G.WS.on('guild_chat', function (data) {

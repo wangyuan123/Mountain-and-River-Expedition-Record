@@ -2,6 +2,7 @@ package com.wargame.service;
 
 import com.wargame.model.constants.JapaneseOfficers;
 import com.wargame.model.constants.WorldConfig;
+import com.wargame.model.constants.MilitaryRankDef;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
 import com.wargame.util.JsonUtil;
@@ -16,6 +17,8 @@ public class WorldViewService {
 
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
+    @org.springframework.beans.factory.annotation.Autowired
+    private CityStateRepository cityStates;
     private final WorldMapRepository worldMapRepository;
     private final NpcCityRepository npcCityRepository;
     private final PlayerCityRepository playerCityRepository;
@@ -53,14 +56,15 @@ public class WorldViewService {
     }
 
     public Map<String, Object> getWorld(Player player, int x, int y, int radius) {
-        if (x < 0 || y < 0 || x >= WorldConfig.SIZE || y >= WorldConfig.SIZE
-                || radius < 0 || radius > WorldConfig.SIZE) {
+        int worldSize = worldMapRepository.findFirstByOrderByIdAsc().map(w -> w.getSize() != null ? w.getSize() : WorldConfig.WORLD_SIZE).orElse(WorldConfig.WORLD_SIZE);
+        if (x < 0 || y < 0 || x >= worldSize || y >= worldSize
+                || radius < 0 || radius > worldSize) {
             throw new IllegalArgumentException("地图坐标或视野半径超出范围");
         }
         int minX = radius == 0 ? 0 : Math.max(0, x - radius);
-        int maxX = radius == 0 ? WorldConfig.SIZE - 1 : Math.min(WorldConfig.SIZE - 1, x + radius);
+        int maxX = radius == 0 ? worldSize - 1 : Math.min(worldSize - 1, x + radius);
         int minY = radius == 0 ? 0 : Math.max(0, y - radius);
-        int maxY = radius == 0 ? WorldConfig.SIZE - 1 : Math.min(WorldConfig.SIZE - 1, y + radius);
+        int maxY = radius == 0 ? worldSize - 1 : Math.min(worldSize - 1, y + radius);
         Map<String, Object> world = new LinkedHashMap<>();
         world.put("view", Map.of("x", x, "y", y, "radius", radius, "loadedAt", System.currentTimeMillis()));
 
@@ -152,6 +156,11 @@ public class WorldViewService {
                 boolean selfCity = cityOwner.equals(player.getId());
                 pcMap.put("ownerId", cityOwner);
                 pcMap.put("playerName", owner != null ? owner.getUsername() : "");
+                // 地图列表展开时展示游戏内统帅名与当前军衔；登录名仅作为旧数据兜底。
+                pcMap.put("commanderName", owner.getDisplayName() == null || owner.getDisplayName().isBlank()
+                        ? owner.getUsername() : owner.getDisplayName());
+                pcMap.put("militaryRank", owner.getMilitaryRank());
+                pcMap.put("militaryRankName", MilitaryRankDef.getRankName(owner.getMilitaryRank()));
                 pcMap.put("level", 0); // 真实玩家等级仅个人档案可见，地图区不展示玩家等级
                 long pcWarAt = 0L, pcWarEnd = 0L;
                 if (!selfCity && owner != null && player.getId().equals(owner.getWarAgainstId())) {
@@ -163,6 +172,11 @@ public class WorldViewService {
                 pcMap.put("warEndAt", pcWarEnd);
                 // coolAt 表示战后保护期 (仅当未处于战争状态时), 战争窗口用 warAt/warEndAt 表达
                 pcMap.put("coolAt", pcWarAt == 0 ? pcWarEnd : 0L);
+                // 列表地图只展示护盾可见状态，不读取城市驻军等私有信息。
+                cityStates.findByPlayerIdAndCitySlot(cityOwner, pc.getCitySlot()).ifPresent(cs -> {
+                    long shieldUntil = cs.getShieldUntil() == null ? 0L : cs.getShieldUntil();
+                    if (shieldUntil > System.currentTimeMillis()) pcMap.put("shieldUntil", shieldUntil);
+                });
                 playerCities.add(pcMap);
             }
         }
@@ -175,6 +189,8 @@ public class WorldViewService {
             List<Bandit> entities = banditRepository.findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(worldId, minX, maxX, minY, maxY);
             for (int i = 0; i < entities.size(); i++) {
                 Bandit b = entities.get(i);
+                // 保留数据库记录供定时迁移，但地图不展示已击败目标。
+                if (Boolean.TRUE.equals(b.getDefeated())) continue;
                 Map<String, Object> bMap = new LinkedHashMap<>();
                 bMap.put("id", b.getId());
                 bMap.put("name", b.getName());
@@ -197,11 +213,19 @@ public class WorldViewService {
         if (worldId != null) {
             List<WildTile> entities = wildTileRepository.findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(worldId, minX, maxX, minY, maxY);
             Map<Long, WildTile> visibleAndOwned = new LinkedHashMap<>();
-            entities.forEach(tile -> visibleAndOwned.put(tile.getId(), tile));
+            entities.stream().filter(tile -> !tile.isDormant())
+                    .forEach(tile -> visibleAndOwned.put(tile.getId(), tile));
             wildTileRepository.findByOccupiedBy(player.getId()).stream()
                     .filter(tile -> worldId.equals(tile.getWorldId()))
                     .forEach(tile -> visibleAndOwned.put(tile.getId(), tile));
             entities = new ArrayList<>(visibleAndOwned.values());
+            // 批量读取占领者公开资料，避免全图查询按野地逐条读取玩家。
+            Set<Long> occupierIds = new HashSet<>();
+            entities.stream().filter(tile -> Boolean.TRUE.equals(tile.getOccupied()))
+                    .map(WildTile::getOccupiedBy).filter(Objects::nonNull).forEach(occupierIds::add);
+            Map<Long, Player> occupiers = new HashMap<>();
+            if (!occupierIds.isEmpty()) playerRepository.findAllById(occupierIds)
+                    .forEach(owner -> occupiers.put(owner.getId(), owner));
             for (int i = 0; i < entities.size(); i++) {
                 WildTile wt = entities.get(i);
                 Map<String, Object> wtMap = new LinkedHashMap<>();
@@ -210,10 +234,20 @@ public class WorldViewService {
                 wtMap.put("x", wt.getX());
                 wtMap.put("y", wt.getY());
                 wtMap.put("level", wt.getLevel());
-                wtMap.put("garrison", JsonUtil.parseObjMap(wt.getGarrison()));
                 wtMap.put("scouted", wt.getScouted() != null && wt.getScouted());
                 boolean isOwner = Boolean.TRUE.equals(wt.getOccupied()) && player.getId().equals(wt.getOccupiedBy());
+                // 本人的驻军用于采集和撤回；其他目标的守军只能通过侦察报告获知。
+                if (isOwner) wtMap.put("garrison", JsonUtil.parseObjMap(wt.getGarrison()));
                 wtMap.put("occupied", isOwner);
+                if (Boolean.TRUE.equals(wt.getOccupied()) && wt.getOccupiedBy() != null) {
+                    Player owner = occupiers.get(wt.getOccupiedBy());
+                    if (owner != null) {
+                        wtMap.put("occupiedByName", owner.getDisplayName() == null || owner.getDisplayName().isBlank() ? owner.getUsername() : owner.getDisplayName());
+                        wtMap.put("occupiedByRank", owner.getMilitaryRank());
+                        wtMap.put("occupiedByRankName", MilitaryRankDef.getRankName(owner.getMilitaryRank()));
+                        wtMap.put("occupiedByPrestige", owner.getPrestige());
+                    }
+                }
                 wtMap.put("totalRes", wt.getTotalRes() != null ? wt.getTotalRes() : 0);
                 wtMap.put("mined", wt.getMined() != null ? wt.getMined() : 0);
                 if (isOwner) {

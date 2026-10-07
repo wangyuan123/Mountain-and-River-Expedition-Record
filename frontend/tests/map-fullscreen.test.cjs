@@ -20,6 +20,15 @@ function fixture({native=false,portrait=true,rejectLock=false}={}) {
   document.exitFullscreen=()=>{exits++;document.fullscreenElement=null;return Promise.resolve();};
   return {c,view,document,events,classes,button,close,counts:()=>({locks,unlocks,exits})};
 }
+test('world map opens in map mode after returning from the list',()=>{
+  const {c}=fixture();
+  c.Game.Core={state:{world:{}},render(){}};
+  assert.equal(c.Game.WorldMap.isMap(),true);
+  c.Game.WorldMap.setMode('list');
+  assert.equal(c.Game.WorldMap.isMap(),false);
+  c.Game.WorldMap.prepareEntry();
+  assert.equal(c.Game.WorldMap.isMap(),true);
+});
 test('map toolbar keeps search and all actions together, without a title',()=>{
   const {c}=fixture();
   c.Game.Core={state:{world:{cityPos:{x:100,y:100}}}};
@@ -33,7 +42,7 @@ test('map toolbar keeps search and all actions together, without a title',()=>{
   assert.ok(toolbar);
   assert.match(toolbar[1], /data-map="back"[^>]*><span>‹ 返回上一步<\/span><\/button>/);
   assert.doesNotMatch(toolbar[1], /data-map="back"[^>]*><span>\[‹ 返回上一步\]<\/span>/);
-  assert.match(toolbar[1],/data-map="back".*<form class="world-map-search">.*class="page-back-button" type="submit"><span>\[定位\]<\/span><\/button>.*class="page-back-button" data-map="refresh"><span>\[刷新\]<\/span><\/button><\/form>.*class="page-back-button" data-map="list"><span>\[列表\]<\/span><\/button>.*data-map="full"/);
+  assert.match(toolbar[1],/data-map="back".*<form class="world-map-search">.*class="page-back-button" type="submit"><span>\[定位\]<\/span><\/button>.*class="page-back-button" data-map="refresh"><span>\[刷新\]<\/span><\/button><\/form>.*class="page-back-button" data-map="list"><span>查看列表地图&gt;<\/span><\/button>.*data-map="full"/);
   assert.doesNotMatch(toolbar[1],/战略地图/);
   assert.equal(container.innerHTML.match(/class="world-map-search"/g).length,1);
   assert.match(container.innerHTML,/<aside class="world-map-minimap collapsed"><button class="minimap-toggle" type="button" aria-expanded="false" aria-label="展开世界缩略图"><span>世界缩略图<\/span><span class="minimap-toggle-icon">\+<\/span><\/button>/);

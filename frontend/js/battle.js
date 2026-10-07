@@ -210,37 +210,27 @@ window.Game = window.Game || {};
       }).length;
     },
 
-    /** 每回合整理敌我记录；含击杀的回合先展示交火前机动，避免历史日志误示阵亡后行动。 */
+    /**
+     * 每回合集中展示双方各自的机动与进攻记录，保留同一方的原始顺序。
+     * @param {string[]} logs - 当前视角的战斗日志
+     * @returns {string[]} 按我方、敌方整理的展示日志
+     */
     groupRoundSideLogs: function (logs) {
       var grouped = [];
       var mine = [];
       var enemy = [];
-      var pending = [];
       function flushSides() {
-        if (pending.some(function (line) { return line.indexOf(' 击毁') >= 0; })) {
-          // 历史战报可能把击杀记录排在敌方机动前；先展示未开火的机动，再保留交火顺序。
-          var movement = [];
-          var combat = [];
-          for (var j = 0; j < pending.length; j++) {
-            var entry = pending[j];
-            (entry.indexOf(' 击毁') >= 0 ? combat : movement).push(entry);
-          }
-          grouped.push.apply(grouped, movement);
-          grouped.push.apply(grouped, combat);
-        } else {
-          grouped.push.apply(grouped, mine);
-          grouped.push.apply(grouped, enemy);
-        }
+        // 日志按阵营阅读；击毁信息仍属于该兵种的行动，不再单独拆到交火区。
+        grouped.push.apply(grouped, mine);
+        grouped.push.apply(grouped, enemy);
         mine = [];
         enemy = [];
-        pending = [];
       }
       for (var i = 0; i < logs.length; i++) {
         var line = String(logs[i] || '');
         var side = /^(我方|敌方)/.exec(line);
         if (side) {
           (side[1] === '我方' ? mine : enemy).push(line);
-          pending.push(line);
         } else {
           flushSides();
           grouped.push(line);
@@ -338,7 +328,7 @@ window.Game = window.Game || {};
       if (occupation) h += '<div class="rc-line"><b>占领结果:</b> ' + occupation.text + '</div>';
       h += '</div>';
       h += '<div id="rdetail_' + r.id + '" class="rc-expand" style="display:none"></div>';
-      h += '<div class="btn-row" style="margin-top:4px"><button id="rcta_' + r.id + '" class="btn sm" onclick="Game.Battle.viewReportDetail(\'' + r.id + '\')">查看完整战报</button><button class="btn sm" onclick="Game.Core.openForum({ shareReportId: \'' + r.id + '\' })" style="margin-left:6px;background:var(--accent,#8c6d3b);color:#fff">🎖️ 分享到论坛</button></div>';
+      h += '<div class="btn-row" style="margin-top:4px"><button id="rcta_' + r.id + '" class="btn sm" onclick="Game.Battle.viewReportDetail(\'' + r.id + '\')">查看完整战报</button><button class="btn sm" onclick="Game.Battle.shareReport(\'' + r.id + '\')" style="margin-left:6px;background:var(--accent,#8c6d3b);color:#fff">分享战报</button></div>';
       h += '</div>';
       return h;
     },
@@ -937,6 +927,49 @@ window.Game = window.Game || {};
       }
     },
 
+    /** 分享菜单保留论坛入口，私聊可选择最近会话或输入完整玩家名。 */
+    shareReport: function (reportId) {
+      var old = document.getElementById('reportShareDialog');
+      if (old) old.remove();
+      var dialog = document.createElement('dialog');
+      dialog.id = 'reportShareDialog';
+      dialog.innerHTML = '<h3>分享战报</h3><div class="btn-row"><button class="btn" data-channel="forum">论坛</button><button class="btn" data-channel="world">世界聊天</button><button class="btn" data-channel="guild">军团聊天</button></div><h4>私聊</h4><select id="reportSharePeer"><option value="">选择最近会话</option></select><input id="reportShareName" maxlength="50" placeholder="或输入完整玩家名"><button class="btn" data-channel="private">分享到私聊</button><button class="btn" data-close>取消</button>';
+      document.body.appendChild(dialog);
+      dialog.showModal();
+      dialog.querySelector('[data-close]').onclick = function () { dialog.close(); dialog.remove(); };
+      G.API.privateChatConversations().then(function (rows) {
+        rows.forEach(function (c) {
+          var option = document.createElement('option');
+          option.value = c.peer.id; option.textContent = c.peer.username;
+          dialog.querySelector('select').appendChild(option);
+        });
+      }).catch(function () {});
+      dialog.querySelectorAll('[data-channel]').forEach(function (button) {
+        button.onclick = function () {
+          var channel = button.getAttribute('data-channel');
+          if (channel === 'forum') { Core.openForum({ shareReportId: reportId }); dialog.close(); dialog.remove(); return; }
+          var name = dialog.querySelector('input').value.trim();
+          var selected = dialog.querySelector('select').value;
+          if (channel === 'private' && !name && !selected) { G.toast('请选择或输入私聊玩家'); return; }
+          button.disabled = true;
+          var recipient = channel === 'private' && name ? G.API.privateChatPlayer(name) : Promise.resolve({ id: selected ? Number(selected) : null });
+          recipient.then(function (peer) { return G.API.shareBattleReport(reportId, channel, peer.id); }).then(function () {
+            G.toast('战报已分享'); dialog.close(); dialog.remove();
+          }).catch(function (err) { G.toast(err.message || '分享失败'); }).finally(function () { button.disabled = false; });
+        };
+      });
+    },
+
+    /** 接收方读取分享快照，不修改持有人的战报或已读状态。 */
+    viewSharedReport: function (token) {
+      return G.API.sharedBattleReport(token).then(function (report) {
+        G.Battle._viewReport = report;
+        Core.history.push(Core.route);
+        Core.route = 'reportDetail';
+        Core.render();
+      }).catch(function (err) { G.toast(err.message || '分享战报加载失败'); });
+    },
+
     viewReportDetail: function (reportId) {
       var r = this.findReport(reportId);
       if (!r) { G.toast('战报不存在'); return; }
@@ -1319,7 +1352,7 @@ window.Game = window.Game || {};
         || (Core.state && Core.state.tech) || {};
       var skills = skillsMap || (this._activeTactical && this._activeTactical.attackerSkills) || {};
       var cat = unit.cat;
-      var catKey = G.Constants.unitTechKeys[cat];
+      var catKey = G.Constants.unitSpeedTechKeys[unitId] || G.Constants.unitTechKeys[cat];
       var engLv = catKey ? Number(tech[catKey] || 0) : 0;
       var blitzLv = Number(skills.blitz || 0);
       return Math.round(baseSpd * (1 + 0.05 * engLv) * (1 + 0.05 * blitzLv) * 10) / 10;
@@ -1327,6 +1360,7 @@ window.Game = window.Game || {};
 
     /**
      * 按兵种配置的固定顺序建立双方共用行序；仅一方拥有的兵种也占一整行。
+     * 行号按兵种 ID 匹配，盟军与日军的不同型号名称不影响同类型对齐。
      * @param {Object} attacker - 进攻方按兵种统计的当前兵力。
      * @param {Object} defender - 防守方按兵种统计的当前兵力。
      * @returns {string[]} 按显示顺序排列的现存兵种 ID。
@@ -1490,7 +1524,7 @@ window.Game = window.Game || {};
         var rangePillClass = 'tactical-marker-range' + (inRange ? ' in-range' : (range === 0 ? ' no-range' : ''));
         var rangeLabel = range > 0 ? (inRange ? '🎯' + range : '射程 ' + range) : '无射程';
 
-        html += '<div class="tactical-marker ' + side + '" style="left:' + positionPercent + '%;--marker-row:' + rowIndex + '" title="' + title + '" data-in-range="' + inRange + '">'
+        html += '<div class="tactical-marker ' + side + '" data-unit-id="' + esc(marker.unitId) + '" style="left:' + positionPercent + '%;--marker-row:' + rowIndex + '" title="' + title + '" data-in-range="' + inRange + '">'
           + icon
           + '<b>×' + esc(String(count)) + '</b>'
           + '<span class="' + rangePillClass + '">' + esc(rangeLabel) + '</span>'

@@ -202,6 +202,34 @@ class MultiCityTest extends BaseServiceTest {
         assertEquals(20, troop(0)); assertEquals(0, troop(1)); assertEquals(1450, balance(1).getGold());
     }
 
+    @Test void transportPreservesCargoAboveDestinationCapacity() {
+        PlayerCity branch = branch();
+        createArmyUnit(player.getId(), "truck", 2);
+        try (var ignored = scope.enter(branch)) {
+            Building refinery = buildingRepository.findByPlayerIdAndCitySlotAndType(player.getId(), 1, "refinery").get(0);
+            refinery.setLevel(2); buildingRepository.save(refinery);
+            assertEquals(400000L, tickService.capacity(player.getId()).get("steel"));
+        }
+        balance(1).setSteel(399900);
+        int originSteel = balance(0).getSteel();
+        March march = marchService.createDispatch(player.getId(), new DispatchRequest(
+                "player", branch.getId(), "transport", Map.of("truck", 1), null, Map.of("steel", 450)));
+        assertEquals(originSteel - 450, balance(0).getSteel());
+        march.setArriveAt(0L); marchService.processMarches(player.getId(), System.currentTimeMillis());
+        assertEquals(400350, balance(1).getSteel(), "超出40万生产容量的运输资源必须完整保留");
+        assertEquals("{}", march.getCarryRes());
+        player.setGameInitialized(true);
+        branch.setLastTick(System.currentTimeMillis() - 60000L);
+        try (var ignored = scope.enter(branch)) { tickService.tick(player.getId()); }
+        assertEquals(400350, balance(1).getSteel(), "后续生产结算不能截断超额库存");
+        March next = marchService.createDispatch(player.getId(), new DispatchRequest(
+                "player", branch.getId(), "transport", Map.of("truck", 1), null, Map.of("steel", 450)));
+        next.setArriveAt(0L); marchService.processMarches(player.getId(), System.currentTimeMillis());
+        assertEquals(400800, balance(1).getSteel(), "已超容量仍应接收后续运输");
+        march.setArriveAt(0L); marchService.processMarches(player.getId(), System.currentTimeMillis());
+        assertEquals(400800, balance(1).getSteel(), "返程不能重复入库");
+    }
+
     @Test void transportPlaneCanDeliverCargoAndReturn() {
         PlayerCity branch = branch(); createArmyUnit(player.getId(), "transport", 1);
         March march = marchService.createDispatch(player.getId(), new DispatchRequest("player", branch.getId(), "transport", Map.of("transport", 1), null, Map.of("gold", 700)));

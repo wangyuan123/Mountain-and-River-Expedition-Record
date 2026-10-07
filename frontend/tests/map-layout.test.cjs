@@ -19,10 +19,22 @@ test('all four player-city cells select the same target without mutating its coo
   }
   assert.equal(layout.pick([city],102,101,200),null);
   assert.equal(layout.pick([city],99.99,101,200),null);
-  for (const kind of ['npc','bandit','simulated_npc','wild']) {
+  for (const kind of ['wild']) {
     const target={kind,id:2,x:100,y:100};
     assert.equal(layout.bounds(target,200).span,1);
     assert.equal(layout.pick([target],101.1,100.5,200),null);
+  }
+});
+test('NPC and bandit footprints match player cities, including world edges', () => {
+  for (const kind of ['npc','simulated_npc','bandit']) {
+    for (const [x,y] of [[100,100],[199,199]]) {
+      const target={kind,id:2,x,y}, b=layout.bounds(target,200);
+      assert.equal(b.span,2);
+      for (const [dx,dy] of [[.01,.01],[1.99,.01],[.01,1.99],[1.99,1.99]]) {
+        assert.equal(layout.pick([target],b.x+dx,b.y+dy,200),target);
+      }
+      assert.equal(layout.pick([target],b.x+2,b.y+1,200),null);
+    }
   }
 });
 test('edge cities keep all four visual cells inside the world', () => {

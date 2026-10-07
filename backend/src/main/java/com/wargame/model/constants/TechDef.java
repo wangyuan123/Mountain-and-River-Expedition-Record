@@ -33,7 +33,7 @@ public record TechDef(
         m.put("inf_load", new TechDef("inf_load", "步兵负重", "步兵", "步兵负重 +20%/级(掠夺)",
                 5, 2, Map.of("steel", 200, "food", 100), 1.6, "load"));
         // 装甲
-        m.put("arm_engine", new TechDef("arm_engine", "燃烧引擎", "装甲", "装甲系移动 +5%/级",
+        m.put("arm_engine", new TechDef("arm_engine", "燃烧引擎", "装甲", "装甲、摩托兵与卡车移动 +5%/级",
                 10, 3, Map.of("steel", 320, "oil", 120, "rare", 40), 1.8, "spd_arm"));
         // 航空
         m.put("air_engine", new TechDef("air_engine", "喷气推进", "航空", "空军移动 +5%/级",

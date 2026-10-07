@@ -108,7 +108,8 @@ window.Game = window.Game || {};
       if (!s.wilds.owned.length) h += '<div class="desc">暂无野地。</div>';
       s.wilds.owned.forEach(function (w, i) {
         var wt = D.wildTypes[w.type];
-        var iconPath = (G.WorldMap && typeof G.WorldMap.icon === 'function') ? G.WorldMap.icon(w) : wt.icon;
+        // 占领记录没有 kind；补齐地图目标类型，无模型地块仍使用类型图标。
+        var iconPath = (G.WorldMap && typeof G.WorldMap.icon === 'function') ? G.WorldMap.icon(Object.assign({}, w, { kind: 'wild' })) || wt.icon : wt.icon;
         var wtOwnedIcon = /\.svg$|\.png$|\.jpg$|\.gif$|\.webp$/i.test(iconPath)
           ? '<img class="wt-icon" src="' + iconPath + '" alt="' + wt.name + '"/>'
           : iconPath;
@@ -129,7 +130,7 @@ window.Game = window.Game || {};
       if (s.wilds._scout) {
         var sc = s.wilds._scout;
         var wt = D.wildTypes[sc.type];
-        var scIconPath = (G.WorldMap && typeof G.WorldMap.icon === 'function') ? G.WorldMap.icon(sc) : wt.icon;
+        var scIconPath = (G.WorldMap && typeof G.WorldMap.icon === 'function') ? G.WorldMap.icon(Object.assign({}, sc, { kind: 'wild' })) || wt.icon : wt.icon;
         var wtScoutIcon = /\.svg$|\.png$|\.jpg$|\.gif$|\.webp$/i.test(scIconPath)
           ? '<img class="wt-icon" src="' + scIconPath + '" alt="' + wt.name + '"/>'
           : scIconPath;

@@ -116,7 +116,7 @@ public class WorldService {
 
         int px = player.getPosX() != null ? player.getPosX() : 0;
         int py = player.getPosY() != null ? player.getPosY() : 0;
-        int size = WorldConfig.SIZE;
+        int size = worldMapRepository.findFirstByOrderByIdAsc().map(w -> w.getSize() != null ? w.getSize() : WorldConfig.WORLD_SIZE).orElse(WorldConfig.WORLD_SIZE);
 
         // JS: var nx = G.clamp(s.world.pos.x + dx, 0, W.size - 1)
         int nx = Math.max(0, Math.min(size - 1, px + dx));
@@ -290,14 +290,15 @@ public class WorldService {
         Long worldId = worldMapRepository.findFirstByOrderByIdAsc()
                 .map(WorldMap::getId).orElse(null);
         if (worldId == null) return Collections.emptyMap();
+        int worldSize = worldMapRepository.findById(worldId).map(w -> w.getSize() != null ? w.getSize() : WorldConfig.WORLD_SIZE).orElse(WorldConfig.WORLD_SIZE);
 
         Map<String, Object> nearby = new LinkedHashMap<>();
 
         // NPC cities (JS: s.world.npcCities.forEach)
         List<Map<String, Object>> npcCities = new ArrayList<>();
         List<NpcCity> npcAll = npcCityRepository.findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(worldId,
-                Math.max(0, px - scanR), Math.min(WorldConfig.SIZE - 1, px + scanR),
-                Math.max(0, py - scanR), Math.min(WorldConfig.SIZE - 1, py + scanR));
+                Math.max(0, px - scanR), Math.min(worldSize - 1, px + scanR),
+                Math.max(0, py - scanR), Math.min(worldSize - 1, py + scanR));
         for (int i = 0; i < npcAll.size(); i++) {
             NpcCity nc = npcAll.get(i);
             if (manhattanDist(px, py, nc.getX(), nc.getY()) <= scanR) {
@@ -319,13 +320,13 @@ public class WorldService {
         List<Map<String, Object>> playerCities = new ArrayList<>();
         List<Map<String, Object>> simulatedNpcCities = new ArrayList<>();
         List<PlayerCity> pcAll = playerCityRepository.findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(worldId,
-                Math.max(0, px - scanR), Math.min(WorldConfig.SIZE - 1, px + scanR),
-                Math.max(0, py - scanR), Math.min(WorldConfig.SIZE - 1, py + scanR));
+                Math.max(0, px - scanR), Math.min(worldSize - 1, px + scanR),
+                Math.max(0, py - scanR), Math.min(worldSize - 1, py + scanR));
         Map<String, Player> byCoordinates = new HashMap<>();
         Map<Long, Player> byId = new HashMap<>();
         playerRepository.findByCityPosXBetweenAndCityPosYBetween(
-                Math.max(0, px - scanR), Math.min(WorldConfig.SIZE - 1, px + scanR),
-                Math.max(0, py - scanR), Math.min(WorldConfig.SIZE - 1, py + scanR))
+                Math.max(0, px - scanR), Math.min(worldSize - 1, px + scanR),
+                Math.max(0, py - scanR), Math.min(worldSize - 1, py + scanR))
                 .forEach(owner -> {
                     byCoordinates.put(owner.getCityPosX() + "," + owner.getCityPosY(), owner);
                     byId.put(owner.getId(), owner);
@@ -375,11 +376,11 @@ public class WorldService {
         // Wild tiles (JS: s.world.wildTiles.forEach)
         List<Map<String, Object>> wildTiles = new ArrayList<>();
         List<WildTile> wtAll = wildTileRepository.findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(worldId,
-                Math.max(0, px - scanR), Math.min(WorldConfig.SIZE - 1, px + scanR),
-                Math.max(0, py - scanR), Math.min(WorldConfig.SIZE - 1, py + scanR));
+                Math.max(0, px - scanR), Math.min(worldSize - 1, px + scanR),
+                Math.max(0, py - scanR), Math.min(worldSize - 1, py + scanR));
         for (int i = 0; i < wtAll.size(); i++) {
             WildTile wt = wtAll.get(i);
-            if (manhattanDist(px, py, wt.getX(), wt.getY()) <= scanR) {
+            if (!wt.isDormant() && manhattanDist(px, py, wt.getX(), wt.getY()) <= scanR) {
                 Map<String, Object> m = new LinkedHashMap<>();
                 m.put("idx", i);
                 m.put("id", wt.getId());
@@ -401,10 +402,11 @@ public class WorldService {
         //  but included for completeness)
         List<Map<String, Object>> bandits = new ArrayList<>();
         List<Bandit> bAll = banditRepository.findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(worldId,
-                Math.max(0, px - scanR), Math.min(WorldConfig.SIZE - 1, px + scanR),
-                Math.max(0, py - scanR), Math.min(WorldConfig.SIZE - 1, py + scanR));
+                Math.max(0, px - scanR), Math.min(worldSize - 1, px + scanR),
+                Math.max(0, py - scanR), Math.min(worldSize - 1, py + scanR));
         for (int i = 0; i < bAll.size(); i++) {
             Bandit b = bAll.get(i);
+            if (Boolean.TRUE.equals(b.getDefeated())) continue;
             if (manhattanDist(px, py, b.getX(), b.getY()) <= scanR) {
                 Map<String, Object> m = new LinkedHashMap<>();
                 m.put("idx", i);
@@ -895,7 +897,11 @@ public class WorldService {
 
         wt.setOccupied(false);
         wt.setScouted(false);
-        wt.setMined(0);
+        // 兼容没有耗尽时间的旧存档；放弃后立即隐藏，等待异地重生。
+        if (wt.getDepletedAt() == null && wt.getTotalRes() != null && wt.getMined() != null
+                && wt.getTotalRes() > 0 && wt.getMined() >= wt.getTotalRes())
+            wt.setDepletedAt(System.currentTimeMillis());
+        if (wt.getDepletedAt() == null) wt.setMined(0);
         wt.setOccupiedBy(null);
         wt.setGarrison("{}");
         wt.setGathering(false);

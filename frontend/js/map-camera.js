@@ -3,8 +3,8 @@
   'use strict';
   function Camera(size, x, y, scale) {
     this.size = size; this.x = x; this.y = y; this.scale = scale || 44;
-    // 初始视图可继续缩小至 50%，按钮、滚轮和双指手势共用该下限。
-    this.minScale = this.scale * 0.5;
+    // 初始比例是缩小下限，按钮、滚轮和双指手势共用该约束。
+    this.minScale = this.scale;
     this.width = 1; this.height = 1;
   }
   // Orthogonal square grid at 0 degrees.

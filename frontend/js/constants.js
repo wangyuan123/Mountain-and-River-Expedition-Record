@@ -156,6 +156,8 @@ window.Game = window.Game || {};
     connectionStatusNames: { connected: '已连接', connecting: '连接中', reconnecting: '重连中', disconnected: '已断开' },
     battleReportTitles: { conquer: '征服报告', plunder: '掠夺报告', scout: '侦查报告' },
     battleResourceNames: { food: '粮', steel: '钢', oil: '油', rare: '稀矿', gold: '金', diamond: '钻' },
+    // 摩托兵与卡车单独使用燃烧引擎，保留步兵系的其他属性归属。
+    unitSpeedTechKeys: { motor: 'arm_engine', truck: 'arm_engine' },
     unitTechKeys: { inf: null, arm: 'arm_engine', air: 'air_engine', nav: 'nav_engine' },
     resourceKeys: ['food', 'steel', 'oil', 'rare'],
     resourceKeysWithGold: ['food', 'steel', 'oil', 'rare', 'gold'],
@@ -247,7 +249,7 @@ window.Game = window.Game || {};
       { id: 'speedUp36h', cat: 'util', name: '36时加速符',icon: '⚡', desc: '立即缩短36小时建筑/造兵时间',    price: 2000, stock: null, tag: '' },
       { id: 'speedUp48h', cat: 'util', name: '48时加速符',icon: '⚡', desc: '立即缩短48小时建筑/造兵时间',    price: 2500, stock: null, tag: '超值' },
       { id: 'speedUp72h', cat: 'util', name: '72时加速符',icon: '⚡', desc: '立即缩短72小时建筑/造兵时间',    price: 3500, stock: null, tag: '限时' },
-      { id: 'shield',    cat: 'util', name: '护盾',     icon: '🛡️', desc: '使用后8小时免受玩家攻击',         price: 200,  stock: null, tag: '' },
+      { id: 'shield',    cat: 'util', name: '护盾',     icon: '🛡️', desc: '每次使用增加8小时免受玩家攻击时间，可叠加',         price: 200,  stock: null, tag: '' },
       { id: 'marchOrd',  cat: 'util', name: '行军令',   icon: '🚩', desc: '行军速度+50%,持续1小时',          price: 100,  stock: null, tag: '' },
       { id: 'populationOrder', cat: 'util', name: '人口动员令', icon: '👥', desc: '使用后立即增加500空闲人口,不超过人口上限', price: 100, stock: null, tag: '推荐' },
       { id: 'cityRenameCard', cat: 'util', name: '城市改名卡', icon: '🏷️', desc: '为一座城市更换新名字', price: 60, stock: null, tag: '' },

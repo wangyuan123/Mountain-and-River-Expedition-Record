@@ -43,15 +43,36 @@ test('战术地图为双方保留独立阵营类，以便只镜像我军模型',
 test('仅镜像我军模型图片，数量文字和敌军模型不受变换', () => {
   const css = fs.readFileSync(path.join(frontend, 'css/style.css'), 'utf8');
   assert.match(css, /\.tactical-marker\.mine \.tactical-unit-icon \.unit-icon-img\s*\{[^}]*transform:\s*scaleX\(-1\)/s);
-  assert.doesNotMatch(css, /\.tactical-marker\.foe[^}]*scaleX\(-1\)/s);
+  assert.doesNotMatch(css, /\.tactical-marker\.foe \.tactical-unit-icon \.unit-icon-img\s*\{/s);
   assert.doesNotMatch(css, /\.tactical-marker\.mine\s*\{[^}]*scaleX\(-1\)/s);
   assert.match(css, /\.tactical-marker\.mine,\s*\.tactical-marker\.foe\s*\{[^}]*top:\s*calc\(78px \+ var\(--marker-row, 0\) \* 37px\)/s);
+});
+
+test('特种兵原稿朝右，我军保留原向而敌军镜像朝左', () => {
+  const Game = setup();
+  Game.DATA.units.special = { name: '特种兵', range: 180 };
+  const mine = Game.Battle.renderTacticalMarkers({ special: 1 }, { special: 0 }, 600, 'mine');
+  const foe = Game.Battle.renderTacticalMarkers({ special: 1 }, { special: 600 }, 600, 'foe');
+  assert.match(mine, /class="tactical-marker mine" data-unit-id="special"/);
+  assert.match(foe, /class="tactical-marker foe" data-unit-id="special"/);
+  const css = fs.readFileSync(path.join(frontend, 'css/style.css'), 'utf8');
+  assert.match(css, /\.tactical-marker\.mine\[data-unit-id="special"\][^{]*\{[^}]*transform:\s*scaleX\(1\)/s);
+  assert.match(css, /\.tactical-marker\.foe\[data-unit-id="special"\][^{]*\{[^}]*transform:\s*scaleX\(-1\)/s);
 });
 
 test('移动端战场保留按兵种行数计算的高度', () => {
   const css = fs.readFileSync(path.join(frontend, 'css/style.css'), 'utf8');
   const mobileStyles = css.slice(css.lastIndexOf('@media (max-width: 520px)'));
   assert.match(mobileStyles, /^@media \(max-width: 520px\)\s*\{[\s\S]*?\.tactical-map\s*\{\s*min-height:\s*max\(285px,\s*var\(--tactical-map-height,\s*250px\)\)/);
+});
+
+test('横屏战场高度不小于全部兵种行所需高度', () => {
+  const css = fs.readFileSync(path.join(frontend, 'css/landscape.css'), 'utf8');
+  const mapRules = [...css.matchAll(/\.tactical-map\s*\{([^}]+)\}/g)];
+  assert.equal(mapRules.length, 2);
+  for (const rule of mapRules) {
+    assert.match(rule[1], /min-height:\s*max\([^;]*var\(--tactical-map-height,\s*250px\)/);
+  }
 });
 
 test('战术单位按服务端坐标横向定位，并保留纵向行序', () => {
@@ -83,13 +104,46 @@ test('战术地图把敌我相同兵种放入同一水平行', () => {
   Battle.renderTacticalBattle(view);
 
   const rows = {};
-  for (const match of view.innerHTML.matchAll(/class="tactical-marker (mine|foe)" style="left:(\d+)%;--marker-row:(\d+)" title="([^"]+)/g)) {
+  for (const match of view.innerHTML.matchAll(/class="tactical-marker (mine|foe)" data-unit-id="[^"]+" style="left:(\d+)%;--marker-row:(\d+)" title="([^"]+)/g)) {
     rows[`${match[1]}:${match[4].split(' ')[0]}`] = { left: Number(match[2]), row: Number(match[3]) };
   }
   assert.equal(rows['mine:tank'].row, rows['foe:tank'].row);
   assert.equal(rows['mine:tank'].left, 3);
   assert.equal(rows['foe:tank'].left, 97);
   assert.deepEqual(Array.from(Battle.tacticalMarkerRows({ truck: 1, tank: 1 }, { tank: 1, artillery: 1 })), ['truck', 'artillery', 'tank']);
+});
+
+test('盟军与日寇型号名称不同、兵力顺序不同时，同类型图标和射程光带仍共用行号', () => {
+  const Game = setup();
+  const battleData = Game.DATA;
+  vm.runInContext(fs.readFileSync(path.join(frontend, 'js/data.js'), 'utf8'),
+    vm.createContext({ window: { Game } }));
+  Object.assign(battleData, Game.DATA);
+  const Battle = Game.Battle;
+  Battle._activeTactical = {
+    targetName: '日寇据点', targetKind: 'npc', initialDistance: 7750,
+    round: 2, maxRound: 30, finished: true, result: {}, log: '',
+    attackerArmy: { fighter: 12, htank: 8, infantry: 30 },
+    defenderArmy: { infantry: 40, htank: 10, fighter: 15 },
+    attackerPositions: {}, defenderPositions: {}
+  };
+  const view = { innerHTML: '' };
+  Battle.renderTacticalBattle(view);
+
+  assert.match(view.innerHTML, /战斗机-野马（P-51）/);
+  assert.match(view.innerHTML, /战斗机-零式战斗机（A6M5）/);
+  const rows = {};
+  for (const match of view.innerHTML.matchAll(/class="tactical-(marker|range-beam) (mine|foe)"(?: data-unit-id="[^"]+")? style="[^"]*--marker-row:(\d+)" title="([^ ]+)/g)) {
+    const type = match[4].split('-')[0];
+    rows[`${match[1]}:${match[2]}:${type}`] = Number(match[3]);
+  }
+  for (const type of ['步兵', '重型坦克', '战斗机']) {
+    const row = rows[`marker:mine:${type}`];
+    assert.equal(typeof row, 'number');
+    assert.equal(rows[`marker:foe:${type}`], row);
+    assert.equal(rows[`range-beam:mine:${type}`], row);
+    assert.equal(rows[`range-beam:foe:${type}`], row);
+  }
 });
 
 test('兵种按配置顺序共用行号，单方兵种在另一侧留空', () => {
@@ -105,7 +159,7 @@ test('兵种按配置顺序共用行号，单方兵种在另一侧留空', () =>
 
   assert.deepEqual(Array.from(Battle.tacticalMarkerRows(Battle._activeTactical.attackerArmy, Battle._activeTactical.defenderArmy)), ['armored', 'htank', 'rocket']);
   const rows = {};
-  for (const match of view.innerHTML.matchAll(/class="tactical-marker (mine|foe)" style="left:\d+%;--marker-row:(\d+)" title="([^ ]+)/g)) {
+  for (const match of view.innerHTML.matchAll(/class="tactical-marker (mine|foe)" data-unit-id="[^"]+" style="left:\d+%;--marker-row:(\d+)" title="([^ ]+)/g)) {
     rows[`${match[1]}:${match[3]}`] = Number(match[2]);
   }
   assert.deepEqual(rows, {
@@ -218,6 +272,9 @@ test('单兵种当前战术命令具有选中状态和辅助技术状态', () =>
   const css = fs.readFileSync(path.join(frontend, 'css/style.css'), 'utf8');
   assert.match(css, /\.tactical-actions \.btn\.ok,\s*\.tactical-command-shortcuts \.btn\.ok\s*\{[^}]*background:\s*#176db7[^}]*color:\s*#fff[^}]*box-shadow:/s);
   assert.match(css, /\.tactical-actions \.btn\.ok::before,\s*\.tactical-command-shortcuts \.btn\.ok::before\s*\{[^}]*content:\s*'✓ '/s);
+  const textActions = fs.readFileSync(path.join(frontend, 'css/text-actions.css'), 'utf8');
+  assert.match(textActions, /\.tactical-actions button\.btn\.ok,\s*#screen \.tactical-command-shortcuts button\.btn\.ok\s*\{[\s\S]*background:/);
+  assert.match(textActions, /tactical-actions button\.btn\.ok::before[\s\S]*content:\s*'✓ \['/);
 });
 
 test('单兵种移动按钮和集火选项的事件属性可正确传入兵种 ID', async () => {

@@ -345,7 +345,7 @@ public class OnboardingService {
 
             if (gTile != null) {
                 int mined = gTile.getMined() != null ? gTile.getMined() : 0;
-                int totalRes = gTile.getTotalRes() != null ? gTile.getTotalRes() : 800;
+                int totalRes = gTile.getTotalRes() != null ? gTile.getTotalRes() : com.wargame.model.constants.WorldConfig.RES_PER_WILD_LEVEL;
                 gatherAmount = Math.min(gatherAmount, Math.max(0, totalRes - mined));
                 if (gatherAmount <= 0) gatherAmount = 200;
                 gTile.setMined(mined + gatherAmount);
@@ -510,7 +510,7 @@ public class OnboardingService {
             if (d >= 3 && !used.contains(x + "," + y)) {
                 WildTile tile = new WildTile(); tile.setWorldId(world.getId()); tile.setType("grainfield");
                 tile.setX(x); tile.setY(y); tile.setLevel(1); tile.setGarrison(JsonUtil.toJson(Map.of("infantry", 10)));
-                tile.setScouted(false); tile.setOccupied(false); tile.setTotalRes(800); tile.setMined(0);
+                tile.setScouted(false); tile.setOccupied(false); tile.setTotalRes(com.wargame.model.constants.WorldConfig.RES_PER_WILD_LEVEL); tile.setMined(0);
                 wilds.saveAndFlush(tile);
                 mark(rows, playerId, "target_" + tile.getId());
                 return targetView(playerId, tile, d);

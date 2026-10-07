@@ -217,7 +217,8 @@ window.Game = window.Game || {};
         if (G.Account) G.Account.clearNotice();
         self.showLoginMsg('登录成功,加载游戏...', false);
         self.guestMode = false;
-        self._showWelcomeAfterStart = true;
+        // 普通登录不展示新账号欢迎简报，也清除未完成注册流程遗留的标记。
+        self._showWelcomeAfterStart = false;
         return self.startGame();
       }).catch(function (err) {
         self.showLoginMsg(err && err.message ? err.message : '登录失败', true);
@@ -271,6 +272,8 @@ window.Game = window.Game || {};
         G.API.register(username, password, self.registrationAgreementVersion).then(function () {
         self.showLoginMsg('注册成功,加载游戏...', false);
         self.guestMode = false;
+        // 欢迎简报只由账号创建成功触发，已有账号的行动指引由服务端进度控制。
+        self._showWelcomeAfterStart = true;
         return self.startGame();
         }).catch(function (err) {
           self.showLoginMsg(err && err.message ? err.message : '注册失败', true);
@@ -302,6 +305,7 @@ window.Game = window.Game || {};
       this.showLoginMsg('创建游客账号...', false);
       G.API.createGuest().then(function () {
         self.guestMode = true;
+        self._showWelcomeAfterStart = true;
         return self.startGame();
       }).catch(function (err) {
         self.showLoginMsg(err && err.message ? err.message : '服务器不可用', true);
@@ -329,6 +333,7 @@ window.Game = window.Game || {};
         if (G.MainQuest) G.MainQuest.init();
         if (G.Chat) G.Chat.loadHistory();
         if (G.Mail) G.Mail.seed();
+        if (G.PrivateChat) G.PrivateChat.refresh();
         if (G.Task && G.Task.Quests) { G.Task.Quests.init(); G.Task.Quests.onEvent('login', 1, true); }
         if (Main._showWelcomeAfterStart) {
           Main._showWelcomeAfterStart = false;

@@ -26,15 +26,18 @@ public class WorldBootstrap implements ApplicationRunner {
     private final NpcCitySpawnService npcCitySpawnService;
     private final IslandContentService islandContentService;
     private final WorldContentService worldContentService;
+    private final com.wargame.service.LandBanditPopulationService landBandits;
 
     public WorldBootstrap(WorldMapRepository worldMapRepository, GameStateService gameStateService,
                           com.wargame.service.WorldTerrainService terrain, NpcCitySpawnService npcCitySpawnService,
-                          IslandContentService islandContentService, WorldContentService worldContentService) {
+                          IslandContentService islandContentService, WorldContentService worldContentService,
+                          com.wargame.service.LandBanditPopulationService landBandits) {
         this.worldMapRepository = worldMapRepository;
         this.gameStateService = gameStateService; this.terrain = terrain;
         this.npcCitySpawnService = npcCitySpawnService;
         this.islandContentService = islandContentService;
         this.worldContentService = worldContentService;
+        this.landBandits = landBandits;
     }
 
     @Override
@@ -47,6 +50,7 @@ public class WorldBootstrap implements ApplicationRunner {
             npcCitySpawnService.ensurePopulation(world.getId());
             islandContentService.ensure(world.getId());
             worldContentService.ensure(world.getId());
+            landBandits.ensure(world.getId());
         });
     }
 }

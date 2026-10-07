@@ -8,7 +8,7 @@
 .dispatch-map-stats { display:flex; gap:24px; padding:0 12px 10px; color:var(--muted, #62738d); font-size:11px; }
 .dispatch-map-stats b { margin-left:5px; color:var(--ink, #334455); font-size:14px; font-variant-numeric:tabular-nums; }
 .dispatch-map-stats small { font-size:11px; font-weight:400; }
-.dispatch-map-surface { position:relative; margin:0 8px; overflow:hidden; border:1px solid #cad4c8; border-radius:6px; background:#e4e9df; }
+.dispatch-map-surface { position:relative; width:calc(100% - 16px); max-width:1100px; margin:0 auto; overflow:hidden; border:1px solid #cad4c8; border-radius:6px; background:#e4e9df; }
 .dispatch-map-surface svg { display:block; width:100%; height:auto; font-family:inherit; }
 .dispatch-map-grid-label { font-size:8px; fill:#788b7d; }
 .dispatch-map-direction { position:absolute; top:4.5px; left:5px; padding:3px 8px; background:rgba(255,255,255,.84); border:1px solid #d1dacf; border-radius:4px; font-size:11px; font-weight:600; color:#425d51; transform:scale(.5); transform-origin:top left; }

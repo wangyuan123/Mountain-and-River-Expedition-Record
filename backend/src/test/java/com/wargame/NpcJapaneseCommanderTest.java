@@ -154,7 +154,7 @@ class NpcJapaneseCommanderTest {
     }
 
     @Test
-    void testDefeatingMaxLevelBanditDropsDiamondsAndCreditsToWallet() {
+    void testDefeatingMaxLevelBanditCreditsActualDiamondDropToWallet() {
         Bandit maxBandit = new Bandit();
         maxBandit.setWorldId(1L);
         maxBandit.setName("日寇总督府 Lv.30");
@@ -187,19 +187,19 @@ class NpcJapaneseCommanderTest {
         // 攻击结算
         settleWithDefaultTactics(march, now);
 
-        // 验证行军携带战利品中包含钻石
+        // 30 级 NPC 的钻石掉落为 10% 概率 5 颗，不再固定掉落 20 颗。
         March returningMarch = marchRepository.findById(march.getId()).orElseThrow();
         Map<String, Integer> carryRes = JsonUtil.parseIntMap(returningMarch.getCarryRes());
-        assertTrue(carryRes.containsKey("diamond"), "击败最高级据点应缴获钻石");
-        assertEquals(20, carryRes.get("diamond"));
+        int dropped = carryRes.getOrDefault("diamond", 0);
+        assertTrue(dropped == 0 || dropped == 5);
 
         // 验证返程抵达主城入库
         returningMarch.setArriveAt(now);
         marchRepository.save(returningMarch);
         marchService.processMarches(playerId, now + 1000);
 
-        // 验证玩家共享钱包的钻石增加 20
+        // 返程后共享钱包只增加本次实际掉落数量。
         Resources wallet = cityScope.wallet(playerId);
-        assertEquals(20, wallet.getDiamond(), "返程后钻石应存入玩家钱包");
+        assertEquals(dropped, wallet.getDiamond(), "返程后钻石应存入玩家钱包");
     }
 }

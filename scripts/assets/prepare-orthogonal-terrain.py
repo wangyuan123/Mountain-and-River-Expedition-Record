@@ -24,7 +24,7 @@ ITEMS = [
     ('wild-swamp-creek', '沼泽·曲折水网', 620),
     ('wild-swamp-marsh', '沼泽·泥泞浅滩', 615),
     # 地表
-    ('wild-grassland', '地表·温带草甸', 610),
+    # ('wild-grassland', '地表·温带草甸', 610) -> 已删除草原独立地图模型，保留地图原生平原地表
     ('wild-rock', '岩石·风化石林', 635),
     ('wild-plains', '平原·广袤原野', 610),
     # 资源点
@@ -129,9 +129,6 @@ def main():
         ('wild-forest-dense', 'wild-forest'),
         ('wild-hill-ridge', 'wild-hill'),
         ('wild-swamp-deep', 'wild-swamp'),
-        ('wild-grassland', 'grass-lush'),
-        ('wild-grassland', 'grass-medium'),
-        ('wild-grassland', 'grass-sparse'),
         ('wild-plains', 'grass-plain'),
     ]:
         src_png = MAP_DIR / f'{src}-map-embedded.png'
@@ -141,6 +138,13 @@ def main():
             im.save(MAP_DIR / f'{dst}.webp', 'WEBP', quality=92, method=6)
             im.save(MAP_DIR / f'{dst}-map.webp', 'WEBP', quality=92, method=6)
             print(f'  Synced alias {dst} from {src}')
+
+    # 草原已取消独立地图模型，保持透明占位
+    transparent = Image.new('RGBA', (384, 384), (0, 0, 0, 0))
+    for g_name in ['wild-grassland', 'grass-lush', 'grass-medium', 'grass-sparse']:
+        transparent.save(MAP_DIR / f'{g_name}-map-embedded.png', 'PNG', optimize=True)
+        transparent.save(MAP_DIR / f'{g_name}.webp', 'WEBP', quality=92)
+        transparent.save(MAP_DIR / f'{g_name}-map.webp', 'WEBP', quality=92)
             
     print('All orthogonal terrain tiles processed successfully!')
 

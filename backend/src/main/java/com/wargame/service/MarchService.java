@@ -52,7 +52,6 @@ public class MarchService {
     private final BanditRepository banditRepository;
     private final NpcCityRepository npcCityRepository;
     private final PlayerCityRepository playerCityRepository;
-    private final WorldMapRepository worldMapRepository;
     private final ScoutReportRepository scoutReportRepository;
     private final TechnologyRepository technologyRepository;
     private final PlayerRepository playerRepository;
@@ -76,7 +75,6 @@ public class MarchService {
                         BanditRepository banditRepository,
                         NpcCityRepository npcCityRepository,
                         PlayerCityRepository playerCityRepository,
-                        WorldMapRepository worldMapRepository,
                         ScoutReportRepository scoutReportRepository,
                         TechnologyRepository technologyRepository,
                         PlayerRepository playerRepository,
@@ -101,7 +99,6 @@ public class MarchService {
         this.banditRepository = banditRepository;
         this.npcCityRepository = npcCityRepository;
         this.playerCityRepository = playerCityRepository;
-        this.worldMapRepository = worldMapRepository;
         this.scoutReportRepository = scoutReportRepository;
         this.technologyRepository = technologyRepository;
         this.playerRepository = playerRepository;
@@ -170,7 +167,13 @@ public class MarchService {
                 if (gTile != null) {
                     int mined = gTile.getMined() != null ? gTile.getMined() : 0;
                     int gatherAmount = m.getGatherAmount() != null ? m.getGatherAmount() : 0;
-                    gTile.setMined(mined + gatherAmount);
+                    int nextMined = mined + gatherAmount;
+                    gTile.setMined(nextMined);
+                    if (gTile.getTotalRes() != null && nextMined >= gTile.getTotalRes()
+                            && gTile.getDepletedAt() == null) {
+                        // 记录耗尽状态；放弃后立即隐藏，并在下一个固定刷新点异地重生。
+                        gTile.setDepletedAt(System.currentTimeMillis());
+                    }
                     wildTileRepository.save(gTile);
                     if (gTile.getLevel() != null && gTile.getLevel() > 0) {
                         wildLv = gTile.getLevel();
@@ -332,7 +335,8 @@ public class MarchService {
             if ("transport".equals(m.getAction()) || "rebase".equals(m.getAction())) {
                 PlayerCity destination = cityScope.requireOwned(playerId, Long.valueOf(m.getTargetId()), true);
                 try (var ignored = cityScope.enter(destination)) {
-                    addResources(playerId, JsonUtil.parseIntMap(m.getCarryRes()));
+                    // 城市间转移是已扣除的自有库存，必须全额入库，不能按生产容量丢弃货物。
+                    addResources(playerId, JsonUtil.parseIntMap(m.getCarryRes()), false);
                     if ("rebase".equals(m.getAction())) {
                         returnArmy(playerId, JsonUtil.parseIntMap(m.getArmy()));
                         Officer officer = targets.getOfficerById(playerId, m.getCommanderId());
@@ -371,6 +375,17 @@ public class MarchService {
                     marchRepository.save(m);
                     continue;
                 }
+            }
+
+            // 仅拦截尚未开战的来袭部队；已有战斗会话在前面继续由战斗调度器推进。
+            if (target instanceof PlayerCity pc && targets.hasRealOwner(pc)
+                    && isOffensiveAction(m.getAction()) && hasActiveShield(pc, now)) {
+                startReturnMarch(m, now);
+                marchRepository.save(m);
+                notifyIncomingChange(m, "cancelled");
+                pushService.pushMarchUpdate(playerId, marchEvent("shieldBlocked", m,
+                        Map.of("message", "目标城市护盾生效，部队正在返程")));
+                continue;
             }
 
             // 发兵后军团关系可能变更，抵达时必须再次校验，避免旧行军绕过新的外交状态。
@@ -425,6 +440,8 @@ public class MarchService {
                             carryRes.merge(resKey, plunderAmount, Integer::sum);
                             m.setCarryRes(JsonUtil.toJson(carryRes));
                             cTile.setMined(mined + plunderAmount);
+                            if (cTile.getMined() >= totalRes && cTile.getDepletedAt() == null)
+                                cTile.setDepletedAt(now);
                             result.setPlunderedResources(Map.of(resKey, plunderAmount));
                         }
                     }
@@ -501,12 +518,16 @@ public class MarchService {
             action = action.substring("tactical_".length());
         }
 
-        // 流寇奖励来自 WorldConfig
+        // 陆地流寇与海洋 NPC 使用相同的资源奖励档位。
         if (target instanceof Bandit bandit) {
             int level = bandit.getLevel() != null ? bandit.getLevel() : 1;
             if (level >= 1 && level <= WorldConfig.BANDIT_LEVELS.size()) {
-                defenderResources = new LinkedHashMap<>(WorldConfig.BANDIT_LEVELS.get(level - 1).reward());
+                defenderResources = banditBattleResources(bandit);
             }
+        } else if (target instanceof NpcCity) {
+            // 兼容旧存档：30 级 NPC 城市曾预存固定钻石，不能带入新概率掉落结算。
+            defenderResources = new LinkedHashMap<>(defenderResources);
+            defenderResources.remove("diamond");
         }
 
         boolean isPlayerBattle = (target instanceof PlayerCity);
@@ -582,8 +603,10 @@ public class MarchService {
         if (target instanceof Bandit bandit) {
             int level = bandit.getLevel() != null ? bandit.getLevel() : 1;
             if (level >= 1 && level <= WorldConfig.BANDIT_LEVELS.size()) {
-                defenderResources = new LinkedHashMap<>(WorldConfig.BANDIT_LEVELS.get(level - 1).reward());
+                defenderResources = banditBattleResources(bandit);
             }
+        } else if (target instanceof NpcCity) {
+            defenderResources.remove("diamond");
         }
 
         int attackerMil = target instanceof WildTile ? 0 : attackerAttrs.military();
@@ -775,9 +798,12 @@ public class MarchService {
         }
 
         if (target == null) throw new IllegalStateException("战斗目标已不存在，无法结算");
+        Map<String, Integer> defenderResources = new LinkedHashMap<>(JsonUtil.parseIntMap(session.getDefenderResources()));
+        // 旧战斗会话可能缓存固定 20 钻石；统一改由战斗胜利后的概率抽取发放。
+        if (target instanceof Bandit || target instanceof NpcCity) defenderResources.remove("diamond");
         BattleResult result = battleService.finishWorldBattle(round.attackerWin(), round.attackerArmy(), round.defenderArmy(),
                 JsonUtil.parseIntMap(session.getInitialAttacker()), JsonUtil.parseIntMap(session.getInitialDefender()),
-                JsonUtil.parseIntMap(session.getAttackerTech()), session.getAction(), JsonUtil.parseIntMap(session.getDefenderResources()),
+                JsonUtil.parseIntMap(session.getAttackerTech()), session.getAction(), defenderResources,
                 session.getDefenderWarehouseLevel(), battleLog);
         Officer attackerCommander = march.getCommanderId() != null
                 ? targets.getOfficerById(attackerPlayerId, march.getCommanderId()) : targets.getCommander(attackerPlayerId);
@@ -1050,6 +1076,10 @@ public class MarchService {
         harvestAmount = resKey == null ? 0 : Math.min(Math.min(harvestAmount, remaining),
                 calcArmyLoad(JsonUtil.parseIntMap(wt.getGarrison())));
         wt.setMined(mined + harvestAmount);
+        if (wt.getTotalRes() != null && wt.getMined() >= wt.getTotalRes() && wt.getDepletedAt() == null) {
+            // 驻军采集耗尽资源后同样进入统一刷新队列。
+            wt.setDepletedAt(now);
+        }
         wt.setGatherHarvested(harvestAmount);
         wt.setGathering(false);
         wildTileRepository.save(wt);
@@ -1123,7 +1153,7 @@ public class MarchService {
             MarchRouteService.Route route = routes.plan(playerId, tile, remaining, false);
             CityEconomy city = cityScope.economy(playerId);
             double slowest = remaining.keySet().stream().map(GameData.UNITS::get).filter(Objects::nonNull)
-                    .mapToDouble(unit -> unit.spd() * getUnitTechSpdMul(playerId, unit.cat())).min().orElse(1.0);
+                    .mapToDouble(unit -> unit.spd() * getUnitTechSpdMul(playerId, unit.speedCategory())).min().orElse(1.0);
             long duration = Math.max(1L, (long) Math.ceil(route.distance() * WorldConfig.MARCH_SEC_PER_GRID / Math.max(0.1, slowest))) * 1000L;
             result.add(new GarrisonRoute(playerId, cityScope.slot(playerId), city.getCityPosX(), city.getCityPosY(),
                     route.distance(), duration, route.mode(), JsonUtil.toJson(route.points()), remaining));
@@ -1225,7 +1255,7 @@ public class MarchService {
             int have=armyUnitRepository.findByPlayerIdAndCitySlotAndType(playerId,cityScope.slot(playerId),e.getKey()).stream().mapToInt(v->Objects.requireNonNullElse(v.getCount(),0)).sum();
             int count=Math.min(e.getValue(),have);if(count<=0)continue;
             army.put(e.getKey(),count);
-            double effectiveSpd = u.spd() * getUnitTechSpdMul(playerId, u.cat());
+            double effectiveSpd = u.spd() * getUnitTechSpdMul(playerId, u.speedCategory());
             slowest=Math.min(slowest,effectiveSpd);
         }
         if(army.isEmpty())throw new IllegalArgumentException("请选择出征部队以计算路线");
@@ -1286,6 +1316,9 @@ public class MarchService {
         } else if (target instanceof PlayerCity pc) {
             if (playerId.equals(pc.getOwnerId())) throw new IllegalArgumentException("不能攻击自己的城市");
             if (pc.getReadyAt() > System.currentTimeMillis()) throw new IllegalArgumentException("目标城市仍在建设中");
+            if (isOffensiveAction(action) && hasActiveShield(pc, System.currentTimeMillis())) {
+                throw new IllegalArgumentException("目标城市护盾生效，无法发起攻击");
+            }
             if (isOffensiveAction(action) && !canAttackPlayerCity(playerId, pc, System.currentTimeMillis())) {
                 if (guildRelations.areFriendly(playerId, pc.getOwnerId())) {
                     throw new IllegalArgumentException("友好军团成员之间不能征服或掠夺");
@@ -1321,7 +1354,7 @@ public class MarchService {
             if (n > max) n = max;
             if (n <= 0) continue;
             customArmy.put(uid, n);
-            double effectiveSpd = u.spd() * getUnitTechSpdMul(playerId, u.cat());
+            double effectiveSpd = u.spd() * getUnitTechSpdMul(playerId, u.speedCategory());
             if (effectiveSpd < slowestSpd) slowestSpd = effectiveSpd;
         }
         if (customArmy.isEmpty()) throw new IllegalArgumentException("请至少选择一种兵种出征");
@@ -1515,6 +1548,7 @@ public class MarchService {
             result.setCityConquered(false);
             result.setReport(result.getReport() + "\n城市守军已击败；本阶段不转移城市归属。\n");
         }
+        awardNpcDiamond(target, result);
         recordBattleWounded(playerId, m, null, null, result.getInitialAttacker(),
                 result.getSurvivorAttacker(), commander, now, result, "攻方");
         if (target instanceof PlayerCity pc && targets.hasRealOwner(pc)) {
@@ -1643,6 +1677,29 @@ public class MarchService {
             startReturnMarch(m, now);
             marchRepository.save(m);
         }
+    }
+
+    /** 陆地和海洋流寇按同等级领取同一资源档位，不受目标地形或旧存档影响。 */
+    private Map<String, Integer> banditBattleResources(Bandit bandit) {
+        int level = bandit.getLevel() != null ? bandit.getLevel() : 1;
+        return WorldConfig.npcReward(level);
+    }
+
+    /** 只在 30 级 NPC 胜利结算中抽取一次钻石，且不复用旧存档中的固定掉落。 */
+    private void awardNpcDiamond(Object target, BattleResult result) {
+        if (!result.isWin()) return;
+        boolean eligible = target instanceof NpcCity city && Objects.equals(city.getLevel(), WorldConfig.MAX_NPC_LEVEL)
+                || target instanceof Bandit bandit && Objects.equals(bandit.getLevel(), WorldConfig.MAX_NPC_LEVEL);
+        if (!eligible) return;
+        int diamond = WorldConfig.npcDiamondDrop(WorldConfig.MAX_NPC_LEVEL,
+                java.util.concurrent.ThreadLocalRandom.current().nextInt(10));
+        Map<String, Integer> plunder = new LinkedHashMap<>(result.getPlunderedResources());
+        plunder.remove("diamond");
+        if (diamond > 0) {
+            plunder.put("diamond", diamond);
+            result.setReport(result.getReport() + "\n★ 击败 30 级 NPC，获得钻石 " + diamond + "！\n");
+        }
+        result.setPlunderedResources(plunder);
     }
 
     // ========================================================================
@@ -2250,6 +2307,14 @@ public class MarchService {
         }
     }
 
+    /** 护盾只保护所属城市，截止时间等于当前时间时已失效；敌对军团也不能绕过。 */
+    private boolean hasActiveShield(PlayerCity city, long now) {
+        if (city.getOwnerId() == null || !targets.hasRealOwner(city)) return false;
+        return cityStateRepository.findByPlayerIdAndCitySlot(city.getOwnerId(), Objects.requireNonNullElse(city.getCitySlot(), 0))
+                .map(cs -> cs.getShieldUntil() != null && cs.getShieldUntil() > now)
+                .orElse(false);
+    }
+
     /**
      * 判断征服或掠夺玩家城的即时权限。
      * 敌对军团永久直通；友好军团禁止作战；中立玩家仍必须处于有效的个人战争期。
@@ -2464,6 +2529,11 @@ public class MarchService {
     }
 
     public void addResources(Long playerId, Map<String, Integer> resMap) {
+        addResources(playerId, resMap, true);
+    }
+
+    /** 城市间运输/调遣允许库存超过生产容量；其他行军收益沿用容量限制。 */
+    private void addResources(Long playerId, Map<String, Integer> resMap, boolean limitCapacity) {
         if (resMap == null || resMap.isEmpty()) return;
         Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (res == null) {
@@ -2479,7 +2549,9 @@ public class MarchService {
         for (Map.Entry<String, Integer> entry : resMap.entrySet()) {
             int amount = entry.getValue();
             if (amount <= 0) continue;
-            long cap = getResourceCapacity(playerId, entry.getKey());
+            long cap = limitCapacity ? getResourceCapacity(playerId, entry.getKey()) : Integer.MAX_VALUE;
+            // 超过持久化整数范围时回滚结算并保留货物，不静默截断。
+            if (!limitCapacity) Math.addExact(getResourceAmount(res, entry.getKey()), amount);
             switch (entry.getKey()) {
                 case "food" -> {
                     int cur = res.getFood() != null ? res.getFood() : 0;

@@ -32,7 +32,7 @@ function fixture() {
           path: typeof path === 'string' ? path : (path && path.id) || '',
           destroy: () => {},
           orig: { width: 260, height: 260 },
-          baseTexture: { valid: true, resource: { source: {} } }
+          baseTexture: { valid: true, resource: { source: {} }, once: () => {} }
         })
       },
       Sprite: class {
@@ -46,7 +46,7 @@ function fixture() {
         destroy() {}
       },
       Container: class {
-        constructor() { this.children = []; }
+        constructor() { this.children = []; this.position = { set: () => {} }; }
         addChild(ch) { this.children.push(ch); }
         removeChild(ch) {
           const idx = this.children.indexOf(ch);
@@ -61,7 +61,19 @@ function fixture() {
         drawPolygon() { return this; }
         moveTo() { return this; }
         lineTo() { return this; }
+        drawEllipse() { return this; }
+        drawRoundedRect() { return this; }
+        quadraticCurveTo() { return this; }
         addChild() {}
+      },
+      Text: class {
+        constructor(text, style) {
+          this.text = text;
+          this.style = style;
+          this.width = 40; this.height = 12;
+          this.anchor = { set: () => {} };
+          this.position = { set: () => {} };
+        }
       },
       Matrix: class {}
     },
@@ -77,11 +89,11 @@ function fixture() {
   vm.createContext(c);
 
   require('./load-constants.cjs')(c);
-  for (const file of ['map-camera.js', 'map-ocean.js', 'map-terrain.js', 'map-chunks.js']) {
+  for (const file of ['map-camera.js', 'map-layout.js', 'map-ocean.js', 'map-terrain.js', 'map-chunks.js']) {
     vm.runInContext(fs.readFileSync(path.join(__dirname, '../js', file), 'utf8'), c);
   }
   let source = fs.readFileSync(path.join(__dirname, '../js/world-map.js'), 'utf8');
-  source = source.replace('  G.WorldMap={', '  G.TestMapView=MapView;\n  G.WorldMap={');
+  source = source.replace('  G.WorldMap={', '  G.TestMapView=MapView; G.TestMapCache=cache;\n  G.WorldMap={');
   vm.runInContext(source, c);
 
   return c;
@@ -136,6 +148,7 @@ test('draw preserves groundTiles across revisions and updates without wiping', (
   v.drawClouds = () => {};
   v.drawMinimap = () => {};
   v.app = { renderer: { render: () => {} } };
+  v.shell = { querySelector: () => null };
 
   // Initial drawGround creates some tiles
   v.drawGround();
@@ -150,6 +163,38 @@ test('draw preserves groundTiles across revisions and updates without wiping', (
   // Calling draw should not nuke groundTiles
   v.draw();
   assert.ok(v.groundTiles.size >= countBefore, 'groundTiles must NOT be wiped when chunk arrives or revision updates');
+});
+
+test('drawing a shielded city keeps the map rendering and enables shield animation', () => {
+  const c = fixture();
+  const v = Object.create(c.Game.TestMapView.prototype);
+  const city = { kind: 'player', id: 1, x: 50, y: 50, name: 'City', cityState: 'shield' };
+  c.Game.TestMapCache.targets = () => [city];
+  v.camera = new c.Game.MapCamera(200, 50, 50, 48);
+  v.camera.width = 400; v.camera.height = 300;
+  v.groundSize = 200;
+  v.ground = new c.PIXI.Sprite({ orig: { width: 2048, height: 2048 } });
+  v.shell = { querySelector: () => null };
+  v.terrain = new c.PIXI.Graphics();
+  v.selectionOutline = new c.PIXI.Graphics();
+  v.statusEl = {}; v.coordEl = {}; v.regionEl = {};
+  v.allowed = () => true;
+  v.markerLayer = new c.PIXI.Container();
+  v.captionLayer = new c.PIXI.Container();
+  v.markers = new Map();
+  v.drawGround = v.drawClouds = v.drawRoutes = v.drawMinimap = () => {};
+  let renders = 0;
+  v.app = { renderer: { render: () => { renders++; } } };
+
+  v.draw();
+
+  assert.equal(renders, 1);
+  assert.equal(v.animatingShields, true);
+  assert.equal(v.markers.get('player:1').shield.visible, true);
+  city.cityState = 'peace';
+  v.draw();
+  assert.equal(v.animatingShields, false);
+  assert.equal(v.markers.get('player:1').shield.visible, false);
 });
 
 test('camera allows sliding 6 cells beyond each world border', () => {
@@ -175,7 +220,7 @@ test('camera allows sliding 6 cells beyond each world border', () => {
   assert.ok(Number.isFinite(p.x) && Number.isFinite(p.y));
 
   // Verify region description for out-of-bounds border areas
-  assert.equal(c.Game.MapTerrain.region(-1, -1, 200), '边境雪原 · 无法通行');
+  assert.equal(c.Game.MapTerrain.region(-1, -1, 200), '边境野地 · 无法通行');
   assert.equal(c.Game.MapTerrain.region(200, 200, 200), '边境野地 · 无法通行');
   assert.notEqual(c.Game.MapTerrain.region(100, 100, 200), '边境野地 · 无法通行');
 });

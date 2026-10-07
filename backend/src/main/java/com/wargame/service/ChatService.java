@@ -116,7 +116,7 @@ public class ChatService {
         }
 
         String originalContent = content;
-        content = politicalWordFilter.filter(filterSensitiveWords(content));
+        content = filterContent(content);
         ChatMessage message = new ChatMessage(null, playerId, player.getUsername(), content, now);
         ChatDtos.MessageResponse response = toDto(chatMessageRepository.save(message), player.getAvatar());
 
@@ -132,6 +132,11 @@ public class ChatService {
         data.put("ts", response.ts());
         pushService.broadcast("chat", data);
         return response;
+    }
+
+    /** 各聊天频道共用内容过滤，不共享发言资格限制。 */
+    public String filterContent(String content) {
+        return politicalWordFilter.filter(filterSensitiveWords(content));
     }
 
     private String normalize(String content) {

@@ -2,8 +2,12 @@
 (function (G) {
   'use strict';
   function isPlayer(t) { return t.kind === 'player' || !!t.selfCity; }
+  /** 返回地图展示占地边长；城市、NPC 与流寇统一四格，野地保留单格。 */
+  function footprintSpan(t) {
+    return isPlayer(t) || t.kind === 'npc' || t.kind === 'simulated_npc' || t.kind === 'bandit' ? 2 : 1;
+  }
   function bounds(t, worldSize) {
-    var span = isPlayer(t) ? 2 : 1;
+    var span = footprintSpan(t);
     var x = Math.max(0, Math.min(worldSize - span, t.x));
     var y = Math.max(0, Math.min(worldSize - span, t.y));
     return { x:x, y:y, span:span, cx:x+span/2, cy:y+span/2 };
@@ -42,5 +46,5 @@
     if (!mask || u<0 || u>=1 || v<0 || v>=1) return false;
     return mask.alpha[Math.floor(v*mask.height)*mask.width+Math.floor(u*mask.width)]>=32;
   }
-  G.MapLayout = { isPlayer:isPlayer, bounds:bounds, contains:contains, pick:pick, unproject:unproject, opaqueAt:opaqueAt };
+  G.MapLayout = { isPlayer:isPlayer, footprintSpan:footprintSpan, bounds:bounds, contains:contains, pick:pick, unproject:unproject, opaqueAt:opaqueAt };
 })(window.Game = window.Game || {});

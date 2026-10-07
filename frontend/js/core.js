@@ -430,9 +430,10 @@ window.Game = window.Game || {};
       return allMul;
     },
 
-    spdMul: function (cat) {
+    /** 行军倍率按兵种匹配引擎科技；省略 unitId 时保持类别计算兼容。 */
+    spdMul: function (cat, unitId) {
       var s = this.state;
-      var catKey = G.Constants.unitTechKeys[cat];
+      var catKey = G.Constants.unitSpeedTechKeys[unitId] || G.Constants.unitTechKeys[cat];
       var techBonus = catKey ? 0.05 * (s.tech[catKey] || 0) : 0;
       var buildingBonus = 0;
       if (cat === 'air' && s.buildings && s.buildings.apron) {

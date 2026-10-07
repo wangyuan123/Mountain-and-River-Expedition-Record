@@ -26,6 +26,34 @@ function runtime() {
 }
 function data(extra = {}) { return { enrolled: true, paused: false, done: false, completed: 0, objectives: [], supplies: [], current: null, checks: {}, ...extra }; }
 
+test('building and research confirmations only spotlight while onboarding is active', async () => {
+  for (const [module, method] of [['Build', 'confirmUpgrade'], ['Tech', 'confirmResearch']]) {
+    const { G, elements, ctx } = modalRuntime();
+    let confirmations = 0;
+    G[module] = { [method]() { confirmations++; return 'confirmed'; } };
+    await G.Onboarding.init();
+    delete elements.onboardingBar;
+    elements.cuOk = { disabled: false };
+    const callbacks = [];
+    ctx.setTimeout = callback => { callbacks.push(callback); return callbacks.length; };
+    for (const inactive of [null, data({ enrolled: false }), data({ paused: true }), data({ done: true })]) {
+      G.Onboarding.state.data = inactive;
+      assert.equal(G[module][method]('farm', 2), 'confirmed');
+      assert.equal(G.Onboarding.getCurrentSpotlightTarget(), null);
+      assert.equal(elements.onboardingSpotlightMask, undefined);
+    }
+    G.Onboarding.state.data = data();
+    G[module][method]('farm', 2);
+    assert.equal(G.Onboarding.getCurrentSpotlightTarget(), elements.cuOk);
+    G.Onboarding.state.data = data({ done: true });
+    G.Onboarding.clearSpotlight();
+    callbacks.forEach(callback => callback());
+    assert.equal(G.Onboarding.getCurrentSpotlightTarget(), null, '跳过后延迟检查不能重新创建聚光灯');
+    assert.equal(elements.onboardingSpotlightMask, undefined);
+    assert.equal(confirmations, 5);
+  }
+});
+
 test('graduation replaces plan choices with encouragement and briefly spotlights the task tab', async () => {
   const { G, elements, calls, ctx } = modalRuntime();
   const final = { id: 'plan', title: '选择发展方向', body: '旧文案' };
@@ -1117,7 +1145,10 @@ test('navigating to reconTech spotlights tech research button and speedup button
   assert.equal(r.G.Onboarding.getCurrentSpotlightTarget(), mockResearchBtn, '聚光灯应聚焦到科技卡片上的研发按钮');
 
   // 测试 confirmResearch 弹窗中的确定按钮聚光灯
-  r.G.Onboarding.init();
+  const initialized = r.G.Onboarding.init();
+  r.calls[0].request.resolve(data({ current: { id: 'reconTech' } }));
+  await initialized;
+  r.G.Onboarding.go('tech', 'recon_level');
   r.G.Tech.confirmResearch('recon_level');
   assert.equal(r.G.Onboarding.getCurrentSpotlightTarget(), mockCuOk, '科技研发确认弹窗的开始研发按钮应获得聚光灯');
 

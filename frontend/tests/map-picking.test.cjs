@@ -151,11 +151,12 @@ test('stationed gathering details expose only the controls appropriate to the mo
 test('player art follows actual coast status for own and other cities, including legacy inland naval cities',()=>{
  const {c}=fixture(),icon=c.Game.TestMapIcon;
  for(const selfCity of [true,false]){
-  assert.equal(icon({kind:'player',selfCity,coastal:true}),'img/cities/harbor.webp');
-  assert.equal(icon({kind:'player',selfCity,coastal:false,legacyNaval:true}),'img/cities/garden-citadel.webp');
-  assert.equal(icon({kind:'player',selfCity}),'img/cities/garden-citadel.webp');
+  assert.equal(icon({kind:'player',selfCity,coastal:true}),'img/cities/player-city-preview-map.png');
+  assert.equal(icon({kind:'player',selfCity,coastal:false,legacyNaval:true}),'img/cities/player-city-preview-map.png');
+  assert.equal(icon({kind:'player',selfCity}),'img/cities/player-city-preview-map.png');
  }
- assert.equal(icon({kind:'npc',coastal:true}),'img/map/npc-fortress.webp');
+ assert.equal(icon({kind:'npc',coastal:true}),'img/map/npc-fortress-orthogonal.webp');
+ assert.equal(icon({kind:'bandit',sea:false}),'img/map/npc-fortress-orthogonal.webp');
  for(const [name,vessel] of [
   ['日寇第1舰队','battleship'],['日寇第4航母编队','carrier'],
   ['日寇第5潜艇支队','sub'],['日寇第6驱逐舰队','destroyer']
@@ -171,7 +172,9 @@ test('player cities extend their ground depth by 28% at every map zoom',()=>{
   assert.equal(height({kind:'wild'},width),width);
   assert.ok(Math.abs(height({kind:'player',coastal:false},width)*.90/width-.64)<1e-9);
   assert.ok(Math.abs(height({kind:'player',coastal:true},width)*.60/width-.64)<1e-9);
-  assert.ok(Math.abs(height({kind:'npc'},width)*.75/width-.5)<1e-9);
+  assert.equal(height({kind:'npc'},width),width);
+  assert.equal(height({kind:'bandit',sea:false},width),width);
+  assert.equal(height({kind:'simulated_npc'},width),width);
  }
 });
 test('march marker uses the home-page unit model for its largest represented unit',()=>{
@@ -213,15 +216,29 @@ test('city name is shown beside city status instead of below the city artwork',(
  assert.doesNotMatch(source,/marker\.label/);
  assert.match(source,/info = caption \+ '·' \+ status \+ '\\n' \+ coordinates;/);
 });
-test('all unit models remain upright (rotation = 0) and face left or right based on route direction',()=>{
+test('ground and naval models remain upright and face left or right based on route direction',()=>{
  const {c}=fixture();
- const units=['fighter','bomber','transport','scout','truck','motor','armored','ltank','htank','assault','rocket','destroyer','sub','battleship','carrier','infantry','special'];
+ const units=['truck','motor','armored','ltank','htank','assault','rocket','destroyer','sub','battleship','carrier','infantry','special'];
  for(const unit of units) {
   for(const [dx,dy] of [[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]]) {
    const heading=c.Game.TestMarchHeading([{x:0,y:0},{x:dx,y:dy}],0,unit);
    assert.equal(heading.rotation, 0, unit+' must remain upright without 2D plane tilt');
    const expectedScaleX = unit === 'special' ? (dx > 0 ? 1 : -1) : (dx > 0 ? -1 : 1);
    assert.equal(heading.scaleX, expectedScaleX, unit+' horizontal facing on '+dx+','+dy);
+  }
+ }
+});
+
+test('aircraft noses follow route direction and reverse on the return route',()=>{
+ const {c}=fixture();
+ const vectors={fighter:[-265,145],bomber:[-255,105],scout:[-145,145],transport:[-260,110]};
+ for(const [unit,[fx,fy]] of Object.entries(vectors)) {
+  for(const [dx,dy] of [[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]]) {
+   const heading=c.Game.TestMarchHeading([{x:0,y:0},{x:dx,y:dy}],0,unit);
+   const angle=Math.atan2(fy,fx)+heading.rotation;
+   assert.ok(Math.abs(Math.cos(angle)-dx/Math.hypot(dx,dy))<1e-9,unit);
+   assert.ok(Math.abs(Math.sin(angle)-dy/Math.hypot(dx,dy))<1e-9,unit);
+   assert.equal(heading.scaleX,1);
   }
  }
 });
@@ -349,27 +366,34 @@ test('ground cell fallback still works and CSS-projected events share the same p
  v.pick({x:20,y:20});assert.ok(v.result.site);
 });
 
-test('selection outline is limited to empty land and non-resource wild terrain',()=>{
+test('selection outline is shown for empty land, all wild terrain, npc and player cities',()=>{
  const {v,c}=fixture();
  c.Game.DATA={wildTypes:{forest:{res:null},snow:{res:null},oil:{res:'oil'},grainfield:{res:'food'}}};
  c.Game.MapOcean={sea:(x,y)=>x===199};
- for(const target of [{kind:'site'}, {kind:'wild',type:'forest'}, {kind:'wild',type:'snow'}]){
+ for(const target of [
+  {kind:'site'},
+  {kind:'wild',type:'forest'},
+  {kind:'wild',type:'snow'},
+  {kind:'wild',type:'oil'},
+  {kind:'wild',type:'grainfield'},
+  {kind:'wild',type:'unknown'},
+  {kind:'npc'},
+  {kind:'player'}
+ ]){
   v.selected={...target,x:10,y:10};assert.equal(v.showSelectionOutline(),true);
   v.selected.x=199;assert.equal(v.showSelectionOutline(),false);
  }
- for(const target of [null,{kind:'npc'}, {kind:'player'}, {kind:'wild',type:'oil'}, {kind:'wild',type:'grainfield'}, {kind:'wild',type:'unknown'}]){
-  v.selected=target;assert.equal(v.showSelectionOutline(),false);
- }
+ v.selected=null;assert.equal(v.showSelectionOutline(),false);
 });
 
 test('map labels distinguish own, other and unclaimed territory without treating claimed as mine',()=>{
  const {c}=fixture();c.Game.DATA={wildTypes:{oil:{name:'油田',res:'oil'},forest:{res:null}}};
  const caption=c.Game.TestOwnershipCaption;
  assert.equal(caption({kind:'player',selfCity:true}),'我的城市');
- assert.equal(caption({kind:'player',selfCity:false,ownerName:'远山'}),'远山');
+ assert.equal(caption({kind:'player',selfCity:false,ownerName:'远山'}),'');
  const wild={kind:'wild',type:'oil',level:1};
  assert.equal(caption({...wild,occupied:true,claimed:true}),'我的 · 1级');
- assert.equal(caption({...wild,occupied:false,claimed:true,ownerName:'远山'}),'远山 · 1级');
+ assert.equal(caption({...wild,occupied:false,claimed:true,ownerName:'远山'}),'油田 · 1级');
  assert.equal(caption({...wild,occupied:false,claimed:false}),'油田 · 1级');
  assert.equal(caption({kind:'npc'}),'');
  assert.equal(caption({kind:'wild',type:'forest'}),'');
@@ -383,7 +407,7 @@ test('reused badges update on capture and release, and clicking a badge opens it
  const g={};for(const key of ['clear','lineStyle','beginFill','drawRoundedRect','endFill','drawPolygon','moveTo','lineTo'])g[key]=()=>g;
  m.ownershipPlate=g;m.ownershipText={text:'',width:50,style:{},position:{set(){}}};
  v.captionLayer={children:[{mapMarker:m}]};
- for(const [occupied,claimed,expected] of [[false,false,'油田 · 1级'],[true,true,'我的 · 1级'],[false,true,'远山 · 1级'],[false,false,'油田 · 1级']]){
+ for(const [occupied,claimed,expected] of [[false,false,'油田 · 1级'],[true,true,'我的 · 1级'],[false,true,'油田 · 1级'],[false,false,'油田 · 1级']]){
   Object.assign(target,{occupied,claimed});c.Game.TestDrawOwnership(m,target,-90);
   assert.equal(m.ownershipText.text,expected);assert.equal(g.visible,true);
   v.pick({x:m.x,y:m.y-80});assert.equal(v.result.target,target);

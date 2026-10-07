@@ -38,7 +38,7 @@ test('森林、丘陵、沼泽地形图标采用多样化变体，且四邻接�
   for (let x = 0; x < 3; x++) {
     for (let y = 0; y < 3; y++) {
       const art = getIcon({ kind: 'wild', type: 'forest', x, y });
-      assert.match(art, /^img\/map\/wild-forest-(dense|ridge|edge)\.webp$/);
+      assert.match(art, /^img\/map\/wild-forest-(dense|ridge|edge)-integrated\.webp$/);
       forestVariants.add(art);
     }
   }
@@ -60,7 +60,7 @@ test('森林、丘陵、沼泽地形图标采用多样化变体，且四邻接�
   for (let x = 0; x < 3; x++) {
     for (let y = 0; y < 3; y++) {
       const art = getIcon({ kind: 'wild', type: 'hill', x, y });
-      assert.match(art, /^img\/map\/wild-hill-(peak|ridge|foothill)\.webp$/);
+      assert.match(art, /^img\/map\/wild-hill-(peak|ridge|foothill)-integrated\.webp$/);
       hillVariants.add(art);
     }
   }
@@ -71,7 +71,7 @@ test('森林、丘陵、沼泽地形图标采用多样化变体，且四邻接�
   for (let x = 0; x < 3; x++) {
     for (let y = 0; y < 3; y++) {
       const art = getIcon({ kind: 'wild', type: 'swamp', x, y });
-      assert.match(art, /^img\/map\/wild-swamp-(deep|creek|marsh)\.webp$/);
+      assert.match(art, /^img\/map\/wild-swamp-(deep|creek|marsh)-integrated\.webp$/);
       swampVariants.add(art);
     }
   }
@@ -110,6 +110,16 @@ test('全部 9 款变体的 WebP 与 embedded-PNG 物理文件均真实存在且
     'img/map/wild-swamp-marsh-map-embedded.png',
   ];
 
+  const integrated = [
+    'forest-dense', 'forest-ridge', 'forest-edge',
+    'hill-peak', 'hill-ridge', 'hill-foothill',
+    'swamp-deep', 'swamp-creek', 'swamp-marsh',
+    'rock', 'grainfield', 'oil', 'plains'
+  ];
+  for (const name of integrated) {
+    expectedFiles.push(`img/map/wild-${name}-integrated.webp`);
+    expectedFiles.push(`img/map/wild-${name}-integrated-map-embedded.png`);
+  }
   for (const rel of expectedFiles) {
     const p = path.join(root, rel);
     assert.ok(fs.existsSync(p), `文件必须存在: ${rel}`);
@@ -122,10 +132,20 @@ test('Game.WorldMap.icon 导出方法可正确解析野地变体图标', () => {
   const c = setup();
   assert.equal(typeof c.Game.WorldMap.icon, 'function');
   const forestArt = c.Game.WorldMap.icon({ kind: 'wild', type: 'forest', x: 5, y: 8 });
-  assert.match(forestArt, /^img\/map\/wild-forest-(dense|ridge|edge)\.webp$/);
+  assert.match(forestArt, /^img\/map\/wild-forest-(dense|ridge|edge)-integrated\.webp$/);
   const hillArt = c.Game.WorldMap.icon({ kind: 'wild', type: 'hill', x: 5, y: 8 });
-  assert.match(hillArt, /^img\/map\/wild-hill-(peak|ridge|foothill)\.webp$/);
+  assert.match(hillArt, /^img\/map\/wild-hill-(peak|ridge|foothill)-integrated\.webp$/);
   const swampArt = c.Game.WorldMap.icon({ kind: 'wild', type: 'swamp', x: 5, y: 8 });
-  assert.match(swampArt, /^img\/map\/wild-swamp-(deep|creek|marsh)\.webp$/);
+  assert.match(swampArt, /^img\/map\/wild-swamp-(deep|creek|marsh)-integrated\.webp$/);
+});
+
+test('草原已删除独立地图模型，icon 返回空字符串以保留大地图原生平原地表', () => {
+  const c = setup();
+  for (let x = 0; x < 5; x++) {
+    for (let y = 0; y < 5; y++) {
+      const art = c.Game.TestMapIcon({ kind: 'wild', type: 'grassland', x, y });
+      assert.equal(art, '', `坐标 (${x},${y}) 的草原不应返回任何独立模型贴图`);
+    }
+  }
 });
 
