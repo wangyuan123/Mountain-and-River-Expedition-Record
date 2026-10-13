@@ -28,7 +28,7 @@ class BattlePrestigeTest {
                 Map.of("infantry", 10, "rocket", 1), Map.of(),
                 Map.of("infantry", 20, "bunker", 5), Map.of("bunker", 5));
 
-        // 守方损失步兵 20 点；攻方损失步兵 10 点和火箭 6 点，净声望为 +4。
+        // 守方损失步兵 20 点；攻方损失步兵 10 点和反坦克火箭车 6 点，净声望为 +4。
         assertEquals(4, attackerChange);
         assertEquals(-attackerChange, BattlePrestige.attackerNetChange(
                 Map.of("infantry", 20, "bunker", 5), Map.of("bunker", 5),

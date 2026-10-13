@@ -8,6 +8,7 @@ import java.util.List;
 public interface TechResearchQueueRepository extends JpaRepository<TechResearchQueue, Long> {
     List<TechResearchQueue> findByPlayerIdOrderByStartedAtAscIdAsc(Long playerId);
     List<TechResearchQueue> findByPlayerIdAndFinishesAtLessThanEqualOrderByFinishesAtAscIdAsc(Long playerId, Long finishesAt);
+    List<TechResearchQueue> findByPlayerIdAndCitySlotAndFinishesAtLessThanEqualOrderByFinishesAtAscIdAsc(Long playerId, Integer citySlot, Long finishesAt);
     List<TechResearchQueue> findByPlayerIdAndCitySlotOrderByStartedAtAscIdAsc(Long playerId, Integer citySlot);
     void deleteByPlayerId(Long playerId);
 }

@@ -1,0 +1,11 @@
+Use case: stylized-concept
+Asset type: World War II strategy game unit model sprite, to match the existing anti-air armored car model.
+Primary request: Create a realistic, finely detailed 3D scale-model render of an American M8 Greyhound armored reconnaissance car.
+Input image 1: style reference only, the game's existing T17E2 anti-air armored car. Match its camera elevation, front-left three-quarter view, lighting, level of realism, olive drab paint, material detail, and framing. Change the vehicle identity to the M8 Greyhound; do not copy the T17E2's twin anti-aircraft guns or four-wheel layout.
+Subject: one complete M8 Greyhound, six wheels on three axles, low angular armored body, small open-topped turret with a single forward-pointing 37 mm main gun, long thin radio antenna, realistic tire tread, wheel hubs, hatches, rivets, metal edges, tools and rear engine deck details. All six wheels belong to the vehicle, with natural perspective occlusion; three near-side wheels must be clearly visible. No crew.
+Style/medium: realistic miniature military vehicle photography / high-quality 3D model rendering, matching the provided game asset. Fine mechanical detailing and subtle wear; no exaggerated rust or damage. No low-poly facets, cartoon shading, flat illustration, or vector icon styling.
+Composition/framing: front-left three-quarter view from above, vehicle facing the lower-left, centered and fully contained in a square image with 6 percent clear margin. Keep the cannon, wheels and antenna fully visible. Readable silhouette at 56 and 72 pixels.
+Lighting/materials: neutral soft studio light, matte olive drab painted steel, dark rubber tires, restrained metallic highlights, natural depth and contact shading. Preserve distinct wheels and turret, without a thick outline.
+Scene/backdrop: plain pure white studio background for local alpha extraction, no horizon line, scenery, frame, pedestal, or large cast shadow. No white paint on the vehicle.
+Text: no captions, labels, watermark, insignia, or large decorative text.
+Constraints: exactly one vehicle. Use the reference only to match the game's art direction. This is a reconnaissance vehicle, with a single level main gun and a radio antenna, not an anti-aircraft gun platform, tank, or tracked vehicle.

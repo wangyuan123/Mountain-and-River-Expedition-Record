@@ -31,11 +31,11 @@ public record OfficerSkillDef(
     );
 
     public static final Map<String, OfficerSkillDef> OFFICER_SKILLS = Map.ofEntries(
-            Map.entry("frenzy",     new OfficerSkillDef("frenzy",     "全军冲锋", "首次交战回合及之后每隔2回合生效（如第4、7、10回合），全军攻击力额外+10%/级", 5, "atk")),
-            Map.entry("bulwark",    new OfficerSkillDef("bulwark",    "坚守阵地", "首次交战回合及之后每隔2回合生效（如第4、7、10回合），全军防御力额外+10%/级", 5, "def")),
-            Map.entry("blitz",      new OfficerSkillDef("blitz",      "闪电突击", "战场移动速度+6%/级，最高30%",       5, "spd")),
-            Map.entry("suppress",   new OfficerSkillDef("suppress",   "火力压制", "降低敌方攻击力6%/级，最高30%",       5, "debuff")),
-            Map.entry("pierce",     new OfficerSkillDef("pierce",     "破甲打击", "无视敌方防御6%/级",           5, "pierce")),
+            Map.entry("frenzy",     new OfficerSkillDef("frenzy",     "全军冲锋", "首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），全军攻击力额外+10%/级，最高50%，仅本回合生效；主动攻击、余伤攻击与反击均适用，不放大师夷长技追加的攻击", 5, "atk")),
+            Map.entry("bulwark",    new OfficerSkillDef("bulwark",    "坚守阵地", "首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），全军防御力额外+10%/级，最高50%，仅本回合生效；与借甲御敌不能同时学习，历史兼有时仅坚守阵地生效", 5, "def")),
+            Map.entry("blitz",      new OfficerSkillDef("blitz",      "闪电突击", "首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），战场移动速度+6%/级，最高30%，仅本回合生效；首次交战仅影响同射程单位的交火先手，后续生效回合同时影响机动与先手。行动顺序按射程优先、同射程速度优先；射程与速度均相同时，奇数回合进攻方先手、偶数回合防守方先手", 5, "spd")),
+            Map.entry("suppress",   new OfficerSkillDef("suppress",   "火力压制", "首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），降低敌方自身攻击力6%/级，最高30%，仅本回合生效，主动攻击、余伤攻击与反击均适用，不削减师夷长技追加的攻击", 5, "debuff")),
+            Map.entry("pierce",     new OfficerSkillDef("pierce",     "破甲打击", "首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），无视敌方有效防御6%/级，最高30%，仅本回合生效，主动攻击、余伤攻击与反击均适用", 5, "pierce")),
             Map.entry("leadership", new OfficerSkillDef("leadership", "三军统帅", "指挥官任命时，带兵上限额外+4%/级，最高20%", 5, "mil")),
             Map.entry("medic",      new OfficerSkillDef("medic",      "战地急救", "战后伤兵额外回收+3%/级，最高15%", 5, "medic")),
             Map.entry("harvest",    new OfficerSkillDef("harvest",    "屯田增产", "市长任命时，基础资源产出额外+10%/级", 5, "logi")),
@@ -43,9 +43,9 @@ public record OfficerSkillDef(
             Map.entry("finance",    new OfficerSkillDef("finance",    "精明理财", "市长任命时，黄金税收产出额外+4%/级", 5, "know")),
             Map.entry("research",   new OfficerSkillDef("research",   "格物致知", "市长任命时，科研速度提升4%/级",     5, "know")),
             Map.entry("ration",     new OfficerSkillDef("ration",     "军屯自给", "市长任命时，全城养兵耗粮降低16%/级，最高80%", 5, "logi")),
-            Map.entry("counter",    new OfficerSkillDef("counter",    "绝境反击", "首次交战回合及之后每隔2回合生效（如第4、7、10回合）；受击存活且射程允许时，以当前剩余兵力总伤害的20%/级反击，最高100%", 5, "def")),
-            Map.entry("learn",      new OfficerSkillDef("learn",      "师夷长技", "首次交战回合及之后每隔2回合生效（如第4、7、10回合）；主动攻击时借用存活同名敌军对应攻击的6%/级，单次最高为敌军对应攻击的30%，反击不生效", 5, "atk")),
-            Map.entry("borrow_armor", new OfficerSkillDef("borrow_armor", "借甲御敌", "首次交战回合及之后每隔2回合生效（如第4、7、10回合）；受击时借用存活同名敌军防御的6%/级，单次最高为敌军同名兵种防御的30%，仅本回合生效", 5, "def"))
+            Map.entry("counter",    new OfficerSkillDef("counter",    "绝境反击", "首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效）；受击存活且射程允许时，以当前剩余兵力总伤害的20%/级反击，最高100%；按反击兵种自身对应领域攻击与专项倍率结算，不继承来袭方倍率", 5, "def")),
+            Map.entry("learn",      new OfficerSkillDef("learn",      "师夷长技", "首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效）；主动攻击时借用交火阶段开始时存活同名敌军对应攻击的6%/级，单次最高为敌军对应攻击的30%；参考值含攻击科技与军官综合军事属性，不复制专项倍率或临时技能，反击不生效", 5, "atk")),
+            Map.entry("borrow_armor", new OfficerSkillDef("borrow_armor", "借甲御敌", "首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效）；受击时借用交火阶段开始时存活同名敌军防御的6%/级，单次最高为敌军同名兵种防御的30%，仅本回合生效；参考值只含基础防御与防御科技，不包含城墙、军官属性或技能；与坚守阵地不能同时学习，历史兼有时仅坚守阵地生效", 5, "def"))
     );
 
     /** 获取技能定义（自动兼容历史存量 supply 技能映射到 leadership） */

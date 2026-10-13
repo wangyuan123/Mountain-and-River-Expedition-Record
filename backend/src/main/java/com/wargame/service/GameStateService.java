@@ -20,6 +20,8 @@ import java.util.concurrent.ThreadLocalRandom;
 @Service
 public class GameStateService {
 
+    @org.springframework.beans.factory.annotation.Autowired private UnitEquipmentService unitEquipment;
+
     @jakarta.persistence.PersistenceContext
     private jakarta.persistence.EntityManager entityManager;
 
@@ -36,11 +38,15 @@ public class GameStateService {
 
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.quest.OnboardingService onboarding;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.service.quest.QuestService questService;
 
     @org.springframework.beans.factory.annotation.Autowired private CityService cityService;
+    @org.springframework.beans.factory.annotation.Autowired private RankService ranks;
     @org.springframework.beans.factory.annotation.Autowired private ArmyProductionQueueRepository armyQueues;
     @org.springframework.beans.factory.annotation.Autowired private TechService techService;
     @org.springframework.beans.factory.annotation.Autowired private PrerequisiteService prerequisiteService;
+    @org.springframework.beans.factory.annotation.Autowired private WildOccupationService wildOccupation;
     @org.springframework.beans.factory.annotation.Autowired private TechResearchQueueRepository techResearchQueueRepository;
 
     private final WorldViewService worldViewService;
@@ -48,6 +54,7 @@ public class GameStateService {
     private final ResourcesRepository resourcesRepository;
     private final BuildingRepository buildingRepository;
     private final ArmyUnitRepository armyUnitRepository;
+    @org.springframework.beans.factory.annotation.Autowired private PrisonerService prisonerService;
     private final WoundedUnitRepository woundedUnitRepository;
     private final FortificationRepository fortificationRepository;
     private final TechnologyRepository technologyRepository;
@@ -70,7 +77,6 @@ public class GameStateService {
 
     private final GuildRepository guildRepository;
     private final MailService mailService;
-    private final NpcCitySpawnService npcCitySpawnService;
 
     private static final Set<String> MULTI_SLOT = Set.of(
             "house", "farm", "refinery", "oilfield", "raremine", "factory", "depot"
@@ -101,8 +107,7 @@ public class GameStateService {
                             EquipmentService equipmentService,
                             GuildMemberRepository guildMemberRepository,
                             GuildRepository guildRepository,
-                            MailService mailService,
-                            NpcCitySpawnService npcCitySpawnService) {
+                            MailService mailService) {
         this.worldViewService = worldViewService;
         this.playerRepository = playerRepository;
         this.resourcesRepository = resourcesRepository;
@@ -129,12 +134,12 @@ public class GameStateService {
         this.guildMemberRepository = guildMemberRepository;
         this.guildRepository = guildRepository;
         this.mailService = mailService;
-        this.npcCitySpawnService = npcCitySpawnService;
     }
 
     /** 当前城市每天只可改名一次；主城额度记在玩家行，分城额度记在对应城市行。 */
     @Transactional
-    public void setCityName(Long playerId, String cityName) {
+    public void setCityName(Long playerId, String rawCityName) {
+        String cityName = com.wargame.model.constants.DisplayNamePolicy.validate(rawCityName, 12, "城市名称");
         CityEconomy economy = cityScope.economy(playerId);
         entityManager.flush();
         entityManager.refresh(economy, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
@@ -163,6 +168,9 @@ public class GameStateService {
             city.setCityNameRenamedAt(now);
             playerCityRepository.save(city);
         });
+        try {
+            if (questService != null) questService.onEvent(playerId, "CITY_NAME_CHANGE", null, 1);
+        } catch (Exception ignored) {}
     }
 
     /** 保存独立于登录用户名的统帅展示名。 */
@@ -173,6 +181,9 @@ public class GameStateService {
                 .orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
         player.setDisplayName(name);
         playerRepository.save(player);
+        try {
+            if (questService != null) questService.onEvent(playerId, "DISPLAY_NAME_CHANGE", null, 1);
+        } catch (Exception ignored) {}
         return name;
     }
 
@@ -251,10 +262,15 @@ public class GameStateService {
         cityScope.selected(playerId).ifPresent(city -> {
             playerInfo.put("activeCityId", city.getId());
             playerInfo.put("mainCity", city.getCitySlot() == 0);
+            playerInfo.put("cityFrozen", city.isSurrenderFrozen(stateNow));
+            playerInfo.put("citySurrenderOfferId", city.getSurrenderOfferId());
+            playerInfo.put("cityTransferDeadlineAt", city.getSurrenderTransferDeadlineAt());
         });
         playerInfo.put("citySlot", cityScope.slot(playerId));
         state.put("cityOverview", cityService.overview(playerId));
         state.put("player", playerInfo);
+        playerInfo.put("npcVictories", player.getNpcVictories());
+        state.put("rankInfo", ranks.getRankInfo(playerId));
         state.put("unreadReportCount", scoutReportRepository.countUnreadByPlayerId(playerId));
 
         // --- resources ---
@@ -280,6 +296,7 @@ public class GameStateService {
         // --- buildings ---
         List<Building> buildings = buildingRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         state.put("buildings", buildBuildingsMap(buildings));
+        state.put("wilds", wildOccupation.state(playerId, cityScope.slot(playerId)));
         state.put("coastalPortLevel", prerequisiteService.coastalPortLevel(playerId));
 
         int populationCapacity = buildings.stream()
@@ -308,6 +325,10 @@ public class GameStateService {
                 .findByPlayerIdAndExpiresAtGreaterThanOrderByExpiresAtAscIdAsc(playerId, System.currentTimeMillis())
                 .stream().mapToLong(WoundedUnit::getCount).sum());
 
+        // 战俘绑定当前稳定城市ID，多城空位与库存不合并。
+        state.put("prisonerCount", cityScope.selected(playerId).map(c -> prisonerService.total(playerId, c.getId())).orElse(0L));
+        state.put("prisonerCapacity", prisonerService.campLevel(playerId, cityScope.slot(playerId)) * 2000);
+
         // --- forts ---
         List<Fortification> forts = fortificationRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         Map<String, Object> fortMap = new LinkedHashMap<>();
@@ -326,7 +347,7 @@ public class GameStateService {
 
         // --- tech ---
         if (techService != null) {
-            techService.settleCompletedResearch(playerId, System.currentTimeMillis());
+            techService.settleCompletedResearchForCity(playerId, cityScope.slot(playerId), System.currentTimeMillis());
         }
         List<Technology> techs = technologyRepository.findByPlayerId(playerId);
         Map<String, Object> techMap = new LinkedHashMap<>();
@@ -335,6 +356,7 @@ public class GameStateService {
             techMap.put(tech.getType(), tech.getLevel());
         }
         state.put("tech", techMap);
+        state.put("unitEquipment", unitEquipment.state(playerId));
         state.put("research", techService != null ? techService.getActiveResearch(playerId) : null);
 
         // --- officers ---
@@ -752,11 +774,13 @@ public class GameStateService {
         saveBuilding(playerId, "refinery", 1);
 
         armyQueues.deleteByPlayerId(playerId);
+        if (unitEquipment != null) unitEquipment.clearOrders(playerId);
 
         // Default army
         armyUnitRepository.deleteByPlayerId(playerId);
         armyUnitRepository.flush();
         woundedUnitRepository.deleteByPlayerId(playerId);
+        prisonerService.clearAccount(playerId);
         saveArmyUnit(playerId, "infantry", 50);
 
         // Default forts (all 0 - no rows needed, frontend defaults to 0)
@@ -870,6 +894,7 @@ public class GameStateService {
         playerCityRepository.findByWorldId(worldId).forEach(playerCityRepository::delete);
         wildTileRepository.findByWorldId(worldId).forEach(wildTileRepository::delete);
 
+        String generationMask = terrain.ensure();
         Set<String> used = collectRealPlayerCoordinates();
         int center = WorldConfig.SIZE / 2;
         used.add(center + "," + center);
@@ -878,14 +903,16 @@ public class GameStateService {
             saveGeneratedWild(worldId, "snow", snowOrigin[0] + dx, snowOrigin[1] + dy);
         }
 
-        // Generate 60 bandits
+        // 初始流寇按低密度分块补点，保留单格占地与 NPC 外围一格间隔。
+        var npcPlanner = new BlockSpawnPlanner(generationMask, WorldConfig.SIZE, false, used, List.of());
         for (int i = 0; i < 60; i++) {
             int lvIdx = rand(0, WorldConfig.BANDIT_LEVELS.size() - 1);
             WorldConfig.BanditLevel bl = WorldConfig.BANDIT_LEVELS.get(lvIdx);
-            int[] coord = freeCoord(used);
+            int[] coord = npcPlanner.pick(used, null, null);
+            if (coord == null) break;
             Bandit bandit = new Bandit();
             bandit.setWorldId(worldId);
-            bandit.setName(WorldConfig.BANDIT_NAMES.get(i % WorldConfig.BANDIT_NAMES.size()) + " Lv." + bl.lv());
+            bandit.setName(WorldConfig.landBanditName(bl.lv()));
             bandit.setLevel(bl.lv());
             bandit.setX(coord[0]);
             bandit.setY(coord[1]);
@@ -893,16 +920,19 @@ public class GameStateService {
             bandit.setCommanderName(JapaneseOfficers.getCommanderForLevel(bl.lv()));
             bandit.setDefeated(false);
             banditRepository.save(bandit);
+            WorldTerrainService.reserveFootprint(used, coord[0] - 1, coord[1] - 1, 3);
         }
 
-        npcCitySpawnService.ensurePopulation(worldId);
-
-        // Keep snow in the northern field; the remaining wilds can be scattered.
+        // 雪原保留北方连片规则，其余初始野地按资源密度分块生成，并避开新补的寇。
+        used.addAll(terrain.occupiedCoordinates(worldId));
+        var wildPlanner = new BlockSpawnPlanner(generationMask, WorldConfig.SIZE, false, used,
+                BlockSpawnPlanner.wildPositions(wildTileRepository.findByWorldId(worldId)));
         List<String> wildTypes = new ArrayList<>(WildTypeDef.WILD_TYPES.keySet());
         wildTypes.remove("snow");
 
         for (int w = 0; w < 31; w++) {
-            int[] coord = freeCoord(used);
+            int[] coord = wildPlanner.pick(used, null, null);
+            if (coord == null) break;
             String wType = wildTypes.get(rand(0, wildTypes.size() - 1));
             saveGeneratedWild(worldId, wType, coord[0], coord[1]);
         }

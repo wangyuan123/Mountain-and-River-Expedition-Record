@@ -8,10 +8,10 @@
   <meta name="theme-color" content="#f4f1ea">
   <meta name="description" content="山河远征录：经营城池、统筹资源、协同军团，在共享世界中制定你的战争策略。">
   <title>山河远征录 - 文字战争策略游戏</title>
-  <link rel="stylesheet" href="css/style.css?v=4.19-city-shield-effect">
+  <link rel="stylesheet" href="css/style.css?v=4.20-march-acceleration">
   <link rel="stylesheet" href="css/guild.css?v=1.2-emblem-presets">
   <link rel="stylesheet" href="css/world-map.css?v=5.6-home-cover-background">
-  <link rel="stylesheet" href="css/dispatch-route.css?v=1.3-guided-gather">
+  <link rel="stylesheet" href="css/dispatch-route.css?v=1.4-campaign-dispatch">
   <link rel="stylesheet" href="css/themes.css?v=3.4-city-rename-cost">
   <link rel="stylesheet" href="css/classic-home.css?v=1.3-shop-nav">
   <link rel="stylesheet" href="css/onboarding.css?v=1.7-gather-countdown-right">
@@ -25,6 +25,8 @@
   <link rel="stylesheet" href="css/officer.css?v=1.7-classic-attr-muted">
   <link rel="stylesheet" href="css/chat-page.css?v=1.4-private-chat-delete">
   <link rel="stylesheet" href="css/rankings.css?v=1.0">
+  <link rel="stylesheet" href="css/unit-equipment.css?v=1.0">
+  <link rel="stylesheet" href="css/pvp.css?v=1.1">
 </head>
 <body>
   <div id="loadingOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;justify-content:center;align-items:center;">
@@ -46,55 +48,59 @@
   </div>
   <div id="toast"></div>
 
-  <script src="js/constants.js?v=2.3-rankings-tab"></script>
+  <script src="js/constants.js?v=2.9-land-bandit"></script>
   <script src="js/sound.js?v=1.4-sound-choice"></script>
   <script src="js/theme.js?v=1.2-classic-home-constants"></script>
-  <script src="js/data.js?v=4.20-grainfield-resource"></script>
+  <script src="js/data.js?v=4.26-land-bandit"></script>
   <script src="js/icons.js?v=1.0-resource-images"></script>
   <script src="js/servers.js?v=1"></script>
   <script src="js/api-client.js?v=3.1-server-regions"></script>
-  <script src="js/api.js?v=3.15-report-share"></script>
-  <script src="js/ws-client.js?v=3.1-server-regions"></script>
-  <script src="js/ws-handlers.js?v=1.8-private-chat"></script>
+  <script src="js/api.js?v=3.16-march-acceleration-unit-equipment"></script>
+  <script src="js/ws-client.js?v=3.2-onboarding-login"></script>
+  <script src="js/ws-handlers.js?v=1.10-report-reading"></script>
   <script src="js/save.js?v=1.1-constants"></script>
   <script src="js/core.js?v=3.16-forum-embed"></script>
-  <script src="js/prerequisites.js?v=1"></script>
-  <script src="js/build.js?v=1.11-sound-choice"></script>
+  <script src="js/prerequisites.js?v=1.1-shipyard"></script>
+  <script src="js/build.js?v=1.15-hospital"></script>
   <script src="js/fort.js?v=1.5-positive-attacks"></script>
-  <script src="js/army.js?v=2.0-onboarding-return"></script>
+  <script src="js/unit-equipment.js?v=1.0"></script>
+  <script src="js/army.js?v=2.1-shipyard"></script>
   <script src="js/battle-defaults.js?v=1.6-direct-tactics-save"></script>
   <script src="js/wounded.js?v=1.0"></script>
-  <script src="js/officer.js?v=3.3-display-names"></script>
-  <script src="js/tech.js?v=3.2-tech-picker-spotlight"></script>
-  <script src="js/map.js?v=1.2-wild-icons"></script>
+  <script src="js/prisoners.js?v=1.0"></script>
+  <script src="js/officer.js?v=3.5-campaign-dispatch"></script>
+  <script src="js/tech.js?v=3.4-tech-effects-audit"></script>
+  <script src="js/map.js?v=1.3-campaign-dispatch"></script>
   <script src="js/world-view.js?v=2.2-cities"></script>
-  <script src="js/dispatch-route.js?v=1.1-compact-map"></script>
-  <script src="js/world.js?v=3.19-city-shield-icons"></script>
+  <script src="js/dispatch-route.js?v=1.2-straight-band-unit-equipment"></script>
+  <script src="js/world.js?v=3.25-land-bandit"></script>
   <script src="js/map-camera.js?v=1.8-minimum-default-scale"></script>
   <script src="js/map-chunks.js?v=1.0"></script>
   <script src="js/map-layout.js?v=4.0-hit-test"></script>
-  <script src="js/map-ocean.js?v=1.4-cloud-variety"></script>
+  <script src="js/map-ocean.js?v=1.5-water-depth"></script>
+  <script src="js/map-water.js?v=1.5-shore-glints"></script>
   <script src="js/map-terrain.js?v=4.15-shrub-grass"></script>
-  <script src="js/world-map.js?v=5.11-pumpjack-animation"></script>
-  <script src="js/depot.js?v=1.8-city-rename-card"></script>
+  <script src="js/world-map.js?v=5.21-npc-square-land-bandit"></script>
+  <script src="js/depot.js?v=1.9-nav-rename"></script>
   <script src="js/shop.js?v=1.2-constants"></script>
-  <script src="js/market.js?v=1.1-themed-confirm"></script>
+  <script src="js/market.js?v=1.2-nav-rename"></script>
   <script src="js/chat.js?v=1.6-report-share"></script>
-  <script src="js/private-chat.js?v=1.4-private-chat-delete"></script>
-  <script src="js/mail.js?v=1.1-constants"></script>
+  <script src="js/private-chat.js?v=1.5-nav-rename"></script>
+  <script src="js/mail.js?v=1.2-nav-rename"></script>
   <script src="js/guild.js?v=2.3-shared-emblem"></script>
   <script src="js/rankings.js?v=1.0"></script>
   <script src="js/recharge.js?v=3.0-protection-constants"></script>
-  <script src="js/battle.js?v=1.24-report-chat-share"></script>
+  <script src="js/battle.js?v=1.27-campaign-dispatch"></script>
+  <script src="js/pvp.js?v=1.3-nav-rename"></script>
   <script src="js/task-quests.js?v=1.1"></script>
   <script src="js/task.js?v=2.3-remove-activities"></script>
-  <script src="js/onboarding.js?v=1.9-graduation-auto-rewards"></script>
-  <script src="js/main-quest.js?v=3.1-remove-activities"></script>
-  <script src="js/cities.js?v=3.1-route-preview"></script>
-  <script src="js/main-view.js?v=4.21-guild-chat-membership"></script>
+  <script src="js/onboarding.js?v=1.12-campaign-dispatch"></script>
+  <script src="js/main-quest.js?v=3.2-campaign-dispatch"></script>
+  <script src="js/cities.js?v=3.2-nav-rename"></script>
+  <script src="js/main-view.js?v=4.22-nav-rename"></script>
   <script src="js/player-profile.js?v=3.5-city-rename-cost"></script>
   <script src="js/protection.js?v=1.0"></script>
-  <script src="js/main.js?v=3.10-chat-badge"></script>
+  <script src="js/main.js?v=3.11-pvp-practice"></script>
   <script src="js/account.js?v=3.0-protection"></script>
 </body>
 </html>

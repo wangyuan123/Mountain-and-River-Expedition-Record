@@ -3,6 +3,7 @@ package com.wargame.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.wargame.model.constants.WorldConfig;
 import com.wargame.model.constants.TechDef;
+import com.wargame.model.constants.GameData;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
 import com.wargame.util.JsonUtil;
@@ -13,11 +14,15 @@ import java.util.*;
 
 @Service
 public class ImportService {
+    @org.springframework.beans.factory.annotation.Autowired private UnitEquipmentService unitEquipment;
 
     private final PlayerRepository playerRepository;
     private final ResourcesRepository resourcesRepository;
     private final BuildingRepository buildingRepository;
     private final ArmyUnitRepository armyUnitRepository;
+    @org.springframework.beans.factory.annotation.Autowired private PrisonerService prisonerService;
+    @org.springframework.beans.factory.annotation.Autowired private AccountService accounts;
+    @org.springframework.beans.factory.annotation.Autowired private WorldTerrainService terrain;
     private final WoundedUnitRepository woundedUnitRepository;
     private final FortificationRepository fortificationRepository;
     private final TechnologyRepository technologyRepository;
@@ -90,8 +95,7 @@ public class ImportService {
             throw new IllegalArgumentException("JSON save data is empty");
         }
 
-        Player player = playerRepository.findById(playerId)
-                .orElseThrow(() -> new IllegalArgumentException("Player not found: " + playerId));
+        Player player = accounts.lockPlayer(playerId);
 
         JsonNode root = JsonUtil.parseTree(jsonStr);
         if (root == null || root.isNull()) {
@@ -153,10 +157,13 @@ public class ImportService {
     // ================================================================
 
     private void clearPlayerData(Long playerId) {
+        if (unitEquipment != null) unitEquipment.clearOrders(playerId);
         resourcesRepository.findByPlayerId(playerId).ifPresent(resourcesRepository::delete);
         buildingRepository.deleteByPlayerId(playerId);
         armyUnitRepository.deleteByPlayerId(playerId);
         woundedUnitRepository.deleteByPlayerId(playerId);
+        // 旧版单城客户端存档没有可信战斗凭证，清理现库存而不从可编辑JSON生成战俘。
+        prisonerService.clearAccount(playerId);
         fortificationRepository.deleteByPlayerId(playerId);
         technologyRepository.deleteByPlayerId(playerId);
         officerRepository.deleteByPlayerId(playerId);
@@ -274,6 +281,7 @@ public class ImportService {
         Iterator<Map.Entry<String, JsonNode>> fields = armyNode.fields();
         while (fields.hasNext()) {
             Map.Entry<String, JsonNode> entry = fields.next();
+            if (!GameData.UNITS.containsKey(entry.getKey())) continue;
             int count = entry.getValue().asInt(0);
             if (count > 0) {
                 ArmyUnit unit = new ArmyUnit();
@@ -468,23 +476,7 @@ public class ImportService {
         playerCityRepository.findByWorldId(worldId).forEach(playerCityRepository::delete);
         wildTileRepository.findByWorldId(worldId).forEach(wildTileRepository::delete);
 
-        // Import NPC cities
-        JsonNode npcCitiesNode = worldNode.path("npcCities");
-        if (npcCitiesNode.isArray()) {
-            for (JsonNode ncNode : npcCitiesNode) {
-                NpcCity npcCity = new NpcCity();
-                npcCity.setWorldId(worldId);
-                npcCity.setName(ncNode.path("name").asText("寇城"));
-                npcCity.setLevel(ncNode.path("level").asInt(1));
-                npcCity.setX(ncNode.path("x").asInt(0));
-                npcCity.setY(ncNode.path("y").asInt(0));
-                npcCity.setArmy(JsonUtil.toJson(WorldConfig.landOnlyArmy(JsonUtil.parseIntMap(jsonNodeToJson(ncNode.path("army"))))));
-                npcCity.setForts(jsonNodeToJson(ncNode.path("forts")));
-                npcCity.setResources(jsonNodeToJson(ncNode.path("reward")));
-                npcCity.setDefeated(ncNode.path("defeated").asBoolean(false));
-                npcCityRepository.save(npcCity);
-            }
-        }
+        // NPC 城市/要塞已取消；旧存档中的 npcCities 记录不再导入。
 
         // Import player cities
         JsonNode playerCitiesNode = worldNode.path("playerCities");
@@ -497,7 +489,7 @@ public class ImportService {
                 playerCity.setLevel(pcNode.path("level").asInt(1));
                 playerCity.setX(pcNode.path("x").asInt(0));
                 playerCity.setY(pcNode.path("y").asInt(0));
-                playerCity.setArmy(jsonNodeToJson(pcNode.path("army")));
+                playerCity.setArmy(removeMotorUnit(jsonNodeToJson(pcNode.path("army"))));
                 playerCity.setForts(jsonNodeToJson(pcNode.path("forts")));
                 playerCity.setResources(jsonNodeToJson(pcNode.path("reward")));
                 playerCity.setPrestige(pcNode.path("prestige").asInt(0));
@@ -513,11 +505,15 @@ public class ImportService {
             for (JsonNode bNode : banditsNode) {
                 Bandit bandit = new Bandit();
                 bandit.setWorldId(worldId);
-                bandit.setName(bNode.path("name").asText("日寇据点"));
                 bandit.setLevel(bNode.path("level").asInt(1));
                 bandit.setX(bNode.path("x").asInt(0));
                 bandit.setY(bNode.path("y").asInt(0));
-                bandit.setArmy(JsonUtil.toJson(WorldConfig.landOnlyArmy(JsonUtil.parseIntMap(jsonNodeToJson(bNode.path("army"))))));
+                boolean sea = WorldTerrainService.sea(terrain.current(), bandit.getX(), bandit.getY());
+                bandit.setName(sea ? bNode.path("name").asText("日寇海域守军 Lv." + bandit.getLevel())
+                        : WorldConfig.landBanditName(bandit.getLevel()));
+                // 统一陆地名称时保留海洋守军的名称和舰艇，避免导入把海军清空。
+                String army = removeMotorUnit(jsonNodeToJson(bNode.path("army")));
+                bandit.setArmy(sea ? army : JsonUtil.toJson(WorldConfig.landOnlyArmy(JsonUtil.parseIntMap(army))));
                 bandit.setDefeated(bNode.path("defeated").asBoolean(false));
                 banditRepository.save(bandit);
             }
@@ -589,9 +585,9 @@ public class ImportService {
             march.setTargetY(mNode.has("targetY") ? mNode.path("targetY").asInt() : null);
             march.setFromX(mNode.has("fromX") ? mNode.path("fromX").asInt() : null);
             march.setFromY(mNode.has("fromY") ? mNode.path("fromY").asInt() : null);
-            march.setDistance(mNode.path("distance").asInt(0));
+            march.setDistance(mNode.path("distance").asDouble(0));
             march.setAction(mNode.path("action").asText(null));
-            march.setArmy(jsonNodeToJson(mNode.path("army")));
+            march.setArmy(removeMotorUnit(jsonNodeToJson(mNode.path("army"))));
 
             // commanderId can be a string ID like "o_123" or a number
             JsonNode cmdNode = mNode.path("commanderId");
@@ -627,7 +623,7 @@ public class ImportService {
             incoming.setFromName(imNode.path("fromName").asText(null));
             incoming.setFromX(imNode.has("fromX") ? imNode.path("fromX").asInt() : null);
             incoming.setFromY(imNode.has("fromY") ? imNode.path("fromY").asInt() : null);
-            incoming.setArmy(jsonNodeToJson(imNode.path("army")));
+            incoming.setArmy(removeMotorUnit(jsonNodeToJson(imNode.path("army"))));
             incoming.setArriveAt(imNode.path("arriveAt").asLong(0));
             incoming.setAction(imNode.path("action").asText(null));
 
@@ -672,5 +668,11 @@ public class ImportService {
             return null;
         }
         return JsonUtil.toJson(node);
+    }
+
+    private String removeMotorUnit(String json) {
+        Map<String, Integer> army = new LinkedHashMap<>(JsonUtil.parseIntMap(json));
+        army.remove("motor");
+        return JsonUtil.toJson(army);
     }
 }

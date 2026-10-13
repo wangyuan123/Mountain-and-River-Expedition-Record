@@ -19,6 +19,9 @@ import java.util.*;
 @Service
 public class ForumService {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.service.quest.QuestService questService;
+
     private final ForumBoardRepository boardRepository;
     private final ForumTopicRepository topicRepository;
     private final ForumReplyRepository replyRepository;
@@ -206,6 +209,10 @@ public class ForumService {
 
         board.setTopicCount(board.getTopicCount() + 1);
         boardRepository.save(board);
+
+        try {
+            if (questService != null) questService.onEvent(playerId, "FORUM_POST", null, 1);
+        } catch (Exception ignored) {}
 
         return toSummaryDto(topic);
     }

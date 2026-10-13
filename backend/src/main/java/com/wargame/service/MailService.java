@@ -169,6 +169,14 @@ public class MailService {
     @Transactional
     public Mail sendSystem(Long toPlayerId, String fromName, String type,
                            String subject, String body, List<Map<String, Object>> attach) {
+        return sendSystem(toPlayerId, fromName, type, subject, body, attach, null);
+    }
+
+    /** System mail variant carrying an interactive city surrender offer reference. */
+    @Transactional
+    public Mail sendSystem(Long toPlayerId, String fromName, String type,
+                           String subject, String body, List<Map<String, Object>> attach,
+                           Long surrenderOfferId) {
         Player to = playerRepository.findById(toPlayerId)
                 .orElseThrow(() -> new IllegalArgumentException("收件人不存在: " + toPlayerId));
         to = accounts.lockPlayer(toPlayerId);
@@ -186,6 +194,7 @@ public class MailService {
         mail.setIsRead(false);
         mail.setIsClaimed(false);
         mail.setCreatedAt(System.currentTimeMillis());
+        mail.setSurrenderOfferId(surrenderOfferId);
         mail = mailRepository.save(mail);
         pushService.pushToPlayer(to.getId(), "mail", Map.of(
                 "id", mail.getId(),
@@ -450,6 +459,7 @@ public class MailService {
         d.put("read", Boolean.TRUE.equals(m.getIsRead()));
         d.put("claimed", Boolean.TRUE.equals(m.getIsClaimed()));
         d.put("ts", m.getCreatedAt());
+        d.put("surrenderOfferId", m.getSurrenderOfferId());
         return d;
     }
 }

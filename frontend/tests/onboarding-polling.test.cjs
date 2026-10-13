@@ -59,7 +59,7 @@ test('参加中的引导每五秒刷新，重复刷新不叠加定时器或在�
   const { G, timers, nodes } = setup(snapshot({ current: { id: 'base', title: '整备前进基地', body: '升级市政厅' }, objectives: [{}] }));
   await G.Onboarding.init();
   assert.match(nodes.get('onboardingBar').innerHTML, /新手战役 · 前进基地行动/);
-  assert.match(nodes.get('onboardingBar').innerHTML, /先升级资源建筑与军工设施/);
+  assert.match(nodes.get('onboardingBar').innerHTML, /先升级(后勤|资源)建筑与军工设施/);
   assert.equal(timers.size, 1);
   const timer = [...timers.values()][0];
   assert.equal(timer.delay, 5000);

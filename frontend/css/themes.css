@@ -1223,6 +1223,7 @@ body[data-theme|="blue-white"] {
 }
 
 [data-theme|="blue-white"] .map-toolbar-row .msb-radius {
+  display: none !important;
   border: 1px solid #b5c7db !important;
   background: #f8fafc !important;
   color: #334455 !important;
@@ -2980,6 +2981,14 @@ body[data-theme="dark"] {
   color: #ffffff !important;
 }
 
+[data-theme="paper"] .map-icon-city { color: #1e3a8a !important; }
+[data-theme="paper"] .map-icon-view { color: #991b1b !important; }
+[data-theme="paper"] .map-icon-wild { color: #14532d !important; }
+[data-theme="paper"] .map-icon-bandit { color: #991b1b !important; }
+[data-theme="paper"] .map-icon-player { color: #581c87 !important; }
+[data-theme="paper"] .map-icon-territory { color: #9a3412 !important; }
+[data-theme="paper"] .map-icon-home { color: #1e3a8a !important; }
+
 [data-theme="paper"] .map-tabs {
   background: #ebe7df !important;
   border: 1px solid #ded9cd !important;
@@ -3037,6 +3046,14 @@ body[data-theme="dark"] {
   background: #0284c7 !important;
   color: #ffffff !important;
 }
+
+[data-theme="dark"] .map-icon-city { color: #38bdf8 !important; }
+[data-theme="dark"] .map-icon-view { color: #fb7185 !important; }
+[data-theme="dark"] .map-icon-wild { color: #4ade80 !important; }
+[data-theme="dark"] .map-icon-bandit { color: #f87171 !important; }
+[data-theme="dark"] .map-icon-player { color: #a78bfa !important; }
+[data-theme="dark"] .map-icon-territory { color: #fb923c !important; }
+[data-theme="dark"] .map-icon-home { color: #38bdf8 !important; }
 
 [data-theme="dark"] .map-tabs {
   background: #0f1420 !important;

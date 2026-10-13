@@ -200,9 +200,26 @@ ensure_git_hooks() {
   fi
 }
 
+get_local_ip() {
+  local ip=""
+  if [[ -x /usr/sbin/ipconfig ]]; then
+    ip="$(/usr/sbin/ipconfig getifaddr en0 2>/dev/null || /usr/sbin/ipconfig getifaddr en1 2>/dev/null || true)"
+  fi
+  if [[ -z "$ip" ]]; then
+    ip="$(ifconfig 2>/dev/null | awk '/inet / && $2 !~ /^127\./ {print $2}' | head -n 1 || true)"
+  fi
+  echo "$ip"
+}
+
 main() {
   [[ -f "$BACKEND_DIR/pom.xml" ]] || fail "未找到 backend/pom.xml。"
   [[ -f "$FRONTEND_DIR/index.html" ]] || fail "未找到 frontend/index.html。"
+
+  LOCAL_IP="$(get_local_ip)"
+  if [[ -n "$LOCAL_IP" ]]; then
+    DEFAULT_ORIGINS="http://localhost:8081,http://127.0.0.1:8081,http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174"
+    export WARGAME_ALLOWED_ORIGINS="${WARGAME_ALLOWED_ORIGINS:-$DEFAULT_ORIGINS,http://${LOCAL_IP}:${FRONTEND_PORT}}"
+  fi
 
   install_homebrew
   ensure_java17
@@ -218,7 +235,10 @@ main() {
 
   printf '\n========================================\n'
   printf '  游戏已启动！\n'
-  printf '  前端：http://localhost:%s\n' "$FRONTEND_PORT"
+  printf '  电脑浏览器：http://localhost:%s\n' "$FRONTEND_PORT"
+  if [[ -n "$LOCAL_IP" ]]; then
+    printf '  手机浏览器：http://%s:%s （需在同一 Wi-Fi）\n' "$LOCAL_IP" "$FRONTEND_PORT"
+  fi
   printf '  后端：http://localhost:%s\n' "$BACKEND_PORT"
   printf '  数据库：MySQL localhost:3306/wargame\n'
   printf '========================================\n'

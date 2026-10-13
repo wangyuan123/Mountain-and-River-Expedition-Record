@@ -4808,7 +4808,7 @@
       "category": "数值",
       "key": "buildings.heavyfactory",
       "name": "重工厂",
-      "content": "生产重型坦克/突击炮/火箭",
+      "content": "生产重型坦克/突击炮/反坦克火箭车",
       "sources": [
         {
           "path": "backend/src/main/java/com/wargame/model/constants/BuildingDef.java",
@@ -4827,16 +4827,16 @@
         "后端字段": {
           "key": "heavyfactory",
           "name": "重工厂",
-          "desc": "生产重型坦克/突击炮/火箭",
+          "desc": "生产重型坦克/突击炮/反坦克火箭车",
           "baseCost": "Map.of(\"steel\", 320, \"oil\", 140, \"rare\", 30)",
           "growth": 1.6,
           "cat": "army",
           "slots": 1
         },
-        "后端原表达式": "new BuildingDef(\"heavyfactory\", \"重工厂\", \"生产重型坦克/突击炮/火箭\", Map.of(\"steel\", 320, \"oil\", 140, \"rare\", 30), 1.6, \"army\", 1)",
+        "后端原表达式": "new BuildingDef(\"heavyfactory\", \"重工厂\", \"生产重型坦克/突击炮/反坦克火箭车\", Map.of(\"steel\", 320, \"oil\", 140, \"rare\", 30), 1.6, \"army\", 1)",
         "前端字段": {
           "name": "重工厂",
-          "desc": "生产重型坦克/突击炮/火箭",
+          "desc": "生产重型坦克/突击炮/反坦克火箭车",
           "baseCost": {
             "steel": 320,
             "oil": 140,
@@ -6056,7 +6056,7 @@
       "id": "N034",
       "category": "数值",
       "key": "units.rocket",
-      "name": "火箭",
+      "name": "反坦克火箭车",
       "content": "基础属性、消耗、生产门槛与相克配置",
       "sources": [
         {
@@ -6075,7 +6075,7 @@
       "values": {
         "后端字段": {
           "key": "rocket",
-          "name": "火箭",
+          "name": "反坦克火箭车",
           "cat": "arm",
           "atk": 90,
           "def": 14,
@@ -6089,9 +6089,9 @@
           "strongVs": "htank",
           "branch": "land"
         },
-        "后端原表达式": "new UnitDef(\"rocket\", \"火箭\", \"arm\", 90, 14, 100, 4, 350, 9, 4, \"heavyfactory\", Map.of(\"steel\", 500, \"oil\", 160, \"rare\", 100), \"htank\", \"land\")",
+        "后端原表达式": "new UnitDef(\"rocket\", \"反坦克火箭车\", \"arm\", 90, 14, 100, 4, 350, 9, 4, \"heavyfactory\", Map.of(\"steel\", 500, \"oil\", 160, \"rare\", 100), \"htank\", \"land\")",
         "前端字段": {
-          "name": "火箭",
+          "name": "反坦克火箭车",
           "cat": "arm",
           "atk": 90,
           "def": 14,
@@ -11824,7 +11824,7 @@
       "id": "A047",
       "category": "图标",
       "key": "img/units/rocket.svg",
-      "name": "火箭",
+      "name": "反坦克火箭车",
       "content": "本地SVG图标",
       "sources": [
         {

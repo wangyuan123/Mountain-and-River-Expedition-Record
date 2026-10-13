@@ -23,8 +23,9 @@ window.Game = window.Game || {};
     return n;
   }
 
+  /** 当前城市的四类工事合计占用城防容量，每级增加3000。 */
   function fortCap() {
-    return (Core.state.buildings.wall || 0) * 800;
+    return (Core.state.buildings.wall || 0) * (D.buildings.wall.fortCapPerLevel || 3000);
   }
 
   function totalForts() {
@@ -59,7 +60,7 @@ window.Game = window.Game || {};
       var wallLv = s.buildings.wall || 0;
       var h = '';
       h += '<div class="title">- 城防工事 -</div>';
-      h += '<div class="desc">围墙 Lv.' + wallLv + '  城防上限 ' + totalForts() + '/' + fortCap() + '。城防在守城战中作为防御单位参战,会被击毁。需先建围墙。</div>';
+      h += '<div class="desc">城防 Lv.' + wallLv + '  四类城防武器共享容量 ' + totalForts() + '/' + fortCap() + '（每级+' + (D.buildings.wall.fortCapPerLevel || 3000) + '）。城防武器在守城战中参战,会被击毁。需先建城防。</div>';
       h += '<div class="desc">守城战:敌军来袭时由后端真实战斗自动触发。</div>';
       h += '<div class="menu">';
       var idx = 0;

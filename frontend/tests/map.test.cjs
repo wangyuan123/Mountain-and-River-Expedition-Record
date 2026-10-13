@@ -68,11 +68,11 @@ test('region cache evicts old unneeded chunks',async()=>{
   assert.equal(store.entries.size,3);assert.ok(store.entries.has('9,0'));assert.ok(!store.entries.has('0,0'));
 });
 test('map actions resolve fixed IDs after list replacement and preserve dispatch defaults',()=>{
-  const state={world:{npcCities:[{id:9,name:'wrong'}],wildTiles:[]}};let route;
+  const state={world:{bandits:[{id:9,name:'wrong'}],wildTiles:[]}};let route;
   const c=context({DATA:{},Core:{state,views:{}},go:r=>route=r,toast:()=>{}});load(c,'world.js');
-  const fresh={kind:'npc',id:42,name:'right',x:10,y:20};c.Game.World.mapAction(fresh,'plunder');
-  assert.equal(state.world._dispatchTarget.target.id,42);assert.equal(state.world._dispatchTarget.action,'plunder');assert.equal(route,'dispatch');
-  state.world.npcCities=[{id:100}];assert.equal(state.world._dispatchTarget.target.id,42);
+  const fresh={kind:'bandit',id:42,name:'寇 Lv.1',x:10,y:20};c.Game.World.mapAction(fresh,'plunder');
+  assert.equal(state.world._dispatchTarget.target.id,42);assert.equal(state.world._dispatchTarget.action,'campaign');assert.equal(c.Game.World.resolveDispatchAction(state.world._dispatchTarget),'plunder');assert.equal(route,'dispatch');
+  state.world.bandits=[{id:100}];assert.equal(state.world._dispatchTarget.target.id,42);
   c.Game.World.mapAction({kind:'wild',id:13,type:'forest',x:30,y:30},'conquer');assert.equal(state.world._dispatchTarget.target.id,13);
 });
 test('map requests abort on timeout so loading slots can recover',async()=>{
@@ -119,14 +119,14 @@ test('wild map dispatch renders safely with zero troop defaults and excludes app
 test('dispatch cap card opens a dismissible breakdown for the selected city',()=>{
   const body={appendChild(mask){mask.parentNode=body;this.mask=mask;},removeChild(mask){mask.parentNode=null;this.mask=null;}};
   const closeButton={focus(){this.focused=true;}};
-  const c=context({DATA:{},Core:{state:{player:{militaryRank:3}},views:{},buildingLevel:()=>10,getCommanderSkills:()=>({leadership:5}),skillBonus:id=>id==='leadership'?0.2:0,armyCap:()=>210000},fmt:String,getMilitaryRankTierInfo:()=>({name:'下士',baseCap:75000})});
+  const c=context({DATA:{},Core:{state:{player:{militaryRank:3}},views:{},buildingLevel:()=>10,getCommanderSkills:()=>({leadership:5}),skillBonus:id=>id==='leadership'?0.2:0,armyCap:()=>90000},fmt:String,getMilitaryRankTierInfo:()=>({name:'下士',baseCap:75000})});
   c.document={body,createElement:()=>({setAttribute(){},querySelector:()=>closeButton})};
   load(c,'world.js');
   c.Game.World.showArmyCapInfo();
   assert.match(body.mask.innerHTML,/下士/);
-  assert.match(body.mask.innerHTML,/要塞防线 Lv\.10/);
+  assert.doesNotMatch(body.mask.innerHTML,/城防 Lv|100000|100,000/);
   assert.match(body.mask.innerHTML,/三军统帅[^<]*当前 Lv\.5，加成 \+20%/);
-  assert.match(body.mask.innerHTML,/75000 \+ 100000\) × \(1 \+ 20%\) = 210000/);
+  assert.match(body.mask.innerHTML,/75000 × \(1 \+ 20%\) = 90000/);
   assert.match(body.mask.innerHTML,/市政厅、作战参谋部和指挥官等级不直接增加上限/);
   assert.equal(closeButton.focused,true);
   closeButton.onclick();

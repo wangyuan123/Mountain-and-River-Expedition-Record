@@ -35,7 +35,8 @@ test('仓库默认显示珠宝分类并生成横向 tabs', () => {
   assert.match(html, /class="depot-tab active"[^>]*>珠宝珍品<\/button>/);
   assert.match(html, /💎 宝石/);
   assert.doesNotMatch(html, /📘 经验书/);
-  assert.equal((html.match(/role="tab"/g) || []).length, 5);
+  assert.equal((html.match(/role="tab"/g) || []).length, 6);
+  assert.match(html, />兵种装备<\/button>/);
 });
 
 test('切换分类只渲染当前分类并保留选中状态', () => {
@@ -76,7 +77,17 @@ test('珠宝宝箱在珠宝分类中显示开启宝箱按钮而非前往晋升�
   G.Depot.renderView({ set innerHTML(value) { html = value; } });
   assert.match(html, /🗃️ 军衔珠宝宝箱/);
   assert.match(html, /onclick="Game\.Depot\.useItem\('box_gem'\)">\[?开启宝箱\]?<\/button>/);
-  assert.match(html, /onclick="Game\.go\('mainQuest'\)">\[?前往晋升军衔\]?<\/button>/);
+  assert.doesNotMatch(html, /前往晋升军衔/);
+});
+
+test('只有军衔凭证提供晋升入口，珠宝不再用于晋升', () => {
+  const G = setup();
+  G.DATA.items.rank_certificate_2 = { cat: 'jewelry', icon: '🎖️', name: '上等兵晋升凭证', desc: '仅用于上等兵' };
+  G.state.items.rank_certificate_2 = 1;
+  let html = '';
+  G.Depot.renderView({ set innerHTML(value) { html = value; } });
+  assert.match(html, /前往晋升军衔/);
+  assert.match(html, /上等兵晋升凭证/);
 });
 
 test('军官装备分类正确识别与渲染防御装备', () => {

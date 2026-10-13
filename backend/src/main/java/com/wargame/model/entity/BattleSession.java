@@ -12,6 +12,20 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "battle_sessions")
 public class BattleSession extends VersionedEntity {
+
+    /** 攻守各自城市的司令官属性快照，不能随玩家切城、换任或换装变化。 */
+    @Column(name = "attacker_command_bonus", columnDefinition = "text")
+    private String attackerCommandBonus;
+    @Column(name = "defender_command_bonus", columnDefinition = "text")
+    private String defenderCommandBonus;
+
+    /** 实际参战的玩家城指挥官；0表示无将参战，null兼容历史会话。 */
+    @Column(name = "defender_commander_id")
+    private Long defenderCommanderId;
+    /** 本场实际装备配置组的派兵人；历史战报不重新读取驻军或账号配装。 */
+    @Column(name = "defender_equipment_sources", columnDefinition = "longtext")
+    private String defenderEquipmentSources;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -55,10 +69,18 @@ public class BattleSession extends VersionedEntity {
     private String initialAttacker;
     @Column(name = "initial_defender", columnDefinition = "text")
     private String initialDefender;
+    /** 开战时各军团驻军实际参战数量，迟到的援军不承担本场损失。 */
+    @Column(name = "defender_support", columnDefinition = "longtext")
+    private String defenderSupport;
     @Column(name = "attacker_positions", columnDefinition = "text")
     private String attackerPositions;
     @Column(name = "defender_positions", columnDefinition = "text")
     private String defenderPositions;
+    /** 本场战斗的玩家指令持续生效，直到该方再次修改；未下令的兵种沿用账号预设。 */
+    @Column(name = "attacker_orders", columnDefinition = "text")
+    private String attackerOrders;
+    @Column(name = "defender_orders", columnDefinition = "text")
+    private String defenderOrders;
     @Column(name = "attacker_tech", columnDefinition = "text")
     private String attackerTech;
     @Column(name = "defender_tech", columnDefinition = "text")

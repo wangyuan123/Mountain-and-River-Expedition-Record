@@ -198,15 +198,26 @@ public class AccountService {
             }
         });
         em.flush();
-        for (String entity : List.of("GuildApplication", "GuildMember", "OfficerEquipment", "ArmyProductionQueue",
-                "TechResearchQueue", "WoundedUnit", "Building", "ArmyUnit", "Fortification", "Technology", "Officer", "Construction",
+        // Cancel diplomatic transfers before clearing account-owned cities. An
+        // initiator's offer may reference another player's city, so clear that
+        // city's freeze explicitly instead of relying on FK cascades.
+        em.createQuery("update PlayerCity c set c.surrenderOfferId = null, c.surrenderRecipientId = null, "
+                        + "c.surrenderFrozenAt = null, c.surrenderTransferDeadlineAt = null "
+                        + "where c.surrenderRecipientId = :id")
+                .setParameter("id", id).executeUpdate();
+        em.createQuery("update CitySurrenderOffer o set o.status = 'CANCELLED', o.cancelledAt = :now, "
+                        + "o.cancelReason = '参与账号已注销' where o.status in ('PENDING', 'ACCEPTED') "
+                        + "and (o.initiatorId = :id or o.defenderId = :id)")
+                .setParameter("id", id).setParameter("now", now).executeUpdate();
+        for (String entity : List.of("GuildApplication", "GuildMember", "UnitLoadout", "UnitEquipmentOrder", "OfficerEquipment", "ArmyProductionQueue",
+                "TechResearchQueue", "PrisonerUnit", "PrisonerOperation", "BattleSettlement", "WoundedUnit", "Building", "ArmyUnit", "Fortification", "Technology", "Officer", "Construction",
                 "Resources", "CityState", "Academy", "PlayerItem", "ScoutReport", "PlayerQuest", "PlayerGuide", "March", "ChatMessage")) {
             em.createQuery("delete from " + entity + " e where e.playerId = :id").setParameter("id", id).executeUpdate();
         }
         em.createQuery("delete from IncomingMarch m where m.targetPlayerId = :id").setParameter("id", id).executeUpdate();
         em.createQuery("delete from Mail m where m.toPlayerId = :id").setParameter("id", id).executeUpdate();
         em.createQuery("update Mail m set m.fromName = '已注销玩家' where m.fromPlayerId = :id").setParameter("id", id).executeUpdate();
-        em.createQuery("update WildTile w set w.occupied = false, w.occupiedBy = null, w.garrison = '{}', "
+        em.createQuery("update WildTile w set w.occupied = false, w.occupiedBy = null, w.occupiedCitySlot = 0, w.garrison = '{}', "
                 + "w.gathering = false, w.gatherStartAt = 0, w.gatherEndAt = 0, w.gatherLoad = 0, w.gatherRes = null, w.version = w.version + 1 "
                 + "where w.occupiedBy = :id").setParameter("id", id).executeUpdate();
         em.createQuery("update Player p set p.warAgainstId = null, p.warAt = 0, p.warEndAt = 0, p.version = p.version + 1 "

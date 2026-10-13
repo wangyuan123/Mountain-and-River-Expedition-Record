@@ -7,8 +7,8 @@ window.Game = window.Game || {};
 
   // 首页总览与军队页共用写实武器模型；没有模型时回退到通用图标。
   var UNIT_MODEL = G.UNIT_MODEL || {};
-  var HOME_MODULE_IDS = G.Constants.homeModuleIds;
-  var HOME_MODULE_NAMES = G.Constants.homeModuleNames;
+  var HOME_MODULE_IDS = (G.Constants && G.Constants.homeModuleIds) || ['officers', 'army', 'resources', 'chat'];
+  var HOME_MODULE_NAMES = (G.Constants && G.Constants.homeModuleNames) || { officers: '军官将领', army: '军队总览', resources: '后勤', chat: '世界通讯' };
   var homeModulePending = null;
   var homeModuleSaveQueue = Promise.resolve();
 
@@ -183,6 +183,7 @@ window.Game = window.Game || {};
     });
   }
 
+  /** 按基础到高级的兵种顺序生成总览；首页三排按行阅读，全屏复用同一顺序。 */
   function renderArmySummaryList() {
     var s = Core.state || {};
     var arr = [];
@@ -199,8 +200,14 @@ window.Game = window.Game || {};
     if (!arr.length) {
       return '<div class="army-summary-empty">暂无可用部队，前往 <a onclick="Game.go(\'army\')">军队</a> 征召</div>';
     }
-    // 数量从大到小排序；首页按三行横向浏览，全屏视图复用这份完整列表。
-    arr.sort(function (a, b) { return b.cnt - a.cnt; });
+    // 复用军队页的兵种进阶顺序，未配置的兵种保留在末尾，不受兵力数量影响。
+    var unitOrder = G.Constants.armyUnitOrder;
+    arr.sort(function (a, b) {
+      var aIndex = unitOrder.indexOf(a.id);
+      var bIndex = unitOrder.indexOf(b.id);
+      return (aIndex < 0 ? unitOrder.length : aIndex) - (bIndex < 0 ? unitOrder.length : bIndex);
+    });
+    var columns = Math.ceil(arr.length / 3);
     var html = '';
     for (var i = 0; i < arr.length; i++) {
       var u = arr[i];
@@ -219,7 +226,9 @@ window.Game = window.Game || {};
       var unitClick = ' role="button" tabindex="0" title="' + G.escapeHtml(u.name) + ' × ' + G.fmt(u.cnt) + '" aria-label="查看' + G.escapeHtml(u.name) + '详情"' +
         ' onclick="Game.MainView.showUnitDetailModal(\'' + G.escapeHtml(u.id) + '\', event)"' +
         ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.MainView.showUnitDetailModal(\'' + G.escapeHtml(u.id) + '\', event);event.preventDefault();}"';
-      html += '<div class="army-summary-item"' + unitClick + '>'
+      // 固定三排的横向列表先填满一行；全屏视图由 CSS 恢复自适应换行。
+      var position = ' style="--army-summary-column:' + (i % columns + 1) + ';--army-summary-row:' + (Math.floor(i / columns) + 1) + '"';
+      html += '<div class="army-summary-item"' + position + unitClick + '>'
         + '<span class="army-summary-icon">' + iconHtml + '</span>'
         + '<span class="army-summary-name">' + G.escapeHtml(displayName) + '</span>'
         + '<span class="army-summary-cnt">' + G.fmt(u.cnt) + '</span>'
@@ -264,16 +273,19 @@ window.Game = window.Game || {};
     var iconHtml = /\.svg$|\.png$|\.jpg$|\.gif$|\.webp$/i.test(rawIcon)
       ? '<img class="unit-detail-icon" src="' + esc(rawIcon) + '" alt="' + esc(unit.name) + '" />'
       : '<span class="unit-detail-icon unit-detail-icon-text">' + esc(rawIcon || '⚔') + '</span>';
-    var role = (D.combatRoles && D.combatRoles[id]) || '暂无战斗定位说明';
+    var battleSpd = (unit.spd || 0) * 50;
+    var marchSec = (9 / (unit.spd || 1)).toFixed(1).replace(/\.0$/, '');
+    var spdTip = '战场单回合机动：' + battleSpd + ' 距离（基速档位 ' + (unit.spd || 0) + '）；大地图基础行军：' + marchSec + '秒/格';
     var stats = [
       ['对地攻击', unit.atkGround], ['对空攻击', unit.atkAir], ['对海攻击', unit.atkSea], ['对工事攻击', unit.atkFort],
-      ['防御', unit.def], ['生命', unit.hp], ['速度', unit.spd], ['射程', unit.range],
+      ['防御', unit.def], ['生命', unit.hp], ['移速', battleSpd, spdTip], ['射程', unit.range],
       ['常驻耗粮', (unit.food || 0) + '/小时'], ['行军油耗', (unit.marchOil || 0) + '/100格'],
       ['行军粮耗', (unit.marchFood || 0) + '/5分钟'], ['人口占用', unit.pop || 0]
     ];
     var statHtml = '';
     for (var i = 0; i < stats.length; i++) {
-      statHtml += '<div class="unit-detail-stat"><span>' + esc(stats[i][0]) + '</span><b>' + esc(String(stats[i][1])) + '</b></div>';
+      var itemTitle = stats[i][2] ? ' title="' + esc(stats[i][2]) + '"' : '';
+      statHtml += '<div class="unit-detail-stat"' + itemTitle + '><span>' + esc(stats[i][0]) + '</span><b>' + esc(String(stats[i][1])) + '</b></div>';
     }
 
     var modal = document.createElement('div');
@@ -345,6 +357,8 @@ window.Game = window.Game || {};
           roleTag = '<span class="home-officer-role">行军中</span>';
         } else if (o.role === 'commander') {
           roleTag = '<span class="home-officer-role role-commander">指挥官</span>';
+        } else if (o.role === 'commander_in_chief') {
+          roleTag = '<span class="home-officer-role role-commander">司令官</span>';
         } else {
           roleTag = '<span class="home-officer-role role-idle">闲置</span>';
         }
@@ -528,7 +542,7 @@ window.Game = window.Game || {};
         detail =
           '<div class="res-detail-value"><span>理论产能</span><b>+' + G.fmt(baseProd) + '/小时</b></div>' +
           '<div class="res-detail-value"><span>实际每小时净产出</span><b class="highlight">0/小时 (储量已满)</b></div>' +
-          '<div class="res-detail-tip">当前储量已达上限，建筑已暂停生产。升级资源建筑可提高储量上限与产量。</div>';
+          '<div class="res-detail-tip">当前储量已达上限，建筑已暂停生产。升级后勤建筑可提高储量上限与产量。</div>';
       } else {
         detail = '<div class="res-detail-value"><span>每小时净产出</span><b class="' + (rate < 0 ? 'neg' : '') + '">' + (rate >= 0 ? '+' : '') + G.fmt(rate) + '/小时</b></div>';
       }
@@ -943,16 +957,17 @@ window.Game = window.Game || {};
 
     h += '<div class="city-head">';
     h += '<div class="city-row">';
-    h += '<div class="city-cell"><span class="city-label">城市</span><b>' + G.escapeHtml(cityName) + '</b><span class="city-edit" onclick="Game.Main.toggleEditCity()">✎</span></div>';
+    h += '<div class="city-cell"><span class="city-label">城市</span><b>' + G.escapeHtml(cityName) + '</b>' + (s.player.cityFrozen ? '<span class="city-edit" title="归降移交中，城市只读">🔒</span>' : '<span class="city-edit" onclick="Game.Main.toggleEditCity()">✎</span>') + '</div>';
     var cs = Core.cityStatusText();
     var cityPos = s.world.cityPos || s.world.pos;
     h += '<div class="city-cell city-coord"><span class="city-label">坐标</span>(' + cityPos.x + ',' + cityPos.y + ')</div>';
     var statusClass = cs.status ? ' ' + cs.status : ' peace';
     h += '<span class="city-status-tag' + statusClass + '" data-status="' + (cs.status || 'peace') + '">' + cs.text + '</span>';
     h += '</div>';
+    if (s.player.cityFrozen) h += '<div class="home-alert" role="status">城市正在归降移交，经营和军事操作已冻结；预计 ' + new Date(Number(s.player.cityTransferDeadlineAt || Date.now())).toLocaleString() + ' 完成。</div>';
     h += '<div id="editCityBox" class="edit-profile-box" style="display:none">';
     h += '<div class="edit-row"><label>城市名</label><input id="epCityName" class="qty" style="width:100%" maxlength="12" value="' + G.escapeHtml(s.player.cityName || '新城市') + '" placeholder="留空则用默认名称"></div>';
-    h += '<div class="d" style="color:var(--muted);margin-top:4px">每天可修改一次，北京时间 0:00 重置。' + (Number(s.player.cityNameRenameAvailableAt) > Date.now() ? '这座城市今日已修改。' : '') + '</div>';
+    h += '<div class="d" style="color:var(--muted);margin-top:4px">最多12个字符，可用标点、符号和 emoji；每天可修改一次，北京时间 0:00 重置。' + (Number(s.player.cityNameRenameAvailableAt) > Date.now() ? '这座城市今日已修改。' : '') + '</div>';
     h += '<div class="d" style="color:var(--muted);margin-top:4px">' + ((Number(s.items && s.items.cityRenameCard) || 0) > 0 ? '优先消耗 1 张城市改名卡。' : '消耗 60 黄金。') + '</div>';
     h += '<div class="btn-row" style="margin-top:4px"><button class="btn ok sm" onclick="Game.Main.saveCity()">保存</button><button class="btn sm" onclick="Game.Main.toggleEditCity()">取消</button></div>';
     h += '</div>';
@@ -1041,8 +1056,8 @@ window.Game = window.Game || {};
     modules.resources = h;
     h = '';
 
-    // —— 世界聊天频道 ——
-    h += '<div class="zone-head">' + homeModuleHandle('chat') + '<span class="zone-title">📡 世界聊天</span><span class="zone-sub">实时通联</span></div>';
+    // —— 世界通讯频道 ——
+    h += '<div class="zone-head">' + homeModuleHandle('chat') + '<span class="zone-title">📡 世界通讯</span><span class="zone-sub">实时通联</span></div>';
     h += renderWorldChat(20);
 
     modules.chat = h;
@@ -1292,13 +1307,13 @@ window.Game = window.Game || {};
       if (G.Chat) G.Chat.updateGuildSendBtnUI();
       return;
     }
-    v.innerHTML = '<section class="chat-page" aria-label="聊天">' +
+    v.innerHTML = '<section class="chat-page" aria-label="通讯">' +
       '<header class="chat-page-header page-backbar">' +
       '<button type="button" class="chat-back-button" onclick="Game.back()" aria-label="返回上一步">‹</button>' +
       '<h1 id="chatPageTitle">世界频道</h1><span id="chatPageSubtitle">实时通联</span></header>' +
       '<div id="chatMessagesPanel" class="chat-tab-panel" aria-label="消息">' + renderChatMessagesPanel() + '</div>' +
       '<div id="chatForumPanel" class="chat-tab-panel" aria-label="论坛" hidden></div>' +
-      '<nav class="chat-bottom-tabs" aria-label="聊天导航">' +
+      '<nav class="chat-bottom-tabs" aria-label="通讯导航">' +
       '<button type="button" class="chat-bottom-tab active" data-chat-tab="messages" aria-controls="chatMessagesPanel" aria-current="page" onclick="Game.MainView.selectChatTab(\'messages\')"><span aria-hidden="true">☏</span>消息</button>' +
       '<button type="button" class="chat-bottom-tab" disabled title="山河战友暂未开放"><span aria-hidden="true">♙</span>山河战友</button>' +
       '<button type="button" class="chat-bottom-tab" data-chat-tab="forum" aria-controls="chatForumPanel" onclick="Game.MainView.selectChatTab(\'forum\')"><span aria-hidden="true">▤</span>论坛</button>' +

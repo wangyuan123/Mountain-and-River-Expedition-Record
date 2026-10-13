@@ -100,6 +100,36 @@ class AttackDesignTest {
         assertTrue(special.atkFort() > rocket.atkFort());
         assertTrue(special.atkFort() <= rocket.atkFort() * 1.1);
         assertTrue(rocket.range() > assault.range() * 2);
-        assertTrue(rocket.range() <= assault.range() * 2.7);
+        assertTrue(rocket.range() <= assault.range() * 2.2);
+    }
+
+    @Test
+    void rocketHasFractionalAntiAirAttackWithoutArmorCountersAgainstAircraft() {
+        UnitDef rocket = UnitDef.UNITS.get("rocket");
+
+        assertEquals(11.5, rocket.atkAir());
+        assertEquals(100, rocket.atkGround());
+        assertEquals(25, rocket.atkSea());
+        assertEquals(179, rocket.atkFort());
+        assertEquals(1600, rocket.range());
+        for (String target : new String[]{"scout", "fighter", "bomber", "transport"}) {
+            assertEquals(1, BattleRules.multiplier("rocket", target), target);
+        }
+    }
+
+    @Test
+    void infantryIsTunedForMassedGroundCombatWithoutReplacingHeavyWeapons() {
+        UnitDef infantry = UnitDef.UNITS.get("infantry");
+        UnitDef assault = UnitDef.UNITS.get("assault");
+
+        assertFalse(UnitDef.UNITS.containsKey("motor"));
+        assertEquals(10, infantry.atkGround());
+        assertEquals(5, infantry.atkAir());
+        assertEquals(5, infantry.atkSea());
+        assertEquals(3, infantry.atkFort());
+        assertEquals(160, infantry.range());
+        assertTrue(infantry.range() > 0);
+        assertTrue(infantry.atkGround() < assault.atkGround(), "步兵数量火力不应替代突击炮的单兵火力");
+        assertTrue(infantry.atkFort() < assault.atkFort(), "步兵攻坚仍应明显依赖重武器");
     }
 }

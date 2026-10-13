@@ -372,6 +372,11 @@ window.Game = window.Game || {};
     },
 
     recruit: function (id, inputId) {
+      var prerequisites = G.Prerequisites && G.Prerequisites.checkRecruitment(id);
+      if (prerequisites && prerequisites.missing.length) {
+        G.toast(prerequisites.missing.map(G.Prerequisites.missingText).join('；'));
+        return;
+      }
       var n = readQty(inputId, 0);
       var max = maxRecruitable(D.units[id]);
       if (max <= 0) {
@@ -586,6 +591,7 @@ window.Game = window.Game || {};
         '<div id="army-tab-units" class="army-tab' + (!isQueueTab ? ' active' : '') + '" onclick="Game.Army.setTab(\'units\')">军队</div>' +
         '<div id="army-tab-queue" class="army-tab' + (isQueueTab ? ' active' : '') + '" onclick="Game.Army.setTab(\'queue\')">生产队列 <span id="army-queue-badge" class="army-tab-badge" style="display:' + badgeStyle + '">' + badgeText + '</span></div>' +
         '<button class="army-tab" onclick="Game.go(\'wounded\')">伤兵营' + (s.woundedCount ? ' (' + G.fmt(s.woundedCount) + ')' : '') + '</button>' +
+        '<button class="army-tab" onclick="Game.go(\'prisoners\')">俘虏池' + (s.prisonerCount ? ' (' + G.fmt(s.prisonerCount) + ')' : '') + '</button>' +
       '</div>';
 
       // 军队面板（所有兵种直接合并展示，取消分类分区）
@@ -598,7 +604,8 @@ window.Game = window.Game || {};
         var have = (s.army && s.army[id]) || 0;
         var stats = getBuildStats(u.build);
         var sumLv = stats.sumLevel;
-        var can = stats.maxBatch > 0;
+        var prerequisites = G.Prerequisites && G.Prerequisites.checkRecruitment(id);
+        var can = stats.maxBatch > 0 && (!prerequisites || !prerequisites.missing.length);
         var maxRecruit = maxRecruitable(u);
         var inpId = 'qty_' + id;
         // 兵工厂展示: 1栋时显示 Lv.x, 多栋时显示 Lv.总和(共N栋) 让玩家清楚每个兵工厂独立计算
@@ -622,7 +629,10 @@ window.Game = window.Game || {};
         h += '<div class="unit-card-details" style="display:' + (isExpanded ? 'block' : 'none') + ';">';
         if (u.history) h += '<div class="d unit-history">原型：' + G.escapeHtml(u.history) + '</div>';
         h += '<div class="d">' + G.escapeHtml((D.combatRoles && D.combatRoles[id]) || '') + '</div>';
-        h += '<div class="d">对地' + u.atkGround + ' 对空' + u.atkAir + ' 对海' + u.atkSea + ' 对工事' + u.atkFort + ' 防' + u.def + ' 血' + u.hp + ' 速' + u.spd + ' 射程' + u.range + ' 常驻耗粮' + u.food + '/h</div>';
+        var battleSpd = (u.spd || 0) * 50;
+        var marchSec = (9 / (u.spd || 1)).toFixed(1).replace(/\.0$/, '');
+        var spdTip = '战场单回合机动：' + battleSpd + ' 距离（基速档位 ' + (u.spd || 0) + '）；大地图基础行军：' + marchSec + '秒/格';
+        h += '<div class="d">对地' + u.atkGround + ' 对空' + u.atkAir + ' 对海' + u.atkSea + ' 对工事' + u.atkFort + ' 防' + u.def + ' 血' + u.hp + ' <span title="' + spdTip + '">移速' + battleSpd + '</span> 射程' + u.range + ' 常驻耗粮' + u.food + '/h</div>';
         h += '<div class="d">行军补给：油耗' + (u.marchOil || 0) + '/100格，粮耗' + (u.marchFood || 0) + '/5分钟</div>';
         if (can) {
           var parallel = stats.parallel;
@@ -630,6 +640,16 @@ window.Game = window.Game || {};
           h += '<div class="desc batch-hint">当前最多可征召 ' + maxRecruit + ' 个（受可用平民和资源限制）；兵工厂等级与训练科技只影响生产速度和并行数。</div>';
         }
         h += '</div>';
+
+        // 配装摘要不随属性详情折叠，配置归属账号而非本城兵数。
+        if (G.UnitEquipment) h += G.UnitEquipment.summary(id, true);
+
+        // 海军的两项能力常驻展示，避免已建军港的玩家误以为能直接造舰。
+        if (u.branch === 'sea' && prerequisites) {
+          h += '<div class="desc">征召前置：' + prerequisites.requirements.map(function (entry) {
+            return entry.name + ' Lv.' + entry.actual + ' / Lv.' + entry.required + (entry.met ? '（已满足）' : '（未满足）');
+          }).join(' · ') + '</div>';
+        }
 
         // 常驻展示的单价与征召解散操作行
         h += '<div class="cost">单价: ' + costHtml(Object.assign({ pop: u.pop }, u.cost)) + '</div>';
@@ -646,7 +666,12 @@ window.Game = window.Game || {};
           if (have > 0) h += '<button type="button" class="btn warn recruit-btn" onclick="Game.Army.openDisbandModal(\'' + id + '\')">解散</button>';
           h += '</div>';
         } else {
-          h += '<div class="cost">需先建造 ' + bName + '</div>';
+          h += '<div class="cost">' + (prerequisites && prerequisites.missing.length
+            ? prerequisites.missing.map(G.Prerequisites.missingText).join('；') : '需先建造 ' + bName) + '</div>';
+          if (prerequisites && prerequisites.missing.length) {
+            h += '<button type="button" class="btn sm" onclick="Game.Prerequisites.goTo(\'' + prerequisites.missing[0].id + '\',\'city\',event)">前往建造</button>';
+          }
+          if (have > 0) h += '<button type="button" class="btn warn recruit-btn" onclick="Game.Army.openDisbandModal(\'' + id + '\')">解散</button>';
         }
         h += '</div>';
       });

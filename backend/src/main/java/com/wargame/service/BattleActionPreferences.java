@@ -82,7 +82,7 @@ public class BattleActionPreferences {
         long total = 0;
         for (var entry : configured.entrySet()) {
             Object value = entry.getValue();
-            if (!UnitDef.UNITS.containsKey(entry.getKey()) || !(value instanceof Number number)
+            if (!UnitDef.UNITS.containsKey(com.wargame.model.constants.UnitEquipmentEffects.base(entry.getKey())) || !(value instanceof Number number)
                     || !Double.isFinite(number.doubleValue()) || number.doubleValue() != number.longValue()
                     || number.longValue() < 0 || number.longValue() > Integer.MAX_VALUE) {
                 throw new IllegalArgumentException("迎战兵力必须为有效兵种的非负整数");
@@ -137,9 +137,9 @@ public class BattleActionPreferences {
         Map<String, BattleService.UnitOrder> orders = new LinkedHashMap<>();
         Map<String, String> configured = effective(defending ? player.getDefendingBattleActions() : player.getOutgoingBattleActions());
         for (Map.Entry<String, Integer> entry : army.entrySet()) {
-            if (entry.getValue() == null || entry.getValue() <= 0 || !UnitDef.UNITS.containsKey(entry.getKey())) continue;
+            if (entry.getValue() == null || entry.getValue() <= 0 || !UnitDef.UNITS.containsKey(com.wargame.model.constants.UnitEquipmentEffects.base(entry.getKey()))) continue;
             orders.put(entry.getKey(), new BattleService.UnitOrder(
-                    BattleService.CommandAction.valueOf(configured.get(entry.getKey()))));
+                    BattleService.CommandAction.valueOf(configured.get(com.wargame.model.constants.UnitEquipmentEffects.base(entry.getKey())))));
         }
         return orders;
     }

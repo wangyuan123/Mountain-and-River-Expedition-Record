@@ -6,8 +6,9 @@ window.Game = window.Game || {};
 
   var D = G.DATA;
   var Core = G.Core;
+  var WILD_BASE_CAP = (G.Constants && G.Constants.wildOccupation && G.Constants.wildOccupation.baseCap) || 2;
   // 每城开局提供 6 支施工队，新建、升级与拆除共用；与后端 BuildService.MAX_CONCURRENT 保持一致。
-  var MAX_CONCURRENT = G.Constants.buildMaxConcurrent;
+  var MAX_CONCURRENT = (G.Constants && G.Constants.buildMaxConcurrent) || 6;
 
   function buildCost(id, fromLevel) {
     var b = D.buildings[id];
@@ -492,7 +493,7 @@ window.Game = window.Game || {};
       }
       var groupKey = Core.buildingGroup(id);
       if (fromLv === 0 && groupKey && Core.groupSlotsRemaining(groupKey) <= 0) {
-        G.toast(this.GROUPS[groupKey].name + '建筑已达当前上限' + Core.groupSlotsCap(groupKey) + '栋（含新建中），可升级市政厅扩容（最高32栋），或拆除建筑、取消新建');
+        G.toast(this.GROUPS[groupKey].name + '建筑已达当前上限' + Core.groupSlotsCap(groupKey) + '栋（含新建中），可升级市政厅扩容（最高36栋），或拆除建筑、取消新建');
         return;
       }
       var toLv = fromLv + 1;
@@ -762,6 +763,10 @@ window.Game = window.Game || {};
 
       // 1. 关键属性与资源产出详情
       var statsRows = '';
+      if (id === 'prisoner_camp') {
+        statsRows += '<div class="bdetail-stat-row"><span class="bdetail-stat-lbl">俘虏池容量</span><span class="bdetail-stat-val">' + G.fmt(s.prisonerCount || 0) + ' / ' + G.fmt(curLv * 2000) + '</span></div>';
+        if (curLv < max) statsRows += '<div class="bdetail-stat-row"><span class="bdetail-stat-lbl">下一级容量</span><span class="bdetail-stat-val">' + G.fmt((curLv + 1) * 2000) + '</span></div>';
+      }
       if (b.produces) {
         var resName = G.DATA.resources[b.produces] ? G.DATA.resources[b.produces].name : b.produces;
         var resIco = G.resourceIconHtml(b.produces);
@@ -808,7 +813,7 @@ window.Game = window.Game || {};
         '</div>';
       }
       if (b.protectPer) {
-        var protect = Math.floor(curLv * b.protectPer * (1 + 0.10 * (s.tech.log_warehouse || 0)));
+        var protect = Math.floor(curLv * b.protectPer * (1 + 0.10 * ((s.tech && s.tech.log_warehouse) || 0)));
         statsRows += '<div class="bdetail-stat-row">' +
           '<span class="bdetail-stat-lbl">资源掠夺保护</span>' +
           '<span class="bdetail-stat-val">每种基础资源保 ' + protect + '</span>' +
@@ -818,6 +823,13 @@ window.Game = window.Game || {};
         statsRows += '<div class="bdetail-stat-row">' +
           '<span class="bdetail-stat-lbl">守城防御提升</span>' +
           '<span class="bdetail-stat-val">+' + (curLv * b.defBonus) + '%</span>' +
+        '</div>';
+      }
+      if (id === 'wall') {
+        // 四类工事共享每级3000容量，与 FortService / 城防页面一致。
+        statsRows += '<div class="bdetail-stat-row">' +
+          '<span class="bdetail-stat-lbl">城防武器容量</span>' +
+          '<span class="bdetail-stat-val">' + G.fmt(curLv * (b.fortCapPerLevel || 3000)) + '（四类共享）</span>' +
         '</div>';
       }
       if (b.airSpdBonus) {
@@ -834,14 +846,52 @@ window.Game = window.Game || {};
       }
       if (id === 'staff') {
         statsRows += '<div class="bdetail-stat-row">' +
-          '<span class="bdetail-stat-lbl">带兵容量加成</span>' +
-          '<span class="bdetail-stat-val">+' + (curLv * 10) + '%</span>' +
+          '<span class="bdetail-stat-lbl">战略指挥枢纽</span>' +
+          '<span class="bdetail-stat-val">支持军官管理、司令部与高级军研</span>' +
+        '</div>';
+      }
+      if (id === 'academy') {
+        var fiveStarRate = (Math.min(10, curLv) * 0.3).toFixed(1);
+        var nextRate = (Math.min(10, curLv + 1) * 0.3).toFixed(1);
+        statsRows += '<div class="bdetail-stat-row">' +
+          '<span class="bdetail-stat-lbl">整批五星概率</span>' +
+          '<span class="bdetail-stat-val">+' + fiveStarRate + '%' + (curLv < max ? (' (下级 +' + nextRate + '%)') : '') + '</span>' +
+        '</div>';
+        statsRows += '<div class="bdetail-stat-row">' +
+          '<span class="bdetail-stat-lbl">将领培养中心</span>' +
+          '<span class="bdetail-stat-val">每日支持免费刷新与各星级将领招募</span>' +
+        '</div>';
+      }
+      if (id === 'lab') {
+        var spdBonus = curLv > 1 ? (curLv - 1) * 10 : 0;
+        var nextSpd = curLv < max ? curLv * 10 : spdBonus;
+        statsRows += '<div class="bdetail-stat-row">' +
+          '<span class="bdetail-stat-lbl">科研耗时加速</span>' +
+          '<span class="bdetail-stat-val">-' + spdBonus + '%' + (curLv < max ? (' (下级 -' + nextSpd + '%)') : '') + '</span>' +
+        '</div>';
+        statsRows += '<div class="bdetail-stat-row">' +
+          '<span class="bdetail-stat-lbl">科技研发层级</span>' +
+          '<span class="bdetail-stat-val">最高开放至 ' + Math.min(10, curLv) + ' 阶科技</span>' +
+        '</div>';
+      }
+      if (id === 'radar') {
+        statsRows += '<div class="bdetail-stat-row">' +
+          '<span class="bdetail-stat-lbl">侦察视野加成</span>' +
+          '<span class="bdetail-stat-val">+' + curLv + ' 格' + (curLv < max ? (' (下级 +' + (curLv + 1) + ' 格)') : '') + '</span>' +
+        '</div>';
+        statsRows += '<div class="bdetail-stat-row">' +
+          '<span class="bdetail-stat-lbl">防空雷达预警</span>' +
+          '<span class="bdetail-stat-val">预警进犯敌军，支撑雷达预警科技</span>' +
         '</div>';
       }
       if (id === 'liaison') {
         statsRows += '<div class="bdetail-stat-row">' +
-          '<span class="bdetail-stat-lbl">军官刷新品质</span>' +
-          '<span class="bdetail-stat-val">偏向高星 (Lv.' + curLv + ')</span>' +
+          '<span class="bdetail-stat-lbl">情报联络枢纽</span>' +
+          '<span class="bdetail-stat-val">盟军外交与前线情报联络 (Lv.' + curLv + ')</span>' +
+        '</div>';
+        statsRows += '<div class="bdetail-stat-row">' +
+          '<span class="bdetail-stat-lbl">战略科研前置</span>' +
+          '<span class="bdetail-stat-val">支持雷达预警科研与高级战车工业</span>' +
         '</div>';
       }
       if (id === 'command') {
@@ -849,14 +899,27 @@ window.Game = window.Game || {};
           '<span class="bdetail-stat-lbl">主城枢纽作用</span>' +
           '<span class="bdetail-stat-val">决定全城各建筑等级上限 (Lv.' + curLv + ')</span>' +
         '</div>';
+        statsRows += '<div class="bdetail-stat-row">' +
+          '<span class="bdetail-stat-lbl">本城野地上限</span>' +
+          '<span class="bdetail-stat-val">' + (WILD_BASE_CAP + curLv) + '（基础' + WILD_BASE_CAP + '＋市政厅等级）' + (curLv < max ? '，下级 ' + (WILD_BASE_CAP + curLv + 1) : '') + '</span>' +
+        '</div>';
+      }
+      if (id === 'headquarters') {
+        var chief = typeof Core.getOfficerByRole === 'function' ? Core.getOfficerByRole('commander_in_chief') : null;
+        var curMarches = 5 + curLv;
+        var nextMarches = 5 + (curLv + 1);
+        statsRows += '<div class="bdetail-stat-row">' +
+          '<span class="bdetail-stat-lbl">出征队伍上限</span>' +
+          '<span class="bdetail-stat-val">' + curMarches + ' 支' + (curLv < max ? (' (下级 ' + nextMarches + ' 支)') : '') + '</span>' +
+        '</div>';
+        statsRows += '<div class="bdetail-stat-row"><span class="bdetail-stat-lbl">司令官</span><span class="bdetail-stat-val">' + (chief ? G.escapeHtml(chief.name) : '未任命') + '</span></div>';
+        statsRows += '<div class="bdetail-stat-row"><span class="bdetail-stat-lbl">战斗加成</span><span class="bdetail-stat-val">四属性每点 +0.1%，本城全部战斗常驻；技能不参与</span></div>';
       }
       if (id === 'exchange') {
         var exRate = (0.50 + curLv * 0.04) * 100;
         var nextExRate = (0.50 + (curLv + 1) * 0.04) * 100;
-        var depotLevels = Core.buildingLevels('depot');
-        var depotCount = depotLevels.filter(function (lv) { return lv > 0; }).length;
-        var slotCap = 2 + Math.floor(curLv / 2) + depotCount;
-        var nextSlotCap = 2 + Math.floor((curLv + 1) / 2) + depotCount;
+        var slotCap = 2 + curLv;
+        var nextSlotCap = 2 + (curLv + 1);
         var taxRate = Math.max(5, 10 - (curLv - 1) * 0.5);
         var nextTaxRate = Math.max(5, 10 - curLv * 0.5);
 
@@ -880,7 +943,7 @@ window.Game = window.Game || {};
       if (spRoute && s.buildings[id]) {
         var routeName = ({
           army: '兵种招募', academy: '军官招募', officer: '军官管理',
-          tech: '科技研究', fort: '城防系统', exchange: '交易所大厅'
+          prisoners: '进入俘虏池', wounded: '伤兵营', tech: '科技研究', fort: '城防系统', exchange: '交易所大厅'
         })[spRoute] || spRoute;
         shortcutHtml = '<div style="margin-top:8px"><button class="btn sm ok" style="width:100%" id="bdetailRouteBtn">→ 前往 ' + routeName + '</button></div>';
       }
@@ -1321,15 +1384,19 @@ window.Game = window.Game || {};
      * 满足 lv > 0 时才生效, 否则点空白处应触发升级弹窗 (无新内容则 noop)。
      */
     SPECIAL_ROUTES: {
+      prisoner_camp: 'prisoners',
+      hospital: 'wounded', // 医院提供现有伤兵治疗入口，等级门槛由医疗科研前置统一管理。
       factory:  'army',     // 军工厂 → 兵种招募
       academy:  'academy',  // 军校 → 军官招募
+      headquarters: 'officer', // 司令部 → 任命司令官
       staff:    'officer',  // 作战参谋部 → 军官管理
       lab:      'tech',     // 军工科技研发中心 → 科技
-      wall:     'fort',     // 要塞防线   → 城防
-      lightfactory: 'army', // 轻装战车厂/重装战车厂/空军基地/军港船坞 也走 army 页 (兵种面板支持按 build 过滤)
+      wall:     'fort',     // 城防系统
+      lightfactory: 'army', // 各制造设施及军港均可进入兵种征召页。
       heavyfactory: 'army',
       airport:     'army',
       port:        'army',
+      shipyard:    'army',
       exchange:    'exchange'
     },
 
@@ -1339,6 +1406,7 @@ window.Game = window.Game || {};
       refinery:     'img/buildings/garden/refinery.webp',
       oilfield:     'img/buildings/garden/oilfield.webp',
       raremine:     'img/buildings/garden/raremine.webp',
+      headquarters: 'img/buildings/garden/headquarters.webp',
       command:      'img/buildings/garden/command.webp',
       house:        'img/buildings/garden/house.webp',
       factory:      'img/buildings/garden/factory.webp',
@@ -1346,6 +1414,7 @@ window.Game = window.Game || {};
       heavyfactory: 'img/buildings/garden/heavyfactory.webp',
       airport:      'img/buildings/garden/airport.webp',
       port:         'img/buildings/garden/port.webp',
+      shipyard:     'img/buildings/garden/shipyard.webp',
       academy:      'img/buildings/garden/academy.webp',
       staff:        'img/buildings/garden/staff.webp',
       lab:          'img/buildings/garden/lab.webp',
@@ -1355,7 +1424,9 @@ window.Game = window.Game || {};
       liaison:      'img/buildings/garden/liaison.webp',
       depot:        'img/buildings/garden/depot.webp',
       transit:      'img/buildings/garden/transit.webp',
-      exchange:     'img/buildings/garden/exchange.webp'
+      hospital:     'img/buildings/garden/hospital.webp',
+      exchange:     'img/buildings/garden/exchange.webp',
+      prisoner_camp:'img/buildings/garden/prisoner_camp.webp'
     },
     renderBuildingIcon: renderBuildingIcon,
 
@@ -1430,6 +1501,11 @@ window.Game = window.Game || {};
 
       // 关键属性（图标 + 名称 + 数值）
       var stats = '';
+      if (id === 'prisoner_camp') {
+        var campLv = s.buildings[id] || 0;
+        stats += '<div class="bcard-stat"><span class="bcard-stat-name">俘虏池容量</span><span class="bcard-stat-val">' + G.fmt(s.prisonerCount || 0) + ' / ' + G.fmt(campLv * 2000) + '</span></div>';
+        if (campLv < max) stats += '<div class="bcard-stat"><span class="bcard-stat-name">下一级容量</span><span class="bcard-stat-val">' + G.fmt((campLv + 1) * 2000) + '</span></div>';
+      }
       if (b.produces) {
         stats += '<div class="bcard-stat"><span class="bcard-stat-ico">' + G.resourceIconHtml(b.produces) + '</span><span class="bcard-stat-name">产出</span><span class="bcard-stat-val">' + G.DATA.resources[b.produces].name + ' ' + G.fmt(Core.produceOf(id)) + '/h</span></div>';
       }
@@ -1442,14 +1518,22 @@ window.Game = window.Game || {};
       }
       if (b.protectPer) {
         var lvForCap = multi ? totalLv : (s.buildings[id] || 0);
-        var protect = Math.floor(lvForCap * b.protectPer * (1 + 0.10 * (s.tech.log_warehouse || 0)));
+        var protect = Math.floor(lvForCap * b.protectPer * (1 + 0.10 * ((s.tech && s.tech.log_warehouse) || 0)));
         stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🛡</span><span class="bcard-stat-name">掠夺保护</span><span class="bcard-stat-val">每资源保 ' + protect + '</span></div>';
       }
       if (b.defBonus) stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🛡</span><span class="bcard-stat-name">守城防御</span><span class="bcard-stat-val">+' + ((s.buildings[id] || 0) * b.defBonus) + '%</span></div>';
+      if (id === 'wall') stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🏰</span><span class="bcard-stat-name">城防武器容量</span><span class="bcard-stat-val">' + G.fmt((s.buildings[id] || 0) * (b.fortCapPerLevel || 3000)) + '</span></div>';
       if (b.airSpdBonus) stats += '<div class="bcard-stat"><span class="bcard-stat-ico">✈</span><span class="bcard-stat-name">空军飞行航速</span><span class="bcard-stat-val">+' + ((s.buildings[id] || 0) * b.airSpdBonus) + '%</span></div>';
       if (b.resBonus) stats += '<div class="bcard-stat"><span class="bcard-stat-ico">📈</span><span class="bcard-stat-name">全资源产出</span><span class="bcard-stat-val">+' + ((s.buildings[id] || 0) * b.resBonus) + '%</span></div>';
-      if (id === 'staff') stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🎖</span><span class="bcard-stat-name">带兵容量加成</span><span class="bcard-stat-val">+' + ((s.buildings[id] || 0) * 10) + '%</span></div>';
-      if (id === 'liaison') stats += '<div class="bcard-stat"><span class="bcard-stat-ico">⭐</span><span class="bcard-stat-name">军官刷新</span><span class="bcard-stat-val">偏向高星 (Lv.' + (s.buildings[id] || 0) + ')</span></div>';
+      if (id === 'command') stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🗺️</span><span class="bcard-stat-name">本城野地上限</span><span class="bcard-stat-val">' + (WILD_BASE_CAP + (s.buildings[id] || 0)) + '</span></div>';
+      if (id === 'academy') stats += '<div class="bcard-stat"><span class="bcard-stat-ico">⭐</span><span class="bcard-stat-name">五星概率</span><span class="bcard-stat-val">+' + ((Math.min(10, s.buildings[id] || 0)) * 0.3).toFixed(1) + '%</span></div>';
+      if (id === 'lab') {
+        var labBonus = (s.buildings[id] || 0) > 1 ? ((s.buildings[id] || 0) - 1) * 10 : 0;
+        stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🔬</span><span class="bcard-stat-name">科研加速</span><span class="bcard-stat-val">-' + labBonus + '%</span></div>';
+      }
+      if (id === 'radar') stats += '<div class="bcard-stat"><span class="bcard-stat-ico">📡</span><span class="bcard-stat-name">侦察视野</span><span class="bcard-stat-val">+' + (s.buildings[id] || 0) + ' 格</span></div>';
+      if (id === 'liaison') stats += '<div class="bcard-stat"><span class="bcard-stat-ico">📞</span><span class="bcard-stat-name">情报联络</span><span class="bcard-stat-val">Lv.' + (s.buildings[id] || 0) + '</span></div>';
+      if (id === 'headquarters') stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🚩</span><span class="bcard-stat-name">出征队伍</span><span class="bcard-stat-val">' + (5 + (s.buildings[id] || 0)) + ' 支</span></div>';
       if (stats) expand += '<div class="bcard-stats">' + stats + '</div>';
 
       // 快捷入口按钮
@@ -1457,7 +1541,7 @@ window.Game = window.Game || {};
       if (spRoute && s.buildings[id]) {
         var routeName = ({
           army: '兵种招募', academy: '军官招募', officer: '军官管理',
-          tech: '科技研究', fort: '城防', exchange: '交易所'
+          prisoners: '进入俘虏池', wounded: '伤兵营', tech: '科技研究', fort: '城防', exchange: '交易所'
         })[spRoute] || spRoute;
         shortcuts += '<button class="btn sm ok bcard-shortcut" onclick="Game.go(\'' + spRoute + '\')">→ ' + routeName + '</button>';
       }
@@ -1541,8 +1625,8 @@ window.Game = window.Game || {};
     },
 
     GROUPS: {
-      res: { name: '资源', order: ['farm', 'refinery', 'oilfield', 'raremine'] },
-      army: { name: '军事', order: ['command', 'house', 'factory', 'lightfactory', 'heavyfactory', 'airport', 'port', 'academy', 'staff', 'lab', 'radar', 'wall', 'apron', 'liaison', 'depot', 'transit', 'exchange'] }
+      res: { name: '后勤', order: ['farm', 'refinery', 'oilfield', 'raremine'] },
+      army: { name: '军工', order: ['command', 'house', 'factory', 'lightfactory', 'heavyfactory', 'airport', 'port', 'shipyard', 'academy', 'staff', 'headquarters', 'lab', 'radar', 'wall', 'apron', 'liaison', 'depot', 'transit', 'hospital', 'exchange', 'prisoner_camp'] }
     },
 
     renderSlotGrid: function (groupKey, jobs, s) {
@@ -1681,10 +1765,10 @@ window.Game = window.Game || {};
       var groupUsed = Core.groupSlotsUsed(groupKey);
       var groupCap = Core.groupSlotsCap(groupKey);
       if (groupKey === 'res') {
-        h += '<div class="desc">资源建筑: ' + groupUsed + '/' + groupCap + ' 栋（含新建中） | 四类建筑共享额度，自由分配</div>';
-        h += '<div class="desc">基础12栋 + 市政厅每级2栋，满级32栋 | 市政厅限制建筑等级上限' + (buildDisc > 0 ? ' | 建筑加速 -' + buildDisc.toFixed(0) + '%' : '') + '</div>';
+        h += '<div class="desc">后勤建筑: ' + groupUsed + '/' + groupCap + ' 栋（含新建中） | 四类建筑共享额度，自由分配</div>';
+        h += '<div class="desc">基础16栋 + 市政厅每级2栋，满级36栋 | 市政厅限制建筑等级上限' + (buildDisc > 0 ? ' | 建筑加速 -' + buildDisc.toFixed(0) + '%' : '') + '</div>';
       } else {
-        h += '<div class="desc">军事建筑: ' + groupUsed + '/' + groupCap + ' 栋（含新建中） | 基础12栋 + 市政厅每级2栋，满级32栋 | 民居、军需仓库、军工厂自由分配，其余建筑限1栋 | 市政厅限制建筑等级上限' + (buildDisc > 0 ? ' | 建筑加速 -' + buildDisc.toFixed(0) + '%' : '') + '</div>';
+        h += '<div class="desc">军工建筑: ' + groupUsed + '/' + groupCap + ' 栋（含新建中） | 基础16栋 + 市政厅每级2栋，满级36栋 | 民居、军需仓库、军工厂自由分配，其余建筑限1栋 | 市政厅限制建筑等级上限' + (buildDisc > 0 ? ' | 建筑加速 -' + buildDisc.toFixed(0) + '%' : '') + '</div>';
       }
       h += '<div id="buildQueueBar">' + this.renderQueueHtml(jobs, s) + '</div>';
       h += this.renderSlotGrid(groupKey, jobs, s);

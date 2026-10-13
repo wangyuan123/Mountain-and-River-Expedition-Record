@@ -1,0 +1,137 @@
+{
+  "ruleVersion": "balance-v12-opening-distance-20261012",
+  "formula": "max over living attacker/defender unit pairs of 3*(floor(speedA*50)+floor(speedB*50))+max(rangeA,rangeB), plus 100",
+  "safetyGap": 100,
+  "infantry": {
+    "initialDistance": 860,
+    "afterRound3": 260,
+    "afterRound4": 60,
+    "range": 160,
+    "firstCombatRound": 4
+  },
+  "rocket": {
+    "initialDistance": 2600,
+    "afterRound3": 1700,
+    "afterRound4": 1400,
+    "range": 1600,
+    "firstCombatRound": 4
+  },
+  "rocketFighterMix": {
+    "initialDistance": 3350,
+    "firstCombatRound": 4
+  },
+  "unitPairCount": 425,
+  "calibration": {
+    "rows": 86,
+    "samples": 564160,
+    "maxAbsResidual": 0.023591648670410872,
+    "modelVersion": "power-v1-pvp-v1-ee6a1fd2c9278b0c82eec5b7"
+  },
+  "holdout": {
+    "samples": 5184,
+    "sideAWinRate": 0.36844135802469136,
+    "sideBWinRate": 0.42399691358024694,
+    "drawRate": 0.20756172839506173
+  },
+  "holdoutMaxAbsMeanLossDifference": 0.03683672267072307,
+  "testResults": [
+    {
+      "class": "BattleOpeningDistanceTest",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "TacticalBattleRoundTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "BattleServiceTest",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "CommandBonusBattleTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "OfficerSkillCycleTest",
+      "tests": 31,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "BattleDamageTest",
+      "tests": 21,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "BattleCompositionTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "PvpRulesTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "PvpCalibrationTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "TacticalPersistentOrdersTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "OfficerSkillPersistenceTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "PvpPracticeTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "TacticalBattleSchedulerTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "testsPassed": 132,
+  "preexistingFailures": {
+    "class": "BattleMechanicsTest",
+    "failures": 8,
+    "confirmedWithOriginalDistanceFormula": true
+  },
+  "validationCommand": "MAVEN_OPTS=\"-Dfile.encoding=UTF-8 -Dsun.jnu.encoding=UTF-8\" mvn -o -f backend/pom.xml -Dtest=BattleOpeningDistanceTest,TacticalBattleRoundTest,BattleServiceTest,CommandBonusBattleTest,OfficerSkillCycleTest,BattleDamageTest,BattleCompositionTest,PvpRulesTest,PvpCalibrationTest,TacticalPersistentOrdersTest,OfficerSkillPersistenceTest,PvpPracticeTest,TacticalBattleSchedulerTest test"
+}

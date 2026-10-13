@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
 
-function fixture() {
+function fixture({ textureFactory, reducedMotion = false } = {}) {
   const c = {
     console, Date, Map, Set, WeakMap, Uint8Array, Float32Array, Math, Promise,
     performance: { now: () => Date.now() },
@@ -24,16 +24,17 @@ function fixture() {
       hidden: false
     },
     window: {
-      matchMedia: () => ({ matches: false })
+      matchMedia: () => ({ matches: reducedMotion })
     },
     PIXI: {
       Texture: {
-        from: (path) => ({
+        from: textureFactory || ((path) => ({
           path: typeof path === 'string' ? path : (path && path.id) || '',
           destroy: () => {},
           orig: { width: 260, height: 260 },
           baseTexture: { valid: true, resource: { source: {} }, once: () => {} }
-        })
+        })),
+        EMPTY: { orig: { width: 1, height: 1 }, baseTexture: { valid: true } }
       },
       Sprite: class {
         constructor(tex) {
@@ -54,14 +55,14 @@ function fixture() {
         }
       },
       Graphics: class {
-        clear() { return this; }
+        clear() { this.ellipses = []; this.lines = []; return this; }
         beginFill() { return this; }
         endFill() { return this; }
         lineStyle() { return this; }
         drawPolygon() { return this; }
         moveTo() { return this; }
-        lineTo() { return this; }
-        drawEllipse() { return this; }
+        lineTo(x, y) { (this.lines || (this.lines = [])).push({ x, y }); return this; }
+        drawEllipse(x, y, rx, ry) { (this.ellipses || (this.ellipses = [])).push({ x, y, rx, ry }); return this; }
         drawRoundedRect() { return this; }
         quadraticCurveTo() { return this; }
         addChild() {}
@@ -93,11 +94,123 @@ function fixture() {
     vm.runInContext(fs.readFileSync(path.join(__dirname, '../js', file), 'utf8'), c);
   }
   let source = fs.readFileSync(path.join(__dirname, '../js/world-map.js'), 'utf8');
-  source = source.replace('  G.WorldMap={', '  G.TestMapView=MapView; G.TestMapCache=cache;\n  G.WorldMap={');
+  source = source.replace('  G.WorldMap={', '  G.TestMapView=MapView; G.TestMapCache=cache; G.TestMountMapView=function(view){instance=view;};\n  G.WorldMap={');
   vm.runInContext(source, c);
 
   return c;
 }
+
+function resourceFixture(options) {
+  const c = fixture(options), v = Object.create(c.Game.TestMapView.prototype);
+  c.Game.DATA.wildTypes = { oil: { name: 'Oil', res: 'oil', icon: 'oil.webp' },
+    ironworks: { name: 'Steel', res: 'steel', icon: 'steel.webp' },
+    rarefactory: { name: 'Rare', res: 'rare', icon: 'rare.webp' } };
+  c.Game.TestMapCache.targets = () => ['oil', 'ironworks', 'rarefactory'].map((type, i) =>
+    ({ kind: 'wild', id: i + 1, type, x: 50 + i, y: 50, level: 1 }));
+  v.camera = new c.Game.MapCamera(200, 50, 50, 48);
+  v.camera.width = 400; v.camera.height = 300;
+  v.groundSize = 200;
+  v.ground = new c.PIXI.Sprite({ orig: { width: 2048, height: 2048 } });
+  v.shell = { querySelector: () => null };
+  v.terrain = new c.PIXI.Graphics();
+  v.statusEl = {}; v.coordEl = {}; v.regionEl = {};
+  v.markerLayer = new c.PIXI.Container();
+  v.captionLayer = new c.PIXI.Container();
+  v.markers = new Map();
+  v.filter = 'all';
+  v.drawSelection = v.drawGround = v.drawWater = v.drawClouds = v.drawRoutes = v.drawMinimap = () => {};
+  v.app = { renderer: { render: () => {} } };
+  v.wake = () => { v.wakes = (v.wakes || 0) + 1; };
+  c.Game.TestMountMapView(v);
+  return { c, v };
+}
+
+function pendingTextures() {
+  const textures = new Map();
+  function textureFactory(path) {
+    const listeners = {};
+    const texture = { path, orig: { width: 384, height: 384 },
+      baseTexture: { valid: false, once: (event, callback) => { listeners[event] = callback; } },
+      load() { this.baseTexture.valid = true; if (listeners.loaded) listeners.loaded(); } };
+    textures.set(path, texture);
+    return texture;
+  }
+  return { textures, textureFactory };
+}
+
+test('resource icons stay on the first frame until all frames load, then keep their phase through redraws', () => {
+  const pending = pendingTextures(), { v } = resourceFixture(pending);
+  v.draw();
+  assert.equal(pending.textures.size, 3, 'Load static first frames before requesting the loops');
+  assert.ok([...v.markers.values()].every(marker => !marker.sprite.visible));
+  [...pending.textures.values()].forEach(texture => texture.load());
+  assert.equal(v.wakes, 3);
+  v.draw();
+  assert.equal(pending.textures.size, 36);
+  const markers = [...v.markers.values()];
+  assert.ok(markers.every(marker => marker.sprite.visible && /frame_00/.test(marker.sprite.texture.path)));
+  assert.equal(v.animatingWilds, false);
+  for (const texture of pending.textures.values()) if (!/frame_11/.test(texture.path)) texture.load();
+  v.updateWildAnimations(600);
+  assert.ok(markers.every(marker => /frame_00/.test(marker.sprite.texture.path)), 'Partial loops must never show blank frames');
+  const wakes = v.wakes;
+  for (const texture of pending.textures.values()) if (/frame_11/.test(texture.path)) texture.load();
+  assert.equal(v.wakes, wakes + 3, 'Wake once per completed resource loop');
+  v.frameTime = 600;
+  v.draw();
+  assert.equal(v.animatingWilds, true);
+  assert.ok(markers.every(marker => /frame_05/.test(marker.sprite.texture.path)));
+  v.updateWildAnimations(720);
+  assert.ok(markers.every(marker => /frame_06/.test(marker.sprite.texture.path)));
+  v.frameTime = 720;
+  v.draw();
+  assert.ok(markers.every(marker => /frame_06/.test(marker.sprite.texture.path)), 'Chunk and countdown redraws preserve the animation clock');
+  assert.equal(pending.textures.size, 36, 'Redraws reuse the loaded textures');
+});
+
+test('a missing animation frame keeps the resource visible as a static image', () => {
+  const pending = pendingTextures(), { v } = resourceFixture(pending);
+  v.draw();
+  [...pending.textures.values()].forEach(texture => texture.load());
+  v.draw();
+  for (const texture of pending.textures.values()) if (!/frame_07/.test(texture.path)) texture.load();
+  v.frameTime = 960;
+  v.draw();
+  v.updateWildAnimations(1440);
+  assert.equal(v.animatingWilds, false);
+  assert.equal(v.markers.size, 3);
+  assert.ok([...v.markers.values()].every(marker => marker.sprite.visible && /frame_00/.test(marker.sprite.texture.path)));
+});
+
+test('reduced motion loads only still frames and freezes already loaded loops', () => {
+  const pending = pendingTextures(), { c, v } = resourceFixture({ ...pending, reducedMotion: true });
+  v.draw();
+  [...pending.textures.values()].forEach(texture => texture.load());
+  v.draw();
+  assert.equal(pending.textures.size, 3);
+  assert.equal(v.animatingWilds, false);
+  c.window.matchMedia = () => ({ matches: false });
+  v.draw();
+  [...pending.textures.values()].forEach(texture => texture.load());
+  v.frameTime = 600;
+  v.draw();
+  assert.equal(v.animatingWilds, true);
+  c.window.matchMedia = () => ({ matches: true });
+  v.draw();
+  assert.equal(v.animatingWilds, false);
+  assert.ok([...v.markers.values()].every(marker => /frame_00/.test(marker.sprite.texture.path)));
+});
+
+test('pending resource frames wake the current map after leaving and reentering', () => {
+  const pending = pendingTextures(), { c, v } = resourceFixture(pending);
+  v.draw();
+  v.destroyed = true;
+  let wakes = 0;
+  c.Game.TestMountMapView({ wake: () => { wakes++; } });
+  [...pending.textures.values()].forEach(texture => texture.load());
+  assert.equal(wakes, 3);
+  assert.equal(v.wakes, undefined);
+});
 
 test('drawGround creates center tiles first and prioritizes focus coordinates', () => {
   const c = fixture();
@@ -191,9 +304,42 @@ test('drawing a shielded city keeps the map rendering and enables shield animati
   assert.equal(renders, 1);
   assert.equal(v.animatingShields, true);
   assert.equal(v.markers.get('player:1').shield.visible, true);
+  const marker = v.markers.get('player:1');
+  assert.equal(marker.shield.ellipses.length, 2);
+  for (const ring of marker.shield.ellipses) {
+    assert.ok(ring.rx < marker.sprite.width * 0.68);
+    assert.ok(ring.ry <= marker.sprite.height * 0.62);
+    for (const [x, y] of [[-.435, -.33], [.435, -.33], [-.49, .44], [.49, .44]]) {
+      const distance = (x * marker.sprite.width / ring.rx) ** 2
+        + ((y * marker.sprite.height - ring.y) / ring.ry) ** 2;
+      assert.ok(distance <= 1 && distance > .7, 'City foundation corners stay close to and inside the circular halo');
+    }
+  }
+
   city.cityState = 'peace';
   v.draw();
   assert.equal(v.animatingShields, false);
+  assert.equal(v.markers.get('player:1').shield.visible, false);
+
+  // 当前主城开盾不能让其他自有城市误显示；切城也不能隐藏主城真实护盾。
+  city.selfCity = true;
+  c.Game.Core.state.world.cityPos = { x: 10, y: 10 };
+  c.Game.Core.getCityStatus = () => 'shield';
+  v.draw();
+  assert.equal(v.markers.get('player:1').shield.visible, false);
+  city.shieldUntil = Date.now() + 3600000;
+  c.Game.Core.getCityStatus = () => 'peace';
+  v.draw();
+  assert.equal(v.markers.get('player:1').shield.visible, true);
+  c.Game.Core.state.world.cityPos = { x: 50, y: 50 };
+  v.draw();
+  assert.equal(v.markers.get('player:1').shield.visible, false);
+  c.Game.Core.getCityStatus = () => 'shield';
+  v.draw();
+  assert.equal(v.markers.get('player:1').shield.visible, true);
+  c.Game.Core.state.world.cityPos = { x: 10, y: 10 };
+  city.shieldUntil = Date.now() - 1;
+  v.draw();
   assert.equal(v.markers.get('player:1').shield.visible, false);
 });
 

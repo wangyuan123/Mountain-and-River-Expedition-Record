@@ -77,6 +77,11 @@ window.Game = window.Game || {};
     return { gold: '黄金', diamond: '钻石', food: '粮食', steel: '钢铁', oil: '石油', rare: '稀矿' }[type] || type;
   }
   function toast(msg) { if (G.toast) G.toast(msg); }
+  function surrenderRemaining(deadline) {
+    var ms = Math.max(0, Number(deadline || 0) - Date.now());
+    var hours = Math.floor(ms / 3600000), mins = Math.floor((ms % 3600000) / 60000);
+    return hours + '小时' + pad2(mins) + '分';
+  }
 
   // ============================================================
   //  数据加载
@@ -91,7 +96,7 @@ window.Game = window.Game || {};
       if (G.Main && G.Main.renderNavBar) G.Main.renderNavBar();
       render();
     }).catch(function (err) {
-      toast('加载邮件失败: ' + (err.message || err));
+      toast('加载电报失败: ' + (err.message || err));
     });
     return listInFlight;
   }
@@ -155,8 +160,35 @@ window.Game = window.Game || {};
         if (mails[i].id === curMailId) { mails[i].read = true; break; }
       }
       render();
+      var current = mails.find(function (m) { return m.id === curMailId; });
+      if (current && current.surrenderOfferId) {
+        G.API.getSurrenderOffer(current.surrenderOfferId).then(function (offer) {
+          if (view !== 'read' || curMailId !== current.id) return;
+          current.surrender = offer; render();
+        }).catch(function () { /* stale or cancelled offer */ });
+      }
       // 异步标后端
       G.API.markMailRead(curMailId).then(refreshUnread).catch(function () { /* ignore */ });
+    },
+
+    /**
+     * 处理劝降答复；接受前再次确认 24 小时冻结和完整城内资产移交范围。
+     * @param {number} offerId - 劝降邀请 ID
+     * @param {string} decision - accept 或 reject
+     */
+    respondSurrender: function (offerId, decision) {
+      if (decision === 'accept') {
+        var current = mails.find(function (m) { return m.surrenderOfferId === offerId; });
+        var offer = current && current.surrender;
+        var city = offer ? (offer.cityName + '（' + offer.cityX + ',' + offer.cityY + '）') : '该城市';
+        if (!confirm('确认接受对 ' + city + ' 的劝降？接受后城市立即冻结 24 小时，倒计时结束后永久移交。建筑、普通资源、部队、城防、军官及军官装备、本城所属野地随城转移；双方均不能撤销，账号科技、军衔、声望、任务、军团关系、其他城市领地、钻石和账号道具不转移。')) return;
+      }
+      G.API.respondSurrender(offerId, decision).then(function (data) {
+        toast(decision === 'accept' ? '已接受劝降，城市将在 24 小时后完成移交' : '已拒绝劝降');
+        var current = mails.find(function (m) { return m.surrenderOfferId === offerId; });
+        if (current) current.surrender = data;
+        render();
+      }).catch(function (err) { toast(err.message || '处理劝降失败'); });
     },
 
     /** 发送 (compose 页调用) */
@@ -291,7 +323,7 @@ window.Game = window.Game || {};
     // 在 innerHTML 重写前抓取当前输入, 之后还原, 防止 WS tick / 顶层 render 把表单刷掉
     var formState = captureFormState();
     var h = '';
-    h += '<div class="title">- 战时邮件 -</div>';
+    h += '<div class="title">- 战时电报 -</div>';
 
     if (view === 'list') {
       h += '<div class="mail-tabs">';
@@ -308,11 +340,11 @@ window.Game = window.Game || {};
         h += '<span class="' + cls + '" onclick="Game.Mail.setFolder(\'' + t.id + '\')">'
           + t.name + nBadge + '</span>';
       }
-      h += '<span class="mail-compose" onclick="Game.Mail.compose()">✏️ 写信</span>';
+      h += '<span class="mail-compose" onclick="Game.Mail.compose()">✏️ 发电报</span>';
       h += '</div>';
 
       if (!mails.length) {
-        h += '<div class="mail-empty">📭 此文件夹暂无邮件</div>';
+        h += '<div class="mail-empty">📭 此文件夹暂无电报</div>';
       } else {
         h += '<div class="mail-list">';
         for (var j = 0; j < mails.length; j++) {
@@ -353,6 +385,17 @@ window.Game = window.Game || {};
       h += '<span><b>时间:</b> ' + fmtTime(cur.ts) + '</span>';
       h += '</div>';
       h += '<div class="mail-detail-body">' + escapeHtml(cur.body || '').replace(/\n/g, '<br>') + '</div>';
+      if (cur.surrender) {
+        var offer = cur.surrender;
+        var deadline = offer.status === 'PENDING' ? offer.responseExpiresAt : offer.transferDeadlineAt;
+        var phase = offer.status === 'PENDING' ? '答复剩余 ' + surrenderRemaining(deadline) : offer.status === 'ACCEPTED' ? '移交剩余 ' + surrenderRemaining(deadline) : '状态：' + offer.status;
+        h += '<div class="mail-attach-box surrender-offer-box"><b>劝降流程</b><div class="mail-attach-list">' + escapeHtml(phase) + '</div>';
+        if (offer.viewerCanRespond) {
+          h += '<button class="mail-claim" onclick="Game.Mail.respondSurrender(' + offer.offerId + ',\'accept\')">接受劝降</button>';
+          h += '<button class="mail-del" onclick="Game.Mail.respondSurrender(' + offer.offerId + ',\'reject\')">拒绝劝降</button>';
+        }
+        h += '</div>';
+      }
       if (cur.attach && cur.attach.length) {
         h += '<div class="mail-attach-box">';
         h += '<div class="mail-attach-title">📎 附件</div>';
@@ -395,9 +438,9 @@ window.Game = window.Game || {};
           + hist.slice(0, 5).map(function (x) { return escapeHtml(x); }).join('、')
           + (hist.length > 5 ? ' 等' : '') + '</div>';
       }
-      h += '<div class="mail-field"><label>主题:</label><input class="mail-input" id="mailSubject" placeholder="邮件主题" maxlength="40" /></div>';
+      h += '<div class="mail-field"><label>主题:</label><input class="mail-input" id="mailSubject" placeholder="电报主题" maxlength="40" /></div>';
       h += '<div class="mail-field mail-body-field"><label>正文:</label><textarea class="mail-textarea" id="mailBody" placeholder="写点什么..."></textarea></div>';
-      h += '<div class="mail-compose-actions"><button class="mail-send" onclick="Game.Mail._sendCompose()">📨 发送</button></div>';
+      h += '<div class="mail-compose-actions"><button class="mail-send" onclick="Game.Mail._sendCompose()">📨 发送电报</button></div>';
       h += '</div>';
     }
 

@@ -198,7 +198,7 @@ window.Game = window.Game || {};
           '<div style="padding:40px 20px;text-align:center;color:#888">' +
             '<div style="font-size:32px;margin-bottom:12px">🏛</div>' +
             '<div>当前城池尚未建造交易所，无法使用交易功能</div>' +
-            '<div style="margin-top:16px"><button class="btn ok" onclick="Game.go(\'buildArmy\')">前往军事区建造</button></div>' +
+            '<div style="margin-top:16px"><button class="btn ok" onclick="Game.go(\'buildArmy\')">前往军工区建造</button></div>' +
           '</div>';
         return;
       }
@@ -210,8 +210,7 @@ window.Game = window.Game || {};
 
       var ratePct = ((0.50 + exLv * 0.04) * 100).toFixed(0);
       var taxPct = Math.max(5, 10 - (exLv - 1) * 0.5).toFixed(1);
-      var depotCount = Core.buildingLevels('depot').filter(function (lv) { return lv > 0; }).length;
-      var slotCap = 2 + Math.floor(exLv / 2) + depotCount;
+      var slotCap = 2 + exLv;
       var usedSlots = (this.overview && this.overview.usedSlots != null) ? this.overview.usedSlots : 0;
 
       var h = '';
@@ -236,7 +235,7 @@ window.Game = window.Game || {};
       }
 
       h += '<div class="menu" style="margin-top:20px">';
-      h += '<div class="menu-item back" onclick="Game.go(\'buildArmy\')">[0] 返回军事区</div>';
+      h += '<div class="menu-item back" onclick="Game.go(\'buildArmy\')">[0] 返回军工区</div>';
       h += '</div>';
 
       v.innerHTML = h;
@@ -309,7 +308,7 @@ window.Game = window.Game || {};
       // 上架表单面板
       h += '<div class="zone-head">📦 发布新挂单</div>';
       h += '<div class="menu-item" style="padding:10px 14px;margin-bottom:16px">';
-      h += '<div class="d" style="margin-bottom:8px">货架槽位: <b>' + usedSlots + ' / ' + slotCap + '</b> · 基础2槽位 + 交易所每2级+1 + 仓库有效槽位</div>';
+      h += '<div class="d" style="margin-bottom:8px">货架槽位: <b>' + usedSlots + ' / ' + slotCap + '</b> · 基础2槽位 + 交易所等级 (Lv.10 满级 12 槽)</div>';
       h += '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">';
       h += '<select class="qty" id="marketSellRes"' + (canList ? '' : ' disabled') + ' style="padding:4px">';
       h += '<option value="food">粮食 (存量 ' + G.fmt(s.resources.food || 0) + ')</option>';

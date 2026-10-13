@@ -6,6 +6,7 @@ window.Game = window.Game || {};
 
   var D = G.DATA;
   var Core = G.Core;
+  var WILD_BASE_CAP = G.Constants.wildOccupation.baseCap;
 
   function zoneUnlocked(zoneId) {
     var z = D.zones[zoneId];
@@ -88,7 +89,7 @@ window.Game = window.Game || {};
     },
 
     occupy: function () {
-      G.toast('请通过世界地图征服野地');
+      G.toast('请通过世界地图讨伐占领野地');
     },
 
     abandon: function (idx) {
@@ -97,16 +98,18 @@ window.Game = window.Game || {};
 
     renderView: function (v) {
       var s = Core.state;
-      var staffLv = s.buildings.staff || 0;
-      var cap = s.wilds.cap + staffLv;
+      var wilds = s.wilds || { commandLevel: s.buildings.command || 0, cap: WILD_BASE_CAP + (s.buildings.command || 0), owned: [] };
+      var commandLv = wilds.commandLevel == null ? (s.buildings.command || 0) : wilds.commandLevel;
+      var cap = wilds.cap == null ? WILD_BASE_CAP + commandLv : wilds.cap;
+      var owned = wilds.owned || [];
       var h = '';
       h += '<div class="title">- 野地占领 -</div>';
-      h += '<div class="desc">参谋部 Lv.' + staffLv + '  野地上限 ' + s.wilds.owned.length + '/' + cap + '。占领后持续产出对应资源。</div>';
+      h += '<div class="desc">本城市政厅 Lv.' + commandLv + '  野地上限 ' + owned.length + '/' + cap + '（基础' + WILD_BASE_CAP + '＋市政厅等级）。占领后持续产出对应资源。</div>';
 
       h += '<div class="zone-head">=== 已占领 ===</div>';
       h += '<div class="menu">';
-      if (!s.wilds.owned.length) h += '<div class="desc">暂无野地。</div>';
-      s.wilds.owned.forEach(function (w, i) {
+      if (!owned.length) h += '<div class="desc">暂无本城所属野地。</div>';
+      owned.forEach(function (w, i) {
         var wt = D.wildTypes[w.type];
         // 占领记录没有 kind；补齐地图目标类型，无模型地块仍使用类型图标。
         var iconPath = (G.WorldMap && typeof G.WorldMap.icon === 'function') ? G.WorldMap.icon(Object.assign({}, w, { kind: 'wild' })) || wt.icon : wt.icon;
@@ -126,9 +129,9 @@ window.Game = window.Game || {};
       h += '</div>';
 
       h += '<div class="zone-head">=== 侦察与占领 ===</div>';
-      h += '<div class="menu-item ok" onclick="Game.Wild.scout()"><span class="num">[侦]</span> 派出侦察(需侦察机)</div>';
-      if (s.wilds._scout) {
-        var sc = s.wilds._scout;
+      h += '<div class="menu-item ok" onclick="Game.Wild.scout()"><span class="num">[侦]</span> 派出侦察(需侦查部队)</div>';
+      if (wilds._scout) {
+        var sc = wilds._scout;
         var wt = D.wildTypes[sc.type];
         var scIconPath = (G.WorldMap && typeof G.WorldMap.icon === 'function') ? G.WorldMap.icon(Object.assign({}, sc, { kind: 'wild' })) || wt.icon : wt.icon;
         var wtScoutIcon = /\.svg$|\.png$|\.jpg$|\.gif$|\.webp$/i.test(scIconPath)

@@ -26,6 +26,11 @@ public class CityContextConfig implements WebMvcConfigurer {
                     try { cityId = Long.valueOf(header); } catch (NumberFormatException e) { throw new IllegalArgumentException("城市编号无效"); }
                     slot = scope.requireOwned(playerId, cityId, true).getCitySlot();
                 }
+                if (isCityWrite(request) && isFrozenCityWrite(request.getRequestURI())) {
+                    try (var ignored = scope.enter(playerId, slot)) {
+                        scope.assertWritable(playerId);
+                    }
+                }
                 request.setAttribute("game.cityScope", scope.enter(playerId, slot));
                 return true;
             }
@@ -33,5 +38,24 @@ public class CityContextConfig implements WebMvcConfigurer {
                 if (request.getAttribute("game.cityScope") instanceof CityScope.Scope selected) selected.close();
             }
         }).addPathPatterns("/api/game/**");
+    }
+
+    private static boolean isCityWrite(HttpServletRequest request) {
+        String method = request.getMethod();
+        return "POST".equalsIgnoreCase(method) || "PUT".equalsIgnoreCase(method) || "PATCH".equalsIgnoreCase(method) || "DELETE".equalsIgnoreCase(method);
+    }
+
+    private static boolean isFrozenCityWrite(String uri) {
+        if (uri == null) return false;
+        if (uri.contains("/game/surrender") || uri.contains("/game/mail") || uri.contains("/game/chat")
+                || uri.contains("/game/guild") || uri.contains("/game/private") || uri.contains("/game/shop")
+                || uri.contains("/game/quest") || uri.contains("/game/rank") || uri.contains("/game/cities/switch")) return false;
+        return uri.contains("/game/build") || uri.contains("/game/army") || uri.contains("/game/tech")
+                || uri.contains("/game/officer") || uri.contains("/game/fort") || uri.contains("/game/depot")
+                || uri.contains("/game/market") || uri.contains("/game/wounded") || uri.contains("/game/unit-equipment")
+                || uri.contains("/game/prisoner") || uri.endsWith("/game/world/dispatch")
+                || uri.endsWith("/game/world/stop-gather") || uri.endsWith("/game/world/cancel-march")
+                || uri.endsWith("/game/world/speedup-march") || uri.contains("/game/world/battle/command")
+                || uri.contains("/game/world/support/dismiss") || uri.startsWith("/api/game/wild/");
     }
 }

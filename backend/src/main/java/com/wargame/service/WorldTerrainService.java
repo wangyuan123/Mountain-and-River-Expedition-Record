@@ -184,7 +184,7 @@ public class WorldTerrainService {
                 .setParameter("w",world).setParameter("x0",x0).setParameter("x1",x1).setParameter("y0",y0).setParameter("y1",y1)
                 .setLockMode(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE).getResultList();
     }
-    /** 据点四格必须全部处于开放边界内、同类地形且无占用。 */
+    /** 目标完整占地必须处于开放边界内、同类地形且无占用。 */
     public static boolean vacantFootprint(String mask, int size, boolean water, Set<String> used, int x, int y, int span) {
         if (x < 0 || y < 0 || x + span > size || y + span > size) return false;
         for (int dy = 0; dy < span; dy++) for (int dx = 0; dx < span; dx++)
@@ -204,8 +204,8 @@ public class WorldTerrainService {
             int span=citySpan(c),x=anchor(c.getX(),span),y=anchor(c.getY(),span);
             for(int yy=y;yy<y+span;yy++)for(int xx=x;xx<x+span;xx++)used.add(xx+","+yy);
         }
-        occupants(NpcCity.class,world,0,SIZE-1,0,SIZE-1).forEach(c->reserveFootprint(used,c.getX(),c.getY(),2));
-        occupants(Bandit.class,world,0,SIZE-1,0,SIZE-1).forEach(c->reserveFootprint(used,c.getX(),c.getY(),2));
+        occupants(NpcCity.class,world,0,SIZE-1,0,SIZE-1).forEach(c->reserveFootprint(used,c.getX(),c.getY(),1));
+        occupants(Bandit.class,world,0,SIZE-1,0,SIZE-1).forEach(c->reserveFootprint(used,c.getX(),c.getY(),1));
         occupants(WildTile.class,world,0,SIZE-1,0,SIZE-1).forEach(c->used.add(c.getX()+","+c.getY()));
         return used;
     }

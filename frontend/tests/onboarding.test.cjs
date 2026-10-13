@@ -140,6 +140,31 @@ test('officer step guides academy construction then recruitment before scouting'
   assert.match(r.elements.view.innerHTML, /data-ob-value="academy:"/);
 });
 
+test('recon step guides airport construction before scout production', () => {
+  const r = runtime();
+  const objective = { id: 'recon', title: '生产侦察机', body: '先建造空军基地', complete: false, reward: {}, diamond: 15 };
+  r.G.Onboarding.state.data = data({ objectives: [objective], current: objective, checks: { airport: false } });
+  r.G.Core.views.onboarding(r.elements.view);
+  assert.match(r.elements.view.innerHTML, /data-ob-value="buildArmy:airport"/);
+  r.G.Onboarding.state.data = data({ objectives: [objective], current: objective, checks: { airport: true } });
+  r.G.Core.views.onboarding(r.elements.view);
+  assert.match(r.elements.view.innerHTML, /data-ob-value="army:scout"/);
+});
+
+test('completed airport construction reopens scout production step', async () => {
+  const { G, elements, screen } = modalRuntime();
+  const objective = { id: 'recon', title: '生产侦察机', body: '先建造空军基地', complete: false, reward: {}, diamond: 15 };
+  G.API.client.get = async () => data({ objectives: [objective], current: objective, checks: { airport: false } });
+  await G.Onboarding.init();
+  elements.onboardingBar.dialog.buttons.find(button => button.dataset.obValue === 'buildArmy:airport').onclick();
+  assert.equal(screen.inert, false);
+  await G.Onboarding.actionStarted('buildArmy', 'airport');
+  G.API.client.get = async () => data({ objectives: [objective], current: objective, checks: { airport: true } });
+  await G.Onboarding.refresh();
+  assert.equal(screen.inert, true);
+  assert.match(elements.onboardingBar.dialog.innerHTML, /data-ob-value="army:scout"/);
+});
+
 test('completed academy construction reopens the recruit step', async () => {
   const { G, elements, screen } = modalRuntime();
   const objective = { id: 'officer', title: '招募军官', body: '招募一名军官', complete: false, reward: {}, diamond: 15 };

@@ -244,7 +244,7 @@ public abstract class BaseServiceTest {
         m.setFromY(fromY);
         m.setTargetX(targetX);
         m.setTargetY(targetY);
-        m.setDistance(Math.abs(fromX - targetX) + Math.abs(fromY - targetY));
+        m.setDistance(Math.hypot(fromX - targetX, fromY - targetY));
         m.setAction(action);
         m.setArmy(JsonUtil.toJson(army));
         m.setCommanderId(null);

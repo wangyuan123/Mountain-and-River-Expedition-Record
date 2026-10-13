@@ -217,23 +217,23 @@ class BuildServiceTest extends BaseServiceTest {
     }
     @org.junit.jupiter.params.ParameterizedTest
     @org.junit.jupiter.params.provider.ValueSource(strings = {"farm", "refinery", "oilfield", "raremine"})
-    void resourceAreaAllows32OfAnyType(String type) {
+    void resourceAreaAllows36OfAnyType(String type) {
         createBuilding(playerId, "command", 10);
         giveResources(playerId, 100000, 100000, 100000, 100000, 100000);
-        for (int slot = 0; slot < 32; slot++) {
+        for (int slot = 0; slot < 36; slot++) {
             assertEquals(true, buildService.upgrade(playerId, type, slot).get("success"), "栋数: " + (slot + 1));
             buildService.completeUpgrade(playerId, System.currentTimeMillis() + 60000);
         }
-        assertEquals(32, buildingRepository.findByPlayerIdAndType(playerId, type).size());
+        assertEquals(36, buildingRepository.findByPlayerIdAndType(playerId, type).size());
         assertEquals(false, buildService.upgrade(playerId, "farm".equals(type) ? "refinery" : "farm", 0).get("success"));
     }
 
     @Test
-    void mixedResourceBuildingsShare32SlotsAndCanStillUpgrade() {
+    void mixedResourceBuildingsShare36SlotsAndCanStillUpgrade() {
         createBuilding(playerId, "command", 10);
         giveResources(playerId, 100000, 100000, 100000, 100000, 100000);
         for (String type : List.of("farm", "refinery", "oilfield", "raremine")) {
-            for (int slot = 0; slot < 8; slot++) {
+            for (int slot = 0; slot < 9; slot++) {
                 Building building = new Building();
                 building.setPlayerId(playerId);
                 building.setType(type);
@@ -243,7 +243,7 @@ class BuildServiceTest extends BaseServiceTest {
             }
         }
         int steelBefore = getResources(playerId).getSteel();
-        assertEquals(false, buildService.upgrade(playerId, "farm", 8).get("success"));
+        assertEquals(false, buildService.upgrade(playerId, "farm", 9).get("success"));
         assertEquals(steelBefore, getResources(playerId).getSteel());
         assertEquals(true, buildService.upgrade(playerId, "farm", 0).get("success"));
     }
@@ -252,7 +252,7 @@ class BuildServiceTest extends BaseServiceTest {
     void newConstructionReservesLastResourceSlotAndCancellationReleasesIt() {
         createBuilding(playerId, "command", 10);
         giveResources(playerId, 100000, 100000, 100000, 100000, 100000);
-        for (int slot = 0; slot < 31; slot++) {
+        for (int slot = 0; slot < 35; slot++) {
             Building building = new Building();
             building.setPlayerId(playerId);
             building.setType("farm");
@@ -267,8 +267,8 @@ class BuildServiceTest extends BaseServiceTest {
     }
 
     @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.CsvSource({"0,12", "1,14", "5,22", "9,30", "10,32", "11,32"})
-    void resourceCapacityGrowsWithTownHallAndCapsAt32(int commandLevel, int capacity) {
+    @org.junit.jupiter.params.provider.CsvSource({"0,16", "1,18", "5,26", "9,34", "10,36", "11,36"})
+    void resourceCapacityGrowsWithTownHallAndCapsAt36(int commandLevel, int capacity) {
         Building command = createBuilding(playerId, "command", commandLevel);
         giveResources(playerId, 100000, 100000, 100000, 100000, 100000);
         for (int slot = 0; slot < capacity - 1; slot++) {
@@ -400,27 +400,27 @@ class BuildServiceTest extends BaseServiceTest {
     void militaryAreaAllowsFreeAllocationOfRepeatableBuildings(String type) {
         createBuilding(playerId, "command", 10);
         giveResources(playerId, 100000, 100000, 100000, 100000, 100000);
-        for (int slot = 0; slot < 30; slot++) {
+        for (int slot = 0; slot < 34; slot++) {
             Building building = createBuilding(playerId, type, 1);
             building.setSlot(slot);
             buildingRepository.save(building);
         }
-        // 市政厅1栋 + 同类30栋 + 新建1栋 = 军事区32栋。
-        assertEquals(true, buildService.upgrade(playerId, type, 30).get("success"));
+        // 市政厅1栋 + 同类34栋 + 新建1栋 = 军事区36栋。
+        assertEquals(true, buildService.upgrade(playerId, type, 34).get("success"));
         int steel = getResources(playerId).getSteel();
         assertEquals(false, buildService.upgrade(playerId, "radar", 0).get("success"));
         assertEquals(steel, getResources(playerId).getSteel());
         buildService.completeUpgrade(playerId, System.currentTimeMillis() + 60000);
-        assertEquals(31, buildingRepository.findByPlayerIdAndType(playerId, type).size());
+        assertEquals(35, buildingRepository.findByPlayerIdAndType(playerId, type).size());
         assertEquals(true, buildService.upgrade(playerId, type, 0).get("success"));
         assertEquals(true, buildService.cancel(playerId, type, 0).get("success"));
-        assertEquals(true, buildService.dismantle(playerId, type, 30).get("success"));
+        assertEquals(true, buildService.dismantle(playerId, type, 34).get("success"));
         buildService.completeUpgrade(playerId, System.currentTimeMillis() + 86400000);
         assertEquals(true, buildService.upgrade(playerId, "radar", 0).get("success"));
     }
 
     @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.CsvSource({"1,14", "5,22", "10,32"})
+    @org.junit.jupiter.params.provider.CsvSource({"1,18", "5,26", "10,36"})
     void militaryQuotaIncludesSingleBuildingsAndPendingConstruction(int level, int capacity) {
         createBuilding(playerId, "command", level);
         giveResources(playerId, 100000, 100000, 100000, 100000, 100000);

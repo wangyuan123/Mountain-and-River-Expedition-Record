@@ -81,6 +81,18 @@ window.Game = window.Game || {};
     // 暴露底层客户端以便扩展
     client: client,
 
+    /** 兵种配装与制备接口；保留城市上下文，过期响应不能覆盖已切换的城市。 */
+    unitEquipmentRequest: function (path, body) {
+      var token = client.getToken(), city = client.cityId;
+      return client.post('/game/unit-equipment' + path, body).then(function (data) {
+        if (client.getToken() === token && client.cityId === city && data && data.state) applyState(data.state);
+        return data;
+      });
+    },
+    saveUnitLoadout: function (unit, slots, version) { return this.unitEquipmentRequest('/' + encodeURIComponent(unit) + '/loadout', { slots: slots, version: version }); },
+    manufactureUnitEquipment: function (item) { return this.unitEquipmentRequest('/manufacture', { item: item }); },
+    cancelUnitEquipmentOrder: function (id) { return this.unitEquipmentRequest('/orders/' + id + '/cancel', {}); },
+
     // ===== Token / 登录态（委托给 client）=====
     getToken: function () { return client.getToken(); },
     setToken: function (token, username) { return client.setToken(token, username); },
@@ -343,6 +355,20 @@ window.Game = window.Game || {};
       return client.get('/game/army/wounded', { noCache: true });
     },
 
+    getPrisoners: function () {
+      return client.get('/game/prisoners', { noCache: true, silent: true });
+    },
+
+    /** 服务端重放同一操作凭证；异城或异账号响应不能覆盖当前页面状态。 */
+    prisonerOperation: function (action, unit, count, operationKey) {
+      var token = client.getToken(), cityId = client.cityId;
+      return client.post('/game/prisoners/' + action, { unit: unit, count: count, operationKey: operationKey }, { timeout: 15000 })
+        .then(function (data) {
+          if (client.getToken() === token && client.cityId === cityId && data && data.success && data.state) applyState(data.state);
+          return data;
+        });
+    },
+
     healWounded: function (id, count, currency) {
       var token = client.getToken();
       return client.post('/game/army/wounded/' + id + '/heal', { count: count, currency: currency })
@@ -553,6 +579,16 @@ window.Game = window.Game || {};
         .then(extractState).then(applyState);
     },
 
+    /** 携带确认时的阶段和版本，消耗请求不自动重试。 */
+    speedUpMarch: function (marchId, returning, version) {
+      var token = client.getToken(), city = client.cityId;
+      return client.post('/game/world/speedup-march', { marchId: marchId, returning: returning, version: version }, { timeout: 15000 })
+        .then(function (data) {
+          if (client.getToken() === token && client.cityId === city && data && data.state) applyState(data.state);
+          return data;
+        });
+    },
+
     /** 获取已到达部队的逐回合战场状态。 */
     getTacticalBattle: function (marchId) {
       return client.get('/game/world/battle?marchId=' + encodeURIComponent(marchId));
@@ -603,6 +639,7 @@ window.Game = window.Game || {};
         body.army = dispatch.army || {};
         body.commanderId = dispatch.commanderId || null;
         body.carryRes = dispatch.carryRes || {};
+        body.conquerMode = dispatch.conquerMode || 'withdraw';
       }
       return client.post('/game/wild/conquer', body)
         .then(extractState).then(applyState);
@@ -629,7 +666,15 @@ window.Game = window.Game || {};
     },
 
     getRankInfo: function () {
-      return client.get('/game/rank/info');
+      return client.get('/game/rank/info', { noCache: true });
+    },
+
+    startRankExam: function () {
+      return client.post('/game/rank/exam/start', {});
+    },
+
+    submitRankExam: function (attemptId, answers) {
+      return client.post('/game/rank/exam/submit', { attemptId: attemptId, answers: answers });
     },
 
     promoteRank: function () {
@@ -649,6 +694,14 @@ window.Game = window.Game || {};
         .then(function (data) {
           // 后端 claim 已在响应里返回最新 state (含 items/resources),
           // 前端这里要把它合并到 G.state, 否则仓库里看不到新增的技能书等。
+          if (data && data.state) applyState(data.state);
+          return data;
+        });
+    },
+
+    claimStage: function (stageId) {
+      return client.post('/game/quest/claim-stage', { stageId: stageId })
+        .then(function (data) {
           if (data && data.state) applyState(data.state);
           return data;
         });
@@ -805,6 +858,24 @@ window.Game = window.Game || {};
     // 删除一封 (仅收件人)
     deleteMail: function (mailId) {
       return client.delete('/game/mail/' + mailId, { silent: true });
+    },
+
+    getSurrenderOffer: function (offerId) {
+      return client.get('/game/surrender/' + encodeURIComponent(offerId), { silent: true, noCache: true });
+    },
+
+    offerSurrender: function (cityId) {
+      return client.post('/game/surrender/offer', { cityId: cityId }).then(function (data) {
+        if (data && data.state) applyState(data.state);
+        return data;
+      });
+    },
+
+    respondSurrender: function (offerId, decision) {
+      return client.post('/game/surrender/respond', { offerId: offerId, decision: decision }).then(function (data) {
+        if (data && data.state) applyState(data.state);
+        return data;
+      });
     },
 
     // ===== 交易所 / 市场 API =====

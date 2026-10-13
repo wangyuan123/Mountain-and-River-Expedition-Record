@@ -37,4 +37,14 @@ public class RankController {
         result.put("state", gameStateService.getGameState(playerId));
         return ResponseEntity.ok(result);
     }
+
+    @PostMapping("/exam/start")
+    public ResponseEntity<Map<String, Object>> startExam() {
+        return ResponseEntity.ok(rankService.startExam(authService.getCurrentPlayer().getId()));
+    }
+
+    @PostMapping("/exam/submit")
+    public ResponseEntity<Map<String, Object>> submitExam(@RequestBody RankService.ExamSubmission submission) {
+        return ResponseEntity.ok(rankService.submitExam(authService.getCurrentPlayer().getId(), submission));
+    }
 }

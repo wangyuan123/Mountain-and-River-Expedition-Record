@@ -166,13 +166,9 @@ public class GameController {
 
     @PostMapping("/settings/city-name")
     public ResponseEntity<Map<String, Object>> setCityName(@RequestBody GameDtos.CityNameRequest request) {
-        String cityName = request.cityName() == null ? "" : request.cityName().trim();
-        if (cityName.isEmpty()) {
-            cityName = "新城市";
-        }
-        if (!cityName.matches("^[A-Za-z0-9_\\u4e00-\\u9fa5·\\s]{1,12}$")) {
-            throw new IllegalArgumentException("城市名仅限中英文/数字/下划线，最多12字");
-        }
+        String rawName = request.cityName();
+        String cityName = (rawName == null || rawName.trim().isEmpty()) ? "新城市" : rawName;
+        cityName = com.wargame.model.constants.DisplayNamePolicy.validate(cityName, 12, "城市名称");
         Long playerId = authService.getCurrentPlayer().getId();
         gameStateService.setCityName(playerId, cityName);
         Map<String, Object> result = new LinkedHashMap<>();

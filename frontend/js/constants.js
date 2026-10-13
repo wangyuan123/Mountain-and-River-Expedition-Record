@@ -13,11 +13,15 @@ window.Game = window.Game || {};
     staticRoutes: {
       shop: 1, depot: 1, depotUse: 1, depotRename: 1,
       officer: 1, officerDetail: 1, academy: 1,
-      tech: 1, settings: 1, battleDefaults: 1,
+      tech: 1, prisoners: 1, settings: 1, battleDefaults: 1,
       reports: 1, reportDetail: 1, battle: 1, report: 1,
       mail: 1, chat: 1, recharge: 1, login: 1,
       guild: 1, rankings: 1, map: 1, wild: 1, dispatch: 1
     },
+    // 单队行军令与服务端 WorldConfig 一致，去程和回程各可使用一次。
+    marchAcceleration: { speedMultiplier: 1.5, minRemainingMs: 10000 },
+    // 每座城市独立计算领地名额，服务端 wilds.cap 返回基础5块加本城市政厅等级。
+    wildOccupation: { baseCap: 5 },
     // 按钮音效是当前设备的听觉偏好，不随游戏账号或服务端存档变化。
     uiSound: {
       storageKey: 'wargame_ui_sound_v1',
@@ -48,20 +52,23 @@ window.Game = window.Game || {};
       { id: 'paper', name: '战术公文沙盘风', tag: '护眼米白', desc: '米白档案纸底 + 1px极细墨线 + 战备橄榄绿与印章红' },
       { id: 'dark', name: '战术夜航终端黑', tag: '极简冷黑', desc: '高纯度冷墨黑 + 雷达天青微光，夜间游玩省电护眼' }
     ],
+    pvp: { heartbeatMs: 10000, queuePollMs: 3000, battlePollMs: 2000 },
     navItems: [
-      { key: '1', label: '资源', route: 'buildRes' },
-      { key: '2', label: '军事', route: 'buildArmy' },
+      { key: '1', label: '后勤', route: 'buildRes' },
+      { key: '2', label: '军工', route: 'buildArmy' },
       { key: '·', label: '军官', route: 'officer' },
       { key: '3', label: '军队', route: 'army' },
       { key: '4', label: '地图', route: 'world' },
-      { key: '5', label: '情报', route: 'alerts' },
+      { key: '5', label: '军情', route: 'alerts' },
       { key: '6', label: '战报', route: 'reports' },
-      { key: '·', label: '聊天', route: 'chat' },
-      { key: '7', label: '邮件', route: 'mail' },
+      { key: '·', label: '通讯', route: 'chat' },
+      { key: '7', label: '电报', route: 'mail' },
       { key: '8', label: '任务', route: 'mainQuest' },
       { key: '9', label: '军团', route: 'guild' },
       { key: '0', label: '仓库', route: 'depot' },
-      { key: '·', label: '科技', route: 'tech' },
+      { key: '·', label: '军研', route: 'tech' },
+      { key: '·', label: '军校', route: 'academy' },
+      { key: '·', label: '对战', route: 'pvp' },
       { key: '·', label: '战术', route: 'battleDefaults' },
       { key: '·', label: '排名', route: 'rankings' },
       { key: '·', label: '商城', route: 'shop' }
@@ -87,12 +94,13 @@ window.Game = window.Game || {};
       army: '点击征召/解散 [0]返回',
       officer: '点击招募/任命/查看详情 [0]返回',
       officerDetail: '查看军官详情 [0]返回',
+      academy: '点击招募/刷新名单 [0]返回',
       tech: '[1-6]研究 [0]返回',
       map: '点击挑战 [0]返回',
       wild: '点击占领/废弃 [0]返回',
       world: '拖动浏览 · 双指缩放 · 点击目标查看详情',
       dispatch: '选配兵力/军官/辎重 [0]返回',
-      alerts: '查看情报 [0]返回',
+      alerts: '查看军情 [0]返回',
       reports: '点击展开 [0]返回',
       reportDetail: '返回战报列表/主菜单',
       battle: '[1]立即结算/下一回合 [0]撤退',
@@ -109,7 +117,7 @@ window.Game = window.Game || {};
       { route: 'settings', label: '设置', icon: '⚙' }
     ],
     armyUnitOrder: [
-      'infantry', 'motor', 'truck', 'armored', 'ltank', 'htank', 'assault', 'rocket',
+      'infantry', 'truck', 'armored', 'recon_car', 'ltank', 'htank', 'assault', 'rocket',
       'scout', 'special', 'fighter', 'bomber', 'transport',
       'destroyer', 'sub', 'battleship', 'carrier'
     ],
@@ -148,16 +156,17 @@ window.Game = window.Game || {};
     equipmentTierOrder: { recruit: 1, officer: 2, marshal: 3 },
     equipmentBranchOrder: { military: 1, defense: 2, logistics: 3, knowledge: 4 },
     equipmentSlotOrder: { weapon: 1, badge: 2, coat: 3 },
-    depotCategories: { jewelry: '珠宝珍品', equipment: '军官装备', officer: '军官道具', resource: '资源道具', util: '功能道具' },
-    depotCategoryOrder: ['jewelry', 'equipment', 'officer', 'resource', 'util'],
-    officerRoles: { mayor: '市长', commander: '指挥官', march: '行军中', idle: '闲置' },
+    depotCategories: { jewelry: '珠宝珍品', equipment: '军官装备', unitEquipment: '兵种装备', officer: '军官道具', resource: '资源道具', util: '功能道具' },
+    depotCategoryOrder: ['jewelry', 'equipment', 'unitEquipment', 'officer', 'resource', 'util'],
+    commandBonusRate: 0.001,
+    officerRoles: { mayor: '市长', commander: '指挥官', commander_in_chief: '司令官', march: '行军中', idle: '闲置' },
     officerAttributes: { logistics: '后勤', military: '军事', defense: '防御', knowledge: '学识' },
     resourceNames: { food: '粮食', steel: '钢铁', oil: '石油', rare: '稀矿', gold: '黄金' },
     connectionStatusNames: { connected: '已连接', connecting: '连接中', reconnecting: '重连中', disconnected: '已断开' },
-    battleReportTitles: { conquer: '征服报告', plunder: '掠夺报告', scout: '侦查报告' },
+    battleReportTitles: { conquer: '讨伐报告', plunder: '讨伐报告', scout: '侦查报告' },
     battleResourceNames: { food: '粮', steel: '钢', oil: '油', rare: '稀矿', gold: '金', diamond: '钻' },
-    // 摩托兵与卡车单独使用燃烧引擎，保留步兵系的其他属性归属。
-    unitSpeedTechKeys: { motor: 'arm_engine', truck: 'arm_engine' },
+    // 卡车单独使用燃烧引擎，保留步兵系的其他属性归属。
+    unitSpeedTechKeys: { truck: 'arm_engine' },
     unitTechKeys: { inf: null, arm: 'arm_engine', air: 'air_engine', nav: 'nav_engine' },
     resourceKeys: ['food', 'steel', 'oil', 'rare'],
     resourceKeysWithGold: ['food', 'steel', 'oil', 'rare', 'gold'],
@@ -169,9 +178,10 @@ window.Game = window.Game || {};
     },
     onboardingPlans: { economy: ['稳固经济', 'buildRes'], expansion: ['继续扩张', 'world'], military: ['发展军备', 'army'] },
     techBranches: ['军事', '机动', '后勤', '侦察'],
-    techEffectPercent: { cap: 10, load: 20, food_save: -5, train: 10, build: -5, medical: 5, range_all: 5 },
-    worldTargetKeys: { wild: 'wildTiles', player: 'playerCities', npc: 'npcCities', simulated_npc: 'simulatedNpcCities', bandit: 'bandits' },
-    dispatchActionNames: { conquer: '征服', plunder: '掠夺', scout: '侦查', gather: '采集', station: '派遣进驻' },
+    // 仅列实际生效的百分比科技；情报、配方、俘获比例及未生效科技由科技页单独说明。
+    techEffectPercent: { atk_all: 10, def_all: 10, range_all: 10, hp_all: 10, spd_arm: 5, spd_air: 5, spd_nav: 5, res: 5, food_save: -5, train: 10, build: -5, medical: 5 },
+    worldTargetKeys: { wild: 'wildTiles', player: 'playerCities', simulated_npc: 'simulatedNpcCities', bandit: 'bandits' },
+    dispatchActionNames: { campaign: '讨伐', conquer: '讨伐', plunder: '讨伐', scout: '侦查', gather: '采集', station: '派遣进驻' },
     cityStateNames: { peace: '和平', war: '战争', shield: '护盾' },
     mapRadiusOptions: [
       { v: 3, label: '范围：3格' }, { v: 5, label: '范围：5格' },
@@ -189,7 +199,7 @@ window.Game = window.Game || {};
     chatMinPrestige: 10000,
     chatTimeGapMs: 5 * 60 * 1000,
     homeModuleIds: ['officers', 'army', 'resources', 'chat'],
-    homeModuleNames: { officers: '军官将领', army: '军队总览', resources: '资源', chat: '世界聊天' },
+    homeModuleNames: { officers: '军官将领', army: '军队总览', resources: '后勤', chat: '世界通讯' },
     protectionAccessErrorCodes: [
       'REAL_NAME_REQUIRED', 'IDENTITY_UNAVAILABLE', 'GUARDIAN_CONSENT_REQUIRED', 'GUARDIAN_RESTRICTED',
       'CALENDAR_UNAVAILABLE', 'PLAY_WINDOW_CLOSED', 'PLAY_TIME_EXHAUSTED', 'PLAY_SESSION_EXPIRED'
@@ -209,13 +219,13 @@ window.Game = window.Game || {};
       { id: 'gift',    name: '礼包' }
     ],
     shopItems: [
-      // —— 军衔珠宝宝箱（开启直接获得晋升军衔所需各类珠宝）——
-      { id: 'box_gem',         cat: 'jewelry', name: '军衔珠宝宝箱', icon: '🗃️', desc: '开启获得晋升必备珠宝：珍珠×5、珊瑚×3、琉璃×3、琥珀×2、玛瑙×2', price: 200,  stock: null, tag: '热销' },
-      { id: 'box_gem_primary', cat: 'jewelry', name: '初级珠宝宝箱', icon: '🧰', desc: '开启获得士官晋升基础珠宝：珍珠×8、珊瑚×6、琉璃×5',             price: 150,  stock: null, tag: '士官晋升' },
-      { id: 'box_gem_medium',  cat: 'jewelry', name: '中级珠宝宝箱', icon: '🧰', desc: '开启获得尉官晋升进阶珠宝：琥珀×8、玛瑙×6、水晶×5、翡翠×2',      price: 400,  stock: null, tag: '尉官晋升' },
-      { id: 'box_gem_senior',  cat: 'jewelry', name: '高级珠宝宝箱', icon: '🎁', desc: '开启获得校官晋升精选珠宝：水晶×8、翡翠×8、玉石×6、夜明珠×3',      price: 1000, stock: null, tag: '校官晋升' },
-      { id: 'box_gem_supreme', cat: 'jewelry', name: '特级夜明珠宝箱', icon: '🌟', desc: '开启获得将官晋升极品珍宝：夜明珠×8、玉石×10、翡翠×10',         price: 1800, stock: null, tag: '将官极品' },
-      { id: 'box_gem_grand',   cat: 'jewelry', name: '璀璨珠宝全集箱', icon: '💎', desc: '开启获得全部9种晋升珠宝各5颗(共45颗珠宝)，助统帅连升数阶！',     price: 2500, stock: null, tag: '豪华全集' },
+      // —— 珠宝宝箱（开启获得珠宝珍品）——
+      { id: 'box_gem',         cat: 'jewelry', name: '珠宝珍品箱', icon: '🗃️', desc: '开启获得珠宝珍品：珍珠×5、珊瑚×3、琉璃×3、琥珀×2、玛瑙×2', price: 200,  stock: null, tag: '热销' },
+      { id: 'box_gem_primary', cat: 'jewelry', name: '初级珠宝宝箱', icon: '🧰', desc: '开启获得基础珠宝：珍珠×8、珊瑚×6、琉璃×5',             price: 150,  stock: null, tag: '基础珠宝' },
+      { id: 'box_gem_medium',  cat: 'jewelry', name: '中级珠宝宝箱', icon: '🧰', desc: '开启获得进阶珠宝：琥珀×8、玛瑙×6、水晶×5、翡翠×2',      price: 400,  stock: null, tag: '进阶珠宝' },
+      { id: 'box_gem_senior',  cat: 'jewelry', name: '高级珠宝宝箱', icon: '🎁', desc: '开启获得精选珠宝：水晶×8、翡翠×8、玉石×6、夜明珠×3',      price: 1000, stock: null, tag: '精选珠宝' },
+      { id: 'box_gem_supreme', cat: 'jewelry', name: '特级夜明珠宝箱', icon: '🌟', desc: '开启获得极品珍宝：夜明珠×8、玉石×10、翡翠×10',         price: 1800, stock: null, tag: '极品珍宝' },
+      { id: 'box_gem_grand',   cat: 'jewelry', name: '璀璨珠宝全集箱', icon: '💎', desc: '开启获得全部9种珠宝各5颗(共45颗珠宝)',     price: 2500, stock: null, tag: '豪华全集' },
 
       // —— 军官道具 ——
       { id: 'expBook',    cat: 'officer',  name: '经验书',     icon: '📘', desc: '军官使用,获得10000经验',          price: 30,   stock: null, tag: '热销' },
@@ -257,8 +267,8 @@ window.Game = window.Game || {};
       { id: 'speedUp36h', cat: 'util', name: '36时加速符',icon: '⚡', desc: '立即缩短36小时建筑/造兵时间',    price: 2000, stock: null, tag: '' },
       { id: 'speedUp48h', cat: 'util', name: '48时加速符',icon: '⚡', desc: '立即缩短48小时建筑/造兵时间',    price: 2500, stock: null, tag: '超值' },
       { id: 'speedUp72h', cat: 'util', name: '72时加速符',icon: '⚡', desc: '立即缩短72小时建筑/造兵时间',    price: 3500, stock: null, tag: '限时' },
-      { id: 'shield',    cat: 'util', name: '护盾',     icon: '🛡️', desc: '每次使用增加8小时免受玩家攻击时间，可叠加',         price: 200,  stock: null, tag: '' },
-      { id: 'marchOrd',  cat: 'util', name: '行军令',   icon: '🚩', desc: '行军速度+50%,持续1小时',          price: 100,  stock: null, tag: '' },
+      { id: 'shield',    cat: 'util', name: '护盾',     icon: '🛡️', desc: '本城8小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地',         price: 200,  stock: null, tag: '' },
+      { id: 'marchOrd',  cat: 'util', name: '行军令',   icon: '🚩', desc: '仓库启用：行军速度+50%，持续1小时；情报使用：本队当前路段剩余时间缩短约1/3，去程与回程各限一次', price: 100, stock: null, tag: '' },
       { id: 'populationOrder', cat: 'util', name: '人口动员令', icon: '👥', desc: '使用后立即增加500空闲人口,不超过人口上限', price: 100, stock: null, tag: '推荐' },
       { id: 'cityRenameCard', cat: 'util', name: '城市改名卡', icon: '🏷️', desc: '为一座城市更换新名字', price: 60, stock: null, tag: '' },
 

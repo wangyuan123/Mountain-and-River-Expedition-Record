@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 
 /** 耗尽且废弃的野地、已击败据点先从地图消失，在北京时间固定刷新点迁移至空闲位置。 */
 @Component
@@ -40,7 +39,7 @@ public class WildTileRefreshScheduler {
         for (var world : worlds.findAll()) landBandits.ensure(world.getId());
     }
 
-    /** 迁移耗尽野地和已击败据点；不改变目标等级及现有数量。 */
+    /** 迁移耗尽野地和已击败据点到同类密度较低的分块；保留等级和现有数量。 */
     @Transactional
     public void refreshDepletedWilds() {
         for (var candidate : worlds.findAll()) {
@@ -50,11 +49,16 @@ public class WildTileRefreshScheduler {
             // 自动布点限于开放战区，不能把展示世界尺寸当作可用陆地边界。
             int size = Math.min(WorldConfig.SIZE, world.getSize() == null ? WorldConfig.SIZE : world.getSize());
             Set<String> used = occupied(world.getId());
-            for (WildTile tile : wilds.findByWorldId(world.getId())) {
+            var worldWilds = wilds.findByWorldId(world.getId());
+            var worldBandits = bandits.findByWorldId(world.getId());
+            var wildPositions = BlockSpawnPlanner.wildPositions(worldWilds);
+            var landWilds = new BlockSpawnPlanner(mask, size, false, used, wildPositions);
+            var seaWilds = new BlockSpawnPlanner(mask, size, true, used, wildPositions);
+            for (WildTile tile : worldWilds) {
                 if (!tile.isDormant()
                         || marches.existsByTargetIdAndTargetKindIn(String.valueOf(tile.getId()), List.of("wild", "wild_gather"))) continue;
                 boolean sea = WorldTerrainService.sea(mask, tile.getX(), tile.getY());
-                int[] destination = randomVacant(mask, size, sea, used, tile.getX(), tile.getY(), 1);
+                int[] destination = (sea ? seaWilds : landWilds).pick(used, tile.getX(), tile.getY());
                 if (destination == null) continue;
                 tile.setX(destination[0]);
                 tile.setY(destination[1]);
@@ -67,22 +71,29 @@ public class WildTileRefreshScheduler {
                 wilds.save(tile);
                 used.add(key(destination[0], destination[1]));
             }
-            // 沿用野地刷新节奏与同地形空格抽样；未结束的行军仍指向旧坐标，不能提前迁移。
-            for (var bandit : bandits.findByWorldId(world.getId())) {
+            // 野地迁移后再预留 NPC 间距；待刷新的旧坐标本轮仍保留，保护行军和占位。
+            var worldNpcs = npcs.findByWorldId(world.getId());
+            worldNpcs.forEach(n -> WorldTerrainService.reserveFootprint(used, n.getX() - 1, n.getY() - 1, 3));
+            worldBandits.forEach(n -> WorldTerrainService.reserveFootprint(used, n.getX() - 1, n.getY() - 1, 3));
+            var npcPositions = BlockSpawnPlanner.npcPositions(worldNpcs, worldBandits);
+            var landNpcs = new BlockSpawnPlanner(mask, size, false, used, npcPositions);
+            var seaNpcs = new BlockSpawnPlanner(mask, size, true, used, npcPositions);
+            for (var bandit : worldBandits) {
                 if (!Boolean.TRUE.equals(bandit.getDefeated())
                         || marches.existsByTargetIdAndTargetKindIn(String.valueOf(bandit.getId()), List.of("bandit"))) continue;
                 boolean sea = WorldTerrainService.sea(mask, bandit.getX(), bandit.getY());
-                int[] destination = randomVacant(mask, size, sea, used, bandit.getX(), bandit.getY(), 2);
+                int[] destination = (sea ? seaNpcs : landNpcs).pick(used, bandit.getX(), bandit.getY());
                 if (destination == null) continue;
                 int level = Math.max(1, bandit.getLevel() == null ? 1 : bandit.getLevel());
                 bandit.setX(destination[0]);
                 bandit.setY(destination[1]);
                 bandit.setArmy(JsonUtil.toJson(sea ? WorldConfig.seaNpcGarrison(level)
                         : WorldConfig.BANDIT_LEVELS.get(level - 1).army()));
+                if (!sea) bandit.setName(WorldConfig.landBanditName(level));
                 // 奖励按等级及地形在战斗时计算；清除击败状态即可恢复可领取奖励，保留名称和军官。
                 bandit.setDefeated(false);
                 bandits.save(bandit);
-                WorldTerrainService.reserveFootprint(used, destination[0], destination[1], 2);
+                WorldTerrainService.reserveFootprint(used, destination[0] - 1, destination[1] - 1, 3);
             }
         }
     }
@@ -92,8 +103,8 @@ public class WildTileRefreshScheduler {
         Set<String> used = new HashSet<>();
         for (WildTile tile : wilds.findByWorldId(worldId))
             if (!tile.isDormant()) used.add(key(tile.getX(), tile.getY()));
-        npcs.findByWorldId(worldId).forEach(n -> WorldTerrainService.reserveFootprint(used, n.getX(), n.getY(), 2));
-        bandits.findByWorldId(worldId).forEach(n -> WorldTerrainService.reserveFootprint(used, n.getX(), n.getY(), 2));
+        npcs.findByWorldId(worldId).forEach(n -> WorldTerrainService.reserveFootprint(used, n.getX(), n.getY(), 1));
+        bandits.findByWorldId(worldId).forEach(n -> WorldTerrainService.reserveFootprint(used, n.getX(), n.getY(), 1));
         for (PlayerCity city : cities.findByWorldId(worldId)) {
             int span = city.getOwnerId() != null && players.existsById(city.getOwnerId()) ? 2 : 1;
             for (int dx = 0; dx < span; dx++) for (int dy = 0; dy < span; dy++)
@@ -105,18 +116,6 @@ public class WildTileRefreshScheduler {
                     used.add(key(player.getCityPosX() + dx, player.getCityPosY() + dy));
         });
         return used;
-    }
-
-    /** 蓄水池抽样使每个同地形空格有相同概率，且明确排除野地原坐标。 */
-    private int[] randomVacant(String mask, int size, boolean sea, Set<String> used, int oldX, int oldY, int span) {
-        int[] selected = null;
-        int count = 0;
-        ThreadLocalRandom random = ThreadLocalRandom.current();
-        for (int y = 0; y < size; y++) for (int x = 0; x < size; x++) {
-            if ((x == oldX && y == oldY) || !WorldTerrainService.vacantFootprint(mask, size, sea, used, x, y, span)) continue;
-            if (random.nextInt(++count) == 0) selected = new int[]{x, y};
-        }
-        return selected;
     }
 
     private String key(int x, int y) { return x + "," + y; }

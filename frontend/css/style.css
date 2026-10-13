@@ -3755,7 +3755,7 @@ body.theme-classic .unit-card-details,
   border-radius: 8px;
   padding: 8px 10px;
   display: grid;
-  grid-auto-flow: column;
+  grid-auto-flow: row;
   grid-template-rows: repeat(3, minmax(64px, auto));
   grid-auto-columns: clamp(160px, 32vw, 220px);
   gap: 8px;
@@ -3770,6 +3770,8 @@ body.theme-classic .unit-card-details,
 }
 .army-summary-item {
   display: grid;
+  grid-column: var(--army-summary-column, auto);
+  grid-row: var(--army-summary-row, auto);
   grid-template-columns: 72px minmax(0, 1fr);
   grid-template-rows: auto auto;
   align-items: center;
@@ -3906,6 +3908,7 @@ body.theme-classic .unit-card-details,
   scroll-snap-type: none;
 }
 .army-summary-expanded .army-summary-empty { grid-row: auto; grid-column: 1 / -1; }
+.army-summary-expanded .army-summary-item { grid-row: auto; grid-column: auto; }
 
 /* 首页兵种详情弹窗 */
 .unit-detail-card { max-width: 540px; }
@@ -5278,6 +5281,12 @@ body.theme-classic .unit-card-details,
   background: rgba(255, 255, 255, .35);
 }
 
+.modal-card.march-speedup-dialog { max-width: 420px; background: var(--surface); color: var(--ink); border-color: var(--line); }
+.march-speedup-dialog .modal-title, .march-speedup-dialog .modal-body { color: var(--ink); border-color: var(--line); }
+.march-speedup-dialog .modal-foot { background: var(--surface); border-color: var(--line); flex-wrap: wrap; }
+.march-speedup-target { overflow-wrap: anywhere; }
+.march-speedup-status { color: var(--danger); min-height: 21px; overflow-wrap: anywhere; }
+
 .modal-card.rank-cap-dialog { max-width: 460px; background: var(--surface); color: var(--ink); border-color: var(--line); }
 .rank-insignia { display: inline-block; width: 24px; height: 24px; flex: none; vertical-align: middle; color: #d7e5f5; fill: currentColor; }
 .rank-insignia-plate { fill: #34445d; stroke: #7e94ad; stroke-width: 1.5; }
@@ -5802,6 +5811,76 @@ body.theme-classic .unit-card-details,
   white-space: nowrap;
 }
 
+/* 阶段通关专属大奖专区 */
+.quest-stage-gift-card {
+  margin: 10px 0 12px;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, rgba(212,163,89,0.14), rgba(255,248,230,0.9));
+  border: 1px solid rgba(212,163,89,0.5);
+  border-left: 4px solid #d4a359;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 2px 6px rgba(185, 129, 50, 0.1);
+}
+.quest-stage-gift-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.quest-stage-gift-icon {
+  font-size: 28px;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+.quest-stage-gift-details {
+  min-width: 0;
+}
+.quest-stage-gift-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #7a5014;
+  margin-bottom: 2px;
+}
+.quest-stage-gift-desc {
+  font-size: 12px;
+  color: #6d5b3a;
+  line-height: 1.4;
+}
+.quest-stage-claim-btn {
+  background: linear-gradient(135deg, #d4a359, #b98132) !important;
+  color: #fff !important;
+  font-weight: bold;
+  font-size: 13px;
+  padding: 7px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(185,129,50,0.35);
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.quest-stage-claim-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(185,129,50,0.45);
+}
+.quest-stage-claimed-tip {
+  font-size: 12px;
+  color: #52c41a;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.quest-stage-locked-panel {
+  opacity: 0.65;
+  filter: grayscale(0.2);
+}
+
 .reports-empty {
   margin: 12px 0 18px;
   padding: 34px 20px 30px;
@@ -5915,7 +5994,7 @@ body.theme-classic .unit-card-details,
 }
 .map-toolbar-row .qty { flex: 1; min-width: 0; }
 .map-toolbar-row .btn { flex: 0 0 auto; }
-.map-toolbar-row .msb-radius { flex: 0 0 auto; min-height: 32px; padding: 4px 6px; font-size: 12px; }
+.map-toolbar-row .msb-radius { display: none !important; flex: 0 0 auto; min-height: 32px; padding: 4px 6px; font-size: 12px; }
 .map-toolbar-quick {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -5936,6 +6015,33 @@ body.theme-classic .unit-card-details,
 }
 .qt-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
 .qt-btn:active { transform: scale(0.97); }
+
+/* 战术地图矢量图标 */
+.map-icon {
+  display: inline-block;
+  vertical-align: -2.5px;
+  width: 14.5px;
+  height: 14.5px;
+  margin-right: 3px;
+  margin-left: 2px;
+  flex-shrink: 0;
+}
+.map-icon-city { color: #0284c7; }
+.map-icon-view { color: #e11d48; }
+.map-icon-wild { color: #16a34a; }
+.map-icon-bandit { color: #dc2626; }
+.map-icon-player { color: #7c3aed; }
+.map-icon-territory { color: #ea580c; }
+.map-icon-home { color: #0284c7; }
+
+.tcard-mini-icon .map-icon,
+span.tcard-mini-icon .map-icon {
+  width: 12px;
+  height: 12px;
+  vertical-align: -1.5px;
+  margin-right: 2px;
+  margin-left: 0;
+}
 
 /* 3. Tabs */
 .map-tabs {
@@ -7414,3 +7520,43 @@ body.theme-classic .unit-card-details,
   .tactical-command-head { align-items: flex-start; flex-direction: column; }
   .tactical-command-shortcuts { justify-content: flex-start; }
 }
+/* 俘虏池按城市展示容量、价格和即时操作，窄屏下每个摘要指标独占一行。 */
+.prisoner-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:12px 0; }
+.prisoner-summary > div, .prisoner-unit { border:1px solid var(--line); padding:10px; min-width:0; }
+.prisoner-summary span, .prisoner-unit .desc { display:block; color:var(--muted); font-size:12px; }
+.prisoner-summary strong { display:block; margin-top:5px; font-size:16px; overflow-wrap:anywhere; }
+.prisoner-notice { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:10px 0; padding:10px; border-left:3px solid var(--accent); background:rgba(140,109,59,.08); }
+.prisoner-empty { padding:28px 0; text-align:center; color:var(--muted); }
+.prisoner-unit { margin:10px 0; }
+.prisoner-unit-head { display:flex; justify-content:space-between; gap:10px; font-size:14px; }
+.prisoner-controls { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:9px; }
+.prisoner-controls label { display:flex; align-items:center; gap:6px; }
+.prisoner-controls input { width:90px; }
+.prisoner-modal p { line-height:1.6; }
+.rb-prisoner-breakdown { margin-top:8px; padding:8px 0; border-top:1px solid var(--line); font-size:12px; }
+.rb-prisoner-breakdown > div { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:4px 0; }
+@media (max-width: 620px) { .prisoner-summary { grid-template-columns:1fr; } .prisoner-controls .btn-row { width:100%; } }
+/* 军衔资格与笔试共用紧凑布局，长题目和选项在手机上自然换行。 */
+.rank-promotion, .rank-exam { padding: 14px 0; margin-bottom: 14px; border-bottom: 1px solid var(--line); }
+.rank-exam-heading { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 12px; }
+.rank-exam-heading > div:first-child { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.rank-exam-heading h2 { margin: 0; font-size: 15px; overflow-wrap: anywhere; }
+.rank-exam-heading .rank-insignia { width: 32px; height: 32px; flex: 0 0 32px; }
+.rank-target, .rank-exam-meta { margin: 12px 0; font-size: 12px; color: var(--muted); }
+.rank-requirement { padding: 8px 0; }
+.rank-requirement > div:first-child, .rank-exam-status { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px 12px; font-size: 12px; }
+.rank-requirement .quest-progress-bar { height: 4px; margin: 6px 0 0; }
+.rank-met { color: var(--ok); }
+.rank-unmet { color: var(--muted); }
+.rank-source { font-size: 11px; color: var(--muted); margin: 4px 0 12px; overflow-wrap: anywhere; }
+.rank-score { padding: 10px 0; font-size: 12px; }
+.rank-promotion-actions, .rank-exam-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; padding-top: 12px; }
+.rank-promotion-actions > span, .rank-exam-actions > span { margin-right: auto; font-size: 12px; }
+.rank-exam-question { padding: 12px 0; margin: 12px 0; border: 0; border-bottom: 1px solid var(--line); min-width: 0; }
+.rank-exam-question legend { font-size: 14px; font-weight: 600; line-height: 1.6; max-width: 100%; overflow-wrap: anywhere; }
+.rank-exam-question label { display: flex; align-items: flex-start; gap: 8px; min-height: 40px; padding: 8px; cursor: pointer; font-size: 13px; line-height: 1.5; border-radius: 4px; box-sizing: border-box; }
+.rank-exam-question label:has(input:checked) { background: rgba(54, 143, 106, .14); }
+.rank-exam-question input { margin: 3px 0 0; flex: 0 0 auto; }
+.rank-exam-question span { min-width: 0; overflow-wrap: anywhere; }
+.rank-exam-time { min-width: 98px; font-variant-numeric: tabular-nums; }
+.rank-exam-actions { position: sticky; bottom: 0; padding: 12px 0; background: var(--paper, #151b1a); border-top: 1px solid var(--line); }

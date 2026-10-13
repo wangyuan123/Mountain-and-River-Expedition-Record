@@ -73,6 +73,15 @@ public class PlayerCity extends VersionedEntity implements CityEconomy {
     @Column(name = "civilian_population", nullable = false) private Integer civilianPopulation = 50;
     @Column(name = "population_growth_remainder", nullable = false) private Double populationGrowthRemainder = 0.0;
     @Column(name = "last_tick", nullable = false) private Long lastTick = 0L;
+    /** Non-null while a diplomatic city transfer is pending or in progress. */
+    @Column(name = "surrender_offer_id") private Long surrenderOfferId;
+    @Column(name = "surrender_recipient_id") private Long surrenderRecipientId;
+    @Column(name = "surrender_frozen_at") private Long surrenderFrozenAt;
+    @Column(name = "surrender_transfer_deadline_at") private Long surrenderTransferDeadlineAt;
+
+    public boolean isSurrenderFrozen(long now) {
+        return surrenderOfferId != null && surrenderFrozenAt != null && surrenderFrozenAt <= now;
+    }
     public String getCityName() { return name; }
     public void setCityName(String value) { name = value; }
     public Integer getCityPosX() { return x; }

@@ -53,13 +53,13 @@ function setup() {
       DATA: {
         buildings: {
           command:  { name: '市政厅', desc: '主城', baseCost: { steel: 400, food: 200 }, growth: 1.6, slots: 1 },
-          farm:     { name: '农田', desc: '粮食', baseCost: { steel: 80 }, growth: 1.5, produces: 'food', baseProduce: 40, slots: 32 },
-          refinery: { name: '炼钢厂', desc: '钢铁', baseCost: { steel: 80 }, growth: 1.5, produces: 'steel', slots: 32 },
-          oilfield: { name: '石油基地', desc: '石油', baseCost: { steel: 80 }, growth: 1.5, produces: 'oil', slots: 32 },
-          raremine: { name: '稀矿厂', desc: '稀矿', baseCost: { steel: 120, oil: 40 }, growth: 1.6, produces: 'rare', slots: 32 },
+          farm:     { name: '农田', desc: '粮食', baseCost: { steel: 80 }, growth: 1.5, produces: 'food', baseProduce: 40, slots: 36 },
+          refinery: { name: '炼钢厂', desc: '钢铁', baseCost: { steel: 80 }, growth: 1.5, produces: 'steel', slots: 36 },
+          oilfield: { name: '石油基地', desc: '石油', baseCost: { steel: 80 }, growth: 1.5, produces: 'oil', slots: 36 },
+          raremine: { name: '稀矿厂', desc: '稀矿', baseCost: { steel: 120, oil: 40 }, growth: 1.6, produces: 'rare', slots: 36 },
           radar:    { name: '防空雷达站', desc: '侦察', baseCost: { steel: 180, oil: 60, rare: 20 }, growth: 1.6, produces: '', slots: 1 }
         },
-        groupSlots: { res: 12, army: 10 },
+        groupSlots: { res: 16, army: 16 },
         resources: {
           food: { name: '粮食', icon: 'img/resources/models/food.webp' },
           steel: { name: '钢铁', icon: 'img/resources/models/steel.webp' },
@@ -87,7 +87,7 @@ function setup() {
         costEnough() { return true; },
         groupSlotsCap(key) {
           const cmd = this.buildingLevel('command');
-          return key === 'res' ? Math.min(32, 12 + cmd * 2) : (10 + cmd * 2);
+          return Math.min(36, 16 + Math.max(0, cmd) * 2);
         },
         groupSlotsUsed(key) {
           let used = 0;
@@ -243,14 +243,14 @@ test('免费加速接口发送队列ID并立即应用完工后的服务端状态
 
 test('卡槽地块网格正确渲染已建建筑与空闲卡槽(+号)', () => {
   const { G, state } = setup();
-  // command level = 2, so res groupCap = 12 + 2*2 = 16
+  // command level = 2, so res groupCap = 16 + 2*2 = 20
   const groupCap = G.Core.groupSlotsCap('res');
-  assert.equal(groupCap, 16);
+  assert.equal(groupCap, 20);
 
   // farm has [2, 1] (2 slots), refinery has [1] (1 slot) -> 3 occupied slots
   const gridHtml = G.Build.renderSlotGrid('res', [], state);
   assert.match(gridHtml, /class="slot-overview-panel"/);
-  assert.match(gridHtml, /已用 3 \/ 16 卡槽/);
+  assert.match(gridHtml, /已用 3 \/ 20 卡槽/);
   assert.match(gridHtml, /农田/);
   assert.match(gridHtml, /炼钢厂/);
 
@@ -259,9 +259,9 @@ test('卡槽地块网格正确渲染已建建筑与空闲卡槽(+号)', () => {
   assert.match(gridHtml, /class="slot-card-plus">\+<\/div>/);
   assert.match(gridHtml, /选建建筑/);
 
-  // Total empty slot cards should be 16 - 3 = 13
+  // Total empty slot cards should be 20 - 3 = 17
   const emptyMatches = gridHtml.match(/class="slot-card slot-card-empty"/g);
-  assert.equal(emptyMatches.length, 13);
+  assert.equal(emptyMatches.length, 17);
 });
 
 test('建筑卡片渲染拆除按钮', () => {
@@ -344,15 +344,15 @@ test('renderGroup 不再渲染下方冗余的手风琴卡片列表', () => {
 test('资源区与军事区底部入口使用同款文字链接并正确跳转', () => {
   const { G } = setup();
   for (const [group, destination, label] of [
-    ['res', 'buildArmy', '军事区'],
-    ['army', 'buildRes', '资源区']
+    ['res', 'buildArmy', '军工区'],
+    ['army', 'buildRes', '后勤区']
   ]) {
     const element = { innerHTML: '' };
     G.Build.renderGroup(element, group);
     assert.ok(element.innerHTML.includes('onclick="Game.go(\'' + destination + '\')"'));
     assert.ok(element.innerHTML.includes('>' + label + ' &gt;</span>'));
     assert.match(element.innerHTML, /class="build-zone-link zone-head-action" role="button" tabindex="0"/);
-    assert.doesNotMatch(element.innerHTML, /前往(?:资源|军事)/);
+    assert.doesNotMatch(element.innerHTML, /前往(?:后勤|军工)/);
   }
 });
 
@@ -418,17 +418,18 @@ test('资源建筑显示对应设施的花园卫城模型', () => {
   }
 });
 
-test('军事建筑显示花园卫城模型，全部 21 个映射都有实际素材', () => {
+test('军事建筑显示花园卫城模型，全部 25 个映射都有实际素材', () => {
   const { G, state } = setup();
   const armyBuildings = [
     'command', 'house', 'factory', 'lightfactory', 'heavyfactory',
-    'airport', 'port', 'academy', 'staff', 'lab', 'radar', 'wall',
-    'apron', 'liaison', 'depot', 'transit', 'exchange'
+    'airport', 'port', 'shipyard', 'academy', 'staff', 'headquarters', 'lab', 'radar', 'wall',
+    'apron', 'liaison', 'depot', 'transit', 'hospital', 'exchange', 'prisoner_camp'
   ];
   for (const id of armyBuildings) {
     assert.equal(G.Build.BUILD_ICON[id], `img/buildings/garden/${id}.webp`);
   }
-  assert.equal(Object.keys(G.Build.BUILD_ICON).length, 21);
+  assert.equal(Object.keys(G.Build.BUILD_ICON).length, 25);
+  assert.equal(G.Build.BUILD_ICON.shipyard, 'img/buildings/garden/shipyard.webp');
   for (const asset of Object.values(G.Build.BUILD_ICON)) {
     assert.ok(fs.existsSync(path.join(__dirname, '..', asset)), `缺少建筑素材：${asset}`);
   }
@@ -467,7 +468,7 @@ test('openBuildPicker 在资源不足时显示缺口提示并支持点击置灰�
     desc: '驻扎战备部队,提供人口与兵员上限,每级+1200',
     baseCost: { steel: 120, food: 60 },
     growth: 1.5,
-    slots: 32
+    slots: 36
   };
   G.Build.GROUPS.army.order.push('house');
 
@@ -511,3 +512,136 @@ test('openBuildPicker 在资源不足时显示缺口提示并支持点击置灰�
   assert.match(confirmModal.innerHTML, /民居/);
 });
 
+test('本城市政厅满级展示15块野地，升级前显示下一等级名额', () => {
+  const { G, context, state } = setup();
+  state.buildings.command = 10;
+  G.Build.onSlotClick('command', null);
+  let modalHtml = context.document.body.appended.at(-1).innerHTML;
+  assert.match(modalHtml, /本城野地上限/);
+  assert.match(modalHtml, /15（基础5＋市政厅等级）/);
+  assert.doesNotMatch(modalHtml, /下级 16/);
+  assert.match(G.Build.renderBuilding('command', G.DATA.buildings.command, [], 0), /本城野地上限<\/span><span class="bcard-stat-val">15<\/span>/);
+  state.buildings.command = 1;
+  G.Build.onSlotClick('command', null);
+  modalHtml = context.document.body.appended.at(-1).innerHTML;
+  assert.match(modalHtml, /6（基础5＋市政厅等级），下级 7/);
+});
+
+test('作战参谋部展示战略指挥枢纽，野地名额归市政厅管理', () => {
+  const { G, context, state } = setup();
+  G.DATA.buildings.staff = { name: '作战参谋部', desc: '军事指挥、军官管理与高级军研', baseCost: { steel: 220, food: 100 }, growth: 1.6, slots: 1 };
+  state.buildings.staff = 10;
+  G.Build.onSlotClick('staff', null);
+  const appended = context.document.body.appended;
+  const modalHtml = appended[appended.length - 1].innerHTML;
+
+  assert.match(modalHtml, /作战参谋部/);
+  assert.doesNotMatch(modalHtml, /野地.*上限/);
+  assert.match(modalHtml, /战略指挥枢纽/);
+  assert.doesNotMatch(modalHtml, /带兵容量加成/);
+
+  // 详情与卡片都移除参谋部的旧野地名额说明。
+  const cardHtml = G.Build.renderBuilding('staff', G.DATA.buildings.staff, [], 0);
+  assert.doesNotMatch(cardHtml, /野地.*上限/);
+  assert.doesNotMatch(cardHtml, /带兵容量加成/);
+});
+
+test('联络中心不显示废弃的军官刷新品质，展示情报联络枢纽', () => {
+  const { G, context, state } = setup();
+  G.DATA.buildings.liaison = { name: '联络中心', desc: '盟军情报与外交联络', baseCost: { steel: 200, food: 120, gold: 200 }, growth: 1.6, slots: 1 };
+  state.buildings.liaison = 5;
+  G.Build.onSlotClick('liaison', null);
+  const modalHtml = context.document.body.appended.at(-1).innerHTML;
+
+  assert.match(modalHtml, /联络中心/);
+  assert.match(modalHtml, /情报联络枢纽/);
+  assert.match(modalHtml, /战略科研前置/);
+  assert.doesNotMatch(modalHtml, /偏向高星/);
+  assert.doesNotMatch(modalHtml, /军官刷新/);
+
+  const cardHtml = G.Build.renderBuilding('liaison', G.DATA.buildings.liaison, [], 0);
+  assert.match(cardHtml, /情报联络/);
+  assert.doesNotMatch(cardHtml, /偏向高星/);
+});
+
+test('军校正确展示整批五星概率与招募培养说明', () => {
+  const { G, context, state } = setup();
+  G.DATA.buildings.academy = { name: '军校', desc: '培养招募军官,等级提升整批五星概率', baseCost: { steel: 200, food: 120, gold: 200 }, growth: 1.6, slots: 1 };
+  state.buildings.academy = 8;
+  G.Build.onSlotClick('academy', null);
+  const modalHtml = context.document.body.appended.at(-1).innerHTML;
+
+  assert.match(modalHtml, /整批五星概率/);
+  assert.match(modalHtml, /\+2\.4%/);
+  assert.match(modalHtml, /将领培养中心/);
+
+  const cardHtml = G.Build.renderBuilding('academy', G.DATA.buildings.academy, [], 0);
+  assert.match(cardHtml, /五星概率/);
+  assert.match(cardHtml, /\+2\.4%/);
+});
+
+test('城墙、研发中心、雷达站与军需仓库展示准确属性与加成', () => {
+  const { G, context, state } = setup();
+  G.DATA.buildings.wall = { name: '城防', desc: '基地外围城防设施,提升守城部队防御并增加城防武器容量', baseCost: { steel: 200, food: 80 }, growth: 1.5, defBonus: 5, slots: 1 };
+  G.DATA.buildings.lab = { name: '军工科技研发中心', desc: '解锁与加速军研进度', baseCost: { steel: 200, food: 100, rare: 20 }, growth: 1.6, slots: 1 };
+  G.DATA.buildings.depot = { name: '军需仓库', desc: '战备物资掠夺保护,被掠夺时保护资源', baseCost: { steel: 100 }, growth: 1.5, protectPer: 1000, slots: 36 };
+  G.DATA.buildings.exchange = { name: '军需物资中转站', desc: '战备物资调配,按比例转换资源', baseCost: { steel: 180, food: 100, gold: 100 }, growth: 1.5, slots: 1 };
+
+  // 1. 满级城防
+  state.buildings.wall = 10;
+  G.Build.onSlotClick('wall', null);
+  const wallModal = context.document.body.appended.at(-1).innerHTML;
+  assert.match(wallModal, /城防武器容量/);
+  assert.match(wallModal, /30,?000（四类共享）/);
+  assert.doesNotMatch(wallModal, /满级带兵|100,000/);
+  const wallCard = G.Build.renderBuilding('wall', G.DATA.buildings.wall, [], 0);
+  assert.match(wallCard, /城防武器容量/);
+  assert.match(wallCard, /30,?000/);
+  assert.doesNotMatch(wallCard, /满级带兵|100,000/);
+
+  // 2. 研发中心科研加速
+  state.buildings.lab = 6;
+  G.Build.onSlotClick('lab', null);
+  const labModal = context.document.body.appended.at(-1).innerHTML;
+  assert.match(labModal, /科研耗时加速/);
+  assert.match(labModal, /-50%/);
+  assert.match(labModal, /科技研发层级/);
+  const labCard = G.Build.renderBuilding('lab', G.DATA.buildings.lab, [], 0);
+  assert.match(labCard, /科研加速/);
+  assert.match(labCard, /-50%/);
+
+  // 3. 雷达站视野
+  state.buildings.radar = 4;
+  G.Build.onSlotClick('radar', null);
+  const radarModal = context.document.body.appended.at(-1).innerHTML;
+  assert.match(radarModal, /侦察视野加成/);
+  assert.match(radarModal, /\+4 格/);
+  const radarCard = G.Build.renderBuilding('radar', G.DATA.buildings.radar, [], 0);
+  assert.match(radarCard, /侦察视野/);
+  assert.match(radarCard, /\+4 格/);
+
+  // 4. 军需仓库资源保护（已与交易所槽位解耦，不再显示交易所槽位）
+  state.buildings.depot = 3;
+  G.Build.onSlotClick('depot', null);
+  const depotModal = context.document.body.appended.at(-1).innerHTML;
+  assert.doesNotMatch(depotModal, /交易所槽位/);
+  assert.match(depotModal, /资源掠夺保护/);
+
+  // 5. 军需物资中转站挂单槽位按 2 + 交易所等级计算 (Lv.5 -> 7 槽)
+  state.buildings.command = 10;
+  state.buildings.exchange = 5;
+  G.Build.onSlotClick('exchange', null);
+  const exchangeModal = context.document.body.appended.at(-1).innerHTML;
+  assert.match(exchangeModal, /货架挂单槽位/);
+  assert.match(exchangeModal, /7 槽 \(下级 8 槽\)/);
+  assert.match(exchangeModal, /战略调配比率/);
+
+  // 6. 司令部出征队伍上限按 5 + 司令部等级计算 (Lv.3 -> 8 支)
+  G.DATA.buildings.headquarters = { name: '司令部', desc: '任命司令官与提升出征队伍上限', baseCost: { steel: 300, food: 150, gold: 150 }, growth: 1.6, slots: 1 };
+  state.buildings.headquarters = 3;
+  G.Build.onSlotClick('headquarters', null);
+  const hqModal = context.document.body.appended.at(-1).innerHTML;
+  assert.match(hqModal, /出征队伍上限/);
+  assert.match(hqModal, /8 支 \(下级 9 支\)/);
+  assert.match(hqModal, /司令官/);
+});

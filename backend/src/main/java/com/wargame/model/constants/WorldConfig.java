@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.LinkedHashMap;
 
 /**
  * 世界配置 - 对应 data.js 中 G.DATA.world
@@ -18,6 +17,9 @@ public final class WorldConfig {
     public static final int WORLD_SIZE = SIZE * 2;
     public static final int VIEW_RADIUS = 3;
     public static final int MARCH_SEC_PER_GRID = 9;
+    /** 单队行军令只加速当前路段，最多一次且保留至少十秒的抵达窗口。 */
+    public static final double MARCH_ACCELERATION_MUL = 1.5;
+    public static final long MARCH_ACCELERATION_MIN_MS = 10_000L;
     public static final int MAX_NPC_LEVEL = 30;
     public static final int MAX_WILD_LEVEL = 30;
     public static final int RES_PER_WILD_LEVEL = 160_000;
@@ -56,8 +58,7 @@ public final class WorldConfig {
             base.replaceAll((unit, count) -> count * multiplier * 4);
             return base;
         }
-        base.put("infantry", level <= 10 ? (level <= 3 ? level * 5 : 18 + (level - 4) * 4) : 48 + (level - 11) * 6);
-        if (level >= 4) base.put("motor", level <= 10 ? (level - 3) * 2 : 14 + (level - 11) * 2);
+        base.put("infantry", level <= 3 ? level * 5 : level <= 10 ? 18 + (level - 4) * 4 + (level - 3) * 2 : 62 + (level - 11) * 8);
         if (level >= 8) base.put("armored", level <= 10 ? level - 7 : 4 + (level - 11) * 2);
         if (level >= 11) {
             base.put("ltank", Math.max(1, level - 10));
@@ -100,9 +101,13 @@ public final class WorldConfig {
     }
 
     public static final List<String> BANDIT_NAMES = List.of(
-            "日寇前哨", "日寇营地", "日寇炮楼", "日寇据点",
-            "日寇补给站", "雇佣兵营", "武装走私队", "雇佣兵基地"
+            "寇"
     );
+
+    /** 陆地寇仅使用一个名称，等级后缀供行军与战报识别难度。 */
+    public static String landBanditName(Integer level) {
+        return "寇 Lv." + Math.max(1, level == null ? 1 : level);
+    }
 
         public static final List<BanditLevel> BANDIT_LEVELS = createBanditLevels();
 
@@ -112,39 +117,38 @@ public final class WorldConfig {
                     Map.of("infantry", 60),
                     Map.of("food", 80, "steel", 120, "oil", 60, "rare", 10, "gold", 15)),
             new BanditLevel(2,
-                    Map.of("infantry", 90, "motor", 30),
+                    Map.of("infantry", 120),
                     Map.of("food", 120, "steel", 180, "oil", 90, "rare", 15, "gold", 20)),
             new BanditLevel(3,
-                    Map.of("infantry", 105, "motor", 45),
+                    Map.of("infantry", 150),
                     Map.of("food", 180, "steel", 260, "oil", 140, "rare", 25, "gold", 30)),
             new BanditLevel(4,
-                    Map.of("infantry", 120, "motor", 45),
+                    Map.of("infantry", 165),
                     Map.of("food", 240, "steel", 360, "oil", 200, "rare", 40, "gold", 45)),
             new BanditLevel(5,
-                    Map.of("infantry", 135, "motor", 45),
+                    Map.of("infantry", 180),
                     Map.of("food", 320, "steel", 480, "oil", 280, "rare", 60, "gold", 70)),
             new BanditLevel(6,
-                    Map.of("infantry", 150, "motor", 60, "armored", 12),
+                    Map.of("infantry", 210, "armored", 12),
                     Map.of("food", 440, "steel", 660, "oil", 400, "rare", 90, "gold", 100)),
             new BanditLevel(7,
-                    Map.of("infantry", 165, "motor", 60, "armored", 15, "ltank", 18),
+                    Map.of("infantry", 225, "armored", 15, "ltank", 18),
                     Map.of("food", 600, "steel", 900, "oil", 560, "rare", 130, "gold", 150)),
             new BanditLevel(8,
-                    Map.of("infantry", 180, "motor", 75, "armored", 20, "ltank", 20, "assault", 15),
+                    Map.of("infantry", 255, "armored", 20, "ltank", 20, "assault", 15),
                     Map.of("food", 800, "steel", 1200, "oil", 760, "rare", 180, "gold", 220))
         ));
 
-        // 9、10 级逐级解锁重坦和火箭炮；11 级起采用全兵种公式。
+        // 9、10 级逐级解锁重坦和反坦克火箭车；11 级起采用全兵种公式。
         levels.add(new BanditLevel(9,
-                Map.of("infantry", 195, "motor", 90, "armored", 25, "ltank", 25, "assault", 18, "htank", 8),
+                Map.of("infantry", 285, "armored", 25, "ltank", 25, "assault", 18, "htank", 8),
                 Map.of("food", 1440, "steel", 2160, "oil", 1260, "rare", 405, "gold", 540)));
         levels.add(new BanditLevel(10,
-                Map.of("infantry", 210, "motor", 105, "armored", 30, "ltank", 30, "assault", 21, "htank", 10, "rocket", 8),
+                Map.of("infantry", 315, "armored", 30, "ltank", 30, "assault", 21, "htank", 10, "rocket", 8),
                 Map.of("food", 1600, "steel", 2400, "oil", 1400, "rare", 450, "gold", 600)));
         for (int level = 11; level <= MAX_NPC_LEVEL; level++) {
             Map<String, Integer> army = new LinkedHashMap<>();
-            army.put("infantry", level * 6);
-            army.put("motor", level * 2);
+            army.put("infantry", level * 8);
             army.put("armored", level * 2);
             army.put("ltank", level * 2);
             army.put("htank", level * 2);
@@ -194,11 +198,6 @@ public final class WorldConfig {
         return level == MAX_NPC_LEVEL && roll == 0 ? 5 : 0;
     }
 
-    public static final List<String> NPC_CITY_NAMES = List.of(
-            "汉堡", "华沙", "维也纳", "布鲁塞尔", "阿姆斯特丹", "斯德哥尔摩", "奥斯陆", "哥本哈根",
-            "布拉格", "布达佩斯", "贝尔格莱德", "索菲亚", "布加勒斯特", "赫尔辛基", "都柏林", "里斯本"
-    );
-
     /** 流寇等级定义 */
     public record BanditLevel(
             int lv,
@@ -206,14 +205,12 @@ public final class WorldConfig {
             Map<String, Integer> reward
     ) {}
 
-    /** NPC 只能使用陆军和空军，移除存档或导入数据中的海军单位。 */
+    /** NPC 只能使用仍在编制中的陆军和空军，移除存档或导入数据中的其他单位。 */
     public static Map<String, Integer> landOnlyArmy(Map<String, Integer> army) {
         Map<String, Integer> result = new LinkedHashMap<>();
         if (army != null) result.putAll(army);
-        result.remove("destroyer");
-        result.remove("sub");
-        result.remove("battleship");
-        result.remove("carrier");
+        result.entrySet().removeIf(entry -> !GameData.UNITS.containsKey(entry.getKey())
+                || "sea".equals(GameData.UNITS.get(entry.getKey()).branch()));
         return result;
     }
 }

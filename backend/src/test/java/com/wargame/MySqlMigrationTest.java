@@ -34,6 +34,19 @@ class MySqlMigrationTest {
                 statement.executeUpdate("INSERT INTO resources(player_id, gold, diamond) "
                         + "SELECT id, 12345, 678 FROM players WHERE username='migration-sentinel'");
             }
+            // 先升级到移除摩托兵之前的真实表结构；V30 已删除 player_cities.army。
+            Flyway.configure().dataSource(url, user, password).target("83").load().migrate();
+            try (var connection = DriverManager.getConnection(url, user, password);
+                 var statement = connection.createStatement()) {
+                statement.executeUpdate("INSERT INTO army_units(player_id,city_slot,type,count) "
+                        + "SELECT id, 0, 'motor', 5 FROM players WHERE username='migration-sentinel'");
+                statement.executeUpdate("INSERT INTO army_units(player_id,city_slot,type,count) "
+                        + "SELECT id, 1, 'motor', 7 FROM players WHERE username='migration-sentinel'");
+                statement.executeUpdate("INSERT INTO army_units(player_id,city_slot,type,count) "
+                        + "SELECT id, 0, 'infantry', 12 FROM players WHERE username='migration-sentinel'");
+                statement.executeUpdate("UPDATE players SET sortie_army='{\"motor\":5,\"infantry\":12}' "
+                        + "WHERE username='migration-sentinel'");
+            }
         }
         properties.add("spring.datasource.url", () -> url);
         properties.add("spring.datasource.username", () -> user);
@@ -64,5 +77,17 @@ class MySqlMigrationTest {
         assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM flyway_schema_history WHERE version='28' AND success=1", Integer.class));
         assertTrue(jdbc.queryForObject("SELECT COUNT(*) FROM information_schema.statistics "
                 + "WHERE table_schema=DATABASE() AND index_name='idx_wild_world_coordinates'", Integer.class) > 0);
+    }
+
+    @Test
+    void removesMotorUnitsAcrossCitiesAndPreservesOtherUnits() {
+        Long playerId = jdbc.queryForObject("SELECT id FROM players WHERE username='migration-sentinel'", Long.class);
+        assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM army_units WHERE player_id=? AND type='motor'", Integer.class, playerId));
+        assertEquals(12, jdbc.queryForObject("SELECT count FROM army_units WHERE player_id=? AND city_slot=0 AND type='infantry'", Integer.class, playerId));
+        assertEquals(0, jdbc.queryForObject("SELECT JSON_CONTAINS_PATH(sortie_army, 'one', '$.motor') FROM players WHERE id=?", Integer.class, playerId));
+        assertEquals(12, jdbc.queryForObject("SELECT JSON_EXTRACT(sortie_army, '$.infantry') FROM players WHERE id=?", Integer.class, playerId));
+        assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM information_schema.columns "
+                + "WHERE table_schema=DATABASE() AND table_name='player_cities' AND column_name='army'", Integer.class));
+        assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM flyway_schema_history WHERE version='84' AND success=1", Integer.class));
     }
 }

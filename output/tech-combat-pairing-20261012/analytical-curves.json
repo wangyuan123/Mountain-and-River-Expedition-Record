@@ -1,0 +1,2693 @@
+{
+  "basis": "Current damage and HP formulas; fixed current army count; same attack, defense and HP tech level; no equipment, commander, skill or point blank bonuses; same wall in both baseline and developed cases",
+  "formulaCheck": {
+    "matchedDensityHealthMaxError": 0
+  },
+  "costsByTargetLevel": [
+    {
+      "level": 1,
+      "steel": 300,
+      "food": 160,
+      "rare": 30
+    },
+    {
+      "level": 2,
+      "steel": 540,
+      "food": 288,
+      "rare": 54
+    },
+    {
+      "level": 3,
+      "steel": 972,
+      "food": 518,
+      "rare": 97
+    },
+    {
+      "level": 4,
+      "steel": 1749,
+      "food": 933,
+      "rare": 174
+    },
+    {
+      "level": 5,
+      "steel": 3149,
+      "food": 1679,
+      "rare": 314
+    },
+    {
+      "level": 6,
+      "steel": 5668,
+      "food": 3023,
+      "rare": 566
+    },
+    {
+      "level": 7,
+      "steel": 10203,
+      "food": 5441,
+      "rare": 1020
+    },
+    {
+      "level": 8,
+      "steel": 18366,
+      "food": 9795,
+      "rare": 1836
+    },
+    {
+      "level": 9,
+      "steel": 33059,
+      "food": 17631,
+      "rare": 3305
+    },
+    {
+      "level": 10,
+      "steel": 59507,
+      "food": 31737,
+      "rare": 5950
+    }
+  ],
+  "totalCost0To10": {
+    "steel": 133513,
+    "food": 71205,
+    "rare": 13346
+  },
+  "rows": [
+    {
+      "unit": "infantry",
+      "commonTechLevel": 0,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "infantry",
+      "commonTechLevel": 0,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "infantry",
+      "commonTechLevel": 1,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.958904109589041,
+      "proposedKillRatioVsZeroTech": 1.0547945205479452
+    },
+    {
+      "unit": "infantry",
+      "commonTechLevel": 1,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.9497206703910616,
+      "proposedKillRatioVsZeroTech": 1.0446927374301678
+    },
+    {
+      "unit": "infantry",
+      "commonTechLevel": 2,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.9210526315789475,
+      "proposedKillRatioVsZeroTech": 1.105263157894737
+    },
+    {
+      "unit": "infantry",
+      "commonTechLevel": 2,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.9042553191489363,
+      "proposedKillRatioVsZeroTech": 1.0851063829787235
+    },
+    {
+      "unit": "infantry",
+      "commonTechLevel": 3,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8860759493670886,
+      "proposedKillRatioVsZeroTech": 1.1518987341772151
+    },
+    {
+      "unit": "infantry",
+      "commonTechLevel": 3,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8629441624365481,
+      "proposedKillRatioVsZeroTech": 1.1218274111675126
+    },
+    {
+      "unit": "infantry",
+      "commonTechLevel": 4,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.853658536585366,
+      "proposedKillRatioVsZeroTech": 1.1951219512195121
+    },
+    {
+      "unit": "infantry",
+      "commonTechLevel": 4,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8252427184466019,
+      "proposedKillRatioVsZeroTech": 1.1553398058252426
+    },
+    {
+      "unit": "infantry",
+      "commonTechLevel": 5,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8235294117647058,
+      "proposedKillRatioVsZeroTech": 1.2352941176470589
+    },
+    {
+      "unit": "infantry",
+      "commonTechLevel": 5,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7906976744186046,
+      "proposedKillRatioVsZeroTech": 1.1860465116279069
+    },
+    {
+      "unit": "infantry",
+      "commonTechLevel": 6,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7954545454545454,
+      "proposedKillRatioVsZeroTech": 1.2727272727272727
+    },
+    {
+      "unit": "infantry",
+      "commonTechLevel": 6,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7589285714285715,
+      "proposedKillRatioVsZeroTech": 1.2142857142857144
+    },
+    {
+      "unit": "infantry",
+      "commonTechLevel": 7,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7692307692307692,
+      "proposedKillRatioVsZeroTech": 1.3076923076923077
+    },
+    {
+      "unit": "infantry",
+      "commonTechLevel": 7,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7296137339055794,
+      "proposedKillRatioVsZeroTech": 1.2403433476394852
+    },
+    {
+      "unit": "infantry",
+      "commonTechLevel": 8,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7446808510638298,
+      "proposedKillRatioVsZeroTech": 1.3404255319148937
+    },
+    {
+      "unit": "infantry",
+      "commonTechLevel": 8,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7024793388429752,
+      "proposedKillRatioVsZeroTech": 1.2644628099173554
+    },
+    {
+      "unit": "infantry",
+      "commonTechLevel": 9,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7216494845360826,
+      "proposedKillRatioVsZeroTech": 1.371134020618557
+    },
+    {
+      "unit": "infantry",
+      "commonTechLevel": 9,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6772908366533865,
+      "proposedKillRatioVsZeroTech": 1.2868525896414342
+    },
+    {
+      "unit": "infantry",
+      "commonTechLevel": 10,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7,
+      "proposedKillRatioVsZeroTech": 1.4
+    },
+    {
+      "unit": "infantry",
+      "commonTechLevel": 10,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6538461538461539,
+      "proposedKillRatioVsZeroTech": 1.3076923076923077
+    },
+    {
+      "unit": "truck",
+      "commonTechLevel": 0,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "truck",
+      "commonTechLevel": 0,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "truck",
+      "commonTechLevel": 1,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.9788867562380038,
+      "proposedKillRatioVsZeroTech": 1.0767754318618044
+    },
+    {
+      "unit": "truck",
+      "commonTechLevel": 1,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.9716251074806534,
+      "proposedKillRatioVsZeroTech": 1.0687876182287188
+    },
+    {
+      "unit": "truck",
+      "commonTechLevel": 2,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.9586466165413533,
+      "proposedKillRatioVsZeroTech": 1.1503759398496238
+    },
+    {
+      "unit": "truck",
+      "commonTechLevel": 2,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.9448160535117057,
+      "proposedKillRatioVsZeroTech": 1.1337792642140467
+    },
+    {
+      "unit": "truck",
+      "commonTechLevel": 3,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.9392265193370165,
+      "proposedKillRatioVsZeroTech": 1.2209944751381214
+    },
+    {
+      "unit": "truck",
+      "commonTechLevel": 3,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.919446704637917,
+      "proposedKillRatioVsZeroTech": 1.1952807160292922
+    },
+    {
+      "unit": "truck",
+      "commonTechLevel": 4,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.9205776173285198,
+      "proposedKillRatioVsZeroTech": 1.2888086642599277
+    },
+    {
+      "unit": "truck",
+      "commonTechLevel": 4,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8954041204437401,
+      "proposedKillRatioVsZeroTech": 1.253565768621236
+    },
+    {
+      "unit": "truck",
+      "commonTechLevel": 5,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.902654867256637,
+      "proposedKillRatioVsZeroTech": 1.3539823008849554
+    },
+    {
+      "unit": "truck",
+      "commonTechLevel": 5,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8725868725868727,
+      "proposedKillRatioVsZeroTech": 1.3088803088803092
+    },
+    {
+      "unit": "truck",
+      "commonTechLevel": 6,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8854166666666666,
+      "proposedKillRatioVsZeroTech": 1.4166666666666667
+    },
+    {
+      "unit": "truck",
+      "commonTechLevel": 6,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8509036144578314,
+      "proposedKillRatioVsZeroTech": 1.3614457831325302
+    },
+    {
+      "unit": "truck",
+      "commonTechLevel": 7,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8688245315161839,
+      "proposedKillRatioVsZeroTech": 1.4770017035775127
+    },
+    {
+      "unit": "truck",
+      "commonTechLevel": 7,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8302718589272593,
+      "proposedKillRatioVsZeroTech": 1.4114621601763409
+    },
+    {
+      "unit": "truck",
+      "commonTechLevel": 8,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8528428093645484,
+      "proposedKillRatioVsZeroTech": 1.5351170568561872
+    },
+    {
+      "unit": "truck",
+      "commonTechLevel": 8,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8106169296987087,
+      "proposedKillRatioVsZeroTech": 1.4591104734576756
+    },
+    {
+      "unit": "truck",
+      "commonTechLevel": 9,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8374384236453202,
+      "proposedKillRatioVsZeroTech": 1.5911330049261083
+    },
+    {
+      "unit": "truck",
+      "commonTechLevel": 9,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7918710581639804,
+      "proposedKillRatioVsZeroTech": 1.5045550105115626
+    },
+    {
+      "unit": "truck",
+      "commonTechLevel": 10,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8225806451612903,
+      "proposedKillRatioVsZeroTech": 1.6451612903225805
+    },
+    {
+      "unit": "truck",
+      "commonTechLevel": 10,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.773972602739726,
+      "proposedKillRatioVsZeroTech": 1.547945205479452
+    },
+    {
+      "unit": "armored",
+      "commonTechLevel": 0,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "armored",
+      "commonTechLevel": 0,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "armored",
+      "commonTechLevel": 1,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.9413854351687388,
+      "proposedKillRatioVsZeroTech": 1.0355239786856127
+    },
+    {
+      "unit": "armored",
+      "commonTechLevel": 1,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.9335124244459369,
+      "proposedKillRatioVsZeroTech": 1.0268636668905307
+    },
+    {
+      "unit": "armored",
+      "commonTechLevel": 2,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8892617449664431,
+      "proposedKillRatioVsZeroTech": 1.0671140939597317
+    },
+    {
+      "unit": "armored",
+      "commonTechLevel": 2,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8753148614609572,
+      "proposedKillRatioVsZeroTech": 1.0503778337531486
+    },
+    {
+      "unit": "armored",
+      "commonTechLevel": 3,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8426073131955485,
+      "proposedKillRatioVsZeroTech": 1.095389507154213
+    },
+    {
+      "unit": "armored",
+      "commonTechLevel": 3,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8239478363959691,
+      "proposedKillRatioVsZeroTech": 1.07113218731476
+    },
+    {
+      "unit": "armored",
+      "commonTechLevel": 4,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8006042296072509,
+      "proposedKillRatioVsZeroTech": 1.1208459214501512
+    },
+    {
+      "unit": "armored",
+      "commonTechLevel": 4,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7782754759238523,
+      "proposedKillRatioVsZeroTech": 1.0895856662933932
+    },
+    {
+      "unit": "armored",
+      "commonTechLevel": 5,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.762589928057554,
+      "proposedKillRatioVsZeroTech": 1.143884892086331
+    },
+    {
+      "unit": "armored",
+      "commonTechLevel": 5,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7374005305039787,
+      "proposedKillRatioVsZeroTech": 1.106100795755968
+    },
+    {
+      "unit": "armored",
+      "commonTechLevel": 6,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.728021978021978,
+      "proposedKillRatioVsZeroTech": 1.164835164835165
+    },
+    {
+      "unit": "armored",
+      "commonTechLevel": 6,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7006048387096773,
+      "proposedKillRatioVsZeroTech": 1.1209677419354838
+    },
+    {
+      "unit": "armored",
+      "commonTechLevel": 7,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.6964520367936925,
+      "proposedKillRatioVsZeroTech": 1.1839684625492775
+    },
+    {
+      "unit": "armored",
+      "commonTechLevel": 7,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6673067690830532,
+      "proposedKillRatioVsZeroTech": 1.1344215074411905
+    },
+    {
+      "unit": "armored",
+      "commonTechLevel": 8,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.6675062972292192,
+      "proposedKillRatioVsZeroTech": 1.2015113350125946
+    },
+    {
+      "unit": "armored",
+      "commonTechLevel": 8,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6370302474793768,
+      "proposedKillRatioVsZeroTech": 1.1466544454628782
+    },
+    {
+      "unit": "armored",
+      "commonTechLevel": 9,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.64087061668682,
+      "proposedKillRatioVsZeroTech": 1.2176541717049578
+    },
+    {
+      "unit": "armored",
+      "commonTechLevel": 9,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6093818500657607,
+      "proposedKillRatioVsZeroTech": 1.1578255151249452
+    },
+    {
+      "unit": "armored",
+      "commonTechLevel": 10,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.6162790697674418,
+      "proposedKillRatioVsZeroTech": 1.2325581395348837
+    },
+    {
+      "unit": "armored",
+      "commonTechLevel": 10,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.5840336134453782,
+      "proposedKillRatioVsZeroTech": 1.1680672268907564
+    },
+    {
+      "unit": "recon_car",
+      "commonTechLevel": 0,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "recon_car",
+      "commonTechLevel": 0,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "recon_car",
+      "commonTechLevel": 1,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.9413854351687388,
+      "proposedKillRatioVsZeroTech": 1.0355239786856127
+    },
+    {
+      "unit": "recon_car",
+      "commonTechLevel": 1,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.9335124244459369,
+      "proposedKillRatioVsZeroTech": 1.0268636668905307
+    },
+    {
+      "unit": "recon_car",
+      "commonTechLevel": 2,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8892617449664431,
+      "proposedKillRatioVsZeroTech": 1.0671140939597317
+    },
+    {
+      "unit": "recon_car",
+      "commonTechLevel": 2,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8753148614609572,
+      "proposedKillRatioVsZeroTech": 1.0503778337531486
+    },
+    {
+      "unit": "recon_car",
+      "commonTechLevel": 3,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8426073131955485,
+      "proposedKillRatioVsZeroTech": 1.095389507154213
+    },
+    {
+      "unit": "recon_car",
+      "commonTechLevel": 3,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8239478363959691,
+      "proposedKillRatioVsZeroTech": 1.07113218731476
+    },
+    {
+      "unit": "recon_car",
+      "commonTechLevel": 4,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8006042296072509,
+      "proposedKillRatioVsZeroTech": 1.1208459214501512
+    },
+    {
+      "unit": "recon_car",
+      "commonTechLevel": 4,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7782754759238523,
+      "proposedKillRatioVsZeroTech": 1.0895856662933932
+    },
+    {
+      "unit": "recon_car",
+      "commonTechLevel": 5,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.762589928057554,
+      "proposedKillRatioVsZeroTech": 1.143884892086331
+    },
+    {
+      "unit": "recon_car",
+      "commonTechLevel": 5,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7374005305039787,
+      "proposedKillRatioVsZeroTech": 1.106100795755968
+    },
+    {
+      "unit": "recon_car",
+      "commonTechLevel": 6,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.728021978021978,
+      "proposedKillRatioVsZeroTech": 1.164835164835165
+    },
+    {
+      "unit": "recon_car",
+      "commonTechLevel": 6,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7006048387096773,
+      "proposedKillRatioVsZeroTech": 1.1209677419354838
+    },
+    {
+      "unit": "recon_car",
+      "commonTechLevel": 7,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.6964520367936925,
+      "proposedKillRatioVsZeroTech": 1.1839684625492775
+    },
+    {
+      "unit": "recon_car",
+      "commonTechLevel": 7,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6673067690830532,
+      "proposedKillRatioVsZeroTech": 1.1344215074411905
+    },
+    {
+      "unit": "recon_car",
+      "commonTechLevel": 8,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.6675062972292192,
+      "proposedKillRatioVsZeroTech": 1.2015113350125946
+    },
+    {
+      "unit": "recon_car",
+      "commonTechLevel": 8,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6370302474793768,
+      "proposedKillRatioVsZeroTech": 1.1466544454628782
+    },
+    {
+      "unit": "recon_car",
+      "commonTechLevel": 9,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.64087061668682,
+      "proposedKillRatioVsZeroTech": 1.2176541717049578
+    },
+    {
+      "unit": "recon_car",
+      "commonTechLevel": 9,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6093818500657607,
+      "proposedKillRatioVsZeroTech": 1.1578255151249452
+    },
+    {
+      "unit": "recon_car",
+      "commonTechLevel": 10,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.6162790697674418,
+      "proposedKillRatioVsZeroTech": 1.2325581395348837
+    },
+    {
+      "unit": "recon_car",
+      "commonTechLevel": 10,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.5840336134453782,
+      "proposedKillRatioVsZeroTech": 1.1680672268907564
+    },
+    {
+      "unit": "ltank",
+      "commonTechLevel": 0,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "ltank",
+      "commonTechLevel": 0,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "ltank",
+      "commonTechLevel": 1,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.9323116219667944,
+      "proposedKillRatioVsZeroTech": 1.0255427841634739
+    },
+    {
+      "unit": "ltank",
+      "commonTechLevel": 1,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.9260120986505351,
+      "proposedKillRatioVsZeroTech": 1.0186133085155886
+    },
+    {
+      "unit": "ltank",
+      "commonTechLevel": 2,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8732057416267944,
+      "proposedKillRatioVsZeroTech": 1.0478468899521534
+    },
+    {
+      "unit": "ltank",
+      "commonTechLevel": 2,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8622183708838822,
+      "proposedKillRatioVsZeroTech": 1.0346620450606585
+    },
+    {
+      "unit": "ltank",
+      "commonTechLevel": 3,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8211473565804275,
+      "proposedKillRatioVsZeroTech": 1.0674915635545557
+    },
+    {
+      "unit": "ltank",
+      "commonTechLevel": 3,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.806647750304013,
+      "proposedKillRatioVsZeroTech": 1.048642075395217
+    },
+    {
+      "unit": "ltank",
+      "commonTechLevel": 4,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7749469214437367,
+      "proposedKillRatioVsZeroTech": 1.0849256900212312
+    },
+    {
+      "unit": "ltank",
+      "commonTechLevel": 4,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7578065498857578,
+      "proposedKillRatioVsZeroTech": 1.060929169840061
+    },
+    {
+      "unit": "ltank",
+      "commonTechLevel": 5,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7336683417085427,
+      "proposedKillRatioVsZeroTech": 1.100502512562814
+    },
+    {
+      "unit": "ltank",
+      "commonTechLevel": 5,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7145421903052065,
+      "proposedKillRatioVsZeroTech": 1.0718132854578097
+    },
+    {
+      "unit": "ltank",
+      "commonTechLevel": 6,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.6965648854961831,
+      "proposedKillRatioVsZeroTech": 1.114503816793893
+    },
+    {
+      "unit": "ltank",
+      "commonTechLevel": 6,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6759510869565217,
+      "proposedKillRatioVsZeroTech": 1.0815217391304348
+    },
+    {
+      "unit": "ltank",
+      "commonTechLevel": 7,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.6630336058128974,
+      "proposedKillRatioVsZeroTech": 1.1271571298819256
+    },
+    {
+      "unit": "ltank",
+      "commonTechLevel": 7,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6413148565903963,
+      "proposedKillRatioVsZeroTech": 1.090235256203674
+    },
+    {
+      "unit": "ltank",
+      "commonTechLevel": 8,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.6325823223570191,
+      "proposedKillRatioVsZeroTech": 1.1386481802426343
+    },
+    {
+      "unit": "ltank",
+      "commonTechLevel": 8,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6100551808706315,
+      "proposedKillRatioVsZeroTech": 1.0980993255671367
+    },
+    {
+      "unit": "ltank",
+      "commonTechLevel": 9,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.6048053024026513,
+      "proposedKillRatioVsZeroTech": 1.1491300745650375
+    },
+    {
+      "unit": "ltank",
+      "commonTechLevel": 9,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.5817012569424145,
+      "proposedKillRatioVsZeroTech": 1.1052323881905874
+    },
+    {
+      "unit": "ltank",
+      "commonTechLevel": 10,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.5793650793650793,
+      "proposedKillRatioVsZeroTech": 1.1587301587301586
+    },
+    {
+      "unit": "ltank",
+      "commonTechLevel": 10,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.5558659217877094,
+      "proposedKillRatioVsZeroTech": 1.1117318435754189
+    },
+    {
+      "unit": "htank",
+      "commonTechLevel": 0,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "htank",
+      "commonTechLevel": 0,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "htank",
+      "commonTechLevel": 1,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.9293266555370061,
+      "proposedKillRatioVsZeroTech": 1.0222593210907067
+    },
+    {
+      "unit": "htank",
+      "commonTechLevel": 1,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.9236625926668002,
+      "proposedKillRatioVsZeroTech": 1.0160288519334804
+    },
+    {
+      "unit": "htank",
+      "commonTechLevel": 2,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8679833679833681,
+      "proposedKillRatioVsZeroTech": 1.0415800415800416
+    },
+    {
+      "unit": "htank",
+      "commonTechLevel": 2,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8581533879374535,
+      "proposedKillRatioVsZeroTech": 1.0297840655249442
+    },
+    {
+      "unit": "htank",
+      "commonTechLevel": 3,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8142369575816676,
+      "proposedKillRatioVsZeroTech": 1.058508044856168
+    },
+    {
+      "unit": "htank",
+      "commonTechLevel": 3,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8013210498870155,
+      "proposedKillRatioVsZeroTech": 1.0417173648531202
+    },
+    {
+      "unit": "htank",
+      "commonTechLevel": 4,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7667584940312214,
+      "proposedKillRatioVsZeroTech": 1.07346189164371
+    },
+    {
+      "unit": "htank",
+      "commonTechLevel": 4,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7515487447016629,
+      "proposedKillRatioVsZeroTech": 1.052168242582328
+    },
+    {
+      "unit": "htank",
+      "commonTechLevel": 5,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7245119305856834,
+      "proposedKillRatioVsZeroTech": 1.0867678958785252
+    },
+    {
+      "unit": "htank",
+      "commonTechLevel": 5,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7075978511128166,
+      "proposedKillRatioVsZeroTech": 1.061396776669225
+    },
+    {
+      "unit": "htank",
+      "commonTechLevel": 6,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.6866776315789473,
+      "proposedKillRatioVsZeroTech": 1.0986842105263157
+    },
+    {
+      "unit": "htank",
+      "commonTechLevel": 6,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6685034802784222,
+      "proposedKillRatioVsZeroTech": 1.0696055684454755
+    },
+    {
+      "unit": "htank",
+      "commonTechLevel": 7,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.6525986713559985,
+      "proposedKillRatioVsZeroTech": 1.1094177413051975
+    },
+    {
+      "unit": "htank",
+      "commonTechLevel": 7,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6335028170949566,
+      "proposedKillRatioVsZeroTech": 1.0769547890614264
+    },
+    {
+      "unit": "htank",
+      "commonTechLevel": 8,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.6217423678332092,
+      "proposedKillRatioVsZeroTech": 1.1191362620997767
+    },
+    {
+      "unit": "htank",
+      "commonTechLevel": 8,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6019848524418908,
+      "proposedKillRatioVsZeroTech": 1.0835727343954036
+    },
+    {
+      "unit": "htank",
+      "commonTechLevel": 9,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.593672236046925,
+      "proposedKillRatioVsZeroTech": 1.1279772484891575
+    },
+    {
+      "unit": "htank",
+      "commonTechLevel": 9,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.5734544097524568,
+      "proposedKillRatioVsZeroTech": 1.089563378529668
+    },
+    {
+      "unit": "htank",
+      "commonTechLevel": 10,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.5680272108843538,
+      "proposedKillRatioVsZeroTech": 1.1360544217687076
+    },
+    {
+      "unit": "htank",
+      "commonTechLevel": 10,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.5475059382422803,
+      "proposedKillRatioVsZeroTech": 1.0950118764845607
+    },
+    {
+      "unit": "assault",
+      "commonTechLevel": 0,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "assault",
+      "commonTechLevel": 0,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "assault",
+      "commonTechLevel": 1,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.9448818897637796,
+      "proposedKillRatioVsZeroTech": 1.0393700787401576
+    },
+    {
+      "unit": "assault",
+      "commonTechLevel": 1,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.9365558912386706,
+      "proposedKillRatioVsZeroTech": 1.0302114803625377
+    },
+    {
+      "unit": "assault",
+      "commonTechLevel": 2,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8955223880597015,
+      "proposedKillRatioVsZeroTech": 1.0746268656716418
+    },
+    {
+      "unit": "assault",
+      "commonTechLevel": 2,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8806818181818182,
+      "proposedKillRatioVsZeroTech": 1.0568181818181819
+    },
+    {
+      "unit": "assault",
+      "commonTechLevel": 3,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.851063829787234,
+      "proposedKillRatioVsZeroTech": 1.1063829787234043
+    },
+    {
+      "unit": "assault",
+      "commonTechLevel": 3,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8310991957104557,
+      "proposedKillRatioVsZeroTech": 1.0804289544235923
+    },
+    {
+      "unit": "assault",
+      "commonTechLevel": 4,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.810810810810811,
+      "proposedKillRatioVsZeroTech": 1.1351351351351353
+    },
+    {
+      "unit": "assault",
+      "commonTechLevel": 4,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7868020304568528,
+      "proposedKillRatioVsZeroTech": 1.1015228426395938
+    },
+    {
+      "unit": "assault",
+      "commonTechLevel": 5,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7741935483870969,
+      "proposedKillRatioVsZeroTech": 1.1612903225806452
+    },
+    {
+      "unit": "assault",
+      "commonTechLevel": 5,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7469879518072289,
+      "proposedKillRatioVsZeroTech": 1.1204819277108433
+    },
+    {
+      "unit": "assault",
+      "commonTechLevel": 6,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7407407407407408,
+      "proposedKillRatioVsZeroTech": 1.1851851851851853
+    },
+    {
+      "unit": "assault",
+      "commonTechLevel": 6,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7110091743119266,
+      "proposedKillRatioVsZeroTech": 1.1376146788990826
+    },
+    {
+      "unit": "assault",
+      "commonTechLevel": 7,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7100591715976332,
+      "proposedKillRatioVsZeroTech": 1.2071005917159765
+    },
+    {
+      "unit": "assault",
+      "commonTechLevel": 7,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6783369803063457,
+      "proposedKillRatioVsZeroTech": 1.1531728665207879
+    },
+    {
+      "unit": "assault",
+      "commonTechLevel": 8,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.6818181818181819,
+      "proposedKillRatioVsZeroTech": 1.2272727272727275
+    },
+    {
+      "unit": "assault",
+      "commonTechLevel": 8,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6485355648535565,
+      "proposedKillRatioVsZeroTech": 1.1673640167364017
+    },
+    {
+      "unit": "assault",
+      "commonTechLevel": 9,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.6557377049180328,
+      "proposedKillRatioVsZeroTech": 1.2459016393442623
+    },
+    {
+      "unit": "assault",
+      "commonTechLevel": 9,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6212424849699398,
+      "proposedKillRatioVsZeroTech": 1.1803607214428857
+    },
+    {
+      "unit": "assault",
+      "commonTechLevel": 10,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.6315789473684211,
+      "proposedKillRatioVsZeroTech": 1.2631578947368423
+    },
+    {
+      "unit": "assault",
+      "commonTechLevel": 10,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.5961538461538461,
+      "proposedKillRatioVsZeroTech": 1.1923076923076923
+    },
+    {
+      "unit": "rocket",
+      "commonTechLevel": 0,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "rocket",
+      "commonTechLevel": 0,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "rocket",
+      "commonTechLevel": 1,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.9448818897637796,
+      "proposedKillRatioVsZeroTech": 1.0393700787401576
+    },
+    {
+      "unit": "rocket",
+      "commonTechLevel": 1,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.9365558912386706,
+      "proposedKillRatioVsZeroTech": 1.0302114803625377
+    },
+    {
+      "unit": "rocket",
+      "commonTechLevel": 2,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8955223880597015,
+      "proposedKillRatioVsZeroTech": 1.0746268656716418
+    },
+    {
+      "unit": "rocket",
+      "commonTechLevel": 2,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8806818181818182,
+      "proposedKillRatioVsZeroTech": 1.0568181818181819
+    },
+    {
+      "unit": "rocket",
+      "commonTechLevel": 3,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.851063829787234,
+      "proposedKillRatioVsZeroTech": 1.1063829787234043
+    },
+    {
+      "unit": "rocket",
+      "commonTechLevel": 3,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8310991957104557,
+      "proposedKillRatioVsZeroTech": 1.0804289544235923
+    },
+    {
+      "unit": "rocket",
+      "commonTechLevel": 4,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.810810810810811,
+      "proposedKillRatioVsZeroTech": 1.1351351351351353
+    },
+    {
+      "unit": "rocket",
+      "commonTechLevel": 4,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7868020304568528,
+      "proposedKillRatioVsZeroTech": 1.1015228426395938
+    },
+    {
+      "unit": "rocket",
+      "commonTechLevel": 5,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7741935483870969,
+      "proposedKillRatioVsZeroTech": 1.1612903225806452
+    },
+    {
+      "unit": "rocket",
+      "commonTechLevel": 5,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7469879518072289,
+      "proposedKillRatioVsZeroTech": 1.1204819277108433
+    },
+    {
+      "unit": "rocket",
+      "commonTechLevel": 6,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7407407407407408,
+      "proposedKillRatioVsZeroTech": 1.1851851851851853
+    },
+    {
+      "unit": "rocket",
+      "commonTechLevel": 6,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7110091743119266,
+      "proposedKillRatioVsZeroTech": 1.1376146788990826
+    },
+    {
+      "unit": "rocket",
+      "commonTechLevel": 7,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7100591715976332,
+      "proposedKillRatioVsZeroTech": 1.2071005917159765
+    },
+    {
+      "unit": "rocket",
+      "commonTechLevel": 7,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6783369803063457,
+      "proposedKillRatioVsZeroTech": 1.1531728665207879
+    },
+    {
+      "unit": "rocket",
+      "commonTechLevel": 8,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.6818181818181819,
+      "proposedKillRatioVsZeroTech": 1.2272727272727275
+    },
+    {
+      "unit": "rocket",
+      "commonTechLevel": 8,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6485355648535565,
+      "proposedKillRatioVsZeroTech": 1.1673640167364017
+    },
+    {
+      "unit": "rocket",
+      "commonTechLevel": 9,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.6557377049180328,
+      "proposedKillRatioVsZeroTech": 1.2459016393442623
+    },
+    {
+      "unit": "rocket",
+      "commonTechLevel": 9,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6212424849699398,
+      "proposedKillRatioVsZeroTech": 1.1803607214428857
+    },
+    {
+      "unit": "rocket",
+      "commonTechLevel": 10,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.6315789473684211,
+      "proposedKillRatioVsZeroTech": 1.2631578947368423
+    },
+    {
+      "unit": "rocket",
+      "commonTechLevel": 10,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.5961538461538461,
+      "proposedKillRatioVsZeroTech": 1.1923076923076923
+    },
+    {
+      "unit": "scout",
+      "commonTechLevel": 0,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "scout",
+      "commonTechLevel": 0,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "scout",
+      "commonTechLevel": 1,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.9620991253644314,
+      "proposedKillRatioVsZeroTech": 1.0583090379008746
+    },
+    {
+      "unit": "scout",
+      "commonTechLevel": 1,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.9620991253644314,
+      "proposedKillRatioVsZeroTech": 1.0583090379008746
+    },
+    {
+      "unit": "scout",
+      "commonTechLevel": 2,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.9269662921348314,
+      "proposedKillRatioVsZeroTech": 1.1123595505617976
+    },
+    {
+      "unit": "scout",
+      "commonTechLevel": 2,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.9269662921348314,
+      "proposedKillRatioVsZeroTech": 1.1123595505617976
+    },
+    {
+      "unit": "scout",
+      "commonTechLevel": 3,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8943089430894308,
+      "proposedKillRatioVsZeroTech": 1.16260162601626
+    },
+    {
+      "unit": "scout",
+      "commonTechLevel": 3,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8943089430894308,
+      "proposedKillRatioVsZeroTech": 1.16260162601626
+    },
+    {
+      "unit": "scout",
+      "commonTechLevel": 4,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8638743455497382,
+      "proposedKillRatioVsZeroTech": 1.2094240837696333
+    },
+    {
+      "unit": "scout",
+      "commonTechLevel": 4,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8638743455497382,
+      "proposedKillRatioVsZeroTech": 1.2094240837696333
+    },
+    {
+      "unit": "scout",
+      "commonTechLevel": 5,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8354430379746834,
+      "proposedKillRatioVsZeroTech": 1.2531645569620251
+    },
+    {
+      "unit": "scout",
+      "commonTechLevel": 5,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8354430379746834,
+      "proposedKillRatioVsZeroTech": 1.2531645569620251
+    },
+    {
+      "unit": "scout",
+      "commonTechLevel": 6,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8088235294117646,
+      "proposedKillRatioVsZeroTech": 1.2941176470588234
+    },
+    {
+      "unit": "scout",
+      "commonTechLevel": 6,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8088235294117646,
+      "proposedKillRatioVsZeroTech": 1.2941176470588234
+    },
+    {
+      "unit": "scout",
+      "commonTechLevel": 7,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7838479809976245,
+      "proposedKillRatioVsZeroTech": 1.3325415676959618
+    },
+    {
+      "unit": "scout",
+      "commonTechLevel": 7,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7838479809976245,
+      "proposedKillRatioVsZeroTech": 1.3325415676959618
+    },
+    {
+      "unit": "scout",
+      "commonTechLevel": 8,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7603686635944701,
+      "proposedKillRatioVsZeroTech": 1.3686635944700463
+    },
+    {
+      "unit": "scout",
+      "commonTechLevel": 8,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7603686635944701,
+      "proposedKillRatioVsZeroTech": 1.3686635944700463
+    },
+    {
+      "unit": "scout",
+      "commonTechLevel": 9,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.738255033557047,
+      "proposedKillRatioVsZeroTech": 1.4026845637583893
+    },
+    {
+      "unit": "scout",
+      "commonTechLevel": 9,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.738255033557047,
+      "proposedKillRatioVsZeroTech": 1.4026845637583893
+    },
+    {
+      "unit": "scout",
+      "commonTechLevel": 10,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.717391304347826,
+      "proposedKillRatioVsZeroTech": 1.434782608695652
+    },
+    {
+      "unit": "scout",
+      "commonTechLevel": 10,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.717391304347826,
+      "proposedKillRatioVsZeroTech": 1.434782608695652
+    },
+    {
+      "unit": "special",
+      "commonTechLevel": 0,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "special",
+      "commonTechLevel": 0,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "special",
+      "commonTechLevel": 1,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.9788867562380038,
+      "proposedKillRatioVsZeroTech": 1.0767754318618044
+    },
+    {
+      "unit": "special",
+      "commonTechLevel": 1,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.9716251074806534,
+      "proposedKillRatioVsZeroTech": 1.0687876182287188
+    },
+    {
+      "unit": "special",
+      "commonTechLevel": 2,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.9586466165413533,
+      "proposedKillRatioVsZeroTech": 1.1503759398496238
+    },
+    {
+      "unit": "special",
+      "commonTechLevel": 2,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.9448160535117057,
+      "proposedKillRatioVsZeroTech": 1.1337792642140467
+    },
+    {
+      "unit": "special",
+      "commonTechLevel": 3,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.9392265193370165,
+      "proposedKillRatioVsZeroTech": 1.2209944751381214
+    },
+    {
+      "unit": "special",
+      "commonTechLevel": 3,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.919446704637917,
+      "proposedKillRatioVsZeroTech": 1.1952807160292922
+    },
+    {
+      "unit": "special",
+      "commonTechLevel": 4,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.9205776173285198,
+      "proposedKillRatioVsZeroTech": 1.2888086642599277
+    },
+    {
+      "unit": "special",
+      "commonTechLevel": 4,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8954041204437401,
+      "proposedKillRatioVsZeroTech": 1.253565768621236
+    },
+    {
+      "unit": "special",
+      "commonTechLevel": 5,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.902654867256637,
+      "proposedKillRatioVsZeroTech": 1.3539823008849554
+    },
+    {
+      "unit": "special",
+      "commonTechLevel": 5,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8725868725868727,
+      "proposedKillRatioVsZeroTech": 1.3088803088803092
+    },
+    {
+      "unit": "special",
+      "commonTechLevel": 6,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8854166666666666,
+      "proposedKillRatioVsZeroTech": 1.4166666666666667
+    },
+    {
+      "unit": "special",
+      "commonTechLevel": 6,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8509036144578314,
+      "proposedKillRatioVsZeroTech": 1.3614457831325302
+    },
+    {
+      "unit": "special",
+      "commonTechLevel": 7,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8688245315161839,
+      "proposedKillRatioVsZeroTech": 1.4770017035775127
+    },
+    {
+      "unit": "special",
+      "commonTechLevel": 7,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8302718589272593,
+      "proposedKillRatioVsZeroTech": 1.4114621601763409
+    },
+    {
+      "unit": "special",
+      "commonTechLevel": 8,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8528428093645484,
+      "proposedKillRatioVsZeroTech": 1.5351170568561872
+    },
+    {
+      "unit": "special",
+      "commonTechLevel": 8,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8106169296987087,
+      "proposedKillRatioVsZeroTech": 1.4591104734576756
+    },
+    {
+      "unit": "special",
+      "commonTechLevel": 9,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8374384236453202,
+      "proposedKillRatioVsZeroTech": 1.5911330049261083
+    },
+    {
+      "unit": "special",
+      "commonTechLevel": 9,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7918710581639804,
+      "proposedKillRatioVsZeroTech": 1.5045550105115626
+    },
+    {
+      "unit": "special",
+      "commonTechLevel": 10,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8225806451612903,
+      "proposedKillRatioVsZeroTech": 1.6451612903225805
+    },
+    {
+      "unit": "special",
+      "commonTechLevel": 10,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.773972602739726,
+      "proposedKillRatioVsZeroTech": 1.547945205479452
+    },
+    {
+      "unit": "fighter",
+      "commonTechLevel": 0,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "fighter",
+      "commonTechLevel": 0,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "fighter",
+      "commonTechLevel": 1,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.9433962264150942,
+      "proposedKillRatioVsZeroTech": 1.0377358490566038
+    },
+    {
+      "unit": "fighter",
+      "commonTechLevel": 1,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.9433962264150942,
+      "proposedKillRatioVsZeroTech": 1.0377358490566038
+    },
+    {
+      "unit": "fighter",
+      "commonTechLevel": 2,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8928571428571429,
+      "proposedKillRatioVsZeroTech": 1.0714285714285714
+    },
+    {
+      "unit": "fighter",
+      "commonTechLevel": 2,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8928571428571429,
+      "proposedKillRatioVsZeroTech": 1.0714285714285714
+    },
+    {
+      "unit": "fighter",
+      "commonTechLevel": 3,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.847457627118644,
+      "proposedKillRatioVsZeroTech": 1.1016949152542372
+    },
+    {
+      "unit": "fighter",
+      "commonTechLevel": 3,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.847457627118644,
+      "proposedKillRatioVsZeroTech": 1.1016949152542372
+    },
+    {
+      "unit": "fighter",
+      "commonTechLevel": 4,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8064516129032259,
+      "proposedKillRatioVsZeroTech": 1.1290322580645162
+    },
+    {
+      "unit": "fighter",
+      "commonTechLevel": 4,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8064516129032259,
+      "proposedKillRatioVsZeroTech": 1.1290322580645162
+    },
+    {
+      "unit": "fighter",
+      "commonTechLevel": 5,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7692307692307693,
+      "proposedKillRatioVsZeroTech": 1.153846153846154
+    },
+    {
+      "unit": "fighter",
+      "commonTechLevel": 5,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7692307692307693,
+      "proposedKillRatioVsZeroTech": 1.153846153846154
+    },
+    {
+      "unit": "fighter",
+      "commonTechLevel": 6,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7352941176470588,
+      "proposedKillRatioVsZeroTech": 1.1764705882352942
+    },
+    {
+      "unit": "fighter",
+      "commonTechLevel": 6,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7352941176470588,
+      "proposedKillRatioVsZeroTech": 1.1764705882352942
+    },
+    {
+      "unit": "fighter",
+      "commonTechLevel": 7,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.704225352112676,
+      "proposedKillRatioVsZeroTech": 1.1971830985915493
+    },
+    {
+      "unit": "fighter",
+      "commonTechLevel": 7,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.704225352112676,
+      "proposedKillRatioVsZeroTech": 1.1971830985915493
+    },
+    {
+      "unit": "fighter",
+      "commonTechLevel": 8,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.6756756756756757,
+      "proposedKillRatioVsZeroTech": 1.2162162162162162
+    },
+    {
+      "unit": "fighter",
+      "commonTechLevel": 8,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6756756756756757,
+      "proposedKillRatioVsZeroTech": 1.2162162162162162
+    },
+    {
+      "unit": "fighter",
+      "commonTechLevel": 9,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.6493506493506495,
+      "proposedKillRatioVsZeroTech": 1.2337662337662338
+    },
+    {
+      "unit": "fighter",
+      "commonTechLevel": 9,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6493506493506495,
+      "proposedKillRatioVsZeroTech": 1.2337662337662338
+    },
+    {
+      "unit": "fighter",
+      "commonTechLevel": 10,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.625,
+      "proposedKillRatioVsZeroTech": 1.25
+    },
+    {
+      "unit": "fighter",
+      "commonTechLevel": 10,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.625,
+      "proposedKillRatioVsZeroTech": 1.25
+    },
+    {
+      "unit": "bomber",
+      "commonTechLevel": 0,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "bomber",
+      "commonTechLevel": 0,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "bomber",
+      "commonTechLevel": 1,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.9502262443438915,
+      "proposedKillRatioVsZeroTech": 1.0452488687782806
+    },
+    {
+      "unit": "bomber",
+      "commonTechLevel": 1,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.9502262443438915,
+      "proposedKillRatioVsZeroTech": 1.0452488687782806
+    },
+    {
+      "unit": "bomber",
+      "commonTechLevel": 2,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.9051724137931034,
+      "proposedKillRatioVsZeroTech": 1.086206896551724
+    },
+    {
+      "unit": "bomber",
+      "commonTechLevel": 2,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.9051724137931034,
+      "proposedKillRatioVsZeroTech": 1.086206896551724
+    },
+    {
+      "unit": "bomber",
+      "commonTechLevel": 3,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8641975308641975,
+      "proposedKillRatioVsZeroTech": 1.1234567901234567
+    },
+    {
+      "unit": "bomber",
+      "commonTechLevel": 3,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8641975308641975,
+      "proposedKillRatioVsZeroTech": 1.1234567901234567
+    },
+    {
+      "unit": "bomber",
+      "commonTechLevel": 4,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8267716535433071,
+      "proposedKillRatioVsZeroTech": 1.1574803149606299
+    },
+    {
+      "unit": "bomber",
+      "commonTechLevel": 4,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8267716535433071,
+      "proposedKillRatioVsZeroTech": 1.1574803149606299
+    },
+    {
+      "unit": "bomber",
+      "commonTechLevel": 5,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7924528301886792,
+      "proposedKillRatioVsZeroTech": 1.1886792452830188
+    },
+    {
+      "unit": "bomber",
+      "commonTechLevel": 5,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7924528301886792,
+      "proposedKillRatioVsZeroTech": 1.1886792452830188
+    },
+    {
+      "unit": "bomber",
+      "commonTechLevel": 6,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7608695652173912,
+      "proposedKillRatioVsZeroTech": 1.2173913043478262
+    },
+    {
+      "unit": "bomber",
+      "commonTechLevel": 6,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7608695652173912,
+      "proposedKillRatioVsZeroTech": 1.2173913043478262
+    },
+    {
+      "unit": "bomber",
+      "commonTechLevel": 7,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7317073170731707,
+      "proposedKillRatioVsZeroTech": 1.2439024390243902
+    },
+    {
+      "unit": "bomber",
+      "commonTechLevel": 7,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7317073170731707,
+      "proposedKillRatioVsZeroTech": 1.2439024390243902
+    },
+    {
+      "unit": "bomber",
+      "commonTechLevel": 8,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7046979865771812,
+      "proposedKillRatioVsZeroTech": 1.2684563758389262
+    },
+    {
+      "unit": "bomber",
+      "commonTechLevel": 8,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7046979865771812,
+      "proposedKillRatioVsZeroTech": 1.2684563758389262
+    },
+    {
+      "unit": "bomber",
+      "commonTechLevel": 9,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.6796116504854369,
+      "proposedKillRatioVsZeroTech": 1.2912621359223302
+    },
+    {
+      "unit": "bomber",
+      "commonTechLevel": 9,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6796116504854369,
+      "proposedKillRatioVsZeroTech": 1.2912621359223302
+    },
+    {
+      "unit": "bomber",
+      "commonTechLevel": 10,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.65625,
+      "proposedKillRatioVsZeroTech": 1.3125
+    },
+    {
+      "unit": "bomber",
+      "commonTechLevel": 10,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.65625,
+      "proposedKillRatioVsZeroTech": 1.3125
+    },
+    {
+      "unit": "transport",
+      "commonTechLevel": 0,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "transport",
+      "commonTechLevel": 0,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "transport",
+      "commonTechLevel": 1,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.9677419354838709,
+      "proposedKillRatioVsZeroTech": 1.064516129032258
+    },
+    {
+      "unit": "transport",
+      "commonTechLevel": 1,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.9677419354838709,
+      "proposedKillRatioVsZeroTech": 1.064516129032258
+    },
+    {
+      "unit": "transport",
+      "commonTechLevel": 2,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.9375,
+      "proposedKillRatioVsZeroTech": 1.125
+    },
+    {
+      "unit": "transport",
+      "commonTechLevel": 2,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.9375,
+      "proposedKillRatioVsZeroTech": 1.125
+    },
+    {
+      "unit": "transport",
+      "commonTechLevel": 3,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.9090909090909092,
+      "proposedKillRatioVsZeroTech": 1.1818181818181819
+    },
+    {
+      "unit": "transport",
+      "commonTechLevel": 3,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.9090909090909092,
+      "proposedKillRatioVsZeroTech": 1.1818181818181819
+    },
+    {
+      "unit": "transport",
+      "commonTechLevel": 4,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8823529411764706,
+      "proposedKillRatioVsZeroTech": 1.2352941176470587
+    },
+    {
+      "unit": "transport",
+      "commonTechLevel": 4,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8823529411764706,
+      "proposedKillRatioVsZeroTech": 1.2352941176470587
+    },
+    {
+      "unit": "transport",
+      "commonTechLevel": 5,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8571428571428571,
+      "proposedKillRatioVsZeroTech": 1.2857142857142856
+    },
+    {
+      "unit": "transport",
+      "commonTechLevel": 5,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8571428571428571,
+      "proposedKillRatioVsZeroTech": 1.2857142857142856
+    },
+    {
+      "unit": "transport",
+      "commonTechLevel": 6,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8333333333333333,
+      "proposedKillRatioVsZeroTech": 1.3333333333333333
+    },
+    {
+      "unit": "transport",
+      "commonTechLevel": 6,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8333333333333333,
+      "proposedKillRatioVsZeroTech": 1.3333333333333333
+    },
+    {
+      "unit": "transport",
+      "commonTechLevel": 7,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8108108108108107,
+      "proposedKillRatioVsZeroTech": 1.3783783783783785
+    },
+    {
+      "unit": "transport",
+      "commonTechLevel": 7,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8108108108108107,
+      "proposedKillRatioVsZeroTech": 1.3783783783783785
+    },
+    {
+      "unit": "transport",
+      "commonTechLevel": 8,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7894736842105263,
+      "proposedKillRatioVsZeroTech": 1.4210526315789473
+    },
+    {
+      "unit": "transport",
+      "commonTechLevel": 8,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7894736842105263,
+      "proposedKillRatioVsZeroTech": 1.4210526315789473
+    },
+    {
+      "unit": "transport",
+      "commonTechLevel": 9,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7692307692307693,
+      "proposedKillRatioVsZeroTech": 1.4615384615384615
+    },
+    {
+      "unit": "transport",
+      "commonTechLevel": 9,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7692307692307693,
+      "proposedKillRatioVsZeroTech": 1.4615384615384615
+    },
+    {
+      "unit": "transport",
+      "commonTechLevel": 10,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.75,
+      "proposedKillRatioVsZeroTech": 1.5
+    },
+    {
+      "unit": "transport",
+      "commonTechLevel": 10,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.75,
+      "proposedKillRatioVsZeroTech": 1.5
+    },
+    {
+      "unit": "destroyer",
+      "commonTechLevel": 0,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "destroyer",
+      "commonTechLevel": 0,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "destroyer",
+      "commonTechLevel": 1,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.9333333333333333,
+      "proposedKillRatioVsZeroTech": 1.0266666666666668
+    },
+    {
+      "unit": "destroyer",
+      "commonTechLevel": 1,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.926829268292683,
+      "proposedKillRatioVsZeroTech": 1.0195121951219515
+    },
+    {
+      "unit": "destroyer",
+      "commonTechLevel": 2,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.875,
+      "proposedKillRatioVsZeroTech": 1.05
+    },
+    {
+      "unit": "destroyer",
+      "commonTechLevel": 2,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8636363636363636,
+      "proposedKillRatioVsZeroTech": 1.0363636363636364
+    },
+    {
+      "unit": "destroyer",
+      "commonTechLevel": 3,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8235294117647058,
+      "proposedKillRatioVsZeroTech": 1.0705882352941176
+    },
+    {
+      "unit": "destroyer",
+      "commonTechLevel": 3,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8085106382978723,
+      "proposedKillRatioVsZeroTech": 1.0510638297872341
+    },
+    {
+      "unit": "destroyer",
+      "commonTechLevel": 4,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7777777777777778,
+      "proposedKillRatioVsZeroTech": 1.0888888888888888
+    },
+    {
+      "unit": "destroyer",
+      "commonTechLevel": 4,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.76,
+      "proposedKillRatioVsZeroTech": 1.0639999999999998
+    },
+    {
+      "unit": "destroyer",
+      "commonTechLevel": 5,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7368421052631579,
+      "proposedKillRatioVsZeroTech": 1.1052631578947367
+    },
+    {
+      "unit": "destroyer",
+      "commonTechLevel": 5,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7169811320754716,
+      "proposedKillRatioVsZeroTech": 1.0754716981132075
+    },
+    {
+      "unit": "destroyer",
+      "commonTechLevel": 6,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7,
+      "proposedKillRatioVsZeroTech": 1.1199999999999999
+    },
+    {
+      "unit": "destroyer",
+      "commonTechLevel": 6,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6785714285714286,
+      "proposedKillRatioVsZeroTech": 1.0857142857142859
+    },
+    {
+      "unit": "destroyer",
+      "commonTechLevel": 7,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.6666666666666666,
+      "proposedKillRatioVsZeroTech": 1.1333333333333333
+    },
+    {
+      "unit": "destroyer",
+      "commonTechLevel": 7,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6440677966101694,
+      "proposedKillRatioVsZeroTech": 1.0949152542372882
+    },
+    {
+      "unit": "destroyer",
+      "commonTechLevel": 8,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.6363636363636364,
+      "proposedKillRatioVsZeroTech": 1.1454545454545455
+    },
+    {
+      "unit": "destroyer",
+      "commonTechLevel": 8,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6129032258064516,
+      "proposedKillRatioVsZeroTech": 1.103225806451613
+    },
+    {
+      "unit": "destroyer",
+      "commonTechLevel": 9,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.6086956521739131,
+      "proposedKillRatioVsZeroTech": 1.1565217391304348
+    },
+    {
+      "unit": "destroyer",
+      "commonTechLevel": 9,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.5846153846153846,
+      "proposedKillRatioVsZeroTech": 1.1107692307692307
+    },
+    {
+      "unit": "destroyer",
+      "commonTechLevel": 10,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.5833333333333334,
+      "proposedKillRatioVsZeroTech": 1.1666666666666667
+    },
+    {
+      "unit": "destroyer",
+      "commonTechLevel": 10,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.5588235294117647,
+      "proposedKillRatioVsZeroTech": 1.1176470588235294
+    },
+    {
+      "unit": "sub",
+      "commonTechLevel": 0,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "sub",
+      "commonTechLevel": 0,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "sub",
+      "commonTechLevel": 1,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.9523809523809523,
+      "proposedKillRatioVsZeroTech": 1.0476190476190477
+    },
+    {
+      "unit": "sub",
+      "commonTechLevel": 1,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.9433962264150942,
+      "proposedKillRatioVsZeroTech": 1.0377358490566038
+    },
+    {
+      "unit": "sub",
+      "commonTechLevel": 2,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.9090909090909091,
+      "proposedKillRatioVsZeroTech": 1.0909090909090908
+    },
+    {
+      "unit": "sub",
+      "commonTechLevel": 2,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8928571428571429,
+      "proposedKillRatioVsZeroTech": 1.0714285714285714
+    },
+    {
+      "unit": "sub",
+      "commonTechLevel": 3,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8695652173913044,
+      "proposedKillRatioVsZeroTech": 1.1304347826086958
+    },
+    {
+      "unit": "sub",
+      "commonTechLevel": 3,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.847457627118644,
+      "proposedKillRatioVsZeroTech": 1.1016949152542372
+    },
+    {
+      "unit": "sub",
+      "commonTechLevel": 4,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8333333333333334,
+      "proposedKillRatioVsZeroTech": 1.1666666666666667
+    },
+    {
+      "unit": "sub",
+      "commonTechLevel": 4,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8064516129032259,
+      "proposedKillRatioVsZeroTech": 1.1290322580645162
+    },
+    {
+      "unit": "sub",
+      "commonTechLevel": 5,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8,
+      "proposedKillRatioVsZeroTech": 1.2000000000000002
+    },
+    {
+      "unit": "sub",
+      "commonTechLevel": 5,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7692307692307693,
+      "proposedKillRatioVsZeroTech": 1.153846153846154
+    },
+    {
+      "unit": "sub",
+      "commonTechLevel": 6,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7692307692307692,
+      "proposedKillRatioVsZeroTech": 1.2307692307692308
+    },
+    {
+      "unit": "sub",
+      "commonTechLevel": 6,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7352941176470588,
+      "proposedKillRatioVsZeroTech": 1.1764705882352942
+    },
+    {
+      "unit": "sub",
+      "commonTechLevel": 7,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7407407407407407,
+      "proposedKillRatioVsZeroTech": 1.2592592592592593
+    },
+    {
+      "unit": "sub",
+      "commonTechLevel": 7,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.704225352112676,
+      "proposedKillRatioVsZeroTech": 1.1971830985915493
+    },
+    {
+      "unit": "sub",
+      "commonTechLevel": 8,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7142857142857143,
+      "proposedKillRatioVsZeroTech": 1.2857142857142858
+    },
+    {
+      "unit": "sub",
+      "commonTechLevel": 8,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6756756756756757,
+      "proposedKillRatioVsZeroTech": 1.2162162162162162
+    },
+    {
+      "unit": "sub",
+      "commonTechLevel": 9,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.6896551724137931,
+      "proposedKillRatioVsZeroTech": 1.3103448275862069
+    },
+    {
+      "unit": "sub",
+      "commonTechLevel": 9,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6493506493506495,
+      "proposedKillRatioVsZeroTech": 1.2337662337662338
+    },
+    {
+      "unit": "sub",
+      "commonTechLevel": 10,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.6666666666666666,
+      "proposedKillRatioVsZeroTech": 1.3333333333333333
+    },
+    {
+      "unit": "sub",
+      "commonTechLevel": 10,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.625,
+      "proposedKillRatioVsZeroTech": 1.25
+    },
+    {
+      "unit": "battleship",
+      "commonTechLevel": 0,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "battleship",
+      "commonTechLevel": 0,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "battleship",
+      "commonTechLevel": 1,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.9210526315789473,
+      "proposedKillRatioVsZeroTech": 1.0131578947368423
+    },
+    {
+      "unit": "battleship",
+      "commonTechLevel": 1,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.9174311926605504,
+      "proposedKillRatioVsZeroTech": 1.0091743119266054
+    },
+    {
+      "unit": "battleship",
+      "commonTechLevel": 2,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.853658536585366,
+      "proposedKillRatioVsZeroTech": 1.024390243902439
+    },
+    {
+      "unit": "battleship",
+      "commonTechLevel": 2,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8474576271186441,
+      "proposedKillRatioVsZeroTech": 1.0169491525423728
+    },
+    {
+      "unit": "battleship",
+      "commonTechLevel": 3,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7954545454545454,
+      "proposedKillRatioVsZeroTech": 1.0340909090909092
+    },
+    {
+      "unit": "battleship",
+      "commonTechLevel": 3,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7874015748031495,
+      "proposedKillRatioVsZeroTech": 1.0236220472440944
+    },
+    {
+      "unit": "battleship",
+      "commonTechLevel": 4,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7446808510638299,
+      "proposedKillRatioVsZeroTech": 1.0425531914893618
+    },
+    {
+      "unit": "battleship",
+      "commonTechLevel": 4,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7352941176470589,
+      "proposedKillRatioVsZeroTech": 1.0294117647058825
+    },
+    {
+      "unit": "battleship",
+      "commonTechLevel": 5,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7,
+      "proposedKillRatioVsZeroTech": 1.0499999999999998
+    },
+    {
+      "unit": "battleship",
+      "commonTechLevel": 5,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6896551724137931,
+      "proposedKillRatioVsZeroTech": 1.0344827586206897
+    },
+    {
+      "unit": "battleship",
+      "commonTechLevel": 6,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.660377358490566,
+      "proposedKillRatioVsZeroTech": 1.0566037735849056
+    },
+    {
+      "unit": "battleship",
+      "commonTechLevel": 6,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6493506493506493,
+      "proposedKillRatioVsZeroTech": 1.038961038961039
+    },
+    {
+      "unit": "battleship",
+      "commonTechLevel": 7,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.6249999999999999,
+      "proposedKillRatioVsZeroTech": 1.0625
+    },
+    {
+      "unit": "battleship",
+      "commonTechLevel": 7,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6134969325153374,
+      "proposedKillRatioVsZeroTech": 1.0429447852760738
+    },
+    {
+      "unit": "battleship",
+      "commonTechLevel": 8,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.5932203389830508,
+      "proposedKillRatioVsZeroTech": 1.0677966101694916
+    },
+    {
+      "unit": "battleship",
+      "commonTechLevel": 8,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.5813953488372093,
+      "proposedKillRatioVsZeroTech": 1.0465116279069768
+    },
+    {
+      "unit": "battleship",
+      "commonTechLevel": 9,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.5645161290322581,
+      "proposedKillRatioVsZeroTech": 1.0725806451612905
+    },
+    {
+      "unit": "battleship",
+      "commonTechLevel": 9,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.5524861878453039,
+      "proposedKillRatioVsZeroTech": 1.0497237569060773
+    },
+    {
+      "unit": "battleship",
+      "commonTechLevel": 10,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.5384615384615384,
+      "proposedKillRatioVsZeroTech": 1.0769230769230769
+    },
+    {
+      "unit": "battleship",
+      "commonTechLevel": 10,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.5263157894736842,
+      "proposedKillRatioVsZeroTech": 1.0526315789473684
+    },
+    {
+      "unit": "carrier",
+      "commonTechLevel": 0,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "carrier",
+      "commonTechLevel": 0,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 1.0,
+      "proposedKillRatioVsZeroTech": 1.0
+    },
+    {
+      "unit": "carrier",
+      "commonTechLevel": 1,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.9278350515463917,
+      "proposedKillRatioVsZeroTech": 1.0206185567010309
+    },
+    {
+      "unit": "carrier",
+      "commonTechLevel": 1,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.9225092250922509,
+      "proposedKillRatioVsZeroTech": 1.014760147601476
+    },
+    {
+      "unit": "carrier",
+      "commonTechLevel": 2,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8653846153846153,
+      "proposedKillRatioVsZeroTech": 1.0384615384615383
+    },
+    {
+      "unit": "carrier",
+      "commonTechLevel": 2,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.8561643835616438,
+      "proposedKillRatioVsZeroTech": 1.0273972602739725
+    },
+    {
+      "unit": "carrier",
+      "commonTechLevel": 3,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.8108108108108109,
+      "proposedKillRatioVsZeroTech": 1.0540540540540542
+    },
+    {
+      "unit": "carrier",
+      "commonTechLevel": 3,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7987220447284344,
+      "proposedKillRatioVsZeroTech": 1.038338658146965
+    },
+    {
+      "unit": "carrier",
+      "commonTechLevel": 4,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.7627118644067797,
+      "proposedKillRatioVsZeroTech": 1.0677966101694916
+    },
+    {
+      "unit": "carrier",
+      "commonTechLevel": 4,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.7485029940119761,
+      "proposedKillRatioVsZeroTech": 1.0479041916167664
+    },
+    {
+      "unit": "carrier",
+      "commonTechLevel": 5,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.72,
+      "proposedKillRatioVsZeroTech": 1.08
+    },
+    {
+      "unit": "carrier",
+      "commonTechLevel": 5,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.704225352112676,
+      "proposedKillRatioVsZeroTech": 1.056338028169014
+    },
+    {
+      "unit": "carrier",
+      "commonTechLevel": 6,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.6818181818181818,
+      "proposedKillRatioVsZeroTech": 1.0909090909090908
+    },
+    {
+      "unit": "carrier",
+      "commonTechLevel": 6,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6648936170212766,
+      "proposedKillRatioVsZeroTech": 1.0638297872340425
+    },
+    {
+      "unit": "carrier",
+      "commonTechLevel": 7,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.6474820143884891,
+      "proposedKillRatioVsZeroTech": 1.1007194244604315
+    },
+    {
+      "unit": "carrier",
+      "commonTechLevel": 7,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.6297229219143576,
+      "proposedKillRatioVsZeroTech": 1.070528967254408
+    },
+    {
+      "unit": "carrier",
+      "commonTechLevel": 8,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.6164383561643836,
+      "proposedKillRatioVsZeroTech": 1.1095890410958904
+    },
+    {
+      "unit": "carrier",
+      "commonTechLevel": 8,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.5980861244019138,
+      "proposedKillRatioVsZeroTech": 1.076555023923445
+    },
+    {
+      "unit": "carrier",
+      "commonTechLevel": 9,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.5882352941176471,
+      "proposedKillRatioVsZeroTech": 1.1176470588235294
+    },
+    {
+      "unit": "carrier",
+      "commonTechLevel": 9,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.5694760820045558,
+      "proposedKillRatioVsZeroTech": 1.082004555808656
+    },
+    {
+      "unit": "carrier",
+      "commonTechLevel": 10,
+      "wall": 0,
+      "currentKillRatioVsZeroTech": 0.5625,
+      "proposedKillRatioVsZeroTech": 1.125
+    },
+    {
+      "unit": "carrier",
+      "commonTechLevel": 10,
+      "wall": 10,
+      "currentKillRatioVsZeroTech": 0.5434782608695652,
+      "proposedKillRatioVsZeroTech": 1.0869565217391304
+    }
+  ]
+}

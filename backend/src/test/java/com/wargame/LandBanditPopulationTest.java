@@ -23,6 +23,9 @@ class LandBanditPopulationTest extends BaseServiceTest {
         worldMapRepository.saveAndFlush(world);
         Bandit defeated = bandit(world.getId(), 0, 0, 1, true);
         Bandit sea = bandit(world.getId(), 1, 1, 30, false);
+        Bandit damaged = bandit(world.getId(), 4, 0, 7, false);
+        damaged.setName("日寇炮楼 Lv.7"); damaged.setCommanderName("旧军官");
+        damaged.setArmy("{\"infantry\":5}"); banditRepository.saveAndFlush(damaged);
         var wild = createWildTile(world.getId(), "grainfield", 2, 0, 1, Map.of(), 100);
         var player = createTestPlayer("population-city", 30);
 
@@ -34,7 +37,14 @@ class LandBanditPopulationTest extends BaseServiceTest {
         for (int level = 1; level <= 30; level++) assertEquals((long) WorldConfig.landBanditQuota(level), counts.get(level));
         assertTrue(defeated.getDefeated());
         assertEquals("{}", defeated.getArmy());
+        assertEquals("寇 Lv.1", defeated.getName());
         assertEquals("{\"infantry\":7}", sea.getArmy());
+        assertEquals("测试据点", sea.getName());
+        assertEquals("寇 Lv.7", damaged.getName());
+        assertEquals("旧军官", damaged.getCommanderName());
+        assertEquals("{\"infantry\":5}", damaged.getArmy());
+        assertFalse(damaged.getDefeated());
+        assertTrue(land.stream().allMatch(b -> WorldConfig.landBanditName(b.getLevel()).equals(b.getName())));
         var coordinates = land.stream().map(b -> b.getX() + "," + b.getY()).collect(Collectors.toSet());
         assertEquals(3300, coordinates.size());
         assertFalse(coordinates.contains(wild.getX() + "," + wild.getY()));

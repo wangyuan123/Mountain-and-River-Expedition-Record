@@ -17,8 +17,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -94,10 +96,47 @@ public class AdminSystemTest extends BaseServiceTest {
         List<Map<String, Object>> bots = adminSpawnerService.spawnMockBots(2, "TestBot", 3, "admin", null);
         assertEquals(2, bots.size());
 
-        List<Map<String, Object>> npcs = adminSpawnerService.spawnNpcCities(2, 3, 5, "admin", null);
-        assertEquals(2, npcs.size());
+        assertEquals("NPC城市/要塞已取消", assertThrows(IllegalArgumentException.class,
+                () -> adminSpawnerService.spawnNpcCities(2, 3, 5, "admin", null)).getMessage());
+        assertEquals(0, npcCityRepository.count());
 
         assertTrue(logRepository.count() > 0, "应有操作审计日志产生");
+    }
+
+    @Test
+    void testSpawnMockBotsDefaultCommanderName() {
+        Player registered1 = new Player();
+        registered1.setUsername("existing_commander_user");
+        registered1.setDisplayName("远征统帅_888888");
+        registered1.setPasswordHash("pass");
+        playerRepository.save(registered1);
+
+        Player registered2 = new Player();
+        registered2.setUsername("远征统帅_999999");
+        registered2.setPasswordHash("pass");
+        playerRepository.save(registered2);
+
+        List<Map<String, Object>> bots = adminSpawnerService.spawnMockBots(5, null, 2, "admin", null);
+        assertEquals(5, bots.size());
+
+        Set<String> displayNames = new HashSet<>();
+        for (Map<String, Object> bot : bots) {
+            String displayName = (String) bot.get("displayName");
+            assertNotNull(displayName);
+            assertTrue(displayName.matches("^远征统帅_\\d{6}$"),
+                    "统帅名格式必须为 '远征统帅_xxx' 且数字为6位，实际为: " + displayName);
+            assertNotEquals("远征统帅_888888", displayName, "统帅名不得与已注册玩家 displayName 重复");
+            assertNotEquals("远征统帅_999999", displayName, "统帅名不得与已注册玩家 username 重复");
+            displayNames.add(displayName);
+        }
+        assertEquals(5, displayNames.size(), "批量生成的统帅名之间不得重复");
+
+        // 验证显式传入 "远征统帅_" 前缀时不会产生双下划线
+        List<Map<String, Object>> botsWithUnderscore = adminSpawnerService.spawnMockBots(2, "远征统帅_", 1, "admin", null);
+        for (Map<String, Object> bot : botsWithUnderscore) {
+            String displayName = (String) bot.get("displayName");
+            assertTrue(displayName.matches("^远征统帅_\\d{6}$"), "前缀带下划线时不应出现双下划线: " + displayName);
+        }
     }
 
     @Test

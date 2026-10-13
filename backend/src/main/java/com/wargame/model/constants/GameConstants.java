@@ -13,11 +13,11 @@ public final class GameConstants {
     public static final String VERSION = "2.0.0";
     public static final String SAVE_KEY = "ww2_wistone_v1";
 
-    /** 编组槽位 - 对应 G.DATA.groupSlots */
-    public static final int GROUP_SLOTS_RES = 12;
-    public static final int GROUP_SLOTS_RES_MAX = 32;
-    public static final int GROUP_SLOTS_ARMY = 12;
-    public static final int GROUP_SLOTS_ARMY_MAX = 32;
+    /** 两区各提供基础16个卡槽，市政厅每级增加2个，满级36个；与前端 G.DATA 保持一致。 */
+    public static final int GROUP_SLOTS_RES = 16;
+    public static final int GROUP_SLOTS_RES_MAX = 36;
+    public static final int GROUP_SLOTS_ARMY = 16;
+    public static final int GROUP_SLOTS_ARMY_MAX = 36;
 
     /** 军官名字池 - 对应 G.DATA.officerNames */
     public static final List<String> OFFICER_NAMES = List.of(
@@ -96,5 +96,4 @@ public final class GameConstants {
     public static final int MARCH_SEC_PER_GRID = WorldConfig.MARCH_SEC_PER_GRID;
     public static final List<String> BANDIT_NAMES = WorldConfig.BANDIT_NAMES;
     public static final List<WorldConfig.BanditLevel> BANDIT_LEVELS = WorldConfig.BANDIT_LEVELS;
-    public static final List<String> NPC_CITY_NAMES = WorldConfig.NPC_CITY_NAMES;
 }

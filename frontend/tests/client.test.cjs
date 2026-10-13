@@ -194,7 +194,7 @@ test('a map response from the previous login cannot update a different account',
 
 test('a selected dispatch keeps its target when the visible map array is replaced', async () => {
   let request;
-  const world = { npcCities: [{ id: 41, name: 'Selected', x: 10, y: 10 }] };
+  const world = { bandits: [{ id: 41, name: 'Selected', x: 10, y: 10 }] };
   const context = sandbox({ Game: {
     DATA: { units: { infantry: {} } },
     Core: { state: { world }, views: {} }, go() {}, toast() {},
@@ -202,8 +202,8 @@ test('a selected dispatch keeps its target when the visible map array is replace
   } });
   context.document.getElementById = id => id === 'dqty_infantry' ? { value: '10' } : null;
   load(context, 'js/world.js');
-  context.Game.World.attack('npc', 0, 'plunder');
-  world.npcCities = [{ id: 99, name: 'Different region' }];
+  context.Game.World.attack('bandit', 0, 'plunder');
+  world.bandits = [{ id: 99, name: 'Different region' }];
   context.Game.World.launchDispatch();
   assert.equal(request.targetId, 41);
   await Promise.resolve();
@@ -212,7 +212,7 @@ test('a selected dispatch keeps its target when the visible map array is replace
 test('dispatch blocks an army selection above the troop cap before requesting the server', () => {
   let requests = 0;
   let message = '';
-  const world = { npcCities: [{ id: 41, name: 'Selected', x: 10, y: 10 }] };
+  const world = { bandits: [{ id: 41, name: 'Selected', x: 10, y: 10 }] };
   const context = sandbox({ Game: {
     DATA: { units: { infantry: {} } },
     Core: { state: { world }, views: {}, armyCap: () => 9 }, go() {},
@@ -221,7 +221,7 @@ test('dispatch blocks an army selection above the troop cap before requesting th
   } });
   context.document.getElementById = id => id === 'dqty_infantry' ? { value: '10' } : null;
   load(context, 'js/world.js');
-  context.Game.World.attack('npc', 0, 'plunder');
+  context.Game.World.attack('bandit', 0, 'plunder');
   context.Game.World.launchDispatch();
 
   assert.equal(requests, 0);
@@ -233,46 +233,50 @@ test('resource buildings share town hall capacity including new construction res
   const context = sandbox();
   for (const file of ['js/data.js', 'js/core.js', 'js/build.js']) load(context, file);
   const core = context.Game.Core;
-  core.state = { buildings: { command: 10, farm: Array(31).fill(1), house: Array(20).fill(1) }, constructions: [] };
-  assert.equal(core.groupSlotsCap('res'), 32);
-  assert.equal(core.groupSlotsCap('army'), 32);
+  core.state = { buildings: { command: 10, farm: Array(35).fill(1), house: Array(20).fill(1) }, constructions: [] };
+  assert.equal(core.groupSlotsCap('res'), 36);
+  assert.equal(core.groupSlotsCap('army'), 36);
   assert.equal(core.groupSlotsRemaining('res'), 1);
   core.state.constructions = [{ id: 'refinery', slot: 0, targetLevel: 1 }];
   assert.equal(core.groupSlotsRemaining('res'), 0);
   core.state.constructions = [{ id: 'farm', slot: 0, targetLevel: 2 }];
   assert.equal(core.groupSlotsRemaining('res'), 1);
-  core.state.buildings = { command: 0, farm: Array(8).fill(1), refinery: Array(8).fill(1), oilfield: Array(8).fill(1), raremine: Array(8).fill(1) };
+  const gridHtml = context.Game.Build.renderSlotGrid('res', core.state.constructions, core.state);
+  assert.equal((gridHtml.match(/class="slot-card slot-card-(?:occupied|empty)/g) || []).length, 36);
+  core.state.buildings = { command: 0, farm: Array(9).fill(1), refinery: Array(9).fill(1), oilfield: Array(9).fill(1), raremine: Array(9).fill(1) };
   core.state.constructions = [];
-  assert.equal(core.groupSlotsCap('res'), 12);
-  assert.equal(core.groupSlotsUsed('res'), 32);
+  assert.equal(core.groupSlotsCap('res'), 16);
+  assert.equal(core.groupSlotsUsed('res'), 36);
   assert.equal(core.groupSlotsRemaining('res'), 0);
-  for (const [level, cap] of [[0, 12], [1, 14], [5, 22], [9, 30], [10, 32], [11, 32]]) {
+  for (const [level, cap] of [[0, 16], [1, 18], [5, 26], [9, 34], [10, 36], [11, 36]]) {
     core.state.buildings.command = level;
     assert.equal(core.groupSlotsCap('res'), cap);
   }
   for (const type of ['farm', 'refinery', 'oilfield', 'raremine']) {
-    assert.equal(context.Game.DATA.buildings[type].slots, 32);
+    assert.equal(context.Game.DATA.buildings[type].slots, 36);
   }
 });
 
 
-test('military quota shares 32 slots while functional buildings remain single-instance', () => {
+test('military quota shares 36 slots while functional buildings remain single-instance', () => {
   const context = sandbox();
   for (const file of ['js/data.js', 'js/core.js', 'js/build.js']) load(context, file);
   const { Core: core, DATA: data, Build: build } = context.Game;
-  core.state = { buildings: { command: 10, house: Array(20).fill(1), factory: Array(5).fill(1), depot: Array(5).fill(1) }, constructions: [] };
-  assert.equal(core.groupSlotsUsed('army'), 31);
+  core.state = { buildings: { command: 10, house: Array(24).fill(1), factory: Array(5).fill(1), depot: Array(5).fill(1) }, constructions: [] };
+  assert.equal(core.groupSlotsUsed('army'), 35);
   core.state.constructions = [{ id: 'radar', slot: null, targetLevel: 1 }];
   assert.equal(core.groupSlotsRemaining('army'), 0);
-  assert.equal(core.groupSlotsRemaining('res'), 32);
+  assert.equal(core.groupSlotsRemaining('res'), 36);
   core.state.constructions = [{ id: 'house', slot: 0, targetLevel: 2 }];
   assert.equal(core.groupSlotsRemaining('army'), 1);
-  for (const [level, cap] of [[0,12], [1,14], [5,22], [10,32], [11,32]]) {
+  const gridHtml = build.renderSlotGrid('army', core.state.constructions, core.state);
+  assert.equal((gridHtml.match(/class="slot-card slot-card-(?:occupied|empty)/g) || []).length, 36);
+  for (const [level, cap] of [[0,16], [1,18], [5,26], [10,36], [11,36]]) {
     core.state.buildings.command = level;
     assert.equal(core.groupSlotsCap('army'), cap);
   }
   for (const type of build.GROUPS.army.order) {
-    assert.equal(data.buildings[type].slots, ['house', 'factory', 'depot'].includes(type) ? 32 : 1);
+    assert.equal(data.buildings[type].slots, ['house', 'factory', 'depot'].includes(type) ? 36 : 1);
   }
 });
 
@@ -343,7 +347,7 @@ test('incoming tick updates the list and keeps the military alert red until the 
   G.WS.emit('tick', { incoming: [] });
   assert.doesNotMatch(G._nav, /class="navitem active alert" data-route="alerts"/);
   G.World.renderAlerts(view);
-  assert.match(view.innerHTML, /暂无敌方来袭情报/);
+  assert.match(view.innerHTML, /暂无敌方来袭军情/);
 });
 
 test('arrived incoming player march opens the same tactical battle for defender command', () => {
@@ -443,10 +447,11 @@ test('导航栏最后显示文字商城，顶部不再显示商城图标', () =>
 
   const labels = [...navHtml.matchAll(/class="navlabel">([^<]+)<\/span>/g)].map(m => m[1]);
   assert.deepEqual(labels, [
-    '首页', '资源', '军事', '军官', '军队', '地图', '情报', '战报', '聊天', '邮件', '任务', '军团', '仓库', '科技', '切换', '战术', '排名', '商城'
+    '首页', '后勤', '军工', '军官', '军队', '地图', '军情', '战报', '通讯', '电报', '任务', '军团', '仓库', '军研', '军校', '对战', '切城', '战术', '排名', '商城'
   ]);
   assert.match(navHtml, /class="navitem" data-route="officer" onclick="Game\.go\('officer'\)"/);
-  assert.doesNotMatch(navHtml, /军情/);
+  assert.match(navHtml, /class="navitem" data-route="academy" onclick="Game\.go\('academy'\)"/);
+  assert.match(navHtml, /军情/);
   assert.match(navHtml, /class="nav-pages"/);
   const topbar = { innerHTML: '' };
   context.document.getElementById = id => id === 'topbar' ? topbar : null;
@@ -490,4 +495,34 @@ test('导航栏军事后包含军官Tab，点击直达军官列表并在军官�
   G.Core.route = 'officerDetail';
   navHtml = G.MainView.navBar();
   assert.match(navHtml, /class="navitem active" data-route="officer"/);
+});
+
+test('导航栏军研后包含军校Tab，点击直达军校招募界面并在军校页保持高亮', () => {
+  const context = sandbox();
+  for (const file of ['js/save.js', 'js/data.js', 'js/core.js', 'js/cities.js', 'js/officer.js', 'js/main-view.js']) load(context, file);
+  const G = context.Game;
+  G.state = {
+    player: { id: 1, cityName: '主城' },
+    world: { incoming: [] },
+    buildings: { academy: 1 },
+    academy: { fiveStarBatchChance: 0.003, list: [] }
+  };
+  G.Core.state = G.state;
+  G.Core.route = 'home';
+
+  // 1. 验证首页下军校导航未处于激活态
+  let navHtml = G.MainView.navBar();
+  assert.match(navHtml, /class="navitem" data-route="academy" onclick="Game\.go\('academy'\)"/);
+  assert.doesNotMatch(navHtml, /class="navitem active" data-route="academy"/);
+
+  // 2. 模拟 Game.go('academy')
+  G.Core.go('academy');
+  assert.equal(G.Core.route, 'academy');
+  navHtml = G.MainView.navBar();
+  assert.match(navHtml, /class="navitem active" data-route="academy"/);
+
+  // 3. 验证 academy 视图渲染军校招募
+  const view = { innerHTML: '' };
+  G.Core.views.academy(view);
+  assert.match(view.innerHTML, /军校招募/);
 });

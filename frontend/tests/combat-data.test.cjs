@@ -44,7 +44,7 @@ test('rocket is the most expensive land unit for every recruitment resource', ()
   const landUnits = Object.values(data.units).filter((unit) => unit.branch === 'land');
   const rocket = data.units.rocket;
   for (const resource of ['food', 'steel', 'oil', 'rare']) {
-    // 火箭作为陆军珍贵远程火力，四项征召资源都必须高于其他陆军。
+    // 反坦克火箭车作为陆军珍贵远程火力，四项征召资源都必须高于其他陆军。
     assert.equal(rocket.cost[resource], Math.max(...landUnits.map((unit) => unit.cost[resource] || 0)), resource);
     assert.ok(landUnits.every((unit) => unit === rocket || rocket.cost[resource] > (unit.cost[resource] || 0)), resource);
   }
@@ -67,6 +67,21 @@ test('military technology bonuses are 10% per level in server and client definit
   }
 });
 
+test('all technology names, branches, descriptions, levels and effect types match server definitions', () => {
+  const definitions = [...source('TechDef').matchAll(/m\.put\("([^"]+)", new TechDef\("([^"]+)", "([^"]+)", "([^"]+)", "([^"]+)",\s*(\d+), (\d+), Map\.of\([^)]*\), ([\d.]+), "([^"]+)"\)\);/g)];
+  assert.deepEqual(definitions.map(match => match[1]).sort(), Object.keys(data.techs).sort());
+  for (const [, id, key, name, branch, description, maxLevel, labReq, growth, effect] of definitions) {
+    assert.equal(id, key);
+    assert.equal(data.techs[id].name, name, id + ' name');
+    assert.equal(data.techs[id].branch, branch, id + ' branch');
+    assert.equal(data.techs[id].desc, description, id + ' description');
+    assert.equal(data.techs[id].max, Number(maxLevel), id + ' max level');
+    assert.equal(data.techs[id].labReq, Number(labReq), id + ' lab requirement');
+    assert.equal(data.techs[id].growth, Number(growth), id + ' cost growth');
+    assert.equal(data.techs[id].affect, effect, id + ' effect');
+  }
+});
+
 test('all displayed fort stats and costs match server definitions', () => {
   const pattern = /"([^"]+)", new FortDef\("[^"]+", "([^"]+)", "[^"]+",\s*([\d,\s]+),\s*Map\.of\(([^)]*)\)/g;
   const matched = [];
@@ -82,13 +97,27 @@ test('all displayed fort stats and costs match server definitions', () => {
   assert.deepEqual(matched.sort(), Object.keys(data.forts).sort());
 });
 
-test('rocket role names exactly the four 5.5-fold counter targets', () => {
-  assert.match(data.combatRoles.rocket, /轻坦、重坦、装甲车、突击炮均×5\.5/);
+test('rocket role names exactly all threefold armor counter targets', () => {
+  assert.match(data.combatRoles.rocket, /轻坦、重坦、防空装甲车、侦查装甲车、突击炮均×3/);
   assert.match(data.combatRoles.rocket, /其他目标无额外克制倍率/);
   assert.doesNotMatch(data.combatRoles.rocket, /特种兵×0\.6|对装甲×1\.75/);
 });
 
-test('armored role names its fivefold anti-air counters', () => {
-  assert.match(data.combatRoles.armored, /对战斗机、轰炸机均×5/);
+test('rocket retains fractional anti-air attack in stats, Japanese units and homepage role', () => {
+  assert.equal(data.units.rocket.atkAir, 11.5);
+  assert.equal(data.japaneseUnits.rocket.atkAir, 11.5);
+  assert.match(data.combatRoles.rocket, /对空攻击11\.5/);
+  assert.match(data.combatRoles.rocket, /有限防空自卫能力/);
+  assert.doesNotMatch(data.combatRoles.rocket, /对空火力极弱/);
+});
+
+test('rocket range and homepage role use the reduced 1600 range for both factions', () => {
+  assert.equal(data.units.rocket.range, 1600);
+  assert.equal(data.japaneseUnits.rocket.range, 1600);
+  assert.match(data.combatRoles.rocket, /基础射程1600/);
+});
+
+test('armored role names its 2.5-fold anti-air counters', () => {
+  assert.match(data.combatRoles.armored, /对战斗机、轰炸机均×2\.5/);
   assert.match(data.combatRoles.armored, /对步兵类无额外克制倍率/);
 });

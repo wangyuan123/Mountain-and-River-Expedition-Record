@@ -1,8 +1,8 @@
 package com.wargame.config;
 
 import com.wargame.repository.WorldMapRepository;
-import com.wargame.service.GameStateService;
 import com.wargame.service.NpcCitySpawnService;
+import com.wargame.service.GameStateService;
 import com.wargame.service.IslandContentService;
 import com.wargame.service.WorldContentService;
 import org.springframework.boot.ApplicationArguments;
@@ -13,8 +13,7 @@ import org.springframework.stereotype.Component;
 /**
  * 启动时世界初始化。
  * <p>
- * 世界 (bandits / npc_cities / player_cities / wild_tiles) 是共享全局数据,
- * 首次部署生成地图；旧地图若缺少 NPC 城市则补足，不重建世界或重置玩家数据。
+ * 世界 (bandits / player_cities / wild_tiles) 是共享全局数据；首次部署生成地图。
  */
 @Component
 @Profile("!test")
@@ -47,7 +46,7 @@ public class WorldBootstrap implements ApplicationRunner {
         }
         terrain.ensure();
         worldMapRepository.findFirstByOrderByIdAsc().ifPresent(world -> {
-            npcCitySpawnService.ensurePopulation(world.getId());
+            npcCitySpawnService.removeInactive(world.getId());
             islandContentService.ensure(world.getId());
             worldContentService.ensure(world.getId());
             landBandits.ensure(world.getId());

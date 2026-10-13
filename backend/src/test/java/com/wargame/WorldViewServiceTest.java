@@ -56,6 +56,7 @@ class WorldViewServiceTest extends BaseServiceTest {
         Player owner = createTestPlayer("city-owner", 30);
         owner.setDisplayName("统帅甲");
         owner.setMilitaryRank(10);
+        owner.setPrestige(25000);
         playerRepository.save(owner);
         var city = new com.wargame.model.entity.PlayerCity();
         city.setWorldId(createTestWorld().getId());
@@ -70,10 +71,12 @@ class WorldViewServiceTest extends BaseServiceTest {
         assertEquals("统帅甲", entries.get(0).get("commanderName"));
         assertEquals(10, entries.get(0).get("militaryRank"));
         assertEquals("上尉", entries.get(0).get("militaryRankName"));
+        assertEquals(25000, entries.get(0).get("prestige"));
         owner.setDisplayName(" ");
         playerRepository.save(owner);
         entries = (List<Map<String, Object>>) views.getWorld(owner.getId(), 10, 10, 3).get("playerCities");
         assertEquals("city-owner", entries.get(0).get("commanderName"));
+        assertEquals(25000, entries.get(0).get("prestige"));
     }
 
     @Test

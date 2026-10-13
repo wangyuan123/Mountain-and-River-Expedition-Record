@@ -16,6 +16,15 @@ public interface WildTileRepository extends JpaRepository<WildTile, Long> {
     List<WildTile> findByWorldIdAndOccupiedTrue(Long worldId);
 
     List<WildTile> findByOccupiedBy(Long occupiedBy);
+    List<WildTile> findByOccupiedByAndOccupiedCitySlotAndOccupiedTrue(Long occupiedBy, Integer occupiedCitySlot);
+    long countByOccupiedByAndOccupiedCitySlotAndOccupiedTrue(Long occupiedBy, Integer occupiedCitySlot);
+
+    /** 锁定当前领地ID，避免MySQL旧快照漏计及一级缓存旧实体升级锁时的版本冲突。 */
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("select w.id from WildTile w where w.occupiedBy = :player "
+            + "and w.occupiedCitySlot = :city and w.occupied = true order by w.id")
+    List<Long> lockOwnedIdsByCity(@org.springframework.data.repository.query.Param("player") Long playerId,
+                                @org.springframework.data.repository.query.Param("city") Integer citySlot);
     List<WildTile> findByOccupiedByAndGatherCitySlotAndGatheringTrueAndGatherMode(
             Long occupiedBy, Integer gatherCitySlot, String gatherMode);
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)

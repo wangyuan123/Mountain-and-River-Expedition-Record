@@ -35,6 +35,10 @@ public class Player extends VersionedEntity implements CityEconomy {
     @Column(name = "display_name", length = 100)
     private String displayName;
 
+    /** 标记是否为系统批量生成的模拟玩家 (Bot) */
+    @Column(name = "is_bot", nullable = false)
+    private Boolean isBot = false;
+
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
@@ -86,6 +90,15 @@ public class Player extends VersionedEntity implements CityEconomy {
 
     @Column(name = "military_rank")
     private Integer militaryRank = 1;
+
+    /** 账号累计击败流寇/NPC 要塞的胜利场次，晋升时不扣除。 */
+    @Column(name = "npc_victories", nullable = false)
+    private long npcVictories = 0L;
+
+    /** 服务端保存目标军衔、试卷及成绩，禁止序列化泄露标准答案。 */
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @Column(name = "rank_exam", columnDefinition = "TEXT")
+    private String rankExam;
 
     @Column(name = "vip_level")
     private Integer vipLevel = 0;

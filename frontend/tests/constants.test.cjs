@@ -17,6 +17,9 @@ test('shared catalogs keep stable IDs and ordered navigation', () => {
   const armyIndex = routes.indexOf('buildArmy');
   assert.equal(routes[armyIndex + 1], 'officer');
   assert.equal(constants.navItems[armyIndex + 1].label, '军官');
+  const techIndex = routes.indexOf('tech');
+  assert.equal(routes[techIndex + 1], 'academy');
+  assert.equal(constants.navItems[techIndex + 1].label, '军校');
   assert.equal(routes.at(-3), 'battleDefaults');
   assert.equal(routes.at(-2), 'rankings');
   assert.equal(routes.at(-1), 'shop');

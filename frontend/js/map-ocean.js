@@ -55,6 +55,22 @@
     var water=shallow+(deep-shallow)*t+grain*2;
     if(d<.16)water+=22*(1-d/.16);return water;
   }
+  /**
+   * 将格心的有符号岸距编码为线性采样纹理，GPU 插值与 sample 的海岸过渡一致。
+   * 红通道 128 表示岸线；每格距离占 14 个色阶，保留近岸半格距离的精度。
+   * @returns {Object|null} 岸距画布及其世界尺寸；地形尚未就绪时返回 null。
+   */
+  function createDepthMap() {
+    if (!depth) return null;
+    var canvas = document.createElement('canvas'); canvas.width = canvas.height = size;
+    var ctx = canvas.getContext('2d'), pixels = ctx.createImageData(size, size);
+    for (var i = 0; i < depth.length; i++) {
+      pixels.data[i * 4] = Math.round(128 + Math.max(-9, Math.min(9, depth[i])) * 14);
+      pixels.data[i * 4 + 3] = 255;
+    }
+    ctx.putImageData(pixels, 0, 0);
+    return { canvas:canvas, size:size };
+  }
   function nearestCoast(x,y,blocked) {
     var best=null,distance=Infinity;
     for(var yy=0;yy<size-1;yy++)for(var xx=0;xx<size-1;xx++){
@@ -141,5 +157,5 @@
     shape.forEach(function(p){puff(p[0],p[1],p[2],p[3],true);});
     return canvas;
   }
-  G.MapOcean={nearestCoast:nearestCoast,configure:configure,sea:sea,isOcean:isOcean,isIsland:isIsland,sample:sample,paint:paint,clouds:clouds,createCloud:createCloud,ready:function(){return !!depth;},clear:function(){cells='';depth=null;mainland=null;}};
+  G.MapOcean={nearestCoast:nearestCoast,configure:configure,sea:sea,isOcean:isOcean,isIsland:isIsland,sample:sample,paint:paint,createDepthMap:createDepthMap,clouds:clouds,createCloud:createCloud,ready:function(){return !!depth;},clear:function(){cells='';depth=null;mainland=null;}};
 })(window.Game=window.Game||{});

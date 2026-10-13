@@ -2,7 +2,7 @@ package com.wargame;
 
 import com.wargame.model.dto.DispatchRequest;
 import com.wargame.model.entity.BattleSession;
-import com.wargame.model.entity.NpcCity;
+import com.wargame.model.entity.Bandit;
 import com.wargame.repository.BattleSessionRepository;
 import com.wargame.util.JsonUtil;
 import jakarta.persistence.EntityManager;
@@ -20,23 +20,58 @@ class OfficerSkillPersistenceTest extends BaseServiceTest {
     @PersistenceContext private EntityManager entityManager;
 
     @Test
+    void newSessionKeepsThreeSafeRoundsAndEngagesOnFourthAfterReload() {
+        var player = createTestPlayer("opening-distance", 30);
+        var target = new Bandit();
+        target.setWorldId(createTestWorld().getId());
+        target.setName("开局距离测试营地");
+        target.setLevel(1);
+        target.setX(20);
+        target.setY(20);
+        target.setArmy(JsonUtil.toJson(Map.of("infantry", 100)));
+        target.setDefeated(false);
+        target = banditRepository.save(target);
+        createArmyUnit(player.getId(), "infantry", 100);
+        var march = marchService.createDispatch(player.getId(), new DispatchRequest(
+                "bandit", target.getId(), "conquer", Map.of("infantry", 100), null, null));
+        marchService.processMarches(player.getId(), march.getArriveAt());
+        BattleSession session = sessions.findByMarchId(march.getId()).orElseThrow();
+        assertEquals(860, session.getInitialDistance());
+        Long sessionId = session.getId();
+
+        for (int round = 1; round <= 4; round++) {
+            long deadline = session.getRoundDeadlineAt();
+            sessions.flush();
+            entityManager.clear();
+            marchService.processTimedOutTacticalBattle(sessionId, deadline);
+            sessions.flush();
+            entityManager.clear();
+            session = sessions.findById(sessionId).orElseThrow();
+            assertEquals(round, session.getRoundNo());
+            assertEquals(round == 4 ? 4 : 0, session.getFirstCombatRound(), session.getBattleLog());
+            if (round <= 3) {
+                assertEquals(Map.of("infantry", 100), JsonUtil.parseIntMap(session.getAttackerArmy()));
+                assertEquals(Map.of("infantry", 100), JsonUtil.parseIntMap(session.getDefenderArmy()));
+            }
+        }
+    }
+
+    @Test
     void reloadAndLegacyRecoveryKeepRoundFourAsCycleAnchor() {
         var player = createTestPlayer("skill-cycle", 30);
         var world = createTestWorld();
-        var target = new NpcCity();
+        var target = new Bandit();
         target.setWorldId(world.getId());
         target.setName("技能周期测试营地");
         target.setLevel(1);
         target.setX(20);
         target.setY(20);
         target.setArmy(JsonUtil.toJson(Map.of("infantry", 100)));
-        target.setForts("{}");
-        target.setResources("{}");
         target.setDefeated(false);
-        target = npcCityRepository.save(target);
+        target = banditRepository.save(target);
         createArmyUnit(player.getId(), "infantry", 100);
         var march = marchService.createDispatch(player.getId(), new DispatchRequest(
-                "npc", target.getId(), "conquer", Map.of("infantry", 100), null, null));
+                "bandit", target.getId(), "conquer", Map.of("infantry", 100), null, null));
         marchService.processMarches(player.getId(), march.getArriveAt());
         BattleSession session = sessions.findByMarchId(march.getId()).orElseThrow();
         assertEquals(0, session.getFirstCombatRound());

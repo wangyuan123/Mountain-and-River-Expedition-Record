@@ -9,11 +9,12 @@
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
     });
   }
-  // North-up, uniform scale: preserve every turn of the authoritative route.
+  // 北向上、等比例投影；旧接口返回的折点也仅保留起终点，统一为直线预览。
   function layout(points) {
     if (!Array.isArray(points) || !points.length || points.some(function (p) {
       return !Array.isArray(p) || p.length < 2 || !Number.isFinite(p[0]) || !Number.isFinite(p[1]);
     })) return null;
+    points=points.length>1?[points[0],points[points.length-1]]:points;
     var xs=points.map(function(p){return p[0];}), ys=points.map(function(p){return p[1];});
     var minX=Math.min.apply(null,xs), maxX=Math.max.apply(null,xs), minY=Math.min.apply(null,ys), maxY=Math.max.apply(null,ys);
     var scale=Math.min(292/Math.max(4,maxX-minX),132/Math.max(4,maxY-minY));
@@ -51,11 +52,11 @@
     var l=layout(route.points), seconds=Math.max(0,Math.round(Number(route.seconds)||0));
     var duration=seconds<60?seconds+' 秒':Math.floor(seconds/60)+' 分 '+seconds%60+' 秒';
     var h='<section class="dispatch-map-card"><header class="dispatch-map-header"><strong>行军路线预览</strong><span>'+esc(modes[route.mode]||'行军路线')+'</span></header>';
-    h+='<div class="dispatch-map-stats"><span>行军距离 <b>'+esc(route.distance)+' <small>格</small></b></span><span>预计抵达 <b>'+duration+'</b></span></div>';
+    h+='<div class="dispatch-map-stats"><span>行军距离 <b>'+esc(Number(Number(route.distance).toFixed(2)))+' <small>格</small></b></span><span>预计抵达 <b>'+duration+'</b></span></div>';
     if(l) {
       var start=route.points[0],end=route.points[route.points.length-1],sp=l.points[0],ep=l.points[l.points.length-1];
       var same=start[0]===end[0]&&start[1]===end[1];
-      var color=route.mode==='land'?'#54734e':'#366f91';
+      var color=/^(conquer|plunder)$/.test(labels.action)?'#e66f79':'#69b7ee';
       var description='从 '+(labels.start||'出发城市')+' ('+start.join(', ')+') 前往 '+(labels.end||'目标')+' ('+end.join(', ')+')，'+l.direction;
       h+='<div class="dispatch-map-surface"><svg viewBox="0 0 '+mapWidth+' '+mapHeight+'" role="img" aria-label="'+esc(description)+'" xmlns="http://www.w3.org/2000/svg">';
       h+='<rect width="'+mapWidth+'" height="'+mapHeight+'" fill="#e4e9df"/>';
@@ -69,8 +70,9 @@
         var py=l.project([l.cx,gy])[1];h+='<path d="M 0 '+py+' H '+mapWidth+'" stroke="#738675" stroke-opacity=".17"/><text x="5" y="'+(py-4)+'" class="dispatch-map-grid-label">'+gy+'</text>';
       }
       var path=l.points.map(function(p){return p.join(',');}).join(' ');
-      h+='<polyline points="'+path+'" fill="none" stroke="#fff" stroke-opacity=".8" stroke-width="7" stroke-linejoin="round"/>';
-      h+='<polyline points="'+path+'" fill="none" stroke="'+color+'" stroke-width="3" stroke-linejoin="round"'+(/air/.test(route.mode)?' stroke-dasharray="7 5"':'')+'/>';
+      h+='<polyline points="'+path+'" fill="none" stroke="'+color+'" stroke-opacity=".05" stroke-width="23"/>';
+      h+='<polyline points="'+path+'" fill="none" stroke="'+color+'" stroke-opacity=".2" stroke-width="17"/>';
+      h+='<polyline points="'+path+'" fill="none" stroke="'+color+'" stroke-opacity=".12" stroke-width="13"/>';
       var lengths=[],total=0;
       for(var i=1;i<l.points.length;i++){var a=l.points[i-1],b=l.points[i];var len=Math.hypot(b[0]-a[0],b[1]-a[1]);lengths.push(len);total+=len;}
       if(total>40)[.3,.55,.8].forEach(function(f){
@@ -78,7 +80,7 @@
         for(var j=0;j<lengths.length;j++){
           if(distance<=lengths[j]&&lengths[j]>0){
             var a=l.points[j],b=l.points[j+1],t=distance/lengths[j],angle=Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI;
-            h+='<path d="M -5 -5 L 2 0 L -5 5" transform="translate('+(a[0]+(b[0]-a[0])*t)+' '+(a[1]+(b[1]-a[1])*t)+') rotate('+angle+')" fill="none" stroke="'+color+'" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>';break;
+            h+='<path d="M -5 -5 L 2 0 L -5 5" transform="translate('+(a[0]+(b[0]-a[0])*t)+' '+(a[1]+(b[1]-a[1])*t)+') rotate('+angle+')" fill="none" stroke="'+color+'" stroke-opacity=".6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>';break;
           }distance-=lengths[j];
         }
       });
@@ -90,7 +92,8 @@
       h+='</svg><span class="dispatch-map-direction">'+esc(l.direction)+'</span><span class="dispatch-map-caption">'+(terrain?'海陆地形 · 北向上':'坐标示意 · 地形未加载')+'</span></div>';
       h+='<div class="dispatch-map-endpoints"><div><i class="dispatch-map-dot start"></i><span><small>起点 · 出发城市</small><strong>'+esc(labels.start||'当前城市')+'</strong><code>('+start.join(', ')+')</code></span></div><span class="dispatch-map-to" aria-hidden="true">→</span><div><i class="dispatch-map-dot end"></i><span><small>终点 · 行军目标</small><strong>'+esc(labels.end||'目标位置')+'</strong><code>('+end.join(', ')+')</code></span></div></div>';
     }else h+='<p class="dispatch-map-empty">路线坐标暂不可用，请重新选择部队后重试。</p>';
-    h+='<footer class="dispatch-map-footer"><span>'+(route.mode==='air'?'直飞目标':route.mode==='airlift'?'运输机跨海投送':route.mode==='land'?'沿陆地通行':'沿可通航海域行进')+'</span><span>可携资源 <b>'+esc(route.cargoLimit)+'</b>'+(route.reservedLoad?' · 陆军占用运力 '+esc(route.reservedLoad):'')+'</span></footer></section>';
+    h+='<div class="dispatch-map-stats"><span>本次油耗 <b>'+esc(route.oil == null ? '待计算' : route.oil)+'</b></span></div>';
+    h+='<footer class="dispatch-map-footer"><span>直线行军'+(route.mode==='airlift'?' · 运输机跨海投送':'')+'</span><span>可携资源 <b>'+esc(route.cargoLimit)+'</b>'+(route.reservedLoad?' · 陆军占用运力 '+esc(route.reservedLoad):'')+'</span></footer></section>';
     el.innerHTML=h;
   }
   G.DispatchRoute={layout:layout,render:render,loadTerrain:loadTerrain};

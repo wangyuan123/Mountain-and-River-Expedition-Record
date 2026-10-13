@@ -1,0 +1,3188 @@
+{
+  "status": "design-only",
+  "source": "current UnitDef / FortDef; shared capacity is implemented at 3000 per level; wall range bonus remains design-only",
+  "formula": "D0=max_pairs(3*(stepA+stepB)+max(techRangeA,techRangeB))+100; D=D0+500 only for city defense with active forts; wall extra range excluded from D0",
+  "cityFortDistanceExtra": 500,
+  "distanceExtraScope": "city defense with at least one active fort; all other battles use D0",
+  "fortRangePerLevel": 0.01,
+  "capacityByWallLevel": [
+    {
+      "level": 0,
+      "sharedCapacity": 0,
+      "rangeBonusPercent": 0
+    },
+    {
+      "level": 1,
+      "sharedCapacity": 3000,
+      "rangeBonusPercent": 1
+    },
+    {
+      "level": 2,
+      "sharedCapacity": 6000,
+      "rangeBonusPercent": 2
+    },
+    {
+      "level": 3,
+      "sharedCapacity": 9000,
+      "rangeBonusPercent": 3
+    },
+    {
+      "level": 4,
+      "sharedCapacity": 12000,
+      "rangeBonusPercent": 4
+    },
+    {
+      "level": 5,
+      "sharedCapacity": 15000,
+      "rangeBonusPercent": 5
+    },
+    {
+      "level": 6,
+      "sharedCapacity": 18000,
+      "rangeBonusPercent": 6
+    },
+    {
+      "level": 7,
+      "sharedCapacity": 21000,
+      "rangeBonusPercent": 7
+    },
+    {
+      "level": 8,
+      "sharedCapacity": 24000,
+      "rangeBonusPercent": 8
+    },
+    {
+      "level": 9,
+      "sharedCapacity": 27000,
+      "rangeBonusPercent": 9
+    },
+    {
+      "level": 10,
+      "sharedCapacity": 30000,
+      "rangeBonusPercent": 10
+    }
+  ],
+  "limitations": "single advancing attacker against a stationary fort; no casualties or command changes; theoretical range-entry round is not a battle result",
+  "scenarios": [
+    {
+      "attacker": "infantry",
+      "fort": "bunker",
+      "techLevel": 0,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 100,
+        "attackerRange": 160,
+        "fortRange": 1050,
+        "baseInitialDistance": 1450,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 1450,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 13
+      },
+      "proposed": {
+        "attackerStep": 100,
+        "attackerRange": 160,
+        "fortRange": 1060,
+        "baseInitialDistance": 1450,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 1950,
+        "firstFortShotRoundIgnoringLoss": 9,
+        "firstAttackerShotRoundIgnoringLoss": 18
+      }
+    },
+    {
+      "attacker": "infantry",
+      "fort": "bunker",
+      "techLevel": 0,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 100,
+        "attackerRange": 160,
+        "fortRange": 1050,
+        "baseInitialDistance": 1450,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 1450,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 13
+      },
+      "proposed": {
+        "attackerStep": 100,
+        "attackerRange": 160,
+        "fortRange": 1102,
+        "baseInitialDistance": 1450,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 1950,
+        "firstFortShotRoundIgnoringLoss": 9,
+        "firstAttackerShotRoundIgnoringLoss": 18
+      }
+    },
+    {
+      "attacker": "infantry",
+      "fort": "bunker",
+      "techLevel": 0,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 100,
+        "attackerRange": 160,
+        "fortRange": 1050,
+        "baseInitialDistance": 1450,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 1450,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 13
+      },
+      "proposed": {
+        "attackerStep": 100,
+        "attackerRange": 160,
+        "fortRange": 1155,
+        "baseInitialDistance": 1450,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 1950,
+        "firstFortShotRoundIgnoringLoss": 8,
+        "firstAttackerShotRoundIgnoringLoss": 18
+      }
+    },
+    {
+      "attacker": "infantry",
+      "fort": "bunker",
+      "techLevel": 10,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 100,
+        "attackerRange": 320,
+        "fortRange": 2100,
+        "baseInitialDistance": 2500,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 2500,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 22
+      },
+      "proposed": {
+        "attackerStep": 100,
+        "attackerRange": 320,
+        "fortRange": 2121,
+        "baseInitialDistance": 2500,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 3000,
+        "firstFortShotRoundIgnoringLoss": 9,
+        "firstAttackerShotRoundIgnoringLoss": 27
+      }
+    },
+    {
+      "attacker": "infantry",
+      "fort": "bunker",
+      "techLevel": 10,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 100,
+        "attackerRange": 320,
+        "fortRange": 2100,
+        "baseInitialDistance": 2500,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 2500,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 22
+      },
+      "proposed": {
+        "attackerStep": 100,
+        "attackerRange": 320,
+        "fortRange": 2205,
+        "baseInitialDistance": 2500,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 3000,
+        "firstFortShotRoundIgnoringLoss": 8,
+        "firstAttackerShotRoundIgnoringLoss": 27
+      }
+    },
+    {
+      "attacker": "infantry",
+      "fort": "bunker",
+      "techLevel": 10,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 100,
+        "attackerRange": 320,
+        "fortRange": 2100,
+        "baseInitialDistance": 2500,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 2500,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 22
+      },
+      "proposed": {
+        "attackerStep": 100,
+        "attackerRange": 320,
+        "fortRange": 2310,
+        "baseInitialDistance": 2500,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 3000,
+        "firstFortShotRoundIgnoringLoss": 7,
+        "firstAttackerShotRoundIgnoringLoss": 27
+      }
+    },
+    {
+      "attacker": "infantry",
+      "fort": "howitzer",
+      "techLevel": 0,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 100,
+        "attackerRange": 160,
+        "fortRange": 3950,
+        "baseInitialDistance": 4350,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4350,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 42
+      },
+      "proposed": {
+        "attackerStep": 100,
+        "attackerRange": 160,
+        "fortRange": 3989,
+        "baseInitialDistance": 4350,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 4850,
+        "firstFortShotRoundIgnoringLoss": 9,
+        "firstAttackerShotRoundIgnoringLoss": 47
+      }
+    },
+    {
+      "attacker": "infantry",
+      "fort": "howitzer",
+      "techLevel": 0,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 100,
+        "attackerRange": 160,
+        "fortRange": 3950,
+        "baseInitialDistance": 4350,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4350,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 42
+      },
+      "proposed": {
+        "attackerStep": 100,
+        "attackerRange": 160,
+        "fortRange": 4147,
+        "baseInitialDistance": 4350,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 4850,
+        "firstFortShotRoundIgnoringLoss": 8,
+        "firstAttackerShotRoundIgnoringLoss": 47
+      }
+    },
+    {
+      "attacker": "infantry",
+      "fort": "howitzer",
+      "techLevel": 0,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 100,
+        "attackerRange": 160,
+        "fortRange": 3950,
+        "baseInitialDistance": 4350,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4350,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 42
+      },
+      "proposed": {
+        "attackerStep": 100,
+        "attackerRange": 160,
+        "fortRange": 4345,
+        "baseInitialDistance": 4350,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 4850,
+        "firstFortShotRoundIgnoringLoss": 6,
+        "firstAttackerShotRoundIgnoringLoss": 47
+      }
+    },
+    {
+      "attacker": "infantry",
+      "fort": "howitzer",
+      "techLevel": 10,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 100,
+        "attackerRange": 320,
+        "fortRange": 7900,
+        "baseInitialDistance": 8300,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 8300,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 80
+      },
+      "proposed": {
+        "attackerStep": 100,
+        "attackerRange": 320,
+        "fortRange": 7979,
+        "baseInitialDistance": 8300,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 8800,
+        "firstFortShotRoundIgnoringLoss": 9,
+        "firstAttackerShotRoundIgnoringLoss": 85
+      }
+    },
+    {
+      "attacker": "infantry",
+      "fort": "howitzer",
+      "techLevel": 10,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 100,
+        "attackerRange": 320,
+        "fortRange": 7900,
+        "baseInitialDistance": 8300,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 8300,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 80
+      },
+      "proposed": {
+        "attackerStep": 100,
+        "attackerRange": 320,
+        "fortRange": 8295,
+        "baseInitialDistance": 8300,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 8800,
+        "firstFortShotRoundIgnoringLoss": 6,
+        "firstAttackerShotRoundIgnoringLoss": 85
+      }
+    },
+    {
+      "attacker": "infantry",
+      "fort": "howitzer",
+      "techLevel": 10,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 100,
+        "attackerRange": 320,
+        "fortRange": 7900,
+        "baseInitialDistance": 8300,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 8300,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 80
+      },
+      "proposed": {
+        "attackerStep": 100,
+        "attackerRange": 320,
+        "fortRange": 8690,
+        "baseInitialDistance": 8300,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 8800,
+        "firstFortShotRoundIgnoringLoss": 2,
+        "firstAttackerShotRoundIgnoringLoss": 85
+      }
+    },
+    {
+      "attacker": "infantry",
+      "fort": "antitank",
+      "techLevel": 0,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 100,
+        "attackerRange": 160,
+        "fortRange": 3850,
+        "baseInitialDistance": 4250,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4250,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 41
+      },
+      "proposed": {
+        "attackerStep": 100,
+        "attackerRange": 160,
+        "fortRange": 3888,
+        "baseInitialDistance": 4250,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 4750,
+        "firstFortShotRoundIgnoringLoss": 9,
+        "firstAttackerShotRoundIgnoringLoss": 46
+      }
+    },
+    {
+      "attacker": "infantry",
+      "fort": "antitank",
+      "techLevel": 0,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 100,
+        "attackerRange": 160,
+        "fortRange": 3850,
+        "baseInitialDistance": 4250,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4250,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 41
+      },
+      "proposed": {
+        "attackerStep": 100,
+        "attackerRange": 160,
+        "fortRange": 4042,
+        "baseInitialDistance": 4250,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 4750,
+        "firstFortShotRoundIgnoringLoss": 8,
+        "firstAttackerShotRoundIgnoringLoss": 46
+      }
+    },
+    {
+      "attacker": "infantry",
+      "fort": "antitank",
+      "techLevel": 0,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 100,
+        "attackerRange": 160,
+        "fortRange": 3850,
+        "baseInitialDistance": 4250,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4250,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 41
+      },
+      "proposed": {
+        "attackerStep": 100,
+        "attackerRange": 160,
+        "fortRange": 4235,
+        "baseInitialDistance": 4250,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 4750,
+        "firstFortShotRoundIgnoringLoss": 6,
+        "firstAttackerShotRoundIgnoringLoss": 46
+      }
+    },
+    {
+      "attacker": "infantry",
+      "fort": "antitank",
+      "techLevel": 10,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 100,
+        "attackerRange": 320,
+        "fortRange": 7700,
+        "baseInitialDistance": 8100,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 8100,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 78
+      },
+      "proposed": {
+        "attackerStep": 100,
+        "attackerRange": 320,
+        "fortRange": 7777,
+        "baseInitialDistance": 8100,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 8600,
+        "firstFortShotRoundIgnoringLoss": 9,
+        "firstAttackerShotRoundIgnoringLoss": 83
+      }
+    },
+    {
+      "attacker": "infantry",
+      "fort": "antitank",
+      "techLevel": 10,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 100,
+        "attackerRange": 320,
+        "fortRange": 7700,
+        "baseInitialDistance": 8100,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 8100,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 78
+      },
+      "proposed": {
+        "attackerStep": 100,
+        "attackerRange": 320,
+        "fortRange": 8085,
+        "baseInitialDistance": 8100,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 8600,
+        "firstFortShotRoundIgnoringLoss": 6,
+        "firstAttackerShotRoundIgnoringLoss": 83
+      }
+    },
+    {
+      "attacker": "infantry",
+      "fort": "antitank",
+      "techLevel": 10,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 100,
+        "attackerRange": 320,
+        "fortRange": 7700,
+        "baseInitialDistance": 8100,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 8100,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 78
+      },
+      "proposed": {
+        "attackerStep": 100,
+        "attackerRange": 320,
+        "fortRange": 8470,
+        "baseInitialDistance": 8100,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 8600,
+        "firstFortShotRoundIgnoringLoss": 2,
+        "firstAttackerShotRoundIgnoringLoss": 83
+      }
+    },
+    {
+      "attacker": "infantry",
+      "fort": "flak",
+      "techLevel": 0,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 100,
+        "attackerRange": 160,
+        "fortRange": 1850,
+        "baseInitialDistance": 2250,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 2250,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 21
+      },
+      "proposed": {
+        "attackerStep": 100,
+        "attackerRange": 160,
+        "fortRange": 1868,
+        "baseInitialDistance": 2250,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 2750,
+        "firstFortShotRoundIgnoringLoss": 9,
+        "firstAttackerShotRoundIgnoringLoss": 26
+      }
+    },
+    {
+      "attacker": "infantry",
+      "fort": "flak",
+      "techLevel": 0,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 100,
+        "attackerRange": 160,
+        "fortRange": 1850,
+        "baseInitialDistance": 2250,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 2250,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 21
+      },
+      "proposed": {
+        "attackerStep": 100,
+        "attackerRange": 160,
+        "fortRange": 1942,
+        "baseInitialDistance": 2250,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 2750,
+        "firstFortShotRoundIgnoringLoss": 9,
+        "firstAttackerShotRoundIgnoringLoss": 26
+      }
+    },
+    {
+      "attacker": "infantry",
+      "fort": "flak",
+      "techLevel": 0,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 100,
+        "attackerRange": 160,
+        "fortRange": 1850,
+        "baseInitialDistance": 2250,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 2250,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 21
+      },
+      "proposed": {
+        "attackerStep": 100,
+        "attackerRange": 160,
+        "fortRange": 2035,
+        "baseInitialDistance": 2250,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 2750,
+        "firstFortShotRoundIgnoringLoss": 8,
+        "firstAttackerShotRoundIgnoringLoss": 26
+      }
+    },
+    {
+      "attacker": "infantry",
+      "fort": "flak",
+      "techLevel": 10,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 100,
+        "attackerRange": 320,
+        "fortRange": 3700,
+        "baseInitialDistance": 4100,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4100,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 38
+      },
+      "proposed": {
+        "attackerStep": 100,
+        "attackerRange": 320,
+        "fortRange": 3737,
+        "baseInitialDistance": 4100,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 4600,
+        "firstFortShotRoundIgnoringLoss": 9,
+        "firstAttackerShotRoundIgnoringLoss": 43
+      }
+    },
+    {
+      "attacker": "infantry",
+      "fort": "flak",
+      "techLevel": 10,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 100,
+        "attackerRange": 320,
+        "fortRange": 3700,
+        "baseInitialDistance": 4100,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4100,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 38
+      },
+      "proposed": {
+        "attackerStep": 100,
+        "attackerRange": 320,
+        "fortRange": 3885,
+        "baseInitialDistance": 4100,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 4600,
+        "firstFortShotRoundIgnoringLoss": 8,
+        "firstAttackerShotRoundIgnoringLoss": 43
+      }
+    },
+    {
+      "attacker": "infantry",
+      "fort": "flak",
+      "techLevel": 10,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 100,
+        "attackerRange": 320,
+        "fortRange": 3700,
+        "baseInitialDistance": 4100,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4100,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 38
+      },
+      "proposed": {
+        "attackerStep": 100,
+        "attackerRange": 320,
+        "fortRange": 4070,
+        "baseInitialDistance": 4100,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 4600,
+        "firstFortShotRoundIgnoringLoss": 6,
+        "firstAttackerShotRoundIgnoringLoss": 43
+      }
+    },
+    {
+      "attacker": "rocket",
+      "fort": "bunker",
+      "techLevel": 0,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 150,
+        "attackerRange": 1600,
+        "fortRange": 1050,
+        "baseInitialDistance": 2150,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 2150,
+        "firstFortShotRoundIgnoringLoss": 8,
+        "firstAttackerShotRoundIgnoringLoss": 4
+      },
+      "proposed": {
+        "attackerStep": 150,
+        "attackerRange": 1600,
+        "fortRange": 1060,
+        "baseInitialDistance": 2150,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 2650,
+        "firstFortShotRoundIgnoringLoss": 11,
+        "firstAttackerShotRoundIgnoringLoss": 7
+      }
+    },
+    {
+      "attacker": "rocket",
+      "fort": "bunker",
+      "techLevel": 0,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 150,
+        "attackerRange": 1600,
+        "fortRange": 1050,
+        "baseInitialDistance": 2150,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 2150,
+        "firstFortShotRoundIgnoringLoss": 8,
+        "firstAttackerShotRoundIgnoringLoss": 4
+      },
+      "proposed": {
+        "attackerStep": 150,
+        "attackerRange": 1600,
+        "fortRange": 1102,
+        "baseInitialDistance": 2150,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 2650,
+        "firstFortShotRoundIgnoringLoss": 11,
+        "firstAttackerShotRoundIgnoringLoss": 7
+      }
+    },
+    {
+      "attacker": "rocket",
+      "fort": "bunker",
+      "techLevel": 0,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 150,
+        "attackerRange": 1600,
+        "fortRange": 1050,
+        "baseInitialDistance": 2150,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 2150,
+        "firstFortShotRoundIgnoringLoss": 8,
+        "firstAttackerShotRoundIgnoringLoss": 4
+      },
+      "proposed": {
+        "attackerStep": 150,
+        "attackerRange": 1600,
+        "fortRange": 1155,
+        "baseInitialDistance": 2150,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 2650,
+        "firstFortShotRoundIgnoringLoss": 10,
+        "firstAttackerShotRoundIgnoringLoss": 7
+      }
+    },
+    {
+      "attacker": "rocket",
+      "fort": "bunker",
+      "techLevel": 10,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 225,
+        "attackerRange": 3200,
+        "fortRange": 2100,
+        "baseInitialDistance": 3975,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 3975,
+        "firstFortShotRoundIgnoringLoss": 9,
+        "firstAttackerShotRoundIgnoringLoss": 4
+      },
+      "proposed": {
+        "attackerStep": 225,
+        "attackerRange": 3200,
+        "fortRange": 2121,
+        "baseInitialDistance": 3975,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 4475,
+        "firstFortShotRoundIgnoringLoss": 11,
+        "firstAttackerShotRoundIgnoringLoss": 6
+      }
+    },
+    {
+      "attacker": "rocket",
+      "fort": "bunker",
+      "techLevel": 10,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 225,
+        "attackerRange": 3200,
+        "fortRange": 2100,
+        "baseInitialDistance": 3975,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 3975,
+        "firstFortShotRoundIgnoringLoss": 9,
+        "firstAttackerShotRoundIgnoringLoss": 4
+      },
+      "proposed": {
+        "attackerStep": 225,
+        "attackerRange": 3200,
+        "fortRange": 2205,
+        "baseInitialDistance": 3975,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 4475,
+        "firstFortShotRoundIgnoringLoss": 11,
+        "firstAttackerShotRoundIgnoringLoss": 6
+      }
+    },
+    {
+      "attacker": "rocket",
+      "fort": "bunker",
+      "techLevel": 10,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 225,
+        "attackerRange": 3200,
+        "fortRange": 2100,
+        "baseInitialDistance": 3975,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 3975,
+        "firstFortShotRoundIgnoringLoss": 9,
+        "firstAttackerShotRoundIgnoringLoss": 4
+      },
+      "proposed": {
+        "attackerStep": 225,
+        "attackerRange": 3200,
+        "fortRange": 2310,
+        "baseInitialDistance": 3975,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 4475,
+        "firstFortShotRoundIgnoringLoss": 10,
+        "firstAttackerShotRoundIgnoringLoss": 6
+      }
+    },
+    {
+      "attacker": "rocket",
+      "fort": "howitzer",
+      "techLevel": 0,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 150,
+        "attackerRange": 1600,
+        "fortRange": 3950,
+        "baseInitialDistance": 4500,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4500,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 20
+      },
+      "proposed": {
+        "attackerStep": 150,
+        "attackerRange": 1600,
+        "fortRange": 3989,
+        "baseInitialDistance": 4500,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 5000,
+        "firstFortShotRoundIgnoringLoss": 7,
+        "firstAttackerShotRoundIgnoringLoss": 23
+      }
+    },
+    {
+      "attacker": "rocket",
+      "fort": "howitzer",
+      "techLevel": 0,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 150,
+        "attackerRange": 1600,
+        "fortRange": 3950,
+        "baseInitialDistance": 4500,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4500,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 20
+      },
+      "proposed": {
+        "attackerStep": 150,
+        "attackerRange": 1600,
+        "fortRange": 4147,
+        "baseInitialDistance": 4500,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 5000,
+        "firstFortShotRoundIgnoringLoss": 6,
+        "firstAttackerShotRoundIgnoringLoss": 23
+      }
+    },
+    {
+      "attacker": "rocket",
+      "fort": "howitzer",
+      "techLevel": 0,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 150,
+        "attackerRange": 1600,
+        "fortRange": 3950,
+        "baseInitialDistance": 4500,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4500,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 20
+      },
+      "proposed": {
+        "attackerStep": 150,
+        "attackerRange": 1600,
+        "fortRange": 4345,
+        "baseInitialDistance": 4500,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 5000,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 23
+      }
+    },
+    {
+      "attacker": "rocket",
+      "fort": "howitzer",
+      "techLevel": 10,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 225,
+        "attackerRange": 3200,
+        "fortRange": 7900,
+        "baseInitialDistance": 8675,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 8675,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 25
+      },
+      "proposed": {
+        "attackerStep": 225,
+        "attackerRange": 3200,
+        "fortRange": 7979,
+        "baseInitialDistance": 8675,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 9175,
+        "firstFortShotRoundIgnoringLoss": 6,
+        "firstAttackerShotRoundIgnoringLoss": 27
+      }
+    },
+    {
+      "attacker": "rocket",
+      "fort": "howitzer",
+      "techLevel": 10,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 225,
+        "attackerRange": 3200,
+        "fortRange": 7900,
+        "baseInitialDistance": 8675,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 8675,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 25
+      },
+      "proposed": {
+        "attackerStep": 225,
+        "attackerRange": 3200,
+        "fortRange": 8295,
+        "baseInitialDistance": 8675,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 9175,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 27
+      }
+    },
+    {
+      "attacker": "rocket",
+      "fort": "howitzer",
+      "techLevel": 10,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 225,
+        "attackerRange": 3200,
+        "fortRange": 7900,
+        "baseInitialDistance": 8675,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 8675,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 25
+      },
+      "proposed": {
+        "attackerStep": 225,
+        "attackerRange": 3200,
+        "fortRange": 8690,
+        "baseInitialDistance": 8675,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 9175,
+        "firstFortShotRoundIgnoringLoss": 3,
+        "firstAttackerShotRoundIgnoringLoss": 27
+      }
+    },
+    {
+      "attacker": "rocket",
+      "fort": "antitank",
+      "techLevel": 0,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 150,
+        "attackerRange": 1600,
+        "fortRange": 3850,
+        "baseInitialDistance": 4400,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4400,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 19
+      },
+      "proposed": {
+        "attackerStep": 150,
+        "attackerRange": 1600,
+        "fortRange": 3888,
+        "baseInitialDistance": 4400,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 4900,
+        "firstFortShotRoundIgnoringLoss": 7,
+        "firstAttackerShotRoundIgnoringLoss": 22
+      }
+    },
+    {
+      "attacker": "rocket",
+      "fort": "antitank",
+      "techLevel": 0,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 150,
+        "attackerRange": 1600,
+        "fortRange": 3850,
+        "baseInitialDistance": 4400,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4400,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 19
+      },
+      "proposed": {
+        "attackerStep": 150,
+        "attackerRange": 1600,
+        "fortRange": 4042,
+        "baseInitialDistance": 4400,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 4900,
+        "firstFortShotRoundIgnoringLoss": 6,
+        "firstAttackerShotRoundIgnoringLoss": 22
+      }
+    },
+    {
+      "attacker": "rocket",
+      "fort": "antitank",
+      "techLevel": 0,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 150,
+        "attackerRange": 1600,
+        "fortRange": 3850,
+        "baseInitialDistance": 4400,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4400,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 19
+      },
+      "proposed": {
+        "attackerStep": 150,
+        "attackerRange": 1600,
+        "fortRange": 4235,
+        "baseInitialDistance": 4400,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 4900,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 22
+      }
+    },
+    {
+      "attacker": "rocket",
+      "fort": "antitank",
+      "techLevel": 10,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 225,
+        "attackerRange": 3200,
+        "fortRange": 7700,
+        "baseInitialDistance": 8475,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 8475,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 24
+      },
+      "proposed": {
+        "attackerStep": 225,
+        "attackerRange": 3200,
+        "fortRange": 7777,
+        "baseInitialDistance": 8475,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 8975,
+        "firstFortShotRoundIgnoringLoss": 6,
+        "firstAttackerShotRoundIgnoringLoss": 26
+      }
+    },
+    {
+      "attacker": "rocket",
+      "fort": "antitank",
+      "techLevel": 10,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 225,
+        "attackerRange": 3200,
+        "fortRange": 7700,
+        "baseInitialDistance": 8475,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 8475,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 24
+      },
+      "proposed": {
+        "attackerStep": 225,
+        "attackerRange": 3200,
+        "fortRange": 8085,
+        "baseInitialDistance": 8475,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 8975,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 26
+      }
+    },
+    {
+      "attacker": "rocket",
+      "fort": "antitank",
+      "techLevel": 10,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 225,
+        "attackerRange": 3200,
+        "fortRange": 7700,
+        "baseInitialDistance": 8475,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 8475,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 24
+      },
+      "proposed": {
+        "attackerStep": 225,
+        "attackerRange": 3200,
+        "fortRange": 8470,
+        "baseInitialDistance": 8475,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 8975,
+        "firstFortShotRoundIgnoringLoss": 3,
+        "firstAttackerShotRoundIgnoringLoss": 26
+      }
+    },
+    {
+      "attacker": "rocket",
+      "fort": "flak",
+      "techLevel": 0,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 150,
+        "attackerRange": 1600,
+        "fortRange": 1850,
+        "baseInitialDistance": 2400,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 2400,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 6
+      },
+      "proposed": {
+        "attackerStep": 150,
+        "attackerRange": 1600,
+        "fortRange": 1868,
+        "baseInitialDistance": 2400,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 2900,
+        "firstFortShotRoundIgnoringLoss": 7,
+        "firstAttackerShotRoundIgnoringLoss": 9
+      }
+    },
+    {
+      "attacker": "rocket",
+      "fort": "flak",
+      "techLevel": 0,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 150,
+        "attackerRange": 1600,
+        "fortRange": 1850,
+        "baseInitialDistance": 2400,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 2400,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 6
+      },
+      "proposed": {
+        "attackerStep": 150,
+        "attackerRange": 1600,
+        "fortRange": 1942,
+        "baseInitialDistance": 2400,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 2900,
+        "firstFortShotRoundIgnoringLoss": 7,
+        "firstAttackerShotRoundIgnoringLoss": 9
+      }
+    },
+    {
+      "attacker": "rocket",
+      "fort": "flak",
+      "techLevel": 0,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 150,
+        "attackerRange": 1600,
+        "fortRange": 1850,
+        "baseInitialDistance": 2400,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 2400,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 6
+      },
+      "proposed": {
+        "attackerStep": 150,
+        "attackerRange": 1600,
+        "fortRange": 2035,
+        "baseInitialDistance": 2400,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 2900,
+        "firstFortShotRoundIgnoringLoss": 6,
+        "firstAttackerShotRoundIgnoringLoss": 9
+      }
+    },
+    {
+      "attacker": "rocket",
+      "fort": "flak",
+      "techLevel": 10,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 225,
+        "attackerRange": 3200,
+        "fortRange": 3700,
+        "baseInitialDistance": 4475,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4475,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 6
+      },
+      "proposed": {
+        "attackerStep": 225,
+        "attackerRange": 3200,
+        "fortRange": 3737,
+        "baseInitialDistance": 4475,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 4975,
+        "firstFortShotRoundIgnoringLoss": 6,
+        "firstAttackerShotRoundIgnoringLoss": 8
+      }
+    },
+    {
+      "attacker": "rocket",
+      "fort": "flak",
+      "techLevel": 10,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 225,
+        "attackerRange": 3200,
+        "fortRange": 3700,
+        "baseInitialDistance": 4475,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4475,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 6
+      },
+      "proposed": {
+        "attackerStep": 225,
+        "attackerRange": 3200,
+        "fortRange": 3885,
+        "baseInitialDistance": 4475,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 4975,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 8
+      }
+    },
+    {
+      "attacker": "rocket",
+      "fort": "flak",
+      "techLevel": 10,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 225,
+        "attackerRange": 3200,
+        "fortRange": 3700,
+        "baseInitialDistance": 4475,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4475,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 6
+      },
+      "proposed": {
+        "attackerStep": 225,
+        "attackerRange": 3200,
+        "fortRange": 4070,
+        "baseInitialDistance": 4475,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 4975,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 8
+      }
+    },
+    {
+      "attacker": "htank",
+      "fort": "bunker",
+      "techLevel": 0,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 200,
+        "attackerRange": 320,
+        "fortRange": 1050,
+        "baseInitialDistance": 1750,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 1750,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 8
+      },
+      "proposed": {
+        "attackerStep": 200,
+        "attackerRange": 320,
+        "fortRange": 1060,
+        "baseInitialDistance": 1750,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 2250,
+        "firstFortShotRoundIgnoringLoss": 6,
+        "firstAttackerShotRoundIgnoringLoss": 10
+      }
+    },
+    {
+      "attacker": "htank",
+      "fort": "bunker",
+      "techLevel": 0,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 200,
+        "attackerRange": 320,
+        "fortRange": 1050,
+        "baseInitialDistance": 1750,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 1750,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 8
+      },
+      "proposed": {
+        "attackerStep": 200,
+        "attackerRange": 320,
+        "fortRange": 1102,
+        "baseInitialDistance": 1750,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 2250,
+        "firstFortShotRoundIgnoringLoss": 6,
+        "firstAttackerShotRoundIgnoringLoss": 10
+      }
+    },
+    {
+      "attacker": "htank",
+      "fort": "bunker",
+      "techLevel": 0,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 200,
+        "attackerRange": 320,
+        "fortRange": 1050,
+        "baseInitialDistance": 1750,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 1750,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 8
+      },
+      "proposed": {
+        "attackerStep": 200,
+        "attackerRange": 320,
+        "fortRange": 1155,
+        "baseInitialDistance": 1750,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 2250,
+        "firstFortShotRoundIgnoringLoss": 6,
+        "firstAttackerShotRoundIgnoringLoss": 10
+      }
+    },
+    {
+      "attacker": "htank",
+      "fort": "bunker",
+      "techLevel": 10,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 640,
+        "fortRange": 2100,
+        "baseInitialDistance": 3100,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 3100,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 9
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 640,
+        "fortRange": 2121,
+        "baseInitialDistance": 3100,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 3600,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 10
+      }
+    },
+    {
+      "attacker": "htank",
+      "fort": "bunker",
+      "techLevel": 10,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 640,
+        "fortRange": 2100,
+        "baseInitialDistance": 3100,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 3100,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 9
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 640,
+        "fortRange": 2205,
+        "baseInitialDistance": 3100,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 3600,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 10
+      }
+    },
+    {
+      "attacker": "htank",
+      "fort": "bunker",
+      "techLevel": 10,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 640,
+        "fortRange": 2100,
+        "baseInitialDistance": 3100,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 3100,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 9
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 640,
+        "fortRange": 2310,
+        "baseInitialDistance": 3100,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 3600,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 10
+      }
+    },
+    {
+      "attacker": "htank",
+      "fort": "howitzer",
+      "techLevel": 0,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 200,
+        "attackerRange": 320,
+        "fortRange": 3950,
+        "baseInitialDistance": 4650,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4650,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 22
+      },
+      "proposed": {
+        "attackerStep": 200,
+        "attackerRange": 320,
+        "fortRange": 3989,
+        "baseInitialDistance": 4650,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 5150,
+        "firstFortShotRoundIgnoringLoss": 6,
+        "firstAttackerShotRoundIgnoringLoss": 25
+      }
+    },
+    {
+      "attacker": "htank",
+      "fort": "howitzer",
+      "techLevel": 0,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 200,
+        "attackerRange": 320,
+        "fortRange": 3950,
+        "baseInitialDistance": 4650,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4650,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 22
+      },
+      "proposed": {
+        "attackerStep": 200,
+        "attackerRange": 320,
+        "fortRange": 4147,
+        "baseInitialDistance": 4650,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 5150,
+        "firstFortShotRoundIgnoringLoss": 6,
+        "firstAttackerShotRoundIgnoringLoss": 25
+      }
+    },
+    {
+      "attacker": "htank",
+      "fort": "howitzer",
+      "techLevel": 0,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 200,
+        "attackerRange": 320,
+        "fortRange": 3950,
+        "baseInitialDistance": 4650,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4650,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 22
+      },
+      "proposed": {
+        "attackerStep": 200,
+        "attackerRange": 320,
+        "fortRange": 4345,
+        "baseInitialDistance": 4650,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 5150,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 25
+      }
+    },
+    {
+      "attacker": "htank",
+      "fort": "howitzer",
+      "techLevel": 10,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 640,
+        "fortRange": 7900,
+        "baseInitialDistance": 8900,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 8900,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 28
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 640,
+        "fortRange": 7979,
+        "baseInitialDistance": 8900,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 9400,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 30
+      }
+    },
+    {
+      "attacker": "htank",
+      "fort": "howitzer",
+      "techLevel": 10,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 640,
+        "fortRange": 7900,
+        "baseInitialDistance": 8900,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 8900,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 28
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 640,
+        "fortRange": 8295,
+        "baseInitialDistance": 8900,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 9400,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 30
+      }
+    },
+    {
+      "attacker": "htank",
+      "fort": "howitzer",
+      "techLevel": 10,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 640,
+        "fortRange": 7900,
+        "baseInitialDistance": 8900,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 8900,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 28
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 640,
+        "fortRange": 8690,
+        "baseInitialDistance": 8900,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 9400,
+        "firstFortShotRoundIgnoringLoss": 3,
+        "firstAttackerShotRoundIgnoringLoss": 30
+      }
+    },
+    {
+      "attacker": "htank",
+      "fort": "antitank",
+      "techLevel": 0,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 200,
+        "attackerRange": 320,
+        "fortRange": 3850,
+        "baseInitialDistance": 4550,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4550,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 22
+      },
+      "proposed": {
+        "attackerStep": 200,
+        "attackerRange": 320,
+        "fortRange": 3888,
+        "baseInitialDistance": 4550,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 5050,
+        "firstFortShotRoundIgnoringLoss": 6,
+        "firstAttackerShotRoundIgnoringLoss": 24
+      }
+    },
+    {
+      "attacker": "htank",
+      "fort": "antitank",
+      "techLevel": 0,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 200,
+        "attackerRange": 320,
+        "fortRange": 3850,
+        "baseInitialDistance": 4550,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4550,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 22
+      },
+      "proposed": {
+        "attackerStep": 200,
+        "attackerRange": 320,
+        "fortRange": 4042,
+        "baseInitialDistance": 4550,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 5050,
+        "firstFortShotRoundIgnoringLoss": 6,
+        "firstAttackerShotRoundIgnoringLoss": 24
+      }
+    },
+    {
+      "attacker": "htank",
+      "fort": "antitank",
+      "techLevel": 0,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 200,
+        "attackerRange": 320,
+        "fortRange": 3850,
+        "baseInitialDistance": 4550,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4550,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 22
+      },
+      "proposed": {
+        "attackerStep": 200,
+        "attackerRange": 320,
+        "fortRange": 4235,
+        "baseInitialDistance": 4550,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 5050,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 24
+      }
+    },
+    {
+      "attacker": "htank",
+      "fort": "antitank",
+      "techLevel": 10,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 640,
+        "fortRange": 7700,
+        "baseInitialDistance": 8700,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 8700,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 27
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 640,
+        "fortRange": 7777,
+        "baseInitialDistance": 8700,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 9200,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 29
+      }
+    },
+    {
+      "attacker": "htank",
+      "fort": "antitank",
+      "techLevel": 10,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 640,
+        "fortRange": 7700,
+        "baseInitialDistance": 8700,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 8700,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 27
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 640,
+        "fortRange": 8085,
+        "baseInitialDistance": 8700,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 9200,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 29
+      }
+    },
+    {
+      "attacker": "htank",
+      "fort": "antitank",
+      "techLevel": 10,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 640,
+        "fortRange": 7700,
+        "baseInitialDistance": 8700,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 8700,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 27
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 640,
+        "fortRange": 8470,
+        "baseInitialDistance": 8700,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 9200,
+        "firstFortShotRoundIgnoringLoss": 3,
+        "firstAttackerShotRoundIgnoringLoss": 29
+      }
+    },
+    {
+      "attacker": "htank",
+      "fort": "flak",
+      "techLevel": 0,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 200,
+        "attackerRange": 320,
+        "fortRange": 1850,
+        "baseInitialDistance": 2550,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 2550,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 12
+      },
+      "proposed": {
+        "attackerStep": 200,
+        "attackerRange": 320,
+        "fortRange": 1868,
+        "baseInitialDistance": 2550,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 3050,
+        "firstFortShotRoundIgnoringLoss": 6,
+        "firstAttackerShotRoundIgnoringLoss": 14
+      }
+    },
+    {
+      "attacker": "htank",
+      "fort": "flak",
+      "techLevel": 0,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 200,
+        "attackerRange": 320,
+        "fortRange": 1850,
+        "baseInitialDistance": 2550,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 2550,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 12
+      },
+      "proposed": {
+        "attackerStep": 200,
+        "attackerRange": 320,
+        "fortRange": 1942,
+        "baseInitialDistance": 2550,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 3050,
+        "firstFortShotRoundIgnoringLoss": 6,
+        "firstAttackerShotRoundIgnoringLoss": 14
+      }
+    },
+    {
+      "attacker": "htank",
+      "fort": "flak",
+      "techLevel": 0,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 200,
+        "attackerRange": 320,
+        "fortRange": 1850,
+        "baseInitialDistance": 2550,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 2550,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 12
+      },
+      "proposed": {
+        "attackerStep": 200,
+        "attackerRange": 320,
+        "fortRange": 2035,
+        "baseInitialDistance": 2550,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 3050,
+        "firstFortShotRoundIgnoringLoss": 6,
+        "firstAttackerShotRoundIgnoringLoss": 14
+      }
+    },
+    {
+      "attacker": "htank",
+      "fort": "flak",
+      "techLevel": 10,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 640,
+        "fortRange": 3700,
+        "baseInitialDistance": 4700,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4700,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 14
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 640,
+        "fortRange": 3737,
+        "baseInitialDistance": 4700,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 5200,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 16
+      }
+    },
+    {
+      "attacker": "htank",
+      "fort": "flak",
+      "techLevel": 10,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 640,
+        "fortRange": 3700,
+        "baseInitialDistance": 4700,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4700,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 14
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 640,
+        "fortRange": 3885,
+        "baseInitialDistance": 4700,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 5200,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 16
+      }
+    },
+    {
+      "attacker": "htank",
+      "fort": "flak",
+      "techLevel": 10,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 640,
+        "fortRange": 3700,
+        "baseInitialDistance": 4700,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4700,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 14
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 640,
+        "fortRange": 4070,
+        "baseInitialDistance": 4700,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 5200,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 16
+      }
+    },
+    {
+      "attacker": "special",
+      "fort": "bunker",
+      "techLevel": 0,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 180,
+        "fortRange": 1050,
+        "baseInitialDistance": 2050,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 2050,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 7
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 180,
+        "fortRange": 1060,
+        "baseInitialDistance": 2050,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 2550,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 8
+      }
+    },
+    {
+      "attacker": "special",
+      "fort": "bunker",
+      "techLevel": 0,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 180,
+        "fortRange": 1050,
+        "baseInitialDistance": 2050,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 2050,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 7
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 180,
+        "fortRange": 1102,
+        "baseInitialDistance": 2050,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 2550,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 8
+      }
+    },
+    {
+      "attacker": "special",
+      "fort": "bunker",
+      "techLevel": 0,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 180,
+        "fortRange": 1050,
+        "baseInitialDistance": 2050,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 2050,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 7
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 180,
+        "fortRange": 1155,
+        "baseInitialDistance": 2050,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 2550,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 8
+      }
+    },
+    {
+      "attacker": "special",
+      "fort": "bunker",
+      "techLevel": 10,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 360,
+        "fortRange": 2100,
+        "baseInitialDistance": 3100,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 3100,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 10
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 360,
+        "fortRange": 2121,
+        "baseInitialDistance": 3100,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 3600,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 11
+      }
+    },
+    {
+      "attacker": "special",
+      "fort": "bunker",
+      "techLevel": 10,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 360,
+        "fortRange": 2100,
+        "baseInitialDistance": 3100,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 3100,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 10
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 360,
+        "fortRange": 2205,
+        "baseInitialDistance": 3100,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 3600,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 11
+      }
+    },
+    {
+      "attacker": "special",
+      "fort": "bunker",
+      "techLevel": 10,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 360,
+        "fortRange": 2100,
+        "baseInitialDistance": 3100,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 3100,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 10
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 360,
+        "fortRange": 2310,
+        "baseInitialDistance": 3100,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 3600,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 11
+      }
+    },
+    {
+      "attacker": "special",
+      "fort": "howitzer",
+      "techLevel": 0,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 180,
+        "fortRange": 3950,
+        "baseInitialDistance": 4950,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4950,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 16
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 180,
+        "fortRange": 3989,
+        "baseInitialDistance": 4950,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 5450,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 18
+      }
+    },
+    {
+      "attacker": "special",
+      "fort": "howitzer",
+      "techLevel": 0,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 180,
+        "fortRange": 3950,
+        "baseInitialDistance": 4950,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4950,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 16
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 180,
+        "fortRange": 4147,
+        "baseInitialDistance": 4950,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 5450,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 18
+      }
+    },
+    {
+      "attacker": "special",
+      "fort": "howitzer",
+      "techLevel": 0,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 180,
+        "fortRange": 3950,
+        "baseInitialDistance": 4950,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4950,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 16
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 180,
+        "fortRange": 4345,
+        "baseInitialDistance": 4950,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 5450,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 18
+      }
+    },
+    {
+      "attacker": "special",
+      "fort": "howitzer",
+      "techLevel": 10,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 360,
+        "fortRange": 7900,
+        "baseInitialDistance": 8900,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 8900,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 29
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 360,
+        "fortRange": 7979,
+        "baseInitialDistance": 8900,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 9400,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 31
+      }
+    },
+    {
+      "attacker": "special",
+      "fort": "howitzer",
+      "techLevel": 10,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 360,
+        "fortRange": 7900,
+        "baseInitialDistance": 8900,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 8900,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 29
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 360,
+        "fortRange": 8295,
+        "baseInitialDistance": 8900,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 9400,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 31
+      }
+    },
+    {
+      "attacker": "special",
+      "fort": "howitzer",
+      "techLevel": 10,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 360,
+        "fortRange": 7900,
+        "baseInitialDistance": 8900,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 8900,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 29
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 360,
+        "fortRange": 8690,
+        "baseInitialDistance": 8900,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 9400,
+        "firstFortShotRoundIgnoringLoss": 3,
+        "firstAttackerShotRoundIgnoringLoss": 31
+      }
+    },
+    {
+      "attacker": "special",
+      "fort": "antitank",
+      "techLevel": 0,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 180,
+        "fortRange": 3850,
+        "baseInitialDistance": 4850,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4850,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 16
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 180,
+        "fortRange": 3888,
+        "baseInitialDistance": 4850,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 5350,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 18
+      }
+    },
+    {
+      "attacker": "special",
+      "fort": "antitank",
+      "techLevel": 0,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 180,
+        "fortRange": 3850,
+        "baseInitialDistance": 4850,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4850,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 16
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 180,
+        "fortRange": 4042,
+        "baseInitialDistance": 4850,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 5350,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 18
+      }
+    },
+    {
+      "attacker": "special",
+      "fort": "antitank",
+      "techLevel": 0,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 180,
+        "fortRange": 3850,
+        "baseInitialDistance": 4850,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4850,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 16
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 180,
+        "fortRange": 4235,
+        "baseInitialDistance": 4850,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 5350,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 18
+      }
+    },
+    {
+      "attacker": "special",
+      "fort": "antitank",
+      "techLevel": 10,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 360,
+        "fortRange": 7700,
+        "baseInitialDistance": 8700,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 8700,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 28
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 360,
+        "fortRange": 7777,
+        "baseInitialDistance": 8700,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 9200,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 30
+      }
+    },
+    {
+      "attacker": "special",
+      "fort": "antitank",
+      "techLevel": 10,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 360,
+        "fortRange": 7700,
+        "baseInitialDistance": 8700,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 8700,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 28
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 360,
+        "fortRange": 8085,
+        "baseInitialDistance": 8700,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 9200,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 30
+      }
+    },
+    {
+      "attacker": "special",
+      "fort": "antitank",
+      "techLevel": 10,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 360,
+        "fortRange": 7700,
+        "baseInitialDistance": 8700,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 8700,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 28
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 360,
+        "fortRange": 8470,
+        "baseInitialDistance": 8700,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 9200,
+        "firstFortShotRoundIgnoringLoss": 3,
+        "firstAttackerShotRoundIgnoringLoss": 30
+      }
+    },
+    {
+      "attacker": "special",
+      "fort": "flak",
+      "techLevel": 0,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 180,
+        "fortRange": 1850,
+        "baseInitialDistance": 2850,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 2850,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 9
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 180,
+        "fortRange": 1868,
+        "baseInitialDistance": 2850,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 3350,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 11
+      }
+    },
+    {
+      "attacker": "special",
+      "fort": "flak",
+      "techLevel": 0,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 180,
+        "fortRange": 1850,
+        "baseInitialDistance": 2850,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 2850,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 9
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 180,
+        "fortRange": 1942,
+        "baseInitialDistance": 2850,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 3350,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 11
+      }
+    },
+    {
+      "attacker": "special",
+      "fort": "flak",
+      "techLevel": 0,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 180,
+        "fortRange": 1850,
+        "baseInitialDistance": 2850,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 2850,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 9
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 180,
+        "fortRange": 2035,
+        "baseInitialDistance": 2850,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 3350,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 11
+      }
+    },
+    {
+      "attacker": "special",
+      "fort": "flak",
+      "techLevel": 10,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 360,
+        "fortRange": 3700,
+        "baseInitialDistance": 4700,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4700,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 15
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 360,
+        "fortRange": 3737,
+        "baseInitialDistance": 4700,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 5200,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 17
+      }
+    },
+    {
+      "attacker": "special",
+      "fort": "flak",
+      "techLevel": 10,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 360,
+        "fortRange": 3700,
+        "baseInitialDistance": 4700,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4700,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 15
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 360,
+        "fortRange": 3885,
+        "baseInitialDistance": 4700,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 5200,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 17
+      }
+    },
+    {
+      "attacker": "special",
+      "fort": "flak",
+      "techLevel": 10,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 360,
+        "fortRange": 3700,
+        "baseInitialDistance": 4700,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4700,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 15
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 360,
+        "fortRange": 4070,
+        "baseInitialDistance": 4700,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 5200,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 17
+      }
+    },
+    {
+      "attacker": "bomber",
+      "fort": "bunker",
+      "techLevel": 0,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 300,
+        "fortRange": 1050,
+        "baseInitialDistance": 2050,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 2050,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 6
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 300,
+        "fortRange": 1060,
+        "baseInitialDistance": 2050,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 2550,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 8
+      }
+    },
+    {
+      "attacker": "bomber",
+      "fort": "bunker",
+      "techLevel": 0,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 300,
+        "fortRange": 1050,
+        "baseInitialDistance": 2050,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 2050,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 6
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 300,
+        "fortRange": 1102,
+        "baseInitialDistance": 2050,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 2550,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 8
+      }
+    },
+    {
+      "attacker": "bomber",
+      "fort": "bunker",
+      "techLevel": 0,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 300,
+        "fortRange": 1050,
+        "baseInitialDistance": 2050,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 2050,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 6
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 300,
+        "fortRange": 1155,
+        "baseInitialDistance": 2050,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 2550,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 8
+      }
+    },
+    {
+      "attacker": "bomber",
+      "fort": "bunker",
+      "techLevel": 10,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 450,
+        "attackerRange": 600,
+        "fortRange": 2100,
+        "baseInitialDistance": 3550,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 3550,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 7
+      },
+      "proposed": {
+        "attackerStep": 450,
+        "attackerRange": 600,
+        "fortRange": 2121,
+        "baseInitialDistance": 3550,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 4050,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 8
+      }
+    },
+    {
+      "attacker": "bomber",
+      "fort": "bunker",
+      "techLevel": 10,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 450,
+        "attackerRange": 600,
+        "fortRange": 2100,
+        "baseInitialDistance": 3550,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 3550,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 7
+      },
+      "proposed": {
+        "attackerStep": 450,
+        "attackerRange": 600,
+        "fortRange": 2205,
+        "baseInitialDistance": 3550,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 4050,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 8
+      }
+    },
+    {
+      "attacker": "bomber",
+      "fort": "bunker",
+      "techLevel": 10,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 450,
+        "attackerRange": 600,
+        "fortRange": 2100,
+        "baseInitialDistance": 3550,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 3550,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 7
+      },
+      "proposed": {
+        "attackerStep": 450,
+        "attackerRange": 600,
+        "fortRange": 2310,
+        "baseInitialDistance": 3550,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 4050,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 8
+      }
+    },
+    {
+      "attacker": "bomber",
+      "fort": "howitzer",
+      "techLevel": 0,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 300,
+        "fortRange": 3950,
+        "baseInitialDistance": 4950,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4950,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 16
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 300,
+        "fortRange": 3989,
+        "baseInitialDistance": 4950,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 5450,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 18
+      }
+    },
+    {
+      "attacker": "bomber",
+      "fort": "howitzer",
+      "techLevel": 0,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 300,
+        "fortRange": 3950,
+        "baseInitialDistance": 4950,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4950,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 16
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 300,
+        "fortRange": 4147,
+        "baseInitialDistance": 4950,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 5450,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 18
+      }
+    },
+    {
+      "attacker": "bomber",
+      "fort": "howitzer",
+      "techLevel": 0,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 300,
+        "fortRange": 3950,
+        "baseInitialDistance": 4950,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4950,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 16
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 300,
+        "fortRange": 4345,
+        "baseInitialDistance": 4950,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 5450,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 18
+      }
+    },
+    {
+      "attacker": "bomber",
+      "fort": "howitzer",
+      "techLevel": 10,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 450,
+        "attackerRange": 600,
+        "fortRange": 7900,
+        "baseInitialDistance": 9350,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 9350,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 20
+      },
+      "proposed": {
+        "attackerStep": 450,
+        "attackerRange": 600,
+        "fortRange": 7979,
+        "baseInitialDistance": 9350,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 9850,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 21
+      }
+    },
+    {
+      "attacker": "bomber",
+      "fort": "howitzer",
+      "techLevel": 10,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 450,
+        "attackerRange": 600,
+        "fortRange": 7900,
+        "baseInitialDistance": 9350,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 9350,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 20
+      },
+      "proposed": {
+        "attackerStep": 450,
+        "attackerRange": 600,
+        "fortRange": 8295,
+        "baseInitialDistance": 9350,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 9850,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 21
+      }
+    },
+    {
+      "attacker": "bomber",
+      "fort": "howitzer",
+      "techLevel": 10,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 450,
+        "attackerRange": 600,
+        "fortRange": 7900,
+        "baseInitialDistance": 9350,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 9350,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 20
+      },
+      "proposed": {
+        "attackerStep": 450,
+        "attackerRange": 600,
+        "fortRange": 8690,
+        "baseInitialDistance": 9350,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 9850,
+        "firstFortShotRoundIgnoringLoss": 3,
+        "firstAttackerShotRoundIgnoringLoss": 21
+      }
+    },
+    {
+      "attacker": "bomber",
+      "fort": "antitank",
+      "techLevel": 0,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 300,
+        "fortRange": 3850,
+        "baseInitialDistance": 4850,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4850,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 16
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 300,
+        "fortRange": 3888,
+        "baseInitialDistance": 4850,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 5350,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 17
+      }
+    },
+    {
+      "attacker": "bomber",
+      "fort": "antitank",
+      "techLevel": 0,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 300,
+        "fortRange": 3850,
+        "baseInitialDistance": 4850,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4850,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 16
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 300,
+        "fortRange": 4042,
+        "baseInitialDistance": 4850,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 5350,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 17
+      }
+    },
+    {
+      "attacker": "bomber",
+      "fort": "antitank",
+      "techLevel": 0,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 300,
+        "fortRange": 3850,
+        "baseInitialDistance": 4850,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 4850,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 16
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 300,
+        "fortRange": 4235,
+        "baseInitialDistance": 4850,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 5350,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 17
+      }
+    },
+    {
+      "attacker": "bomber",
+      "fort": "antitank",
+      "techLevel": 10,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 450,
+        "attackerRange": 600,
+        "fortRange": 7700,
+        "baseInitialDistance": 9150,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 9150,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 19
+      },
+      "proposed": {
+        "attackerStep": 450,
+        "attackerRange": 600,
+        "fortRange": 7777,
+        "baseInitialDistance": 9150,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 9650,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 21
+      }
+    },
+    {
+      "attacker": "bomber",
+      "fort": "antitank",
+      "techLevel": 10,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 450,
+        "attackerRange": 600,
+        "fortRange": 7700,
+        "baseInitialDistance": 9150,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 9150,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 19
+      },
+      "proposed": {
+        "attackerStep": 450,
+        "attackerRange": 600,
+        "fortRange": 8085,
+        "baseInitialDistance": 9150,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 9650,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 21
+      }
+    },
+    {
+      "attacker": "bomber",
+      "fort": "antitank",
+      "techLevel": 10,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 450,
+        "attackerRange": 600,
+        "fortRange": 7700,
+        "baseInitialDistance": 9150,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 9150,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 19
+      },
+      "proposed": {
+        "attackerStep": 450,
+        "attackerRange": 600,
+        "fortRange": 8470,
+        "baseInitialDistance": 9150,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 9650,
+        "firstFortShotRoundIgnoringLoss": 3,
+        "firstAttackerShotRoundIgnoringLoss": 21
+      }
+    },
+    {
+      "attacker": "bomber",
+      "fort": "flak",
+      "techLevel": 0,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 300,
+        "fortRange": 1850,
+        "baseInitialDistance": 2850,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 2850,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 9
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 300,
+        "fortRange": 1868,
+        "baseInitialDistance": 2850,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 3350,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 11
+      }
+    },
+    {
+      "attacker": "bomber",
+      "fort": "flak",
+      "techLevel": 0,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 300,
+        "fortRange": 1850,
+        "baseInitialDistance": 2850,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 2850,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 9
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 300,
+        "fortRange": 1942,
+        "baseInitialDistance": 2850,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 3350,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 11
+      }
+    },
+    {
+      "attacker": "bomber",
+      "fort": "flak",
+      "techLevel": 0,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 300,
+        "attackerRange": 300,
+        "fortRange": 1850,
+        "baseInitialDistance": 2850,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 2850,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 9
+      },
+      "proposed": {
+        "attackerStep": 300,
+        "attackerRange": 300,
+        "fortRange": 2035,
+        "baseInitialDistance": 2850,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 3350,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 11
+      }
+    },
+    {
+      "attacker": "bomber",
+      "fort": "flak",
+      "techLevel": 10,
+      "wallLevel": 1,
+      "current": {
+        "attackerStep": 450,
+        "attackerRange": 600,
+        "fortRange": 3700,
+        "baseInitialDistance": 5150,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 5150,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 11
+      },
+      "proposed": {
+        "attackerStep": 450,
+        "attackerRange": 600,
+        "fortRange": 3737,
+        "baseInitialDistance": 5150,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 5650,
+        "firstFortShotRoundIgnoringLoss": 5,
+        "firstAttackerShotRoundIgnoringLoss": 12
+      }
+    },
+    {
+      "attacker": "bomber",
+      "fort": "flak",
+      "techLevel": 10,
+      "wallLevel": 5,
+      "current": {
+        "attackerStep": 450,
+        "attackerRange": 600,
+        "fortRange": 3700,
+        "baseInitialDistance": 5150,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 5150,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 11
+      },
+      "proposed": {
+        "attackerStep": 450,
+        "attackerRange": 600,
+        "fortRange": 3885,
+        "baseInitialDistance": 5150,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 5650,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 12
+      }
+    },
+    {
+      "attacker": "bomber",
+      "fort": "flak",
+      "techLevel": 10,
+      "wallLevel": 10,
+      "current": {
+        "attackerStep": 450,
+        "attackerRange": 600,
+        "fortRange": 3700,
+        "baseInitialDistance": 5150,
+        "cityFortDistanceExtra": 0,
+        "initialDistance": 5150,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 11
+      },
+      "proposed": {
+        "attackerStep": 450,
+        "attackerRange": 600,
+        "fortRange": 4070,
+        "baseInitialDistance": 5150,
+        "cityFortDistanceExtra": 500,
+        "initialDistance": 5650,
+        "firstFortShotRoundIgnoringLoss": 4,
+        "firstAttackerShotRoundIgnoringLoss": 12
+      }
+    }
+  ]
+}

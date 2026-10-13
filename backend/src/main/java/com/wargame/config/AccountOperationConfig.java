@@ -33,6 +33,22 @@ public class AccountOperationConfig {
         MethodInterceptor advice = invocation -> {
             var auth = SecurityContextHolder.getContext().getAuthentication();
             if (auth == null || !(auth.getPrincipal() instanceof UserPrincipal user)) return invocation.proceed();
+            if (invocation.getThis() instanceof com.wargame.controller.PvpPracticeController) {
+                // 演习复制与双人锁在独立短事务完成，不能持有单方真实账号锁进入配对事务。
+                Runnable check = () -> new TransactionTemplate(transactions.getObject()).executeWithoutResult(status -> {
+                    var player = accounts.getObject().lockPlayer(user.getPlayerId());
+                    if (!player.accountActive() || player.getAuthVersion() != user.getAuthVersion())
+                        throw new AccountException("ACCOUNT_UNAVAILABLE", "登录状态已失效，请重新登录");
+                    var attributes = org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+                    var request = attributes instanceof org.springframework.web.context.request.ServletRequestAttributes web ? web.getRequest() : null;
+                    protection.getObject().requireOperationAccess(player, request == null ? null : request.getHeader("X-Play-Session"),
+                            request == null ? "" : request.getRequestURI());
+                });
+                check.run();
+                Object result = invocation.proceed();
+                check.run();
+                return result;
+            }
             return new TransactionTemplate(transactions.getObject()).execute(status -> {
                 var player = accounts.getObject().lockPlayer(user.getPlayerId());
                 if (!player.accountActive() || player.getAuthVersion() != user.getAuthVersion())

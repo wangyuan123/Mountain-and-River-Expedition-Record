@@ -18,7 +18,7 @@ function setup(initialCount = 0) {
       activeElement: null,
       querySelector: () => null,
       querySelectorAll: () => [nav],
-      getElementById: () => ({ innerHTML: '' }),
+      getElementById: () => ({ innerHTML: '', style: {} }),
       createElement: () => ({ remove() { nav.badge = null; } })
     },
     Game: {
@@ -36,6 +36,101 @@ function setup(initialCount = 0) {
 }
 const flush = () => new Promise(resolve => setImmediate(resolve));
 
+for (const type of ['battle', 'scout']) {
+  for (const route of ['reports', 'reportDetail']) {
+    test(`return arrival syncs state without replacing the ${type} ${route} being read`, async () => {
+      const { G, context, load } = setup();
+      load('core.js');
+      G.Core.state = G.state;
+      load('battle.js');
+      G.ApiClient = function () { this.getToken = () => 'alice'; };
+      load('api.js');
+      G.API.getReports = undefined;
+      const report = { id: 21, type, time: Date.now(), readAt: 1, win: true,
+        toName: '目标', data: { targetName: '目标', showCityInfo: true }, roundLogs: ['我方前进'] };
+      G.state.reports.push(report);
+      G.state.world.marches = [{ id: 7, returning: true }];
+
+      let nodes = {};
+      let writes = 0;
+      let html = '';
+      const view = {
+        scrollTop: 0,
+        querySelector: () => ({}),
+        get innerHTML() { return html; },
+        set innerHTML(value) {
+          html = value;
+          writes++;
+          nodes = {};
+          // 用渲染后的 ID 和初始样式重建节点，模拟 innerHTML 替换会销毁展开状态。
+          for (const match of value.matchAll(/<(?:div|button)\b[^>]*\bid="([^"]+)"[^>]*>/g)) {
+            const display = /display:([^;"\s]+)/.exec(match[0]);
+            nodes[match[1]] = { innerHTML: '', style: { display: display ? display[1] : '' },
+              classList: { add() {}, remove() {} }, querySelector: () => null };
+          }
+        }
+      };
+      context.document.getElementById = id => id === 'view' ? view : nodes[id] || null;
+      G.Core.route = route;
+      G.Battle._viewReport = report;
+      G.Core.render();
+      if (route === 'reports') G.Battle.toggleReport(21);
+      if (route === 'reportDetail' && type === 'battle') G.Battle.toggleBattleDetails();
+      const boxId = route === 'reports' ? 'rdetail_21' : type === 'battle' ? 'battleDetailsBox' : null;
+      const box = boxId && nodes[boxId];
+      const displayBefore = box && box.style.display;
+      const writesBefore = writes;
+      view.scrollTop = 320;
+
+      let topUpdates = 0;
+      let navUpdates = 0;
+      const messages = [];
+      G.Core.refreshTop = () => { topUpdates++; };
+      G.Main = { renderNavBar() { navUpdates++; } };
+      G.toast = message => messages.push(message);
+      const latestState = { player: { id: 1 }, resources: { food: 1500 },
+        army: { infantry: 30 }, world: { marches: [] }, unreadReportCount: 0 };
+      let forceRefresh;
+      G.API.getGameState = async force => { forceRefresh = force; return latestState; };
+      load('ws-client.js');
+      load('ws-handlers.js');
+      G.WS.handleMessage(JSON.stringify({ type: 'march', data: { event: 'returned', marchId: 7 } }));
+      await flush();
+
+      assert.equal(forceRefresh, true);
+      assert.equal(G.state, latestState);
+      assert.equal(G.Core.state, G.state);
+      assert.equal(G.state.reports[0], report);
+      assert.equal(G.state.army.infantry, 30);
+      assert.equal(G.state.resources.food, 1500);
+      assert.equal(G.state.world.marches.length, 0);
+      assert.equal(writes, writesBefore, 'background arrival must preserve the report DOM');
+      assert.equal(view.scrollTop, 320);
+      if (boxId) {
+        assert.equal(nodes[boxId], box);
+        assert.equal(box.style.display, displayBefore);
+      }
+      assert.equal(topUpdates, 1);
+      assert.equal(navUpdates, 1);
+      assert.deepEqual(messages, ['部队已返回城市']);
+    });
+  }
+}
+
+test('return arrival still renders the updated army page', async () => {
+  const { G, load } = setup();
+  G.Core.route = 'army';
+  const latestState = { player: { id: 1 }, army: { infantry: 30 }, world: { marches: [] } };
+  G.API.getGameState = async () => latestState;
+  let renderedState;
+  G.Core.render = () => { renderedState = G.Core.state; };
+  load('ws-client.js');
+  load('ws-handlers.js');
+  G.WS.handleMessage(JSON.stringify({ type: 'march', data: { event: 'returned' } }));
+  await flush();
+  assert.equal(renderedState, latestState);
+});
+
 for (const legacy of [true, false]) {
   test(`unit renaming preserves log-only troop and casualty recovery: legacy=${legacy}`, () => {
     const { G } = setup();
@@ -47,7 +142,7 @@ for (const legacy of [true, false]) {
     for (const [id, unit] of Object.entries(G.DATA.units)) {
       // 旧战报可能缺少初始兵力表，必须从日志恢复；新名称中的型号括号不能干扰数量解析。
       const attacked = G.Battle.renderArmyUnits('enemy', null, { [id]: 7 }, [
-        `我方${nameOf(G.DATA.units.rocket)}(20)齐射敌${nameOf(unit)}(10) 伤害100 击毁3`
+        `我方${nameOf(G.DATA.units.rocket)}(20)齐射敌${nameOf(unit)}(10) 伤害100 击毁3${legacy ? '' : ' 剩余攻击额度0% 有效射程1600 目标距离1500'}`
       ]);
       assert.ok(attacked.includes(unit.name), id);
       assert.match(attacked, /rb-u-init">10<\/span>/, id);
@@ -61,6 +156,34 @@ for (const legacy of [true, false]) {
     }
   });
 }
+
+test('pre-rename rocket reports recover troops and casualties under the current unit name', () => {
+  const { G } = setup();
+  const dataContext = { window: { Game: {} } };
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../js/data.js'), 'utf8'), dataContext);
+  Object.assign(G.DATA, dataContext.window.Game.DATA);
+  G.fmt = String;
+  // 使用真实旧名称，覆盖无初始兵力表的历史战报，而非从改名后的配置生成测试输入。
+  for (const [oldName, isJapanese] of [
+    ['火箭', false],
+    ['火箭-喀秋莎（BM-13）', false],
+    ['火箭-四式喷进炮（Type 4）', true]
+  ]) {
+    const currentName = (isJapanese ? G.DATA.japaneseUnits : G.DATA.units).rocket.name;
+    const attacked = G.Battle.renderArmyUnits('enemy', null, { rocket: 7 }, [
+      `我方步兵(20)射击敌${oldName}(10) 伤害100 击毁3`
+    ], null, isJapanese);
+    assert.ok(attacked.includes(currentName), oldName);
+    assert.match(attacked, /rb-u-init">10<\/span>/, oldName);
+    assert.match(attacked, /rb-u-surv">7<\/span>/, oldName);
+    assert.match(attacked, /rb-loss-val lost">\(-3\)<\/span>/, oldName);
+    const moved = G.Battle.renderArmyUnits('mine', null, null, [
+      `我方${oldName}(12) 前进 100 距离->200`
+    ], null, isJapanese);
+    assert.ok(moved.includes(currentName), oldName);
+    assert.match(moved, /rb-u-init">12<\/span>/, oldName);
+  }
+});
 
 for (const intercepted of [true, false]) {
   test(`incoming scout report uses defender perspective: intercepted=${intercepted}`, () => {
@@ -112,7 +235,7 @@ test('battle list uses action titles and keeps detailed results behind both deta
   };
   G.state.reports.push(r);
   const card = G.Battle.renderReportCard(r);
-  assert.match(card, /征服报告<\/span>/);
+  assert.match(card, /讨伐报告<\/span>/);
   assert.match(card, /&lt;玩家&gt; → &lt;目标&gt; \(103,105\)/);
   assert.match(card, /rc-head" onclick="Game.Battle.toggleReport\('21'\)/);
   assert.match(card, /id="rdetail_21" class="rc-expand" style="display:none"><\/div>/);
@@ -187,11 +310,11 @@ test('battle details omit deployment instructions from saved reports', () => {
   assert.match(detail.innerHTML, /我方步兵前进/);
 });
 
-test('battle details keep each side together within its round', () => {
+test('battle details preserve server timeline within each round', () => {
   const { G } = setup();
   G.fmt = String;
   const roundLogs = [
-    '规则版本：balance-v10-rocket-counters-20260925',
+    '规则版本：balance-v11-attrition-counters-20261008',
     '战场初始距离: 4000',
     '-- 第1回合 --',
     '敌方将领加成：本回合生效',
@@ -210,21 +333,21 @@ test('battle details keep each side together within its round', () => {
   const lines = [...detail.innerHTML.matchAll(/<div class="logline[^\"]*">([^<]*)<\/div>/g)]
     .map(match => match[1]);
   assert.match(detail.innerHTML, /class="rb-initial-distance">战场初始距离: 4000<\/div>/);
-  assert.doesNotMatch(detail.innerHTML, /规则版本|balance-v10-rocket-counters-20260925/);
+  assert.doesNotMatch(detail.innerHTML, /规则版本|balance-v11-attrition-counters-20261008/);
   assert.deepEqual(lines, [
     '-- 第1回合 --',
-    '我方战斗机(500)前进并攻击',
-    '我方轰炸机(200)前进',
     '敌方将领加成：本回合生效',
     '敌方战列舰(1)前进并炮击',
+    '我方战斗机(500)前进并攻击',
     '敌方驱逐舰(5)前进',
+    '我方轰炸机(200)前进',
     '-- 第2回合 --',
-    '我方战斗机(500)攻击',
     '敌方战列舰(1)开火',
+    '我方战斗机(500)攻击',
     '★ 全歼敌军,胜利!'
   ]);
   assert.deepEqual(roundLogs.slice(0, 5), [
-    '规则版本：balance-v10-rocket-counters-20260925',
+    '规则版本：balance-v11-attrition-counters-20261008',
     '战场初始距离: 4000', '-- 第1回合 --',
     '敌方将领加成：本回合生效', '敌方战列舰(1)前进并炮击'
   ]);
@@ -239,7 +362,7 @@ test('battle details keep movement and finishing attacks together for both sides
     '我方轰炸机(200) [前进] 推进600 -> 坐标1200',
     '我方战斗机(1000) [前进] 推进500 -> 坐标1500；空战敌步兵(35) 伤害4200 击毁35',
     '敌方步兵(35) [前进] 推进150 -> 坐标1850',
-    '敌方火箭(20) [前进] 推进375 -> 坐标2000；齐射我方轰炸机(200) 伤害100 击毁1',
+    '敌方反坦克火箭车(20) [前进] 推进375 -> 坐标2000；齐射我方轰炸机(200) 伤害100 击毁1',
     '★ 全歼敌军，胜利！'
   ] };
   const detail = { innerHTML: '' };
@@ -249,8 +372,8 @@ test('battle details keep movement and finishing attacks together for both sides
   assert.ok(detail.innerHTML.indexOf('我方战斗机(1000) [前进]') <
     detail.innerHTML.indexOf('敌方步兵(35) [前进]'));
   assert.ok(detail.innerHTML.indexOf('敌方步兵(35) [前进]') <
-    detail.innerHTML.indexOf('敌方火箭(20) [前进]'));
-  assert.ok(detail.innerHTML.indexOf('敌方火箭(20) [前进]') <
+    detail.innerHTML.indexOf('敌方反坦克火箭车(20) [前进]'));
+  assert.ok(detail.innerHTML.indexOf('敌方反坦克火箭车(20) [前进]') <
     detail.innerHTML.indexOf('★ 全歼敌军'));
 });
 
@@ -277,7 +400,7 @@ test('defender battle report maps the invader and commander to the enemy side', 
   assert.match(card, /rc-result w">胜/);
   assert.match(board, /防守成功/);
   assert.match(board, /敌方统帅:<\/b> 朱可夫/);
-  assert.match(board, /来袭玩家 对我方城市 我方主城 \(20,20\) 发起了掠夺/);
+  assert.match(board, /来袭玩家 对我方城市 我方主城 \(20,20\) 发起了讨伐/);
   assert.match(board, /我方防守成功，已击退来袭部队/);
   assert.doesNotMatch(board, /我方遭受强烈阻击/);
   assert.match(board, /损失资源:<\/b> 粮30/);
@@ -305,13 +428,13 @@ test('battle report wraps coordinates and includes recorded rounds in both persp
   const card = G.Battle.renderReportCard(report);
   assert.match(card, /&lt;太原城&gt; \(6,100\)/);
 
-  const attackerBoard = G.Battle.renderReportBoard({ ...report, perspective: 'attacker' }, false);
+  const attackerBoard = G.Battle.renderReportBoard({ ...report, perspective: 'attacker', commanders: { attacker: { name: '<朱可夫>' } } }, false);
   assert.match(attackerBoard, /出发地:<\/b> 新城市 \(0,105\)/);
   assert.match(attackerBoard, /目的地:<\/b> &lt;太原城&gt; \(6,100\)/);
-  assert.match(attackerBoard, /一支部队对 &lt;太原城&gt; \(6,100\) 进行了征服，历经2回合。/);
+  assert.match(attackerBoard, /我方 &lt;朱可夫&gt;将领率军 对 &lt;太原城&gt; \(6,100\) 进行了讨伐，历经2回合。/);
 
   const defenderBoard = G.Battle.renderReportBoard({ ...report, perspective: 'defender', attackerName: '敌人' }, false);
-  assert.match(defenderBoard, /敌人 对我方城市 &lt;太原城&gt; \(6,100\) 发起了征服，历经2回合。/);
+  assert.match(defenderBoard, /敌人 对我方城市 &lt;太原城&gt; \(6,100\) 发起了讨伐，历经2回合。/);
 
   const oldBoard = G.Battle.renderReportBoard({ ...report, roundLogs: null, toCoord: null }, false);
   assert.doesNotMatch(oldBoard, /历经|\(\)/);
@@ -324,15 +447,15 @@ test('battle commander skills show final bonuses instead of per-level rules', ()
     attacker: {
       name: '朱可夫', level: 100, military: 219,
       skills: [
-        { name: '全军冲锋', level: 5, description: '首次交战回合及之后每隔2回合生效（如第4、7、10回合），全军攻击力额外+10%/级' },
-        { name: '破甲打击', level: 5, description: '无视敌方防御6%/级' }
+        { name: '全军冲锋', level: 5, description: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），全军攻击力额外+10%/级' },
+        { name: '破甲打击', level: 5, description: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），无视敌方有效防御30%，仅本回合生效，主动攻击、余伤攻击与反击均适用' }
       ]
     },
     defender: null
   }, 'attacker');
 
-  assert.match(panel, /首次交战回合及之后每隔2回合生效（如第4、7、10回合），全军攻击力额外\+50%/);
-  assert.match(panel, /无视敌方防御30%/);
+  assert.match(panel, /首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），全军攻击力额外\+50%/);
+  assert.match(panel, /无视敌方有效防御30%，仅本回合生效，主动攻击、余伤攻击与反击均适用/);
   assert.doesNotMatch(panel, /%\/级/);
 });
 
@@ -372,9 +495,10 @@ test('new battle reports show a recipient settlement snapshot', () => {
   const { G } = setup();
   G.fmt = String;
   const board = G.Battle.renderReportBoard({
-    time: Date.now(), perspective: 'attacker', win: true, action: 'conquer', targetType: 'npc',
+    time: Date.now(), perspective: 'attacker', win: true, action: 'conquer', targetType: 'player',
     plunder: { food: 120, gold: 30 }, exp: 80,
     prestigeChange: 12, prestigeAfter: 248, moraleChange: 1, moraleAfter: 71,
+    enemyMoraleChange: -2, enemyMoraleAfter: 68,
     losses: 40, recoveryPercent: 25, recoveredCount: 10
   }, false);
 
@@ -385,9 +509,26 @@ test('new battle reports show a recipient settlement snapshot', () => {
   assert.match(board, /\+12 <small>当前 248<\/small>/);
   assert.match(board, /民心变化/);
   assert.match(board, /\+1 <small>当前 71<\/small>/);
+  assert.match(board, /敌军城市民心变化/);
+  assert.match(board, /-2 <small>战后 68<\/small>/);
   assert.match(board, /本方战损/);
   assert.match(board, /伤兵回收/);
   assert.match(board, /25% <small>入营 10<\/small>/);
+});
+
+test('defender reports show zero enemy morale and omit unrecorded enemy cities', () => {
+  const { G } = setup();
+  G.fmt = String;
+  const report = {
+    time: Date.now(), perspective: 'defender', win: true, targetType: 'player',
+    moraleChange: 1, moraleAfter: 71, enemyMoraleChange: 0, enemyMoraleAfter: 0
+  };
+  const board = G.Battle.renderReportBoard(report, false);
+  assert.match(board, /敌军城市民心变化<\/span><b>\+0 <small>战后 0<\/small>/);
+  for (const snapshot of [{ enemyMoraleChange: null, enemyMoraleAfter: null }, { enemyMoraleChange: undefined, enemyMoraleAfter: undefined }]) {
+    const historical = G.Battle.renderReportBoard(Object.assign({}, report, snapshot), false);
+    assert.doesNotMatch(historical, /敌军城市民心变化/);
+  }
 });
 
 test('fleet conquest reports describe defeating a fleet instead of conquering a city', () => {
@@ -398,12 +539,12 @@ test('fleet conquest reports describe defeating a fleet instead of conquering a 
     toName: '日寇第18舰队', cityConquered: true
   }, false);
 
-  assert.match(board, /击溃成功/);
-  assert.match(board, /★ 已成功击溃该舰队/);
+  assert.match(board, /已击败/);
+  assert.match(board, /★ 已击败该舰队/);
   assert.doesNotMatch(board, /已成功征服该城市|征服成功/);
 });
 
-test('land NPC conquest keeps city wording', () => {
+test('land NPC victory never implies city ownership', () => {
   const { G } = setup();
   G.fmt = String;
   const board = G.Battle.renderReportBoard({
@@ -411,19 +552,102 @@ test('land NPC conquest keeps city wording', () => {
     toName: '日寇据点', cityConquered: true
   }, false);
 
-  assert.match(board, /征服成功/);
-  assert.match(board, /★ 已成功征服该城市/);
+  assert.match(board, /已击败/);
+  assert.doesNotMatch(board, /征服成功|已成功征服该城市|接管成功|已接管/);
+});
+
+test('campaign reports show the settlement choice and frozen wild troop outcome', () => {
+  const { G } = setup();
+  G.fmt = String;
+  for (const [action, disposition, mode, troops] of [
+    ['conquer', 'stationed', '尝试占领', '原地驻守'],
+    ['conquer', 'returning', '尝试占领', '部队返城'],
+    ['plunder', 'returning', '仅夺取资源', '部队返城']
+  ]) {
+    const report = { time: Date.now(), win: true, action, targetType: 'wild',
+      wildConquered: action === 'conquer', troopDisposition: disposition };
+    const board = G.Battle.renderReportBoard(report, false);
+    assert.match(board, /【讨伐报告】/);
+    assert.ok(board.includes('<b>行动配置:</b> ' + mode));
+    assert.ok(board.includes('<b>部队去向:</b> ' + troops));
+    const historical = G.Battle.renderReportBoard({ ...report, troopDisposition: undefined }, false);
+    assert.doesNotMatch(historical, /部队去向/);
+  }
+});
+
+test('historical conquest flags never imply an actual player city takeover', () => {
+  const { G } = setup();
+  G.fmt = String;
+  const report = { time: Date.now(), win: true, action: 'conquer', targetType: 'player', cityConquered: true };
+  const board = G.Battle.renderReportBoard(report, false);
+  assert.match(board, /接管结果未记录/);
+  assert.doesNotMatch(board, /接管成功|已接管该城市/);
+  const plunder = G.Battle.renderReportBoard({ ...report, action: 'plunder', cityTakeoverReason: '' }, false);
+  assert.match(plunder, /未接管（仅夺取资源）/);
+  assert.doesNotMatch(plunder, /接管成功|已接管该城市/);
+});
+
+test('player city takeover and captive reports show actual settlement from both perspectives', () => {
+  const { G } = setup();
+  G.fmt = String;
+  G.escapeHtml = value => String(value).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const report = {
+    time: Date.now(), win: true, action: 'conquer', targetType: 'player', cityConquered: true, cityTakeoverReason: '',
+    capturedOfficerId: 7, capturedOfficerName: '<守将>'
+  };
+  const attack = G.Battle.renderReportBoard({ ...report, perspective: 'attacker' }, false);
+  assert.match(attack, /接管成功/);
+  assert.match(attack, /建筑、建设队列与资源保留/);
+  assert.match(attack, /俘虏敌将.*&lt;守将&gt;/);
+  assert.match(attack, /已转入我方参谋部/);
+  assert.doesNotMatch(attack, /<守将>/);
+  const defense = G.Battle.renderReportBoard({ ...report, win: false, perspective: 'defender' }, false);
+  assert.match(defense, /城市已被敌方接管/);
+  assert.match(defense, /被俘指挥官.*已转入敌方参谋部/);
+  const blocked = G.Battle.renderReportBoard({ ...report, cityConquered: false, capturedOfficerId: null,
+    cityTakeoverReason: '城市数量已达当前军衔上限', perspective: 'attacker' }, false);
+  assert.match(blocked, /未接管原因.*军衔上限/);
+  assert.doesNotMatch(blocked, /接管成功|俘虏敌将/);
+});
+
+test('city ownership event switches the request context before refreshing a lost city', async () => {
+  const { G, load } = setup();
+  const calls = [];
+  G.API.client = { cityId: 11, invalidateCityRequests() { calls.push('invalidate'); } };
+  G.API.getGameState = async () => {
+    calls.push(G.API.client.cityId);
+    return { player: { id: 1, activeCityId: 22 }, world: {} };
+  };
+  G.WorldView = { invalidate() { calls.push('world'); } };
+  load('ws-client.js'); load('ws-handlers.js');
+  G.WS.handleMessage(JSON.stringify({ type: 'city_ownership', data: { cityId: 11, gained: false, activeCityId: 22 } }));
+  await flush();
+  assert.equal(G.API.client.cityId, 22);
+  assert.deepEqual(calls, ['invalidate', 'world', 22]);
+  assert.equal(G.state.player.activeCityId, 22);
+});
+
+test('reconnecting after offline city loss reloads state without the old city header', async () => {
+  const { G, load } = setup();
+  const calls = [];
+  G.API.client = { cityId: 11, invalidateCityRequests() { calls.push('invalidate'); } };
+  G.API.getGameState = async () => { calls.push(G.API.client.cityId); return { player: { id: 1, activeCityId: 22 }, world: {} }; };
+  load('ws-client.js'); load('ws-handlers.js');
+  G.WS.emit('connected', { reconnected: true });
+  await flush();
+  assert.deepEqual(calls, ['invalidate', null]);
+  assert.equal(G.state.player.activeCityId, 22);
 });
 
 test('report titles distinguish actions and support historical subjects without matching target names', () => {
   const { G } = setup();
   for (const [report, title] of [
-    [{ action: 'plunder', targetType: 'npc', win: false }, '掠夺报告'],
-    [{ action: 'conquer', win: false }, '征服报告'],
-    [{ subject: '掠夺野地失败 森林' }, '掠夺报告'],
-    [{ subject: '占领野地胜利 森林' }, '征服报告'],
-    [{ subject: '出征胜利·已征服 烈焰军团', cityConquered: true }, '征服报告'],
-    [{ subject: '征服失败 敌方城市' }, '征服报告'],
+    [{ action: 'plunder', targetType: 'npc', win: false }, '讨伐报告'],
+    [{ action: 'conquer', win: false }, '讨伐报告'],
+    [{ subject: '掠夺野地失败 森林' }, '讨伐报告'],
+    [{ subject: '占领野地胜利 森林' }, '讨伐报告'],
+    [{ subject: '出征胜利·已征服 烈焰军团', cityConquered: true }, '讨伐报告'],
+    [{ subject: '征服失败 敌方城市' }, '讨伐报告'],
     [{ subject: '出征胜利 掠夺者' }, '战斗报告'],
     [{ targetType: 'bandit' }, '剿寇报告'],
     [{}, '战斗报告']
@@ -637,12 +861,13 @@ test('wild reports keep combat and settlement outcomes separate in every detail 
   const cases = [
     [{ wildConquered: true }, '占领成功', '结算时已纳入我方领地'],
     [{ wildConquered: false }, '未占领', '战斗获胜，但结算记录为未占领'],
+    [{ wildConquered: false, wildOccupationReason: '本城野地占领已达上限（6/6）' }, '未占领', '本城野地占领已达上限（6/6）'],
     [{ win: false, wildConquered: false }, '未占领', '本次战斗未获胜'],
     [{ subject: '占领野地胜利 油田' }, '占领结果未记录', '无法确认当时是否占领'],
     [{ subject: '占领野地胜利·已占领 油田' }, '占领成功', '结算时已纳入我方领地'],
     [{ wildConquered: false, conquered: true, subject: '占领野地胜利·已占领 油田' }, '未占领', '战斗获胜，但结算记录为未占领'],
     [{ conquered: true }, '占领成功', '结算时已纳入我方领地'],
-    [{ action: 'plunder', wildConquered: false }, '不占领（掠夺行动）', '不改变野地归属'],
+    [{ action: 'plunder', wildConquered: false }, '未占领（仅夺取资源）', '不改变野地归属'],
     [{ targetType: undefined, action: undefined, subject: '占领野地胜利·已占领 油田' }, '占领成功', '结算时已纳入我方领地']
   ];
   for (const [fields, result, explanation] of cases) {

@@ -263,7 +263,7 @@ class BattleServiceTest {
     void testMicroDamageDoesNotGuaranteeKill() {
         // 守方: 10辆重型坦克 (def=60, hp=420)
         Map<String, Integer> garrison = Map.of("htank", 10);
-        // 攻方: 1个步兵 (atk=6)
+        // 攻方: 1个步兵 (atk=10)
         Map<String, Integer> attacker = Map.of("infantry", 1);
 
         BattleResult result = battleService.resolveWild(garrison, attacker);
@@ -294,8 +294,22 @@ class BattleServiceTest {
     @DisplayName("野地战斗动态距离与两阶段机动推进验证")
     void testWildBattleDistance() {
         BattleResult result = battleService.resolveWild(Map.of("infantry", 10), Map.of("infantry", 10));
-        assertTrue(result.getReport().contains("战场初始距离: 1000"), "双方步兵(spd=3, range=100)保底初始距离应为 1000");
-        assertTrue(result.getReport().contains("[前进] 推进150 -> 坐标150"), "第一回合攻方步兵推进150");
+        assertTrue(result.getReport().contains("战场初始距离: 1460"), "双方步兵(spd=4, range=160)初始距离应保证前三回合安全、第四回合接敌");
+        assertTrue(result.getReport().contains("[前进] 推进200 -> 坐标200"), "步兵基础移速4时每回合推进200");
+    }
+
+    @Test
+    @DisplayName("步兵人海: 数量火力可压制装甲车，但单兵仍无法替代重武器")
+    void infantryMassesCanPressureArmoredLine() {
+        BattleResult result = new BattleService(7L).resolveWild(
+                Map.of("armored", 10), Map.of("infantry", 100));
+
+        assertTrue(result.isWin(), "十倍数量的步兵应能在野战中压制装甲车防线");
+        assertTrue(result.getSurvivorAttacker().getOrDefault("infantry", 0) > 0,
+                "人海战术胜利后应保留部分步兵");
+        BattleResult single = new BattleService(7L).resolveWild(
+                Map.of("armored", 1), Map.of("infantry", 1));
+        assertFalse(single.isWin(), "单个步兵不能凭属性提升击败装甲车");
     }
 
     @Test
@@ -332,9 +346,9 @@ class BattleServiceTest {
                 Map.of("rocket", new BattleService.UnitOrder(BattleService.CommandAction.HOLD))
         );
 
-        assertTrue(sameInRange.log().matches("(?s).*我方火箭[^\\n]*?敌火箭.*"), sameInRange.log());
-        assertTrue(sameOutOfRange.log().matches("(?s).*我方火箭[^\\n]*?敌装甲车.*"), sameOutOfRange.log());
-        assertTrue(sameAbsent.log().matches("(?s).*我方火箭[^\\n]*?敌装甲车.*"), sameAbsent.log());
+        assertTrue(sameInRange.log().matches("(?s).*我方反坦克火箭车[^\\n]*?敌反坦克火箭车.*"), sameInRange.log());
+        assertTrue(sameOutOfRange.log().matches("(?s).*我方反坦克火箭车[^\\n]*?敌装甲车.*"), sameOutOfRange.log());
+        assertTrue(sameAbsent.log().matches("(?s).*我方反坦克火箭车[^\\n]*?敌装甲车.*"), sameAbsent.log());
     }
 
     @Test
@@ -353,9 +367,9 @@ class BattleServiceTest {
                 Map.of("rocket", new BattleService.UnitOrder(BattleService.CommandAction.HOLD, "howitzer"))
         );
 
-        assertTrue(focused.log().matches("(?s).*我方火箭[^\\n]*?敌榴弹炮.*"), focused.log());
+        assertTrue(focused.log().matches("(?s).*我方反坦克火箭车[^\\n]*?敌榴弹炮.*"), focused.log());
         assertTrue(focused.log().contains("指定集火"), focused.log());
-        assertTrue(outOfRange.log().matches("(?s).*我方火箭[^\\n]*?敌火箭.*"), outOfRange.log());
+        assertTrue(outOfRange.log().matches("(?s).*我方反坦克火箭车[^\\n]*?敌反坦克火箭车.*"), outOfRange.log());
     }
 
     @Test

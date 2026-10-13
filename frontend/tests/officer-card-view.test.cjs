@@ -219,3 +219,25 @@ test('军官能力属性与数值使用主题色变量，去除黑色字体', ()
   assert.match(css, /\[data-theme\|="blue-white"\]\s*\.officer-detail\s*\{[^}]*--od-accent:\s*#2b5f9e/);
   assert.match(css, /\[data-theme\|="blue-white"\]\s*\.officer-detail\s*\{[^}]*--od-ink:\s*#1e3a5f/);
 });
+
+test('参谋部军官列表采用小卡片自适应多列网格与紧凑信息排版', () => {
+  const css = fs.readFileSync(path.join(__dirname, '../css/officer.css'), 'utf8');
+  assert.match(css, /\.officer-cards-list\s*\{[^}]*display:\s*grid;/);
+  assert.match(css, /\.officer-cards-list\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fill,\s*minmax\(/);
+  assert.match(css, /\.officer-card\s*\{[^}]*border-radius:\s*8px;/);
+  assert.match(css, /\.card-sub-header-row\s*\{[^}]*display:\s*flex;/);
+
+  const officers = [
+    { id: 'o1', name: '紧凑军官', star: 3, level: 50, role: 'idle', military: 88, defense: 66, logistics: 77, knowledge: 55, loyalty: 90, salary: 30 }
+  ];
+  const context = setupTestEnvironment(officers);
+  const container = { innerHTML: '' };
+  context.Game.Officer.renderView(container);
+  const html = container.innerHTML;
+
+  assert.match(html, /class="officer-cards-list">/);
+  assert.match(html, /class="card-header-row">/);
+  assert.match(html, /class="card-sub-header-row">/);
+  assert.match(html, /class="card-detail-hint">详情 &gt;<\/span>/);
+  assert.match(html, /onkeydown="if\(event\.key==='Enter'\|\|event\.key===' '\)/);
+});

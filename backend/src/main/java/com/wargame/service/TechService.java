@@ -22,6 +22,9 @@ public class TechService {
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private PlayerCityRepository playerCities;
+
     private final TechnologyRepository technologyRepository;
     private final ResourcesRepository resourcesRepository;
     private final BuildingRepository buildingRepository;
@@ -91,7 +94,7 @@ public class TechService {
 
         // 2. 先结算可能已到期的科研
         long now = System.currentTimeMillis();
-        settleCompletedResearch(playerId, now);
+        settleCompletedResearchForCity(playerId, cityScope.slot(playerId), now);
 
         // 检查是否有正在研究的科技（科技为全帝国共享，同时只能研发一项）
         List<TechResearchQueue> existingQueue = techResearchQueueRepository.findByPlayerIdOrderByStartedAtAscIdAsc(playerId);
@@ -186,6 +189,11 @@ public class TechService {
             result.put("message", "未找到正在进行的科技研发");
             return result;
         }
+        if (frozenQueue(playerId, q, System.currentTimeMillis())) {
+            result.put("success", false);
+            result.put("message", "归降移交中的城市只读，不能修改科研队列");
+            return result;
+        }
 
         // 返还 80% 资源
         int refundFood = (int) Math.floor(q.getCostFood() * 0.8);
@@ -235,6 +243,11 @@ public class TechService {
             result.put("message", "当前没有正在进行的科技研发");
             return result;
         }
+        if (frozenQueue(playerId, target, now)) {
+            result.put("success", false);
+            result.put("message", "归降移交中的城市只读，不能加速科研");
+            return result;
+        }
 
         ItemDef item = speedUpSupport.consume(playerId, itemId, count, now, result);
         if (item == null) return result;
@@ -250,7 +263,7 @@ public class TechService {
         String name = t != null ? t.name() : target.getTechType();
 
         if (newFinish <= now) {
-            settleCompletedResearch(playerId, now);
+            settleCompletedResearchForCity(playerId, target.getCitySlot() == null ? 0 : target.getCitySlot(), now);
             result.put("success", true);
             result.put("message", "⚡ 加速成功！【" + name + "】研发已完成！");
             result.put("completed", true);
@@ -273,6 +286,19 @@ public class TechService {
     public List<String> settleCompletedResearch(Long playerId, long now) {
         List<TechResearchQueue> completed = techResearchQueueRepository
                 .findByPlayerIdAndFinishesAtLessThanEqualOrderByFinishesAtAscIdAsc(playerId, now);
+        return settleCompletedRows(playerId, now, completed);
+    }
+
+    /** 只结算指定城市的科研队列，避免其他城市的 tick 越过冻结边界。 */
+    @Transactional
+    public List<String> settleCompletedResearchForCity(Long playerId, Integer citySlot, long now) {
+        if (isCityFrozen(playerId, citySlot, now)) return Collections.emptyList();
+        List<TechResearchQueue> completed = techResearchQueueRepository
+                .findByPlayerIdAndCitySlotAndFinishesAtLessThanEqualOrderByFinishesAtAscIdAsc(playerId, citySlot, now);
+        return settleCompletedRows(playerId, now, completed);
+    }
+
+    private List<String> settleCompletedRows(Long playerId, long now, List<TechResearchQueue> completed) {
         if (completed == null || completed.isEmpty()) return Collections.emptyList();
 
         List<String> messages = new ArrayList<>();
@@ -311,6 +337,16 @@ public class TechService {
             messages.add("🔬 科技【" + name + "】已成功研发至 Lv." + targetLevel + "！");
         }
         return messages;
+    }
+
+    private boolean frozenQueue(Long playerId, TechResearchQueue queue, long now) {
+        return queue != null && isCityFrozen(playerId, queue.getCitySlot() == null ? 0 : queue.getCitySlot(), now);
+    }
+
+    private boolean isCityFrozen(Long playerId, Integer citySlot, long now) {
+        if (playerCities == null) return false;
+        return playerCities.findByOwnerIdAndCitySlot(playerId, citySlot)
+                .map(city -> city.isSurrenderFrozen(now)).orElse(false);
     }
 
     // ================================================================
@@ -401,7 +437,10 @@ public class TechService {
     //  calcTechBonus - 计算累积科技加成
     // ================================================================
 
+    /** 累积效果：通常为整百分比；capture_permille专用千分比（0—10），调用方不得当作百分比。 */
     public int calcTechBonus(Long playerId, String bonusType) {
+        // 俘获使用专门的整数千分比接口，不能落入默认5%/级的整百分比逻辑。
+        if ("capture_permille".equals(bonusType)) return Math.max(0, Math.min(10, getTechLevel(playerId, "prisoner_education")));
         int total = 0;
         for (Map.Entry<String, TechDef> entry : GameData.TECHS.entrySet()) {
             if (bonusType.equals(entry.getValue().effect())) {

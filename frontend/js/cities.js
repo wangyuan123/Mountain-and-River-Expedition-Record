@@ -36,10 +36,10 @@ window.Game = window.Game || {};
       html += '<div class="city-list-row' + (city.current ? ' selected' : '') + '">';
       html += '<button class="city-choice" data-ready-at="' + city.readyAt + '" data-city-id="' + city.id + '" onclick="Game.Cities.select(' + city.id + ')"' + (pending || city.current ? ' disabled' : '') + '>';
       html += '<span class="city-choice-heading"><b>' + esc(city.name) + '</b><span class="city-tag">' + (city.coastal ? '沿海' : city.legacyNaval ? '海军补给' : city.main ? '主城' : '分城') + '</span><span>Lv.' + city.level + '</span></span>';
-      html += '<span class="city-choice-meta">坐标 ' + city.x + ',' + city.y + '<span class="city-ready-label">' + (pending ? '建设中 · ' + remaining(city.readyAt) : city.current ? '当前城市' : '点击切换') + '</span></span>';
+      html += '<span class="city-choice-meta">坐标 ' + city.x + ',' + city.y + '<span class="city-ready-label">' + (pending ? '建设中 · ' + remaining(city.readyAt) : city.frozen ? '归降移交中 · 只读' : city.current ? '当前城市' : '点击切换') + '</span></span>';
       if (city.incoming) html += '<span class="city-danger">敌军来袭！</span>';
       html += '</button>';
-      if (!city.current && !pending) html += '<button class="btn sm" onclick="Game.Cities.transferForm(' + city.id + ',\'transport\')">运输</button><button class="btn sm" onclick="Game.Cities.transferForm(' + city.id + ',\'rebase\')">派遣</button>';
+      if (!city.current && !pending && !city.frozen) html += '<button class="btn sm" onclick="Game.Cities.transferForm(' + city.id + ',\'transport\')">运输</button><button class="btn sm" onclick="Game.Cities.transferForm(' + city.id + ',\'rebase\')">派遣</button>';
       html += '</div>';
     });
     html += '</div><p class="city-hint">' + esc(rankTip(info)) + '</p>';
@@ -47,15 +47,17 @@ window.Game = window.Game || {};
     html += '<button class="btn city-wide" onclick="Game.Cities.close();Game.go(\'mainQuest\')">查看军衔</button>';
     contents(html);
   }
+  var supportTargets = [], supportRequest = 0;
   G.Cities = {
     switching: false,
     nav: function () {
       var s = state(), p = s.player || {}, info = overview();
       var alert = info.cities.some(function (city) { return city.incoming; });
-      return '<button type="button" class="navitem city-switch" onclick="Game.Cities.open()" aria-haspopup="dialog" aria-label="切换城市" title="当前城市：' + esc(p.cityName || '新城市') + '（' + (p.mainCity === false ? '分城' : '主城') + '）"><span class="navlabel">切换</span>' + (alert ? '<i class="city-alert-dot" aria-label="有城市遭到攻击"></i>' : '') + '</button>';
+      return '<button type="button" class="navitem city-switch" onclick="Game.Cities.open()" aria-haspopup="dialog" aria-label="切换城市" title="当前城市：' + esc(p.cityName || '新城市') + '（' + (p.mainCity === false ? '分城' : '主城') + '）"><span class="navlabel">切城</span>' + (alert ? '<i class="city-alert-dot" aria-label="有城市遭到攻击"></i>' : '') + '</button>';
     },
     close: function () {
       if (this.switching) return;
+      supportTargets = []; supportRequest++;
       var mask = document.getElementById('cityDialogMask');
       if (mask) mask.remove();
       if (timer) { clearInterval(timer); timer = null; }
@@ -66,7 +68,7 @@ window.Game = window.Game || {};
       if (this.switching) return;
       this.close(); focusBefore = document.activeElement;
       var mask = document.createElement('div'); mask.id = 'cityDialogMask'; mask.className = 'city-dialog-mask';
-      mask.innerHTML = '<section id="cityDialog" class="city-dialog" role="dialog" aria-modal="true" aria-labelledby="cityDialogTitle"><div class="city-dialog-heading"><b id="cityDialogTitle">城市切换</b><button class="btn sm" onclick="Game.Cities.close()" aria-label="关闭城市列表">✕</button></div><div id="cityDialogContent"></div></section>';
+      mask.innerHTML = '<section id="cityDialog" class="city-dialog" role="dialog" aria-modal="true" aria-labelledby="cityDialogTitle"><div class="city-dialog-heading"><b id="cityDialogTitle">切城</b><button class="btn sm" onclick="Game.Cities.close()" aria-label="关闭城市列表">✕</button></div><div id="cityDialogContent"></div></section>';
       mask.addEventListener('click', function (event) { if (event.target === mask) G.Cities.close(); });
       document.body.appendChild(mask); drawList();
       document.addEventListener('keydown', dismissKey);
@@ -91,6 +93,9 @@ window.Game = window.Game || {};
       this.select(cityId, true);
     },
     select: function (cityId, goHome) {
+      if (G.UnitEquipment && G.UnitEquipment.isBusy()) return;
+      if (G.UnitEquipment && G.UnitEquipment.hasUnsaved()) { G.UnitEquipment.close(false); return; }
+      if (G.UnitEquipment) G.UnitEquipment.close(true);
       if (this.switching) return;
       var city = overview().cities.find(function (c) { return c.id === cityId; });
       if (!city || city.current || city.readyAt > Date.now()) return;
@@ -123,7 +128,7 @@ window.Game = window.Game || {};
       if (!(info.sites || []).length) {
         html += '<p class="city-hint">尚无已占领的丘陵野地，也可直接在地图选择空地建城。</p><button class="btn ok" onclick="Game.Cities.close();Game.go(\'world\')">前往地图</button>';
       } else {
-        html += '<form id="cityFoundForm"><label>城市名称<input name="name" class="qty" maxlength="12" required placeholder="1—12个中英文、数字或下划线"></label><label>建城位置<select name="wildId">';
+        html += '<form id="cityFoundForm"><label>城市名称<input name="name" class="qty" maxlength="12" required placeholder="最多12个字符，可用标点、符号和 emoji"></label><label>建城位置<select name="wildId">';
         info.sites.forEach(function (site) { html += '<option value="' + site.id + '">' + (site.type === 'forest' ? '森林' : '丘陵') + ' (' + site.x + ',' + site.y + ')</option>'; });
         html += '</select></label><button class="btn ok city-wide" type="submit">支付资源并开始建城</button></form>';
       }
@@ -131,8 +136,15 @@ window.Game = window.Game || {};
       var form = document.getElementById('cityFoundForm');
       if (form) form.addEventListener('submit', function (event) {
         event.preventDefault(); var button = form.querySelector('button'); if (button.disabled) return;
+        var cityName = form.elements.name ? form.elements.name.value : '';
+        try {
+          cityName = G.normalizeDisplayName ? G.normalizeDisplayName(cityName, 12, '城市名称') : cityName.trim();
+        } catch (err) {
+          G.toast(err.message);
+          return;
+        }
         button.disabled = true;
-        G.API.client.post('/game/cities', { name: form.elements.name.value.trim(), wildId: Number(form.elements.wildId.value) }).then(function (data) {
+        G.API.client.post('/game/cities', { name: cityName, wildId: Number(form.elements.wildId.value) }).then(function (data) {
           G.API.applyState(data.state); if (G.WorldView) G.WorldView.invalidate();
           if (G.WorldMap) G.WorldMap.invalidate();
           drawList(); G.Core.refreshTop(); G.toast(data.message);
@@ -145,14 +157,37 @@ window.Game = window.Game || {};
       if (!document.getElementById('cityDialogMask')) this.open();
       this.transferForm(cityId, action);
     },
+    /** 从成员名录或地图读取同军团成员的城市，服务端重验支援权限。 */
+    openSupport: function (playerId, action, cityId) {
+      this.open();
+      panelMode = 'support';
+      var request = ++supportRequest;
+      contents('<p class="city-hint" role="status">正在读取成员城市...</p>');
+      G.API.client.get('/game/world/support/cities?playerId=' + Number(playerId), { silent: true }).then(function (cities) {
+        if (request !== supportRequest || !document.getElementById('cityDialogMask')) return;
+        supportTargets = cities;
+        var title = document.getElementById('cityDialogTitle');
+        if (title) title.textContent = action === 'transport' ? '军团物资运输' : '军团驻防';
+        if (cityId) { G.Cities.transferForm(cityId, action); return; }
+        var html = '<div class="city-list">';
+        cities.forEach(function (city) {
+          html += '<div class="city-list-row"><button class="city-choice" onclick="Game.Cities.transferForm(' + Number(city.id) + ',\'' + (action === 'transport' ? 'transport' : 'reinforce') + '\')"><span class="city-choice-heading"><b>' + esc(city.name) + '</b></span><span class="city-choice-meta">坐标 ' + city.x + ',' + city.y + '</span></button></div>';
+        });
+        contents(html + '</div>' + (!cities.length ? '<p class="city-hint">暂无可接收支援的城市</p>' : ''));
+      }).catch(function (e) {
+        if (request !== supportRequest) return;
+        contents('<p class="city-hint" role="alert">' + esc(e.message || '成员城市读取失败') + '</p>');
+      });
+    },
     /** 运输只派后勤单位往返；派遣将选中的任意兵种留驻目标城市。 */
     transferForm: function (cityId, action) {
       panelMode = 'transfer';
-      var s = state(), city = overview().cities.find(function (c) { return c.id === cityId; });
+      var s = state(), city = overview().cities.find(function (c) { return c.id === cityId; }) || supportTargets.find(function (c) { return c.id === cityId; });
       if (!city || city.current || city.readyAt > Date.now()) return;
-      action = action === 'transport' ? 'transport' : 'rebase';
+      var supporting = supportTargets.indexOf(city) >= 0;
+      action = action === 'transport' ? 'transport' : supporting ? 'reinforce' : 'rebase';
       var transporting = action === 'transport';
-      var html = '<p>从 <b>' + esc(s.player.cityName) + '</b> 前往 <b>' + esc(city.name) + '</b></p><form id="cityTransferForm"><input type="hidden" name="action" value="' + action + '"><p class="city-hint">' + (transporting ? '运输：卡车或运输机送达物资后返回出发城市。' : '派遣：选中的兵种抵达后留驻目标城市。') + '</p><div class="city-transfer-grid">';
+      var html = '<p>从 <b>' + esc(s.player.cityName) + '</b> 前往 <b>' + esc(city.name) + '</b></p><form id="cityTransferForm"><input type="hidden" name="action" value="' + action + '"><p class="city-hint">' + (transporting ? '运输：卡车或运输机送达物资后返回出发城市。' : supporting ? '驻防部队归你所有，由城主指挥守城；可在军情中撤回。' : '派遣：选中的兵种抵达后留驻目标城市。') + '</p><div class="city-transfer-grid">';
       Object.keys(s.army || {}).forEach(function (key) {
         if (s.army[key] <= 0) return;
         if (transporting && key !== 'truck' && key !== 'transport') return;
@@ -185,9 +220,9 @@ window.Game = window.Game || {};
         return o && o.role !== 'mayor' && o.role !== 'commander' && o.role !== 'march' &&
           !marchingCommanderIds.has(Number(o.id)) && !marchingCommanderIds.has(String(o.id));
       }).forEach(function (o) { html += '<option value="' + o.id + '">' + esc(o.name) + '</option>'; });
-      html += '</select></label><div id="cityRoutePreview" class="city-hint" aria-live="polite"></div><button type="submit" class="btn ok city-wide">确认' + (transporting ? '运输' : '派遣') + '</button></form><button class="btn city-wide" onclick="Game.Cities.back()">返回城市列表</button>'; contents(html);
+      html += '</select></label><div id="cityRoutePreview" class="city-hint" aria-live="polite"></div><button type="submit" class="btn ok city-wide">确认' + (transporting ? '运输' : supporting ? '驻防' : '派遣') + '</button></form><button class="btn city-wide" onclick="Game.Cities.' + (supporting ? 'close()">关闭' : 'back()">返回城市列表') + '</button>'; contents(html);
       var routeForm=document.getElementById('cityTransferForm');
-      if(G.World&&G.World.bindRoutePreview)G.World.bindRoutePreview(routeForm,document.getElementById('cityRoutePreview'),function(){var army={};routeForm.querySelectorAll('[data-unit]').forEach(function(el){army[el.dataset.unit]=Math.max(0,parseInt(el.value,10)||0);});return {targetKind:'player',targetId:cityId,action:routeForm.elements.action.value,army:army};},{start:s.player.cityName,end:city.name});
+      if(G.World&&G.World.bindRoutePreview)G.World.bindRoutePreview(routeForm,document.getElementById('cityRoutePreview'),function(){var army={};routeForm.querySelectorAll('[data-unit]').forEach(function(el){army[el.dataset.unit]=Math.max(0,parseInt(el.value,10)||0);});return {targetKind:'player',targetId:cityId,action:routeForm.elements.action.value,army:army};},{start:s.player.cityName,end:city.name,updateOnInput:true});
       document.getElementById('cityTransferForm').addEventListener('input', function (event) {
         var changed = event.target, dataset = changed.dataset || {};
         var kind = dataset.unitRange || dataset.unit ? 'unit' : 'resource';
@@ -205,7 +240,7 @@ window.Game = window.Game || {};
           }
         }
         var load = 0, carry = 0;
-        this.querySelectorAll('[data-unit]').forEach(function (input) { load += Number(input.value) * (G.DATA.units[input.dataset.unit].load || 0); });
+        this.querySelectorAll('[data-unit]').forEach(function (input) { load += Number(input.value) * (G.DATA.units[input.dataset.unit].load || 0) * (G.UnitEquipment ? G.UnitEquipment.mul(G.UnitEquipment.snapshot(), input.dataset.unit, 'load') : 1); });
         this.querySelectorAll('[data-resource]').forEach(function (input) { carry += Number(input.value); });
         var hint = document.getElementById('cityTransferLoad');
         hint.textContent = '携带资源 ' + carry + ' / 部队负重 ' + load;
@@ -219,7 +254,7 @@ window.Game = window.Game || {};
         if (!Object.keys(army).length) { G.toast('请至少选择一种兵种'); return; }
         if (transporting && !Object.keys(resources).some(function (key) { return resources[key] > 0; })) { G.toast('请填写要运输的物资'); return; }
         button.disabled = true;
-        G.API.client.post('/game/world/dispatch', { targetKind: 'player', targetId: cityId, action: form.elements.action.value, army: army, carryRes: resources, commanderId: Number(form.elements.commander.value) || null }).then(function (data) {
+        G.API.client.post('/game/world/dispatch', { unitEquipmentVersion: G.World && G.World._currentRoute && G.World._currentRoute.unitEquipmentVersion, targetKind: 'player', targetId: cityId, action: form.elements.action.value, army: army, carryRes: resources, commanderId: Number(form.elements.commander.value) || null }).then(function (data) {
           G.API.applyState(data.state); G.Cities.close(); G.Core.render(); G.toast('部队已出发，可在地图查看行军进度');
         }).catch(function (e) { button.disabled = false; error(e); });
       });

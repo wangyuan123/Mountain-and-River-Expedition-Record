@@ -31,6 +31,9 @@ public class ArmyService {
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private PrerequisiteService prerequisiteService;
+
     private static final int MAX_QUEUE_CAPACITY = 500;
 
     private final ArmyUnitRepository armyUnitRepository;
@@ -79,7 +82,19 @@ public class ArmyService {
             return result;
         }
 
+        // 与建造/拆除共用玩家锁，防止校验之后军港或造船厂被并发拆除。
+        Player player = playerRepository.lockById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
         completeProduction(playerId, System.currentTimeMillis());
+
+        // 在扣款与人口扣减前统一校验；海军同时需要本城造船厂和军港。
+        var missing = prerequisiteService.unmetRecruitment(playerId, cityScope.slot(playerId), unitType);
+        if (!missing.isEmpty()) {
+            result.put("success", false);
+            result.put("message", prerequisiteService.message(missing));
+            result.put("missingPrerequisites", missing);
+            result.put("maxRecruitable", 0);
+            return result;
+        }
 
         // 2. 列出所有该兵种对应的训练建筑 - 方案B: 按栋独立计算后求和
         //    不再使用"sum(blv)"的全局求和公式，改为遍历每栋兵工厂：
@@ -121,7 +136,6 @@ public class ArmyService {
         double avgSpeed = activeLanes > 0 ? totalWeightedSpeed / activeLanes : 1.0;
 
         // 3. 单次可征召数由当前平民与资源共同决定；生产队列按并行通道排期，不再用兵工厂等级限制数量。
-        Player player = playerRepository.findById(playerId).orElse(null);
         int civilians = player != null && cityScope.economy(playerId).getCivilianPopulation() != null ? cityScope.economy(playerId).getCivilianPopulation() : 0;
         Resources resources = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         int maxByPopulation = u.pop() > 0 ? civilians / u.pop() : Integer.MAX_VALUE;
@@ -447,6 +461,10 @@ public class ArmyService {
             UnitDef queuedUnit = GameData.UNITS.get(q.getUnitType());
             String queueBuilding = q.getBuildingType() != null ? q.getBuildingType()
                     : queuedUnit != null ? queuedUnit.build() : null;
+            // 旧军港造舰订单继续占用造船通道，设施拆分不能额外增加并行制造能力。
+            if ("port".equals(queueBuilding) && queuedUnit != null && "sea".equals(queuedUnit.branch())) {
+                queueBuilding = queuedUnit.build();
+            }
             if (!buildingType.equals(queueBuilding)) continue;
             int lane = 0;
             for (int i = 1; i < laneAvailableAt.size(); i++) if (laneAvailableAt.get(i) < laneAvailableAt.get(lane)) lane = i;
@@ -498,8 +516,8 @@ public class ArmyService {
 
     // ================================================================
     //  armyCap - 对应 JS Core.armyCap
-    //  少校基础 300,000，此后每阶 +50,000，上将 600,000；当前城市满级围墙额外 +100,000。
-    //  三军统帅技能仍作用于基础与围墙奖励之和；市政厅、参谋部和指挥官等级不参与计算。
+    //  少校基础 300,000，此后每阶 +50,000，上将 600,000。
+    //  三军统帅技能只放大军衔基础；城防建筑与其他建筑、指挥官等级均不增加带兵上限。
     // ================================================================
 
     public int armyCap(Long playerId) {
@@ -507,7 +525,6 @@ public class ArmyService {
         int rankTier = (player != null && player.getMilitaryRank() != null) ? player.getMilitaryRank() : 1;
         int rankBase = MilitaryRankDef.getRankBase(rankTier);
 
-        int wallBonus = buildingLevel(playerId, "wall") >= 10 ? 100000 : 0;
         int leadershipLv = 0;
         List<Officer> commanders = officerRepository.findByPlayerIdAndCitySlotAndRole(playerId, cityScope.slot(playerId), "commander");
         if (commanders != null && !commanders.isEmpty()) {
@@ -519,14 +536,14 @@ public class ArmyService {
             }
         }
 
-        double cap = rankBase + wallBonus;
+        double cap = rankBase;
         if (leadershipLv > 0) {
             cap *= (1.0 + 0.04 * leadershipLv);
         }
         return (int) Math.floor(cap);
     }
 
-    /** 出城迎战只将军衔基础放大至 1.5 倍，围墙与统帅加成保持与攻击相同的数额。 */
+    /** 出城迎战只额外增加半份军衔基础，统帅加成保持与攻击相同的数额。 */
     public int sortieCap(Long playerId) {
         Player player = playerRepository.findById(playerId).orElse(null);
         int rankBase = MilitaryRankDef.getRankBase(player != null ? player.getMilitaryRank() : 1);

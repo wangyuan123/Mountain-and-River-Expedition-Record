@@ -1,0 +1,2819 @@
+{
+  "actualLoss": 0,
+  "auto": false,
+  "createdAt": 1791600639971,
+  "deadlineAt": 1791600781263,
+  "draft": {},
+  "enemy": {
+    "army": {
+      "infantry": 1000
+    },
+    "baseValues": {
+      "infantry": 36.72805467214401
+    },
+    "battlefield": "LAND_AIR",
+    "chief": {
+      "defense": 0,
+      "knowledge": 0,
+      "logistics": 0,
+      "military": 0,
+      "name": "",
+      "officerId": null
+    },
+    "citySlot": 0,
+    "commanderId": null,
+    "commanderName": "无带兵将领",
+    "defaults": {
+      "infantry": {
+        "action": "ADVANCE",
+        "focusTarget": null
+      }
+    },
+    "defense": 0,
+    "effectiveStats": {
+      "infantry": {
+        "air": 5.0,
+        "defense": 15.0,
+        "ground": 10.0,
+        "hp": 120.0,
+        "range": 160.0,
+        "sea": 5.0,
+        "speed": 2.0
+      }
+    },
+    "knowledge": 0,
+    "logistics": 0,
+    "military": 0,
+    "officerEquipment": [],
+    "playerName": "演习统帅甲",
+    "power": 38050,
+    "powerModelVersion": "power-v1-pvp-v1-8cc036d5a45e2da5c776e5c1",
+    "rulesVersion": "pvp-v1-8cc036d5a45e2da5c776e5c1",
+    "skillFactor": 1.0,
+    "skills": {},
+    "snapshotId": "898ca934-84f1-4a5b-900d-7825f84512ff",
+    "tech": {}
+  },
+  "enemyArmy": {
+    "infantry": 713
+  },
+  "enemyLoaded": true,
+  "enemyLoss": 0.287,
+  "enemyPositions": {
+    "infantry": 550
+  },
+  "enemyReady": false,
+  "firstCombatRound": 5,
+  "initialDistance": 1000,
+  "loaded": true,
+  "locked": false,
+  "maxRound": 24,
+  "mine": {
+    "snapshotId": "b4c30627-f2be-45d2-9970-6dd998904602",
+    "playerName": "演习统帅乙",
+    "citySlot": 0,
+    "battlefield": "LAND_AIR",
+    "army": {
+      "infantry": 1000
+    },
+    "tech": {},
+    "skills": {},
+    "commanderId": null,
+    "commanderName": "无带兵将领",
+    "military": 0,
+    "defense": 0,
+    "logistics": 0,
+    "knowledge": 0,
+    "officerEquipment": [],
+    "chief": {
+      "officerId": null,
+      "name": "",
+      "military": 0,
+      "defense": 0,
+      "logistics": 0,
+      "knowledge": 0
+    },
+    "defaults": {
+      "infantry": {
+        "action": "ADVANCE",
+        "focusTarget": null
+      }
+    },
+    "baseValues": {
+      "infantry": 36.72805467214401
+    },
+    "effectiveStats": {
+      "infantry": {
+        "air": 5.0,
+        "defense": 15.0,
+        "ground": 10.0,
+        "hp": 120.0,
+        "range": 160.0,
+        "sea": 5.0,
+        "speed": 2.0
+      }
+    },
+    "rulesVersion": "pvp-v1-8cc036d5a45e2da5c776e5c1",
+    "powerModelVersion": "power-v1-pvp-v1-8cc036d5a45e2da5c776e5c1",
+    "power": 38050,
+    "skillFactor": 1.0
+  },
+  "mode": "PVP_PRACTICE",
+  "myArmy": {
+    "infantry": 720
+  },
+  "myLoss": 0.28,
+  "myPositions": {
+    "infantry": 550
+  },
+  "pendingTakeover": false,
+  "rated": true,
+  "reason": "SURRENDER",
+  "region": "jiangsu-1",
+  "result": "WIN",
+  "revision": 0,
+  "round": 9,
+  "rulesVersion": "pvp-v1-8cc036d5a45e2da5c776e5c1",
+  "seed": 3996356749724742059,
+  "serverTime": 1791600774561,
+  "sessionId": "4b1cb62d-402b-471d-8e12-014329398278",
+  "settledAt": 1791600774552,
+  "side": "B",
+  "startsAt": 1791600646263,
+  "status": "FINISHED",
+  "version": 51,
+  "rounds": [
+    {
+      "after": {
+        "armyA": {
+          "infantry": 1000
+        },
+        "armyB": {
+          "infantry": 1000
+        },
+        "positionsA": {
+          "infantry": 100
+        },
+        "positionsB": {
+          "infantry": 900
+        },
+        "distance": 1000,
+        "firstCombatRound": 0,
+        "autoA": false,
+        "autoB": false,
+        "pendingTakeoverA": false,
+        "pendingTakeoverB": false,
+        "lossA": 0.0,
+        "lossB": 0.0
+      },
+      "before": {
+        "armyA": {
+          "infantry": 1000
+        },
+        "armyB": {
+          "infantry": 1000
+        },
+        "positionsA": {
+          "infantry": 0
+        },
+        "positionsB": {
+          "infantry": 1000
+        },
+        "distance": 1000,
+        "firstCombatRound": 0,
+        "autoA": false,
+        "autoB": false,
+        "pendingTakeoverA": false,
+        "pendingTakeoverB": false,
+        "lossA": 0.0,
+        "lossB": 0.0
+      },
+      "events": [
+        {
+          "blitzMultiplier": 1.0,
+          "from": 0,
+          "side": "A",
+          "speed": 2.0,
+          "target": "",
+          "to": 100,
+          "type": "MOVEMENT",
+          "unit": "infantry"
+        },
+        {
+          "blitzMultiplier": 1.0,
+          "from": 1000,
+          "side": "B",
+          "speed": 2.0,
+          "target": "",
+          "to": 900,
+          "type": "MOVEMENT",
+          "unit": "infantry"
+        },
+        {
+          "active": false,
+          "cycle": "3/6/9",
+          "defense": 0,
+          "military": 0,
+          "side": "A",
+          "target": "",
+          "type": "OFFICER_ATTRIBUTES",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "frenzy",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "bulwark",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "blitz",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "suppress",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "pierce",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "counter",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "learn",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "borrow_armor",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "cycle": "3/6/9",
+          "defense": 0,
+          "military": 0,
+          "side": "B",
+          "target": "",
+          "type": "OFFICER_ATTRIBUTES",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "frenzy",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "bulwark",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "blitz",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "suppress",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "pierce",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "counter",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "learn",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "borrow_armor",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "blitzMultiplier": 1.0,
+          "order": 1,
+          "range": 160,
+          "side": "A",
+          "speed": 2.0,
+          "target": "",
+          "type": "INITIATIVE",
+          "unit": "infantry"
+        },
+        {
+          "blitzMultiplier": 1.0,
+          "order": 2,
+          "range": 160,
+          "side": "B",
+          "speed": 2.0,
+          "target": "",
+          "type": "INITIATIVE",
+          "unit": "infantry"
+        },
+        {
+          "reason": "NO_VALID_RANGE_TARGET",
+          "side": "A",
+          "target": "",
+          "type": "NO_FIRE",
+          "unit": "infantry"
+        },
+        {
+          "reason": "NO_VALID_RANGE_TARGET",
+          "side": "B",
+          "target": "",
+          "type": "NO_FIRE",
+          "unit": "infantry"
+        }
+      ],
+      "log": "-- 第1回合 --\n我方将领加成：本回合无将领属性或技能加成生效\n敌方将领加成：本回合无将领属性或技能加成生效\n我方步兵-加兰德步枪兵（M1）(1000) [前进] 推进100 -> 坐标100 (距敌900)\n敌方步兵-加兰德步枪兵（M1）(1000) [前进] 推进100 -> 坐标900 (距我900)\n",
+      "ordersA": {
+        "infantry": {
+          "action": "ADVANCE",
+          "focusTarget": null
+        }
+      },
+      "ordersB": {
+        "infantry": {
+          "action": "ADVANCE",
+          "focusTarget": null
+        }
+      },
+      "resolvedAt": 1791600662082,
+      "round": 1,
+      "seed": 5294538467442630442,
+      "sourcesA": {
+        "infantry": "DEFAULT"
+      },
+      "sourcesB": {
+        "infantry": "DEFAULT"
+      }
+    },
+    {
+      "after": {
+        "armyA": {
+          "infantry": 1000
+        },
+        "armyB": {
+          "infantry": 1000
+        },
+        "positionsA": {
+          "infantry": 200
+        },
+        "positionsB": {
+          "infantry": 800
+        },
+        "distance": 1000,
+        "firstCombatRound": 0,
+        "autoA": false,
+        "autoB": false,
+        "pendingTakeoverA": false,
+        "pendingTakeoverB": false,
+        "lossA": 0.0,
+        "lossB": 0.0
+      },
+      "before": {
+        "armyA": {
+          "infantry": 1000
+        },
+        "armyB": {
+          "infantry": 1000
+        },
+        "positionsA": {
+          "infantry": 100
+        },
+        "positionsB": {
+          "infantry": 900
+        },
+        "distance": 1000,
+        "firstCombatRound": 0,
+        "autoA": false,
+        "autoB": false,
+        "pendingTakeoverA": false,
+        "pendingTakeoverB": false,
+        "lossA": 0.0,
+        "lossB": 0.0
+      },
+      "events": [
+        {
+          "blitzMultiplier": 1.0,
+          "from": 100,
+          "side": "A",
+          "speed": 2.0,
+          "target": "",
+          "to": 200,
+          "type": "MOVEMENT",
+          "unit": "infantry"
+        },
+        {
+          "blitzMultiplier": 1.0,
+          "from": 900,
+          "side": "B",
+          "speed": 2.0,
+          "target": "",
+          "to": 800,
+          "type": "MOVEMENT",
+          "unit": "infantry"
+        },
+        {
+          "active": false,
+          "cycle": "3/6/9",
+          "defense": 0,
+          "military": 0,
+          "side": "A",
+          "target": "",
+          "type": "OFFICER_ATTRIBUTES",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "frenzy",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "bulwark",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "blitz",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "suppress",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "pierce",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "counter",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "learn",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "borrow_armor",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "cycle": "3/6/9",
+          "defense": 0,
+          "military": 0,
+          "side": "B",
+          "target": "",
+          "type": "OFFICER_ATTRIBUTES",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "frenzy",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "bulwark",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "blitz",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "suppress",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "pierce",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "counter",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "learn",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "borrow_armor",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "blitzMultiplier": 1.0,
+          "order": 1,
+          "range": 160,
+          "side": "B",
+          "speed": 2.0,
+          "target": "",
+          "type": "INITIATIVE",
+          "unit": "infantry"
+        },
+        {
+          "blitzMultiplier": 1.0,
+          "order": 2,
+          "range": 160,
+          "side": "A",
+          "speed": 2.0,
+          "target": "",
+          "type": "INITIATIVE",
+          "unit": "infantry"
+        },
+        {
+          "reason": "NO_VALID_RANGE_TARGET",
+          "side": "B",
+          "target": "",
+          "type": "NO_FIRE",
+          "unit": "infantry"
+        },
+        {
+          "reason": "NO_VALID_RANGE_TARGET",
+          "side": "A",
+          "target": "",
+          "type": "NO_FIRE",
+          "unit": "infantry"
+        }
+      ],
+      "log": "-- 第2回合 --\n我方将领加成：本回合无将领属性或技能加成生效\n敌方将领加成：本回合无将领属性或技能加成生效\n敌方步兵-加兰德步枪兵（M1）(1000) [前进] 推进100 -> 坐标800 (距我700)\n我方步兵-加兰德步枪兵（M1）(1000) [前进] 推进100 -> 坐标200 (距敌700)\n",
+      "ordersA": {
+        "infantry": {
+          "action": "ADVANCE",
+          "focusTarget": null
+        }
+      },
+      "ordersB": {
+        "infantry": {
+          "action": "ADVANCE",
+          "focusTarget": null
+        }
+      },
+      "resolvedAt": 1791600677158,
+      "round": 2,
+      "seed": -4102117203827838381,
+      "sourcesA": {
+        "infantry": "DEFAULT"
+      },
+      "sourcesB": {
+        "infantry": "DEFAULT"
+      }
+    },
+    {
+      "after": {
+        "armyA": {
+          "infantry": 1000
+        },
+        "armyB": {
+          "infantry": 1000
+        },
+        "positionsA": {
+          "infantry": 200
+        },
+        "positionsB": {
+          "infantry": 700
+        },
+        "distance": 1000,
+        "firstCombatRound": 0,
+        "autoA": false,
+        "autoB": false,
+        "pendingTakeoverA": false,
+        "pendingTakeoverB": false,
+        "lossA": 0.0,
+        "lossB": 0.0
+      },
+      "before": {
+        "armyA": {
+          "infantry": 1000
+        },
+        "armyB": {
+          "infantry": 1000
+        },
+        "positionsA": {
+          "infantry": 200
+        },
+        "positionsB": {
+          "infantry": 800
+        },
+        "distance": 1000,
+        "firstCombatRound": 0,
+        "autoA": false,
+        "autoB": false,
+        "pendingTakeoverA": false,
+        "pendingTakeoverB": false,
+        "lossA": 0.0,
+        "lossB": 0.0
+      },
+      "events": [
+        {
+          "blitzMultiplier": 1.0,
+          "from": 200,
+          "side": "A",
+          "speed": 2.0,
+          "target": "",
+          "to": 200,
+          "type": "MOVEMENT",
+          "unit": "infantry"
+        },
+        {
+          "blitzMultiplier": 1.0,
+          "from": 800,
+          "side": "B",
+          "speed": 2.0,
+          "target": "",
+          "to": 700,
+          "type": "MOVEMENT",
+          "unit": "infantry"
+        },
+        {
+          "active": true,
+          "cycle": "3/6/9",
+          "defense": 0,
+          "military": 0,
+          "side": "A",
+          "target": "",
+          "type": "OFFICER_ATTRIBUTES",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "frenzy",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "bulwark",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "blitz",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "suppress",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "pierce",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "counter",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "learn",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "borrow_armor",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": true,
+          "cycle": "3/6/9",
+          "defense": 0,
+          "military": 0,
+          "side": "B",
+          "target": "",
+          "type": "OFFICER_ATTRIBUTES",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "frenzy",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "bulwark",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "blitz",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "suppress",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "pierce",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "counter",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "learn",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "borrow_armor",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "blitzMultiplier": 1.0,
+          "order": 1,
+          "range": 160,
+          "side": "A",
+          "speed": 2.0,
+          "target": "",
+          "type": "INITIATIVE",
+          "unit": "infantry"
+        },
+        {
+          "blitzMultiplier": 1.0,
+          "order": 2,
+          "range": 160,
+          "side": "B",
+          "speed": 2.0,
+          "target": "",
+          "type": "INITIATIVE",
+          "unit": "infantry"
+        },
+        {
+          "reason": "NO_VALID_RANGE_TARGET",
+          "side": "A",
+          "target": "",
+          "type": "NO_FIRE",
+          "unit": "infantry"
+        },
+        {
+          "reason": "NO_VALID_RANGE_TARGET",
+          "side": "B",
+          "target": "",
+          "type": "NO_FIRE",
+          "unit": "infantry"
+        }
+      ],
+      "log": "-- 第3回合 --\n我方将领加成：本回合无将领属性或技能加成生效\n敌方将领加成：本回合无将领属性或技能加成生效\n我方步兵-加兰德步枪兵（M1）(1000) [待命] 坚守阵地 坐标200\n敌方步兵-加兰德步枪兵（M1）(1000) [前进] 推进100 -> 坐标700 (距我500)\n",
+      "ordersA": {
+        "infantry": {
+          "action": "HOLD",
+          "focusTarget": null
+        }
+      },
+      "ordersB": {
+        "infantry": {
+          "action": "ADVANCE",
+          "focusTarget": null
+        }
+      },
+      "resolvedAt": 1791600692228,
+      "round": 3,
+      "seed": 3133094044579422820,
+      "sourcesA": {
+        "infantry": "MANUAL"
+      },
+      "sourcesB": {
+        "infantry": "DEFAULT"
+      }
+    },
+    {
+      "after": {
+        "armyA": {
+          "infantry": 1000
+        },
+        "armyB": {
+          "infantry": 1000
+        },
+        "positionsA": {
+          "infantry": 300
+        },
+        "positionsB": {
+          "infantry": 600
+        },
+        "distance": 1000,
+        "firstCombatRound": 0,
+        "autoA": false,
+        "autoB": false,
+        "pendingTakeoverA": false,
+        "pendingTakeoverB": false,
+        "lossA": 0.0,
+        "lossB": 0.0
+      },
+      "before": {
+        "armyA": {
+          "infantry": 1000
+        },
+        "armyB": {
+          "infantry": 1000
+        },
+        "positionsA": {
+          "infantry": 200
+        },
+        "positionsB": {
+          "infantry": 700
+        },
+        "distance": 1000,
+        "firstCombatRound": 0,
+        "autoA": false,
+        "autoB": false,
+        "pendingTakeoverA": false,
+        "pendingTakeoverB": false,
+        "lossA": 0.0,
+        "lossB": 0.0
+      },
+      "events": [
+        {
+          "blitzMultiplier": 1.0,
+          "from": 200,
+          "side": "A",
+          "speed": 2.0,
+          "target": "",
+          "to": 300,
+          "type": "MOVEMENT",
+          "unit": "infantry"
+        },
+        {
+          "blitzMultiplier": 1.0,
+          "from": 700,
+          "side": "B",
+          "speed": 2.0,
+          "target": "",
+          "to": 600,
+          "type": "MOVEMENT",
+          "unit": "infantry"
+        },
+        {
+          "active": false,
+          "cycle": "3/6/9",
+          "defense": 0,
+          "military": 0,
+          "side": "A",
+          "target": "",
+          "type": "OFFICER_ATTRIBUTES",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "frenzy",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "bulwark",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "blitz",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "suppress",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "pierce",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "counter",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "learn",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "borrow_armor",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "cycle": "3/6/9",
+          "defense": 0,
+          "military": 0,
+          "side": "B",
+          "target": "",
+          "type": "OFFICER_ATTRIBUTES",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "frenzy",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "bulwark",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "blitz",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "suppress",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "pierce",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "counter",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "learn",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 0,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "borrow_armor",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "blitzMultiplier": 1.0,
+          "order": 1,
+          "range": 160,
+          "side": "B",
+          "speed": 2.0,
+          "target": "",
+          "type": "INITIATIVE",
+          "unit": "infantry"
+        },
+        {
+          "blitzMultiplier": 1.0,
+          "order": 2,
+          "range": 160,
+          "side": "A",
+          "speed": 2.0,
+          "target": "",
+          "type": "INITIATIVE",
+          "unit": "infantry"
+        },
+        {
+          "reason": "NO_VALID_RANGE_TARGET",
+          "side": "B",
+          "target": "",
+          "type": "NO_FIRE",
+          "unit": "infantry"
+        },
+        {
+          "reason": "NO_VALID_RANGE_TARGET",
+          "side": "A",
+          "target": "",
+          "type": "NO_FIRE",
+          "unit": "infantry"
+        }
+      ],
+      "log": "-- 第4回合 --\n我方将领加成：本回合无将领属性或技能加成生效\n敌方将领加成：本回合无将领属性或技能加成生效\n敌方步兵-加兰德步枪兵（M1）(1000) [前进] 推进100 -> 坐标600 (距我400)\n我方步兵-加兰德步枪兵（M1）(1000) [前进] 推进100 -> 坐标300 (距敌400)\n",
+      "ordersA": {
+        "infantry": {
+          "action": "ADVANCE",
+          "focusTarget": null
+        }
+      },
+      "ordersB": {
+        "infantry": {
+          "action": "ADVANCE",
+          "focusTarget": null
+        }
+      },
+      "resolvedAt": 1791600706287,
+      "round": 4,
+      "seed": 874612485847375030,
+      "sourcesA": {
+        "infantry": "DEFAULT"
+      },
+      "sourcesB": {
+        "infantry": "DEFAULT"
+      }
+    },
+    {
+      "after": {
+        "armyA": {
+          "infantry": 954
+        },
+        "armyB": {
+          "infantry": 952
+        },
+        "positionsA": {
+          "infantry": 400
+        },
+        "positionsB": {
+          "infantry": 500
+        },
+        "distance": 1000,
+        "firstCombatRound": 5,
+        "autoA": false,
+        "autoB": false,
+        "pendingTakeoverA": false,
+        "pendingTakeoverB": false,
+        "lossA": 0.046,
+        "lossB": 0.048
+      },
+      "before": {
+        "armyA": {
+          "infantry": 1000
+        },
+        "armyB": {
+          "infantry": 1000
+        },
+        "positionsA": {
+          "infantry": 300
+        },
+        "positionsB": {
+          "infantry": 600
+        },
+        "distance": 1000,
+        "firstCombatRound": 0,
+        "autoA": false,
+        "autoB": false,
+        "pendingTakeoverA": false,
+        "pendingTakeoverB": false,
+        "lossA": 0.0,
+        "lossB": 0.0
+      },
+      "events": [
+        {
+          "blitzMultiplier": 1.0,
+          "from": 300,
+          "side": "A",
+          "speed": 2.0,
+          "target": "",
+          "to": 400,
+          "type": "MOVEMENT",
+          "unit": "infantry"
+        },
+        {
+          "blitzMultiplier": 1.0,
+          "from": 600,
+          "side": "B",
+          "speed": 2.0,
+          "target": "",
+          "to": 500,
+          "type": "MOVEMENT",
+          "unit": "infantry"
+        },
+        {
+          "active": false,
+          "cycle": "3/6/9",
+          "defense": 0,
+          "military": 0,
+          "side": "A",
+          "target": "",
+          "type": "OFFICER_ATTRIBUTES",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "frenzy",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "bulwark",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "blitz",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "suppress",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "pierce",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "counter",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "learn",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "borrow_armor",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "cycle": "3/6/9",
+          "defense": 0,
+          "military": 0,
+          "side": "B",
+          "target": "",
+          "type": "OFFICER_ATTRIBUTES",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "frenzy",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "bulwark",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "blitz",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "suppress",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "pierce",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "counter",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "learn",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "borrow_armor",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "blitzMultiplier": 1.0,
+          "order": 1,
+          "range": 160,
+          "side": "A",
+          "speed": 2.0,
+          "target": "",
+          "type": "INITIATIVE",
+          "unit": "infantry"
+        },
+        {
+          "blitzMultiplier": 1.0,
+          "order": 2,
+          "range": 160,
+          "side": "B",
+          "speed": 2.0,
+          "target": "",
+          "type": "INITIATIVE",
+          "unit": "infantry"
+        },
+        {
+          "armorReason": "NO_COMMANDER_OR_SKILL",
+          "attack": 10.0,
+          "borrowedDefense": 0.0,
+          "bulwarkMultiplier": 1.0,
+          "damage": 5714.285714285715,
+          "defense": 15.0,
+          "distance": 100,
+          "frenzyMultiplier": 1.0,
+          "hp": 120.0,
+          "kills": 48,
+          "learnReason": "NO_COMMANDER_OR_SKILL",
+          "learnedAttack": 0.0,
+          "pierce": 0.0,
+          "range": 160,
+          "side": "A",
+          "suppression": 0.0,
+          "target": "infantry",
+          "type": "FIRE",
+          "unit": "infantry"
+        },
+        {
+          "armorReason": "NO_COMMANDER_OR_SKILL",
+          "attack": 10.0,
+          "borrowedDefense": 0.0,
+          "bulwarkMultiplier": 1.0,
+          "damage": 5440.0,
+          "defense": 15.0,
+          "distance": 100,
+          "frenzyMultiplier": 1.0,
+          "hp": 120.0,
+          "kills": 46,
+          "learnReason": "NO_COMMANDER_OR_SKILL",
+          "learnedAttack": 0.0,
+          "pierce": 0.0,
+          "range": 160,
+          "side": "B",
+          "suppression": 0.0,
+          "target": "infantry",
+          "type": "FIRE",
+          "unit": "infantry"
+        }
+      ],
+      "log": "-- 第5回合 --\n我方将领加成：本回合无将领属性或技能加成生效\n敌方将领加成：本回合无将领属性或技能加成生效\n我方步兵-加兰德步枪兵（M1）(1000) [前进] 推进100 -> 坐标400 (距敌200)；射击敌步兵-加兰德步枪兵（M1）(1000) 对地攻击10 本次原始火力10000 伤害5714 击毁48 剩余攻击额度0%\n敌方步兵-加兰德步枪兵（M1）(1000) [前进] 推进100 -> 坐标500 (距我200)；射击我步兵-加兰德步枪兵（M1）(1000) 对地攻击10 本次原始火力9520 伤害5440 击毁46 剩余攻击额度0%\n",
+      "ordersA": {
+        "infantry": {
+          "action": "ADVANCE",
+          "focusTarget": null
+        }
+      },
+      "ordersB": {
+        "infantry": {
+          "action": "ADVANCE",
+          "focusTarget": null
+        }
+      },
+      "resolvedAt": 1791600721354,
+      "round": 5,
+      "seed": -2118778034404454673,
+      "sourcesA": {
+        "infantry": "DEFAULT"
+      },
+      "sourcesB": {
+        "infantry": "DEFAULT"
+      }
+    },
+    {
+      "after": {
+        "armyA": {
+          "infantry": 863
+        },
+        "armyB": {
+          "infantry": 870
+        },
+        "positionsA": {
+          "infantry": 450
+        },
+        "positionsB": {
+          "infantry": 450
+        },
+        "distance": 1000,
+        "firstCombatRound": 5,
+        "autoA": true,
+        "autoB": false,
+        "pendingTakeoverA": true,
+        "pendingTakeoverB": false,
+        "lossA": 0.137,
+        "lossB": 0.13
+      },
+      "before": {
+        "armyA": {
+          "infantry": 954
+        },
+        "armyB": {
+          "infantry": 952
+        },
+        "positionsA": {
+          "infantry": 400
+        },
+        "positionsB": {
+          "infantry": 500
+        },
+        "distance": 1000,
+        "firstCombatRound": 5,
+        "autoA": true,
+        "autoB": false,
+        "pendingTakeoverA": true,
+        "pendingTakeoverB": false,
+        "lossA": 0.046,
+        "lossB": 0.048
+      },
+      "events": [
+        {
+          "blitzMultiplier": 1.0,
+          "from": 400,
+          "side": "A",
+          "speed": 2.0,
+          "target": "",
+          "to": 450,
+          "type": "MOVEMENT",
+          "unit": "infantry"
+        },
+        {
+          "blitzMultiplier": 1.0,
+          "from": 500,
+          "side": "B",
+          "speed": 2.0,
+          "target": "",
+          "to": 450,
+          "type": "MOVEMENT",
+          "unit": "infantry"
+        },
+        {
+          "active": true,
+          "cycle": "3/6/9",
+          "defense": 0,
+          "military": 0,
+          "side": "A",
+          "target": "",
+          "type": "OFFICER_ATTRIBUTES",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "frenzy",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "bulwark",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "blitz",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "suppress",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "pierce",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "counter",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "learn",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "borrow_armor",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": true,
+          "cycle": "3/6/9",
+          "defense": 0,
+          "military": 0,
+          "side": "B",
+          "target": "",
+          "type": "OFFICER_ATTRIBUTES",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "frenzy",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "bulwark",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "blitz",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "suppress",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "pierce",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "counter",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "learn",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "borrow_armor",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "blitzMultiplier": 1.0,
+          "order": 1,
+          "range": 160,
+          "side": "B",
+          "speed": 2.0,
+          "target": "",
+          "type": "INITIATIVE",
+          "unit": "infantry"
+        },
+        {
+          "blitzMultiplier": 1.0,
+          "order": 2,
+          "range": 160,
+          "side": "A",
+          "speed": 2.0,
+          "target": "",
+          "type": "INITIATIVE",
+          "unit": "infantry"
+        },
+        {
+          "armorReason": "NO_COMMANDER_OR_SKILL",
+          "attack": 10.0,
+          "borrowedDefense": 0.0,
+          "bulwarkMultiplier": 1.0,
+          "damage": 10880.0,
+          "defense": 15.0,
+          "distance": 0,
+          "frenzyMultiplier": 1.0,
+          "hp": 120.0,
+          "kills": 91,
+          "learnReason": "NO_COMMANDER_OR_SKILL",
+          "learnedAttack": 0.0,
+          "pierce": 0.0,
+          "range": 160,
+          "side": "B",
+          "suppression": 0.0,
+          "target": "infantry",
+          "type": "FIRE",
+          "unit": "infantry"
+        },
+        {
+          "armorReason": "NO_COMMANDER_OR_SKILL",
+          "attack": 10.0,
+          "borrowedDefense": 0.0,
+          "bulwarkMultiplier": 1.0,
+          "damage": 9862.857142857143,
+          "defense": 15.0,
+          "distance": 0,
+          "frenzyMultiplier": 1.0,
+          "hp": 120.0,
+          "kills": 82,
+          "learnReason": "NO_COMMANDER_OR_SKILL",
+          "learnedAttack": 0.0,
+          "pierce": 0.0,
+          "range": 160,
+          "side": "A",
+          "suppression": 0.0,
+          "target": "infantry",
+          "type": "FIRE",
+          "unit": "infantry"
+        }
+      ],
+      "log": "-- 第6回合 --\n我方将领加成：本回合无将领属性或技能加成生效\n敌方将领加成：本回合无将领属性或技能加成生效\n敌方步兵-加兰德步枪兵（M1）(952) [前进] 推进50 -> 坐标450 (距我50)；射击我步兵-加兰德步枪兵（M1）(954) [贴脸×2.0] 对地攻击10 本次原始火力9520 伤害10880 击毁91 剩余攻击额度0%\n我方步兵-加兰德步枪兵（M1）(954) [前进] 推进50 -> 坐标450 (距敌50)；射击敌步兵-加兰德步枪兵（M1）(952) [贴脸×2.0] 对地攻击10 本次原始火力8630 伤害9863 击毁82 剩余攻击额度0%\n",
+      "ordersA": {
+        "infantry": {
+          "action": "ADVANCE",
+          "focusTarget": null
+        }
+      },
+      "ordersB": {
+        "infantry": {
+          "action": "ADVANCE",
+          "focusTarget": null
+        }
+      },
+      "resolvedAt": 1791600736429,
+      "round": 6,
+      "seed": 5536358047470015375,
+      "sourcesA": {
+        "infantry": "AUTO"
+      },
+      "sourcesB": {
+        "infantry": "DEFAULT"
+      }
+    },
+    {
+      "after": {
+        "armyA": {
+          "infantry": 788
+        },
+        "armyB": {
+          "infantry": 788
+        },
+        "positionsA": {
+          "infantry": 450
+        },
+        "positionsB": {
+          "infantry": 450
+        },
+        "distance": 1000,
+        "firstCombatRound": 5,
+        "autoA": false,
+        "autoB": false,
+        "pendingTakeoverA": false,
+        "pendingTakeoverB": false,
+        "lossA": 0.21200000000000002,
+        "lossB": 0.21200000000000002
+      },
+      "before": {
+        "armyA": {
+          "infantry": 863
+        },
+        "armyB": {
+          "infantry": 870
+        },
+        "positionsA": {
+          "infantry": 450
+        },
+        "positionsB": {
+          "infantry": 450
+        },
+        "distance": 1000,
+        "firstCombatRound": 5,
+        "autoA": false,
+        "autoB": false,
+        "pendingTakeoverA": false,
+        "pendingTakeoverB": false,
+        "lossA": 0.137,
+        "lossB": 0.13
+      },
+      "events": [
+        {
+          "blitzMultiplier": 1.0,
+          "from": 450,
+          "side": "A",
+          "speed": 2.0,
+          "target": "",
+          "to": 450,
+          "type": "MOVEMENT",
+          "unit": "infantry"
+        },
+        {
+          "blitzMultiplier": 1.0,
+          "from": 450,
+          "side": "B",
+          "speed": 2.0,
+          "target": "",
+          "to": 450,
+          "type": "MOVEMENT",
+          "unit": "infantry"
+        },
+        {
+          "active": false,
+          "cycle": "3/6/9",
+          "defense": 0,
+          "military": 0,
+          "side": "A",
+          "target": "",
+          "type": "OFFICER_ATTRIBUTES",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "frenzy",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "bulwark",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "blitz",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "suppress",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "pierce",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "counter",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "learn",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "borrow_armor",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "cycle": "3/6/9",
+          "defense": 0,
+          "military": 0,
+          "side": "B",
+          "target": "",
+          "type": "OFFICER_ATTRIBUTES",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "frenzy",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "bulwark",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "blitz",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "suppress",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "pierce",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "counter",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "learn",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "borrow_armor",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "blitzMultiplier": 1.0,
+          "order": 1,
+          "range": 160,
+          "side": "A",
+          "speed": 2.0,
+          "target": "",
+          "type": "INITIATIVE",
+          "unit": "infantry"
+        },
+        {
+          "blitzMultiplier": 1.0,
+          "order": 2,
+          "range": 160,
+          "side": "B",
+          "speed": 2.0,
+          "target": "",
+          "type": "INITIATIVE",
+          "unit": "infantry"
+        },
+        {
+          "armorReason": "NO_COMMANDER_OR_SKILL",
+          "attack": 10.0,
+          "borrowedDefense": 0.0,
+          "bulwarkMultiplier": 1.0,
+          "damage": 9862.857142857143,
+          "defense": 15.0,
+          "distance": 0,
+          "frenzyMultiplier": 1.0,
+          "hp": 120.0,
+          "kills": 82,
+          "learnReason": "NO_COMMANDER_OR_SKILL",
+          "learnedAttack": 0.0,
+          "pierce": 0.0,
+          "range": 160,
+          "side": "A",
+          "suppression": 0.0,
+          "target": "infantry",
+          "type": "FIRE",
+          "unit": "infantry"
+        },
+        {
+          "armorReason": "NO_COMMANDER_OR_SKILL",
+          "attack": 10.0,
+          "borrowedDefense": 0.0,
+          "bulwarkMultiplier": 1.0,
+          "damage": 9005.714285714286,
+          "defense": 15.0,
+          "distance": 0,
+          "frenzyMultiplier": 1.0,
+          "hp": 120.0,
+          "kills": 75,
+          "learnReason": "NO_COMMANDER_OR_SKILL",
+          "learnedAttack": 0.0,
+          "pierce": 0.0,
+          "range": 160,
+          "side": "B",
+          "suppression": 0.0,
+          "target": "infantry",
+          "type": "FIRE",
+          "unit": "infantry"
+        }
+      ],
+      "log": "-- 第7回合 --\n我方将领加成：本回合无将领属性或技能加成生效\n敌方将领加成：本回合无将领属性或技能加成生效\n我方步兵-加兰德步枪兵（M1）(863) [前进] 已贴脸 坐标450；射击敌步兵-加兰德步枪兵（M1）(870) [贴脸×2.0] 对地攻击10 本次原始火力8630 伤害9863 击毁82 剩余攻击额度0%\n敌方步兵-加兰德步枪兵（M1）(870) [前进] 已贴脸 坐标450；射击我步兵-加兰德步枪兵（M1）(863) [贴脸×2.0] 对地攻击10 本次原始火力7880 伤害9006 击毁75 剩余攻击额度0%\n",
+      "ordersA": {
+        "infantry": {
+          "action": "ADVANCE",
+          "focusTarget": null
+        }
+      },
+      "ordersB": {
+        "infantry": {
+          "action": "ADVANCE",
+          "focusTarget": null
+        }
+      },
+      "resolvedAt": 1791600751499,
+      "round": 7,
+      "seed": -7956448390510397983,
+      "sourcesA": {
+        "infantry": "DEFAULT"
+      },
+      "sourcesB": {
+        "infantry": "DEFAULT"
+      }
+    },
+    {
+      "after": {
+        "armyA": {
+          "infantry": 713
+        },
+        "armyB": {
+          "infantry": 720
+        },
+        "positionsA": {
+          "infantry": 450
+        },
+        "positionsB": {
+          "infantry": 450
+        },
+        "distance": 1000,
+        "firstCombatRound": 5,
+        "autoA": false,
+        "autoB": false,
+        "pendingTakeoverA": false,
+        "pendingTakeoverB": false,
+        "lossA": 0.287,
+        "lossB": 0.28
+      },
+      "before": {
+        "armyA": {
+          "infantry": 788
+        },
+        "armyB": {
+          "infantry": 788
+        },
+        "positionsA": {
+          "infantry": 450
+        },
+        "positionsB": {
+          "infantry": 450
+        },
+        "distance": 1000,
+        "firstCombatRound": 5,
+        "autoA": false,
+        "autoB": false,
+        "pendingTakeoverA": false,
+        "pendingTakeoverB": false,
+        "lossA": 0.21200000000000002,
+        "lossB": 0.21200000000000002
+      },
+      "events": [
+        {
+          "blitzMultiplier": 1.0,
+          "from": 450,
+          "side": "A",
+          "speed": 2.0,
+          "target": "",
+          "to": 450,
+          "type": "MOVEMENT",
+          "unit": "infantry"
+        },
+        {
+          "blitzMultiplier": 1.0,
+          "from": 450,
+          "side": "B",
+          "speed": 2.0,
+          "target": "",
+          "to": 450,
+          "type": "MOVEMENT",
+          "unit": "infantry"
+        },
+        {
+          "active": false,
+          "cycle": "3/6/9",
+          "defense": 0,
+          "military": 0,
+          "side": "A",
+          "target": "",
+          "type": "OFFICER_ATTRIBUTES",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "frenzy",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "bulwark",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "blitz",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "suppress",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "pierce",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "counter",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "learn",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "A",
+          "skill": "borrow_armor",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "cycle": "3/6/9",
+          "defense": 0,
+          "military": 0,
+          "side": "B",
+          "target": "",
+          "type": "OFFICER_ATTRIBUTES",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "frenzy",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "bulwark",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "blitz",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "suppress",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "pierce",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "counter",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "learn",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "active": false,
+          "firstCombatRound": 5,
+          "level": 0,
+          "reason": "NO_COMMANDER_OR_SKILL",
+          "side": "B",
+          "skill": "borrow_armor",
+          "target": "",
+          "type": "SKILL_WINDOW",
+          "unit": ""
+        },
+        {
+          "blitzMultiplier": 1.0,
+          "order": 1,
+          "range": 160,
+          "side": "B",
+          "speed": 2.0,
+          "target": "",
+          "type": "INITIATIVE",
+          "unit": "infantry"
+        },
+        {
+          "blitzMultiplier": 1.0,
+          "order": 2,
+          "range": 160,
+          "side": "A",
+          "speed": 2.0,
+          "target": "",
+          "type": "INITIATIVE",
+          "unit": "infantry"
+        },
+        {
+          "armorReason": "NO_COMMANDER_OR_SKILL",
+          "attack": 10.0,
+          "borrowedDefense": 0.0,
+          "bulwarkMultiplier": 1.0,
+          "damage": 9005.714285714286,
+          "defense": 15.0,
+          "distance": 0,
+          "frenzyMultiplier": 1.0,
+          "hp": 120.0,
+          "kills": 75,
+          "learnReason": "NO_COMMANDER_OR_SKILL",
+          "learnedAttack": 0.0,
+          "pierce": 0.0,
+          "range": 160,
+          "side": "B",
+          "suppression": 0.0,
+          "target": "infantry",
+          "type": "FIRE",
+          "unit": "infantry"
+        },
+        {
+          "armorReason": "NO_COMMANDER_OR_SKILL",
+          "attack": 10.0,
+          "borrowedDefense": 0.0,
+          "bulwarkMultiplier": 1.0,
+          "damage": 8148.571428571428,
+          "defense": 15.0,
+          "distance": 0,
+          "frenzyMultiplier": 1.0,
+          "hp": 120.0,
+          "kills": 68,
+          "learnReason": "NO_COMMANDER_OR_SKILL",
+          "learnedAttack": 0.0,
+          "pierce": 0.0,
+          "range": 160,
+          "side": "A",
+          "suppression": 0.0,
+          "target": "infantry",
+          "type": "FIRE",
+          "unit": "infantry"
+        }
+      ],
+      "log": "-- 第8回合 --\n我方将领加成：本回合无将领属性或技能加成生效\n敌方将领加成：本回合无将领属性或技能加成生效\n敌方步兵-加兰德步枪兵（M1）(788) [前进] 已贴脸 坐标450；射击我步兵-加兰德步枪兵（M1）(788) [贴脸×2.0] 对地攻击10 本次原始火力7880 伤害9006 击毁75 剩余攻击额度0%\n我方步兵-加兰德步枪兵（M1）(788) [前进] 已贴脸 坐标450；射击敌步兵-加兰德步枪兵（M1）(788) [贴脸×2.0] 对地攻击10 本次原始火力7130 伤害8149 击毁68 剩余攻击额度0%\n",
+      "ordersA": {
+        "infantry": {
+          "action": "ADVANCE",
+          "focusTarget": null
+        }
+      },
+      "ordersB": {
+        "infantry": {
+          "action": "ADVANCE",
+          "focusTarget": null
+        }
+      },
+      "resolvedAt": 1791600766567,
+      "round": 8,
+      "seed": -2646838210847826298,
+      "sourcesA": {
+        "infantry": "DEFAULT"
+      },
+      "sourcesB": {
+        "infantry": "DEFAULT"
+      }
+    }
+  ]
+}

@@ -8,15 +8,16 @@ function setup(extra={}) {
   for(const file of ['constants.js','dispatch-route.js','world.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../js',file),'utf8'),c);
   return c;
 }
-test('preview preserves route turns, centres axis-aligned routes and labels direction',()=>{
+test('preview joins endpoints directly, centres axis-aligned routes and labels direction',()=>{
   const {Game:g}=setup();
   for(const points of [[[20,30],[20,80]],[[20,30],[90,30]],[[0,0],[0,199],[199,199]],[[20,30]],[[20,30],[20,30]]]) {
     const l=g.DispatchRoute.layout(points);
-    assert.equal(l.points.length,points.length);
+    const endpoints=points.length>1?[points[0],points[points.length-1]]:points;
+    assert.equal(l.points.length,endpoints.length);
     l.points.forEach((p,i)=>{
       assert.ok(p[0]>=274&&p[0]<=566&&p[1]>=50&&p[1]<=182);
-      assert.ok(Math.abs((p[0]-420)/l.scale+l.cx-points[i][0])<1e-9);
-      assert.ok(Math.abs((p[1]-116)/l.scale+l.cy-points[i][1])<1e-9);
+      assert.ok(Math.abs((p[0]-420)/l.scale+l.cx-endpoints[i][0])<1e-9);
+      assert.ok(Math.abs((p[1]-116)/l.scale+l.cy-endpoints[i][1])<1e-9);
     });
   }
   assert.equal(g.DispatchRoute.layout([[20,30],[20,80]]).points[0][0],420);
@@ -34,10 +35,21 @@ test('preview escapes names, shows server metrics and handles missing or coincid
   assert.match(el.innerHTML,/\(126, 139\)/);
   assert.match(el.innerHTML,/\(135, 177\)/);
   assert.match(el.innerHTML,/47/);assert.match(el.innerHTML,/31 秒/);
-  assert.match(el.innerHTML,/stroke-dasharray="7 5"/);
+  assert.match(el.innerHTML,/stroke-opacity=".2" stroke-width="17"/);
+  assert.doesNotMatch(el.innerHTML,/stroke-dasharray/);
   assert.match(el.innerHTML,/地形未加载/);
   g.DispatchRoute.render(el,{...route,points:[]});assert.match(el.innerHTML,/路线坐标暂不可用/);assert.doesNotMatch(el.innerHTML,/<svg/);
   g.DispatchRoute.render(el,{...route,points:[[20,30]]});assert.match(el.innerHTML,/起终/);assert.doesNotMatch(el.innerHTML,/NaN|Infinity/);
+});
+test('preview colors depend on the action and decimal distance is formatted only for display',()=>{
+  const {Game:g}=setup(),el={};
+  const route={mode:'land',points:[[10,10],[13,12]],distance:Math.sqrt(13),seconds:11,cargoLimit:100};
+  for(const [action,color] of [['conquer','#e66f79'],['plunder','#e66f79'],['transport','#69b7ee'],['rebase','#69b7ee']]){
+    g.DispatchRoute.render(el,route,{action});
+    assert.ok(el.innerHTML.includes('stroke="'+color+'"'));
+    assert.match(el.innerHTML,/3.61 <small>格/);
+    assert.equal(route.distance,Math.sqrt(13));
+  }
 });
 test('quantity changes keep the existing preview; unit changes reject stale previews',async()=>{
   const timers=[],requests=[];let onChange,resolveTerrain;
@@ -118,4 +130,3 @@ test('onDispatchInputChange and slider change refresh route preview', () => {
   c.Game.World.onDispatchSliderChange('scout', 2);
   assert.equal(refreshed, 2, '滑动滑块应刷新行军路线');
 });
-

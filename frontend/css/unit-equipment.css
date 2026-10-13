@@ -1,0 +1,367 @@
+/* ========================================================================== */
+/* 兵种装备系统界面样式 (Unit Equipment Redesign)                            */
+/* ========================================================================== */
+
+/* 1. 兵种卡片装备摘要栏 */
+.unit-equipment-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 8px 0 10px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line, rgba(0, 0, 0, 0.08));
+}
+
+.unit-equipment-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* 战术装备芯片胶囊 (Interactive Tactical Chips) */
+.unit-equipment-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 7px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.16s ease;
+  user-select: none;
+  background: var(--surface-muted, #f8fafc);
+  color: var(--ink, #1e293b);
+  outline: none;
+  text-decoration: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+.unit-equipment-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+.unit-equipment-chip:active {
+  transform: translateY(0);
+}
+
+.ue-chip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.ue-chip-icon svg,
+.ue-slot-icon svg {
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+
+.ue-chip-slot {
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+}
+.ue-chip-divider {
+  opacity: 0.35;
+  font-size: 10px;
+}
+.ue-chip-name {
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 未配置空槽位 */
+.unit-equipment-chip.is-empty {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  color: #64748b;
+}
+.unit-equipment-chip.is-empty .ue-chip-name {
+  color: #94a3b8;
+}
+.unit-equipment-chip.is-empty:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+/* 防护槽位 (战术精钢蓝) */
+.unit-equipment-chip.slot-protection .ue-chip-icon {
+  color: #2563eb;
+  background: rgba(37, 99, 235, 0.1);
+}
+.unit-equipment-chip.slot-protection .ue-chip-slot { color: #2563eb; }
+.unit-equipment-chip.is-equipped.slot-protection {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e3a8a;
+}
+.unit-equipment-chip.is-equipped.slot-protection:hover {
+  border-color: #93c5fd;
+  background: #e0f2fe;
+}
+
+/* 作战槽位 (战术火控红) */
+.unit-equipment-chip.slot-combat .ue-chip-icon {
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.1);
+}
+.unit-equipment-chip.slot-combat .ue-chip-slot { color: #dc2626; }
+.unit-equipment-chip.is-equipped.slot-combat {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+.unit-equipment-chip.is-equipped.slot-combat:hover {
+  border-color: #fca5a5;
+  background: #fee2e2;
+}
+
+/* 保障槽位 (战术测控琥珀金) */
+.unit-equipment-chip.slot-support .ue-chip-icon {
+  color: #d97706;
+  background: rgba(217, 119, 6, 0.1);
+}
+.unit-equipment-chip.slot-support .ue-chip-slot { color: #d97706; }
+.unit-equipment-chip.is-equipped.slot-support {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+}
+.unit-equipment-chip.is-equipped.slot-support:hover {
+  border-color: #fcd34d;
+  background: #fef3c7;
+}
+
+/* 晴空蓝白模式定制增强 */
+[data-theme|="blue-white"] .unit-equipment-summary {
+  border-top-color: #e2e8f0;
+}
+[data-theme|="blue-white"] .unit-equipment-chip.is-empty {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+/* 暗色/夜航主题适配 */
+[data-theme="dark"] .unit-equipment-summary {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+[data-theme="dark"] .unit-equipment-chip.is-empty {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #94a3b8;
+}
+[data-theme="dark"] .unit-equipment-chip.is-empty .ue-chip-name {
+  color: #64748b;
+}
+[data-theme="dark"] .unit-equipment-chip.is-empty:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+[data-theme="dark"] .unit-equipment-chip.slot-protection .ue-chip-icon {
+  color: #60a5fa;
+  background: rgba(96, 165, 250, 0.15);
+}
+[data-theme="dark"] .unit-equipment-chip.slot-protection .ue-chip-slot { color: #60a5fa; }
+[data-theme="dark"] .unit-equipment-chip.is-equipped.slot-protection {
+  background: rgba(37, 99, 235, 0.18);
+  border-color: rgba(96, 165, 250, 0.4);
+  color: #dbeafe;
+}
+[data-theme="dark"] .unit-equipment-chip.is-equipped.slot-protection:hover {
+  background: rgba(37, 99, 235, 0.28);
+  border-color: rgba(96, 165, 250, 0.6);
+}
+[data-theme="dark"] .unit-equipment-chip.slot-combat .ue-chip-icon {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.15);
+}
+[data-theme="dark"] .unit-equipment-chip.slot-combat .ue-chip-slot { color: #f87171; }
+[data-theme="dark"] .unit-equipment-chip.is-equipped.slot-combat {
+  background: rgba(220, 38, 38, 0.18);
+  border-color: rgba(248, 113, 113, 0.4);
+  color: #fee2e2;
+}
+[data-theme="dark"] .unit-equipment-chip.is-equipped.slot-combat:hover {
+  background: rgba(220, 38, 38, 0.28);
+  border-color: rgba(248, 113, 113, 0.6);
+}
+[data-theme="dark"] .unit-equipment-chip.slot-support .ue-chip-icon {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.15);
+}
+[data-theme="dark"] .unit-equipment-chip.slot-support .ue-chip-slot { color: #fbbf24; }
+[data-theme="dark"] .unit-equipment-chip.is-equipped.slot-support {
+  background: rgba(217, 119, 6, 0.18);
+  border-color: rgba(251, 191, 36, 0.4);
+  color: #fef3c7;
+}
+[data-theme="dark"] .unit-equipment-chip.is-equipped.slot-support:hover {
+  background: rgba(217, 119, 6, 0.28);
+  border-color: rgba(251, 191, 36, 0.6);
+}
+
+.unit-equipment-summary > .btn,
+.ue-config-btn {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+/* 2. 配装抽屉与模态浮层 */
+.unit-equipment-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+  z-index: 1500;
+  display: flex;
+  justify-content: flex-end;
+}
+.unit-equipment-drawer {
+  width: 460px;
+  max-width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel, var(--bg, #222b2c));
+  color: var(--text, #eee);
+  box-shadow: -8px 0 30px rgba(0, 0, 0, 0.35);
+}
+.unit-equipment-drawer > header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border, #43494e);
+}
+.unit-equipment-drawer h2 { font-size: 18px; margin: 0 0 8px; }
+.unit-equipment-drawer h3 { font-size: 15px; margin: 0 0 12px; }
+.unit-equipment-drawer p { font-size: 12px; line-height: 1.6; margin: 6px 0; color: var(--muted, #adb8b4); }
+.unit-equipment-drawer > header > div { flex: 1; min-width: 0; }
+.unit-equipment-drawer > header > .btn { flex-shrink: 0; white-space: nowrap; }
+
+.unit-equipment-content {
+  overflow: auto;
+  flex: 1;
+  padding: 16px 20px;
+  overscroll-behavior: contain;
+}
+
+/* 抽屉内 3 个槽位卡片 */
+.unit-equipment-slot {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--border, #43494e);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.02);
+  color: inherit;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.unit-equipment-slot:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+.unit-equipment-slot.active {
+  border-color: var(--accent, #d9ba6a);
+  background: #b6a06f14;
+}
+.unit-equipment-slot.active.slot-protection { border-color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
+.unit-equipment-slot.active.slot-combat { border-color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+.unit-equipment-slot.active.slot-support { border-color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
+
+.ue-slot-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 6px;
+  color: var(--muted, #adb8b4);
+  font-size: 12px;
+}
+.ue-slot-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+}
+.slot-protection .ue-slot-icon { color: #3b82f6; }
+.slot-combat .ue-slot-icon { color: #ef4444; }
+.slot-support .ue-slot-icon { color: #f59e0b; }
+.ue-slot-title { font-weight: 600; }
+.unit-equipment-slot strong { display: block; font-size: 14px; margin-bottom: 3px; }
+.unit-equipment-slot small { display: block; font-size: 12px; margin-top: 4px; line-height: 1.5; color: var(--muted, #adb8b4); }
+
+.unit-equipment-preview,
+.unit-equipment-choices,
+.unit-equipment-orders {
+  margin: 18px 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--border, #43494e);
+}
+.unit-equipment-preview dl { margin: 10px 0; }
+.unit-equipment-preview dl > div {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 13px;
+}
+.unit-equipment-preview dd { margin: 0; }
+.unit-equipment-effects { color: var(--accent, #d9ba6a) !important; }
+
+.unit-equipment-choices article,
+.unit-equipment-orders > div {
+  border: 1px solid var(--border, #43494e);
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 10px;
+  background: rgba(255, 255, 255, 0.02);
+}
+.unit-equipment-status {
+  font-size: 11px;
+  margin-left: 8px;
+  color: var(--accent, #d9ba6a);
+}
+.unit-equipment-drawer details { font-size: 12px; margin-top: 10px; }
+.unit-equipment-drawer summary { cursor: pointer; padding: 7px 0; }
+
+.unit-equipment-drawer > footer {
+  flex-shrink: 0;
+  padding: 12px 18px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border, #43494e);
+  background: inherit;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.unit-equipment-drawer > footer p { flex-basis: 100%; color: #eea686; }
+.unit-equipment-report { margin: 10px 0; font-size: 12px; }
+.unit-equipment-report summary { cursor: pointer; font-weight: bold; }
+.unit-equipment-report p { line-height: 1.6; }
+
+@media (max-width: 600px) {
+  .unit-equipment-drawer { width: 100%; box-shadow: none; }
+  .unit-equipment-drawer > header { padding-top: calc(14px + env(safe-area-inset-top)); }
+  .unit-equipment-summary { flex-direction: column; align-items: stretch; gap: 8px; }
+  .unit-equipment-chips { gap: 6px; }
+  .unit-equipment-summary > .btn { align-self: flex-end; }
+}

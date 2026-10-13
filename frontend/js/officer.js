@@ -975,7 +975,7 @@ window.Game = window.Game || {};
       h += '<br/>新建军校后才能招募军官。</div>';
 
       if (academyLv <= 0) {
-        h += '<div class="panel"><div class="d">尚未建造军校,无法招募军官。请到 <b>军事</b> 建造 <b>军校</b> 后再来。</div></div>';
+        h += '<div class="panel"><div class="d">尚未建造军校,无法招募军官。请到 <b>军工</b> 建造 <b>军校</b> 后再来。</div></div>';
       } else {
         // 概率由后端下发，明确按整批计算，避免误解为每名候选人独立抽取。
         var batchChance = s.academy.fiveStarBatchChance;
@@ -1013,14 +1013,34 @@ window.Game = window.Game || {};
         }
       }
 
-      h += '<div class="menu-item back" onclick="Game.go(\'buildArmy\')">[0] 返回军事</div>';
+      h += '<div class="menu-item back" onclick="Game.go(\'buildArmy\')">[0] 返回军工</div>';
       v.innerHTML = h;
     },
 
+    /** 展示本城司令官的有效属性倍率；技能保留在档案，岗位不传播技能。 */
+    renderChiefBoard: function () {
+      var chief = Core.getOfficerByRole ? Core.getOfficerByRole('commander_in_chief') : null;
+      var enabled = !!(Core.state && Core.state.buildings && Core.state.buildings.headquarters);
+      var esc = G.escapeHtml;
+      var h = '<div class="officer-board-slot slot-commander' + (chief ? ' is-clickable' : '') + '"'
+        + (chief ? ' onclick="Game.Officer.showDetail(\'' + chief.id + '\')" onkeydown="Game.Officer.activateBoardSlot(event,\'' + chief.id + '\')" role="button" tabindex="0"' : '') + '>';
+      h += '<div class="board-slot-head"><span class="board-slot-role">🎖️ 司令部 · 司令官</span></div>';
+      if (chief) {
+        h += '<div class="board-slot-officer">' + esc(chief.name) + ' ' + starIcons(chief.star) + '</div>';
+        [['military', '攻击'], ['defense', '防御'], ['logistics', '生命'], ['knowledge', '机动']].forEach(function (entry) {
+          h += '<div class="board-slot-detail">' + entry[1] + ' <b>+' + ((chief[entry[0]] || 0) * G.Constants.commandBonusRate * 100).toFixed(1) + '%</b></div>';
+        });
+        if (!enabled) h += '<div class="board-slot-detail">司令部未建成，加成暂停</div>';
+      } else {
+        h += '<div class="board-slot-vacant">暂未任命司令官</div><div class="board-slot-detail">'
+          + (enabled ? '在下方选择将领点击【任司令官】' : '先到军工建造司令部') + '</div>';
+      }
+      return h + '<div class="board-slot-detail">本城全部战斗常驻；装备、套装计入，技能不参与</div></div>';
+    },
+
     /**
-     * 军官管理页 (route: 'officer')
-     * <p>
-     * 参谋部入口: 列出已招募的将领, 包含4星黄金与5星钻石王者荣耀段位边框的独立卡片设计。
+     * 军官管理页 (route: 'officer')，展示独立岗位与已招募将领。
+     * 4星黄金与5星钻石军官沿用原有卡片设计。
      */
     renderView: function (v) {
       var s = Core.state || {};
@@ -1036,10 +1056,10 @@ window.Game = window.Game || {};
       h += '<div class="officer-mgmt-title">🎖️ 参谋部 · 军官管理</div>';
       h += '<button type="button" class="officer-mgmt-recruit-btn" onclick="Game.go(\'academy\')" title="前往军校招募新将领">招募将领 &gt;</button>';
       h += '</div>';
-      h += '<div class="officer-mgmt-desc">已招募将领 <b>' + officers.length + '</b> 名。委任市长提升城池资源产能，委任指挥官加持部队攻防与带兵上限。</div>';
+      h += '<div class="officer-mgmt-desc">已招募将领 <b>' + officers.length + '</b> 名。委任市长提升城池资源产能，委任指挥官加持部队攻防与带兵上限。司令官四项属性增益本城全部战斗，装备与套装计入，技能不参与。</div>';
       h += '</div>';
 
-      // 顶部任职看板 (执政市长 / 全军指挥官 双台)
+      // 三个独立岗位各占一个军官，司令官不替代市长或城市指挥官。
       var mayor = Core.getOfficerByRole ? Core.getOfficerByRole('mayor') : null;
       var cmd = Core.getOfficerByRole ? Core.getOfficerByRole('commander') : null;
 
@@ -1090,6 +1110,7 @@ window.Game = window.Game || {};
       }
       h += '</div>';
 
+      h += this.renderChiefBoard();
       h += '</div>'; // .officer-board-grid
 
       // 我的军官 标题栏
@@ -1100,7 +1121,7 @@ window.Game = window.Game || {};
       // 军官卡片列表
       if (!officers.length) {
         h += '<div class="menu-item" style="text-align:center;padding:24px 16px;color:var(--muted, #64748b)">';
-        h += '暂无军官。请到 <b>军事</b> → <b>军校</b> 招募。';
+        h += '暂无军官。请到 <b>军工</b> → <b>军校</b> 招募。';
         h += '</div>';
       } else {
         h += '<div class="officer-cards-list">';
@@ -1124,6 +1145,8 @@ window.Game = window.Game || {};
             roleBadge = '<span class="card-role-badge role-mayor">👑 市长</span>';
           } else if (o.role === 'commander') {
             roleBadge = '<span class="card-role-badge role-commander">⚔️ 指挥官</span>';
+          } else if (o.role === 'commander_in_chief') {
+            roleBadge = '<span class="card-role-badge role-commander">🎖️ 司令官</span>';
           } else if (o.role === 'march') {
             roleBadge = '<span class="card-role-badge">🚩 行军中</span>';
           }
@@ -1144,22 +1167,26 @@ window.Game = window.Game || {};
             skillTagsHtml = '<span class="card-skill-tag-empty">暂无特长技能</span>';
           }
 
-          h += '<div class="officer-card ' + tierClass + '" onclick="Game.Officer.showDetail(\'' + o.id + '\')" role="button" tabindex="0" title="点击查看 ' + esc(o.name) + ' 详情">';
+          h += '<div class="officer-card ' + tierClass + '" onclick="Game.Officer.showDetail(\'' + o.id + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();Game.Officer.showDetail(\'' + o.id + '\');}" role="button" tabindex="0" title="点击查看 ' + esc(o.name) + ' 详情">';
           h += cornersHtml;
           h += '<div class="officer-card-inner">';
 
           // 头部：段位、将领名、星级与职位/等级徽章
           h += '<div class="card-header-row">';
           h += '<div class="card-officer-title">';
-          if (tierRibbon) h += tierRibbon;
           h += '<span class="card-officer-name">' + esc(o.name) + '</span>';
-          h += '<span class="card-officer-stars">' + starIcons(o.star) + '</span>';
           h += '</div>';
 
           h += '<div class="card-badge-group">';
           h += roleBadge;
-          h += '<span class="card-level-badge' + (isMax ? ' is-max' : '') + '">Lv.' + o.level + (isMax ? ' (满)' : '') + '</span>';
+          h += '<span class="card-level-badge' + (isMax ? ' is-max' : '') + '">Lv.' + o.level + '</span>';
           h += '</div>';
+          h += '</div>';
+
+          // 次头部：星级与稀有度标签
+          h += '<div class="card-sub-header-row">';
+          h += '<span class="card-officer-stars">' + starIcons(o.star) + '</span>';
+          if (tierRibbon) h += tierRibbon;
           h += '</div>';
 
           // 四维属性矩阵
@@ -1207,8 +1234,14 @@ window.Game = window.Game || {};
             h += '<button type="button" class="btn-card-action btn-appoint-mayor" onclick="event.stopPropagation();Game.Officer.appoint(\'' + o.id + '\',\'mayor\')">任市长</button>';
             h += '<button type="button" class="btn-card-action btn-appoint-commander" onclick="event.stopPropagation();Game.Officer.appoint(\'' + o.id + '\',\'commander\')">任指挥官</button>';
           }
+          if (o.role === 'commander_in_chief') {
+            h += '<button type="button" class="btn-card-action btn-dismiss" onclick="event.stopPropagation();Game.Officer.appoint(\'' + o.id + '\',\'commander_in_chief\')">取消司令官任命</button>';
+          } else {
+            var chiefLocked = !s.buildings || !s.buildings.headquarters || o.role === 'march';
+            h += '<button type="button" class="btn-card-action btn-appoint-commander"' + (chiefLocked ? ' disabled title="司令部落成且军官未行军时可任命"' : '') + ' onclick="event.stopPropagation();Game.Officer.appoint(\'' + o.id + '\',\'commander_in_chief\')">任司令官</button>';
+          }
           h += '</div>';
-          h += '<span class="card-detail-hint">点击卡片查看详情 &gt;</span>';
+          h += '<span class="card-detail-hint">详情 &gt;</span>';
           h += '</div>';
 
           h += '</div>'; // .officer-card-inner
@@ -1217,7 +1250,7 @@ window.Game = window.Game || {};
         h += '</div>'; // .officer-cards-list
       }
 
-      h += '<div class="menu-item back" onclick="Game.go(\'buildArmy\')" style="margin-top:16px">[0] 返回军事</div>';
+      h += '<div class="menu-item back" onclick="Game.go(\'buildArmy\')" style="margin-top:16px">[0] 返回军工</div>';
       h += '</div>'; // .officer-mgmt-wrap
 
       v.innerHTML = h;
@@ -1360,6 +1393,10 @@ window.Game = window.Game || {};
       ];
       for (var ai = 0; ai < attrs.length; ai++) {
         var attr = attrs[ai];
+        if (o.role === 'commander_in_chief') {
+          var chiefEffects = { military: '攻击', defense: '防御', logistics: '生命', knowledge: '机动' };
+          attr.effect = '司令官 · ' + chiefEffects[attr.key] + ' +' + (attr.value * G.Constants.commandBonusRate * 100).toFixed(1) + '%（常驻）';
+        }
         h += '<div class="officer-attr-row"><div class="officer-attr-main"><span>' + attr.label + '</span><strong>' + attr.value + '</strong><small>/ ' + G.ATTR_MAX + '</small>';
         if (canAdd && attr.value < G.ATTR_MAX) h += '<button type="button" class="officer-attr-add" aria-label="增加' + attr.label + '" onclick="Game.Officer.addAttr(\'' + o.id + '\',\'' + attr.key + '\')">+</button>';
         h += '</div>';
@@ -1443,7 +1480,7 @@ window.Game = window.Game || {};
       h += '<section class="officer-detail-section officer-detail-loyalty"><div class="officer-detail-section-head"><h2>忠诚与俸禄</h2><span>每小时结算</span></div>';
       h += '<div class="officer-loyalty-heading"><div><small>忠诚度</small><strong class="' + (loy >= 80 ? 'is-high' : loy >= 50 ? 'is-mid' : 'is-low') + '">' + loy + '<span>/100 · ' + loyLabel + '</span></strong></div><div><small>俸禄</small><strong>' + (o.salary || 0) + '<span>金 / 小时</span></strong></div></div>';
       h += '<div class="officer-detail-progress loyalty"><span style="width:' + Math.max(0, Math.min(100, loy)) + '%"></span></div>';
-      h += '<div class="officer-detail-note">闲置时忠诚缓慢恢复，任职时缓慢下降；俸禄自动从黄金扣除。</div>';
+      h += '<div class="officer-detail-note">闲置时忠诚缓慢恢复，任职时缓慢下降；俸禄自动从黄金扣除。守城指挥官忠诚为0时，在敌方开启占领的讨伐中守城失败，会被敌方俘虏。</div>';
       var nowMs = Date.now();
       var rewardCost = (o.star || 1) * 50 + (o.level || 1) * 2;
       var cooling = o.rewardCoolAt && nowMs < o.rewardCoolAt;

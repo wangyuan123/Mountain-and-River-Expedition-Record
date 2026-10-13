@@ -14,45 +14,77 @@ public final class MilitaryRankDef {
             String name,
             int prestige,
             int baseCap,
-            Map<String, Integer> reqGems
-    ) {}
+            int npcVictories,
+            int minNpcLevel,
+            int certificateDropPercent
+    ) {
+        public String certificateKey() { return tier > 1 ? "rank_certificate_" + tier : null; }
+        public String certificateName() { return name + "晋升凭证"; }
+    }
 
     public record GemDef(String key, String name, String icon, String desc) {}
 
     public static final Map<String, GemDef> GEMS = Map.of(
-            "gem_pearl",      new GemDef("gem_pearl",      "珍珠",   "⚪", "稀有天然珍珠，野地采集获得，用于晋升军衔"),
-            "gem_coral",      new GemDef("gem_coral",      "珊瑚",   "🪸", "红润天然珊瑚，野地采集获得，用于晋升军衔"),
-            "gem_glaze",      new GemDef("gem_glaze",      "琉璃",   "🔮", "晶莹剔透琉璃，野地采集获得，用于晋升军衔"),
-            "gem_amber",      new GemDef("gem_amber",      "琥珀",   "🍯", "温润千年琥珀，野地采集获得，用于晋升军衔"),
-            "gem_agate",      new GemDef("gem_agate",      "玛瑙",   "🟤", "珍贵斑斓玛瑙，野地采集获得，用于晋升军衔"),
-            "gem_crystal",    new GemDef("gem_crystal",    "水晶",   "💎", "璀璨高纯水晶，野地采集获得，用于晋升军衔"),
-            "gem_jadeite",    new GemDef("gem_jadeite",    "翡翠",   "🟢", "翠绿极品翡翠，野地采集获得，用于晋升军衔"),
-            "gem_jade",       new GemDef("gem_jade",       "玉石",   "🪨", "温润无瑕美玉，野地采集获得，用于晋升军衔"),
-            "gem_nightpearl", new GemDef("gem_nightpearl", "夜明珠", "🌟", "绝世璀璨夜明珠，高级野地采集获得，用于晋升将官军衔")
+            "gem_pearl",      new GemDef("gem_pearl",      "珍珠",   "⚪", "稀有天然珍珠，野地采集获得，可收藏的珠宝珍品"),
+            "gem_coral",      new GemDef("gem_coral",      "珊瑚",   "🪸", "红润天然珊瑚，野地采集获得，可收藏的珠宝珍品"),
+            "gem_glaze",      new GemDef("gem_glaze",      "琉璃",   "🔮", "晶莹剔透琉璃，野地采集获得，可收藏的珠宝珍品"),
+            "gem_amber",      new GemDef("gem_amber",      "琥珀",   "🍯", "温润千年琥珀，野地采集获得，可收藏的珠宝珍品"),
+            "gem_agate",      new GemDef("gem_agate",      "玛瑙",   "🟤", "珍贵斑斓玛瑙，野地采集获得，可收藏的珠宝珍品"),
+            "gem_crystal",    new GemDef("gem_crystal",    "水晶",   "💎", "璀璨高纯水晶，野地采集获得，可收藏的珠宝珍品"),
+            "gem_jadeite",    new GemDef("gem_jadeite",    "翡翠",   "🟢", "翠绿极品翡翠，野地采集获得，可收藏的珠宝珍品"),
+            "gem_jade",       new GemDef("gem_jade",       "玉石",   "🪨", "温润无瑕美玉，野地采集获得，可收藏的珠宝珍品"),
+            "gem_nightpearl", new GemDef("gem_nightpearl", "夜明珠", "🌟", "绝世璀璨夜明珠，高级野地采集获得，可收藏的珠宝珍品")
     );
 
     public static final int MAX_RANK_TIER = 17;
 
     // 保留全部 17 阶军衔；上尉及以下每阶增加 25,000；少校基础 300,000，此后每阶增加 50,000，上将为 600,000。
     public static final List<RankInfo> RANKS = List.of(
-            new RankInfo(1,  "列兵",   0,       25000,  Map.of()),
-            new RankInfo(2,  "上等兵", 200,     50000, Map.of("gem_pearl", 3)),
-            new RankInfo(3,  "下士",   500,     75000, Map.of("gem_pearl", 5, "gem_coral", 2)),
-            new RankInfo(4,  "中士",   1000,    100000, Map.of("gem_pearl", 8, "gem_coral", 4, "gem_glaze", 2)),
-            new RankInfo(5,  "上士",   2000,    125000, Map.of("gem_coral", 6, "gem_glaze", 4, "gem_amber", 2)),
-            new RankInfo(6,  "军士长", 3500,    150000, Map.of("gem_glaze", 8, "gem_amber", 5, "gem_agate", 2)),
-            new RankInfo(7,  "准尉",   5500,    175000, Map.of("gem_amber", 8, "gem_agate", 5, "gem_crystal", 2)),
-            new RankInfo(8,  "少尉",   8000,    200000, Map.of("gem_agate", 8, "gem_crystal", 5, "gem_jadeite", 2)),
-            new RankInfo(9,  "中尉",   15000,   225000, Map.of("gem_crystal", 8, "gem_jadeite", 5, "gem_jade", 2)),
-            new RankInfo(10, "上尉",   25000,   250000, Map.of("gem_jadeite", 8, "gem_jade", 5, "gem_nightpearl", 1)),
-            new RankInfo(11, "少校",   45000,   300000, Map.of("gem_jade", 8, "gem_nightpearl", 2, "gem_pearl", 15)),
-            new RankInfo(12, "中校",   80000,   350000, Map.of("gem_nightpearl", 4, "gem_coral", 15, "gem_glaze", 12)),
-            new RankInfo(13, "上校",   150000,  400000, Map.of("gem_amber", 15, "gem_agate", 12, "gem_crystal", 10)),
-            new RankInfo(14, "大校",   300000,  450000, Map.of("gem_crystal", 15, "gem_jadeite", 12, "gem_jade", 10)),
-            new RankInfo(15, "少将",   600000,  500000, Map.of("gem_jadeite", 18, "gem_jade", 15, "gem_nightpearl", 6)),
-            new RankInfo(16, "中将",   1200000, 550000, Map.of("gem_jade", 20, "gem_nightpearl", 10, "gem_crystal", 15, "gem_pearl", 20)),
-            new RankInfo(17, "上将",   2500000, 600000, Map.of("gem_nightpearl", 15, "gem_jade", 25, "gem_jadeite", 25, "gem_agate", 20))
+            new RankInfo(1,  "列兵",   0,       25000,  0,    0,  0),
+            new RankInfo(2,  "上等兵", 200,     50000,  3,    1,  30),
+            new RankInfo(3,  "下士",   500,     75000,  8,    2,  28),
+            new RankInfo(4,  "中士",   1000,    100000, 15,   3,  26),
+            new RankInfo(5,  "上士",   2000,    125000, 25,   4,  24),
+            new RankInfo(6,  "军士长", 3500,    150000, 40,   5,  22),
+            new RankInfo(7,  "准尉",   5500,    175000, 60,   6,  20),
+            new RankInfo(8,  "少尉",   8000,    200000, 90,   8,  18),
+            new RankInfo(9,  "中尉",   15000,   225000, 130,  10, 16),
+            new RankInfo(10, "上尉",   25000,   250000, 180,  12, 14),
+            new RankInfo(11, "少校",   45000,   300000, 250,  14, 12),
+            new RankInfo(12, "中校",   80000,   350000, 350,  16, 10),
+            new RankInfo(13, "上校",   150000,  400000, 480,  18, 9),
+            new RankInfo(14, "大校",   300000,  450000, 650,  21, 8),
+            new RankInfo(15, "少将",   600000,  500000, 850,  24, 6),
+            new RankInfo(16, "中将",   1200000, 550000, 1100, 27, 4),
+            new RankInfo(17, "上将",   2500000, 600000, 1400, 30, 2)
     );
+
+    /** NPC 等级只匹配一个凭证档位；高级 NPC 不混入低阶凭证。 */
+    public static RankInfo certificateRankForNpc(int npcLevel) {
+        if (npcLevel < 1 || npcLevel > WorldConfig.MAX_NPC_LEVEL) return null;
+        for (int i = RANKS.size() - 1; i > 0; i--) {
+            if (npcLevel >= RANKS.get(i).minNpcLevel()) return RANKS.get(i);
+        }
+        return null;
+    }
+
+    /** 每场胜利抽一次，成功只掉落一张；roll 为 [0, 1) 的均匀随机数。 */
+    public static String rollPromotionCertificate(int npcLevel, double roll) {
+        if (!Double.isFinite(roll) || roll < 0 || roll >= 1) throw new IllegalArgumentException("无效的掉落随机值");
+        RankInfo rank = certificateRankForNpc(npcLevel);
+        return rank != null && roll < rank.certificateDropPercent() / 100.0 ? rank.certificateKey() : null;
+    }
+
+    public static int maxNpcLevelForCertificate(int tier) {
+        return tier >= MAX_RANK_TIER ? WorldConfig.MAX_NPC_LEVEL : getRank(tier + 1).minNpcLevel() - 1;
+    }
+
+    /** 主线与仓库复用同一来源文案，防止 NPC 等级区间和掉率漂移。 */
+    public static String certificateSource(RankInfo rank) {
+        int maxLevel = maxNpcLevelForCertificate(rank.tier());
+        String levels = rank.minNpcLevel() == maxLevel ? String.valueOf(maxLevel) : rank.minNpcLevel() + "–" + maxLevel;
+        return levels + " 级寇或海域守军，胜利掉率 " + rank.certificateDropPercent() + "%";
+    }
 
     public static int getCityCap(int tier) {
         if (tier < 4) return 1;

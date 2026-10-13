@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-function setupTestEnvironment() {
+function setupTestEnvironment(runtime = false) {
   const appendedElements = [];
   const nodes = {};
   const context = {
@@ -96,6 +96,15 @@ function setupTestEnvironment() {
   vm.createContext(context);
   const code = fs.readFileSync(path.join(__dirname, '../js/tech.js'), 'utf8');
   require('./load-constants.cjs')(context);
+  if (runtime) {
+    const state = context.Game.Core.state;
+    for (const file of ['data.js', 'core.js']) {
+      vm.runInContext(fs.readFileSync(path.join(__dirname, '../js', file), 'utf8'), context);
+    }
+    context.Game.Core.state = Object.assign(state, { buildings: { lab: 10 }, officers: [], army: {} });
+    context.Game.Core.costEnough = () => true;
+    context.Game.Core.render = () => {};
+  }
   vm.runInContext(code, context);
   return { G: context.Game, appendedElements, context };
 }
@@ -142,7 +151,7 @@ test('confirmResearch creates a confirmation modal card instead of instantly upg
   assert.equal(appendedElements.length, 1);
 
   const modal = appendedElements[0];
-  assert.ok(modal.innerHTML.includes('科技研发确认'));
+  assert.ok(modal.innerHTML.includes('军研确认'));
   assert.ok(modal.innerHTML.includes('开始研发'));
   assert.ok(modal.innerHTML.includes('加成效果'));
   assert.ok(modal.innerHTML.includes('研发工期'));
@@ -169,4 +178,104 @@ test('renderActiveResearchCard renders progress bar when active research exists'
   assert.ok(container.innerHTML.includes('正在研发：【攻击科技 Lv.2】'));
   assert.ok(container.innerHTML.includes('加速研发'));
   assert.ok(container.innerHTML.includes('取消研发'));
+});
+
+function currentTechnologyEffect(G, id) {
+  G.Tech.setTab(G.DATA.techs[id].branch);
+  const container = {};
+  G.Tech.renderView(container);
+  const card = container.innerHTML.split('data-tech="' + id + '"')[1].split('data-tech="')[0];
+  return card.match(/<b style="color:var\(--ink\);">([^<]+)<\/b>/)[1];
+}
+
+// 用实际运行的属性计算校验展示数值，避免文案与卡片同时使用错误倍率而互相通过。
+test('technology card and upgrade preview percentages match runtime effects at every level', () => {
+  const { G, appendedElements } = setupTestEnvironment(true);
+  const multipliers = {
+    attack_tech: () => G.Core.atkMul('inf'),
+    defense_tech: () => G.Core.defMul('inf', false),
+    weapon_range: () => G.Core.rangeMul(),
+    cmd_hp: () => G.Core.hpMul('inf'),
+    arm_engine: () => G.Core.spdMul('arm'),
+    air_engine: () => G.Core.spdMul('air'),
+    nav_engine: () => G.Core.spdMul('nav'),
+    log_production: () => G.Core.resBonusMul(),
+    log_train: () => G.Core.trainMul(),
+    log_build: () => G.Core.buildMul()
+  };
+  function effectText(read) {
+    const percent = Math.round((read() - 1) * 100);
+    return (percent > 0 ? '+' : '') + percent + '%';
+  }
+  for (const [id, read] of Object.entries(multipliers)) {
+    const max = G.DATA.techs[id].max;
+    for (let lv = 0; lv <= max; lv++) {
+      G.Core.state.tech = { [id]: lv };
+      const current = effectText(read);
+      assert.equal(currentTechnologyEffect(G, id), current, id + ' Lv.' + lv);
+      if (lv < max) {
+        G.Core.state.tech[id] = lv + 1;
+        const next = effectText(read);
+        G.Core.state.tech[id] = lv;
+        G.Tech.confirmResearch(id);
+        assert.ok(appendedElements.at(-1).innerHTML.includes(current + ' → ' + next), id + ' upgrade Lv.' + lv);
+      }
+    }
+  }
+});
+
+test('equipment technology shows recipe access without inventing attribute bonuses', () => {
+  const { G, appendedElements } = setupTestEnvironment(true);
+  const effects = ['未解锁', 'Lv.1及以下配方', 'Lv.2及以下配方', 'Lv.3及以下配方'];
+  for (let lv = 0; lv <= 3; lv++) {
+    G.Core.state.tech = { unit_refit: lv };
+    assert.equal(currentTechnologyEffect(G, 'unit_refit'), effects[lv]);
+    if (lv < 3) {
+      G.Tech.confirmResearch('unit_refit');
+      const html = appendedElements.at(-1).innerHTML;
+      assert.ok(html.includes(effects[lv] + ' → ' + effects[lv + 1]));
+      assert.ok(html.includes('配方权限'));
+      assert.doesNotMatch(html, /\+\d+%/);
+    }
+  }
+});
+
+test('inactive load and storage technologies never promise numerical bonuses', () => {
+  const { G, appendedElements } = setupTestEnvironment(true);
+  G.Core.state.buildings.farm = [2, 3];
+  const capacity = G.Core.capacity().food;
+  for (const [id, text] of [['inf_load', '无额外负重加成'], ['log_warehouse', '无额外容量加成']]) {
+    for (let lv = 0; lv <= G.DATA.techs[id].max; lv++) {
+      G.Core.state.tech = { [id]: lv };
+      assert.equal(currentTechnologyEffect(G, id), text);
+      assert.equal(G.Core.capacity().food, capacity);
+      if (lv < G.DATA.techs[id].max) {
+        G.Tech.confirmResearch(id);
+        assert.ok(appendedElements.at(-1).innerHTML.includes(text + ' → ' + text));
+      }
+    }
+  }
+});
+
+test('capture and medical technologies show absolute rates with their own labels', () => {
+  const { G, appendedElements } = setupTestEnvironment(true);
+  for (const [id, rate, label] of [
+    ['prisoner_education', lv => (lv / 10).toFixed(1) + '%', '俘获比例'],
+    ['log_medical', () => Math.round(G.Core.medicalMul() * 100) + '%', '伤兵回收率']
+  ]) {
+    for (let lv = 0; lv <= 10; lv++) {
+      G.Core.state.tech = { [id]: lv };
+      const current = rate(lv);
+      assert.equal(currentTechnologyEffect(G, id), current);
+      if (lv < 10) {
+        G.Core.state.tech[id] = lv + 1;
+        const next = rate(lv + 1);
+        G.Core.state.tech[id] = lv;
+        G.Tech.confirmResearch(id);
+        const html = appendedElements.at(-1).innerHTML;
+        assert.ok(html.includes(current + ' → ' + next));
+        assert.ok(html.includes(label));
+      }
+    }
+  }
 });

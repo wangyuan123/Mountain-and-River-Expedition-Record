@@ -72,8 +72,8 @@ class BattleMechanicsTest {
         Object suppression = context(Map.of(), Map.of("suppress", 1));
         for (boolean defending : new boolean[]{false, true}) {
             assertEquals(343, damage(defending, suppression, empty, 0, true));
-            assertEquals(322, damage(defending, empty, suppression, 0, true), "压制光环在军官回合降低敌方6%伤害");
-            assertEquals(322, damage(defending, empty, suppression, 0, false), "压制光环在普通回合常驻生效降低敌方6%伤害");
+            assertEquals(322, damage(defending, empty, suppression, 0, true), "交战技能回合降低敌方6%伤害");
+            assertEquals(343, damage(defending, empty, suppression, 0, false), "技能间隔回合不压制敌方攻击");
         }
     }
 
@@ -84,7 +84,8 @@ class BattleMechanicsTest {
         Object pierce = context(Map.of(), Map.of("pierce", 5));
         for (boolean defending : new boolean[]{false, true}) {
             assertEquals(240, damage(defending, empty, defense, 0, false));
-            assertEquals(293, damage(defending, pierce, defense, 0, false));
+            assertEquals(293, damage(defending, pierce, defense, 0, true));
+            assertEquals(240, damage(defending, pierce, defense, 0, false), "技能间隔回合不破甲");
         }
         assertEquals(185, damage(false, empty, defense, 10, false), "攻击守城军时城墙生效");
         assertEquals(240, damage(true, empty, defense, 10, false), "出征军不能携带城墙防御");
@@ -115,7 +116,7 @@ class BattleMechanicsTest {
 
         StringBuilder report = new StringBuilder();
         ReflectionTestUtils.invokeMethod(new BattleService(4096), "simAct", "infantry",
-                new LinkedHashMap<>(Map.of("infantry", 100)), new LinkedHashMap<>(Map.of("motor", 10000)),
+                new LinkedHashMap<>(Map.of("infantry", 100)), new LinkedHashMap<>(Map.of("armored", 10000)),
                 100, report, side(false), learning, empty, 0, true);
         assertFalse(report.toString().contains("师夷长技"), "没有同名存活敌军时不应获得学习加成");
     }
@@ -139,8 +140,8 @@ class BattleMechanicsTest {
         assertTrue(bonusLog.contains("上限敌方同名兵种防御30%"), "战斗详情应说明封顶以敌方防御为准");
         assertEquals(damage(false, empty, bulwark, 0, true), damage(false, empty, conflictingSkills, 0, true),
                 "旧存档同时拥有两个互斥技能时，应仅保留坚守阵地生效");
-        assertEquals(damage("motor", "infantry", false, empty, empty, 0, true),
-                damage("motor", "infantry", false, empty, borrowedArmor, 0, true),
+        assertEquals(damage("armored", "infantry", false, empty, empty, 0, true),
+                damage("armored", "infantry", false, empty, borrowedArmor, 0, true),
                 "没有同名存活敌军时不应获得借甲防御");
     }
 
@@ -177,10 +178,10 @@ class BattleMechanicsTest {
     @Test
     void infantryCanUseWeakFireAgainstNearbyAircraft() throws Exception {
         var mine = new LinkedHashMap<>(Map.of("infantry", 0));
-        var enemy = new LinkedHashMap<>(Map.of("fighter", 50, "motor", 500));
+        var enemy = new LinkedHashMap<>(Map.of("fighter", 50, "armored", 500));
         StringBuilder report = new StringBuilder();
         ReflectionTestUtils.invokeMethod(new BattleService(19), "simAct", "infantry",
-                new LinkedHashMap<>(Map.of("infantry", 10)), new LinkedHashMap<>(Map.of("fighter", 10, "motor", 10)),
+                new LinkedHashMap<>(Map.of("infantry", 10)), new LinkedHashMap<>(Map.of("fighter", 10, "armored", 10)),
                 mine, enemy, 2200, report, side(false), null, null, 0, false);
         assertEquals(0, mine.get("infantry"), "飞机在射程内时应使用弱对空火力");
         assertTrue(report.toString().contains("对空攻击5 本次原始火力50 伤害20"));

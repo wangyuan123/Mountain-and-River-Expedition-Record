@@ -10,9 +10,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class OfficerSkillDescriptionTest {
     @Test
     void allPeriodicSkillsDescribeTheSameCombatAnchor() {
-        for (String id : new String[]{"frenzy", "bulwark", "counter", "learn", "borrow_armor"}) {
+        for (String id : new String[]{"frenzy", "bulwark", "blitz", "suppress", "pierce", "counter", "learn", "borrow_armor"}) {
             assertTrue(OfficerSkillDef.getSkill(id).desc()
-                    .contains("首次交战回合及之后每隔2回合生效（如第4、7、10回合）"), id);
+                    .contains("首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效）"), id);
         }
     }
 

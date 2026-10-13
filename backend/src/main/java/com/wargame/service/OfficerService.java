@@ -246,9 +246,16 @@ public class OfficerService {
     //  appoint - 对应 JS G.Officer.appoint
     // ================================================================
 
+    /** 每城每职只任命一人；司令部落成后解锁司令官，行军军官不能改任。 */
     @Transactional
     public Map<String, Object> appoint(Long playerId, Long officerId, String role) {
         Map<String, Object> result = new LinkedHashMap<>();
+
+        if (role == null || !Set.of("mayor", "commander", "commander_in_chief").contains(role)) {
+            throw new IllegalArgumentException("职位无效");
+        }
+        // 使用玩家行锁串行化同一城市的任命，避免并发产生两名司令官。
+        playerRepository.lockById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
 
         List<Officer> officers = officerRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         Officer target = null;
@@ -266,6 +273,10 @@ public class OfficerService {
 
         if (marches.existsByPlayerIdAndCommanderId(playerId, officerId)) throw new IllegalArgumentException("军官正在行军，无法任命");
         String currentRole = target.getRole() != null ? target.getRole() : "idle";
+
+        if ("commander_in_chief".equals(role) && !currentRole.equals(role) && buildingLevel(playerId, "headquarters") < 1) {
+            throw new IllegalArgumentException("请先建造司令部");
+        }
 
         // JS: if (s.officers[i].role === role) { set to idle (取消任命) }
         if (currentRole.equals(role)) {
@@ -1029,6 +1040,9 @@ public class OfficerService {
         officer.setName(newName);
         officer.setNameRenamedAt(now);
         officerRepository.save(officer);
+        try {
+            questService.onEvent(playerId, "OFFICER_RENAME", null, 1);
+        } catch (Exception ignored) {}
 
         result.put("success", true);
         result.put("message", usedCard
@@ -1426,6 +1440,7 @@ public class OfficerService {
         return switch (role) {
             case "mayor" -> "市长";
             case "commander" -> "指挥官";
+            case "commander_in_chief" -> "司令官";
             default -> "闲置";
         };
     }

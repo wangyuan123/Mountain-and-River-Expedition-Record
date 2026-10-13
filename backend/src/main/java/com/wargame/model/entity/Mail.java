@@ -21,6 +21,25 @@ import lombok.NoArgsConstructor;
 @Table(name = "mails")
 public class Mail {
 
+    /** Compatibility constructor for tests/importers created before surrender metadata. */
+    public Mail(Long id, Long fromPlayerId, String fromName, Long toPlayerId, String toName,
+                String type, boolean isSystem, String subject, String body, String attachJson,
+                boolean isRead, boolean isClaimed, long createdAt) {
+        this.id = id;
+        this.fromPlayerId = fromPlayerId;
+        this.fromName = fromName;
+        this.toPlayerId = toPlayerId;
+        this.toName = toName;
+        this.type = type;
+        this.subject = subject;
+        this.isSystem = isSystem;
+        this.body = body;
+        this.attachJson = attachJson;
+        this.isRead = isRead;
+        this.isClaimed = isClaimed;
+        this.createdAt = createdAt;
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -64,4 +83,8 @@ public class Mail {
 
     @Column(name = "created_at", nullable = false)
     private Long createdAt;
+
+    /** Optional interactive diplomatic offer referenced by this mail. */
+    @Column(name = "surrender_offer_id")
+    private Long surrenderOfferId;
 }

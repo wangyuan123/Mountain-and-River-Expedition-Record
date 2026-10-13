@@ -17,7 +17,6 @@ import java.util.*;
 public class WorldMapService {
     public static final int CHUNK_SIZE = 16;
     private final WorldMapRepository worlds;
-    private final NpcCityRepository npcs;
     private final PlayerCityRepository cities;
     private final BanditRepository bandits;
     private final WildTileRepository wilds;
@@ -49,16 +48,11 @@ public class WorldMapService {
             cityList.stream().filter(c -> owners.get(c.getOwnerId()) == null ||
                     !owners.get(c.getOwnerId()).deletionDue(System.currentTimeMillis()))
                     .forEach(c -> targets.add(city(viewer, c, owners.get(c.getOwnerId()))));
-            npcs.findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(world, x, maxX, y, maxY).forEach(n -> {
-                Map<String, Object> t = base("npc", n.getId(), n.getX(), n.getY(), n.getName(), n.getLevel());
-                t.put("defeated", Boolean.TRUE.equals(n.getDefeated()));
-                t.put("commanderName", n.getCommanderName() != null ? n.getCommanderName() : JapaneseOfficers.getCommanderForLevel(n.getLevel() != null ? n.getLevel() : 1));
-                targets.add(t);
-            });
             // 已击败据点与休眠野地一样从地图隐藏，固定刷新后重新出现。
             bandits.findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(world, x, maxX, y, maxY).stream()
                     .filter(b -> !Boolean.TRUE.equals(b.getDefeated())).forEach(b -> {
-                Map<String, Object> t = base("bandit", b.getId(), b.getX(), b.getY(), b.getName(), b.getLevel());
+                Map<String, Object> t = base("bandit", b.getId(), b.getX(), b.getY(),
+                        isSea(mask, b) ? b.getName() : WorldConfig.landBanditName(b.getLevel()), b.getLevel());
                 t.put("defeated", Boolean.TRUE.equals(b.getDefeated()));
                 t.put("sea", isSea(mask, b));
                 t.put("commanderName", b.getCommanderName() != null ? b.getCommanderName() : JapaneseOfficers.getCommanderForLevel(b.getLevel() != null ? b.getLevel() : 1));
@@ -83,18 +77,13 @@ public class WorldMapService {
                 if (!kind.equals(t.get("kind"))) throw new IllegalArgumentException("目标归属已变化，请刷新地图");
                 return t;
             }
-            case "npc" -> {
-                NpcCity n = npcs.findById(id).filter(v -> world.equals(v.getWorldId())).orElseThrow(this::missing);
-                Map<String, Object> t = base(kind, id, n.getX(), n.getY(), n.getName(), n.getLevel());
-                t.put("defeated", Boolean.TRUE.equals(n.getDefeated()));
-                t.put("commanderName", n.getCommanderName() != null ? n.getCommanderName() : JapaneseOfficers.getCommanderForLevel(n.getLevel() != null ? n.getLevel() : 1));
-                return t;
-            }
+            case "npc" -> throw missing();
             case "bandit" -> {
                 Bandit b = bandits.findById(id)
                         .filter(v -> world.equals(v.getWorldId()) && !Boolean.TRUE.equals(v.getDefeated()))
                         .orElseThrow(this::missing);
-                Map<String, Object> t = base(kind, id, b.getX(), b.getY(), b.getName(), b.getLevel());
+                Map<String, Object> t = base(kind, id, b.getX(), b.getY(),
+                        isSea(terrain.current(), b) ? b.getName() : WorldConfig.landBanditName(b.getLevel()), b.getLevel());
                 t.put("defeated", Boolean.TRUE.equals(b.getDefeated()));
                 t.put("sea", isSea(terrain.current(), b));
                 t.put("commanderName", b.getCommanderName() != null ? b.getCommanderName() : JapaneseOfficers.getCommanderForLevel(b.getLevel() != null ? b.getLevel() : 1));
@@ -134,6 +123,8 @@ public class WorldMapService {
         t.put("selfCity", self); t.put("mainCity", Integer.valueOf(0).equals(c.getCitySlot()));
         t.put("readyAt", c.getReadyAt() == null ? 0L : c.getReadyAt());
         t.put("defeated", false);
+        t.put("surrenderFrozen", c.isSurrenderFrozen(System.currentTimeMillis()));
+        t.put("surrenderTransferDeadlineAt", c.getSurrenderTransferDeadlineAt());
         t.put("coastal", terrain.coastal(c));
         t.put("legacyNaval", c.isLegacyNaval());
         if (owner != null) {
@@ -142,6 +133,7 @@ public class WorldMapService {
             t.put("prestige", owner.getPrestige() == null ? 0 : owner.getPrestige());
             // 敌对军团可绕过个人宣战；关系值供地图在不伪造战争倒计时的前提下展示操作入口。
             t.put("guildRelation", guildRelations.relationshipBetweenPlayers(viewer, owner.getId()));
+            t.put("guildmate", guildRelations.areGuildmates(viewer, owner.getId()));
             boolean related = !self && viewer.equals(owner.getWarAgainstId());
             long warAt = related && owner.getWarAt() != null ? owner.getWarAt() : 0L;
             long warEnd = related && owner.getWarEndAt() != null ? owner.getWarEndAt() : 0L;
@@ -166,6 +158,7 @@ public class WorldMapService {
         t.put("claimed", Boolean.TRUE.equals(w.getOccupied()));
         // 地图概览仅向领地主人提供采集与驻扎状态；进驻行军删除后仍可显示驻军标记。
         if (Boolean.TRUE.equals(t.get("occupied"))) {
+            t.put("occupiedCitySlot", Objects.requireNonNullElse(w.getOccupiedCitySlot(), 0));
             t.put("hasGarrison", JsonUtil.parseIntMap(w.getGarrison()).values().stream().anyMatch(count -> count != null && count > 0));
             t.put("gathering", Boolean.TRUE.equals(w.getGathering()));
             t.put("gatherEndAt", w.getGatherEndAt() == null ? 0L : w.getGatherEndAt());

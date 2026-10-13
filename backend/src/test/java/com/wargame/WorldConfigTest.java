@@ -18,7 +18,7 @@ class WorldConfigTest {
 
         var high = WorldConfig.BANDIT_LEVELS.get(29);
         assertEquals(5400, high.army().get("htank"));
-        assertEquals(16200, high.army().get("infantry"));
+        assertEquals(21600, high.army().get("infantry"));
         assertEquals(2700, high.army().get("rocket"));
         assertEquals(1350, high.army().get("special"));
         assertEquals(144000, high.reward().get("food"));
@@ -33,7 +33,7 @@ class WorldConfigTest {
             assertEquals(WorldConfig.BANDIT_LEVELS.get(level - 1).reward(), WorldConfig.npcReward(level));
             assertEquals(WorldConfig.BANDIT_LEVELS.get(level - 1).reward(), WorldConfig.seaNpcReward(level));
         }
-        assertTrue(WorldConfig.BANDIT_NAMES.stream().anyMatch(name -> name.contains("雇佣兵")));
+        assertEquals(java.util.List.of("寇"), WorldConfig.BANDIT_NAMES);
         for (var tier : WorldConfig.BANDIT_LEVELS) {
             assertFalse(tier.reward().containsKey("exp"));
             assertFalse(tier.reward().containsKey("diamond"));
@@ -62,8 +62,9 @@ class WorldConfigTest {
         for (int level = 1; level <= 10; level++) {
             var army = WorldConfig.BANDIT_LEVELS.get(level - 1).army();
             assertEquals(totals[level - 1], army.values().stream().mapToInt(Integer::intValue).sum(), "level " + level);
-            if (level <= 5) assertTrue(java.util.Set.of("infantry", "motor").containsAll(army.keySet()));
-            if (level <= 8) assertTrue(java.util.Set.of("infantry", "motor", "armored", "ltank", "assault").containsAll(army.keySet()));
+            assertFalse(army.containsKey("motor"));
+            if (level <= 5) assertTrue(java.util.Set.of("infantry").containsAll(army.keySet()));
+            if (level <= 8) assertTrue(java.util.Set.of("infantry", "armored", "ltank", "assault").containsAll(army.keySet()));
         }
         assertEquals(144, WorldConfig.BANDIT_LEVELS.get(8).army().get("htank"));
         assertFalse(WorldConfig.BANDIT_LEVELS.get(8).army().containsKey("rocket"));

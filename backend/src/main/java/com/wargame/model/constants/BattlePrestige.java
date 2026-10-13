@@ -22,7 +22,7 @@ public final class BattlePrestige {
      * @return 单位的整数声望价值
      */
     public static int unitValue(String unitId) {
-        UnitDef unit = GameData.UNITS.get(unitId);
+        UnitDef unit = GameData.UNITS.get(UnitEquipmentEffects.base(unitId));
         if (unit == null || unit.cost() == null) return 0;
         Map<String, Integer> cost = unit.cost();
         long weightedCost = (long) cost.getOrDefault("steel", 0) * STEEL_WEIGHT

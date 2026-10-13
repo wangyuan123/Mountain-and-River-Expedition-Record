@@ -17,7 +17,7 @@ class MarchCommanderBattleTest extends BaseServiceTest {
 
     private Long playerId;
     private Long worldId;
-    private NpcCity npcCity;
+    private Bandit npcCity;
 
     @BeforeEach
     void setUp() {
@@ -27,18 +27,16 @@ class MarchCommanderBattleTest extends BaseServiceTest {
         WorldMap world = createTestWorld();
         worldId = world.getId();
 
-        // 创建一个测试用的 NPC 城市 (斯德哥尔摩)
-        npcCity = new NpcCity();
+        // 创建测试用的陆地寇
+        npcCity = new Bandit();
         npcCity.setWorldId(worldId);
         npcCity.setName("斯德哥尔摩");
         npcCity.setLevel(2);
         npcCity.setX(20);
         npcCity.setY(20);
         npcCity.setArmy(JsonUtil.toJson(Map.of("infantry", 20)));
-        npcCity.setForts(JsonUtil.toJson(Map.of()));
-        npcCity.setResources(JsonUtil.toJson(Map.of("food", 500, "steel", 500, "oil", 500, "rare", 200, "gold", 100)));
         npcCity.setDefeated(false);
-        npcCity = npcCityRepository.save(npcCity);
+        npcCity = banditRepository.save(npcCity);
     }
 
     @Test
@@ -64,7 +62,7 @@ class MarchCommanderBattleTest extends BaseServiceTest {
 
         // 3. 发起出征，明确指定 commanderId 为尼米兹的 ID
         DispatchRequest req = new DispatchRequest(
-                "npc", npcCity.getId(), "conquer",
+                "bandit", npcCity.getId(), "conquer",
                 Map.of("ltank", 100),
                 nimitz.getId(),
                 Map.of("food", 0, "steel", 0, "oil", 0, "rare", 0)
@@ -124,7 +122,7 @@ class MarchCommanderBattleTest extends BaseServiceTest {
         createArmyUnit(playerId, "ltank", 100);
 
         DispatchRequest req = new DispatchRequest(
-                "npc", npcCity.getId(), "conquer",
+                "bandit", npcCity.getId(), "conquer",
                 Map.of("ltank", 50),
                 nimitz.getId(),
                 Map.of("food", 0, "steel", 0, "oil", 0, "rare", 0)
@@ -159,7 +157,7 @@ class MarchCommanderBattleTest extends BaseServiceTest {
             March activeMarch = marchRepository.findById(march.getId()).orElseThrow();
             if (activeMarch.getBattleId() == null) break;
             roundTime += 15_000L;
-            marchService.processMarches(playerId, roundTime);
+            marchService.processTimedOutTacticalBattle(activeMarch.getBattleId(), roundTime);
         }
     }
 }

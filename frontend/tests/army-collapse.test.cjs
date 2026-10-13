@@ -22,7 +22,7 @@ function setupArmy() {
       views: {},
       route: 'army',
       state: {
-        army: { infantry: 100000, motor: 50000 },
+        army: { infantry: 100000, truck: 50000 },
         resources: { steel: 500000, oil: 500000, rare: 500000, food: 500000 },
         marches: [],
         woundedCount: 0
@@ -48,9 +48,9 @@ function setupArmy() {
           build: 'factory',
           cost: { steel: 20, oil: 0, rare: 0 }
         },
-        motor: {
-          name: '摩托兵-哈雷（WLA）',
-          history: '美国｜哈雷WLA军用摩托。',
+        truck: {
+          name: '卡车-十轮大卡（CCKW-353）',
+          history: '美国｜GMC六轮驱动运输卡车。',
           cat: 'inf',
           atkGround: 12, atkAir: 1, atkSea: 1, atkFort: 6, def: 6, hp: 55, spd: 7, range: 140, food: 2, pop: 1,
           build: 'factory',
@@ -61,8 +61,8 @@ function setupArmy() {
         factory: { name: '军工厂' }
       },
       combatRoles: {
-        infantry: '廉价步兵；适合数量压制，惧怕摩托兵与装甲车',
-        motor: '机动反步兵'
+        infantry: '廉价步兵；适合数量压制，惧怕装甲车',
+        truck: '地面后勤'
       },
       resources: {
         steel: { icon: 'img/resources/models/steel.webp' },
@@ -124,7 +124,7 @@ test('army cards hide prototype and production details by default, keeping heade
 
   // Header should display [兵种名](编号) format
   assert.match(html, /<span class="n"[^>]*>步兵\(M1\)<\/span>/);
-  assert.match(html, /<span class="n"[^>]*>摩托兵\(WLA\)<\/span>/);
+  assert.match(html, /<span class="n"[^>]*>卡车\(CCKW-353\)<\/span>/);
 
   // Price and recruit row should be visible outside details
   assert.match(html, /<div class="cost">单价:/);
@@ -186,9 +186,9 @@ test('renderView preserves expanded state for already expanded unit cards', () =
   assert.match(html, /id="unit-card-infantry"[\s\S]*?class="unit-card-details"[^>]*style="display:block;"/);
   assert.match(html, /id="unit-card-infantry"[\s\S]*?收起 &#9652;/);
 
-  // Motor should remain collapsed
-  assert.match(html, /id="unit-card-motor"[\s\S]*?class="unit-card-details"[^>]*style="display:none;"/);
-  assert.match(html, /id="unit-card-motor"[\s\S]*?详情 &#9662;/);
+  // Truck should remain collapsed
+  assert.match(html, /id="unit-card-truck"[\s\S]*?class="unit-card-details"[^>]*style="display:none;"/);
+  assert.match(html, /id="unit-card-truck"[\s\S]*?详情 &#9662;/);
 });
 
 test('disband opens a dedicated modal with its own quantity input and slider', async () => {
@@ -261,11 +261,11 @@ test('unitDisplayName formats full names to [兵种名](编号) and home summary
 
   // [兵种名](编号) should be displayed in the summary name span
   assert.match(html, /<span class="army-summary-name">步兵\(M1\)<\/span>/);
-  assert.match(html, /<span class="army-summary-name">摩托兵\(WLA\)<\/span>/);
+  assert.match(html, /<span class="army-summary-name">卡车\(CCKW-353\)<\/span>/);
 
   // Full name should be retained in the title attribute for tooltip inspection
   assert.match(html, /title="步兵-加兰德步枪兵（M1） × 100000"/);
-  assert.match(html, /title="摩托兵-哈雷（WLA） × 50000"/);
+  assert.match(html, /title="卡车-十轮大卡（CCKW-353） × 50000"/);
 });
 
 test('dispatch unit selection displays compact [兵种名](编号) format with title tooltip', () => {

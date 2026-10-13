@@ -45,10 +45,8 @@ public class MarketService {
 
     public int getMarketOrderSlotCap(Long playerId, int citySlot) {
         int exLv = getExchangeLevel(playerId, citySlot);
-        List<Building> depots = buildingRepository.findByPlayerIdAndCitySlotAndType(playerId, citySlot, "depot");
-        long depotCount = depots.stream().filter(b -> b.getLevel() != null && b.getLevel() > 0).count();
-        // 基础2个槽位 + 交易所每2级+1 + 仓库有效槽位
-        return 2 + (exLv / 2) + (int) depotCount;
+        // 挂单槽位上限完全由交易所等级决定: 基础2个槽位 + 交易所等级 (Lv.1 = 3, Lv.10 = 12)
+        return 2 + exLv;
     }
 
     public double getExchangeRate(int exchangeLevel) {

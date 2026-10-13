@@ -1,0 +1,319 @@
+{
+  "status": "design-only-not-active",
+  "tech": {
+    "key": "fire_density",
+    "name": "火力密度",
+    "branch": "军事",
+    "maxLevel": 10,
+    "labReq": 3,
+    "cost": {
+      "steel": 300,
+      "food": 160,
+      "rare": 30
+    },
+    "costGrowth": 1.8,
+    "effect": "firepower_all",
+    "ratePerLevel": 0.1,
+    "stacking": "independent linear multiplier: 1 + 0.10*level",
+    "missingLevel": 0
+  },
+  "prerequisites": {
+    "name": "火力密度",
+    "maxLevel": 10,
+    "labFloor": 3,
+    "tierByLevel": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "levels": [
+      {
+        "targetLevel": 1,
+        "tier": 1,
+        "requires": [
+          {
+            "building": "lab",
+            "level": 3,
+            "scope": "city"
+          },
+          {
+            "building": "factory",
+            "level": 1,
+            "scope": "city"
+          },
+          {
+            "building": "academy",
+            "level": 1,
+            "scope": "city"
+          },
+          {
+            "building": "raremine",
+            "level": 1,
+            "scope": "city"
+          }
+        ]
+      },
+      {
+        "targetLevel": 2,
+        "tier": 2,
+        "requires": [
+          {
+            "building": "lab",
+            "level": 3,
+            "scope": "city"
+          },
+          {
+            "building": "factory",
+            "level": 2,
+            "scope": "city"
+          },
+          {
+            "building": "academy",
+            "level": 1,
+            "scope": "city"
+          },
+          {
+            "building": "raremine",
+            "level": 1,
+            "scope": "city"
+          }
+        ]
+      },
+      {
+        "targetLevel": 3,
+        "tier": 3,
+        "requires": [
+          {
+            "building": "lab",
+            "level": 3,
+            "scope": "city"
+          },
+          {
+            "building": "factory",
+            "level": 3,
+            "scope": "city"
+          },
+          {
+            "building": "academy",
+            "level": 1,
+            "scope": "city"
+          },
+          {
+            "building": "raremine",
+            "level": 1,
+            "scope": "city"
+          }
+        ]
+      },
+      {
+        "targetLevel": 4,
+        "tier": 4,
+        "requires": [
+          {
+            "building": "lab",
+            "level": 4,
+            "scope": "city"
+          },
+          {
+            "building": "factory",
+            "level": 4,
+            "scope": "city"
+          },
+          {
+            "building": "academy",
+            "level": 2,
+            "scope": "city"
+          },
+          {
+            "building": "raremine",
+            "level": 2,
+            "scope": "city"
+          }
+        ]
+      },
+      {
+        "targetLevel": 5,
+        "tier": 5,
+        "requires": [
+          {
+            "building": "lab",
+            "level": 5,
+            "scope": "city"
+          },
+          {
+            "building": "factory",
+            "level": 5,
+            "scope": "city"
+          },
+          {
+            "building": "academy",
+            "level": 3,
+            "scope": "city"
+          },
+          {
+            "building": "raremine",
+            "level": 3,
+            "scope": "city"
+          }
+        ]
+      },
+      {
+        "targetLevel": 6,
+        "tier": 6,
+        "requires": [
+          {
+            "building": "lab",
+            "level": 6,
+            "scope": "city"
+          },
+          {
+            "building": "factory",
+            "level": 6,
+            "scope": "city"
+          },
+          {
+            "building": "academy",
+            "level": 4,
+            "scope": "city"
+          },
+          {
+            "building": "raremine",
+            "level": 4,
+            "scope": "city"
+          }
+        ]
+      },
+      {
+        "targetLevel": 7,
+        "tier": 7,
+        "requires": [
+          {
+            "building": "lab",
+            "level": 7,
+            "scope": "city"
+          },
+          {
+            "building": "factory",
+            "level": 7,
+            "scope": "city"
+          },
+          {
+            "building": "academy",
+            "level": 5,
+            "scope": "city"
+          },
+          {
+            "building": "raremine",
+            "level": 5,
+            "scope": "city"
+          },
+          {
+            "building": "staff",
+            "level": 5,
+            "scope": "city"
+          }
+        ]
+      },
+      {
+        "targetLevel": 8,
+        "tier": 8,
+        "requires": [
+          {
+            "building": "lab",
+            "level": 8,
+            "scope": "city"
+          },
+          {
+            "building": "factory",
+            "level": 8,
+            "scope": "city"
+          },
+          {
+            "building": "academy",
+            "level": 6,
+            "scope": "city"
+          },
+          {
+            "building": "raremine",
+            "level": 6,
+            "scope": "city"
+          },
+          {
+            "building": "staff",
+            "level": 6,
+            "scope": "city"
+          }
+        ]
+      },
+      {
+        "targetLevel": 9,
+        "tier": 9,
+        "requires": [
+          {
+            "building": "lab",
+            "level": 9,
+            "scope": "city"
+          },
+          {
+            "building": "factory",
+            "level": 9,
+            "scope": "city"
+          },
+          {
+            "building": "academy",
+            "level": 7,
+            "scope": "city"
+          },
+          {
+            "building": "raremine",
+            "level": 7,
+            "scope": "city"
+          },
+          {
+            "building": "staff",
+            "level": 7,
+            "scope": "city"
+          }
+        ]
+      },
+      {
+        "targetLevel": 10,
+        "tier": 10,
+        "requires": [
+          {
+            "building": "lab",
+            "level": 10,
+            "scope": "city"
+          },
+          {
+            "building": "factory",
+            "level": 10,
+            "scope": "city"
+          },
+          {
+            "building": "academy",
+            "level": 8,
+            "scope": "city"
+          },
+          {
+            "building": "raremine",
+            "level": 8,
+            "scope": "city"
+          },
+          {
+            "building": "staff",
+            "level": 8,
+            "scope": "city"
+          }
+        ]
+      }
+    ]
+  }
+}

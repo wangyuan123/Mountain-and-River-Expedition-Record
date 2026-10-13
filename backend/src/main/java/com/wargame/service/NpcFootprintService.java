@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
-/** 修复旧单格据点扩为四格后的占地冲突，保留身份、守军和战果。 */
+/** 修复所有单格 NPC 的占地冲突与间隔不足，保留身份、守军和战果。 */
 @Service
 @RequiredArgsConstructor
 public class NpcFootprintService {
@@ -27,12 +27,12 @@ public class NpcFootprintService {
 
     /** 将已有 NPC 外围的一格间隔加入生成禁区。 */
     public void reserveSpacing(Long worldId, Set<String> used) {
-        npcs.findByWorldId(worldId).forEach(n -> reserveSpacing(used, n.getX(), n.getY()));
-        bandits.findByWorldId(worldId).forEach(n -> reserveSpacing(used, n.getX(), n.getY()));
+        npcs.findByWorldId(worldId).forEach(n -> reserveSpacing(used, n.getX(), n.getY(), 1));
+        bandits.findByWorldId(worldId).forEach(n -> reserveSpacing(used, n.getX(), n.getY(), 1));
     }
 
-    private void reserveSpacing(Set<String> used, int x, int y) {
-        for (int dy = -1; dy <= 2; dy++) for (int dx = -1; dx <= 2; dx++)
+    private void reserveSpacing(Set<String> used, int x, int y, int span) {
+        for (int dy = -1; dy <= span; dy++) for (int dx = -1; dx <= span; dx++)
             used.add((x + dx) + "," + (y + dy));
     }
 
@@ -53,49 +53,57 @@ public class NpcFootprintService {
         var npcList = npcs.findByWorldId(worldId);
         var banditList = bandits.findByWorldId(worldId);
         Map<String, Integer> spacing = new HashMap<>();
-        npcList.forEach(n -> mark(spacing, n.getX() - 1, n.getY() - 1, 4, 1));
-        banditList.forEach(n -> mark(spacing, n.getX() - 1, n.getY() - 1, 4, 1));
+        npcList.forEach(n -> mark(spacing, n.getX() - 1, n.getY() - 1, 3, 1));
+        banditList.forEach(n -> mark(spacing, n.getX() - 1, n.getY() - 1, 3, 1));
         var candidates = new java.util.ArrayList<Integer>(size * size);
         for (int cell = 0; cell < size * size; cell++) candidates.add(cell);
         java.util.Collections.shuffle(candidates);
-        npcList.forEach(n -> mark(occupied, n.getX(), n.getY(), 2, 1));
-        banditList.forEach(n -> mark(occupied, n.getX(), n.getY(), 2, 1));
+        npcList.forEach(n -> mark(occupied, n.getX(), n.getY(), 1, 1));
+        banditList.forEach(n -> mark(occupied, n.getX(), n.getY(), 1, 1));
         for (var npc : npcList) {
             if (marches.existsByTargetIdAndTargetKindIn(String.valueOf(npc.getId()), java.util.List.of("npc"))) continue;
-            relocate(mask, size, occupied, spacing, candidates, npc.getX(), npc.getY(), (x, y) -> {
+            relocate(mask, size, occupied, spacing, candidates, npc.getX(), npc.getY(), 1, (x, y) -> {
                 npc.setX(x); npc.setY(y); npcs.save(npc);
             });
         }
         for (var npc : banditList) {
             if (marches.existsByTargetIdAndTargetKindIn(String.valueOf(npc.getId()), java.util.List.of("bandit"))) continue;
-            relocate(mask, size, occupied, spacing, candidates, npc.getX(), npc.getY(), (x, y) -> {
+            boolean isSea = (npc.getName() != null && npc.getName().startsWith("日寇海域守军"))
+                    || WorldTerrainService.sea(mask, npc.getX(), npc.getY());
+            relocate(mask, size, occupied, spacing, candidates, npc.getX(), npc.getY(), 1, isSea, (x, y) -> {
                 npc.setX(x); npc.setY(y); bandits.save(npc);
             });
         }
     }
 
     private void relocate(String mask, int size, Map<String, Integer> occupied,
-                          Map<String, Integer> spacing, java.util.List<Integer> candidates, int x, int y,
+                          Map<String, Integer> spacing, java.util.List<Integer> candidates, int x, int y, int span,
                           BiConsumer<Integer, Integer> move) {
-        boolean water = WorldTerrainService.sea(mask, x, y);
+        relocate(mask, size, occupied, spacing, candidates, x, y, span, WorldTerrainService.sea(mask, x, y), move);
+    }
+
+    private void relocate(String mask, int size, Map<String, Integer> occupied,
+                          Map<String, Integer> spacing, java.util.List<Integer> candidates, int x, int y, int span,
+                          boolean water,
+                          BiConsumer<Integer, Integer> move) {
         // 使用计数而非集合，移除自身时不能误释放其他重叠目标的格子。
-        mark(occupied, x, y, 2, -1);
-        // 四格据点外围留一格空隙；计数保留其他 NPC 的间距约束。
-        mark(spacing, x - 1, y - 1, 4, -1);
+        mark(occupied, x, y, span, -1);
+        // NPC 城市及流寇均为单格，外围均留一格空隙；计数保留其他 NPC 的间距约束。
+        mark(spacing, x - 1, y - 1, span + 2, -1);
         Set<String> used = new HashSet<>(occupied.keySet());
         used.addAll(spacing.keySet());
         int nx = x, ny = y;
-        if (!WorldTerrainService.vacantFootprint(mask, size, water, used, x, y, 2)) {
+        if (!WorldTerrainService.vacantFootprint(mask, size, water, used, x, y, span)) {
             int start = java.util.concurrent.ThreadLocalRandom.current().nextInt(size * size);
             for (int i = 0; i < size * size; i++) {
                 int cell = candidates.get((start + i) % candidates.size()), cx = cell % size, cy = cell / size;
-                if (!WorldTerrainService.vacantFootprint(mask, size, water, used, cx, cy, 2)) continue;
+                if (!WorldTerrainService.vacantFootprint(mask, size, water, used, cx, cy, span)) continue;
                 nx = cx; ny = cy; move.accept(nx, ny); break;
             }
         }
         // 空间不足时重新预留旧位置，后续目标不能把它当成空地。
-        mark(occupied, nx, ny, 2, 1);
-        mark(spacing, nx - 1, ny - 1, 4, 1);
+        mark(occupied, nx, ny, span, 1);
+        mark(spacing, nx - 1, ny - 1, span + 2, 1);
     }
 
     private void mark(Map<String, Integer> occupied, int x, int y, int span, int delta) {

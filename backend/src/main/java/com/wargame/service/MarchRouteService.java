@@ -1,6 +1,7 @@
 package com.wargame.service;
 
 import com.wargame.model.constants.GameData;
+import com.wargame.model.constants.UnitEquipmentEffects;
 import com.wargame.model.entity.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -11,13 +12,25 @@ import static com.wargame.service.WorldTerrainService.*;
 @Service
 @RequiredArgsConstructor
 public class MarchRouteService {
+    @org.springframework.beans.factory.annotation.Autowired private UnitEquipmentService unitEquipment;
     private final WorldTerrainService terrain;
     private final CityScope scope;
     private final com.wargame.repository.BuildingRepository buildings;
-    public record Route(String mode, List<List<Integer>> points, int distance, int reservedLoad, int cargoLimit) {}
+    public record Route(String mode, List<List<Integer>> points, double distance, int reservedLoad, int cargoLimit) {}
 
     @Transactional
     public Route plan(Long playerId,Object target,Map<String,Integer> army,boolean transfer) {
+        return plan(playerId, target, army, transfer, null);
+    }
+
+    /** 地面侦查只检查连通陆路，不能通过普通陆军的跨海空运回退规则。 */
+    @Transactional
+    public Route plan(Long playerId,Object target,Map<String,Integer> army,boolean transfer,String action) {
+        return plan(playerId, target, army, transfer, action, unitEquipment == null ? Map.of() : unitEquipment.snapshot(playerId));
+    }
+
+    /** 预览与派遣共用同一冻结配装，运兵后剩余运力才可用于货物。 */
+    public Route plan(Long playerId,Object target,Map<String,Integer> army,boolean transfer,String action,Map<String,Integer> equipment) {
         String mask=terrain.ensure();
         CityEconomy economy=scope.economy(playerId);
         int sx=economy.getCityPosX(),sy=economy.getCityPosY();
@@ -29,7 +42,7 @@ public class MarchRouteService {
         else throw new IllegalArgumentException("无效行军目标");
         if(!inside(sx,sy)||!inside(tx,ty))throw new IllegalArgumentException("出征坐标超出地图");
         // 跨海运兵容量与运输机兵种载重共用同一数值，避免路线校验沿用旧上限。
-        boolean navy=false,land=false;long population=0,capacity=(long)army.getOrDefault("transport",0)*GameData.UNITS.get("transport").load();
+        boolean navy=false,land=false;long population=0,capacity=(long)Math.floor((double)army.getOrDefault("transport",0)*GameData.UNITS.get("transport").load()*UnitEquipmentEffects.mul(equipment,"transport","load"));
         for(var entry:army.entrySet()){
             var u=GameData.UNITS.get(entry.getKey());if(u==null||entry.getValue()<=0)continue;
             if("sea".equals(u.branch()))navy=true;
@@ -55,12 +68,15 @@ public class MarchRouteService {
             return route(legacy?"sea_supply":"sea",path,(int)population,(int)Math.min(Integer.MAX_VALUE,capacity-population));
         }
         if(land){
+            boolean groundRecon = "scout".equals(action) && army.getOrDefault("recon_car", 0) > 0;
             if (seaTarget) {
+                if (groundRecon) throw new IllegalArgumentException("地面侦查无法抵达，请使用侦察机");
                 requireLift(population,capacity);
                 return route("airlift",List.of(source,dest),(int)population,(int)Math.min(Integer.MAX_VALUE,capacity-population));
             }
             List<Integer> path=path(mask,List.of(source),List.of(dest),false);
             if(!path.isEmpty())return route("land",path,0,Integer.MAX_VALUE);
+            if (groundRecon) throw new IllegalArgumentException("地面侦查无法抵达，请使用侦察机");
             requireLift(population,capacity);
             return route("airlift",List.of(source,dest),(int)population,(int)Math.min(Integer.MAX_VALUE,capacity-population));
         }
@@ -68,7 +84,7 @@ public class MarchRouteService {
     }
     private boolean hasPort(Long owner,Integer slot){return buildings.findByPlayerIdAndCitySlotAndType(owner,slot,"port").stream().anyMatch(b->b.getLevel()!=null&&b.getLevel()>0);}
     private static void requireLift(long population,long capacity){
-        if(population>capacity)throw new IllegalArgumentException("跨海陆军需要运输机：所需运力 "+population+"，当前 "+capacity+"（每架"+GameData.UNITS.get("transport").load()+"）");
+        if(population>capacity)throw new IllegalArgumentException("跨海陆军需要运输机：所需运力 "+population+"，当前 "+capacity+"（按本次已保存装备计算）");
     }
     private static int nearestSea(String mask,int x,int y){
         int found=-1,best=Integer.MAX_VALUE;
@@ -89,15 +105,10 @@ public class MarchRouteService {
         List<Integer> result=new ArrayList<>();if(found<0)return result;
         for(int p=found;p!=-1;p=parent[p])result.add(p);Collections.reverse(result);return result;
     }
+    /** 海陆寻路仅校验通行资格；实际行军统一使用两端直线及欧氏距离。 */
     private static Route route(String mode,List<Integer> path,int reserved,int cargo){
-        List<List<Integer>> points=new ArrayList<>();int distance=0;
-        for(int i=0;i<path.size();i++){
-            int p=path.get(i),x=p%SIZE,y=p/SIZE;
-            if(i>0){int prev=path.get(i-1);distance+=Math.abs(x-prev%SIZE)+Math.abs(y-prev/SIZE);}
-            // Keep endpoints and turns only; one tile at every turn preserves the authoritative route.
-            if(i>0&&i<path.size()-1){int a=path.get(i-1),b=path.get(i+1);if((a%SIZE==x&&b%SIZE==x)||(a/SIZE==y&&b/SIZE==y))continue;}
-            points.add(List.of(x,y));
-        }
-        return new Route(mode,points,distance,reserved,cargo);
+        int start=path.get(0),end=path.get(path.size()-1);
+        int sx=start%SIZE,sy=start/SIZE,tx=end%SIZE,ty=end/SIZE;
+        return new Route(mode,List.of(List.of(sx,sy),List.of(tx,ty)),Math.hypot(tx-sx,ty-sy),reserved,cargo);
     }
 }

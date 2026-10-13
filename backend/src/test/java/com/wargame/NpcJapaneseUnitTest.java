@@ -15,9 +15,9 @@ import static org.junit.jupiter.api.Assertions.*;
 public class NpcJapaneseUnitTest {
 
     @Test
-    public void testAllSeventeenUnitsHaveJapaneseNames() {
+    public void testAllUnitsHaveJapaneseNames() {
         assertEquals(17, GameData.UNITS.size(), "游戏应有 17 种标准兵种");
-        assertEquals(17, JapaneseUnitDef.NAMES.size(), "日军兵种定义应覆盖全部 17 种兵种");
+        assertEquals(GameData.UNITS.keySet(), JapaneseUnitDef.NAMES.keySet(), "日军名称必须覆盖全部兵种");
 
         for (String unitId : GameData.UNITS.keySet()) {
             UnitDef allied = GameData.UNITS.get(unitId);

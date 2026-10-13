@@ -179,7 +179,7 @@
 | [N031](</Users/chenjuan/Documents/游戏/docs/content-audit-20260913/CATALOG.md:4840>) | 轻型坦克 | 来源不明 | 补来源记录 |
 | [N032](</Users/chenjuan/Documents/游戏/docs/content-audit-20260913/CATALOG.md:4893>) | 重型坦克 | 来源不明 | 补来源记录 |
 | [N033](</Users/chenjuan/Documents/游戏/docs/content-audit-20260913/CATALOG.md:4946>) | 突击炮 | 来源不明 | 补来源记录 |
-| [N034](</Users/chenjuan/Documents/游戏/docs/content-audit-20260913/CATALOG.md:4999>) | 火箭 | 来源不明 | 补来源记录 |
+| [N034](</Users/chenjuan/Documents/游戏/docs/content-audit-20260913/CATALOG.md:4999>) | 反坦克火箭车 | 来源不明 | 补来源记录 |
 | [N035](</Users/chenjuan/Documents/游戏/docs/content-audit-20260913/CATALOG.md:5052>) | 侦察机 | 来源不明 | 补来源记录 |
 | [N036](</Users/chenjuan/Documents/游戏/docs/content-audit-20260913/CATALOG.md:5109>) | 特种兵 | 来源不明 | 补来源记录 |
 | [N037](</Users/chenjuan/Documents/游戏/docs/content-audit-20260913/CATALOG.md:5162>) | 战斗机 | 来源不明 | 补来源记录 |
@@ -454,7 +454,7 @@
 | [A044](</Users/chenjuan/Documents/游戏/docs/content-audit-20260913/CATALOG.md:10958>) | 步兵 | 来源不明 | 补作者与授权 |
 | [A045](</Users/chenjuan/Documents/游戏/docs/content-audit-20260913/CATALOG.md:10984>) | 轻型坦克 | 来源不明 | 补作者与授权 |
 | [A046](</Users/chenjuan/Documents/游戏/docs/content-audit-20260913/CATALOG.md:11010>) | 摩托兵 | 来源不明 | 补作者与授权 |
-| [A047](</Users/chenjuan/Documents/游戏/docs/content-audit-20260913/CATALOG.md:11036>) | 火箭 | 来源不明 | 补作者与授权 |
+| [A047](</Users/chenjuan/Documents/游戏/docs/content-audit-20260913/CATALOG.md:11036>) | 反坦克火箭车 | 来源不明 | 补作者与授权 |
 | [A048](</Users/chenjuan/Documents/游戏/docs/content-audit-20260913/CATALOG.md:11062>) | 侦察机 | 来源不明 | 补作者与授权 |
 | [A049](</Users/chenjuan/Documents/游戏/docs/content-audit-20260913/CATALOG.md:11088>) | 特种兵 | 来源不明 | 补作者与授权 |
 | [A050](</Users/chenjuan/Documents/游戏/docs/content-audit-20260913/CATALOG.md:11114>) | 潜艇 | 来源不明 | 补作者与授权 |

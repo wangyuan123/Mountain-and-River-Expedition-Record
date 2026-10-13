@@ -99,8 +99,8 @@ public class MarketServiceTest {
         assertEquals(5, marketService.getExchangeLevel(seller.getId(), 0));
         assertEquals(0.70, marketService.getExchangeRate(5), 0.001); // 0.50 + 5*0.04 = 0.70
         assertEquals(0.08, marketService.getTaxRate(5), 0.001);     // 0.10 - 4*0.005 = 0.08
-        // 基础2 + exLv(5)/2 = 4 槽位
-        assertEquals(4, marketService.getMarketOrderSlotCap(seller.getId(), 0));
+        // 挂单槽位上限: 基础2 + 交易所等级(5) = 7 槽位
+        assertEquals(7, marketService.getMarketOrderSlotCap(seller.getId(), 0));
     }
 
     @Test

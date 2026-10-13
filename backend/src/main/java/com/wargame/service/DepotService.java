@@ -54,6 +54,8 @@ public class DepotService {
 
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.service.quest.QuestService questService;
 
     private final ResourcesRepository resourcesRepository;
     private final PlayerItemRepository playerItemRepository;
@@ -101,9 +103,13 @@ public class DepotService {
         if (isEquipmentBox(itemId)) {
             return useEquipmentBox(playerId, itemId);
         }
-        // 军衔珠宝宝箱类（开启直接获得对应军衔晋升珠宝）
+        // 珠宝宝箱类（开启获得珠宝珍品）
         if (isJewelryBox(itemId)) {
             return useJewelryBox(playerId, itemId);
+        }
+        // 主线阶段专属豪华大礼包
+        if (isStageGift(itemId)) {
+            return useStageGift(playerId, itemId);
         }
         // 功能类
         if ("shield".equals(itemId)) return useShield(playerId);
@@ -441,6 +447,9 @@ public class DepotService {
         officer.setName(newName);
         officer.setNameRenamedAt(now);
         officerRepository.save(officer);
+        try {
+            if (questService != null) questService.onEvent(playerId, "OFFICER_RENAME", null, 1);
+        } catch (Exception ignored) {}
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("success", true);
         result.put("message", "改名成功: " + old + " → " + newName);
@@ -567,13 +576,13 @@ public class DepotService {
     }
 
     // ================================================================
-    //  军衔珠宝宝箱：开启后直接向玩家发放用于提升军衔的各类珠宝
+    //  珠宝珍品箱：开启后直接向玩家发放可收藏的各类珠宝
     // ================================================================
 
     private record JewelryBoxDef(String boxName, Map<String, Integer> gems) {}
 
     private static final Map<String, JewelryBoxDef> JEWELRY_BOXES = Map.of(
-        "box_gem", new JewelryBoxDef("军衔珠宝宝箱", Map.of(
+        "box_gem", new JewelryBoxDef("珠宝珍品箱", Map.of(
             "gem_pearl", 5, "gem_coral", 3, "gem_glaze", 3, "gem_amber", 2, "gem_agate", 2
         )),
         "box_gem_primary", new JewelryBoxDef("初级珠宝宝箱", Map.of(
@@ -640,9 +649,127 @@ public class DepotService {
             }
         }
 
-        String msg = "🎉 开启【" + boxDef.boxName() + "】，获得军衔晋升珠宝："
+        String msg = "🎉 开启【" + boxDef.boxName() + "】，获得珠宝珍品："
                 + String.join("、", awardedNames) + "！";
         return success(msg, Map.of("boxId", itemId, "gems", awardedItems));
+    }
+
+    // ================================================================
+    //  主线阶段专属大礼包
+    // ================================================================
+
+    public record StageGiftReward(
+            String name,
+            int food, int steel, int oil, int rare,
+            int gold, int diamond,
+            Map<String, Integer> extraItems
+    ) {}
+
+    public static final Map<String, StageGiftReward> STAGE_GIFTS = Map.of(
+            "stage_gift_1", new StageGiftReward("新兵奠基礼包",
+                    20_000, 20_000, 20_000, 5_000,
+                    2_000, 50,
+                    Map.of("speedUp10m", 5, "box_recruit_military", 1)),
+            "stage_gift_2", new StageGiftReward("拔寨起步礼包",
+                    50_000, 50_000, 50_000, 15_000,
+                    5_000, 100,
+                    Map.of("speedUp1h", 3, "box_gem_primary", 1, "skillBook", 2)),
+            "stage_gift_3", new StageGiftReward("整军备战礼包",
+                    150_000, 150_000, 150_000, 50_000,
+                    12_000, 200,
+                    Map.of("speedUp1h", 5, "recruitOrd", 2, "box_gem_medium", 1, "box_officer_military", 1)),
+            "stage_gift_4", new StageGiftReward("初露锋芒礼包",
+                    500_000, 500_000, 500_000, 150_000,
+                    30_000, 500,
+                    Map.of("speedUp5h", 3, "box_gem_medium", 2, "shield", 1)),
+            "stage_gift_5", new StageGiftReward("百战精锐礼包",
+                    1_500_000, 1_500_000, 1_500_000, 500_000,
+                    80_000, 1_000,
+                    Map.of("speedUp12h", 2, "box_gem_senior", 2, "recruitOrd", 5, "expBookAdv", 3)),
+            "stage_gift_6", new StageGiftReward("横扫千军礼包",
+                    5_000_000, 5_000_000, 5_000_000, 1_500_000,
+                    200_000, 2_000,
+                    Map.of("speedUp24h", 2, "box_gem_senior", 3, "expBookAdv", 5)),
+            "stage_gift_7", new StageGiftReward("威震四海礼包",
+                    15_000_000, 15_000_000, 15_000_000, 5_000_000,
+                    500_000, 5_000,
+                    Map.of("speedUp48h", 2, "box_gem_supreme", 2, "box_marshal_military", 1)),
+            "stage_gift_8", new StageGiftReward("三军统帅大礼包",
+                    50_000_000, 50_000_000, 50_000_000, 15_000_000,
+                    1_500_000, 10_000,
+                    Map.of("speedUp72h", 3, "box_gem_grand", 2, "box_marshal_defense", 1, "box_marshal_logistics", 1, "expBookMax", 2))
+    );
+
+    public static boolean isStageGift(String itemId) {
+        return itemId != null && STAGE_GIFTS.containsKey(itemId);
+    }
+
+    private Map<String, Object> useStageGift(Long playerId, String itemId) {
+        StageGiftReward gift = STAGE_GIFTS.get(itemId);
+        if (gift == null) return error("未知的阶段礼包: " + itemId);
+
+        int consumed = playerItemRepository.tryConsume(playerId, itemId, 1, System.currentTimeMillis());
+        if (consumed == 0) return error("【" + gift.name() + "】数量不足");
+
+        Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
+        if (res == null) {
+            playerItemRepository.tryConsume(playerId, itemId, -1, System.currentTimeMillis());
+            return error("玩家资源数据不存在");
+        }
+
+        res.setFood((res.getFood() != null ? res.getFood() : 0) + gift.food());
+        res.setSteel((res.getSteel() != null ? res.getSteel() : 0) + gift.steel());
+        res.setOil((res.getOil() != null ? res.getOil() : 0) + gift.oil());
+        res.setRare((res.getRare() != null ? res.getRare() : 0) + gift.rare());
+        res.setGold((res.getGold() != null ? res.getGold() : 0) + gift.gold());
+        res.setDiamond((res.getDiamond() != null ? res.getDiamond() : 0) + gift.diamond());
+        resourcesRepository.save(res);
+
+        long now = System.currentTimeMillis();
+        List<String> bonusNames = new ArrayList<>();
+        if (gift.extraItems() != null) {
+            for (Map.Entry<String, Integer> e : gift.extraItems().entrySet()) {
+                String itKey = e.getKey();
+                int cnt = e.getValue();
+                addItemToDepot(playerId, itKey, cnt, now);
+                ItemDef def = ItemDef.ITEMS.get(itKey);
+                bonusNames.add((def != null ? def.name() : itKey) + "×" + cnt);
+            }
+        }
+
+        StringBuilder msg = new StringBuilder();
+        msg.append("🎉 成功开启【").append(gift.name()).append("】！获得：\n");
+        msg.append("粮/钢/油各 +").append(gift.food()).append("、稀矿 +").append(gift.rare()).append("\n");
+        msg.append("黄金 +").append(gift.gold()).append("、钻石 +").append(gift.diamond()).append("！\n");
+        if (!bonusNames.isEmpty()) {
+            msg.append("额外附赠：").append(String.join("，", bonusNames));
+        }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("success", true);
+        result.put("message", msg.toString());
+        result.put("itemId", itemId);
+        result.put("gold", res.getGold());
+        result.put("diamond", res.getDiamond());
+        return result;
+    }
+
+    private void addItemToDepot(Long playerId, String itemKey, int count, long now) {
+        if (count <= 0) return;
+        Optional<PlayerItem> opt = playerItemRepository.findByPlayerIdAndItemKey(playerId, itemKey);
+        if (opt.isPresent()) {
+            PlayerItem pi = opt.get();
+            pi.setCount(pi.getCount() + count);
+            pi.setUpdatedAt(now);
+            playerItemRepository.save(pi);
+        } else {
+            PlayerItem pi = new PlayerItem();
+            pi.setPlayerId(playerId);
+            pi.setItemKey(itemKey);
+            pi.setCount(count);
+            pi.setUpdatedAt(now);
+            playerItemRepository.save(pi);
+        }
     }
 
     // ================================================================

@@ -36,6 +36,15 @@
 .dispatch-gather-mode > span > span { color:var(--muted, #62738d); font-size:12px; line-height:1.6; }
 .dispatch-gather-mode:focus-within { outline:2px solid var(--accent, #416993); outline-offset:2px; }
 .dispatch-gather-mode.is-disabled { opacity:.5; cursor:not-allowed; background:var(--surface-muted, #eef4fb); }
+.dispatch-occupy-switch { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:44px; cursor:pointer; }
+.dispatch-occupy-control { display:flex; align-items:center; gap:10px; }
+.dispatch-occupy-control input { appearance:none; width:40px; height:24px; margin:0; border:1px solid var(--line); border-radius:14px; background:var(--surface-muted); position:relative; }
+.dispatch-occupy-control input::after { content:''; position:absolute; width:16px; height:16px; left:3px; top:3px; border-radius:50%; background:var(--muted); }
+.dispatch-occupy-control input:checked { background:var(--accent); border-color:var(--accent); }
+.dispatch-occupy-control input:checked::after { left:19px; background:var(--surface); }
+.dispatch-occupy-control input:disabled { opacity:.55; cursor:not-allowed; }
+.dispatch-occupy-control input:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+.dispatch-campaign-subtitle { margin:14px 0 8px; font-weight:600; }
 .wild-gather-march { margin:8px 0; padding:8px; border:1px solid var(--line, #d4e0ee); border-radius:6px; font-size:12px; line-height:1.6; }
 .wild-gather-march button { margin-top:6px; }
 @media (max-width:360px) { .dispatch-map-stats { gap:12px; } .dispatch-map-header { padding-left:9px; padding-right:9px; } .dispatch-map-header strong { font-size:13px; } }

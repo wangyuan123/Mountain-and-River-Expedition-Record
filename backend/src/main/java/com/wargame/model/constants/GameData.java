@@ -61,5 +61,4 @@ public final class GameData {
     public static final int MARCH_SEC_PER_GRID = WorldConfig.MARCH_SEC_PER_GRID;
     public static final List<String> BANDIT_NAMES = WorldConfig.BANDIT_NAMES;
     public static final List<WorldConfig.BanditLevel> BANDIT_LEVELS = WorldConfig.BANDIT_LEVELS;
-    public static final List<String> NPC_CITY_NAMES = WorldConfig.NPC_CITY_NAMES;
 }

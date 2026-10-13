@@ -102,7 +102,7 @@ def main():
 
     # 6. Prepare items sorted from level 30 down to level 1
     types = ['grainfield', 'ironworks', 'oil', 'rarefactory']
-    units = ['infantry', 'motor', 'armored', 'ltank']
+    units = ['infantry', 'armored', 'ltank']
 
     items = []
     # For each level from 30 down to 1:

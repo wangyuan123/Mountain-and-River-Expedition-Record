@@ -6,6 +6,7 @@ import com.wargame.service.AuthService;
 import com.wargame.service.GameStateService;
 import com.wargame.service.MarchService;
 import com.wargame.service.WorldService;
+import com.wargame.service.GuildSupportService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,6 +27,21 @@ public class WorldController {
     private final WorldService worldService;
     private final MarchService marchService;
     private final GameStateService gameStateService;
+    @org.springframework.beans.factory.annotation.Autowired private GuildSupportService guildSupport;
+
+    /** 支援目标城市列表只向同军团成员开放。 */
+    @GetMapping("/support/cities")
+    public List<Map<String, Object>> supportCities(@RequestParam Long playerId) {
+        return guildSupport.memberCities(authService.getCurrentPlayer().getId(), playerId);
+    }
+
+    @PostMapping("/support/dismiss")
+    public Map<String, Object> dismissSupport(@RequestBody GameDtos.CancelMarchRequest request) {
+        if (request.marchId() == null) throw new IllegalArgumentException("驻军ID不能为空");
+        Long playerId = authService.getCurrentPlayer().getId();
+        marchService.dismissSupport(playerId, request.marchId());
+        return Map.of("success", true, "state", gameStateService.getGameState(playerId));
+    }
 
     public WorldController(AuthService authService, WorldService worldService,
                            MarchService marchService, GameStateService gameStateService) {
@@ -103,6 +119,15 @@ public class WorldController {
         result.put("message", "部队已撤回，正在返城");
         result.put("state", gameStateService.getGameState(playerId));
         return ResponseEntity.ok(result);
+    }
+
+    /** 只缩短当前队伍的移动时间，扣令与改时钟由服务端原子处理。 */
+    @PostMapping("/speedup-march")
+    public Map<String, Object> speedUpMarch(@RequestBody GameDtos.SpeedUpMarchRequest request) {
+        Long playerId = authService.getCurrentPlayer().getId();
+        Map<String, Object> result = marchService.speedUpMarch(playerId, request.marchId(), request.returning(), request.version());
+        result.put("state", gameStateService.getGameState(playerId));
+        return result;
     }
 
     @GetMapping("/battle")

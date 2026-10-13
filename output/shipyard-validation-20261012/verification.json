@@ -1,0 +1,50 @@
+{
+  "date": "2026-10-12",
+  "ruleVersion": "shipyard-2026-10-12-v1",
+  "backend": {
+    "tests": 89,
+    "passed": 89,
+    "failed": 0
+  },
+  "frontendRelated": {
+    "tests": 59,
+    "passed": 59,
+    "failed": 0
+  },
+  "frontendAll": {
+    "tests": 667,
+    "passed": 662,
+    "failed": 5,
+    "failures": [
+      "服务端顺序优先于旧本地顺序，且按玩家隔离",
+      "旧本地顺序仅在服务端未配置时迁移一次",
+      "方向键和指针拖拽按操作顺序写入服务端",
+      "连续调整等待上一次写入完成，最终保存最后一次顺序",
+      "参加中的引导每五秒刷新，重复刷新不叠加定时器或在途请求"
+    ]
+  },
+  "browser": {
+    "data": "isolated preview, no real player writes",
+    "checks": [
+      "Military build picker includes shipyard with cost steel 400, oil 180, rare 60",
+      "Missing shipyard locks navy recruitment and retains disband",
+      "Go to build opens shipyard details with all upgrade prerequisites",
+      "Both completed buildings enable navy recruit inputs",
+      "Pending shipyard demolition locks navy recruitment",
+      "Page console has no errors"
+    ],
+    "screenshots": [
+      "build-picker.png",
+      "shipyard-detail.png",
+      "navy-ready.png",
+      "navy-missing-shipyard.png"
+    ]
+  },
+  "existingData": {
+    "databaseMigrationRequired": false,
+    "existingFleetsPreserved": true,
+    "legacyPaidQueuesPreserved": true,
+    "legacyQueuesReserveShipyardLanes": true
+  },
+  "pvpRulesVersion": "pvp-v1-8cc036d5a45e2da5c776e5c1"
+}

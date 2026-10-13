@@ -1,0 +1,28 @@
+[
+  {
+    "viewport": {
+      "width": 1280,
+      "height": 900
+    },
+    "dispatch": true,
+    "blockedGround": true,
+    "routeRetry": true,
+    "carOnlyDefault": true,
+    "report": true,
+    "noOverflow": true,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "dispatch": true,
+    "blockedGround": true,
+    "routeRetry": true,
+    "carOnlyDefault": true,
+    "report": true,
+    "noOverflow": true,
+    "errors": []
+  }
+]

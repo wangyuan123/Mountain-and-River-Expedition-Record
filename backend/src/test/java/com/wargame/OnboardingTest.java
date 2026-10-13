@@ -53,14 +53,22 @@ class OnboardingTest extends BaseServiceTest {
         onboarding.claim(playerId, "base");
         onboarding.claim(playerId, "base");
         assertEquals(steel + 4000, getResources(playerId).getSteel(), "重复请求只能入账一次");
-        recruit("infantry", 3); recruit("truck", 2); recruit("scout", 1);
+        recruit("infantry", 3); recruit("truck", 2);
         assertTrue(complete("train"));
         build("depot"); build("lab"); build("radar"); research("recon_level");
+        assertEquals(false, ((Map<?, ?>) onboarding.status(playerId).get("checks")).get("airport"));
+        assertEquals(false, army.recruit(playerId, "scout", 1).get("success"));
+        // 按现有建筑前置建设空军基地，验证真实新手补给足够完成新增生产条件。
+        build("factory"); build("depot"); build("command");
+        build("oilfield"); build("oilfield");
+        build("lightfactory"); build("lightfactory"); build("lightfactory");
+        build("academy"); build("academy"); build("transit"); build("transit");
+        build("command"); build("apron"); build("airport");
+        assertEquals(true, ((Map<?, ?>) onboarding.status(playerId).get("checks")).get("airport"));
+        recruit("scout", 1);
         assertTrue(complete("recon"));
         assertEquals("officer", ((Map<?, ?>) onboarding.status(playerId).get("current")).get("id"));
-        assertFalse(complete("officer"), "建造军校前没有军官，不能提前进入侦察步骤");
-        build("academy");
-        assertFalse(complete("officer"), "只建军校还不算完成招募");
+        assertFalse(complete("officer"), "只建军校还不算完成招募，不能提前进入侦察步骤");
         assertTrue((Boolean) officers.refreshAcademy(playerId).get("success"));
         int officerGold = getResources(playerId).getGold();
         Map<String, Object> recruited = officers.recruit(playerId, 0);

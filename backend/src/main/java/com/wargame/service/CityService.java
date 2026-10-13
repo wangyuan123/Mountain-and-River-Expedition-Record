@@ -43,6 +43,11 @@ public class CityService {
             item.put("id", city.getId()); item.put("slot", city.getCitySlot()); item.put("name", city.getName());
             item.put("main", city.getCitySlot() == 0); item.put("current", city.getCitySlot() == scope.slot(playerId));
             item.put("x", city.getX()); item.put("y", city.getY()); item.put("readyAt", city.getReadyAt());
+            item.put("surrenderOfferId", city.getSurrenderOfferId());
+            item.put("surrenderRecipientId", city.getSurrenderRecipientId());
+            item.put("surrenderFrozenAt", city.getSurrenderFrozenAt());
+            item.put("surrenderTransferDeadlineAt", city.getSurrenderTransferDeadlineAt());
+            item.put("frozen", city.isSurrenderFrozen(System.currentTimeMillis()));
             item.put("ready", city.getReadyAt() <= System.currentTimeMillis()); item.put("incoming", incoming.contains(city.getId().toString()));
             item.put("coastal", terrain.coastal(city)); item.put("legacyNaval", city.isLegacyNaval());
             item.put("level", buildings.findByPlayerIdAndCitySlotAndType(playerId, city.getCitySlot(), "command")
@@ -84,7 +89,7 @@ public class CityService {
     @Transactional
     public PlayerCity foundAt(Long playerId, Long wildId, Integer x, Integer y, String name) {
         WorldMap world=terrain.lockWorld(); String mask=terrain.ensure();
-        if (name == null || !name.matches("[\\p{IsHan}A-Za-z0-9_]{1,12}")) throw new IllegalArgumentException("城市名仅限中英文、数字或下划线，最多12字");
+        name = com.wargame.model.constants.DisplayNamePolicy.validate(name, 12, "城市名称");
         Player player = players.lockById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
         List<PlayerCity> owned = cities.findByOwnerIdAndCitySlotIsNotNullOrderByCitySlotAsc(playerId);
         int cap = MilitaryRankDef.getCityCap(player.getMilitaryRank());

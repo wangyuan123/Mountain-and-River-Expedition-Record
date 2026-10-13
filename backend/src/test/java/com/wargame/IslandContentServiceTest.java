@@ -30,7 +30,7 @@ class IslandContentServiceTest extends BaseServiceTest {
         var wilds = wildTileRepository.findByWorldId(world.getId());
         var npcs = npcCityRepository.findByWorldId(world.getId());
         assertTrue(wilds.size() > 20);
-        assertTrue(npcs.size() > 5);
+        assertTrue(npcs.isEmpty(), "岛屿不再生成 NPC 城市/要塞");
         assertEquals(1, wilds.stream().filter(wild -> wild.getId().equals(existing.getId())).count());
         assertEquals(1, wilds.stream().filter(wild -> wild.getX() == x && wild.getY() == y).count());
         Set<String> types = new HashSet<>();

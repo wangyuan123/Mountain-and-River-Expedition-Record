@@ -47,6 +47,14 @@ public class CityScope {
         return cities.findByOwnerIdAndCitySlot(playerId, slot(playerId));
     }
 
+    public boolean frozen(Long playerId) {
+        return selected(playerId).map(city -> city.isSurrenderFrozen(System.currentTimeMillis())).orElse(false);
+    }
+
+    public void assertWritable(Long playerId) {
+        if (frozen(playerId)) throw new com.wargame.security.GameAccessException("CITY_FROZEN", "归降移交中的城市只读", 409);
+    }
+
     public CityEconomy economy(Long playerId) {
         int slot = slot(playerId);
         if (slot == 0) return players.findById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));

@@ -18,13 +18,13 @@ import static org.junit.jupiter.api.Assertions.*;
 /** 固定种子、互换攻守与两种距离，检验真实交战结果而非只检查克制标签。 */
 class BattleBalanceTest {
     private static final int SEEDS = 32;
-    private static final List<String> LAND_UNITS = List.of("infantry", "motor", "armored", "ltank",
+    private static final List<String> LAND_UNITS = List.of("infantry", "armored", "ltank",
             "htank", "assault", "rocket", "special", "fighter", "bomber");
     private static final List<String> NAVAL_UNITS = List.of("destroyer", "sub", "battleship", "carrier", "fighter", "bomber");
-    private static final List<String> COMBAT_UNITS = List.of("infantry", "motor", "armored", "ltank",
+    private static final List<String> COMBAT_UNITS = List.of("infantry", "armored", "ltank",
             "htank", "assault", "rocket", "special", "fighter", "bomber", "destroyer", "sub", "battleship", "carrier");
     private static final String[][] COUNTERS = {
-            {"motor", "infantry"}, {"armored", "motor"}, {"ltank", "armored"}, {"ltank", "rocket"},
+            {"ltank", "armored"}, {"ltank", "rocket"},
             {"htank", "ltank"}, {"rocket", "htank"}, {"special", "rocket"},
             {"armored", "fighter"}, {"armored", "bomber"}, {"rocket", "assault"}, {"fighter", "bomber"}, {"bomber", "htank"},
             {"destroyer", "sub"}, {"sub", "battleship"}, {"sub", "carrier"},
@@ -32,11 +32,11 @@ class BattleBalanceTest {
             {"fighter", "rocket"}, {"bomber", "rocket"}, {"rocket", "ltank"}, {"rocket", "special"}
     };
 
-    // v6主炮/射程比例使正面地面突击失去优势；新等价经济下轻装摩托数量庞大，装甲车突击测试保留为历史对照。
-    // v7按彻底精简方案废弃轻装地面倍率，motor:infantry 与 ltank:armored 转为观察对照。
+    // v6主炮/射程比例使正面地面突击失去优势；轻装地面单位已从正式编制移除。
+    // v7按彻底精简方案废弃轻装地面倍率，ltank:armored 转为观察对照。
     // v8彻底取消所有克制倍率（纯属性模式），原依赖倍率强行在30回合全歼的对决加入历史观察集。
     private static final Set<String> HISTORICAL_COMPARISONS = Set.of(
-            "ltank:rocket", "special:rocket", "armored:motor", "motor:infantry", "ltank:armored",
+            "ltank:rocket", "special:rocket", "ltank:armored",
             "htank:ltank", "destroyer:sub", "sub:battleship", "battleship:destroyer", "bomber:htank"
     );
 
@@ -148,6 +148,23 @@ class BattleBalanceTest {
                 return (result.wins + result.advantageous) > 0;
             }) || "battleship".equals(target);
             assertTrue(counterExists, "海战/航空单位 " + target + " 缺少等资源反制兵种");
+        }
+    }
+
+    @Test
+    void specializedCountersRequireSustainedCombatAtEqualStrength() {
+        for (String[] pair : new String[][]{{"rocket", "htank"}, {"armored", "fighter"}, {"armored", "bomber"}}) {
+            for (int seed = 0; seed < SEEDS; seed++) {
+                for (boolean reverse : List.of(false, true)) {
+                    BattleResult result = battle(Map.of(reverse ? pair[1] : pair[0], 100),
+                            Map.of(reverse ? pair[0] : pair[1], 100), seed, true, false);
+                    Map<String, Integer> opponents = reverse
+                            ? result.getSurvivorAttacker() : result.getSurvivorDefender();
+                    // 同数量、无成长时应保留克制胜利，但不能在前五回合内迅速清场。
+                    assertTrue(opponents.isEmpty(), pair[0] + " -> " + pair[1] + result.getReport());
+                    assertTrue(result.getReport().contains("-- 第6回合 --"), result.getReport());
+                }
+            }
         }
     }
 

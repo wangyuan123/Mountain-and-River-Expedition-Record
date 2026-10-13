@@ -1,0 +1,107 @@
+{
+  "date": "2026-10-09",
+  "backendTargeted": {
+    "tests": 67,
+    "classes": [
+      {
+        "class": "ReconArmoredCarTest",
+        "tests": 23,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "class": "GuildSupportTest",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "class": "WildScoutTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "class": "ApronAirMarchSpeedTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "class": "BattleDamageTest",
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "class": "NpcJapaneseUnitTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ]
+  },
+  "frontendTargeted": {
+    "tests": 88,
+    "passed": 88,
+    "failed": 0
+  },
+  "backendFull": {
+    "tests": 644,
+    "failures": 33,
+    "errors": 10,
+    "skipped": 2,
+    "status": "failed"
+  },
+  "frontendFull": {
+    "tests": 571,
+    "passed": 567,
+    "failed": 4,
+    "status": "failed",
+    "failingFile": "frontend/tests/home-module-order.test.cjs"
+  },
+  "browser": [
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "dispatch": true,
+      "blockedGround": true,
+      "routeRetry": true,
+      "carOnlyDefault": true,
+      "report": true,
+      "noOverflow": true,
+      "errors": []
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "dispatch": true,
+      "blockedGround": true,
+      "routeRetry": true,
+      "carOnlyDefault": true,
+      "report": true,
+      "noOverflow": true,
+      "errors": []
+    }
+  ],
+  "assetStatus": "realistic_model_applied",
+  "assetPath": "frontend/img/units/models/recon_car.webp",
+  "assetSha256": "094faef8fe5ee973570c78e88b779fd8f9b75f594ddd988581804f21a06110a5",
+  "assetValidation": {
+    "relatedFrontendTests": 43,
+    "passed": 43,
+    "oldLowPolyRemoved": true,
+    "sourceFilePreserved": true,
+    "browserPreviewPassed": true
+  }
+}

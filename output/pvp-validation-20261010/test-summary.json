@@ -1,0 +1,91 @@
+{
+  "backendTests": 104,
+  "classes": [
+    {
+      "class": "PvpPracticeTest",
+      "tests": 13,
+      "errors": 0,
+      "failures": 0
+    },
+    {
+      "class": "PvpRulesTest",
+      "tests": 3,
+      "errors": 0,
+      "failures": 0
+    },
+    {
+      "class": "PvpMigrationTest",
+      "tests": 1,
+      "errors": 0,
+      "failures": 0
+    },
+    {
+      "class": "PvpControllerTest",
+      "tests": 2,
+      "errors": 0,
+      "failures": 0
+    },
+    {
+      "class": "PvpPerformanceTest",
+      "tests": 1,
+      "errors": 0,
+      "failures": 0
+    },
+    {
+      "class": "PvpEventsTest",
+      "tests": 1,
+      "errors": 0,
+      "failures": 0
+    },
+    {
+      "class": "PvpMatcherTest",
+      "tests": 1,
+      "errors": 0,
+      "failures": 0
+    },
+    {
+      "class": "PvpCalibrationTest",
+      "tests": 1,
+      "errors": 0,
+      "failures": 0
+    },
+    {
+      "class": "OfficerSkillCycleTest",
+      "tests": 31,
+      "errors": 0,
+      "failures": 0
+    },
+    {
+      "class": "CommandBonusBattleTest",
+      "tests": 5,
+      "errors": 0,
+      "failures": 0
+    },
+    {
+      "class": "TacticalBattleRoundTest",
+      "tests": 11,
+      "errors": 0,
+      "failures": 0
+    },
+    {
+      "class": "AccountDeletionTest",
+      "tests": 11,
+      "errors": 0,
+      "failures": 0
+    },
+    {
+      "class": "AntiAddictionTest",
+      "tests": 16,
+      "errors": 0,
+      "failures": 0
+    },
+    {
+      "class": "config.ComplianceBoundaryTest",
+      "tests": 7,
+      "errors": 0,
+      "failures": 0
+    }
+  ],
+  "frontendTests": 70,
+  "frontendFailures": 0
+}

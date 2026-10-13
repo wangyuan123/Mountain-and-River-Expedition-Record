@@ -31,5 +31,7 @@ public interface ForumTopicRepository extends JpaRepository<ForumTopic, Long> {
 
     Page<ForumTopic> findByAuthorIdOrderByCreatedAtDesc(Long authorId, Pageable pageable);
 
+    long countByAuthorId(Long authorId);
+
     long countByBoardId(Long boardId);
 }

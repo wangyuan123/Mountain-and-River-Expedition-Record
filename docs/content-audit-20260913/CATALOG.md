@@ -3893,7 +3893,7 @@
 
 ### N010 · 重工厂（buildings.heavyfactory）
 
-生产重型坦克/突击炮/火箭
+生产重型坦克/突击炮/反坦克火箭车
 
 **状态：来源不明；评估：待评估；建议次序：补来源记录。**
 
@@ -3906,16 +3906,16 @@
   "后端字段": {
     "key": "heavyfactory",
     "name": "重工厂",
-    "desc": "生产重型坦克/突击炮/火箭",
+    "desc": "生产重型坦克/突击炮/反坦克火箭车",
     "baseCost": "Map.of(\"steel\", 320, \"oil\", 140, \"rare\", 30)",
     "growth": 1.6,
     "cat": "army",
     "slots": 1
   },
-  "后端原表达式": "new BuildingDef(\"heavyfactory\", \"重工厂\", \"生产重型坦克/突击炮/火箭\", Map.of(\"steel\", 320, \"oil\", 140, \"rare\", 30), 1.6, \"army\", 1)",
+  "后端原表达式": "new BuildingDef(\"heavyfactory\", \"重工厂\", \"生产重型坦克/突击炮/反坦克火箭车\", Map.of(\"steel\", 320, \"oil\", 140, \"rare\", 30), 1.6, \"army\", 1)",
   "前端字段": {
     "name": "重工厂",
-    "desc": "生产重型坦克/突击炮/火箭",
+    "desc": "生产重型坦克/突击炮/反坦克火箭车",
     "baseCost": {
       "steel": 320,
       "oil": 140,
@@ -4996,7 +4996,7 @@
 
 评估选项：保留并补证 / 重写、重绘或重设计 / 停用 / 待确认（尚未选择）
 
-### N034 · 火箭（units.rocket）
+### N034 · 反坦克火箭车（units.rocket）
 
 基础属性、消耗、生产门槛与相克配置
 
@@ -5010,7 +5010,7 @@
 {
   "后端字段": {
     "key": "rocket",
-    "name": "火箭",
+    "name": "反坦克火箭车",
     "cat": "arm",
     "atk": 90,
     "def": 14,
@@ -5024,9 +5024,9 @@
     "strongVs": "htank",
     "branch": "land"
   },
-  "后端原表达式": "new UnitDef(\"rocket\", \"火箭\", \"arm\", 90, 14, 100, 4, 350, 9, 4, \"heavyfactory\", Map.of(\"steel\", 500, \"oil\", 160, \"rare\", 100), \"htank\", \"land\")",
+  "后端原表达式": "new UnitDef(\"rocket\", \"反坦克火箭车\", \"arm\", 90, 14, 100, 4, 350, 9, 4, \"heavyfactory\", Map.of(\"steel\", 500, \"oil\", 160, \"rare\", 100), \"htank\", \"land\")",
   "前端字段": {
-    "name": "火箭",
+    "name": "反坦克火箭车",
     "cat": "arm",
     "atk": 90,
     "def": 14,
@@ -11033,7 +11033,7 @@ SVG含本地矢量路径；未见作者/来源/许可证元数据。可编辑SVG
 
 评估选项：保留并补证 / 重写、重绘或重设计 / 停用 / 待确认（尚未选择）
 
-### A047 · 火箭（img/units/rocket.svg）
+### A047 · 反坦克火箭车（img/units/rocket.svg）
 
 本地SVG图标
 

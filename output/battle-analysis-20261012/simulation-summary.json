@@ -1,0 +1,261 @@
+{
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31
+  ],
+  "ruleVersion": "balance-v12-opening-distance-20261012",
+  "sourceHash": "4cdf3c96d2c1623f73a305930974453c7844a14c2b405533b6084b9d75504432",
+  "parameters": {
+    "attackerTech": {
+      "attack_tech": 10,
+      "defense_tech": 10,
+      "cmd_hp": 10,
+      "weapon_range": 10,
+      "arm_engine": 10,
+      "air_engine": 10,
+      "nav_engine": 10
+    },
+    "defenderTech": "same as attacker",
+    "defenderWall": 10,
+    "attackerEquipment": {},
+    "defenderEquipment": {},
+    "commandBonus": "none",
+    "historicalInitialDistances": [
+      6725,
+      6950
+    ],
+    "military": [
+      {
+        "attacker": 219,
+        "defender": 160
+      },
+      {
+        "attacker": 100,
+        "defender": 0
+      }
+    ],
+    "defense": [
+      {
+        "attacker": 75,
+        "defender": 205
+      },
+      {
+        "attacker": 100,
+        "defender": 0
+      }
+    ],
+    "orderReconstruction": "movement actions from each round log; focus target persists after logged 指定集火"
+  },
+  "results": [
+    {
+      "battle": 1,
+      "scenario": "original",
+      "averageSurvivorAttacker": 674624.0,
+      "averageSurvivorDefender": 689567.3,
+      "wins": 0,
+      "runs": 32,
+      "rounds": 24
+    },
+    {
+      "battle": 1,
+      "scenario": "current-distance",
+      "averageSurvivorAttacker": 668893.3,
+      "averageSurvivorDefender": 680721.7,
+      "wins": 0,
+      "runs": 32,
+      "rounds": 24
+    },
+    {
+      "battle": 1,
+      "scenario": "auto-focus",
+      "averageSurvivorAttacker": 674624.0,
+      "averageSurvivorDefender": 689567.3,
+      "wins": 0,
+      "runs": 32,
+      "rounds": 24
+    },
+    {
+      "battle": 1,
+      "scenario": "damage-1.5",
+      "averageSurvivorAttacker": 606980.1,
+      "averageSurvivorDefender": 646304.9,
+      "wins": 0,
+      "runs": 32,
+      "rounds": 24
+    },
+    {
+      "battle": 1,
+      "scenario": "damage-2",
+      "averageSurvivorAttacker": 522465.3,
+      "averageSurvivorDefender": 626672.4,
+      "wins": 0,
+      "runs": 32,
+      "rounds": 24
+    },
+    {
+      "battle": 1,
+      "scenario": "damage-3",
+      "averageSurvivorAttacker": 26451.1,
+      "averageSurvivorDefender": 627608.3,
+      "wins": 0,
+      "runs": 32,
+      "rounds": 24
+    },
+    {
+      "battle": 1,
+      "scenario": "defense-tech-0",
+      "averageSurvivorAttacker": 561419.7,
+      "averageSurvivorDefender": 631855.9,
+      "wins": 0,
+      "runs": 32,
+      "rounds": 24
+    },
+    {
+      "battle": 1,
+      "scenario": "hp-tech-0",
+      "averageSurvivorAttacker": 522465.3,
+      "averageSurvivorDefender": 626672.4,
+      "wins": 0,
+      "runs": 32,
+      "rounds": 24
+    },
+    {
+      "battle": 1,
+      "scenario": "rocket-focus-armor",
+      "averageSurvivorAttacker": 693867.1,
+      "averageSurvivorDefender": 560868.3,
+      "wins": 0,
+      "runs": 32,
+      "rounds": 24
+    },
+    {
+      "battle": 1,
+      "scenario": "rocket-focus-ship",
+      "averageSurvivorAttacker": 420033.3,
+      "averageSurvivorDefender": 862415.0,
+      "wins": 0,
+      "runs": 32,
+      "rounds": 24
+    },
+    {
+      "battle": 2,
+      "scenario": "original",
+      "averageSurvivorAttacker": 616228.5,
+      "averageSurvivorDefender": 657644.6,
+      "wins": 0,
+      "runs": 32,
+      "rounds": 24
+    },
+    {
+      "battle": 2,
+      "scenario": "current-distance",
+      "averageSurvivorAttacker": 592953.5,
+      "averageSurvivorDefender": 645870.3,
+      "wins": 0,
+      "runs": 32,
+      "rounds": 24
+    },
+    {
+      "battle": 2,
+      "scenario": "auto-focus",
+      "averageSurvivorAttacker": 616030.9,
+      "averageSurvivorDefender": 670955.8,
+      "wins": 0,
+      "runs": 32,
+      "rounds": 24
+    },
+    {
+      "battle": 2,
+      "scenario": "damage-1.5",
+      "averageSurvivorAttacker": 550315.9,
+      "averageSurvivorDefender": 632189.6,
+      "wins": 0,
+      "runs": 32,
+      "rounds": 24
+    },
+    {
+      "battle": 2,
+      "scenario": "damage-2",
+      "averageSurvivorAttacker": 494972.3,
+      "averageSurvivorDefender": 622251.9,
+      "wins": 0,
+      "runs": 32,
+      "rounds": 24
+    },
+    {
+      "battle": 2,
+      "scenario": "damage-3",
+      "averageSurvivorAttacker": 395272.2,
+      "averageSurvivorDefender": 608270.3,
+      "wins": 0,
+      "runs": 32,
+      "rounds": 24
+    },
+    {
+      "battle": 2,
+      "scenario": "defense-tech-0",
+      "averageSurvivorAttacker": 529645.3,
+      "averageSurvivorDefender": 623952.6,
+      "wins": 0,
+      "runs": 32,
+      "rounds": 24
+    },
+    {
+      "battle": 2,
+      "scenario": "hp-tech-0",
+      "averageSurvivorAttacker": 494972.3,
+      "averageSurvivorDefender": 622251.9,
+      "wins": 0,
+      "runs": 32,
+      "rounds": 24
+    },
+    {
+      "battle": 2,
+      "scenario": "rocket-focus-armor",
+      "averageSurvivorAttacker": 639589.8,
+      "averageSurvivorDefender": 569038.1,
+      "wins": 0,
+      "runs": 32,
+      "rounds": 24
+    },
+    {
+      "battle": 2,
+      "scenario": "rocket-focus-ship",
+      "averageSurvivorAttacker": 452875.2,
+      "averageSurvivorDefender": 816270.2,
+      "wins": 0,
+      "runs": 32,
+      "rounds": 24
+    }
+  ]
+}

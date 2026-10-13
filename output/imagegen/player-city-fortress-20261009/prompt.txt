@@ -1,0 +1,31 @@
+Use case: stylized-concept.
+Asset type: one complete realistic 3D miniature player-city fortress model asset for the WWII-inspired strategy game 山河远征录, matching its existing A / garden citadel architectural collection.
+
+Primary request:
+Create an impressive, prestigious, high-end military fortress-city (玩家军事要塞重镇) with deep military atmosphere and impeccable architectural order. The city seamlessly combines a low perimeter defensive bastion wall, a grand neoclassical city hall command center, a prominent air-defense radar station, an authentic prisoner-of-war (POW) camp compound, and an expansive multi-branch military base with both armored staging grounds and an active airfield.
+
+Camera and Framing:
+- Elevated three-quarter isometric perspective, approximately 35-40 degrees above the horizon, viewing from the south towards the north, showing the front facade and right side.
+- Strictly SQUARE ground footprint aligned to the cardinal directions (NOT rotated 45 degrees into a diamond, NOT a floating diorama slab). The southern defensive wall runs horizontally along the lower portion.
+- Near-orthographic focal length, entire fortress fully contained within the square frame with a 6-8 percent clean margin. All-in-focus rendering from front gate to rear radar tower.
+
+Architectural Zones and Mandatory Facilities:
+1. Fortified Perimeter Wall (要塞城墙):
+   Low, thick early-20th-century stone and reinforced concrete defensive rampart enclosing the city. Corner bastions with mounted dual anti-aircraft flak guns, parapet walkway with embrasures, and a formidable southern armored entrance gatehouse with heavy reinforced gates, guard posts, and anti-vehicle barricades.
+2. Grand City Hall (市政厅 / 统帅大本营):
+   Commanding the north-central axis as the premier architectural anchor: a magnificent 3-4 story neoclassical civic-military headquarters with a pale limestone facade, grand columned portico, wide stone approach steps, symmetrical wings, and a modest central clock tower with an oxidized bronze dome. A dignified paved command plaza extends before it.
+3. Air-Defense Radar Station (防空雷达站):
+   Elevated on the northeastern fortified bastion: a tall steel-lattice antenna tower supporting an open wire-mesh parabolic radar dish, accompanied by a slender radio communication mast and a reinforced concrete transmitter bunker.
+4. POW Camp Compound (战俘营):
+   Distinct, walled-off compound in the northwestern quarter: two long, low single-story barracks with red terracotta tile roofs and pale stucco walls, enclosed by timber posts and taut wire-mesh fencing surrounding a packed-dirt muster yard, guarded by two elevated timber watchtowers at opposite corners with four slender legs and pitched tile roofs.
+5. Comprehensive Military Base Complex (综合军事基地):
+   - East sector airfield: smooth neutral-gray concrete runway and taxiway, curved corrugated-iron aircraft hangars, small glass-cab flight tower, and organized parked WWII propeller warplanes (P-51 Mustang style fighters and heavy B-17 Flying Fortress style bombers, parked with landing gear firmly on the apron).
+   - South sector armored parade & staging grounds: paved assembly yard displaying disciplined rows of olive-drab medium/heavy tanks with clear turrets and barrels, six-wheeled M8 Greyhound style reconnaissance cars, and BM-13 Katyusha rocket launcher trucks with exposed rails.
+   - West-central ordnance depot: red-brick armaments workshop with steel sawtooth glass roofs, supply crates, fuel drums, and transport trucks.
+
+Materials, Color Palette and Craftsmanship:
+Master scale-model craftsmanship with convincing physical textures. Harmonious palette matching the garden building collection: warm cream limestone and stucco, muted terracotta clay roof tiles, weathered dark timber, olive-drab military vehicles, neutral gray concrete paving, and manicured green grass accents.
+Lighting:
+Bright, natural morning daylight from upper-left casting crisp, realistic volumetric contact shadows that emphasize multi-level building relief, retaining clear interior court details.
+Background & Constraints:
+Solid uniform seamless pure white background for clean transparency preparation. Flat thin ground surface with natural stone borders, NO floating dirt island, NO thick diorama pedestal block, NO water moat. NO modern skyscrapers, NO medieval fantasy spires, NO flying/airborne planes, NO text, flags, watermarks, or UI icons.

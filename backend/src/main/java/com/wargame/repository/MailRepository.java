@@ -18,6 +18,8 @@ public interface MailRepository extends JpaRepository<Mail, Long> {
     /** 发件箱：from_player_id = 当前玩家, 按时间倒序 */
     List<Mail> findByFromPlayerIdOrderByCreatedAtDesc(Long fromPlayerId);
 
+    List<Mail> findBySurrenderOfferId(Long surrenderOfferId);
+
     /** 未读数量 */
     long countByToPlayerIdAndIsReadFalse(Long toPlayerId);
 

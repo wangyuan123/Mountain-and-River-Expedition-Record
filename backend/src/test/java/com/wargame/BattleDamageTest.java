@@ -21,8 +21,9 @@ class BattleDamageTest {
 
     @Test
     void exactFirepowerExhaustionStopsBeforeNextTarget() throws Exception {
-        Map<String, Integer> targets = army("htank", 8_000, "bunker", 10);
-        String report = act("rocket", 12_859, targets, 0, false, null, null);
+        // ×3 下 12859 辆反坦克火箭车的攻击额度恰好击毁 2400 辆重坦，验证没有余伤再命中碉堡。
+        Map<String, Integer> targets = army("htank", 2_400, "bunker", 10);
+        String report = act("rocket", 12_859, targets, 0, false, null, null, "htank");
         assertEquals(0, targets.get("htank"));
         assertEquals(10, targets.get("bunker"));
         assertFalse(report.contains("余伤攻击"), report);
@@ -31,11 +32,11 @@ class BattleDamageTest {
     @Test
     void spilloverRecalculatesDefenseAndMatchupForEveryTarget() throws Exception {
         Map<String, Integer> targets = army("htank", 1, "bunker", 100);
-        String report = act("rocket", 32, targets, 0, false, null, null);
+        String report = act("rocket", 32, targets, 0, false, null, null, "htank");
         assertEquals(0, targets.get("htank"));
-        assertTrue(targets.get("bunker") >= 90 && targets.get("bunker") <= 91);
-        assertTrue(report.contains("倍率×5.5 相克"), report);
-        assertTrue(report.contains("余伤攻击敌碉堡(100) 对工事攻击179 伤害2473"), report);
+        assertTrue(targets.get("bunker") >= 91 && targets.get("bunker") <= 92);
+        assertTrue(report.contains("倍率×3.0 相克"), report);
+        assertTrue(report.contains("余伤攻击敌碉堡(100) 对工事攻击179 伤害2168"), report);
         assertEquals(1, report.lines().filter(line -> line.contains("本次原始火力")).count());
         String rocketName = UnitDef.UNITS.get("rocket").name();
         assertEquals(1, report.lines().filter(line -> line.startsWith("我方" + rocketName)).count(), report);
@@ -43,29 +44,31 @@ class BattleDamageTest {
 
     @Test
     void antiAirBonusNeverSpillsIntoGroundTargets() throws Exception {
-        Map<String, Integer> targets = army("scout", 1, "htank", 100);
-        String report = act("armored", 10, targets, 100, false, null, null);
-        assertEquals(0, targets.get("scout"));
-        assertTrue(report.contains("余伤攻击敌" + UnitDef.UNITS.get("htank").name() + "(100) [前排承伤] 对地攻击18 伤害28"), report);
+        Map<String, Integer> targets = army("fighter", 1, "htank", 100);
+        String report = act("armored", 10, targets, 100, false, null, null, "fighter");
+        assertEquals(0, targets.get("fighter"));
+        assertTrue(report.contains("倍率×2.5 相克"), report);
+        assertTrue(report.contains("余伤攻击敌" + UnitDef.UNITS.get("htank").name() + "(100) [前排承伤] 对地攻击18 伤害24"), report);
         assertTrue(targets.get("htank") >= 99);
     }
 
     @Test
-    void weakAirAttackRemainsIndependentWithSkills() throws Exception {
+    void weakAirAttackRemainsIndependentWhenPiercingIsOnCooldown() throws Exception {
         Map<String, Integer> targets = army("fighter", 100);
         String report = act("rocket", 100, targets, 0, false,
                 context(Map.of("attack_tech", 10), Map.of("pierce", 5)), null);
-        assertTrue(report.contains("本次原始火力1000 伤害488"), report);
-        assertTrue(targets.get("fighter") == 96);
+        assertTrue(report.contains("本次原始火力2300 伤害920"), report);
+        assertFalse(report.contains("破甲"), report);
+        assertEquals(93, targets.get("fighter"));
     }
 
     @Test
     void excessGroundAttackSwitchesToWeakAirWeapon() throws Exception {
         Map<String, Integer> targets = army("infantry", 1, "fighter", 100);
-        String report = act("rocket", 100, targets, 0, false, null, null);
+        String report = act("rocket", 100, targets, 0, false, null, null, "infantry");
         assertEquals(0, targets.get("infantry"));
-        assertTrue(report.contains("余伤攻击敌" + UnitDef.UNITS.get("fighter").name() + "(100) 对空攻击5 伤害196"), report);
-        assertTrue(targets.get("fighter") >= 98);
+        assertTrue(report.contains("余伤攻击敌" + UnitDef.UNITS.get("fighter").name() + "(100) 对空攻击12 伤害450"), report);
+        assertEquals(97, targets.get("fighter"));
     }
 
     @Test
@@ -83,7 +86,7 @@ class BattleDamageTest {
     @Test
     void logisticsUseWeakSiegeWeaponAtContact() throws Exception {
         Map<String, Integer> targets = army("infantry", 1, "bunker", 100);
-        String report = act("truck", 1000, targets, 0, false, null, null);
+        String report = act("truck", 1000, targets, 0, false, null, null, "infantry");
         assertEquals(0, targets.get("infantry"));
         assertTrue(report.contains("对工事攻击1 伤害407"), report);
         assertTrue(targets.get("bunker") == 98 || targets.get("bunker") == 99);
@@ -145,7 +148,7 @@ class BattleDamageTest {
     @Test
     void fractionalKillDoesNotCreateSpillover() throws Exception {
         Map<String, Integer> targets = army("htank", 1, "infantry", 10);
-        String report = act("rocket", 1, targets, 350, false, null, null);
+        String report = act("rocket", 1, targets, 350, false, null, null, "htank");
         assertEquals(10, targets.get("infantry"));
         assertFalse(report.contains("余伤攻击"), report);
     }
@@ -153,9 +156,9 @@ class BattleDamageTest {
     @Test
     void movementContinuesPastRangeWithoutFiringInSameAction() throws Exception {
         Map<String, Integer> targets = army("htank", 1);
-        String report = act("rocket", 100, targets, 2001, false, null, null);
+        String report = act("rocket", 100, targets, 1601, false, null, null);
         assertEquals(1, targets.get("htank"));
-        assertTrue(report.contains("前进 250 距离->1751"), report);
+        assertTrue(report.contains("前进 150 距离->1451"), report);
         assertFalse(report.contains("伤害"), report);
     }
 
@@ -164,37 +167,97 @@ class BattleDamageTest {
         Map<String, Integer> close = army("htank", 100);
         Map<String, Integer> far = army("htank", 100);
         String closeLog = act(new BattleService(4096), "rocket", 168, close, 0, false, null, null);
-        String farLog = act(new BattleService(4096), "rocket", 168, far, 2000, false, null, null);
+        String farLog = act(new BattleService(4096), "rocket", 168, far, 1600, false, null, null);
         assertEquals(close, far);
-        assertTrue(closeLog.contains("伤害22132"));
-        assertTrue(farLog.contains("伤害22132"));
+        assertTrue(closeLog.contains("伤害12072"), closeLog);
+        assertTrue(farLog.contains("伤害12072"), farLog);
     }
 
     @Test
-    void onlyDesignatedMeleeUnitsGainPointBlankDamageOnEitherSide() throws Exception {
+    void rocketRangeBoundaryAndTechnologyAreReflectedInCombatLogs() throws Exception {
+        String boundary = act("rocket", 1, army("htank", 100), 1600, false, null, null, "htank");
+        String outside = act("rocket", 1, army("htank", 100), 1601, false, null, null, "htank");
+        String developed = act("rocket", 1, army("htank", 100), 1920, false,
+                context(Map.of("weapon_range", 2), Map.of()), null, "htank");
+        String developedOutside = act("rocket", 1, army("htank", 100), 1921, false,
+                context(Map.of("weapon_range", 2), Map.of()), null, "htank");
+
+        assertTrue(boundary.contains("伤害"), boundary);
+        assertTrue(boundary.contains("有效射程1600 目标距离1600"), boundary);
+        assertFalse(outside.contains("伤害"), outside);
+        assertTrue(developed.contains("有效射程1920 目标距离1920"), developed);
+        assertFalse(developedOutside.contains("伤害"), developedOutside);
+    }
+
+    @Test
+    void infantryDoublesPointBlankDamageWhileOtherMeleeUnitsKeepTheirBonusOnEitherSide() throws Exception {
         for (boolean defending : new boolean[]{false, true}) {
             for (String unit : new String[]{"infantry", "ltank", "htank", "special"}) {
                 String close = act(unit, 100, army("infantry", 100_000), 0, defending, null, null);
                 String far = act(unit, 100, army("infantry", 100_000), 1, defending, null, null);
-                assertTrue(close.contains("贴脸×1.5"), unit + close);
-                assertFalse(far.contains("贴脸×1.5"), unit + far);
-                assertEquals(1.5, (double) reportedDamage(close) / reportedDamage(far), 0.01, unit);
+                double multiplier = "infantry".equals(unit) ? 2.0 : 1.5;
+                assertTrue(close.contains("贴脸×" + multiplier), unit + close);
+                assertFalse(far.contains("贴脸×"), unit + far);
+                assertEquals(multiplier, (double) reportedDamage(close) / reportedDamage(far), 0.01, unit);
             }
-            for (String unit : new String[]{"motor", "armored", "assault", "rocket", "fighter", "bomber", "howitzer"}) {
+            for (String unit : new String[]{"armored", "assault", "rocket", "fighter", "bomber", "howitzer"}) {
                 String close = act(unit, 100, army("infantry", 100_000), 0, defending, null, null);
                 String far = act(unit, 100, army("infantry", 100_000), 1, defending, null, null);
-                assertFalse(close.contains("贴脸×1.5"), unit + close);
+                assertFalse(close.contains("贴脸×"), unit + close);
                 assertEquals(reportedDamage(far), reportedDamage(close), unit);
             }
         }
     }
 
     @Test
+    void infantrySpilloverSharesItsBudgetAndRechecksContactDistance() throws Exception {
+        for (int fortDistance : new int[]{0, 1}) {
+            Map<String, Integer> targets = army("infantry", 1, "bunker", 100_000);
+            Class<?> sideClass = Class.forName("com.wargame.service.BattleService$Side");
+            Object side = Arrays.stream(sideClass.getEnumConstants())
+                    .filter(value -> ((Enum<?>) value).name().equals("MINE"))
+                    .findFirst().orElseThrow();
+            StringBuilder report = new StringBuilder();
+            ReflectionTestUtils.invokeMethod(service, "fireUnitCombat", "infantry", army("infantry", 100), targets,
+                    Map.of("infantry", 0), Map.of("infantry", 0, "bunker", fortDistance),
+                    160, report, side, null, null, 0, false, "infantry");
+
+            // 消灭一个贴脸步兵消耗 10.5 份攻击额度；剩余 89.5 份按碉堡距离计算攻坚伤害。
+            assertEquals(0, targets.get("infantry"));
+            assertTrue(report.toString().contains("贴脸×2.0"), report.toString());
+            String spillover = report.substring(report.indexOf("余伤攻击"));
+            assertEquals(fortDistance == 0, spillover.contains("贴脸×2.0"), spillover);
+            assertEquals(fortDistance == 0 ? 244 : 122, reportedDamage(spillover), spillover);
+        }
+    }
+
+    @Test
+    void infantryCounterattackAtContactDoesNotReceiveDoubleDamage() {
+        Map<String, BattleService.UnitOrder> hold = Map.of("infantry",
+                new BattleService.UnitOrder(BattleService.CommandAction.HOLD));
+        var state = new BattleService(4096).resolveWorldRound(
+                army("infantry", 100), army("infantry", 100),
+                Map.of("infantry", 200), Map.of("infantry", 200), 400,
+                Map.of(), Map.of(), Map.of(), Map.of("counter", 5),
+                0, 0, 0, 0, 0, 0, 4, 4, hold, hold);
+
+        assertTrue(state.log().contains("贴脸×2.0"), state.log());
+        var counter = Pattern.compile("敌方[^\\n]*\\((\\d+)\\) \\[绝境反击\\][^\\n]*? 伤害(\\d+)")
+                .matcher(state.log());
+        assertTrue(counter.find(), state.log());
+        assertFalse(counter.group().contains("贴脸×"), state.log());
+        var infantry = UnitDef.UNITS.get("infantry");
+        long normalDamage = Math.round(Integer.parseInt(counter.group(1)) * infantry.atkGround() * 100.0
+                / (100 + 5 * infantry.def()));
+        assertEquals(normalDamage, Long.parseLong(counter.group(2)), state.log());
+    }
+
+    @Test
     void defenderUsesSameSpilloverRulesAndSkipsDeadTargets() throws Exception {
         Map<String, Integer> targets = army("htank", 1, "bunker", 100, "scout", 0);
-        String report = act("rocket", 32, targets, 0, true, null, null);
+        String report = act("rocket", 32, targets, 0, true, null, null, "htank");
         assertEquals(0, targets.get("htank"));
-        assertTrue(report.contains("余伤攻击我碉堡(100) 对工事攻击179 伤害2473"), report);
+        assertTrue(report.contains("余伤攻击我碉堡(100) 对工事攻击179 伤害2168"), report);
         assertFalse(report.contains("侦察机"), report);
     }
 
@@ -202,7 +265,7 @@ class BattleDamageTest {
     void targetsUseEffectiveHealthWithCommanderHp() throws Exception {
         Map<String, Integer> targets = army("htank", 1, "bunker", 100);
         String report = act("rocket", 32, targets, 0, false,
-                context(Map.of(), Map.of()), context(Map.of("cmd_hp", 20), Map.of()));
+                context(Map.of(), Map.of()), context(Map.of("cmd_hp", 20), Map.of()), "htank");
         assertEquals(0, targets.get("htank"));
         assertTrue(report.contains("本次原始火力3200"), report);
     }
@@ -212,15 +275,35 @@ class BattleDamageTest {
         return act(service, unit, count, targets, distance, enemy, attackerContext, defenderContext);
     }
 
+    private String act(String unit, int count, Map<String, Integer> targets, int distance,
+                       boolean enemy, Object attackerContext, Object defenderContext, String focusTarget) throws Exception {
+        return act(service, unit, count, targets, distance, enemy, attackerContext, defenderContext, focusTarget);
+    }
+
     private String act(BattleService svc, String unit, int count, Map<String, Integer> targets, int distance,
                        boolean enemy, Object attackerContext, Object defenderContext) throws Exception {
+        return act(svc, unit, count, targets, distance, enemy, attackerContext, defenderContext, null);
+    }
+
+    private String act(BattleService svc, String unit, int count, Map<String, Integer> targets, int distance,
+                       boolean enemy, Object attackerContext, Object defenderContext, String focusTarget) throws Exception {
         Class<?> sideClass = Class.forName("com.wargame.service.BattleService$Side");
         Object side = Arrays.stream(sideClass.getEnumConstants())
                 .filter(value -> ((Enum<?>) value).name().equals(enemy ? "ENEMY" : "MINE"))
                 .findFirst().orElseThrow();
         StringBuilder report = new StringBuilder();
-        ReflectionTestUtils.invokeMethod(svc, "simAct", unit, army(unit, count), targets,
-                distance, report, side, attackerContext, defenderContext, 0, false);
+        if (focusTarget == null) {
+            ReflectionTestUtils.invokeMethod(svc, "simAct", unit, army(unit, count), targets,
+                    distance, report, side, attackerContext, defenderContext, 0, false);
+        } else {
+            // 余伤用例显式指定首个目标，避免同距离 ID 排序改变需要验证的领域切换顺序。
+            Map<String, Integer> myPositions = Map.of(unit, enemy ? distance : 0);
+            Map<String, Integer> foePositions = new LinkedHashMap<>();
+            targets.keySet().forEach(target -> foePositions.put(target, enemy ? 0 : distance));
+            ReflectionTestUtils.invokeMethod(svc, "fireUnitCombat", unit, army(unit, count), targets,
+                    enemy ? foePositions : myPositions, enemy ? myPositions : foePositions,
+                    distance, report, side, attackerContext, defenderContext, 0, false, focusTarget);
+        }
         return report.toString();
     }
 

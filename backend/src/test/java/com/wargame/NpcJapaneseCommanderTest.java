@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -82,6 +83,12 @@ class NpcJapaneseCommanderTest {
         assertEquals("牟田口廉也", JapaneseOfficers.getCommanderForLevel(29));
         assertEquals("寺内寿一", JapaneseOfficers.getCommanderForLevel(30));
 
+        for (int npcLevel = 1; npcLevel <= 30; npcLevel++) {
+            Officer officer = JapaneseOfficers.buildOfficer(null, npcLevel);
+            assertTrue(JsonUtil.parseList(officer.getSkills()).size() <= 3,
+                    "NPC 等级 " + npcLevel + " 的将领技能不得超过三个");
+        }
+
         // 低等级将领构建
         Officer lowOfficer = JapaneseOfficers.buildOfficer(null, 1);
         assertEquals("细谷资彦", lowOfficer.getName());
@@ -97,10 +104,11 @@ class NpcJapaneseCommanderTest {
         assertEquals(90, maxOfficer.getLevel());
         assertEquals(225, maxOfficer.getMilitary());
         assertEquals(225, maxOfficer.getDefense());
-        assertTrue(maxOfficer.getSkills().contains("counter"));
+        List<Map<String, Object>> maxSkills = JsonUtil.parseList(maxOfficer.getSkills());
+        assertEquals(3, maxSkills.size(), "NPC 将领最多只能拥有三个技能");
         assertTrue(maxOfficer.getSkills().contains("bulwark"));
         assertTrue(maxOfficer.getSkills().contains("frenzy"));
-        assertTrue(maxOfficer.getSkills().contains("pierce"));
+        assertTrue(maxOfficer.getSkills().contains("suppress"));
     }
 
     @Test

@@ -54,6 +54,25 @@ window.Game = window.Game || {};
     return result && result.missing[0] || null;
   }
 
+  /** 征召按本城已完成建筑校验；海军同时需要制造设施和驻泊军港，与 UnitDef 保持一致。 */
+  function checkRecruitment(id) {
+    var unit = G.DATA.units && G.DATA.units[id];
+    if (!unit) return null;
+    var buildings = unit.branch === 'sea' ? [unit.build, 'port'] : [unit.build];
+    var requirements = buildings.map(function (building) {
+      var actual = currentLevel(building, 'city');
+      return {
+        id: building,
+        name: G.DATA.buildings[building].name,
+        required: 1,
+        actual: actual,
+        scope: 'city',
+        met: actual >= 1
+      };
+    });
+    return { requirements: requirements, missing: requirements.filter(function (entry) { return !entry.met; }) };
+  }
+
   function missingText(entry) {
     if (!entry) return '';
     var where = entry.scope === 'owned_coastal_city' ? '任一沿海城' : '本城';
@@ -130,6 +149,7 @@ window.Game = window.Game || {};
   G.Prerequisites = {
     setRules: setRules,
     check: check,
+    checkRecruitment: checkRecruitment,
     firstMissing: firstMissing,
     missingText: missingText,
     html: html,

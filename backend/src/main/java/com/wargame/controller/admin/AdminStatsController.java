@@ -1,7 +1,7 @@
 package com.wargame.controller.admin;
 
 import com.wargame.repository.AdminOperationLogRepository;
-import com.wargame.repository.NpcCityRepository;
+import com.wargame.repository.BanditRepository;
 import com.wargame.repository.PlayerCityRepository;
 import com.wargame.repository.PlayerRepository;
 import org.springframework.data.domain.PageRequest;
@@ -17,16 +17,16 @@ import java.util.Map;
 public class AdminStatsController {
 
     private final PlayerRepository playerRepository;
-    private final NpcCityRepository npcCityRepository;
+    private final BanditRepository banditRepository;
     private final PlayerCityRepository playerCityRepository;
     private final AdminOperationLogRepository logRepository;
 
     public AdminStatsController(PlayerRepository playerRepository,
-                                NpcCityRepository npcCityRepository,
+                                BanditRepository banditRepository,
                                 PlayerCityRepository playerCityRepository,
                                 AdminOperationLogRepository logRepository) {
         this.playerRepository = playerRepository;
-        this.npcCityRepository = npcCityRepository;
+        this.banditRepository = banditRepository;
         this.playerCityRepository = playerCityRepository;
         this.logRepository = logRepository;
     }
@@ -34,7 +34,7 @@ public class AdminStatsController {
     @GetMapping
     public Map<String, Object> getStats() {
         long totalPlayers = playerRepository.count();
-        long totalNpc = npcCityRepository.count();
+        long totalNpc = banditRepository.count();
         long totalCities = playerCityRepository.count();
         var recentLogs = logRepository.findAll(PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "createdAt"))).getContent();
 

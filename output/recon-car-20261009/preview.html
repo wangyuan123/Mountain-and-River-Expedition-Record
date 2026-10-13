@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="blue-white">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>侦查装甲车功能预览</title>
+<base href="../../frontend/">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/themes.css">
+<link rel="stylesheet" href="css/dispatch-route.css">
+<style>body{padding:12px}#screen{min-height:0}main{padding:12px}.preview-controls{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.preview-model{height:80px;width:80px;object-fit:contain}label{font-size:13px}</style>
+<div id="screen">
+  <div class="panel">功能预览 · 示例数据 <img class="preview-model" src="img/units/models/recon_car.webp" alt="M8侦查装甲车">
+    <div class="preview-controls">
+      <button class="btn" onclick="configure('both')">两种部队</button>
+      <button class="btn" onclick="configure('car')">仅装甲车</button>
+      <button class="btn" onclick="configure('blocked')">陆路不通</button>
+      <button class="btn" onclick="showReport()">车辆报告</button>
+    </div>
+  </div>
+  <main id="view"></main>
+</div>
+<script src="js/constants.js"></script>
+<script src="js/data.js"></script>
+<script src="js/core.js"></script>
+<script src="js/dispatch-route.js"></script>
+<script src="js/world.js"></script>
+<script src="js/battle.js"></script>
+<script>
+var blocked = false, lastDispatch = null;
+Game.Core.state = {player:{id:1,citySlot:0,cityName:'前进基地'},army:{scout:20,recon_car:30},tech:{},buildings:{},resources:{food:10000,steel:10000,oil:10000,rare:1000,gold:1000},officers:[],reports:[],cityState:{},world:{cityPos:{x:10,y:10},pos:{x:10,y:10},marches:[],wildTiles:[]}};
+Game.toast = function (message) { window.lastToast = message; };
+Game.go = function () {};
+Game.Core.render = function () { Game.World.renderDispatch(document.getElementById('view')); };
+Game.DispatchRoute.loadTerrain = function () { return Promise.resolve({sea:function(){return false;}}); };
+Game.API = {client:{post:function(url,request){
+  if (blocked && request.army.recon_car) return Promise.reject(Error('地面侦查无法抵达，请使用侦察机'));
+  return Promise.resolve({mode:request.army.recon_car?'land':'air',points:[[10,10],[20,10]],distance:10,seconds:request.army.recon_car?18:10,cargoLimit:1000});
+}},worldDispatch:function(request){lastDispatch=request;return Promise.resolve({success:true});}};
+function configure(mode) {
+  blocked = mode === 'blocked';
+  Game.Core.state.army = mode === 'car' || blocked ? {recon_car:30} : {scout:20,recon_car:30};
+  Game.Core.state.world._dispatchTarget = {kind:'wild',action:'scout',target:{id:1,x:20,y:10,type:'oil',level:3}};
+  Game.Core.render();
+}
+function showReport() {
+  document.getElementById('view').innerHTML = Game.Battle.renderScoutReportBoard({time:Date.now(),data:{targetName:'敌方前沿据点',x:20,y:10,scoutUnit:'recon_car',reconMode:'land',result:'draw',showCityInfo:true,reconLevel:2,myArmy:{recon_car:100},mySurvivors:{recon_car:55},enemyArmy:{recon_car:120},enemySurvivors:{recon_car:70},wounded:{recon_car:10},combatLog:['第1回合：我方剩余95，敌方剩余114'],army:{infantry:500,recon_car:70},forts:{bunker:30}}});
+}
+configure('both');
+</script>
+</html>

@@ -64,6 +64,9 @@ class BanditRefreshTest extends BaseServiceTest {
         var wild = createWildTile(world.getId(), "grainfield", 0, 1, 1, Map.of(), 160_000);
         wild.setOccupied(true);
         wildTileRepository.saveAndFlush(wild);
+        var wild2 = createWildTile(world.getId(), "ironworks", 1, 1, 1, Map.of(), 160_000);
+        wild2.setOccupied(true);
+        wildTileRepository.saveAndFlush(wild2);
         refresh();
         assertTrue(npc.getDefeated());
         assertEquals(0, npc.getX());

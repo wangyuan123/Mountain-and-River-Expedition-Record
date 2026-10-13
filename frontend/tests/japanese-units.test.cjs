@@ -14,7 +14,7 @@ vm.runInContext(fs.readFileSync(path.join(root, 'frontend/js/world.js'), 'utf8')
 const Game = context.window.Game;
 const data = Game.DATA;
 
-test('japaneseUnits dictionary contains all 17 unit types', () => {
+test('japaneseUnits dictionary contains all current unit types', () => {
   const unitKeys = Object.keys(data.units);
   assert.equal(unitKeys.length, 17);
   assert.deepEqual(Object.keys(data.japaneseUnits).sort(), unitKeys.sort());

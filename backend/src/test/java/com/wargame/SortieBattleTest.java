@@ -126,6 +126,7 @@ class SortieBattleTest extends BaseServiceTest {
     @Test
     void attackAllowsExactly25000AndRejects25001BeforeDeductingTroops() {
         Player attacker = createTestPlayer("capacity-boundary", 30);
+        createBuilding(attacker.getId(), "wall", 10);
         giveResources(attacker.getId(), 10000000, 0, 0, 0, 0);
         ArmyUnit army = createArmyUnit(attacker.getId(), "infantry", 100000);
         WildTile target = createWildTile(createTestWorld().getId(), "forest", 11, 10, 1, Map.of(), 0);

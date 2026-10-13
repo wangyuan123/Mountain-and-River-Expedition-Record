@@ -6,8 +6,10 @@ import com.wargame.model.constants.FortDef;
 import com.wargame.model.constants.GameData;
 import com.wargame.model.constants.JapaneseUnitDef;
 import com.wargame.model.constants.UnitDef;
+import com.wargame.model.constants.UnitEquipmentEffects;
 import com.wargame.model.dto.BattleRoundState;
 import com.wargame.model.dto.BattleResult;
+import com.wargame.model.dto.CommandBonus;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -22,10 +24,47 @@ import java.util.concurrent.ThreadLocalRandom;
 @Service
 public class BattleService {
 
-    public static final int MAX_ROUND = 30;
-    /** 仅步兵、轻重坦和特种兵在与当前目标重合时获得贴脸伤害加成。 */
-    private static final Set<String> POINT_BLANK_UNITS = Set.of("infantry", "ltank", "htank", "special");
+    /** 战术战斗最多 24 回合；按每回合 15 秒倒计时，打满约 6 分钟，保留攻坚操作空间并收束无效僵持。 */
+    public static final int MAX_ROUND = 24;
+    /** 与当前目标距离为 0 时，步兵冲锋火力翻倍，轻重坦和特种兵获得 1.5 倍贴脸伤害。 */
+    private static final Map<String, Double> POINT_BLANK_MULTIPLIERS = Map.of(
+            "infantry", 2.0, "ltank", 1.5, "htank", 1.5, "special", 1.5);
     private final java.util.function.DoubleSupplier random;
+    public enum TerminalStrategy { WORLD, PVP_PRACTICE }
+    private List<Map<String, Object>> practiceEvents;
+    private boolean tracePractice = true;
+
+    /** 结构化事件只在独立演习引擎实例收集，不解析中文战报，不共享随机流。 */
+    public List<Map<String, Object>> practiceEvents() {
+        return practiceEvents == null ? List.of() : List.copyOf(practiceEvents);
+    }
+    private void event(String type, Side side, String unit, String target, Map<String, ?> effects) {
+        if (practiceEvents == null) return;
+        Map<String, Object> e = new LinkedHashMap<>();
+        e.put("type", type); e.put("side", side == Side.MINE ? "A" : "B");
+        e.put("unit", unit); e.put("target", target); e.putAll(effects); practiceEvents.add(e);
+    }
+
+    /** 匹配估值和战前属性预览共用引擎永久倍率，将领周期属性按三回合均值计算。 */
+    public Map<String, Double> practiceStats(String id, TechCtx ctx) {
+        UnitStats u = getStats(id);
+        double atk = atkMul(u.cat(), ctx.tech, 0) * (1 + ctx.commanderMil / 300.0) * ctx.commandBonus.attackMul();
+        return Map.of("ground", u.atkGround() * atk * (1 + Math.min(.15, UnitEquipmentEffects.percent(ctx.tech, id, "ground"))),
+                "air", u.atkAir() * atk * (1 + Math.min(.15, UnitEquipmentEffects.percent(ctx.tech, id, "air"))),
+                "sea", u.atkSea() * atk * (1 + Math.min(.15, UnitEquipmentEffects.percent(ctx.tech, id, "sea"))),
+                "defense", effDef(id, ctx.tech, Map.of(), 0, 0, false, false, false) * (1 + ctx.commanderDef / 300.0) * ctx.commandBonus.defenseMul(),
+                "hp", effHp(id, ctx.tech) * ctx.commandBonus.hpMul(), "speed", effSpd(id, ctx), "range", (double) effectiveRange(id, ctx));
+    }
+
+    /** 中立演习入口：城墙恒为0，终局只负责停止，由演习服务对称判胜/平。 */
+    public BattleRoundState resolvePracticeRound(Map<String, Integer> a, Map<String, Integer> b,
+            Map<String, Integer> ap, Map<String, Integer> bp, int distance, TechCtx ac, TechCtx bc,
+            int round, int firstCombat, Map<String, UnitOrder> ao, Map<String, UnitOrder> bo) {
+        practiceEvents = tracePractice ? new ArrayList<>() : null;
+        return resolveRound(a, b, ap, bp, distance, ac.tech, bc.tech, ac.skills, bc.skills,
+                ac.commanderMil, ac.commanderDef, bc.commanderMil, bc.commanderDef, 0, 0,
+                round, firstCombat, ao, bo, ac.commandBonus, bc.commandBonus, TerminalStrategy.PVP_PRACTICE);
+    }
 
     public BattleService() {
         random = () -> ThreadLocalRandom.current().nextDouble();
@@ -35,6 +74,9 @@ public class BattleService {
     public BattleService(long seed) {
         random = new Random(seed)::nextDouble;
     }
+
+    /** 校准只运行数值内核，不收集无需保存的事件。 */
+    public BattleService(long seed, boolean trace) { this(seed); tracePractice = trace; }
 
     /** 军官技能每级加成比率 - 对应 JS Core.skillBonus 中的 rates */
     private static final Map<String, Double> SKILL_RATES = Map.ofEntries(
@@ -80,7 +122,7 @@ public class BattleService {
     /** 从 UnitDef 或 FortDef 获取统一属性 - 对应 JS U(id) */
     private UnitStats getStats(String id) {
         if (id == null) return null;
-        UnitDef u = GameData.UNITS.get(id);
+        UnitDef u = GameData.UNITS.get(UnitEquipmentEffects.base(id));
         if (u != null) {
             return new UnitStats(u.key(), u.name(), u.cat(),
                     u.atkGround(), u.atkAir(), u.atkSea(), u.atkFort(), u.def(), u.hp(), u.spd(), u.range(),
@@ -101,7 +143,7 @@ public class BattleService {
      */
     private String unitName(String unitId, Side side, boolean defenderIsJapanese) {
         boolean isJapanese = (side == Side.ENEMY && defenderIsJapanese);
-        return JapaneseUnitDef.getUnitName(unitId, isJapanese);
+        return JapaneseUnitDef.getUnitName(UnitEquipmentEffects.base(unitId), isJapanese) + (unitId.contains("~") ? "（援军配装组）" : "");
     }
 
     /**
@@ -116,42 +158,32 @@ public class BattleService {
     }
 
     /**
-     * 动态战场初始距离计算公式：
-     * D = max(1000, 3 * (maxSpdA + maxSpdB) * 50 + maxRange)
+     * 按每个存活攻守兵种组合计算开局距离：D = max(3 × (stepA + stepB) + max(rangeA, rangeB)) + 100。
+     * 步长使用常驻速度的实际整数值；前三回合即使双方全速前进也不能开火，最早第四回合接敌。
+     * 不设固定最低宽度，也不把不同兵种的最高速度和最长射程叠加，避免步兵或混编额外空跑。
+     * 待命、后退或后勤默认不前进仍可延后接敌；周期闪电突击不参与尚未交战的开局距离。
      */
     public int calcInitialDistance(Map<String, Integer> attackerArmy,
                                   Map<String, Integer> defenderArmy,
                                   TechCtx attackerCtx,
                                   TechCtx defenderCtx) {
-        double maxSpdA = 0;
-        int maxRangeA = 0;
-        if (attackerArmy != null) {
-            for (Map.Entry<String, Integer> e : attackerArmy.entrySet()) {
-                if (e.getValue() != null && e.getValue() > 0) {
-                    double spd = attackerCtx != null ? effSpd(e.getKey(), attackerCtx.tech, attackerCtx.skills) : (getStats(e.getKey()) != null ? getStats(e.getKey()).spd() : 0);
-                    int r = effectiveRange(e.getKey(), attackerCtx);
-                    if (spd > maxSpdA) maxSpdA = spd;
-                    if (r > maxRangeA) maxRangeA = r;
-                }
+        if (attackerArmy == null || defenderArmy == null) return 100;
+        int maxApproachDistance = 0;
+        for (Map.Entry<String, Integer> attacker : attackerArmy.entrySet()) {
+            UnitStats a = getStats(attacker.getKey());
+            if (a == null || attacker.getValue() == null || attacker.getValue() <= 0) continue;
+            int attackerStep = (int) ((attackerCtx != null ? effSpd(attacker.getKey(), attackerCtx) : a.spd()) * 50);
+            int attackerRange = effectiveRange(attacker.getKey(), attackerCtx);
+            for (Map.Entry<String, Integer> defender : defenderArmy.entrySet()) {
+                UnitStats b = getStats(defender.getKey());
+                if (b == null || defender.getValue() == null || defender.getValue() <= 0) continue;
+                int defenderStep = (int) ((defenderCtx != null ? effSpd(defender.getKey(), defenderCtx) : b.spd()) * 50);
+                int range = Math.max(attackerRange, effectiveRange(defender.getKey(), defenderCtx));
+                maxApproachDistance = Math.max(maxApproachDistance, 3 * (attackerStep + defenderStep) + range);
             }
         }
-
-        double maxSpdB = 0;
-        int maxRangeB = 0;
-        if (defenderArmy != null) {
-            for (Map.Entry<String, Integer> e : defenderArmy.entrySet()) {
-                if (e.getValue() != null && e.getValue() > 0) {
-                    double spd = defenderCtx != null ? effSpd(e.getKey(), defenderCtx.tech, defenderCtx.skills) : (getStats(e.getKey()) != null ? getStats(e.getKey()).spd() : 0);
-                    int r = effectiveRange(e.getKey(), defenderCtx);
-                    if (spd > maxSpdB) maxSpdB = spd;
-                    if (r > maxRangeB) maxRangeB = r;
-                }
-            }
-        }
-
-        int maxRange = Math.max(maxRangeA, maxRangeB);
-        int calcDist = (int) Math.round(3 * (maxSpdA + maxSpdB) * 50 + maxRange);
-        return Math.max(1000, calcDist);
+        // 距离等于射程即可开火，多留 100 点可确保第三回合安全，并在战场上看清间隔。
+        return maxApproachDistance + 100;
     }
 
     // ========================================================================
@@ -344,6 +376,33 @@ public class BattleService {
             boolean isPlayerBattle,
             Map<String, UnitOrder> attackerOrders,
             Map<String, UnitOrder> defenderOrders) {
+        return startWorldDispatch(
+                attackerArmy, defenderArmy, defenderForts, attackerTech, defenderTech, attackerSkills, defenderSkills, attackerCommanderMil, attackerCommanderDef, defenderCommanderMil, defenderCommanderDef, attackerWallLevel, defenderWallLevel, action, defenderResources, defenderWarehouseLevel, isPlayerBattle, attackerOrders, defenderOrders,
+                CommandBonus.NONE, CommandBonus.NONE);
+    }
+
+    /** 司令官加成常驻，与带兵将领的属性回合、技能周期独立组合。 */
+    public BattleResult startWorldDispatch(
+            Map<String, Integer> attackerArmy,
+            Map<String, Integer> defenderArmy,
+            Map<String, Integer> defenderForts,
+            Map<String, Integer> attackerTech,
+            Map<String, Integer> defenderTech,
+            Map<String, Integer> attackerSkills,
+            Map<String, Integer> defenderSkills,
+            int attackerCommanderMil,
+            int attackerCommanderDef,
+            int defenderCommanderMil,
+            int defenderCommanderDef,
+            int attackerWallLevel,
+            int defenderWallLevel,
+            String action,
+            Map<String, Integer> defenderResources,
+            long defenderWarehouseLevel,
+            boolean isPlayerBattle,
+            Map<String, UnitOrder> attackerOrders,
+            Map<String, UnitOrder> defenderOrders,
+            CommandBonus attackerCommandBonus, CommandBonus defenderCommandBonus) {
 
         // 克隆军队 (不修改原始 map)
         Map<String, Integer> mine = snapshot(attackerArmy);
@@ -364,8 +423,8 @@ public class BattleService {
         Map<String, Integer> aSkills = attackerSkills != null ? attackerSkills : Collections.emptyMap();
         Map<String, Integer> dSkills = defenderSkills != null ? defenderSkills : Collections.emptyMap();
 
-        TechCtx attackerCtx = new TechCtx(aTech, aSkills, attackerCommanderMil, attackerCommanderDef);
-        TechCtx defenderCtx = new TechCtx(dTech, dSkills, defenderCommanderMil, defenderCommanderDef);
+        TechCtx attackerCtx = new TechCtx(aTech, aSkills, attackerCommanderMil, attackerCommanderDef, attackerCommandBonus);
+        TechCtx defenderCtx = new TechCtx(dTech, dSkills, defenderCommanderMil, defenderCommanderDef, defenderCommandBonus);
 
         // 保存初始军队快照 (用于战后经验计算) - 对应 JS mineStart / enemyStart
         Map<String, Integer> mineStart = snapshot(mine);
@@ -384,7 +443,7 @@ public class BattleService {
 
         // 首次交战回合由实际可开火目标确定，双方技能共用同一个周期起点。
         int firstCombatRound = 0;
-        // 模拟 30 回合 - 对应 JS resolveRound 循环
+        // 模拟 24 回合 - 对应 JS resolveRound 循环
         for (int round = 1; round <= MAX_ROUND; round++) {
             boolean officerActive = (round % 3 == 0);
 
@@ -394,7 +453,8 @@ public class BattleService {
             boolean defenderIsJapanese = !isPlayerBattle;
             int movementReportStart = report.length();
             executeMovementPhase(mine, enemy, minePos, enemyPos, initialDist, report,
-                    attackerOrders, defenderOrders, attackerCtx, defenderCtx, defenderIsJapanese);
+                    attackerOrders, defenderOrders, attackerCtx, defenderCtx, defenderIsJapanese,
+                    isSkillRoundActive(round, firstCombatRound));
 
             // 阶段二: 战术交火阶段
             firstCombatRound = executeCombatPhase(mine, enemy, minePos, enemyPos, initialDist, report,
@@ -476,25 +536,80 @@ public class BattleService {
                                               int firstCombatRound,
                                               Map<String, UnitOrder> attackerOrders,
                                               Map<String, UnitOrder> defenderOrders) {
+        return resolveWorldRound(attackerArmy, defenderArmy, attackerPositions, defenderPositions,
+                initialDistance, attackerTech, defenderTech, attackerSkills, defenderSkills,
+                attackerCommanderMil, attackerCommanderDef, defenderCommanderMil, defenderCommanderDef,
+                attackerWallLevel, defenderWallLevel, round, firstCombatRound, attackerOrders, defenderOrders,
+                CommandBonus.NONE, CommandBonus.NONE);
+    }
+
+    /** 司令官加成常驻，与带兵将领的属性回合、技能周期独立组合。 */
+    public BattleRoundState resolveWorldRound(Map<String, Integer> attackerArmy,
+                                              Map<String, Integer> defenderArmy,
+                                              Map<String, Integer> attackerPositions,
+                                              Map<String, Integer> defenderPositions,
+                                              int initialDistance,
+                                              Map<String, Integer> attackerTech,
+                                              Map<String, Integer> defenderTech,
+                                              Map<String, Integer> attackerSkills,
+                                              Map<String, Integer> defenderSkills,
+                                              int attackerCommanderMil,
+                                              int attackerCommanderDef,
+                                              int defenderCommanderMil,
+                                              int defenderCommanderDef,
+                                              int attackerWallLevel,
+                                              int defenderWallLevel,
+                                              int round,
+                                              int firstCombatRound,
+                                              Map<String, UnitOrder> attackerOrders,
+                                              Map<String, UnitOrder> defenderOrders,
+            CommandBonus attackerCommandBonus, CommandBonus defenderCommandBonus) {
+        return resolveRound(attackerArmy, defenderArmy, attackerPositions, defenderPositions, initialDistance,
+                attackerTech, defenderTech, attackerSkills, defenderSkills, attackerCommanderMil, attackerCommanderDef,
+                defenderCommanderMil, defenderCommanderDef, attackerWallLevel, defenderWallLevel, round, firstCombatRound,
+                attackerOrders, defenderOrders, attackerCommandBonus, defenderCommandBonus, TerminalStrategy.WORLD);
+    }
+
+    private BattleRoundState resolveRound(Map<String, Integer> attackerArmy, Map<String, Integer> defenderArmy,
+            Map<String, Integer> attackerPositions, Map<String, Integer> defenderPositions, int initialDistance,
+            Map<String, Integer> attackerTech, Map<String, Integer> defenderTech,
+            Map<String, Integer> attackerSkills, Map<String, Integer> defenderSkills,
+            int attackerCommanderMil, int attackerCommanderDef, int defenderCommanderMil, int defenderCommanderDef,
+            int attackerWallLevel, int defenderWallLevel, int round, int firstCombatRound,
+            Map<String, UnitOrder> attackerOrders, Map<String, UnitOrder> defenderOrders,
+            CommandBonus attackerCommandBonus, CommandBonus defenderCommandBonus, TerminalStrategy strategy) {
         Map<String, Integer> mine = snapshot(attackerArmy);
         Map<String, Integer> enemy = snapshot(defenderArmy);
         Map<String, Integer> minePos = new LinkedHashMap<>(attackerPositions);
         Map<String, Integer> enemyPos = new LinkedHashMap<>(defenderPositions);
         TechCtx attackerCtx = new TechCtx(attackerTech != null ? attackerTech : Collections.emptyMap(),
-                attackerSkills != null ? attackerSkills : Collections.emptyMap(), attackerCommanderMil, attackerCommanderDef);
+                attackerSkills != null ? attackerSkills : Collections.emptyMap(), attackerCommanderMil, attackerCommanderDef, attackerCommandBonus);
         TechCtx defenderCtx = new TechCtx(defenderTech != null ? defenderTech : Collections.emptyMap(),
-                defenderSkills != null ? defenderSkills : Collections.emptyMap(), defenderCommanderMil, defenderCommanderDef);
+                defenderSkills != null ? defenderSkills : Collections.emptyMap(), defenderCommanderMil, defenderCommanderDef, defenderCommandBonus);
         boolean officerActive = round % 3 == 0;
         StringBuilder report = new StringBuilder("-- 第").append(round).append("回合 --\n");
 
         int movementReportStart = report.length();
         executeMovementPhase(mine, enemy, minePos, enemyPos, initialDistance, report,
-                attackerOrders, defenderOrders, attackerCtx, defenderCtx);
+                attackerOrders, defenderOrders, attackerCtx, defenderCtx, false,
+                isSkillRoundActive(round, firstCombatRound));
+        if (strategy == TerminalStrategy.PVP_PRACTICE) {
+            // 首次交战E在机动后确定，速度加成不能追溯改变已经执行的坐标。
+            boolean movementSkill = isSkillRoundActive(round, firstCombatRound);
+            minePos.forEach((id, x) -> event("MOVEMENT", Side.MINE, id, "", Map.of("from", attackerPositions.getOrDefault(id, 0), "to", x,
+                    "speed", effSpd(id, attackerCtx, movementSkill), "blitzMultiplier", 1 + (movementSkill ? skillBonus(attackerCtx.skills, "blitz") : 0))));
+            enemyPos.forEach((id, x) -> event("MOVEMENT", Side.ENEMY, id, "", Map.of("from", defenderPositions.getOrDefault(id, initialDistance), "to", x,
+                    "speed", effSpd(id, defenderCtx, movementSkill), "blitzMultiplier", 1 + (movementSkill ? skillBonus(defenderCtx.skills, "blitz") : 0))));
+        }
         firstCombatRound = executeCombatPhase(mine, enemy, minePos, enemyPos, initialDistance, report,
                 movementReportStart,
                 attackerOrders, defenderOrders, attackerCtx, defenderCtx,
                 attackerWallLevel, defenderWallLevel, officerActive, round, firstCombatRound);
 
+        if (strategy == TerminalStrategy.PVP_PRACTICE) {
+            return new BattleRoundState(round, allDead(mine) || allDead(enemy) || round >= MAX_ROUND, false,
+                    filterPositive(mine), filterPositive(enemy), minePos, enemyPos, report.toString(), firstCombatRound);
+        }
         boolean attackerWin = allDead(enemy);
         boolean defenderWin = allDead(mine) || (!attackerWin && round >= MAX_ROUND);
         if (attackerWin) report.append("★ 全歼敌军,胜利!\n");
@@ -652,7 +767,7 @@ public class BattleService {
             TechCtx attackerCtx,
             TechCtx defenderCtx) {
         executeMovementPhase(mine, enemy, minePos, enemyPos, initialDist, report,
-                attackerOrders, defenderOrders, attackerCtx, defenderCtx, false);
+                attackerOrders, defenderOrders, attackerCtx, defenderCtx, false, false);
     }
 
     private void executeMovementPhase(
@@ -666,128 +781,145 @@ public class BattleService {
             Map<String, UnitOrder> defenderOrders,
             TechCtx attackerCtx,
             TechCtx defenderCtx,
-            boolean defenderIsJapanese) {
+            boolean defenderIsJapanese,
+            boolean skillRoundActive) {
 
-        // 双方依据回合开始时的坐标同步机动，接触距离按各自速度分配，避免同回合互相穿越。
+        // 先按旧坐标同步分摊接触距离，再用剩余步长抵达实际前排；日志必须等双方机动结束后生成。
         Map<String, Integer> oldMinePos = new LinkedHashMap<>(minePos);
         Map<String, Integer> oldEnemyPos = new LinkedHashMap<>(enemyPos);
+        moveArmy(Side.MINE, mine, enemy, minePos, oldMinePos, oldEnemyPos, initialDist,
+                attackerOrders, defenderOrders, attackerCtx, defenderCtx, skillRoundActive);
+        moveArmy(Side.ENEMY, enemy, mine, enemyPos, oldMinePos, oldEnemyPos, initialDist,
+                defenderOrders, attackerOrders, defenderCtx, attackerCtx, skillRoundActive);
+        completeAdvanceAtContact(mine, enemy, minePos, enemyPos, oldMinePos, oldEnemyPos,
+                initialDist, attackerOrders, defenderOrders, attackerCtx, defenderCtx, skillRoundActive);
+        appendMovementReport(Side.MINE, mine, enemy, minePos, enemyPos, oldMinePos,
+                initialDist, report, attackerOrders, defenderIsJapanese);
+        appendMovementReport(Side.ENEMY, enemy, mine, minePos, enemyPos, oldEnemyPos,
+                initialDist, report, defenderOrders, defenderIsJapanese);
+    }
 
-        // 1. 攻方机动
-        for (Map.Entry<String, Integer> e : mine.entrySet()) {
+    /** 仅用回合开始的坐标规划一方机动，保持双方同步与原有速度分摊规则。 */
+    private void moveArmy(Side side, Map<String, Integer> army, Map<String, Integer> foeArmy,
+                          Map<String, Integer> positions, Map<String, Integer> oldMinePos,
+                          Map<String, Integer> oldEnemyPos, int initialDist,
+                          Map<String, UnitOrder> orders, Map<String, UnitOrder> foeOrders,
+                          TechCtx ctx, TechCtx foeCtx, boolean skillRoundActive) {
+        for (Map.Entry<String, Integer> e : army.entrySet()) {
             String unitId = e.getKey();
             int count = e.getValue() != null ? e.getValue() : 0;
             if (count <= 0) continue;
             UnitStats u = getStats(unitId);
             if (u == null) continue;
-
-            UnitOrder order = attackerOrders != null ? attackerOrders.get(unitId) : null;
+            UnitOrder order = orders != null ? orders.getOrDefault(unitId, orders.get(UnitEquipmentEffects.base(unitId))) : null;
             CommandAction action = order != null ? order.action() : defaultAction(unitId);
-
-            double spd = attackerCtx != null ? effSpd(unitId, attackerCtx.tech, attackerCtx.skills) : u.spd();
+            double spd = ctx != null ? effSpd(unitId, ctx, skillRoundActive) : u.spd();
             int rawStep = (int) (spd * 50);
-            int curX = minePos.getOrDefault(unitId, formationOffset(unitId));
-            String uName = unitName(unitId, Side.MINE, defenderIsJapanese);
-
+            int curX = positions.getOrDefault(unitId, side == Side.MINE ? 0 : initialDist);
             if (action == CommandAction.ADVANCE) {
-                if (!u.autoAdvance() && order == null) {
-                    report.append("我方").append(uName).append("(").append(count)
-                            .append(") [待命] 原地待命 坐标").append(curX).append("\n");
-                    continue;
-                }
-                int minDist = advanceDistanceToLivingFoe(Side.MINE, unitId, enemy, oldMinePos, oldEnemyPos, initialDist);
-                if (minDist == Integer.MAX_VALUE) {
-                    report.append("我方").append(uName).append("(").append(count)
-                            .append(") [前进] 无存活敌军，保持坐标").append(curX).append("\n");
-                    continue;
-                }
+                int minDist = advanceDistanceToLivingFoe(side, unitId, foeArmy, oldMinePos, oldEnemyPos, initialDist);
+                if (minDist == Integer.MAX_VALUE) continue;
                 int step = Math.min(rawStep, minDist);
-                step = limitAdvanceAtContact(Side.MINE, unitId, step, rawStep, enemy,
-                        oldMinePos, oldEnemyPos, initialDist, defenderOrders, defenderCtx);
-                step = Math.min(step, Math.max(0, initialDist - curX));
-                int newX = curX + step;
-                minePos.put(unitId, newX);
-                if (step > 0) {
-                    report.append("我方").append(uName).append("(").append(count)
-                            .append(") [前进] 推进").append(step).append(" -> 坐标").append(newX)
-                            .append(" (距敌").append(minDist - step).append(")\n");
-                } else {
-                    report.append("我方").append(uName).append("(").append(count)
-                            .append(") [前进] 已贴脸 坐标").append(newX).append("\n");
-                }
+                step = limitAdvanceAtContact(side, unitId, step, rawStep, foeArmy,
+                        oldMinePos, oldEnemyPos, initialDist, foeOrders, foeCtx, skillRoundActive);
+                step = Math.min(step, side == Side.MINE ? Math.max(0, initialDist - curX) : curX);
+                positions.put(unitId, curX + (side == Side.MINE ? step : -step));
             } else if (action == CommandAction.RETREAT) {
-                int step = Math.min(rawStep, curX);
-                int newX = curX - step;
-                minePos.put(unitId, newX);
-                if (curX <= 0) {
-                    report.append("我方").append(uName).append("(").append(count)
-                            .append(") [后退] 已达阵地底线(坐标0) 退无可退\n");
-                } else {
-                    report.append("我方").append(uName).append("(").append(count)
-                            .append(") [后退] 撤退").append(step).append(" -> 坐标").append(newX).append("\n");
-                }
-            } else {
-                report.append("我方").append(uName).append("(").append(count)
-                        .append(") [待命] 坚守阵地 坐标").append(curX).append("\n");
+                int step = Math.min(rawStep, side == Side.MINE ? curX : Math.max(0, initialDist - curX));
+                positions.put(unitId, curX + (side == Side.MINE ? -step : step));
             }
         }
+    }
 
-        // 2. 守方机动
-        for (Map.Entry<String, Integer> e : enemy.entrySet()) {
+    /**
+     * 混编按理论速度分摊时，受阻敌军的实际位移会更小；后续前进单位用剩余步长补齐到已接触的前排。
+     * 只向双方已有单位接触的坐标补齐，并以最近存活敌军限制路程；统一读取补齐前的快照，避免遍历顺序影响。
+     */
+    private void completeAdvanceAtContact(Map<String, Integer> mine, Map<String, Integer> enemy,
+                                           Map<String, Integer> minePos, Map<String, Integer> enemyPos,
+                                           Map<String, Integer> oldMinePos, Map<String, Integer> oldEnemyPos,
+                                           int initialDist, Map<String, UnitOrder> attackerOrders,
+                                           Map<String, UnitOrder> defenderOrders, TechCtx attackerCtx,
+                                           TechCtx defenderCtx, boolean skillRoundActive) {
+        Set<Integer> contactPositions = new HashSet<>();
+        for (var e : mine.entrySet()) {
+            if (e.getValue() != null && e.getValue() > 0 && getStats(e.getKey()) != null)
+                contactPositions.add(minePos.getOrDefault(e.getKey(), 0));
+        }
+        Set<Integer> enemyPositions = new HashSet<>();
+        for (var e : enemy.entrySet()) {
+            if (e.getValue() != null && e.getValue() > 0 && getStats(e.getKey()) != null)
+                enemyPositions.add(enemyPos.getOrDefault(e.getKey(), initialDist));
+        }
+        contactPositions.retainAll(enemyPositions);
+        if (contactPositions.isEmpty()) return;
+        Map<String, Integer> movedMinePos = new LinkedHashMap<>(minePos);
+        Map<String, Integer> movedEnemyPos = new LinkedHashMap<>(enemyPos);
+        advanceRearUnitsToContact(Side.MINE, mine, enemy, minePos, oldMinePos, movedMinePos, movedEnemyPos,
+                initialDist, contactPositions, attackerOrders, attackerCtx, skillRoundActive);
+        advanceRearUnitsToContact(Side.ENEMY, enemy, mine, enemyPos, oldEnemyPos, movedMinePos, movedEnemyPos,
+                initialDist, contactPositions, defenderOrders, defenderCtx, skillRoundActive);
+    }
+
+    /** 补齐只消耗本回合尚未使用的机动预算；待命、后退、零速单位均不会被吸附到前排。 */
+    private void advanceRearUnitsToContact(Side side, Map<String, Integer> army, Map<String, Integer> foeArmy,
+                                           Map<String, Integer> positions, Map<String, Integer> oldPositions,
+                                           Map<String, Integer> movedMinePos, Map<String, Integer> movedEnemyPos,
+                                           int initialDist, Set<Integer> contactPositions,
+                                           Map<String, UnitOrder> orders, TechCtx ctx, boolean skillRoundActive) {
+        for (var e : army.entrySet()) {
+            String unitId = e.getKey();
+            if (e.getValue() == null || e.getValue() <= 0 || getStats(unitId) == null) continue;
+            UnitOrder order = orders != null ? orders.getOrDefault(unitId, orders.get(UnitEquipmentEffects.base(unitId))) : null;
+            if ((order != null ? order.action() : defaultAction(unitId)) != CommandAction.ADVANCE) continue;
+            int oldX = oldPositions.getOrDefault(unitId, side == Side.MINE ? 0 : initialDist);
+            int curX = positions.getOrDefault(unitId, oldX);
+            int rawStep = (int) ((ctx != null ? effSpd(unitId, ctx, skillRoundActive) : getStats(unitId).spd()) * 50);
+            int remainingStep = Math.max(0, rawStep - Math.abs(curX - oldX));
+            int gap = nearestLivingFoeDistance(side, unitId, foeArmy, movedMinePos, movedEnemyPos, initialDist);
+            if (gap == Integer.MAX_VALUE) continue;
+            int contactX = curX + (side == Side.MINE ? gap : -gap);
+            // 必须是前进方向上最近敌军所在的真实接触点，不能跨过未接触的前排追逐更远目标。
+            if (!contactPositions.contains(contactX)) continue;
+            int step = Math.min(remainingStep, gap);
+            positions.put(unitId, curX + (side == Side.MINE ? step : -step));
+        }
+    }
+
+    /** 战报中的距敌/距我使用双方最终坐标；接触前排不等于接触本次攻击目标。 */
+    private void appendMovementReport(Side side, Map<String, Integer> army, Map<String, Integer> foeArmy,
+                                      Map<String, Integer> minePos, Map<String, Integer> enemyPos,
+                                      Map<String, Integer> oldPositions, int initialDist, StringBuilder report,
+                                      Map<String, UnitOrder> orders, boolean defenderIsJapanese) {
+        Map<String, Integer> positions = side == Side.MINE ? minePos : enemyPos;
+        String prefix = side == Side.MINE ? "我方" : "敌方";
+        for (Map.Entry<String, Integer> e : army.entrySet()) {
             String unitId = e.getKey();
             int count = e.getValue() != null ? e.getValue() : 0;
-            if (count <= 0) continue;
-            UnitStats u = getStats(unitId);
-            if (u == null) continue;
-
-            UnitOrder order = defenderOrders != null ? defenderOrders.get(unitId) : null;
+            if (count <= 0 || getStats(unitId) == null) continue;
+            UnitOrder order = orders != null ? orders.getOrDefault(unitId, orders.get(UnitEquipmentEffects.base(unitId))) : null;
             CommandAction action = order != null ? order.action() : defaultAction(unitId);
-
-            double spd = defenderCtx != null ? effSpd(unitId, defenderCtx.tech, defenderCtx.skills) : u.spd();
-            int rawStep = (int) (spd * 50);
-            int curX = enemyPos.getOrDefault(unitId, initialDist - formationOffset(unitId));
-            String uName = unitName(unitId, Side.ENEMY, defenderIsJapanese);
-
+            int oldX = oldPositions.getOrDefault(unitId, side == Side.MINE ? 0 : initialDist);
+            int newX = positions.getOrDefault(unitId, oldX);
+            int step = Math.abs(newX - oldX);
+            report.append(prefix).append(unitName(unitId, side, defenderIsJapanese)).append("(").append(count).append(") ");
             if (action == CommandAction.ADVANCE) {
-                if (!u.autoAdvance() && order == null) {
-                    report.append("敌方").append(uName).append("(").append(count)
-                            .append(") [待命] 原地待命 坐标").append(curX).append("\n");
-                    continue;
-                }
-                int minDist = advanceDistanceToLivingFoe(Side.ENEMY, unitId, mine, oldMinePos, oldEnemyPos, initialDist);
+                int minDist = nearestLivingFoeDistance(side, unitId, foeArmy, minePos, enemyPos, initialDist);
                 if (minDist == Integer.MAX_VALUE) {
-                    report.append("敌方").append(uName).append("(").append(count)
-                            .append(") [前进] 无存活敌军，保持坐标").append(curX).append("\n");
-                    continue;
-                }
-                int step = Math.min(rawStep, minDist);
-                step = limitAdvanceAtContact(Side.ENEMY, unitId, step, rawStep, mine,
-                        oldMinePos, oldEnemyPos, initialDist, attackerOrders, attackerCtx);
-                step = Math.min(step, curX);
-                int newX = curX - step;
-                enemyPos.put(unitId, newX);
-                if (step > 0) {
-                    report.append("敌方").append(uName).append("(").append(count)
-                            .append(") [前进] 推进").append(step).append(" -> 坐标").append(newX)
-                            .append(" (距我").append(minDist - step).append(")\n");
+                    report.append("[前进] 无存活敌军，保持坐标").append(newX);
                 } else {
-                    report.append("敌方").append(uName).append("(").append(count)
-                            .append(") [前进] 已贴脸 坐标").append(newX).append("\n");
+                    if (step > 0) report.append("[前进] 推进").append(step).append(" -> 坐标").append(newX);
+                    else report.append(minDist == 0 ? "[前进] 已接触前排 坐标" : "[前进] 未能推进 坐标").append(newX);
+                    report.append(side == Side.MINE ? " (距敌" : " (距我").append(minDist).append(")");
                 }
             } else if (action == CommandAction.RETREAT) {
-                int step = Math.min(rawStep, Math.max(0, initialDist - curX));
-                int newX = curX + step;
-                enemyPos.put(unitId, newX);
-                if (curX >= initialDist) {
-                    report.append("敌方").append(uName).append("(").append(count)
-                            .append(") [后退] 已达阵地底线(坐标").append(initialDist).append(") 退无可退\n");
-                } else {
-                    report.append("敌方").append(uName).append("(").append(count)
-                            .append(") [后退] 撤退").append(step).append(" -> 坐标").append(newX).append("\n");
-                }
+                boolean atBaseline = side == Side.MINE ? oldX <= 0 : oldX >= initialDist;
+                if (atBaseline) report.append("[后退] 已达阵地底线(坐标").append(side == Side.MINE ? 0 : initialDist).append(") 退无可退");
+                else report.append("[后退] 撤退").append(step).append(" -> 坐标").append(newX);
             } else {
-                report.append("敌方").append(uName).append("(").append(count)
-                        .append(") [待命] 坚守阵地 坐标").append(curX).append("\n");
+                report.append("[待命] 坚守阵地 坐标").append(newX);
             }
+            report.append("\n");
         }
     }
 
@@ -796,7 +928,7 @@ public class BattleService {
     // 按射程降序、速度降序依次开火；优先集火目标，支持边打边退
     // ========================================================================
 
-    /** 机动完成后首次出现可开火目标即记为交战；五项周期技能在该回合及此后每隔两回合共同生效。 */
+    /** 机动完成后首次出现可开火目标即记为交战；所有战斗技能在该回合及此后每隔两回合共同生效。 */
     private int executeCombatPhase(
             Map<String, Integer> mine,
             Map<String, Integer> enemy,
@@ -847,7 +979,7 @@ public class BattleService {
                 Map<String, Integer> foeArmy = entry.side == Side.MINE ? enemy : mine;
                 TechCtx ctx = entry.side == Side.MINE ? attackerCtx : defenderCtx;
                 Map<String, UnitOrder> orders = entry.side == Side.MINE ? attackerOrders : defenderOrders;
-                UnitOrder unitOrder = orders != null ? orders.get(entry.id) : null;
+                UnitOrder unitOrder = orders != null ? orders.getOrDefault(entry.id, orders.get(UnitEquipmentEffects.base(entry.id))) : null;
                 if (pickCombatTarget(entry.id, entry.side, foeArmy, minePos, enemyPos, initialDist, ctx,
                         unitOrder != null ? unitOrder.focusTarget() : null) != null) {
                     firstCombatRound = round;
@@ -855,8 +987,29 @@ public class BattleService {
                 }
             }
         }
-        boolean skillRoundActive = firstCombatRound > 0 && round >= firstCombatRound
-                && (round - firstCombatRound) % 3 == 0;
+        boolean skillRoundActive = isSkillRoundActive(round, firstCombatRound);
+        if (practiceEvents != null) {
+            for (Side side : Side.values()) {
+                TechCtx ctx = side == Side.MINE ? attackerCtx : defenderCtx;
+                event("OFFICER_ATTRIBUTES", side, "", "", Map.of("active", officerActive,
+                        "military", ctx.commanderMil, "defense", ctx.commanderDef, "cycle", "3/6/9"));
+                for (String skill : List.of("frenzy", "bulwark", "blitz", "suppress", "pierce", "counter", "learn", "borrow_armor")) {
+                    int level = ctx.skills.getOrDefault(skill, 0);
+                    event("SKILL_WINDOW", side, "", "", Map.of("skill", skill, "level", level,
+                            "firstCombatRound", firstCombatRound, "active", skillRoundActive && level > 0,
+                            "reason", level == 0 ? "NO_COMMANDER_OR_SKILL" : firstCombatRound == 0 ? "NOT_ENGAGED" :
+                                    !skillRoundActive ? "OUTSIDE_SKILL_WINDOW" : "WINDOW_OPEN"));
+                }
+            }
+        }
+        // 首次交战在机动结束后确认；闪电突击立即参与交火先手，已完成的机动不追溯重算。
+        if (skillRoundActive) order = buildOrder(mine, enemy, attackerCtx, defenderCtx, round, true);
+        for (int i = 0; i < order.size() && practiceEvents != null; i++) {
+            ActionEntry entry = order.get(i);
+            TechCtx ctx = entry.side == Side.MINE ? attackerCtx : defenderCtx;
+            event("INITIATIVE", entry.side, entry.id, "", Map.of("order", i + 1, "range", entry.range, "speed", entry.spd,
+                    "blitzMultiplier", 1 + (skillRoundActive ? skillBonus(ctx.skills, "blitz") : 0)));
+        }
         StringBuilder bonusLog = new StringBuilder();
         String mineBonus = buildCommanderBonusLog("我方", attackerCtx, round, skillRoundActive);
         String enemyBonus = buildCommanderBonusLog("敌方", defenderCtx, round, skillRoundActive);
@@ -885,14 +1038,13 @@ public class BattleService {
             int myWallLevel = a.side == Side.MINE ? attackerWallLevel : defenderWallLevel;
 
             UnitOrder uOrder = a.side == Side.MINE
-                    ? (attackerOrders != null ? attackerOrders.get(a.id) : null)
-                    : (defenderOrders != null ? defenderOrders.get(a.id) : null);
+                    ? (attackerOrders != null ? attackerOrders.getOrDefault(a.id, attackerOrders.get(UnitEquipmentEffects.base(a.id))) : null)
+                    : (defenderOrders != null ? defenderOrders.getOrDefault(a.id, defenderOrders.get(UnitEquipmentEffects.base(a.id))) : null);
             String focusTarget = uOrder != null ? uOrder.focusTarget() : null;
 
             fireUnitCombat(a.id, myA, foe, minePos, enemyPos, initialDist, report, a.side,
                     actCtx, foeCtx, foeWallLevel, myWallLevel, officerActive, skillRoundActive,
-                    skillRoundActive, skillRoundActive, skillRoundActive, learningSources,
-                    skillRoundActive, armorSources, counterArmorSources, focusTarget, false,
+                    learningSources, armorSources, counterArmorSources, focusTarget, false,
                     movementReportStart, defenderIsJapanese);
         }
         reorderMovementLogsByCombatOrder(report, movementReportStart, order, defenderIsJapanese);
@@ -903,10 +1055,12 @@ public class BattleService {
     private String pickCombatTarget(String attackerId, Side side, Map<String, Integer> foeArmy,
                                     Map<String, Integer> minePos, Map<String, Integer> enemyPos,
                                     int initialDist, TechCtx ctx, String focusTarget) {
-        if (focusTarget != null && foeArmy.getOrDefault(focusTarget, 0) > 0 && baseAttack(attackerId, focusTarget) > 0) {
-            int range = effectiveRange(attackerId, ctx);
-            int dist = getUnitDistToFoe(side, attackerId, focusTarget, minePos, enemyPos, initialDist);
-            if (dist <= range) return focusTarget;
+        if (focusTarget != null) {
+            for (String candidate : foeArmy.keySet()) {
+                if (UnitEquipmentEffects.base(candidate).equals(UnitEquipmentEffects.base(focusTarget))
+                        && foeArmy.getOrDefault(candidate, 0) > 0 && baseAttack(attackerId, candidate) > 0
+                        && getUnitDistToFoe(side, attackerId, candidate, minePos, enemyPos, initialDist) <= effectiveRange(attackerId, ctx)) return candidate;
+            }
         }
         return pickTargetInRange(attackerId, side, foeArmy, minePos, enemyPos, initialDist, ctx);
     }
@@ -926,8 +1080,8 @@ public class BattleService {
                                 String focusTarget) {
         fireUnitCombat(unitId, myArmy, foeArmy, minePos, enemyPos, initialDist, report, side,
                 actCtx, foeCtx, foeWallLevel, 0, officerActive, officerActive,
-                officerActive, officerActive, officerActive, snapshotLivingTroopIds(foeArmy),
-                officerActive, snapshotLivingTroopIds(myArmy), snapshotLivingTroopIds(foeArmy), focusTarget, false, -1, false);
+                snapshotLivingTroopIds(foeArmy), snapshotLivingTroopIds(myArmy),
+                snapshotLivingTroopIds(foeArmy), focusTarget, false, -1, false);
     }
 
     /**
@@ -1007,7 +1161,8 @@ public class BattleService {
     }
 
     /**
-     * 执行单个单位的交火逻辑；贴脸加成按当前目标距离在最终直接伤害上结算，不影响反击。
+     * 执行单个单位的交火逻辑；步兵贴脸为 2 倍，轻重坦和特种兵为 1.5 倍。
+     * 主动及余伤攻击逐目标判断接触距离，在最终直接伤害上结算加成，不影响反击。
      */
     private void fireUnitCombat(String unitId,
                                 Map<String, Integer> myArmy,
@@ -1022,21 +1177,16 @@ public class BattleService {
                                 int foeWallLevel,
                                 int myWallLevel,
                                 boolean officerActive,
-                                boolean counterActive,
-                                boolean frenzyActive,
-                                boolean bulwarkActive,
-                                boolean learningActive,
+                                boolean skillRoundActive,
                                 Set<String> learningSources,
-                                boolean armorLearningActive,
                                 Set<String> armorSources,
                                 Set<String> counterArmorSources,
                                 String focusTarget,
                                 boolean isCounter,
                                 int movementReportStart) {
         fireUnitCombat(unitId, myArmy, foeArmy, minePos, enemyPos, initialDist, report, side,
-                actCtx, foeCtx, foeWallLevel, myWallLevel, officerActive, counterActive,
-                frenzyActive, bulwarkActive, learningActive, learningSources,
-                armorLearningActive, armorSources, counterArmorSources, focusTarget, isCounter,
+                actCtx, foeCtx, foeWallLevel, myWallLevel, officerActive, skillRoundActive,
+                learningSources, armorSources, counterArmorSources, focusTarget, isCounter,
                 movementReportStart, false);
     }
 
@@ -1053,12 +1203,8 @@ public class BattleService {
                                 int foeWallLevel,
                                 int myWallLevel,
                                 boolean officerActive,
-                                boolean counterActive,
-                                boolean frenzyActive,
-                                boolean bulwarkActive,
-                                boolean learningActive,
+                                boolean skillRoundActive,
                                 Set<String> learningSources,
-                                boolean armorLearningActive,
                                 Set<String> armorSources,
                                 Set<String> counterArmorSources,
                                 String focusTarget,
@@ -1076,6 +1222,7 @@ public class BattleService {
         // 寻找射程内目标
         String target = pickCombatTarget(unitId, side, foeArmy, minePos, enemyPos, initialDist, actCtx, focusTarget);
         if (target == null) {
+            event("NO_FIRE", side, unitId, "", Map.of("reason", "NO_VALID_RANGE_TARGET"));
             int minDist = advanceDistanceToLivingFoe(side, unitId, foeArmy, minePos, enemyPos, initialDist);
             if (minDist != Integer.MAX_VALUE && minDist > effectiveRange(unitId, actCtx)) {
                 return;
@@ -1096,9 +1243,9 @@ public class BattleService {
         // 射程内开火
         double attackBonus = actCtx == null ? 1
                 : attackBonus(u.cat(), actCtx.tech, actCtx.skills, actCtx.commanderMil,
-                        officerActive, frenzyActive);
-        if (foeCtx != null) attackBonus *= 1 - skillBonus(foeCtx.skills, "suppress");
-        double pierce = actCtx == null ? 0 : skillBonus(actCtx.skills, "pierce");
+                        officerActive, skillRoundActive) * actCtx.commandBonus.attackMul();
+        if (skillRoundActive && foeCtx != null) attackBonus *= 1 - skillBonus(foeCtx.skills, "suppress");
+        double pierce = !skillRoundActive || actCtx == null ? 0 : skillBonus(actCtx.skills, "pierce");
         double totalActions = count;
         double remainingActions = totalActions;
         boolean firstTarget = true;
@@ -1109,19 +1256,20 @@ public class BattleService {
             String tName = unitName(target, foeSide, defenderIsJapanese);
             double def = foeCtx == null ? tU.def()
                     : effDef(target, foeCtx.tech, foeCtx.skills, foeCtx.commanderDef,
-                    foeWallLevel, officerActive, bulwarkActive, armorLearningActive,
-                    actCtx, armorSources, side == Side.MINE);
+                    foeWallLevel, officerActive, skillRoundActive, skillRoundActive,
+                    actCtx, armorSources, side == Side.MINE, foeCtx.commandBonus);
             def = Math.max(0, def * (1 - pierce));
             double cm = counterMul(unitId, target);
-            double targetAttack = baseAttack(unitId, target) * attackBonus;
+            double targetAttack = baseAttack(unitId, target) * attackBonus * UnitEquipmentEffects.attack(actCtx == null ? null : actCtx.tech, unitId, target);
             double learnedAttack = learningBonus(unitId, target, actCtx, foeCtx,
-                    learningActive, learningSources, isCounter);
+                    skillRoundActive, learningSources, isCounter);
             targetAttack += learnedAttack;
-            boolean pointBlank = POINT_BLANK_UNITS.contains(unitId)
-                    && getUnitDistToFoe(side, unitId, target, minePos, enemyPos, initialDist) == 0;
+            // 余伤切换目标后重新检查距离，不能把前排的接触加成带给尚未接触的后排。
+            double pointBlankMultiplier = getUnitDistToFoe(side, unitId, target, minePos, enemyPos, initialDist) == 0
+                    ? POINT_BLANK_MULTIPLIERS.getOrDefault(UnitEquipmentEffects.base(unitId), 1.0) : 1.0;
             double damagePerAction = targetAttack * cm * 100.0 / (100.0 + 5 * def)
-                    * (pointBlank ? 1.5 : 1.0);
-            double hpPer = Math.max(1, foeCtx == null ? tU.hp() : effHp(target, foeCtx.tech));
+                    * pointBlankMultiplier * UnitEquipmentEffects.damage(foeCtx == null ? null : foeCtx.tech, target, unitId);
+            double hpPer = Math.max(1, foeCtx == null ? tU.hp() : effHp(target, foeCtx.tech) * foeCtx.commandBonus.hpMul());
             int beforeKill = foeArmy.getOrDefault(target, 0);
             double targetHp = hpPer * beforeKill;
             double damage = remainingActions * damagePerAction;
@@ -1138,6 +1286,18 @@ public class BattleService {
             }
             int remainingTarget = beforeKill - kills;
             foeArmy.put(target, remainingTarget);
+            Map<String, Object> effect = new LinkedHashMap<>();
+            effect.put("damage", appliedDamage); effect.put("kills", kills); effect.put("attack", targetAttack);
+            effect.put("distance", getUnitDistToFoe(side, unitId, target, minePos, enemyPos, initialDist));
+            effect.put("range", effectiveRange(unitId, actCtx)); effect.put("defense", def); effect.put("hp", hpPer);
+            effect.put("frenzyMultiplier", 1 + (skillRoundActive && actCtx != null ? skillBonus(actCtx.skills, "frenzy") : 0));
+            effect.put("suppression", skillRoundActive && foeCtx != null ? skillBonus(foeCtx.skills, "suppress") : 0);
+            effect.put("pierce", pierce); effect.put("learnedAttack", learnedAttack);
+            effect.put("bulwarkMultiplier", 1 + (skillRoundActive && foeCtx != null ? skillBonus(foeCtx.skills, "bulwark") : 0));
+            effect.put("borrowedDefense", foeCtx == null ? 0 : borrowedArmorBonus(target, foeCtx.skills, skillRoundActive, actCtx, armorSources));
+            effect.put("learnReason", actCtx == null || skillBonus(actCtx.skills, "learn") == 0 ? "NO_COMMANDER_OR_SKILL" : !skillRoundActive ? "OUTSIDE_SKILL_WINDOW" : learningSources.contains(UnitEquipmentEffects.base(unitId)) ? "APPLIED_IF_LEARNED" : "NO_SAME_UNIT_REFERENCE");
+            effect.put("armorReason", foeCtx == null || skillBonus(foeCtx.skills, "borrow_armor") == 0 ? "NO_COMMANDER_OR_SKILL" : !skillRoundActive ? "OUTSIDE_SKILL_WINDOW" : skillBonus(foeCtx.skills, "bulwark") > 0 ? "BULWARK_PRIORITY" : armorSources.contains(UnitEquipmentEffects.base(target)) ? "APPLIED_IF_LEARNED" : "NO_SAME_UNIT_REFERENCE");
+            event("FIRE", side, unitId, target, effect);
             StringBuilder attackOutcome = new StringBuilder();
             attackOutcome.append(sidePrefix).append(uName).append("(").append(count).append(")")
                     .append(firstTarget ? verb(unitId) : "余伤攻击")
@@ -1146,9 +1306,11 @@ public class BattleService {
             List<String> tags = new ArrayList<>();
             if (cm > 1.0001) tags.add("倍率×" + cm + " 相克");
             else if (cm < 0.9999) tags.add("倍率×" + cm + " 火力受限");
-            if (pointBlank) tags.add("贴脸×1.5");
-            if ("htank".equals(target)) tags.add("前排承伤");
+            if (pointBlankMultiplier > 1.0) tags.add("贴脸×" + pointBlankMultiplier);
+            if ("htank".equals(UnitEquipmentEffects.base(target))) tags.add("前排承伤");
             if (firstTarget && focusTarget != null && focusTarget.equals(target)) tags.add("指定集火");
+            double gearReduction = 1 - UnitEquipmentEffects.damage(foeCtx == null ? null : foeCtx.tech, target, unitId);
+            if (gearReduction > 0) tags.add("装备减伤" + percent(gearReduction) + "%");
             if (pierce > 0) tags.add("破甲" + percent(pierce) + "%");
             if (learnedAttack > 0) tags.add("师夷长技+" + Math.round(learnedAttack) + "攻击");
             if (!tags.isEmpty()) {
@@ -1158,6 +1320,10 @@ public class BattleService {
             if (firstTarget) attackOutcome.append(" 本次原始火力").append(Math.round(targetAttack * totalActions));
             attackOutcome.append(" 伤害").append(Math.round(appliedDamage)).append(" 击毁").append(kills)
                     .append(" 剩余攻击额度").append(Math.round(100 * remainingActions / totalActions)).append("%");
+            if ("rocket".equals(UnitEquipmentEffects.base(unitId))) {
+                attackOutcome.append(" 有效射程").append(effectiveRange(unitId, actCtx));
+            }
+            attackOutcome.append(" 目标距离").append(getUnitDistToFoe(side, unitId, target, minePos, enemyPos, initialDist));
             // 首次开火优先接到前进行；后续余伤追加到同一兵种已有日志，避免被其他兵种隔开。
             String combatPrefix = sidePrefix + uName + "(" + count + ")";
             String attackDetails = attackOutcome.substring(combatPrefix.length());
@@ -1170,25 +1336,33 @@ public class BattleService {
 
             // --- 绝境反击 (Counterattack) ---
             // 反击沿用首次交战起算的技能周期，独立于将领属性的固定回合；仍须受击存活且能够还击。
-            if (counterActive && !isCounter && foeCtx != null && remainingTarget > 0 && myArmy.getOrDefault(unitId, 0) > 0) {
+            if (!isCounter && foeCtx != null && skillBonus(foeCtx.skills, "counter") > 0) {
+                int counterDistance = getUnitDistToFoe(side, unitId, target, minePos, enemyPos, initialDist);
+                String reason = !skillRoundActive ? "OUTSIDE_SKILL_WINDOW" : remainingTarget <= 0 ? "ELIMINATED_BEFORE_COUNTER"
+                        : myArmy.getOrDefault(unitId, 0) <= 0 ? "NO_LIVING_ATTACKER" : baseAttack(target, unitId) <= 0 ? "NO_APPLICABLE_ATTACK_DOMAIN"
+                        : counterDistance > effectiveRange(target, foeCtx) ? "NO_VALID_RANGE_TARGET" : "";
+                if (!reason.isEmpty()) event("NO_COUNTER", foeSide, target, unitId, Map.of("skill", "counter", "reason", reason,
+                        "distance", counterDistance, "range", effectiveRange(target, foeCtx)));
+            }
+            if (skillRoundActive && !isCounter && foeCtx != null && remainingTarget > 0 && myArmy.getOrDefault(unitId, 0) > 0) {
                 double counterRate = skillBonus(foeCtx.skills, "counter");
                 if (counterRate > 0 && baseAttack(target, unitId) > 0) {
                     int targetRange = effectiveRange(target, foeCtx);
                     int dist = getUnitDistToFoe(side, unitId, target, minePos, enemyPos, initialDist);
                     if (dist <= targetRange) {
                         double cAtkBonus = attackBonus(tU.cat(), foeCtx.tech, foeCtx.skills, foeCtx.commanderMil,
-                                officerActive, frenzyActive);
+                                officerActive, skillRoundActive) * foeCtx.commandBonus.attackMul();
                         if (actCtx != null) cAtkBonus *= 1 - skillBonus(actCtx.skills, "suppress");
                         double cPierce = skillBonus(foeCtx.skills, "pierce");
                         double cDef = actCtx == null ? u.def()
                                 : effDef(unitId, actCtx.tech, actCtx.skills, actCtx.commanderDef,
-                                myWallLevel, officerActive, bulwarkActive, armorLearningActive,
-                                foeCtx, counterArmorSources, foeSide == Side.MINE);
+                                myWallLevel, officerActive, skillRoundActive, skillRoundActive,
+                                foeCtx, counterArmorSources, foeSide == Side.MINE, actCtx.commandBonus);
                         cDef = Math.max(0, cDef * (1 - cPierce));
                         double cCm = counterMul(target, unitId);
-                        double cBaseAtk = baseAttack(target, unitId) * cAtkBonus;
-                        double cDamagePerAction = cBaseAtk * cCm * 100.0 / (100.0 + 5 * cDef);
-                        double cHpPer = Math.max(1, actCtx == null ? u.hp() : effHp(unitId, actCtx.tech));
+                        double cBaseAtk = baseAttack(target, unitId) * cAtkBonus * UnitEquipmentEffects.attack(foeCtx.tech, target, unitId);
+                        double cDamagePerAction = cBaseAtk * cCm * 100.0 / (100.0 + 5 * cDef) * UnitEquipmentEffects.damage(actCtx == null ? null : actCtx.tech, unitId, target);
+                        double cHpPer = Math.max(1, actCtx == null ? u.hp() : effHp(unitId, actCtx.tech) * actCtx.commandBonus.hpMul());
                         int cBeforeKill = myArmy.getOrDefault(unitId, 0);
                         double cTotalDamage = remainingTarget * cDamagePerAction * counterRate;
                         double cAppliedDamage = Math.min(cTotalDamage, cHpPer * cBeforeKill);
@@ -1201,6 +1375,8 @@ public class BattleService {
                             if (cFrac > 0 && random.getAsDouble() < cFrac) cKills++;
                         }
                         myArmy.put(unitId, cBeforeKill - cKills);
+                        event("COUNTER", foeSide, target, unitId, Map.of("skill", "counter", "damage", cAppliedDamage,
+                                "kills", cKills, "rate", counterRate, "distance", dist, "range", targetRange));
 
                         String foeSidePrefix = foeSide == Side.MINE ? "我方" : "敌方";
                         String mySidePrefix = side == Side.MINE ? "我" : "敌";
@@ -1209,6 +1385,8 @@ public class BattleService {
                         List<String> cTags = new ArrayList<>();
                         if (cCm > 1.0001) cTags.add("倍率×" + cCm + " 相克");
                         else if (cCm < 0.9999) cTags.add("倍率×" + cCm + " 火力受限");
+                        double cGearReduction = 1 - UnitEquipmentEffects.damage(actCtx == null ? null : actCtx.tech, unitId, target);
+                        if (cGearReduction > 0) cTags.add("装备减伤" + percent(cGearReduction) + "%");
                         if (cPierce > 0) cTags.add("破甲" + percent(cPierce) + "%");
                         if (!cTags.isEmpty()) {
                             report.append(" [").append(String.join(" ", cTags)).append("]");
@@ -1282,7 +1460,7 @@ public class BattleService {
             int minDist = advanceDistanceToLivingFoe(side, unitId, foeArmy, minePos, enemyPos, initialDist);
             if (minDist == Integer.MAX_VALUE) return false;
             if (!u.autoAdvance()) return false;
-            double spd = actCtx != null ? effSpd(unitId, actCtx.tech, actCtx.skills) : u.spd();
+            double spd = actCtx != null ? effSpd(unitId, actCtx) : u.spd();
             int step = Math.min((int) (spd * 50), minDist);
             if (step <= 0) return false;
             if (side == Side.MINE) {
@@ -1341,7 +1519,7 @@ public class BattleService {
     private double learningBonus(String unitId, String targetId, TechCtx actCtx, TechCtx foeCtx,
                                  boolean learningActive, Set<String> learningSources, boolean isCounter) {
         if (!learningActive || isCounter || actCtx == null || foeCtx == null
-                || !learningSources.contains(unitId) || !GameData.UNITS.containsKey(unitId)) {
+                || !learningSources.contains(UnitEquipmentEffects.base(unitId)) || !GameData.UNITS.containsKey(UnitEquipmentEffects.base(unitId))) {
             return 0;
         }
         UnitStats unit = getStats(unitId);
@@ -1349,7 +1527,7 @@ public class BattleService {
 
         // 按当前目标领域读取敌方同名兵种攻击，并只保留可稳定复现的永久成长倍率。
         double enemyStableAttack = baseAttack(unitId, targetId)
-                * atkMul(unit.cat(), foeCtx.tech, foeCtx.commanderMil);
+                * atkMul(unit.cat(), foeCtx.tech, foeCtx.commanderMil) * foeCtx.commandBonus.attackMul();
         double learnedAttack = enemyStableAttack * skillBonus(actCtx.skills, "learn");
         // 封顶同样以敌方攻击为基准，保留高养成敌军带来高学习收益的设计。
         return Math.min(learnedAttack, enemyStableAttack * 0.30);
@@ -1363,8 +1541,8 @@ public class BattleService {
     private Set<String> snapshotLivingTroopIds(Map<String, Integer> army) {
         Set<String> troopIds = new HashSet<>();
         for (Map.Entry<String, Integer> entry : army.entrySet()) {
-            if (entry.getValue() != null && entry.getValue() > 0 && GameData.UNITS.containsKey(entry.getKey())) {
-                troopIds.add(entry.getKey());
+            if (entry.getValue() != null && entry.getValue() > 0 && GameData.UNITS.containsKey(UnitEquipmentEffects.base(entry.getKey()))) {
+                troopIds.add(UnitEquipmentEffects.base(entry.getKey()));
             }
         }
         return troopIds;
@@ -1375,10 +1553,20 @@ public class BattleService {
                           int commanderDef, int wallLevel, boolean commanderActive,
                           boolean bulwarkActive, boolean armorLearningActive,
                           TechCtx armorSourceCtx, Set<String> armorSources, boolean defendingCity) {
+        return effDef(unitId, tech, skills, commanderDef, wallLevel, commanderActive, bulwarkActive,
+                armorLearningActive, armorSourceCtx, armorSources, defendingCity, CommandBonus.NONE);
+    }
+
+    /** 司令官仅放大自身永久防御，借甲御敌产生的临时防御不重复放大。 */
+    private double effDef(String unitId, Map<String, Integer> tech, Map<String, Integer> skills,
+                          int commanderDef, int wallLevel, boolean commanderActive,
+                          boolean bulwarkActive, boolean armorLearningActive,
+                          TechCtx armorSourceCtx, Set<String> armorSources, boolean defendingCity,
+                          CommandBonus commandBonus) {
         UnitStats u = getStats(unitId);
         if (u == null) return 1;
         double multiplier = defMul(u.cat(), tech, wallLevel, defendingCity, commanderActive ? commanderDef : 0);
-        double defense = u.def() * multiplier;
+        double defense = u.def() * UnitEquipmentEffects.mul(tech, unitId, "defense") * multiplier * commandBonus.defenseMul();
         if (bulwarkActive) defense *= 1 + skillBonus(skills, "bulwark");
         return defense + borrowedArmorBonus(unitId, skills, armorLearningActive,
                 armorSourceCtx, armorSources);
@@ -1401,8 +1589,8 @@ public class BattleService {
     private double borrowedArmorBonus(String unitId, Map<String, Integer> skills,
                                       boolean armorLearningActive, TechCtx armorSourceCtx,
                                       Set<String> armorSources) {
-        if (!armorLearningActive || armorSourceCtx == null || !armorSources.contains(unitId)
-                || !GameData.UNITS.containsKey(unitId) || skillBonus(skills, "bulwark") > 0) {
+        if (!armorLearningActive || armorSourceCtx == null || !armorSources.contains(UnitEquipmentEffects.base(unitId))
+                || !GameData.UNITS.containsKey(UnitEquipmentEffects.base(unitId)) || skillBonus(skills, "bulwark") > 0) {
             return 0;
         }
         UnitStats unit = getStats(unitId);
@@ -1423,21 +1611,32 @@ public class BattleService {
     private double effHp(String unitId, Map<String, Integer> tech) {
         UnitStats u = getStats(unitId);
         if (u == null) return 1;
-        return u.hp() * hpMul(u.cat(), tech);
+        return u.hp() * UnitEquipmentEffects.mul(tech, unitId, "hp") * hpMul(u.cat(), tech);
     }
 
-    /**
-     * 有效速度 - 对应 JS effSpd(id)
-     * <p>
-     * 始终生效: base * spdMul(cat) * (1 + blitz)
-     */
+    /** 常驻学识加成进入初始距离、实际机动、交火先手，工事零速度保持为零。 */
+    private double effSpd(String unitId, TechCtx ctx) {
+        return effSpd(unitId, ctx, false);
+    }
+
+    private double effSpd(String unitId, TechCtx ctx, boolean skillRoundActive) {
+        return effSpd(unitId, ctx.tech, ctx.skills, skillRoundActive) * ctx.commandBonus.speedMul();
+    }
+
+    /** 尚未交战时按科技速度计算开局距离，不能把周期闪电突击当成常驻速度。 */
     private double effSpd(String unitId, Map<String, Integer> tech, Map<String, Integer> skills) {
+        return effSpd(unitId, tech, skills, false);
+    }
+
+    /** 科技速度常驻；闪电突击只在统一交战技能回合影响机动和交火先手。 */
+    private double effSpd(String unitId, Map<String, Integer> tech, Map<String, Integer> skills,
+                          boolean skillRoundActive) {
         UnitStats u = getStats(unitId);
         if (u == null) return 0;
-        // 摩托兵和卡车仅在机动科技上归入装甲，攻击、防御等仍按原类别计算。
-        String speedCat = "motor".equals(unitId) || "truck".equals(unitId) ? "arm" : u.cat();
-        double base = u.spd() * spdMul(speedCat, tech);
-        double blitz = skillBonus(skills, "blitz");
+        // 卡车仅在机动科技上归入装甲，攻击、防御等仍按原类别计算。
+        String speedCat = "truck".equals(UnitEquipmentEffects.base(unitId)) ? "arm" : u.cat();
+        double base = u.spd() * UnitEquipmentEffects.speed(tech, unitId, true) * spdMul(speedCat, tech);
+        double blitz = skillRoundActive ? skillBonus(skills, "blitz") : 0;
         return base * (1 + blitz);
     }
 
@@ -1523,6 +1722,12 @@ public class BattleService {
         return rate * Math.min(5, lv);
     }
 
+    /** 首次交战回合触发，空过两个回合后再次触发；脱离射程不改变持久化的起点。 */
+    private boolean isSkillRoundActive(int round, int firstCombatRound) {
+        return firstCombatRound > 0 && round >= firstCombatRound
+                && (round - firstCombatRound) % 3 == 0;
+    }
+
     /** 战报读取实际技能周期；将领军事、防御属性继续使用独立的固定回合规则。 */
     private String buildCommanderBonusLog(String sideName, TechCtx ctx, int round, boolean skillRoundActive) {
         if (ctx == null) return "";
@@ -1538,16 +1743,25 @@ public class BattleService {
                 appendSkillBonus(bonuses, ctx.skills, "borrow_armor", "借甲御敌", "+", "同名兵种防御（本回合，上限敌方同名兵种防御30%）");
             }
             appendSkillBonus(bonuses, ctx.skills, "counter", "绝境反击", "", "反击伤害（受击存活且可还击时）");
+            appendSkillBonus(bonuses, ctx.skills, "suppress", "火力压制", "-", "敌方攻击");
+            appendSkillBonus(bonuses, ctx.skills, "pierce", "破甲打击", "", "无视敌方防御");
+            appendSkillBonus(bonuses, ctx.skills, "blitz", "闪电突击", "+", "速度（本回合）");
         }
-        appendSkillBonus(bonuses, ctx.skills, "suppress", "火力压制", "-", "敌方攻击");
-        appendSkillBonus(bonuses, ctx.skills, "blitz", "闪电突击", "+", "速度（持续生效）");
-        return sideName + "将领加成：" + (bonuses.isEmpty() ? "本回合无将领属性或技能加成生效" : String.join("；", bonuses));
+        CommandBonus chief = ctx.commandBonus;
+        String chiefLog = chief.officerId() == null ? "" : sideName + "司令官：" + chief.name()
+                + "（常驻，技能不参与）攻击+" + bonusPercent(chief.military()) + "% / 防御+" + bonusPercent(chief.defense())
+                + "% / 生命+" + bonusPercent(chief.logistics()) + "% / 机动+" + bonusPercent(chief.knowledge()) + "%\n";
+        return chiefLog + sideName + "将领加成：" + (bonuses.isEmpty() ? "本回合无将领属性或技能加成生效" : String.join("；", bonuses));
     }
 
     private void appendSkillBonus(List<String> bonuses, Map<String, Integer> skills, String skillId,
                                   String name, String prefix, String effect) {
         double bonus = skillBonus(skills, skillId);
         if (bonus > 0) bonuses.add(name + " " + prefix + percent(bonus) + "%" + effect);
+    }
+
+    private String bonusPercent(int attribute) {
+        return String.format(Locale.ROOT, "%.1f", Math.max(0, attribute) * CommandBonus.RATE * 100);
     }
 
     private int percent(double value) {
@@ -1562,7 +1776,14 @@ public class BattleService {
     private enum Side { MINE, ENEMY }
 
     /** 科技/技能上下文 */
-    public record TechCtx(Map<String, Integer> tech, Map<String, Integer> skills, int commanderMil, int commanderDef) {
+    public record TechCtx(Map<String, Integer> tech, Map<String, Integer> skills, int commanderMil, int commanderDef,
+                          CommandBonus commandBonus) {
+        public TechCtx {
+            commandBonus = commandBonus != null ? commandBonus : CommandBonus.NONE;
+        }
+        public TechCtx(Map<String, Integer> tech, Map<String, Integer> skills, int commanderMil, int commanderDef) {
+            this(tech, skills, commanderMil, commanderDef, CommandBonus.NONE);
+        }
         public TechCtx(Map<String, Integer> tech, Map<String, Integer> skills, int commanderMil) {
             this(tech, skills, commanderMil, 0);
         }
@@ -1578,6 +1799,12 @@ public class BattleService {
      */
     private List<ActionEntry> buildOrder(Map<String, Integer> mine, Map<String, Integer> enemy,
                                          TechCtx mineCtx, TechCtx foeCtx, int round) {
+        return buildOrder(mine, enemy, mineCtx, foeCtx, round, false);
+    }
+
+    /** 同射程时按当回合有效速度排先手，闪电突击不能泄漏到技能间隔回合。 */
+    private List<ActionEntry> buildOrder(Map<String, Integer> mine, Map<String, Integer> enemy,
+                                         TechCtx mineCtx, TechCtx foeCtx, int round, boolean skillRoundActive) {
         List<ActionEntry> arr = new ArrayList<>();
 
         for (Map.Entry<String, Integer> e : mine.entrySet()) {
@@ -1585,7 +1812,7 @@ public class BattleService {
             UnitStats u = getStats(e.getKey());
             if (u == null) continue;
             double spd = mineCtx != null
-                    ? effSpd(e.getKey(), mineCtx.tech, mineCtx.skills)
+                    ? effSpd(e.getKey(), mineCtx, skillRoundActive)
                     : u.spd();
             arr.add(new ActionEntry(Side.MINE, e.getKey(), effectiveRange(e.getKey(), mineCtx), spd));
         }
@@ -1594,7 +1821,7 @@ public class BattleService {
             UnitStats u = getStats(e.getKey());
             if (u == null) continue;
             double spd = foeCtx != null
-                    ? effSpd(e.getKey(), foeCtx.tech, foeCtx.skills)
+                    ? effSpd(e.getKey(), foeCtx, skillRoundActive)
                     : u.spd();
             arr.add(new ActionEntry(Side.ENEMY, e.getKey(), effectiveRange(e.getKey(), foeCtx), spd));
         }
@@ -1711,16 +1938,16 @@ public class BattleService {
     private int limitAdvanceAtContact(Side side, String unitId, int step, int rawStep,
                                       Map<String, Integer> foeArmy, Map<String, Integer> minePos,
                                       Map<String, Integer> enemyPos, int initialDist,
-                                      Map<String, UnitOrder> foeOrders, TechCtx foeCtx) {
+                                      Map<String, UnitOrder> foeOrders, TechCtx foeCtx, boolean skillRoundActive) {
         for (Map.Entry<String, Integer> entry : foeArmy.entrySet()) {
             String foeId = entry.getKey();
             if (entry.getValue() == null || entry.getValue() <= 0 || getStats(foeId) == null) continue;
             int distance = getUnitDistToFoe(side, unitId, foeId, minePos, enemyPos, initialDist);
-            UnitOrder order = foeOrders != null ? foeOrders.get(foeId) : null;
+            UnitOrder order = foeOrders != null ? foeOrders.getOrDefault(foeId, foeOrders.get(UnitEquipmentEffects.base(foeId))) : null;
             CommandAction action = order != null ? order.action() : defaultAction(foeId);
             int foeStep = action == CommandAction.ADVANCE
                     ? (int) ((foeCtx != null
-                    ? effSpd(foeId, foeCtx.tech, foeCtx.skills) : getStats(foeId).spd()) * 50)
+                    ? effSpd(foeId, foeCtx, skillRoundActive) : getStats(foeId).spd()) * 50)
                     : 0;
             int limit = distance;
             if (foeStep > 0 && rawStep > 0) {
@@ -1761,9 +1988,11 @@ public class BattleService {
     private String pickTargetInRange(String attackerId, Side side, Map<String, Integer> foeArmy,
                                      Map<String, Integer> minePos, Map<String, Integer> enemyPos,
                                      int initialDist, TechCtx ctx) {
-        if (foeArmy.getOrDefault(attackerId, 0) > 0 && baseAttack(attackerId, attackerId) > 0
-                && getUnitDistToFoe(side, attackerId, attackerId, minePos, enemyPos, initialDist)
-                <= effectiveRange(attackerId, ctx)) return attackerId;
+        for (String candidate : foeArmy.keySet()) {
+            if (UnitEquipmentEffects.base(candidate).equals(UnitEquipmentEffects.base(attackerId))
+                    && foeArmy.getOrDefault(candidate, 0) > 0 && baseAttack(attackerId, candidate) > 0
+                    && getUnitDistToFoe(side, attackerId, candidate, minePos, enemyPos, initialDist) <= effectiveRange(attackerId, ctx)) return candidate;
+        }
         return pickNearestTargetInRange(attackerId, side, foeArmy, minePos, enemyPos, initialDist, ctx);
     }
 
@@ -1847,11 +2076,10 @@ public class BattleService {
      * 动作词映射 - 对应 JS Battle.verb
      */
     private String verb(String id) {
-        return switch (id) {
+        return switch (UnitEquipmentEffects.base(id)) {
             case "infantry" -> "射击";
-            case "motor" -> "冲击";
             case "truck" -> "碾压";
-            case "armored" -> "扫射";
+            case "armored", "recon_car" -> "扫射";
             case "ltank", "htank", "destroyer", "howitzer" -> "炮击";
             case "assault" -> "拦射";
             case "rocket" -> "齐射";

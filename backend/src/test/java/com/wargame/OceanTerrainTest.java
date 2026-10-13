@@ -139,20 +139,59 @@ class OceanTerrainTest extends BaseServiceTest {
         createBuilding(p.getId(),"command",2);
         var build=buildService.upgrade(p.getId(),"port",0);assertEquals(false,build.get("success"));assertTrue(build.get("message").toString().contains("沿海"));
     }
+    private Bandit createBandit(Long world,String name,int x,int y,int level,Map<String,Integer> army){
+        Bandit b=new Bandit();b.setWorldId(world);b.setName(name);b.setX(x);b.setY(y);b.setLevel(level);b.setArmy(JsonUtil.toJson(army));b.setDefeated(false);return banditRepository.save(b);
+    }
     @Test void failedDispatchDoesNotDeductAndSuccessfulRouteSurvivesReturn(){
         WorldMap w=coastWorld();Player p=player("route-save");city(p,w,98,40);createBuilding(p.getId(),"port",1);
         createArmyUnit(p.getId(),"destroyer",10);createArmyUnit(p.getId(),"infantry",10);
-        NpcCity inland=createNpcCity(w.getId(),"内陆",50,40,1,Map.of());
-        var invalid=new DispatchRequest("npc",inland.getId(),"conquer",Map.of("destroyer",1),null,Map.of("gold",100));
+        Bandit inland=createBandit(w.getId(),"内陆",50,40,1,Map.of());
+        var invalid=new DispatchRequest("bandit",inland.getId(),"conquer",Map.of("destroyer",1),null,Map.of("gold",100));
         assertThrows(IllegalArgumentException.class,()->marchService.createDispatch(p.getId(),invalid));
         assertEquals(10,armyUnitRepository.findByPlayerIdAndCitySlotAndType(p.getId(),0,"destroyer").get(0).getCount());
         assertEquals(100000,resourcesRepository.findByPlayerIdAndCitySlot(p.getId(),0).orElseThrow().getGold());
-        NpcCity island=createNpcCity(w.getId(),"海岛",150,40,1,Map.of());
-        var request=new DispatchRequest("npc",island.getId(),"conquer",Map.of("destroyer",1),null,Map.of());
+        Bandit island=createBandit(w.getId(),"海岛",150,40,1,Map.of());
+        var request=new DispatchRequest("bandit",island.getId(),"conquer",Map.of("destroyer",1),null,Map.of());
         var preview=marchService.previewRoute(p.getId(),request);March march=marchService.createDispatch(p.getId(),request);
         assertEquals(preview.get("distance"),march.getDistance());assertEquals("sea",march.getRouteMode());
         assertEquals(98,JsonUtil.parseTree(march.getRouteData()).get(0).get(0).asInt());
         marchService.cancelMarch(p.getId(),march.getId());assertTrue(march.getReturning());
         assertEquals(150,JsonUtil.parseTree(march.getRouteData()).get(0).get(0).asInt());
+    }
+    @Test void straightDistanceAndEndpointsApplyToLandSeaAirAndAirlift(){
+        WorldMap w=coastWorld();Player p=player("straight-routes");city(p,w,98,40);createBuilding(p.getId(),"port",1);
+        Bandit inland=createBandit(w.getId(),"斜向内陆",90,46,1,Map.of());
+        var land=routes.plan(p.getId(),inland,Map.of("infantry",1),false);
+        assertEquals(10.0,land.distance(),1e-9);
+        assertEquals(List.of(List.of(98,40),List.of(90,46)),land.points());
+        Bandit island=createBandit(w.getId(),"斜向海岛",150,47,1,Map.of());
+        for(var army:List.of(Map.of("destroyer",1),Map.of("scout",1),Map.of("infantry",1,"transport",1))){
+            var route=routes.plan(p.getId(),island,army,false);
+            assertEquals(Math.hypot(52,7),route.distance(),1e-9);
+            assertEquals(List.of(List.of(98,40),List.of(150,47)),route.points());
+        }
+    }
+    @Test void fractionalDistanceIsPersistedAndUsedForTimeFuelAndReturn(){
+        WorldMap w=coastWorld();Player p=player("straight-dispatch");city(p,w,98,40);
+        createArmyUnit(p.getId(),"ltank",100);
+        Bandit target=createBandit(w.getId(),"斜向目标",90,43,1,Map.of());
+        var req=new DispatchRequest("bandit",target.getId(),"conquer",Map.of("ltank",100),null,Map.of());
+        var preview=marchService.previewRoute(p.getId(),req);
+        double distance=Math.hypot(8,3);
+        assertEquals(distance,((Number)preview.get("distance")).doubleValue(),1e-9);
+        var unit=com.wargame.model.constants.GameData.UNITS.get("ltank");
+        int seconds=(int)Math.ceil(distance*9/unit.spd());
+        assertEquals(seconds,preview.get("seconds"));
+        March march=marchService.createDispatch(p.getId(),req);
+        marchRepository.flush();
+        assertEquals(distance,marchRepository.findById(march.getId()).orElseThrow().getDistance(),1e-9);
+        assertEquals(seconds*1000L,march.getArriveAt()-march.getStartAt());
+        int fuel=(int)Math.ceil(100*unit.marchOil()*distance/100*2);
+        assertEquals(100000-fuel,resourcesRepository.findByPlayerIdAndCitySlot(p.getId(),0).orElseThrow().getOil());
+        marchService.cancelMarch(p.getId(),march.getId());
+        assertTrue(march.getReturning());
+        assertEquals(distance,march.getDistance(),1e-9);
+        assertEquals("[[90,43],[98,40]]",march.getRouteData());
+        assertEquals(seconds*1000L,march.getArriveAt()-march.getStartAt());
     }
 }

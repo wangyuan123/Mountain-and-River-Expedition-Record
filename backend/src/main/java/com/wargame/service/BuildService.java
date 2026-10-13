@@ -40,6 +40,8 @@ public class BuildService {
     @org.springframework.beans.factory.annotation.Autowired
     private PrerequisiteService prerequisiteService;
 
+    @org.springframework.beans.factory.annotation.Autowired private PrisonerService prisonerService;
+
     private final BuildingRepository buildingRepository;
     private final ConstructionRepository constructionRepository;
     private final ResourcesRepository resourcesRepository;
@@ -64,8 +66,8 @@ public class BuildService {
     /** 建筑分组 - 对应 JS G.Build.GROUPS */
     private static final Map<String, List<String>> GROUPS = Map.of(
             "res",  List.of("farm", "refinery", "oilfield", "raremine"),
-            "army", List.of("command", "house", "factory", "lightfactory", "heavyfactory", "airport", "port",
-                            "academy", "staff", "lab", "radar", "wall", "apron", "liaison", "depot", "transit", "exchange")
+            "army", List.of("command", "house", "factory", "lightfactory", "heavyfactory", "airport", "port", "shipyard",
+                            "academy", "staff", "headquarters", "lab", "radar", "wall", "apron", "liaison", "depot", "transit", "hospital", "exchange", "prisoner_camp")
     );
 
     /** 每城开局提供 6 支施工队，新建、升级与拆除共用；与前端 build.js 保持一致。 */
@@ -136,11 +138,14 @@ public class BuildService {
             curLv = buildingLevel(playerId, buildingType);
         }
 
-        if("port".equals(buildingType)&&curLv==0){
+        // 造船厂与军港共用沿海准入，保留旧城 legacyNaval 的既有海军资格。
+        if (("port".equals(buildingType) || "shipyard".equals(buildingType)) && curLv == 0) {
             terrain.ensure();
             var city=cityScope.selected(playerId);
             if(city.isPresent()&&!terrain.canUsePort(city.get())){
-                result.put("success",false);result.put("message","新建港口需要沿海城市，请在海边建立分城");return result;
+                result.put("success", false);
+                result.put("message", "新建" + b.name() + "需要沿海城市，请在海边建立分城");
+                return result;
             }
         }
 
@@ -210,7 +215,7 @@ public class BuildService {
                 if (remaining <= 0) {
                     result.put("success", false);
                     result.put("message", "res".equals(groupKey)
-                            ? "资源建筑已达当前上限(" + groupSlotsCap(playerId, groupKey) + "栋，含新建中），可升级市政厅扩容（最高32栋），或拆除建筑、取消新建"
+                            ? "资源建筑已达当前上限(" + groupSlotsCap(playerId, groupKey) + "栋，含新建中），可升级市政厅扩容（最高36栋），或拆除建筑、取消新建"
                             : "军事建筑已达当前上限(" + groupSlotsCap(playerId, groupKey) + "栋，含新建中），请升级市政厅、拆除建筑或取消新建");
                     return result;
                 }
@@ -352,6 +357,15 @@ public class BuildService {
 
         // 7. 目标等级：curLv - 1 (如 2级拆除后为1级，1级拆除后为0级即彻底消失)
         int targetLevel = curLv - 1;
+        // 降级保留足够容量，完全拆除必须先清空俘虏池；与入池共用账号锁。
+        if ("prisoner_camp".equals(buildingType)) {
+            long stock = cityScope.selected(playerId).map(c -> prisonerService.currentTotal(playerId, c.getId())).orElse(0L);
+            if (stock > (long) targetLevel * 2000) {
+                result.put("success", false);
+                result.put("message", targetLevel == 0 ? "请先招募或释放营内战俘" : "降级后的容量不足，请先招募或释放战俘");
+                return result;
+            }
+        }
         String affected = prerequisiteService.affectedTask(playerId, cityScope.slot(playerId),
                 buildingType, slotKey, targetLevel);
         if (affected != null) {
@@ -943,7 +957,7 @@ public class BuildService {
         return used;
     }
 
-    /** 资源区基础12栋，每级市政厅增加2栋，最高32栋；军事区采用相同扩容规则。 */
+    /** 资源区基础16栋，每级市政厅增加2栋，最高36栋；军事区采用相同扩容规则。 */
     private int groupSlotsCap(Long playerId, String groupKey) {
         int commandLv = buildingLevel(playerId, "command");
         if ("res".equals(groupKey)) {

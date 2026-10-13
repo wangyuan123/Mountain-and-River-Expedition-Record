@@ -129,6 +129,15 @@ public class GuildRelationService {
         return FRIENDLY.equals(relationshipBetweenPlayers(firstPlayerId, secondPlayerId));
     }
 
+    /** 后勤支援限同一军团，外交上的友好关系不授予支援权限。 */
+    @Transactional(readOnly = true)
+    public boolean areGuildmates(Long firstPlayerId, Long secondPlayerId) {
+        if (firstPlayerId == null || secondPlayerId == null || firstPlayerId.equals(secondPlayerId)) return false;
+        GuildMember first = guildMemberRepository.findByPlayerId(firstPlayerId).orElse(null);
+        GuildMember second = guildMemberRepository.findByPlayerId(secondPlayerId).orElse(null);
+        return first != null && second != null && first.getGuildId().equals(second.getGuildId());
+    }
+
     /** 返回军团详情页所需的全部已设置关系。 */
     @Transactional(readOnly = true)
     public List<Map<String, Object>> listRelations(Long guildId) {

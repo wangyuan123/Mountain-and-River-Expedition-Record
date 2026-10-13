@@ -167,8 +167,6 @@ window.Game = window.Game || {};
       if (existing) return;
       var rankInfo = G.getMilitaryRankTierInfo((Core.state.player && Core.state.player.militaryRank) || 1);
       var ranks = D.militaryRanks;
-      var wallLevel = Core.buildingLevel ? Core.buildingLevel('wall') : 0;
-      var wallBonus = wallLevel >= 10 ? 100000 : 0;
       var skills = Core.getCommanderSkills ? Core.getCommanderSkills() : {};
       var skillLevel = Math.max(skills.leadership || 0, skills.supply || 0);
       var skillBonus = Core.skillBonus ? Math.max(Core.skillBonus('leadership'), Core.skillBonus('supply')) : 0;
@@ -192,8 +190,8 @@ window.Game = window.Game || {};
         + '<button type="button" class="rank-cap-close" aria-label="关闭军衔说明">✕</button></div>'
         + '<div class="modal-body rank-cap-body">'
         + '<div class="rank-cap-summary">当前军衔 <strong class="rank-cap-label">' + G.renderMilitaryRankIcon(rankInfo.tier) + G.escapeHtml(rankInfo.name) + '</strong> · 军衔基础上限 <strong>' + G.fmt(rankInfo.baseCap) + '</strong></div>'
-        + '<p>当前城市围墙 Lv.' + wallLevel + (wallBonus ? '（满级，+100,000）' : '（满级 Lv.10 后 +100,000）') + '；三军统帅 Lv.' + skillLevel + '（+' + skillPercent + '%）。</p>'
-        + '<p><strong>当前实际带兵上限：(' + G.fmt(rankInfo.baseCap) + ' + ' + G.fmt(wallBonus) + ') × (1 + ' + skillPercent + '%) = ' + G.fmt(total) + '</strong></p>'
+        + '<p>三军统帅 Lv.' + skillLevel + '（+' + skillPercent + '%）。</p>'
+        + '<p><strong>当前实际带兵上限：' + G.fmt(rankInfo.baseCap) + ' × (1 + ' + skillPercent + '%) = ' + G.fmt(total) + '</strong></p>'
         + '<p>各军衔的基础上限如下；上尉及以下每阶增加 25,000；少校为 300,000，此后每阶增加 50,000，上将为 600,000。实际出征仍需当前城市有足够驻军。</p>'
         + '<table class="rank-cap-table"><thead><tr><th scope="col">等级</th><th scope="col">军衔</th><th scope="col">基础上限</th></tr></thead><tbody>' + rows + '</tbody></table>'
         + '</div><div class="modal-foot"><button type="button" class="btn btn-primary rank-cap-done">知道了</button></div>'
@@ -409,7 +407,7 @@ window.Game = window.Game || {};
         + '<form id="renameCityForm">'
         + '<div class="modal-body"><label for="renameCityInput">新城市名称</label>'
         + '<input id="renameCityInput" name="cityName" type="text" maxlength="12" aria-required="true" autocomplete="off" aria-describedby="renameCityHint">'
-        + '<p id="renameCityHint">最多12字，支持中英文、数字、下划线和间隔号。每天可修改一次，北京时间 0:00 重置。'
+        + '<p id="renameCityHint">最多12个字符，可用标点、符号和 emoji；不能换行。每天可修改一次，北京时间 0:00 重置。'
         + (availableAt > Date.now() ? '这座城市今日已修改，请明日再试。' : '') + '</p>'
         + '<p class="city-rename-cost">' + costTip + '</p></div>'
         + '<div class="modal-foot"><button type="button" class="account-confirm-cancel">取消</button>'
@@ -446,10 +444,19 @@ window.Game = window.Game || {};
         if (saving) return;
         if (availableAt > Date.now()) { G.toast('这座城市今天已改名，请明日 0:00 后再试'); return; }
         if (cardCount <= 0 && goldCount < 60) { G.toast('城市改名卡或黄金不足（需 1 张改名卡或 60 黄金）'); return; }
-        var newName = input.value.trim();
-        if (!newName) { G.toast('城市名不能为空'); input.focus(); return; }
-        var safeRe = /^[A-Za-z0-9_\u4e00-\u9fa5·\s]{1,12}$/;
-        if (!safeRe.test(newName)) { G.toast('城市名仅限中英文/数字/下划线，最多12字'); input.focus(); return; }
+        var newName;
+        try {
+          newName = G.normalizeDisplayName(input.value, 12, '城市名称');
+        } catch (error) {
+          G.toast(error.message);
+          input.focus();
+          return;
+        }
+        if (newName === (p.cityName || '新城市')) {
+          G.toast('新城市名称与当前名称相同');
+          input.focus();
+          return;
+        }
 
         function saved() {
           saving = false;

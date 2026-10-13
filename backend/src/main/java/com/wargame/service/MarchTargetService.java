@@ -12,6 +12,7 @@ import java.util.*;
 /** Target lookup and intelligence access, shared by dispatch and battle settlement. */
 @Service
 public class MarchTargetService {
+    @org.springframework.beans.factory.annotation.Autowired private UnitEquipmentService unitEquipment;
 
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
@@ -69,6 +70,7 @@ public class MarchTargetService {
             case "bandit":
                 return banditRepository.findById(id).orElse(null);
             case "npc":
+                // 只用于升级前的行军和战斗结算；新出征在 MarchService 中拒绝。
                 return npcCityRepository.findById(id).orElse(null);
             case "simulated_npc":
                 return playerCityRepository.findById(id).filter(pc -> !hasRealOwner(pc)).orElse(null);
@@ -162,21 +164,27 @@ public class MarchTargetService {
         return 1;
     }
 
-    public void setTargetScoutCount(Object target, int scoutCount) {
+    /** 仅更新实际参加拦截的兵种，保留目标的其他守军及另一方式的侦查单位。 */
+    public void setTargetReconCount(Object target, String scoutUnit, int scoutCount) {
         if (target instanceof WildTile wt) {
             Map<String, Integer> army = JsonUtil.parseIntMap(wt.getGarrison());
-            army.put("scout", scoutCount);
+            army.put(scoutUnit, Math.max(0, scoutCount));
             wt.setGarrison(JsonUtil.toJson(army));
             wildTileRepository.save(wt);
-        } else if (target instanceof PlayerCity pc && pc.getOwnerId() != null) {
-            List<ArmyUnit> units = armyUnitRepository.findByPlayerIdAndCitySlotAndType(pc.getOwnerId(), Objects.requireNonNullElse(pc.getCitySlot(), 0), "scout");
-            ArmyUnit unit = units.isEmpty() ? new ArmyUnit(null, pc.getOwnerId(), "scout", 0) : units.get(0);
+        } else if (target instanceof PlayerCity pc && hasRealOwner(pc)) {
+            List<ArmyUnit> units = armyUnitRepository.findByPlayerIdAndCitySlotAndType(pc.getOwnerId(), Objects.requireNonNullElse(pc.getCitySlot(), 0), scoutUnit);
+            ArmyUnit unit = units.isEmpty() ? new ArmyUnit(null, pc.getOwnerId(), scoutUnit, 0) : units.get(0);
             unit.setCitySlot(Objects.requireNonNullElse(pc.getCitySlot(), 0));
             unit.setCount(Math.max(0, scoutCount));
             armyUnitRepository.save(unit);
+        } else if (target instanceof Bandit bandit) {
+            Map<String, Integer> army = JsonUtil.parseIntMap(bandit.getArmy());
+            army.put(scoutUnit, Math.max(0, scoutCount));
+            bandit.setArmy(JsonUtil.toJson(army));
+            banditRepository.save(bandit);
         } else if (target instanceof NpcCity nc) {
             Map<String, Integer> army = JsonUtil.parseIntMap(nc.getArmy());
-            army.put("scout", scoutCount);
+            army.put(scoutUnit, Math.max(0, scoutCount));
             nc.setArmy(JsonUtil.toJson(army));
             npcCityRepository.save(nc);
         }
@@ -204,6 +212,13 @@ public class MarchTargetService {
         return map;
     }
 
+    /** 每场新战斗读取当前账号配装；既有会话只读取它自己的冻结 JSON。 */
+    public Map<String, Integer> getCombatTechMap(Long playerId) {
+        Map<String, Integer> result = getTechMap(playerId);
+        if (unitEquipment != null) result.putAll(unitEquipment.snapshot(playerId));
+        return result;
+    }
+
     public Map<String, Integer> getTechMap(Long playerId) {
         List<Technology> techs = technologyRepository.findByPlayerId(playerId);
         Map<String, Integer> map = new LinkedHashMap<>();
@@ -216,6 +231,20 @@ public class MarchTargetService {
     public Officer getCommander(Long playerId) {
         List<Officer> officers = officerRepository.findByPlayerIdAndCitySlotAndRole(playerId, cityScope.slot(playerId), "commander");
         return (officers != null && !officers.isEmpty()) ? officers.get(0) : null;
+    }
+
+    /** 司令官只来自指定城市；司令部被拆除后暂不提供战斗加成。 */
+    public Officer getCommanderInChief(Long playerId, int citySlot) {
+        try (var ignored = cityScope.enter(playerId, citySlot)) {
+            if (buildingLevel(playerId, "headquarters") < 1) return null;
+            return officerRepository.findByPlayerIdAndCitySlotAndRole(playerId, citySlot, "commander_in_chief")
+                    .stream().findFirst().orElse(null);
+        }
+    }
+
+    /** 守城指挥官必须来自被攻击城市，不能随城主当前选择的城市变化。 */
+    public Officer getCityCommander(PlayerCity city) {
+        try (var ignored = cityScope.enter(city)) { return getCommander(city.getOwnerId()); }
     }
 
     /** 根据 officerId 取具体军官（行军里的 commanderId 字段） */

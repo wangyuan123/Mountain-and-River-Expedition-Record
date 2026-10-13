@@ -2,9 +2,9 @@
 (function (G) {
   'use strict';
   function isPlayer(t) { return t.kind === 'player' || !!t.selfCity; }
-  /** 返回地图展示占地边长；城市、NPC 与流寇统一四格，野地保留单格。 */
+  /** 返回地图展示占地边长；玩家城市四格，所有 NPC、流寇及野地单格。 */
   function footprintSpan(t) {
-    return isPlayer(t) || t.kind === 'npc' || t.kind === 'simulated_npc' || t.kind === 'bandit' ? 2 : 1;
+    return isPlayer(t) ? 2 : 1;
   }
   function bounds(t, worldSize) {
     var span = footprintSpan(t);

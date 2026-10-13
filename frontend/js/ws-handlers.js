@@ -28,7 +28,7 @@ window.Game = window.Game || {};
     return false;
   }
 
-  // Refresh full state from server, sync G.state + Core.state, then re-render
+  /** 同步服务端最新状态；编辑表单或阅读历史战报时，只更新顶栏和导航以保留当前内容。 */
   function refreshState() {
     if (!G.API || !G.API.getGameState) return;
     // force=true to bypass cache — WS events mean something changed
@@ -39,12 +39,13 @@ window.Game = window.Game || {};
         G.state = state;
         if (G.Core) G.Core.state = G.state;
       }
-      // 用户正在编辑表单时, 跳过 Core.render() 以免把表单刷掉
-      // (mail.js 已用 captureFormState / restoreFormState 做防御层, 但能少一次 DOM 操作更好)
-      if (G.Core && !isUserEditing()) {
+      // 战报是历史快照，回城等后台事件无需重建正文，否则会丢失展开状态和阅读位置。
+      // 新战报仍由 battle / scoutReport 事件单独更新列表。
+      var readingReport = G.Core && (G.Core.route === 'reports' || G.Core.route === 'reportDetail');
+      if (G.Core && !isUserEditing() && !readingReport) {
         G.Core.render();
       } else if (G.Core) {
-        // 编辑中: 仍刷新顶栏/导航, 但不动 content
+        // 状态已同步；编辑或阅读中只刷新顶栏/导航，保留正文 DOM。
         if (G.Core.refreshTop) G.Core.refreshTop();
         if (G.Main && G.Main.renderNavBar) G.Main.renderNavBar();
       }
@@ -54,6 +55,7 @@ window.Game = window.Game || {};
   }
 
   // tick handler - update resources, construction progress, march progress
+  G.WS.on('support_update', refreshState);
   G.WS.on('tick', function (data) {
     if (!G.state) return;
     // Ensure Core.state references the same object
@@ -63,6 +65,11 @@ window.Game = window.Game || {};
     }
     if (data.population) {
       G.state.population = data.population;
+    }
+    if (data.items) G.state.items = data.items;
+    if (data.unitEquipment) {
+      G.state.unitEquipment = data.unitEquipment;
+      if (G.UnitEquipment) G.UnitEquipment.refresh();
     }
     if (data.constructions) {
       var previousConstructions = G.state.constructions || [];
@@ -89,6 +96,7 @@ window.Game = window.Game || {};
       });
       if (G.World && G.World.checkMarchArrivals) G.World.checkMarchArrivals();
     }
+    if (data.reinforcements && G.state.world) G.state.world.reinforcements = data.reinforcements;
     if (Array.isArray(data.incoming) && G.state.world) {
       var previousIncoming = G.state.world.incoming || [];
       data.incoming.forEach(function (attack) {
@@ -200,6 +208,19 @@ window.Game = window.Game || {};
     }
   });
 
+  // 城权变更后清除旧城市请求上下文，避免失守城的X-City-Id使后续状态请求一直失败。
+  G.WS.on('city_ownership', function (data) {
+    if (!data) return;
+    if (G.API && G.API.client) {
+      G.API.client.invalidateCityRequests();
+      if (!data.gained) G.API.client.cityId = data.activeCityId || null;
+    }
+    if (G.WorldView) G.WorldView.invalidate();
+    if (G.Cities && G.Cities.close) G.Cities.close();
+    G.toast(data.gained ? '敌方城市已接管，可在城市管理中切换' : '城市失守，已为你保留可继续发展的主城');
+    refreshState();
+  });
+
   // battle handler - battle report
   G.WS.on('battle', function (data) {
     if (!data) return;
@@ -225,6 +246,8 @@ window.Game = window.Game || {};
         return names[key] + ' ' + G.fmt(plunder[key]);
       });
       var message = data.wildConquered ? '战斗胜利，野地已占领' : '战斗胜利';
+      if (data.cityConquered && data.targetType === 'player') message += '，城市已接管';
+      if (data.capturedOfficerId != null) message += '，俘虏敌将：' + (data.capturedOfficerName || '敌方指挥官');
       if (resources.length) message += '，获得资源：' + resources.join('、');
       G.toast(message);
     } else {
@@ -292,8 +315,12 @@ window.Game = window.Game || {};
     showWsBanner('连接已断开，正在重连...', 'var(--danger)');
   });
 
-  // connected handler - WebSocket reconnected
-  G.WS.on('connected', function () {
+  // 首次连接保留登录请求；断线期间可能失去当前城市，重连时重新读取账号当前城市。
+  G.WS.on('connected', function (data) {
+    if (data && data.reconnected && G.API && G.API.client) {
+      G.API.client.invalidateCityRequests();
+      G.API.client.cityId = null;
+    }
     if (G.PrivateChat) G.PrivateChat.refresh();
     if (G.Battle) G.Battle._reportsHistoryLoaded = null;
     // Hide the disconnect banner and show a brief "reconnected" confirmation

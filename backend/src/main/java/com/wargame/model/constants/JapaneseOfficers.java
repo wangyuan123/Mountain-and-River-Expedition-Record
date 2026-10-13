@@ -13,6 +13,8 @@ import java.util.Map;
  */
 public final class JapaneseOfficers {
 
+    private static final int MAX_SKILLS = 3;
+
     private JapaneseOfficers() {}
 
     /**
@@ -89,19 +91,20 @@ public final class JapaneseOfficers {
 
         // 将领技能配置
         List<Map<String, Object>> skills = new ArrayList<>();
-        if (safeLevel >= 3) {
+        // NPC 与玩家军官统一最多保留三个技能；高等级额外技能按既有解锁顺序截断。
+        if (safeLevel >= 3 && skills.size() < MAX_SKILLS) {
             skills.add(Map.of("id", "bulwark", "lv", Math.min(5, 1 + safeLevel / 6)));
         }
-        if (safeLevel >= 7) {
+        if (safeLevel >= 7 && skills.size() < MAX_SKILLS) {
             skills.add(Map.of("id", "frenzy", "lv", Math.min(5, 1 + safeLevel / 7)));
         }
-        if (safeLevel >= 14) {
+        if (safeLevel >= 14 && skills.size() < MAX_SKILLS) {
             skills.add(Map.of("id", "suppress", "lv", Math.min(5, 1 + safeLevel / 8)));
         }
-        if (safeLevel >= 21) {
+        if (safeLevel >= 21 && skills.size() < MAX_SKILLS) {
             skills.add(Map.of("id", "pierce", "lv", Math.min(5, 1 + safeLevel / 9)));
         }
-        if (safeLevel >= 28) {
+        if (safeLevel >= 28 && skills.size() < MAX_SKILLS) {
             skills.add(Map.of("id", "counter", "lv", 5));
         }
         officer.setSkills(JsonUtil.toJson(skills));

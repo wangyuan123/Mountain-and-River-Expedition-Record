@@ -26,7 +26,7 @@ public record ItemDef(
     /** cat: jewelry - 珠宝珍品与宝箱 */
     public static final String CAT_JEWELRY = "jewelry";
 
-    public static final Map<String, ItemDef> ITEMS = Map.ofEntries(
+    private static final Map<String, ItemDef> BASE_ITEMS = Map.ofEntries(
             // —— 军官道具 ——
             Map.entry("expBook",    new ItemDef("expBook",    "经验书",      "📘", CAT_OFFICER, "军官使用,获得10000经验", 0)),
             Map.entry("expBookAdv", new ItemDef("expBookAdv", "高级经验书",  "📕", CAT_OFFICER, "军官使用,获得100000经验", 0)),
@@ -115,6 +115,16 @@ public record ItemDef(
             Map.entry("supplyPack", new ItemDef("supplyPack", "战备补给包",  "img/resources/models/food.webp", CAT_RESOURCE, "粮钢油稀各8000,适合长期发展", 0)),
             Map.entry("resourcePack500w", new ItemDef("resourcePack500w", "资源大礼包", "🎁", CAT_RESOURCE, "粮食/钢铁/石油/稀矿各500万", 0)),
 
+            // —— 主线任务阶段通关专属大礼包 ——
+            Map.entry("stage_gift_1", new ItemDef("stage_gift_1", "新兵奠基礼包", "🎁", CAT_RESOURCE, "主线第1阶段通关大奖：粮钢油各2万、稀矿5000、黄金2000、钻石50、10分加速符×5、列兵军事装备箱×1", 0)),
+            Map.entry("stage_gift_2", new ItemDef("stage_gift_2", "拔寨起步礼包", "🎁", CAT_RESOURCE, "主线第2阶段通关大奖：粮钢油各5万、稀矿1.5万、黄金5000、钻石100、1时加速符×3、初级珠宝宝箱×1、通用技能书×2", 0)),
+            Map.entry("stage_gift_3", new ItemDef("stage_gift_3", "整军备战礼包", "🎁", CAT_RESOURCE, "主线第3阶段通关大奖：粮钢油各15万、稀矿5万、黄金1.2万、钻石200、1时加速符×5、征募令×2、中级珠宝宝箱×1、校官军事装备箱×1", 0)),
+            Map.entry("stage_gift_4", new ItemDef("stage_gift_4", "初露锋芒礼包", "🎁", CAT_RESOURCE, "主线第4阶段通关大奖：粮钢油各50万、稀矿15万、黄金3万、钻石500、5时加速符×3、中级珠宝宝箱×2、护盾×1", 0)),
+            Map.entry("stage_gift_5", new ItemDef("stage_gift_5", "百战精锐礼包", "🎁", CAT_RESOURCE, "主线第5阶段通关大奖：粮钢油各150万、稀矿50万、黄金8万、钻石1000、12时加速符×2、高级珠宝宝箱×2、征募令×5、高级经验书×3", 0)),
+            Map.entry("stage_gift_6", new ItemDef("stage_gift_6", "横扫千军礼包", "🎁", CAT_RESOURCE, "主线第6阶段通关大奖：粮钢油各500万、稀矿150万、黄金20万、钻石2000、24时加速符×2、高级珠宝宝箱×3、高级经验书×5", 0)),
+            Map.entry("stage_gift_7", new ItemDef("stage_gift_7", "威震四海礼包", "🎁", CAT_RESOURCE, "主线第7阶段通关大奖：粮钢油各1500万、稀矿500万、黄金50万、钻石5000、48时加速符×2、特级夜明珠宝箱×2、元帅军事装备箱×1", 0)),
+            Map.entry("stage_gift_8", new ItemDef("stage_gift_8", "三军统帅大礼包", "👑", CAT_RESOURCE, "主线第8阶段终极大奖：粮钢油各5000万、稀矿1500万、黄金150万、钻石10000、72时加速符×3、璀璨珠宝全集箱×2、满级经验书×2", 0)),
+
             // —— 功能道具 - 加速符（8 种时长）- 建筑施工/军队生产通用 ——
             Map.entry("speedUp10m",  new ItemDef("speedUp10m",  "10分加速符",  "⚡", CAT_UTIL, "立即缩短10分钟建筑/造兵时间",     10 * 60)),
             Map.entry("speedUp1h",   new ItemDef("speedUp1h",   "1时加速符",   "⚡", CAT_UTIL, "立即缩短1小时建筑/造兵时间",     60 * 60)),
@@ -126,17 +136,33 @@ public record ItemDef(
             Map.entry("speedUp72h",  new ItemDef("speedUp72h",  "72时加速符",  "⚡", CAT_UTIL, "立即缩短72小时建筑/造兵时间",    72 * 60 * 60)),
 
             // —— 其他功能道具 ——
-            Map.entry("shield",    new ItemDef("shield",    "护盾",     "🛡️", CAT_UTIL, "每次使用增加8小时免受玩家攻击时间，可叠加", 0)),
-            Map.entry("marchOrd",  new ItemDef("marchOrd",  "行军令",   "🚩", CAT_UTIL, "行军速度+50%,持续1小时", 0)),
+            Map.entry("shield",    new ItemDef("shield",    "护盾",     "🛡️", CAT_UTIL, "本城8小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地", 0)),
+            Map.entry("marchOrd",  new ItemDef("marchOrd",  "行军令",   "🚩", CAT_UTIL, "仓库启用：行军速度+50%，持续1小时；情报使用：本队当前路段剩余时间缩短约1/3，去程与回程各限一次", 0)),
             Map.entry("populationOrder", new ItemDef("populationOrder", "人口动员令", "👥", CAT_UTIL, "使用后立即增加500空闲人口,不超过人口上限", 0)),
             Map.entry("cityRenameCard", new ItemDef("cityRenameCard", "城市改名卡", "🏷️", CAT_UTIL, "为一座城市更换新名字", 0)),
 
-            // —— 军衔珠宝宝箱 ——
-            Map.entry("box_gem",          new ItemDef("box_gem",          "军衔珠宝宝箱",   "🗃️", CAT_JEWELRY, "开启获得晋升必备珠宝：珍珠×5、珊瑚×3、琉璃×3、琥珀×2、玛瑙×2", 0)),
-            Map.entry("box_gem_primary",  new ItemDef("box_gem_primary",  "初级珠宝宝箱",   "🧰", CAT_JEWELRY, "开启获得士官晋升基础珠宝：珍珠×8、珊瑚×6、琉璃×5", 0)),
-            Map.entry("box_gem_medium",   new ItemDef("box_gem_medium",   "中级珠宝宝箱",   "🧰", CAT_JEWELRY, "开启获得尉官晋升进阶珠宝：琥珀×8、玛瑙×6、水晶×5、翡翠×2", 0)),
-            Map.entry("box_gem_senior",   new ItemDef("box_gem_senior",   "高级珠宝宝箱",   "🎁", CAT_JEWELRY, "开启获得校官晋升精选珠宝：水晶×8、翡翠×8、玉石×6、夜明珠×3", 0)),
-            Map.entry("box_gem_supreme",  new ItemDef("box_gem_supreme",  "特级夜明珠宝箱", "🌟", CAT_JEWELRY, "开启获得将官晋升极品珍宝：夜明珠×8、玉石×10、翡翠×10", 0)),
-            Map.entry("box_gem_grand",    new ItemDef("box_gem_grand",    "璀璨珠宝全集箱", "💎", CAT_JEWELRY, "开启获得全部9种晋升珠宝各5颗(共45颗珠宝)，助统帅连升数阶！", 0))
+            // —— 珠宝珍品箱 ——
+            Map.entry("box_gem",          new ItemDef("box_gem",          "珠宝珍品箱",   "🗃️", CAT_JEWELRY, "开启获得珠宝珍品：珍珠×5、珊瑚×3、琉璃×3、琥珀×2、玛瑙×2", 0)),
+            Map.entry("box_gem_primary",  new ItemDef("box_gem_primary",  "初级珠宝宝箱",   "🧰", CAT_JEWELRY, "开启获得基础珠宝：珍珠×8、珊瑚×6、琉璃×5", 0)),
+            Map.entry("box_gem_medium",   new ItemDef("box_gem_medium",   "中级珠宝宝箱",   "🧰", CAT_JEWELRY, "开启获得进阶珠宝：琥珀×8、玛瑙×6、水晶×5、翡翠×2", 0)),
+            Map.entry("box_gem_senior",   new ItemDef("box_gem_senior",   "高级珠宝宝箱",   "🎁", CAT_JEWELRY, "开启获得精选珠宝：水晶×8、翡翠×8、玉石×6、夜明珠×3", 0)),
+            Map.entry("box_gem_supreme",  new ItemDef("box_gem_supreme",  "特级夜明珠宝箱", "🌟", CAT_JEWELRY, "开启获得极品珍宝：夜明珠×8、玉石×10、翡翠×10", 0)),
+            Map.entry("box_gem_grand",    new ItemDef("box_gem_grand",    "璀璨珠宝全集箱", "💎", CAT_JEWELRY, "开启获得全部9种珠宝各5颗(共45颗珠宝)", 0))
     );
+
+    /** 凭证与军衔共用定义，且不加入任何付费宝箱的产物列表。 */
+    public static final Map<String, ItemDef> ITEMS;
+    static {
+        Map<String, ItemDef> items = new java.util.LinkedHashMap<>(BASE_ITEMS);
+        for (var rank : MilitaryRankDef.RANKS) {
+            if (rank.tier() == 1) continue;
+            items.put(rank.certificateKey(), new ItemDef(rank.certificateKey(), rank.certificateName(), "🎖️",
+                    CAT_JEWELRY, "仅用于晋升" + rank.name() + "，授衔消耗1张；" + MilitaryRankDef.certificateSource(rank), 0));
+        }
+        for (var equipment : UnitEquipmentDef.ITEMS.values()) {
+            items.put(equipment.key(), new ItemDef(equipment.key(), equipment.name(), "🧰", "unitEquipment",
+                    "本账号全部对应兵种生效；在军队页配置", 0));
+        }
+        ITEMS = Map.copyOf(items);
+    }
 }

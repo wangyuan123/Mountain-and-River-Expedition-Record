@@ -4,11 +4,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wargame.model.constants.BuildingDef;
 import com.wargame.model.constants.TechDef;
+import com.wargame.model.constants.UnitDef;
 import com.wargame.model.entity.Building;
 import com.wargame.model.entity.Construction;
 import com.wargame.model.entity.PlayerCity;
 import com.wargame.model.entity.TechResearchQueue;
 import com.wargame.repository.BuildingRepository;
+import com.wargame.repository.ArmyProductionQueueRepository;
 import com.wargame.repository.ConstructionRepository;
 import com.wargame.repository.PlayerCityRepository;
 import com.wargame.repository.TechResearchQueueRepository;
@@ -30,15 +32,17 @@ public class PrerequisiteService {
     private final TechResearchQueueRepository researchQueues;
     private final PlayerCityRepository cities;
     private final WorldTerrainService terrain;
+    private final ArmyProductionQueueRepository productionQueues;
 
     public PrerequisiteService(BuildingRepository buildings, ConstructionRepository constructions,
                                TechResearchQueueRepository researchQueues, PlayerCityRepository cities,
-                               WorldTerrainService terrain) {
+                               WorldTerrainService terrain, ArmyProductionQueueRepository productionQueues) {
         this.buildings = buildings;
         this.constructions = constructions;
         this.researchQueues = researchQueues;
         this.cities = cities;
         this.terrain = terrain;
+        this.productionQueues = productionQueues;
         try (InputStream stream = getClass().getResourceAsStream("/game/tech-building-prerequisites.json")) {
             if (stream == null) throw new IllegalStateException("Missing prerequisite rules");
             rules = mapper.readTree(stream);
@@ -63,6 +67,19 @@ public class PrerequisiteService {
     public int coastalPortLevel(Long playerId) {
         if (buildings.findByPlayerIdAndType(playerId, "port").isEmpty()) return 0;
         return highestCoastalLevel(playerId, "port");
+    }
+
+    /** 征召只认本城已完成且未被拆除施工预占的建筑，其他城市不能代替制造或驻泊能力。 */
+    public List<Map<String, Object>> unmetRecruitment(Long playerId, int citySlot, String unitType) {
+        List<Map<String, Object>> missing = new ArrayList<>();
+        for (String building : UnitDef.UNITS.get(unitType).recruitmentBuildings()) {
+            int actual = highestAvailableLevel(playerId, citySlot, building, null, null);
+            if (actual < 1) {
+                missing.add(Map.of("building", building, "name", BuildingDef.BUILDINGS.get(building).name(),
+                        "required", 1, "current", actual, "scope", "city"));
+            }
+        }
+        return missing;
     }
 
     /** Returns every direct unmet requirement; levels of duplicate buildings never add together. */
@@ -95,6 +112,13 @@ public class PrerequisiteService {
     /** Prevents a downgrade from invalidating work already paid for and in progress. */
     public String affectedTask(Long playerId, int citySlot, String type, Integer slot, int nextLevel) {
         int affectedSlot = slot == null ? 0 : slot;
+        // 已付费舰船队列也依赖军港与造船厂；旧版记录的 buildingType=port 同样受保护。
+        if (nextLevel < 1 && ("port".equals(type) || "shipyard".equals(type))) {
+            for (var job : productionQueues.findByPlayerIdAndCitySlotOrderByStartedAtAscIdAsc(playerId, citySlot)) {
+                UnitDef unit = UnitDef.UNITS.get(job.getUnitType());
+                if (unit != null && "sea".equals(unit.branch())) return "生产中的" + unit.name();
+            }
+        }
         for (Construction job : constructions.findByPlayerIdAndCitySlot(playerId, citySlot)) {
             if (job.getTargetLevel() == null || job.getTargetLevel() <= 0) continue;
             if (job.getPrerequisiteRequirements() == null) continue;

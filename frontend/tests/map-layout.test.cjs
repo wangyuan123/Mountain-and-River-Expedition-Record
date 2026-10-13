@@ -25,15 +25,16 @@ test('all four player-city cells select the same target without mutating its coo
     assert.equal(layout.pick([target],101.1,100.5,200),null);
   }
 });
-test('NPC and bandit footprints match player cities, including world edges', () => {
+test('all NPC cities and bandits use one cell, including world edges', () => {
   for (const kind of ['npc','simulated_npc','bandit']) {
     for (const [x,y] of [[100,100],[199,199]]) {
       const target={kind,id:2,x,y}, b=layout.bounds(target,200);
-      assert.equal(b.span,2);
-      for (const [dx,dy] of [[.01,.01],[1.99,.01],[.01,1.99],[1.99,1.99]]) {
+      const span=1;
+      assert.equal(b.span,span);
+      for (const [dx,dy] of [[.01,.01],[span-.01,.01],[.01,span-.01],[span-.01,span-.01]]) {
         assert.equal(layout.pick([target],b.x+dx,b.y+dy,200),target);
       }
-      assert.equal(layout.pick([target],b.x+2,b.y+1,200),null);
+      assert.equal(layout.pick([target],b.x+span,b.y+.5,200),null);
     }
   }
 });

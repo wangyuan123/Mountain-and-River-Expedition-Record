@@ -47,6 +47,18 @@ public class QuestController {
         return ResponseEntity.ok(result);
     }
 
+    @PostMapping("/claim-stage")
+    public ResponseEntity<Map<String, Object>> claimStage(@RequestBody Map<String, String> body) {
+        String stageId = body.get("stageId");
+        if (stageId == null || stageId.isBlank()) {
+            throw new IllegalArgumentException("stageId 不能为空");
+        }
+        Long playerId = authService.getCurrentPlayer().getId();
+        Map<String, Object> result = questService.claimStage(playerId, stageId);
+        result.put("state", gameStateService.getGameState(playerId));
+        return ResponseEntity.ok(result);
+    }
+
     @GetMapping("/guide")
     public ResponseEntity<Map<String, Object>> guide() {
         Long playerId = authService.getCurrentPlayer().getId();

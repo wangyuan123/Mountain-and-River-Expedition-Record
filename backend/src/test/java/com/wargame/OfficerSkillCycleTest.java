@@ -75,12 +75,12 @@ class OfficerSkillCycleTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"frenzy", "bulwark", "learn", "borrow_armor", "counter"})
+    @ValueSource(strings = {"frenzy", "bulwark", "blitz", "suppress", "pierce", "learn", "borrow_armor", "counter"})
     void allPeriodicSkillsStartAtRoundFourAndRepeatAtSevenTenThirteen(String skill) {
         Map<String, Integer> mine = ARMY;
         Map<String, Integer> enemy = ARMY;
         Map<String, Integer> minePos = Map.of("infantry", 0);
-        Map<String, Integer> enemyPos = Map.of("infantry", 400);
+        Map<String, Integer> enemyPos = Map.of("infantry", 300);
         int firstCombatRound = 0;
         String name = OfficerSkillDef.getSkill(skill).name();
 
@@ -98,12 +98,14 @@ class OfficerSkillCycleTest {
             assertFalse(state.finished(), state.log());
             if (round < 4) {
                 assertFalse(state.log().contains(" 伤害"), state.log());
+            } else if ("blitz".equals(skill)) {
+                assertEquals(firstDamage(baseline.log()), firstDamage(state.log()), "移速不应直接改变伤害");
             } else if ("counter".equals(skill)) {
                 assertEquals(active, state.log().contains("[绝境反击]"), state.log());
                 assertEquals(firstDamage(baseline.log()), firstDamage(state.log()));
             } else if (!active) {
                 assertEquals(firstDamage(baseline.log()), firstDamage(state.log()), state.log());
-            } else if ("frenzy".equals(skill) || "learn".equals(skill)) {
+            } else if ("frenzy".equals(skill) || "learn".equals(skill) || "pierce".equals(skill)) {
                 assertTrue(firstDamage(state.log()) > firstDamage(baseline.log()), state.log());
             } else {
                 assertTrue(firstDamage(state.log()) < firstDamage(baseline.log()), state.log());
@@ -119,19 +121,90 @@ class OfficerSkillCycleTest {
     @ParameterizedTest
     @ValueSource(ints = {1, 2, 5, 6})
     void skillCycleFollowsAnyFirstCombatRound(int firstRound) {
-        int firstCombatRound = 0;
-        for (int round = firstRound; round <= firstRound + 3; round++) {
-            var state = resolve(round, firstCombatRound, ARMY, ARMY,
-                    Map.of("infantry", 150), Map.of("infantry", 250), Map.of("frenzy", 5), HOLD);
-            assertEquals(firstRound, state.firstCombatRound());
-            assertEquals(round == firstRound || round == firstRound + 3, state.log().contains("全军冲锋"));
-            firstCombatRound = state.firstCombatRound();
+        for (String skill : new String[]{"frenzy", "bulwark", "blitz", "suppress", "pierce", "learn", "borrow_armor", "counter"}) {
+            int firstCombatRound = 0;
+            for (int round = firstRound; round <= firstRound + 3; round++) {
+                var state = resolve(round, firstCombatRound, ARMY, ARMY,
+                        Map.of("infantry", 150), Map.of("infantry", 250), Map.of(skill, 5), HOLD);
+                assertEquals(firstRound, state.firstCombatRound());
+                String bonuses = state.log().lines().filter(line -> line.contains("将领加成："))
+                        .reduce("", (left, right) -> left + right);
+                assertEquals(round == firstRound || round == firstRound + 3,
+                        bonuses.contains(OfficerSkillDef.getSkill(skill).name()), state.log());
+                firstCombatRound = state.firstCombatRound();
+            }
+        }
+    }
+
+    @Test
+    void blitzDoesNotChangeInitialDistanceOrMovementBeforeFirstCombat() {
+        var service = new BattleService(0);
+        var plain = new BattleService.TechCtx(TECH, Map.of(), 0);
+        var blitz = new BattleService.TechCtx(TECH, Map.of("blitz", 5), 0);
+        assertEquals(service.calcInitialDistance(ARMY, ARMY, plain, plain),
+                service.calcInitialDistance(ARMY, ARMY, blitz, blitz));
+
+        var state = service.resolveWorldRound(ARMY, ARMY,
+                Map.of("infantry", 0), Map.of("infantry", 2_000), 2_000,
+                TECH, TECH, blitz.skills(), blitz.skills(), 0, 0, 0, 0, 0, 0,
+                1, 0, orders(BattleService.CommandAction.ADVANCE), HOLD);
+        assertEquals(100, state.attackerPositions().get("infantry"));
+        assertEquals(0, state.firstCombatRound());
+        assertFalse(state.log().contains("闪电突击"), state.log());
+    }
+
+    @Test
+    void blitzAffectsBothSidesMovementOnlyOnEstablishedSkillRounds() {
+        for (int round = 4; round <= 13; round++) {
+            var state = new BattleService(0).resolveWorldRound(ARMY, ARMY,
+                    Map.of("infantry", 1_000), Map.of("infantry", 2_000), 3_000,
+                    TECH, TECH, Map.of("blitz", 5), Map.of("blitz", 5), 0, 0, 0, 0, 0, 0,
+                    round, 4, orders(BattleService.CommandAction.RETREAT), orders(BattleService.CommandAction.RETREAT));
+            boolean active = round == 4 || round == 7 || round == 10 || round == 13;
+            int step = active ? 130 : 100;
+            assertEquals(1_000 - step, state.attackerPositions().get("infantry"), state.log());
+            assertEquals(2_000 + step, state.defenderPositions().get("infantry"), state.log());
+            assertEquals(4, state.firstCombatRound());
+        }
+    }
+
+    @Test
+    void blitzStartsAtFirstShotAndCannotChangeInitiativeOnCooldownRounds() {
+        for (int round : new int[]{4, 6, 10}) {
+            var state = new BattleService(0).resolveWorldRound(ARMY, ARMY,
+                    Map.of("infantry", 150), Map.of("infantry", 250), 400,
+                    TECH, TECH, Map.of("blitz", 5), Map.of(), 0, 0, 0, 0, 0, 0,
+                    round, round == 4 ? 0 : 4, HOLD, HOLD);
+            String firstShot = state.log().lines().filter(line -> line.contains(" 伤害")).findFirst().orElseThrow();
+            assertTrue(firstShot.startsWith(round == 6 ? "敌方" : "我方"), state.log());
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"suppress", "pierce"})
+    void suppressionAndPiercingAlsoAffectCounterDamageOnlyOnSkillRounds(String skill) {
+        for (int round = 4; round <= 7; round++) {
+            var state = resolve(round, 4, ARMY, ARMY, Map.of("infantry", 150), Map.of("infantry", 250),
+                    Map.of("counter", 5, skill, 5), HOLD);
+            var baseline = resolve(round, 4, ARMY, ARMY, Map.of("infantry", 150), Map.of("infantry", 250),
+                    Map.of("counter", 5), HOLD);
+            if (round == 4 || round == 7) {
+                var counter = Pattern.compile("\\[绝境反击\\].*? 伤害(\\d+)").matcher(state.log());
+                var plainCounter = Pattern.compile("\\[绝境反击\\].*? 伤害(\\d+)").matcher(baseline.log());
+                assertTrue(counter.find(), state.log());
+                assertTrue(plainCounter.find(), baseline.log());
+                long actual = Long.parseLong(counter.group(1));
+                long plainDamage = Long.parseLong(plainCounter.group(1));
+                assertTrue("pierce".equals(skill) ? actual > plainDamage : actual < plainDamage, state.log());
+            } else {
+                assertEquals(baseline.log(), state.log());
+            }
         }
     }
 
     @Test
     void retreatAndReengagementDoNotRestartSkillCycle() {
-        var first = resolve(4, 0, ARMY, ARMY, Map.of("infantry", 0), Map.of("infantry", 400),
+        var first = resolve(4, 0, ARMY, ARMY, Map.of("infantry", 0), Map.of("infantry", 300),
                 Map.of("frenzy", 5), orders(BattleService.CommandAction.ADVANCE));
         var retreat = resolve(5, first.firstCombatRound(), first.attackerArmy(), first.defenderArmy(),
                 first.attackerPositions(), first.defenderPositions(), Map.of("frenzy", 5),
@@ -172,9 +245,10 @@ class OfficerSkillCycleTest {
         assertFalse(state.log().contains("全军冲锋"));
     }
 
-    @Test
-    void fullBattleAndPersistedRoundsProduceTheSameSkillCycleAndDamage() {
-        var skills = Map.of("frenzy", 5, "learn", 5, "counter", 5);
+    @ParameterizedTest
+    @ValueSource(strings = {"frenzy", "bulwark", "blitz", "suppress", "pierce", "learn", "borrow_armor", "counter"})
+    void fullBattleAndPersistedRoundsProduceTheSameSkillCycleAndDamage(String skill) {
+        var skills = Map.of(skill, 5);
         var full = new BattleService(17).startWorldDispatch(ARMY, ARMY, Map.of(), TECH, TECH, skills, skills,
                 0, 0, 0, 0, "conquer", Map.of(), 0);
         var service = new BattleService(17);

@@ -17,4 +17,8 @@ public interface PlayerCityRepository extends JpaRepository<PlayerCity, Long> {
     java.util.Optional<PlayerCity> findByOwnerIdAndCitySlot(Long ownerId, Integer citySlot);
     List<PlayerCity> findByOwnerIdAndCitySlotIsNotNullOrderByCitySlotAsc(Long ownerId);
     boolean existsByWorldIdAndXAndY(Long worldId, Integer x, Integer y);
+
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("select c from PlayerCity c where c.id = :id")
+    java.util.Optional<PlayerCity> findForUpdate(@org.springframework.data.repository.query.Param("id") Long id);
 }

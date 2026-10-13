@@ -1,0 +1,30 @@
+A richly detailed 3D miniature military-administrative city game asset for a WWII-themed strategy game, with strong stereoscopic 3D depth and volumetric architecture.
+
+Viewing Angle and Perspective:
+Bird's-eye oblique view / 3D aerial perspective, looking from the south towards the north at an elevation of approximately 50-55 degrees above horizontal, matching the classic 3D city-builder perspective. High stereoscopic relief showing vertical building facades, architectural stories, doors, windows, and realistic shadows.
+Crucially: The city footprint is strictly a SQUARE (NOT rotated into a diamond, NOT 45-degree isometric). The front southern perimeter wall is horizontal across the lower portion of the image. North is straight up, east-west roads run horizontally, north-south roads run vertically.
+
+City Layout and Distinct Districts:
+1. Western Residential Quarter: 12-16 detailed 1-to-3 story European-style houses with pitched roofs, gables, chimneys, window shutters, porches, small courtyards, and lived-in streets.
+2. Northern Industrial Quarter: Heavy red-brick armaments factory complex with multi-story assembly halls, steel sawtooth glass roofs, industrial chimneys, loading docks, crane, and military cargo trucks.
+3. Central Civic & Command Quarter (3 distinct standalone buildings):
+   - City Hall (市政厅): Dignified civic building with pale stone facade, classical pediment, entrance steps, and a central clock tower, situated on an open town square.
+   - General Staff (参谋部): Separate elongated 3-story office building with ordered window rows and parallel wings.
+   - Military Command Headquarters (司令部): Separate fortified command building with a gated motor pool, high radio mast antenna, and communications annex.
+4. Southern Ground Force Staging Yards:
+   - Two compact rectangular infantry platoons standing in disciplined ranks and files.
+   - Convoy of BM-13 Katyusha rocket launcher trucks with visible raised launch rails.
+   - Tank formations: distinct group of light tanks and larger heavy IS-2 style tanks with detailed turrets, gun barrels, and tracks.
+   - Wheeled armored cars (M8 Greyhound style 6-wheeled reconnaissance vehicles).
+5. Eastern Airfield (occupies the eastern third of the city):
+   - North-south runway with white threshold stripes, connecting taxiways, aircraft parking aprons.
+   - Aircraft hangars with curved and gabled roofs, airport control tower with glass cab.
+   - Metal lattice radar antenna on a support tower with an equipment shack near the northern end.
+   - Three distinct types of PARKED aircraft on the aprons (all stationary on landing gear, wings clear):
+     * P-51 Mustang style single-engine propeller fighters
+     * B-17 Flying Fortress style large 4-engine heavy bombers
+     * P-38 / F-5 Lightning style twin-boom twin-engine reconnaissance planes
+
+Materials & Visual Style:
+Rich tactile materials: pale limestone, dark red brick, slate and terracotta tile roofs, olive-drab military vehicles and aircraft, neutral gray concrete runway, neat green trees and lawns. Clear natural daylight from upper-left casting crisp, realistic 3D contact shadows that emphasize vertical height and volumetric depth.
+Clean isolated city on a pure clean white background, thin ground plate with low perimeter stone defensive wall and gatehouses. No 45-degree rotation, no moat, no modern skyscrapers, no fantasy castles.

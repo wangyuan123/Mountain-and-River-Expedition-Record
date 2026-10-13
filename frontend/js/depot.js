@@ -319,7 +319,9 @@
         h += '<div class="menu">';
         var hasInCat = false;
 
-        if (cat === 'equipment') {
+        if (cat === 'unitEquipment' && G.UnitEquipment) {
+          h += G.UnitEquipment.inventoryHtml(); hasInCat = true;
+        } else if (cat === 'equipment') {
           var eqKeys = Object.keys(s.items || {}).filter(function (k) {
             return equipmentInfo(k) && (s.items[k] || 0) > 0;
           });
@@ -360,8 +362,10 @@
             var cls = cnt > 0 ? 'menu-item ok' : 'menu-item lock';
             var btnHtml = '';
             if (cnt > 0) {
-              if (info.cat === 'jewelry' && !info.isBox && iid.indexOf('box_') !== 0) {
+              if (iid.indexOf('rank_certificate_') === 0) {
                 btnHtml = '<button type="button" class="btn depot-btn" onclick="Game.go(\'mainQuest\')">[前往晋升军衔]</button>';
+              } else if (iid.indexOf('gem_') === 0) {
+                btnHtml = '';
               } else {
                 var btnLabel = iid === 'cityRenameCard' ? '修改城市名' : (info.isBox || iid.indexOf('box_') === 0) ? '开启宝箱' : (iid === 'expBook' || iid === 'expBookAdv' || iid === 'expBookMax' || iid === 'loyaltyBox' || iid === 'renameCard' || iid === 'skillBook' || iid.indexOf('skillBook_') === 0 || iid === 'starUp') ? '选择军官使用' : '使用';
                 btnHtml = '<button type="button" class="btn depot-btn" onclick="Game.Depot.useItem(\'' + iid + '\')">[' + btnLabel + ']</button>';
@@ -408,7 +412,7 @@
       h += '</div>';
       h += '<div class="menu">';
       if (!s.officers || !s.officers.length) {
-        h += '<div class="desc">暂无军官,请前往【军事】→【军校】招募</div>';
+        h += '<div class="desc">暂无军官,请前往【军工】→【军校】招募</div>';
       }
       for (var i = 0; i < (s.officers || []).length; i++) {
         var o = s.officers[i];
@@ -456,7 +460,7 @@
         h += '<div class="' + itemCls + '" style="cursor:pointer" ' + clickAttr + '>';
         h += '<span class="n" style="color:' + (D.starColor[o.star] || '#bbb') + '">' + G.escapeHtml(o.name) + '</span> ';
         h += '<span class="stars">' + starStr + '</span> ';
-        h += '<span class="lv">Lv.' + o.level + (o.role === 'mayor' ? ' [市长]' : (o.role === 'commander' ? ' [司令]' : '')) + equipTip + '</span> ';
+        h += '<span class="lv">Lv.' + o.level + (o.role === 'mayor' ? ' [市长]' : (o.role === 'commander' ? ' [司令]' : (o.role === 'commander_in_chief' ? ' [司令官]' : ''))) + equipTip + '</span> ';
         h += '<div class="d">将' + o.military + ' 军' + o.logistics + ' 智' + o.knowledge + ' 忠' + (o.loyalty || 0) + skillStr + '</div>';
         if (curEquipTip) h += curEquipTip;
         h += '</div>';

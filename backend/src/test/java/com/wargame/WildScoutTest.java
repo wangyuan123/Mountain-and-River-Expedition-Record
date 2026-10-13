@@ -17,7 +17,7 @@ import static org.mockito.Mockito.*;
 class WildScoutTest extends BaseServiceTest {
     private March dispatch(Player player, WildTile tile, boolean legacyEndpoint) {
         if (!legacyEndpoint) return marchService.createDispatch(player.getId(), new DispatchRequest(
-                "wild", tile.getId(), "scout", Map.of("scout", 1, "infantry", 10), null, null));
+                "wild", tile.getId(), "scout", Map.of("scout", 1), null, null));
         AuthService auth = mock(AuthService.class);
         GameStateService state = mock(GameStateService.class);
         when(auth.getCurrentPlayer()).thenReturn(player);
@@ -72,10 +72,10 @@ class WildScoutTest extends BaseServiceTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
-    void cannotScoutWithoutAircraft(boolean legacyEndpoint) {
+    void cannotScoutWithoutReconUnits(boolean legacyEndpoint) {
         Player player = createTestPlayer();
         WildTile tile = createWildTile(createTestWorld().getId(), "oil", 15, 15, 3, Map.of(), 5000);
-        assertEquals("请至少选择一种兵种出征", assertThrows(IllegalArgumentException.class,
+        assertEquals(legacyEndpoint ? "城内没有可用侦查部队，请制造侦察机或侦查装甲车" : "请至少选择一种兵种出征", assertThrows(IllegalArgumentException.class,
                 () -> dispatch(player, tile, legacyEndpoint)).getMessage());
         assertFalse(tile.getScouted());
         assertTrue(marchRepository.findByPlayerId(player.getId()).isEmpty());

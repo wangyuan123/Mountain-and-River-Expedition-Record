@@ -260,7 +260,7 @@ public class ShopController {
             Map.entry("shield", 200),
             Map.entry("marchOrd", 100),
             Map.entry("populationOrder", 100),
-            // 军衔珠宝宝箱
+            // 珠宝珍品箱
             Map.entry("box_gem", 200),
             Map.entry("box_gem_primary", 150),
             Map.entry("box_gem_medium", 400),
@@ -350,8 +350,8 @@ public class ShopController {
             Map.entry("shield", "护盾"),
             Map.entry("marchOrd", "行军令"),
             Map.entry("populationOrder", "人口动员令"),
-            // 军衔珠宝宝箱
-            Map.entry("box_gem", "军衔珠宝宝箱"),
+            // 珠宝珍品箱
+            Map.entry("box_gem", "珠宝珍品箱"),
             Map.entry("box_gem_primary", "初级珠宝宝箱"),
             Map.entry("box_gem_medium", "中级珠宝宝箱"),
             Map.entry("box_gem_senior", "高级珠宝宝箱"),

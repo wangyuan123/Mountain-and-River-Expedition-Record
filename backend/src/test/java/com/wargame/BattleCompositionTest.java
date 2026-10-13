@@ -21,18 +21,17 @@ class BattleCompositionTest {
     }
 
     @Test
-    void dedicatedSiegeClearsBunkersWithinRoundLimitAtComparableBudget() {
-        // 碉堡射程提至1050后，喀秋莎火箭（range=2000）作为射程压制工事的超视距攻坚武器，
-        // 需验证在30回合上限内拥有足够的攻坚火力彻底清空碉堡群。
+    void shorterRocketRangeRequiresMoreSiegeFirepowerWithinRoundLimit() {
+        // 喀秋莎反坦克火箭车射程调整为1600后，仍需验证在24回合上限内拥有足够的攻坚火力清空碉堡群。
         for (boolean developed : List.of(false, true)) {
-            for (String id : List.of("rocket")) {
-                int count = 140;
+            for (int count : new int[]{140, 175}) {
                 int wins = 0;
                 for (int seed = 0; seed < 32; seed++) {
-                    BattleResult result = battle(Map.of(id, count), Map.of(), Map.of("bunker", 700), seed, developed);
+                    BattleResult result = battle(Map.of("rocket", count), Map.of(), Map.of("bunker", 700), seed, developed);
                     if (result.getSurvivorDefender().isEmpty()) wins++;
                 }
-                assertTrue(wins >= 20, id + " developed=" + developed + " wins=" + wins);
+                assertEquals(count == 140 ? 0 : 32, wins,
+                        "rocket count=" + count + " developed=" + developed + " wins=" + wins);
             }
         }
     }

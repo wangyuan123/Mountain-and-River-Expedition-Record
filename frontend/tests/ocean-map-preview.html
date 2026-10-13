@@ -11,9 +11,12 @@ Game.API={getToken:function(){return 'preview';},getMapChunk:function(cx,cy){req
 Game.Core.route='world';Game.Core.renderTop=function(){};Game.Core.footer=function(){return '';};Game.Core.render=function(){var v=document.getElementById('view');if(!Game.WorldMap.mounted(v))v.innerHTML='';if(Game.WorldMap.isMap())Game.WorldMap.render(v);else v.innerHTML='<button onclick="Game.WorldMap.setMode(\'map\')">返回大地图</button>';};
 Game.toast=function(t){log.textContent=t;};Game.go=function(r){log.textContent='进入：'+r;};Game.World={mapAction:function(t,action){log.textContent='目标 '+t.kind+':'+t.id+'，操作 '+action;}};
 window.addEventListener('error',function(e){log.textContent='ERROR: '+e.message;});
-</script><script src="js/map-camera.js"></script><script src="js/map-chunks.js"></script><script src="js/map-layout.js"></script><script src="js/map-ocean.js?v=1.0"></script><script src="js/map-terrain.js?v=3.0-ocean"></script><script src="js/world-map.js"></script><script>
+</script><script src="js/map-camera.js"></script><script src="js/map-chunks.js"></script><script src="js/map-layout.js"></script><script src="js/map-ocean.js?v=1.5-water-depth"></script><script src="js/map-water.js?v=1.5-shore-glints"></script><script src="js/map-terrain.js?v=3.0-ocean"></script><script src="js/world-map.js?v=5.12-water-ripples"></script><script>
 if(new URLSearchParams(location.search).has('showcase')){document.querySelector('.fixture-tools').hidden=true;document.getElementById('fixture-log').hidden=true;}
 fetch('tests/ocean-fixture.json').then(function(r){return r.json();}).then(function(data){
+  // 演示地形为 200 格；四象限预览复用正式地图的镜像规则，保持地表与海面尺寸一致。
+  Game.DATA.world.quadrantSize=data.size;
+  Game.DATA.world.size=new URLSearchParams(location.search).has('quadrants')?data.size*2:data.size;
   Game.MapOcean.configure(data);
   var sea=function(x,y){return Game.MapOcean.sea(x,y);};
   sampleTargets=sampleTargets.filter(function(t){return t.kind==='wild'&&!sea(t.x,t.y)&&t.x%9===0&&t.y%9===0;});
@@ -21,6 +24,14 @@ fetch('tests/ocean-fixture.json').then(function(r){return r.json();}).then(funct
   sampleTargets.push({id:3,kind:'player',selfCity:false,x:141,y:106,name:'花园卫城',ownerName:'内陆指挥官',ownerId:3,coastal:false});
   sampleTargets.push({id:2,kind:'npc',x:134,y:98,name:'海防要塞',level:5,coastal:true});
   Game.Core.state.world.cityPos={x:145,y:106};Game.Core.state.world.pos={x:145,y:106};Game.Core.state.world.marches=[];
+  if(new URLSearchParams(location.search).has('marchbands')){
+    var now=Date.now();
+    Game.Core.state.world.marches=[
+      {id:101,action:'conquer',targetKind:'npc',fromX:145,fromY:106,targetX:134,targetY:98,army:{infantry:200},startAt:now-60000,arriveAt:now+180000,route:[[145,106],[145,98],[134,98]]},
+      {id:102,action:'conquer',targetKind:'player',returning:true,fromX:139,fromY:111,targetX:145,targetY:106,army:{ltank:20},startAt:now-60000,arriveAt:now+180000},
+      {id:103,action:'transport',targetKind:'player',fromX:145,fromY:106,targetX:141,targetY:106,army:{truck:50},startAt:now-60000,arriveAt:now+180000}
+    ];
+  }
   Game.Core.state.cityOverview={count:1,cap:3,cities:[]};
   Game.API.client={get:function(url){
     if(url.indexOf('/terrain')>=0)return Promise.resolve(data);
@@ -32,7 +43,7 @@ fetch('tests/ocean-fixture.json').then(function(r){return r.json();}).then(funct
     return Promise.resolve({x:x,y:y,valid:land&&!occupied,coastal:coastal,cityType:coastal?'海岸':hill?'丘陵':'平原',reason:!land?'城市四格占地必须全部位于陆地':occupied?'该范围与现有据点占地重叠':''});
   },post:function(){return Promise.reject(Error('演示页面不扣资源，请在正式游戏中建城'));}};
   Game.Core.render();
-});setInterval(function(){var m=Game.WorldMap.metrics();document.getElementById('fixture-metrics').textContent='镜头 '+(m.x||0).toFixed(2)+','+(m.y||0).toFixed(2)+' · 缩放 '+(m.scale||0).toFixed(1)+' · 缓存 '+m.chunks+' · 请求 '+requests+' · 图标 '+m.markers+' · 实际位置 '+Game.state.world.pos.x+','+Game.state.world.pos.y;},300);
+});setInterval(function(){var m=Game.WorldMap.metrics();document.getElementById('fixture-metrics').textContent='镜头 '+(m.x||0).toFixed(2)+','+(m.y||0).toFixed(2)+' · 缩放 '+(m.scale||0).toFixed(1)+' · 缓存 '+m.chunks+' · 请求 '+requests+' · 图标 '+m.markers+' · 海面 '+m.water+' · 实际位置 '+Game.state.world.pos.x+','+Game.state.world.pos.y;},300);
 document.getElementById('rerender').onclick=function(){Game.Core.render();};document.getElementById('netfail').onclick=function(){failed=!failed;this.textContent=failed?'恢复网络':'切换弱网失败';};document.getElementById('theme').onclick=function(){document.documentElement.dataset.theme=document.documentElement.dataset.theme==='3gqq'?'dark':'3gqq';};
 document.getElementById('pinch').onclick=function(){var el=document.querySelector('canvas'),r=el.getBoundingClientRect();function e(type,id,x,y){el.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:id,pointerType:'touch',clientX:r.left+x,clientY:r.top+y}));}var old=el.setPointerCapture;el.setPointerCapture=function(){};e('pointerdown',11,140,170);e('pointerdown',12,240,170);e('pointermove',11,100,170);e('pointermove',12,280,170);e('pointerup',11,100,170);e('pointerup',12,280,170);el.setPointerCapture=old;log.textContent='已模拟双指展开手势';};
 </script></body></html>

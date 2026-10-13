@@ -6,7 +6,7 @@ import java.util.Map;
 
 /**
  * 日军专属兵种定义与名称映射
- * 数值与底层 ID (infantry, motor, etc.) 与盟军完全一致，仅在 NPC 日寇城与流寇据点展示日军专属名称。
+ * 数值与底层 ID 与盟军完全一致，仅在 NPC 日寇城与流寇据点展示日军专属名称。
  */
 public final class JapaneseUnitDef {
 
@@ -17,13 +17,13 @@ public final class JapaneseUnitDef {
     static {
         Map<String, String> m = new LinkedHashMap<>();
         m.put("infantry", "步兵-三八式步枪兵（Type 38）");
-        m.put("motor", "摩托兵-九七式侧三轮（陆王）");
         m.put("truck", "卡车-九四式六轮卡车（Type 94）");
         m.put("armored", "装甲车-九三式装甲车（Type 93）");
+        m.put("recon_car", "侦查装甲车-九二式重装甲车（Type 92）");
         m.put("ltank", "轻型坦克-九五式轻战（Ha-Go）");
         m.put("htank", "重型坦克-四式中战（Chi-To）");
         m.put("assault", "突击炮-一式自走炮（Ho-Ni I）");
-        m.put("rocket", "火箭-四式喷进炮（Type 4）");
+        m.put("rocket", "反坦克火箭车-四式喷进炮（Type 4）");
         m.put("scout", "侦察机-百式司令部侦察机（Ki-46）");
         m.put("special", "特种兵-挺进战队（义烈空挺队）");
         m.put("fighter", "战斗机-零式战斗机（A6M5）");

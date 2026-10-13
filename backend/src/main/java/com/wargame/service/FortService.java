@@ -30,8 +30,8 @@ public class FortService {
     private final ResourcesRepository resourcesRepository;
     private final BuildingRepository buildingRepository;
 
-    /** 城防上限系数 - 对应 JS: (s.buildings.wall || 0) * 800 */
-    private static final int FORT_CAP_PER_WALL_LEVEL = 800;
+    /** 四类城防武器共享容量，每级城防增加3000，10级可容纳30000。 */
+    private static final int FORT_CAP_PER_WALL_LEVEL = 3000;
     /** 拆除返还比例 - 对应 JS: Math.floor(cost.steel * n * 0.3) */
     private static final double DISMANTLE_REFUND_RATIO = 0.3;
 
@@ -67,12 +67,12 @@ public class FortService {
             return result;
         }
 
-        // 3. 检查城防上限 (JS: if (totalForts() + n > fortCap()))
+        // 四类工事合计占用当前城市容量；先校验再扣费，用长整数避免超大请求绕过上限。
         int cap = fortCap(playerId);
         int total = totalForts(playerId);
-        if (total + count > cap) {
+        if ((long) total + count > cap) {
             result.put("success", false);
-            result.put("message", "城防数量已达上限(围墙Lv." + wallLv + " 上限" + cap + ")");
+            result.put("message", "四类城防武器共享容量不足(城防Lv." + wallLv + " 容量" + cap + ")");
             return result;
         }
 
@@ -185,9 +185,10 @@ public class FortService {
     }
 
     // ================================================================
-    //  fortCap - 对应 JS fortCap(): (s.buildings.wall || 0) * 800
+    //  fortCap - 四类工事合计容量，城防每级3000
     // ================================================================
 
+    /** 当前城市四类工事共享的总容量，升级城防只扩容，不赠送工事。 */
     public int fortCap(Long playerId) {
         return buildingLevel(playerId, "wall") * FORT_CAP_PER_WALL_LEVEL;
     }

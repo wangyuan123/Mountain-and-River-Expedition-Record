@@ -330,6 +330,7 @@ window.Game = window.Game || {};
         Main.renderNavBar();
         Core.route = 'home';
         Core.render();
+        if (G.Pvp) G.Pvp.start();
         if (G.MainQuest) G.MainQuest.init();
         if (G.Chat) G.Chat.loadHistory();
         if (G.Mail) G.Mail.seed();
@@ -439,9 +440,14 @@ window.Game = window.Game || {};
         return;
       }
       var cityEl = document.getElementById('epCityName');
-      var cityName = cityEl ? cityEl.value.trim() : '';
-      var safeRe = /^[A-Za-z0-9_\u4e00-\u9fa5·\s]{1,12}$/;
-      if (cityName && !safeRe.test(cityName)) { G.toast('城市名仅限中英文/数字/下划线，最多12字'); return; }
+      var rawName = cityEl ? cityEl.value : '';
+      var cityName = (!rawName || !rawName.trim()) ? '新城市' : rawName;
+      try {
+        cityName = G.normalizeDisplayName(cityName, 12, '城市名称');
+      } catch (error) {
+        G.toast(error.message);
+        return;
+      }
       G.API.setCityName(cityName).then(function () {
         G.toast('城市名已保存');
         var box = document.getElementById('editCityBox');

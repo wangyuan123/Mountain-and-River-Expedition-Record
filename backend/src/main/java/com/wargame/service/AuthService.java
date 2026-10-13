@@ -79,6 +79,7 @@ public class AuthService {
         player.setPasswordHash(passwordEncoder.encode(password));
         player.setFaction("allies");
         player.setCityName("新城市");
+        player.setDisplayName(playerRepository.generateDefaultCommanderName());
         if (protection.enabled()) {
             player.setGameInitialized(false);
             player.setPosX(null); player.setPosY(null); player.setCityPosX(null); player.setCityPosY(null);
@@ -139,6 +140,7 @@ public class AuthService {
         player.setPasswordHash(passwordEncoder.encode("guest-" + System.currentTimeMillis()));
         player.setFaction("allies");
         player.setCityName("新城市");
+        player.setDisplayName(playerRepository.generateDefaultCommanderName());
         player = playerRepository.save(player);
         gameStateService.initializeNewPlayer(player.getId());
         String token = jwtUtil.generateToken(username, player.getId());

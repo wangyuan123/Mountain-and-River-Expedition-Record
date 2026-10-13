@@ -315,11 +315,90 @@ def update_world_map_table(mask_str):
     """)
     print("    world_map table successfully updated.")
 
+def sea_npc_garrison(level):
+    multiplier = level + 9
+    army = {'sub': 40 * level * multiplier}
+    if level >= 4:
+        destroyers = 12 * (level - 3) if level <= 10 else 84 + 18 * (level - 10) if level <= 20 else 264 + 24 * (level - 20)
+        army['destroyer'] = destroyers * multiplier
+    if level >= 11:
+        battleships = 8 * (level - 10) if level <= 20 else 80 + 12 * (level - 20)
+        army['battleship'] = battleships * multiplier
+    if level >= 21:
+        carrier_step = level - 20
+        army['carrier'] = 2 * carrier_step * (level + 29)
+        army['fighter'] = 80 * carrier_step * multiplier
+        army['bomber'] = 40 * carrier_step * multiplier
+    return army
+
+def populate_sea_fleets(mask_str, total_sea_set):
+    print("==> 10. Populating sea fleets in circular ocean and waterways...")
+    run_sql("DELETE FROM bandits WHERE name LIKE '日寇海域守军%' OR name LIKE '%舰队%' OR name LIKE '%潜艇支队%';")
+    blocked_raw = subprocess.check_output(['mysql', '-u', 'root', '-N', '-e', """
+        SELECT x, y FROM wargame.player_cities
+        UNION
+        SELECT x, y FROM wargame.npc_cities
+        UNION
+        SELECT x, y FROM wargame.bandits
+        UNION
+        SELECT x, y FROM wargame.wild_tiles;
+    """]).decode().strip().splitlines()
+    used = set()
+    for line in blocked_raw:
+        if line.strip():
+            x, y = map(int, line.split())
+            used.add((x, y))
+
+    def get_cells(gx, gy, span, blocked_set, seed):
+        res = []
+        for y in range(max(0, gy), min(HEIGHT, gy + span)):
+            for x in range(max(0, gx), min(WIDTH, gx + span)):
+                if (x, y) in total_sea_set and (x, y) not in blocked_set:
+                    res.append((x, y))
+        rng = random.Random(seed)
+        rng.shuffle(res)
+        return res
+
+    all_fleets = []
+    fleet = 0
+    for gy in range(0, HEIGHT, 16):
+        for gx in range(0, WIDTH, 16):
+            c = get_cells(gx, gy, 16, used, gy * 811 + gx)
+            if not c:
+                continue
+            pos = c[0]
+            used.add(pos)
+            fleet += 1
+            all_fleets.append(pos)
+
+    for gy in range(0, HEIGHT, 16):
+        for gx in range(0, WIDTH, 16):
+            c = get_cells(gx, gy, 16, used, gy * 1217 + gx)
+            if not c:
+                continue
+            pos = c[0]
+            used.add(pos)
+            all_fleets.append(pos)
+
+    values = []
+    for idx, (x, y) in enumerate(all_fleets):
+        level = 1 + (idx % 30)
+        name = f'日寇海域守军 Lv.{level}'
+        army_json = json.dumps(sea_npc_garrison(level))
+        commander = '山本五十六'
+        values.append(f"(1, '{name}', {x}, {y}, {level}, '{army_json}', 0, '{commander}', 0)")
+
+    if values:
+        sql = f"INSERT INTO bandits (world_id, name, x, y, level, army, defeated, commander_name, version) VALUES {','.join(values)};"
+        run_sql(sql)
+    print(f"    Populated {len(all_fleets)} sea fleets across central circular ocean and waterways.")
+
 def main():
     mask_str, total_sea_set, circle_sea_set = generate_terrain_mask()
     update_world_map_table(mask_str)
     populate_wild_tiles(mask_str, total_sea_set)
-    print("\n[SUCCESS] Central circular ocean and wild tiles configured successfully!")
+    populate_sea_fleets(mask_str, total_sea_set)
+    print("\n[SUCCESS] Central circular ocean, wild tiles, and sea fleets configured successfully!")
 
 if __name__ == '__main__':
     main()

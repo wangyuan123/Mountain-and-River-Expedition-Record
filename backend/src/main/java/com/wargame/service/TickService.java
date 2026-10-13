@@ -20,6 +20,8 @@ import java.util.concurrent.atomic.AtomicLong;
 @Service
 public class TickService {
 
+    @org.springframework.beans.factory.annotation.Autowired private UnitEquipmentService unitEquipment;
+
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
 
@@ -114,6 +116,12 @@ public class TickService {
         if (player == null) return;
 
         long now = System.currentTimeMillis();
+        if (cityScope.frozen(playerId)) {
+            // Freeze the city clock as well as its writes; no catch-up production after handoff.
+            cityScope.economy(playerId).setLastTick(now);
+            cityScope.saveEconomy(playerId);
+            return;
+        }
         long lastTick = cityScope.economy(playerId).getLastTick() != null ? cityScope.economy(playerId).getLastTick() : now;
         // 新建或历史账号可能尚未写入 lastTick。即使本次没有经济时间差，
         // 也必须继续处理到达行军和战术回合，避免离线战斗永久停滞。
@@ -320,6 +328,11 @@ public class TickService {
 
         // Complete army production queues before processing marches.
         armyService.completeProduction(playerId, now);
+        if (unitEquipment.complete(playerId, now)) {
+            // 制备完成即同步账号库存与本城通道，离开配装面板也能看到新装备。
+            pushService.pushTickUpdate(playerId, Map.of("items", unitEquipment.inventory(playerId),
+                    "unitEquipment", unitEquipment.state(playerId)));
+        }
 
         // Process marches
         marchService.processMarches(playerId, now);
@@ -329,7 +342,9 @@ public class TickService {
 
         // Complete constructions and research
         List<String> completedBuilds = buildService.completeUpgrade(playerId, now);
-        List<String> completedResearch = techService != null ? techService.settleCompletedResearch(playerId, now) : Collections.emptyList();
+        List<String> completedResearch = techService != null
+                ? techService.settleCompletedResearchForCity(playerId, cityScope.slot(playerId), now)
+                : Collections.emptyList();
 
         // Push tick update to player via WebSocket
         pushTickUpdate(playerId, res, now, completedBuilds, completedResearch, civilians, populationCap, effectiveCap, morale, resentment, tax);
@@ -418,6 +433,7 @@ public class TickService {
             marchList.add(worldViewService.toMarchMap(m, now));
         }
         stateChanges.put("marches", marchList);
+        stateChanges.put("reinforcements", worldViewService.getReinforcements(playerId));
 
         // 建筑进度
         List<Construction> constructions = constructionRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));

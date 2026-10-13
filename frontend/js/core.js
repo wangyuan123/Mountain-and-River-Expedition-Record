@@ -148,6 +148,11 @@ window.Game = window.Game || {};
       var s = this.state;
       var cs = s.cityState;
       var now = Date.now();
+      if (s.player && s.player.cityFrozen) {
+        var transferMin = s.player.cityTransferDeadlineAt && s.player.cityTransferDeadlineAt > now
+          ? Math.ceil((s.player.cityTransferDeadlineAt - now) / 60000) : 0;
+        return { status: 'surrender', text: '归降移交中', color: 'var(--warning)', detail: transferMin ? '剩余' + transferMin + '分钟' : '等待服务器结算' };
+      }
       if (status === 'shield') {
         var safeUntil = Math.max(cs.shieldUntil || 0, cs.peaceUntil || 0);
         var min = Math.ceil((safeUntil - now) / 60000);
@@ -250,10 +255,11 @@ window.Game = window.Game || {};
       return used;
     },
 
+    /** 两区沿用市政厅每级增加2个卡槽的规则，满级上限与后端统一为36个。 */
     groupSlotsCap: function (groupKey) {
-      var base = (D.groupSlots && D.groupSlots[groupKey]) || 10;
+      var base = (D.groupSlots && D.groupSlots[groupKey]) || 16;
       var commandLv = this.buildingLevel('command');
-      return Math.min(32, base + Math.max(0, commandLv) * 2);
+      return Math.min(36, base + Math.max(0, commandLv) * 2);
     },
 
     groupSlotsRemaining: function (groupKey) {
@@ -406,12 +412,20 @@ window.Game = window.Game || {};
       return s ? ' · 技能:' + s : '';
     },
 
+    /** 只读取服务器装备后的有效属性，不读取技能，也不影响世界地图行军速度。 */
+    commandBonusMul: function (attribute) {
+      var state = this.state || {};
+      if (!state.buildings || !state.buildings.headquarters) return 1;
+      var chief = this.getOfficerByRole('commander_in_chief');
+      return 1 + Math.max(0, Number(chief && chief[attribute]) || 0) * G.Constants.commandBonusRate;
+    },
+
     atkMul: function (cat) {
       var s = this.state;
       var cmd = this.getOfficerByRole('commander');
       var cmdMil = cmd ? cmd.military : 0;
       var allMul = 1 + 0.10 * (s.tech.attack_tech || 0);
-      return allMul * (1 + cmdMil / 100);
+      return allMul * (1 + cmdMil / 100) * this.commandBonusMul('military');
     },
 
     defMul: function (cat, isMine) {
@@ -419,7 +433,7 @@ window.Game = window.Game || {};
       var allMul = 1 + 0.10 * (s.tech.defense_tech || 0);
       var catMul = 1;
       var wallMul = (isMine && cat !== 'air') ? (1 + 0.05 * (s.buildings.wall || 0)) : 1;
-      return allMul * catMul * wallMul;
+      return allMul * catMul * wallMul * this.commandBonusMul('defense');
     },
 
     rangeMul: function () { return 1 + 0.10 * (this.state.tech.weapon_range || 0); },
@@ -427,7 +441,7 @@ window.Game = window.Game || {};
     hpMul: function (cat) {
       var s = this.state;
       var allMul = 1 + 0.10 * (s.tech.cmd_hp || 0);
-      return allMul;
+      return allMul * this.commandBonusMul('logistics');
     },
 
     /** 行军倍率按兵种匹配引擎科技；省略 unitId 时保持类别计算兼容。 */
@@ -464,13 +478,12 @@ window.Game = window.Game || {};
       var rankTier = p.militaryRank || 1;
       var rankInfo = G.getMilitaryRankTierInfo ? G.getMilitaryRankTierInfo(rankTier) : { baseCap: 25000 };
       var rankBase = rankInfo.baseCap || 25000;
-      // 只有当前城市围墙达到满级才一次性加成，统帅技能继续放大最终基础容量。
-      var wallBonus = this.buildingLevel('wall') >= 10 ? 100000 : 0;
+      // 带兵上限只取军衔基础与统帅技能，城防升级收益属于城防武器。
       var leadBonus = 0;
       if (this.skillBonus) {
         leadBonus = Math.max(this.skillBonus('leadership'), this.skillBonus('supply'));
       }
-      return Math.floor((rankBase + wallBonus) * (1 + leadBonus));
+      return Math.floor(rankBase * (1 + leadBonus));
     },
 
     /** 迎战仅额外增加半份军衔基础，攻击已有的各类加成不再乘以 1.5。 */
@@ -478,6 +491,12 @@ window.Game = window.Game || {};
       var tier = (this.state && this.state.player && this.state.player.militaryRank) || 1;
       var rank = G.getMilitaryRankTierInfo ? G.getMilitaryRankTierInfo(tier) : { baseCap: 25000 };
       return this.armyCap() + Math.floor(rank.baseCap / 2);
+    },
+
+    /** 当前城池最大同时出征队伍数量：基础5支 + 司令部等级（0级5支，1级6支，满级15支） */
+    maxMarches: function () {
+      var hqLv = this.buildingLevel('headquarters');
+      return 5 + hqLv;
     },
 
     addExp: function () {},
@@ -722,6 +741,7 @@ window.Game = window.Game || {};
       if (this.route !== 'alerts' && G.World && G.World.stopAlertTimer) G.World.stopAlertTimer();
       if (this.route !== 'battle' && G.Battle && G.Battle.stopTacticalTimer) G.Battle.stopTacticalTimer();
       if (this.route !== 'wounded' && G.Wounded) G.Wounded.stop();
+      if (this.route !== 'prisoners' && G.Prisoners) G.Prisoners.stop();
       if (this.route !== 'tech' && G.Tech && G.Tech.stopTimer) G.Tech.stopTimer();
       var screen = $('screen');
       if (screen && screen.classList) screen.classList.toggle('chat-open', this.route === 'chat');
@@ -872,7 +892,7 @@ window.Game = window.Game || {};
       }
 
       // 4. Army production: handled by army.js own queue timer
-      if (route === 'army' || route === 'wounded') {
+      if (route === 'army' || route === 'wounded' || route === 'prisoners') {
         return;
       }
 

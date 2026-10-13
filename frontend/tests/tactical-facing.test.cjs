@@ -13,7 +13,7 @@ function setup() {
         truck: { name: '卡车', range: 0, spd: 8 },
         armored: { name: '装甲车', range: 300, spd: 7 },
         htank: { name: '重型坦克', range: 320, spd: 6 },
-        rocket: { name: '火箭', range: 2000, spd: 5 }
+        rocket: { name: '反坦克火箭车', range: 1600, spd: 5 }
       },
       forts: {}
     },
@@ -94,7 +94,7 @@ test('战术单位按服务端坐标横向定位，并保留纵向行序', () =>
 test('战术地图把敌我相同兵种放入同一水平行', () => {
   const Battle = setup().Battle;
   Battle._activeTactical = {
-    targetName: '测试敌军', side: 'attacker', initialDistance: 600, round: 1, maxRound: 30,
+    targetName: '测试敌军', side: 'attacker', initialDistance: 600, round: 1, maxRound: 24,
     attackerArmy: { truck: 1, tank: 1 }, defenderArmy: { tank: 1, artillery: 1 },
     attackerPositions: {}, defenderPositions: {}, finished: true, result: {}, log: ''
   };
@@ -122,7 +122,7 @@ test('盟军与日寇型号名称不同、兵力顺序不同时，同类型图�
   const Battle = Game.Battle;
   Battle._activeTactical = {
     targetName: '日寇据点', targetKind: 'npc', initialDistance: 7750,
-    round: 2, maxRound: 30, finished: true, result: {}, log: '',
+    round: 2, maxRound: 24, finished: true, result: {}, log: '',
     attackerArmy: { fighter: 12, htank: 8, infantry: 30 },
     defenderArmy: { infantry: 40, htank: 10, fighter: 15 },
     attackerPositions: {}, defenderPositions: {}
@@ -149,7 +149,7 @@ test('盟军与日寇型号名称不同、兵力顺序不同时，同类型图�
 test('兵种按配置顺序共用行号，单方兵种在另一侧留空', () => {
   const Battle = setup().Battle;
   Battle._activeTactical = {
-    targetName: '测试敌军', side: 'attacker', initialDistance: 3000, round: 1, maxRound: 30,
+    targetName: '测试敌军', side: 'attacker', initialDistance: 3000, round: 1, maxRound: 24,
     attackerArmy: { rocket: 1, armored: 1 }, defenderArmy: { rocket: 1, htank: 1 },
     attackerPositions: {}, defenderPositions: {}, finished: true, result: {}, log: ''
   };
@@ -163,8 +163,8 @@ test('兵种按配置顺序共用行号，单方兵种在另一侧留空', () =>
     rows[`${match[1]}:${match[3]}`] = Number(match[2]);
   }
   assert.deepEqual(rows, {
-    'mine:火箭': 2, 'mine:装甲车': 0,
-    'foe:火箭': 2, 'foe:重型坦克': 1
+    'mine:反坦克火箭车': 2, 'mine:装甲车': 0,
+    'foe:反坦克火箭车': 2, 'foe:重型坦克': 1
   });
   assert.match(view.innerHTML, /class="tactical-map" style="--tactical-map-height:324px"/);
 });
@@ -235,7 +235,7 @@ test('全部前进覆盖默认待命的侦察机、运输机、卡车并提交�
 test('战术命令区提供全部待命、全部前进和全部后退快捷操作', () => {
   const Battle = setup().Battle;
   Battle._activeTactical = {
-    targetName: '测试敌军', side: 'attacker', initialDistance: 600, round: 1, maxRound: 30,
+    targetName: '测试敌军', side: 'attacker', initialDistance: 600, round: 1, maxRound: 24,
     attackerArmy: { truck: 10 }, defenderArmy: {}, attackerPositions: {}, defenderPositions: {}, log: ''
   };
   Battle._tacticalOrders = { truck: { action: null, focusTarget: null } };
@@ -255,7 +255,7 @@ test('战术命令区提供全部待命、全部前进和全部后退快捷操�
 test('单兵种当前战术命令具有选中状态和辅助技术状态', () => {
   const Battle = setup().Battle;
   Battle._activeTactical = {
-    targetName: '测试敌军', side: 'attacker', initialDistance: 600, round: 1, maxRound: 30,
+    targetName: '测试敌军', side: 'attacker', initialDistance: 600, round: 1, maxRound: 24,
     attackerArmy: { truck: 10 }, defenderArmy: {}, attackerPositions: {}, defenderPositions: {}, log: ''
   };
   Battle._tacticalOrders = { truck: { action: 'ADVANCE', focusTarget: null } };
@@ -282,7 +282,7 @@ test('单兵种移动按钮和集火选项的事件属性可正确传入兵种 I
   Game.escapeHtml = (value) => String(value).replaceAll('&', '&amp;').replaceAll('"', '&quot;');
   const Battle = Game.Battle;
   Battle._activeTactical = {
-    marchId: 42, targetName: '测试敌军', side: 'attacker', initialDistance: 600, round: 1, maxRound: 30,
+    marchId: 42, targetName: '测试敌军', side: 'attacker', initialDistance: 600, round: 1, maxRound: 24,
     attackerArmy: { truck: 1 }, defenderArmy: { htank: 1 }, attackerPositions: {}, defenderPositions: {}, log: ''
   };
   Battle._tacticalOrders = { truck: { action: null, focusTarget: null } };
@@ -316,10 +316,10 @@ test('单兵种移动按钮和集火选项的事件属性可正确传入兵种 I
   });
 });
 
-test('账号预设在指挥页展示，但只有集火或手动下令才覆盖本回合', () => {
+test('账号预设在指挥页展示，集火或手动下令形成本场指令', () => {
   const Battle = setup().Battle;
   Battle._activeTactical = {
-    targetName: '测试敌军', side: 'attacker', initialDistance: 600, round: 1, maxRound: 30,
+    targetName: '测试敌军', side: 'attacker', initialDistance: 600, round: 1, maxRound: 24,
     attackerArmy: { truck: 10 }, defenderArmy: { tank: 1 }, attackerPositions: {}, defenderPositions: {},
     defaultActions: { truck: 'HOLD' }, log: ''
   };
@@ -335,10 +335,91 @@ test('账号预设在指挥页展示，但只有集火或手动下令才覆盖�
   assert.equal(Battle._tacticalOrders.truck.focusTarget, 'tank');
 });
 
+test('后退和待命在连续回合恢复并保持选中，重新打开面板也沿用服务端指令', async () => {
+  for (const [action, label] of [['RETREAT', '后退'], ['HOLD', '待命']]) {
+    const Game = setup();
+    const Battle = Game.Battle;
+    const submitted = [];
+    let savedOrders = {};
+    let round = 0;
+    const snapshot = () => ({
+      marchId: 42, targetName: '测试敌军', side: 'attacker', initialDistance: 600, round, maxRound: 24,
+      attackerArmy: { truck: 10 }, defenderArmy: {}, attackerPositions: {}, defenderPositions: {},
+      defaultActions: { truck: 'ADVANCE' }, orders: structuredClone(savedOrders), log: ''
+    });
+    Game.API = {
+      commandTacticalBattle(marchId, orders, expectedRound) {
+        submitted.push({ marchId, orders: structuredClone(orders), round: expectedRound });
+        savedOrders = structuredClone(orders);
+        round++;
+        return Promise.resolve(snapshot());
+      },
+      getTacticalBattle() { return Promise.resolve(snapshot()); }
+    };
+    Game.Core.go = () => {};
+    Battle.startTacticalTimer = () => {};
+    Battle._activeTactical = snapshot();
+    Battle.resetTacticalOrders();
+    Battle.setTacticalAction('truck', action);
+    for (let nextRound = 1; nextRound <= 3; nextRound++) {
+      Battle.executeTacticalRound(true);
+      await new Promise(resolve => setImmediate(resolve));
+      assert.equal(Battle._activeTactical.round, nextRound);
+      assert.equal(Battle._tacticalOrders.truck.action, action);
+      const view = { innerHTML: '' };
+      Battle.renderTacticalBattle(view);
+      const buttons = view.innerHTML.match(/<div class="tactical-actions">([\s\S]*?)<\/div>/)[1];
+      assert.match(buttons, new RegExp('aria-pressed="true"[^>]*>' + label + '</button>'));
+      assert.match(view.innerHTML, /已提交的指令在本场后续所有回合持续生效，直到再次修改/);
+    }
+    assert.deepEqual(submitted.map(call => call.orders.truck.action), [action, action, action]);
+    Battle._tacticalOrders = {};
+    Battle.openTactical(42);
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(Battle._tacticalOrders.truck.action, action);
+    Battle.setTacticalAction('truck', 'ADVANCE');
+    Battle.executeTacticalRound();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(Battle._tacticalOrders.truck.action, 'ADVANCE');
+    assert.equal(submitted.at(-1).orders.truck.action, 'ADVANCE');
+  }
+});
+
+test('恢复和批量修改装备组命令后，单兵种修改仍统一提交且保留集火', () => {
+  const Battle = setup().Battle;
+  Battle._activeTactical = {
+    attackerArmy: { 'rocket~p1': 10, 'rocket~p2': 20, truck: 0 },
+    orders: {
+      'rocket~p1': { action: 'HOLD', focusTarget: 'htank' },
+      'rocket~p2': { action: 'HOLD', focusTarget: 'htank' }
+    }
+  };
+  Battle.startTacticalTimer = () => {};
+  Battle.resetTacticalOrders();
+  assert.deepEqual(Object.keys(Battle._tacticalOrders), ['rocket']);
+  Battle.setAllTacticalActions('RETREAT');
+  assert.equal(Battle._tacticalOrders.rocket.action, 'RETREAT');
+  assert.equal(Battle._tacticalOrders.rocket.focusTarget, 'htank');
+  Battle.setTacticalAction('rocket', 'HOLD');
+  assert.equal(Battle._tacticalOrders.rocket.action, 'HOLD');
+  assert.deepEqual(Object.keys(Battle._tacticalOrders), ['rocket'], '不会留下旧装备组指令覆盖单兵种修改');
+});
+
+test('切换另一场战斗时清除上一场本地指令，只恢复新会话的命令', () => {
+  const Battle = setup().Battle;
+  Battle.startTacticalTimer = () => {};
+  Battle._activeTactical = { marchId: 1, attackerArmy: { rocket: 1 }, orders: { rocket: { action: 'RETREAT' } } };
+  Battle.resetTacticalOrders();
+  assert.equal(Battle._tacticalOrders.rocket.action, 'RETREAT');
+  Battle._activeTactical = { marchId: 2, attackerArmy: { rocket: 1 }, orders: {} };
+  Battle.resetTacticalOrders();
+  assert.equal(Battle._tacticalOrders.rocket.action, null);
+});
+
 test('战术地图与单位徽标展示兵种射程与接敌状态', () => {
   const Battle = setup().Battle;
   Battle._activeTactical = {
-    targetName: '测试敌军', side: 'attacker', initialDistance: 3000, round: 1, maxRound: 30,
+    targetName: '测试敌军', side: 'attacker', initialDistance: 3000, round: 1, maxRound: 24,
     attackerArmy: { rocket: 50, htank: 10, truck: 5 },
     defenderArmy: { htank: 10 },
     attackerPositions: { rocket: 500, htank: 300, truck: 100 },
@@ -354,16 +435,16 @@ test('战术地图与单位徽标展示兵种射程与接敌状态', () => {
   assert.match(view.innerHTML, /也可手动指定射程内的任意敌军/);
   assert.match(view.innerHTML, /默认索敌（同兵种优先，否则最近）/);
   assert.match(view.innerHTML, /class="tactical-range-beam mine in-range"/);
-  assert.match(view.innerHTML, /title="火箭 我军射程: 2000（覆盖至坐标 2500）/);
+  assert.match(view.innerHTML, /title="反坦克火箭车 我军射程: 1600（覆盖至坐标 2100）/);
   assert.match(view.innerHTML, /title="重型坦克 我军射程: 320（覆盖至坐标 620）/);
 
   // 2. 徽标上展示射程标签与是否接敌
-  assert.match(view.innerHTML, /class="tactical-marker-range in-range">🎯2000<\/span>/);
+  assert.match(view.innerHTML, /class="tactical-marker-range in-range">🎯1600<\/span>/);
   assert.match(view.innerHTML, /class="tactical-marker-range">射程 320<\/span>/);
   assert.match(view.innerHTML, /class="tactical-marker-range no-range">无射程<\/span>/);
 
   // 3. 命令卡片上展示射程、速度及距离提示
-  assert.match(view.innerHTML, /class="tactical-metric-pill range"[^>]*>射程 <b>2000<\/b><\/span>/);
+  assert.match(view.innerHTML, /class="tactical-metric-pill range"[^>]*>射程 <b>1600<\/b><\/span>/);
   assert.match(view.innerHTML, /class="tactical-metric-pill spd"[^>]*>移速 <b>5<\/b><\/span>/);
   assert.match(view.innerHTML, /class="tactical-order-range-status in-range">🎯 已进入射程（距最近敌军 1500，可开火）<\/div>/);
   assert.match(view.innerHTML, /class="tactical-order-range-status out-range">⏳ 距最近敌军 1700（还差 1380 进射程，建议前进）<\/div>/);
@@ -376,18 +457,18 @@ test('武器射程科技加成在战术指挥界面中正确提升实战射程�
     attackerArmy: { rocket: 50 },
     defenderArmy: { htank: 10 },
     attackerPositions: { rocket: 0 },
-    defenderPositions: { htank: 2150 },
-    attackerTech: { weapon_range: 2, engine: 1 }, // 武器射程 Lv2 (+20% -> 2400), 引擎 Lv1 (+5%)
+    defenderPositions: { htank: 1900 },
+    attackerTech: { weapon_range: 2, engine: 1 }, // 武器射程 Lv2 (+20% -> 1920), 引擎 Lv1 (+5%)
     finished: false, log: ''
   };
   Battle.startTacticalTimer = () => {};
   const view = { innerHTML: '' };
   Battle.renderTacticalBattle(view);
 
-  // 火箭基础射程 2000，Lv2 科技 +20% 后为 2400。目标距离 2150 <= 2400，故判定为已进入射程
-  assert.match(view.innerHTML, /title="火箭 我军射程: 2400 \(含科技\+400\)（覆盖至坐标 2400），距最近敌军 2150 \[🎯已在射程内\]/);
-  assert.match(view.innerHTML, /class="tactical-marker-range in-range">🎯2400<\/span>/);
-  assert.match(view.innerHTML, /有效交火射程: 2400（基础: 2000，科技 \+20%）/);
-  assert.match(view.innerHTML, /class="tech-tag"[^>]*>\+400<\/small>/);
-  assert.match(view.innerHTML, /class="tactical-order-range-status in-range">🎯 已进入射程（实战射程 2400，距最近敌军 2150，可开火）<\/div>/);
+  // 反坦克火箭车基础射程 1600，Lv2 科技 +20% 后为 1920。目标距离 1900 <= 1920，故判定为已进入射程
+  assert.match(view.innerHTML, /title="反坦克火箭车 我军射程: 1920 \(含科技\+320\)（覆盖至坐标 1920），距最近敌军 1900 \[🎯已在射程内\]/);
+  assert.match(view.innerHTML, /class="tactical-marker-range in-range">🎯1920<\/span>/);
+  assert.match(view.innerHTML, /有效交火射程: 1920（基础: 1600，科技 \+20%）/);
+  assert.match(view.innerHTML, /class="tech-tag"[^>]*>\+320<\/small>/);
+  assert.match(view.innerHTML, /class="tactical-order-range-status in-range">🎯 已进入射程（实战射程 1920，距最近敌军 1900，可开火）<\/div>/);
 });

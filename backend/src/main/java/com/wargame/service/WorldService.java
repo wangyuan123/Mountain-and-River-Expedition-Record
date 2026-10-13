@@ -38,9 +38,10 @@ public class WorldService {
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
 
+    @org.springframework.beans.factory.annotation.Autowired private CityStateRepository cityStates;
+
     private final PlayerRepository playerRepository;
     private final WorldMapRepository worldMapRepository;
-    private final NpcCityRepository npcCityRepository;
     private final PlayerCityRepository playerCityRepository;
     private final WildTileRepository wildTileRepository;
     private final BanditRepository banditRepository;
@@ -59,7 +60,6 @@ public class WorldService {
 
     public WorldService(PlayerRepository playerRepository,
                         WorldMapRepository worldMapRepository,
-                        NpcCityRepository npcCityRepository,
                         PlayerCityRepository playerCityRepository,
                         WildTileRepository wildTileRepository,
                         BanditRepository banditRepository,
@@ -72,7 +72,6 @@ public class WorldService {
                         MailService mailService) {
         this.playerRepository = playerRepository;
         this.worldMapRepository = worldMapRepository;
-        this.npcCityRepository = npcCityRepository;
         this.playerCityRepository = playerCityRepository;
         this.wildTileRepository = wildTileRepository;
         this.banditRepository = banditRepository;
@@ -205,6 +204,7 @@ public class WorldService {
                 boolean selfCity = realPlayer.getId().equals(playerId);
                 boolean relatedWar = !selfCity && playerId.equals(realPlayer.getWarAgainstId());
                 result.put("ownerId", realPlayer.getId());
+                result.put("guildmate", guildRelations.areGuildmates(playerId, realPlayer.getId()));
                 result.put("selfCity", selfCity);
                 result.put("warAt", relatedWar && realPlayer.getWarAt() != null ? realPlayer.getWarAt() : 0L);
                 result.put("warEndAt", relatedWar && realPlayer.getWarEndAt() != null ? realPlayer.getWarEndAt() : 0L);
@@ -229,24 +229,12 @@ public class WorldService {
             result.put("name", playerCity.getName());
             result.put("level", playerCity.getLevel());
             result.put("ownerId", simulatedNpc ? null : playerCity.getOwnerId());
+            result.put("prestige", owner != null && owner.getPrestige() != null ? owner.getPrestige() : 0);
+            result.put("guildmate", !simulatedNpc && guildRelations.areGuildmates(playerId, playerCity.getOwnerId()));
             result.put("simulatedNpc", simulatedNpc);
             result.put("selfCity", !simulatedNpc && playerCity.getOwnerId().equals(playerId));
             result.put("warAt", 0L);
             result.put("warEndAt", 0L);
-            result.put("x", x);
-            result.put("y", y);
-            result.put("distance", manhattanDist(currentX(playerId), currentY(playerId), x, y));
-            return result;
-        }
-
-        NpcCity npcCity = npcCityRepository.findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(worldId, x, x, y, y).stream()
-                .filter(city -> x == city.getX() && y == city.getY())
-                .findFirst().orElse(null);
-        if (npcCity != null) {
-            result.put("kind", "npc");
-            result.put("id", npcCity.getId());
-            result.put("name", npcCity.getName());
-            result.put("level", npcCity.getLevel());
             result.put("x", x);
             result.put("y", y);
             result.put("distance", manhattanDist(currentX(playerId), currentY(playerId), x, y));
@@ -294,27 +282,7 @@ public class WorldService {
 
         Map<String, Object> nearby = new LinkedHashMap<>();
 
-        // NPC cities (JS: s.world.npcCities.forEach)
-        List<Map<String, Object>> npcCities = new ArrayList<>();
-        List<NpcCity> npcAll = npcCityRepository.findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(worldId,
-                Math.max(0, px - scanR), Math.min(worldSize - 1, px + scanR),
-                Math.max(0, py - scanR), Math.min(worldSize - 1, py + scanR));
-        for (int i = 0; i < npcAll.size(); i++) {
-            NpcCity nc = npcAll.get(i);
-            if (manhattanDist(px, py, nc.getX(), nc.getY()) <= scanR) {
-                Map<String, Object> m = new LinkedHashMap<>();
-                m.put("idx", i);
-                m.put("id", nc.getId());
-                m.put("name", nc.getName());
-                m.put("level", nc.getLevel());
-                m.put("x", nc.getX());
-                m.put("y", nc.getY());
-                m.put("defeated", nc.getDefeated() != null && nc.getDefeated());
-                m.put("distance", manhattanDist(px, py, nc.getX(), nc.getY()));
-                npcCities.add(m);
-            }
-        }
-        nearby.put("npcCities", npcCities);
+        nearby.put("npcCities", new ArrayList<>());
 
         // Player cities and ownerless legacy cities, which are simulated NPCs.
         List<Map<String, Object>> playerCities = new ArrayList<>();
@@ -363,7 +331,9 @@ public class WorldService {
                 boolean relatedWar = !selfCity && playerId.equals(owner.getWarAgainstId());
                 m.put("ownerId", ownerId);
                 m.put("playerName", owner != null ? owner.getUsername() : "");
+                m.put("prestige", owner != null && owner.getPrestige() != null ? owner.getPrestige() : 0);
                 m.put("selfCity", selfCity);
+                m.put("guildmate", guildRelations.areGuildmates(playerId, ownerId));
                 m.put("warAt", relatedWar && owner.getWarAt() != null ? owner.getWarAt() : 0L);
                 m.put("warEndAt", relatedWar && owner.getWarEndAt() != null ? owner.getWarEndAt() : 0L);
                 m.put("distance", manhattanDist(px, py, pc.getX(), pc.getY()));
@@ -386,6 +356,7 @@ public class WorldService {
                 m.put("id", wt.getId());
                 m.put("type", wt.getType());
                 m.put("level", wt.getLevel());
+                m.put("citySlot", wt.getOccupiedCitySlot() == null ? 0 : wt.getOccupiedCitySlot());
                 m.put("x", wt.getX());
                 m.put("y", wt.getY());
                 m.put("scouted", wt.getScouted() != null && wt.getScouted());
@@ -456,6 +427,20 @@ public class WorldService {
         if (defenderId.equals(playerId)) {
             result.put("success", false);
             result.put("message", "不能向自己的城市宣战");
+            return result;
+        }
+
+        // 与开盾使用同一玩家锁；仅检查发起城和被宣战城，不扩散到其他城或野地。
+        accounts.lockPlayer(playerId);
+        accounts.lockPlayer(defenderId);
+        long shieldCheckAt = System.currentTimeMillis();
+        boolean ownShield = cityStates.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId))
+                .map(cs -> cs.getShieldUntil() != null && cs.getShieldUntil() > shieldCheckAt).orElse(false);
+        boolean targetShield = cityStates.findByPlayerIdAndCitySlot(defenderId, java.util.Objects.requireNonNullElse(target.getCitySlot(), 0))
+                .map(cs -> cs.getShieldUntil() != null && cs.getShieldUntil() > shieldCheckAt).orElse(false);
+        if (ownShield || targetShield) {
+            result.put("success", false);
+            result.put("message", ownShield ? "当前城市护盾生效，无法向其他玩家宣战" : "目标城市护盾生效，无法宣战");
             return result;
         }
 
@@ -703,18 +688,9 @@ public class WorldService {
                 targetDefeated = b.getDefeated() != null && b.getDefeated();
             }
             case "npc" -> {
-                List<NpcCity> npcs = npcCityRepository.findByWorldId(worldId);
-                if (targetIdx < 0 || targetIdx >= npcs.size()) {
-                    result.put("success", false);
-                    result.put("message", "目标不存在");
-                    return result;
-                }
-                NpcCity n = npcs.get(targetIdx);
-                targetX = n.getX();
-                targetY = n.getY();
-                targetName = n.getName();
-                targetId = "n_" + targetIdx;
-                targetDefeated = n.getDefeated() != null && n.getDefeated();
+                result.put("success", false);
+                result.put("message", "NPC城市已取消");
+                return result;
             }
             case "player", "simulated_npc" -> {
                 List<PlayerCity> pcs = playerCityRepository.findByWorldId(worldId).stream()
@@ -770,7 +746,8 @@ public class WorldService {
         // Calculate march time (JS: marchSec = ceil(marchDist * secPerGrid / spd))
         int px = cityScope.economy(playerId).getCityPosX();
         int py = cityScope.economy(playerId).getCityPosY();
-        int marchDist = manhattanDist(px, py, targetX, targetY);
+        // 快捷侦查与出征准备使用相同的直线距离，避免绕过路线预览后计时不同。
+        double marchDist = Math.hypot(targetX - px, targetY - py);
         UnitDef scoutDef = GameData.UNITS.get("scout");
         int airLv = getTechLevel(playerId, "air_engine");
         int apronLv = buildingLevel(playerId, "apron");
@@ -793,6 +770,8 @@ public class WorldService {
         march.setFromX(px);
         march.setFromY(py);
         march.setDistance(marchDist);
+        march.setRouteMode("air");
+        march.setRouteData(JsonUtil.toJson(List.of(List.of(px, py), List.of(targetX, targetY))));
         march.setAction("scout");
         march.setArmy(JsonUtil.toJson(Map.of("scout", sendCount)));
         march.setCommanderId(null);
@@ -807,14 +786,14 @@ public class WorldService {
         marchRepository.save(march);
 
         result.put("success", true);
-        result.put("message", "侦查部队出征! 距" + marchDist + "格 约" + marchSec + "秒后到达");
+        result.put("message", "侦查部队出征! 距" + String.format(Locale.ROOT, "%.2f", marchDist) + "格 约" + marchSec + "秒后到达");
         result.put("marchId", march.getId());
         result.put("arriveAt", march.getArriveAt());
         return result;
     }
 
     // ================================================================
-    //  getOwnedWildTiles - 返回玩家已占领的野地
+    //  getOwnedWildTiles - 返回当前城市已占领的野地
     // ================================================================
 
     public List<Map<String, Object>> getOwnedWildTiles(Long playerId) {
@@ -824,17 +803,7 @@ public class WorldService {
 
         List<Map<String, Object>> owned = new ArrayList<>();
 
-        // Query wild tiles occupied by this player
-        List<WildTile> tiles = wildTileRepository.findByOccupiedBy(playerId);
-        if (tiles == null || tiles.isEmpty()) {
-            // Fallback: query all occupied tiles for the world and filter
-            tiles = wildTileRepository.findByWorldIdAndOccupiedTrue(worldId);
-            if (tiles != null) {
-                tiles = tiles.stream()
-                        .filter(t -> t.getOccupiedBy() == null || playerId.equals(t.getOccupiedBy()))
-                        .toList();
-            }
-        }
+        List<WildTile> tiles = wildTileRepository.findByOccupiedByAndOccupiedCitySlotAndOccupiedTrue(playerId, cityScope.slot(playerId));
 
         if (tiles != null) {
             for (WildTile wt : tiles) {
@@ -903,6 +872,7 @@ public class WorldService {
             wt.setDepletedAt(System.currentTimeMillis());
         if (wt.getDepletedAt() == null) wt.setMined(0);
         wt.setOccupiedBy(null);
+        wt.setOccupiedCitySlot(0);
         wt.setGarrison("{}");
         wt.setGathering(false);
         wt.setGatherStartAt(0L);

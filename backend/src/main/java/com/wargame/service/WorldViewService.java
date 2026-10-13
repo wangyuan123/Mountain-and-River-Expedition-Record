@@ -19,8 +19,9 @@ public class WorldViewService {
     private com.wargame.service.CityScope cityScope;
     @org.springframework.beans.factory.annotation.Autowired
     private CityStateRepository cityStates;
+    @org.springframework.beans.factory.annotation.Autowired private GuildSupportService guildSupport;
+    @org.springframework.beans.factory.annotation.Autowired private GuildRelationService guildRelations;
     private final WorldMapRepository worldMapRepository;
-    private final NpcCityRepository npcCityRepository;
     private final PlayerCityRepository playerCityRepository;
     private final BanditRepository banditRepository;
     private final WildTileRepository wildTileRepository;
@@ -30,9 +31,8 @@ public class WorldViewService {
     private final IncomingMarchRepository incomingMarchRepository;
     private final ArmyUnitRepository armyUnitRepository;
 
-    public WorldViewService(WorldMapRepository worldMapRepository, NpcCityRepository npcCityRepository, PlayerCityRepository playerCityRepository, BanditRepository banditRepository, WildTileRepository wildTileRepository, PlayerRepository playerRepository, MarchRepository marchRepository, BattleSessionRepository battleSessionRepository, IncomingMarchRepository incomingMarchRepository, ArmyUnitRepository armyUnitRepository) {
+    public WorldViewService(WorldMapRepository worldMapRepository, PlayerCityRepository playerCityRepository, BanditRepository banditRepository, WildTileRepository wildTileRepository, PlayerRepository playerRepository, MarchRepository marchRepository, BattleSessionRepository battleSessionRepository, IncomingMarchRepository incomingMarchRepository, ArmyUnitRepository armyUnitRepository) {
         this.worldMapRepository = worldMapRepository;
-        this.npcCityRepository = npcCityRepository;
         this.playerCityRepository = playerCityRepository;
         this.banditRepository = banditRepository;
         this.wildTileRepository = wildTileRepository;
@@ -83,28 +83,8 @@ public class WorldViewService {
         WorldMap worldMap = worldMapRepository.findFirstByOrderByIdAsc().orElse(null);
         Long worldId = worldMap != null ? worldMap.getId() : null;
 
-        // NPC cities
-        List<Map<String, Object>> npcCities = new ArrayList<>();
-        if (worldId != null) {
-            List<NpcCity> entities = npcCityRepository.findByWorldIdAndXBetweenAndYBetweenOrderByIdAsc(worldId, minX, maxX, minY, maxY);
-            for (int i = 0; i < entities.size(); i++) {
-                NpcCity nc = entities.get(i);
-                Map<String, Object> ncMap = new LinkedHashMap<>();
-                ncMap.put("id", nc.getId());
-                ncMap.put("name", nc.getName());
-                ncMap.put("x", nc.getX());
-                ncMap.put("y", nc.getY());
-                ncMap.put("level", nc.getLevel());
-                ncMap.put("army", JsonUtil.parseObjMap(nc.getArmy()));
-                ncMap.put("forts", JsonUtil.parseObjMap(nc.getForts()));
-                ncMap.put("reward", JsonUtil.parseObjMap(nc.getResources()));
-                ncMap.put("commanderName", nc.getCommanderName() != null ? nc.getCommanderName()
-                        : JapaneseOfficers.getCommanderForLevel(nc.getLevel() != null ? nc.getLevel() : 1));
-                ncMap.put("defeated", nc.getDefeated() != null && nc.getDefeated());
-                npcCities.add(ncMap);
-            }
-        }
-        world.put("npcCities", npcCities);
+        // NPC 城市/要塞已取消；保留空数组兼容旧前端状态结构。
+        world.put("npcCities", new ArrayList<>());
 
         // Player cities and legacy ownerless cities, which are handled as simulated NPCs.
         List<Map<String, Object>> playerCities = new ArrayList<>();
@@ -138,6 +118,8 @@ public class WorldViewService {
                 pcMap.put("reward", JsonUtil.parseObjMap(pc.getResources()));
                 pcMap.put("defeated", false);
                 pcMap.put("prestige", pc.getPrestige() != null ? pc.getPrestige() : 0);
+                pcMap.put("surrenderFrozen", pc.isSurrenderFrozen(System.currentTimeMillis()));
+                pcMap.put("surrenderTransferDeadlineAt", pc.getSurrenderTransferDeadlineAt());
 
                 // 坐标上的真实玩家优先于历史 owner_id；无真实 owner 的 PlayerCity 视为模拟 NPC。
                 Long cityOwner = pc.getOwnerId();
@@ -155,12 +137,14 @@ public class WorldViewService {
                 }
                 boolean selfCity = cityOwner.equals(player.getId());
                 pcMap.put("ownerId", cityOwner);
+                pcMap.put("guildmate", guildRelations.areGuildmates(player.getId(), cityOwner));
                 pcMap.put("playerName", owner != null ? owner.getUsername() : "");
                 // 地图列表展开时展示游戏内统帅名与当前军衔；登录名仅作为旧数据兜底。
                 pcMap.put("commanderName", owner.getDisplayName() == null || owner.getDisplayName().isBlank()
                         ? owner.getUsername() : owner.getDisplayName());
                 pcMap.put("militaryRank", owner.getMilitaryRank());
                 pcMap.put("militaryRankName", MilitaryRankDef.getRankName(owner.getMilitaryRank()));
+                pcMap.put("prestige", owner.getPrestige() != null ? owner.getPrestige() : 0);
                 pcMap.put("level", 0); // 真实玩家等级仅个人档案可见，地图区不展示玩家等级
                 long pcWarAt = 0L, pcWarEnd = 0L;
                 if (!selfCity && owner != null && player.getId().equals(owner.getWarAgainstId())) {
@@ -193,7 +177,8 @@ public class WorldViewService {
                 if (Boolean.TRUE.equals(b.getDefeated())) continue;
                 Map<String, Object> bMap = new LinkedHashMap<>();
                 bMap.put("id", b.getId());
-                bMap.put("name", b.getName());
+                bMap.put("name", WorldTerrainService.sea(worldMap.getTerrainData(), b.getX(), b.getY())
+                        ? b.getName() : WorldConfig.landBanditName(b.getLevel()));
                 bMap.put("x", b.getX());
                 bMap.put("y", b.getY());
                 bMap.put("level", b.getLevel());
@@ -239,6 +224,7 @@ public class WorldViewService {
                 // 本人的驻军用于采集和撤回；其他目标的守军只能通过侦察报告获知。
                 if (isOwner) wtMap.put("garrison", JsonUtil.parseObjMap(wt.getGarrison()));
                 wtMap.put("occupied", isOwner);
+                if (isOwner) wtMap.put("occupiedCitySlot", Objects.requireNonNullElse(wt.getOccupiedCitySlot(), 0));
                 if (Boolean.TRUE.equals(wt.getOccupied()) && wt.getOccupiedBy() != null) {
                     Player owner = occupiers.get(wt.getOccupiedBy());
                     if (owner != null) {
@@ -275,6 +261,7 @@ public class WorldViewService {
             }
         }
         world.put("marches", marches);
+        world.put("reinforcements", getReinforcements(playerId));
 
         world.put("incoming", getIncoming(player));
 
@@ -353,9 +340,16 @@ public class WorldViewService {
         return incoming;
     }
 
+    public List<Map<String, Object>> getReinforcements(Long playerId) {
+        return guildSupport.received(playerId);
+    }
+
     public Map<String, Object> toMarchMap(March m, long now) {
         Map<String, Object> mMap = new LinkedHashMap<>();
         mMap.put("id", m.getId());
+        mMap.put("version", m.getVersion());
+        mMap.put("outboundAccelerated", Boolean.TRUE.equals(m.getOutboundAccelerated()));
+        mMap.put("returnAccelerated", Boolean.TRUE.equals(m.getReturnAccelerated()));
         mMap.put("targetKind", m.getTargetKind());
         mMap.put("targetIdx", m.getTargetIdx());
         mMap.put("targetId", m.getTargetId());
@@ -369,12 +363,15 @@ public class WorldViewService {
         mMap.put("route", JsonUtil.parseTree(m.getRouteData()));
         mMap.put("action", m.getAction());
         mMap.put("battleMode", m.getBattleMode());
+        mMap.put("conquerMode", Objects.requireNonNullElse(m.getConquerMode(), "withdraw"));
         mMap.put("army", JsonUtil.parseObjMap(m.getArmy()));
+        mMap.put("unitEquipment", JsonUtil.parseIntMap(m.getUnitEquipmentSnapshot()));
         mMap.put("commanderId", m.getCommanderId());
         mMap.put("carryRes", JsonUtil.parseObjMap(m.getCarryRes()));
         mMap.put("startAt", m.getStartAt());
         mMap.put("arriveAt", m.getArriveAt());
         mMap.put("returning", Boolean.TRUE.equals(m.getReturning()));
+        mMap.put("stationed", Boolean.TRUE.equals(m.getStationed()));
         mMap.put("battleWon", Boolean.TRUE.equals(m.getBattleWon()));
         mMap.put("win", Boolean.TRUE.equals(m.getBattleWon()));
         mMap.put("gathering", Boolean.TRUE.equals(m.getGathering()));

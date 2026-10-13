@@ -23,7 +23,7 @@ Game.go=function(){document.getElementById('model-log').textContent='已验证�
 <script src="js/main-view.js?v=3.1-unit-models"></script>
 <script>
 function showModels(group){
-  var groups=[['infantry','motor','truck','armored','ltank','htank','assault','rocket'],['scout','fighter','bomber','transport','destroyer','sub','battleship','carrier'],['special','infantry','motor','truck']];
+  var groups=[['infantry','truck','armored','ltank','htank','assault','rocket'],['scout','fighter','bomber','transport','destroyer','sub','battleship','carrier'],['special','infantry','truck']];
   Game.Core.state.army={};groups[group].forEach(function(id,i){Game.Core.state.army[id]=12345-i*1234;});
   document.getElementById('model-view').innerHTML='<div class="zone-head"><span class="zone-title">🪖 军队总览</span><span class="zone-sub">带兵上限 20000</span></div><div class="army-summary" onclick="Game.go(\'army\')">'+Game.MainView.renderArmySummaryList()+'</div><div class="army-summary-foot" onclick="Game.go(\'army\')">总兵力 · 示例数据 <span class="army-go">详情 &gt;</span></div>';
 }

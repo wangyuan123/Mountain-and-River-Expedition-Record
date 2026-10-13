@@ -25,7 +25,6 @@ public class IslandContentService {
     private final WildTileRepository wilds;
     private final PlayerRepository players;
     private final WorldTerrainService terrain;
-    private final NpcCitySpawnService npcs;
 
     /** Seed new island targets once under the world lock; existing ownership and battles are never reset. */
     @Transactional
@@ -53,13 +52,9 @@ public class IslandContentService {
             int targetCount = Math.min(available.size(), island.size() >= 35 ? 4 : island.size() >= 12 ? 2 : 1);
             for (int target = 0; target < targetCount; target++) {
                 int cell = available.get(target), x = cell % WorldConfig.SIZE, y = cell / WorldConfig.SIZE;
-                if (target == 0 && island.size() >= 20) {
-                    npcs.spawnAt(worldId, x, y);
-                } else {
-                    String type = target == targetCount - 1 && targetCount >= 4
-                            ? WILDS.get(index % WILDS.size()) : RESOURCES.get((index + target) % RESOURCES.size());
-                    seedWild(worldId, x, y, type, index + target);
-                }
+                String type = target == targetCount - 1 && targetCount >= 4
+                        ? WILDS.get(index % WILDS.size()) : RESOURCES.get((index + target) % RESOURCES.size());
+                seedWild(worldId, x, y, type, index + target);
             }
             index++;
         }

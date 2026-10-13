@@ -27,14 +27,20 @@ test('首页全部当前兵种均有对应的真实模型，长名称保留在�
   }
 });
 
-test('首页总览按数量排序显示全部兵种，零兵力不显示', () => {
+test('首页总览按兵种进阶顺序逐行显示，数量与存档键顺序不影响排序，零兵力不显示', () => {
   const G = setup();
-  const ids = Object.keys(G.DATA.units);
-  ids.forEach((id, i) => { G.Core.state.army[id] = i; });
+  const ids = Array.from(G.Constants.armyUnitOrder);
+  ids.slice().reverse().forEach((id, i) => { G.Core.state.army[id] = i + 1; });
   const html = G.MainView.renderArmySummaryList();
   const images = [...html.matchAll(/src="img\/units\/models\/([^".]+)\.webp"/g)].map(m => m[1]);
-  assert.deepEqual(images, ids.slice(1).reverse());
+  assert.deepEqual(images, ids);
+  const positions = [...html.matchAll(/--army-summary-column:(\d+);--army-summary-row:(\d+)/g)].map(m => [Number(m[1]), Number(m[2])]);
+  const columns = Math.ceil(ids.length / 3);
+  assert.deepEqual(positions, ids.map((id, i) => [i % columns + 1, Math.floor(i / columns) + 1]));
   assert.doesNotMatch(html, /army-summary-more|还有 \d+ 种部队/);
+  G.Core.state.army = { carrier: 999999, rocket: 0, htank: 23, ltank: 5, infantry: 1 };
+  const partialImages = [...G.MainView.renderArmySummaryList().matchAll(/src="img\/units\/models\/([^".]+)\.webp"/g)].map(m => m[1]);
+  assert.deepEqual(partialImages, ['infantry', 'ltank', 'htank', 'carrier']);
   G.Core.state.army = {};
   assert.match(G.MainView.renderArmySummaryList(), /army-summary-empty/);
 });
@@ -51,9 +57,12 @@ test('军队总览三排浏览，全屏入口展示全部兵种并可关闭', ()
   const css = fs.readFileSync(path.join(__dirname, '../css/style.css'), 'utf8');
   const source = fs.readFileSync(path.join(__dirname, '../js/main-view.js'), 'utf8');
   assert.match(css, /\.army-summary\s*\{[^}]*grid-template-rows: repeat\(3, minmax\(64px, auto\)\)/s);
+  assert.match(css, /\.army-summary\s*\{[^}]*grid-auto-flow: row;/s);
+  assert.match(css, /\.army-summary-item\s*\{[^}]*grid-column: var\(--army-summary-column, auto\);[^}]*grid-row: var\(--army-summary-row, auto\);/s);
   assert.match(css, /\.army-summary\s*\{[^}]*scrollbar-width:\s*thin;[^}]*scrollbar-color:\s*#a8afa4 #eeebe3;/s);
   assert.match(css, /\.home-officer-list::-webkit-scrollbar,\s*\.army-summary::-webkit-scrollbar\s*\{[^}]*height:\s*6px;/s);
   assert.match(css, /\.army-summary-expanded\s*\{[^}]*grid-auto-flow: row;[^}]*grid-template-rows: none;/s);
+  assert.match(css, /\.army-summary-expanded \.army-summary-item\s*\{[^}]*grid-row: auto;[^}]*grid-column: auto;/s);
   assert.match(source, /class="army-summary-expand"/);
   assert.match(source, /Game\.MainView\.showArmySummaryFullscreen\(\)/);
 

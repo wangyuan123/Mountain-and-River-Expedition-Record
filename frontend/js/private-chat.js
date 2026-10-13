@@ -89,7 +89,7 @@
       remove.onclick = function () { return P.remove(c.peer.id); };
       button.type = 'button';
       button.className = 'private-conversation';
-      button.innerHTML = '<img class="chat-avatar" src="' + escape(G.Chat.avatarSrc ? G.Chat.avatarSrc(c.peer.avatar, false) : '') + '" alt=""><span class="private-conversation-body"><span class="private-conversation-name">' + escape(c.peer.username) + '<span class="private-peer-status">' + statusText(c.peer) + '</span></span><span class="private-conversation-preview">' + escape(c.lastMessage ? c.lastMessage.content : '还没有消息，点击开始聊天') + '</span></span>' + (c.unread ? '<span class="private-unread-badge">' + Number(c.unread) + '</span>' : '');
+      button.innerHTML = '<img class="chat-avatar" src="' + escape(G.Chat.avatarSrc ? G.Chat.avatarSrc(c.peer.avatar, false) : '') + '" alt=""><span class="private-conversation-body"><span class="private-conversation-name">' + escape(c.peer.username) + '<span class="private-peer-status">' + statusText(c.peer) + '</span></span><span class="private-conversation-preview">' + escape(c.lastMessage ? c.lastMessage.content : '还没有消息，点击开始通讯') + '</span></span>' + (c.unread ? '<span class="private-unread-badge">' + Number(c.unread) + '</span>' : '');
       var dragged = false;
       var startX = 0;
       var startY = 0;
@@ -193,7 +193,7 @@
       if (!m || m.id == null) return;
       var me = G.Core.state && G.Core.state.player;
       if (me && String(m.recipientId) === String(me.id) && (!visible() || !peer || String(m.playerId) !== String(peer.id)) && G.toast) {
-        G.toast(m.username + ' 发来私聊，请到聊天 → 私聊查看');
+        G.toast(m.username + ' 发来私聊，请到通讯 → 私聊查看');
       }
       if (peer && (String(m.playerId) === String(peer.id) || String(m.recipientId) === String(peer.id))) {
         if (!messages.some(function (existing) { return String(existing.id) === String(m.id); })) {

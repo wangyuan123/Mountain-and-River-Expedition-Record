@@ -51,13 +51,15 @@ window.Game = window.Game || {};
 
       this.socket.onopen = function () {
         if (WS.socket !== socket) return;
+        // 首次连接与断线重连分别通知，避免首次登录时取消正在加载的请求。
+        var reconnected = WS.status === 'reconnecting';
         WS.connected = true;
         WS.lastPong = Date.now();
         WS.setStatus('connected');
         console.log('WebSocket connected');
         WS.startHeartbeat();
         // Request fresh state on connect
-        WS.emit('connected', {});
+        WS.emit('connected', { reconnected: reconnected });
       };
 
       this.socket.onmessage = function (event) {

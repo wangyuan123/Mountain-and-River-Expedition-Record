@@ -57,7 +57,7 @@ test('数据定义包含三军统帅和军屯自给，旧补给兼容指向三�
   }
 });
 
-test('Core.armyCap 仅受军衔、满级围墙和统帅技能影响，兼容旧 supply', () => {
+test('Core.armyCap 仅受军衔和统帅技能影响，城防不增加上限且兼容旧 supply', () => {
   const { Core, D } = setupGame();
   D.militaryRanks.forEach((rank) => {
     assert.equal(rank.baseCap, [25000, 50000, 75000, 100000, 125000, 150000, 175000, 200000, 225000, 250000, 300000, 350000, 400000, 450000, 500000, 550000, 600000][rank.tier - 1]);
@@ -83,17 +83,17 @@ test('Core.armyCap 仅受军衔、满级围墙和统帅技能影响，兼容旧 
   Core.state.buildings.wall = 9;
   assert.equal(Core.armyCap(), 600000);
   Core.state.buildings.wall = 10;
-  assert.equal(Core.armyCap(), 700000);
+  assert.equal(Core.armyCap(), 600000);
 
   Core.state.officers[0].skills = [{ id: 'leadership', lv: 5 }];
-  assert.equal(Core.armyCap(), 840000);
-  assert.equal(Core.sortieCap(), 1140000);
+  assert.equal(Core.armyCap(), 720000);
+  assert.equal(Core.sortieCap(), 1020000);
 
   Core.state.officers[0].skills = [{ id: 'supply', lv: 5 }];
-  assert.equal(Core.armyCap(), 840000);
-  assert.equal(Core.sortieCap(), 1140000);
+  assert.equal(Core.armyCap(), 720000);
+  assert.equal(Core.sortieCap(), 1020000);
   Core.state.officers[0].role = 'mayor';
-  assert.equal(Core.armyCap(), 700000);
+  assert.equal(Core.armyCap(), 600000);
 });
 
 test('Core.foodPerHour 受到市长军屯技能降低', () => {
@@ -130,8 +130,8 @@ test('数据定义包含绝境反击 counter，且 skillBonus 正常生效', () 
     assert.equal(Math.round(Core.skillBonus('counter') * 100), level * 20);
   }
   assert.match(D.officerSkills.counter.desc, /当前剩余兵力总伤害的20%\/级反击，最高100%/);
-  for (const id of ['frenzy', 'bulwark', 'counter', 'learn', 'borrow_armor']) {
-    assert.match(D.officerSkills[id].desc, /首次交战回合及之后每隔2回合生效（如第4、7、10回合）/);
+  for (const id of ['frenzy', 'bulwark', 'blitz', 'suppress', 'pierce', 'counter', 'learn', 'borrow_armor']) {
+    assert.match(D.officerSkills[id].desc, /首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效）/);
   }
 });
 
@@ -239,7 +239,7 @@ test('军官技能列表仅显示可点击的技能名称，详情在弹窗内�
 
   assert.match(modal.innerHTML, /全军冲锋/);
   assert.match(modal.innerHTML, /当前等级 <b>Lv\.2<\/b>/);
-  assert.match(modal.innerHTML, /首次交战回合及之后每隔2回合生效（如第4、7、10回合），全军攻击力额外\+10%\/级/);
+  assert.match(modal.innerHTML, /首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），全军攻击力额外\+10%\/级/);
 });
 
 test('军官技能升级只选择对应的指定技能书，满级禁用', async () => {

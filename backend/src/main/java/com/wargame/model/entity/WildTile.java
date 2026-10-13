@@ -44,6 +44,10 @@ public class WildTile extends VersionedEntity {
     @Column(name = "occupied_by")
     private Long occupiedBy;
 
+    /** 领地所属城市，与驻军/采集出发城市独立；历史领地归入主城序号0。 */
+    @Column(name = "occupied_city_slot", nullable = false)
+    private Integer occupiedCitySlot = 0;
+
     @Column(name = "total_res")
     private Integer totalRes;
 

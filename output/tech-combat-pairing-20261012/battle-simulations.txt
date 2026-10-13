@@ -1,0 +1,16 @@
+battle=1 scenario=baseline distance=6725 survivorA=674624.0 survivorD=689567.3 wins=0/32 round=24.00 range=24-24
+defender0={carrier=64367, ltank=64366, battleship=64367, htank=26541, infantry=64366, transport=64366, destroyer=32967, truck=64365, sub=64366, scout=50767, assault=64366, special=64365}
+apos={htank=2466, rocket=2466} dpos={carrier=2467, ltank=2467, rocket=4925, battleship=2467, htank=2467, bomber=2416, infantry=4325, transport=6725, destroyer=2466, truck=6725, sub=2476, scout=6725, fighter=2242, armored=2466, assault=3125, special=2467}
+battle=1 scenario=both-density-1 distance=6725 survivorA=660646.8 survivorD=677178.8 wins=0/32 round=24.00 range=24-24
+battle=1 scenario=both-density-5 distance=6725 survivorA=606980.1 survivorD=646304.9 wins=0/32 round=24.00 range=24-24
+battle=1 scenario=both-density-10 distance=6725 survivorA=522465.3 survivorD=626672.4 wins=0/32 round=24.00 range=24-24
+battle=1 scenario=attacker-density-10 distance=6725 survivorA=675035.6 survivorD=617325.2 wins=0/32 round=24.00 range=24-24
+battle=1 scenario=defender-density-10 distance=6725 survivorA=503236.4 survivorD=706503.8 wins=0/32 round=24.00 range=24-24
+battle=2 scenario=baseline distance=6950 survivorA=616228.5 survivorD=657644.6 wins=0/32 round=24.00 range=24-24
+defender0={carrier=65679, ltank=65678, battleship=65679, infantry=65678, transport=65678, destroyer=14733, truck=65678, sub=65678, scout=51803, assault=65679, special=65678}
+apos={rocket=2025, armored=2992, htank=2992} dpos={carrier=2994, ltank=2994, rocket=4925, battleship=2994, htank=2994, bomber=2982, infantry=4550, transport=6950, destroyer=2992, truck=6950, sub=3002, scout=6950, fighter=2674, armored=2992, assault=3355, special=2994}
+battle=2 scenario=both-density-1 distance=6950 survivorA=598560.8 survivorD=649249.3 wins=0/32 round=24.00 range=24-24
+battle=2 scenario=both-density-5 distance=6950 survivorA=550315.9 survivorD=632189.6 wins=0/32 round=24.00 range=24-24
+battle=2 scenario=both-density-10 distance=6950 survivorA=494972.3 survivorD=622251.9 wins=0/32 round=24.00 range=24-24
+battle=2 scenario=attacker-density-10 distance=6950 survivorA=622944.7 survivorD=610982.4 wins=0/32 round=24.00 range=24-24
+battle=2 scenario=defender-density-10 distance=6950 survivorA=485961.3 survivorD=673986.9 wins=0/32 round=24.00 range=24-24

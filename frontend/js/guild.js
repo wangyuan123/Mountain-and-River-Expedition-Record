@@ -532,6 +532,10 @@ window.Game = window.Game || {};
 
         h += '<div class="guild-member-actions">';
         h += '<button type="button" class="guild-op-btn" onclick="Game.Guild.contact(' + m.playerId + ')">[写信]</button>';
+        if (String(m.playerId) !== String(((Core.state || {}).player || {}).id)) {
+          h += '<button type="button" class="guild-op-btn" onclick="Game.Cities.openSupport(' + m.playerId + ',\'transport\')">[运输]</button>';
+          h += '<button type="button" class="guild-op-btn" onclick="Game.Cities.openSupport(' + m.playerId + ',\'reinforce\')">[驻防]</button>';
+        }
         if (g.isLeader && m.role !== 'leader') {
           h += '<button type="button" class="guild-op-btn" onclick="Game.Guild.updateRole(' + m.playerId + ',\'' + (m.role === 'admin' ? 'member' : 'admin') + '\')">' + (m.role === 'admin' ? '[取消管理]' : '[设为管理]') + '</button>';
           h += '<button type="button" class="guild-op-btn warn" onclick="Game.Guild.transferLeadership(' + m.playerId + ')">[转让团长]</button>';

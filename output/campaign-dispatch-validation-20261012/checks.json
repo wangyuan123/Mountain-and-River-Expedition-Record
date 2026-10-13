@@ -1,0 +1,249 @@
+{
+  "browser": "154.0.8037.99",
+  "requestMode": "fixture only",
+  "checks": [
+    {
+      "scenario": "toggle retains all fields, preview action and responsive bounds",
+      "theme": "paper",
+      "width": 1280,
+      "passed": true
+    },
+    {
+      "scenario": "toggle retains all fields, preview action and responsive bounds",
+      "theme": "paper",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "scenario": "toggle retains all fields, preview action and responsive bounds",
+      "theme": "dark",
+      "width": 1280,
+      "passed": true
+    },
+    {
+      "scenario": "toggle retains all fields, preview action and responsive bounds",
+      "theme": "dark",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "scenario": "toggle retains all fields, preview action and responsive bounds",
+      "theme": "blue-white",
+      "width": 1280,
+      "passed": true
+    },
+    {
+      "scenario": "toggle retains all fields, preview action and responsive bounds",
+      "theme": "blue-white",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "scenario": "toggle retains all fields, preview action and responsive bounds",
+      "theme": "blue-white-classic",
+      "width": 1280,
+      "passed": true
+    },
+    {
+      "scenario": "toggle retains all fields, preview action and responsive bounds",
+      "theme": "blue-white-classic",
+      "width": 320,
+      "passed": true
+    },
+    {
+      "scenario": "stale route response rejected and submit waits for current mode",
+      "passed": true
+    },
+    {
+      "scenario": "failure preserves DOM and successful API state replacement clears draft",
+      "passed": true
+    },
+    {
+      "scenario": "actual Core/WorldMap quest navigation preserves tab and selects correct settlement mode",
+      "passed": true
+    },
+    {
+      "scenario": "resource-less wild forces occupation and NPC explains no ownership",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "baselineLayout": [
+    {
+      "theme": "paper",
+      "width": 320,
+      "dimensions": {
+        "field": {
+          "x": 12,
+          "y": 656.703125,
+          "width": 296,
+          "height": 350.015625,
+          "top": 656.703125,
+          "right": 308,
+          "bottom": 1006.71875,
+          "left": 12
+        },
+        "toggle": {
+          "x": 221,
+          "y": 704.59375,
+          "width": 40,
+          "height": 24,
+          "top": 704.59375,
+          "right": 261,
+          "bottom": 728.59375,
+          "left": 221
+        },
+        "scrollWidth": 348,
+        "baselineScrollWidth": 348,
+        "width": 320,
+        "overflow": true,
+        "wide": [
+          {
+            "tag": "INPUT",
+            "id": "dqty_infantry",
+            "className": "qty recruit-qty",
+            "right": 348
+          },
+          {
+            "tag": "INPUT",
+            "id": "dqty_truck",
+            "className": "qty recruit-qty",
+            "right": 348
+          }
+        ]
+      }
+    },
+    {
+      "theme": "dark",
+      "width": 320,
+      "dimensions": {
+        "field": {
+          "x": 12,
+          "y": 655.703125,
+          "width": 296,
+          "height": 350.015625,
+          "top": 655.703125,
+          "right": 308,
+          "bottom": 1005.71875,
+          "left": 12
+        },
+        "toggle": {
+          "x": 221,
+          "y": 703.59375,
+          "width": 40,
+          "height": 24,
+          "top": 703.59375,
+          "right": 261,
+          "bottom": 727.59375,
+          "left": 221
+        },
+        "scrollWidth": 348,
+        "baselineScrollWidth": 348,
+        "width": 320,
+        "overflow": true,
+        "wide": [
+          {
+            "tag": "INPUT",
+            "id": "dqty_infantry",
+            "className": "qty recruit-qty",
+            "right": 348
+          },
+          {
+            "tag": "INPUT",
+            "id": "dqty_truck",
+            "className": "qty recruit-qty",
+            "right": 348
+          }
+        ]
+      }
+    },
+    {
+      "theme": "blue-white",
+      "width": 320,
+      "dimensions": {
+        "field": {
+          "x": 13,
+          "y": 615.03125,
+          "width": 294,
+          "height": 323.734375,
+          "top": 615.03125,
+          "right": 307,
+          "bottom": 938.765625,
+          "left": 13
+        },
+        "toggle": {
+          "x": 222,
+          "y": 655.421875,
+          "width": 40,
+          "height": 24,
+          "top": 655.421875,
+          "right": 262,
+          "bottom": 679.421875,
+          "left": 222
+        },
+        "scrollWidth": 349,
+        "baselineScrollWidth": 349,
+        "width": 320,
+        "overflow": true,
+        "wide": [
+          {
+            "tag": "INPUT",
+            "id": "dqty_infantry",
+            "className": "qty recruit-qty",
+            "right": 349
+          },
+          {
+            "tag": "INPUT",
+            "id": "dqty_truck",
+            "className": "qty recruit-qty",
+            "right": 349
+          }
+        ]
+      }
+    },
+    {
+      "theme": "blue-white-classic",
+      "width": 320,
+      "dimensions": {
+        "field": {
+          "x": 6,
+          "y": 613.140625,
+          "width": 308,
+          "height": 323.734375,
+          "top": 613.140625,
+          "right": 314,
+          "bottom": 936.875,
+          "left": 6
+        },
+        "toggle": {
+          "x": 229,
+          "y": 653.53125,
+          "width": 40,
+          "height": 24,
+          "top": 653.53125,
+          "right": 269,
+          "bottom": 677.53125,
+          "left": 229
+        },
+        "scrollWidth": 356,
+        "baselineScrollWidth": 356,
+        "width": 320,
+        "overflow": true,
+        "wide": [
+          {
+            "tag": "INPUT",
+            "id": "dqty_infantry",
+            "className": "qty recruit-qty",
+            "right": 356
+          },
+          {
+            "tag": "INPUT",
+            "id": "dqty_truck",
+            "className": "qty recruit-qty",
+            "right": 356
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,293 @@
+{
+  "rulesVersion": "balance-v13-contact-movement-20261012",
+  "backend": [
+    {
+      "class": "BattleContactMovementTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "BattleOpeningDistanceTest",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "TacticalBattleRoundTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "BattleServiceTest",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "CommandBonusBattleTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "OfficerSkillCycleTest",
+      "tests": 31,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "BattleDamageTest",
+      "tests": 21,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "BattleCompositionTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "PvpRulesTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "PvpCalibrationTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "TacticalPersistentOrdersTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "OfficerSkillPersistenceTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "PvpPracticeTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "TacticalBattleSchedulerTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "frontend": {
+    "tests": 43,
+    "failures": 0
+  },
+  "movementInvariantCases": 160,
+  "replay": [
+    {
+      "phase": "before",
+      "reportId": 3682,
+      "distance": 6725,
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "meanAttackerSurvivors": 674624.0,
+      "meanDefenderSurvivors": 689567.3,
+      "wins": 0
+    },
+    {
+      "phase": "before",
+      "reportId": 3684,
+      "distance": 6950,
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "meanAttackerSurvivors": 616228.5,
+      "meanDefenderSurvivors": 657644.6,
+      "wins": 0
+    },
+    {
+      "phase": "after",
+      "reportId": 3682,
+      "distance": 6725,
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "meanAttackerSurvivors": 651701.6,
+      "meanDefenderSurvivors": 692135.3,
+      "wins": 0
+    },
+    {
+      "phase": "after",
+      "reportId": 3684,
+      "distance": 6950,
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "meanAttackerSurvivors": 606128.8,
+      "meanDefenderSurvivors": 684397.6,
+      "wins": 0
+    }
+  ],
+  "calibration": {
+    "modelVersion": "power-v1-pvp-v1-96817f2e5f611b061b686103",
+    "configurations": 86,
+    "samples": 564160,
+    "maxResidual": 0.02468174378823124
+  },
+  "holdout": {
+    "samples": 5184,
+    "maxMeanLossDifference": 0.02607069982137095
+  },
+  "sha256": {
+    "backend/src/main/java/com/wargame/service/BattleService.java": "85df26dffcc091ce72a5e20f4d2634c103655ffe081f6d959adc7ca438f32bd5",
+    "backend/src/main/java/com/wargame/model/constants/BattleRules.java": "f9ef1774e51434dfaa6be57a9b3226df6e33f84a7db038204566af8fb644f0ad",
+    "backend/src/main/resources/game/pvp-power-calibration-v1.json": "2f19169cec3cffff14b207a1ef8773213bb90d78ddb5169b11c65c7cee49276d"
+  }
+}

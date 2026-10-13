@@ -80,6 +80,9 @@ public class GameDtos {
 
     public record CancelMarchRequest(Long marchId) {}
 
+    /** 阶段与版本取自确认弹窗打开时的行军快照，防止旧请求消耗新阶段的道具。 */
+    public record SpeedUpMarchRequest(Long marchId, Boolean returning, Long version) {}
+
     /** 战术战斗中每个己方兵种本回合的机动与可选集火目标。 */
     public record BattleUnitOrderRequest(String action, String focusTarget) {}
 
@@ -103,10 +106,16 @@ public class GameDtos {
             Map<String, Integer> army,
             Long commanderId,
             Map<String, Integer> carryRes,
-            String gatherMode
+            String gatherMode,
+            String conquerMode
     ) {
         public WildDispatchRequest(Long wildTileId, Map<String, Integer> army, Long commanderId, Map<String, Integer> carryRes) {
-            this(wildTileId, army, commanderId, carryRes, null);
+            this(wildTileId, army, commanderId, carryRes, null, null);
+        }
+
+        public WildDispatchRequest(Long wildTileId, Map<String, Integer> army, Long commanderId,
+                                   Map<String, Integer> carryRes, String gatherMode) {
+            this(wildTileId, army, commanderId, carryRes, gatherMode, null);
         }
     }
 

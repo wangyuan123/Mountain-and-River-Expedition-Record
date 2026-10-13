@@ -359,13 +359,14 @@
     }
   }
 
-  /** 防止换账号后的旧响应复活提示；定时刷新只改目标栏，不重绘正在编辑的游戏表单。 */
+  /** 忽略旧账号响应，同账号的失效查询自动重读；定时刷新不重绘正在编辑的游戏表单。 */
   function refresh() {
     if (!Core.state || !G.API.isLoggedIn()) { stop(); return Promise.resolve(null); }
     if (state.busy) return Promise.resolve(state.data);
     // 暂停/恢复等操作尚未完成时，不发起可能读到旧状态的刷新请求。
     if (state.pending) return state.pending;
     var key = context();
+    var revision = G.API.client.cityRevision;
     var request = G.API.client.get('/game/onboarding', { silent: true }).then(function (data) {
       if (key !== context()) return null;
       state.error = '';
@@ -382,6 +383,9 @@
           // 防空雷达站是侦察技术前置，建成后重新提示前往科技页研发
           (state.data && state.data.current && state.data.current.id === 'reconTech' &&
             !state.data.checks.radar && data.checks && data.checks.radar) ||
+          // 空军基地是侦察机生产前置，建成后重新提示侦察机生产。
+          (state.data && state.data.current && state.data.current.id === 'recon' &&
+            !state.data.checks.airport && data.checks && data.checks.airport) ||
           // 军校只是招募步骤的前置，建成后也要重新提示玩家前往军校招募。
           (state.data && state.data.current && state.data.current.id === 'officer' &&
             !state.data.checks.academy && data.checks && data.checks.academy) ||
@@ -395,7 +399,13 @@
       syncPolling();
       return data;
     }).catch(function (err) {
-      if (key === context()) { state.error = err.message || '行动状态暂时无法读取'; render(); }
+      if (key !== context()) return null;
+      if (revision !== G.API.client.cityRevision) {
+        // 重连或城市更新取消的只读请求应按新上下文重读，不显示为新手行动故障。
+        if (state.pending === request) state.pending = null;
+        return refresh();
+      }
+      state.error = err.message || '行动状态暂时无法读取'; render();
       return null;
     }).finally(function () { if (state.pending === request) state.pending = null; });
     state.pending = request;
@@ -496,7 +506,7 @@
       // 研发完成并由轮询或完成事件确认后，refresh() 才重新打开弹窗。
       state.snoozedFor = data.current.id;
       state.guidedAction = null;
-      state.actionNote = '研发命令已下达。科技完成后会自动勾选并返回指引。';
+      state.actionNote = '研发命令已下达。军研完成后会自动勾选并返回指引。';
       closeModal();
       var locateSpeedUp = function () {
         var speedBtn = (document.querySelector && (
@@ -561,7 +571,9 @@
     if (objective.id === 'reconTech') return (state.data && state.data.checks && state.data.checks.radar === false)
       ? buildButton('先建造防空雷达站', '防空雷达站', 'buildArmy', 'radar')
       : routeButton('研究侦察技术', 'tech', 'recon_level');
-    if (objective.id === 'recon') return routeButton('生产侦察机', 'army', 'scout');
+    if (objective.id === 'recon') return (state.data && state.data.checks && state.data.checks.airport === false)
+      ? buildButton('先建造空军基地', '空军基地', 'buildArmy', 'airport')
+      : routeButton('生产侦察机', 'army', 'scout');
     if (objective.id === 'officer') return (state.data && state.data.checks && state.data.checks.academy)
       ? routeButton('前往军校招募军官', 'academy')
       : buildButton('先建造军校', '军校', 'buildArmy', 'academy');
@@ -805,7 +817,7 @@
     var data = state.data;
     var readingReport = updateReportReading();
     var currentKey = data && data.current ? data.current.id : 'supplies';
-    // 侦察报告在到达野地时就会送达，任务弹窗必须等服务端确认侦察机返城。
+    // 侦察报告在到达野地时就会送达，任务弹窗必须等服务端确认侦查部队返城。
     var waitingForScoutReturn = data && data.waitingForScoutReturn && currentKey === 'scout';
     // 采集任务进行中或在途返城时，右侧展示倒计时弹窗，主指引弹窗保持收起。
     if (data && data.enrolled && !data.paused && !data.done && currentKey === 'gather' && (data.waitingForGather || findActiveGatherMarch())) {
@@ -845,7 +857,7 @@
           '<strong id="obDialogTitle">' + esc(current && current.id === 'plan' ? '基地已准备好，接下来由你指挥' : current ? current.title : '行动目标已完成') + '</strong></div>' +
           '<span class="ob-count">' + completed + ' / ' + total + '</span></div>' +
           '<div class="ob-progress" role="progressbar" aria-label="新手行动进度" aria-valuemin="0" aria-valuemax="' + total + '" aria-valuenow="' + completed + '"><span style="width:' + percent + '%"></span></div>' +
-          (completed === 0 ? '<p class="ob-intro">先升级资源建筑与军工设施，再生产部队、招募军官、侦察并采集资源。操作完成后目标会自动更新。</p>' : '') +
+          (completed === 0 ? '<p class="ob-intro">先升级后勤建筑与军工设施，再生产部队、招募军官、侦察并采集资源。操作完成后目标会自动更新。</p>' : '') +
           '<p id="obDialogDesc">' + esc(current && current.id === 'plan' ? '指挥官，做得不错！你已经迈出了建设与远征的第一步。友情提示：打开「任务」Tab，通过主线任务继续探索新玩法；完成任务后，记得领取奖励。按自己的节奏出发吧！' : current ? current.body : '所有行动步骤已完成。') + '</p>' +
           (current && state.actionNote ? '<p class="ob-action-note" role="status">' + esc(state.actionNote) + '</p>' : '') +
           (current ? checklist(current) : '') +
@@ -884,15 +896,15 @@
       '<div><div class="title">前进基地行动</div><p>跟随真实行动熟悉建设、生产、出征与采集；完成后继续主线任务领取资源奖励。</p></div></div>';
     if (state.error) h += '<p class="ob-error" role="alert">' + esc(state.error) + '</p>' + button('重新检查', 'refresh');
     if (!data) h += '<p>正在读取行动记录…</p>';
-    else if (!data.enrolled) h += '<p>接管基地，完成资源建设、军工生产、侦察占领与首次采集；老指挥官也可直接领取行动补给并继续主线。</p>' +
+    else if (!data.enrolled) h += '<p>接管基地，完成后勤建设、军工生产、侦察占领与首次采集；老指挥官也可直接领取行动补给并继续主线。</p>' +
       '<div class="ob-actions">' + button('开启行动', 'start') + button('跳过指引 · 领取全部补给', 'skip') + '</div>';
     else {
-      h += '<div class="ob-roadmap"><span>① 资源与军工建设</span><span>② 造兵、招募与侦察</span><span>③ 占领与采集</span><span>④ 主线任务</span></div>';
+      h += '<div class="ob-roadmap"><span>① 后勤与军工建设</span><span>② 造兵、招募与侦察</span><span>③ 占领与采集</span><span>④ 主线任务</span></div>';
       h += '<div class="ob-overview"><span>已完成 ' + data.completed + ' / ' + data.objectives.length + '</span>' +
         (data.done ? '' : button(data.paused ? '恢复弹窗' : '暂停弹窗', 'pause', data.paused ? 'false' : 'true') + button('跳过指引 · 领取剩余补给', 'skip')) + '</div>' +
         '<p class="ob-muted">补给送达主城。跳过会一次性发放未领取的行动补给，已领部分不重复发放。</p>';
       if (data.done) h += '<section class="ob-graduation"><h2>' + (data.skipped ? '已跳过前进基地行动' : '前进基地行动完成') + '</h2><p>' +
-        (data.skipped ? '行动补给已送达。' : '你已掌握基础资源建设、军工生产与野地采集。') + '下一步按主线章节任务继续发展，完成任务后记得领取资源奖励。</p>' +
+        (data.skipped ? '行动补给已送达。' : '你已掌握基础后勤建设、军工生产与野地采集。') + '下一步按主线章节任务继续发展，完成任务后记得领取资源奖励。</p>' +
         '<div class="ob-actions">' + routeButton('前往主线任务 · 领取奖励', 'mainQuest') +
         '</div></section>';
       if (Core.state.player && Core.state.player.citySlot !== 0) h += '<p class="ob-error">当前是分城。前进基地行动在主城进行。</p>' + button('切回主城', 'homeCity');
@@ -1086,7 +1098,7 @@
 
   function findTarget(action) {
     if (state.busy) return;
-    if (Core.state.player.citySlot !== 0) { G.toast('请从城市切换入口切回主城'); return; }
+    if (Core.state.player.citySlot !== 0) { G.toast('请从切城入口切回主城'); return; }
     var key = context(); state.busy = true; render();
     return G.API.client.post('/game/onboarding/target', { gather: action === 'gather' }).then(function (target) {
       if (key !== context()) return;
@@ -1097,14 +1109,16 @@
       var sArmy = (Core.state && Core.state.army) || {};
       var defaultArmy = {};
       if (action === 'scout') {
-        defaultArmy.scout = sArmy.scout != null ? Math.min(Number(sArmy.scout) || 0, 1) : 1;
+        var scoutUnit = Number(sArmy.scout) > 0 || !Number(sArmy.recon_car) ? 'scout' : 'recon_car';
+        defaultArmy[scoutUnit] = sArmy[scoutUnit] != null ? Math.min(Number(sArmy[scoutUnit]) || 0, 1) : 1;
       } else if (action === 'gather') {
         defaultArmy.truck = sArmy.truck != null ? Math.min(Number(sArmy.truck) || 0, 2) : 2;
       } else {
         defaultArmy.infantry = sArmy.infantry != null ? Math.min(Number(sArmy.infantry) || 0, 50) : 50;
       }
       world._dispatchTarget = { kind: action === 'gather' ? 'wild_gather' : 'wild', idx: idx, target: target,
-        action: action === 'scout' ? 'scout' : action === 'gather' ? 'gather' : 'conquer',
+        action: action === 'scout' ? 'scout' : action === 'gather' ? 'gather' : 'campaign',
+        occupyTarget: true,
         defaultArmy: defaultArmy };
       // 引导要求资源随部队返城入库，这次推荐采集固定使用全自动，避免停在野地等待手动命令。
       if (action === 'gather') {
@@ -1171,7 +1185,7 @@
         else if (action === 'homeCity') {
           var cities = Core.state.cityOverview && Core.state.cityOverview.cities || [];
           var home = cities.find(function (c) { return c.citySlot === 0 || c.main; });
-          if (home && G.Cities) G.Cities.select(home.id); else G.toast('请从城市切换入口选择主城');
+          if (home && G.Cities) G.Cities.select(home.id); else G.toast('请从切城入口选择主城');
         } else mutate(action);
       };
     });

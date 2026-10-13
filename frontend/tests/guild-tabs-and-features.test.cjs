@@ -160,6 +160,18 @@ test('setTab switches tab buttons active class and toggles panel display', () =>
   assert.equal(fields.guildTabPanel_rankings.style.display, 'none');
 });
 
+test('members offer transport and garrison support for other guildmates only', () => {
+  const { guild, context } = fixture();
+  context.Game.Core.state = { player: { id: 1 } };
+  guild.mine = { id: 10, name: '军团', members: [
+    { playerId: 1, name: '自己', role: 'leader' }, { playerId: 2, name: '成员', role: 'member' }
+  ] };
+  const html = guild.renderMine();
+  assert.match(html, /Game.Cities.openSupport\(2,'transport'\)/);
+  assert.match(html, /Game.Cities.openSupport\(2,'reinforce'\)/);
+  assert.doesNotMatch(html, /Game.Cities.openSupport\(1,/);
+});
+
 test('renderRecruitment displays 10000 gold cost with official gold icon and prevents creation when gold is insufficient', () => {
   const { guild, fields, calls, context } = fixture();
   context.Game.Core.state = {
@@ -211,4 +223,3 @@ test('guild tabs navigation supports horizontal scroll and scrolls active tab in
   assert.equal(guild.currentTab, 'manage');
   assert.equal(scrolled, true);
 });
-

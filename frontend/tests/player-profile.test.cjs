@@ -24,7 +24,7 @@ test('profile rank opens the full rank-to-cap table with the current city bonus'
   context.Game = { Core: {
     state: { player: { militaryRank: 3 } }, buildingLevel: () => 10,
     getCommanderSkills: () => ({ leadership: 5 }), skillBonus: skill => skill === 'leadership' ? 0.2 : 0,
-    armyCap: () => 210000
+    armyCap: () => 90000
   }, fmt: value => Number(value).toLocaleString('en-US'), escapeHtml: value => value };
   load(context, 'data.js');
   load(context, 'player-profile.js');
@@ -37,7 +37,8 @@ test('profile rank opens the full rank-to-cap table with the current city bonus'
   assert.match(mask.innerHTML, /下士 <span>（当前）<\/span>/);
   assert.match(mask.innerHTML, /<td>17<\/td><th scope="row"><span class="rank-cap-label"><svg[^>]*rank-insignia-general/);
   assert.match(mask.innerHTML, /上将<\/span><\/th><td>600,000<\/td>/);
-  assert.match(mask.innerHTML, /75,000 \+ 100,000\) × \(1 \+ 20%\) = 210,000/);
+  assert.match(mask.innerHTML, /75,000 × \(1 \+ 20%\) = 90,000/);
+  assert.doesNotMatch(mask.innerHTML, /当前城市围墙|满级 Lv\.10 后|\+ 100,000/);
   assert.equal(closeButton.focused, true);
   context.Game.PlayerProfile.showRankCapInfo();
   assert.equal(elements.rankCapInfoMask, mask);
@@ -243,12 +244,14 @@ test('city rename validates, retries failed saves, and updates the city after su
   const player = { cityName: '旧城' };
   const context = vm.createContext({ console, document });
   context.window = context;
-  context.Game = {
-    Core: { state: { player, resources: { gold: 120 } }, render() { renders++; } },
-    API: { setCityName(name) { calls.push(name); return fail ? Promise.reject(new Error('网络错误')) : Promise.resolve(); } },
-    toast(message) { messages.push(message); }
-  };
+  context.Game = {};
+  require('./load-constants.cjs')(context);
+  load(context, 'core.js');
   load(context, 'player-profile.js');
+  context.Game.Core.state = { player, resources: { gold: 120 } };
+  context.Game.Core.render = () => { renders++; };
+  context.Game.API = { setCityName(name) { calls.push(name); return fail ? Promise.reject(new Error('网络错误')) : Promise.resolve(); } };
+  context.Game.toast = message => { messages.push(message); };
   context.Game.Main = context.Game.PlayerProfile;
   context.Game.Main.closePlayerDrawer = () => { drawerCloses++; };
   context.Game.Main.promptRenameCityInDrawer();
@@ -260,11 +263,13 @@ test('city rename validates, retries failed saves, and updates the city after su
   const submitForm = () => form.onsubmit({ preventDefault() {} });
 
   input.value = ' '; submitForm();
-  input.value = 'bad!'; submitForm();
-  assert.deepEqual(messages, ['城市名不能为空', '城市名仅限中英文/数字/下划线，最多12字']);
+  input.value = '超长城市名称一二三四五六七八九'; submitForm();
+  input.value = '张三\n城'; submitForm();
+  input.value = '旧城'; submitForm();
+  assert.deepEqual(messages, ['城市名称不能为空', '城市名称最多12个字符', '城市名称不能包含换行或不可见字符', '新城市名称与当前名称相同']);
   assert.deepEqual(calls, []);
-  input.value = ' 新城 '; submitForm(); submitForm();
-  assert.deepEqual(calls, ['新城']);
+  input.value = ' 烈火·前哨☆ '; submitForm(); submitForm();
+  assert.deepEqual(calls, ['烈火·前哨☆']);
   assert.equal(submit.disabled, true);
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(elements.renameCityModal, modal);
@@ -273,7 +278,7 @@ test('city rename validates, retries failed saves, and updates the city after su
   fail = false;
   submitForm();
   await new Promise(resolve => setImmediate(resolve));
-  assert.equal(player.cityName, '新城');
+  assert.equal(player.cityName, '烈火·前哨☆');
   assert.equal(elements.renameCityModal, undefined);
   assert.equal(drawerCloses, 1);
   assert.equal(renders, 1);
