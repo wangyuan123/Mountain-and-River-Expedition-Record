@@ -26,7 +26,7 @@ RAW_3_4 = RAW_DIR / 'city_tall_lv5_9_transparent.png'
 RAW_5_6 = RAW_DIR / 'city_tall_lv5_6_transparent.png'
 RAW_7_8 = RAW_DIR / 'city_tall_lv10_transparent.png'
 RAW_9 = RAW_DIR / 'city_tall_lv9_10_redesign_c1.png'
-RAW_10_SUPREME = RAW_DIR / 'city_tall_lv10_supreme_c2.png'
+RAW_10_SUPREME = RAW_DIR / 'city_tall_lv10_supreme_fixed_transparent.png'
 
 # 目标大地图资产
 MAP_1_2_PNG = CITIES_DIR / 'player-city-preview-map.png'
