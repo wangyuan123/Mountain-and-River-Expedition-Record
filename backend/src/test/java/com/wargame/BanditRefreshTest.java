@@ -46,7 +46,7 @@ class BanditRefreshTest extends BaseServiceTest {
         refresh();
 
         assertRestored(world, landNpc, false, WorldConfig.BANDIT_LEVELS.get(2).army());
-        assertRestored(world, seaNpc, true, WorldConfig.seaNpcGarrison(30));
+        assertRestored(world, seaNpc, true, WorldConfig.seaNpcGarrison(30, seaNpc.getX(), seaNpc.getY()));
         assertEquals(false, maps.target(player.getId(), "bandit", seaNpc.getId()).get("defeated"));
         assertEquals(activeArmy, banditRepository.findById(active.getId()).orElseThrow().getArmy());
         assertEquals(land[0] + 1, active.getX());

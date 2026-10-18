@@ -1,6 +1,6 @@
 # 内容来源逐项清单
 
-静态快照时间：2026-09-13T22:54:54.048926+08:00。共 467 个审查条目。编号用于反馈；全部保持“待评估”。本清单已按用户要求删减部分历史描述，不再是未经编辑的快照摘录。
+静态快照时间：2026-09-13T22:54:54.048926+08:00。共 461 个审查条目。编号用于反馈；全部保持“待评估”。本清单已按用户要求删减部分历史描述，不再是未经编辑的快照摘录。
 
 “来源不明”只表示仓库中缺少可核验来源，不能直接认定为复制或侵权。所有数值为快照中代码/配置的现状；未对每个公式做运行验证。
 
@@ -3081,39 +3081,6 @@
 
 评估选项：保留并补证 / 重写、重绘或重设计 / 停用 / 待确认（尚未选择）
 
-### I061 · 周年庆大礼（annivPack）
-
-前端：周年庆礼包；商城：钻石×2000 + 道具×20 + 限定头衔
-
-**状态：来源不明；评估：待评估；建议次序：优先评估文案。**
-
-营销描述未附活动策划来源；“开7倍”“限定头衔”“周年庆”等表达及发放承诺应逐项确认。
-
-位置：[data.js:235](</Users/chenjuan/Documents/游戏/frontend/js/data.js:235>) · [shop.js:64](</Users/chenjuan/Documents/游戏/frontend/js/shop.js:64>)
-
-```json
-{
-  "frontend": {
-    "name": "周年庆大礼",
-    "icon": "🎉",
-    "desc": "周年庆礼包",
-    "cat": "gift"
-  },
-  "shop": {
-    "id": "annivPack",
-    "cat": "gift",
-    "name": "周年庆大礼",
-    "icon": "🎉",
-    "desc": "钻石×2000 + 道具×20 + 限定头衔",
-    "price": 1999,
-    "stock": 1,
-    "tag": "限定"
-  }
-}
-```
-
-评估选项：保留并补证 / 重写、重绘或重设计 / 停用 / 待确认（尚未选择）
-
 ### I062 · 珍珠（gem_pearl）
 
 前端：稀有天然珍珠，野地采集获得，用于晋升军衔；后端珠宝：稀有天然珍珠，野地采集获得，用于晋升军衔
@@ -3323,13 +3290,13 @@
 
 ### I071 · 新手礼包（newbiePack）
 
-商城：开7倍:粮20000/钢20000/油10000/稀5000/金3000
+商城：开启获得：粮食×20000、钢铁×20000、石油×10000、稀矿×5000、黄金×3000
 
 **状态：来源不明；评估：待评估；建议次序：优先评估文案。**
 
-营销描述未附活动策划来源；“开7倍”“限定头衔”“周年庆”等表达及发放承诺应逐项确认。
+2026-10-14 已改为固定资源明细，并补齐99钻账号限购一次、仓库开启和服务端发奖；原始创作来源仍待核实。
 
-位置：[shop.js:61](</Users/chenjuan/Documents/游戏/frontend/js/shop.js:61>)
+位置：[constants.js:284](</Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/frontend/js/constants.js:284>) · [新手礼包规则](../NEWBIE_PACK.md)
 
 ```json
 {
@@ -3338,64 +3305,10 @@
     "cat": "gift",
     "name": "新手礼包",
     "icon": "🎁",
-    "desc": "开7倍:粮20000/钢20000/油10000/稀5000/金3000",
+    "desc": "开启获得：粮食×20000、钢铁×20000、石油×10000、稀矿×5000、黄金×3000",
     "price": 99,
     "stock": 1,
-    "tag": "限时"
-  }
-}
-```
-
-评估选项：保留并补证 / 重写、重绘或重设计 / 停用 / 待确认（尚未选择）
-
-### I072 · 钻石月卡（monthCard）
-
-商城：立即得300钻,30天内每日登录送100钻
-
-**状态：来源不明；评估：待评估；建议次序：优先评估文案。**
-
-营销描述未附活动策划来源；“开7倍”“限定头衔”“周年庆”等表达及发放承诺应逐项确认。
-
-位置：[shop.js:62](</Users/chenjuan/Documents/游戏/frontend/js/shop.js:62>)
-
-```json
-{
-  "shop": {
-    "id": "monthCard",
-    "cat": "gift",
-    "name": "钻石月卡",
-    "icon": "💳",
-    "desc": "立即得300钻,30天内每日登录送100钻",
-    "price": 1500,
-    "stock": 1,
-    "tag": "推荐"
-  }
-}
-```
-
-评估选项：保留并补证 / 重写、重绘或重设计 / 停用 / 待确认（尚未选择）
-
-### I073 · 战备月卡（warChest）
-
-商城：立即得500钻+15个常用道具组合
-
-**状态：来源不明；评估：待评估；建议次序：优先评估文案。**
-
-营销描述未附活动策划来源；“开7倍”“限定头衔”“周年庆”等表达及发放承诺应逐项确认。
-
-位置：[shop.js:63](</Users/chenjuan/Documents/游戏/frontend/js/shop.js:63>)
-
-```json
-{
-  "shop": {
-    "id": "warChest",
-    "cat": "gift",
-    "name": "战备月卡",
-    "icon": "🎖️",
-    "desc": "立即得500钻+15个常用道具组合",
-    "price": 888,
-    "stock": 1,
-    "tag": "超值"
+    "tag": "新手"
   }
 }
 ```
@@ -7084,7 +6997,7 @@
 
 **状态：来源不明；评估：待评估；建议次序：补来源记录。**
 
-当前为模拟充值；档位数值和月卡/礼包承诺未附策划来源。
+当前为模拟充值；档位数值和礼包承诺未附策划来源。
 
 位置：[recharge.js:14](</Users/chenjuan/Documents/游戏/frontend/js/recharge.js:14>) · [ShopController.java:165](</Users/chenjuan/Documents/游戏/backend/src/main/java/com/wargame/controller/ShopController.java:165>)
 
@@ -7108,7 +7021,7 @@
 
 **状态：来源不明；评估：待评估；建议次序：补来源记录。**
 
-当前为模拟充值；档位数值和月卡/礼包承诺未附策划来源。
+当前为模拟充值；档位数值和礼包承诺未附策划来源。
 
 位置：[recharge.js:15](</Users/chenjuan/Documents/游戏/frontend/js/recharge.js:15>) · [ShopController.java:165](</Users/chenjuan/Documents/游戏/backend/src/main/java/com/wargame/controller/ShopController.java:165>)
 
@@ -7133,7 +7046,7 @@
 
 **状态：来源不明；评估：待评估；建议次序：补来源记录。**
 
-当前为模拟充值；档位数值和月卡/礼包承诺未附策划来源。
+当前为模拟充值；档位数值和礼包承诺未附策划来源。
 
 位置：[recharge.js:16](</Users/chenjuan/Documents/游戏/frontend/js/recharge.js:16>) · [ShopController.java:165](</Users/chenjuan/Documents/游戏/backend/src/main/java/com/wargame/controller/ShopController.java:165>)
 
@@ -7158,7 +7071,7 @@
 
 **状态：来源不明；评估：待评估；建议次序：补来源记录。**
 
-当前为模拟充值；档位数值和月卡/礼包承诺未附策划来源。
+当前为模拟充值；档位数值和礼包承诺未附策划来源。
 
 位置：[recharge.js:17](</Users/chenjuan/Documents/游戏/frontend/js/recharge.js:17>) · [ShopController.java:165](</Users/chenjuan/Documents/游戏/backend/src/main/java/com/wargame/controller/ShopController.java:165>)
 
@@ -7183,7 +7096,7 @@
 
 **状态：来源不明；评估：待评估；建议次序：补来源记录。**
 
-当前为模拟充值；档位数值和月卡/礼包承诺未附策划来源。
+当前为模拟充值；档位数值和礼包承诺未附策划来源。
 
 位置：[recharge.js:18](</Users/chenjuan/Documents/游戏/frontend/js/recharge.js:18>) · [ShopController.java:165](</Users/chenjuan/Documents/游戏/backend/src/main/java/com/wargame/controller/ShopController.java:165>)
 
@@ -7208,7 +7121,7 @@
 
 **状态：来源不明；评估：待评估；建议次序：补来源记录。**
 
-当前为模拟充值；档位数值和月卡/礼包承诺未附策划来源。
+当前为模拟充值；档位数值和礼包承诺未附策划来源。
 
 位置：[recharge.js:19](</Users/chenjuan/Documents/游戏/frontend/js/recharge.js:19>) · [ShopController.java:165](</Users/chenjuan/Documents/游戏/backend/src/main/java/com/wargame/controller/ShopController.java:165>)
 
@@ -7233,7 +7146,7 @@
 
 **状态：来源不明；评估：待评估；建议次序：补来源记录。**
 
-当前为模拟充值；档位数值和月卡/礼包承诺未附策划来源。
+当前为模拟充值；档位数值和礼包承诺未附策划来源。
 
 位置：[recharge.js:20](</Users/chenjuan/Documents/游戏/frontend/js/recharge.js:20>) · [ShopController.java:165](</Users/chenjuan/Documents/游戏/backend/src/main/java/com/wargame/controller/ShopController.java:165>)
 
@@ -7247,54 +7160,6 @@
   "diamond": 15800,
   "desc": "钻石、资源与稀有道具组合礼包",
   "bonus": "豪华"
-}
-```
-
-评估选项：保留并补证 / 重写、重绘或重设计 / 停用 / 待确认（尚未选择）
-
-### N099 · 钻石月卡（recharge.mk30）
-
-立即获得300钻石，持续领取月卡福利
-
-**状态：来源不明；评估：待评估；建议次序：补来源记录。**
-
-当前为模拟充值；档位数值和月卡/礼包承诺未附策划来源。
-
-位置：[recharge.js:21](</Users/chenjuan/Documents/游戏/frontend/js/recharge.js:21>) · [ShopController.java:165](</Users/chenjuan/Documents/游戏/backend/src/main/java/com/wargame/controller/ShopController.java:165>)
-
-```json
-{
-  "id": "mk30",
-  "cat": "monthly",
-  "name": "钻石月卡",
-  "icon": "💳",
-  "rmb": 30,
-  "diamond": 300,
-  "desc": "立即获得300钻石，持续领取月卡福利"
-}
-```
-
-评估选项：保留并补证 / 重写、重绘或重设计 / 停用 / 待确认（尚未选择）
-
-### N100 · 战备月卡（recharge.wk98）
-
-立即获得980钻石，享受战备补给特权
-
-**状态：来源不明；评估：待评估；建议次序：补来源记录。**
-
-当前为模拟充值；档位数值和月卡/礼包承诺未附策划来源。
-
-位置：[recharge.js:22](</Users/chenjuan/Documents/游戏/frontend/js/recharge.js:22>) · [ShopController.java:165](</Users/chenjuan/Documents/游戏/backend/src/main/java/com/wargame/controller/ShopController.java:165>)
-
-```json
-{
-  "id": "wk98",
-  "cat": "monthly",
-  "name": "战备月卡",
-  "icon": "🎖️",
-  "rmb": 98,
-  "diamond": 980,
-  "desc": "立即获得980钻石，享受战备补给特权"
 }
 ```
 
@@ -9811,32 +9676,6 @@ SVG含本地矢量路径；未见作者/来源/许可证元数据。可编辑SVG
     " Gold Marshal Sash ",
     " Red Collar Tabs with Gold Stars ",
     " Head & Chin "
-  ]
-}
-```
-
-评估选项：保留并补证 / 重写、重绘或重设计 / 停用 / 待确认（尚未选择）
-
-### V008 · 萌系指挥官（img/avatars/commander-8.svg）
-
-预设头像
-
-**状态：来源待核；评估：待评估；建议次序：优先核对创作来源。**
-
-历史描述已按用户要求删减；创作来源与权利归属仍待评估。
-
-位置：[commander-8.svg:4](</Users/chenjuan/Documents/游戏/frontend/img/avatars/commander-8.svg:4>) · [main-view.js:873](</Users/chenjuan/Documents/游戏/frontend/js/main-view.js:873>) · [main-view.js:892](</Users/chenjuan/Documents/游戏/frontend/js/main-view.js:892>) · [core.js:490](</Users/chenjuan/Documents/游戏/frontend/js/core.js:490>) · [core.js:497](</Users/chenjuan/Documents/游戏/frontend/js/core.js:497>) · [player-profile.js:69](</Users/chenjuan/Documents/游戏/frontend/js/player-profile.js:69>)
-
-```json
-{
-  "sha256": "d901d9536dbc2607389acb92c986cdfa4fcf888eecb800f23b8cb3e60557f432",
-  "引用数": 7,
-  "注释摘要": [
-    " Clean white/soft background ",
-    " Doodle Frame Corners ",
-    " Doodle Desk ",
-    " Tea / Coffee Cup with Steam ",
-    " Cute Stickman Head "
   ]
 }
 ```

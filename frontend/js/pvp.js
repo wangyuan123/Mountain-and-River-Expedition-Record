@@ -209,7 +209,7 @@ window.Game = window.Game || {};
   function summary(s) {
     if (!s) return '';
     return '<div class="pvp-summary"><strong>' + esc(s.commanderName) + '</strong><span>演习实力 ' + esc(s.power) + '</span><p>'
-      + Object.keys(s.army).map(function (k) { return esc(name(k)) + ' × ' + s.army[k]; }).join('　') + '</p><small>司令官：' + esc(s.chief.name || '未任命') + '</small></div>';
+      + Object.keys(s.army).map(function (k) { return esc(name(k)) + ' × ' + s.army[k]; }).join('　') + '</p><small>司令官：' + esc(s.chief.name || '未任命') + ' · 行动火力×' + G.Core.firepowerMul(s.tech || {}).toFixed(1) + '（实力估值的有效输出已包含此倍率）</small></div>';
   }
   function disabled() { return busy || pending ? ' disabled' : ''; }
 
@@ -297,7 +297,7 @@ window.Game = window.Game || {};
     h += '<div class="pvp-actions"><button class="btn ok" onclick="Game.Pvp.again()">再次匹配</button><button class="btn" onclick="Game.Pvp.backLobby()">调整编队</button></div></div>';
     if (r.mine) h += summary(r.mine) + '<p>虚拟剩余：' + Object.keys(r.myArmy || {}).map(function (k) { return esc(name(k)) + ' × ' + r.myArmy[k]; }).join('　') + '</p>';
     if (r.enemy) h += '<details><summary>双方参战科技、配装与有效属性快照</summary><pre class="pvp-json">' + esc(JSON.stringify({ mine: r.mine, enemy: r.enemy }, null, 2)) + '</pre></details>';
-    h += '<h3>逐回合复盘</h3><p class="pvp-muted">技能窗口为首次交战E、E+3…；将领军事/防御在3/6/9…回合生效，司令官属性常驻。效果来自引擎事件，不表示技能胜率贡献。</p>';
+    h += '<h3>逐回合复盘</h3><p class="pvp-muted">将领军事/防御与战斗技能在首次交战E生效，之后间隔两回合再触发（E、E+3、E+6…）；司令官属性常驻。效果来自引擎事件，不表示技能胜率贡献。</p>';
     (r.rounds || []).forEach(function (round) {
       var mineA = r.side === 'A', ownOrders = mineA ? round.ordersA : round.ordersB, enemyOrders = mineA ? round.ordersB : round.ordersA;
       h += '<details class="pvp-round"><summary>第 ' + round.round + ' 回合 · 首次交战 E=' + round.after.firstCombatRound + '</summary><p>我方执行：' + orderText(ownOrders, mineA ? round.sourcesA : round.sourcesB) + '</p><p>敌方执行：' + orderText(enemyOrders, mineA ? round.sourcesB : round.sourcesA) + '</p><div class="pvp-events">';
@@ -315,9 +315,9 @@ window.Game = window.Game || {};
     if (e.type === 'INITIATIVE') return '<p>' + esc(label + ' 先手序号 ' + e.order + ' · 射程 ' + e.range + ' · 速度 ' + Math.round(e.speed) + ' · 闪电突击×' + e.blitzMultiplier) + '</p>';
     if (e.type === 'NO_FIRE') return '<p>' + esc(label + '：' + reasons[e.reason]) + '</p>';
     if (e.type === 'NO_COUNTER') return '<p>' + esc(label + ' 反击未生效：' + reasons[e.reason]) + '</p>';
-    if (e.type === 'COUNTER') return '<p>' + esc(label + ' 反击 ' + name(e.target) + ' · 伤害 ' + Math.round(e.damage) + ' · 击毁 ' + e.kills) + '</p>';
+    if (e.type === 'COUNTER') return '<p>' + esc(label + ' 反击 ' + name(e.target) + ' · 火力密度×' + (e.firepowerMultiplier || 1) + ' · 伤害 ' + Math.round(e.damage) + ' · 击毁 ' + e.kills) + '</p>';
     return '<p>' + esc(label + ' → ' + name(e.target) + ' · 距离 ' + e.distance + '/射程 ' + e.range + ' · 伤害 ' + Math.round(e.damage) + ' · 击毁 ' + e.kills) + '</p><small>'
-      + esc('冲锋×' + e.frenzyMultiplier + ' · 压制 ' + pct(e.suppression) + ' · 破甲 ' + pct(e.pierce) + ' · 坚守×' + e.bulwarkMultiplier + ' · 学习攻击+' + Math.round(e.learnedAttack) + '（' + reasons[e.learnReason] + '） · 借甲防御+' + Math.round(e.borrowedDefense) + '（' + reasons[e.armorReason] + '）') + '</small>';
+      + esc('火力密度×' + (e.firepowerMultiplier || 1) + ' · 冲锋×' + e.frenzyMultiplier + ' · 压制 ' + pct(e.suppression) + ' · 破甲 ' + pct(e.pierce) + ' · 坚守×' + e.bulwarkMultiplier + ' · 学习攻击+' + Math.round(e.learnedAttack) + '（' + reasons[e.learnReason] + '） · 借甲防御+' + Math.round(e.borrowedDefense) + '（' + reasons[e.armorReason] + '）') + '</small>';
   }
   function history() {
     Promise.all([0, 1, 2, 3, 4].map(function (page) { return request('GET', 'reports?page=' + page); })).then(function (pages) { lobby.reports = [].concat.apply([], pages); show(); }).catch(function (e) { error = e.message; show(); });

@@ -32,8 +32,9 @@ public class WorldTerrainService {
     private final PlayerRepository players;
     private final jakarta.persistence.EntityManager entityManager;
 
-    public static boolean inside(int x, int y) { return x >= 0 && y >= 0 && x < SIZE && y < SIZE; }
-    public static int anchor(int n, int span) { return Math.min(n, SIZE - span); }
+    /** 四大战场共用全局坐标；SIZE 仍是既有海陆地形存档的单象限尺寸。 */
+    public static boolean inside(int x, int y) { return x >= 0 && y >= 0 && x < WorldConfig.WORLD_SIZE && y < WorldConfig.WORLD_SIZE; }
+    public static int anchor(int n, int span) { return Math.min(n, WorldConfig.WORLD_SIZE - span); }
     public static boolean sea(String mask, int x, int y) {
         if (mask == null || mask.isEmpty() || x < 0 || y < 0) return false;
         int base = (int) Math.round(Math.sqrt(mask.length()));
@@ -96,7 +97,11 @@ public class WorldTerrainService {
     private void protect(char[] mask, int x, int y, int span) {
         x=anchor(x,span); y=anchor(y,span);
         for(int yy=y-1;yy<y+span+1;yy++) for(int xx=x-1;xx<x+span;xx++)
-            if(inside(xx,yy)) mask[yy*SIZE+xx]='0';
+            if(inside(xx,yy)) {
+                int mx = xx < SIZE ? xx : WorldConfig.WORLD_SIZE - 1 - xx;
+                int my = yy < SIZE ? yy : WorldConfig.WORLD_SIZE - 1 - yy;
+                mask[my*SIZE+mx]='0';
+            }
     }
     public WorldMap lockWorld() {
         Long id=worlds.findFirstByOrderByIdAsc().map(WorldMap::getId).orElseThrow(()->new IllegalArgumentException("世界尚未初始化"));
@@ -150,19 +155,42 @@ public class WorldTerrainService {
         return Map.of("version",TERRAIN_VERSION,"size",size,"cells",data,"seaCells",data.chars().filter(c->c=='1').count());
     }
     public static List<Integer> neighbors(int p) {
-        List<Integer> out=new ArrayList<>(4);int x=p%SIZE,y=p/SIZE;
-        if(x>0)out.add(p-1);if(x<SIZE-1)out.add(p+1);if(y>0)out.add(p-SIZE);if(y<SIZE-1)out.add(p+SIZE);return out;
+        return neighbors(p,SIZE);
+    }
+    /** 邻接格使用当前索引宽度，防止跨战场坐标被编码为下一行。 */
+    public static List<Integer> neighbors(int p,int size) {
+        List<Integer> out=new ArrayList<>(4);int x=p%size,y=p/size;
+        if(x>0)out.add(p-1);if(x<size-1)out.add(p+1);if(y>0)out.add(p-size);if(y<size-1)out.add(p+size);return out;
     }
     public static List<Integer> shores(String mask,int x,int y,int span) {
-        List<Integer> out=new ArrayList<>(); x=anchor(x,span);y=anchor(y,span);
+        int size = (int) Math.sqrt(mask.length());
+        List<Integer> out=new ArrayList<>(); x=Math.min(x,size-span);y=Math.min(y,size-span);
         for(int i=0;i<span;i++){
-            if(inside(x+i,y-1)&&sea(mask,x+i,y-1))out.add((y-1)*SIZE+x+i);
-            if(inside(x+i,y+span)&&sea(mask,x+i,y+span))out.add((y+span)*SIZE+x+i);
-            if(inside(x-1,y+i)&&sea(mask,x-1,y+i))out.add((y+i)*SIZE+x-1);
-            if(inside(x+span,y+i)&&sea(mask,x+span,y+i))out.add((y+i)*SIZE+x+span);
+            if(x+i>=0&&x+i<size&&y>0&&sea(mask,x+i,y-1))out.add((y-1)*size+x+i);
+            if(x+i>=0&&x+i<size&&y+span<size&&sea(mask,x+i,y+span))out.add((y+span)*size+x+i);
+            if(y+i>=0&&y+i<size&&x>0&&sea(mask,x-1,y+i))out.add((y+i)*size+x-1);
+            if(y+i>=0&&y+i<size&&x+span<size&&sea(mask,x+span,y+i))out.add((y+i)*size+x+span);
         }return out;
     }
-    public static boolean coastal(String mask,int x,int y,int span) { return mask!=null&&!shores(mask,x,y,span).isEmpty(); }
+    /** 沿海判定直接采样镜像坐标，不为每个城市复制整张地形数组。 */
+    public static boolean coastal(String mask,int x,int y,int span) {
+        if(mask==null)return false;
+        x=anchor(x,span);y=anchor(y,span);
+        for(int i=0;i<span;i++) {
+            if(inside(x+i,y-1)&&sea(mask,x+i,y-1) || inside(x+i,y+span)&&sea(mask,x+i,y+span)
+                    || inside(x-1,y+i)&&sea(mask,x-1,y+i) || inside(x+span,y+i)&&sea(mask,x+span,y+i))return true;
+        }
+        return false;
+    }
+
+    /** 寻路使用完整四战场索引；存档仍保留原地形，镜像扩展不迁移既有坐标。 */
+    public static String playableMask(String mask) {
+        if(mask.length()==WorldConfig.WORLD_SIZE*WorldConfig.WORLD_SIZE)return mask;
+        char[] expanded=new char[WorldConfig.WORLD_SIZE*WorldConfig.WORLD_SIZE];
+        for(int y=0;y<WorldConfig.WORLD_SIZE;y++)for(int x=0;x<WorldConfig.WORLD_SIZE;x++)
+            expanded[y*WorldConfig.WORLD_SIZE+x]=sea(mask,x,y)?'1':'0';
+        return new String(expanded);
+    }
     /**
      * Returns the founding terrain family for a 2x2 footprint.  The world
      * currently stores an authoritative land/sea mask; the visual terrain is
@@ -200,13 +228,13 @@ public class WorldTerrainService {
 
     public Set<String> occupiedCoordinates(Long world) {
         Set<String> used=new HashSet<>();
-        for(PlayerCity c:occupants(PlayerCity.class,world,0,SIZE-1,0,SIZE-1)){
+        for(PlayerCity c:occupants(PlayerCity.class,world,0,WorldConfig.WORLD_SIZE-1,0,WorldConfig.WORLD_SIZE-1)){
             int span=citySpan(c),x=anchor(c.getX(),span),y=anchor(c.getY(),span);
             for(int yy=y;yy<y+span;yy++)for(int xx=x;xx<x+span;xx++)used.add(xx+","+yy);
         }
-        occupants(NpcCity.class,world,0,SIZE-1,0,SIZE-1).forEach(c->reserveFootprint(used,c.getX(),c.getY(),1));
-        occupants(Bandit.class,world,0,SIZE-1,0,SIZE-1).forEach(c->reserveFootprint(used,c.getX(),c.getY(),1));
-        occupants(WildTile.class,world,0,SIZE-1,0,SIZE-1).forEach(c->used.add(c.getX()+","+c.getY()));
+        occupants(NpcCity.class,world,0,WorldConfig.WORLD_SIZE-1,0,WorldConfig.WORLD_SIZE-1).forEach(c->reserveFootprint(used,c.getX(),c.getY(),1));
+        occupants(Bandit.class,world,0,WorldConfig.WORLD_SIZE-1,0,WorldConfig.WORLD_SIZE-1).forEach(c->reserveFootprint(used,c.getX(),c.getY(),1));
+        occupants(WildTile.class,world,0,WorldConfig.WORLD_SIZE-1,0,WorldConfig.WORLD_SIZE-1).forEach(c->used.add(c.getX()+","+c.getY()));
         return used;
     }
     /**
@@ -215,7 +243,7 @@ public class WorldTerrainService {
      * 返回空字符串表示选址通过，否则返回具体原因。
      */
     public String siteReason(Long world, String mask,int x,int y,Long consumedWild) {
-        if(x<0||y<0||x+1>=SIZE||y+1>=SIZE)return "城市需要完整的 2×2 地块，不能超出地图";
+        if(x<0||y<0||x>=WorldConfig.WORLD_SIZE-1||y>=WorldConfig.WORLD_SIZE-1)return "城市需要完整的 2×2 地块，不能超出地图";
         for(int yy=y;yy<y+2;yy++)for(int xx=x;xx<x+2;xx++)if(sea(mask,xx,yy))return "城市四格占地必须全部位于陆地";
         for(PlayerCity c:occupants(PlayerCity.class,world,Math.max(0,x-1),x+2,Math.max(0,y-1),y+2)){
             int span=citySpan(c), cx=anchor(c.getX(),span),cy=anchor(c.getY(),span);

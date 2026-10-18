@@ -15,8 +15,15 @@ public record DispatchRequest(
         String gatherMode,
         String battleMode,
         String conquerMode,
-        String unitEquipmentVersion
+        String unitEquipmentVersion,
+        Boolean abandonNewbieProtection
 ) {
+    public DispatchRequest(String targetKind, Long targetId, String action, Map<String, Integer> army,
+                           Long commanderId, Map<String, Integer> carryRes, String gatherMode, String battleMode,
+                           String conquerMode, String unitEquipmentVersion) {
+        this(targetKind, targetId, action, army, commanderId, carryRes, gatherMode, battleMode, conquerMode, unitEquipmentVersion, false);
+    }
+
     public DispatchRequest(String targetKind, Long targetId, String action, Map<String, Integer> army,
                            Long commanderId, Map<String, Integer> carryRes, String gatherMode, String battleMode, String conquerMode) {
         this(targetKind, targetId, action, army, commanderId, carryRes, gatherMode, battleMode, conquerMode, null);

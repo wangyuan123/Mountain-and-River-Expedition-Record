@@ -109,7 +109,7 @@ test('first connection still shows the guide and starts polling for enrolled acc
   assert.equal(r.reads().length, 1);
   assert.equal(r.G.Onboarding.state.error, '');
   assert.equal(r.nodes.has('onboardingBar'), true);
-  assert.equal(r.screen.inert, true);
+  assert.equal(r.screen.inert, false);
   assert.equal(r.timers.get(r.G.Onboarding.state.timer).delay, 5000);
 });
 

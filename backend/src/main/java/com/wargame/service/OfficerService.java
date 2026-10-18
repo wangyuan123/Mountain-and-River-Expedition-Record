@@ -143,7 +143,6 @@ public class OfficerService {
         playerRepository.save(player);
         Academy academy = getOrCreateAcademy(playerId);
         academy.setOfficers(JsonUtil.toJson(list));
-        academy.setRefreshAt(player.getAcademyRefreshAt());
         academyRepository.save(academy);
 
         result.put("success", true);
@@ -1092,7 +1091,6 @@ public class OfficerService {
             equipment.setPlayerId(playerId);
             equipment.setOfficerId(officerId);
             equipment.setCreatedAt(now);
-            officer.setEquipmentCount((officer.getEquipmentCount() != null ? officer.getEquipmentCount() : 0) + 1);
         }
 
         equipment.setItemKey(def.key());
@@ -1118,7 +1116,6 @@ public class OfficerService {
         addToInventory(playerId, equipment.getItemKey());
         equipmentRepository.delete(equipment);
         equipmentRepository.flush();
-        officer.setEquipmentCount(Math.max(0, (officer.getEquipmentCount() != null ? officer.getEquipmentCount() : 0) - 1));
         officerRepository.save(officer);
         OfficerEquipmentDef def = OfficerEquipmentDef.ITEMS.get(itemId);
         return equipmentSuccess("已卸下 " + (def != null ? def.name() : itemId));
@@ -1393,7 +1390,6 @@ public class OfficerService {
             Academy a = new Academy();
             a.setPlayerId(playerId);
             a.setCitySlot(cityScope.slot(playerId));
-            a.setRefreshAt(0L);
             a.setOfficers("[]");
             return academyRepository.save(a);
         });

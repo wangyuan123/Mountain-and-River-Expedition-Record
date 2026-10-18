@@ -2,10 +2,11 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 function setup(){const c=vm.createContext({console,Math,Game:{}});c.window=c;for(const f of ['constants.js','map-ocean.js','map-terrain.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../js',f),'utf8'),c);return c;}
 test('authoritative ocean mask preserves cell boundaries and rejects malformed data',()=>{
  const c=setup(),o=c.Game.MapOcean;assert.equal(o.ready(),false);o.configure({size:4,cells:'0011001100110011'});
- assert.equal(o.sea(1.99,2),false);assert.equal(o.sea(2,2),true);assert.equal(o.sea(-1,2),false);assert.equal(o.sea(4,2),false);
+ assert.equal(o.sea(1.99,2),false);assert.equal(o.sea(2,2),true);assert.equal(o.sea(-1,2),false);assert.equal(o.sea(4,2),true);assert.equal(o.sea(8,2),false);
  assert.ok(o.sample(1.5,1.5)<0);assert.equal(o.sample(2,1.5),0);assert.ok(o.sample(2.5,1.5)>0);
  assert.throws(()=>o.configure({size:4,cells:'1'}));assert.throws(()=>o.configure({size:2,cells:'ab10'}));
  const candidate=o.nearestCoast(0,0);assert.deepEqual(JSON.parse(JSON.stringify(candidate)),{x:0,y:0});assert.equal(o.nearestCoast(0,0,()=>true),null);
+ assert.deepEqual(JSON.parse(JSON.stringify(o.nearestCoast(6,6))),{x:6,y:6});
  o.clear();assert.equal(o.ready(),false);
 });
 test('ocean and shoreline detail textures agree across chunk boundaries',()=>{

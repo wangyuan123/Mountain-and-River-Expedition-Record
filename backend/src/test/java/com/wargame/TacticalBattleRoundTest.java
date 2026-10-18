@@ -17,18 +17,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class TacticalBattleRoundTest {
 
     @Test
-    void reducedRocketRangeUpdatesInitialDistanceAndAutomaticBattleLog() {
+    void rocketOpeningDistanceUsesPlayerDefaultAndWildSceneInAutomaticLog() {
         BattleService service = new BattleService(0);
         Map<String, Integer> army = Map.of("rocket", 100);
-        assertEquals(2600, service.calcInitialDistance(army, army, null, null));
+        assertEquals(3450, service.calcInitialDistance(army, army, null, null));
 
         String report = service.resolveWild(army, army).getReport();
-        assertTrue(report.contains("战场初始距离: 2600"), report);
+        assertTrue(report.contains("战场初始距离: 2100"), report);
         int firstFire = report.indexOf("；齐射");
-        assertTrue(firstFire > report.indexOf("-- 第4回合 --"), report);
-        assertTrue(firstFire < report.indexOf("-- 第5回合 --"), report);
-        assertFalse(report.substring(0, report.indexOf("-- 第4回合 --")).contains("伤害"), report);
-        assertTrue(report.contains("有效射程1600 目标距离1400"), report);
+        assertTrue(firstFire > report.indexOf("-- 第2回合 --"), report);
+        assertTrue(firstFire < report.indexOf("-- 第3回合 --"), report);
+        assertFalse(report.substring(0, report.indexOf("-- 第2回合 --")).contains("伤害"), report);
+        assertTrue(report.contains("有效射程1600 目标距离1500"), report);
     }
 
     @Test
@@ -38,7 +38,7 @@ class TacticalBattleRoundTest {
                 Map.of("infantry", 20), Map.of("infantry", 20),
                 Map.of("infantry", 0), Map.of("infantry", 1000), 1000,
                 Map.of(), Map.of(), Map.of(), Map.of(),
-                0, 0, 0, 0, 0, 0, 1,
+                0, 0, 0, 0, 1,
                 Map.of("infantry", new BattleService.UnitOrder(BattleService.CommandAction.HOLD)), Map.of());
 
         assertEquals(1, state.round());
@@ -48,18 +48,18 @@ class TacticalBattleRoundTest {
     }
 
     @Test
-    void finishesBattleAtTwentyFourthRoundWhenBothSidesSurvive() {
-        assertEquals(24, BattleService.MAX_ROUND);
+    void finishesDefaultConquestAtThirtyFifthRoundWhenBothSidesSurvive() {
+        assertEquals(35, BattleService.CONQUER_MAX_ROUND);
         BattleService service = new BattleService(0);
         BattleRoundState state = service.resolveWorldRound(
                 Map.of("truck", 1), Map.of("truck", 1),
                 Map.of("truck", 0), Map.of("truck", 1000), 1000,
                 Map.of(), Map.of(), Map.of(), Map.of(),
-                0, 0, 0, 0, 0, 0, BattleService.MAX_ROUND,
+                0, 0, 0, 0, BattleService.CONQUER_MAX_ROUND,
                 Map.of("truck", new BattleService.UnitOrder(BattleService.CommandAction.HOLD)),
                 Map.of("truck", new BattleService.UnitOrder(BattleService.CommandAction.HOLD)));
 
-        assertEquals(BattleService.MAX_ROUND, state.round());
+        assertEquals(BattleService.CONQUER_MAX_ROUND, state.round());
         assertTrue(state.finished());
         assertFalse(state.attackerWin());
     }
@@ -71,7 +71,7 @@ class TacticalBattleRoundTest {
                 Map.of("htank", 1_000), Map.of("infantry", 1),
                 Map.of("htank", 0), Map.of("infantry", 0), 1_000,
                 Map.of(), Map.of(), Map.of(), Map.of(),
-                0, 0, 0, 0, 0, 0, 1,
+                0, 0, 0, 0, 1,
                 Map.of(), Map.of());
 
         assertEquals(1, state.round());
@@ -86,7 +86,7 @@ class TacticalBattleRoundTest {
                 Map.of("fighter", 1_000), Map.of("infantry", 35),
                 Map.of("fighter", 1_000), Map.of("infantry", 1_700), 2_300,
                 Map.of(), Map.of(), Map.of(), Map.of(),
-                0, 0, 0, 0, 0, 0, 3,
+                0, 0, 0, 0, 3,
                 Map.of(), Map.of());
 
         String report = state.log();
@@ -105,7 +105,7 @@ class TacticalBattleRoundTest {
                 Map.of("rocket", 1), Map.of("rocket", 1),
                 Map.of("rocket", 0), Map.of("rocket", 1_900), 1_900,
                 Map.of(), Map.of(), Map.of(), Map.of(),
-                0, 0, 0, 0, 0, 0, 1,
+                0, 0, 0, 0, 1,
                 Map.of(), Map.of());
 
         String report = state.log();
@@ -134,7 +134,7 @@ class TacticalBattleRoundTest {
                     Map.of("rocket", 1), Map.of("truck", 100_000),
                     attackerPositions, defenderPositions, 1_000,
                     Map.of(), Map.of(), Map.of(), Map.of(),
-                    0, 0, 0, 0, 0, 0, round,
+                    0, 0, 0, 0, round,
                     Map.of(), Map.of());
             assertEquals(Math.min(round * 150, 1_000), state.attackerPositions().get("rocket"), state.log());
             assertEquals(1_000, state.defenderPositions().get("truck"));
@@ -155,7 +155,7 @@ class TacticalBattleRoundTest {
                 attacker, defender,
                 Map.of("fighter", 0), Map.of("fighter", 300, "rocket", 300), 300,
                 Map.of(), Map.of(), Map.of(), Map.of(),
-                0, 0, 0, 0, 0, 0, 1,
+                0, 0, 0, 0, 1,
         Map.of(), Map.of());
 
         String report = state.log();
@@ -172,7 +172,7 @@ class TacticalBattleRoundTest {
                 Map.of("rocket", 100, "truck", 1), Map.of("armored", 1, "htank", 100_000),
                 Map.of("rocket", 0, "truck", 0), Map.of("armored", 300, "htank", 1_700), 1_700,
                 Map.of(), Map.of(), Map.of(), Map.of(),
-                0, 0, 0, 0, 0, 0, 1,
+                0, 0, 0, 0, 1,
                 Map.of("rocket", new BattleService.UnitOrder(BattleService.CommandAction.ADVANCE)),
                 Map.of("armored", new BattleService.UnitOrder(BattleService.CommandAction.HOLD),
                         "htank", new BattleService.UnitOrder(BattleService.CommandAction.HOLD)));
@@ -192,7 +192,7 @@ class TacticalBattleRoundTest {
                 Map.of("truck", 1), Map.of("truck", 1),
                 Map.of("truck", 0), Map.of("truck", 100), 100,
                 Map.of(), Map.of(), Map.of(), Map.of(),
-                0, 0, 0, 0, 0, 0, 1,
+                0, 0, 0, 0, 1,
                 Map.of("truck", new BattleService.UnitOrder(BattleService.CommandAction.ADVANCE)),
                 Map.of("truck", new BattleService.UnitOrder(BattleService.CommandAction.ADVANCE)));
         assertEquals(50, state.attackerPositions().get("truck"));
@@ -205,18 +205,19 @@ class TacticalBattleRoundTest {
             assertEquals(3.0, BattleRules.multiplier("rocket", target), target);
 
             var unit = UnitDef.UNITS.get(target);
-            double defense = unit.def() * 2 * 1.5;
-            long expectedDamage = Math.round(10_000 * 200.0 * 3.0 * 100.0 / (100.0 + 5 * defense));
+            // 科技重构为+5%/级（最高+50%），10级防御科技倍率为 1 + 10 * 0.05 = 1.5。
+            double defense = unit.def() * 1.5;
+            long expectedDamage = Math.round(10_000 * 150.0 * 3.0 * 100.0 / (100.0 + 5 * defense));
             BattleRoundState state = new BattleService(0).resolveWorldRound(
                     Map.of("rocket", 10_000), Map.of(target, 100_000),
                     Map.of("rocket", 0), Map.of(target, 1_600), 1_600,
                     Map.of("attack_tech", 10), Map.of("defense_tech", 10, "cmd_hp", 10),
-                    Map.of(), Map.of(), 0, 0, 0, 0, 0, 10, 1,
+                    Map.of(), Map.of(), 0, 0, 0, 0, 1,
                     Map.of("rocket", new BattleService.UnitOrder(BattleService.CommandAction.HOLD)),
                     Map.of(target, new BattleService.UnitOrder(BattleService.CommandAction.HOLD)));
 
             assertTrue(state.log().contains("倍率×3.0 相克"), target + ": " + state.log());
-            assertTrue(state.log().contains("对地攻击200 本次原始火力2000000 伤害" + expectedDamage),
+            assertTrue(state.log().contains("对地攻击150 本次原始火力1500000 伤害" + expectedDamage),
                     target + ": " + state.log());
         }
 
@@ -232,7 +233,7 @@ class TacticalBattleRoundTest {
                 Map.of("armored", 10_000), Map.of("fighter", 100_000),
                 Map.of("armored", 0), Map.of("fighter", 300), 300,
                 Map.of("attack_tech", 10), Map.of("defense_tech", 10, "cmd_hp", 10),
-                Map.of(), Map.of(), 0, 0, 0, 0, 0, 0, 1,
+                Map.of(), Map.of(), 0, 0, 0, 0, 1,
                 Map.of("armored", new BattleService.UnitOrder(BattleService.CommandAction.HOLD)),
                 Map.of("fighter", new BattleService.UnitOrder(BattleService.CommandAction.HOLD)));
         assertTrue(airState.log().contains("倍率×2.5 相克"), airState.log());

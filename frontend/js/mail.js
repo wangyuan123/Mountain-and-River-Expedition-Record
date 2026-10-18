@@ -71,10 +71,16 @@ window.Game = window.Game || {};
     });
   }
   function attachIcon(type) {
-    return G.DATA && G.DATA.resources && G.DATA.resources[type] ? G.resourceIconHtml(type) : '🎁';
+    if (G.DATA && G.DATA.resources && G.DATA.resources[type]) return G.resourceIconHtml(type);
+    if (G.DATA && G.DATA.units && G.DATA.units[type]) return '🪖';
+    return '🎁';
   }
   function attachLabel(type) {
-    return { gold: '黄金', diamond: '钻石', food: '粮食', steel: '钢铁', oil: '石油', rare: '稀矿' }[type] || type;
+    var resMap = { gold: '黄金', diamond: '钻石', food: '粮食', steel: '钢铁', oil: '石油', rare: '稀矿' };
+    if (resMap[type]) return resMap[type];
+    if (G.unitDisplayName) return G.unitDisplayName(type);
+    if (G.DATA && G.DATA.units && G.DATA.units[type]) return G.DATA.units[type].name || type;
+    return type;
   }
   function toast(msg) { if (G.toast) G.toast(msg); }
   function surrenderRemaining(deadline) {
@@ -177,18 +183,29 @@ window.Game = window.Game || {};
      * @param {string} decision - accept 或 reject
      */
     respondSurrender: function (offerId, decision) {
+      function submit() {
+        G.API.respondSurrender(offerId, decision).then(function (data) {
+          toast(decision === 'accept' ? '已接受劝降，城市将在 24 小时后完成移交' : '已拒绝劝降');
+          var current = mails.find(function (m) { return m.surrenderOfferId === offerId; });
+          if (current) current.surrender = data;
+          render();
+        }).catch(function (err) { toast(err.message || '处理劝降失败'); });
+      }
       if (decision === 'accept') {
         var current = mails.find(function (m) { return m.surrenderOfferId === offerId; });
         var offer = current && current.surrender;
         var city = offer ? (offer.cityName + '（' + offer.cityX + ',' + offer.cityY + '）') : '该城市';
-        if (!confirm('确认接受对 ' + city + ' 的劝降？接受后城市立即冻结 24 小时，倒计时结束后永久移交。建筑、普通资源、部队、城防、军官及军官装备、本城所属野地随城转移；双方均不能撤销，账号科技、军衔、声望、任务、军团关系、其他城市领地、钻石和账号道具不转移。')) return;
+        G.World.showConfirm({
+          title: '接受劝降确认',
+          message: '确认接受对 ' + city + ' 的劝降？接受后城市立即冻结 24 小时，倒计时结束后永久移交。',
+          subMessage: '建筑、普通资源、部队、城防、军官及军官装备、本城所属野地随城转移；双方均不能撤销。账号科技、军衔、声望、任务、军团关系、其他城市领地、钻石和账号道具不转移。',
+          danger: true,
+          okText: '接受并开始移交',
+          onConfirm: submit
+        });
+        return;
       }
-      G.API.respondSurrender(offerId, decision).then(function (data) {
-        toast(decision === 'accept' ? '已接受劝降，城市将在 24 小时后完成移交' : '已拒绝劝降');
-        var current = mails.find(function (m) { return m.surrenderOfferId === offerId; });
-        if (current) current.surrender = data;
-        render();
-      }).catch(function (err) { toast(err.message || '处理劝降失败'); });
+      submit();
     },
 
     /** 发送 (compose 页调用) */

@@ -3,6 +3,7 @@ package com.wargame;
 import com.wargame.model.dto.CommandBonus;
 import com.wargame.model.dto.BattleRoundState;
 import com.wargame.model.constants.GameData;
+import com.wargame.model.constants.UnitDef;
 import com.wargame.service.BattleService;
 import com.wargame.util.JsonUtil;
 import org.junit.jupiter.api.Test;
@@ -19,7 +20,7 @@ class CommandBonusBattleTest {
     private BattleRoundState round(CommandBonus attacker, CommandBonus defender, int number, int military, Map<String, Integer> skills) {
         return new BattleService(0).resolveWorldRound(Map.of("infantry", 100), Map.of("infantry", 100),
                 Map.of("infantry", 0), Map.of("infantry", 100), 1000,
-                Map.of(), Map.of(), skills, Map.of(), military, 0, 0, 0, 0, 0, number, 1,
+                Map.of(), Map.of(), skills, Map.of(), military, 0, 0, 0, number, 1,
                 hold, hold, attacker, defender);
     }
 
@@ -35,19 +36,21 @@ class CommandBonusBattleTest {
     private BattleRoundState attackRound(CommandBonus attacker, int number, Map<String, Integer> skills) {
         return new BattleService(0).resolveWorldRound(Map.of("infantry", 100), Map.of("truck", 100),
                 Map.of("infantry", 0), Map.of("truck", 100), 1000,
-                Map.of(), Map.of(), skills, Map.of(), 100, 0, 0, 0, 0, 0, number, 1,
+                Map.of(), Map.of(), skills, Map.of(), 100, 0, 0, 0, number, 1,
                 hold, Map.of("truck", new BattleService.UnitOrder(BattleService.CommandAction.HOLD)),
                 attacker, CommandBonus.NONE);
     }
 
-    @Test void attackBonusIsPermanentAndMultipliesLeaderAttributesAndSkillsOnlyOnTheirOwnRounds() {
+    @Test void chiefIsPermanentAndLeaderAttributesShareFirstCombatWindowsWithSkills() {
         CommandBonus chief = new CommandBonus(1L, "司令", 150, 0, 0, 0);
         double baseAttack = GameData.UNITS.get("infantry").atkGround() * 100;
-        double plain = rawFire(attackRound(CommandBonus.NONE, 1, Map.of()));
+        double plain = rawFire(attackRound(CommandBonus.NONE, 2, Map.of()));
         assertEquals(baseAttack, plain, 0.01);
-        assertEquals(1.15, rawFire(attackRound(chief, 1, Map.of())) / plain, 0.01);
-        assertEquals(2.30, rawFire(attackRound(chief, 3, Map.of())) / plain, 0.02);
-        assertEquals(1.15 * 1.20, rawFire(attackRound(chief, 1, Map.of("frenzy", 2))) / plain, 0.02);
+        assertEquals(2.30, rawFire(attackRound(chief, 1, Map.of())) / plain, 0.02);
+        assertEquals(1.15, rawFire(attackRound(chief, 3, Map.of())) / plain, 0.01);
+        assertEquals(2.30, rawFire(attackRound(chief, 4, Map.of())) / plain, 0.02);
+        assertEquals(2.30 * 1.20, rawFire(attackRound(chief, 1, Map.of("frenzy", 2))) / plain, 0.02);
+        assertEquals(2.30 * 1.20, rawFire(attackRound(chief, 4, Map.of("frenzy", 2))) / plain, 0.02);
         assertEquals(1.15, rawFire(attackRound(chief, 2, Map.of("frenzy", 2))) / plain, 0.02);
     }
 
@@ -59,18 +62,19 @@ class CommandBonusBattleTest {
         assertTrue(logistics.defenderArmy().get("infantry") > plain.defenderArmy().get("infantry"));
     }
 
-    @Test void knowledgeChangesMovementAndInitialDistanceButNeverMovesForts() {
+    @Test void knowledgeChangesMovementButNotInitialDistanceOrFortPosition() {
         CommandBonus chief = new CommandBonus(1L, "机动", 0, 0, 0, 200);
         BattleService service = new BattleService(0);
         BattleRoundState state = service.resolveWorldRound(Map.of("infantry", 1), Map.of("bunker", 1),
                 Map.of("infantry", 0), Map.of("bunker", 2000), 2000,
-                Map.of(), Map.of(), Map.of(), Map.of(), 0, 0, 0, 0, 0, 0, 1, 0,
+                Map.of(), Map.of(), Map.of(), Map.of(), 0, 0, 0, 0, 1, 0,
                 Map.of(), Map.of(), chief, chief);
-        assertEquals(120, state.attackerPositions().get("infantry"));
+        double speed = UnitDef.UNITS.get("infantry").spd();
+        assertEquals((int) (speed * chief.speedMul() * 50), state.attackerPositions().get("infantry"));
         assertEquals(2000, state.defenderPositions().get("bunker"));
         var plain = new BattleService.TechCtx(Map.of(), Map.of(), 0, 0);
         var boosted = new BattleService.TechCtx(Map.of(), Map.of(), 0, 0, chief);
-        assertEquals(60, service.calcInitialDistance(Map.of("infantry", 1), Map.of("bunker", 1), boosted, plain)
+        assertEquals(0, service.calcInitialDistance(Map.of("infantry", 1), Map.of("bunker", 1), boosted, plain)
                 - service.calcInitialDistance(Map.of("infantry", 1), Map.of("bunker", 1), plain, plain));
     }
 
@@ -87,7 +91,7 @@ class CommandBonusBattleTest {
         BattleService service = new BattleService(0);
         BattleRoundState old = service.resolveWorldRound(Map.of("infantry", 100), Map.of("infantry", 100),
                 Map.of("infantry", 0), Map.of("infantry", 100), 1000,
-                Map.of(), Map.of(), Map.of(), Map.of(), 0, 0, 0, 0, 0, 0, 1, 1, hold, hold);
+                Map.of(), Map.of(), Map.of(), Map.of(), 0, 0, 0, 0, 1, 1, hold, hold);
         assertEquals(old, round(CommandBonus.NONE, CommandBonus.NONE, 1, 0, Map.of()));
         assertEquals(0, old.attackerPositions().get("infantry"));
     }

@@ -4,16 +4,20 @@ import com.wargame.model.constants.FortDef;
 import com.wargame.model.constants.BattlePrestige;
 import com.wargame.model.constants.GameData;
 import com.wargame.model.constants.JapaneseOfficers;
-import com.wargame.model.constants.MilitaryRankDef;
 import com.wargame.model.constants.OfficerSkillDef;
 import com.wargame.model.constants.UnitDef;
 import com.wargame.model.constants.UnitEquipmentEffects;
+import com.wargame.model.constants.TechnologyRules;
 import com.wargame.model.constants.ReconRules;
 import com.wargame.model.constants.WildTypeDef;
 import com.wargame.model.constants.WorldConfig;
+import com.wargame.model.constants.NewbieProtection;
 import com.wargame.model.dto.BattleRoundState;
 import com.wargame.model.dto.BattleResult;
 import com.wargame.model.dto.CommandBonus;
+import com.wargame.model.dto.ConquestWallState;
+import com.wargame.model.constants.BattleRules;
+import com.wargame.model.constants.BattleScene;
 import com.wargame.model.dto.DispatchRequest;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
@@ -32,6 +36,7 @@ import java.util.*;
  */
 @Service
 public class MarchService {
+    @org.springframework.beans.factory.annotation.Autowired private IncomingIntelligenceService incomingIntelligence;
 
     private static final long TACTICAL_ROUND_TIMEOUT_MS = 15_000L;
 
@@ -186,11 +191,10 @@ public class MarchService {
                 pushService.pushMarchUpdate(playerId, marchEvent("arrived", m, Collections.emptyMap()));
             }
 
-            // 3a. 采集返程到达 -> 收取资源与掉落晋升珠宝
+            // 3a. 采集返程到达 -> 收取资源并归还部队
             if ("wild_gather".equals(targetKind) && returning && gatherEndAt > 0) {
                 marchRepository.delete(m);
                 WildTile gTile = targets.findWildTileById(m.getTargetId());
-                int wildLv = 1;
                 if (gTile != null) {
                     int mined = gTile.getMined() != null ? gTile.getMined() : 0;
                     int gatherAmount = m.getGatherAmount() != null ? m.getGatherAmount() : 0;
@@ -202,9 +206,6 @@ public class MarchService {
                         gTile.setDepletedAt(System.currentTimeMillis());
                     }
                     wildTileRepository.save(gTile);
-                    if (gTile.getLevel() != null && gTile.getLevel() > 0) {
-                        wildLv = gTile.getLevel();
-                    }
                 }
                 String gatherRes = m.getGatherRes();
                 int gatherAmount = m.getGatherAmount() != null ? m.getGatherAmount() : 0;
@@ -213,32 +214,12 @@ public class MarchService {
                 }
                 addResources(playerId, JsonUtil.parseIntMap(m.getCarryRes()));
 
-                // 掉落晋升珠宝
-                Map<String, Integer> gemDrops = gatherAmount > 0
-                        ? MilitaryRankDef.rollGatherGems(wildLv) : Collections.emptyMap();
-                for (Map.Entry<String, Integer> ge : gemDrops.entrySet()) {
-                    String gKey = ge.getKey();
-                    int gCnt = ge.getValue();
-                    playerItemRepository.findByPlayerIdAndItemKey(playerId, gKey)
-                            .ifPresentOrElse(existing -> {
-                                existing.setCount(existing.getCount() + gCnt);
-                                existing.setUpdatedAt(System.currentTimeMillis());
-                                playerItemRepository.save(existing);
-                            }, () -> {
-                                PlayerItem newItem = new PlayerItem(null, playerId, gKey, gCnt, System.currentTimeMillis());
-                                playerItemRepository.save(newItem);
-                            });
-                }
-
                 if (gatherAmount > 0 && gatherRes != null) {
                     questService.onEvent(playerId, "GATHER_COMPLETE", gatherRes, 1);
                 }
                 returnArmy(playerId, JsonUtil.parseIntMap(m.getArmy()));
 
                 Map<String, Object> extra = new LinkedHashMap<>(resourceEvent(m.getGatherRes(), gatherAmount));
-                if (!gemDrops.isEmpty()) {
-                    extra.put("gems", gemDrops);
-                }
                 pushService.pushMarchUpdate(playerId, marchEvent("returned", m, extra));
                 continue;
             }
@@ -342,8 +323,9 @@ public class MarchService {
                 Map<String, Integer> combatTech = targets.getCombatTechMap(playerId);
                 BattleResult result = battleService.startWorldDispatch(armyMap, garrison, Map.of(),
                         combatTech, Map.of(), targets.getCommanderSkills(commander), Map.of(),
-                        attrs.military(), attrs.defense(), 0, 0, 0, 0, "conquer", Map.of(), 0, true,
-                        battleActionPreferences.orders(playerId, false, armyMap), Map.of(), chief, CommandBonus.NONE);
+                        attrs.military(), attrs.defense(), 0, 0,
+                        m.getAction() != null ? m.getAction() : "conquer", Map.of(), 0, true,
+                        battleActionPreferences.orders(playerId, false, armyMap), Map.of(), chief, CommandBonus.NONE, null, BattleScene.WILD);
                 recordCommandBonuses(result, chief, CommandBonus.NONE);
                 recordUnitEquipment(result, combatTech, Map.of());
                 settleWildBattle(playerId, m, cTile, now, result, commander);
@@ -421,6 +403,15 @@ public class MarchService {
                 continue;
             }
 
+            // 出发后野地或城市可能换主；未经退出保护的旧行军只能返程，不能自动参战。
+            if (isPlayerWarfare(playerId, target, m.getAction())
+                    && NewbieProtection.until(playerRepository.findById(playerId).orElse(null), now) > now) {
+                startReturnMarch(m, now);
+                marchRepository.save(m);
+                notifyIncomingChange(m, "cancelled");
+                continue;
+            }
+
             // 归降冻结是目标城市级别的硬边界；旧行军即使在冻结后抵达也必须返程，
             // 包括侦察等没有战斗结算的 action，不能通过抵达时机绕过只读状态。
             if (target instanceof PlayerCity frozenCity && frozenCity.isSurrenderFrozen(now)) {
@@ -473,7 +464,7 @@ public class MarchService {
                                   BattleResult result, Officer commander) {
         recordBattleWounded(playerId, m, null, null, result.getInitialAttacker(),
                 result.getSurvivorAttacker(), commander, now, result, "攻方");
-        settleBattleAwards(playerId, m, true, result);
+        settleBattleAwards(playerId, m, true, result, m.getAction());
         if (commander != null && result.getExpGained() > 0) {
             long curExp = commander.getExp() != null ? commander.getExp() : 0L;
             commander.setExp(curExp + result.getExpGained());
@@ -485,7 +476,11 @@ public class MarchService {
         boolean wildConquered = false;
         if (result.isWin()) {
             String wildAction = m.getAction() != null ? m.getAction() : "conquer";
-            if ("plunder".equals(wildAction)) {
+            if (BattleService.isHarassmentAction(wildAction)) {
+                // 短回合袭击仅更新真实战损，不消耗矿藏、不占领，也不派生采集奖励。
+                cTile.setGarrison(JsonUtil.toJson(survivorGarrison));
+                wildTileRepository.save(cTile);
+            } else if ("plunder".equals(wildAction)) {
                 // 掠夺: 不占领野地, 更新剩余驻军, 根据幸存部队负重掠夺资源
                 cTile.setGarrison(JsonUtil.toJson(survivorGarrison));
                 WildTypeDef wtDefPl = WildTypeDef.WILD_TYPES.get(cTile.getType());
@@ -537,7 +532,8 @@ public class MarchService {
             cTile.setGarrison(JsonUtil.toJson(survivorGarrison));
             wildTileRepository.save(cTile);
         }
-        pushBattleReport(playerId, result, m, commander, null, wildConquered);
+        pushBattleReport(playerId, result, m, commander, null, wildConquered,
+                m.getAction() != null ? m.getAction() : "conquer");
         m.setBattleWon(result.isWin());
         m.setBattleId(null);
         // 征服成功且选择占领时，将幸存部队转成野地驻军；默认策略仍按原逻辑返城。
@@ -643,7 +639,6 @@ public class MarchService {
             defenderCommanderMil = dAttrs.military();
             defenderCommanderDef = dAttrs.defense();
         }
-        int defenderWallLevel = defenderPlayerId != null ? targets.buildingLevel(defenderPlayerId, "wall") : 0;
         long defenderWarehouseLevel = defenderPlayerId != null ? targets.buildingLevel(defenderPlayerId, "depot") : 0;
 
         CommandBonus attackerChief = commandBonus(playerId, Objects.requireNonNullElse(m.getCitySlot(), 0));
@@ -655,14 +650,20 @@ public class MarchService {
                 attackerSkills, defenderSkills,
                 attackerCommanderMil, attackerCommanderDef,
                 defenderCommanderMil, defenderCommanderDef,
-                0, defenderWallLevel,
                 action, defenderResources, defenderWarehouseLevel,
                 isPlayerBattle,
-                battleActionPreferences.orders(playerId, false, armyMap), Collections.emptyMap(), attackerChief, defenderChief);
+                battleActionPreferences.orders(playerId, false, armyMap), Collections.emptyMap(), attackerChief, defenderChief,
+                conquestWall(target, action, defenderArmy, defenderForts), battleScene(target));
         recordCommandBonuses(result, attackerChief, defenderChief);
         recordUnitEquipment(result, attackerTech, defenderTech);
         recordEquipmentSources(result, defense.sources());
         settleTacticalBattle(playerId, m, target, now, result, commander, defenderCommander, action, JsonUtil.toJson(defense.support()));
+    }
+
+    /** 模拟玩家城仍属于NPC；自动与逐回合入口必须采用相同场景。 */
+    private BattleScene battleScene(Object target) {
+        if (target instanceof WildTile) return BattleScene.WILD;
+        return target instanceof PlayerCity city && targets.hasRealOwner(city) ? BattleScene.PLAYER : BattleScene.NPC;
     }
 
     /**
@@ -680,6 +681,9 @@ public class MarchService {
     /** 攻守城市作用域已固定后，读取本次参战军官、城防和资源并冻结到会话。 */
     private void createTacticalBattle(Long playerId, March march, Object target, long now) {
         if (march.getBattleId() != null) return;
+        // 手动打开战场同样不得绕过退出确认；正常 PvP 出征已在发起事务中永久退出。
+        if (isPlayerWarfare(playerId, target, march.getAction())
+                && NewbieProtection.until(playerRepository.findById(playerId).orElse(null), now) > now) return;
         if (target instanceof PlayerCity city && targets.hasRealOwner(city)) {
             accounts.lockPlayer(city.getOwnerId());
             // 手动打开战场也会建会话，必须重验城权与战争资格，防止排队部队攻击刚接管的己方城市。
@@ -720,7 +724,6 @@ public class MarchService {
         defenderTech = UnitEquipmentEffects.forArmy(defenderTech, defenderArmy);
         Map<String, Integer> attackerSkills = targets.getCommanderSkills(attackerCommander);
         Map<String, Integer> defenderSkills = targets.getCommanderSkills(defenderCommander);
-        int wallLevel = defenderPlayerId != null ? targets.buildingLevel(defenderPlayerId, "wall") : 0;
         long warehouseLevel = defenderPlayerId != null ? targets.buildingLevel(defenderPlayerId, "depot") : 0;
         Map<String, Integer> defenderResources = target instanceof WildTile
                 ? new LinkedHashMap<>() : new LinkedHashMap<>(targets.getTargetResources(target));
@@ -738,10 +741,13 @@ public class MarchService {
         CommandBonus attackerChief = commandBonus(playerId, Objects.requireNonNullElse(march.getCitySlot(), 0));
         CommandBonus defenderChief = target instanceof PlayerCity pc && targets.hasRealOwner(pc)
                 ? commandBonus(pc.getOwnerId(), Objects.requireNonNullElse(pc.getCitySlot(), 0)) : CommandBonus.NONE;
+        ConquestWallState wall = conquestWall(target, march.getAction(), defenderArmy, Map.of());
         int initialDistance = battleService.calcInitialDistance(attackerArmy, defenderArmy,
                 new BattleService.TechCtx(attackerTech, attackerSkills, attackerMil, attackerDef, attackerChief),
-                new BattleService.TechCtx(defenderTech, defenderSkills, defenderMil, defenderDef, defenderChief));
+                new BattleService.TechCtx(defenderTech, defenderSkills, defenderMil, defenderDef, defenderChief), wall, battleScene(target));
         BattleSession session = new BattleSession();
+        saveWall(session, wall);
+        session.setBattleRulesVersion(BattleRules.VERSION);
         session.setDefenderCommanderId(target instanceof PlayerCity ? (defenderCommander != null ? defenderCommander.getId() : 0L) : null);
         session.setPlayerId(playerId);
         session.setMarchId(march.getId());
@@ -766,14 +772,13 @@ public class MarchService {
         session.setAttackerSkills(JsonUtil.toJson(attackerSkills));
         session.setDefenderSkills(JsonUtil.toJson(defenderSkills));
         session.setDefenderResources(JsonUtil.toJson(defenderResources));
-        session.setBattleLog("");
+        session.setBattleLog("规则版本：" + BattleRules.VERSION + "\n战场初始距离: " + initialDistance + "\n");
         session.setAttackerCommandBonus(JsonUtil.toJson(attackerChief.toMap()));
         session.setDefenderCommandBonus(JsonUtil.toJson(defenderChief.toMap()));
         session.setAttackerCommanderMil(attackerMil);
         session.setAttackerCommanderDef(attackerDef);
         session.setDefenderCommanderMil(defenderMil);
         session.setDefenderCommanderDef(defenderDef);
-        session.setDefenderWallLevel(wallLevel);
         session.setDefenderWarehouseLevel(warehouseLevel);
         session = battleSessionRepository.save(session);
         march.setBattleId(session.getId());
@@ -857,7 +862,7 @@ public class MarchService {
         // 防守玩家只能修改守城部队指令，进攻方沿用自身指令；反之亦然。
         Map<String, BattleService.UnitOrder> orders = access.defending()
                 ? parseBattleOrders(request, defenderArmy, attackerArmy)
-                : parseBattleOrders(request, attackerArmy, defenderArmy);
+                : parseBattleOrders(request, attackerArmy, battleTargets(session, defenderArmy, false));
         try {
             questService.onEvent(playerId, "BATTLE_COMMAND", null, 1);
         } catch (Exception ignored) {}
@@ -923,7 +928,7 @@ public class MarchService {
         Long defenderPlayerId = target instanceof PlayerCity city && targets.hasRealOwner(city)
                 ? city.getOwnerId() : null;
         Map<String, BattleService.UnitOrder> savedAttackerOrders = persistentBattleOrders(
-                session.getAttackerOrders(), attackerArmy, defenderArmy);
+                session.getAttackerOrders(), attackerArmy, battleTargets(session, defenderArmy, false));
         Map<String, BattleService.UnitOrder> savedDefenderOrders = persistentBattleOrders(
                 session.getDefenderOrders(), defenderArmy, attackerArmy);
         savedAttackerOrders.putAll(attackerOrders);
@@ -943,14 +948,18 @@ public class MarchService {
                 session.getInitialDistance(), JsonUtil.parseIntMap(session.getAttackerTech()), JsonUtil.parseIntMap(session.getDefenderTech()),
                 JsonUtil.parseIntMap(session.getAttackerSkills()), JsonUtil.parseIntMap(session.getDefenderSkills()),
                 session.getAttackerCommanderMil(), session.getAttackerCommanderDef(),
-                session.getDefenderCommanderMil(), session.getDefenderCommanderDef(), 0, session.getDefenderWallLevel(),
+                session.getDefenderCommanderMil(), session.getDefenderCommanderDef(),
                 nextRound, firstCombatRound, resolvedAttackerOrders, resolvedDefenderOrders,
-                CommandBonus.fromJson(session.getAttackerCommandBonus()), CommandBonus.fromJson(session.getDefenderCommandBonus()));
+                CommandBonus.fromJson(session.getAttackerCommandBonus()), CommandBonus.fromJson(session.getDefenderCommandBonus()),
+                session.getAction(), restoreWall(session));
         String battleLog = session.getBattleLog() + round.log();
 
+        // 所有推进路径持久化同一耐久与阶段；终局响应同样使用本回合状态，不能展示上一回合满血。
+        saveWall(session, round.wall());
+        session.setRoundNo(round.round());
+        session.setFirstCombatRound(round.firstCombatRound());
+
         if (!round.finished()) {
-            session.setRoundNo(round.round());
-            session.setFirstCombatRound(round.firstCombatRound());
             session.setAttackerArmy(JsonUtil.toJson(round.attackerArmy()));
             session.setDefenderArmy(JsonUtil.toJson(round.defenderArmy()));
             session.setAttackerPositions(JsonUtil.toJson(round.attackerPositions()));
@@ -969,8 +978,10 @@ public class MarchService {
         if (target instanceof Bandit || target instanceof NpcCity) defenderResources.remove("diamond");
         BattleResult result = battleService.finishWorldBattle(round.attackerWin(), round.attackerArmy(), round.defenderArmy(),
                 JsonUtil.parseIntMap(session.getInitialAttacker()), JsonUtil.parseIntMap(session.getInitialDefender()),
-                JsonUtil.parseIntMap(session.getAttackerTech()), session.getAction(), defenderResources,
+                JsonUtil.parseIntMap(session.getAttackerTech()), JsonUtil.parseIntMap(session.getDefenderTech()), session.getAction(), defenderResources,
                 session.getDefenderWarehouseLevel(), battleLog);
+        result.setWall(round.wall());
+        result.setTerminalReason(round.terminalReason());
         recordCommandBonuses(result, CommandBonus.fromJson(session.getAttackerCommandBonus()),
                 CommandBonus.fromJson(session.getDefenderCommandBonus()));
         recordUnitEquipment(result, JsonUtil.parseIntMap(session.getAttackerTech()), JsonUtil.parseIntMap(session.getDefenderTech()));
@@ -1005,7 +1016,10 @@ public class MarchService {
         response.put("attackerPositions", defendingViewer ? round.defenderPositions() : round.attackerPositions());
         response.put("defenderPositions", defendingViewer ? round.attackerPositions() : round.defenderPositions());
         response.put("log", battleLog);
+        response.put("wall", round.wall());
+        response.put("battlePhase", round.wall() != null ? round.wall().phase() : null);
         response.put("finished", true);
+        response.put("terminalReason", round.terminalReason());
         response.put("result", Map.of("win", defendingViewer ? !result.isWin() : result.isWin(), "report", result.getReport()));
         return response;
     }
@@ -1088,6 +1102,46 @@ public class MarchService {
         return positions;
     }
 
+    /** 仅真实玩家城征服需要破墙，读取被攻击城市槽位，不能误用攻方或主城等级。 */
+    private ConquestWallState conquestWall(Object target, String action, Map<String, Integer> army, Map<String, Integer> forts) {
+        if (action == null) action = "conquer";
+        if (!(target instanceof PlayerCity city) || !targets.hasRealOwner(city)
+                || !Set.of("conquer", "tactical_conquer").contains(action)) return null;
+        boolean defendersAlive = java.util.stream.Stream.concat(army.values().stream(), forts.values().stream())
+                .anyMatch(n -> n != null && n > 0);
+        try (var ignored = cityScope.enter(city)) {
+            return ConquestWallState.create(targets.buildingLevel(city.getOwnerId(), "wall"),
+                    targets.getTechLevel(city.getOwnerId(), "wall_reinforcement"), defendersAlive, BattleRules.VERSION);
+        }
+    }
+
+    /** 旧会话缺等级快照则沿用旧规则；禁止刷新或超时重新读取建筑、重新补满耐久。 */
+    private ConquestWallState restoreWall(BattleSession session) {
+        if (session.getWallLevelSnapshot() == null) return null;
+        return new ConquestWallState(session.getWallLevelSnapshot(), session.getWallMaxHp(), session.getWallHpRemaining(),
+                session.getWallDefense(), session.getBattlePhase(), session.getBattleRulesVersion());
+    }
+
+    private void saveWall(BattleSession session, ConquestWallState wall) {
+        if (wall == null) return;
+        session.setWallLevelSnapshot(wall.level());
+        session.setWallMaxHp(wall.maxHp());
+        session.setWallHpRemaining(wall.hpRemaining());
+        session.setWallDefense(wall.defense());
+        session.setBattlePhase(wall.phase());
+        session.setBattleRulesVersion(wall.rulesVersion());
+    }
+
+    /** 仅为集火验证增加墙体标识；不会改变真实军队、损失、伤兵或援军快照。 */
+    private Map<String, Integer> battleTargets(BattleSession session, Map<String, Integer> enemyArmy, boolean defendingViewer) {
+        Map<String, Integer> targets = new LinkedHashMap<>(enemyArmy);
+        ConquestWallState wall = restoreWall(session);
+        if (!defendingViewer && wall != null && wall.standing() && ConquestWallState.ATTACK_WALL.equals(wall.phase())) {
+            targets.put(ConquestWallState.TARGET, 1);
+        }
+        return targets;
+    }
+
     /**
      * 以当前指挥方视角序列化战场，防守方需要看到守军作为“我军”才能提交正确兵种指令。
      */
@@ -1104,13 +1158,16 @@ public class MarchService {
         view.put("firstCombatRound", session.getFirstCombatRound() != null ? session.getFirstCombatRound()
                 : battleService.firstCombatRoundFromLog(session.getBattleLog()));
         view.put("roundDeadlineAt", session.getRoundDeadlineAt());
-        view.put("maxRound", BattleService.MAX_ROUND);
+        view.put("maxRound", BattleService.maxRoundForAction(session.getAction()));
         view.put("initialDistance", session.getInitialDistance());
+        view.put("rulesVersion", session.getBattleRulesVersion());
+        view.put("wall", restoreWall(session));
+        view.put("battlePhase", session.getBattlePhase());
         view.put("attackerArmy", JsonUtil.parseIntMap(defendingViewer ? session.getDefenderArmy() : session.getAttackerArmy()));
         view.put("defenderArmy", JsonUtil.parseIntMap(defendingViewer ? session.getAttackerArmy() : session.getDefenderArmy()));
         view.put("orders", persistentBattleOrders(defendingViewer ? session.getDefenderOrders() : session.getAttackerOrders(),
                 JsonUtil.parseIntMap(defendingViewer ? session.getDefenderArmy() : session.getAttackerArmy()),
-                JsonUtil.parseIntMap(defendingViewer ? session.getAttackerArmy() : session.getDefenderArmy())));
+                battleTargets(session, JsonUtil.parseIntMap(defendingViewer ? session.getAttackerArmy() : session.getDefenderArmy()), defendingViewer)));
         view.put("attackerPositions", JsonUtil.parseIntMap(defendingViewer ? session.getDefenderPositions() : session.getAttackerPositions()));
         view.put("defenderPositions", JsonUtil.parseIntMap(defendingViewer ? session.getAttackerPositions() : session.getDefenderPositions()));
         view.put("attackerTech", JsonUtil.parseIntMap(defendingViewer ? session.getDefenderTech() : session.getAttackerTech()));
@@ -1315,7 +1372,7 @@ public class MarchService {
         if (remaining <= 0) {
             throw new IllegalArgumentException("该野地资源已耗尽");
         }
-        Map<String,Integer> gatherEquipment = UnitEquipmentEffects.only(targets.getCombatTechMap(playerId));
+        Map<String,Integer> gatherEquipment = TechnologyRules.actionSnapshot(targets.getCombatTechMap(playerId));
         int load = calcArmyLoad(garrison, gatherEquipment);
         if (load <= 0) {
             throw new IllegalArgumentException("当前驻军无运载能力，无法采集");
@@ -1540,9 +1597,10 @@ public class MarchService {
     // createDispatch - 对应 JS world.js launchDispatch
     // ========================================================================
 
+    /** 世界行军的陆军（含步兵系）共用燃烧引擎；空军另叠加出发城市机场，战场不读取机场。 */
     public double getUnitTechSpdMul(Long playerId, String cat) {
         String catKey = switch (cat != null ? cat : "") {
-            case "arm" -> "arm_engine";
+            case "inf", "arm" -> "arm_engine";
             case "air" -> "air_engine";
             case "nav" -> "nav_engine";
             default -> null;
@@ -1571,7 +1629,7 @@ public class MarchService {
         boolean transfer="transport".equals(req.action())||"rebase".equals(req.action())||"reinforce".equals(req.action());
         if (transfer) requireTransferTarget(playerId, target, req.action());
         if ("scout".equals(req.action())) ReconRules.requireUnit(req.army());
-        Map<String,Integer> actionEquipment = UnitEquipmentEffects.only(targets.getCombatTechMap(playerId));
+        Map<String,Integer> actionEquipment = TechnologyRules.actionSnapshot(targets.getCombatTechMap(playerId));
         Map<String,Integer> army=new LinkedHashMap<>();double slowest=Double.MAX_VALUE;
         for(var e:(req.army()==null?Map.<String,Integer>of():req.army()).entrySet()){
             var u=GameData.UNITS.get(e.getKey());if(u==null||e.getValue()==null||e.getValue()<=0)continue;
@@ -1592,11 +1650,17 @@ public class MarchService {
     /** 兼容快捷侦查：优先使用侦察机，无飞机时派出一辆侦查车，仍由正式出征复核陆路和补给。 */
     @Transactional
     public March createDefaultReconDispatch(Long playerId, String targetKind, Long targetId) {
+        return createDefaultReconDispatch(playerId, targetKind, targetId, false);
+    }
+
+    /** 兼容接口同样要求显式退出新手保护，不能通过快捷侦查绕过正式出征校验。 */
+    @Transactional
+    public March createDefaultReconDispatch(Long playerId, String targetKind, Long targetId, Boolean abandonNewbieProtection) {
         for (String unit : List.of("scout", "recon_car")) {
             boolean available = armyUnitRepository.findByPlayerIdAndCitySlotAndType(playerId, cityScope.slot(playerId), unit)
                     .stream().anyMatch(army -> Objects.requireNonNullElse(army.getCount(), 0) > 0);
             if (available) return createDispatch(playerId, new DispatchRequest(targetKind, targetId, "scout",
-                    Map.of(unit, 1), null, null));
+                    Map.of(unit, 1), null, null, null, null, null, null, abandonNewbieProtection));
         }
         throw new IllegalArgumentException("城内没有可用侦查部队，请制造侦察机或侦查装甲车");
     }
@@ -1630,7 +1694,8 @@ public class MarchService {
             throw new IllegalArgumentException("当前城池出征队伍已达上限 (" + activeMarches + "/" + maxMarches + ")，请等待部队返城或升级司令部");
         }
         Player player = accounts.lockPlayer(playerId);
-        Map<String,Integer> actionEquipment = UnitEquipmentEffects.only(targets.getCombatTechMap(playerId));
+        NewbieProtection.start(player, System.currentTimeMillis());
+        Map<String,Integer> actionEquipment = TechnologyRules.actionSnapshot(targets.getCombatTechMap(playerId));
         if (req.unitEquipmentVersion() != null && !req.unitEquipmentVersion().equals(UnitEquipmentEffects.actionVersion(actionEquipment))) throw new IllegalArgumentException("装备配置已更新，请重新预览行军路线");
 
         String kind = req.targetKind();
@@ -1640,12 +1705,12 @@ public class MarchService {
         boolean isStation = "station".equals(action);
         if (isStation && !"wild".equals(kind)) throw new IllegalArgumentException("野地进驻只能用于野地目标");
         boolean transfer = "transport".equals(action) || "rebase".equals(action) || "reinforce".equals(action);
-        if (!Set.of("conquer", "plunder", "scout", "gather", "transport", "rebase", "station", "reinforce").contains(action)) throw new IllegalArgumentException("无效行军类型");
+        if (!isOffensiveAction(action) && !Set.of("scout", "gather", "transport", "rebase", "station", "reinforce").contains(action)) throw new IllegalArgumentException("无效行军类型");
         String gatherMode = req.gatherMode() == null ? "auto" : req.gatherMode();
         if (!Set.of("auto", "manual").contains(gatherMode)) throw new IllegalArgumentException("无效采集模式");
         if (!isGather && "manual".equals(gatherMode)) throw new IllegalArgumentException("只有采集出征可以设置全手动模式");
         boolean pveAttack = Set.of("wild", "bandit", "npc", "simulated_npc").contains(kind)
-                && ("conquer".equals(action) || "plunder".equals(action));
+                && isOffensiveAction(action);
         String battleMode = req.battleMode();
         if (battleMode != null && !Set.of("manual", "auto").contains(battleMode)) throw new IllegalArgumentException("无效战斗方式");
         if (battleMode != null && !pveAttack) throw new IllegalArgumentException("只有对 NPC 或野地的攻击可以选择战斗方式");
@@ -1662,6 +1727,8 @@ public class MarchService {
         }
 
         if (target == null) throw new IllegalArgumentException("目标不存在");
+        // 对外军事行动包括争夺玩家野地和援军；和平运输、自有城调遣及 PvE 不退出保护。
+        boolean playerWarfare = isPlayerWarfare(playerId, target, action);
         if (target instanceof PlayerCity frozenCity && frozenCity.isSurrenderFrozen(System.currentTimeMillis())) {
             throw new com.wargame.security.GameAccessException("CITY_FROZEN", "归降移交中的城市拒绝新的行军", 409);
         }
@@ -1814,6 +1881,11 @@ public class MarchService {
                 throw new IllegalArgumentException("资源不足: " + rk + "（行军油耗和携带物资共需 " + need + "，库存 " + have + "）");
             }
         }
+        // 资源、路线和编队验证失败均不消耗保护；成功退出与出征在同一事务中提交。
+        if (playerWarfare) {
+            NewbieProtection.requireConfirmation(player, req.abandonNewbieProtection(), now);
+            if (NewbieProtection.until(player, now) > now) player.setNewbieProtectionEnded(true);
+        }
         for (String rk : List.of("food", "steel", "oil", "rare", "gold")) {
             deductResource(res, rk, totalCost.getOrDefault(rk, 0));
         }
@@ -1897,7 +1969,7 @@ public class MarchService {
             notification.put("startAt", march.getStartAt());
             notification.put("arriveAt", march.getArriveAt());
         }
-        pushService.pushIncomingAttack(city.getOwnerId(), notification);
+        pushService.pushIncomingAttack(city.getOwnerId(), IncomingIntelligenceService.project(notification, incomingIntelligence.radar(city.getOwnerId())));
     }
 
     // ========================================================================
@@ -1926,7 +1998,7 @@ public class MarchService {
     // resolveAttack - 攻击流寇/NPC城/玩家城 (conquer/plunder)
     // ========================================================================
 
-    /** 战斗结束后结算民心，再判断接管与俘虏；双方战报始终属于原参战玩家。 */
+    /** 战斗结束后结算民心、民怨，再判断接管与俘虏；双方战报始终属于原参战玩家。 */
     private void settleTacticalBattle(Long playerId, March m, Object target, long now,
                                       BattleResult result, Officer commander, Officer defenderCommander, String action) {
         String support = m.getBattleId() == null ? null : battleSessionRepository.findById(m.getBattleId())
@@ -1954,7 +2026,8 @@ public class MarchService {
             if (receipt.isEmpty()) return;
             prisonerReceipt = receipt.get();
         }
-        awardNpcDiamond(target, result);
+        // 不取资源的出征不能通过 30 级 NPC 的额外掉落重新获得钻石。
+        if (!BattleService.isHarassmentAction(action)) awardNpcDiamond(target, result);
         ranks.awardNpcVictory(playerId, target, result);
         recordBattleWounded(playerId, m, null, null, result.getInitialAttacker(),
                 result.getSurvivorAttacker(), commander, now, result, "攻方");
@@ -1979,12 +2052,16 @@ public class MarchService {
             result.setPrisoners(prisonerService.capture(prisonerReceipt, destination, sources,
                     mobileLosses(result.isWin() ? result.getInitialDefender() : result.getInitialAttacker(),
                             result.isWin() ? result.getSurvivorDefender() : result.getSurvivorAttacker()), result.isWin(), now));
-            result.setReport(result.getReport() + "\n战俘结算：候选 " + result.getPrisoners().get("candidateTotal")
-                    + "，收容 " + result.getPrisoners().get("acceptedTotal") + "，未收容 " + result.getPrisoners().get("overflow") + "。\n");
+            long accepted = result.getPrisoners() != null
+                    ? ((Number) result.getPrisoners().getOrDefault("acceptedTotal", 0)).longValue() : 0;
+            if (accepted > 0) {
+                result.setReport(result.getReport() + "\n战俘结算：候选 " + result.getPrisoners().get("candidateTotal")
+                        + "，收容 " + result.getPrisoners().get("acceptedTotal") + "，未收容 " + result.getPrisoners().get("overflow") + "。\n");
+            }
         }
-        settleBattleAwards(playerId, m, true, result);
+        settleBattleAwards(playerId, m, true, result, action);
         if (target instanceof PlayerCity pc && targets.hasRealOwner(pc)) {
-            settleBattleAwards(pc.getOwnerId(), m, false, result);
+            settleBattleAwards(pc.getOwnerId(), m, false, result, action);
         }
         if (originalDefenderId != null && result.isWin() && "conquer".equals(action)) {
             PlayerCity city = (PlayerCity) target;
@@ -2004,6 +2081,7 @@ public class MarchService {
                 try { questService.onEvent(playerId, "CAPTIVE_OFFICER", null, 1); } catch (Exception ignored) {}
             }
         }
+        limitBattleLoot(m, result);
         pushBattleReport(playerId, result, m, commander, defenderCommander);
         if (originalDefenderId != null) pushBattleReport(originalDefenderId, result, m, commander, defenderCommander);
 
@@ -2190,9 +2268,23 @@ public class MarchService {
         enemyArmy.forEach((id, count) -> { if (UnitEquipmentEffects.base(id).equals(scoutUnit)) interceptArmy.put(id, count); });
         dEquipment = UnitEquipmentEffects.forArmy(dEquipment, interceptArmy);
         Map<String, Object> interceptSources = equipmentSources(defense.sources(), interceptArmy);
-        int warning = defenderId == null ? 0 : targets.getTechLevel(defenderId, "recon_level") + targets.getTechLevel(defenderId, "recon_radar") * 2;
+        // 双方自身侦察技术计入基础先手，守方雷达仅增加第一次交火的先手值。
+        int myReconLv = targets.getTechLevel(playerId, "recon_level");
+        int defenderReconLv = defenderId == null ? 0 : targets.getTechLevel(defenderId, "recon_level");
+        int defenderRadarLv = defenderId == null ? 0 : targets.getTechLevel(defenderId, "recon_radar");
+        // “不派遣将领”不借用出发城守将；守方只读取被侦查城市的守将，不能串到主城。
+        Officer scoutCommander = m.getCommanderId() != null ? targets.getOfficerById(playerId, m.getCommanderId()) : null;
+        Officer interceptCommander = target instanceof PlayerCity pc && targets.hasRealOwner(pc)
+                ? targets.getCityCommander(pc) : null;
+        if (target instanceof Bandit bandit) {
+            interceptCommander = JapaneseOfficers.buildOfficer(bandit.getCommanderName(), Objects.requireNonNullElse(bandit.getLevel(), 1));
+        } else if (target instanceof NpcCity city) {
+            interceptCommander = JapaneseOfficers.buildOfficer(city.getCommanderName(), Objects.requireNonNullElse(city.getLevel(), 1));
+        }
+        BattleService.TechCtx attackerRecon = scoutContext(scoutCommander, aEquipment, attackerChief);
+        BattleService.TechCtx defenderRecon = scoutContext(interceptCommander, dEquipment, defenderChief);
         UnitEquipmentRecon.Result encounter = UnitEquipmentRecon.resolve(scoutUnit, myScouts, enemyArmy,
-                aEquipment, dEquipment, attackerChief, defenderChief, warning);
+                battleService, attackerRecon, defenderRecon, myReconLv, defenderReconLv, defenderRadarLv);
         int myLost = myScouts - encounter.ownAlive();
         int enemyRemain = encounter.enemyAlive().values().stream().mapToInt(Integer::intValue).sum();
         int enemyLost = enemyScouts - enemyRemain;
@@ -2215,15 +2307,25 @@ public class MarchService {
         supportScoutResult.setReport("");
         recordSupportWounded(scoutLosses, now, supportScoutResult);
 
-        // 情报深度只取决于出征方的侦察技术。
-        int myReconLv = targets.getTechLevel(playerId, "recon_level");
-
         // 生成侦查报告
         Map<String, Object> reportData = new LinkedHashMap<>();
         // 报告在抵达野地时生成；新手行动用行军 ID 确认本次侦察已实际返城。
         reportData.put("commandBonuses", Map.of("attacker", attackerChief.toMap(), "defender", defenderChief.toMap()));
+        // 快照按真实攻守归属保存；无拦截兵力时不宣称守将参战。
+        Map<String, Object> scoutCommanders = new LinkedHashMap<>();
+        scoutCommanders.put("attacker", buildCommanderReport(scoutCommander));
+        scoutCommanders.put("defender", enemyScouts > 0 ? buildCommanderReport(interceptCommander) : null);
+        reportData.put("commanders", scoutCommanders);
+        reportData.put("commanderAttributeRounds", List.of(1, 4, 7, 10));
+        reportData.put("commanderSkillRounds", List.of(1, 4, 7, 10));
+        // 保存本次先手规则与双方科技快照，后续规则变化不能改写历史报告说明。
+        Map<String, Object> reconInitiative = Map.of("version", UnitEquipmentRecon.INITIATIVE_RULES_VERSION,
+                "attackerReconLevel", myReconLv, "defenderReconLevel", defenderReconLv,
+                "defenderRadarLevel", defenderRadarLv);
+        reportData.put("reconInitiative", reconInitiative);
         reportData.put("unitEquipment", Map.of("attacker", aEquipment, "defender", dEquipment, "sources", interceptSources));
         reportData.put("marchId", m.getId());
+        reportData.put("citySlot", Objects.requireNonNullElse(m.getCitySlot(), 0));
         reportData.put("time", now);
         reportData.put("attackerName", playerRepository.findById(playerId)
                 .map(Player::getUsername).orElse("我方"));
@@ -2313,8 +2415,6 @@ public class MarchService {
             }
         }
 
-        Officer scoutCommander = m.getCommanderId() != null
-                ? targets.getOfficerById(playerId, m.getCommanderId()) : targets.getCommander(playerId);
         reportData.put("wounded", woundedService.recordOutboundLosses(playerId, m,
                 Map.of(scoutUnit, myScouts), Map.of(scoutUnit, myScouts - myLost), scoutCommander, now));
         saveScoutReport(playerId, target, reportData, now);
@@ -2349,13 +2449,17 @@ public class MarchService {
                     .replace("敌方", "我方").replace("来袭方", "敌方")).toList());
             defenseData.put("unitEquipment", Map.of("attacker", aEquipment, "defender", dEquipment, "sources", interceptSources));
             defenseData.put("commandBonuses", Map.of("attacker", attackerChief.toMap(), "defender", defenderChief.toMap()));
+            defenseData.put("commanders", scoutCommanders);
+            defenseData.put("commanderAttributeRounds", List.of(1, 4, 7, 10));
+            defenseData.put("commanderSkillRounds", List.of(1, 4, 7, 10));
+            defenseData.put("reconInitiative", reconInitiative);
             defenseData.put("attackerInitiative", attackerInitiative);
             defenseData.put("defenderInitiative", defenderInitiative);
             defenseData.put("firstStrike", attackerFirst ? "attacker" : "defender");
             defenseData.put("wounded", woundedService.recordLosses(pc.getOwnerId(), pc.getX(), pc.getY(),
                     Map.of(scoutUnit, scoutLosses.initial().getOrDefault(scoutUnit, 0)),
                     Map.of(scoutUnit, scoutLosses.survivors().getOrDefault(scoutUnit, 0)),
-                    targets.getCommander(pc.getOwnerId()), now));
+                    interceptCommander, now));
             saveScoutReport(pc.getOwnerId(), target, defenseData, now);
         }
         try {
@@ -2378,6 +2482,13 @@ public class MarchService {
         } else {
             marchRepository.delete(m);
         }
+    }
+
+    /** 侦查沿用将领装备和套装的有效军事、防御；上下文不携带普通作战科技。 */
+    private BattleService.TechCtx scoutContext(Officer commander, Map<String, Integer> equipment, CommandBonus chief) {
+        EquipmentService.Attributes attrs = commander == null ? null : equipmentService.attributes(commander);
+        return new BattleService.TechCtx(equipment, targets.getCommanderSkills(commander),
+                attrs == null ? 0 : attrs.military(), attrs == null ? 0 : attrs.defense(), chief);
     }
 
     private void saveScoutReport(Long recipientId, Object target, Map<String, Object> data, long now) {
@@ -2420,7 +2531,6 @@ public class MarchService {
             defenderCommanderDef = dAttrs.defense();
         }
         Map<String, Integer> defenderSkills = targets.getCommanderSkills(commander);
-        int defenderWallLevel = targets.buildingLevel(playerId, "wall");
 
         Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         Map<String, Integer> defenderResources = new LinkedHashMap<>();
@@ -2442,9 +2552,8 @@ public class MarchService {
                 Collections.emptyMap(), defenderSkills,
                 0, 0,
                 defenderCommanderMil, defenderCommanderDef,
-                0, defenderWallLevel,
                 action, defenderResources, defenderWarehouseLevel,
-                true, Collections.emptyMap(), battleActionPreferences.orders(playerId, true, defenderArmy), CommandBonus.NONE, defenderChief);
+                true, Collections.emptyMap(), battleActionPreferences.orders(playerId, true, defenderArmy), CommandBonus.NONE, defenderChief, null, BattleScene.NPC);
         recordCommandBonuses(result, CommandBonus.NONE, defenderChief);
         recordUnitEquipment(result, Map.of(), defenderTech);
         recordEquipmentSources(result, defense.sources());
@@ -2453,8 +2562,8 @@ public class MarchService {
         recordBattleWounded(playerId, null, null, null, losses.initial(),
                 losses.survivors(), commander, now, result, "守方");
         recordSupportWounded(losses, now, result);
-        settleBattleAwards(playerId, null, false, result);
-        pushBattleReport(playerId, result, null, null, commander);
+        settleBattleAwards(playerId, null, false, result, action);
+        pushBattleReport(playerId, result, null, null, commander, false, action);
 
         // 应用守方损失
         applyDefenderLosses(playerId, losses.initial(), losses.survivors());
@@ -2546,15 +2655,17 @@ public class MarchService {
     }
 
     /**
-     * 结算某一真实玩家在战斗中的声望和民心，并把结果锁定到当前战报。
+     * 结算某一真实玩家在战斗中的声望、民心和民怨，并把结果锁定到当前战报。
      * 声望按双方作战单位的生产成本折算后的净损失计算；胜利方民心上升，守城失败方民心下降，进攻失败不影响出发城民心。
+     * 只有征服、掠夺守城战败增加民怨，档位按本次结算扣减前的民心判断，接管前完成写入。
      * 城防损失不进入声望或伤兵计算，声望扣减不会使现有声望低于 0。
      * @param playerId 战报接收者的玩家 ID
      * @param march 当前行军；来袭防守战可能为空
      * @param attacker 该玩家是否为进攻方
      * @param result 已完成的战斗结果
+     * @param action 实际出征动作；未知来源来袭也必须传入，旧行军为空时按征服兼容
      */
-    private void settleBattleAwards(Long playerId, March march, boolean attacker, BattleResult result) {
+    private void settleBattleAwards(Long playerId, March march, boolean attacker, BattleResult result, String action) {
         boolean won = attacker == result.isWin();
         int requestedPrestigeChange = battlePrestigeChange(result, attacker);
         int prestigeChange = 0;
@@ -2573,17 +2684,34 @@ public class MarchService {
         CityEconomy economy = battleEconomy(playerId, march, attacker);
         if (economy != null) {
             int moraleBefore = Objects.requireNonNullElse(economy.getMorale(), 70);
+            // 只有玩家城对战和未知来源的来袭战记录民怨；NPC、野地战报不出现无关的民怨零值。
+            boolean trackResentment = march == null || "player".equals(march.getTargetKind());
+            int resentmentBefore = trackResentment
+                    ? Math.max(0, Math.min(100, Objects.requireNonNullElse(economy.getResentment(), 0))) : 0;
+            // 先用战前民心定档，避免 71/41 民心在同场扣除 2 点后误落入较低档位。
+            int resentmentGain = trackResentment && !attacker && !won
+                    ? defeatedCityResentmentGain(Objects.requireNonNullElse(action, "conquer"), moraleBefore) : 0;
+            int resentmentAfter = trackResentment ? Math.min(100, resentmentBefore + resentmentGain) : 0;
             int moraleAfter = Math.max(0, Math.min(100, moraleBefore + requestedMoraleChange));
             // 战报记录上下限截断后的实际变化，避免民心已满/归零时显示虚假的增减值。
             int moraleChange = moraleAfter - moraleBefore;
             economy.setMorale(moraleAfter);
+            if (trackResentment) economy.setResentment(resentmentAfter);
             saveBattleEconomy(economy);
             if (attacker) {
                 result.setAttackerMoraleChange(moraleChange);
                 result.setAttackerMoraleAfter(moraleAfter);
+                if (trackResentment) {
+                    result.setAttackerResentmentChange(resentmentAfter - resentmentBefore);
+                    result.setAttackerResentmentAfter(resentmentAfter);
+                }
             } else {
                 result.setDefenderMoraleChange(moraleChange);
                 result.setDefenderMoraleAfter(moraleAfter);
+                if (trackResentment) {
+                    result.setDefenderResentmentChange(resentmentAfter - resentmentBefore);
+                    result.setDefenderResentmentAfter(resentmentAfter);
+                }
             }
         }
         if (attacker) {
@@ -2618,6 +2746,18 @@ public class MarchService {
         return losses;
     }
 
+    /**
+     * 按战前民心计算守城战败的民怨增量；掠夺只影响高民心城市，短战模式均为零。
+     * @param action 实际出征动作
+     * @param moraleBefore 本场结算扣减前的守城民心
+     * @return 未应用民怨上限的增量
+     */
+    private int defeatedCityResentmentGain(String action, int moraleBefore) {
+        if ("conquer".equals(action)) return moraleBefore >= 71 ? 3 : moraleBefore >= 41 ? 2 : 1;
+        if ("plunder".equals(action) && moraleBefore >= 71) return 2;
+        return 0;
+    }
+
     /** 选择本次战斗实际发生的城市经济体，兼容主城、分城和来袭防守。 */
     private CityEconomy battleEconomy(Long playerId, March march, boolean attacker) {
         if (march != null) {
@@ -2638,7 +2778,7 @@ public class MarchService {
         }
     }
 
-    /** 按经济体的实际实体类型保存民心变化。 */
+    /** 按经济体的实际实体类型保存民心、民怨变化。 */
     private void saveBattleEconomy(CityEconomy economy) {
         if (economy instanceof PlayerCity city) playerCityRepository.save(city);
         else if (economy instanceof Player player) playerRepository.save(player);
@@ -2680,16 +2820,17 @@ public class MarchService {
 
     private void pushBattleReport(Long playerId, BattleResult result, March m,
                                   Officer attackerCommander, Officer defenderCommander) {
-        pushBattleReport(playerId, result, m, attackerCommander, defenderCommander, false);
+        pushBattleReport(playerId, result, m, attackerCommander, defenderCommander, false,
+                m != null && m.getAction() != null ? m.getAction() : "conquer");
     }
 
+    /** 来袭记录没有对应的出发行军，须显式传入动作，确保战报与民怨结算使用同一规则。 */
     private void pushBattleReport(Long playerId, BattleResult result, March m,
-                                  Officer attackerCommander, Officer defenderCommander, boolean wildConquered) {
+                                  Officer attackerCommander, Officer defenderCommander, boolean wildConquered, String action) {
         long now = System.currentTimeMillis();
         String targetName = m != null && m.getTargetName() != null && !m.getTargetName().isBlank()
                 ? m.getTargetName() : "目标";
         String targetKind = m != null && m.getTargetKind() != null ? m.getTargetKind() : "target";
-        String action = m != null && m.getAction() != null ? m.getAction() : "conquer";
         boolean isCityConquered = result.isCityConquered();
         boolean conquered = isCityConquered || wildConquered;
         boolean defenderPerspective = m == null || !playerId.equals(m.getPlayerId());
@@ -2700,7 +2841,10 @@ public class MarchService {
         Map<String, Object> report = new LinkedHashMap<>();
         report.put("type", "battle");
         report.put("perspective", perspective);
+        report.put("citySlot", m != null ? Objects.requireNonNullElse(m.getCitySlot(), 0) : 0);
         report.put("attackerWin", attackerWin);
+        if (result.getWall() != null) report.put("wall", result.getWall());
+        if (result.getTerminalReason() != null) report.put("terminalReason", result.getTerminalReason());
         report.put("win", recipientWin);
         report.put("readAt", 0L);
         report.put("time", now);
@@ -2729,6 +2873,11 @@ public class MarchService {
         // 对真实玩家城市的战报同时保留敌方城市民心，NPC/野地和来袭未知城市则为空。
         report.put("enemyMoraleChange", defenderPerspective ? result.getAttackerMoraleChange() : result.getDefenderMoraleChange());
         report.put("enemyMoraleAfter", defenderPerspective ? result.getAttackerMoraleAfter() : result.getDefenderMoraleAfter());
+        // 冻结实际民怨增量与战后值；后续安抚、税率变化和城权转移不回写本场快照。
+        report.put("resentmentChange", defenderPerspective ? result.getDefenderResentmentChange() : result.getAttackerResentmentChange());
+        report.put("resentmentAfter", defenderPerspective ? result.getDefenderResentmentAfter() : result.getAttackerResentmentAfter());
+        report.put("enemyResentmentChange", defenderPerspective ? result.getAttackerResentmentChange() : result.getDefenderResentmentChange());
+        report.put("enemyResentmentAfter", defenderPerspective ? result.getAttackerResentmentAfter() : result.getDefenderResentmentAfter());
         report.put("losses", defenderPerspective ? result.getDefenderLosses() : result.getAttackerLosses());
         report.put("recoveryPercent", defenderPerspective ? result.getDefenderRecoveryPercent() : result.getAttackerRecoveryPercent());
         report.put("recoveredCount", defenderPerspective ? result.getDefenderRecoveredCount() : result.getAttackerRecoveredCount());
@@ -2746,7 +2895,7 @@ public class MarchService {
         report.put("capturedOfficerName", result.getCapturedOfficerName());
         report.put("wildConquered", wildConquered);
         report.put("wildOccupationReason", result.getWildOccupationReason());
-        if ("wild".equals(targetKind) && m != null && Set.of("conquer", "plunder").contains(action)) {
+        if ("wild".equals(targetKind) && m != null && isOffensiveAction(action)) {
             // 在行军删除或转为驻军前冻结实际去向；历史战报没有此字段时不推测。
             boolean hasSurvivors = result.getSurvivorAttacker() != null
                     && result.getSurvivorAttacker().values().stream().anyMatch(count -> count != null && count > 0);
@@ -2811,6 +2960,7 @@ public class MarchService {
         result.setCommandBonuses(Map.of("attacker", attacker.toMap(), "defender", defender.toMap()));
     }
 
+    /** 保存结算时的有效属性和技能，历史战报不受后续换装或升级影响。 */
     private Map<String, Object> buildCommanderReport(Officer commander) {
         if (commander == null) return null;
 
@@ -2818,7 +2968,10 @@ public class MarchService {
         data.put("name", commander.getName() != null ? commander.getName() : "未命名将领");
         data.put("level", commander.getLevel() != null ? commander.getLevel() : 0);
         data.put("baseMilitary", commander.getMilitary() != null ? commander.getMilitary() : 0);
-        data.put("military", equipmentService.attributes(commander).military());
+        EquipmentService.Attributes attrs = equipmentService.attributes(commander);
+        data.put("military", attrs.military());
+        data.put("baseDefense", commander.getDefense() != null ? commander.getDefense() : 0);
+        data.put("defense", attrs.defense());
 
         List<Map<String, Object>> skills = new ArrayList<>();
         if (commander.getSkills() != null && !commander.getSkills().isBlank()) {
@@ -2830,6 +2983,7 @@ public class MarchService {
                 String skillId = rawId.toString();
                 OfficerSkillDef definition = OfficerSkillDef.getSkill(skillId);
                 Map<String, Object> skill = new LinkedHashMap<>();
+                skill.put("id", skillId);
                 skill.put("name", definition != null ? definition.name() : skillId);
                 skill.put("level", level.intValue());
                 skill.put("description", definition != null
@@ -2843,7 +2997,9 @@ public class MarchService {
 
     private String buildBattleSubject(boolean win, boolean conquered, String action, String targetKind, String targetName) {
         String act;
-        if ("bandit".equals(targetKind)) {
+        if (BattleService.isHarassmentAction(action)) {
+            act = BattleService.actionName(action);
+        } else if ("bandit".equals(targetKind)) {
             act = "剿寇";
         } else if ("npc".equals(targetKind)) {
             act = "攻城";
@@ -2873,7 +3029,7 @@ public class MarchService {
 
     /** 生成守城方视角标题，避免把来袭方的进攻结果描述成我方出征。 */
     private String buildDefenseBattleSubject(boolean win, String action, String targetName) {
-        String act = "plunder".equals(action) ? "掠夺防守" : "征服防守";
+        String act = BattleService.actionName(action) + "防守";
         return act + (win ? "胜利 " : "失败 ") + targetName;
     }
 
@@ -2897,12 +3053,21 @@ public class MarchService {
         }
     }
 
-    /** 护盾只保护所属城市，截止时间等于当前时间时已失效；敌对军团也不能绕过。 */
+    /** 道具护盾保护所属城市，新手保护覆盖账号所有城市；敌对军团也不能绕过。 */
     private boolean hasActiveShield(PlayerCity city, long now) {
         if (city.getOwnerId() == null || !targets.hasRealOwner(city)) return false;
+        if (NewbieProtection.until(playerRepository.findById(city.getOwnerId()).orElse(null), now) > now) return true;
         return cityStateRepository.findByPlayerIdAndCitySlot(city.getOwnerId(), Objects.requireNonNullElse(city.getCitySlot(), 0))
                 .map(cs -> cs.getShieldUntil() != null && cs.getShieldUntil() > now)
                 .orElse(false);
+    }
+
+    /** 按当前归属识别玩家战争，目标变更后也不能让受保护账号意外参战。 */
+    private boolean isPlayerWarfare(Long playerId, Object target, String action) {
+        return (target instanceof PlayerCity city && targets.hasRealOwner(city)
+                && !playerId.equals(city.getOwnerId()) && !"transport".equals(action))
+                || (target instanceof WildTile tile && Boolean.TRUE.equals(tile.getOccupied())
+                && tile.getOccupiedBy() != null && !playerId.equals(tile.getOccupiedBy()));
     }
 
     /**
@@ -2931,7 +3096,7 @@ public class MarchService {
     }
 
     private boolean isOffensiveAction(String action) {
-        return "conquer".equals(action) || "plunder".equals(action);
+        return BattleService.isOffensiveAction(action);
     }
 
     // ========================================================================
@@ -2939,24 +3104,67 @@ public class MarchService {
     // ========================================================================
 
     /**
-     * 计算部队负重 - 对应 JS World.calcDispatchLoad (简化版, 不含科技加成)
+     * 计算行动负重：冻结的科技与装备相乘；旧行军缺负重键按零级处理。
      */
     public int calcArmyLoad(Map<String, Integer> army) { return calcArmyLoad(army, Map.of()); }
+
+    /**
+     * 战利品按战后幸存部队及出发时冻结的科技、装备计算剩余负重。
+     * 普通资源共用容量，超载时按可获资源比例分配；钻石为独立特殊掉落，不占物资负重。
+     * 必须在战报、装载与守方扣款之前执行，三处使用同一份实际取得数量。
+     */
+    private void limitBattleLoot(March march, BattleResult result) {
+        Map<String, Integer> loot = result.getPlunderedResources();
+        if (!result.isWin() || loot == null || loot.isEmpty()) return;
+        List<String> resourceKeys = List.of("food", "steel", "oil", "rare", "gold");
+        Map<String, Integer> carried = JsonUtil.parseIntMap(march.getCarryRes());
+        long occupied = resourceKeys.stream().mapToLong(key -> Math.max(0, carried.getOrDefault(key, 0))).sum();
+        int capacity = (int) Math.max(0L, (long) calcArmyLoad(result.getSurvivorAttacker(),
+                JsonUtil.parseIntMap(march.getUnitEquipmentSnapshot())) - occupied);
+        long available = resourceKeys.stream().mapToLong(key -> Math.max(0, loot.getOrDefault(key, 0))).sum();
+        if (available <= capacity) return;
+
+        Map<String, Integer> limited = new LinkedHashMap<>(loot);
+        int remaining = capacity;
+        for (String key : resourceKeys) {
+            int amount = Math.max(0, loot.getOrDefault(key, 0));
+            int share = (int) ((long) amount * capacity / available);
+            limited.put(key, share);
+            remaining -= share;
+        }
+        // 余数从大到小补齐整数单位，避免逐资源截断造成容量浪费或固定优先掠夺某一种资源。
+        List<String> remainderOrder = new ArrayList<>(resourceKeys);
+        remainderOrder.sort(Comparator.comparingLong((String key) ->
+                (long) Math.max(0, loot.getOrDefault(key, 0)) * capacity % available).reversed());
+        for (String key : remainderOrder) {
+            if (remaining == 0) break;
+            if (limited.get(key) < Math.max(0, loot.getOrDefault(key, 0))) {
+                limited.merge(key, 1, Integer::sum);
+                remaining--;
+            }
+        }
+        result.setPlunderedResources(limited);
+        result.setReport(result.getReport().replace("★ 征服胜利! 夺取敌方全部资源。",
+                "★ 征服胜利! 按部队剩余负重装载资源。")
+                + "\n战利品负重限制：剩余运力 " + capacity + "，可获普通资源 " + available
+                + "，实际装载 " + capacity + "。\n");
+    }
 
     public int calcArmyLoad(Map<String, Integer> army, Map<String, Integer> equipment) {
         if (army == null || army.isEmpty()) return 0;
         double total = 0;
         for (Map.Entry<String, Integer> entry : army.entrySet()) {
             UnitDef u = GameData.UNITS.get(entry.getKey());
-            if (u != null && u.load() != null && u.load() > 0) {
+            if (u != null && u.load() != null && u.load() > 0 && entry.getValue() != null && entry.getValue() > 0) {
                 total += (double) entry.getValue() * u.load() * UnitEquipmentEffects.mul(equipment, entry.getKey(), "load");
             }
         }
-        return (int) Math.floor(total);
+        return (int) Math.min(Integer.MAX_VALUE, Math.floor(total * TechnologyRules.loadMultiplier(equipment)));
     }
 
     /**
      * 按单程距离汇总行军油耗，并按任务所需的趟数预扣，使返程不受资源库存变化影响。
+     * 保留每 100 格的基础油耗口径，最终扣油为原规则向上取整后的 10 倍。
      * 出征不消耗粮食，粮食库存不会影响部队是否可以出发。
      *
      * @param army 按兵种键聚合的出征数量
@@ -2975,8 +3183,8 @@ public class MarchService {
             oil += (double) count * unit.marchOil() * UnitEquipmentEffects.mul(equipment, entry.getKey(), "oil") * Math.max(0, distance) / 100;
         }
         int routeLegs = Math.max(1, legs);
-        // 汇总后向上取整，确保少量兵力也会携带完整的最低补给包。
-        return (int) Math.ceil(oil * routeLegs);
+        // 先汇总全部趟数并向上取整，再乘 10，使不足 1 的原始油耗也按原扣油量放大。
+        return (int) (Math.ceil(oil * routeLegs) * 10);
     }
 
     /**

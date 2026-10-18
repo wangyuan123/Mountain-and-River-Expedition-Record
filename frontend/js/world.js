@@ -58,7 +58,11 @@ window.Game = window.Game || {};
   }
 
   var World = {
-    // The canvas keeps stable IDs. Legacy actions receive a freshly resolved record.
+    /**
+     * 按稳定城市／目标 ID 更新列表后分发地图行动，劝降独立于出征处理。
+     * @param {Object} target - 点击时重新读取的目标状态
+     * @param {string} action - 地图行动类型
+     */
     mapAction: function (target, action) {
       var keys = G.Constants.worldTargetKeys;
       var key = keys[target.kind];
@@ -67,6 +71,7 @@ window.Game = window.Game || {};
       var idx = list.findIndex(function (t) { return String(t.id) === String(target.id); });
       if (idx < 0) { idx = list.length; list.push(target); } else list[idx] = target;
       if (target.selfCity) { G.go('home'); return; }
+      if (action === 'surrender') { if (target.kind === 'player') this.offerSurrender(idx); return; }
       if (action === 'declare') { this.declareWar(target.kind, idx); return; }
       if (target.kind === 'wild') {
         if (action === 'scout') this.scoutWild(idx);
@@ -319,7 +324,11 @@ window.Game = window.Game || {};
       else if (kind === 'simulated_npc') target = s.world.simulatedNpcCities[idx];
       else if (kind === 'player') target = s.world.playerCities[idx];
       if (!target) return;
-      if (target.defeated) { G.toast('目标已被击败,等待刷新'); return; }
+      var targetShielded = (target.shieldUntil != null ? target.shieldUntil > Date.now() : target.cityState === 'shield') || (target.coolAt > Date.now());
+      if (kind === 'player' && targetShielded) {
+        G.toast((target.name || '目标城市') + '处于护盾期间，无法发起侦查或攻击');
+        return;
+      }
       if (kind === 'player' && target.coolAt > Date.now()) {
         var mins = Math.ceil((target.coolAt - Date.now()) / 60000);
         G.toast('该玩家处于保护期,剩 ' + mins + ' 分钟');
@@ -347,15 +356,27 @@ window.Game = window.Game || {};
       G.go('dispatch');
     },
 
+    /**
+     * 向列表或地图解析出的真实玩家城市发送劝降邀请，确认前检查城市是否可移交。
+     * @param {number} idx - 当前玩家城市列表中的索引
+     */
     offerSurrender: function (idx) {
       var s = Core.state, target = s.world && s.world.playerCities && s.world.playerCities[idx];
       if (!target || !target.id || target.selfCity) return;
+      if (target.readyAt > Date.now()) { G.toast('目标城市尚未建成'); return; }
       if (target.surrenderFrozen) { G.toast('该城市正在移交中'); return; }
-      if (!confirm('向“' + target.name + '”发送劝降提议？对方有 24 小时答复；接受后城市冻结并在 24 小时后完成移交。')) return;
-      G.API.offerSurrender(target.id).then(function () {
-        G.toast('劝降电报已送达，对方有 24 小时答复');
-        Core.render();
-      }).catch(function (err) { G.toast(err.message || '发送劝降失败'); });
+      this.showConfirm({
+        title: '发送劝降提议',
+        message: '向“' + target.name + '”（' + target.x + ',' + target.y + '）发送劝降提议？',
+        subMessage: '对方有 24 小时答复；接受后城市冻结，并在 24 小时后完成移交。',
+        okText: '发送劝降电报',
+        onConfirm: function () {
+          G.API.offerSurrender(target.id).then(function () {
+            G.toast('劝降电报已送达，对方有 24 小时答复');
+            Core.render();
+          }).catch(function (err) { G.toast(err.message || '发送劝降失败'); });
+        }
+      });
     },
 
     scoutWild: function (idx) {
@@ -378,26 +399,32 @@ window.Game = window.Game || {};
     /**
      * 将旧攻击入口转为讨伐草稿；任务预选仅作用于下一次对应目标的普通讨伐入口。
      * @param {Object} dt - 本次出征目标和配置
-     * @returns {Object} 兼容旧动作并约束无资源野地后的草稿
+     * @returns {Object} 兼容旧动作、任务预选与五种出征模式的草稿
      */
     prepareCampaign: function (dt) {
       if (!dt.action) dt.action = 'campaign';
-      var legacy = dt.action === 'conquer' || dt.action === 'plunder';
+      var modes = G.Constants.campaignModes;
+      var legacy = modes.some(function (mode) { return mode.action === dt.action; });
       if (legacy) {
+        dt.campaignAction = dt.action;
         dt.occupyTarget = dt.action === 'conquer';
         dt.action = 'campaign';
       }
       if (dt.action !== 'campaign') return dt;
       var taskMode = Core.state.world._campaignTaskMode;
-      if (!legacy && typeof dt.occupyTarget !== 'boolean' && taskMode && taskMode.kind === dt.kind) {
+      if (!legacy && !dt.campaignAction && typeof dt.occupyTarget !== 'boolean' && taskMode && taskMode.kind === dt.kind) {
         dt.occupyTarget = taskMode.occupyTarget;
         delete Core.state.world._campaignTaskMode;
       }
       if (typeof dt.occupyTarget !== 'boolean') dt.occupyTarget = true;
+      if (!modes.some(function (mode) { return mode.action === dt.campaignAction; })) {
+        dt.campaignAction = dt.occupyTarget ? 'conquer' : 'plunder';
+      }
       var wild = dt.target || (Core.state.world.wildTiles || [])[dt.idx];
       var type = dt.kind === 'wild' && wild && (D.wildTypes || {})[wild.type];
-      // 无资源类型不能走现有掠夺分支；耗尽的资源点仍允许关闭占领。
-      if (dt.kind === 'wild' && (!type || !type.res)) dt.occupyTarget = true;
+      // 无资源地块不能掠夺，但允许不取资源的短回合袭击；旧占领布尔值继续供任务兼容。
+      if (dt.kind === 'wild' && (!type || !type.res) && dt.campaignAction === 'plunder') dt.campaignAction = 'conquer';
+      dt.occupyTarget = dt.campaignAction === 'conquer';
       if (!dt.conquerMode) dt.conquerMode = 'withdraw';
       return dt;
     },
@@ -409,16 +436,18 @@ window.Game = window.Game || {};
      */
     resolveDispatchAction: function (dt) {
       this.prepareCampaign(dt);
-      return dt.action === 'campaign' ? (dt.occupyTarget ? 'conquer' : 'plunder') : dt.action;
+      return dt.action === 'campaign' ? dt.campaignAction : dt.action;
     },
 
     /** 根据目标与处置模式生成说明，不推测尚未侦察的库存和民心。 */
     campaignDescription: function (dt) {
       var action = this.resolveDispatchAction(dt);
+      var mode = G.Constants.campaignModes.find(function (item) { return item.action === action; });
+      if (mode && mode.description) return mode.description;
       if (dt.kind === 'wild') {
         var tile = dt.target || Core.state.world.wildTiles[dt.idx];
         var type = tile && D.wildTypes[tile.type];
-        if (!type || !type.res) return '该地块没有可夺取资源，仅支持占领。胜利后取得地块归属。';
+        if (!type || !type.res) return '该地块没有可夺取资源，无法选择掠夺。征服胜利后取得地块归属，也可选择佯攻、袭扰或游击打击守军。';
         if (action === 'conquer') return '胜利后占领该野地，之后可驻军采集；本次战斗不直接带走野地资源。';
         var remaining = Math.max(0, (tile.totalRes || 0) - (tile.mined || 0));
         return '胜利后按幸存部队负重夺取剩余资源，不改变野地归属，部队自动返城。' +
@@ -426,7 +455,7 @@ window.Game = window.Game || {};
       }
       if (action === 'plunder') return '胜利后取得仓库保护外的非黄金资源，不接管城市，也不俘虏指挥官；胜利结算经验为占领模式的一半。';
       if (dt.kind === 'player') return '胜利后尝试接管城市：需要敌城战后民心为0，且我方城市数量未达军衔上限。成功时保留建筑、建设队列和普通资源，清除其余军事资产。未能接管时取得全部普通资源，含黄金。忠诚为0的敌方参战指挥官可被俘虏。';
-      return '该目标无法保留为我方领地，胜利后会清除或刷新；开启后缴获全部普通资源，含黄金。';
+      return '该目标无法保留为我方领地，胜利后会清除或刷新；征服胜利后缴获全部普通资源，含黄金。';
     },
 
     /** 只更新战后处置区域，保留已填兵力、指挥官、战斗方式和携带资源。 */
@@ -434,29 +463,42 @@ window.Game = window.Game || {};
       var dt = Core.state.world._dispatchTarget;
       if (!dt || dt.action !== 'campaign' || typeof document === 'undefined') return;
       var action = this.resolveDispatchAction(dt);
-      var checkbox = document.getElementById('dpOccupyTarget');
-      if (checkbox) checkbox.checked = dt.occupyTarget;
-      var state = document.getElementById('dpOccupyState');
-      if (state) state.textContent = dt.occupyTarget ? '开启' : '关闭';
+      var select = document.getElementById('dpCampaignAction');
+      if (select) select.value = action;
+      var name = G.Constants.dispatchActionNames[action];
+      var heading = document.getElementById('dpCampaignHeading');
+      if (heading) heading.textContent = name + '说明';
+      var limit = document.getElementById('dpCampaignLimit');
+      if (limit) limit.textContent = '最多 ' + G.Constants.battleRoundLimits[action] + ' 回合';
       var description = document.getElementById('dpCampaignDescription');
       if (description) description.textContent = this.campaignDescription(dt);
       var troops = document.getElementById('dpCampaignTroops');
       if (troops) troops.hidden = dt.kind !== 'wild' || action !== 'conquer';
       var summary = document.getElementById('dpCampaignSummary');
-      if (summary) summary.textContent = '本次讨伐：' + (action === 'conquer' ? '尝试占领' : '仅夺取资源') + ' · ' +
+      if (summary) summary.textContent = '本次出征：' + name + ' · ' + (action === 'conquer' ? '尝试占领' : action === 'plunder' ? '仅夺取资源' : '不获取资源') + ' · ' +
         (dt.kind === 'wild' && action === 'conquer' && dt.conquerMode === 'occupy' ? '原地驻守' : '自动返城');
     },
 
-    /** 设置本次胜利结算方式，并立即使旧路线预览失效。 */
+    /** 兼容旧任务入口，转为对应的征服或掠夺选择。 */
     setOccupyTarget: function (enabled) {
+      this.setCampaignAction(enabled ? 'conquer' : 'plunder');
+    },
+
+    /** 切换真实出征动作并使旧路线失效，只更新局部控件以保留表单。 */
+    setCampaignAction: function (action) {
       var dt = Core.state.world._dispatchTarget;
       if (!dt || dt.action !== 'campaign' || this._launching) return;
-      dt.occupyTarget = !!enabled;
+      if (!G.Constants.campaignModes.some(function (mode) { return mode.action === action; })) return;
+      dt.campaignAction = action;
       this.prepareCampaign(dt);
       this.updateCampaignControls();
       if (this._refreshDispatchRoute) this._refreshDispatchRoute();
     },
 
+    /**
+     * 展示随当前主题切换的确认弹窗，只有确认按钮执行操作；取消、遮罩和 Esc 均关闭。
+     * @param {Object} opts - 标题、正文、按钮文案及确认回调
+     */
     showConfirm: function (opts) {
       if (typeof document === 'undefined') {
         if (confirm((opts.title ? opts.title + '\n\n' : '') + opts.message)) {
@@ -465,33 +507,75 @@ window.Game = window.Game || {};
         return;
       }
       var mask = document.createElement('div');
-      mask.className = 'modal-mask';
-      var esc = G.escapeHtml || function (s) { return s; };
+      mask.className = 'modal-mask confirm-dialog-mask';
+      var previousFocus = document.activeElement;
       var title = esc(opts.title || '操作确认');
       var msg = esc(opts.message || '');
-      var sub = opts.subMessage ? '<div style="margin-top:10px;font-size:13px;opacity:.78;line-height:1.5;">' + esc(opts.subMessage) + '</div>' : '';
+      var sub = opts.subMessage ? '<p class="confirm-dialog-submessage">' + esc(opts.subMessage) + '</p>' : '';
       var okText = esc(opts.okText || '确定');
       var cancelText = esc(opts.cancelText || '取消');
       var okClass = opts.danger ? 'btn btn-danger' : 'btn btn-primary';
       mask.innerHTML =
-        '<div class="modal-card confirm-dialog" style="max-width:380px;width:92%;text-align:center;box-shadow:0 12px 36px rgba(0,0,0,.35);">' +
-          '<div class="modal-title" style="font-size:16px;font-weight:bold;margin-bottom:12px;">' + title + '</div>' +
-          '<div class="confirm-dialog-message" style="font-size:14px;color:var(--ink-sec, #555);line-height:1.6;margin-bottom:20px;text-align:left;padding:0 4px;">' +
-            msg + sub +
+        '<div class="modal-card confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="worldConfirmTitle">' +
+          '<div class="modal-title" id="worldConfirmTitle">' + title + '</div>' +
+          '<div class="modal-body confirm-dialog-message">' +
+            '<p>' + msg + '</p>' + sub +
           '</div>' +
-          '<div class="confirm-dialog-actions" style="display:flex;gap:12px;justify-content:flex-end;">' +
-            '<button class="btn btn-secondary" id="confirmCancelBtn">' + cancelText + '</button>' +
-            '<button class="' + okClass + '" id="confirmOkBtn">' + okText + '</button>' +
+          '<div class="modal-foot confirm-dialog-actions">' +
+            '<button type="button" class="btn btn-secondary" id="confirmCancelBtn">' + cancelText + '</button>' +
+            '<button type="button" class="' + okClass + '" id="confirmOkBtn">' + okText + '</button>' +
           '</div>' +
         '</div>';
-      document.body.appendChild(mask);
-      var cleanup = function () { if (mask.parentNode) mask.parentNode.removeChild(mask); };
-      mask.querySelector('#confirmCancelBtn').onclick = cleanup;
-      mask.querySelector('#confirmOkBtn').onclick = function () {
+      // 原生全屏只展示全屏元素的子树，地图全屏时将弹窗挂在该元素内。
+      (document.fullscreenElement || document.body).appendChild(mask);
+      var closed = false;
+      var cleanup = function () {
+        if (closed) return;
+        closed = true;
+        if (mask.parentNode) mask.parentNode.removeChild(mask);
+        if (previousFocus && previousFocus.isConnected && previousFocus.focus) previousFocus.focus();
+      };
+      var cancel = mask.querySelector('#confirmCancelBtn');
+      var ok = mask.querySelector('#confirmOkBtn');
+      cancel.onclick = cleanup;
+      ok.onclick = function () {
+        if (closed) return;
         cleanup();
         if (typeof opts.onConfirm === 'function') opts.onConfirm();
       };
       mask.onclick = function (e) { if (e.target === mask) cleanup(); };
+      mask.onkeydown = function (e) {
+        if (e.key === 'Escape') cleanup();
+        if (e.key === 'Tab' && ((e.shiftKey && document.activeElement === cancel) || (!e.shiftKey && document.activeElement === ok))) {
+          e.preventDefault();
+          (e.shiftKey ? ok : cancel).focus();
+        }
+      };
+      if (cancel.focus) cancel.focus();
+    },
+
+    /** 新手保护按账号生效，仅在用户确认本次军事行动后传递退出意图。 */
+    hasNewbieProtection: function () {
+      var s = Core.state || {};
+      return Math.max((s.player || {}).newbieProtectionUntil || 0, (s.cityState || {}).newbieProtectionUntil || 0) > Date.now();
+    },
+
+    /** 取消不发送请求；切换账号或出发城市后，旧确认也不能继续提交。 */
+    confirmPlayerWarfare: function (needed, send) {
+      if (!needed || !this.hasNewbieProtection()) { send(false); return; }
+      var actor = Core.state.player || {};
+      var playerId = actor.id, citySlot = actor.citySlot;
+      this.showConfirm({
+        title: '确认退出新手保护',
+        message: '参与玩家战争将立即永久结束账号所有城市的新手保护，无法恢复。',
+        subMessage: '首次进入保护7天；之后声望不足10000可延长，最长14天。正常建设和打NPC无需退出。',
+        okText: '退出保护并继续', cancelText: '保留保护', danger: true,
+        onConfirm: function () {
+          var current = Core.state.player || {};
+          if (current.id !== playerId || current.citySlot !== citySlot) { G.toast('出发城市已改变，请重新操作'); return; }
+          send(true);
+        }
+      });
     },
 
     /** 展示出征城市的带兵上限构成，与 Core.armyCap 的实时规则保持一致。 */
@@ -537,6 +621,7 @@ window.Game = window.Game || {};
       if (!t) return;
       s.world._dispatchTarget = { kind: action === 'gather' ? 'wild_gather' : 'wild', idx: idx, action: action || 'station', target: t };
       G.go('dispatch');
+      if (action === 'gather' && G.Onboarding && G.Onboarding.showTaskHint) G.Onboarding.showTaskHint('gather');
     },
 
     abandonWild: function (idx) {
@@ -605,6 +690,7 @@ window.Game = window.Game || {};
         return;
       }
       if (document.getElementById('stationedGatherModal')) return;
+      if (G.Onboarding && G.Onboarding.showTaskHint) G.Onboarding.showTaskHint('gather');
       var tileId = t.id;
       var mask = document.createElement('div');
       mask.id = 'stationedGatherModal';
@@ -688,9 +774,16 @@ window.Game = window.Game || {};
 
     declareWar: function (kind, idx) {
       var s = Core.state;
+      var abandonNewbieProtection = this.hasNewbieProtection();
+      var actorId = s.player && s.player.id, actorSlot = s.player && s.player.citySlot;
       var target;
       if (kind === 'player') target = s.world.playerCities[idx];
       if (!target) return;
+      var targetShielded = (target.shieldUntil != null ? target.shieldUntil > Date.now() : target.cityState === 'shield') || (target.coolAt > Date.now());
+      if (targetShielded) {
+        G.toast((target.name || '目标城市') + '处于护盾期间，无法发起侦查或攻击');
+        return;
+      }
 
       var prepareSec = 2 * 3600;
       var warSec = 48 * 3600;
@@ -769,6 +862,7 @@ window.Game = window.Game || {};
             '<div class="dw-warn">' +
               '<div class="dw-warn-title">⚠ 战争期间须知</div>' +
               '<ul class="dw-warn-list">' +
+                (abandonNewbieProtection ? '<li>确认宣战将立即永久退出账号所有城市的新手保护，无法恢复。</li>' : '') +
                 '<li>备战期内双方都无法进攻,只能侦察</li>' +
                 '<li>对方同时也可对你发起进攻,务必留守部队</li>' +
                 '<li>48 小时交战期结束自动恢复和平</li>' +
@@ -777,7 +871,7 @@ window.Game = window.Game || {};
           '</div>' +
           '<div class="modal-foot dw-foot">' +
             '<button class="btn dw-btn-cancel" id="dwCancel">再想想</button>' +
-            '<button class="btn dw-btn-ok" id="dwOk"><span>⚔</span>确认宣战</button>' +
+            '<button class="btn dw-btn-ok" id="dwOk"><span>⚔</span>' + (abandonNewbieProtection ? '退出保护并宣战' : '确认宣战') + '</button>' +
           '</div>' +
         '</div>';
       document.body.appendChild(mask);
@@ -788,7 +882,8 @@ window.Game = window.Game || {};
 
       mask.querySelector('#dwOk').onclick = function () {
         close();
-        G.API.declareWar(target.id).then(function () {
+        if ((Core.state.player && Core.state.player.id) !== actorId || (Core.state.player && Core.state.player.citySlot) !== actorSlot) { G.toast('出发城市已改变，请重新操作'); return; }
+        G.API.declareWar(target.id, abandonNewbieProtection).then(function () {
           if (G.WorldMap) G.WorldMap.invalidate();
           G.toast('宣战成功! ' + fmtLeft(prepareSec) + '后开打,持续 ' + fmtLeft(warSec));
           Core.render();
@@ -852,7 +947,7 @@ window.Game = window.Game || {};
         var u = D.units[id];
         if (u && u.load) total += army[id] * u.load * (G.UnitEquipment ? G.UnitEquipment.mul(G.UnitEquipment.snapshot(), id, 'load') : 1);
       }
-      return Math.floor(total);
+      return Math.floor(total * (Core.loadMul ? Core.loadMul() : 1));
     },
 
     calcDispatchSpeed: function (army) {
@@ -910,12 +1005,14 @@ window.Game = window.Game || {};
     calcDispatchMarchTime: function (distance, slowestSpd, speedMul) {
       if (!slowestSpd || slowestSpd <= 0 || distance == null || distance < 0) return null;
       var mul = speedMul || 1.0;
-      var sec = Math.max(1, Math.ceil((distance * 9) / (slowestSpd * mul)));
+      var secPerGrid = (D.world && D.world.marchSecPerGrid) || 18;
+      var sec = Math.max(1, Math.ceil((distance * secPerGrid) / (slowestSpd * mul)));
       return sec;
     },
 
     /**
      * 计算出征所需的石油。
+     * 保留每 100 格的基础油耗口径，最终扣油为原规则向上取整后的 10 倍。
      * 出征不再受粮食限制，只有按路线距离和预扣趟数计算的油耗会影响能否出发。
      * @param {Object} army - 按兵种键聚合的出征数量。
      * @param {number} distance - 单程直线距离，以地图格边长为单位，保留小数。
@@ -932,8 +1029,8 @@ window.Game = window.Game || {};
         if (!unit || count <= 0) continue;
         oil += count * (Number(unit.marchOil) || 0) * (G.UnitEquipment ? G.UnitEquipment.mul(G.UnitEquipment.snapshot(), uid, 'oil') : 1) * routeDistance / 100;
       }
-      // 按整支部队汇总后向上取整，避免零散兵力的油耗被舍弃。
-      return Math.ceil(oil * routeLegs);
+      // 先汇总全部趟数并向上取整，再乘 10，与后端实际扣油保持一致。
+      return Math.ceil(oil * routeLegs) * 10;
     },
 
     fmtDuration: function (sec) {
@@ -1170,7 +1267,9 @@ window.Game = window.Game || {};
       }
       var dispatchAction = this.resolveDispatchAction(dt);
       if (dt.action === 'campaign' && (this._dispatchRoutePending || this._dispatchRouteError)) {
-        G.toast(this._dispatchRoutePending ? '行军路线正在更新，请稍候再出征' : '行军路线校验失败，请重新选择部队后重试');
+        // 路线拒绝需要说明跨海、运力或港口等具体原因，避免提示玩家反复重试。
+        var routeError = typeof this._dispatchRouteError === 'string' ? this._dispatchRouteError : '行军路线校验失败，请重新选择部队后重试';
+        G.toast(this._dispatchRoutePending ? '行军路线正在更新，请稍候再出征' : routeError);
         return;
       }
       var target;
@@ -1181,7 +1280,7 @@ window.Game = window.Game || {};
         var wt = dt.target || s.world.wildTiles[dt.idx];
         if (wt) {
           var wtd = G.DATA.wildTypes[wt.type] || { name: '野地' };
-          target = { id: wt.id, name: wtd.name + ' Lv.' + wt.level, x: wt.x, y: wt.y };
+          target = { id: wt.id, name: wtd.name + ' Lv.' + wt.level, x: wt.x, y: wt.y, ownerId: wt.ownerId };
         }
       }
       if (!target) { G.toast('目标已失效'); G.go('world'); return; }
@@ -1261,8 +1360,7 @@ window.Game = window.Game || {};
       };
       if (dt.kind === 'wild_gather') {
         var gatherModeEl = document.querySelector('input[name="dpGatherMode"]:checked');
-        // 引导采集在提交时也固定全自动，防止旧表单选择或重绘残留导致部队无法自动返城。
-        dispatchRequest.gatherMode = dt.onboardingGather ? 'auto' : (gatherModeEl ? gatherModeEl.value : (dt.gatherMode || 'auto'));
+        dispatchRequest.gatherMode = gatherModeEl ? gatherModeEl.value : (dt.gatherMode || 'auto');
       }
       if (!['player', 'wild_gather'].includes(dt.kind) && dispatchRequest.action !== 'scout' && dispatchRequest.action !== 'station') {
         var battleModeEl = document.querySelector('input[name="dpBattleMode"]:checked');
@@ -1273,27 +1371,33 @@ window.Game = window.Game || {};
         dispatchRequest.conquerMode = dt.kind === 'wild' && dispatchAction === 'conquer' && dt.conquerMode === 'occupy' ? 'occupy' : 'withdraw';
       }
 
-      if(this._launching)return;this._launching=true;
-      G.API.worldDispatch(dispatchRequest).then(function () {
-        // API 可能已整体替换状态并保留同一草稿引用，两个状态对象都要清除。
-        if (Core.state.world._dispatchTarget === dt) delete Core.state.world._dispatchTarget;
-        delete s.world._dispatchTarget;
-        G.toast('部队出征');
-        // 触发每日任务进度
-        var act = dispatchRequest.action;
-        // 侦查任务在侦查部队抵达并生成报告后，由 WebSocket 事件计数，不能在出发时完成。
-        if (act === 'gather' && G.Task && G.Task.Quests) G.Task.Quests.onEvent('gather');
-        else if ((act === 'conquer' || act === 'plunder' || act === 'attack' || act === 'occupy') && G.Task && G.Task.Quests) G.Task.Quests.onEvent('attack');
-        G.go('world');
-      }).catch(function (err) {
-        G.toast(err.message || '出征失败');
-      }).finally(function(){G.World._launching=false;});
+      var playerWarfare = (dt.kind === 'player' && !target.selfCity && dispatchAction !== 'transport')
+        || (dt.kind === 'wild' && target.ownerId != null && String(target.ownerId) !== String((s.player || {}).id));
+      this.confirmPlayerWarfare(playerWarfare, function (confirmed) {
+        if (Core.state.world._dispatchTarget !== dt) return;
+        if(G.World._launching)return;G.World._launching=true;
+        if (confirmed) dispatchRequest.abandonNewbieProtection = true;
+        G.API.worldDispatch(dispatchRequest).then(function () {
+          // API 可能已整体替换状态并保留同一草稿引用，两个状态对象都要清除。
+          if (Core.state.world._dispatchTarget === dt) delete Core.state.world._dispatchTarget;
+          delete s.world._dispatchTarget;
+          G.toast('部队出征');
+          // 触发每日任务进度
+          var act = dispatchRequest.action;
+          // 侦查任务在侦查部队抵达并生成报告后，由 WebSocket 事件计数，不能在出发时完成。
+          if (act === 'gather' && G.Task && G.Task.Quests) G.Task.Quests.onEvent('gather');
+          else if ((act === 'conquer' || act === 'plunder' || act === 'attack' || act === 'occupy') && G.Task && G.Task.Quests) G.Task.Quests.onEvent('attack');
+          G.go('world');
+        }).catch(function (err) {
+          G.toast(err.message || '出征失败');
+        }).finally(function(){G.World._launching=false;});
+      });
     },
 
-    /** 普通采集记住玩家选择；从新手指引发起的采集始终保持全自动。 */
+    /** 记住玩家的采集模式，任务推荐也允许自由选择。 */
     setGatherMode: function (mode) {
       var target = Core.state.world._dispatchTarget;
-      if (target && target.kind === 'wild_gather') target.gatherMode = !target.onboardingGather && mode === 'manual' ? 'manual' : 'auto';
+      if (target && target.kind === 'wild_gather') target.gatherMode = mode === 'manual' ? 'manual' : 'auto';
     },
 
     /** 保留当前出征的 PvE 战斗方式，界面重新渲染后仍展示玩家选择。 */
@@ -1601,7 +1705,6 @@ window.Game = window.Game || {};
 
       var isWildConquer = dt.kind === 'wild';
       var isGather = dt.kind === 'wild_gather';
-      var guidedGather = isGather && dt.onboardingGather;
       var isScout = dt.action === 'scout';
       if (isScout && !dt.reconMode) {
         dt.reconMode = Number(s.army.scout) > 0 || !Number(s.army.recon_car) ? 'air' : 'land';
@@ -1616,11 +1719,10 @@ window.Game = window.Game || {};
         : isStation
         ? '派遣部队行军进驻已占领野地，进驻后可驻防防守并就地开启资源采集。'
         : isGather
-        ? (guidedGather ? '新手引导使用全自动采集：部队抵达野地后开始采集，采满自动回城，资源入库后继续指引。'
-          : '派遣部队前往已占领野地采集资源，采集量取决于部队负重；可选择全自动或全手动，资源返城后入库。')
+        ? '派遣部队前往已占领野地采集资源，采集量取决于部队负重；可选择全自动或全手动，资源返城后入库。'
         : '';
-      var h = '';
-      h += '<div class="title">- ' + (isStation ? '派遣进驻' : (isGather ? '采集派遣' : '出征准备')) + ' -</div>';
+      var h = '<div class="dispatch-preparation">';
+      h += '<div class="dispatch-preparation-heading"><h2>' + (isStation ? '派遣进驻' : (isGather ? '采集派遣' : '出征准备')) + '</h2><span>确认目标 · 配置部队</span></div>';
       h += '<div class="panel">';
       h += '<div class="bfield">行动: <b style="color:var(--accent)">' + actionName + '</b> | 目标: <b>' + target.name + '</b>';
       if (dt.kind !== 'player' && target.level) h += ' Lv.' + target.level;
@@ -1670,10 +1772,15 @@ window.Game = window.Game || {};
       if (isCampaign) {
         var occupyOnly = dt.kind === 'wild' && !target._wildType.res;
         var conquerMode = dt.conquerMode === 'occupy' ? 'occupy' : 'withdraw';
-        h += '<fieldset class="panel dispatch-gather-modes"><legend>战后处置</legend>';
-        h += '<label class="dispatch-occupy-switch"><span>是否占领</span><span class="dispatch-occupy-control">';
-        h += '<input type="checkbox" role="switch" id="dpOccupyTarget"' + (dt.occupyTarget ? ' checked' : '') + (occupyOnly ? ' disabled' : '') + ' onchange="Game.World.setOccupyTarget(this.checked)"><span id="dpOccupyState">' + (dt.occupyTarget ? '开启' : '关闭') + '</span></span></label>';
-        h += '<div class="desc" id="dpCampaignDescription" aria-live="polite">' + esc(this.campaignDescription(dt)) + '</div>';
+        h += '<section class="dispatch-campaign-settings" aria-label="出征方式">';
+        h += '<div class="dispatch-campaign-choice"><label for="dpCampaignAction">出征方式<small>选择本次行动的目的</small></label>';
+        h += '<select id="dpCampaignAction" aria-describedby="dpCampaignDescription" onchange="Game.World.setCampaignAction(this.value)">';
+        G.Constants.campaignModes.forEach(function (mode) {
+          h += '<option value="' + mode.action + '"' + (dt.campaignAction === mode.action ? ' selected' : '') + (occupyOnly && mode.action === 'plunder' ? ' disabled' : '') + '>' + mode.name + '</option>';
+        });
+        h += '</select></div>';
+        h += '<div class="dispatch-campaign-hint" role="status" aria-live="polite" aria-atomic="true"><div class="dispatch-campaign-hint-heading"><strong id="dpCampaignHeading">' + G.Constants.dispatchActionNames[dt.campaignAction] + '说明</strong><span id="dpCampaignLimit">最多 ' + G.Constants.battleRoundLimits[dt.campaignAction] + ' 回合</span></div>';
+        h += '<p id="dpCampaignDescription">' + esc(this.campaignDescription(dt)) + '</p></div>';
         if (dt.kind === 'wild') {
           h += '<div id="dpCampaignTroops"' + (!dt.occupyTarget ? ' hidden' : '') + '><div class="dispatch-campaign-subtitle">占领成功后部队</div>';
           h += '<label class="dispatch-gather-mode"><input type="radio" name="dpConquerMode" value="withdraw"' + (conquerMode === 'withdraw' ? ' checked' : '') + ' onchange="Game.World.setConquerMode(this.value)">';
@@ -1681,7 +1788,7 @@ window.Game = window.Game || {};
           h += '<label class="dispatch-gather-mode"><input type="radio" name="dpConquerMode" value="occupy"' + (conquerMode === 'occupy' ? ' checked' : '') + ' onchange="Game.World.setConquerMode(this.value)">';
           h += '<span><strong>原地驻守</strong><span>幸存部队留在野地驻守，后续可手动撤回</span></span></label></div>';
         }
-        h += '</fieldset>';
+        h += '</section>';
       }
 
       if (isScout) {
@@ -1693,7 +1800,7 @@ window.Game = window.Game || {};
         h += '<button type="button" class="btn" data-ground-recon-retry' + (!ground.error || ground.pending ? ' hidden' : '') + ' onclick="Game.World.retryGroundRecon()">重新检查陆路</button></div>';
       }
 
-      h += '<div class="zone-head"><span>-- 兵种配置 (选择出征数量) --</span><span class="dispatch-unit-actions">';
+      h += '<div class="dispatch-section-heading"><span>兵种配置 <small>选择出征数量</small></span><span class="dispatch-unit-actions">';
       h += '<button type="button" class="btn dispatch-set-all" onclick="Game.World.setAllDispatchUnitsToOne()">全部设置1单位</button>';
       h += '<button type="button" class="btn dispatch-reset" onclick="Game.World.resetDispatchUnits()">重置</button>';
       h += '</span></div>';
@@ -1707,7 +1814,7 @@ window.Game = window.Game || {};
         if (isScout && uid !== scoutUnit) continue;
         hasAny = true;
         var u = D.units[uid];
-        var isLogi = u.logistic ? ' (辎重' + u.load + '/辆)' : '';
+        var loadHint = u.logistic ? ' (辎重' + u.load + '/辆)' : u.load > 0 ? ' (负重' + u.load + '/人)' : '';
         var supplyBadge = ' <span class="dispatch-unit-supply" title="每100格油耗 ' + (u.marchOil || 0) + '">油耗 ' + (u.marchOil || 0) + '</span>';
         var techMul = (typeof Core !== 'undefined' && Core.spdMul) ? Core.spdMul(u.cat, uid) : 1;
         var techBonus = Math.round((techMul - 1) * 100);
@@ -1728,7 +1835,7 @@ window.Game = window.Game || {};
           var base = name.indexOf('-') > 0 ? name.split('-')[0].trim() : name.replace(/[（(].*?[）)]/, '').trim();
           return code ? base + '(' + code + ')' : base;
         })(u.name));
-        h += '<span class="dispatch-unit-name" title="' + esc(u.name) + '">' + uName + isLogi + spdBadge + supplyBadge + '</span>';
+        h += '<span class="dispatch-unit-name" title="' + esc(u.name) + '">' + uName + loadHint + spdBadge + supplyBadge + '</span>';
         h += '<span class="dispatch-unit-have">城内' + G.fmt(have) + '</span>';
         if (G.UnitEquipment) h += G.UnitEquipment.summary(uid, false);
         h += '</div>';
@@ -1787,14 +1894,13 @@ window.Game = window.Game || {};
       h += '</div>';
 
       if (isGather) {
-        var gatherMode = !guidedGather && dt.gatherMode === 'manual' ? 'manual' : 'auto';
+        var gatherMode = dt.gatherMode === 'manual' ? 'manual' : 'auto';
         h += '<fieldset class="panel dispatch-gather-modes"><legend>采集模式</legend>';
         h += '<label class="dispatch-gather-mode"><input type="radio" name="dpGatherMode" value="auto"' + (gatherMode === 'auto' ? ' checked' : '') + ' onchange="Game.World.setGatherMode(this.value)" />';
         h += '<span><strong>采集全自动</strong><span>采集完成后自动收获并自动按原路线回城</span></span></label>';
-        h += '<label class="dispatch-gather-mode' + (guidedGather ? ' is-disabled' : '') + '"><input type="radio" name="dpGatherMode" value="manual"' + (gatherMode === 'manual' ? ' checked' : '') + (guidedGather ? ' disabled' : '') + ' onchange="Game.World.setGatherMode(this.value)" />';
+        h += '<label class="dispatch-gather-mode"><input type="radio" name="dpGatherMode" value="manual"' + (gatherMode === 'manual' ? ' checked' : '') + ' onchange="Game.World.setGatherMode(this.value)" />';
         h += '<span><strong>采集全手动</strong><span>需要玩家自主终止采集任务，需要亲自下达命令选择部队回城</span></span></label>';
-        h += '<div class="desc">' + (guidedGather ? '新手采集固定为全自动，采集完成后自动回城；资源入库后继续指引。'
-          : '全手动采满后仍在野地等待；可提前终止并保留已采资源，再点击“部队回城”。返城不改变野地归属。') + '</div></fieldset>';
+        h += '<div class="desc">' + '全手动采满后仍在野地等待；可提前终止并保留已采资源，再点击“部队回城”。返城不改变野地归属。' + '</div></fieldset>';
       }
       if (!isGather && !isScout && !isStation && dt.kind !== 'player') {
         var battleMode = dt.battleMode || (dt.kind === 'wild' ? 'auto' : 'manual');
@@ -1805,12 +1911,14 @@ window.Game = window.Game || {};
         h += '<span><strong>自动结算</strong><span>进入战斗后系统直接完成战斗结算</span></span></label></fieldset>';
       }
       // 任何行军(侦查/讨伐/采集)都可以带指挥官
-      //  侦查: 减少遭遇战损失, 获得军官经验
+      //  侦查: 遭遇战按周期接入军事、防御和战斗技能
       //  讨伐: 攻击/技能加成
       //  采集: 后勤属性提升采集速度 (1 + logistics/100, 上限 ×3.0)
       if (true) {
         h += '<div class="zone-head">-- 指挥官选择 --</div>';
         h += '<div class="panel">';
+        if (isScout) h += '<div class="desc">随队将领军事、防御与战斗技能在首次交火时生效，之后间隔两回合再触发（第1、4、7、10回合；每点军事／防御+1%攻击／防御）。装备、套装计入属性；不派遣将领时无随队将领加成。</div>';
+        if (isScout) h += '<div class="desc">双方先手按有效速度＋5×自身侦察技术等级比较；守方雷达仅首回合每级+5点。同值时奇数回合出征方先手，偶数回合守方先手。</div>';
         var marchingCommanderIds = new Set();
         var activeMarches = (s.world && s.world.marches) || (Core.state && Core.state.world && Core.state.world.marches) || [];
         activeMarches.forEach(function (m) {
@@ -1872,7 +1980,7 @@ window.Game = window.Game || {};
         if (!foundC) h += '<div class="desc">(当前无空闲将领可选，建议招募将领或等待出征队伍返城以获得战力与经验加成)</div>';
         h += '</div>';
 
-        h += '<div class="zone-head">-- 携带资源 (货辎队负重内) --</div>';
+        h += '<div class="zone-head">-- 携带资源 (部队负重内) --</div>';
         h += '<div class="panel">';
         h += '<div class="desc">携带资源随军出征,战胜则返还并计入战利品,战败则丢失。</div>';
         var resOrder = G.Constants.resourceKeys;
@@ -1916,14 +2024,23 @@ window.Game = window.Game || {};
       },{start:s.player&&s.player.cityName,end:target.name+(target.level?' Lv.'+target.level:'')});
     },
 
+    /**
+     * 预览当前编队路线，并清理容器的旧绑定；失败原因供出征拦截提示。
+     * @param {Element} container - 出征表单容器
+     * @param {Element} hint - 路线预览与失败原因的展示区域
+     * @param {Function} request - 获取当前编队路线请求参数
+     * @param {Object} labels - 起终点名称与预览选项
+     * @returns {void}
+     */
     bindRoutePreview: function(container,hint,request,labels) {
       if(!hint||!G.API||!G.API.client)return;
+      if(typeof container._disposeRoutePreview==='function')container._disposeRoutePreview();
       labels=Object.assign({},labels);
-      var timer,sequence=0,terrain=null,currentRoute=null,lastRouteKey=null,isLoading=false,lastRouteFailed=false;
+      var timer,sequence=0,terrain=null,currentRoute=null,lastRouteKey=null,isLoading=false,lastRouteFailed=false,disposed=false;
       var self = this;
       if(G.DispatchRoute)G.DispatchRoute.loadTerrain().then(function(data){
         terrain=data;
-        if(hint.isConnected&&currentRoute)G.DispatchRoute.render(hint,currentRoute,labels,terrain);
+        if(!disposed&&hint.isConnected&&currentRoute)G.DispatchRoute.render(hint,currentRoute,labels,terrain);
       });
       /**
        * 生成路线计算所需的稳定键。
@@ -1944,6 +2061,8 @@ window.Game = window.Game || {};
        * @returns {void}
        */
       function update(force){
+        // #view 会复用于多次出征；旧预览节点移除后不能再改写全局提交状态。
+        if(disposed||!hint.isConnected)return;
         var payload=request(),nextRouteKey=routeKey(payload);
         labels.action=payload.action;
         var hasArmy = Object.keys(payload.army || {}).some(function(uid){
@@ -1981,9 +2100,9 @@ window.Game = window.Game || {};
         if(badge)badge.textContent='正在更新路线…';
         else hint.innerHTML='<div class="dispatch-map-card dispatch-map-empty">正在计算行军路线与抵达时间…</div>';
         timer=setTimeout(function(){
-          if(!hint.isConnected)return;
+          if(disposed||!hint.isConnected)return;
           G.API.client.post('/game/world/route',payload,{silent:true}).then(function(route){
-            if(!hint.isConnected||seq!==sequence)return;
+            if(disposed||!hint.isConnected||seq!==sequence)return;
             currentRoute=route;
             self._currentRoute = route;
             self._dispatchRoutePending=false;
@@ -1993,24 +2112,33 @@ window.Game = window.Game || {};
             else hint.textContent='行军距离 '+distanceText(route.distance)+' 格 · 预计 '+route.seconds+' 秒';
             self.updateDispatchStats();
           }).catch(function(e){
-            if(hint.isConnected&&seq===sequence){
+            if(!disposed&&hint.isConnected&&seq===sequence){
               isLoading=false;
               lastRouteFailed=true;
               hint.setAttribute('aria-busy','false');
               hint.textContent=e.message||'路线计算失败，请重新选择部队后重试';
               self._currentRoute = null;
               self._dispatchRoutePending=false;
-              self._dispatchRouteError=true;
+              self._dispatchRouteError=hint.textContent;
               self.updateDispatchStats();
             }
           });
         },300);
       }
       self._refreshDispatchRoute = function(){ update(false); };
+      function onChange(){update(false);}
+      // 重新打开或重绘出征页时解绑旧监听，同时使未完成的旧请求失效。
+      container._disposeRoutePreview=function(){
+        disposed=true;sequence++;clearTimeout(timer);
+        if(container.removeEventListener){
+          container.removeEventListener('change',onChange);
+          if(labels.updateOnInput)container.removeEventListener('input',onChange);
+        }
+      };
       // 数量输入的 input 事件只更新统计；change 事件用于检查兵种集合是否真的变化。
-      container.addEventListener('change',function(){update(false);});
+      container.addEventListener('change',onChange);
       // 城市支援弹窗即时更新，避免确认按钮点击时因输入失焦触发预览布局变化。
-      if(labels.updateOnInput)container.addEventListener('input',function(){update(false);});
+      if(labels.updateOnInput)container.addEventListener('input',onChange);
       update(true);
     },
 
@@ -2696,8 +2824,8 @@ window.Game = window.Game || {};
           var remain = Math.max(0, Math.ceil((m.arriveAt - now) / 1000));
           var timeStr = this.alertCountdown(m.arriveAt);
           var isGather = m.targetKind === 'wild_gather';
-          var kindName = m.returning ? '返城' : m.stationed ? '驻防' : isGather ? '采集' : ({ conquer: '讨伐', plunder: '讨伐', campaign: '讨伐', scout: '侦查', transport: '运输', rebase: '调遣', reinforce: '驻防行军' }[m.action] || '出征');
-          var campaignModeText = m.action === 'conquer' ? '尝试占领' : m.action === 'plunder' ? '仅夺取资源' : '';
+          var kindName = m.returning ? '返城' : m.stationed ? '驻防' : isGather ? '采集' : ({ conquer: '征服', plunder: '掠夺', feint: '佯攻', harass: '袭扰', guerrilla: '游击', campaign: '讨伐', scout: '侦查', transport: '运输', rebase: '调遣', reinforce: '驻防行军' }[m.action] || '出征');
+          var campaignModeText = m.action === 'conquer' ? '尝试占领' : m.action === 'plunder' ? '仅夺取资源' : ['feint', 'harass', 'guerrilla'].includes(m.action) ? '不获取资源 · 最多 ' + G.Constants.battleRoundLimits[m.action] + ' 回合' : '';
           var urgent = remain <= 10 ? 'urgent' : '';
           // 兼容字段缺失: 老存档/老推送可能没带 distance/originName 等
           var fromX = m.fromX != null ? m.fromX : '?';
@@ -2792,25 +2920,46 @@ window.Game = window.Game || {};
           h += ' <span class="lv">' + (im.expanded ? '▼' : '▶') + '</span>';
           if (im.expanded) {
             h += '<div class="d" style="margin-top:4px;padding-left:8px;border-left:2px solid var(--border)">';
-            h += '<div>来袭玩家: <b>' + attackerName + '</b></div>';
-            h += '<div>出发地: (' + (im.fromX != null ? im.fromX : '?') + ',' + (im.fromY != null ? im.fromY : '?') + ')</div>';
+            var radar = Number(im.radarLevel || 0);
+            h += '<div>雷达情报等级: Lv.' + radar + '</div>';
+            if (radar >= 1) {
+              h += '<div>来袭玩家: <b>' + attackerName + '</b></div>';
+              h += '<div>出发地: (' + (im.fromX != null ? im.fromX : '?') + ',' + (im.fromY != null ? im.fromY : '?') + ')</div>';
+              h += '<div>行动: ' + esc(G.Constants.dispatchActionNames[im.action] || '未知') + '</div>';
+            }
             h += '<div>目的地: (' + targetX + ',' + targetY + ') ' + targetName + '</div>';
-            h += '<div>统帅: <b>' + esc(im.commander || '未知') + '</b>';
-            if (im.commanderStar) {
-              var starStr2 = '';
-              for (var si2 = 0; si2 < im.commanderStar; si2++) starStr2 += '★';
-              h += ' <span style="color:var(--gold)">' + starStr2 + '</span>';
+            if (radar >= 2) {
+              var branches = { land: '陆军', sea: '海军', air: '空军' };
+              h += '<div>军种: ' + esc((im.branches || []).map(function (b) { return branches[b] || b; }).join('、') || '未知') + '</div>';
+              h += '<div>兵力区间: ' + esc(im.strengthBand || '未知') + '</div>';
             }
-            if (im.commanderLevel) h += ' Lv.' + im.commanderLevel;
-            h += '</div>';
-            h += '<div>兵种详情:</div>';
-            var armyTotal = 0;
-            for (var auid in im.army) {
-              var au = D.units[auid];
-              h += '<div style="padding-left:12px">- ' + (au ? au.name : auid) + ' x' + G.fmt(im.army[auid]) + '</div>';
-              armyTotal += im.army[auid];
+            if (radar >= 3) {
+              h += '<div>兵种: ' + esc((im.unitTypes || []).map(function (uid) { return (D.units[uid] || {}).name || uid; }).join('、') || '未知') + '</div>';
+              h += '<div>总兵力: ' + (im.totalTroops != null ? G.fmt(im.totalTroops) : '未知') + '</div>';
             }
-            h += '<div>总兵力: <b style="color:var(--danger)">' + G.fmt(armyTotal) + '</b></div>';
+            if (radar >= 4) {
+              h += '<div>统帅: ' + esc(im.commander || '未知') + (im.commanderStar ? ' ' + im.commanderStar + '星' : '') + (im.commanderLevel ? ' Lv.' + im.commanderLevel : '') + '</div>';
+              Object.keys(im.army || {}).forEach(function (uid) {
+                h += '<div>' + esc((D.units[uid] || {}).name || uid) + ' ×' + G.fmt(im.army[uid]) + '</div>';
+              });
+            }
+            if (radar >= 5) {
+              var techIntel = Object.keys(im.combatTech || {}).map(function (id) { return ((D.techs[id] || {}).name || id) + ' Lv.' + im.combatTech[id]; });
+              h += '<div>战斗科技: ' + esc(techIntel.join('、') || '未知') + '</div>';
+              var gearIntel = Object.keys(im.unitEquipment || {}).filter(function (key) { return key.indexOf(':item:') >= 0; }).map(function (key) {
+                var itemId = key.split(':item:')[1];
+                var item = ((Core.state.unitEquipment || {}).catalog || {})[itemId];
+                return item ? item.name : itemId;
+              });
+              h += '<div>已配装装备: ' + esc(im.unitEquipment ? (gearIntel.join('、') || '无') : '未知') + '</div>';
+              var attrs = im.commanderAttributes;
+              h += '<div>将领有效属性: ' + esc(attrs ? '军事 ' + attrs.military + ' / 防御 ' + attrs.defense : '未知') + '</div>';
+              var skills = Object.keys(im.skills || {}).map(function (id) { return ((D.officerSkills[id] || {}).name || id) + ' Lv.' + im.skills[id]; });
+              h += '<div>将领技能: ' + esc(im.skills ? (skills.join('、') || '无') : '未知') + '</div>';
+              var chief = im.commandBonus;
+              h += '<div>司令官: ' + esc(chief ? (chief.name || '未任命') + '（军事 ' + chief.military + ' / 防御 ' + chief.defense + ' / 后勤 ' + chief.logistics + ' / 学识 ' + chief.knowledge + '）' : '未知') + '</div>';
+              h += '<div>' + esc(im.intelligenceSource || '旧来袭缺少高级情报') + '</div>';
+            }
             if (im.waitingForBattle) {
               h += '<div class="cost urgent">敌军已到达城下，等待本城上一场战斗结束。</div>';
             } else if (isArrived && im.marchId) {

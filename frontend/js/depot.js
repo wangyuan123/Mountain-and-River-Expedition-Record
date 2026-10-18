@@ -63,7 +63,7 @@
     /** 切换仓库物品分类（保存在当前状态，刷新后仍保持本次选择） */
     setTab: function (cat) {
       var valid = G.Constants.depotCategoryOrder;
-      if (valid.indexOf(cat) < 0) cat = 'jewelry';
+      if (valid.indexOf(cat) < 0) cat = valid[0];
       Core.state._depotTab = cat;
       Core.render();
     },
@@ -77,6 +77,11 @@
       if ((s.items[itemId] || 0) <= 0) { G.toast('道具数量不足'); return; }
       var info = D.items[itemId] || equipmentInfo(itemId);
       if (!info) return;
+
+      if (itemId === 'teleportNormal' || itemId === 'teleportAdvanced') {
+        G.CityTeleport.open(itemId);
+        return;
+      }
 
       if (itemId === 'cityRenameCard') {
         G.Main.promptRenameCityInDrawer();
@@ -305,7 +310,7 @@
 
       var cats = G.Constants.depotCategories;
       var catOrder = G.Constants.depotCategoryOrder;
-      var activeCat = catOrder.indexOf(s._depotTab) >= 0 ? s._depotTab : 'jewelry';
+      var activeCat = catOrder.indexOf(s._depotTab) >= 0 ? s._depotTab : catOrder[0];
       h += '<div class="depot-tabs" role="tablist" aria-label="仓库物品分类">';
       for (var ti = 0; ti < catOrder.length; ti++) {
         var tabCat = catOrder[ti];
@@ -364,10 +369,8 @@
             if (cnt > 0) {
               if (iid.indexOf('rank_certificate_') === 0) {
                 btnHtml = '<button type="button" class="btn depot-btn" onclick="Game.go(\'mainQuest\')">[前往晋升军衔]</button>';
-              } else if (iid.indexOf('gem_') === 0) {
-                btnHtml = '';
               } else {
-                var btnLabel = iid === 'cityRenameCard' ? '修改城市名' : (info.isBox || iid.indexOf('box_') === 0) ? '开启宝箱' : (iid === 'expBook' || iid === 'expBookAdv' || iid === 'expBookMax' || iid === 'loyaltyBox' || iid === 'renameCard' || iid === 'skillBook' || iid.indexOf('skillBook_') === 0 || iid === 'starUp') ? '选择军官使用' : '使用';
+                var btnLabel = iid === 'newbiePack' ? '开启礼包' : iid === 'cityRenameCard' ? '修改城市名' : (info.isBox || iid.indexOf('box_') === 0) ? '开启宝箱' : (iid === 'expBook' || iid === 'expBookAdv' || iid === 'expBookMax' || iid === 'loyaltyBox' || iid === 'renameCard' || iid === 'skillBook' || iid.indexOf('skillBook_') === 0 || iid === 'starUp') ? '选择军官使用' : '使用';
                 btnHtml = '<button type="button" class="btn depot-btn" onclick="Game.Depot.useItem(\'' + iid + '\')">[' + btnLabel + ']</button>';
               }
             }
@@ -382,9 +385,7 @@
         }
 
         if (!hasInCat) {
-          if (cat === 'jewelry') {
-            h += '<div class="desc">暂无珠宝珍品，派遣部队前往野地采集可探得各类稀世珠宝</div>';
-          } else if (cat === 'equipment') {
+          if (cat === 'equipment') {
             h += '<div class="desc">暂无军官装备，可在商城购买装备宝箱开启获得</div>';
           } else {
             h += '<div class="desc">暂无此类道具</div>';

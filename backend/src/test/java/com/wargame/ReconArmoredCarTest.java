@@ -1,12 +1,16 @@
 package com.wargame;
 
 import com.wargame.model.constants.BattleRules;
+import com.wargame.model.constants.OfficerEquipmentDef;
 import com.wargame.model.constants.UnitDef;
 import com.wargame.model.dto.DispatchRequest;
+import com.wargame.model.dto.CommandBonus;
 import com.wargame.model.entity.*;
 import com.wargame.repository.ArmyProductionQueueRepository;
+import com.wargame.repository.OfficerEquipmentRepository;
 import com.wargame.service.ArmyService;
 import com.wargame.service.BattleService;
+import com.wargame.service.UnitEquipmentRecon;
 import com.wargame.service.WorldTerrainService;
 import com.wargame.util.JsonUtil;
 import org.junit.jupiter.api.*;
@@ -16,14 +20,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.Map;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-// 使用独立内存库，避免全量测试中其他 Spring 上下文关闭时删除本类的表。
-@SpringBootTest(properties = "spring.datasource.url=jdbc:h2:mem:recon-armored-car;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE")
 class ReconArmoredCarTest extends BaseServiceTest {
     @Autowired ArmyService armyService;
     @Autowired ArmyProductionQueueRepository queues;
+    @Autowired OfficerEquipmentRepository equipment;
     private Player player;
     private WorldMap world;
     private WildTile tile;
@@ -46,6 +50,124 @@ class ReconArmoredCarTest extends BaseServiceTest {
 
     private Map<String, Object> report() {
         return JsonUtil.parseObjMap(scoutReportRepository.findByPlayerId(player.getId()).get(0).getData());
+    }
+
+    @ParameterizedTest @ValueSource(strings = {"scout", "recon_car"})
+    void actualResearchAndOpeningRadarReachBothReportPerspectives(String unit) {
+        createTechnology(player.getId(), "recon_level", 4);
+        Player defender = createTestPlayer("radar-defender", 30);
+        createTechnology(defender.getId(), "recon_level", 2);
+        createTechnology(defender.getId(), "recon_radar", 3);
+        PlayerCity target = new PlayerCity();
+        target.setOwnerId(defender.getId()); target.setCitySlot(0); target.setWorldId(world.getId());
+        target.setName("雷达拦截城市"); target.setX(20); target.setY(10); target.setLevel(1);
+        target = playerCityRepository.saveAndFlush(target);
+        createArmyUnit(defender.getId(), unit, 1000);
+        March march = marchService.createDispatch(player.getId(), new DispatchRequest("player", target.getId(),
+                "scout", Map.of(unit, 1000), null, null));
+        marchService.processMarches(player.getId(), march.getArriveAt());
+        Map<String, Object> attack = report();
+        Map<String, Object> defense = JsonUtil.parseObjMap(scoutReportRepository.findByPlayerId(defender.getId()).get(0).getData());
+        Map<String, Object> initiative = Map.of("version", UnitEquipmentRecon.INITIATIVE_RULES_VERSION,
+                "attackerReconLevel", 4, "defenderReconLevel", 2, "defenderRadarLevel", 3);
+        assertEquals(initiative, attack.get("reconInitiative"));
+        assertEquals(initiative, defense.get("reconInitiative"));
+        int speed = UnitDef.UNITS.get(unit).spd();
+        assertEquals(speed + 20, attack.get("attackerInitiative"));
+        assertEquals(speed + 25, attack.get("defenderInitiative"));
+        assertEquals("defender", attack.get("firstStrike"));
+        assertEquals(attack.get("firstStrike"), defense.get("firstStrike"));
+        List<?> logs = (List<?>) attack.get("combatLog"), defenseLogs = (List<?>) defense.get("combatLog");
+        assertEquals(10, logs.size());
+        assertTrue(logs.get(0).toString().contains("本回合先手：敌方"));
+        assertTrue(defenseLogs.get(0).toString().contains("我方雷达预警：先手+15（仅首回合）"));
+        for (int round = 2; round <= 10; round++) {
+            assertTrue(logs.get(round - 1).toString().contains("本回合先手：我方（我方" + (speed + 20) + " / 敌方" + (speed + 10) + "）"));
+            assertTrue(defenseLogs.get(round - 1).toString().contains("本回合先手：敌方"));
+            assertFalse(logs.get(round - 1).toString().contains("雷达预警"));
+        }
+        assertEquals(attack.get("mySurvivors"), defense.get("enemySurvivors"));
+        assertEquals(attack.get("enemySurvivors"), defense.get("mySurvivors"));
+    }
+
+    @ParameterizedTest @ValueSource(strings = {"scout", "recon_car"})
+    void actualLeadersEquipmentAndFirstCombatCycleReachBothReportPerspectives(String unit) {
+        Officer home = createOfficer(player.getId(), "commander", 200, 200, 10, 10);
+        home.setName("不能借用的本城守将"); officerRepository.save(home);
+        Officer leader = createOfficer(player.getId(), "idle", 70, 40, 10, 10);
+        leader.setName("实际随队将领"); leader.setSkills("[{\"id\":\"frenzy\",\"lv\":5}]");
+        officerRepository.saveAndFlush(leader);
+        for (String slot : List.of("weapon", "badge", "coat")) equip(leader, "recruit_military_" + slot);
+        Player defender = createTestPlayer("recon-defender", 30);
+        Officer main = createOfficer(defender.getId(), "commander", 210, 210, 10, 10);
+        main.setName("不能串用的主城守将"); officerRepository.save(main);
+        Officer guard = createOfficer(defender.getId(), "commander", 55, 77, 10, 10);
+        guard.setCitySlot(1); guard.setName("实际分城守将");
+        guard.setSkills("[{\"id\":\"bulwark\",\"lv\":3}]"); officerRepository.saveAndFlush(guard);
+        PlayerCity target = new PlayerCity();
+        target.setOwnerId(defender.getId()); target.setCitySlot(1); target.setWorldId(world.getId());
+        target.setName("目标分城"); target.setX(20); target.setY(10); target.setLevel(1);
+        target = playerCityRepository.saveAndFlush(target);
+        ArmyUnit garrison = createArmyUnit(defender.getId(), unit, 1000);
+        garrison.setCitySlot(1); armyUnitRepository.saveAndFlush(garrison);
+
+        March march = marchService.createDispatch(player.getId(), new DispatchRequest("player", target.getId(),
+                "scout", Map.of(unit, 1000), leader.getId(), null));
+        marchService.processMarches(player.getId(), march.getArriveAt());
+        Map<String, Object> attack = report();
+        Map<String, Object> defense = JsonUtil.parseObjMap(scoutReportRepository.findByPlayerId(defender.getId()).get(0).getData());
+        Map<?, ?> commanders = (Map<?, ?>) attack.get("commanders");
+        Map<?, ?> a = (Map<?, ?>) commanders.get("attacker"), d = (Map<?, ?>) commanders.get("defender");
+        assertEquals("实际随队将领", a.get("name")); assertEquals(70, a.get("baseMilitary"));
+        assertEquals(88, a.get("military")); assertEquals(40, a.get("baseDefense")); assertEquals(43, a.get("defense"));
+        assertEquals("frenzy", ((Map<?, ?>) ((List<?>) a.get("skills")).get(0)).get("id"));
+        assertEquals("实际分城守将", d.get("name")); assertEquals(55, d.get("military")); assertEquals(77, d.get("defense"));
+        assertEquals(commanders, defense.get("commanders")); assertEquals("defender", defense.get("perspective"));
+        assertEquals(List.of(1, 4, 7, 10), attack.get("commanderAttributeRounds"));
+        assertEquals(attack.get("commanderAttributeRounds"), attack.get("commanderSkillRounds"));
+        assertEquals(attack.get("commanderAttributeRounds"), defense.get("commanderAttributeRounds"));
+        List<?> logs = (List<?>) attack.get("combatLog");
+        assertEquals(10, logs.size());
+        for (int round = 1; round <= 10; round++) {
+            String log = logs.get(round - 1).toString();
+            assertEquals((round - 1) % 3 == 0, log.contains("军事属性 +88%攻击"));
+            assertEquals((round - 1) % 3 == 0, log.contains("全军冲锋"));
+            assertEquals((round - 1) % 3 == 0, log.contains("坚守阵地"));
+        }
+        // 首回合实际战损核对总属性只计一次，且无需等到第3回合才能参与。
+        var stats = UnitDef.UNITS.get(unit);
+        double base = "scout".equals(unit) ? stats.atkAir() : stats.atkGround();
+        int enemy = 1000 - (int) Math.floor(1000 * base * 1.88 * 1.5 / (stats.hp() + stats.def() * 1.77 * 1.3)) - 1;
+        int own = 1000 - (int) Math.floor(enemy * base * 1.55 / (stats.hp() + stats.def() * 1.43)) - 1;
+        assertTrue(logs.get(0).toString().startsWith("第1回合：我方剩余" + own + "，敌方剩余" + enemy));
+        String defenseLog = ((List<?>) defense.get("combatLog")).get(0).toString();
+        assertTrue(defenseLog.contains("我方将领加成：军事属性 +55%攻击"));
+        assertTrue(defenseLog.contains("敌方将领加成：军事属性 +88%攻击"));
+        assertEquals(attack.get("mySurvivors"), defense.get("enemySurvivors"));
+        assertEquals(attack.get("enemySurvivors"), defense.get("mySurvivors"));
+    }
+
+    @ParameterizedTest @ValueSource(strings = {"scout", "recon_car"})
+    void unselectedHomeCommanderDoesNotJoinRecon(String unit) {
+        Officer home = createOfficer(player.getId(), "commander", 219, 219, 10, 10);
+        home.setSkills("[{\"id\":\"frenzy\",\"lv\":5}]"); officerRepository.saveAndFlush(home);
+        tile.setGarrison(JsonUtil.toJson(Map.of(unit, 100))); wildTileRepository.saveAndFlush(tile);
+        March march = marchService.createDispatch(player.getId(), request(Map.of(unit, 100)));
+        marchService.processMarches(player.getId(), march.getArriveAt());
+        assertNull(((Map<?, ?>) report().get("commanders")).get("attacker"));
+        var baseline = UnitEquipmentRecon.resolve(unit, 100, Map.of(unit, 100), Map.of(), Map.of(), CommandBonus.NONE, CommandBonus.NONE, 0, 0, 0);
+        assertEquals(baseline.ownAlive(), ((Map<?, ?>) report().get("mySurvivors")).get(unit));
+        assertTrue(((List<?>) report().get("combatLog")).stream().noneMatch(log -> log.toString().contains("将领加成")));
+    }
+
+    private void equip(Officer officer, String key) {
+        OfficerEquipmentDef def = OfficerEquipmentDef.ITEMS.get(key);
+        OfficerEquipment item = new OfficerEquipment();
+        item.setPlayerId(officer.getPlayerId()); item.setOfficerId(officer.getId()); item.setItemKey(key);
+        item.setSetType(def.setKey()); item.setTier(def.tier()); item.setSlot(def.slot());
+        item.setMilitaryBonus(def.military()); item.setDefenseBonus(def.defense());
+        item.setLogisticsBonus(def.logistics()); item.setKnowledgeBonus(def.knowledge());
+        item.setCreatedAt(0L); item.setEquippedAt(0L); equipment.saveAndFlush(item);
     }
 
     @ParameterizedTest @ValueSource(ints = {0, 1, 2, 3, 4, 5})
@@ -195,7 +317,7 @@ class ReconArmoredCarTest extends BaseServiceTest {
     @Test void speedUsesArmorEngineAndNeverApronBonus() {
         var car = marchService.previewRoute(player.getId(), request(Map.of("recon_car", 1)));
         var plane = marchService.previewRoute(player.getId(), request(Map.of("scout", 1)));
-        assertEquals(1.8, ((Number) car.get("seconds")).doubleValue() / ((Number) plane.get("seconds")).doubleValue(), 0.1);
+        assertEquals(9.0 / 5.0, ((Number) car.get("seconds")).doubleValue() / ((Number) plane.get("seconds")).doubleValue(), 0.1);
         createBuilding(player.getId(), "apron", 10);
         assertEquals(car.get("seconds"), marchService.previewRoute(player.getId(), request(Map.of("recon_car", 1))).get("seconds"));
         createTechnology(player.getId(), "arm_engine", 10);
@@ -223,7 +345,7 @@ class ReconArmoredCarTest extends BaseServiceTest {
         for (boolean defending : new boolean[]{false, true}) {
             var result = new BattleService(42).startWorldDispatch(
                     Map.of(defending ? "infantry" : "recon_car", 100), Map.of(defending ? "recon_car" : "infantry", 100),
-                    Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), 0, 0, 0, 0,
+                    Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), 0, 0,
                     "plunder", Map.of(), 0, true);
             assertTrue(result.getReport().contains("侦查装甲车-灰狗（M8）"));
             assertTrue(result.getReport().contains("扫射"));

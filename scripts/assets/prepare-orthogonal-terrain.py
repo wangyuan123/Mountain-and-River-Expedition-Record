@@ -139,12 +139,15 @@ def main():
             im.save(MAP_DIR / f'{dst}-map.webp', 'WEBP', quality=92, method=6)
             print(f'  Synced alias {dst} from {src}')
 
-    # 草原已取消独立地图模型，保持透明占位
-    transparent = Image.new('RGBA', (384, 384), (0, 0, 0, 0))
-    for g_name in ['wild-grassland', 'grass-lush', 'grass-medium', 'grass-sparse']:
-        transparent.save(MAP_DIR / f'{g_name}-map-embedded.png', 'PNG', optimize=True)
-        transparent.save(MAP_DIR / f'{g_name}.webp', 'WEBP', quality=92)
-        transparent.save(MAP_DIR / f'{g_name}-map.webp', 'WEBP', quality=92)
+    # 草原已采用 0° 正交方格实机黑土与草坪双色不规则边缘融合草坪
+    lawn_src = ROOT / 'output/imagegen/grass-redesign-20261015/optionA_steppe_calibrated.png'
+    if lawn_src.exists():
+        lawn_im = Image.open(lawn_src)
+        for g_name in ['wild-grassland', 'grass-lush', 'grass-medium', 'grass-sparse']:
+            lawn_im.save(MAP_DIR / f'{g_name}-map-embedded.png', 'PNG', optimize=True)
+            lawn_im.save(MAP_DIR / f'{g_name}.webp', 'WEBP', quality=92, method=6)
+            lawn_im.save(MAP_DIR / f'{g_name}-map.webp', 'WEBP', quality=92, method=6)
+        print('  Synced calibrated square organic lawn for all grassland tiles')
             
     print('All orthogonal terrain tiles processed successfully!')
 

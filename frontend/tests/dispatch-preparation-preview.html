@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="blue-white-classic">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <base href="../">
+  <title>出征准备交互预览（模拟数据）</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/dispatch-route.css">
+  <link rel="stylesheet" href="css/themes.css">
+  <link rel="stylesheet" href="css/classic-home.css">
+  <link rel="stylesheet" href="css/landscape.css">
+</head>
+<body>
+  <div id="screen"><main id="view"></main></div>
+  <script src="js/constants.js"></script>
+  <script src="js/data.js"></script>
+  <script>
+    var params = new URLSearchParams(location.search);
+    var theme = params.get('theme');
+    if (['blue-white', 'blue-white-classic', 'paper', 'dark'].includes(theme)) {
+      document.documentElement.dataset.theme = theme;
+    }
+    Game.fmt = function (value) { return Number(value).toLocaleString(); };
+    Game.escapeHtml = function (value) {
+      return String(value).replace(/[&<>"']/g, function (character) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character];
+      });
+    };
+    Game.go = function () {};
+    Game.toast = function (message) { window.alert(message); };
+    // 预览仅渲染真实出征组件；所有目标与兵力均为模拟数据，不连接游戏接口。
+    Game.Core = {
+      views: {}, armyCap: function () { return 25000; },
+      state: {
+        player: { id: 1, citySlot: 0, cityName: '远征基地' },
+        resources: { food: 100000, steel: 80000, oil: 60000, rare: 20000 },
+        tech: {}, buildings: {}, reports: [], army: { infantry: 1000, truck: 20 },
+        officers: [{ id: 7, role: 'idle', name: '林远', star: 3, level: 12, military: 76, logistics: 52, knowledge: 48 }],
+        world: {
+          cityPos: { x: 120, y: 120 }, marches: [], incoming: [],
+          wildTiles: [{ id: 11, type: 'ironworks', level: 3, x: 124, y: 122, totalRes: 100000, mined: 12000, scouted: true, garrison: { infantry: 120 } }]
+        }
+      }
+    };
+  </script>
+  <script src="js/world.js"></script>
+  <script>
+    Game.World.launchDispatch = function () { Game.toast('此页为交互预览，不会实际出征。'); };
+    Game.World.attackWild(0, params.get('action') || 'campaign');
+    Game.Core.state.world._dispatchTarget.defaultArmy = { infantry: 100, truck: 5 };
+    Game.World.renderDispatch(document.getElementById('view'));
+  </script>
+</body>
+</html>

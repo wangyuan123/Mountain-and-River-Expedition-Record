@@ -21,6 +21,7 @@ public class WorldViewService {
     private CityStateRepository cityStates;
     @org.springframework.beans.factory.annotation.Autowired private GuildSupportService guildSupport;
     @org.springframework.beans.factory.annotation.Autowired private GuildRelationService guildRelations;
+    @org.springframework.beans.factory.annotation.Autowired private IncomingIntelligenceService intelligence;
     private final WorldMapRepository worldMapRepository;
     private final PlayerCityRepository playerCityRepository;
     private final BanditRepository banditRepository;
@@ -156,11 +157,12 @@ public class WorldViewService {
                 pcMap.put("warEndAt", pcWarEnd);
                 // coolAt 表示战后保护期 (仅当未处于战争状态时), 战争窗口用 warAt/warEndAt 表达
                 pcMap.put("coolAt", pcWarAt == 0 ? pcWarEnd : 0L);
-                // 列表地图只展示护盾可见状态，不读取城市驻军等私有信息。
-                cityStates.findByPlayerIdAndCitySlot(cityOwner, pc.getCitySlot()).ifPresent(cs -> {
-                    long shieldUntil = cs.getShieldUntil() == null ? 0L : cs.getShieldUntil();
-                    if (shieldUntil > System.currentTimeMillis()) pcMap.put("shieldUntil", shieldUntil);
-                });
+                // 列表与坐标地图共用新手保护规则，避免敌对关系绕过受保护城市的行动限制。
+                long newbieUntil = com.wargame.model.constants.NewbieProtection.until(owner, System.currentTimeMillis());
+                long itemUntil = cityStates.findByPlayerIdAndCitySlot(cityOwner, pc.getCitySlot())
+                        .map(cs -> Objects.requireNonNullElse(cs.getShieldUntil(), 0L)).orElse(0L);
+                pcMap.put("newbieProtectionUntil", newbieUntil);
+                if (Math.max(newbieUntil, itemUntil) > System.currentTimeMillis()) pcMap.put("shieldUntil", Math.max(newbieUntil, itemUntil));
                 playerCities.add(pcMap);
             }
         }
@@ -273,6 +275,7 @@ public class WorldViewService {
         Long playerId = player.getId();
         long now = System.currentTimeMillis();
         List<Map<String, Object>> incoming = new ArrayList<>();
+        int radar = intelligence.radar(playerId);
         if (playerId != null) {
             List<IncomingMarch> entities = incomingMarchRepository.findByTargetPlayerId(playerId);
             for (IncomingMarch im : entities) {
@@ -292,7 +295,7 @@ public class WorldViewService {
                 imMap.put("arriveAt", im.getArriveAt());
                 imMap.put("action", im.getAction());
                 imMap.put("arrived", false);
-                incoming.add(imMap);
+                incoming.add(intelligence.view(radar, imMap, null));
             }
         }
 
@@ -334,7 +337,7 @@ public class WorldViewService {
                 // 防守方可在抵达后直接进入同一战术会话，首次读取会由战斗接口补建会话。
                 info.put("arrived", march.getBattleId() != null
                         || now >= Objects.requireNonNullElse(march.getArriveAt(), Long.MAX_VALUE));
-                incoming.add(info);
+                incoming.add(intelligence.view(radar, info, march));
             }
         }
         return incoming;
@@ -351,7 +354,6 @@ public class WorldViewService {
         mMap.put("outboundAccelerated", Boolean.TRUE.equals(m.getOutboundAccelerated()));
         mMap.put("returnAccelerated", Boolean.TRUE.equals(m.getReturnAccelerated()));
         mMap.put("targetKind", m.getTargetKind());
-        mMap.put("targetIdx", m.getTargetIdx());
         mMap.put("targetId", m.getTargetId());
         mMap.put("targetName", m.getTargetName());
         mMap.put("targetX", m.getTargetX());
@@ -384,7 +386,7 @@ public class WorldViewService {
         mMap.put("battleId", m.getBattleId());
         mMap.put("inBattle", m.getBattleId() != null);
         boolean arrivedAttack = "player".equals(m.getTargetKind()) && !Boolean.TRUE.equals(m.getReturning())
-                && ("conquer".equals(m.getAction()) || "plunder".equals(m.getAction()))
+                && BattleService.isOffensiveAction(m.getAction())
                 && m.getBattleId() == null && now >= Objects.requireNonNullElse(m.getArriveAt(), Long.MAX_VALUE);
         if (arrivedAttack) {
             List<Long> waiting = marchRepository.findWaitingPlayerCityAttackIds(m.getTargetId(), now,

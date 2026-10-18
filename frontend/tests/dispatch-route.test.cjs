@@ -44,7 +44,7 @@ test('preview escapes names, shows server metrics and handles missing or coincid
 test('preview colors depend on the action and decimal distance is formatted only for display',()=>{
   const {Game:g}=setup(),el={};
   const route={mode:'land',points:[[10,10],[13,12]],distance:Math.sqrt(13),seconds:11,cargoLimit:100};
-  for(const [action,color] of [['conquer','#e66f79'],['plunder','#e66f79'],['transport','#69b7ee'],['rebase','#69b7ee']]){
+  for(const [action,color] of [['conquer','#e66f79'],['plunder','#e66f79'],['feint','#e66f79'],['harass','#e66f79'],['guerrilla','#e66f79'],['transport','#69b7ee'],['rebase','#69b7ee']]){
     g.DispatchRoute.render(el,route,{action});
     assert.ok(el.innerHTML.includes('stroke="'+color+'"'));
     assert.match(el.innerHTML,/3.61 <small>格/);

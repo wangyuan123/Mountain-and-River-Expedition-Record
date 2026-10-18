@@ -54,7 +54,7 @@ class UnitEquipmentServiceTest extends BaseServiceTest {
         assertThrows(IllegalArgumentException.class, () -> equipment.save(p.getId(), "motor", Map.of(), null));
     }
     @Test void cityLaneManufacturesOnceAndRefundsOnlyFrozenCost() {
-        Player p = createTestPlayer(); tech(p.getId(), 1); createBuilding(p.getId(), "factory", 2);
+        Player p = createTestPlayer(); tech(p.getId(), 2); createBuilding(p.getId(), "factory", 4);
         giveResources(p.getId(), 100000, 100000, 100000, 100000, 100000);
         equipment.manufacture(p.getId(), "ue_infantry_helmet"); equipment.manufacture(p.getId(), "ue_infantry_lmg");
         var lane = orders.findByPlayerIdAndCitySlotOrderByStartAtAscIdAsc(p.getId(), 0);
@@ -130,7 +130,7 @@ class UnitEquipmentServiceTest extends BaseServiceTest {
         WorldMap world = flatWorld(); createArmyUnit(p.getId(), "infantry", 1000);
         WildTile tile = createWildTile(world.getId(), "forest", 20, 10, 1, Map.of("infantry", 1000), 0);
         March march = marchService.createDispatch(p.getId(), new DispatchRequest("wild", tile.getId(), "conquer", Map.of("infantry", 1000), null, null, null, "manual"));
-        long arrival = march.getArriveAt(); assertTrue(JsonUtil.parseIntMap(march.getUnitEquipmentSnapshot()).isEmpty());
+        long arrival = march.getArriveAt(); assertTrue(UnitEquipmentEffects.only(JsonUtil.parseIntMap(march.getUnitEquipmentSnapshot())).isEmpty());
         item(p.getId(), "ue_infantry_helmet"); item(p.getId(), "ue_infantry_vest");
         equipment.save(p.getId(), "infantry", Map.of("protection", "ue_infantry_helmet"), null);
         marchService.processMarches(p.getId(), arrival);

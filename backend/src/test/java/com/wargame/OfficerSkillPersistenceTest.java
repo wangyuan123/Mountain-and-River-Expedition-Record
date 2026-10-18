@@ -20,7 +20,7 @@ class OfficerSkillPersistenceTest extends BaseServiceTest {
     @PersistenceContext private EntityManager entityManager;
 
     @Test
-    void newSessionKeepsThreeSafeRoundsAndEngagesOnFourthAfterReload() {
+    void newSessionKeepsFourSafeRoundsAndEngagesOnFifthAfterReload() {
         var player = createTestPlayer("opening-distance", 30);
         var target = new Bandit();
         target.setWorldId(createTestWorld().getId());
@@ -36,10 +36,10 @@ class OfficerSkillPersistenceTest extends BaseServiceTest {
                 "bandit", target.getId(), "conquer", Map.of("infantry", 100), null, null));
         marchService.processMarches(player.getId(), march.getArriveAt());
         BattleSession session = sessions.findByMarchId(march.getId()).orElseThrow();
-        assertEquals(860, session.getInitialDistance());
+        assertEquals(1160, session.getInitialDistance());
         Long sessionId = session.getId();
 
-        for (int round = 1; round <= 4; round++) {
+        for (int round = 1; round <= 5; round++) {
             long deadline = session.getRoundDeadlineAt();
             sessions.flush();
             entityManager.clear();
@@ -48,8 +48,8 @@ class OfficerSkillPersistenceTest extends BaseServiceTest {
             entityManager.clear();
             session = sessions.findById(sessionId).orElseThrow();
             assertEquals(round, session.getRoundNo());
-            assertEquals(round == 4 ? 4 : 0, session.getFirstCombatRound(), session.getBattleLog());
-            if (round <= 3) {
+            assertEquals(round == 5 ? 5 : 0, session.getFirstCombatRound(), session.getBattleLog());
+            if (round <= 4) {
                 assertEquals(Map.of("infantry", 100), JsonUtil.parseIntMap(session.getAttackerArmy()));
                 assertEquals(Map.of("infantry", 100), JsonUtil.parseIntMap(session.getDefenderArmy()));
             }

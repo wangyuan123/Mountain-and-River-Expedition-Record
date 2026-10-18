@@ -204,7 +204,7 @@ window.Game = window.Game || {};
     var ob = G.Onboarding && G.Onboarding.state;
     var obBar = typeof document !== 'undefined' && document.getElementById ? document.getElementById('onboardingBar') : null;
     if (currentTab === 'queue' && !obBar && ob && !ob.guidedAction && ob.snoozedFor && ob.data && ob.data.current && ob.data.current.id === ob.snoozedFor) {
-      var unitType = ob.snoozedFor === 'train' ? 'truck' : (ob.snoozedFor === 'recon' ? 'scout' : ob.snoozedFor);
+      var unitType = ob.snoozedFor;
       var currentItem = el.querySelector('.army-queue-item[data-unit="' + unitType + '"]');
       var speedEl = currentItem ? (currentItem.querySelector('.army-free-speedup-btn') || currentItem.querySelector('.army-queue-btn')) : null;
       if (speedEl && G.Onboarding.showSpotlight) {
@@ -630,9 +630,11 @@ window.Game = window.Game || {};
         if (u.history) h += '<div class="d unit-history">原型：' + G.escapeHtml(u.history) + '</div>';
         h += '<div class="d">' + G.escapeHtml((D.combatRoles && D.combatRoles[id]) || '') + '</div>';
         var battleSpd = (u.spd || 0) * 50;
-        var marchSec = (9 / (u.spd || 1)).toFixed(1).replace(/\.0$/, '');
+        var secPerGrid = (D.world && D.world.marchSecPerGrid) || 18;
+        var marchSec = (secPerGrid / (u.spd || 1)).toFixed(1).replace(/\.0$/, '');
         var spdTip = '战场单回合机动：' + battleSpd + ' 距离（基速档位 ' + (u.spd || 0) + '）；大地图基础行军：' + marchSec + '秒/格';
         h += '<div class="d">对地' + u.atkGround + ' 对空' + u.atkAir + ' 对海' + u.atkSea + ' 对工事' + u.atkFort + ' 防' + u.def + ' 血' + u.hp + ' <span title="' + spdTip + '">移速' + battleSpd + '</span> 射程' + u.range + ' 常驻耗粮' + u.food + '/h</div>';
+        h += '<div class="d">火力密度：行动火力 ×' + Core.firepowerMul().toFixed(1) + '，与攻击科技独立相乘</div>';
         h += '<div class="d">行军补给：油耗' + (u.marchOil || 0) + '/100格，粮耗' + (u.marchFood || 0) + '/5分钟</div>';
         if (can) {
           var parallel = stats.parallel;

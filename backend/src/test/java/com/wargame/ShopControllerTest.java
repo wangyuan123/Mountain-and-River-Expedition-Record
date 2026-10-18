@@ -1,6 +1,7 @@
 package com.wargame;
 
 import com.wargame.controller.ShopController;
+import com.wargame.controller.DepotController;
 import com.wargame.model.UserPrincipal;
 import com.wargame.model.constants.ItemDef;
 import com.wargame.model.dto.GameDtos;
@@ -13,6 +14,7 @@ import com.wargame.repository.OfficerEquipmentRepository;
 import com.wargame.repository.OfficerRepository;
 import com.wargame.repository.PlayerItemRepository;
 import com.wargame.service.DepotService;
+import com.wargame.service.CityScope;
 import com.wargame.service.OfficerService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,6 +34,12 @@ public class ShopControllerTest extends BaseServiceTest {
 
     @Autowired
     private ShopController shopController;
+
+    @Autowired
+    private DepotController depotController;
+
+    @Autowired
+    private CityScope cityScope;
 
     @Autowired
     private DepotService depotService;
@@ -61,6 +69,120 @@ public class ShopControllerTest extends BaseServiceTest {
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
+    }
+
+    @Test
+    @DisplayName("新手礼包购买入仓、开启固定发奖，重复购买和重复开启均不增加奖励")
+    void buyAndOpenNewbiePackOnce() {
+        Resources res = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
+        res.setDiamond(200);
+        resourcesRepository.save(res);
+
+        Map<String, Object> buy = shopController.buy(new GameDtos.ShopBuyRequest("newbiePack")).getBody();
+        assertNotNull(buy);
+        assertEquals(true, buy.get("success"));
+        assertEquals(99, buy.get("price"));
+        Resources purchased = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
+        assertEquals(101, purchased.getDiamond());
+        assertEquals(1000, purchased.getFood(), "购买只入仓，不提前发资源");
+        assertEquals(1, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "newbiePack").orElseThrow().getCount());
+        assertEquals(false, shopController.buy(new GameDtos.ShopBuyRequest("newbiePack")).getBody().get("success"));
+
+        Map<String, Object> open = depotController.useItem(new GameDtos.DepotUseRequest("newbiePack", null, null)).getBody();
+        assertNotNull(open);
+        assertEquals(true, open.get("success"));
+        Map<?, ?> latest = (Map<?, ?>) open.get("state");
+        assertEquals(0, ((Map<?, ?>) latest.get("items")).get("newbiePack"));
+        Resources awarded = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
+        assertEquals(21000, awarded.getFood());
+        assertEquals(21000, awarded.getSteel());
+        assertEquals(11000, awarded.getOil());
+        assertEquals(5500, awarded.getRare());
+        assertEquals(3500, awarded.getGold());
+        assertEquals(101, awarded.getDiamond());
+
+        assertEquals(false, depotService.useItem(player.getId(), "newbiePack", null, null).get("success"));
+        assertEquals(false, shopController.buy(new GameDtos.ShopBuyRequest("newbiePack")).getBody().get("success"));
+        assertEquals(21000, resourcesRepository.findByPlayerId(player.getId()).orElseThrow().getFood());
+        assertEquals(101, resourcesRepository.findByPlayerId(player.getId()).orElseThrow().getDiamond());
+        assertEquals(0, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "newbiePack").orElseThrow().getCount());
+        assertEquals("resource", ItemDef.ITEMS.get("newbiePack").cat());
+    }
+
+    @Test
+    @DisplayName("钻石不足不会占用新手礼包限购资格")
+    void insufficientBalanceDoesNotReserveNewbiePack() {
+        Resources res = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
+        res.setDiamond(98);
+        resourcesRepository.save(res);
+        assertEquals(false, shopController.buy(new GameDtos.ShopBuyRequest("newbiePack")).getBody().get("success"));
+        assertTrue(playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "newbiePack").isEmpty());
+        assertEquals(98, resourcesRepository.findByPlayerId(player.getId()).orElseThrow().getDiamond());
+        res.setDiamond(99);
+        resourcesRepository.save(res);
+        assertEquals(true, shopController.buy(new GameDtos.ShopBuyRequest("newbiePack")).getBody().get("success"));
+    }
+
+    @Test
+    @DisplayName("城市资源数据缺失时新手礼包不被消耗")
+    void missingResourcesPreserveNewbiePack() {
+        playerItemRepository.save(new PlayerItem(null, player.getId(), "newbiePack", 1, System.currentTimeMillis()));
+        try (var ignored = cityScope.enter(player.getId(), 1)) {
+            assertEquals(false, depotService.useItem(player.getId(), "newbiePack", null, null).get("success"));
+        }
+        assertEquals(1, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "newbiePack").orElseThrow().getCount());
+        assertEquals(1000, resourcesRepository.findByPlayerIdAndCitySlot(player.getId(), 0).orElseThrow().getFood());
+    }
+
+    @Test
+    @DisplayName("新手礼包资源发往当前城市，账号共享的限购记录不改变")
+    void newbiePackCreditsSelectedCity() {
+        Resources city = new Resources();
+        city.setPlayerId(player.getId()); city.setCitySlot(1);
+        city.setFood(10); city.setSteel(20); city.setOil(30); city.setRare(40); city.setGold(50);
+        resourcesRepository.save(city);
+        playerItemRepository.save(new PlayerItem(null, player.getId(), "newbiePack", 1, System.currentTimeMillis()));
+        try (var ignored = cityScope.enter(player.getId(), 1)) {
+            assertEquals(true, depotService.useItem(player.getId(), "newbiePack", null, null).get("success"));
+        }
+        Resources awarded = resourcesRepository.findByPlayerIdAndCitySlot(player.getId(), 1).orElseThrow();
+        assertEquals(20010, awarded.getFood()); assertEquals(20020, awarded.getSteel());
+        assertEquals(10030, awarded.getOil()); assertEquals(5040, awarded.getRare()); assertEquals(3050, awarded.getGold());
+        assertEquals(1000, resourcesRepository.findByPlayerIdAndCitySlot(player.getId(), 0).orElseThrow().getFood());
+        assertEquals(false, shopController.buy(new GameDtos.ShopBuyRequest("newbiePack")).getBody().get("success"));
+    }
+
+    @Test
+    @DisplayName("已移除礼包不能再购买，余额和库存不变")
+    void removedGiftProductsAreUnavailable() {
+        Resources res = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
+        res.setDiamond(5000);
+        resourcesRepository.save(res);
+
+        for (String itemId : new String[] { "annivPack", "monthCard", "warChest" }) {
+            Map<String, Object> response = shopController.buy(new GameDtos.ShopBuyRequest(itemId)).getBody();
+            assertNotNull(response);
+            assertEquals(false, response.get("success"));
+            assertEquals("无效的道具: " + itemId, response.get("message"));
+            assertTrue(playerItemRepository.findByPlayerIdAndItemKey(player.getId(), itemId).isEmpty());
+        }
+        assertEquals(5000, resourcesRepository.findByPlayerId(player.getId()).orElseThrow().getDiamond());
+    }
+
+    @Test
+    @DisplayName("已移除的月卡充值档位不能发放钻石")
+    void removedMonthlyRechargePackagesAreUnavailable() {
+        Resources res = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
+        res.setDiamond(200);
+        resourcesRepository.save(res);
+        for (String packageId : new String[] { "mk30", "wk98" }) {
+            Map<String, Object> response = shopController.recharge(
+                    new GameDtos.ShopRechargeRequest(packageId, 30, 300, "模拟支付")).getBody();
+            assertNotNull(response);
+            assertEquals(false, response.get("success"));
+            assertEquals("无效的充值档位", response.get("message"));
+        }
+        assertEquals(200, resourcesRepository.findByPlayerId(player.getId()).orElseThrow().getDiamond());
     }
 
     @Test
@@ -220,7 +342,6 @@ public class ShopControllerTest extends BaseServiceTest {
         officer.setLogistics(50);
         officer.setKnowledge(50);
         officer.setLoyalty(100);
-        officer.setEquipmentCount(0);
         officer = officerRepository.save(officer);
 
         // 2. 发放两把不同的武器装备到玩家背包
@@ -253,85 +374,57 @@ public class ShopControllerTest extends BaseServiceTest {
     }
 
     @Test
-    @DisplayName("购买军衔珠宝宝箱并开启：扣除200钻石、入仓、开箱后发放5种晋升珠宝")
-    void testBuyAndOpenJewelryBox() {
+    @DisplayName("已移除的珠宝宝箱不能购买或开启，失败不扣钻石或发奖")
+    void removedJewelryBoxesCannotBeBoughtOrOpened() {
         Resources res = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
-        res.setDiamond(500);
+        res.setDiamond(5000);
         resourcesRepository.save(res);
-
-        // 1. 购买军衔珠宝宝箱 (200钻)
-        ResponseEntity<Map<String, Object>> buyResp = shopController.buy(new GameDtos.ShopBuyRequest("box_gem"));
-        assertNotNull(buyResp.getBody());
-        assertTrue((Boolean) buyResp.getBody().get("success"), "购买军衔珠宝宝箱应成功");
-        assertEquals("已购买 军衔珠宝宝箱", buyResp.getBody().get("message"));
-
-        Resources updatedRes = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
-        assertEquals(300, updatedRes.getDiamond(), "扣除200钻后应剩余300钻");
-
-        PlayerItem boxItem = playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "box_gem").orElseThrow();
-        assertEquals(1, boxItem.getCount(), "仓库中应有1个军衔珠宝宝箱");
-
-        // 2. 玩家在仓库中开启军衔珠宝宝箱
-        Map<String, Object> openResp = depotService.useItem(player.getId(), "box_gem", null, null);
-        assertNotNull(openResp);
-        assertTrue((Boolean) openResp.get("success"), "开启珠宝宝箱应成功: " + openResp.get("message"));
-        assertTrue(((String) openResp.get("message")).contains("开启【军衔珠宝宝箱】"));
-
-        // 3. 验证宝箱已被扣除
-        PlayerItem afterOpenBox = playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "box_gem").orElseThrow();
-        assertEquals(0, afterOpenBox.getCount(), "开箱后宝箱数量应为0");
-
-        // 4. 验证获得对应晋升珠宝：珍珠×5、珊瑚×3、琉璃×3、琥珀×2、玛瑙×2
-        assertEquals(5, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "gem_pearl").orElseThrow().getCount());
-        assertEquals(3, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "gem_coral").orElseThrow().getCount());
-        assertEquals(3, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "gem_glaze").orElseThrow().getCount());
-        assertEquals(2, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "gem_amber").orElseThrow().getCount());
-        assertEquals(2, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "gem_agate").orElseThrow().getCount());
-    }
-
-    @Test
-    @DisplayName("购买璀璨珠宝全集箱并开启：发放全部9种晋升珠宝各5颗")
-    void testBuyAndOpenGrandJewelryBox() {
-        Resources res = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
-        res.setDiamond(3000);
-        resourcesRepository.save(res);
-
-        // 1. 购买璀璨珠宝全集箱 (2500钻)
-        ResponseEntity<Map<String, Object>> buyResp = shopController.buy(new GameDtos.ShopBuyRequest("box_gem_grand"));
-        assertNotNull(buyResp.getBody());
-        assertTrue((Boolean) buyResp.getBody().get("success"), "购买璀璨珠宝全集箱应成功");
-
-        Resources updatedRes = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
-        assertEquals(500, updatedRes.getDiamond(), "扣除2500钻后应剩余500钻");
-
-        // 2. 开启宝箱
-        Map<String, Object> openResp = depotService.useItem(player.getId(), "box_gem_grand", null, null);
-        assertNotNull(openResp);
-        assertTrue((Boolean) openResp.get("success"), "开启宝箱应成功");
-
-        // 3. 验证全部9种珠宝各获得5颗
-        String[] allGems = {
-            "gem_pearl", "gem_coral", "gem_glaze", "gem_amber", "gem_agate",
-            "gem_crystal", "gem_jadeite", "gem_jade", "gem_nightpearl"
+        String[] removed = {
+                "box_gem", "box_gem_primary", "box_gem_medium",
+                "box_gem_senior", "box_gem_supreme", "box_gem_grand"
         };
-        for (String gemKey : allGems) {
-            PlayerItem pi = playerItemRepository.findByPlayerIdAndItemKey(player.getId(), gemKey).orElseThrow();
-            assertEquals(5, pi.getCount(), "应获得珠宝 " + gemKey + " 各5颗");
+        long itemsBefore = playerItemRepository.count();
+        for (String key : removed) {
+            assertNull(ItemDef.ITEMS.get(key));
+            Map<String, Object> bought = shopController.buy(new GameDtos.ShopBuyRequest(key)).getBody();
+            assertNotNull(bought);
+            assertEquals(false, bought.get("success"));
+            assertEquals(false, depotService.useItem(player.getId(), key, null, null).get("success"));
         }
+        assertEquals(5000, resourcesRepository.findByPlayerId(player.getId()).orElseThrow().getDiamond());
+        assertEquals(itemsBefore, playerItemRepository.count());
     }
 
     @Test
-    @DisplayName("6种军衔珠宝宝箱均在ItemDef与价格表中正确注册")
-    void testAllJewelryBoxesRegistered() {
-        String[] boxKeys = {
-            "box_gem", "box_gem_primary", "box_gem_medium",
-            "box_gem_senior", "box_gem_supreme", "box_gem_grand"
-        };
-        for (String key : boxKeys) {
-            ItemDef def = ItemDef.ITEMS.get(key);
-            assertNotNull(def, "ItemDef 应注册 " + key);
-            assertEquals("jewelry", def.cat(), "宝箱分类应为 jewelry");
-            assertTrue(def.name().contains("宝箱") || def.name().contains("箱"), "名称应包含宝箱: " + def.name());
+    @DisplayName("八个阶段礼包保留有效赠品，开启后不能重复发奖")
+    void stageGiftsGrantOnlyActiveItemsAndCannotBeReopened() {
+        var expectedGifts = java.util.List.of(
+                Map.of("speedUp10m", 5, "box_recruit_military", 1),
+                Map.of("speedUp1h", 3, "skillBook", 2),
+                Map.of("speedUp1h", 5, "recruitOrd", 2, "box_officer_military", 1),
+                Map.of("speedUp5h", 3, "shield", 1),
+                Map.of("speedUp12h", 2, "recruitOrd", 5, "expBookAdv", 3),
+                Map.of("speedUp24h", 2, "expBookAdv", 5),
+                Map.of("speedUp48h", 2, "box_marshal_military", 1),
+                Map.of("speedUp72h", 3, "box_marshal_defense", 1, "box_marshal_logistics", 1, "expBookMax", 2)
+        );
+        Map<String, Integer> expectedInventory = new java.util.LinkedHashMap<>();
+        for (int stage = 1; stage <= expectedGifts.size(); stage++) {
+            String key = "stage_gift_" + stage;
+            playerItemRepository.save(new PlayerItem(null, player.getId(), key, 1, System.currentTimeMillis()));
+            assertEquals(true, depotService.useItem(player.getId(), key, null, null).get("success"));
+            expectedGifts.get(stage - 1).forEach((item, count) -> expectedInventory.merge(item, count, Integer::sum));
+            assertEquals(false, depotService.useItem(player.getId(), key, null, null).get("success"));
+
+            Map<String, Integer> inventory = new java.util.LinkedHashMap<>();
+            for (PlayerItem item : playerItemRepository.findByPlayerId(player.getId())) {
+                assertNotNull(ItemDef.ITEMS.get(item.getItemKey()), "礼包只能发放有效道具");
+                if (item.getCount() > 0) inventory.put(item.getItemKey(), item.getCount());
+            }
+            assertEquals(expectedInventory, inventory, key);
+        }
+        for (var rank : com.wargame.model.constants.MilitaryRankDef.RANKS) {
+            if (rank.tier() > 1) assertEquals(ItemDef.CAT_UTIL, ItemDef.ITEMS.get(rank.certificateKey()).cat());
         }
     }
 

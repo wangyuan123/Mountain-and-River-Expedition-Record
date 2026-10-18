@@ -34,12 +34,12 @@ public class WorldContentService {
     private final PlayerRepository players;
     private final WorldTerrainService terrain;
 
-    /** Apply world content versions without changing existing ownership or defeated state. */
+    /** 按持久化版本补齐战场内容；开放新战场不重置已有目标的归属、坐标或击败状态。 */
     @Transactional
     public void ensure(Long worldId) {
         var world = worlds.lockById(worldId).orElseThrow();
         int version = world.getWorldContentVersion() == null ? 0 : world.getWorldContentVersion();
-        if (version >= 3) {
+        if (version >= 4) {
             ensureSeaFleets(worldId);
             return;
         }
@@ -47,44 +47,58 @@ public class WorldContentService {
         Set<String> used = terrain.occupiedCoordinates(worldId);
         reservePlayerCities(used);
         if (version < 1) {
-        seedLandBlocks(worldId, mask, used);
-        players.findAll().forEach(player -> {
-            if (player.isGameInitialized() && player.getCityPosX() != null && player.getCityPosY() != null)
-                seedAround(worldId, mask, used, player.getCityPosX(), player.getCityPosY());
-        });
-        seedSeaBlocks(worldId, mask, used, 0);
+            seedLandBlocks(worldId, mask, used, 0, 0);
+            players.findAll().forEach(player -> {
+                if (player.isGameInitialized() && player.getCityPosX() != null && player.getCityPosY() != null)
+                    seedAround(worldId, mask, used, player.getCityPosX(), player.getCityPosY());
+            });
+            seedSeaBlocks(worldId, mask, used, 0, 0, 0);
         }
         // 旧版第二轮海域目标只补一次；版本 2 升级时不能重复布点。
         if (version < 2) {
-            seedSeaBlocks(worldId, mask, used, WorldConfig.MAX_NPC_LEVEL);
+            seedSeaBlocks(worldId, mask, used, WorldConfig.MAX_NPC_LEVEL, 0, 0);
         }
         // 旧世界只升级现存海洋目标；击败状态与空兵力不回填，避免重启复活。
-        int seaIndex = 0;
-        for (Bandit npc : bandits.findByWorldId(worldId).stream()
-                .filter(b -> WorldTerrainService.sea(mask, b.getX(), b.getY()))
-                .sorted(Comparator.comparing(Bandit::getId)).toList()) {
-            int level = 1 + seaIndex++ % WorldConfig.MAX_NPC_LEVEL;
-            npc.setLevel(level);
-            npc.setName("日寇海域守军 Lv." + level);
-            if (!Boolean.TRUE.equals(npc.getDefeated()))
-                npc.setArmy(JsonUtil.toJson(WorldConfig.seaNpcGarrison(level)));
-            bandits.save(npc);
+        if (version < 3) {
+            int seaIndex = 0;
+            for (Bandit npc : bandits.findByWorldId(worldId).stream()
+                    .filter(b -> WorldTerrainService.sea(mask, b.getX(), b.getY()))
+                    .sorted(Comparator.comparing(Bandit::getId)).toList()) {
+                int level = 1 + seaIndex++ % WorldConfig.MAX_NPC_LEVEL;
+                npc.setLevel(level);
+                npc.setName("日寇海域守军 Lv." + level);
+                if (!Boolean.TRUE.equals(npc.getDefeated()))
+                    npc.setArmy(JsonUtil.toJson(WorldConfig.seaNpcGarrison(level, npc.getX(), npc.getY())));
+                bandits.save(npc);
+            }
         }
-        world.setWorldContentVersion(3);
+        // 版本 4 仅补原先关闭的三个象限，各战场按原分块预算独立布点。
+        for (int minY = 0; minY < WorldConfig.WORLD_SIZE; minY += WorldConfig.SIZE)
+            for (int minX = 0; minX < WorldConfig.WORLD_SIZE; minX += WorldConfig.SIZE) {
+                if (minX == 0 && minY == 0) continue;
+                seedLandBlocks(worldId, mask, used, minX, minY);
+                seedSeaBlocks(worldId, mask, used, 0, minX, minY);
+                seedSeaBlocks(worldId, mask, used, WorldConfig.MAX_NPC_LEVEL, minX, minY);
+            }
+        world.setWorldContentVersion(4);
         worlds.save(world);
     }
 
     /** 确保海洋区域始终具有日寇舰队守军，若海域目标全部缺失则自动补全两轮布点。 */
     @Transactional
     public void ensureSeaFleets(Long worldId) {
+        worlds.lockById(worldId).orElseThrow();
         String mask = terrain.ensure();
         long seaBanditsCount = bandits.findByWorldId(worldId).stream()
                 .filter(b -> WorldTerrainService.sea(mask, b.getX(), b.getY())).count();
         if (seaBanditsCount > 0) return;
         Set<String> used = terrain.occupiedCoordinates(worldId);
         reservePlayerCities(used);
-        seedSeaBlocks(worldId, mask, used, 0);
-        seedSeaBlocks(worldId, mask, used, WorldConfig.MAX_NPC_LEVEL);
+        for (int minY = 0; minY < WorldConfig.WORLD_SIZE; minY += WorldConfig.SIZE)
+            for (int minX = 0; minX < WorldConfig.WORLD_SIZE; minX += WorldConfig.SIZE) {
+                seedSeaBlocks(worldId, mask, used, 0, minX, minY);
+                seedSeaBlocks(worldId, mask, used, WorldConfig.MAX_NPC_LEVEL, minX, minY);
+            }
         int seaIndex = 0;
         for (Bandit npc : bandits.findByWorldId(worldId).stream()
                 .filter(b -> WorldTerrainService.sea(mask, b.getX(), b.getY()))
@@ -93,7 +107,7 @@ public class WorldContentService {
             npc.setLevel(level);
             npc.setName("日寇海域守军 Lv." + level);
             if (!Boolean.TRUE.equals(npc.getDefeated()))
-                npc.setArmy(JsonUtil.toJson(WorldConfig.seaNpcGarrison(level)));
+                npc.setArmy(JsonUtil.toJson(WorldConfig.seaNpcGarrison(level, npc.getX(), npc.getY())));
             npc.setCommanderName("山本五十六");
             bandits.save(npc);
         }
@@ -118,20 +132,22 @@ public class WorldContentService {
     }
 
     /** 沿用每块最多一处 NPC、两处资源的总供给预算，实际位置按既有密度均衡分配。 */
-    private void seedLandBlocks(Long worldId, String mask, Set<String> used) {
+    private void seedLandBlocks(Long worldId, String mask, Set<String> used, int minX, int minY) {
         List<int[]> budgets = new ArrayList<>();
-        for (int gy = 0; gy < WorldConfig.SIZE; gy += BlockSpawnPlanner.BLOCK_SIZE)
-            for (int gx = 0; gx < WorldConfig.SIZE; gx += BlockSpawnPlanner.BLOCK_SIZE) {
+        for (int gy = minY; gy < minY + WorldConfig.SIZE; gy += BlockSpawnPlanner.BLOCK_SIZE)
+            for (int gx = minX; gx < minX + WorldConfig.SIZE; gx += BlockSpawnPlanner.BLOCK_SIZE) {
                 int slots = Math.min(3, cells(gx, gy, BlockSpawnPlanner.BLOCK_SIZE, mask, used, false, gy * 397L + gx).size());
                 if (slots > 0) budgets.add(new int[]{gx, gy, slots});
             }
         var worldNpcs = npcs.findByWorldId(worldId);
         var worldBandits = bandits.findByWorldId(worldId);
         Set<String> npcUsed = npcSpacing(used, worldNpcs, worldBandits);
-        var npcPlanner = new BlockSpawnPlanner(mask, WorldConfig.SIZE, false, npcUsed,
-                BlockSpawnPlanner.npcPositions(worldNpcs, worldBandits));
-        var wildPlanner = new BlockSpawnPlanner(mask, WorldConfig.SIZE, false, used,
-                BlockSpawnPlanner.wildPositions(wilds.findByWorldId(worldId)));
+        // 候选格限定本次开放的战场，索引仍按全局宽度编码，避免补点落回西北。
+        var candidates = cells(minX, minY, WorldConfig.SIZE, mask, used, false, 0);
+        var npcPlanner = new BlockSpawnPlanner(mask, WorldConfig.WORLD_SIZE, false, npcUsed,
+                BlockSpawnPlanner.npcPositions(worldNpcs, worldBandits), candidates);
+        var wildPlanner = new BlockSpawnPlanner(mask, WorldConfig.WORLD_SIZE, false, used,
+                BlockSpawnPlanner.wildPositions(wilds.findByWorldId(worldId)), candidates);
         for (int[] budget : budgets) {
             int[] npc = npcPlanner.pick(npcUsed, null, null);
             if (npc != null) {
@@ -151,16 +167,17 @@ public class WorldContentService {
     }
 
     /** 保留每轮按可用海域分块计算的舰队预算，并按海域面积与既有舰队密度布点。 */
-    private void seedSeaBlocks(Long worldId, String mask, Set<String> used, int levelOffset) {
+    private void seedSeaBlocks(Long worldId, String mask, Set<String> used, int levelOffset, int minX, int minY) {
         int budget = 0;
-        for (int gy = 0; gy < WorldConfig.SIZE; gy += BlockSpawnPlanner.BLOCK_SIZE)
-            for (int gx = 0; gx < WorldConfig.SIZE; gx += BlockSpawnPlanner.BLOCK_SIZE)
+        for (int gy = minY; gy < minY + WorldConfig.SIZE; gy += BlockSpawnPlanner.BLOCK_SIZE)
+            for (int gx = minX; gx < minX + WorldConfig.SIZE; gx += BlockSpawnPlanner.BLOCK_SIZE)
                 if (!cells(gx, gy, BlockSpawnPlanner.BLOCK_SIZE, mask, used, true, gy * 811L + gx).isEmpty()) budget++;
         var worldNpcs = npcs.findByWorldId(worldId);
         var worldBandits = bandits.findByWorldId(worldId);
         Set<String> npcUsed = npcSpacing(used, worldNpcs, worldBandits);
-        var planner = new BlockSpawnPlanner(mask, WorldConfig.SIZE, true, npcUsed,
-                BlockSpawnPlanner.npcPositions(worldNpcs, worldBandits));
+        var planner = new BlockSpawnPlanner(mask, WorldConfig.WORLD_SIZE, true, npcUsed,
+                BlockSpawnPlanner.npcPositions(worldNpcs, worldBandits),
+                cells(minX, minY, WorldConfig.SIZE, mask, used, true, 0));
         for (int number = 1; number <= budget; number++) {
             int[] destination = planner.pick(npcUsed, null, null);
             if (destination == null) break;
@@ -191,11 +208,11 @@ public class WorldContentService {
                 .filter(b -> !WorldTerrainService.sea(mask, b.getX(), b.getY()))
                 .filter(b -> Math.abs(b.getX() - x) + Math.abs(b.getY() - y) <= 7).count();
         List<Integer> nearby = cells(x - 7, y - 7, 15, mask, used, false, x * 1171L + y);
-        nearby.removeIf(cell -> Math.abs(cell % WorldConfig.SIZE - x) + Math.abs(cell / WorldConfig.SIZE - y) > 7);
+        nearby.removeIf(cell -> Math.abs(cell % WorldConfig.WORLD_SIZE - x) + Math.abs(cell / WorldConfig.WORLD_SIZE - y) > 7);
         List<Integer> inner = new ArrayList<>(nearby);
-        inner.removeIf(cell -> Math.abs(cell % WorldConfig.SIZE - x) + Math.abs(cell / WorldConfig.SIZE - y) > 3);
+        inner.removeIf(cell -> Math.abs(cell % WorldConfig.WORLD_SIZE - x) + Math.abs(cell / WorldConfig.WORLD_SIZE - y) > 3);
         var resourcePositions = BlockSpawnPlanner.wildPositions(wilds.findByWorldId(worldId));
-        var innerPlanner = new BlockSpawnPlanner(mask, WorldConfig.SIZE, false, used, resourcePositions, inner);
+        var innerPlanner = new BlockSpawnPlanner(mask, WorldConfig.WORLD_SIZE, false, used, resourcePositions, inner);
         int added = 0;
         for (int n = innerWilds; n < 4; n++) {
             int[] destination = innerPlanner.pick(used, null, null);
@@ -206,7 +223,7 @@ public class WorldContentService {
             added++;
         }
         // 外圈密度包含刚补足的内圈资源，避免两段补给使用过期的数量快照。
-        var nearbyPlanner = new BlockSpawnPlanner(mask, WorldConfig.SIZE, false, used, resourcePositions, nearby);
+        var nearbyPlanner = new BlockSpawnPlanner(mask, WorldConfig.WORLD_SIZE, false, used, resourcePositions, nearby);
         for (int n = existingWilds + added; n < 8; n++) {
             int[] destination = nearbyPlanner.pick(used, null, null);
             if (destination == null) break;
@@ -216,7 +233,7 @@ public class WorldContentService {
         var worldNpcs = npcs.findByWorldId(worldId);
         var worldBandits = bandits.findByWorldId(worldId);
         Set<String> npcUsed = npcSpacing(used, worldNpcs, worldBandits);
-        var npcPlanner = new BlockSpawnPlanner(mask, WorldConfig.SIZE, false, npcUsed,
+        var npcPlanner = new BlockSpawnPlanner(mask, WorldConfig.WORLD_SIZE, false, npcUsed,
                 BlockSpawnPlanner.npcPositions(worldNpcs, worldBandits), nearby);
         for (int n = existingNpcs; n < 2; n++) {
             int[] destination = npcPlanner.pick(npcUsed, null, null);
@@ -230,10 +247,10 @@ public class WorldContentService {
 
     private static List<Integer> cells(int x0, int y0, int span, String mask, Set<String> used, boolean water, long seed) {
         List<Integer> result = new ArrayList<>();
-        for (int y = Math.max(0, y0); y < Math.min(WorldConfig.SIZE, y0 + span); y++)
-            for (int x = Math.max(0, x0); x < Math.min(WorldConfig.SIZE, x0 + span); x++)
+        for (int y = Math.max(0, y0); y < Math.min(WorldConfig.WORLD_SIZE, y0 + span); y++)
+            for (int x = Math.max(0, x0); x < Math.min(WorldConfig.WORLD_SIZE, x0 + span); x++)
                 if (WorldTerrainService.sea(mask, x, y) == water && !used.contains(x + "," + y))
-                    result.add(y * WorldConfig.SIZE + x);
+                    result.add(y * WorldConfig.WORLD_SIZE + x);
         Collections.shuffle(result, new Random(seed));
         return result;
     }
@@ -252,7 +269,7 @@ public class WorldContentService {
         Bandit npc = new Bandit();
         npc.setWorldId(worldId); npc.setX(x); npc.setY(y); npc.setLevel(level);
         npc.setName(WorldConfig.landBanditName(level));
-        npc.setArmy(JsonUtil.toJson(WorldConfig.BANDIT_LEVELS.get(level - 1).army()));
+        npc.setArmy(JsonUtil.toJson(WorldConfig.landNpcGarrison(level, x, y)));
         npc.setCommanderName(JapaneseOfficers.getCommanderForLevel(level)); npc.setDefeated(false);
         bandits.save(npc);
     }
@@ -263,7 +280,7 @@ public class WorldContentService {
         Bandit npc = new Bandit();
         npc.setWorldId(worldId); npc.setX(x); npc.setY(y); npc.setLevel(level);
         npc.setName("日寇海域守军 Lv." + level);
-        npc.setArmy(JsonUtil.toJson(WorldConfig.seaNpcGarrison(level)));
+        npc.setArmy(JsonUtil.toJson(WorldConfig.seaNpcGarrison(level, x, y)));
         npc.setCommanderName("山本五十六");
         npc.setDefeated(false);
         bandits.save(npc);

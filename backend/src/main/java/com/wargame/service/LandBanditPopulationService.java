@@ -41,8 +41,8 @@ public class LandBanditPopulationService {
         retiredCities.removeInactive(worldId);
         String mask = terrain.current();
         if (mask == null || mask.isEmpty()) return;
-        // 自动布点限于开放战区，不能把展示世界尺寸当作可用陆地边界。
-        int size = Math.min(WorldConfig.SIZE, world.getSize() == null ? WorldConfig.SIZE : world.getSize());
+        // 四大战场均可补点；沿用总配额，优先补到同类目标密度较低的分块。
+        int size = Math.min(WorldConfig.WORLD_SIZE, world.getSize() == null ? WorldConfig.WORLD_SIZE : world.getSize());
         List<Bandit> land = bandits.findByWorldId(worldId).stream()
                 .filter(b -> !WorldTerrainService.sea(mask, b.getX(), b.getY()))
                 .filter(b -> b.getName() == null || !b.getName().startsWith("日寇海域守军"))
@@ -82,7 +82,7 @@ public class LandBanditPopulationService {
                 Bandit npc = new Bandit();
                 npc.setWorldId(worldId); npc.setX(destination[0]); npc.setY(destination[1]); npc.setLevel(level);
                 npc.setName(WorldConfig.landBanditName(level));
-                npc.setArmy(JsonUtil.toJson(WorldConfig.BANDIT_LEVELS.get(level - 1).army()));
+                npc.setArmy(JsonUtil.toJson(WorldConfig.landNpcGarrison(level, npc.getX(), npc.getY())));
                 npc.setCommanderName(JapaneseOfficers.getCommanderForLevel(level));
                 npc.setDefeated(false);
                 bandits.save(npc);

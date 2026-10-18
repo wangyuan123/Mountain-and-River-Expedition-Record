@@ -44,7 +44,7 @@ class BattleServiceTest {
         return battleService.resolveWorldRound(
                 attackerArmy, defenderArmy, attackerPositions, defenderPositions, initialDistance,
                 Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(),
-                0, 0, 0, 0, 0, 0, 1, attackerOrders, Collections.emptyMap()
+                0, 0, 0, 0, 1, attackerOrders, Collections.emptyMap()
         );
     }
 
@@ -198,7 +198,7 @@ class BattleServiceTest {
         BattleResult resultNoForts = battleService.startWorldDispatch(
                 attackerArmy, defenderArmy, noForts,
                 Map.of(), Map.of(), Map.of(), Map.of(),
-                0, 0, 0, 0,
+                0, 0,
                 "conquer", Map.of(), 0);
 
         // 使用能覆盖步兵射程的榴弹炮验证城防火力，避免依赖败战时额外扣除幸存者。
@@ -207,7 +207,7 @@ class BattleServiceTest {
         BattleResult resultWithForts = battleService.startWorldDispatch(
                 attackerArmy, defenderArmy, withForts,
                 Map.of(), Map.of(), Map.of(), Map.of(),
-                0, 0, 0, 0,
+                0, 0,
                 "conquer", Map.of(), 0);
 
         // With forts, attacker should have fewer survivors (forts fight back)
@@ -294,8 +294,9 @@ class BattleServiceTest {
     @DisplayName("野地战斗动态距离与两阶段机动推进验证")
     void testWildBattleDistance() {
         BattleResult result = battleService.resolveWild(Map.of("infantry", 10), Map.of("infantry", 10));
-        assertTrue(result.getReport().contains("战场初始距离: 1460"), "双方步兵(spd=4, range=160)初始距离应保证前三回合安全、第四回合接敌");
-        assertTrue(result.getReport().contains("[前进] 推进200 -> 坐标200"), "步兵基础移速4时每回合推进200");
+        assertTrue(result.getReport().contains("战场初始距离: 660"), "野地使用最大有效射程160加缓冲500");
+        assertTrue(result.getReport().contains("[前进] 推进100 -> 坐标100"), "步兵基础移速2时每回合推进100");
+        assertEquals(3, battleService.firstCombatRoundFromLog(result.getReport()));
     }
 
     @Test
@@ -384,7 +385,6 @@ class BattleServiceTest {
                 Map.of(), Map.of(),
                 100, 0, // 攻方 mil=100, def=0
                 0, 100, // 守方 mil=0, def=100
-                0, 0,
                 "conquer",
                 Map.of(), 0,
                 true);
@@ -404,7 +404,6 @@ class BattleServiceTest {
                 Map.of(),
                 Map.of(), Map.of(),
                 Map.of(), Map.of("counter", 5),
-                0, 0,
                 0, 0,
                 0, 0,
                 "conquer",

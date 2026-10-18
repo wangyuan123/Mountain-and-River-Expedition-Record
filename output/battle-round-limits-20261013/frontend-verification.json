@@ -1,0 +1,7 @@
+{
+  "command": "node --test frontend/tests/tactical-facing.test.cjs frontend/tests/constants.test.cjs frontend/tests/pvp.test.cjs frontend/tests/reports.test.cjs",
+  "tests": 75,
+  "passed": 75,
+  "failed": 0,
+  "exitCode": 0
+}

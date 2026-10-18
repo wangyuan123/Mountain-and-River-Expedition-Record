@@ -43,6 +43,11 @@ class IncomingIntelligenceTest extends BaseServiceTest {
         city.setResources("{}");
         playerCityRepository.save(city);
         createArmyUnit(attacker.getId(), "infantry", 100);
+        attacker.setWarAgainstId(defender.getId());
+        attacker.setWarAt(System.currentTimeMillis() - 1);
+        attacker.setWarEndAt(System.currentTimeMillis() + 3_600_000);
+        playerRepository.save(attacker);
+        resourcesRepository.findByPlayerIdAndCitySlot(attacker.getId(), 0).ifPresent(r -> { r.setOil(100_000); resourcesRepository.save(r); });
     }
 
     private March dispatch() {
@@ -97,9 +102,10 @@ class IncomingIntelligenceTest extends BaseServiceTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"plunder", "scout"})
+    @ValueSource(strings = {"conquer", "plunder", "feint", "harass", "guerrilla", "scout"})
     @SuppressWarnings("unchecked")
     void realDispatchAppearsOutsideMapViewAndCancellationRemovesIt(String action) {
+        createTechnology(defender.getId(), "recon_radar", 4);
         String unit = "scout".equals(action) ? "scout" : "infantry";
         if ("scout".equals(action)) createArmyUnit(attacker.getId(), unit, 100);
         March march = marchService.createDispatch(attacker.getId(), new DispatchRequest(
@@ -138,6 +144,10 @@ class IncomingIntelligenceTest extends BaseServiceTest {
     void resolvedAttackDoesNotRemainInIncomingList() {
         March march = dispatch();
         marchService.processMarches(attacker.getId(), march.getArriveAt() + 1);
+        assertEquals(1, views.getIncoming(defender).size(), "到达后仍需完成玩家战术战斗");
+        var result = marchService.executeTacticalRound(attacker.getId(), march.getId(),
+                new com.wargame.model.dto.GameDtos.BattleCommandRequest(Map.of(), 0));
+        assertEquals(true, result.get("finished"));
         assertTrue(views.getIncoming(defender).isEmpty());
         verify(pushes).pushIncomingAttack(eq(defender.getId()), argThat(data -> "resolved".equals(data.get("event"))));
     }
@@ -167,4 +177,20 @@ class IncomingIntelligenceTest extends BaseServiceTest {
         verify(pushes).pushTickUpdate(eq(defender.getId()), argThat(data ->
                 data.get("incoming") instanceof List<?> list && list.isEmpty()));
     }
+    @Test
+    void zeroRadarReadAndPushNeverRevealSourceOrArmyButKeepBattleEntry() {
+        March march = dispatch();
+        var view = views.getIncoming(defender).get(0);
+        assertEquals(march.getId(), view.get("marchId"));
+        assertEquals(city.getId().toString(), view.get("targetCityId"));
+        for (String key : List.of("fromName", "army", "fromX", "action", "totalTroops", "combatTech", "unitEquipment")) assertFalse(view.containsKey(key), key);
+        verify(pushes).pushIncomingAttack(eq(defender.getId()), argThat(data ->
+                "started".equals(data.get("event")) && !data.containsKey("fromName") && !data.containsKey("army")));
+        createTechnology(defender.getId(), "recon_radar", 5);
+        var full = views.getIncoming(defender).get(0);
+        assertEquals(Map.of("infantry", 10), full.get("army"));
+        assertNotNull(full.get("combatTech"));
+        assertNotNull(full.get("intelligenceSource"));
+    }
+
 }

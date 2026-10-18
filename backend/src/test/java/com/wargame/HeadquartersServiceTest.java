@@ -155,23 +155,27 @@ class HeadquartersServiceTest extends BaseServiceTest {
     }
 
     @Test void scoutKnowledgeChangesInitiativeWithoutChangingIntelligenceTierOrUsingSkills() {
-        createBuilding(playerId, "headquarters", 1);
+        headquarters(playerId, 0);
         Officer chief = createOfficer(playerId, "commander_in_chief", 0, 0, 0, 219);
+        chief.setCitySlot(0);
         chief.setSkills("[{\"id\":\"blitz\",\"lv\":5}]"); officerRepository.saveAndFlush(chief);
         Player defender = createTestPlayer("chief-scout-speed", 30);
         PlayerCity target = branchCity(defender.getId(), 25);
+        headquarters(defender.getId(), 1);
+        Officer defenderChief = createOfficer(defender.getId(), "commander_in_chief", 0, 0, 0, 100);
+        defenderChief.setCitySlot(1); officerRepository.saveAndFlush(defenderChief);
         ArmyUnit garrison = createArmyUnit(defender.getId(), "scout", 1000);
         garrison.setCitySlot(1); armyUnitRepository.saveAndFlush(garrison);
-        createTechnology(defender.getId(), "recon_level", 3);
+        createTechnology(defender.getId(), "attack_tech", 3);
         Map<String, Object> boosted = scoutReport(target, garrison);
         assertEquals("attacker", boosted.get("firstStrike"));
-        assertEquals(13, boosted.get("attackerInitiative"));
+        assertEquals(11, boosted.get("attackerInitiative")); // round(9 × 1.219) = 11，移除进攻方+2先手偏置，司令官技能不参与。
         assertEquals(0, boosted.get("reconLevel"));
         assertFalse(boosted.containsKey("techs"));
         chief.setKnowledge(0); officerRepository.saveAndFlush(chief);
         Map<String, Object> plain = scoutReport(target, garrison);
         assertEquals("defender", plain.get("firstStrike"));
-        assertEquals(11, plain.get("attackerInitiative"));
+        assertEquals(9, plain.get("attackerInitiative"));
     }
 
     @Test void playerCityBattleUsesSourceAndTargetCitySnapshotsInBothViewerPerspectives() {

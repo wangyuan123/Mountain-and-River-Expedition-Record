@@ -15,6 +15,7 @@ public class PrivateChatConversation {
     @Column(name = "peer_id", nullable = false) private Long peerId;
     @Column(nullable = false) private Long openedAt;
     @Column(nullable = false) private Long deletedThrough = 0L;
+    @Column(nullable = false) private Long clearedThrough = 0L;
     public PrivateChatConversation(Long id, Long ownerId, Long peerId, Long openedAt) {
         this.id = id; this.ownerId = ownerId; this.peerId = peerId; this.openedAt = openedAt;
     }

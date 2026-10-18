@@ -23,7 +23,7 @@ function setup(buildings = {}, constructions = []) {
         civilianPopulation: () => 1000, populationCapacity: () => 1200,
         popFree: () => 1000, populationGrowthPerHour: () => 36,
         armyCap: () => 1200, foodPerHour: () => 0, getOfficerByRole: () => null,
-        buildMul: () => 1, trainMul: () => 1,
+        buildMul: () => 1, trainMul: () => 1, firepowerMul: () => 1,
         buildingLevels: id => Array.isArray(buildings[id]) ? buildings[id] : [buildings[id] || 0]
       }
     }

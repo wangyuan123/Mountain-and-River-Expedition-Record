@@ -3910,6 +3910,209 @@ body.theme-classic .unit-card-details,
 .army-summary-expanded .army-summary-empty { grid-row: auto; grid-column: 1 / -1; }
 .army-summary-expanded .army-summary-item { grid-row: auto; grid-column: auto; }
 
+/* 首页 城防总览 块 */
+.fort-summary-zone-head { margin-top: 14px; }
+.fort-summary-expand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-left: auto;
+  padding: 3px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--accent, #004499);
+  cursor: pointer;
+}
+.fort-summary-expand:hover,
+.fort-summary-expand:focus-visible {
+  background: var(--accent-soft, #eef4fb);
+  outline: 2px solid var(--accent, #004499);
+}
+.fort-summary-expand + .fort-summary-go { margin-left: 0; }
+.fort-summary {
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: minmax(56px, auto);
+  grid-auto-columns: clamp(170px, 46vw, 220px);
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: auto;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #a8afa4 #eeebe3;
+}
+.fort-summary::-webkit-scrollbar {
+  width: 6px;
+  height: 4px;
+}
+.fort-summary::-webkit-scrollbar-thumb { background: #a8afa4; border-radius: 2px; }
+.fort-summary-item {
+  display: grid;
+  grid-column: var(--fort-summary-column, auto);
+  grid-row: var(--fort-summary-row, 1);
+  grid-template-columns: 48px minmax(0, 1fr) max-content;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 2px;
+  min-width: 0;
+  padding: 4px 10px 4px 0;
+  border-bottom: none;
+  border-right: 1px dashed var(--line, #e2e8f0);
+  color: var(--ink, #1f2937);
+  scroll-snap-align: start;
+}
+.fort-summary-item:last-child {
+  border-right: none;
+  padding-right: 0;
+}
+.fort-summary-item.is-empty { opacity: .62; }
+.fort-summary-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 52px;
+  grid-row: 1 / 3;
+  font-size: 28px;
+  line-height: 1;
+}
+.fort-summary-icon-img {
+  width: 100%;
+  height: 100%;
+  max-width: 48px;
+  max-height: 48px;
+  object-fit: contain;
+  vertical-align: middle;
+  display: block;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.16));
+}
+.fort-card-icon {
+  width: 28px;
+  height: 28px;
+  vertical-align: middle;
+  margin-right: 6px;
+  display: inline-flex;
+}
+.fort-card-icon .unit-icon-img {
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+}
+.fort-summary-name {
+  min-width: 0;
+  align-self: end;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.fort-summary-cnt {
+  align-self: end;
+  color: var(--accent, #004499);
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.fort-summary-role {
+  grid-column: 2 / 4;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted, #64748b);
+  font-size: 11px;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fort-summary-empty {
+  grid-row: 1 / -1;
+  padding: 4px 0;
+  color: var(--muted, #64748b);
+  font-size: 12px;
+  text-align: center;
+}
+.fort-summary-empty a {
+  color: var(--accent, #004499);
+  cursor: pointer;
+  text-decoration: underline;
+}
+.fort-summary-foot {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  align-items: center;
+  gap: 6px 12px;
+  margin-top: 6px;
+  padding: 0 4px;
+  color: var(--muted, #64748b);
+  cursor: pointer;
+  font-size: 14px;
+}
+.fort-summary-wall,
+.fort-summary-capacity { min-width: 0; overflow-wrap: anywhere; }
+.fort-summary-foot b { color: var(--ink, #1f2937); font-variant-numeric: tabular-nums; }
+.fort-go {
+  justify-self: end;
+  color: var(--accent, #004499);
+  font-weight: 600;
+  white-space: nowrap;
+}
+@media (max-width: 480px) {
+  .fort-summary-foot { grid-template-columns: minmax(0, 1fr) max-content; }
+  .fort-summary-wall,
+  .fort-summary-capacity { grid-column: 1; }
+  .fort-go { grid-column: 2; grid-row: 1 / 3; }
+}
+.modal-mask.fort-summary-mask { padding: 0; }
+.modal-card.fort-summary-dialog {
+  max-width: none;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
+  border-radius: 0;
+  background: var(--surface, #fff);
+}
+.fort-summary-dialog-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--accent, #004499);
+}
+.fort-summary-close {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 20px;
+  cursor: pointer;
+}
+.fort-summary-close:focus-visible { outline: 2px solid currentColor; }
+.fort-summary-dialog-body { min-height: 0; }
+.fort-summary-expanded {
+  grid-auto-flow: row;
+  grid-template-rows: none;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr));
+  grid-auto-columns: auto;
+  overflow: visible;
+  scroll-snap-type: none;
+}
+.fort-summary-expanded .fort-summary-empty { grid-row: auto; grid-column: 1 / -1; }
+.fort-summary-expanded .fort-summary-item {
+  grid-row: auto;
+  grid-column: auto;
+  border-right: none;
+  border-bottom: 1px dashed var(--line, #e2e8f0);
+  padding: 4px 0;
+}
+
 /* 首页兵种详情弹窗 */
 .unit-detail-card { max-width: 540px; }
 .unit-detail-title {
@@ -5082,7 +5285,6 @@ body.theme-classic .unit-card-details,
   gap: 10px;
   margin-bottom: 14px;
 }
-.rech-grid.monthly { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
 
 .rech-card {
   position: relative;
@@ -5280,6 +5482,14 @@ body.theme-classic .unit-card-details,
   border-top: 1px solid #e8dcc0;
   background: rgba(255, 255, 255, .35);
 }
+
+.confirm-dialog-mask { z-index:10020; }
+.modal-card.confirm-dialog { max-width:380px; background:var(--surface); color:var(--ink); border-color:var(--line); }
+.confirm-dialog .modal-title, .confirm-dialog .modal-body { color:var(--ink); border-color:var(--line); }
+.confirm-dialog .modal-title { padding:16px 18px 12px; }
+.confirm-dialog-message { font-size:14px; line-height:1.6; overflow-wrap:anywhere; white-space:pre-line; }
+.confirm-dialog-message .confirm-dialog-submessage { margin-top:10px; font-size:13px; color:var(--muted); }
+.confirm-dialog .modal-foot { background:var(--surface); border-color:var(--line); gap:12px; flex-wrap:wrap; }
 
 .modal-card.march-speedup-dialog { max-width: 420px; background: var(--surface); color: var(--ink); border-color: var(--line); }
 .march-speedup-dialog .modal-title, .march-speedup-dialog .modal-body { color: var(--ink); border-color: var(--line); }
@@ -5574,10 +5784,10 @@ body.theme-classic .unit-card-details,
 
 /* 自定义弹窗内容区的统一内边距 */
 .confirm-dialog .confirm-dialog-actions {
-  padding: 0 18px 14px;
+  padding: 10px 18px 14px;
 }
 .confirm-dialog .confirm-dialog-message {
-  padding: 0 18px !important;
+  padding: 14px 18px;
 }
 .stationed-gather-modal .dispatch-gather-modes {
   margin-left: 14px;
@@ -7122,10 +7332,17 @@ span.tcard-mini-icon .map-icon {
 .wounded-card-head { display:flex; justify-content:space-between; gap:12px; color:var(--accent); }
 .wounded-meta { margin:7px 0 12px; font-size:12px; color:var(--muted); }
 .wounded-urgent { color:var(--danger); font-weight:600; }
+.wounded-controls { display:grid; grid-template-columns:minmax(0,1fr) max-content; align-items:start; gap:16px; }
+.wounded-quantity { min-width:0; }
 .wounded-controls label { display:flex; align-items:center; gap:10px; font-size:13px; margin-bottom:10px; }
 .wounded-controls .qty { width:100px; }
-.wounded-controls .btn-row { flex-wrap:wrap; gap:8px; }
-.wounded-controls .btn { flex:1; min-width:120px; }
+.wounded-payments { display:grid; gap:8px; }
+.wounded-payment-row { display:flex; justify-content:flex-end; gap:8px; }
+.wounded-balance-warning { margin-top:8px; padding:8px 10px; border:1px solid #ead393; border-radius:4px; background:#fff5d6; color:#76531b; font-size:12px; line-height:1.6; }
+@media(max-width:600px) {
+  .wounded-controls { grid-template-columns:minmax(0,1fr); gap:10px; }
+  .wounded-payments { justify-self:end; }
+}
 .wounded-empty { text-align:center; padding:30px 12px; color:var(--muted); }
 .wounded-empty p { font-size:12px; }
 
@@ -7308,6 +7525,8 @@ span.tcard-mini-icon .map-icon {
 .tactical-map {
   position: relative;
   min-height: var(--tactical-map-height, 250px);
+  --battle-left-pad: 4%;
+  --battle-right-pad: 4%;
   overflow: hidden;
   border: 2px solid #526f98;
   border-radius: 12px;
@@ -7316,6 +7535,15 @@ span.tcard-mini-icon .map-icon {
     repeating-linear-gradient(0deg, transparent 0, transparent 40px, rgba(255, 255, 255, 0.12) 41px),
     #71845e;
   box-shadow: inset 0 0 32px rgba(13, 26, 35, 0.45);
+}
+
+.tactical-map.has-wall-right {
+  --battle-left-pad: 4%;
+  --battle-right-pad: 112px;
+}
+.tactical-map.has-wall-left {
+  --battle-left-pad: 112px;
+  --battle-right-pad: 4%;
 }
 
 .tactical-base {
@@ -7335,8 +7563,8 @@ span.tcard-mini-icon .map-icon {
   position: absolute;
   top: 54px;
   bottom: 30px;
-  left: 5%;
-  right: 5%;
+  left: var(--battle-left-pad, 5%);
+  right: var(--battle-right-pad, 5%);
   border-top: 2px dashed rgba(255, 255, 255, 0.6);
   border-bottom: 2px dashed rgba(255, 255, 255, 0.28);
 }
@@ -7364,7 +7592,105 @@ span.tcard-mini-icon .map-icon {
   transform: translateX(-50%) scale(1.08);
 }
 
-.tactical-marker .tactical-unit-icon { width: 15px; height: 15px; overflow: hidden; border-radius: 3px; }
+.tactical-marker .tactical-unit-icon { width: 22.5px; height: 22.5px; overflow: hidden; border-radius: 3px; }
+.tactical-marker.tactical-wall-marker,
+.tactical-marker.tactical-wall-marker.foe,
+.tactical-marker.tactical-wall-marker.mine {
+  top: 0 !important;
+  bottom: 0 !important;
+  height: 100% !important;
+}
+.tactical-marker.tactical-wall-marker {
+  position: absolute;
+  top: 0 !important;
+  bottom: 0 !important;
+  height: 100% !important;
+  width: var(--battle-right-pad, 112px);
+  min-width: var(--battle-right-pad, 112px);
+  padding: 0;
+  border: none;
+  background: transparent;
+  transform: none !important;
+  box-shadow: none;
+  z-index: 4;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+.tactical-marker.tactical-wall-marker.foe {
+  width: var(--battle-right-pad, 112px);
+  min-width: var(--battle-right-pad, 112px);
+  right: 0 !important;
+  left: auto !important;
+}
+.tactical-marker.tactical-wall-marker.mine {
+  width: var(--battle-left-pad, 112px);
+  min-width: var(--battle-left-pad, 112px);
+  left: 0 !important;
+  right: auto !important;
+}
+.tactical-marker.tactical-wall-marker:hover .tactical-wall-icon {
+  filter: drop-shadow(0 0 12px rgba(255, 230, 140, 0.7)) brightness(1.06);
+}
+.tactical-wall-marker .tactical-wall-icon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  border: none;
+  background: transparent;
+  overflow: hidden;
+  z-index: 1;
+  transition: filter 0.2s ease;
+}
+.tactical-wall-marker .tactical-wall-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  object-position: right center;
+  filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.45));
+}
+.tactical-marker.tactical-wall-marker.mine .tactical-wall-icon img {
+  object-position: left center;
+}
+.tactical-wall-overlay {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
+  pointer-events: auto;
+}
+.tactical-marker.tactical-wall-marker.foe .tactical-wall-overlay { right: 8px; }
+.tactical-marker.tactical-wall-marker.mine .tactical-wall-overlay { left: 8px; }
+.tactical-wall-overlay b {
+  font-size: 10px;
+  color: #fff;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+.tactical-wall-stat { width: 110px; color: #e2e8f0; font-size: 8px; line-height: 10px; text-align: left; text-shadow: 0 1px 2px rgba(0, 0, 0, .9); white-space: nowrap; }
+.tactical-wall-bar { display: block; width: 110px; height: 5px; overflow: hidden; border: 1px solid rgba(255, 255, 255, .7); border-radius: 3px; background: rgba(0, 0, 0, .75); box-sizing: border-box; }
+.tactical-wall-bar i { display: block; height: 100%; transition: width .2s ease; }
+.tactical-wall-bar.hp i { background: #ef5b52; }
+.tactical-wall-bar.defense i { background: #60a5fa; }
+.tactical-map.has-wall-right .foe-base { right: calc(var(--battle-right-pad, 112px) + 8px); }
+.tactical-map.has-wall-left .mine-base { left: calc(var(--battle-left-pad, 112px) + 8px); }
 /* 多数模型原稿朝左；左侧我军水平镜像后，敌我火力方向相向。 */
 .tactical-marker.mine .tactical-unit-icon .unit-icon-img {
   transform: scaleX(-1);
@@ -7377,7 +7703,36 @@ span.tcard-mini-icon .map-icon {
 .tactical-marker.foe[data-unit-id="special"] .tactical-unit-icon .unit-icon-img {
   transform: scaleX(-1);
 }
-.tactical-marker b { width: 100%; color: #fff; font-size: 8px; font-variant-numeric: tabular-nums; letter-spacing: -0.25px; line-height: 1; text-align: center; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85); white-space: nowrap; }
+.tactical-marker > b {
+  position: absolute;
+  top: 1px;
+  color: #fff;
+  font-size: 8px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.2px;
+  line-height: 1.1;
+  white-space: nowrap;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95);
+  pointer-events: none;
+  z-index: 3;
+}
+/* 我军向右射击，后方是左侧：数量展示在兵种图标左侧（大后方），射程光带在右侧向前延伸 */
+.tactical-marker.mine > b {
+  right: calc(50% + 14px);
+  left: auto;
+  text-align: right;
+}
+/* 敌军向左射击，后方是右侧：数量展示在兵种图标右侧（大后方），射程光带在左侧向前延伸 */
+.tactical-marker.foe > b {
+  left: calc(50% + 14px);
+  right: auto;
+  text-align: left;
+}
 
 .tactical-marker-range {
   display: inline-flex;
@@ -7468,6 +7823,121 @@ span.tcard-mini-icon .map-icon {
   user-select: none;
 }
 
+/* 城防武器弧线射程光带 (Ballistic Arc) */
+.tactical-range-beam.fort-arc {
+  position: absolute;
+  z-index: 5;
+  height: 38px;
+  top: var(--fort-anchor-top, calc(78px + var(--marker-row, 0) * 37px - 2px));
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  overflow: visible;
+  display: block;
+  pointer-events: auto;
+}
+.tactical-range-beam.fort-arc .fort-arc-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.45));
+}
+.tactical-range-beam.fort-arc .fort-arc-line {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 3px rgba(245, 158, 11, 0.6));
+}
+.tactical-range-beam.fort-arc.in-range .fort-arc-line {
+  filter: drop-shadow(0 0 6px rgba(74, 222, 128, 0.85));
+}
+.tactical-range-beam.fort-arc .fort-arc-label {
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid rgba(245, 158, 11, 0.6);
+  color: #fef08a;
+  font-size: 8px;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+.tactical-range-beam.fort-arc.in-range .fort-arc-label {
+  border-color: #4ade80;
+  color: #86efac;
+  background: rgba(20, 83, 45, 0.9);
+  box-shadow: 0 0 8px rgba(74, 222, 128, 0.5);
+}
+.tactical-range-beam.fort-arc.foe .fort-arc-label {
+  border-color: rgba(239, 68, 68, 0.7);
+  color: #fca5a5;
+  background: rgba(69, 10, 10, 0.88);
+}
+.tactical-range-beam.fort-arc.foe.in-range .fort-arc-label {
+  border-color: #f87171;
+  color: #fecaca;
+  background: rgba(127, 29, 29, 0.92);
+  box-shadow: 0 0 8px rgba(248, 113, 113, 0.5);
+}
+
+/* 城防武器弧形光带出发点位置的数量标注徽章 */
+.tactical-range-beam.fort-arc .fort-arc-origin-badge {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.2px;
+  line-height: 1.1;
+  padding: 1px 5px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 4;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.75);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95);
+}
+/* 我军城墙在左侧，光带向右出发：出发点在左端紧贴要塞平台 */
+.tactical-range-beam.fort-arc.mine .fort-arc-origin-badge {
+  left: -2px;
+  color: #fef08a;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(245, 158, 11, 0.7);
+}
+.tactical-range-beam.fort-arc.mine.in-range .fort-arc-origin-badge {
+  color: #bbf7d0;
+  background: rgba(20, 83, 45, 0.94);
+  border-color: #4ade80;
+  box-shadow: 0 0 6px rgba(74, 222, 128, 0.65);
+}
+/* 敌军城墙在右侧，光带向左出发：出发点在右端紧贴要塞平台 */
+.tactical-range-beam.fort-arc.foe .fort-arc-origin-badge {
+  right: -2px;
+  color: #fecaca;
+  background: rgba(69, 10, 10, 0.92);
+  border: 1px solid rgba(239, 68, 68, 0.75);
+}
+.tactical-range-beam.fort-arc.foe.in-range .fort-arc-origin-badge {
+  color: #fee2e2;
+  background: rgba(127, 29, 29, 0.95);
+  border-color: #f87171;
+  box-shadow: 0 0 6px rgba(248, 113, 113, 0.65);
+}
+
 .tactical-distance { position: absolute; bottom: 8px; left: 50%; color: rgba(255, 255, 255, 0.9); font-size: 11px; transform: translateX(-50%); white-space: nowrap; }
 
 .tactical-command-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -7511,14 +7981,38 @@ span.tcard-mini-icon .map-icon {
   .rb-settlement-grid { grid-template-columns: 1fr; }
   .tactical-map { min-height: max(285px, var(--tactical-map-height, 250px)); }
   .tactical-marker { width: 44px; min-width: 44px; height: 33px; }
-  .tactical-marker .tactical-unit-icon { width: 14px; height: 14px; }
-  .tactical-marker b { font-size: 7.5px; }
+  .tactical-marker .tactical-unit-icon { width: 21px; height: 21px; }
+  .tactical-marker > b { font-size: 7.5px; }
+  .tactical-marker.mine > b { right: calc(50% + 13px); }
+  .tactical-marker.foe > b { left: calc(50% + 13px); }
   .tactical-marker-range { font-size: 7px; line-height: 8px; padding: 0 1px; }
   .tactical-head { align-items: center; }
   .tactical-turn-status { display: block; }
   .tactical-turn-status > div + div { border-top: 1px solid #c7d4e5; border-left: 0; }
   .tactical-command-head { align-items: flex-start; flex-direction: column; }
   .tactical-command-shortcuts { justify-content: flex-start; }
+  .tactical-marker.tactical-wall-marker {
+    width: 96px;
+    min-width: 96px;
+  }
+  .tactical-wall-overlay {
+    padding: 4px 5px;
+    gap: 1.5px;
+  }
+  .tactical-wall-overlay b {
+    font-size: 8.5px;
+  }
+  .tactical-wall-stat,
+  .tactical-wall-bar {
+    width: 84px;
+  }
+  .tactical-wall-stat {
+    font-size: 7px;
+  }
+  .tactical-map.has-wall-right { --battle-right-pad: 88px; }
+  .tactical-map.has-wall-left { --battle-left-pad: 88px; }
+  .tactical-map.has-wall-right .foe-base { right: calc(var(--battle-right-pad, 88px) + 4px); }
+  .tactical-map.has-wall-left .mine-base { left: calc(var(--battle-left-pad, 88px) + 4px); }
 }
 /* 俘虏池按城市展示容量、价格和即时操作，窄屏下每个摘要指标独占一行。 */
 .prisoner-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:12px 0; }
@@ -7535,6 +8029,14 @@ span.tcard-mini-icon .map-icon {
 .prisoner-modal p { line-height:1.6; }
 .rb-prisoner-breakdown { margin-top:8px; padding:8px 0; border-top:1px solid var(--line); font-size:12px; }
 .rb-prisoner-breakdown > div { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:4px 0; }
+.rb-prisoner-details { margin:6px 10px; font-size:12px; }
+.rb-prisoner-details summary { cursor:pointer; font-weight:600; color:#8ec5fc; padding:4px 0; user-select:none; }
+.rb-prisoner-details summary:hover { color:#bfdbfe; }
+body.theme-classic .rb-prisoner-details summary,
+[data-theme="light"] .rb-prisoner-details summary { color:#244f86; }
+body.theme-classic .rb-prisoner-details summary:hover,
+[data-theme="light"] .rb-prisoner-details summary:hover { color:#1d4164; }
+.rb-prisoner-details[open] summary { margin-bottom:6px; border-bottom:1px dashed var(--line, #426c98); padding-bottom:6px; }
 @media (max-width: 620px) { .prisoner-summary { grid-template-columns:1fr; } .prisoner-controls .btn-row { width:100%; } }
 /* 军衔资格与笔试共用紧凑布局，长题目和选项在手机上自然换行。 */
 .rank-promotion, .rank-exam { padding: 14px 0; margin-bottom: 14px; border-bottom: 1px solid var(--line); }
@@ -7560,3 +8062,9 @@ span.tcard-mini-icon .map-icon {
 .rank-exam-question span { min-width: 0; overflow-wrap: anywhere; }
 .rank-exam-time { min-width: 98px; font-variant-numeric: tabular-nums; }
 .rank-exam-actions { position: sticky; bottom: 0; padding: 12px 0; background: var(--paper, #151b1a); border-top: 1px solid var(--line); }
+
+/* 征服战独立墙体耐久与阶段，窄屏按行展示。 */
+.conquest-wall-panel { display:flex; flex-direction:column; gap:6px; padding:12px; margin:10px 0; border:1px solid var(--line); border-radius:8px; }
+.conquest-wall-panel small { color:var(--muted); }
+.conquest-wall-hp { height:10px; background:rgba(128,128,128,.2); border-radius:5px; overflow:hidden; }
+.conquest-wall-hp > div { height:100%; background:#c39c50; }

@@ -32,6 +32,7 @@ class LandBanditQuestTest extends BaseServiceTest {
         world.setTerrainVersion(WorldTerrainService.TERRAIN_VERSION);
         worldMapRepository.saveAndFlush(world);
         var player = createTestPlayer();
+        resourcesRepository.findByPlayerIdAndCitySlot(player.getId(), 0).ifPresent(r -> { r.setOil(100_000); resourcesRepository.save(r); });
         quests.getPlayerQuests(player.getId());
         var target = new Bandit();
         target.setWorldId(world.getId()); target.setX(20); target.setY(20); target.setLevel(1);

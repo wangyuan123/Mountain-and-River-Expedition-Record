@@ -58,7 +58,8 @@ function setup(storage = new Map(), username = 'alice', serverOrder = null, save
     produceOf: () => 0, foodPerHour: () => 0, civilianPopulation: () => 10,
     capacity: () => ({ food: 100, steel: 100, oil: 100, rare: 100 }),
     morale: () => 100, resentment: () => 0, populationCapacity: () => 100,
-    populationGrowthPerHour: () => 0, popFree: () => 10
+    populationGrowthPerHour: () => 0, popFree: () => 10,
+    wallMul: () => 1
   };
   const context = vm.createContext({
     Math, JSON, document: {

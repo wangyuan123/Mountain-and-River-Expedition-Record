@@ -32,8 +32,10 @@ public class PvpPowerModel {
             List<Map<String, Object>> rows = PvpJson.read(new String(stream.readAllBytes(), StandardCharsets.UTF_8), new TypeReference<>() {});
             Map<String, Map<String, Object>> measured = new HashMap<>();
             for (var row : rows) {
+                // 战斗周期更新后，旧系数不可复用；未附带本版实测的组合由入队流程重新校准。
+                if (!VERSION.equals(row.get("modelVersion"))) continue;
                 double factor = ((Number) row.get("factor")).doubleValue();
-                if (!VERSION.equals(row.get("modelVersion")) || !Double.isFinite(factor) || factor <= 0
+                if (!Double.isFinite(factor) || factor <= 0
                         || ((Number) row.get("samples")).intValue() <= 0) throw new IllegalStateException("演习实力校准配置版本或样本无效");
                 measured.put(row.get("field") + ":" + PvpJson.write(row.get("skills")), Map.copyOf(row));
             }
@@ -124,7 +126,8 @@ public class PvpPowerModel {
     }
     private static BattleService.TechCtx context(Map<String, Integer> army, Map<String, Integer> skills, int level, boolean gear) {
         Map<String, Integer> tech = new HashMap<>();
-        for (String key : List.of("attack_tech", "defense_tech", "cmd_hp", "weapon_range", "arm_engine", "air_engine", "nav_engine")) tech.put(key, level);
+        // 校准参考成长同时包含生命与其对应的火力科技，避免沿用旧输出节奏的技能系数。
+        for (String key : List.of("attack_tech", "defense_tech", "cmd_hp", "fire_density", "weapon_range", "arm_engine", "air_engine", "nav_engine")) tech.put(key, level);
         if (gear) army.keySet().forEach(id -> { for (String key : List.of("ground", "air", "sea", "defense", "hp", "speed")) tech.put(UnitEquipmentEffects.key(id, key), 10); });
         return new BattleService.TechCtx(tech, skills, 60, 60, CommandBonus.NONE);
     }

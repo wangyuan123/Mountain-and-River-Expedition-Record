@@ -39,7 +39,7 @@ class StationedGatherModeTest extends BaseServiceTest {
 
     @Test
     void automaticGatherTicksWithoutMarchesAndReturnsExactlyOnce() {
-        station(0, 10, "[[10,10],[15,10],[15,15]]");
+        station(0, 1, "[[10,10],[15,10],[15,15]]");
         assertTrue(marchRepository.findByPlayerId(playerId).isEmpty());
         marchService.startWildGather(playerId, tile.getId(), "auto");
         long finishedAt = tile.getGatherEndAt();
@@ -68,7 +68,7 @@ class StationedGatherModeTest extends BaseServiceTest {
         marchService.processMarches(playerId, returning.getArriveAt());
         marchService.processMarches(playerId, returning.getArriveAt() + 1000);
         assertEquals(1500, getResources(playerId).getFood());
-        assertEquals(10, armyUnitRepository.findByPlayerIdAndType(playerId, "truck").get(0).getCount());
+        assertEquals(1, armyUnitRepository.findByPlayerIdAndType(playerId, "truck").get(0).getCount());
         assertEquals(500, tile.getMined());
         assertTrue(tile.getOccupied());
         assertEquals(playerId, tile.getOccupiedBy());
@@ -77,7 +77,7 @@ class StationedGatherModeTest extends BaseServiceTest {
 
     @Test
     void manualHarvestLeavesCargoAndArmyUntilExplicitReturn() {
-        station(0, 10, "[[10,10],[15,10],[15,15]]");
+        station(0, 1, "[[10,10],[15,10],[15,15]]");
         marchService.startWildGather(playerId, tile.getId(), "manual");
         finishTimeInPast();
         marchService.processMarches(playerId, System.currentTimeMillis());
@@ -90,7 +90,7 @@ class StationedGatherModeTest extends BaseServiceTest {
         assertEquals(500, marchService.harvestWild(playerId, tile.getId()).get("harvestAmount"));
         assertEquals(500, tile.getMined());
         assertEquals(1000, getResources(playerId).getFood());
-        assertEquals(10, JsonUtil.parseIntMap(tile.getGarrison()).get("truck"));
+        assertEquals(1, JsonUtil.parseIntMap(tile.getGarrison()).get("truck"));
         assertFalse(tile.getGathering());
         assertThrows(IllegalArgumentException.class, () -> marchService.startWildGather(playerId, tile.getId(), "auto"));
         assertEquals(false, worldService.abandonWild(playerId, tile.getId()).get("success"));
@@ -107,7 +107,7 @@ class StationedGatherModeTest extends BaseServiceTest {
 
     @Test
     void partialHarvestIsClampedAndDoesNotResume() {
-        station(0, 10, "[[10,10],[15,15]]");
+        station(0, 1, "[[10,10],[15,15]]");
         marchService.startWildGather(playerId, tile.getId(), "manual");
         long now = System.currentTimeMillis();
         tile.setGatherStartAt(now - 50_000L);
@@ -194,7 +194,7 @@ class StationedGatherModeTest extends BaseServiceTest {
         marchService.processMarches(playerId, tile.getGatherEndAt());
         March returning = onlyMarch();
         assertEquals(2, JsonUtil.parseIntMap(returning.getArmy()).get("truck"));
-        assertEquals(100, returning.getGatherAmount());
+        assertEquals(1000, returning.getGatherAmount());
     }
 
     @Test

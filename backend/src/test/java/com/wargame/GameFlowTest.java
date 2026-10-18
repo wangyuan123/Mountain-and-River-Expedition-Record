@@ -33,7 +33,7 @@ class GameFlowTest extends BaseServiceTest {
         assertFalse(token.isBlank());
         long playerId = registered.path("playerId").asLong();
 
-        JsonNode built = postJson("/api/game/build/upgrade", token, Map.of("building", "factory", "slot", 0));
+        JsonNode built = postJson("/api/game/build/upgrade", token, Map.of("building", "command", "slot", 0));
         assertTrue(built.path("success").asBoolean(), built.toString());
         for (Construction queue : constructionRepository.findByPlayerId(playerId)) {
             queue.setFinishAt(System.currentTimeMillis() - 1);
@@ -55,8 +55,10 @@ class GameFlowTest extends BaseServiceTest {
         Player player = playerRepository.findById(playerId).orElseThrow();
         String resourceType = WildTypeDef.WILD_TYPES.entrySet().stream()
                 .filter(entry -> entry.getValue().res() != null).findFirst().orElseThrow().getKey();
-        WildTile target = createWildTile(worldId, resourceType,
-                (player.getCityPosX() + 1) % 200, player.getCityPosY(), 1, Map.of(), 1000);
+        giveResources(playerId, 0, 0, 10000, 0, 0);
+        int targetX = player.getCityPosX() < 399 ? player.getCityPosX() + 1 : player.getCityPosX() - 1;
+        int targetY = player.getCityPosY();
+        WildTile target = createWildTile(worldId, resourceType, targetX, targetY, 1, Map.of(), 1000);
         postJson("/api/game/world/dispatch", token, Map.of("targetKind", "wild", "targetId", target.getId(),
                 "action", "plunder", "army", Map.of("infantry", 10, "truck", 1), "carryRes", Map.of()));
         March march = marchRepository.findByPlayerId(playerId).get(0);
@@ -127,7 +129,11 @@ class GameFlowTest extends BaseServiceTest {
     private JsonNode postJson(String path, String token, Object body) throws Exception {
         var request = post(path).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(body));
         if (token != null) request.header("Authorization", "Bearer " + token);
-        return json.readTree(http.perform(request).andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString());
+        var result = http.perform(request).andReturn();
+        if (result.getResponse().getStatus() != 200) {
+            System.err.println("POST_FAIL: " + path + " -> " + result.getResponse().getStatus() + " " + result.getResponse().getContentAsString());
+        }
+        assertEquals(200, result.getResponse().getStatus(), result.getResponse().getContentAsString());
+        return json.readTree(result.getResponse().getContentAsString());
     }
 }

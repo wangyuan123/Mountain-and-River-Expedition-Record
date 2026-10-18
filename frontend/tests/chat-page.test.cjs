@@ -32,15 +32,18 @@ function setup() {
   };
   const messageTab = attributes();
   const forumTab = attributes();
+  const friendsTab = attributes();
   messageTab.setAttribute('data-chat-tab', 'messages');
   forumTab.setAttribute('data-chat-tab', 'forum');
+  friendsTab.setAttribute('data-chat-tab', 'friends');
   const messages = { hidden: false };
+  const friends = { hidden: true };
   const forum = { hidden: true, children: [], querySelector: selector => selector === 'iframe' ? forum.children[0] : null, appendChild(node) { this.children.push(node); } };
   const title = { textContent: '世界频道' };
   const subtitle = { textContent: '实时通联' };
   const page = {
-    querySelector: selector => ({ '#chatMessagesPanel': messages, '#chatForumPanel': forum, '#chatPageTitle': title, '#chatPageSubtitle': subtitle })[selector] || null,
-    querySelectorAll: selector => selector === '[data-chat-tab]' ? [messageTab, forumTab] : []
+    querySelector: selector => ({ '#chatMessagesPanel': messages, '#chatFriendsPanel': friends, '#chatForumPanel': forum, '#chatPageTitle': title, '#chatPageSubtitle': subtitle })[selector] || null,
+    querySelectorAll: selector => selector === '[data-chat-tab]' ? [messageTab, friendsTab, forumTab] : []
   };
   let mounted = false;
   const view = {
@@ -69,8 +72,31 @@ function setup() {
   game.Core.renderTop = () => {};
   game.state = game.Core.state = { player: { id: 1, username: 'alice' }, prestige: 10000, world: { incoming: [] } };
   game.Core.route = 'chat';
-  return { game, view, box, input, button, classes, messages, forum, messageTab, forumTab, title, subtitle, nodes };
+  return { game, view, box, input, button, classes, messages, forum, friends, messageTab, forumTab, friendsTab, title, subtitle, nodes };
 }
+
+test('friends tab is enabled and switches without losing chat draft or scrolling', () => {
+  const { game, view, friends, forum, messages, friendsTab, box, input, title } = setup();
+  let loads = 0;
+  game.Friends = { render: () => '<div id="friendList"></div>', refresh: () => { loads++; } };
+  game.Core.views.chat(view);
+  assert.match(view.html, /data-chat-tab="friends"/);
+  assert.doesNotMatch(view.html, /山河战友暂未开放/);
+  assert.equal(game.Constants.navItems.find(item => item.route === 'chat').label, '聊天');
+  box.scrollTop = 45;
+  game.MainView.selectChatTab('friends');
+  assert.equal(friends.hidden, false);
+  assert.equal(messages.hidden, true);
+  assert.equal(title.textContent, '山河战友');
+  assert.equal(friendsTab.getAttribute('aria-current'), 'page');
+  assert.equal(loads, 1);
+  game.MainView.selectChatTab('forum');
+  assert.equal(friends.hidden, true);
+  assert.equal(forum.hidden, false);
+  game.MainView.selectChatTab('messages');
+  assert.equal(box.scrollTop, 45);
+  assert.equal(input.value, '尚未发送的草稿');
+});
 
 test('chat route renders world messages and preserves the draft and scroll during background updates', () => {
   const { game, view, input, box, classes } = setup();

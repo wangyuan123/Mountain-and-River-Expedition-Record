@@ -1,0 +1,32 @@
+Use case: stylized-concept.
+Asset type: one complete realistic 3D miniature player-city fortress model asset for the WWII-inspired strategy game 山河远征录, matching its existing A / garden citadel architectural collection.
+Tier: Tier 2 (City Wall Level 5-9: Fortified Regional Stronghold / 城墙5-9级加固要塞主城).
+
+Primary request:
+Create an impressive, reinforced military fortress-city with higher defensive walls, more magnificent central command architecture, and significantly enhanced military presence. The fortress seamlessly combines taller stone-and-concrete defensive ramparts, a grand 4-5 story neoclassical military-civic headquarters, a high-mast radar station, an authentic prisoner-of-war (POW) camp compound, and an expanded military staging base with armored divisions and an active airfield.
+
+Camera and Framing:
+- Elevated three-quarter isometric perspective, approximately 35-40 degrees above the horizon, viewing from the south towards the north, showing front facade and right side.
+- Strictly SQUARE ground footprint aligned to cardinal directions (NOT rotated 45 degrees into diamond, NOT a floating diorama slab). The southern defensive wall runs horizontally along the lower portion.
+- Near-orthographic focal length, entire fortress fully contained within the square frame with a 6-8 percent clean margin. All-in-focus rendering from front gate to rear radar tower.
+
+Architectural Zones and Upgraded Facilities:
+1. Fortified Perimeter Wall (5-9级显著加高防御城墙):
+   Conspicuously TALLER and thicker early-20th-century stone and reinforced concrete defensive rampart wall (measuring 1.8x the height of a basic town wall). Heavy angular corner bastion towers elevated significantly above ground level, each mounted with dual heavy anti-aircraft flak guns. A reinforced 2-story southern armored gatehouse with heavy steel portcullis doors, twin guard towers, searchlights, and anti-tank barricades (Czech hedgehogs). Wide elevated parapet walkway with sentry posts.
+2. Grand Command Headquarters (更宏伟的4-5层统帅市政大本营):
+   Commanding the north-central axis: a magnificent 4-5 story neoclassical military-civic headquarters with pale limestone facade, grand columned portico with classical pediment, wide stone approach steps, symmetrical wings, and a tall central clock tower with an oxidized bronze dome. A dignified paved command plaza with manicured formal hedges extends before it.
+3. Air-Defense Radar Station (东北加固防空雷达站):
+   Elevated on the fortified northeastern bastion: a tall steel-lattice antenna tower supporting an open wire-mesh parabolic radar dish, accompanied by a slender radio communication mast and a reinforced concrete transmitter bunker.
+4. POW Camp Compound (西北战俘营封闭区):
+   Walled-off compound in the northwestern quarter: two long single-story barracks with red terracotta tile roofs and pale stucco walls, enclosed by timber posts and wire-mesh fencing surrounding a packed-dirt muster yard, guarded by two elevated timber watchtowers at opposite corners.
+5. Expanded Military Base Complex (东南部与正南部强化军事基地):
+   - East sector airfield: smooth gray concrete runway and taxiway, twin curved corrugated-iron aircraft hangars, glass-cab flight control tower, and parked WWII propeller warplanes (P-51 Mustang style fighters and heavy bombers).
+   - South sector armored parade & staging grounds: paved assembly yard displaying disciplined rows of olive-drab medium tanks, M8 Greyhound armored cars, and BM-13 Katyusha rocket launcher trucks with exposed rails.
+   - West-central ordnance depot: red-brick armaments workshop with steel sawtooth glass roofs, supply crates, fuel drums, and transport trucks.
+
+Materials, Color Palette and Craftsmanship:
+Master scale-model craftsmanship with convincing physical textures. Harmonious palette matching the garden building collection: warm cream limestone and stucco, muted terracotta clay roof tiles, weathered dark timber, olive-drab military vehicles, neutral gray concrete paving, and manicured green grass accents.
+Lighting:
+Bright, natural morning daylight from upper-left casting crisp, realistic volumetric contact shadows that emphasize multi-level building relief, retaining clear interior court details.
+Background & Constraints:
+Solid uniform seamless pure white background (#ffffff) for clean transparency preparation. Flat thin ground surface with natural stone borders, NO floating dirt island, NO thick diorama pedestal block, NO water moat. NO modern skyscrapers, NO medieval fantasy spires, NO flying/airborne planes, NO text, flags, watermarks, or UI icons.

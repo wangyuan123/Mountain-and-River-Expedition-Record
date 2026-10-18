@@ -1,0 +1,12 @@
+{
+  "version": "fire-density-2026-10-13-v1",
+  "buildingTypes": 25,
+  "technologyTypes": 19,
+  "buildingRules": 250,
+  "technologyRules": 161,
+  "runtimeAndDesignMatch": true,
+  "existingPrerequisitesUnchanged": true,
+  "allTenDensityLevelsMatchFormula": true,
+  "publishedCalibrationMatchesMeasuredOutput": true,
+  "baselineAndNewEngineHaveIdenticalSixFailures": true
+}

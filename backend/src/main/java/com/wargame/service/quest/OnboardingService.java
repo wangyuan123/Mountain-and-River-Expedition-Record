@@ -1,26 +1,23 @@
 package com.wargame.service.quest;
 
-import com.wargame.model.constants.MilitaryRankDef;
 import com.wargame.model.constants.WildTypeDef;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
 import com.wargame.service.CityScope;
 import com.wargame.service.MarchRouteService;
-import com.wargame.service.MarchService;
-import com.wargame.service.WebSocketPushService;
 import com.wargame.service.WorldTerrainService;
 import com.wargame.util.JsonUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
-/** 前进基地行动：持久化实际成果，提示偏好与一次性补给资格分别保存。 */
+/** 五个核心行动与可选玩法探索；完成事实、提示偏好和奖励分别持久化。 */
 @Service
+@RequiredArgsConstructor
 public class OnboardingService {
-    private static final String PREFIX = "ob2_";
+    private static final String PREFIX = "ob3_";
     private static final String ENROLLED = PREFIX + "enrolled";
     private final PlayerGuideRepository guides;
     private final PlayerRepository players;
@@ -32,482 +29,278 @@ public class OnboardingService {
     private final ScoutReportRepository reports;
     private final MarchRepository marches;
     private final WildTileRepository wilds;
-    private final PlayerItemRepository playerItemRepository;
+    private final GuildMemberRepository guildMembers;
+    private final UnitLoadoutRepository loadouts;
     private final WorldTerrainService terrain;
     private final CityScope scope;
-    private final MarchService marchService;
-    private final WebSocketPushService pushService;
-
-    public OnboardingService(PlayerGuideRepository guides,
-                             PlayerRepository players,
-                             BuildingRepository buildings,
-                             TechnologyRepository techs,
-                             ArmyUnitRepository armies,
-                             OfficerRepository officers,
-                             ResourcesRepository resources,
-                             ScoutReportRepository reports,
-                             MarchRepository marches,
-                             WildTileRepository wilds,
-                             PlayerItemRepository playerItemRepository,
-                             WorldTerrainService terrain,
-                             CityScope scope,
-                             @Lazy MarchService marchService,
-                             WebSocketPushService pushService) {
-        this.guides = guides;
-        this.players = players;
-        this.buildings = buildings;
-        this.techs = techs;
-        this.armies = armies;
-        this.officers = officers;
-        this.resources = resources;
-        this.reports = reports;
-        this.marches = marches;
-        this.wilds = wilds;
-        this.playerItemRepository = playerItemRepository;
-        this.terrain = terrain;
-        this.scope = scope;
-        this.marchService = marchService;
-        this.pushService = pushService;
-    }
 
     public record Objective(String id, String title, String body, String route, String building) {}
     public record Supply(String id, String title, List<String> requires, Map<String, Integer> resources) {}
     public record Reward(Map<String, Integer> resources, int diamond) {}
+    public record Exploration(String id, String title, String body, String route, String building, String hint, Map<String, Integer> reward) {}
 
     public static final List<Objective> OBJECTIVES = List.of(
-            new Objective("base", "升级市政厅", "先建1级农田、炼钢厂与民居，再把市政厅升到2级。", "buildArmy", "command"),
-            new Objective("farm", "建设农田", "把农田总等级提升到2级，建立稳定的粮食收入。", "buildRes", "farm"),
-            new Objective("factory", "建造军工厂", "先确认民居就绪（提供兵员基础），再建造1级军工厂，开启步兵与车辆生产。", "buildArmy", "factory"),
-            new Objective("infantry", "生产步兵", "完成一次步兵生产，认识军队生产队列。", "army", "infantry"),
-            new Objective("train", "生产卡车", "完成一次卡车生产，为之后的采集运输做准备。", "army", "truck"),
-            new Objective("lab", "建造军工科技研发中心", "先建1级军需仓库（满足仓储与科研物资前置），再建成1级军工科技研发中心。", "buildArmy", "lab"),
-            new Objective("reconTech", "研究侦察技术", "先建1级防空雷达站（提供空情与侦察前置），再完成1级侦察技术研究。", "tech", "recon_level"),
-            new Objective("recon", "生产侦察机", "先建造1级空军基地，再完成一次侦察机生产，准备执行侦察任务。", "army", "scout"),
-            new Objective("officer", "招募军官", "建造军校并招募一名军官，之后侦察、占领和采集时可派遣将领。", "academy", "academy"),
-            new Objective("scout", "完成一次侦察", "对推荐资源点完成一次成功侦察，等待侦查部队返回城内后继续指引。", "world", ""),
-            new Objective("occupy", "占领资源点", "派出部队占领一处资源野地，建立第一处外部补给点。", "world", ""),
-            new Objective("report", "阅读战报", "打开并阅读一次获胜的野地战报，核对战果。", "reports", ""),
-            new Objective("gather", "运回资源", "从资源点采集资源并等待运输队返城入库。", "world", ""),
-            new Objective("develop", "完成一次发展", "采集入库后，完成任意一项建筑升级或新建。", "buildRes", ""),
-            new Objective("plan", "基地已准备好，接下来由你指挥", "指挥官，做得不错！你已经迈出了建设与远征的第一步。友情提示：打开「任务」Tab，通过主线任务继续探索新玩法；完成任务后，记得领取奖励。按自己的节奏出发吧！", "onboarding", "")
+            new Objective("base", "建设基地", "完成任意一次建筑建造或升级，认识施工队列。", "buildRes", ""),
+            new Objective("infantry", "组建部队", "生产一名步兵，认识征召与生产队列；初始部队已足够参加首战。", "army", "infantry"),
+            new Objective("scout", "执行侦察", "基础侦察部队已就绪。侦察推荐野地，取得情报后即可继续。", "world", ""),
+            new Objective("occupy", "完成首次讨伐", "讨伐推荐的低难度野地，体验一次胜利；可以顺便占领资源点。", "world", ""),
+            new Objective("report", "查看战果", "打开获胜的野地战报查看战果，随后到「任务」探索更多玩法。", "reports", "")
     );
-    private static final Map<String, Reward> STEP_REWARDS = Map.ofEntries(
-            Map.entry("base", reward(Map.of("food", 3000, "steel", 2400, "gold", 100), 10)),
-            Map.entry("farm", reward(Map.of("food", 3500, "steel", 1000), 10)),
-            Map.entry("factory", reward(Map.of("food", 2200, "steel", 3600, "oil", 1000, "gold", 200), 15)),
-            Map.entry("infantry", reward(Map.of("food", 2400, "steel", 1600, "gold", 100), 10)),
-            Map.entry("train", reward(Map.of("food", 2400, "steel", 1400, "oil", 400, "gold", 100), 10)),
-            Map.entry("lab", reward(Map.of("food", 2000, "steel", 2400, "rare", 300), 15)),
-            Map.entry("reconTech", reward(Map.of("steel", 2000, "oil", 600, "rare", 400), 15)),
-            Map.entry("recon", reward(Map.of("oil", 1400, "rare", 300, "gold", 200), 15)),
-            Map.entry("officer", reward(Map.of("food", 2000, "steel", 1500, "gold", 200), 15)),
-            Map.entry("scout", reward(Map.of("food", 2500, "steel", 2000, "oil", 600), 15)),
-            Map.entry("occupy", reward(Map.of("food", 4000, "steel", 3000, "oil", 1000, "rare", 400), 20)),
-            Map.entry("report", reward(Map.of("food", 2000, "steel", 2000, "gold", 200), 10)),
-            Map.entry("gather", reward(Map.of("food", 5000, "steel", 3600, "oil", 1000), 20)),
-            Map.entry("develop", reward(Map.of("food", 5000, "steel", 4000, "oil", 800, "rare", 500), 20)),
-            Map.entry("plan", reward(Map.of("food", 10000, "steel", 8000, "oil", 2500, "rare", 800, "gold", 1000), 75))
-    );
-    private static final Reward COMPLETION_REWARD = reward(Map.of("food", 25000, "steel", 20000, "oil", 8000, "rare", 3000, "gold", 3000), 200);
+    private static final Reward COMPLETION_REWARD = new Reward(Map.of("food", 10000, "steel", 8000, "oil", 2500, "rare", 800, "gold", 1000), 100);
     public static final List<Supply> SUPPLIES = List.of(
-            new Supply("base", "整备补给", List.of("base"), Map.of("food", 4000, "steel", 4000, "oil", 1200, "rare", 200, "gold", 500)),
-            new Supply("scout", "出征补给", List.of("recon", "scout"), Map.of("food", 3000, "steel", 3000, "oil", 1600, "rare", 300, "gold", 500)),
-            new Supply("gather", "发展补给", List.of("occupy", "gather"), Map.of("food", 5000, "steel", 4000, "oil", 2000, "rare", 500, "gold", 1000))
+            new Supply("base", "建设补给", List.of("base"), Map.of("food", 4000, "steel", 4000, "oil", 1200, "rare", 200, "gold", 500)),
+            new Supply("scout", "出征补给", List.of("infantry", "scout"), Map.of("food", 3000, "steel", 3000, "oil", 1600, "rare", 300, "gold", 500)),
+            new Supply("battle", "首战补给", List.of("occupy"), Map.of("food", 5000, "steel", 4000, "oil", 2000, "rare", 500, "gold", 1000))
+    );
+    public static final List<Exploration> EXPLORATIONS = List.of(
+            new Exploration("gather", "首次采集", "从己方资源地采集并将资源运回城市。", "world", "", "选择己方资源地，派出步兵或运输部队采集。步兵每人基础负重10，卡车每辆500，优先使用基础卡车；全自动会采满返城，资源返城入库后完成任务。", Map.of("food", 5000, "steel", 3600, "oil", 1000)),
+            new Exploration("truck", "生产卡车", "生产一辆卡车，提高资源运输能力。", "army", "truck", "卡车擅长运输，负重较高。选择军队中的卡车，征召一辆并等待生产完成。", Map.of("food", 1000, "steel", 1000)),
+            new Exploration("tech", "研究科技", "完成一次科技研究，提升基地能力。", "tech", "", "科研中心建成后，选择一项可研究的科技；研究完成后任务自动更新。", Map.of("steel", 1500, "rare", 200)),
+            new Exploration("officer", "招募军官", "招募一名军官，了解将领的作用。", "academy", "academy", "军校建成后刷新候选军官，选择一名招募。将领可以出征，也可以留城任职。", Map.of("gold", 300)),
+            new Exploration("equipment", "配置兵种装备", "给一个兵种配置装备，提升作战能力。", "army", "infantry", "打开兵种的配装入口，使用仓库中的兵种装备；缺少装备时可以先查看制造条件。", Map.of("steel", 1500)),
+            new Exploration("guild", "加入军团", "加入或创建军团，结识其他指挥官。", "guild", "", "在军团页选择一个军团申请加入，审核通过后完成任务；也可以自行创建军团。", Map.of("gold", 300))
     );
 
-    /** 新注册和游客自动加入；旧账号只在主动开启时加入，绝不重置进度或余额。 */
+    /** 加入只发一次基础设施与侦察能力，避免把机场与科研前置链隐藏在五步背后。 */
     @Transactional
     public Map<String, Object> start(Long playerId) {
-        players.lockById(playerId).orElseThrow();
         Map<String, PlayerGuide> rows = locked(playerId);
-        if (!rows.containsKey(ENROLLED)) save(rows, playerId, ENROLLED, "active");
+        if (!rows.containsKey(ENROLLED)) {
+            save(rows, playerId, ENROLLED, "active");
+            if (level(playerId, "factory") == 0) {
+                Building factory = new Building(); factory.setPlayerId(playerId); factory.setCitySlot(0);
+                factory.setType("factory"); factory.setLevel(1); factory.setSlot(0); buildings.save(factory);
+            }
+            if (armies.findByPlayerIdAndCitySlotAndType(playerId, 0, "scout").stream().mapToInt(a -> a.getCount()).sum() == 0) addArmy(playerId, "scout", 1);
+            // 提供高运力的基础卡车，让可选采集无需先走生产教学链；步兵也可少量采集。
+            if (armies.findByPlayerIdAndCitySlotAndType(playerId, 0, "truck").stream().mapToInt(a -> a.getCount()).sum() == 0) addArmy(playerId, "truck", 1);
+            Technology recon = techs.findByPlayerIdAndType(playerId, "recon_level").stream().findFirst().orElseGet(() -> {
+                Technology t = new Technology(); t.setPlayerId(playerId); t.setType("recon_level"); t.setLevel(0); return t;
+            });
+            if (recon.getLevel() < 1) {
+                recon.setLevel(1); techs.save(recon);
+            }
+            mark(rows, playerId, "starter");
+        }
         return snapshot(playerId, rows);
     }
 
     @Transactional
-    public Map<String, Object> status(Long playerId) {
-        return snapshot(playerId, locked(playerId));
-    }
+    public Map<String, Object> status(Long playerId) { return snapshot(playerId, locked(playerId)); }
 
     @Transactional
     public Map<String, Object> pause(Long playerId, boolean paused) {
         Map<String, PlayerGuide> rows = locked(playerId);
         PlayerGuide entry = requireEnrolled(rows);
-        entry.setStatus(paused ? "paused" : "active");
-        guides.save(entry);
+        entry.setStatus(paused ? "paused" : "active"); guides.save(entry);
         return snapshot(playerId, rows);
     }
 
-    /** 事件按真实完成结果计入主城；暂停提示仍然积累成果，初始赠兵不算征兵，招募成功才算获得军官。 */
+    /** 核心目标只统计主城真实完成事件；可选任务在暂停、跳过、毕业后以及分城仍可完成。 */
     @Transactional
     public void onEvent(Long playerId, String event, String key, int delta) {
-        if (playerId == null || delta <= 0 || scope.slot(playerId) != 0) return;
-        if (!Set.of("ARMY_RECRUIT", "OFFICER_RECRUIT", "GATHER_COMPLETE", "BUILD_UPGRADE_DONE").contains(event)) return;
+        if (playerId == null || delta <= 0 || event == null) return;
+        if (!Set.of("ARMY_RECRUIT", "OFFICER_RECRUIT", "GATHER_COMPLETE", "BUILD_UPGRADE_DONE", "TECH_LEVEL", "SCOUT_WILD", "WILD_CONQUER").contains(event)) return;
         Map<String, PlayerGuide> rows = locked(playerId);
-        if (!rows.containsKey(ENROLLED) || done(rows, "skipped") || done(rows, "plan")) return;
-        if ("ARMY_RECRUIT".equals(event) && Set.of("infantry", "truck", "scout").contains(key == null ? "" : key)) {
-            mark(rows, playerId, "trained_" + key);
-            completeObjective(rows, playerId, "infantry".equals(key) ? "infantry" : "truck".equals(key) ? "train" : "recon");
-        }
-        if ("GATHER_COMPLETE".equals(event)) completeObjective(rows, playerId, "gather");
-        if ("OFFICER_RECRUIT".equals(event)) completeObjective(rows, playerId, "officer");
-        if ("BUILD_UPGRADE_DONE".equals(event)) {
-            if (done(rows, "gather")) completeObjective(rows, playerId, "develop");
+        if ("GATHER_COMPLETE".equals(event)) mark(rows, playerId, "task_gather");
+        if ("OFFICER_RECRUIT".equals(event)) mark(rows, playerId, "task_officer");
+        if ("TECH_LEVEL".equals(event)) mark(rows, playerId, "task_tech");
+        if ("ARMY_RECRUIT".equals(event) && "truck".equals(key)) mark(rows, playerId, "task_truck");
+        if (rows.containsKey(ENROLLED) && !finished(rows) && scope.slot(playerId) == 0) {
+            if ("ARMY_RECRUIT".equals(event) && "infantry".equals(key)) mark(rows, playerId, "infantry");
+            if ("BUILD_UPGRADE_DONE".equals(event)) mark(rows, playerId, "base");
         }
         evaluate(playerId, rows);
     }
 
-    /** 补给以明确的阶段ID领取；资格、入账和已领取标记在同一事务中提交。 */
+    /** 阶段补给自动到账；手动接口仍进行条件校验，重复请求不重复发放。 */
     @Transactional
     public Map<String, Object> claim(Long playerId, String supplyId) {
-        Supply supply = SUPPLIES.stream().filter(s -> s.id().equals(supplyId)).findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("补给不存在"));
+        Supply supply = SUPPLIES.stream().filter(s -> s.id().equals(supplyId)).findFirst().orElseThrow(() -> new IllegalArgumentException("补给不存在"));
         Map<String, PlayerGuide> rows = locked(playerId);
-        requireEnrolled(rows);
-        if (!done(rows, "skipped") && !done(rows, "plan")) evaluate(playerId, rows);
-        String claimId = PREFIX + "supply_" + supply.id();
-        if (!rows.containsKey(claimId)) {
-            if (!supply.requires().stream().allMatch(id -> done(rows, id))) throw new IllegalArgumentException("尚未达成补给条件");
-            Resources balance = resources.findByPlayerIdAndCitySlot(playerId, 0).orElseThrow();
-            Map<String, Integer> r = supply.resources();
-            balance.setFood(balance.getFood() + r.get("food"));
-            balance.setSteel(balance.getSteel() + r.get("steel"));
-            balance.setOil(balance.getOil() + r.get("oil"));
-            balance.setRare(balance.getRare() + r.get("rare"));
-            balance.setGold(balance.getGold() + r.get("gold"));
-            resources.save(balance);
-            save(rows, playerId, claimId, "claimed");
-        }
+        requireEnrolled(rows); evaluate(playerId, rows);
+        if (!done(rows, "supply_" + supply.id()) && !supply.requires().stream().allMatch(id -> done(rows, id))) throw new IllegalArgumentException("尚未达成补给条件");
+        grantSupply(rows, playerId, supply);
         return snapshot(playerId, rows);
     }
 
-    /** 跳过只结算尚未领取的补给，已领取标记与余额同事务提交；不伪造行动成果。 */
+    /** 跳过结清未领阶段补给，不伪造成果，玩法探索继续开放。 */
     @Transactional
     public Map<String, Object> skip(Long playerId) {
-        players.lockById(playerId).orElseThrow();
         Map<String, PlayerGuide> rows = locked(playerId);
         if (!rows.containsKey(ENROLLED)) save(rows, playerId, ENROLLED, "active");
-        PlayerGuide entry = rows.get(ENROLLED);
-        if (!done(rows, "skipped") && !done(rows, "plan")) {
-            Resources balance = resources.findByPlayerIdAndCitySlot(playerId, 0).orElseThrow();
-            for (Supply supply : SUPPLIES) {
-                String claimId = PREFIX + "supply_" + supply.id();
-                if (rows.containsKey(claimId)) continue;
-                Map<String, Integer> reward = supply.resources();
-                balance.setFood(balance.getFood() + reward.get("food"));
-                balance.setSteel(balance.getSteel() + reward.get("steel"));
-                balance.setOil(balance.getOil() + reward.get("oil"));
-                balance.setRare(balance.getRare() + reward.get("rare"));
-                balance.setGold(balance.getGold() + reward.get("gold"));
-                save(rows, playerId, claimId, "claimed");
-            }
-            resources.save(balance);
+        if (!finished(rows)) {
+            SUPPLIES.forEach(s -> grantSupply(rows, playerId, s));
             mark(rows, playerId, "skipped");
         }
-        entry.setStatus("paused");
-        guides.save(entry);
+        rows.get(ENROLLED).setStatus("paused"); guides.save(rows.get(ENROLLED));
         return snapshot(playerId, rows);
     }
 
+    /** 五个真实目标完成后自动毕业；重复确认仅返回状态。 */
     @Transactional
-    public Map<String, Object> choosePlan(Long playerId, String plan) {
-        // explore 表示新收尾确认；保留历史方向值，兼容已毕业账号和旧客户端。
-        if (!Set.of("economy", "expansion", "military", "explore").contains(plan == null ? "" : plan)) throw new IllegalArgumentException("请确认完成新手行动");
+    public Map<String, Object> finish(Long playerId) {
         Map<String, PlayerGuide> rows = locked(playerId);
-        requireEnrolled(rows);
-        if (done(rows, "skipped")) throw new IllegalArgumentException("行动已跳过，请继续主线任务");
-        evaluate(playerId, rows);
-        if (!OBJECTIVES.stream().filter(o -> !"plan".equals(o.id())).allMatch(o -> done(rows, o.id()))) {
-            throw new IllegalArgumentException("请先完成前进基地行动");
-        }
-        save(rows, playerId, PREFIX + "plan", plan);
-        grantReward(rows, playerId, "plan", STEP_REWARDS.get("plan"));
-        grantReward(rows, playerId, "completion", COMPLETION_REWARD);
-        // 毕业时自动结清剩余阶段补给，与完成标记同事务提交；已领取的不重复发放。
-        Resources balance = resources.findByPlayerIdAndCitySlot(playerId, 0).orElseThrow();
-        for (Supply supply : SUPPLIES) {
-            String claimId = PREFIX + "supply_" + supply.id();
-            if (rows.containsKey(claimId)) continue;
-            Map<String, Integer> r = supply.resources();
-            balance.setFood(balance.getFood() + r.get("food"));
-            balance.setSteel(balance.getSteel() + r.get("steel"));
-            balance.setOil(balance.getOil() + r.get("oil"));
-            balance.setRare(balance.getRare() + r.get("rare"));
-            balance.setGold(balance.getGold() + r.get("gold"));
-            save(rows, playerId, claimId, "claimed");
-        }
-        resources.save(balance);
+        requireEnrolled(rows); evaluate(playerId, rows);
+        if (!finished(rows)) throw new IllegalArgumentException("请先完成五个核心行动");
         return snapshot(playerId, rows);
     }
 
-    /** 首次失败的恢复支持只发一次；不扣人口，不要求购买道具。 */
+    /** 首次战败只补员一次；援军不会冒充生产完成事件。 */
     @Transactional
     public Map<String, Object> recover(Long playerId) {
         Map<String, PlayerGuide> rows = locked(playerId);
-        requireEnrolled(rows);
-        if (done(rows, "skipped")) throw new IllegalArgumentException("行动已跳过，请继续主线任务");
-        evaluate(playerId, rows);
+        requireEnrolled(rows); evaluate(playerId, rows);
+        if (finished(rows)) throw new IllegalArgumentException("行动已结束");
         if (!done(rows, "recovery")) {
-            if (!done(rows, "defeat") || done(rows, "plan")) throw new IllegalArgumentException("当前无需补员");
-            for (var unit : Map.of("infantry", 30, "scout", 1, "truck", 2).entrySet()) {
-                ArmyUnit army = armies.findByPlayerIdAndCitySlotAndType(playerId, 0, unit.getKey()).stream().findFirst().orElseGet(() -> {
-                    ArmyUnit a = new ArmyUnit(); a.setPlayerId(playerId); a.setCitySlot(0); a.setType(unit.getKey()); a.setCount(0); return a;
-                });
-                army.setCount(army.getCount() + unit.getValue());
-                armies.save(army);
-            }
+            if (!done(rows, "defeat")) throw new IllegalArgumentException("当前无需补员");
+            addArmy(playerId, "infantry", 30); addArmy(playerId, "scout", 1);
             mark(rows, playerId, "recovery");
         }
         return snapshot(playerId, rows);
     }
 
-    private Map<String, Object> snapshot(Long playerId, Map<String, PlayerGuide> rows) {
-        if (!rows.containsKey(ENROLLED)) return Map.of("enrolled", false, "done", false, "objectives", OBJECTIVES);
-        if (!done(rows, "skipped") && !done(rows, "plan")) evaluate(playerId, rows);
-        List<Map<String, Object>> objectives = OBJECTIVES.stream().map(o -> {
-            Map<String, Object> item = new LinkedHashMap<>();
-            item.put("id", o.id()); item.put("title", o.title()); item.put("body", o.body());
-            // 新目标不追溯已毕业账号：展示为豁免，不补发招募奖励，也不重开毕业进度。
-            boolean exempt = "officer".equals(o.id()) && done(rows, "plan") && !done(rows, o.id());
-            item.put("route", o.route()); item.put("building", o.building()); item.put("complete", done(rows, o.id()) || exempt);
-            item.put("exempt", exempt);
-            Reward reward = STEP_REWARDS.get(o.id());
-            item.put("reward", reward.resources()); item.put("diamond", reward.diamond());
-            item.put("rewarded", done(rows, "reward_" + o.id()));
-            return item;
-        }).toList();
-        List<Map<String, Object>> supplies = SUPPLIES.stream().map(s -> {
-            Map<String, Object> item = new LinkedHashMap<>();
-            item.put("id", s.id()); item.put("title", s.title()); item.put("resources", s.resources());
-            item.put("claimed", rows.containsKey(PREFIX + "supply_" + s.id()));
-            item.put("available", s.requires().stream().allMatch(id -> done(rows, id)));
-            return item;
-        }).toList();
-        Map<String, Object> out = new LinkedHashMap<>();
-        out.put("enrolled", true); out.put("paused", "paused".equals(rows.get(ENROLLED).getStatus()));
-        boolean skipped = done(rows, "skipped");
-        out.put("done", done(rows, "plan") || skipped); out.put("skipped", skipped);
-        out.put("objectives", objectives); out.put("supplies", supplies);
-        out.put("completed", objectives.stream().filter(o -> Boolean.TRUE.equals(o.get("complete"))).count());
-        out.put("current", skipped || done(rows, "plan") ? null : objectives.stream().filter(o -> !Boolean.TRUE.equals(o.get("complete"))).findFirst().orElse(null));
-        out.put("recoveryAvailable", done(rows, "defeat") && !done(rows, "recovery") && !done(rows, "plan") && !skipped);
-        out.put("plan", done(rows, "plan") ? rows.get(PREFIX + "plan").getStatus() : "");
-        out.put("completionReward", COMPLETION_REWARD.resources());
-        out.put("completionDiamond", COMPLETION_REWARD.diamond());
-        Resources balance = resources.findByPlayerIdAndCitySlot(playerId, 0).orElseThrow();
-        Map<String, Integer> balances = new LinkedHashMap<>();
-        balances.put("food", balance.getFood()); balances.put("steel", balance.getSteel());
-        balances.put("oil", balance.getOil()); balances.put("rare", balance.getRare());
-        balances.put("gold", balance.getGold()); balances.put("diamond", Objects.requireNonNullElse(balance.getDiamond(), 0));
-        out.put("balances", balances);
-        out.put("checks", checks(playerId, rows));
-        // 服务端同步等待状态，刷新页面或重新登录也不能在侦察往返途中提前弹出指引。
-        out.put("waitingForScoutReturn", !skipped && !done(rows, "plan") && !done(rows, "scout")
-                && marches.findByPlayerIdAndCitySlot(playerId, 0).stream()
-                .anyMatch(m -> "scout".equals(m.getAction()) && "wild".equals(m.getTargetKind())));
-        // 服务端同步采集等待状态：采集尚未完成时，若有在途或采集中的采集行军，指示前端展示采集等待/倒计时。
-        out.put("waitingForGather", !skipped && !done(rows, "plan") && !done(rows, "gather")
-                && marches.findByPlayerIdAndCitySlot(playerId, 0).stream()
-                .anyMatch(m -> "wild_gather".equals(m.getTargetKind()) || ("gather".equals(m.getAction()) && "wild".equals(m.getTargetKind()))));
-        return out;
+    /** 记录第一次主动探索，返回是否需要展示轻量提示；点击本身不计入任务完成。 */
+    @Transactional
+    public Map<String, Object> beginTask(Long playerId, String taskId) {
+        exploration(taskId);
+        Map<String, PlayerGuide> rows = locked(playerId);
+        Map<String, Object> result = snapshot(playerId, rows);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> tasks = (List<Map<String, Object>>) result.get("optionalTasks");
+        boolean locked = tasks.stream().anyMatch(t -> taskId.equals(t.get("id")) && "locked".equals(t.get("status")));
+        boolean first = !locked && !done(rows, "hint_" + taskId) && !done(rows, "task_" + taskId);
+        if (first) mark(rows, playerId, "hint_" + taskId);
+        tasks.stream().filter(t -> taskId.equals(t.get("id"))).forEach(t -> t.put("hintSeen", done(rows, "hint_" + taskId)));
+        result.put("showHint", first);
+        return result;
     }
 
-    /**
-     * 立即结束采集并返回新手引导：
-     * 结算在途或采集中的采集行军（收获资源、返还部队、更新野地已采量、重置军官），
-     * 标记完成 gather 任务，发放奖励并返回最新快照。
-     */
+    /** 探索奖励与完成事实分别保存；在账号锁内完成资源入账及领取标记。 */
     @Transactional
-    public Map<String, Object> finishGather(Long playerId) {
-        players.lockById(playerId).orElseThrow();
-        Map<String, PlayerGuide> rows = locked(playerId);
-        requireEnrolled(rows);
-        if (done(rows, "skipped")) throw new IllegalArgumentException("行动已跳过，请继续主线任务");
-
-        // 查找属于该玩家主城的活跃采集行军
-        List<March> activeMarches = marches.findByPlayerIdAndCitySlot(playerId, 0);
-        for (March m : activeMarches) {
-            boolean isGather = "wild_gather".equals(m.getTargetKind()) ||
-                    ("gather".equals(m.getAction()) && "wild".equals(m.getTargetKind()));
-            if (!isGather) continue;
-
-            // 计算采集资源量与返还
-            WildTile gTile = null;
-            if (m.getTargetId() != null) {
-                try {
-                    gTile = wilds.findById(Long.parseLong(m.getTargetId())).orElse(null);
-                } catch (Exception ignored) {}
-            }
-            int wildLv = 1;
-            int gatherAmount = m.getGatherAmount() != null && m.getGatherAmount() > 0
-                    ? m.getGatherAmount() : 400; // 默认两辆卡车载荷 400
-            String gatherRes = m.getGatherRes() != null ? m.getGatherRes() : "food";
-
-            if (gTile != null) {
-                int mined = gTile.getMined() != null ? gTile.getMined() : 0;
-                int totalRes = gTile.getTotalRes() != null ? gTile.getTotalRes() : com.wargame.model.constants.WorldConfig.RES_PER_WILD_LEVEL;
-                gatherAmount = Math.min(gatherAmount, Math.max(0, totalRes - mined));
-                if (gatherAmount <= 0) gatherAmount = 200;
-                gTile.setMined(mined + gatherAmount);
-                if (gTile.getLevel() != null && gTile.getLevel() > 0) wildLv = gTile.getLevel();
-                wilds.save(gTile);
-            }
-
-            // 结算资源入库
-            marchService.addResources(playerId, Map.of(gatherRes, gatherAmount));
-            marchService.addResources(playerId, JsonUtil.parseIntMap(m.getCarryRes()));
-
-            // 掉落晋升珠宝
-            Map<String, Integer> gemDrops = gatherAmount > 0
-                    ? MilitaryRankDef.rollGatherGems(wildLv) : Collections.emptyMap();
-            for (Map.Entry<String, Integer> ge : gemDrops.entrySet()) {
-                String gKey = ge.getKey();
-                int gCnt = ge.getValue();
-                playerItemRepository.findByPlayerIdAndItemKey(playerId, gKey)
-                        .ifPresentOrElse(existing -> {
-                            existing.setCount(existing.getCount() + gCnt);
-                            existing.setUpdatedAt(System.currentTimeMillis());
-                            playerItemRepository.save(existing);
-                        }, () -> {
-                            PlayerItem newItem = new PlayerItem(null, playerId, gKey, gCnt, System.currentTimeMillis());
-                            playerItemRepository.save(newItem);
-                        });
-            }
-
-            // 部队归队
-            Map<String, Integer> army = JsonUtil.parseIntMap(m.getArmy());
-            if (army.isEmpty()) army = Map.of("truck", 2);
-            marchService.returnArmy(playerId, army);
-
-            // 指挥官重置状态
-            if (m.getCommanderId() != null) {
-                officers.findById(m.getCommanderId()).ifPresent(o -> {
-                    if ("march".equals(o.getRole())) {
-                        o.setRole("idle");
-                        officers.save(o);
-                    }
-                });
-            }
-
-            // 删除该行军
-            marches.delete(m);
-
-            // 推送通知
-            Map<String, Object> extra = new LinkedHashMap<>();
-            extra.put("resource", gatherRes);
-            extra.put("amount", gatherAmount);
-            if (!gemDrops.isEmpty()) extra.put("gems", gemDrops);
-            Map<String, Object> evt = new LinkedHashMap<>();
-            evt.put("event", "returned");
-            evt.put("marchId", m.getId());
-            evt.put("targetName", m.getTargetName());
-            evt.putAll(extra);
-            pushService.pushMarchUpdate(playerId, evt);
-        }
-
-        // 标记完成采集引导目标
-        completeObjective(rows, playerId, "gather");
-        evaluate(playerId, rows);
+    public Map<String, Object> claimTask(Long playerId, String taskId) {
+        Exploration task = exploration(taskId);
+        Map<String, PlayerGuide> rows = locked(playerId); evaluate(playerId, rows);
+        if (!done(rows, "task_" + taskId)) throw new IllegalArgumentException("探索任务尚未完成");
+        grantReward(rows, playerId, "task_" + taskId, new Reward(task.reward(), 0));
         return snapshot(playerId, rows);
     }
 
-    private Map<String, Boolean> checks(Long playerId, Map<String, PlayerGuide> rows) {
-        return Map.ofEntries(
-                Map.entry("command", level(playerId, "command") >= 2),
-                Map.entry("farm", sumLevel(playerId, "farm") >= 2),
-                Map.entry("farm1", sumLevel(playerId, "farm") >= 1),
-                Map.entry("refinery1", level(playerId, "refinery") >= 1),
-                Map.entry("house", level(playerId, "house") >= 1),
-                Map.entry("factory", level(playerId, "factory") >= 1),
-                Map.entry("depot", level(playerId, "depot") >= 1),
-                Map.entry("lab", level(playerId, "lab") >= 1),
-                Map.entry("radar", level(playerId, "radar") >= 1),
-                Map.entry("airport", level(playerId, "airport") >= 1),
-                Map.entry("academy", level(playerId, "academy") >= 1),
-                Map.entry("reconTech", techs.findByPlayerIdAndType(playerId, "recon_level").stream().anyMatch(t -> t.getLevel() >= 1)),
-                Map.entry("infantry", done(rows, "trained_infantry")),
-                Map.entry("truck", done(rows, "trained_truck")),
-                Map.entry("scout", done(rows, "trained_scout"))
-        );
+    private Map<String, Object> snapshot(Long playerId, Map<String, PlayerGuide> rows) {
+        evaluate(playerId, rows);
+        List<Map<String, Object>> objectives = OBJECTIVES.stream().map(o -> {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("id", o.id()); item.put("title", o.title()); item.put("body", o.body());
+            item.put("route", o.route()); item.put("building", o.building()); item.put("complete", done(rows, o.id()));
+            return item;
+        }).toList();
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("enrolled", rows.containsKey(ENROLLED));
+        out.put("paused", rows.containsKey(ENROLLED) && "paused".equals(rows.get(ENROLLED).getStatus()));
+        out.put("done", finished(rows)); out.put("skipped", done(rows, "skipped"));
+        out.put("objectives", objectives);
+        out.put("completed", objectives.stream().filter(o -> Boolean.TRUE.equals(o.get("complete"))).count());
+        out.put("current", !rows.containsKey(ENROLLED) || finished(rows) ? null : objectives.stream().filter(o -> !Boolean.TRUE.equals(o.get("complete"))).findFirst().orElse(null));
+        out.put("supplies", SUPPLIES.stream().map(s -> Map.of("id", s.id(), "title", s.title(), "resources", s.resources(),
+                "claimed", done(rows, "supply_" + s.id()), "available", s.requires().stream().allMatch(id -> done(rows, id)))).toList());
+        out.put("recoveryAvailable", done(rows, "defeat") && !done(rows, "recovery") && !finished(rows));
+        out.put("completionReward", COMPLETION_REWARD.resources()); out.put("completionDiamond", COMPLETION_REWARD.diamond());
+        out.put("checks", Map.of("factory", level(playerId, "factory") >= 1));
+        // 只等待情报送达，返程中的侦察部队不会阻塞首战。
+        out.put("scouting", !done(rows, "scout") && marches.findByPlayerIdAndCitySlot(playerId, 0).stream().anyMatch(m -> "scout".equals(m.getAction()) && !Boolean.TRUE.equals(m.getReturning())));
+        out.put("optionalTasks", optionalTasks(playerId, rows));
+        resources.findByPlayerIdAndCitySlot(playerId, 0).ifPresent(balance -> out.put("balances", Map.of("food", balance.getFood(), "steel", balance.getSteel(),
+                "oil", balance.getOil(), "rare", balance.getRare(), "gold", balance.getGold(), "diamond", Objects.requireNonNullElse(balance.getDiamond(), 0))));
+        return out;
     }
 
-    /** 按实际成果结算目标；侦察情报已送达时仍须等对应行军返城，才发奖并推进。 */
+    /** 报告生成即可推进，胜利不限占领模式；已读战报加五个成果自动发奖毕业。 */
     private void evaluate(Long playerId, Map<String, PlayerGuide> rows) {
-        Map<String, Boolean> c = checks(playerId, rows);
-        if (c.get("command")) completeObjective(rows, playerId, "base");
-        if (c.get("farm")) completeObjective(rows, playerId, "farm");
-        if (c.get("factory")) completeObjective(rows, playerId, "factory");
-        if (done(rows, "trained_infantry")) completeObjective(rows, playerId, "infantry");
-        if (done(rows, "trained_truck")) completeObjective(rows, playerId, "train");
-        if (c.get("lab")) completeObjective(rows, playerId, "lab");
-        if (c.get("reconTech")) completeObjective(rows, playerId, "reconTech");
-        if (done(rows, "trained_scout")) completeObjective(rows, playerId, "recon");
-        // 老账号已拥有主城军官时可直接衔接新步骤，不要求再招募一次。
-        if (!officers.findByPlayerIdAndCitySlot(playerId, 0).isEmpty()) completeObjective(rows, playerId, "officer");
-        if (wilds.findByOccupiedBy(playerId).stream().anyMatch(this::hasResource)) completeObjective(rows, playerId, "occupy");
-        long startedAt = rows.get(ENROLLED).getCompletedAt();
-        List<March> activeScouts = done(rows, "scout") ? List.of() : marches.findByPlayerId(playerId).stream()
-                .filter(m -> "scout".equals(m.getAction()) && "wild".equals(m.getTargetKind())).toList();
+        if (!officers.findByPlayerId(playerId).isEmpty()) mark(rows, playerId, "task_officer");
+        if (techs.findByPlayerId(playerId).stream().anyMatch(t -> t.getLevel() > ("recon_level".equals(t.getType()) && done(rows, "starter") ? 1 : 0))) mark(rows, playerId, "task_tech");
+        if (guildMembers.findByPlayerId(playerId).isPresent()) mark(rows, playerId, "task_guild");
+        if (loadouts.findByPlayerId(playerId).stream().anyMatch(l -> !JsonUtil.parseObjMap(l.getSlots()).isEmpty())) mark(rows, playerId, "task_equipment");
+        if (!rows.containsKey(ENROLLED) || finished(rows)) return;
+        long startedAt = Objects.requireNonNullElse(rows.get(ENROLLED).getCompletedAt(), 0L);
         for (ScoutReport report : reports.findByPlayerIdAndCreatedAtGreaterThanEqual(playerId, startedAt)) {
             var data = JsonUtil.parseTree(report.getData());
-            if ("scout".equals(report.getType()) && "wild".equals(data.path("targetKind").asText())
-                    && data.path("showCityInfo").asBoolean() && data.path("reconLevel").asInt() >= 1
-                    && !data.path("resources").isEmpty() && scoutReturned(report, activeScouts)) {
-                completeObjective(rows, playerId, "scout");
-            }
+            // 战报保留出发城市，分城报告不能推动只在主城开展的核心行动。
+            if (data.path("citySlot").asInt(0) != 0 || "defender".equals(data.path("perspective").asText())) continue;
+            if ("scout".equals(report.getType()) && "wild".equals(data.path("targetKind").asText()) && data.path("showCityInfo").asBoolean()) mark(rows, playerId, "scout");
             if ("battle".equals(report.getType()) && "wild".equals(data.path("targetType").asText())) {
-                if (!data.path("win").asBoolean()) mark(rows, playerId, "defeat");
-                if (data.path("wildConquered").asBoolean() && report.getReadAt() != null && report.getReadAt() > 0) completeObjective(rows, playerId, "report");
+                if (data.path("win").asBoolean()) {
+                    mark(rows, playerId, "occupy");
+                    if (report.getReadAt() != null && report.getReadAt() > 0) mark(rows, playerId, "report");
+                } else mark(rows, playerId, "defeat");
             }
+        }
+        SUPPLIES.stream().filter(s -> s.requires().stream().allMatch(id -> done(rows, id))).forEach(s -> grantSupply(rows, playerId, s));
+        if (OBJECTIVES.stream().allMatch(o -> done(rows, o.id()))) {
+            grantReward(rows, playerId, "completion", COMPLETION_REWARD);
+            mark(rows, playerId, "completed");
         }
     }
 
-    /** 行军记录在返城入库时删除；旧报告没有行军 ID 时按野地坐标与报告时间兼容关联。 */
-    private boolean scoutReturned(ScoutReport report, List<March> activeScouts) {
-        long marchId = JsonUtil.parseTree(report.getData()).path("marchId").asLong();
-        return activeScouts.stream().noneMatch(m -> {
-            if (marchId > 0) return Objects.equals(m.getId(), marchId);
-            Integer x = Boolean.TRUE.equals(m.getReturning()) ? m.getOriginX() : m.getTargetX();
-            Integer y = Boolean.TRUE.equals(m.getReturning()) ? m.getOriginY() : m.getTargetY();
-            return Objects.equals(report.getTargetX(), x) && Objects.equals(report.getTargetY(), y)
-                    && m.getStartAt() != null && report.getCreatedAt() != null && m.getStartAt() <= report.getCreatedAt();
-        });
+    /** 可选任务只根据自身条件解锁，互相不串成必须依次完成的链条。 */
+    private List<Map<String, Object>> optionalTasks(Long playerId, Map<String, PlayerGuide> rows) {
+        boolean owned = wilds.findByOccupiedBy(playerId).stream().anyMatch(t -> Objects.requireNonNullElse(t.getOccupiedCitySlot(), 0) == 0
+                && hasResource(t) && Objects.requireNonNullElse(t.getTotalRes(), 0) > Objects.requireNonNullElse(t.getMined(), 0));
+        boolean gathering = marches.findByPlayerId(playerId).stream().anyMatch(m -> "wild_gather".equals(m.getTargetKind()) || "gather".equals(m.getAction()));
+        return EXPLORATIONS.stream().map(t -> {
+            String reason = switch (t.id()) {
+                case "gather" -> owned ? "" : "先占领一处有剩余资源的野地";
+                case "truck" -> level(playerId, "factory") >= 1 ? "" : "先建造军工厂";
+                case "tech" -> level(playerId, "lab") >= 1 ? "" : "先建造科研中心";
+                case "officer" -> level(playerId, "academy") >= 1 ? "" : "先建造军校";
+                default -> "";
+            };
+            boolean complete = done(rows, "task_" + t.id()), claimed = done(rows, "reward_task_" + t.id());
+            String status = claimed ? "claimed" : complete ? "completed" : "gather".equals(t.id()) && gathering ? "in_progress" : !reason.isEmpty() ? "locked" : "available";
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("id", t.id()); item.put("title", t.title()); item.put("body", t.body()); item.put("hint", t.hint());
+            item.put("route", t.route()); item.put("building", t.building()); item.put("status", status);
+            item.put("unlockHint", reason); item.put("hintSeen", done(rows, "hint_" + t.id())); item.put("reward", t.reward());
+            return item;
+        }).toList();
     }
 
     /** 优先沿用可达目标；附近没有合适目标时仅补建一处低等级资源地。 */
     @Transactional
     public Map<String, Object> target(Long playerId, boolean gather) {
         if (scope.slot(playerId) != 0) throw new IllegalArgumentException("请切回主城执行前进基地行动");
-        // 与城市选址使用同一把世界锁，避免推荐补建与他人建城重叠。
-        WorldMap world = terrain.lockWorld();
         Map<String, PlayerGuide> rows = locked(playerId);
-        requireEnrolled(rows);
-        if (done(rows, "skipped")) throw new IllegalArgumentException("行动已跳过，请继续主线任务");
+        // 先锁账号再锁世界，与出征保持顺序；世界锁避免补建目标与建城重叠。
+        WorldMap world = terrain.lockWorld();
+        if (!gather) {
+            requireEnrolled(rows);
+            if (finished(rows)) throw new IllegalArgumentException("行动已结束，请在地图中自行选择目标");
+        }
         Player player = players.findById(playerId).orElseThrow();
-        String mask = terrain.ensure();
-        int source = player.getCityPosY() * WorldTerrainService.SIZE + player.getCityPosX();
+        String mask = WorldTerrainService.playableMask(terrain.ensure());
+        int size = com.wargame.model.constants.WorldConfig.WORLD_SIZE;
+        int source = player.getCityPosY() * size + player.getCityPosX();
         List<WildTile> candidates = new ArrayList<>(wilds.findByWorldId(world.getId()));
         candidates.sort(Comparator.comparingInt(t -> Math.abs(t.getX() - player.getCityPosX()) + Math.abs(t.getY() - player.getCityPosY())));
         for (WildTile tile : candidates) {
             if (!hasResource(tile) || tile.getTotalRes() == null || tile.getTotalRes() <= Objects.requireNonNullElse(tile.getMined(), 0)) continue;
             boolean owned = Boolean.TRUE.equals(tile.getOccupied());
-            if (gather ? !playerId.equals(tile.getOccupiedBy()) : owned) continue;
+            if (gather ? (!playerId.equals(tile.getOccupiedBy()) || Objects.requireNonNullElse(tile.getOccupiedCitySlot(), 0) != 0) : owned) continue;
             Map<String, Integer> defenders = JsonUtil.parseIntMap(tile.getGarrison());
             if (!gather && (defenders.entrySet().stream().anyMatch(e -> !"infantry".equals(e.getKey()) && e.getValue() > 0)
                     || defenders.getOrDefault("infantry", 0) > 10)) continue;
-            List<Integer> path = MarchRouteService.path(mask, List.of(source), List.of(tile.getY() * WorldTerrainService.SIZE + tile.getX()), false);
+            List<Integer> path = MarchRouteService.path(mask, List.of(source), List.of(tile.getY() * size + tile.getX()), false);
             if (path.isEmpty() || path.size() > 21) continue;
             return targetView(playerId, tile, path.size() - 1);
         }
         if (gather) throw new IllegalArgumentException("附近没有可采集的己方资源地，请先占领新的补给点");
-        if (done(rows, "plan")) throw new IllegalArgumentException("行动已完成，请在地图中自行选择目标");
+        if (finished(rows)) throw new IllegalArgumentException("行动已完成，请在地图中自行选择目标");
         long created = rows.keySet().stream().filter(k -> k.startsWith(PREFIX + "target_")).count();
         if (created >= 3) throw new IllegalArgumentException("补给点已补建3次，请在地图寻找可用资源地");
         Set<String> used = terrain.occupiedCoordinates(world.getId());
         ArrayDeque<Integer> queue = new ArrayDeque<>();
         Map<Integer, Integer> distance = new HashMap<>(); queue.add(source); distance.put(source, 0);
         while (!queue.isEmpty()) {
-            int pos = queue.remove(), d = distance.get(pos), x = pos % WorldTerrainService.SIZE, y = pos / WorldTerrainService.SIZE;
+            int pos = queue.remove(), d = distance.get(pos), x = pos % size, y = pos / size;
             if (d >= 3 && !used.contains(x + "," + y)) {
                 WildTile tile = new WildTile(); tile.setWorldId(world.getId()); tile.setType("grainfield");
                 tile.setX(x); tile.setY(y); tile.setLevel(1); tile.setGarrison(JsonUtil.toJson(Map.of("infantry", 10)));
@@ -517,7 +310,7 @@ public class OnboardingService {
                 return targetView(playerId, tile, d);
             }
             if (d >= 20) continue;
-            for (int next : WorldTerrainService.neighbors(pos)) if (!distance.containsKey(next) && mask.charAt(next) == '0') {
+            for (int next : WorldTerrainService.neighbors(pos,size)) if (!distance.containsKey(next) && mask.charAt(next) == '0') {
                 distance.put(next, d + 1); queue.add(next);
             }
         }
@@ -547,44 +340,42 @@ public class OnboardingService {
         return def != null && def.res() != null;
     }
     private int level(Long id, String type) { return buildings.findByPlayerIdAndCitySlotAndType(id, 0, type).stream().mapToInt(b -> b.getLevel()).max().orElse(0); }
-    private int sumLevel(Long id, String type) { return buildings.findByPlayerIdAndCitySlotAndType(id, 0, type).stream().mapToInt(b -> b.getLevel()).sum(); }
     private boolean done(Map<String, PlayerGuide> rows, String id) { return rows.containsKey(PREFIX + id); }
-    private static Reward reward(Map<String, Integer> resources, int diamond) { return new Reward(resources, diamond); }
-    private void completeObjective(Map<String, PlayerGuide> rows, Long playerId, String id) {
-        if (!done(rows, id)) mark(rows, playerId, id);
-        Reward reward = STEP_REWARDS.get(id);
-        if (reward != null) grantReward(rows, playerId, id, reward);
+    private boolean finished(Map<String, PlayerGuide> rows) { return done(rows, "completed") || done(rows, "skipped"); }
+    private Exploration exploration(String id) { return EXPLORATIONS.stream().filter(t -> t.id().equals(id)).findFirst().orElseThrow(() -> new IllegalArgumentException("探索任务不存在")); }
+    private void addArmy(Long playerId, String type, int count) {
+        ArmyUnit unit = armies.findByPlayerIdAndCitySlotAndType(playerId, 0, type).stream().findFirst().orElseGet(() -> {
+            ArmyUnit a = new ArmyUnit(); a.setPlayerId(playerId); a.setCitySlot(0); a.setType(type); a.setCount(0); return a;
+        });
+        unit.setCount(unit.getCount() + count); armies.save(unit);
+    }
+    private void grantSupply(Map<String, PlayerGuide> rows, Long playerId, Supply supply) {
+        if (done(rows, "supply_" + supply.id())) return;
+        grantReward(rows, playerId, "supply_" + supply.id(), new Reward(supply.resources(), 0));
+        mark(rows, playerId, "supply_" + supply.id());
     }
     private void grantReward(Map<String, PlayerGuide> rows, Long playerId, String id, Reward reward) {
-        if (reward == null || done(rows, "reward_" + id)) return;
+        if (done(rows, "reward_" + id)) return;
         Resources balance = resources.findByPlayerIdAndCitySlot(playerId, 0).orElseThrow();
-        Map<String, Integer> values = reward.resources();
-        balance.setFood(balance.getFood() + values.getOrDefault("food", 0));
-        balance.setSteel(balance.getSteel() + values.getOrDefault("steel", 0));
-        balance.setOil(balance.getOil() + values.getOrDefault("oil", 0));
-        balance.setRare(balance.getRare() + values.getOrDefault("rare", 0));
-        balance.setGold(balance.getGold() + values.getOrDefault("gold", 0));
-        balance.setDiamond(Objects.requireNonNullElse(balance.getDiamond(), 0) + reward.diamond());
-        resources.save(balance);
-        save(rows, playerId, PREFIX + "reward_" + id, "claimed");
+        Map<String, Integer> r = reward.resources();
+        balance.setFood(balance.getFood() + r.getOrDefault("food", 0)); balance.setSteel(balance.getSteel() + r.getOrDefault("steel", 0));
+        balance.setOil(balance.getOil() + r.getOrDefault("oil", 0)); balance.setRare(balance.getRare() + r.getOrDefault("rare", 0));
+        balance.setGold(balance.getGold() + r.getOrDefault("gold", 0)); balance.setDiamond(Objects.requireNonNullElse(balance.getDiamond(), 0) + reward.diamond());
+        resources.save(balance); mark(rows, playerId, "reward_" + id);
     }
     private PlayerGuide requireEnrolled(Map<String, PlayerGuide> rows) {
         if (!rows.containsKey(ENROLLED)) throw new IllegalArgumentException("请先开启前进基地行动");
         return rows.get(ENROLLED);
     }
     private Map<String, PlayerGuide> locked(Long id) {
-        // 先锁稳定的报名行，再查询成果；否则并发等待前的查询可能漏掉刚插入的领奖记录。
-        guides.lockEntry(id, ENROLLED);
-        Map<String, PlayerGuide> rows = new LinkedHashMap<>();
-        guides.lockByPlayerId(id).forEach(g -> rows.put(g.getStepId(), g));
+        // 账号行一直存在，探索任务在未报名及毕业后也能以同一把锁串行化领取。
+        players.lockById(id).orElseThrow();
+        Map<String, PlayerGuide> rows = new LinkedHashMap<>(); guides.lockByPlayerId(id).forEach(g -> rows.put(g.getStepId(), g));
         return rows;
     }
-    private void mark(Map<String, PlayerGuide> rows, Long playerId, String id) {
-        if (!done(rows, id)) save(rows, playerId, PREFIX + id, "done");
-    }
+    private void mark(Map<String, PlayerGuide> rows, Long playerId, String id) { if (!done(rows, id)) save(rows, playerId, PREFIX + id, "done"); }
     private void save(Map<String, PlayerGuide> rows, Long playerId, String id, String status) {
-        PlayerGuide row = rows.getOrDefault(id, new PlayerGuide());
-        row.setPlayerId(playerId); row.setStepId(id); row.setStatus(status); row.setCompletedAt(System.currentTimeMillis());
-        rows.put(id, guides.save(row));
+        PlayerGuide row = rows.getOrDefault(id, new PlayerGuide()); row.setPlayerId(playerId); row.setStepId(id); row.setStatus(status);
+        row.setCompletedAt(System.currentTimeMillis()); rows.put(id, guides.save(row));
     }
 }

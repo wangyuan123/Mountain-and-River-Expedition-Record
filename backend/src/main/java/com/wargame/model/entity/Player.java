@@ -28,6 +28,14 @@ public class Player extends VersionedEntity implements CityEconomy {
     @Column(name = "game_initialized", nullable = false)
     private boolean gameInitialized = true;
 
+    /** null 为待首次进入的新账号，0 为不补发保护的历史账号。 */
+    @Column(name = "newbie_protection_started_at")
+    private Long newbieProtectionStartedAt = 0L;
+
+    /** 主动参战或发展达标后永久结束，切城、重登及声望下降均不恢复。 */
+    @Column(name = "newbie_protection_ended", nullable = false)
+    private boolean newbieProtectionEnded = false;
+
     @Column(name = "username", unique = true, nullable = false, length = 50)
     private String username;
 
@@ -53,6 +61,14 @@ public class Player extends VersionedEntity implements CityEconomy {
 
     @Column(name = "avatar", length = 255)
     private String avatar = AvatarDef.randomAvatar();
+
+    /** 好友添加权限：APPROVAL 需审批、ANYONE 可直接添加、NONE 拒绝新申请。 */
+    @Column(name = "friend_request_policy", nullable = false, length = 16)
+    private String friendRequestPolicy = "APPROVAL";
+
+    /** 开启后仅接收自己好友列表中玩家的私聊，系统和军团消息不受影响。 */
+    @Column(name = "block_stranger_messages", nullable = false)
+    private boolean blockStrangerMessages = false;
 
     /** 首页四个模块的账号级顺序，JSON 数组；null 表示尚未自定义。 */
     @Column(name = "home_module_order", length = 128)
@@ -219,6 +235,14 @@ public class Player extends VersionedEntity implements CityEconomy {
 
     public Integer getMilitaryRank() {
         return militaryRank != null ? militaryRank : 1;
+    }
+
+    /** 所有声望写入统一记录新手毕业，先检查旧值以防通过降声望重新开盾。 */
+    public void setPrestige(Integer prestige) {
+        long now = System.currentTimeMillis();
+        com.wargame.model.constants.NewbieProtection.finishForPrestige(this, now);
+        this.prestige = prestige;
+        com.wargame.model.constants.NewbieProtection.finishForPrestige(this, now);
     }
 
     public void setMilitaryRank(Integer militaryRank) {

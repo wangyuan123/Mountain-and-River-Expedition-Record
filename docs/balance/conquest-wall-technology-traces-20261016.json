@@ -1,0 +1,471 @@
+{
+  "cases": [
+    {
+      "initialDistance": 2120,
+      "equipmentPercent": 0,
+      "attackerWin": true,
+      "attackRounds": 9,
+      "breachBattleRound": 13,
+      "defense": 200,
+      "reinforcementLevel": 0,
+      "firstAttackRound": 5,
+      "maxHp": 2500000.0,
+      "trace": [
+        {
+          "battleRound": 1,
+          "distance": 1670,
+          "remainingHp": 2500000.0,
+          "damage": 0.0
+        },
+        {
+          "battleRound": 2,
+          "distance": 1220,
+          "remainingHp": 2500000.0,
+          "damage": 0.0
+        },
+        {
+          "battleRound": 3,
+          "distance": 770,
+          "remainingHp": 2500000.0,
+          "damage": 0.0
+        },
+        {
+          "battleRound": 4,
+          "distance": 320,
+          "remainingHp": 2500000.0,
+          "damage": 0.0
+        },
+        {
+          "battleRound": 5,
+          "distance": 0,
+          "remainingHp": 2211590.909091,
+          "damage": 288409.090909
+        },
+        {
+          "battleRound": 6,
+          "distance": 0,
+          "remainingHp": 1923181.818182,
+          "damage": 288409.090909
+        },
+        {
+          "battleRound": 7,
+          "distance": 0,
+          "remainingHp": 1634772.727273,
+          "damage": 288409.090909
+        },
+        {
+          "battleRound": 8,
+          "distance": 0,
+          "remainingHp": 1346363.636364,
+          "damage": 288409.090909
+        },
+        {
+          "battleRound": 9,
+          "distance": 0,
+          "remainingHp": 1057954.545455,
+          "damage": 288409.090909
+        },
+        {
+          "battleRound": 10,
+          "distance": 0,
+          "remainingHp": 769545.454546,
+          "damage": 288409.090909
+        },
+        {
+          "battleRound": 11,
+          "distance": 0,
+          "remainingHp": 481136.363637,
+          "damage": 288409.090909
+        },
+        {
+          "battleRound": 12,
+          "distance": 0,
+          "remainingHp": 192727.272728,
+          "damage": 288409.090909
+        },
+        {
+          "battleRound": 13,
+          "distance": 0,
+          "remainingHp": 0.0,
+          "damage": 192727.272728
+        }
+      ]
+    },
+    {
+      "initialDistance": 2120,
+      "equipmentPercent": 15,
+      "attackerWin": true,
+      "attackRounds": 8,
+      "breachBattleRound": 12,
+      "defense": 200,
+      "reinforcementLevel": 0,
+      "firstAttackRound": 5,
+      "maxHp": 2500000.0,
+      "trace": [
+        {
+          "battleRound": 1,
+          "distance": 1670,
+          "remainingHp": 2500000.0,
+          "damage": 0.0
+        },
+        {
+          "battleRound": 2,
+          "distance": 1220,
+          "remainingHp": 2500000.0,
+          "damage": 0.0
+        },
+        {
+          "battleRound": 3,
+          "distance": 770,
+          "remainingHp": 2500000.0,
+          "damage": 0.0
+        },
+        {
+          "battleRound": 4,
+          "distance": 320,
+          "remainingHp": 2500000.0,
+          "damage": 0.0
+        },
+        {
+          "battleRound": 5,
+          "distance": 0,
+          "remainingHp": 2168329.545455,
+          "damage": 331670.454545
+        },
+        {
+          "battleRound": 6,
+          "distance": 0,
+          "remainingHp": 1836659.09091,
+          "damage": 331670.454545
+        },
+        {
+          "battleRound": 7,
+          "distance": 0,
+          "remainingHp": 1504988.636365,
+          "damage": 331670.454545
+        },
+        {
+          "battleRound": 8,
+          "distance": 0,
+          "remainingHp": 1173318.18182,
+          "damage": 331670.454545
+        },
+        {
+          "battleRound": 9,
+          "distance": 0,
+          "remainingHp": 841647.727275,
+          "damage": 331670.454545
+        },
+        {
+          "battleRound": 10,
+          "distance": 0,
+          "remainingHp": 509977.27273,
+          "damage": 331670.454545
+        },
+        {
+          "battleRound": 11,
+          "distance": 0,
+          "remainingHp": 178306.818185,
+          "damage": 331670.454545
+        },
+        {
+          "battleRound": 12,
+          "distance": 0,
+          "remainingHp": 0.0,
+          "damage": 178306.818185
+        }
+      ]
+    },
+    {
+      "initialDistance": 2120,
+      "equipmentPercent": 0,
+      "attackerWin": true,
+      "attackRounds": 19,
+      "breachBattleRound": 23,
+      "defense": 300,
+      "reinforcementLevel": 10,
+      "firstAttackRound": 5,
+      "maxHp": 3750000.0,
+      "trace": [
+        {
+          "battleRound": 1,
+          "distance": 1670,
+          "remainingHp": 3750000.0,
+          "damage": 0.0
+        },
+        {
+          "battleRound": 2,
+          "distance": 1220,
+          "remainingHp": 3750000.0,
+          "damage": 0.0
+        },
+        {
+          "battleRound": 3,
+          "distance": 770,
+          "remainingHp": 3750000.0,
+          "damage": 0.0
+        },
+        {
+          "battleRound": 4,
+          "distance": 320,
+          "remainingHp": 3750000.0,
+          "damage": 0.0
+        },
+        {
+          "battleRound": 5,
+          "distance": 0,
+          "remainingHp": 3551718.75,
+          "damage": 198281.25
+        },
+        {
+          "battleRound": 6,
+          "distance": 0,
+          "remainingHp": 3353437.5,
+          "damage": 198281.25
+        },
+        {
+          "battleRound": 7,
+          "distance": 0,
+          "remainingHp": 3155156.25,
+          "damage": 198281.25
+        },
+        {
+          "battleRound": 8,
+          "distance": 0,
+          "remainingHp": 2956875.0,
+          "damage": 198281.25
+        },
+        {
+          "battleRound": 9,
+          "distance": 0,
+          "remainingHp": 2758593.75,
+          "damage": 198281.25
+        },
+        {
+          "battleRound": 10,
+          "distance": 0,
+          "remainingHp": 2560312.5,
+          "damage": 198281.25
+        },
+        {
+          "battleRound": 11,
+          "distance": 0,
+          "remainingHp": 2362031.25,
+          "damage": 198281.25
+        },
+        {
+          "battleRound": 12,
+          "distance": 0,
+          "remainingHp": 2163750.0,
+          "damage": 198281.25
+        },
+        {
+          "battleRound": 13,
+          "distance": 0,
+          "remainingHp": 1965468.75,
+          "damage": 198281.25
+        },
+        {
+          "battleRound": 14,
+          "distance": 0,
+          "remainingHp": 1767187.5,
+          "damage": 198281.25
+        },
+        {
+          "battleRound": 15,
+          "distance": 0,
+          "remainingHp": 1568906.25,
+          "damage": 198281.25
+        },
+        {
+          "battleRound": 16,
+          "distance": 0,
+          "remainingHp": 1370625.0,
+          "damage": 198281.25
+        },
+        {
+          "battleRound": 17,
+          "distance": 0,
+          "remainingHp": 1172343.75,
+          "damage": 198281.25
+        },
+        {
+          "battleRound": 18,
+          "distance": 0,
+          "remainingHp": 974062.5,
+          "damage": 198281.25
+        },
+        {
+          "battleRound": 19,
+          "distance": 0,
+          "remainingHp": 775781.25,
+          "damage": 198281.25
+        },
+        {
+          "battleRound": 20,
+          "distance": 0,
+          "remainingHp": 577500.0,
+          "damage": 198281.25
+        },
+        {
+          "battleRound": 21,
+          "distance": 0,
+          "remainingHp": 379218.75,
+          "damage": 198281.25
+        },
+        {
+          "battleRound": 22,
+          "distance": 0,
+          "remainingHp": 180937.5,
+          "damage": 198281.25
+        },
+        {
+          "battleRound": 23,
+          "distance": 0,
+          "remainingHp": 0.0,
+          "damage": 180937.5
+        }
+      ]
+    },
+    {
+      "initialDistance": 2120,
+      "equipmentPercent": 15,
+      "attackerWin": true,
+      "attackRounds": 17,
+      "breachBattleRound": 21,
+      "defense": 300,
+      "reinforcementLevel": 10,
+      "firstAttackRound": 5,
+      "maxHp": 3750000.0,
+      "trace": [
+        {
+          "battleRound": 1,
+          "distance": 1670,
+          "remainingHp": 3750000.0,
+          "damage": 0.0
+        },
+        {
+          "battleRound": 2,
+          "distance": 1220,
+          "remainingHp": 3750000.0,
+          "damage": 0.0
+        },
+        {
+          "battleRound": 3,
+          "distance": 770,
+          "remainingHp": 3750000.0,
+          "damage": 0.0
+        },
+        {
+          "battleRound": 4,
+          "distance": 320,
+          "remainingHp": 3750000.0,
+          "damage": 0.0
+        },
+        {
+          "battleRound": 5,
+          "distance": 0,
+          "remainingHp": 3521976.5625,
+          "damage": 228023.4375
+        },
+        {
+          "battleRound": 6,
+          "distance": 0,
+          "remainingHp": 3293953.125,
+          "damage": 228023.4375
+        },
+        {
+          "battleRound": 7,
+          "distance": 0,
+          "remainingHp": 3065929.6875,
+          "damage": 228023.4375
+        },
+        {
+          "battleRound": 8,
+          "distance": 0,
+          "remainingHp": 2837906.25,
+          "damage": 228023.4375
+        },
+        {
+          "battleRound": 9,
+          "distance": 0,
+          "remainingHp": 2609882.8125,
+          "damage": 228023.4375
+        },
+        {
+          "battleRound": 10,
+          "distance": 0,
+          "remainingHp": 2381859.375,
+          "damage": 228023.4375
+        },
+        {
+          "battleRound": 11,
+          "distance": 0,
+          "remainingHp": 2153835.9375,
+          "damage": 228023.4375
+        },
+        {
+          "battleRound": 12,
+          "distance": 0,
+          "remainingHp": 1925812.5,
+          "damage": 228023.4375
+        },
+        {
+          "battleRound": 13,
+          "distance": 0,
+          "remainingHp": 1697789.0625,
+          "damage": 228023.4375
+        },
+        {
+          "battleRound": 14,
+          "distance": 0,
+          "remainingHp": 1469765.625,
+          "damage": 228023.4375
+        },
+        {
+          "battleRound": 15,
+          "distance": 0,
+          "remainingHp": 1241742.1875,
+          "damage": 228023.4375
+        },
+        {
+          "battleRound": 16,
+          "distance": 0,
+          "remainingHp": 1013718.75,
+          "damage": 228023.4375
+        },
+        {
+          "battleRound": 17,
+          "distance": 0,
+          "remainingHp": 785695.3125,
+          "damage": 228023.4375
+        },
+        {
+          "battleRound": 18,
+          "distance": 0,
+          "remainingHp": 557671.875,
+          "damage": 228023.4375
+        },
+        {
+          "battleRound": 19,
+          "distance": 0,
+          "remainingHp": 329648.4375,
+          "damage": 228023.4375
+        },
+        {
+          "battleRound": 20,
+          "distance": 0,
+          "remainingHp": 101625.0,
+          "damage": 228023.4375
+        },
+        {
+          "battleRound": 21,
+          "distance": 0,
+          "remainingHp": 0.0,
+          "damage": 101625.0
+        }
+      ]
+    }
+  ],
+  "battleRules": "balance-v19-technology-20261016"
+}

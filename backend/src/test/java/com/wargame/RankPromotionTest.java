@@ -83,7 +83,7 @@ class RankPromotionTest extends BaseServiceTest {
         PlayerItem certificate = items.findByPlayerIdAndItemKey(p.getId(), "rank_certificate_2").orElseThrow();
         certificate.setCount(2); items.saveAndFlush(certificate);
         items.saveAndFlush(new PlayerItem(null, p.getId(), "rank_certificate_3", 9, 0L));
-        items.saveAndFlush(new PlayerItem(null, p.getId(), "gem_pearl", 50, 0L));
+        items.saveAndFlush(new PlayerItem(null, p.getId(), "expBook", 50, 0L));
         var grade = pass(p.getId(), 1);
         assertEquals(true, grade.get("passed"));
         assertEquals(4, grade.get("correct"));
@@ -98,7 +98,7 @@ class RankPromotionTest extends BaseServiceTest {
         assertNull(promoted.getRankExam());
         assertEquals(1, items.findByPlayerIdAndItemKey(p.getId(), "rank_certificate_2").orElseThrow().getCount());
         assertEquals(9, items.findByPlayerIdAndItemKey(p.getId(), "rank_certificate_3").orElseThrow().getCount());
-        assertEquals(50, items.findByPlayerIdAndItemKey(p.getId(), "gem_pearl").orElseThrow().getCount());
+        assertEquals(50, items.findByPlayerIdAndItemKey(p.getId(), "expBook").orElseThrow().getCount());
         assertEquals(2, playerQuests.findByPlayerIdAndQuestId(p.getId(), "q1_9").orElseThrow().getProgress());
         assertThrows(IllegalArgumentException.class, () -> ranks.submitExam(p.getId(), new RankService.ExamSubmission(attempt, List.of())));
     }

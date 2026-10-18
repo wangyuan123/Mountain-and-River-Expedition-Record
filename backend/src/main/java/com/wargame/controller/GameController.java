@@ -42,6 +42,7 @@ public class GameController {
     @GetMapping("/state")
     public ResponseEntity<Map<String, Object>> getState() {
         Long playerId = authService.getCurrentPlayer().getId();
+        gameStateService.enterGame(playerId);
         return ResponseEntity.ok(gameStateService.getGameState(playerId));
     }
 

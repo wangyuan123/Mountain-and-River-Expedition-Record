@@ -369,11 +369,12 @@ window.Game = window.Game || {};
         });
     },
 
+    /** 治疗响应只更新发起治疗的账号和城市，切城后的页面保留自己的状态。 */
     healWounded: function (id, count, currency) {
-      var token = client.getToken();
+      var token = client.getToken(), cityId = client.cityId;
       return client.post('/game/army/wounded/' + id + '/heal', { count: count, currency: currency })
         .then(function (data) {
-          if (client.getToken() === token && data && data.success && data.state) applyState(data.state);
+          if (client.getToken() === token && client.cityId === cityId && data && data.success && data.state) applyState(data.state);
           return data;
         });
     },
@@ -606,8 +607,8 @@ window.Game = window.Game || {};
         });
     },
 
-    declareWar: function (targetCityId) {
-      return client.post('/game/world/declare-war', { targetCityId: targetCityId })
+    declareWar: function (targetCityId, abandonNewbieProtection) {
+      return client.post('/game/world/declare-war', { targetCityId: targetCityId, abandonNewbieProtection: abandonNewbieProtection === true })
         .then(extractState).then(applyState);
     },
 
@@ -627,8 +628,8 @@ window.Game = window.Game || {};
 
     // ==================== 野地 ====================
 
-    wildScout: function (wildTileId) {
-      return client.post('/game/wild/scout', { wildTileId: wildTileId })
+    wildScout: function (wildTileId, abandonNewbieProtection) {
+      return client.post('/game/wild/scout', { wildTileId: wildTileId, abandonNewbieProtection: abandonNewbieProtection === true })
         .then(extractState).then(applyState);
     },
 
@@ -640,6 +641,7 @@ window.Game = window.Game || {};
         body.commanderId = dispatch.commanderId || null;
         body.carryRes = dispatch.carryRes || {};
         body.conquerMode = dispatch.conquerMode || 'withdraw';
+        body.abandonNewbieProtection = dispatch.abandonNewbieProtection === true;
       }
       return client.post('/game/wild/conquer', body)
         .then(extractState).then(applyState);
@@ -808,6 +810,9 @@ window.Game = window.Game || {};
     privateChatDelete: function (peerId) {
       return client.delete('/game/chat/private/' + peerId, { silent: true });
     },
+    privateChatClear: function (peerId) {
+      return client.post('/game/chat/private/' + peerId + '/clear', {}, { silent: true });
+    },
     privateChatHistory: function (peerId) {
       return client.get('/game/chat/private/' + peerId + '/history', { silent: true });
     },
@@ -817,6 +822,24 @@ window.Game = window.Game || {};
     sendPrivateChat: function (peerId, content) {
       return client.post('/game/chat/private/send', { recipientId: peerId, content: content }, { silent: true });
     },
+
+    // 好友、申请和隐私设置由服务端按登录账号保存。
+    friends: function () { return client.get('/game/friends', { silent: true, noCache: true }); },
+    friendSearch: function (query) { return client.get('/game/friends/search?query=' + encodeURIComponent(query), { silent: true }); },
+    friendProfile: function (id) { return client.get('/game/friends/' + id, { silent: true }); },
+    friendAdd: function (id) { return client.post('/game/friends/' + id, { groupId: 0 }, { silent: true }); },
+    friendRemove: function (id) { return client.delete('/game/friends/' + id, { silent: true }); },
+    friendMove: function (id, groupId) { return client.put('/game/friends/' + id + '/group', { groupId: groupId }, { silent: true }); },
+    friendBlock: function (id, blocked) {
+      return blocked ? client.post('/game/friends/' + id + '/block', {}, { silent: true }) : client.delete('/game/friends/' + id + '/block', { silent: true });
+    },
+    friendGroupSave: function (id, name) {
+      return id ? client.put('/game/friends/groups/' + id, { name: name }, { silent: true }) : client.post('/game/friends/groups', { name: name }, { silent: true });
+    },
+    friendGroupDelete: function (id) { return client.delete('/game/friends/groups/' + id, { silent: true }); },
+    friendRequestAccept: function (id) { return client.post('/game/friends/requests/' + id + '/accept', {}, { silent: true }); },
+    friendRequestDismiss: function (id) { return client.delete('/game/friends/requests/' + id, { silent: true }); },
+    friendSettings: function (settings) { return client.put('/game/friends/settings', settings, { silent: true }); },
 
     // ==================== 邮件 ====================
 

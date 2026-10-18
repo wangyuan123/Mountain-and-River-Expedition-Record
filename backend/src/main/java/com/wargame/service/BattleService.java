@@ -2,6 +2,7 @@ package com.wargame.service;
 
 import com.wargame.model.constants.BuildingDef;
 import com.wargame.model.constants.BattleRules;
+import com.wargame.model.constants.BattleScene;
 import com.wargame.model.constants.FortDef;
 import com.wargame.model.constants.GameData;
 import com.wargame.model.constants.JapaneseUnitDef;
@@ -10,6 +11,7 @@ import com.wargame.model.constants.UnitEquipmentEffects;
 import com.wargame.model.dto.BattleRoundState;
 import com.wargame.model.dto.BattleResult;
 import com.wargame.model.dto.CommandBonus;
+import com.wargame.model.dto.ConquestWallState;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -24,8 +26,43 @@ import java.util.concurrent.ThreadLocalRandom;
 @Service
 public class BattleService {
 
-    /** 战术战斗最多 24 回合；按每回合 15 秒倒计时，打满约 6 分钟，保留攻坚操作空间并收束无效僵持。 */
+    /** 独立演习和 resolveWild 基础模拟使用 24 回合；正式出征按战斗类型选择上限。 */
     public static final int MAX_ROUND = 24;
+    public static final int PLUNDER_MAX_ROUND = 25;
+    public static final int CONQUER_MAX_ROUND = 35;
+
+    /** 世界战斗按出征类型收束；兼容旧 tactical_ 标识，缺类型时沿用默认征服语义。 */
+    public static int maxRoundForAction(String action) {
+        String normalized = action == null ? "conquer" : action.replaceFirst("^tactical_", "");
+        return switch (normalized) {
+            case "plunder" -> PLUNDER_MAX_ROUND;
+            case "feint" -> 10;
+            case "harass" -> 15;
+            case "guerrilla" -> 5;
+            default -> CONQUER_MAX_ROUND;
+        };
+    }
+
+    /** 短回合袭击只造成战斗损失，不能取得资源、钻石或目标归属。 */
+    public static boolean isHarassmentAction(String action) {
+        return "feint".equals(action) || "harass".equals(action) || "guerrilla".equals(action);
+    }
+
+    /** 攻击资格、排队和战斗状态必须覆盖全部五种出征动作。 */
+    public static boolean isOffensiveAction(String action) {
+        return "conquer".equals(action) || "plunder".equals(action) || isHarassmentAction(action);
+    }
+
+    public static String actionName(String action) {
+        if (action == null) return "征服";
+        return switch (action) {
+            case "plunder" -> "掠夺";
+            case "feint" -> "佯攻";
+            case "harass" -> "袭扰";
+            case "guerrilla" -> "游击";
+            default -> "征服";
+        };
+    }
     /** 与当前目标距离为 0 时，步兵冲锋火力翻倍，轻重坦和特种兵获得 1.5 倍贴脸伤害。 */
     private static final Map<String, Double> POINT_BLANK_MULTIPLIERS = Map.of(
             "infantry", 2.0, "ltank", 1.5, "htank", 1.5, "special", 1.5);
@@ -45,25 +82,27 @@ public class BattleService {
         e.put("unit", unit); e.put("target", target); e.putAll(effects); practiceEvents.add(e);
     }
 
-    /** 匹配估值和战前属性预览共用引擎永久倍率，将领周期属性按三回合均值计算。 */
+    /** 匹配估值的输出包含行动火力，将领周期属性按三回合均值计算；火力倍率单列以区别武器攻击。 */
     public Map<String, Double> practiceStats(String id, TechCtx ctx) {
         UnitStats u = getStats(id);
-        double atk = atkMul(u.cat(), ctx.tech, 0) * (1 + ctx.commanderMil / 300.0) * ctx.commandBonus.attackMul();
+        double firepower = actionFirepowerMultiplier(ctx.tech);
+        double atk = atkMul(u.cat(), ctx.tech, 0) * (1 + ctx.commanderMil / 300.0) * ctx.commandBonus.attackMul() * firepower;
         return Map.of("ground", u.atkGround() * atk * (1 + Math.min(.15, UnitEquipmentEffects.percent(ctx.tech, id, "ground"))),
                 "air", u.atkAir() * atk * (1 + Math.min(.15, UnitEquipmentEffects.percent(ctx.tech, id, "air"))),
                 "sea", u.atkSea() * atk * (1 + Math.min(.15, UnitEquipmentEffects.percent(ctx.tech, id, "sea"))),
-                "defense", effDef(id, ctx.tech, Map.of(), 0, 0, false, false, false) * (1 + ctx.commanderDef / 300.0) * ctx.commandBonus.defenseMul(),
-                "hp", effHp(id, ctx.tech) * ctx.commandBonus.hpMul(), "speed", effSpd(id, ctx), "range", (double) effectiveRange(id, ctx));
+                "defense", effDef(id, ctx.tech, Map.of(), 0, false, false) * (1 + ctx.commanderDef / 300.0) * ctx.commandBonus.defenseMul(),
+                "hp", effHp(id, ctx.tech) * ctx.commandBonus.hpMul(), "speed", effSpd(id, ctx), "range", (double) effectiveRange(id, ctx),
+                "firepowerMultiplier", firepower);
     }
 
-    /** 中立演习入口：城墙恒为0，终局只负责停止，由演习服务对称判胜/平。 */
+    /** 中立演习入口：终局只负责停止，由演习服务对称判胜/平。 */
     public BattleRoundState resolvePracticeRound(Map<String, Integer> a, Map<String, Integer> b,
             Map<String, Integer> ap, Map<String, Integer> bp, int distance, TechCtx ac, TechCtx bc,
             int round, int firstCombat, Map<String, UnitOrder> ao, Map<String, UnitOrder> bo) {
         practiceEvents = tracePractice ? new ArrayList<>() : null;
         return resolveRound(a, b, ap, bp, distance, ac.tech, bc.tech, ac.skills, bc.skills,
-                ac.commanderMil, ac.commanderDef, bc.commanderMil, bc.commanderDef, 0, 0,
-                round, firstCombat, ao, bo, ac.commandBonus, bc.commandBonus, TerminalStrategy.PVP_PRACTICE);
+                ac.commanderMil, ac.commanderDef, bc.commanderMil, bc.commanderDef,
+                round, firstCombat, ao, bo, ac.commandBonus, bc.commandBonus, TerminalStrategy.PVP_PRACTICE, MAX_ROUND);
     }
 
     public BattleService() {
@@ -122,6 +161,10 @@ public class BattleService {
     /** 从 UnitDef 或 FortDef 获取统一属性 - 对应 JS U(id) */
     private UnitStats getStats(String id) {
         if (id == null) return null;
+        // 仅用于墙体机动几何；耐久在独立状态中结算，绝不塞入 defenderArmy。
+        if (ConquestWallState.TARGET.equals(id)) {
+            return new UnitStats(id, "城墙", "fort", 0, 0, 0, 0, 0, 0, 0, 0, "", false);
+        }
         UnitDef u = GameData.UNITS.get(UnitEquipmentEffects.base(id));
         if (u != null) {
             return new UnitStats(u.key(), u.name(), u.cat(),
@@ -157,33 +200,39 @@ public class BattleService {
         return CommandAction.ADVANCE;
     }
 
+    /** 兼容未指定场景的玩家战斗和演习调用；新世界入口必须显式传入场景。 */
+    public int calcInitialDistance(Map<String, Integer> attackerArmy, Map<String, Integer> defenderArmy,
+                                  TechCtx attackerCtx, TechCtx defenderCtx) {
+        return calcInitialDistance(attackerArmy, defenderArmy, attackerCtx, defenderCtx, null, BattleScene.PLAYER);
+    }
+
+    /** 空城墙体射程为0；保留旧征服入口，按玩家战斗距离计算。 */
+    public int calcInitialDistance(Map<String, Integer> attackerArmy, Map<String, Integer> defenderArmy,
+                                  TechCtx attackerCtx, TechCtx defenderCtx, ConquestWallState wall) {
+        return calcInitialDistance(attackerArmy, defenderArmy, attackerCtx, defenderCtx, wall, BattleScene.PLAYER);
+    }
+
     /**
-     * 按每个存活攻守兵种组合计算开局距离：D = max(3 × (stepA + stepB) + max(rangeA, rangeB)) + 100。
-     * 步长使用常驻速度的实际整数值；前三回合即使双方全速前进也不能开火，最早第四回合接敌。
-     * 不设固定最低宽度，也不把不同兵种的最高速度和最长射程叠加，避免步兵或混编额外空跑。
-     * 待命、后退或后勤默认不前进仍可延后接敌；周期闪电突击不参与尚未交战的开局距离。
+     * 开局距离为双方存活兵种、工事的最大有效射程加场景缓冲，不叠加双方射程或移速。
+     * 玩家战斗/演习+1850、NPC+1000、野地+500；空城也计入攻方射程，墙体不增加距离。
+     * 仅创建战场时调用，进行中会话继续使用已保存距离；不再保证前三回合安全。
      */
-    public int calcInitialDistance(Map<String, Integer> attackerArmy,
-                                  Map<String, Integer> defenderArmy,
-                                  TechCtx attackerCtx,
-                                  TechCtx defenderCtx) {
-        if (attackerArmy == null || defenderArmy == null) return 100;
-        int maxApproachDistance = 0;
-        for (Map.Entry<String, Integer> attacker : attackerArmy.entrySet()) {
-            UnitStats a = getStats(attacker.getKey());
-            if (a == null || attacker.getValue() == null || attacker.getValue() <= 0) continue;
-            int attackerStep = (int) ((attackerCtx != null ? effSpd(attacker.getKey(), attackerCtx) : a.spd()) * 50);
-            int attackerRange = effectiveRange(attacker.getKey(), attackerCtx);
-            for (Map.Entry<String, Integer> defender : defenderArmy.entrySet()) {
-                UnitStats b = getStats(defender.getKey());
-                if (b == null || defender.getValue() == null || defender.getValue() <= 0) continue;
-                int defenderStep = (int) ((defenderCtx != null ? effSpd(defender.getKey(), defenderCtx) : b.spd()) * 50);
-                int range = Math.max(attackerRange, effectiveRange(defender.getKey(), defenderCtx));
-                maxApproachDistance = Math.max(maxApproachDistance, 3 * (attackerStep + defenderStep) + range);
+    public int calcInitialDistance(Map<String, Integer> attackerArmy, Map<String, Integer> defenderArmy,
+                                  TechCtx attackerCtx, TechCtx defenderCtx, ConquestWallState wall, BattleScene scene) {
+        return Math.max(maxEffectiveRange(attackerArmy, attackerCtx), maxEffectiveRange(defenderArmy, defenderCtx))
+                + Objects.requireNonNull(scene, "战斗场景不能为空").buffer();
+    }
+
+    /** 仅实际参战的正数兵力参与射程上限，援军配置组沿用基础兵种射程。 */
+    private int maxEffectiveRange(Map<String, Integer> army, TechCtx ctx) {
+        if (army == null) return 0;
+        int range = 0;
+        for (var entry : army.entrySet()) {
+            if (entry.getValue() != null && entry.getValue() > 0 && getStats(entry.getKey()) != null) {
+                range = Math.max(range, effectiveRange(entry.getKey(), ctx));
             }
         }
-        // 距离等于射程即可开火，多留 100 点可确保第三回合安全，并在战场上看清间隔。
-        return maxApproachDistance + 100;
+        return range;
     }
 
     // ========================================================================
@@ -207,7 +256,7 @@ public class BattleService {
         Map<String, Integer> myStart = snapshot(myArmy);
         Map<String, Integer> foeStart = snapshot(foeArmy);
 
-        int initialDist = calcInitialDistance(myArmy, foeArmy, null, null);
+        int initialDist = calcInitialDistance(myArmy, foeArmy, null, null, null, BattleScene.WILD);
         Map<String, Integer> minePos = new LinkedHashMap<>();
         Map<String, Integer> enemyPos = new LinkedHashMap<>();
         for (String k : myArmy.keySet()) minePos.put(k, formationOffset(k));
@@ -227,7 +276,7 @@ public class BattleService {
             // 阶段二: 战术交火
             executeCombatPhase(myArmy, foeArmy, minePos, enemyPos, initialDist, report,
                     movementReportStart,
-                    attackerOrders, defenderOrders, null, null, 0, 0, false, round, 0);
+                    attackerOrders, defenderOrders, null, null, false, round, 0);
 
             if (allDead(foeArmy)) {
                 return buildWildResult(true, myArmy, foeArmy, myStart, foeStart, report);
@@ -241,7 +290,7 @@ public class BattleService {
     }
 
     // ========================================================================
-    // startWorldDispatch - 世界出征战斗 (含科技/军官/城防加成)
+    // startWorldDispatch - 世界出征战斗 (含科技、军官与参战工事)
     // ========================================================================
 
     /**
@@ -257,8 +306,6 @@ public class BattleService {
             Map<String, Integer> defenderSkills,
             int attackerCommanderMil,
             int defenderCommanderMil,
-            int attackerWallLevel,
-            int defenderWallLevel,
             String action,
             Map<String, Integer> defenderResources,
             long defenderWarehouseLevel) {
@@ -266,7 +313,6 @@ public class BattleService {
                 attackerTech, defenderTech, attackerSkills, defenderSkills,
                 attackerCommanderMil, 0,
                 defenderCommanderMil, 0,
-                attackerWallLevel, defenderWallLevel,
                 action, defenderResources, defenderWarehouseLevel, true,
                 null, null);
     }
@@ -284,8 +330,6 @@ public class BattleService {
             Map<String, Integer> defenderSkills,
             int attackerCommanderMil,
             int defenderCommanderMil,
-            int attackerWallLevel,
-            int defenderWallLevel,
             String action,
             Map<String, Integer> defenderResources,
             long defenderWarehouseLevel,
@@ -294,7 +338,6 @@ public class BattleService {
                 attackerTech, defenderTech, attackerSkills, defenderSkills,
                 attackerCommanderMil, 0,
                 defenderCommanderMil, 0,
-                attackerWallLevel, defenderWallLevel,
                 action, defenderResources, defenderWarehouseLevel, isPlayerBattle,
                 null, null);
     }
@@ -311,8 +354,6 @@ public class BattleService {
             int attackerCommanderDef,
             int defenderCommanderMil,
             int defenderCommanderDef,
-            int attackerWallLevel,
-            int defenderWallLevel,
             String action,
             Map<String, Integer> defenderResources,
             long defenderWarehouseLevel,
@@ -321,7 +362,6 @@ public class BattleService {
                 attackerTech, defenderTech, attackerSkills, defenderSkills,
                 attackerCommanderMil, attackerCommanderDef,
                 defenderCommanderMil, defenderCommanderDef,
-                attackerWallLevel, defenderWallLevel,
                 action, defenderResources, defenderWarehouseLevel, isPlayerBattle,
                 null, null);
     }
@@ -339,8 +379,6 @@ public class BattleService {
             Map<String, Integer> defenderSkills,
             int attackerCommanderMil,
             int defenderCommanderMil,
-            int attackerWallLevel,
-            int defenderWallLevel,
             String action,
             Map<String, Integer> defenderResources,
             long defenderWarehouseLevel,
@@ -351,7 +389,6 @@ public class BattleService {
                 attackerTech, defenderTech, attackerSkills, defenderSkills,
                 attackerCommanderMil, 0,
                 defenderCommanderMil, 0,
-                attackerWallLevel, defenderWallLevel,
                 action, defenderResources, defenderWarehouseLevel, isPlayerBattle,
                 attackerOrders, defenderOrders);
     }
@@ -368,8 +405,6 @@ public class BattleService {
             int attackerCommanderDef,
             int defenderCommanderMil,
             int defenderCommanderDef,
-            int attackerWallLevel,
-            int defenderWallLevel,
             String action,
             Map<String, Integer> defenderResources,
             long defenderWarehouseLevel,
@@ -377,7 +412,7 @@ public class BattleService {
             Map<String, UnitOrder> attackerOrders,
             Map<String, UnitOrder> defenderOrders) {
         return startWorldDispatch(
-                attackerArmy, defenderArmy, defenderForts, attackerTech, defenderTech, attackerSkills, defenderSkills, attackerCommanderMil, attackerCommanderDef, defenderCommanderMil, defenderCommanderDef, attackerWallLevel, defenderWallLevel, action, defenderResources, defenderWarehouseLevel, isPlayerBattle, attackerOrders, defenderOrders,
+                attackerArmy, defenderArmy, defenderForts, attackerTech, defenderTech, attackerSkills, defenderSkills, attackerCommanderMil, attackerCommanderDef, defenderCommanderMil, defenderCommanderDef, action, defenderResources, defenderWarehouseLevel, isPlayerBattle, attackerOrders, defenderOrders,
                 CommandBonus.NONE, CommandBonus.NONE);
     }
 
@@ -394,8 +429,6 @@ public class BattleService {
             int attackerCommanderDef,
             int defenderCommanderMil,
             int defenderCommanderDef,
-            int attackerWallLevel,
-            int defenderWallLevel,
             String action,
             Map<String, Integer> defenderResources,
             long defenderWarehouseLevel,
@@ -403,6 +436,40 @@ public class BattleService {
             Map<String, UnitOrder> attackerOrders,
             Map<String, UnitOrder> defenderOrders,
             CommandBonus attackerCommandBonus, CommandBonus defenderCommandBonus) {
+
+        return startWorldDispatch(attackerArmy, defenderArmy, defenderForts, attackerTech, defenderTech,
+                attackerSkills, defenderSkills, attackerCommanderMil, attackerCommanderDef,
+                defenderCommanderMil, defenderCommanderDef, action, defenderResources, defenderWarehouseLevel,
+                isPlayerBattle, attackerOrders, defenderOrders, attackerCommandBonus, defenderCommandBonus, null);
+    }
+
+    /** 新玩家城征服入口显式传入开战墙体快照；其他目标与旧调用继续无墙结算。 */
+    public BattleResult startWorldDispatch(
+            Map<String, Integer> attackerArmy, Map<String, Integer> defenderArmy, Map<String, Integer> defenderForts,
+            Map<String, Integer> attackerTech, Map<String, Integer> defenderTech,
+            Map<String, Integer> attackerSkills, Map<String, Integer> defenderSkills,
+            int attackerCommanderMil, int attackerCommanderDef, int defenderCommanderMil, int defenderCommanderDef,
+            String action, Map<String, Integer> defenderResources, long defenderWarehouseLevel, boolean isPlayerBattle,
+            Map<String, UnitOrder> attackerOrders, Map<String, UnitOrder> defenderOrders,
+            CommandBonus attackerCommandBonus, CommandBonus defenderCommandBonus, ConquestWallState wall) {
+        return startWorldDispatch(attackerArmy, defenderArmy, defenderForts, attackerTech, defenderTech,
+                attackerSkills, defenderSkills, attackerCommanderMil, attackerCommanderDef,
+                defenderCommanderMil, defenderCommanderDef, action, defenderResources, defenderWarehouseLevel,
+                isPlayerBattle, attackerOrders, defenderOrders, attackerCommandBonus, defenderCommandBonus, wall,
+                isPlayerBattle ? BattleScene.PLAYER : BattleScene.NPC);
+    }
+
+    /** 世界战斗显式区分目标场景；历史布尔值仍仅管理名称与墙体适用性。 */
+    public BattleResult startWorldDispatch(
+            Map<String, Integer> attackerArmy, Map<String, Integer> defenderArmy, Map<String, Integer> defenderForts,
+            Map<String, Integer> attackerTech, Map<String, Integer> defenderTech,
+            Map<String, Integer> attackerSkills, Map<String, Integer> defenderSkills,
+            int attackerCommanderMil, int attackerCommanderDef, int defenderCommanderMil, int defenderCommanderDef,
+            String action, Map<String, Integer> defenderResources, long defenderWarehouseLevel, boolean isPlayerBattle,
+            Map<String, UnitOrder> attackerOrders, Map<String, UnitOrder> defenderOrders,
+            CommandBonus attackerCommandBonus, CommandBonus defenderCommandBonus, ConquestWallState wall, BattleScene scene) {
+
+        if (!isPlayerBattle || !"conquer".equals(action) && !"tactical_conquer".equals(action)) wall = null;
 
         // 克隆军队 (不修改原始 map)
         Map<String, Integer> mine = snapshot(attackerArmy);
@@ -431,7 +498,7 @@ public class BattleService {
         Map<String, Integer> enemyStart = snapshot(enemy);
 
         // 动态计算初始战场距离
-        int initialDist = calcInitialDistance(mine, enemy, attackerCtx, defenderCtx);
+        int initialDist = calcInitialDistance(mine, enemy, attackerCtx, defenderCtx, wall, scene);
 
         Map<String, Integer> minePos = new LinkedHashMap<>();
         Map<String, Integer> enemyPos = new LinkedHashMap<>();
@@ -443,46 +510,34 @@ public class BattleService {
 
         // 首次交战回合由实际可开火目标确定，双方技能共用同一个周期起点。
         int firstCombatRound = 0;
-        // 模拟 24 回合 - 对应 JS resolveRound 循环
-        for (int round = 1; round <= MAX_ROUND; round++) {
-            boolean officerActive = (round % 3 == 0);
-
-            report.append("-- 第").append(round).append("回合 --\n");
-
-            // 阶段一: 统一机动阶段
-            boolean defenderIsJapanese = !isPlayerBattle;
-            int movementReportStart = report.length();
-            executeMovementPhase(mine, enemy, minePos, enemyPos, initialDist, report,
-                    attackerOrders, defenderOrders, attackerCtx, defenderCtx, defenderIsJapanese,
-                    isSkillRoundActive(round, firstCombatRound));
-
-            // 阶段二: 战术交火阶段
-            firstCombatRound = executeCombatPhase(mine, enemy, minePos, enemyPos, initialDist, report,
-                    movementReportStart,
-                    attackerOrders, defenderOrders, attackerCtx, defenderCtx,
-                    attackerWallLevel, defenderWallLevel, officerActive, round, firstCombatRound, defenderIsJapanese);
-
-            // 胜负判定
-            if (allDead(enemy)) {
-                report.append("★ 全歼敌军,胜利!\n");
-                return finishBattle(true, mine, enemy, mineStart, enemyStart,
-                        aTech, action, defenderResources, defenderWarehouseLevel, report);
-            }
-            if (allDead(mine)) {
-                report.append("✗ 部队溃败,失败!\n");
-                return finishBattle(false, mine, enemy, mineStart, enemyStart,
-                        aTech, action, defenderResources, defenderWarehouseLevel, report);
-            }
-            if (round >= MAX_ROUND) {
-                report.append("✗ 回合耗尽,被迫撤退\n");
-                return finishBattle(false, mine, enemy, mineStart, enemyStart,
-                        aTech, action, defenderResources, defenderWarehouseLevel, report);
+        // 自动结算和逐回合指挥共用同一类型上限，最后一回合先交火再判定撤退。
+        int maxRound = maxRoundForAction(action);
+        for (int round = 1; round <= maxRound; round++) {
+            // 同步、手动及超时均调用同一回合内核，清军后仅共享同一份攻击额度溢出到墙体。
+            BattleRoundState state = resolveRound(mine, enemy, minePos, enemyPos, initialDist,
+                    aTech, dTech, aSkills, dSkills, attackerCommanderMil, attackerCommanderDef,
+                    defenderCommanderMil, defenderCommanderDef, round, firstCombatRound,
+                    attackerOrders, defenderOrders, attackerCommandBonus, defenderCommandBonus,
+                    TerminalStrategy.WORLD, maxRound, wall, !isPlayerBattle);
+            mine = state.attackerArmy();
+            enemy = state.defenderArmy();
+            minePos = state.attackerPositions();
+            enemyPos = state.defenderPositions();
+            firstCombatRound = state.firstCombatRound();
+            wall = state.wall();
+            report.append(state.log());
+            if (state.finished()) {
+                BattleResult result = finishBattle(state.attackerWin(), mine, enemy, mineStart, enemyStart,
+                        aTech, dTech, action, defenderResources, defenderWarehouseLevel, report);
+                result.setWall(wall);
+                result.setTerminalReason(state.terminalReason());
+                return result;
             }
         }
 
         // 安全兜底
         return finishBattle(false, mine, enemy, mineStart, enemyStart,
-                aTech, action, defenderResources, defenderWarehouseLevel, report);
+                aTech, dTech, action, defenderResources, defenderWarehouseLevel, report);
     }
 
     /**
@@ -502,15 +557,12 @@ public class BattleService {
                                               int attackerCommanderDef,
                                               int defenderCommanderMil,
                                               int defenderCommanderDef,
-                                              int attackerWallLevel,
-                                              int defenderWallLevel,
                                               int round,
                                               Map<String, UnitOrder> attackerOrders,
                                               Map<String, UnitOrder> defenderOrders) {
         return resolveWorldRound(attackerArmy, defenderArmy, attackerPositions, defenderPositions,
                 initialDistance, attackerTech, defenderTech, attackerSkills, defenderSkills,
-                attackerCommanderMil, attackerCommanderDef, defenderCommanderMil, defenderCommanderDef,
-                attackerWallLevel, defenderWallLevel, round, 0, attackerOrders, defenderOrders);
+                attackerCommanderMil, attackerCommanderDef, defenderCommanderMil, defenderCommanderDef, round, 0, attackerOrders, defenderOrders);
     }
 
     /**
@@ -530,20 +582,17 @@ public class BattleService {
                                               int attackerCommanderDef,
                                               int defenderCommanderMil,
                                               int defenderCommanderDef,
-                                              int attackerWallLevel,
-                                              int defenderWallLevel,
                                               int round,
                                               int firstCombatRound,
                                               Map<String, UnitOrder> attackerOrders,
                                               Map<String, UnitOrder> defenderOrders) {
         return resolveWorldRound(attackerArmy, defenderArmy, attackerPositions, defenderPositions,
                 initialDistance, attackerTech, defenderTech, attackerSkills, defenderSkills,
-                attackerCommanderMil, attackerCommanderDef, defenderCommanderMil, defenderCommanderDef,
-                attackerWallLevel, defenderWallLevel, round, firstCombatRound, attackerOrders, defenderOrders,
+                attackerCommanderMil, attackerCommanderDef, defenderCommanderMil, defenderCommanderDef, round, firstCombatRound, attackerOrders, defenderOrders,
                 CommandBonus.NONE, CommandBonus.NONE);
     }
 
-    /** 司令官加成常驻，与带兵将领的属性回合、技能周期独立组合。 */
+    /** 兼容未传战斗类型的单回合调用，默认按征服结算；正式会话使用带 action 的重载。 */
     public BattleRoundState resolveWorldRound(Map<String, Integer> attackerArmy,
                                               Map<String, Integer> defenderArmy,
                                               Map<String, Integer> attackerPositions,
@@ -557,17 +606,69 @@ public class BattleService {
                                               int attackerCommanderDef,
                                               int defenderCommanderMil,
                                               int defenderCommanderDef,
-                                              int attackerWallLevel,
-                                              int defenderWallLevel,
                                               int round,
                                               int firstCombatRound,
                                               Map<String, UnitOrder> attackerOrders,
                                               Map<String, UnitOrder> defenderOrders,
             CommandBonus attackerCommandBonus, CommandBonus defenderCommandBonus) {
+        return resolveWorldRound(attackerArmy, defenderArmy, attackerPositions, defenderPositions, initialDistance,
+                attackerTech, defenderTech, attackerSkills, defenderSkills, attackerCommanderMil, attackerCommanderDef,
+                defenderCommanderMil, defenderCommanderDef, round, firstCombatRound,
+                attackerOrders, defenderOrders, attackerCommandBonus, defenderCommandBonus, "conquer");
+    }
+
+    /** 逐回合结算使用会话保存的出征类型，双方视角、手动和超时推进共用同一终局边界。 */
+    public BattleRoundState resolveWorldRound(Map<String, Integer> attackerArmy,
+                                              Map<String, Integer> defenderArmy,
+                                              Map<String, Integer> attackerPositions,
+                                              Map<String, Integer> defenderPositions,
+                                              int initialDistance,
+                                              Map<String, Integer> attackerTech,
+                                              Map<String, Integer> defenderTech,
+                                              Map<String, Integer> attackerSkills,
+                                              Map<String, Integer> defenderSkills,
+                                              int attackerCommanderMil,
+                                              int attackerCommanderDef,
+                                              int defenderCommanderMil,
+                                              int defenderCommanderDef,
+                                              int round,
+                                              int firstCombatRound,
+                                              Map<String, UnitOrder> attackerOrders,
+                                              Map<String, UnitOrder> defenderOrders,
+            CommandBonus attackerCommandBonus, CommandBonus defenderCommandBonus, String action) {
         return resolveRound(attackerArmy, defenderArmy, attackerPositions, defenderPositions, initialDistance,
                 attackerTech, defenderTech, attackerSkills, defenderSkills, attackerCommanderMil, attackerCommanderDef,
-                defenderCommanderMil, defenderCommanderDef, attackerWallLevel, defenderWallLevel, round, firstCombatRound,
-                attackerOrders, defenderOrders, attackerCommandBonus, defenderCommandBonus, TerminalStrategy.WORLD);
+                defenderCommanderMil, defenderCommanderDef, round, firstCombatRound,
+                attackerOrders, defenderOrders, attackerCommandBonus, defenderCommandBonus, TerminalStrategy.WORLD,
+                maxRoundForAction(action));
+    }
+
+    private BattleRoundState resolveRound(Map<String, Integer> attackerArmy, Map<String, Integer> defenderArmy,
+            Map<String, Integer> attackerPositions, Map<String, Integer> defenderPositions, int initialDistance,
+            Map<String, Integer> attackerTech, Map<String, Integer> defenderTech,
+            Map<String, Integer> attackerSkills, Map<String, Integer> defenderSkills,
+            int attackerCommanderMil, int attackerCommanderDef, int defenderCommanderMil, int defenderCommanderDef, int round, int firstCombatRound,
+            Map<String, UnitOrder> attackerOrders, Map<String, UnitOrder> defenderOrders,
+            CommandBonus attackerCommandBonus, CommandBonus defenderCommandBonus, TerminalStrategy strategy, int maxRound) {
+        return resolveRound(attackerArmy, defenderArmy, attackerPositions, defenderPositions, initialDistance,
+                attackerTech, defenderTech, attackerSkills, defenderSkills, attackerCommanderMil, attackerCommanderDef,
+                defenderCommanderMil, defenderCommanderDef, round, firstCombatRound, attackerOrders, defenderOrders,
+                attackerCommandBonus, defenderCommandBonus, strategy, maxRound, null, false);
+    }
+
+    /** 墙体原样延续，旧会话传 null；由调用方冻结适用范围，不读取实时建筑或守方成长。 */
+    public BattleRoundState resolveWorldRound(Map<String, Integer> attackerArmy, Map<String, Integer> defenderArmy,
+            Map<String, Integer> attackerPositions, Map<String, Integer> defenderPositions, int initialDistance,
+            Map<String, Integer> attackerTech, Map<String, Integer> defenderTech,
+            Map<String, Integer> attackerSkills, Map<String, Integer> defenderSkills,
+            int attackerCommanderMil, int attackerCommanderDef, int defenderCommanderMil, int defenderCommanderDef,
+            int round, int firstCombatRound, Map<String, UnitOrder> attackerOrders, Map<String, UnitOrder> defenderOrders,
+            CommandBonus attackerCommandBonus, CommandBonus defenderCommandBonus, String action, ConquestWallState wall) {
+        if (!"conquer".equals(action) && !"tactical_conquer".equals(action)) wall = null;
+        return resolveRound(attackerArmy, defenderArmy, attackerPositions, defenderPositions, initialDistance,
+                attackerTech, defenderTech, attackerSkills, defenderSkills, attackerCommanderMil, attackerCommanderDef,
+                defenderCommanderMil, defenderCommanderDef, round, firstCombatRound, attackerOrders, defenderOrders,
+                attackerCommandBonus, defenderCommandBonus, TerminalStrategy.WORLD, maxRoundForAction(action), wall, false);
     }
 
     private BattleRoundState resolveRound(Map<String, Integer> attackerArmy, Map<String, Integer> defenderArmy,
@@ -575,9 +676,9 @@ public class BattleService {
             Map<String, Integer> attackerTech, Map<String, Integer> defenderTech,
             Map<String, Integer> attackerSkills, Map<String, Integer> defenderSkills,
             int attackerCommanderMil, int attackerCommanderDef, int defenderCommanderMil, int defenderCommanderDef,
-            int attackerWallLevel, int defenderWallLevel, int round, int firstCombatRound,
-            Map<String, UnitOrder> attackerOrders, Map<String, UnitOrder> defenderOrders,
-            CommandBonus attackerCommandBonus, CommandBonus defenderCommandBonus, TerminalStrategy strategy) {
+            int round, int firstCombatRound, Map<String, UnitOrder> attackerOrders, Map<String, UnitOrder> defenderOrders,
+            CommandBonus attackerCommandBonus, CommandBonus defenderCommandBonus, TerminalStrategy strategy, int maxRound,
+            ConquestWallState wall, boolean defenderIsJapanese) {
         Map<String, Integer> mine = snapshot(attackerArmy);
         Map<String, Integer> enemy = snapshot(defenderArmy);
         Map<String, Integer> minePos = new LinkedHashMap<>(attackerPositions);
@@ -586,13 +687,29 @@ public class BattleService {
                 attackerSkills != null ? attackerSkills : Collections.emptyMap(), attackerCommanderMil, attackerCommanderDef, attackerCommandBonus);
         TechCtx defenderCtx = new TechCtx(defenderTech != null ? defenderTech : Collections.emptyMap(),
                 defenderSkills != null ? defenderSkills : Collections.emptyMap(), defenderCommanderMil, defenderCommanderDef, defenderCommandBonus);
-        boolean officerActive = round % 3 == 0;
+        boolean officerActive = isSkillRoundActive(round, firstCombatRound);
         StringBuilder report = new StringBuilder("-- 第").append(round).append("回合 --\n");
 
+        // 回合开始有守军时先正常机动与交火；清军后仅剩余攻击额度可继续攻墙。
+        boolean wallPhase = wall != null && wall.standing() && allDead(enemy);
         int movementReportStart = report.length();
-        executeMovementPhase(mine, enemy, minePos, enemyPos, initialDistance, report,
-                attackerOrders, defenderOrders, attackerCtx, defenderCtx, false,
-                isSkillRoundActive(round, firstCombatRound));
+        if (wallPhase) {
+            report.append("阶段：攻击城墙\n");
+            movementReportStart = report.length();
+            Map<String, Integer> wallTarget = Map.of(ConquestWallState.TARGET, 1);
+            Map<String, Integer> wallPos = Map.of(ConquestWallState.TARGET, initialDistance);
+            Map<String, Integer> oldMinePos = new LinkedHashMap<>(minePos);
+            moveArmy(Side.MINE, mine, wallTarget, minePos, oldMinePos, wallPos, initialDistance,
+                    attackerOrders, Map.of(), attackerCtx, null, isSkillRoundActive(round, firstCombatRound));
+            appendMovementReport(Side.MINE, mine, wallTarget, minePos, wallPos, oldMinePos,
+                    initialDistance, report, attackerOrders, false);
+        } else {
+            if (wall != null) report.append("阶段：清除守军\n");
+            movementReportStart = report.length();
+            executeMovementPhase(mine, enemy, minePos, enemyPos, initialDistance, report,
+                    attackerOrders, defenderOrders, attackerCtx, defenderCtx, defenderIsJapanese,
+                    isSkillRoundActive(round, firstCombatRound));
+        }
         if (strategy == TerminalStrategy.PVP_PRACTICE) {
             // 首次交战E在机动后确定，速度加成不能追溯改变已经执行的坐标。
             boolean movementSkill = isSkillRoundActive(round, firstCombatRound);
@@ -601,23 +718,105 @@ public class BattleService {
             enemyPos.forEach((id, x) -> event("MOVEMENT", Side.ENEMY, id, "", Map.of("from", defenderPositions.getOrDefault(id, initialDistance), "to", x,
                     "speed", effSpd(id, defenderCtx, movementSkill), "blitzMultiplier", 1 + (movementSkill ? skillBonus(defenderCtx.skills, "blitz") : 0))));
         }
-        firstCombatRound = executeCombatPhase(mine, enemy, minePos, enemyPos, initialDistance, report,
-                movementReportStart,
-                attackerOrders, defenderOrders, attackerCtx, defenderCtx,
-                attackerWallLevel, defenderWallLevel, officerActive, round, firstCombatRound);
+        if (wallPhase) {
+            for (String id : mine.keySet()) {
+                if (mine.get(id) > 0 && baseAttack(id, ConquestWallState.TARGET) > 0
+                        && Math.abs(initialDistance - minePos.getOrDefault(id, 0)) <= effectiveRange(id, attackerCtx)) {
+                    if (firstCombatRound == 0) firstCombatRound = round;
+                    break;
+                }
+            }
+            wall = attackWall(mine, minePos, initialDistance, attackerCtx, round, firstCombatRound,
+                    wall, report, movementReportStart);
+        } else {
+            WallCombatState wallCombat = wall != null && wall.standing() ? new WallCombatState(wall) : null;
+            firstCombatRound = executeCombatPhase(mine, enemy, minePos, enemyPos, initialDistance, report,
+                    movementReportStart, attackerOrders, defenderOrders, attackerCtx, defenderCtx,
+                    officerActive, round, firstCombatRound, defenderIsJapanese, wallCombat);
+            if (wallCombat != null) wall = wallCombat.wall;
+        }
 
         if (strategy == TerminalStrategy.PVP_PRACTICE) {
-            return new BattleRoundState(round, allDead(mine) || allDead(enemy) || round >= MAX_ROUND, false,
+            return new BattleRoundState(round, allDead(mine) || allDead(enemy) || round >= maxRound, false,
                     filterPositive(mine), filterPositive(enemy), minePos, enemyPos, report.toString(), firstCombatRound);
         }
-        boolean attackerWin = allDead(enemy);
-        boolean defenderWin = allDead(mine) || (!attackerWin && round >= MAX_ROUND);
-        if (attackerWin) report.append("★ 全歼敌军,胜利!\n");
+        if (wall != null) wall = wall.afterRound(!allDead(enemy));
+        boolean attackerWin = allDead(enemy) && !allDead(mine) && (wall == null || !wall.standing());
+        boolean defenderWin = allDead(mine) || (!attackerWin && round >= maxRound);
+        String terminalReason = null;
+        if (attackerWin) {
+            terminalReason = wall != null && wall.level() > 0 ? "WALL_BREACHED" : "DEFENDERS_ELIMINATED";
+            report.append(wall != null && wall.level() > 0 ? "★ 守军已清除，城墙已攻破，胜利!\n" : "★ 全歼敌军,胜利!\n");
+        }
         else if (defenderWin && allDead(mine)) report.append("✗ 部队溃败,失败!\n");
-        else if (defenderWin) report.append("✗ 回合耗尽,被迫撤退\n");
+        else if (defenderWin) {
+            terminalReason = wall != null && wall.standing() && allDead(enemy) ? "WALL_NOT_BREACHED" : "ROUND_LIMIT";
+            report.append("WALL_NOT_BREACHED".equals(terminalReason)
+                    ? "✗ 守军已清除，但未在期限内破墙，被迫撤退\n" : "✗ 回合耗尽,被迫撤退\n");
+        }
+        if (defenderWin && allDead(mine)) terminalReason = "ATTACKERS_ELIMINATED";
+        if (!attackerWin && !defenderWin && wall != null && wall.standing() && allDead(enemy) && !wallPhase) {
+            report.append("守军及工事已清除，继续攻击城墙\n");
+        }
 
         return new BattleRoundState(round, attackerWin || defenderWin, attackerWin,
-                filterPositive(mine), filterPositive(enemy), minePos, enemyPos, report.toString(), firstCombatRound);
+                filterPositive(mine), filterPositive(enemy), minePos, enemyPos, report.toString(), firstCombatRound,
+                wall, terminalReason);
+    }
+
+    /** 独立结构扣血：沿用攻方攻坚、配装、贴脸与周期技能，墙体不享受守方加成或反击。 */
+    private ConquestWallState attackWall(Map<String, Integer> mine, Map<String, Integer> positions,
+            int wallPosition, TechCtx ctx, int round, int firstCombatRound, ConquestWallState wall,
+            StringBuilder report, int movementReportStart) {
+        boolean skillsActive = isSkillRoundActive(round, firstCombatRound);
+        String bonusLog = buildCommanderBonusLog("我方", ctx, round, skillsActive);
+        if (!bonusLog.isEmpty()) {
+            report.insert(movementReportStart, bonusLog + "\n");
+            movementReportStart += bonusLog.length() + 1;
+        }
+        List<ActionEntry> order = buildOrder(mine, Map.of(), ctx, null, round, skillsActive);
+        for (ActionEntry entry : order) {
+            if (!wall.standing()) break;
+            wall = attackWallUnit(entry.id, mine.get(entry.id), mine.get(entry.id), positions, wallPosition,
+                    ctx, skillsActive, skillsActive, wall, report, movementReportStart, false);
+        }
+        reorderMovementLogsByCombatOrder(report, movementReportStart, order, false);
+        return wall;
+    }
+
+    /** 回合局部墙体持有者；不存服务字段，避免不同城市并发串用耐久。 */
+    private static final class WallCombatState {
+        private ConquestWallState wall;
+        private WallCombatState(ConquestWallState wall) { this.wall = wall; }
+    }
+
+    /** 军事目标和墙体共享行动预算；余伤重新计算攻坚领域、距离及贴脸倍率。 */
+    private ConquestWallState attackWallUnit(String unitId, int count, double remainingActions,
+            Map<String, Integer> positions, int wallPosition, TechCtx ctx, boolean officerActive,
+            boolean skillsActive, ConquestWallState wall, StringBuilder report, int movementReportStart,
+            boolean overflow) {
+        int distance = Math.abs(wallPosition - positions.getOrDefault(unitId, 0));
+        double fortAttack = baseAttack(unitId, ConquestWallState.TARGET);
+        if (!wall.standing() || remainingActions <= 0 || fortAttack <= 0 || distance > effectiveRange(unitId, ctx)) return wall;
+        double attack = fortAttack * attackBonus(getStats(unitId).cat(), ctx.tech, ctx.skills,
+                ctx.commanderMil, officerActive, skillsActive) * ctx.commandBonus.attackMul()
+                * UnitEquipmentEffects.attack(ctx.tech, unitId, ConquestWallState.TARGET);
+        double defense = wall.defense() * (1 - (skillsActive ? skillBonus(ctx.skills, "pierce") : 0));
+        double contact = distance == 0 ? POINT_BLANK_MULTIPLIERS.getOrDefault(UnitEquipmentEffects.base(unitId), 1.0) : 1.0;
+        double damage = attack * remainingActions * actionFirepowerMultiplier(ctx.tech) * contact
+                * 100 / (100 + 5 * Math.max(0, defense));
+        var before = wall.hpRemaining();
+        wall = wall.damage(damage);
+        String outcome = (overflow ? "余伤攻击敌城墙" : "攻击敌城墙")
+                + "，伤害" + before.subtract(wall.hpRemaining()).setScale(0, java.math.RoundingMode.DOWN)
+                + "，墙体剩余生命" + wall.hpRemaining().setScale(0, java.math.RoundingMode.CEILING)
+                + "，有效射程" + effectiveRange(unitId, ctx) + " 目标距离" + distance;
+        if (!appendCombatOutcomeToMovementLog(report, movementReportStart, Side.MINE,
+                unitName(unitId, Side.MINE, false), outcome, false)) {
+            report.append("我方").append(unitName(unitId, Side.MINE, false)).append("(")
+                    .append(count).append(") ").append(outcome).append("\n");
+        }
+        return wall;
     }
 
     /** 历史会话没有周期起点时，从首次含伤害结算（包括零伤害）的回合恢复，避免更新后重新起算。 */
@@ -647,8 +846,18 @@ public class BattleService {
                                           Map<String, Integer> defenderResources,
                                           long defenderWarehouseLevel,
                                           String report) {
+        return finishWorldBattle(win, survivorAttacker, survivorDefender, initialAttacker, initialDefender,
+                attackerTech, Map.of(), action, defenderResources, defenderWarehouseLevel, report);
+    }
+
+    /** 战术结算读取本场守方科技，途中研发不能追溯改变仓库保护。 */
+    public BattleResult finishWorldBattle(boolean win, Map<String, Integer> survivorAttacker,
+                                          Map<String, Integer> survivorDefender, Map<String, Integer> initialAttacker,
+                                          Map<String, Integer> initialDefender, Map<String, Integer> attackerTech,
+                                          Map<String, Integer> defenderTech, String action,
+                                          Map<String, Integer> defenderResources, long defenderWarehouseLevel, String report) {
         return finishBattle(win, survivorAttacker, survivorDefender, initialAttacker, initialDefender,
-                attackerTech != null ? attackerTech : Collections.emptyMap(), action, defenderResources,
+                attackerTech != null ? attackerTech : Collections.emptyMap(), defenderTech, action, defenderResources,
                 defenderWarehouseLevel, new StringBuilder(report != null ? report : ""));
     }
 
@@ -662,6 +871,7 @@ public class BattleService {
                                       Map<String, Integer> mineStart,
                                       Map<String, Integer> enemyStart,
                                       Map<String, Integer> attackerTech,
+                                      Map<String, Integer> defenderTech,
                                       String action,
                                       Map<String, Integer> defenderResources,
                                       long defenderWarehouseLevel,
@@ -688,7 +898,11 @@ public class BattleService {
         boolean cityConquered = false;
         if (win) {
             String act = action != null ? action : "conquer";
-            if (defenderResources != null && !defenderResources.isEmpty()) {
+            if (isHarassmentAction(act)) {
+                // 与掠夺相同按半额胜利经验结算；资源奖励在所有目标上保持为空。
+                expGained = expGained / 2;
+                report.append("★ ").append(actionName(act)).append("胜利！本次行动不夺取资源、不占领目标。\n");
+            } else if (defenderResources != null && !defenderResources.isEmpty()) {
                 if ("conquer".equals(act)) {
                     // 征服: 夺取全部资源 (含黄金) - 对应 JS conquer 分支
                     for (String rk : List.of("food", "steel", "oil", "rare", "gold")) {
@@ -703,7 +917,7 @@ public class BattleService {
                     report.append("★ 征服胜利! 夺取敌方全部资源。\n");
                 } else if ("plunder".equals(act)) {
                     // 掠夺: 仓库保护外的非黄金资源 - 对应 JS plunder 分支
-                    int prot = calcProtectCap(defenderWarehouseLevel);
+                    int prot = calcProtectCap(defenderWarehouseLevel, defenderTech);
                     for (String rk : List.of("food", "steel", "oil", "rare")) {
                         int amount = defenderResources.getOrDefault(rk, 0);
                         plunderedResources.put(rk, Math.max(0, amount - prot));
@@ -941,14 +1155,11 @@ public class BattleService {
             Map<String, UnitOrder> defenderOrders,
             TechCtx attackerCtx,
             TechCtx defenderCtx,
-            int attackerWallLevel,
-            int defenderWallLevel,
             boolean officerActive,
             int round,
             int firstCombatRound) {
         return executeCombatPhase(mine, enemy, minePos, enemyPos, initialDist, report,
-                movementReportStart, attackerOrders, defenderOrders, attackerCtx, defenderCtx,
-                attackerWallLevel, defenderWallLevel, officerActive, round, firstCombatRound, false);
+                movementReportStart, attackerOrders, defenderOrders, attackerCtx, defenderCtx, officerActive, round, firstCombatRound, false);
     }
 
     private int executeCombatPhase(
@@ -963,12 +1174,31 @@ public class BattleService {
             Map<String, UnitOrder> defenderOrders,
             TechCtx attackerCtx,
             TechCtx defenderCtx,
-            int attackerWallLevel,
-            int defenderWallLevel,
             boolean officerActive,
             int round,
             int firstCombatRound,
             boolean defenderIsJapanese) {
+        return executeCombatPhase(mine, enemy, minePos, enemyPos, initialDist, report, movementReportStart,
+                attackerOrders, defenderOrders, attackerCtx, defenderCtx, officerActive, round, firstCombatRound,
+                defenderIsJapanese, null);
+    }
+
+    private int executeCombatPhase(
+            Map<String, Integer> mine,
+            Map<String, Integer> enemy,
+            Map<String, Integer> minePos,
+            Map<String, Integer> enemyPos,
+            int initialDist,
+            StringBuilder report,
+            int movementReportStart,
+            Map<String, UnitOrder> attackerOrders,
+            Map<String, UnitOrder> defenderOrders,
+            TechCtx attackerCtx,
+            TechCtx defenderCtx,
+            boolean officerActive,
+            int round,
+            int firstCombatRound,
+            boolean defenderIsJapanese, WallCombatState wallCombat) {
 
         List<ActionEntry> order = buildOrder(mine, enemy, attackerCtx, defenderCtx, round);
         if (firstCombatRound == 0) {
@@ -988,11 +1218,14 @@ public class BattleService {
             }
         }
         boolean skillRoundActive = isSkillRoundActive(round, firstCombatRound);
+        // 首次交火在索敌后才确定，属性与技能共用该起点，首发攻防也必须立即享受将领加成。
+        officerActive = skillRoundActive;
         if (practiceEvents != null) {
             for (Side side : Side.values()) {
                 TechCtx ctx = side == Side.MINE ? attackerCtx : defenderCtx;
                 event("OFFICER_ATTRIBUTES", side, "", "", Map.of("active", officerActive,
-                        "military", ctx.commanderMil, "defense", ctx.commanderDef, "cycle", "3/6/9"));
+                        "military", ctx.commanderMil, "defense", ctx.commanderDef,
+                        "firstCombatRound", firstCombatRound, "cycle", "E/E+3/E+6"));
                 for (String skill : List.of("frenzy", "bulwark", "blitz", "suppress", "pierce", "counter", "learn", "borrow_armor")) {
                     int level = ctx.skills.getOrDefault(skill, 0);
                     event("SKILL_WINDOW", side, "", "", Map.of("skill", skill, "level", level,
@@ -1026,7 +1259,7 @@ public class BattleService {
             Map<String, Integer> myA = a.side == Side.MINE ? mine : enemy;
             Map<String, Integer> foe = a.side == Side.MINE ? enemy : mine;
             if (myA.getOrDefault(a.id, 0) <= 0) continue;
-            if (allDead(foe)) break;
+            if (allDead(foe) && !(a.side == Side.MINE && wallCombat != null && wallCombat.wall.standing())) continue;
 
             TechCtx actCtx = a.side == Side.MINE ? attackerCtx : defenderCtx;
             TechCtx foeCtx = a.side == Side.MINE ? defenderCtx : attackerCtx;
@@ -1034,8 +1267,6 @@ public class BattleService {
             // 普通防御读取被攻击方的同名兵种；反击防御读取被反击方的同名兵种。
             Set<String> armorSources = a.side == Side.MINE ? enemyArmorSources : mineArmorSources;
             Set<String> counterArmorSources = a.side == Side.MINE ? mineArmorSources : enemyArmorSources;
-            int foeWallLevel = a.side == Side.MINE ? defenderWallLevel : attackerWallLevel;
-            int myWallLevel = a.side == Side.MINE ? attackerWallLevel : defenderWallLevel;
 
             UnitOrder uOrder = a.side == Side.MINE
                     ? (attackerOrders != null ? attackerOrders.getOrDefault(a.id, attackerOrders.get(UnitEquipmentEffects.base(a.id))) : null)
@@ -1043,9 +1274,9 @@ public class BattleService {
             String focusTarget = uOrder != null ? uOrder.focusTarget() : null;
 
             fireUnitCombat(a.id, myA, foe, minePos, enemyPos, initialDist, report, a.side,
-                    actCtx, foeCtx, foeWallLevel, myWallLevel, officerActive, skillRoundActive,
+                    actCtx, foeCtx, officerActive, skillRoundActive,
                     learningSources, armorSources, counterArmorSources, focusTarget, false,
-                    movementReportStart, defenderIsJapanese);
+                    movementReportStart, defenderIsJapanese, wallCombat);
         }
         reorderMovementLogsByCombatOrder(report, movementReportStart, order, defenderIsJapanese);
         return firstCombatRound;
@@ -1075,11 +1306,10 @@ public class BattleService {
                                 Side side,
                                 TechCtx actCtx,
                                 TechCtx foeCtx,
-                                int foeWallLevel,
                                 boolean officerActive,
                                 String focusTarget) {
         fireUnitCombat(unitId, myArmy, foeArmy, minePos, enemyPos, initialDist, report, side,
-                actCtx, foeCtx, foeWallLevel, 0, officerActive, officerActive,
+                actCtx, foeCtx, officerActive, officerActive,
                 snapshotLivingTroopIds(foeArmy), snapshotLivingTroopIds(myArmy),
                 snapshotLivingTroopIds(foeArmy), focusTarget, false, -1, false);
     }
@@ -1174,8 +1404,6 @@ public class BattleService {
                                 Side side,
                                 TechCtx actCtx,
                                 TechCtx foeCtx,
-                                int foeWallLevel,
-                                int myWallLevel,
                                 boolean officerActive,
                                 boolean skillRoundActive,
                                 Set<String> learningSources,
@@ -1185,7 +1413,7 @@ public class BattleService {
                                 boolean isCounter,
                                 int movementReportStart) {
         fireUnitCombat(unitId, myArmy, foeArmy, minePos, enemyPos, initialDist, report, side,
-                actCtx, foeCtx, foeWallLevel, myWallLevel, officerActive, skillRoundActive,
+                actCtx, foeCtx, officerActive, skillRoundActive,
                 learningSources, armorSources, counterArmorSources, focusTarget, isCounter,
                 movementReportStart, false);
     }
@@ -1200,8 +1428,6 @@ public class BattleService {
                                 Side side,
                                 TechCtx actCtx,
                                 TechCtx foeCtx,
-                                int foeWallLevel,
-                                int myWallLevel,
                                 boolean officerActive,
                                 boolean skillRoundActive,
                                 Set<String> learningSources,
@@ -1211,6 +1437,30 @@ public class BattleService {
                                 boolean isCounter,
                                 int movementReportStart,
                                 boolean defenderIsJapanese) {
+        fireUnitCombat(unitId, myArmy, foeArmy, minePos, enemyPos, initialDist, report, side,
+                actCtx, foeCtx, officerActive, skillRoundActive, learningSources, armorSources,
+                counterArmorSources, focusTarget, isCounter, movementReportStart, defenderIsJapanese, null);
+    }
+
+    private void fireUnitCombat(String unitId,
+                                Map<String, Integer> myArmy,
+                                Map<String, Integer> foeArmy,
+                                Map<String, Integer> minePos,
+                                Map<String, Integer> enemyPos,
+                                int initialDist,
+                                StringBuilder report,
+                                Side side,
+                                TechCtx actCtx,
+                                TechCtx foeCtx,
+                                boolean officerActive,
+                                boolean skillRoundActive,
+                                Set<String> learningSources,
+                                Set<String> armorSources,
+                                Set<String> counterArmorSources,
+                                String focusTarget,
+                                boolean isCounter,
+                                int movementReportStart,
+                                boolean defenderIsJapanese, WallCombatState wallCombat) {
         UnitStats u = getStats(unitId);
         if (u == null) return;
         int count = myArmy.getOrDefault(unitId, 0);
@@ -1221,6 +1471,11 @@ public class BattleService {
 
         // 寻找射程内目标
         String target = pickCombatTarget(unitId, side, foeArmy, minePos, enemyPos, initialDist, actCtx, focusTarget);
+        if (side == Side.MINE && wallCombat != null && allDead(foeArmy)) {
+            wallCombat.wall = attackWallUnit(unitId, count, count, minePos, initialDist, actCtx,
+                    officerActive, skillRoundActive, wallCombat.wall, report, movementReportStart, false);
+            return;
+        }
         if (target == null) {
             event("NO_FIRE", side, unitId, "", Map.of("reason", "NO_VALID_RANGE_TARGET"));
             int minDist = advanceDistanceToLivingFoe(side, unitId, foeArmy, minePos, enemyPos, initialDist);
@@ -1246,6 +1501,7 @@ public class BattleService {
                         officerActive, skillRoundActive) * actCtx.commandBonus.attackMul();
         if (skillRoundActive && foeCtx != null) attackBonus *= 1 - skillBonus(foeCtx.skills, "suppress");
         double pierce = !skillRoundActive || actCtx == null ? 0 : skillBonus(actCtx.skills, "pierce");
+        double firepower = actionFirepowerMultiplier(actCtx == null ? null : actCtx.tech);
         double totalActions = count;
         double remainingActions = totalActions;
         boolean firstTarget = true;
@@ -1255,9 +1511,8 @@ public class BattleService {
             Side foeSide = (side == Side.MINE ? Side.ENEMY : Side.MINE);
             String tName = unitName(target, foeSide, defenderIsJapanese);
             double def = foeCtx == null ? tU.def()
-                    : effDef(target, foeCtx.tech, foeCtx.skills, foeCtx.commanderDef,
-                    foeWallLevel, officerActive, skillRoundActive, skillRoundActive,
-                    actCtx, armorSources, side == Side.MINE, foeCtx.commandBonus);
+                    : effDef(target, foeCtx.tech, foeCtx.skills, foeCtx.commanderDef, officerActive, skillRoundActive, skillRoundActive,
+                    actCtx, armorSources, foeCtx.commandBonus);
             def = Math.max(0, def * (1 - pierce));
             double cm = counterMul(unitId, target);
             double targetAttack = baseAttack(unitId, target) * attackBonus * UnitEquipmentEffects.attack(actCtx == null ? null : actCtx.tech, unitId, target);
@@ -1268,7 +1523,8 @@ public class BattleService {
             double pointBlankMultiplier = getUnitDistToFoe(side, unitId, target, minePos, enemyPos, initialDist) == 0
                     ? POINT_BLANK_MULTIPLIERS.getOrDefault(UnitEquipmentEffects.base(unitId), 1.0) : 1.0;
             double damagePerAction = targetAttack * cm * 100.0 / (100.0 + 5 * def)
-                    * pointBlankMultiplier * UnitEquipmentEffects.damage(foeCtx == null ? null : foeCtx.tech, target, unitId);
+                    * pointBlankMultiplier * UnitEquipmentEffects.damage(foeCtx == null ? null : foeCtx.tech, target, unitId) * firepower;
+            // 每份攻击额度只乘一次火力密度；击毁消耗按增强后的伤害计算，余伤切换不重置额度。
             double hpPer = Math.max(1, foeCtx == null ? tU.hp() : effHp(target, foeCtx.tech) * foeCtx.commandBonus.hpMul());
             int beforeKill = foeArmy.getOrDefault(target, 0);
             double targetHp = hpPer * beforeKill;
@@ -1288,6 +1544,8 @@ public class BattleService {
             foeArmy.put(target, remainingTarget);
             Map<String, Object> effect = new LinkedHashMap<>();
             effect.put("damage", appliedDamage); effect.put("kills", kills); effect.put("attack", targetAttack);
+            effect.put("firepowerMultiplier", firepower);
+            effect.put("rawFirepower", targetAttack * totalActions * firepower);
             effect.put("distance", getUnitDistToFoe(side, unitId, target, minePos, enemyPos, initialDist));
             effect.put("range", effectiveRange(unitId, actCtx)); effect.put("defense", def); effect.put("hp", hpPer);
             effect.put("frenzyMultiplier", 1 + (skillRoundActive && actCtx != null ? skillBonus(actCtx.skills, "frenzy") : 0));
@@ -1307,6 +1565,7 @@ public class BattleService {
             if (cm > 1.0001) tags.add("倍率×" + cm + " 相克");
             else if (cm < 0.9999) tags.add("倍率×" + cm + " 火力受限");
             if (pointBlankMultiplier > 1.0) tags.add("贴脸×" + pointBlankMultiplier);
+            if (firepower > 1.0) tags.add("火力密度×" + firepower);
             if ("htank".equals(UnitEquipmentEffects.base(target))) tags.add("前排承伤");
             if (firstTarget && focusTarget != null && focusTarget.equals(target)) tags.add("指定集火");
             double gearReduction = 1 - UnitEquipmentEffects.damage(foeCtx == null ? null : foeCtx.tech, target, unitId);
@@ -1317,7 +1576,7 @@ public class BattleService {
                 attackOutcome.append(" [").append(String.join(" ", tags)).append("]");
             }
             attackOutcome.append(" ").append(BattleRules.domainLabel(target)).append("攻击").append(Math.round(targetAttack));
-            if (firstTarget) attackOutcome.append(" 本次原始火力").append(Math.round(targetAttack * totalActions));
+            if (firstTarget) attackOutcome.append(" 本次原始火力").append(Math.round(targetAttack * totalActions * firepower));
             attackOutcome.append(" 伤害").append(Math.round(appliedDamage)).append(" 击毁").append(kills)
                     .append(" 剩余攻击额度").append(Math.round(100 * remainingActions / totalActions)).append("%");
             if ("rocket".equals(UnitEquipmentEffects.base(unitId))) {
@@ -1335,7 +1594,7 @@ public class BattleService {
             }
 
             // --- 绝境反击 (Counterattack) ---
-            // 反击沿用首次交战起算的技能周期，独立于将领属性的固定回合；仍须受击存活且能够还击。
+            // 反击与将领属性共用首次交火起算的周期；仍须受击存活且能够还击。
             if (!isCounter && foeCtx != null && skillBonus(foeCtx.skills, "counter") > 0) {
                 int counterDistance = getUnitDistToFoe(side, unitId, target, minePos, enemyPos, initialDist);
                 String reason = !skillRoundActive ? "OUTSIDE_SKILL_WINDOW" : remainingTarget <= 0 ? "ELIMINATED_BEFORE_COUNTER"
@@ -1355,13 +1614,14 @@ public class BattleService {
                         if (actCtx != null) cAtkBonus *= 1 - skillBonus(actCtx.skills, "suppress");
                         double cPierce = skillBonus(foeCtx.skills, "pierce");
                         double cDef = actCtx == null ? u.def()
-                                : effDef(unitId, actCtx.tech, actCtx.skills, actCtx.commanderDef,
-                                myWallLevel, officerActive, skillRoundActive, skillRoundActive,
-                                foeCtx, counterArmorSources, foeSide == Side.MINE, actCtx.commandBonus);
+                                : effDef(unitId, actCtx.tech, actCtx.skills, actCtx.commanderDef, officerActive, skillRoundActive, skillRoundActive,
+                                foeCtx, counterArmorSources, actCtx.commandBonus);
                         cDef = Math.max(0, cDef * (1 - cPierce));
                         double cCm = counterMul(target, unitId);
                         double cBaseAtk = baseAttack(target, unitId) * cAtkBonus * UnitEquipmentEffects.attack(foeCtx.tech, target, unitId);
-                        double cDamagePerAction = cBaseAtk * cCm * 100.0 / (100.0 + 5 * cDef) * UnitEquipmentEffects.damage(actCtx == null ? null : actCtx.tech, unitId, target);
+                        // 反击使用反击方自己的火力科技，与反击比例独立相乘，不借用进攻方倍率或贴脸加成。
+                        double cFirepower = actionFirepowerMultiplier(foeCtx.tech);
+                        double cDamagePerAction = cBaseAtk * cCm * 100.0 / (100.0 + 5 * cDef) * UnitEquipmentEffects.damage(actCtx == null ? null : actCtx.tech, unitId, target) * cFirepower;
                         double cHpPer = Math.max(1, actCtx == null ? u.hp() : effHp(unitId, actCtx.tech) * actCtx.commandBonus.hpMul());
                         int cBeforeKill = myArmy.getOrDefault(unitId, 0);
                         double cTotalDamage = remainingTarget * cDamagePerAction * counterRate;
@@ -1376,13 +1636,15 @@ public class BattleService {
                         }
                         myArmy.put(unitId, cBeforeKill - cKills);
                         event("COUNTER", foeSide, target, unitId, Map.of("skill", "counter", "damage", cAppliedDamage,
-                                "kills", cKills, "rate", counterRate, "distance", dist, "range", targetRange));
+                                "kills", cKills, "rate", counterRate, "distance", dist, "range", targetRange,
+                                "firepowerMultiplier", cFirepower, "rawFirepower", cBaseAtk * remainingTarget * counterRate * cFirepower));
 
                         String foeSidePrefix = foeSide == Side.MINE ? "我方" : "敌方";
                         String mySidePrefix = side == Side.MINE ? "我" : "敌";
                         report.append(foeSidePrefix).append(tName).append("(").append(remainingTarget).append(")")
                                 .append(" [绝境反击] ").append(mySidePrefix).append(uName).append("(").append(cBeforeKill).append(")");
                         List<String> cTags = new ArrayList<>();
+                        if (cFirepower > 1.0) cTags.add("火力密度×" + cFirepower);
                         if (cCm > 1.0001) cTags.add("倍率×" + cCm + " 相克");
                         else if (cCm < 0.9999) cTags.add("倍率×" + cCm + " 火力受限");
                         double cGearReduction = 1 - UnitEquipmentEffects.damage(actCtx == null ? null : actCtx.tech, unitId, target);
@@ -1405,6 +1667,12 @@ public class BattleService {
             target = remainingActions > 1e-9
                     ? pickCombatTarget(unitId, side, foeArmy, minePos, enemyPos, initialDist, actCtx, null) : null;
         }
+        if (side == Side.MINE && !isCounter && wallCombat != null && allDead(foeArmy)
+                && myArmy.getOrDefault(unitId, 0) > 0 && remainingActions > 1e-9) {
+            wallCombat.wall = attackWallUnit(unitId, count, remainingActions, minePos, initialDist, actCtx,
+                    officerActive, skillRoundActive, wallCombat.wall, report, movementReportStart, true);
+        }
+
     }
 
     /**
@@ -1418,7 +1686,6 @@ public class BattleService {
                        Side side,
                        TechCtx actCtx,
                        TechCtx foeCtx,
-                       int foeWallLevel,
                        boolean officerActive) {
         Map<String, Integer> minePos = new LinkedHashMap<>();
         Map<String, Integer> enemyPos = new LinkedHashMap<>();
@@ -1431,7 +1698,7 @@ public class BattleService {
             if (side == Side.MINE) enemyPos.put(k, initialDist);
             else minePos.put(k, 0);
         }
-        simAct(unitId, myArmy, foeArmy, minePos, enemyPos, initialDist, report, side, actCtx, foeCtx, foeWallLevel, officerActive);
+        simAct(unitId, myArmy, foeArmy, minePos, enemyPos, initialDist, report, side, actCtx, foeCtx, officerActive);
         return minDistanceToLivingFoe(side, unitId, foeArmy, minePos, enemyPos, initialDist);
     }
 
@@ -1448,7 +1715,6 @@ public class BattleService {
                            Side side,
                            TechCtx actCtx,
                            TechCtx foeCtx,
-                           int foeWallLevel,
                            boolean officerActive) {
         UnitStats u = getStats(unitId);
         if (u == null) return false;
@@ -1475,7 +1741,7 @@ public class BattleService {
             return true;
         }
 
-        fireUnitCombat(unitId, myArmy, foeArmy, minePos, enemyPos, initialDist, report, side, actCtx, foeCtx, foeWallLevel, officerActive, null);
+        fireUnitCombat(unitId, myArmy, foeArmy, minePos, enemyPos, initialDist, report, side, actCtx, foeCtx, officerActive, null);
         return false;
     }
 
@@ -1493,7 +1759,7 @@ public class BattleService {
     }
 
     /** 加成对四项攻击采用同一规则；弱项火力也按自身面板增益，不能借用主武器攻击。 */
-    private double attackBonus(String cat, Map<String, Integer> tech, Map<String, Integer> skills,
+    double attackBonus(String cat, Map<String, Integer> tech, Map<String, Integer> skills,
                                int commanderMil, boolean commanderActive, boolean frenzyActive) {
         double multiplier = atkMul(cat, tech, commanderActive ? commanderMil : 0);
         return frenzyActive ? multiplier * (1 + skillBonus(skills, "frenzy")) : multiplier;
@@ -1516,7 +1782,7 @@ public class BattleService {
      * 同名敌军是否存活以交火阶段开始时的快照为准，参考值只读取基础攻击、攻击科技和军事属性，
      * 不复制临时技能或压制效果；反击不享受此加成，防止与绝境反击在同一回合形成双重爆发。
      */
-    private double learningBonus(String unitId, String targetId, TechCtx actCtx, TechCtx foeCtx,
+    double learningBonus(String unitId, String targetId, TechCtx actCtx, TechCtx foeCtx,
                                  boolean learningActive, Set<String> learningSources, boolean isCounter) {
         if (!learningActive || isCounter || actCtx == null || foeCtx == null
                 || !learningSources.contains(UnitEquipmentEffects.base(unitId)) || !GameData.UNITS.containsKey(UnitEquipmentEffects.base(unitId))) {
@@ -1548,43 +1814,43 @@ public class BattleService {
         return troopIds;
     }
 
-    /** 防御科技双方常驻，城墙只加守城方；防御属性、坚守阵地和借甲御敌按各自回合生效。 */
+    /** 防御科技双方常驻；防御属性、坚守阵地和借甲御敌按各自回合生效。 */
     private double effDef(String unitId, Map<String, Integer> tech, Map<String, Integer> skills,
-                          int commanderDef, int wallLevel, boolean commanderActive,
+                          int commanderDef, boolean commanderActive,
                           boolean bulwarkActive, boolean armorLearningActive,
-                          TechCtx armorSourceCtx, Set<String> armorSources, boolean defendingCity) {
-        return effDef(unitId, tech, skills, commanderDef, wallLevel, commanderActive, bulwarkActive,
-                armorLearningActive, armorSourceCtx, armorSources, defendingCity, CommandBonus.NONE);
+                          TechCtx armorSourceCtx, Set<String> armorSources) {
+        return effDef(unitId, tech, skills, commanderDef, commanderActive, bulwarkActive,
+                armorLearningActive, armorSourceCtx, armorSources, CommandBonus.NONE);
     }
 
     /** 司令官仅放大自身永久防御，借甲御敌产生的临时防御不重复放大。 */
-    private double effDef(String unitId, Map<String, Integer> tech, Map<String, Integer> skills,
-                          int commanderDef, int wallLevel, boolean commanderActive,
+    double effDef(String unitId, Map<String, Integer> tech, Map<String, Integer> skills,
+                          int commanderDef, boolean commanderActive,
                           boolean bulwarkActive, boolean armorLearningActive,
-                          TechCtx armorSourceCtx, Set<String> armorSources, boolean defendingCity,
+                          TechCtx armorSourceCtx, Set<String> armorSources,
                           CommandBonus commandBonus) {
         UnitStats u = getStats(unitId);
         if (u == null) return 1;
-        double multiplier = defMul(u.cat(), tech, wallLevel, defendingCity, commanderActive ? commanderDef : 0);
+        double multiplier = defMul(tech, commanderActive ? commanderDef : 0);
         double defense = u.def() * UnitEquipmentEffects.mul(tech, unitId, "defense") * multiplier * commandBonus.defenseMul();
         if (bulwarkActive) defense *= 1 + skillBonus(skills, "bulwark");
         return defense + borrowedArmorBonus(unitId, skills, armorLearningActive,
                 armorSourceCtx, armorSources);
     }
 
-    /** 保留非战斗战力概览使用的旧签名；概览不模拟借甲御敌的敌军快照。 */
+    /** 非战斗战力概览不模拟借甲御敌的敌军快照。 */
     private double effDef(String unitId, Map<String, Integer> tech, Map<String, Integer> skills,
-                          int commanderDef, int wallLevel, boolean commanderActive,
-                          boolean bulwarkActive, boolean defendingCity) {
-        return effDef(unitId, tech, skills, commanderDef, wallLevel, commanderActive,
-                bulwarkActive, false, null, Collections.emptySet(), defendingCity);
+                          int commanderDef, boolean commanderActive,
+                          boolean bulwarkActive) {
+        return effDef(unitId, tech, skills, commanderDef, commanderActive,
+                bulwarkActive, false, null, Collections.emptySet());
     }
 
     /**
      * 计算借甲御敌在当前回合提供的临时防御值。
      *
      * 参考对象必须是交火阶段开始时存活的同名敌军；仅复制其基础防御与防御科技，
-     * 不继承城墙、将领属性或临时技能。旧存档若同时拥有坚守阵地，则以坚守阵地优先。
+     * 不继承将领属性或临时技能。旧存档若同时拥有坚守阵地，则以坚守阵地优先。
      */
     private double borrowedArmorBonus(String unitId, Map<String, Integer> skills,
                                       boolean armorLearningActive, TechCtx armorSourceCtx,
@@ -1596,8 +1862,8 @@ public class BattleService {
         UnitStats unit = getStats(unitId);
         if (unit == null) return 0;
 
-        // 城墙与临时加成均不参与借鉴，防止防守方把额外防御再次复制为技能收益。
-        double enemyStableDefense = unit.def() * defMul(unit.cat(), armorSourceCtx.tech, 0, false);
+        // 临时加成不参与借鉴，防止额外防御再次复制为技能收益。
+        double enemyStableDefense = unit.def() * defMul(armorSourceCtx.tech);
         double borrowedDefense = enemyStableDefense * skillBonus(skills, "borrow_armor");
         // 封顶同样以敌方防御为基准，保留高养成敌军带来高借甲收益的设计。
         return Math.min(borrowedDefense, enemyStableDefense * 0.30);
@@ -1608,13 +1874,13 @@ public class BattleService {
      * <p>
      * 始终生效 (不依赖 officerActive): base * hpMul(cat)
      */
-    private double effHp(String unitId, Map<String, Integer> tech) {
+    double effHp(String unitId, Map<String, Integer> tech) {
         UnitStats u = getStats(unitId);
         if (u == null) return 1;
         return u.hp() * UnitEquipmentEffects.mul(tech, unitId, "hp") * hpMul(u.cat(), tech);
     }
 
-    /** 常驻学识加成进入初始距离、实际机动、交火先手，工事零速度保持为零。 */
+    /** 常驻学识加成进入实际机动、交火先手，不参与开局距离，工事零速度保持为零。 */
     private double effSpd(String unitId, TechCtx ctx) {
         return effSpd(unitId, ctx, false);
     }
@@ -1633,8 +1899,8 @@ public class BattleService {
                           boolean skillRoundActive) {
         UnitStats u = getStats(unitId);
         if (u == null) return 0;
-        // 卡车仅在机动科技上归入装甲，攻击、防御等仍按原类别计算。
-        String speedCat = "truck".equals(UnitEquipmentEffects.base(unitId)) ? "arm" : u.cat();
+        // 全部陆军共用燃烧引擎，攻击、防御等仍按原类别计算。
+        String speedCat = u.cat();
         double base = u.spd() * UnitEquipmentEffects.speed(tech, unitId, true) * spdMul(speedCat, tech);
         double blitz = skillRoundActive ? skillBonus(skills, "blitz") : 0;
         return base * (1 + blitz);
@@ -1647,56 +1913,58 @@ public class BattleService {
     /**
      * 攻击倍率 - 对应 JS Core.atkMul(cat)
      * <p>
-     * (1 + 0.10*attack_tech) * (1 + cmdMil/100)，科技满级10级时提供100%基础攻击加成
+     * (1 + 0.05*attack_tech) * (1 + cmdMil/100)，科技满级10级时提供50%基础攻击加成
      */
     private double atkMul(String cat, Map<String, Integer> tech, int commanderMil) {
         int cmdAttack = tech.getOrDefault("attack_tech", 0);
-        double allMul = 1 + 0.10 * cmdAttack;
+        double allMul = 1 + 0.05 * cmdAttack;
         return allMul * (1 + commanderMil / 100.0);
     }
 
     /**
-     * 防御倍率 - 对应 JS Core.defMul(cat, isMine)
+     * 防御倍率：攻守双方使用相同规则，墙体等级不进入部队或工事防御。
      * <p>
-     * (1 + 0.10*defense_tech) * (1 + cmdDef/100) * wallMul
-     * wallMul = (isMine && cat != 'air') ? (1 + 0.05*wall) : 1
+     * (1 + 0.05*defense_tech) * (1 + cmdDef/100)
      */
-    private double defMul(String cat, Map<String, Integer> tech, int wallLevel, boolean isMine) {
-        return defMul(cat, tech, wallLevel, isMine, 0);
+    private double defMul(Map<String, Integer> tech) {
+        return defMul(tech, 0);
     }
 
-    private double defMul(String cat, Map<String, Integer> tech, int wallLevel, boolean isMine, int commanderDef) {
+    private double defMul(Map<String, Integer> tech, int commanderDef) {
         int cmdDefense = tech.getOrDefault("defense_tech", 0);
-        double allMul = 1 + 0.10 * cmdDefense;
+        double allMul = 1 + 0.05 * cmdDefense;
         if (commanderDef > 0) {
             allMul *= (1 + commanderDef / 100.0);
         }
-        double catMul = 1;
-        double wallMul = (isMine && !"air".equals(cat)) ? (1 + 0.05 * wallLevel) : 1;
-        return allMul * catMul * wallMul;
+        return allMul;
     }
 
     /**
      * 生命倍率 - 对应 JS Core.hpMul(cat)
      * <p>
-     * 1 + 0.10*cmd_hp
+     * 1 + 0.05*cmd_hp
      */
     private double hpMul(String cat, Map<String, Integer> tech) {
         int cmdHp = tech.getOrDefault("cmd_hp", 0);
-        return 1 + 0.10 * cmdHp;
+        return 1 + 0.05 * cmdHp;
+    }
+
+    /** 全军行动火力常驻且与攻击独立相乘；旧快照缺项为零级，非法等级限制在 0～10。 */
+    private double actionFirepowerMultiplier(Map<String, Integer> tech) {
+        Integer level = tech == null ? null : tech.get("fire_density");
+        return 1 + 0.05 * Math.max(0, Math.min(10, level == null ? 0 : level));
     }
 
     /**
      * 速度倍率 - 对应 JS Core.spdMul(cat)
      * <p>
-     * inf: 1 (无引擎科技)
-     * arm: 1 + 0.05*arm_engine
+     * inf/arm: 1 + 0.05*arm_engine（陆军共用）
      * air: 1 + 0.05*air_engine
      * nav: 1 + 0.05*nav_engine
      */
     private double spdMul(String cat, Map<String, Integer> tech) {
         String catKey = switch (cat) {
-            case "arm" -> "arm_engine";
+            case "inf", "arm" -> "arm_engine";
             case "air" -> "air_engine";
             case "nav" -> "nav_engine";
             default -> null;
@@ -1714,7 +1982,7 @@ public class BattleService {
      * <p>
      * 返回 rate * level, rate 来自 SKILL_RATES
      */
-    private double skillBonus(Map<String, Integer> skills, String skillId) {
+    double skillBonus(Map<String, Integer> skills, String skillId) {
         if (skills == null) return 0;
         int lv = skills.getOrDefault(skillId, 0);
         if (lv <= 0) return 0;
@@ -1723,15 +1991,15 @@ public class BattleService {
     }
 
     /** 首次交战回合触发，空过两个回合后再次触发；脱离射程不改变持久化的起点。 */
-    private boolean isSkillRoundActive(int round, int firstCombatRound) {
+    boolean isSkillRoundActive(int round, int firstCombatRound) {
         return firstCombatRound > 0 && round >= firstCombatRound
                 && (round - firstCombatRound) % 3 == 0;
     }
 
-    /** 战报读取实际技能周期；将领军事、防御属性继续使用独立的固定回合规则。 */
-    private String buildCommanderBonusLog(String sideName, TechCtx ctx, int round, boolean skillRoundActive) {
+    /** 战报读取实际交火周期；将领军事、防御属性与八项战斗技能同时生效。 */
+    String buildCommanderBonusLog(String sideName, TechCtx ctx, int round, boolean skillRoundActive) {
         if (ctx == null) return "";
-        boolean officerActive = round % 3 == 0;
+        boolean officerActive = skillRoundActive;
         List<String> bonuses = new ArrayList<>();
         if (officerActive && ctx.commanderMil > 0) bonuses.add("军事属性 +" + ctx.commanderMil + "%攻击");
         if (officerActive && ctx.commanderDef > 0) bonuses.add("防御属性 +" + ctx.commanderDef + "%防御");
@@ -1981,7 +2249,7 @@ public class BattleService {
     private int effectiveRange(String id, TechCtx ctx) {
         UnitStats u = getStats(id);
         return u == null ? 0 : (int) Math.floor(u.range()
-                * (1 + 0.10 * (ctx == null ? 0 : ctx.tech.getOrDefault("weapon_range", 0))));
+                * (1 + 0.05 * (ctx == null ? 0 : ctx.tech.getOrDefault("weapon_range", 0))));
     }
 
     /** 默认索敌优先射程内的同兵种，否则选择最近的可攻击敌军。 */
@@ -2066,10 +2334,12 @@ public class BattleService {
      * <p>
      * floor(depotLv * protectPer)
      */
-    private int calcProtectCap(long depotLevel) {
+    public int calcProtectCap(long depotLevel, Map<String, Integer> tech) {
         BuildingDef depot = GameData.BUILDINGS.get("depot");
         int protectPer = depot != null && depot.protectPer() != null ? depot.protectPer() : 1000;
-        return (int) Math.floor(depotLevel * protectPer);
+        // 每类资源分别保护同一额度；按本城仓库总等级计算，不改变储量上限。
+        return (int) Math.min(Integer.MAX_VALUE, Math.floor(Math.max(0, depotLevel) * (double) protectPer
+                * (1 + .10 * com.wargame.model.constants.TechnologyRules.level(tech, "log_warehouse", 5))));
     }
 
     /**
@@ -2179,8 +2449,8 @@ public class BattleService {
             double atk = effAtk(unitType, t, s, 0, true);
             return atk * count;
         } else {
-            // 防御力: 使用军官生效时的最大值 (isMine=true)
-            double def = effDef(unitType, t, s, 0, 0, true, true, true);
+            // 防御力: 使用军官生效时的最大值。
+            double def = effDef(unitType, t, s, 0, true, true);
             return def * count;
         }
     }
@@ -2239,6 +2509,12 @@ public class BattleService {
      */
     public Map<String, Integer> calcPlunder(Map<String, Integer> defenderResources,
                                             long defenderWarehouseLevel) {
+        return calcPlunder(defenderResources, defenderWarehouseLevel, Map.of());
+    }
+
+    /** 侦查测算与实际掠夺共用仓储倍率，调用方提供守方科技快照。 */
+    public Map<String, Integer> calcPlunder(Map<String, Integer> defenderResources,
+                                           long defenderWarehouseLevel, Map<String, Integer> defenderTech) {
         Map<String, Integer> plunder = new LinkedHashMap<>();
         if (defenderResources == null) {
             for (String rk : List.of("food", "steel", "oil", "rare", "gold")) {
@@ -2247,7 +2523,7 @@ public class BattleService {
             return plunder;
         }
 
-        int protection = calcProtectCap(defenderWarehouseLevel);
+        int protection = calcProtectCap(defenderWarehouseLevel, defenderTech);
 
         // food/steel/oil/rare: 仓库保护, 取超出部分
         for (String rk : List.of("food", "steel", "oil", "rare")) {

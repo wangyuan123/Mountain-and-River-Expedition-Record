@@ -51,7 +51,7 @@ window.Game = window.Game || {};
     renderContent: function (data) {
       var self = this, esc = G.escapeHtml;
       var h = '<div class="prisoner-summary"><div><span>' + esc(data.cityName) + ' · 战俘营 Lv.' + data.campLevel + '</span><strong>' + G.fmt(data.total) + ' / ' + G.fmt(data.capacity) + '</strong></div>' +
-        '<div><span>战俘思想教育 Lv.' + data.educationLevel + '</span><strong>俘获比例 ' + (data.ratePermille / 10).toFixed(1) + '%</strong></div>' +
+        '<div><span>战俘收编 Lv.' + data.educationLevel + '</span><strong>俘获比例 ' + (data.ratePermille / 10).toFixed(1) + '%</strong></div>' +
         '<div><span>本城黄金</span><strong>' + G.fmt((Core.state.resources || {}).gold || 0) + '</strong></div></div>';
       if (this.attempt) h += '<div class="prisoner-notice">上次' + (this.attempt.action === 'recruit' ? '招募' : '释放') + '结果尚未确认：' + esc((G.DATA.units[this.attempt.unit] || {}).name || this.attempt.unit) + ' × ' + G.fmt(this.attempt.count) +
         '<button class="btn sm"' + (this.pending ? ' disabled' : '') + ' onclick="Game.Prisoners.retry()">重试确认结果</button></div>';

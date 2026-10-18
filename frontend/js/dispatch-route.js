@@ -56,7 +56,8 @@
     if(l) {
       var start=route.points[0],end=route.points[route.points.length-1],sp=l.points[0],ep=l.points[l.points.length-1];
       var same=start[0]===end[0]&&start[1]===end[1];
-      var color=/^(conquer|plunder)$/.test(labels.action)?'#e66f79':'#69b7ee';
+      // 五种攻击行动统一使用进攻路线色，避免短战模式被误认成运输或调遣。
+      var color=/^(conquer|plunder|feint|harass|guerrilla)$/.test(labels.action)?'#e66f79':'#69b7ee';
       var description='从 '+(labels.start||'出发城市')+' ('+start.join(', ')+') 前往 '+(labels.end||'目标')+' ('+end.join(', ')+')，'+l.direction;
       h+='<div class="dispatch-map-surface"><svg viewBox="0 0 '+mapWidth+' '+mapHeight+'" role="img" aria-label="'+esc(description)+'" xmlns="http://www.w3.org/2000/svg">';
       h+='<rect width="'+mapWidth+'" height="'+mapHeight+'" fill="#e4e9df"/>';

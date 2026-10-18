@@ -45,3 +45,11 @@ test('laboratory level 10 checks the best owned coastal port', () => {
   assert.equal(environment(buildings, [], 8).check('buildings', 'lab', 10)
     .missing.some(item => item.id === 'port'), false);
 });
+
+test('fire density research requires local firepower facilities and late staff levels', () => {
+  assert.equal(environment({ lab: 3, factory: 1, academy: 1, raremine: 1 })
+    .check('technologies', 'fire_density', 1).missing.length, 0);
+  const missing = environment({ lab: 10, factory: 10, academy: 8, raremine: 8, staff: 7 })
+    .check('technologies', 'fire_density', 10).missing;
+  assert.deepEqual(Array.from(missing, m => [m.id, m.required, m.actual]), [['staff', 8, 7]]);
+});

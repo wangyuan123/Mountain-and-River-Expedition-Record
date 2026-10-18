@@ -5,8 +5,10 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 function setup() {
+  const scrolls = [], focuses = [];
+  function element(selector) { return { scrollTop: 0, dataset: {}, focus(options) { focuses.push({ selector, options }); }, scrollIntoView(options) { scrolls.push({ selector, options }); }, querySelector(child) { return element(selector + ' ' + child); } }; }
   const document = { activeElement: null, body: { style: {}, appendChild(el) { this.panel = el; el.isConnected = true; } }, querySelector() { return null; }, addEventListener() {}, removeEventListener() {} };
-  document.createElement = () => ({ listeners: {}, innerHTML: '', addEventListener(key, cb) { this.listeners[key] = cb; }, querySelector() { return { scrollTop: 0, focus() {}, dataset: {} }; }, querySelectorAll() { return []; }, contains() { return false; }, remove() { document.body.panel = null; } });
+  document.createElement = () => ({ listeners: {}, innerHTML: '', addEventListener(key, cb) { this.listeners[key] = cb; }, querySelector(selector) { return element(selector); }, querySelectorAll() { return []; }, contains() { return false; }, remove() { document.body.panel = null; } });
   const G = { escapeHtml: v => String(v).replace(/</g, '&lt;'), toast() {}, Core: { state: { tech: { unit_refit: 3 }, resources: { steel: 100000, oil: 100000, rare: 100000 }, items: { ue_infantry_helmet: 1, ue_infantry_radio: 1 } }, render() {}, views: {} }, API: { client: {}, getGameState: () => Promise.resolve(G.Core.state) } };
   const context = { window: { Game: G, setInterval: () => 1, clearInterval() {} }, document, Date, console, setTimeout, clearTimeout };
   vm.createContext(context);
@@ -18,7 +20,7 @@ function setup() {
   } };
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/unit-equipment.js'), 'utf8'), context);
   function click(action, key) { document.body.panel.listeners.click({ target: { closest: () => ({ dataset: { ue: action, key }, disabled: false }) } }); }
-  return { G, document, context, click, html: () => document.body.panel.innerHTML };
+  return { G, document, context, click, scrolls, focuses, html: () => document.body.panel.innerHTML };
 }
 async function settle() { await new Promise(resolve => setImmediate(resolve)); }
 
@@ -31,6 +33,41 @@ test('card summary is persistent and drawer has three slots with no equipment qu
   assert.equal((html().match(/data-ue="slot"/g) || []).length, 3);
   assert.doesNotMatch(html(), /<input|覆盖率|装配数量/);
   assert.match(html(), /role="dialog" aria-modal="true"/);
+});
+test('clicking every equipment slot reveals its matching choices and focuses selection', () => {
+  const { G, click, html, scrolls, focuses } = setup();
+  G.UnitEquipment.open('infantry');
+  assert.equal(scrolls.length, 0);
+  for (const [slot, label, expected, absent] of [
+    ['protection', '防护', '加强钢盔包', '班排无线电组'],
+    ['combat', '作战', null, '加强钢盔包'],
+    ['support', '保障', '班排无线电组', '加强钢盔包']
+  ]) {
+    click('slot', slot);
+    const choices = html().match(/<section class="unit-equipment-choices">([\s\S]*?)<\/section>/)[1];
+    assert.ok(choices.includes('<h3>' + label + '装备</h3>'));
+    if (expected) assert.ok(choices.includes(expected));
+    assert.ok(!choices.includes(absent));
+    assert.equal(scrolls.at(-1).selector, '.unit-equipment-choices');
+    assert.equal(scrolls.at(-1).options.block, 'start');
+    assert.equal(focuses.at(-1).selector, '.unit-equipment-choices [data-ue="choose"]:not([disabled])');
+    assert.equal(focuses.at(-1).options.preventScroll, true);
+  }
+  assert.equal(scrolls.length, 3);
+  assert.equal(G.UnitEquipment.hasUnsaved(), false);
+});
+test('opening a specific summary slot reveals choices and selecting stock updates its draft', () => {
+  const { G, click, html, scrolls } = setup();
+  G.UnitEquipment.open('infantry', 'support');
+  assert.equal(scrolls.length, 1);
+  assert.equal(scrolls[0].selector, '.unit-equipment-choices');
+  const choices = html().match(/<section class="unit-equipment-choices">([\s\S]*?)<\/section>/)[1];
+  assert.ok(choices.includes('班排无线电组'));
+  assert.ok(!choices.includes('加强钢盔包'));
+  click('choose', 'ue_infantry_radio');
+  assert.equal(G.UnitEquipment.hasUnsaved(), true);
+  assert.equal(G.Core.state.unitEquipment.loadouts.infantry, undefined);
+  assert.match(html(), /草稿已选/);
 });
 test('select only changes draft, save atomically submits slots and cancellation discards draft', async () => {
   const { G, click, html } = setup(); const requests = [];
@@ -66,8 +103,9 @@ test('complete preview exposes all attack domains action costs capacity and cond
   const { G, html } = setup(); G.Core.atkMul = () => 99; G.Core.commandBonusMul = () => 1.1; G.Core.state.tech.attack_tech = 1;
   G.UnitEquipment.open('infantry');
   ['完整属性', '对地攻击', '对空攻击', '对海攻击', '对工事攻击', '行军速度', '战场速度', '载重', '行军油耗', '行军粮耗', '反坦克火箭车伤害减免', '驱逐舰伤害减免'].forEach(label => assert.ok(html().includes(label), label));
-  assert.match(html(), /<dt>对地攻击<\/dt><dd>12\.1<\/dd>/);
+  assert.match(html(), /<dt>对地攻击<\/dt><dd>11\.55<\/dd>/);
   assert.match(html(), /周期属性与技能/);
+  assert.doesNotMatch(html(), /本城城墙/);
 });
 test('manufacturing blocks close while pending and state refresh preserves draft', async () => {
   const { G, document, click } = setup(); let finish;

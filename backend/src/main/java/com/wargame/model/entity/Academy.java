@@ -20,9 +20,6 @@ public class Academy extends CityOwnedEntity {
     @Column(name = "player_id", nullable = false)
     private Long playerId;
 
-    @Column(name = "refresh_at")
-    private Long refreshAt;
-
     @Column(name = "officers", columnDefinition = "text")
     private String officers;
 }

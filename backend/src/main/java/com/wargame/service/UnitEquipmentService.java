@@ -39,6 +39,14 @@ public class UnitEquipmentService {
         return UnitEquipmentEffects.snapshot(loadouts(player));
     }
 
+    /** 路线预览与派遣冻结负重科技，保持运兵容量和资源负重一致。 */
+    public Map<String, Integer> actionSnapshot(Long player) {
+        Map<String, Integer> tech = new LinkedHashMap<>(snapshot(player));
+        tech.put("log_load", technologies.findByPlayerIdAndType(player, "log_load").stream()
+                .mapToInt(t -> Objects.requireNonNullElse(t.getLevel(), 0)).max().orElse(0));
+        return TechnologyRules.actionSnapshot(tech);
+    }
+
     /** 一次保存三槽；不读取军队数量，换装旧物返库，非法请求不产生部分扣款。 */
     @Transactional
     public void save(Long player, String unit, Map<String, String> requested, Long version) {
@@ -78,7 +86,7 @@ public class UnitEquipmentService {
         if (d == null) throw new IllegalArgumentException("装备配方不存在");
         int tech = technologies.findByPlayerIdAndType(player, "unit_refit").stream().mapToInt(t -> Objects.requireNonNullElse(t.getLevel(), 0)).max().orElse(0);
         int factory = facilityLevel(player, d.unit());
-        if (tech < d.level()) throw new IllegalArgumentException("需兵种装备工程 Lv." + d.level());
+        if (tech < d.level()) throw new IllegalArgumentException("需武器装备 Lv." + d.level());
         if (factory < d.level() * 2) throw new IllegalArgumentException("本城对应生产设施需 Lv." + d.level() * 2);
         List<UnitEquipmentOrder> lane = orders.findByPlayerIdAndCitySlotOrderByStartAtAscIdAsc(player, scope.slot(player));
         if (lane.size() >= 100) throw new IllegalArgumentException("装备制造队列已满");

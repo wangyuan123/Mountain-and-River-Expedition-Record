@@ -72,6 +72,21 @@ class TechServiceTest {
     }
 
     @Test
+    void fireDensitySharesHealthCostsAndTimeAndReportsFivePercentPerLevel() {
+        Long playerId = 100L;
+        for (int level : new int[]{0, 1, 5, 9}) {
+            assertEquals(techService.calcTechCost("cmd_hp", level), techService.calcTechCost("fire_density", level));
+            assertEquals(techService.calcTechDuration("cmd_hp", level, 10), techService.calcTechDuration("fire_density", level, 10));
+        }
+        assertEquals(Map.of("steel", 300, "food", 160, "rare", 30), techService.calcTechCost("fire_density", 0));
+        assertEquals(0, techService.getTechLevel(playerId, "fire_density"));
+        Technology tech = new Technology();
+        tech.setLevel(5);
+        when(technologyRepository.findByPlayerIdAndType(playerId, "fire_density")).thenReturn(List.of(tech));
+        assertEquals(25, techService.calcTechBonus(playerId, "firepower_all"));
+    }
+
+    @Test
     void testStartResearchSuccess() {
         Long playerId = 100L;
         // Lab level 1

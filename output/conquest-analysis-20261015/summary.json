@@ -1,0 +1,928 @@
+{
+  "battleId": 3705,
+  "createdAtBeijing": "2026-10-14T23:37:57.809000+08:00",
+  "rulesVersion": "balance-v16-conquest-wall-breach-20261013",
+  "terminalReason": "ATTACKERS_ELIMINATED",
+  "rounds": 21,
+  "wall": {
+    "level": 10,
+    "maxHp": 2500000.0,
+    "phase": "CLEAR_DEFENDERS",
+    "defense": 200,
+    "hpRemaining": 2500000.0,
+    "rulesVersion": "balance-v16-conquest-wall-breach-20261013"
+  },
+  "economyWeights": {
+    "steel": 1,
+    "oil": 2,
+    "rare": 4
+  },
+  "economyLimit": "Excludes food, time, population, upkeep and wounded recovery costs.",
+  "initialCount": {
+    "attacker": 600000,
+    "defender": 920000
+  },
+  "survivingCount": {
+    "attacker": 0,
+    "defender": 491107
+  },
+  "initialWeightedCost": {
+    "attacker": 501000000,
+    "defender": 1090088270
+  },
+  "lostWeightedCost": {
+    "attacker": 501000000,
+    "defender": 301544970
+  },
+  "initialFourResourceSum": {
+    "attacker": 379500000,
+    "defender": 750075705
+  },
+  "stableEffectiveHpDiagnostic": {
+    "attacker": 702000000.0,
+    "defender": 6535253823.0
+  },
+  "lossesByTarget": {
+    "attacker": {
+      "rocket": 300000,
+      "fighter": 300000
+    },
+    "defender": {
+      "flak": 0,
+      "htank": 0,
+      "ltank": 0,
+      "bomber": 55339,
+      "bunker": 0,
+      "rocket": 90338,
+      "armored": 92490,
+      "assault": 90339,
+      "carrier": 0,
+      "fighter": 90338,
+      "antitank": 0,
+      "howitzer": 0,
+      "infantry": 0,
+      "destroyer": 0,
+      "recon_car": 0,
+      "battleship": 10049
+    }
+  },
+  "sources": {
+    "attacker": [
+      {
+        "unit": "rocket",
+        "initial": 300000,
+        "survivors": 0,
+        "fireEvents": 20,
+        "fireRounds": [
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20
+        ],
+        "damage": 154811515,
+        "kills": 304866,
+        "initialWeightedCost": 339000000,
+        "destroyedWeightedCost": 209609520,
+        "destroyedValuePerInitialCost": 0.6183171681415929,
+        "targets": {
+          "armored": {
+            "events": 2,
+            "kills": 90244,
+            "damage": 64975580,
+            "destroyedWeightedCost": 34292720
+          },
+          "assault": {
+            "events": 1,
+            "kills": 90339,
+            "damage": 36135600,
+            "destroyedWeightedCost": 36135600
+          },
+          "battleship": {
+            "events": 12,
+            "kills": 6951,
+            "damage": 18071472,
+            "destroyedWeightedCost": 20853000
+          },
+          "bomber": {
+            "events": 1,
+            "kills": 4770,
+            "damage": 1860281,
+            "destroyedWeightedCost": 4245300
+          },
+          "fighter": {
+            "events": 3,
+            "kills": 22224,
+            "damage": 6667182,
+            "destroyedWeightedCost": 12000960
+          },
+          "rocket": {
+            "events": 1,
+            "kills": 90338,
+            "damage": 27101400,
+            "destroyedWeightedCost": 102081940
+          }
+        }
+      },
+      {
+        "unit": "fighter",
+        "initial": 300000,
+        "survivors": 0,
+        "fireEvents": 10,
+        "fireRounds": [
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13
+        ],
+        "damage": 49826813,
+        "kills": 124027,
+        "initialWeightedCost": 162000000,
+        "destroyedWeightedCost": 91935450,
+        "destroyedValuePerInitialCost": 0.5675027777777778,
+        "targets": {
+          "armored": {
+            "events": 1,
+            "kills": 2246,
+            "damage": 1617354,
+            "destroyedWeightedCost": 853480
+          },
+          "battleship": {
+            "events": 5,
+            "kills": 3098,
+            "damage": 8053218,
+            "destroyedWeightedCost": 9294000
+          },
+          "bomber": {
+            "events": 2,
+            "kills": 50569,
+            "damage": 19721949,
+            "destroyedWeightedCost": 45006410
+          },
+          "fighter": {
+            "events": 2,
+            "kills": 68114,
+            "damage": 20434292,
+            "destroyedWeightedCost": 36781560
+          }
+        }
+      }
+    ],
+    "defender": [
+      {
+        "unit": "carrier",
+        "initial": 90338,
+        "survivors": 90338,
+        "fireEvents": 18,
+        "fireRounds": [
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21
+        ],
+        "damage": 68852213,
+        "kills": 229509,
+        "initialWeightedCost": 343284400,
+        "destroyedWeightedCost": 172805150,
+        "destroyedValuePerInitialCost": 0.5033877158414423,
+        "targets": {
+          "fighter": {
+            "events": 10,
+            "kills": 146678,
+            "damage": 44002903,
+            "destroyedWeightedCost": 79206120
+          },
+          "rocket": {
+            "events": 8,
+            "kills": 82831,
+            "damage": 24849310,
+            "destroyedWeightedCost": 93599030
+          }
+        }
+      },
+      {
+        "unit": "battleship",
+        "initial": 90338,
+        "survivors": 80289,
+        "fireEvents": 18,
+        "fireRounds": [
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21
+        ],
+        "damage": 36178657,
+        "kills": 120596,
+        "initialWeightedCost": 271014000,
+        "destroyedWeightedCost": 112556660,
+        "destroyedValuePerInitialCost": 0.4153167733032242,
+        "targets": {
+          "fighter": {
+            "events": 10,
+            "kills": 40198,
+            "damage": 12059497,
+            "destroyedWeightedCost": 21706920
+          },
+          "rocket": {
+            "events": 8,
+            "kills": 80398,
+            "damage": 24119160,
+            "destroyedWeightedCost": 90849740
+          }
+        }
+      },
+      {
+        "unit": "destroyer",
+        "initial": 90338,
+        "survivors": 90338,
+        "fireEvents": 15,
+        "fireRounds": [
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20
+        ],
+        "damage": 28176331,
+        "kills": 93925,
+        "initialWeightedCost": 98468420,
+        "destroyedWeightedCost": 74293540,
+        "destroyedValuePerInitialCost": 0.7544910337750925,
+        "targets": {
+          "fighter": {
+            "events": 8,
+            "kills": 53969,
+            "damage": 16189969,
+            "destroyedWeightedCost": 29143260
+          },
+          "rocket": {
+            "events": 7,
+            "kills": 39956,
+            "damage": 11986362,
+            "destroyedWeightedCost": 45150280
+          }
+        }
+      },
+      {
+        "unit": "ltank",
+        "initial": 90338,
+        "survivors": 90338,
+        "fireEvents": 14,
+        "fireRounds": [
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20
+        ],
+        "damage": 16652412,
+        "kills": 55511,
+        "initialWeightedCost": 45169000,
+        "destroyedWeightedCost": 57041600,
+        "destroyedValuePerInitialCost": 1.2628484137350837,
+        "targets": {
+          "fighter": {
+            "events": 6,
+            "kills": 9637,
+            "damage": 2890288,
+            "destroyedWeightedCost": 5203980
+          },
+          "rocket": {
+            "events": 8,
+            "kills": 45874,
+            "damage": 13762124,
+            "destroyedWeightedCost": 51837620
+          }
+        }
+      },
+      {
+        "unit": "bomber",
+        "initial": 90338,
+        "survivors": 34999,
+        "fireEvents": 15,
+        "fireRounds": [
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20
+        ],
+        "damage": 7353050,
+        "kills": 24510,
+        "initialWeightedCost": 80400820,
+        "destroyedWeightedCost": 24858990,
+        "destroyedValuePerInitialCost": 0.3091882644977999,
+        "targets": {
+          "fighter": {
+            "events": 8,
+            "kills": 4809,
+            "damage": 1442773,
+            "destroyedWeightedCost": 2596860
+          },
+          "rocket": {
+            "events": 7,
+            "kills": 19701,
+            "damage": 5910277,
+            "destroyedWeightedCost": 22262130
+          }
+        }
+      },
+      {
+        "unit": "recon_car",
+        "initial": 58134,
+        "survivors": 58134,
+        "fireEvents": 15,
+        "fireRounds": [
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20
+        ],
+        "damage": 4038415,
+        "kills": 13464,
+        "initialWeightedCost": 22090920,
+        "destroyedWeightedCost": 13477360,
+        "destroyedValuePerInitialCost": 0.6100859538670187,
+        "targets": {
+          "fighter": {
+            "events": 8,
+            "kills": 2944,
+            "damage": 882924,
+            "destroyedWeightedCost": 1589760
+          },
+          "rocket": {
+            "events": 7,
+            "kills": 10520,
+            "damage": 3155491,
+            "destroyedWeightedCost": 11887600
+          }
+        }
+      },
+      {
+        "unit": "rocket",
+        "initial": 90338,
+        "survivors": 0,
+        "fireEvents": 3,
+        "fireRounds": [
+          4,
+          5,
+          6
+        ],
+        "damage": 3954900,
+        "kills": 13182,
+        "initialWeightedCost": 102081940,
+        "destroyedWeightedCost": 13141000,
+        "destroyedValuePerInitialCost": 0.12872992029736113,
+        "targets": {
+          "fighter": {
+            "events": 2,
+            "kills": 2974,
+            "damage": 892595,
+            "destroyedWeightedCost": 1605960
+          },
+          "rocket": {
+            "events": 1,
+            "kills": 10208,
+            "damage": 3062305,
+            "destroyedWeightedCost": 11535040
+          }
+        }
+      },
+      {
+        "unit": "assault",
+        "initial": 90339,
+        "survivors": 0,
+        "fireEvents": 5,
+        "fireRounds": [
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "damage": 5418127,
+        "kills": 18060,
+        "initialWeightedCost": 36135600,
+        "destroyedWeightedCost": 9752400,
+        "destroyedValuePerInitialCost": 0.2698834390462591,
+        "targets": {
+          "fighter": {
+            "events": 5,
+            "kills": 18060,
+            "damage": 5418127,
+            "destroyedWeightedCost": 9752400
+          }
+        }
+      },
+      {
+        "unit": "htank",
+        "initial": 5162,
+        "survivors": 5162,
+        "fireEvents": 14,
+        "fireRounds": [
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20
+        ],
+        "damage": 1449829,
+        "kills": 4832,
+        "initialWeightedCost": 4594180,
+        "destroyedWeightedCost": 4905560,
+        "destroyedValuePerInitialCost": 1.0677770570591487,
+        "targets": {
+          "fighter": {
+            "events": 7,
+            "kills": 940,
+            "damage": 282366,
+            "destroyedWeightedCost": 507600
+          },
+          "rocket": {
+            "events": 7,
+            "kills": 3892,
+            "damage": 1167463,
+            "destroyedWeightedCost": 4397960
+          }
+        }
+      },
+      {
+        "unit": "armored",
+        "initial": 92490,
+        "survivors": 0,
+        "fireEvents": 2,
+        "fireRounds": [
+          6,
+          7
+        ],
+        "damage": 2659282,
+        "kills": 8864,
+        "initialWeightedCost": 35146200,
+        "destroyedWeightedCost": 4786560,
+        "destroyedValuePerInitialCost": 0.13618997217337864,
+        "targets": {
+          "fighter": {
+            "events": 2,
+            "kills": 8864,
+            "damage": 2659282,
+            "destroyedWeightedCost": 4786560
+          }
+        }
+      },
+      {
+        "unit": "fighter",
+        "initial": 90338,
+        "survivors": 0,
+        "fireEvents": 2,
+        "fireRounds": [
+          5,
+          6
+        ],
+        "damage": 2394819,
+        "kills": 7983,
+        "initialWeightedCost": 48782520,
+        "destroyedWeightedCost": 4310820,
+        "destroyedValuePerInitialCost": 0.0883681285837632,
+        "targets": {
+          "fighter": {
+            "events": 2,
+            "kills": 7983,
+            "damage": 2394819,
+            "destroyedWeightedCost": 4310820
+          }
+        }
+      },
+      {
+        "unit": "antitank",
+        "initial": 5000,
+        "survivors": 5000,
+        "fireEvents": 15,
+        "fireRounds": [
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21
+        ],
+        "damage": 718034,
+        "kills": 2397,
+        "initialWeightedCost": 650000,
+        "destroyedWeightedCost": 2681470,
+        "destroyedValuePerInitialCost": 4.125338461538462,
+        "targets": {
+          "fighter": {
+            "events": 7,
+            "kills": 46,
+            "damage": 13588,
+            "destroyedWeightedCost": 24840
+          },
+          "rocket": {
+            "events": 8,
+            "kills": 2351,
+            "damage": 704446,
+            "destroyedWeightedCost": 2656630
+          }
+        }
+      },
+      {
+        "unit": "flak",
+        "initial": 5000,
+        "survivors": 5000,
+        "fireEvents": 15,
+        "fireRounds": [
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21
+        ],
+        "damage": 1057301,
+        "kills": 3523,
+        "initialWeightedCost": 725000,
+        "destroyedWeightedCost": 2297720,
+        "destroyedValuePerInitialCost": 3.1692689655172415,
+        "targets": {
+          "fighter": {
+            "events": 7,
+            "kills": 2853,
+            "damage": 856029,
+            "destroyedWeightedCost": 1540620
+          },
+          "rocket": {
+            "events": 8,
+            "kills": 670,
+            "damage": 201272,
+            "destroyedWeightedCost": 757100
+          }
+        }
+      },
+      {
+        "unit": "infantry",
+        "initial": 21509,
+        "survivors": 21509,
+        "fireEvents": 4,
+        "fireRounds": [
+          17,
+          18,
+          19,
+          20
+        ],
+        "damage": 575700,
+        "kills": 1920,
+        "initialWeightedCost": 645270,
+        "destroyedWeightedCost": 2169600,
+        "destroyedValuePerInitialCost": 3.362313450183644,
+        "targets": {
+          "rocket": {
+            "events": 4,
+            "kills": 1920,
+            "damage": 575700,
+            "destroyedWeightedCost": 2169600
+          }
+        }
+      },
+      {
+        "unit": "howitzer",
+        "initial": 5000,
+        "survivors": 5000,
+        "fireEvents": 15,
+        "fireRounds": [
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21
+        ],
+        "damage": 516764,
+        "kills": 1724,
+        "initialWeightedCost": 500000,
+        "destroyedWeightedCost": 1921570,
+        "destroyedValuePerInitialCost": 3.84314,
+        "targets": {
+          "fighter": {
+            "events": 7,
+            "kills": 45,
+            "damage": 13588,
+            "destroyedWeightedCost": 24300
+          },
+          "rocket": {
+            "events": 8,
+            "kills": 1679,
+            "damage": 503176,
+            "destroyedWeightedCost": 1897270
+          }
+        }
+      },
+      {
+        "unit": "bunker",
+        "initial": 5000,
+        "survivors": 5000,
+        "fireEvents": 0,
+        "fireRounds": [],
+        "damage": 0,
+        "kills": 0,
+        "initialWeightedCost": 400000,
+        "destroyedWeightedCost": 0,
+        "destroyedValuePerInitialCost": 0.0,
+        "targets": {}
+      }
+    ]
+  },
+  "attackerOfficerAttributeRounds": [
+    3,
+    6,
+    9,
+    12,
+    15,
+    18,
+    21
+  ],
+  "attackerSkillRounds": [
+    4,
+    7,
+    10,
+    13,
+    16,
+    19
+  ],
+  "staticEqualResourceNormalVolleyDiagnostics": [
+    {
+      "source": "rocket",
+      "target": "armored",
+      "budget": 1000000,
+      "continuousExpectedKills": 171.50305275433897,
+      "destroyedWeightedCost": 65171.16004664881,
+      "destroyedValuePerInitialCost": 0.06517116004664882
+    },
+    {
+      "source": "rocket",
+      "target": "battleship",
+      "budget": 1000000,
+      "continuousExpectedKills": 1.3091061423260197,
+      "destroyedWeightedCost": 3927.318426978059,
+      "destroyedValuePerInitialCost": 0.003927318426978059
+    },
+    {
+      "source": "fighter",
+      "target": "bomber",
+      "budget": 1000000,
+      "continuousExpectedKills": 189.9335232668566,
+      "destroyedWeightedCost": 169040.83570750238,
+      "destroyedValuePerInitialCost": 0.1690408357075024
+    },
+    {
+      "source": "fighter",
+      "target": "armored",
+      "budget": 1000000,
+      "continuousExpectedKills": 14.355440712029857,
+      "destroyedWeightedCost": 5455.067470571345,
+      "destroyedValuePerInitialCost": 0.005455067470571346
+    },
+    {
+      "source": "fighter",
+      "target": "battleship",
+      "budget": 1000000,
+      "continuousExpectedKills": 8.218277449046681,
+      "destroyedWeightedCost": 24654.832347140044,
+      "destroyedValuePerInitialCost": 0.024654832347140044
+    },
+    {
+      "source": "armored",
+      "target": "fighter",
+      "budget": 1000000,
+      "continuousExpectedKills": 367.3245614035088,
+      "destroyedWeightedCost": 198355.26315789478,
+      "destroyedValuePerInitialCost": 0.19835526315789478
+    },
+    {
+      "source": "carrier",
+      "target": "fighter",
+      "budget": 1000000,
+      "continuousExpectedKills": 54.82456140350877,
+      "destroyedWeightedCost": 29605.263157894733,
+      "destroyedValuePerInitialCost": 0.02960526315789473
+    },
+    {
+      "source": "flak",
+      "target": "fighter",
+      "budget": 1000000,
+      "continuousExpectedKills": 724.1379310344828,
+      "destroyedWeightedCost": 391034.4827586207,
+      "destroyedValuePerInitialCost": 0.3910344827586207
+    },
+    {
+      "source": "carrier",
+      "target": "rocket",
+      "budget": 1000000,
+      "continuousExpectedKills": 37.85780240073868,
+      "destroyedWeightedCost": 42779.316712834705,
+      "destroyedValuePerInitialCost": 0.042779316712834706
+    },
+    {
+      "source": "battleship",
+      "target": "rocket",
+      "budget": 1000000,
+      "continuousExpectedKills": 53.21637426900584,
+      "destroyedWeightedCost": 60134.5029239766,
+      "destroyedValuePerInitialCost": 0.0601345029239766
+    },
+    {
+      "source": "destroyer",
+      "target": "rocket",
+      "budget": 1000000,
+      "continuousExpectedKills": 70.81924995976179,
+      "destroyedWeightedCost": 80025.75245453083,
+      "destroyedValuePerInitialCost": 0.08002575245453082
+    },
+    {
+      "source": "ltank",
+      "target": "rocket",
+      "budget": 1000000,
+      "continuousExpectedKills": 115.7894736842105,
+      "destroyedWeightedCost": 130842.10526315788,
+      "destroyedValuePerInitialCost": 0.13084210526315787
+    },
+    {
+      "source": "htank",
+      "target": "rocket",
+      "budget": 1000000,
+      "continuousExpectedKills": 98.56100926473486,
+      "destroyedWeightedCost": 111373.9404691504,
+      "destroyedValuePerInitialCost": 0.1113739404691504
+    },
+    {
+      "source": "infantry",
+      "target": "rocket",
+      "budget": 1000000,
+      "continuousExpectedKills": 584.7953216374269,
+      "destroyedWeightedCost": 660818.7134502925,
+      "destroyedValuePerInitialCost": 0.6608187134502925
+    }
+  ],
+  "validation": {
+    "eventsParsed": 200,
+    "everyDamageSegmentParsed": true,
+    "perTargetKillsReconcileWithInitialMinusSurvivors": true,
+    "destroyedResourceValuesReconcileWithTargetLosses": true,
+    "representativeDamageFormulaChecks": [
+      {
+        "side": "attacker",
+        "source": "rocket",
+        "target": "fighter",
+        "round": 5,
+        "calculatedDamage": 1725000.0,
+        "loggedDamage": 1725000
+      },
+      {
+        "side": "attacker",
+        "source": "rocket",
+        "target": "armored",
+        "round": 7,
+        "calculatedDamage": 60654139.53488371,
+        "loggedDamage": 60654140
+      },
+      {
+        "side": "defender",
+        "source": "armored",
+        "target": "fighter",
+        "round": 7,
+        "calculatedDamage": 180549.95918367343,
+        "loggedDamage": 180550
+      }
+    ],
+    "eventOrderCaveat": "Movement and fire are merged in the report; line order is not strict fire order."
+  },
+  "snapshotHashes": {
+    "battle-3705.json": "4e53853d12aed9db08843ff7da6ff9ffa45e52b29b279e4336dddbbdafbfa68d",
+    "unit-stats.json": "3b9bcebde2607789786db27ccd02c009249ddf5e68c2a11d62269b84ed2f0056"
+  },
+  "sourceHashesAtAnalysis": {
+    "backend/src/main/java/com/wargame/service/BattleService.java": "3491dc70ec5f48db63cc8d05d0ab147c716fc9c44cb1ae97429965be331821cd",
+    "backend/src/main/java/com/wargame/model/constants/UnitDef.java": "97318ac007f891838cfd845cf07d8adc5aa140dc850d3da6f6d9fbc4811c42b0",
+    "backend/src/main/java/com/wargame/model/constants/FortDef.java": "e6df0d6023e40cbed3528a08455fca51fe3d7161038c5b4a7560a264d180734e",
+    "backend/src/main/java/com/wargame/model/constants/BattleRules.java": "501c620e05d7cf39e90adc0f7ed2e91517769c487b12cf6ea66b5f29bd497fe3"
+  }
+}

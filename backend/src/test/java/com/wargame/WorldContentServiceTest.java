@@ -19,6 +19,44 @@ class WorldContentServiceTest extends BaseServiceTest {
     @Autowired WorldContentService content;
     @Autowired WorldTerrainService terrain;
 
+    @Test void versionThreeOpensOuterBattlefieldsOnceWithoutChangingExistingTargets() {
+        var world = createTestWorld();
+        world.setWorldContentVersion(3); worldMapRepository.save(world);
+        String mask = terrain.ensure();
+        var claimed = createWildTile(world.getId(), "oil", 90, 90, 5, Map.of(), 800);
+        claimed.setOccupied(true); claimed.setOccupiedBy(42L); wildTileRepository.saveAndFlush(claimed);
+        Bandit defeated = new Bandit();
+        defeated.setWorldId(world.getId()); defeated.setX(94); defeated.setY(90);
+        defeated.setName("旧据点"); defeated.setLevel(2); defeated.setDefeated(true); defeated.setArmy("{}");
+        banditRepository.saveAndFlush(defeated);
+        content.ensure(world.getId());
+        var allWilds = wildTileRepository.findByWorldId(world.getId());
+        var allNpcs = banditRepository.findByWorldId(world.getId());
+        assertEquals(1, allWilds.stream().filter(w -> w.getX() < 400 && w.getY() < 400).count());
+        assertEquals(1, allNpcs.stream().filter(n -> n.getX() < 400 && n.getY() < 400).count());
+        assertEquals(42L, wildTileRepository.findById(claimed.getId()).orElseThrow().getOccupiedBy());
+        assertTrue(banditRepository.findById(defeated.getId()).orElseThrow().getDefeated());
+        assertEquals("{}", banditRepository.findById(defeated.getId()).orElseThrow().getArmy());
+        assertEquals("旧据点", banditRepository.findById(defeated.getId()).orElseThrow().getName());
+        assertTrue(allWilds.size() > 600);
+        assertTrue(allWilds.stream().noneMatch(w -> WorldTerrainService.sea(mask, w.getX(), w.getY())));
+        content.ensure(world.getId());
+        assertEquals(allWilds.size(), wildTileRepository.findByWorldId(world.getId()).size());
+        assertEquals(allNpcs.size(), banditRepository.findByWorldId(world.getId()).size());
+    }
+
+    @Test void nearbySupplyWorksAfterMovingToAnOuterBattlefield() {
+        var world = createTestWorld();
+        terrain.ensure();
+        content.ensureAround(world.getId(), 700, 600);
+        var wilds = wildTileRepository.findByWorldId(world.getId());
+        assertTrue(wilds.size() >= 8);
+        assertTrue(wilds.stream().allMatch(w -> Math.abs(w.getX() - 700) + Math.abs(w.getY() - 600) <= 7));
+        assertEquals(2, banditRepository.findByWorldId(world.getId()).size());
+        content.ensureAround(world.getId(), 700, 600);
+        assertEquals(wilds.size(), wildTileRepository.findByWorldId(world.getId()).size());
+    }
+
     @Test void backfillsDenseResourcesAndSeaFleetsOnceWithoutResettingExistingTargets() {
         var world = createTestWorld();
         var player = createTestPlayer("content-player", 30);
@@ -55,13 +93,25 @@ class WorldContentServiceTest extends BaseServiceTest {
                 java.util.stream.IntStream.rangeClosed(1, 30).boxed().collect(Collectors.toSet())));
         fleets.forEach(fleet -> {
             assertTrue(fleet.getName().startsWith("日寇"));
-            assertEquals(com.wargame.model.constants.WorldConfig.seaNpcGarrison(fleet.getLevel()),
+            assertEquals(com.wargame.model.constants.WorldConfig.seaNpcGarrison(fleet.getLevel(), fleet.getX(), fleet.getY()),
                     JsonUtil.parseIntMap(fleet.getArmy()));
             assertTrue(JsonUtil.parseIntMap(fleet.getArmy()).keySet().stream()
                     .allMatch(unit -> Set.of("sea", "air").contains(GameData.UNITS.get(unit).branch())));
         });
         assertTrue(allWilds.stream().noneMatch(w -> WorldTerrainService.sea(mask, w.getX(), w.getY())));
-        assertEquals(3, worldMapRepository.findById(world.getId()).orElseThrow().getWorldContentVersion());
+        for (int row = 0; row < 2; row++) for (int column = 0; column < 2; column++) {
+            int minX = column * WorldConfig.SIZE, minY = row * WorldConfig.SIZE;
+            var fieldWilds = allWilds.stream().filter(w -> w.getX() >= minX && w.getX() < minX + WorldConfig.SIZE
+                    && w.getY() >= minY && w.getY() < minY + WorldConfig.SIZE).toList();
+            var fieldNpcs = allNpcs.stream().filter(n -> n.getX() >= minX && n.getX() < minX + WorldConfig.SIZE
+                    && n.getY() >= minY && n.getY() < minY + WorldConfig.SIZE).toList();
+            assertTrue(fieldWilds.size() > 200);
+            assertTrue(fieldWilds.stream().map(w -> w.getType()).collect(Collectors.toSet()).containsAll(
+                    Set.of("grainfield", "ironworks", "oil", "rarefactory")));
+            assertTrue(fieldNpcs.stream().anyMatch(n -> !WorldTerrainService.sea(mask, n.getX(), n.getY())));
+            assertTrue(fieldNpcs.stream().anyMatch(n -> WorldTerrainService.sea(mask, n.getX(), n.getY())));
+        }
+        assertEquals(4, worldMapRepository.findById(world.getId()).orElseThrow().getWorldContentVersion());
         content.ensure(world.getId());
         assertEquals(allWilds.size(), wildTileRepository.findByWorldId(world.getId()).size());
         assertEquals(allNpcs.size(), banditRepository.findByWorldId(world.getId()).size());
@@ -82,18 +132,20 @@ class WorldContentServiceTest extends BaseServiceTest {
         final Long defeatedId = defeated.getId();
 
         content.ensure(world.getId());
-        var fleets = banditRepository.findByWorldId(world.getId());
+        var allTargets = banditRepository.findByWorldId(world.getId());
+        var fleets = allTargets.stream().filter(b -> b.getX() < WorldConfig.SIZE && b.getY() < WorldConfig.SIZE).toList();
         assertTrue(fleets.size() > 20);
         assertTrue(fleets.stream().filter(b -> !b.getId().equals(defeatedId))
                 .allMatch(b -> b.getName().startsWith("日寇海域守军 Lv.")));
         assertTrue(fleets.stream().filter(b -> !b.getId().equals(defeatedId))
                 .allMatch(b -> WorldTerrainService.sea(mask, b.getX(), b.getY())));
-        assertTrue(wildTileRepository.findByWorldId(world.getId()).isEmpty());
+        assertTrue(wildTileRepository.findByWorldId(world.getId()).stream()
+                .noneMatch(w -> w.getX() < WorldConfig.SIZE && w.getY() < WorldConfig.SIZE));
         assertTrue(banditRepository.findById(defeatedId).orElseThrow().getDefeated());
         assertEquals(Map.of("battleship", 1), JsonUtil.parseIntMap(banditRepository.findById(defeatedId).orElseThrow().getArmy()));
-        assertEquals(3, worldMapRepository.findById(world.getId()).orElseThrow().getWorldContentVersion());
+        assertEquals(4, worldMapRepository.findById(world.getId()).orElseThrow().getWorldContentVersion());
         content.ensure(world.getId());
-        assertEquals(fleets.size(), banditRepository.findByWorldId(world.getId()).size());
+        assertEquals(allTargets.size(), banditRepository.findByWorldId(world.getId()).size());
     }
 
     @Test void upgradesVersionTwoWithoutAddingTargetsOrRevivingDefeatedFleets() {
@@ -115,10 +167,13 @@ class WorldContentServiceTest extends BaseServiceTest {
         banditRepository.save(defeated);
 
         content.ensure(world.getId());
-        assertEquals(2, banditRepository.findByWorldId(world.getId()).size());
-        assertEquals(WorldConfig.seaNpcGarrison(1), JsonUtil.parseIntMap(banditRepository.findById(active.getId()).orElseThrow().getArmy()));
+        assertEquals(2, banditRepository.findByWorldId(world.getId()).stream()
+                .filter(b -> b.getX() < WorldConfig.SIZE && b.getY() < WorldConfig.SIZE).count());
+        var activeAfterUpgrade = banditRepository.findById(active.getId()).orElseThrow();
+        assertEquals(WorldConfig.seaNpcGarrison(activeAfterUpgrade.getLevel(), activeAfterUpgrade.getX(), activeAfterUpgrade.getY()),
+                JsonUtil.parseIntMap(activeAfterUpgrade.getArmy()));
         assertTrue(banditRepository.findById(defeated.getId()).orElseThrow().getDefeated());
         assertEquals(Map.of(), JsonUtil.parseIntMap(banditRepository.findById(defeated.getId()).orElseThrow().getArmy()));
-        assertEquals(3, worldMapRepository.findById(world.getId()).orElseThrow().getWorldContentVersion());
+        assertEquals(4, worldMapRepository.findById(world.getId()).orElseThrow().getWorldContentVersion());
     }
 }

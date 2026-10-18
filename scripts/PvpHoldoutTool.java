@@ -17,7 +17,7 @@ public class PvpHoldoutTool {
     }
     static BattleService.TechCtx context(Map<String,Integer> army,Map<String,Integer> skills) {
         Map<String,Integer> tech=new TreeMap<>();
-        for(String id:List.of("attack_tech","defense_tech","cmd_hp","weapon_range","arm_engine","air_engine","nav_engine"))tech.put(id,3);
+        for(String id:List.of("attack_tech","defense_tech","cmd_hp","fire_density","weapon_range","arm_engine","air_engine","nav_engine"))tech.put(id,3);
         army.keySet().forEach(id->{for(String key:List.of("ground","air","sea","defense","hp","speed"))tech.put(UnitEquipmentEffects.key(id,key),5);});
         return new BattleService.TechCtx(tech,skills,60,60,CommandBonus.NONE);
     }

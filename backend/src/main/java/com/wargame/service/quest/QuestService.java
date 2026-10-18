@@ -157,7 +157,7 @@ public class QuestService {
                         .filter(t -> t.getLevel() != null && t.getLevel() >= 8).count();
             }
             case "TECH_MAX_COUNT" -> {
-                // 统计达到 10 级满级的科技数量
+                // 按各科技自身的5级或10级上限统计满级项数。
                 yield (int) technologyRepository.findByPlayerId(playerId).stream()
                         .filter(t -> {
                             TechDef def = TechDef.TECHS.get(t.getType());
@@ -166,7 +166,7 @@ public class QuestService {
                         }).count();
             }
             case "TECH_ALL_MAX" -> {
-                // 统计达到满级的科技种类数 (全部16项)
+                // 按当前科技目录统计已满级种类，新增与拆分科技也必须研发完成。
                 int maxed = 0;
                 for (TechDef def : TechDef.TECHS.values()) {
                     int lv = technologyRepository.findByPlayerIdAndType(playerId, def.key()).stream()

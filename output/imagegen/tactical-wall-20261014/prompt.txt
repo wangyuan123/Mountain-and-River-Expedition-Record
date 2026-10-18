@@ -1,0 +1,29 @@
+Use case: stylized-concept.
+Asset type: one realistic 3D miniature fortress city wall model asset for the tactical battle command panel in the WWII-inspired strategy game 山河远征录, matching its existing A / garden citadel architectural collection.
+
+Primary request:
+Create an impressive, highly detailed, vertical military defensive fortress rampart wall (战役战术要塞防御城墙防线). 
+The fortress wall stands vertically as a continuous fortified defensive barrier spanning vertically from the very top of the frame to the bottom. 
+The FRONT FACADE and the MAIN FORTRESS GATE are explicitly facing towards the LEFT (towards incoming enemy forces on the battlefield).
+
+Camera and Framing:
+- Elevated three-quarter isometric perspective, approximately 35-40 degrees above the horizon, viewing from the side-front so that the wall stretches vertically from top to bottom of the frame.
+- The front vertical fortified wall face and gate open towards the LEFT. The flat interior fortress walkway is on the RIGHT side.
+- Long vertical defensive line occupying the frame from top to bottom, near-orthographic lens, all elements crisply in-focus.
+
+Key Architectural Elements:
+1. Central Grand Bastion Gatehouse (中央主要塞城门楼):
+   Located at the vertical center of the rampart, protruding outward towards the LEFT. Built with warm cream limestone and reinforced concrete. Features a monumental stone gate arch with heavy blast-resistant double steel doors, fortified iron rivets, and locking crossbeams facing left. Flanked by two rounded defensive watchtowers with observation slits, small terracotta tiled roofs, and machine gun cupolas.
+2. Continuous Upper & Lower Ramparts (上下两段要塞城墙防线):
+   Extending seamlessly above and below the central gate to the frame edges. Thick, battered stone foundation, crenellated parapets with regular crenels (垛口) facing left, sentry catwalk with guardrails on the right, and embedded rifle/machine-gun firing slits.
+3. Top and Bottom Bastions:
+   Hexagonal concrete pillbox bunkers terminating the wall at the upper and lower ends.
+4. Battlefield Obstacles:
+   Along the left exterior ground base facing incoming enemies: steel Czech hedgehog anti-tank obstacles, barbed-wire revetments, and sandbag firing positions firmly on the ground.
+
+Materials & Craftsmanship:
+Master scale-model miniature diorama craftsmanship with convincing physical textures: warm cream limestone and weathered stucco, desaturated terracotta roof caps, dark charcoal steel blast doors and obstacles, clean neutral concrete base.
+Lighting:
+Crisp natural morning daylight from upper-left casting sharp, soft ambient occlusion contact shadows to highlight the three-dimensional depth and wall thickness.
+Background & Constraints:
+Solid uniform seamless pure white background for clean transparency extraction. NO floating dirt diorama slab, NO modern skyscrapers, NO futuristic tech, NO text, watermarks, flags, or UI icons.

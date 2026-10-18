@@ -53,6 +53,52 @@ test('首页后勤兵种说明与运输载重保持一致', () => {
   assert.match(G.DATA.combatRoles.transport, /载重800/);
 });
 
+test('首页仅统计可用兵力，伤兵单独提示且治疗后才归队', () => {
+  const G = setup();
+  const home = { innerHTML: '' };
+  G.Core.state = {
+    player: { cityName: '测试城', homeModuleOrder: ['army'] }, resources: {},
+    buildings: {}, forts: {}, officers: [], army: { infantry: 0, rocket: 0 },
+    woundedCount: 50, world: { cityPos: { x: 1, y: 2 }, marches: [], incoming: [] }, reports: []
+  };
+  G.Core.cityStatusText = () => ({ status: 'peace', text: '和平' });
+  G.Core.getOfficerByRole = () => null;
+  G.Core.armyCap = () => 100;
+  G.Core.produceOf = () => 0;
+  G.Core.foodPerHour = () => 0;
+  G.Core.civilianPopulation = () => 0;
+  G.Core.capacity = () => ({ food: 100, steel: 100, oil: 100, rare: 100 });
+  G.Core.morale = () => 100;
+  G.Core.resentment = () => 0;
+  G.Core.populationCapacity = () => 100;
+  G.Core.populationGrowthPerHour = () => 0;
+  G.Core.popFree = () => 0;
+
+  G.Core.views.home(home);
+  assert.match(home.innerHTML, /可用兵力 <b[^>]*>0<\/b>/);
+  assert.match(home.innerHTML, /暂无可用部队/);
+  assert.match(home.innerHTML, /待救治伤兵 <b>50<\/b>/);
+  assert.match(home.innerHTML, /不计入可用兵力/);
+  assert.match(home.innerHTML, /Game\.go\('wounded'\)/);
+  assert.doesNotMatch(G.MainView.renderArmySummaryList(), /army-summary-item/);
+
+  // 未参战驻军仍可使用；不能按伤兵总数从正常库存中再次扣兵。
+  G.Core.state.army.infantry = 17;
+  G.Core.views.home(home);
+  assert.match(home.innerHTML, /可用兵力 <b[^>]*>17<\/b>/);
+  assert.match(home.innerHTML, /待救治伤兵 <b>50<\/b>/);
+
+  // 付费治疗的服务端结果只将已治疗数量转入正常库存。
+  G.Core.state.army.infantry = 27;
+  G.Core.state.woundedCount = 40;
+  G.Core.views.home(home);
+  assert.match(home.innerHTML, /可用兵力 <b[^>]*>27<\/b>/);
+  assert.match(home.innerHTML, /待救治伤兵 <b>40<\/b>/);
+  G.Core.state.woundedCount = 0;
+  G.Core.views.home(home);
+  assert.doesNotMatch(home.innerHTML, /待救治伤兵/);
+});
+
 test('军队总览三排浏览，全屏入口展示全部兵种并可关闭', () => {
   const css = fs.readFileSync(path.join(__dirname, '../css/style.css'), 'utf8');
   const source = fs.readFileSync(path.join(__dirname, '../js/main-view.js'), 'utf8');

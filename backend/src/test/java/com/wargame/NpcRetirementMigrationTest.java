@@ -29,7 +29,14 @@ class NpcRetirementMigrationTest {
                 }
             }
             sql.execute("INSERT INTO bandits VALUES (9,'日寇海域守军 Lv.30',30,'{\"destroyer\":2}',TRUE)");
-            ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/migration/V92__remove_npc_cities_unify_land_bandits.sql"));
+            String script = new String(new ClassPathResource("db/migration/V92__remove_npc_cities_unify_land_bandits.sql")
+                    .getInputStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8)
+                    .replace("CONVERT(npc_cities.id USING utf8mb4) COLLATE utf8mb4_unicode_ci", "CAST(npc_cities.id AS VARCHAR(50))");
+            for (String statement : script.split(";")) {
+                if (!statement.strip().isBlank()) {
+                    sql.execute(statement.strip());
+                }
+            }
             var cities = sql.executeQuery("SELECT id FROM npc_cities ORDER BY id");
             assertTrue(cities.next()); assertEquals(102, cities.getLong(1));
             assertTrue(cities.next()); assertEquals(103, cities.getLong(1));

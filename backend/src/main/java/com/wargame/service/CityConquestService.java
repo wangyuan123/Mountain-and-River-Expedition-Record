@@ -341,7 +341,7 @@ public class CityConquestService {
 
     /** 从现有占地外寻找完整2×2陆地，避免新主城与原城或野地重叠。 */
     private int[] freeCitySite(String mask, Set<String> occupied) {
-        int size = WorldTerrainService.SIZE;
+        int size = com.wargame.model.constants.WorldConfig.WORLD_SIZE;
         int start = new Random().nextInt(size * size);
         for (int i = 0; i < size * size; i++) {
             int n = (start + i) % (size * size), x = n % size, y = n / size;

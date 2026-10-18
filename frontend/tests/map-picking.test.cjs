@@ -142,8 +142,8 @@ test('guildmate city offers support and opens the selected member city',()=>{
  v.detail={innerHTML:'',querySelector:()=>({appendChild:button=>buttons.push(button),insertAdjacentHTML(){}})};
  v.selected={kind:'player',id:22,ownerId:2,guildmate:true,name:'成员城',x:8,y:105,readyAt:0};
  v.renderDetail(v.selected);
- assert.deepEqual(buttons.map(b=>b.textContent),['运输','驻防']);
- buttons[0].onclick();buttons[1].onclick();
+ assert.deepEqual(buttons.map(b=>b.textContent),['劝降','运输','驻防']);
+ buttons.find(b=>b.textContent==='运输').onclick();buttons.find(b=>b.textContent==='驻防').onclick();
  assert.deepEqual(calls,[[2,'transport',22],[2,'reinforce',22]]);
  buttons.length=0;v.selected.guildmate=false;v.selected.guildRelation='friendly';v.renderDetail(v.selected);
  assert.ok(!buttons.some(b=>b.textContent==='运输'||b.textContent==='驻防'));
@@ -184,6 +184,24 @@ test('player art follows actual coast status for own and other cities, including
  }
  assert.equal(icon({kind:'npc',coastal:true}),'img/map/npc-fortress-orthogonal.webp');
  assert.equal(icon({kind:'bandit',sea:false}),'img/map/npc-fortress-orthogonal.webp');
+ assert.equal(icon({kind:'player',wallLevel:1}),'img/cities/player-city-preview-map.png');
+ assert.equal(icon({kind:'player',wallLevel:2}),'img/cities/player-city-preview-map.png');
+ assert.equal(icon({kind:'player',wallLevel:3}),'img/cities/player-city-lv3-4.png');
+ assert.equal(icon({kind:'player',wallLevel:4}),'img/cities/player-city-lv3-4.png');
+ assert.equal(icon({kind:'player',wallLevel:5}),'img/cities/player-city-lv5-6.png');
+ assert.equal(icon({kind:'player',wallLevel:6}),'img/cities/player-city-lv5-6.png');
+ assert.equal(icon({kind:'player',wallLevel:7}),'img/cities/player-city-lv7-8.png');
+ assert.equal(icon({kind:'player',wallLevel:8}),'img/cities/player-city-lv7-8.png');
+ assert.equal(icon({kind:'player',wallLevel:9}),'img/cities/player-city-lv9.png');
+ assert.equal(icon({kind:'player',wallLevel:10}),'img/cities/player-city-lv10.png');
+ assert.ok(fs.existsSync(path.join(__dirname,'..','img/cities/player-city-lv1-2.png')));
+ assert.ok(fs.existsSync(path.join(__dirname,'..','img/cities/player-city-lv3-4.png')));
+ assert.ok(fs.existsSync(path.join(__dirname,'..','img/cities/player-city-lv5-6.png')));
+ assert.ok(fs.existsSync(path.join(__dirname,'..','img/cities/player-city-lv7-8.png')));
+ assert.ok(fs.existsSync(path.join(__dirname,'..','img/cities/player-city-lv9.png')));
+ assert.ok(fs.existsSync(path.join(__dirname,'..','img/cities/player-city-lv9-10.png')));
+ assert.ok(fs.existsSync(path.join(__dirname,'..','img/cities/player-city-lv5-9.png')));
+ assert.ok(fs.existsSync(path.join(__dirname,'..','img/cities/player-city-lv10.png')));
  for(const [name,vessel] of [
   ['日寇第1舰队','battleship'],['日寇第4航母编队','carrier'],
   ['日寇第5潜艇支队','sub'],['日寇第6驱逐舰队','destroyer']

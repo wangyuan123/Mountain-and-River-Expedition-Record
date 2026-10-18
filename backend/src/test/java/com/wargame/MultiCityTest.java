@@ -261,10 +261,21 @@ class MultiCityTest extends BaseServiceTest {
         createArmyUnit(player.getId(), "infantry", 100);
         ArmyUnit garrison = createArmyUnit(player.getId(), "infantry", 1); garrison.setCitySlot(1); armyUnitRepository.save(garrison);
         Player attacker = createTestPlayer("city-attacker", 30);
+        player.setNewbieProtectionEnded(true); playerRepository.saveAndFlush(player);
         long now = System.currentTimeMillis();
-        createMarch(attacker.getId(), "player", branch.getId().toString(), branch.getName(), 10, 10, branch.getX(), branch.getY(),
+        attacker.setWarAgainstId(player.getId());
+        attacker.setWarAt(now - 100_000L);
+        attacker.setWarEndAt(now + 3_600_000L);
+        playerRepository.saveAndFlush(attacker);
+        March attackMarch = createMarch(attacker.getId(), "player", branch.getId().toString(), branch.getName(), 10, 10, branch.getX(), branch.getY(),
                 Map.of("infantry",1000), "conquer", now - 60000, now - 1, false, false);
         marchService.processMarches(attacker.getId(), now);
+        for (int round = 0; round < 30; round++) {
+            attackMarch = marchRepository.findById(attackMarch.getId()).orElse(null);
+            if (attackMarch == null || attackMarch.getBattleId() == null) break;
+            now += 15_000;
+            marchService.processTimedOutTacticalBattle(attackMarch.getBattleId(), now);
+        }
         assertEquals(100, troop(0)); assertEquals(0, troop(1));
         assertEquals(90000, balance(0).getGold()); assertEquals(0, balance(1).getGold());
         assertEquals(player.getId(), branch.getOwnerId());

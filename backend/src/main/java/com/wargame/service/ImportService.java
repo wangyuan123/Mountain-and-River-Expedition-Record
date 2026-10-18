@@ -315,19 +315,25 @@ public class ImportService {
         JsonNode techNode = root.path("tech");
         if (techNode.isMissingNode() || !techNode.isObject()) return;
 
-        Iterator<Map.Entry<String, JsonNode>> fields = techNode.fields();
-        while (fields.hasNext()) {
-            Map.Entry<String, JsonNode> entry = fields.next();
-            if (!TechDef.TECHS.containsKey(entry.getKey())) continue;
-            int level = entry.getValue().asInt(0);
-            if (level > 0) {
-                Technology tech = new Technology();
-                tech.setPlayerId(playerId);
-                tech.setType(entry.getKey());
-                tech.setLevel(level);
-                technologyRepository.save(tech);
-            }
-        }
+        // 新存档显式携带规则版本；旧格式只在导入时映射一次，不能重复扩展新等级。
+        boolean current = com.wargame.model.constants.TechnologyRules.VERSION.equals(root.path("technologyRulesVersion").asText());
+        Map<String, Integer> levels = new LinkedHashMap<>();
+        techNode.fields().forEachRemaining(entry -> {
+            String key = entry.getKey();
+            int level = Math.max(0, entry.getValue().asInt(0));
+            Map<String, Integer> mapped = current
+                    ? (TechDef.TECHS.containsKey(key) ? Map.of(key, Math.min(TechDef.TECHS.get(key).maxLevel(), level)) : Map.of())
+                    : com.wargame.model.constants.TechnologyRules.legacyTargets(key, level);
+            mapped.forEach((k, v) -> levels.merge(k, v, Math::max));
+        });
+        levels.forEach((key, level) -> {
+            if (level <= 0) return;
+            Technology tech = new Technology();
+            tech.setPlayerId(playerId);
+            tech.setType(key);
+            tech.setLevel(level);
+            technologyRepository.save(tech);
+        });
     }
 
     private void importOfficers(Long playerId, JsonNode root) {
@@ -410,10 +416,8 @@ public class ImportService {
             } else {
                 academy.setOfficers("[]");
             }
-            academy.setRefreshAt(academyNode.path("refreshAt").asLong(0));
         } else {
             academy.setOfficers("[]");
-            academy.setRefreshAt(0L);
         }
 
         academyRepository.save(academy);
@@ -426,21 +430,11 @@ public class ImportService {
 
         if (!csNode.isMissingNode() && csNode.isObject()) {
             cs.setStatus(csNode.path("status").asText("peace"));
-            // warTarget can be a string or null in JS
-            JsonNode warTargetNode = csNode.path("warTarget");
-            if (warTargetNode.isNumber()) {
-                cs.setWarTargetId(warTargetNode.asLong());
-            } else {
-                cs.setWarTargetId(null);
-            }
             cs.setWarEndAt(csNode.path("warUntil").asLong(0));
             cs.setShieldUntil(csNode.path("shieldUntil").asLong(0));
             cs.setPeaceUntil(csNode.path("peaceUntil").asLong(0));
-            cs.setWarAt(0L);
         } else {
             cs.setStatus("peace");
-            cs.setWarTargetId(null);
-            cs.setWarAt(0L);
             cs.setWarEndAt(0L);
             cs.setShieldUntil(0L);
             cs.setPeaceUntil(0L);
@@ -578,7 +572,6 @@ public class ImportService {
             March march = new March();
             march.setPlayerId(playerId);
             march.setTargetKind(mNode.path("targetKind").asText(null));
-            march.setTargetIdx(mNode.has("targetIdx") ? mNode.path("targetIdx").asInt() : null);
             march.setTargetId(mNode.path("targetId").asText(null));
             march.setTargetName(mNode.path("targetName").asText(null));
             march.setTargetX(mNode.has("targetX") ? mNode.path("targetX").asInt() : null);

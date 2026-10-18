@@ -3,6 +3,7 @@ package com.wargame;
 import com.wargame.model.entity.*;
 import com.wargame.repository.WoundedUnitRepository;
 import com.wargame.service.WoundedService;
+import com.wargame.service.CityScope;
 import com.wargame.util.JsonUtil;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -20,6 +21,7 @@ class WoundedServiceTest extends BaseServiceTest {
     @Autowired WoundedService service;
     @Autowired WoundedUnitRepository wounded;
     @Autowired PlatformTransactionManager transactionManager;
+    @Autowired CityScope scope;
     private Player player;
 
     @BeforeEach
@@ -31,6 +33,22 @@ class WoundedServiceTest extends BaseServiceTest {
 
     private void record(int initial, int alive, long now) {
         service.recordLosses(player.getId(), 10, 10, Map.of("scout", initial), Map.of("scout", alive), null, now);
+    }
+
+    /** 玩家城战斗必须处于战争期，且逐回合推进完毕后才生成最终战报和伤兵。 */
+    private void finishCityBattle(PlayerCity city, Map<String, Integer> army, long now) {
+        player.setWarAgainstId(city.getOwnerId());
+        player.setWarAt(now - 60000);
+        player.setWarEndAt(now + 3600000);
+        playerRepository.save(player);
+        March march = createMarch(player.getId(), "player", city.getId().toString(), city.getName(),
+                10, 10, city.getX(), city.getY(), army, "plunder", now - 60000, now - 1, false, false);
+        marchService.processMarches(player.getId(), now);
+        assertNotNull(march.getBattleId(), "玩家城抵达后应建立战术会话");
+        for (int i = 0; i < 40 && march.getBattleId() != null; i++) {
+            marchService.executeTacticalRound(player.getId(), march.getId(), null);
+        }
+        assertNull(march.getBattleId(), "战斗须完成结算后再检查兵力");
     }
 
     private PlayerCity createTestCity(String name, Long owner, int x, int y) {
@@ -106,6 +124,34 @@ class WoundedServiceTest extends BaseServiceTest {
     }
 
     @Test
+    void diamondsRoundUpPerThousandGoldForQuotesAndActualTreatment() {
+        assertEquals(4, service.goldCost("infantry", 1));
+        assertEquals(1, service.diamondCost("infantry", 1));
+        assertEquals(1, service.diamondCost("infantry", 249));
+        assertEquals(1, service.diamondCost("infantry", 250));
+        assertEquals(2, service.diamondCost("infantry", 251));
+        assertEquals(1552, service.diamondCost("destroyer", 20410));
+        createTechnology(player.getId(), "log_medical", 10);
+        service.recordLosses(player.getId(), 10, 10, Map.of("infantry", 502), Map.of(), null, System.currentTimeMillis());
+        var batch = batches(player.getId()).get(0);
+        Resources balance = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
+        balance.setGold(0);
+        balance.setDiamond(1);
+        resourcesRepository.save(balance);
+        var quote = (List<?>) service.getCamp(player.getId()).get("batches");
+        assertEquals(2L, ((Map<?, ?>) quote.get(0)).get("diamondCost"));
+        assertThrows(IllegalArgumentException.class, () -> service.heal(player.getId(), batch.getId(), 251, "diamond"));
+        assertEquals(1, balance.getDiamond());
+        assertEquals(251, batch.getCount());
+        var result = service.heal(player.getId(), batch.getId(), 250, "diamond");
+        assertEquals(1L, result.get("cost"));
+        assertEquals(0, balance.getDiamond());
+        assertEquals(0, balance.getGold());
+        assertEquals(1, batch.getCount());
+        assertEquals(250, armyUnitRepository.findByPlayerIdAndType(player.getId(), "infantry").get(0).getCount());
+    }
+
+    @Test
     void rejectsInsufficientFundsOtherPlayersExpiredBatchesAndInvalidQuantities() {
         createTechnology(player.getId(), "log_medical", 10);
         record(100, 0, System.currentTimeMillis());
@@ -161,9 +207,7 @@ class WoundedServiceTest extends BaseServiceTest {
         createTechnology(defender.getId(), "log_medical", 10);
         createTechnology(player.getId(), "log_medical", 10);
         long now = System.currentTimeMillis();
-        createMarch(player.getId(), "player", city.getId().toString(), city.getName(), 10, 10, 20, 20,
-                Map.of("infantry", 100), "plunder", now - 60000, now - 1, false, false);
-        marchService.processMarches(player.getId(), now);
+        finishCityBattle(city, Map.of("infantry", 100), now);
         Map<String, Object> report = JsonUtil.parseObjMap(scoutReportRepository.findByPlayerId(player.getId()).get(0).getData());
         @SuppressWarnings("unchecked") var alive = (Map<String, Number>) report.get("survivorAttacker");
         assertEquals((100 - alive.getOrDefault("infantry", 0).intValue()) / 2,
@@ -185,6 +229,117 @@ class WoundedServiceTest extends BaseServiceTest {
         assertFalse(batches(player.getId()).isEmpty());
         assertTrue(batches(player.getId()).stream().mapToInt(WoundedUnit::getCount).sum() <= 50);
         assertEquals(777, armyUnitRepository.findByPlayerIdAndType(player.getId(), "infantry").get(0).getCount());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"gold", "diamond"})
+    void annihilatedDefendersStayOutOfHomeArmyUntilPaidTreatment(String currency) {
+        Player defender = createTestPlayer("annihilated-defender", 30);
+        PlayerCity city = createTestCity("全灭守城", defender.getId(), 20, 20);
+        city.setCitySlot(0);
+        playerCityRepository.save(city);
+        createArmyUnit(defender.getId(), "infantry", 10);
+        createArmyUnit(defender.getId(), "truck", 4);
+        createTechnology(defender.getId(), "log_medical", 10);
+        long now = System.currentTimeMillis();
+        finishCityBattle(city, Map.of("infantry", 10000), now);
+
+        Map<String, Object> report = JsonUtil.parseObjMap(
+                scoutReportRepository.findByPlayerId(defender.getId()).get(0).getData());
+        assertTrue(JsonUtil.parseIntMap(JsonUtil.toJson(report.get("survivorDefender"))).isEmpty());
+        assertEquals(7, batches(defender.getId()).stream().mapToInt(WoundedUnit::getCount).sum());
+        Map<String, Object> before = gameStateService.getGameState(defender.getId());
+        assertEquals(0, JsonUtil.parseIntMap(JsonUtil.toJson(before.get("army"))).values()
+                .stream().mapToInt(Integer::intValue).sum());
+        assertEquals(7L, before.get("woundedCount"));
+
+        Resources balance = resourcesRepository.findByPlayerId(defender.getId()).orElseThrow();
+        balance.setGold(10000);
+        balance.setDiamond(100);
+        resourcesRepository.save(balance);
+        WoundedUnit infantry = batches(defender.getId()).stream()
+                .filter(batch -> "infantry".equals(batch.getType())).findFirst().orElseThrow();
+        service.heal(defender.getId(), infantry.getId(), 2, currency);
+        Map<String, Object> after = gameStateService.getGameState(defender.getId());
+        Map<String, Integer> army = JsonUtil.parseIntMap(JsonUtil.toJson(after.get("army")));
+        assertEquals(2, army.get("infantry"));
+        assertEquals(0, army.getOrDefault("truck", 0));
+        assertEquals(5L, after.get("woundedCount"));
+        assertEquals("gold".equals(currency) ? 10000 - service.goldCost("infantry", 2) : 10000, balance.getGold().longValue());
+        assertEquals("diamond".equals(currency) ? 100 - service.diamondCost("infantry", 2) : 100, balance.getDiamond().longValue());
+    }
+
+    @Test
+    void annihilatedSortieDoesNotClearUnsentReservesOrCountWoundedAsArmy() {
+        Player defender = createTestPlayer("reserve-defender", 30);
+        defender.setSortieArmy("{\"infantry\":10}");
+        playerRepository.save(defender);
+        PlayerCity city = createTestCity("预备兵守城", defender.getId(), 20, 20);
+        city.setCitySlot(0);
+        playerCityRepository.save(city);
+        createArmyUnit(defender.getId(), "infantry", 17);
+        createTechnology(defender.getId(), "log_medical", 10);
+        long now = System.currentTimeMillis();
+        finishCityBattle(city, Map.of("infantry", 10000), now);
+
+        Map<String, Object> report = JsonUtil.parseObjMap(
+                scoutReportRepository.findByPlayerId(defender.getId()).get(0).getData());
+        assertEquals(Map.of("infantry", 10), JsonUtil.parseIntMap(JsonUtil.toJson(report.get("initialDefender"))));
+        assertTrue(JsonUtil.parseIntMap(JsonUtil.toJson(report.get("survivorDefender"))).isEmpty());
+        Map<String, Object> state = gameStateService.getGameState(defender.getId());
+        assertEquals(Map.of("infantry", 7), JsonUtil.parseIntMap(JsonUtil.toJson(state.get("army"))));
+        assertEquals(5L, state.get("woundedCount"));
+    }
+
+    @Test
+    void homeWoundedCountMatchesCurrentCityCampAndDoesNotIncludeOtherCities() {
+        createTestWorld();
+        createTechnology(player.getId(), "log_medical", 10);
+        record(20, 0, System.currentTimeMillis());
+        WoundedUnit branch = new WoundedUnit();
+        branch.setPlayerId(player.getId());
+        branch.setCitySlot(1);
+        branch.setCityX(20);
+        branch.setCityY(20);
+        branch.setCityName("分城");
+        branch.setType("scout");
+        branch.setCount(50);
+        branch.setCreatedAt(System.currentTimeMillis());
+        branch.setExpiresAt(System.currentTimeMillis() + WoundedService.RETENTION_MS);
+        branch.setRecoveryPercent(50);
+        wounded.save(branch);
+        assertEquals(10L, service.getCamp(player.getId()).get("total"));
+        assertEquals(10L, gameStateService.getGameState(player.getId()).get("woundedCount"));
+        assertTrue(JsonUtil.parseIntMap(JsonUtil.toJson(gameStateService.getGameState(player.getId()).get("army"))).isEmpty());
+    }
+
+    @Test
+    void outboundWoundedKeepMarchCityWhenCoordinatesDifferAndAnotherCityIsActive() {
+        PlayerCity main = createTestCity("主城", player.getId(), 10, 10);
+        main.setCitySlot(0);
+        playerCityRepository.save(main);
+        PlayerCity branch = createTestCity("分城", player.getId(), 20, 20);
+        branch.setCitySlot(1);
+        playerCityRepository.save(branch);
+        player.setActiveCityId(main.getId());
+        playerRepository.save(player);
+        createTechnology(player.getId(), "log_medical", 10);
+        March outbound = new March();
+        outbound.setPlayerId(player.getId());
+        outbound.setCitySlot(1);
+        outbound.setFromX(90);
+        outbound.setFromY(90);
+        service.recordOutboundLosses(player.getId(), outbound, Map.of("scout", 20), Map.of(), null, System.currentTimeMillis());
+        WoundedUnit batch = batches(player.getId()).get(0);
+        assertEquals(1, batch.getCitySlot());
+        assertEquals(branch.getId(), batch.getCityId());
+        assertEquals(20, batch.getCityX());
+        assertEquals(20, batch.getCityY());
+        assertEquals(0, scope.slot(player.getId()), "记录伤兵后须恢复调用方的城市上下文");
+        assertEquals(0L, service.getCamp(player.getId()).get("total"));
+        try (var ignored = scope.enter(branch)) {
+            assertEquals(10L, service.getCamp(player.getId()).get("total"));
+        }
     }
 
     @Test

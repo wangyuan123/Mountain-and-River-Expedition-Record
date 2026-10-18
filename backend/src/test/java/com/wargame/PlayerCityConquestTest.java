@@ -10,6 +10,9 @@ import com.wargame.util.JwtUtil;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
@@ -89,7 +92,7 @@ class PlayerCityConquestTest extends BaseServiceTest {
         Officer o = officer(defender.getId(), slot, "commander", 15, 12, 13, 14);
         o.setLoyalty(loyalty); o.setName("守将"); o.setStar(5); o.setLevel(42);
         o.setExp(123456L); o.setAttrPoints(9); o.setSkills("[{\"id\":\"mil_boost\",\"lv\":3}]");
-        o.setBio("完整履历"); o.setSalary(12); o.setRewardAt(987L); o.setRecruitAt(456L); o.setNameRenamedAt(321L); o.setEquipmentCount(1);
+        o.setBio("完整履历"); o.setSalary(12); o.setRewardAt(987L); o.setRecruitAt(456L); o.setNameRenamedAt(321L);
         return o;
     }
 
@@ -127,6 +130,7 @@ class PlayerCityConquestTest extends BaseServiceTest {
 
     @Test void takeoverAndCapturePreserveBuildingsStockAndCompleteOfficerButClearMilitaryAssets() {
         PlayerCity target = city(defender, 1, 30, 30, 2);
+        target.setResentment(12);
         Long targetId = target.getId();
         Building farm = building(defender.getId(), 1, "farm", 7); Long farmId = farm.getId();
         Construction build = createConstruction(defender.getId(), "farm", 8, 1, System.currentTimeMillis() + 3_600_000, 0); build.setCitySlot(1);
@@ -150,6 +154,9 @@ class PlayerCityConquestTest extends BaseServiceTest {
 
         PlayerCity owned = playerCityRepository.findById(targetId).orElseThrow();
         assertEquals(attacker.getId(), owned.getOwnerId()); assertEquals(1, owned.getCitySlot()); assertEquals(0, owned.getMorale());
+        assertEquals(13, owned.getResentment(), "分城须先结算败战民怨，再随城权转移保留");
+        assertEquals(1, report(defender.getId()).get("resentmentChange"));
+        assertEquals(13, report(attacker.getId()).get("enemyResentmentAfter"));
         assertEquals(attacker.getId(), buildingRepository.findById(farmId).orElseThrow().getPlayerId());
         assertEquals(7, buildingRepository.findById(farmId).orElseThrow().getLevel());
         assertEquals(attacker.getId(), constructionRepository.findById(buildId).orElseThrow().getPlayerId());
@@ -186,7 +193,8 @@ class PlayerCityConquestTest extends BaseServiceTest {
         assertEquals(attacker.getId(), officerRepository.findById(officerId).orElseThrow().getPlayerId());
         assertEquals(false, report(attacker.getId()).get("cityConquered"));
         assertTrue(report(attacker.getId()).get("cityTakeoverReason").toString().contains("军衔上限"));
-        assertEquals(0, resourcesRepository.findByPlayerIdAndCitySlot(defender.getId(), 1).orElseThrow().getFood());
+        assertEquals(0, resourcesRepository.findByPlayerIdAndCitySlot(defender.getId(), 1).orElseThrow().getFood(),
+                "步兵自携负重足够时，未接管城市也可搬走普通资源");
     }
 
     @Test void constructionCitiesCountAgainstRankCapAndPositiveMoralePreventsTakeover() {
@@ -207,6 +215,40 @@ class PlayerCityConquestTest extends BaseServiceTest {
         assertFalse(report(attacker.getId()).get("report").toString().contains("俘虏"));
     }
 
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvSource({"conquer,0", "plunder,0", "conquer,1", "plunder,1"})
+    void cityLootMatchesSurvivorCapacityReportsAndActualDefenderDeduction(String action, int truckCount) {
+        PlayerCity target = city(defender, 1, 30, 30, 70);
+        var before = resourcesRepository.findByPlayerIdAndCitySlot(defender.getId(), 1).orElseThrow();
+        before.setFood(20_000); before.setSteel(20_000); before.setOil(20_000); before.setRare(20_000); before.setGold(20_000);
+        var initial = Map.of("food", before.getFood(), "steel", before.getSteel(), "oil", before.getOil(),
+                "rare", before.getRare(), "gold", before.getGold());
+        long now = System.currentTimeMillis();
+        March march = createMarch(attacker.getId(), "player", target.getId().toString(), target.getName(),
+                10, 10, 30, 30, Map.of("infantry", 1000, "truck", truckCount), action, now - 60_000, now - 1, false, false);
+        march.setCarryRes(JsonUtil.toJson(Map.of("food", 100)));
+        marchService.processMarches(attacker.getId(), now);
+        finish(march.getId());
+
+        March returning = marchRepository.findById(march.getId()).orElseThrow();
+        var loot = JsonUtil.parseIntMap(JsonUtil.toJson(report(attacker.getId()).get("plunder")));
+        var cargo = JsonUtil.parseIntMap(returning.getCarryRes());
+        int capacity = marchService.calcArmyLoad(JsonUtil.parseIntMap(returning.getArmy()));
+        assertEquals(10_000 + 500 * truckCount, capacity);
+        assertEquals(capacity - 100, loot.values().stream().mapToInt(Integer::intValue).sum());
+        assertEquals(capacity, cargo.values().stream().mapToInt(Integer::intValue).sum());
+        assertEquals(report(attacker.getId()).get("plunder"), report(defender.getId()).get("plunder"));
+        var after = resourcesRepository.findByPlayerIdAndCitySlot(defender.getId(), 1).orElseThrow();
+        var stock = Map.of("food", after.getFood(), "steel", after.getSteel(), "oil", after.getOil(),
+                "rare", after.getRare(), "gold", after.getGold());
+        initial.forEach((key, amount) -> {
+            assertEquals(amount - loot.getOrDefault(key, 0), stock.get(key), key);
+            assertEquals(loot.getOrDefault(key, 0) + ("food".equals(key) ? 100 : 0), cargo.getOrDefault(key, 0), key);
+        });
+        if ("plunder".equals(action)) assertEquals(0, loot.get("gold"));
+        assertEquals(defender.getId(), playerCityRepository.findById(target.getId()).orElseThrow().getOwnerId());
+    }
+
     @Test void plunderNeverTakesOverOrCapturesEvenAtZeroMoraleAndLoyalty() {
         PlayerCity target = city(defender, 1, 30, 30, 0); Long targetId = target.getId();
         Long officerId = commander(1, 0).getId();
@@ -216,17 +258,111 @@ class PlayerCityConquestTest extends BaseServiceTest {
         assertNull(report(attacker.getId()).get("capturedOfficerId")); assertEquals(false, report(attacker.getId()).get("cityConquered"));
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"feint", "harass", "guerrilla"})
+    void harassmentVictoryDoesNotLootTakeOverOrCapture(String action) {
+        PlayerCity target = city(defender, 1, 30, 30, 0);
+        Long officerId = commander(1, 0).getId();
+        var before = resourcesRepository.findByPlayerIdAndCitySlot(defender.getId(), 1).orElseThrow();
+        var stock = java.util.List.of(before.getFood(), before.getSteel(), before.getOil(), before.getRare(), before.getGold());
+        March march = begin(target, action, 1000, 0);
+        finish(march.getId());
+        var result = report(attacker.getId());
+        assertEquals(true, result.get("attackerWin"));
+        assertEquals(false, result.get("cityConquered"));
+        assertNull(result.get("capturedOfficerId"));
+        assertTrue(((Map<?, ?>) result.get("plunder")).values().stream().allMatch(amount -> ((Number) amount).intValue() == 0));
+        assertEquals(defender.getId(), playerCityRepository.findById(target.getId()).orElseThrow().getOwnerId());
+        assertEquals(defender.getId(), officerRepository.findById(officerId).orElseThrow().getPlayerId());
+        var after = resourcesRepository.findByPlayerIdAndCitySlot(defender.getId(), 1).orElseThrow();
+        assertEquals(stock, java.util.List.of(after.getFood(), after.getSteel(), after.getOil(), after.getRare(), after.getGold()));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"1,conquer,100,0,3", "1,conquer,71,0,3", "1,conquer,70,0,2",
+            "1,conquer,41,0,2", "1,conquer,40,0,1", "1,conquer,0,0,1",
+            "1,plunder,100,0,2", "1,plunder,71,0,2", "1,plunder,70,0,0",
+            "1,plunder,41,0,0", "1,plunder,40,0,0", "1,plunder,0,0,0",
+            "1,feint,100,7,0", "1,harass,100,7,0", "1,guerrilla,100,7,0",
+            "1,conquer,100,98,2", "1,conquer,100,99,1", "1,conquer,100,100,0",
+            "1,plunder,100,99,1", "1,plunder,100,100,0", "0,conquer,71,0,3",
+            "0,conquer,41,9,2", "0,plunder,71,0,2", "0,conquer,100,99,1"})
+    void defeatedCityResentmentUsesPreBattleMoraleAndActualCity(int slot, String action, int moraleBefore,
+                                                               int resentmentBefore, int actualGain) {
+        // 无接管名额，让 0 民心档位也能直接核对原守城方的持久化经济数据。
+        attacker.setMilitaryRank(1);
+        attacker.setResentment(11);
+        defender.setResentment(17);
+        PlayerCity target = slot == 0
+                ? playerCityRepository.findByOwnerIdAndCitySlot(defender.getId(), 0).orElseThrow()
+                : city(defender, slot, 30, 30, moraleBefore);
+        CityEconomy economy = slot == 0 ? defender : target;
+        economy.setMorale(moraleBefore);
+        economy.setResentment(resentmentBefore);
+        if (slot == 0) {
+            // 主城地图记录是冗余值，不能作为民心定档或民怨累加的依据。
+            target.setMorale(10);
+            target.setResentment(44);
+        }
+        PlayerCity selected = city(defender, 2, 40, 40, 22);
+        selected.setResentment(29);
+        defender.setActiveCityId(selected.getId());
+        Long targetId = target.getId();
+        Long selectedId = selected.getId();
+        Long attackerId = attacker.getId();
+        Long defenderId = defender.getId();
+
+        March march = begin(target, action, 1000, 0);
+        Long battleId = march.getBattleId();
+        finish(march.getId());
+        marchService.processTimedOutTacticalBattle(battleId, System.currentTimeMillis() + 3_600_000L);
+        em.flush();
+        em.clear();
+
+        PlayerCity saved = playerCityRepository.findById(targetId).orElseThrow();
+        CityEconomy savedEconomy = slot == 0 ? playerRepository.findById(defenderId).orElseThrow() : saved;
+        assertEquals(defenderId, saved.getOwnerId());
+        assertEquals(resentmentBefore + actualGain, savedEconomy.getResentment());
+        assertEquals(Math.max(0, moraleBefore - 2), savedEconomy.getMorale());
+        assertEquals(11, playerRepository.findById(attackerId).orElseThrow().getResentment());
+        assertEquals(29, playerCityRepository.findById(selectedId).orElseThrow().getResentment());
+        if (slot != 0) assertEquals(17, playerRepository.findById(defenderId).orElseThrow().getResentment());
+        assertEquals(1, scoutReportRepository.findByPlayerId(defenderId).size(), "同场重复调度不重复生成战报");
+
+        // 后续安抚或切城引发的经济变化不能改写已保存的本次战果。
+        savedEconomy.setResentment(1);
+        savedEconomy.setMorale(1);
+        Map<String, Object> attackReport = report(attackerId);
+        Map<String, Object> defenseReport = report(defenderId);
+        assertEquals(true, attackReport.get("attackerWin"));
+        assertEquals(actualGain, defenseReport.get("resentmentChange"));
+        assertEquals(resentmentBefore + actualGain, defenseReport.get("resentmentAfter"));
+        assertEquals(actualGain, attackReport.get("enemyResentmentChange"));
+        assertEquals(resentmentBefore + actualGain, attackReport.get("enemyResentmentAfter"));
+        assertEquals(0, attackReport.get("resentmentChange"));
+        assertEquals(11, attackReport.get("resentmentAfter"));
+        assertEquals(0, defenseReport.get("enemyResentmentChange"));
+        assertEquals(11, defenseReport.get("enemyResentmentAfter"));
+    }
+
     @Test void defeatNeverTakesOverOrCaptures() {
+        attacker.setResentment(7);
         PlayerCity target = city(defender, 1, 30, 30, 0); Long targetId = target.getId(); Long officerId = commander(1, 0).getId();
+        target.setResentment(13);
         March march = begin(target, "conquer", 1, 1000); finish(march.getId());
         assertEquals(false, report(attacker.getId()).get("win")); assertEquals(false, report(attacker.getId()).get("cityConquered"));
         assertEquals(defender.getId(), playerCityRepository.findById(targetId).orElseThrow().getOwnerId());
         assertEquals(defender.getId(), officerRepository.findById(officerId).orElseThrow().getPlayerId());
+        assertEquals(7, attacker.getResentment(), "进攻失败不增加出发城民怨");
+        assertEquals(13, target.getResentment(), "守城胜利不增加民怨");
+        assertEquals(0, report(attacker.getId()).get("resentmentChange"));
+        assertEquals(0, report(defender.getId()).get("resentmentChange"));
     }
 
     @Test void mainCityLossPromotesRemainingCityAndPreservesAccountWalletAndOtherAssets() {
         PlayerCity target = playerCityRepository.findByOwnerIdAndCitySlot(defender.getId(), 0).orElseThrow(); Long targetId = target.getId();
         defender.setMorale(2); target.setMorale(99);
+        defender.setResentment(4); target.setResentment(44);
         Resources wallet = resourcesRepository.findByPlayerIdAndCitySlot(defender.getId(), 0).orElseThrow(); wallet.setDiamond(999);
         PlayerCity remaining = city(defender, 2, 40, 40, 65); Long remainingId = remaining.getId();
         WildTile remainingWild = createWildTile(world.getId(), "forest", 50, 50, 1, Map.of(), 0);
@@ -238,6 +374,11 @@ class PlayerCityConquestTest extends BaseServiceTest {
         March march = begin(target, "conquer", 1000, 1); finish(march.getId());
         Player player = playerRepository.findById(defender.getId()).orElseThrow();
         assertEquals(remainingId, player.getActiveCityId()); assertEquals(40, player.getCityPosX()); assertEquals(65, player.getMorale());
+        assertEquals(0, player.getResentment(), "提升后的新主城保留自身民怨");
+        assertEquals(5, playerCityRepository.findById(targetId).orElseThrow().getResentment(), "失守主城的民怨随城保留");
+        assertEquals(1, report(defender.getId()).get("resentmentChange"));
+        assertEquals(5, report(defender.getId()).get("resentmentAfter"));
+        assertEquals(5, report(attacker.getId()).get("enemyResentmentAfter"));
         assertEquals(0, playerCityRepository.findById(remainingId).orElseThrow().getCitySlot());
         assertEquals(0, wildTileRepository.findById(remainingWildId).orElseThrow().getOccupiedCitySlot());
         assertEquals(defender.getId(), wildTileRepository.findById(remainingWildId).orElseThrow().getOccupiedBy());

@@ -27,14 +27,15 @@
   }
   function statusText(target) {
     if (target.available === false) return '账号不可用';
+    if (target.blocked) return '黑名单限制';
     return target.online ? '在线' : '离线';
   }
   function paintTitle() {
     var title = node('privateChatTitle');
     var text = peer ? peer.username + ' · ' + statusText(peer) : '';
     if (title && title.textContent !== text) title.textContent = text;
-    if (node('privateChatInput')) node('privateChatInput').disabled = !peer || peer.available === false;
-    if (node('privateChatSend')) node('privateChatSend').disabled = sending || !peer || peer.available === false;
+    if (node('privateChatInput')) node('privateChatInput').disabled = !peer || peer.available === false || peer.blocked;
+    if (node('privateChatSend')) node('privateChatSend').disabled = sending || !peer || peer.available === false || peer.blocked;
   }
   function panels() {
     if (node('privateChatListPanel')) node('privateChatListPanel').hidden = dialog;
@@ -89,7 +90,7 @@
       remove.onclick = function () { return P.remove(c.peer.id); };
       button.type = 'button';
       button.className = 'private-conversation';
-      button.innerHTML = '<img class="chat-avatar" src="' + escape(G.Chat.avatarSrc ? G.Chat.avatarSrc(c.peer.avatar, false) : '') + '" alt=""><span class="private-conversation-body"><span class="private-conversation-name">' + escape(c.peer.username) + '<span class="private-peer-status">' + statusText(c.peer) + '</span></span><span class="private-conversation-preview">' + escape(c.lastMessage ? c.lastMessage.content : '还没有消息，点击开始通讯') + '</span></span>' + (c.unread ? '<span class="private-unread-badge">' + Number(c.unread) + '</span>' : '');
+      button.innerHTML = '<img class="chat-avatar" src="' + escape(G.Chat.avatarSrc ? G.Chat.avatarSrc(c.peer.avatar, false) : '') + '" alt=""><span class="private-conversation-body"><span class="private-conversation-name">' + escape(c.peer.username) + '<span class="private-peer-status">' + statusText(c.peer) + '</span></span><span class="private-conversation-preview">' + escape(c.lastMessage ? c.lastMessage.content : '还没有消息，点击开始聊天') + '</span></span>' + (c.unread ? '<span class="private-unread-badge">' + Number(c.unread) + '</span>' : '');
       var dragged = false;
       var startX = 0;
       var startY = 0;
@@ -122,7 +123,7 @@
       dialog = false;
       return '<div id="privateChatListPanel" class="private-chat-panel"><div class="chat-input-bar"><input class="chat-input" id="privateChatPlayer" aria-label="玩家名" maxlength="50" placeholder="输入完整玩家名" onkeydown="if(event.key===\'Enter\')Game.PrivateChat.find()"><button class="chat-send" onclick="Game.PrivateChat.find()">发起私聊</button></div>' +
         '<div id="privateChatConversations" class="private-conversations"></div></div>' +
-        '<div id="privateChatDialogPanel" class="private-chat-panel" hidden><div class="private-dialog-header"><button class="chat-back-button" onclick="Game.PrivateChat.showList()" aria-label="返回私聊列表">‹</button><h2 id="privateChatTitle"></h2></div>' +
+        '<div id="privateChatDialogPanel" class="private-chat-panel" hidden><div class="private-dialog-header"><button class="chat-back-button" onclick="Game.PrivateChat.showList()" aria-label="返回私聊列表">‹</button><h2 id="privateChatTitle"></h2><button class="btn sm" onclick="Game.PrivateChat.profile()">玩家资料</button></div>' +
         '<div class="chat-box" id="privateChatBox" style="flex:1;min-height:0;"></div>' +
         '<div class="chat-input-bar"><input class="chat-input" id="privateChatInput" aria-label="私聊消息" maxlength="80" placeholder="私聊消息，最多 80 字" onkeydown="if(event.key===\'Enter\')Game.PrivateChat.send()" disabled><button class="chat-send" id="privateChatSend" onclick="Game.PrivateChat.send()" disabled>发送</button></div></div>';
     },
@@ -142,6 +143,7 @@
       var targetRequest = playerId ? Promise.resolve({ id: Number(playerId), username: username }) : G.API.privateChatPlayer(username);
       return targetRequest.then(function (target) {
         G.go('chat');
+        if (G.MainView.selectChatTab) G.MainView.selectChatTab('messages');
         G.MainView.selectChatChannel('private');
         return P.open(target);
       }).catch(error);
@@ -181,7 +183,7 @@
         // 合并请求期间到达的实时消息，避免历史响应抹去新消息。
         var merged = {};
         messages.concat(data.messages || []).forEach(function (m) { merged[m.id] = m; });
-        messages = Object.keys(merged).map(function (id) { return merged[id]; }).sort(function (a, b) { return a.id - b.id; }).slice(-50);
+        messages = Object.keys(merged).map(function (id) { return merged[id]; }).filter(function (m) { return m.id > (data.clearedThrough || 0); }).sort(function (a, b) { return a.id - b.id; }).slice(-50);
         paint();
         return markRead();
       }) : Promise.resolve();
@@ -193,7 +195,7 @@
       if (!m || m.id == null) return;
       var me = G.Core.state && G.Core.state.player;
       if (me && String(m.recipientId) === String(me.id) && (!visible() || !peer || String(m.playerId) !== String(peer.id)) && G.toast) {
-        G.toast(m.username + ' 发来私聊，请到通讯 → 私聊查看');
+        G.toast(m.username + ' 发来私聊，请到聊天 → 私聊查看');
       }
       if (peer && (String(m.playerId) === String(peer.id) || String(m.recipientId) === String(peer.id))) {
         if (!messages.some(function (existing) { return String(existing.id) === String(m.id); })) {
@@ -205,7 +207,7 @@
     /** 发送结果只清空对应会话草稿；切换会话不改变正在发送的收件人。 */
     send: function () {
       var input = node('privateChatInput');
-      if (!peer || !dialog || peer.available === false || !input || sending) return;
+      if (!peer || !dialog || peer.available === false || peer.blocked || !input || sending) return;
       var text = input.value.trim();
       if (!text) { error(new Error('消息不能为空')); return; }
       if (Date.now() < nextSendAt) { error(new Error('发言过于频繁，请等待 5 秒冷却')); return; }
@@ -221,6 +223,18 @@
         sending = false;
         paintTitle();
       });
+    },
+    profile: function () { if (peer && G.Friends) return G.Friends.view(peer.id); },
+    /** 清空自己的缓存及草稿，旧请求失效；服务端边界确保刷新和跨设备后仍保持清空。 */
+    cleared: function (peerId) {
+      delete drafts[peerId];
+      if (peer && String(peer.id) === String(peerId)) {
+        ++generation;
+        messages = [];
+        if (node('privateChatInput')) node('privateChatInput').value = '';
+        paint();
+      }
+      return P.refresh();
     }
   };
   // 事件委托兼容增量追加的聊天消息，同时提供键盘入口。

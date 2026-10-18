@@ -56,6 +56,7 @@ class MarchCommanderBattleTest extends BaseServiceTest {
         nimitz.setRole(null);
         nimitz.setSkills(JsonUtil.toJson(List.of(Map.of("id", "blitz", "lv", 2))));
         nimitz = officerRepository.save(nimitz);
+        resourcesRepository.findByPlayerIdAndCitySlot(playerId, 0).ifPresent(r -> { r.setOil(100_000); resourcesRepository.save(r); });
 
         // 2. 准备 200 辆轻型坦克
         createArmyUnit(playerId, "ltank", 200);

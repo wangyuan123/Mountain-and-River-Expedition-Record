@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="blue-white-classic">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <base href="../">
+  <title>伤兵营数量选择预览（模拟数据）</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/themes.css">
+  <link rel="stylesheet" href="css/classic-home.css">
+  <link rel="stylesheet" href="css/text-actions.css">
+  <link rel="stylesheet" href="css/landscape.css">
+</head>
+<body>
+  <div id="screen"><main id="view"></main></div>
+  <script>
+    var params = new URLSearchParams(location.search);
+    var theme = params.get('theme');
+    if (['blue-white', 'blue-white-classic', 'paper', 'dark'].includes(theme)) document.documentElement.dataset.theme = theme;
+    var balances = {
+      account: { gold: 25625, diamond: 2635 },
+      both: { gold: 25625, diamond: 263 },
+      gold: { gold: 25625, diamond: 20000 },
+      diamond: { gold: 2000000, diamond: 263 },
+      enough: { gold: 2000000, diamond: 20000 },
+      zero: { gold: 0, diamond: 0 }
+    };
+    // 预览使用真实伤兵营组件和模拟余额，不连接游戏接口或扣除任何资源。
+    window.Game = {
+      Core: { views: {}, route: 'wounded', state: {
+        player: { activeCityId: 1, citySlot: 0, cityName: '主城' },
+        resources: balances[params.get('balance')] || balances.account
+      }, refreshTop: function () {} },
+      DATA: { units: { destroyer: { name: '驱逐舰' } } },
+      API: { getToken: function () { return 'preview'; } },
+      Cities: { open: function () {} },
+      fmt: function (value) { return Number(value).toLocaleString(); },
+      escapeHtml: function (value) {
+        return String(value).replace(/[&<>"']/g, function (character) {
+          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character];
+        });
+      },
+      go: function () {}, toast: function () {}
+    };
+  </script>
+  <script src="js/wounded.js"></script>
+  <script>
+    var camp = {
+      cityId: 1, citySlot: 0, cityName: '主城', cityX: 100, cityY: 100,
+      medicalLevel: 10, serverTime: 1000, resources: Game.Core.state.resources,
+      batches: [{ id: 1, citySlot: 0, unit: 'destroyer', count: 20410,
+        recoveryPercent: 65, expiresAt: 122401000, goldPerUnit: 76 }]
+    };
+    Game.API.getWounded = function () { return Promise.resolve(camp); };
+    Game.API.healWounded = function () { return Promise.resolve({ success: false, message: '此页为交互预览，不会实际治疗或扣费。' }); };
+    Game.Wounded.renderView(document.getElementById('view'));
+  </script>
+</body>
+</html>

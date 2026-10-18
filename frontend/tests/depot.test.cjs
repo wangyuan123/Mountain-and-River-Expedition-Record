@@ -5,7 +5,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 function setup() {
-  const state = { world: {}, items: { gem: 2, expBook: 1, emptySpeed: 0 } };
+  const state = { world: {}, items: { recruit_military_weapon: 2, expBook: 1, emptySpeed: 0 } };
   const context = vm.createContext({
     console, Date,
     window: null,
@@ -13,7 +13,6 @@ function setup() {
     Game: {
       state,
       DATA: { items: {
-        gem: { cat: 'jewelry', icon: '💎', name: '宝石', desc: '珍贵宝石' },
         expBook: { cat: 'officer', icon: '📘', name: '经验书', desc: '提升经验' },
         emptySpeed: { cat: 'util', icon: '⚡', name: '空加速券', desc: '不应显示' }
       } },
@@ -27,15 +26,15 @@ function setup() {
   return context.Game;
 }
 
-test('仓库默认显示珠宝分类并生成横向 tabs', () => {
+test('仓库默认显示军官装备分类并生成横向 tabs', () => {
   const G = setup();
   let html = '';
   G.Depot.renderView({ set innerHTML(value) { html = value; } });
   assert.match(html, /class="depot-tabs"/);
-  assert.match(html, /class="depot-tab active"[^>]*>珠宝珍品<\/button>/);
-  assert.match(html, /💎 宝石/);
+  assert.match(html, /class="depot-tab active"[^>]*>军官装备<\/button>/);
+  assert.match(html, /列兵军刀/);
   assert.doesNotMatch(html, /📘 经验书/);
-  assert.equal((html.match(/role="tab"/g) || []).length, 6);
+  assert.equal((html.match(/role="tab"/g) || []).length, 5);
   assert.match(html, />兵种装备<\/button>/);
 });
 
@@ -50,13 +49,23 @@ test('切换分类只渲染当前分类并保留选中状态', () => {
   G.Depot.renderView({ set innerHTML(value) { html = value; } });
   assert.match(html, /class="depot-tab active"[^>]*>军官道具<\/button>/);
   assert.match(html, /📘 经验书/);
-  assert.doesNotMatch(html, /💎 宝石/);
+  assert.doesNotMatch(html, /列兵军刀/);
 });
 
-test('无效分类回到珠宝分类，避免空白仓库', () => {
+test('无效分类回到首个有效分类，避免空白仓库', () => {
   const G = setup();
   G.Depot.setTab('unknown');
-  assert.equal(G.state._depotTab, 'jewelry');
+  assert.equal(G.state._depotTab, 'equipment');
+});
+
+test('旧珠宝分类状态自动显示有效分类，仓库不会空白', () => {
+  const G = setup();
+  G.state._depotTab = 'jewelry';
+  const view = {};
+  G.Depot.renderView(view);
+  assert.match(view.innerHTML, /class="depot-tab active"[^>]*>军官装备<\/button>/);
+  assert.match(view.innerHTML, /列兵军刀/);
+  assert.doesNotMatch(view.innerHTML, /珠宝珍品/);
 });
 
 test('数量为 0 的道具不会出现在对应分类中', () => {
@@ -68,22 +77,23 @@ test('数量为 0 的道具不会出现在对应分类中', () => {
   assert.match(html, /暂无此类道具/);
 });
 
-test('珠宝宝箱在珠宝分类中显示开启宝箱按钮而非前往晋升军衔', () => {
+test('军官装备宝箱仍可在军官道具分类中开启', () => {
   const G = setup();
-  G.DATA.items.box_gem = { cat: 'jewelry', icon: '🗃️', name: '军衔珠宝宝箱', desc: '开启获得晋升珠宝', isBox: true };
-  G.state.items.box_gem = 1;
-  G.state._depotTab = 'jewelry';
+  G.DATA.items.box_recruit_military = { cat: 'officer', icon: '📦', name: '列兵军事装备箱', desc: '开启获得整套列兵军事装备', isBox: true };
+  G.state.items.box_recruit_military = 1;
+  G.state._depotTab = 'officer';
   let html = '';
   G.Depot.renderView({ set innerHTML(value) { html = value; } });
-  assert.match(html, /🗃️ 军衔珠宝宝箱/);
-  assert.match(html, /onclick="Game\.Depot\.useItem\('box_gem'\)">\[?开启宝箱\]?<\/button>/);
+  assert.match(html, /列兵军事装备箱/);
+  assert.match(html, /onclick="Game\.Depot\.useItem\('box_recruit_military'\)">\[?开启宝箱\]?<\/button>/);
   assert.doesNotMatch(html, /前往晋升军衔/);
 });
 
-test('只有军衔凭证提供晋升入口，珠宝不再用于晋升', () => {
+test('军衔凭证在功能道具分类中提供晋升入口', () => {
   const G = setup();
-  G.DATA.items.rank_certificate_2 = { cat: 'jewelry', icon: '🎖️', name: '上等兵晋升凭证', desc: '仅用于上等兵' };
+  G.DATA.items.rank_certificate_2 = { cat: 'util', icon: '🎖️', name: '上等兵晋升凭证', desc: '仅用于上等兵' };
   G.state.items.rank_certificate_2 = 1;
+  G.Depot.setTab('util');
   let html = '';
   G.Depot.renderView({ set innerHTML(value) { html = value; } });
   assert.match(html, /前往晋升军衔/);

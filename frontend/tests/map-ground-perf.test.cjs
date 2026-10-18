@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
 
-function fixture({ textureFactory, reducedMotion = false } = {}) {
+function fixture({ textureFactory, reducedMotion = false, drawImages } = {}) {
   const c = {
     console, Date, Map, Set, WeakMap, Uint8Array, Float32Array, Math, Promise,
     performance: { now: () => Date.now() },
@@ -13,7 +13,7 @@ function fixture({ textureFactory, reducedMotion = false } = {}) {
         getContext: () => ({
           createImageData: (w, h) => ({ data: new Uint8ClampedArray(w * h * 4) }),
           putImageData: () => {},
-          drawImage: () => {},
+          drawImage: (...args) => { if (drawImages) drawImages.push(args); },
           beginPath: () => {}, moveTo: () => {}, quadraticCurveTo: () => {},
           stroke: () => {}, fillRect: () => {}, lineTo: () => {}, setTransform: () => {}
         }),
@@ -231,6 +231,27 @@ test('drawGround creates center tiles first and prioritizes focus coordinates', 
   assert.ok(v.groundTiles.has(centerKey), 'Center tile directly under camera focus must be created in first batch');
   assert.ok(v.groundTiles.size >= 2, 'Tiles generated under time budget');
   assert.equal(v.terrainPending, true, 'Next frames scheduled to complete rest of viewport');
+});
+
+test('procedural woodland leaves forest target cells clear for their full map icons', async () => {
+  const drawImages = [], c = fixture({ drawImages });
+  c.Image = class {
+    set src(value) { this.path = value; if (this.onload) this.onload(); }
+    get src() { return this.path; }
+  };
+  await c.Game.MapTerrain.loadMeadows();
+  const woodlandImages = () => drawImages.filter(([image]) => /^img\/map\/wild-forest-(dense|ridge|edge)-integrated\.webp$/.test(image.src));
+
+  c.Game.MapTerrain.createTile(5, 5, 200);
+  const withoutForestTarget = woodlandImages().length;
+  assert.ok(withoutForestTarget > 0, 'control tile should contain procedural woodland');
+
+  drawImages.length = 0;
+  c.Game.MapTerrain.updateChunk(1, 1, [{ kind: 'wild', type: 'forest', x: 22, y: 22 }]);
+  c.Game.MapTerrain.createTile(5, 5, 200);
+
+  assert.ok(woodlandImages().length < withoutForestTarget,
+    'a forest target reserves its cell and nearby halo from overlapping procedural trees');
 });
 
 test('draw preserves groundTiles across revisions and updates without wiping', () => {

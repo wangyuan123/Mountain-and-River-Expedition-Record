@@ -3,6 +3,7 @@ package com.wargame.service;
 import com.wargame.model.constants.GameData;
 import com.wargame.model.constants.ItemDef;
 import com.wargame.model.constants.TechDef;
+import com.wargame.model.constants.TechnologyRules;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
 import com.wargame.util.JsonUtil;
@@ -32,17 +33,6 @@ public class TechService {
     private final TechResearchQueueRepository techResearchQueueRepository;
     private final SpeedUpSupport speedUpSupport;
 
-    /** 科技效果每级百分比 - 对应 JS tech.js renderView 中的 pctMap */
-    private static final Map<String, Integer> PCT_MAP = Map.of(
-            "cap", 10,
-            "load", 20,
-            "food_save", -5,
-            "train", 10,
-            "build", -5,
-            "medical", 5
-    );
-    private static final int DEFAULT_PCT = 5;
-
     public TechService(TechnologyRepository technologyRepository,
                        ResourcesRepository resourcesRepository,
                        BuildingRepository buildingRepository,
@@ -69,6 +59,9 @@ public class TechService {
     private com.wargame.repository.OfficerRepository officerRepository;
     @org.springframework.beans.factory.annotation.Autowired
     private PrerequisiteService prerequisiteService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.service.quest.OnboardingService onboarding;
 
     // ================================================================
     //  upgrade / startResearch - 开始研发科技
@@ -306,19 +299,17 @@ public class TechService {
             String techType = q.getTechType();
             int targetLevel = q.getTargetLevel();
             TechDef t = GameData.TECHS.get(techType);
-            String name = t != null ? t.name() : techType;
+            String name = t != null ? t.name() : ("log_production".equals(techType) ? "四项资源产量（旧科研）" : techType);
 
-            // 升级科技等级
-            List<Technology> existing = technologyRepository.findByPlayerIdAndType(playerId, techType);
-            if (existing != null && !existing.isEmpty()) {
-                Technology tech = existing.get(0);
-                tech.setLevel(targetLevel);
-                technologyRepository.save(tech);
-            } else {
-                Technology tech = new Technology();
+            // 旧共享产量保持一条队列、一次声望和退款；到期后同时授予四项成果。
+            Map<String, Integer> targets = "log_production".equals(techType)
+                    ? TechnologyRules.legacyTargets(techType, targetLevel) : Map.of(techType, targetLevel);
+            for (var target : targets.entrySet()) {
+                Technology tech = technologyRepository.findByPlayerIdAndType(playerId, target.getKey())
+                        .stream().findFirst().orElseGet(Technology::new);
                 tech.setPlayerId(playerId);
-                tech.setType(techType);
-                tech.setLevel(targetLevel);
+                tech.setType(target.getKey());
+                tech.setLevel(Math.max(Objects.requireNonNullElse(tech.getLevel(), 0), target.getValue()));
                 technologyRepository.save(tech);
             }
 
@@ -334,6 +325,8 @@ public class TechService {
             }
 
             techResearchQueueRepository.delete(q);
+            // 研究成果在结算时留存，暂停或跳过引导后完成研究也能领取探索奖励。
+            if (onboarding != null) onboarding.onEvent(playerId, "TECH_LEVEL", techType, 1);
             messages.add("🔬 科技【" + name + "】已成功研发至 Lv." + targetLevel + "！");
         }
         return messages;
@@ -364,7 +357,7 @@ public class TechService {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("queueId", q.getId());
         m.put("techType", q.getTechType());
-        m.put("name", t != null ? t.name() : q.getTechType());
+        m.put("name", t != null ? t.name() : ("log_production".equals(q.getTechType()) ? "四项资源产量（旧科研）" : q.getTechType()));
         m.put("targetLevel", q.getTargetLevel());
         m.put("startedAt", q.getStartedAt());
         m.put("finishesAt", q.getFinishesAt());
@@ -403,7 +396,8 @@ public class TechService {
     // ================================================================
 
     public int calcTechDuration(Long playerId, String techType, int currentLevel, int labLevel) {
-        double base = 30.0 * Math.pow(1.8, Math.max(0, currentLevel));
+        // 四项产量各占原共享科技的四分之一基础工期。
+        double base = (TechnologyRules.PRODUCTION.contains(techType) ? 7.5 : 30.0) * Math.pow(1.8, Math.max(0, currentLevel));
         double labSpeed = 1.0 + 0.10 * Math.max(0, labLevel - 1);
         int researchLv = getMayorResearchLevel(playerId);
         double mayorSpeed = 1.0 + 0.04 * researchLv;
@@ -445,7 +439,7 @@ public class TechService {
         for (Map.Entry<String, TechDef> entry : GameData.TECHS.entrySet()) {
             if (bonusType.equals(entry.getValue().effect())) {
                 int lv = getTechLevel(playerId, entry.getKey());
-                int pct = PCT_MAP.getOrDefault(bonusType, DEFAULT_PCT);
+                int pct = TechnologyRules.effectPercent(bonusType);
                 total += lv * pct;
             }
         }

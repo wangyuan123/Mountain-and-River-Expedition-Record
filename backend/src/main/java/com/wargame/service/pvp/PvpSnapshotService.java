@@ -15,7 +15,7 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class PvpSnapshotService {
-    public static final String RULES = "pvp-v1-" + PvpJson.hash(PvpJson.write(Map.of("battle", BattleRules.VERSION, "units", versionedUnits(),
+    public static final String RULES = "pvp-v1-" + PvpJson.hash(PvpJson.write(Map.of("battle", BattleRules.PRACTICE_VERSION, "units", versionedUnits(),
             "skills", OfficerSkillDef.OFFICER_SKILLS, "equipment", UnitEquipmentDef.ITEMS))).substring(0, 24);
 
     /** 生产设施调整不改变战斗：摘要保留历史建筑归属，避免作废实测校准及进行中的演习。 */
@@ -86,7 +86,7 @@ public class PvpSnapshotService {
             var ca = equipment.attributes(chief);
             CommandBonus bonus = chief == null ? CommandBonus.NONE : new CommandBonus(chief.getId(), chief.getName(), ca.military(), ca.defense(), ca.logistics(), ca.knowledge());
             Map<String, Integer> tech = new TreeMap<>(UnitEquipmentEffects.forArmy(targets.getCombatTechMap(playerId), preset.army()));
-            tech.keySet().removeIf(k -> !k.startsWith(UnitEquipmentEffects.PREFIX) && !Set.of("attack_tech", "defense_tech", "cmd_hp", "arm_engine", "air_engine", "nav_engine", "weapon_range").contains(k));
+            tech.keySet().removeIf(k -> !k.startsWith(UnitEquipmentEffects.PREFIX) && !Set.of("attack_tech", "defense_tech", "cmd_hp", "fire_density", "arm_engine", "air_engine", "nav_engine", "weapon_range").contains(k));
             Map<String, Integer> skills = new TreeMap<>(targets.getCommanderSkills(o));
             Map<String, Double> values = new TreeMap<>();
             Map<String, Map<String, Double>> stats = new TreeMap<>();

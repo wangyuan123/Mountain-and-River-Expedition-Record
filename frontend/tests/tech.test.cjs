@@ -124,7 +124,7 @@ test('recon onboarding focuses the speed-up item in the actual picker and clears
   };
   G.Core.state.research = { name: '侦察技术', targetLevel: 1, finishesAt: 1029000, queueId: 1 };
   G.DATA.items = { speedUp10m: { seconds: 600 }, speedUp1h: { seconds: 3600 } };
-  G.Onboarding = { state: { snoozedFor: 'reconTech' }, showSpotlight: target => focused.push(target), clearSpotlight: () => cleared++ };
+  G.Onboarding = { state: { guidedAction: { route: 'tech' } }, showSpotlight: target => focused.push(target), clearSpotlight: () => cleared++ };
   G.Tech.openSpeedUpPicker();
   assert.equal(focused[0], row, '加速弹窗必须把背景按钮的聚光灯切换到加速符');
   cancel.onclick();
@@ -151,7 +151,7 @@ test('confirmResearch creates a confirmation modal card instead of instantly upg
   assert.equal(appendedElements.length, 1);
 
   const modal = appendedElements[0];
-  assert.ok(modal.innerHTML.includes('军研确认'));
+  assert.ok(modal.innerHTML.includes('科技确认'));
   assert.ok(modal.innerHTML.includes('开始研发'));
   assert.ok(modal.innerHTML.includes('加成效果'));
   assert.ok(modal.innerHTML.includes('研发工期'));
@@ -188,18 +188,57 @@ function currentTechnologyEffect(G, id) {
   return card.match(/<b style="color:var\(--ink\);">([^<]+)<\/b>/)[1];
 }
 
+test('recon research shows its permanent initiative and radar shows opening-only initiative', () => {
+  const { G, appendedElements } = setupTestEnvironment(true);
+  G.Core.state.tech = { recon_level: 4, recon_radar: 2 };
+  G.Tech.setTab('侦察');
+  const container = {};
+  G.Tech.renderView(container);
+  assert.match(container.innerHTML, /侦查交火先手\+20点/);
+  assert.match(container.innerHTML, /当前首回合拦截先手值加成/);
+  assert.match(G.DATA.techs.recon_level.desc, /攻守双方各按自身等级每级增加5点先手值/);
+  assert.match(G.DATA.techs.recon_radar.desc, /首回合.*每级增加5点先手值，最高25点，后续回合不再提供/);
+  assert.equal(currentTechnologyEffect(G, 'recon_radar'), '+10点');
+  G.Tech.confirmResearch('recon_radar');
+  assert.match(appendedElements.at(-1).innerHTML, /首回合拦截先手值/);
+  assert.match(appendedElements.at(-1).innerHTML, /\+10点 → \+15点/);
+});
+
+test('fire density card shows independent action multiplier and reads frozen levels', () => {
+  const { G, appendedElements } = setupTestEnvironment(true);
+  for (const level of [0, 1, 5, 10]) {
+    G.Core.state.tech = { attack_tech: 10, fire_density: level };
+    assert.equal(G.Core.atkMul('inf'), 1.5);
+    assert.equal(G.Core.firepowerMul(), 1 + level / 20);
+    assert.equal(currentTechnologyEffect(G, 'fire_density'), '+' + level * 5 + '%（×' + (1 + level / 20).toFixed(2) + '）');
+  }
+  assert.equal(G.Core.firepowerMul({}), 1);
+  assert.equal(G.Core.firepowerMul({ fire_density: 5 }), 1.25);
+  G.Core.state.tech.fire_density = 5;
+  G.Tech.confirmResearch('fire_density');
+  const modal = appendedElements.at(-1).innerHTML;
+  assert.match(modal, /行动火力/);
+  assert.match(modal, /\+25%（×1\.25）/);
+  assert.match(modal, /\+30%（×1\.30）/);
+});
+
 // 用实际运行的属性计算校验展示数值，避免文案与卡片同时使用错误倍率而互相通过。
 test('technology card and upgrade preview percentages match runtime effects at every level', () => {
   const { G, appendedElements } = setupTestEnvironment(true);
   const multipliers = {
     attack_tech: () => G.Core.atkMul('inf'),
-    defense_tech: () => G.Core.defMul('inf', false),
+    defense_tech: () => G.Core.defMul(),
     weapon_range: () => G.Core.rangeMul(),
     cmd_hp: () => G.Core.hpMul('inf'),
     arm_engine: () => G.Core.spdMul('arm'),
     air_engine: () => G.Core.spdMul('air'),
     nav_engine: () => G.Core.spdMul('nav'),
-    log_production: () => G.Core.resBonusMul(),
+    prod_food: () => G.Core.resBonusMul('food'),
+    prod_steel: () => G.Core.resBonusMul('steel'),
+    prod_oil: () => G.Core.resBonusMul('oil'),
+    prod_rare: () => G.Core.resBonusMul('rare'),
+    wall_reinforcement: () => G.Core.wallMul(),
+    log_load: () => G.Core.loadMul(),
     log_train: () => G.Core.trainMul(),
     log_build: () => G.Core.buildMul()
   };
@@ -226,11 +265,11 @@ test('technology card and upgrade preview percentages match runtime effects at e
 
 test('equipment technology shows recipe access without inventing attribute bonuses', () => {
   const { G, appendedElements } = setupTestEnvironment(true);
-  const effects = ['未解锁', 'Lv.1及以下配方', 'Lv.2及以下配方', 'Lv.3及以下配方'];
-  for (let lv = 0; lv <= 3; lv++) {
+  const effects = ['未解锁', 'Lv.1及以下配方', 'Lv.2及以下配方', 'Lv.3及以下配方', 'Lv.4及以下配方', 'Lv.5及以下配方'];
+  for (let lv = 0; lv <= 5; lv++) {
     G.Core.state.tech = { unit_refit: lv };
     assert.equal(currentTechnologyEffect(G, 'unit_refit'), effects[lv]);
-    if (lv < 3) {
+    if (lv < 5) {
       G.Tech.confirmResearch('unit_refit');
       const html = appendedElements.at(-1).innerHTML;
       assert.ok(html.includes(effects[lv] + ' → ' + effects[lv + 1]));
@@ -240,20 +279,17 @@ test('equipment technology shows recipe access without inventing attribute bonus
   }
 });
 
-test('inactive load and storage technologies never promise numerical bonuses', () => {
-  const { G, appendedElements } = setupTestEnvironment(true);
+test('load applies to all units and warehouse protects resources without changing storage capacity', () => {
+  const { G } = setupTestEnvironment(true);
   G.Core.state.buildings.farm = [2, 3];
+  G.Core.state.buildings.depot = [2, 3];
   const capacity = G.Core.capacity().food;
-  for (const [id, text] of [['inf_load', '无额外负重加成'], ['log_warehouse', '无额外容量加成']]) {
-    for (let lv = 0; lv <= G.DATA.techs[id].max; lv++) {
-      G.Core.state.tech = { [id]: lv };
-      assert.equal(currentTechnologyEffect(G, id), text);
-      assert.equal(G.Core.capacity().food, capacity);
-      if (lv < G.DATA.techs[id].max) {
-        G.Tech.confirmResearch(id);
-        assert.ok(appendedElements.at(-1).innerHTML.includes(text + ' → ' + text));
-      }
-    }
+  for (let lv = 0; lv <= 5; lv++) {
+    G.Core.state.tech = { log_load: lv * 2, log_warehouse: lv };
+    assert.equal(currentTechnologyEffect(G, 'log_load'), (lv ? '+' : '') + lv * 10 + '%');
+    assert.equal(G.Core.loadMul(), 1 + lv * .1);
+    assert.equal(G.Core.protectCap(), Math.floor(5000 * (1 + lv * .1)));
+    assert.equal(G.Core.capacity().food, capacity);
   }
 });
 

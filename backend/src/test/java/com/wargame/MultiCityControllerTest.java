@@ -22,7 +22,7 @@ class MultiCityControllerTest extends BaseServiceTest {
     @Test void cityHeaderPinsMutationsAndRejectsForeignCitiesEvenAfterAnotherTabSwitches() throws Exception {
         WorldMap world = createTestWorld();
         JsonNode registration = json.readTree(http.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"username\":\"city-http\",\"password\":\"test-password-123\"}"))
+                .content("{\"username\":\"city-http\",\"password\":\"test-password-123\",\"agreementVersion\":\"2026-09-28-v1\"}"))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
         Long id = registration.path("playerId").asLong(); String auth = "Bearer " + registration.path("token").asText();
         Player player = playerRepository.findById(id).orElseThrow(); player.setMilitaryRank(4); playerRepository.save(player);
@@ -56,18 +56,21 @@ class MultiCityControllerTest extends BaseServiceTest {
     }
 
     @Test void oceanApiSupportsCoordinateFoundingAndProtectsOccupiedCells() throws Exception {
-        WorldMap world=createTestWorld();char[] mask=new char[40000];java.util.Arrays.fill(mask,'0');
-        for(int y=0;y<200;y++)for(int x=100;x<200;x++)mask[y*200+x]='1';
+        WorldMap world=createTestWorld();int size = com.wargame.service.WorldTerrainService.SIZE;
+        char[] mask=new char[size*size];java.util.Arrays.fill(mask,'0');
+        for(int y=0;y<size;y++)for(int x=100;x<size;x++)mask[y*size+x]='1';
+        world.setSize(com.wargame.model.constants.WorldConfig.WORLD_SIZE);
+        world.setTerrainVersion(com.wargame.service.WorldTerrainService.TERRAIN_VERSION);
         world.setTerrainData(new String(mask));worldMapRepository.save(world);
         http.perform(get("/api/game/world/map/terrain")).andExpect(status().isUnauthorized());
         JsonNode registration=json.readTree(http.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"username\":\"ocean-http\",\"password\":\"test-password-123\"}"))
+                .content("{\"username\":\"ocean-http\",\"password\":\"test-password-123\",\"agreementVersion\":\"2026-09-28-v1\"}"))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
         Long id=registration.path("playerId").asLong();String auth="Bearer "+registration.path("token").asText();
         Player player=playerRepository.findById(id).orElseThrow();player.setMilitaryRank(4);playerRepository.save(player);
         giveResources(id, 100000, 100000, 100000, 100000, 100000);
         PlayerCity main=playerCityRepository.findByOwnerIdAndCitySlot(id,0).orElseThrow();
-        assertTrue(main.getX()<99);assertTrue(main.getY()<199);
+        assertTrue(main.getX()<99);assertTrue(main.getY()<size-1);
         JsonNode map=json.readTree(http.perform(get("/api/game/world/map/terrain").header("Authorization",auth))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());assertEquals(new String(mask),map.path("cells").asText());
         int y=main.getY()<100?150:40;

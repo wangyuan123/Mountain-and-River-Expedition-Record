@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="blue-white-classic">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <base href="../">
+  <title>地图／文本战场指挥交互预览</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/themes.css">
+  <link rel="stylesheet" href="css/classic-home.css">
+  <link rel="stylesheet" href="css/text-actions.css">
+  <link rel="stylesheet" href="css/landscape.css">
+</head>
+<body>
+  <div id="screen"><main id="view"></main></div>
+  <script src="js/constants.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/icons.js"></script>
+  <script>
+    Game.escapeHtml = function (value) {
+      return String(value).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    };
+    Game.fmt = function (value) { return Number(value).toLocaleString(); };
+    Game.go = function () {};
+    Game.Core = {
+      route: 'battle', state: { tech: {} }, views: {}, firepowerMul: function () { return 1; },
+      render: function () { Game.Battle.renderTacticalBattle(document.getElementById('view')); }
+    };
+    // 预览只在内存推进模拟回合，不调用游戏接口。
+    Game.API = { commandTacticalBattle: function (marchId, orders) {
+      return Promise.resolve(Object.assign({}, Game.Battle._activeTactical, {
+        round: Game.Battle._activeTactical.round + 1,
+        orders: JSON.parse(JSON.stringify(orders)), roundDeadlineAt: Date.now() + 15000
+      }));
+    } };
+  </script>
+  <script src="js/battle.js"></script>
+  <script>
+    Game.Battle._activeTactical = {
+      marchId: 101, side: 'attacker', round: 2, action: 'conquer', targetKind: 'player',
+      targetName: '双视图指挥演练（模拟战场）', initialDistance: 3000, roundDeadlineAt: Date.now() + 15000,
+      battlePhase: 'CLEAR_DEFENDERS', attackerArmy: { ltank: 24000, htank: 22000, rocket: 130000 },
+      defenderArmy: { infantry: 36000, armored: 90000, ltank: 88000, htank: 88000, rocket: 88000, fighter: 88000 },
+      attackerPositions: { ltank: 300, htank: 240, rocket: 240 },
+      defenderPositions: { infantry: 2800, armored: 2600, ltank: 2400, htank: 2300, rocket: 1800, fighter: 2000 },
+      defaultActions: { ltank: 'ADVANCE', htank: 'HOLD', rocket: 'HOLD' },
+      attackerTech: { weapon_range: 2 }, defenderTech: {}, orders: {}, log: '第1回合：双方接近。\n第2回合：等待我军下达命令。',
+      wall: { level: 10, maxHp: 2500000, hpRemaining: 2500000, defense: 200, phase: 'CLEAR_DEFENDERS' }
+    };
+    Game.Battle.resetTacticalOrders();
+    Game.Core.render();
+  </script>
+</body>
+</html>

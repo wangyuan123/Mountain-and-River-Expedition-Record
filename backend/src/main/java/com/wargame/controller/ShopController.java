@@ -32,6 +32,9 @@ public class ShopController {
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.repository.PlayerRepository playerRepository;
+
     private final AuthService authService;
     private final ResourcesRepository resourcesRepository;
     private final PlayerItemRepository playerItemRepository;
@@ -85,7 +88,7 @@ public class ShopController {
     }
 
     /**
-     * 商店购买道具 - 扣除钻石，添加道具到背包。
+     * 商店购买道具：扣除钻石后入仓；新手礼包每个账号限购一次，入仓后自行开启。
      */
     @PostMapping("/buy")
     @Transactional
@@ -106,6 +109,16 @@ public class ShopController {
             result.put("success", false);
             result.put("message", "无效的道具: " + itemId);
             return ResponseEntity.ok(result);
+        }
+
+        // 新手礼包只从商城发放，库存行即购买凭据；开启后数量为零也不恢复购买资格。
+        if ("newbiePack".equals(itemId)) {
+            playerRepository.lockById(playerId).orElseThrow();
+            if (playerItemRepository.findByPlayerIdAndItemKey(playerId, itemId).isPresent()) {
+                result.put("success", false);
+                result.put("message", "新手礼包每个账号限购1份");
+                return ResponseEntity.ok(result);
+            }
         }
 
         Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, 0).orElse(null);
@@ -174,9 +187,7 @@ public class ShopController {
             Map.entry("p198", 2230),
             Map.entry("p328", 3780),
             Map.entry("p648", 7680),
-            Map.entry("p1280", 15800),
-            Map.entry("mk30", 300),
-            Map.entry("wk98", 980)
+            Map.entry("p1280", 15800)
         );
 
         private static final Map<String, Integer> PRICES = Map.ofEntries(
@@ -258,20 +269,12 @@ public class ShopController {
             Map.entry("speedUp48h", 2500),
             Map.entry("speedUp72h", 3500),
             Map.entry("shield", 200),
+            Map.entry("teleportNormal", 100),
+            Map.entry("teleportAdvanced", 500),
             Map.entry("marchOrd", 100),
             Map.entry("populationOrder", 100),
-            // 珠宝珍品箱
-            Map.entry("box_gem", 200),
-            Map.entry("box_gem_primary", 150),
-            Map.entry("box_gem_medium", 400),
-            Map.entry("box_gem_senior", 1000),
-            Map.entry("box_gem_supreme", 1800),
-            Map.entry("box_gem_grand", 2500),
             // 礼包
-            Map.entry("newbiePack", 99),
-            Map.entry("monthCard", 1500),
-            Map.entry("warChest", 888),
-            Map.entry("annivPack", 1999)
+            Map.entry("newbiePack", 99)
         );
 
         private static final Map<String, String> NAMES = Map.ofEntries(
@@ -348,28 +351,18 @@ public class ShopController {
             Map.entry("speedUp48h", "48时加速符"),
             Map.entry("speedUp72h", "72时加速符"),
             Map.entry("shield", "护盾"),
+            Map.entry("teleportNormal", "普通传送"),
+            Map.entry("teleportAdvanced", "高级传送"),
             Map.entry("marchOrd", "行军令"),
             Map.entry("populationOrder", "人口动员令"),
-            // 珠宝珍品箱
-            Map.entry("box_gem", "珠宝珍品箱"),
-            Map.entry("box_gem_primary", "初级珠宝宝箱"),
-            Map.entry("box_gem_medium", "中级珠宝宝箱"),
-            Map.entry("box_gem_senior", "高级珠宝宝箱"),
-            Map.entry("box_gem_supreme", "特级夜明珠宝箱"),
-            Map.entry("box_gem_grand", "璀璨珠宝全集箱"),
-            Map.entry("newbiePack", "新手礼包"),
-            Map.entry("monthCard", "钻石月卡"),
-            Map.entry("warChest", "战备月卡"),
-            Map.entry("annivPack", "周年庆大礼")
-        );
-
-        private static final java.util.Set<String> GIFTS = java.util.Set.of(
-            "newbiePack", "monthCard", "warChest", "annivPack"
+            Map.entry("newbiePack", "新手礼包")
         );
 
         static Integer getRechargeDiamond(String pkgId) { return RECHARGE_DIAMONDS.get(pkgId); }
         static Integer getPrice(String itemId) {
-            return specificSkillBookName(itemId) != null ? 160 : PRICES.get(itemId);
+            // 下架或未知商品返回空值供购买接口拒绝，避免三元表达式将空价格拆箱。
+            if (specificSkillBookName(itemId) != null) return 160;
+            return PRICES.get(itemId);
         }
 
         static String getItemName(String itemId) {

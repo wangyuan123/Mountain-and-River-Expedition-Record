@@ -3,6 +3,7 @@ package com.wargame.service;
 import com.wargame.model.constants.GameData;
 import com.wargame.model.constants.UnitDef;
 import com.wargame.model.constants.WorldConfig;
+import com.wargame.model.constants.NewbieProtection;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
 import com.wargame.util.JsonUtil;
@@ -174,13 +175,12 @@ public class WorldService {
 
     // ================================================================
     //  calcScanRadius - 扫描半径计算
-    //  对应 JS: D.world.viewRadius + radarLv + (s.tech.recon_level || 0)
+    //  对应 JS: D.world.viewRadius + radarLv（侦察技术不增加扫描半径）
     // ================================================================
 
     public int calcScanRadius(Long playerId) {
         int radarLv = buildingLevel(playerId, "radar");
-        int reconLevel = getTechLevel(playerId, "recon_level");
-        return WorldConfig.VIEW_RADIUS + radarLv + reconLevel;
+        return WorldConfig.VIEW_RADIUS + radarLv;
     }
 
     /** 按坐标查询地图目标，仅返回目标存在性和基础公开信息，不绕过侦查详情权限。 */
@@ -334,6 +334,10 @@ public class WorldService {
                 m.put("prestige", owner != null && owner.getPrestige() != null ? owner.getPrestige() : 0);
                 m.put("selfCity", selfCity);
                 m.put("guildmate", guildRelations.areGuildmates(playerId, ownerId));
+                int slot = pc.getCitySlot() != null ? pc.getCitySlot() : 0;
+                buildingRepository.findByPlayerIdAndCitySlotAndType(ownerId, slot, "wall").stream()
+                        .map(Building::getLevel).filter(Objects::nonNull).findFirst()
+                        .ifPresent(lvl -> m.put("wallLevel", lvl));
                 m.put("warAt", relatedWar && owner.getWarAt() != null ? owner.getWarAt() : 0L);
                 m.put("warEndAt", relatedWar && owner.getWarEndAt() != null ? owner.getWarEndAt() : 0L);
                 m.put("distance", manhattanDist(px, py, pc.getX(), pc.getY()));
@@ -402,6 +406,12 @@ public class WorldService {
 
     @Transactional
     public Map<String, Object> declareWar(Long playerId, Long targetCityId) {
+        return declareWar(playerId, targetCityId, false);
+    }
+
+    /** 宣战退出账号新手保护须明确确认，且只在宣战全部校验成功后生效。 */
+    @Transactional
+    public Map<String, Object> declareWar(Long playerId, Long targetCityId, Boolean abandonNewbieProtection) {
         Map<String, Object> result = new LinkedHashMap<>();
 
         PlayerCity target = playerCityRepository.findById(targetCityId).orElse(null);
@@ -431,13 +441,15 @@ public class WorldService {
         }
 
         // 与开盾使用同一玩家锁；仅检查发起城和被宣战城，不扩散到其他城或野地。
-        accounts.lockPlayer(playerId);
-        accounts.lockPlayer(defenderId);
+        attacker = accounts.lockPlayer(playerId);
+        Player defender = accounts.lockPlayer(defenderId);
         long shieldCheckAt = System.currentTimeMillis();
+        NewbieProtection.start(attacker, shieldCheckAt);
         boolean ownShield = cityStates.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId))
                 .map(cs -> cs.getShieldUntil() != null && cs.getShieldUntil() > shieldCheckAt).orElse(false);
         boolean targetShield = cityStates.findByPlayerIdAndCitySlot(defenderId, java.util.Objects.requireNonNullElse(target.getCitySlot(), 0))
                 .map(cs -> cs.getShieldUntil() != null && cs.getShieldUntil() > shieldCheckAt).orElse(false);
+        targetShield = targetShield || NewbieProtection.until(defender, shieldCheckAt) > shieldCheckAt;
         if (ownShield || targetShield) {
             result.put("success", false);
             result.put("message", ownShield ? "当前城市护盾生效，无法向其他玩家宣战" : "目标城市护盾生效，无法宣战");
@@ -456,13 +468,12 @@ public class WorldService {
             return result;
         }
 
-        Player defender = accounts.lockPlayer(defenderId);
-        if (defender.deletionDue(System.currentTimeMillis())) throw new IllegalArgumentException("目标城池已失效");
         if (defender == null) {
             result.put("success", false);
             result.put("message", "目标玩家不存在");
             return result;
         }
+        if (defender.deletionDue(System.currentTimeMillis())) throw new IllegalArgumentException("目标城池已失效");
 
         long now = System.currentTimeMillis();
 
@@ -494,6 +505,9 @@ public class WorldService {
 
         long warAt = now + WAR_PREPARE_MS;
         long warEndTime = warAt + WAR_DURATION_MS;
+
+        NewbieProtection.requireConfirmation(attacker, abandonNewbieProtection, now);
+        if (NewbieProtection.until(attacker, now) > now) attacker.setNewbieProtectionEnded(true);
 
         // 写双方玩家
         attacker.setWarAt(warAt);
@@ -762,7 +776,6 @@ public class WorldService {
         march.setPlayerId(playerId);
         march.setCitySlot(cityScope.slot(playerId));
         march.setTargetKind(targetKind);
-        march.setTargetIdx(targetIdx);
         march.setTargetId(targetId);
         march.setTargetName(targetName);
         march.setTargetX(targetX);

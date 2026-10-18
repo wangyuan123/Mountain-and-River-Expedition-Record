@@ -71,27 +71,18 @@ test('gather preparation shows requested descriptions and defaults to automatic 
   assert.doesNotMatch(view.innerHTML, /value="manual"[^>]*disabled/);
 });
 
-test('onboarding gathering locks automatic mode through rendering, selection changes, and dispatch', async () => {
+test('task-recommended gathering permits manual mode and preserves player choice', async () => {
   const { game, state, requests, selectMode } = setup();
-  state.world._dispatchTarget.onboardingGather = true;
-  state.world._dispatchTarget.gatherMode = 'manual';
+  state.world._dispatchTarget.gatherMode = 'auto';
   const view = { innerHTML: '' };
   game.World.renderDispatch(view);
   assert.match(view.innerHTML, /name="dpGatherMode" value="auto" checked/);
-  assert.match(view.innerHTML, /class="dispatch-gather-mode is-disabled"/);
-  assert.match(view.innerHTML, /name="dpGatherMode" value="manual" disabled/);
-  assert.doesNotMatch(view.innerHTML, /value="manual" checked/);
-  assert.match(view.innerHTML, /新手采集固定为全自动/);
+  assert.doesNotMatch(view.innerHTML, /value="manual" disabled|新手采集固定/);
   game.World.setGatherMode('manual');
-  assert.equal(state.world._dispatchTarget.gatherMode, 'auto');
   game.World.renderDispatch(view);
-  assert.match(view.innerHTML, /value="manual" disabled/);
-  selectMode('manual');
-  game.World.launchDispatch();
-  await new Promise(setImmediate);
-  assert.equal(requests.length, 1);
-  assert.equal(requests[0].gatherMode, 'auto');
-  assert.equal(requests[0].action, 'gather');
+  assert.match(view.innerHTML, /value="manual" checked/);
+  selectMode('manual'); game.World.launchDispatch(); await new Promise(setImmediate);
+  assert.equal(requests[0].gatherMode, 'manual'); assert.equal(requests[0].action, 'gather');
 });
 
 test('dispatch submits the selected mode and legacy gathering still defaults to automatic', async () => {

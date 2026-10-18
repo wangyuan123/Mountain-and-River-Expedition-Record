@@ -1,0 +1,8 @@
+Use case: product-mockup
+Asset type: realistic miniature anti-tank gun icon for WWII strategy game city defense.
+Primary request: One WWII anti-tank direct-fire artillery gun miniature model (PaK 40 / 57mm M1 anti-tank gun / 反坦克炮). Very long slender high-velocity gun barrel with a distinctive perforated double-baffle muzzle brake, aimed forward at a low direct-fire angle pointing left, dual-layered angled armored gun shield with sloped plates, low-slung compact carriage, rubber-tired spoked wheels, optical sight, olive drab and dunkelgrau military camouflage finish with steel edge wear. Low-profile deadly armor-piercing anti-tank cannon.
+Style/medium: premium museum-quality painted scale model artillery photographed as a real physical model, crisp sculpted metal, thin shield plates, realistic gun breech and trail, restrained field wear. Never cartoon, flat vector, toy caricature, badge or game UI.
+Composition/framing: square canvas, elevated three-quarter view from above at about 25 degrees, barrel pointing left, entire anti-tank gun fits within frame with at least 8 percent clean margin. Crisp readable silhouette.
+Scene/backdrop: perfectly uniform pure white #ffffff seamless background, isolated subject, no base, no plinth, no terrain, no scenery. No cast shadow on background; subtle contact shading only under tires.
+Lighting/mood: soft neutral studio daylight from upper left, realistic metallic highlights.
+Constraints: exactly one anti-tank gun. No soldiers, no muzzle blast, no modern gear, no text, no watermark, no flags.

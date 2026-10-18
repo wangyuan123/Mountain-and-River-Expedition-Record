@@ -45,6 +45,7 @@
       if (isCurrentPlayer(playerId) && Core.route === 'mainQuest') drawQuestView(v);
       if (G.Main && G.Main.renderNavBar) G.Main.renderNavBar();
     });
+    if (G.Onboarding) G.Onboarding.refresh();
     var requestVersion = ++rankRequestVersion;
     if (G.API.getRankInfo) G.API.getRankInfo().then(function (rank) {
       // 交卷或授衔可能先于旧资格请求返回，只接受当前账号的最新请求。
@@ -268,10 +269,13 @@
   }
 
   function drawQuestView(v) {
+    if (!v) return;
     var h = '<div class="main-quest-view">';
     h += '<div class="title">战略主线与晋升</div>';
     h += '<div class="desc main-quest-summary">完成多阶段主线目标，获取海量战备资源、黄金与钻石通关大礼包；晋升统帅军衔拓展城池与出兵容量！</div>';
     h += '<div class="ob-actions" style="margin-bottom:12px;"><button class="btn" onclick="Game.go(\'depot\')">📦 打开我的物资仓库</button></div>';
+
+    h += renderExplorationTasks();
 
     // 军衔晋升专区
     h += renderRankQuestCard();
@@ -393,6 +397,25 @@
     '</div>';
   }
 
+  /** 玩法探索位于任务页前部，各任务独立解锁，点击时才提供首次提示与定位。 */
+  function renderExplorationTasks() {
+    var guide = G.Onboarding && G.Onboarding.state.data;
+    var h = '<section class="panel exploration-tasks"><div class="zone-head"><span class="zone-title">玩法探索</span><span class="zone-sub">按自己的节奏体验</span></div>';
+    h += '<button class="btn sm" onclick="Game.go(\'onboarding\')">' + (guide && guide.done ? '查看新手行动记录' : '查看核心行动指引') + '</button>';
+    if (!guide) return h + '<p>正在读取探索任务…</p></section>';
+    var statuses = { locked: '准备条件', available: '可探索', in_progress: '进行中', completed: '可领取', claimed: '已领取' };
+    (guide.optionalTasks || []).forEach(function (task) {
+      var label = statuses[task.status] || '可探索';
+      h += '<div class="quest-row" data-exploration-id="' + escapeHtml(task.id) + '"><div class="quest-row-top"><div class="quest-title">' + escapeHtml(task.title) +
+        '<span class="quest-badge">' + label + '</span></div><div class="quest-reward">' + formatReward(task.reward) + '</div></div><p class="quest-desc">' + escapeHtml(task.body) + '</p>';
+      if (task.status === 'locked') h += '<p class="ob-muted">' + escapeHtml(task.unlockHint) + '</p>';
+      if (task.status === 'completed') h += '<button class="btn sm ok" data-exploration-claim="' + escapeHtml(task.id) + '">领取奖励</button>';
+      else if (task.status !== 'claimed') h += '<button class="btn sm" data-exploration-start="' + escapeHtml(task.id) + '">' + (task.status === 'locked' ? '查看准备指引' : task.status === 'in_progress' ? '查看采集' : '去完成') + '</button>';
+      h += '</div>';
+    });
+    return h + '</section>';
+  }
+
   /** 任务事件仍区分两种战果，只给下一次对应目标的讨伐草稿预选处置模式。 */
   function campaignTaskMode(id) {
     return {
@@ -417,7 +440,7 @@
     Core.state.world._activeTab = mode.kind;
     G.go('world');
     if (G.WorldMap) G.WorldMap.setMode('list');
-    G.toast('请选择' + (mode.kind === 'wild' ? '野地' : '玩家城市') + '讨伐；本次任务预选' + (mode.occupyTarget ? '开启' : '关闭') + '「是否占领」');
+    G.toast('请选择' + (mode.kind === 'wild' ? '野地' : '玩家城市') + '讨伐；本次任务预选「' + (mode.occupyTarget ? '征服' : '掠夺') + '」');
   }
 
   var EQUIPMENT_NAMES = G.Constants.equipmentNames || {};
@@ -449,6 +472,12 @@
   }
 
   function bindClaimHandlers() {
+    document.querySelectorAll('[data-exploration-start]').forEach(function (button) {
+      button.onclick = function () { G.Onboarding.beginTask(button.getAttribute('data-exploration-start')); };
+    });
+    document.querySelectorAll('[data-exploration-claim]').forEach(function (button) {
+      button.onclick = function () { G.Onboarding.mutate('tasks/claim', { taskId: button.getAttribute('data-exploration-claim') }); };
+    });
     // 单项任务领取
     var btns = document.querySelectorAll('.quest-claim-btn');
     for (var i = 0; i < btns.length; i++) {
@@ -543,6 +572,7 @@
     refresh: refresh,
     loadQuests: loadQuests,
     renderQuestView: renderQuestView,
+    drawQuestView: drawQuestView,
     hasUnclaimed: hasUnclaimed,
     doPromoteRank: doPromoteRank,
     startRankExam: startRankExam,

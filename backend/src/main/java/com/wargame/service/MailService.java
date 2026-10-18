@@ -1,9 +1,12 @@
 package com.wargame.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.wargame.model.constants.UnitDef;
+import com.wargame.model.entity.ArmyUnit;
 import com.wargame.model.entity.Mail;
 import com.wargame.model.entity.Player;
 import com.wargame.model.entity.Resources;
+import com.wargame.repository.ArmyUnitRepository;
 import com.wargame.repository.MailRepository;
 import com.wargame.repository.PlayerRepository;
 import com.wargame.repository.ResourcesRepository;
@@ -28,7 +31,7 @@ import java.util.*;
  *   <li>{@link #send}             - 发邮件（玩家间）</li>
  *   <li>{@link #sendSystem}       - 系统发邮件（给指定玩家）</li>
  *   <li>{@link #markRead}         - 标记已读</li>
- *   <li>{@link #claimAttach}      - 领取附件（资源入账）</li>
+ *   <li>{@link #claimAttach}      - 领取附件（资源与部队入账）</li>
  *   <li>{@link #delete}           - 删除一封（仅收件人）</li>
  *   <li>{@link #seedForNewPlayer} - 新玩家系统邮件种子（来自 GameStateService.initializeNewPlayer）</li>
  * </ul>
@@ -54,15 +57,18 @@ public class MailService {
     private final PlayerRepository playerRepository;
     private final ResourcesRepository resourcesRepository;
     private final WebSocketPushService pushService;
+    private final ArmyUnitRepository armyUnitRepository;
 
     public MailService(MailRepository mailRepository,
                        PlayerRepository playerRepository,
                        ResourcesRepository resourcesRepository,
-                       WebSocketPushService pushService) {
+                       WebSocketPushService pushService,
+                       ArmyUnitRepository armyUnitRepository) {
         this.mailRepository = mailRepository;
         this.playerRepository = playerRepository;
         this.resourcesRepository = resourcesRepository;
         this.pushService = pushService;
+        this.armyUnitRepository = armyUnitRepository;
     }
 
     // ================================================================
@@ -235,7 +241,39 @@ public class MailService {
         if (attach.isEmpty()) {
             throw new IllegalArgumentException("该邮件没有附件");
         }
-        applyResources(playerId, attach, +1);
+
+        List<Map<String, Object>> resList = new ArrayList<>();
+        Map<String, Integer> armyDeltas = new LinkedHashMap<>();
+
+        for (Map<String, Object> a : attach) {
+            String t = String.valueOf(a.get("type"));
+            int qty = a.get("qty") instanceof Number n ? n.intValue() : 0;
+            if (qty <= 0) continue;
+
+            if (ALLOWED_ATTACH.contains(t)) {
+                resList.add(a);
+            } else if (UnitDef.UNITS.containsKey(t)) {
+                armyDeltas.merge(t, qty, Integer::sum);
+            } else if ("army".equalsIgnoreCase(t)) {
+                String unit = a.containsKey("unit") ? String.valueOf(a.get("unit")) : String.valueOf(a.get("unitType"));
+                if (UnitDef.UNITS.containsKey(unit)) {
+                    armyDeltas.merge(unit, qty, Integer::sum);
+                }
+            } else if (t.startsWith("army_")) {
+                String unit = t.substring(5);
+                if (UnitDef.UNITS.containsKey(unit)) {
+                    armyDeltas.merge(unit, qty, Integer::sum);
+                }
+            }
+        }
+
+        if (!resList.isEmpty()) {
+            applyResources(playerId, resList, +1);
+        }
+        if (!armyDeltas.isEmpty()) {
+            applyArmyUnits(playerId, armyDeltas);
+        }
+
         mailRepository.markClaimed(mailId, playerId);
         log.info("Mail claim: player={} mail={} attach={}", playerId, mailId, attach);
         Map<String, Object> result = new LinkedHashMap<>();
@@ -392,6 +430,29 @@ public class MailService {
         applyResources(playerId, agg, sign);
     }
 
+    private void applyArmyUnits(Long playerId, Map<String, Integer> armyDeltas) {
+        if (armyDeltas == null || armyDeltas.isEmpty()) return;
+        int citySlot = cityScope != null ? cityScope.slot(playerId) : 0;
+        for (Map.Entry<String, Integer> entry : armyDeltas.entrySet()) {
+            String unitType = entry.getKey();
+            int count = entry.getValue();
+            if (count <= 0) continue;
+            List<ArmyUnit> list = armyUnitRepository.findByPlayerIdAndCitySlotAndType(playerId, citySlot, unitType);
+            ArmyUnit u;
+            if (list.isEmpty()) {
+                u = new ArmyUnit();
+                u.setPlayerId(playerId);
+                u.setCitySlot(citySlot);
+                u.setType(unitType);
+                u.setCount(count);
+            } else {
+                u = list.get(0);
+                u.setCount((u.getCount() != null ? u.getCount() : 0) + count);
+            }
+            armyUnitRepository.save(u);
+        }
+    }
+
     private static int getRes(Resources r, String key) {
         return switch (key) {
             case "food"    -> r.getFood()    != null ? r.getFood()    : 0;
@@ -424,7 +485,7 @@ public class MailService {
             case "rare"    -> "稀矿";
             case "gold"    -> "黄金";
             case "diamond" -> "钻石";
-            default -> key;
+            default -> UnitDef.UNITS.containsKey(key) ? UnitDef.UNITS.get(key).name() : key;
         };
     }
 

@@ -151,7 +151,7 @@ public class WorldController {
             throw new IllegalArgumentException("目标城市ID不能为空");
         }
         Long playerId = authService.getCurrentPlayer().getId();
-        Map<String, Object> result = worldService.declareWar(playerId, request.targetCityId());
+        Map<String, Object> result = worldService.declareWar(playerId, request.targetCityId(), request.abandonNewbieProtection());
         result.put("state", gameStateService.getGameState(playerId));
         return ResponseEntity.ok(result);
     }

@@ -1,9 +1,6 @@
 package com.wargame.model.constants;
 
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 
 public final class MilitaryRankDef {
 
@@ -21,20 +18,6 @@ public final class MilitaryRankDef {
         public String certificateKey() { return tier > 1 ? "rank_certificate_" + tier : null; }
         public String certificateName() { return name + "晋升凭证"; }
     }
-
-    public record GemDef(String key, String name, String icon, String desc) {}
-
-    public static final Map<String, GemDef> GEMS = Map.of(
-            "gem_pearl",      new GemDef("gem_pearl",      "珍珠",   "⚪", "稀有天然珍珠，野地采集获得，可收藏的珠宝珍品"),
-            "gem_coral",      new GemDef("gem_coral",      "珊瑚",   "🪸", "红润天然珊瑚，野地采集获得，可收藏的珠宝珍品"),
-            "gem_glaze",      new GemDef("gem_glaze",      "琉璃",   "🔮", "晶莹剔透琉璃，野地采集获得，可收藏的珠宝珍品"),
-            "gem_amber",      new GemDef("gem_amber",      "琥珀",   "🍯", "温润千年琥珀，野地采集获得，可收藏的珠宝珍品"),
-            "gem_agate",      new GemDef("gem_agate",      "玛瑙",   "🟤", "珍贵斑斓玛瑙，野地采集获得，可收藏的珠宝珍品"),
-            "gem_crystal",    new GemDef("gem_crystal",    "水晶",   "💎", "璀璨高纯水晶，野地采集获得，可收藏的珠宝珍品"),
-            "gem_jadeite",    new GemDef("gem_jadeite",    "翡翠",   "🟢", "翠绿极品翡翠，野地采集获得，可收藏的珠宝珍品"),
-            "gem_jade",       new GemDef("gem_jade",       "玉石",   "🪨", "温润无瑕美玉，野地采集获得，可收藏的珠宝珍品"),
-            "gem_nightpearl", new GemDef("gem_nightpearl", "夜明珠", "🌟", "绝世璀璨夜明珠，高级野地采集获得，可收藏的珠宝珍品")
-    );
 
     public static final int MAX_RANK_TIER = 17;
 
@@ -113,35 +96,4 @@ public final class MilitaryRankDef {
         return getRank(tier).baseCap();
     }
 
-    /**
-     * 根据野地等级随机掉落珠宝 (用于野地采集完成归城)
-     */
-    public static Map<String, Integer> rollGatherGems(int wildLevel) {
-        Map<String, Integer> drops = new LinkedHashMap<>();
-        ThreadLocalRandom rand = ThreadLocalRandom.current();
-
-        if (wildLevel <= 3) {
-            drops.put("gem_pearl", rand.nextInt(1, 3));
-            if (rand.nextDouble() < 0.35) {
-                drops.put("gem_coral", 1);
-            }
-        } else if (wildLevel <= 6) {
-            drops.put("gem_coral", rand.nextInt(1, 3));
-            if (rand.nextDouble() < 0.60) drops.put("gem_glaze", 1);
-            if (rand.nextDouble() < 0.40) drops.put("gem_amber", 1);
-            if (rand.nextDouble() < 0.25) drops.put("gem_agate", 1);
-        } else if (wildLevel <= 8) {
-            drops.put("gem_agate", rand.nextInt(1, 3));
-            if (rand.nextDouble() < 0.60) drops.put("gem_crystal", 1);
-            if (rand.nextDouble() < 0.45) drops.put("gem_jadeite", 1);
-            if (rand.nextDouble() < 0.30) drops.put("gem_jade", 1);
-        } else {
-            // Level 9 ~ 10
-            drops.put("gem_crystal", rand.nextInt(1, 3));
-            if (rand.nextDouble() < 0.70) drops.put("gem_jadeite", 1);
-            if (rand.nextDouble() < 0.55) drops.put("gem_jade", 1);
-            if (rand.nextDouble() < 0.35) drops.put("gem_nightpearl", 1);
-        }
-        return drops;
-    }
 }

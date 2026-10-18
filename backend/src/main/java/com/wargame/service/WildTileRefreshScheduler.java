@@ -46,8 +46,8 @@ public class WildTileRefreshScheduler {
             var world = worlds.lockById(candidate.getId()).orElseThrow();
             String mask = terrain.current();
             if (mask == null || mask.isEmpty()) continue;
-            // 自动布点限于开放战区，不能把展示世界尺寸当作可用陆地边界。
-            int size = Math.min(WorldConfig.SIZE, world.getSize() == null ? WorldConfig.SIZE : world.getSize());
+            // 四大战场都参与刷新，不能把外围战场的目标强制迁回西北。
+            int size = Math.min(WorldConfig.WORLD_SIZE, world.getSize() == null ? WorldConfig.WORLD_SIZE : world.getSize());
             Set<String> used = occupied(world.getId());
             var worldWilds = wilds.findByWorldId(world.getId());
             var worldBandits = bandits.findByWorldId(world.getId());
@@ -87,8 +87,8 @@ public class WildTileRefreshScheduler {
                 int level = Math.max(1, bandit.getLevel() == null ? 1 : bandit.getLevel());
                 bandit.setX(destination[0]);
                 bandit.setY(destination[1]);
-                bandit.setArmy(JsonUtil.toJson(sea ? WorldConfig.seaNpcGarrison(level)
-                        : WorldConfig.BANDIT_LEVELS.get(level - 1).army()));
+                bandit.setArmy(JsonUtil.toJson(sea ? WorldConfig.seaNpcGarrison(level, destination[0], destination[1])
+                        : WorldConfig.landNpcGarrison(level, destination[0], destination[1])));
                 if (!sea) bandit.setName(WorldConfig.landBanditName(level));
                 // 奖励按等级及地形在战斗时计算；清除击败状态即可恢复可领取奖励，保留名称和军官。
                 bandit.setDefeated(false);

@@ -140,12 +140,11 @@ class AcademyRecruitmentTest extends BaseServiceTest {
     }
 
     @Test
-    void failedPaymentDoesNotUseQuotaAndOldSingleRefreshCooldownIsIgnored() {
+    void failedPaymentDoesNotUseQuota() {
         Long playerId = createTestPlayer().getId();
         createBuilding(playerId, "academy", 1);
         Academy academy = new Academy();
         academy.setPlayerId(playerId);
-        academy.setRefreshAt(System.currentTimeMillis() + 3600_000L);
         academy.setOfficers("[]");
         academies.saveAndFlush(academy);
         giveResources(playerId, 0, 0, 0, 0, 199);

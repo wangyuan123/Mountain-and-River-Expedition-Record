@@ -34,6 +34,7 @@ function setupArmy() {
       armyCap: () => 200000,
       foodPerHour: () => 9500000,
       getOfficerByRole: () => null,
+      firepowerMul: () => 1,
       buildingLevels: () => [10, 10],
       trainMul: () => 1.5,
       render: () => {}

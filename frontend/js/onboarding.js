@@ -2,7 +2,7 @@
 (function (G) {
   'use strict';
   var Core = G.Core;
-  var state = { data: null, timer: null, pending: null, busy: false, epoch: 0, error: '', snoozedFor: '', guidedAction: null, actionNote: '', expanded: false, screenWasInert: false, reportReading: null, gatherTracking: null, recommendedGatherTargetId: null };
+  var state = { data: null, timer: null, pending: null, busy: false, epoch: 0, error: '', snoozedFor: '', guidedAction: null, actionNote: '' };
   var labels = G.Constants.resourceNames;
   var currentSpotlightTarget = null;
   var graduationSpotlightTimer = null;
@@ -78,7 +78,7 @@
     var minTop = vRect ? vRect.top : 0;
     var maxBottom = vRect ? Math.min(winH, vRect.bottom) : winH;
 
-    // 如果目标已被滚出可视区域，将镂空框移至屏幕外，同时保持遮罩显示覆盖全屏，防止遮罩消失或错位在顶栏
+    // 目标滚出可视区域时暂时隐藏高亮框，避免在顶栏留下错位的提示。
     if (rect.bottom <= minTop || rect.top >= maxBottom) {
       if (!mask.style) mask.style = {};
       mask.style.top = '-999px';
@@ -98,66 +98,9 @@
     mask.style.display = 'block';
   }
 
-  function handleSpotlightGlobalClick(e) {
-    if (e.target && e.target.closest && (
-      e.target.closest('.modal-mask') ||
-      e.target.closest('.spicker') ||
-      e.target.closest('.spicker-row') ||
-      e.target.closest('.army-queue-btn') ||
-      e.target.closest('button[onclick*="SpeedUp"]') ||
-      e.target.closest('button[onclick*="speedUp"]') ||
-      e.target.closest('button[onclick*="accelerateJob"]') ||
-      e.target.closest('button[onclick*="launchDispatch"]') ||
-      e.target.closest('.officer-recruit-act') ||
-      e.target.closest('.link-act')
-    )) {
-      return;
-    }
-    if (!currentSpotlightTarget || !currentSpotlightTarget.getBoundingClientRect) return;
-    if (typeof document !== 'undefined' && document.body && document.body.contains && !document.body.contains(currentSpotlightTarget)) {
-      var refreshed = reacquireSpotlightTarget();
-      if (refreshed && typeof document !== 'undefined' && document.body && document.body.contains && document.body.contains(refreshed)) {
-        showSpotlight(refreshed);
-      } else {
-        clearSpotlight();
-        return;
-      }
-    }
-    var rect = currentSpotlightTarget.getBoundingClientRect();
-
-    var view = typeof document !== 'undefined' && document.getElementById ? document.getElementById('view') : null;
-    var vRect = view && view.getBoundingClientRect ? view.getBoundingClientRect() : null;
-    var winH = typeof window !== 'undefined' ? (window.innerHeight || (document.documentElement && document.documentElement.clientHeight) || 800) : 800;
-    var minTop = vRect ? vRect.top : 0;
-    var maxBottom = vRect ? Math.min(winH, vRect.bottom) : winH;
-
-    // 如果目标滚出了可视区域，用户在页面上点击时自动平滑回滚到目标居中
-    if (rect.bottom <= minTop || rect.top >= maxBottom) {
-      if (currentSpotlightTarget.scrollIntoView) {
-        currentSpotlightTarget.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
-      }
-      e.stopPropagation();
-      e.preventDefault();
-      return;
-    }
-
-    var pad = 12;
-    if (e.clientX >= rect.left - pad && e.clientX <= rect.right + pad &&
-        e.clientY >= rect.top - pad && e.clientY <= rect.bottom + pad) {
-      return;
-    }
-    if (currentSpotlightTarget.contains && currentSpotlightTarget.contains(e.target)) {
-      return;
-    }
-    e.stopPropagation();
-    e.preventDefault();
-  }
-
   function attachSpotlightListeners() {
     if (spotlightListenersAttached || typeof window === 'undefined' || !window.addEventListener) return;
     spotlightListenersAttached = true;
-    window.addEventListener('click', handleSpotlightGlobalClick, true);
-    window.addEventListener('pointerdown', handleSpotlightGlobalClick, true);
     window.addEventListener('scroll', updateSpotlightFramePosition, true);
     window.addEventListener('resize', updateSpotlightFramePosition, true);
   }
@@ -165,8 +108,6 @@
   function detachSpotlightListeners() {
     if (!spotlightListenersAttached || typeof window === 'undefined' || !window.removeEventListener) return;
     spotlightListenersAttached = false;
-    window.removeEventListener('click', handleSpotlightGlobalClick, true);
-    window.removeEventListener('pointerdown', handleSpotlightGlobalClick, true);
     window.removeEventListener('scroll', updateSpotlightFramePosition, true);
     window.removeEventListener('resize', updateSpotlightFramePosition, true);
   }
@@ -253,22 +194,12 @@
     return sum;
   }
 
-  function findRecommendedDevelopBuilding() {
-    var candidates = ['refinery', 'oilfield', 'raremine'];
-    for (var i = 0; i < candidates.length; i++) {
-      var id = candidates[i];
-      if (getBuildingLevel(id) < 1) {
-        return id;
-      }
-    }
-    return 'farm';
-  }
-
   /** 仅在当前账号仍参与引导时高亮确认按钮，延迟检查也必须遵守跳过状态。 */
   function canSpotlightConfirm(key) {
     var data = state.data;
     return key === context() && Core.state && G.API.isLoggedIn() &&
-      data && data.enrolled === true && !data.paused && !data.done && !state.busy;
+      data && data.enrolled === true && !data.paused && !data.done && !state.busy &&
+      state.guidedAction && ['buildArmy', 'buildRes'].includes(state.guidedAction.route);
   }
 
   function hookBuildConfirm() {
@@ -293,28 +224,6 @@
   }
   hookBuildConfirm();
 
-  function hookTechConfirm() {
-    if (!G.Tech || !G.Tech.confirmResearch || G.Tech._onboardingHooked) return;
-    G.Tech._onboardingHooked = true;
-    var origConfirm = G.Tech.confirmResearch;
-    G.Tech.confirmResearch = function (id) {
-      var res = origConfirm.apply(this, arguments);
-      var key = context();
-      if (!canSpotlightConfirm(key)) return res;
-      var checkOkBtn = function () {
-        if (!canSpotlightConfirm(key)) return;
-        var cuOk = document.getElementById ? document.getElementById('cuOk') : null;
-        if (cuOk && !cuOk.disabled) {
-          showSpotlight(cuOk);
-        }
-      };
-      checkOkBtn();
-      setTimeout(checkOkBtn, 50);
-      return res;
-    };
-  }
-  hookTechConfirm();
-
   function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -326,16 +235,13 @@
       (disabled || state.busy ? ' disabled' : '') + '>' + esc(label) + '</button>';
   }
   function routeButton(label, route, building) { return button(label, 'route', route + ':' + (building || '')); }
-  function buildButton(label, name, route, building) {
-    var pending = (Core.state && Core.state.constructions || []).some(function (job) {
-      return job.id === building && job.action !== 'dismantle';
-    });
-    return routeButton(pending ? '施工中 · 查看' + name : label, route, building);
-  }
-  function hasSupply() { return state.data && (state.data.supplies || []).some(function (s) { return s.available && !s.claimed; }); }
+  function hasSupply() { return state.data && (state.data.optionalTasks || []).some(function (t) { return t.status === 'completed'; }); }
   function applyBalances(data) {
     if (!data || !data.balances || !Core.state || !Core.state.resources) return;
-    Object.keys(data.balances).forEach(function (key) { Core.state.resources[key] = data.balances[key]; });
+    // 引导奖励只入主城，分城状态只能同步账号共享的钻石余额。
+    Object.keys(data.balances).forEach(function (key) {
+      if (!Core.state.player || !Core.state.player.citySlot || key === 'diamond') Core.state.resources[key] = data.balances[key];
+    });
     if (Core.renderTop) Core.renderTop();
   }
 
@@ -371,29 +277,15 @@
       if (key !== context()) return null;
       state.error = '';
       if (completedCheckChanged(state.data, data) ||
-          // 召回或侦察失败后仍需返回本步，避免没有完成目标时弹窗一直保持收起。
-          (state.data && state.data.current && state.data.current.id === 'scout' &&
-            state.data.waitingForScoutReturn && !data.waitingForScoutReturn) ||
-          // 民居是军工厂前置，建成后重新提示建造军工厂
-          (state.data && state.data.current && state.data.current.id === 'factory' &&
-            !state.data.checks.house && data.checks && data.checks.house) ||
-          // 军需仓库是军工科技研发中心前置，建成后重新提示建造军工科技研发中心
-          (state.data && state.data.current && state.data.current.id === 'lab' &&
-            !state.data.checks.depot && data.checks && data.checks.depot) ||
-          // 防空雷达站是侦察技术前置，建成后重新提示前往科技页研发
-          (state.data && state.data.current && state.data.current.id === 'reconTech' &&
-            !state.data.checks.radar && data.checks && data.checks.radar) ||
-          // 空军基地是侦察机生产前置，建成后重新提示侦察机生产。
-          (state.data && state.data.current && state.data.current.id === 'recon' &&
-            !state.data.checks.airport && data.checks && data.checks.airport) ||
-          // 军校只是招募步骤的前置，建成后也要重新提示玩家前往军校招募。
-          (state.data && state.data.current && state.data.current.id === 'officer' &&
-            !state.data.checks.academy && data.checks && data.checks.academy) ||
+          (state.data && state.data.scouting && !data.scouting) ||
           (state.data && state.data.current && data.current && state.data.current.id !== data.current.id)) {
         state.snoozedFor = ''; state.guidedAction = null; state.actionNote = '';
         clearSpotlight();
       }
-      if (data && data.done) clearSpotlight();
+      if (data && data.done) {
+        clearSpotlight();
+        if (state.data && !state.data.done && !data.skipped) G.toast('新手行动完成！补给已到账，前往「任务」探索更多玩法。');
+      }
       if (JSON.stringify(state.data) !== JSON.stringify(data)) { state.data = data; render(); }
       applyBalances(data);
       syncPolling();
@@ -415,119 +307,32 @@
   function stop() {
     state.epoch++;
     if (state.timer) clearInterval(state.timer);
-    clearReportReading();
-    clearGatherTracking();
-    state.recommendedGatherTargetId = null;
     clearSpotlight();
+    var hint = document.getElementById('onboardingTaskHint');
+    if (hint) hint.remove();
     state.timer = null; state.pending = null; state.data = null; state.error = ''; state.busy = false;
-    state.snoozedFor = ''; state.guidedAction = null; state.actionNote = ''; state.expanded = false;
+    state.snoozedFor = ''; state.guidedAction = null; state.actionNote = '';
     closeModal();
   }
   function init() {
     stop();
     hookBuildConfirm();
-    hookTechConfirm();
     return refresh();
   }
 
+  /** 命令下达后仅提示队列位置；目标由服务端完成事件推进，不要求额外确认。 */
   function actionStarted(route, id) {
-    var data = state.data, guided = state.guidedAction;
-    var isCurrentArmy = route === 'army' && data && data.current && (
-      (data.current.id === 'infantry' && id === 'infantry') ||
-      (data.current.id === 'train' && ['infantry', 'truck'].includes(id)) ||
-      (data.current.id === 'recon' && id === 'scout')
-    );
+    var data = state.data;
     if (!data || !data.current || data.paused || data.done) return Promise.resolve(null);
-    if (!isCurrentArmy) {
-      if (!guided || state.snoozedFor !== data.current.id || guided.route !== route ||
-          (guided.building && guided.building !== id)) return Promise.resolve(null);
-      if (route === 'tech' && data.current.id === 'reconTech' && id !== 'recon_level') return Promise.resolve(null);
-    }
-    if (route === 'buildArmy' || route === 'buildRes') {
-      // 建筑命令下达后保持弹窗收起，玩家需要在施工页面查看倒计时并使用加速；
-      // 完工事件或轮询确认对应检查项后，refresh() 会重新打开弹窗。
-      state.guidedAction = null;
-      state.actionNote = '施工命令已下达。建筑完成后会自动勾选并返回指引。';
-      closeModal();
-      syncPolling();
-      var locateSpeedUp = function () {
-        var qBar = document.getElementById ? document.getElementById('buildQueueBar') : null;
-        var speedBtn = (qBar && qBar.querySelector && (
-          qBar.querySelector('button[onclick*="accelerateJob"]') ||
-          qBar.querySelector('.btn.ok') ||
-          qBar.querySelector('button')
-        )) || (document.querySelector && (
-          document.querySelector('#buildQueueBar button[onclick*="accelerateJob"]') ||
-          document.querySelector('#buildQueueBar .btn.ok') ||
-          document.querySelector('#buildQueueBar button')
-        ));
-        if (speedBtn) {
-          showSpotlight(speedBtn);
-        }
-      };
-      locateSpeedUp();
-      setTimeout(locateSpeedUp, 60);
-      return Promise.resolve(null);
-    }
-    if (route === 'army') {
-      // 造兵命令下达后保持弹窗收起，玩家需要在生产队列查看倒计时并使用加速；
-      // 生产完成并由轮询确认目标完成后，refresh() 才重新打开弹窗。
-      state.snoozedFor = data.current.id;
-      state.guidedAction = null;
-      state.actionNote = '生产命令已下达。部队完成后会自动勾选并返回指引。';
-      closeModal();
-      if (G.Army && G.Army.setTab) {
-        G.Army.setTab('queue');
-      }
-      var locateQueueItem = function () {
-        var queueItem = (document.querySelector && document.querySelector('.army-queue-item[data-unit="' + id + '"]')) ||
-          (document.querySelector && document.querySelector('.army-queue-item')) ||
-          (document.getElementById && document.getElementById('army-panel-queue'));
-        if (!queueItem) return;
-        highlightTarget(queueItem);
-        var speedBtn = (queueItem.querySelector && (
-          queueItem.querySelector('button[onclick*="freeSpeedUp"]') ||
-          queueItem.querySelector('.army-free-speedup-btn') ||
-          queueItem.querySelector('button[onclick*="openSpeedUpPicker"]') ||
-          queueItem.querySelector('.army-queue-actions button:not(.warn)') ||
-          queueItem.querySelector('.army-queue-btn:not(.warn)') ||
-          queueItem.querySelector('button')
-        )) || queueItem;
-        showSpotlight(speedBtn);
-      };
-      locateQueueItem();
-      setTimeout(locateQueueItem, 60);
-      setTimeout(locateQueueItem, 200);
-      syncPolling();
-      return Promise.resolve(null);
-    }
-    if (route === 'tech') {
-      // 科技命令下达后保持弹窗收起，玩家需要在研发队列查看倒计时并使用加速；
-      // 研发完成并由轮询或完成事件确认后，refresh() 才重新打开弹窗。
-      state.snoozedFor = data.current.id;
-      state.guidedAction = null;
-      state.actionNote = '研发命令已下达。军研完成后会自动勾选并返回指引。';
-      closeModal();
-      var locateSpeedUp = function () {
-        var speedBtn = (document.querySelector && (
-          document.querySelector('button[onclick*="openSpeedUpPicker"]') ||
-          document.querySelector('#tech-panel button[onclick*="openSpeedUpPicker"]') ||
-          document.querySelector('.tech-panel button.ok')
-        )) || null;
-        if (speedBtn) {
-          showSpotlight(speedBtn);
-        }
-      };
-      locateSpeedUp();
-      setTimeout(locateSpeedUp, 60);
-      setTimeout(locateSpeedUp, 200);
-      syncPolling();
-      return Promise.resolve(null);
-    }
-    state.snoozedFor = ''; state.guidedAction = null;
-    state.actionNote = route === 'tech' ? '研发命令已下达，研究完成后会自动更新目标。' : '生产命令已下达，部队交付后会自动更新目标。';
-    render();
-    return refresh();
+    var construction = (route === 'buildRes' || route === 'buildArmy') && data.current.id === 'base';
+    var production = route === 'army' && data.current.id === 'infantry' && id === 'infantry';
+    if (!construction && !production) return Promise.resolve(null);
+    state.snoozedFor = data.current.id; state.guidedAction = null;
+    state.actionNote = construction ? '施工中，可自由探索其他功能。' : '生产中，可自由探索其他功能。';
+    closeModal(); clearSpotlight();
+    if (production && G.Army && G.Army.setTab) G.Army.setTab('queue');
+    syncPolling();
+    return Promise.resolve(null);
   }
 
   function mutate(action, body) {
@@ -545,7 +350,9 @@
       applyBalances(data);
       if (action === 'claim') G.toast('补给已送达主城');
       if (action === 'skip') G.toast('行动补给已送达主城，可继续主线任务');
-      if (action === 'recover') G.toast('援军已抵达主城：30步兵、1侦察机、2卡车');
+      if (action === 'recover') G.toast('援军已抵达主城：30步兵、1侦察机');
+      if (action === 'tasks/claim') G.toast('探索任务奖励已到账');
+      if (action === 'start' || (action === 'pause' && !data.paused)) state.snoozedFor = '';
       if (action === 'pause' || action === 'skip') {
         state.actionNote = '';
         clearSpotlight();
@@ -558,328 +365,49 @@
   }
 
   function actions(objective) {
-    if (objective.id === 'base') return buildButton('升级市政厅', '市政厅', 'buildArmy', 'command');
-    if (objective.id === 'farm') return buildButton('升级农田', '农田', 'buildRes', 'farm');
-    if (objective.id === 'factory') return (state.data && state.data.checks && state.data.checks.house === false)
-      ? buildButton('先建造民居', '民居', 'buildArmy', 'house')
-      : buildButton('建造军工厂', '军工厂', 'buildArmy', 'factory');
-    if (objective.id === 'infantry') return routeButton('前往生产步兵', 'army', 'infantry');
-    if (objective.id === 'train') return routeButton('前往生产卡车', 'army', 'truck');
-    if (objective.id === 'lab') return (state.data && state.data.checks && state.data.checks.depot === false)
-      ? buildButton('先建造军需仓库', '军需仓库', 'buildArmy', 'depot')
-      : buildButton('建造军工科技研发中心', '军工科技研发中心', 'buildArmy', 'lab');
-    if (objective.id === 'reconTech') return (state.data && state.data.checks && state.data.checks.radar === false)
-      ? buildButton('先建造防空雷达站', '防空雷达站', 'buildArmy', 'radar')
-      : routeButton('研究侦察技术', 'tech', 'recon_level');
-    if (objective.id === 'recon') return (state.data && state.data.checks && state.data.checks.airport === false)
-      ? buildButton('先建造空军基地', '空军基地', 'buildArmy', 'airport')
-      : routeButton('生产侦察机', 'army', 'scout');
-    if (objective.id === 'officer') return (state.data && state.data.checks && state.data.checks.academy)
-      ? routeButton('前往军校招募军官', 'academy')
-      : buildButton('先建造军校', '军校', 'buildArmy', 'academy');
-    if (objective.id === 'scout' || objective.id === 'occupy' || objective.id === 'gather') {
-      return button(objective.id === 'gather' ? '派出采集队' : '选择推荐资源点', 'target', objective.id);
-    }
-    if (objective.id === 'report') return routeButton('查看战报', 'reports');
-    if (objective.id === 'develop') {
-      var recBuilding = findRecommendedDevelopBuilding();
-      var bName = (G.DATA && G.DATA.buildings && G.DATA.buildings[recBuilding] && G.DATA.buildings[recBuilding].name) ||
-        (recBuilding === 'refinery' ? '炼钢厂' : recBuilding === 'oilfield' ? '石油基地' : recBuilding === 'raremine' ? '稀矿厂' : '农田');
-      var isNew = getBuildingLevel(recBuilding) === 0;
-      return buildButton(isNew ? ('建造' + bName) : ('升级' + bName), bName, 'buildRes', recBuilding);
-    }
-    if (objective.id === 'plan') return button('开启新的征程', 'finish');
+    if (objective.id === 'base') return routeButton('前往建设', 'buildRes') + routeButton('军工建筑', 'buildArmy');
+    if (objective.id === 'infantry') return routeButton('生产一名步兵', 'army', 'infantry');
+    if (objective.id === 'scout' || objective.id === 'occupy') return button('选择推荐野地', 'target', objective.id);
+    if (objective.id === 'report') return routeButton('查看获胜战报', 'reports');
     return '';
   }
 
-  function checklist(o) {
-    return '<div class="ob-step-status">' + (o.exempt ? '已毕业账号豁免本步，不补发奖励' : o.complete ? '已完成，奖励已到账' : '完成本步后自动发放奖励') + '</div>';
-  }
-
   function closeModal() {
-    var modal = document.getElementById('onboardingBar');
-    if (modal) modal.remove();
-    var screen = document.getElementById('screen');
-    if (screen && modal) screen.inert = state.screenWasInert;
+    var card = document.getElementById('onboardingBar');
+    if (card) card.remove();
   }
 
-  function clearReportReading() {
-    if (state.reportReading) clearInterval(state.reportReading.timer);
-    state.reportReading = null;
-    var notice = document.getElementById('onboardingReportCountdown');
-    if (notice) notice.remove();
-  }
-
-  function clearGatherTracking() {
-    if (state.gatherTracking) clearInterval(state.gatherTracking.timer);
-    state.gatherTracking = null;
-    var notice = document.getElementById('onboardingGatherCountdown');
-    if (notice) notice.remove();
-  }
-
-  /** 主动返回只结束阅读等待并刷新真实任务进度，不代替服务端完成判定。 */
-  function returnFromReportReading(reading) {
-    if (!reading || state.reportReading !== reading || reading.key !== context()) return;
-    clearReportReading();
-    state.snoozedFor = '';
-    render();
-    return refresh();
-  }
-
-  function finishGatherNow() {
-    clearGatherTracking();
-    state.recommendedGatherTargetId = null;
-    state.snoozedFor = '';
-    return mutate('finish-gather').then(function () {
-      render();
-    });
-  }
-
-  function calculateGatherRemainingSeconds(march) {
-    var now = Date.now();
-    if (!march) return 0;
-    if (march.returning) {
-      return Math.max(0, Math.ceil((Number(march.arriveAt || 0) - now) / 1000));
-    }
-    if (march.gathering) {
-      var gatherEnd = Number(march.gatherEndAt || 0);
-      var gatherRem = Math.max(0, gatherEnd - now);
-      var oneWay = Math.max(1000, Number(march.arriveAt || 0) - Number(march.startAt || 0));
-      return Math.max(0, Math.ceil((gatherRem + oneWay) / 1000));
-    }
-    var outboundRem = Math.max(0, Number(march.arriveAt || 0) - now);
-    var legDur = Math.max(1000, Number(march.arriveAt || 0) - Number(march.startAt || 0));
-    var gatherDur = 60000;
-    return Math.max(0, Math.ceil((outboundRem + gatherDur + legDur) / 1000));
-  }
-
-  function findActiveGatherMarch() {
-    var marches = (Core.state && Core.state.world && Core.state.world.marches) || [];
-    var gatherMarches = marches.filter(function (m) {
-      if (!m) return false;
-      var isGather = m.targetKind === 'wild_gather' || (m.action === 'gather' && m.targetKind === 'wild');
-      if (!isGather) return false;
-      if (state.recommendedGatherTargetId != null) {
-        return String(m.targetId) === String(state.recommendedGatherTargetId);
-      }
-      return true;
-    });
-    if (!gatherMarches.length) return null;
-    gatherMarches.sort(function (a, b) {
-      return calculateGatherRemainingSeconds(a) - calculateGatherRemainingSeconds(b);
-    });
-    return gatherMarches[0];
-  }
-
-  function updateGatherCountdown() {
-    var tracking = state.gatherTracking, data = state.data;
-    if (!tracking) return false;
-    if (tracking.key !== context() || !Core.state || !G.API.isLoggedIn() || Core.route === 'login' ||
-        !data || !data.enrolled || data.paused || data.done || !data.current || data.current.id !== 'gather') {
-      clearGatherTracking();
-      return false;
-    }
-    var march = findActiveGatherMarch();
-    var seconds = 0;
-    if (march) {
-      seconds = calculateGatherRemainingSeconds(march);
-      tracking.lastKnownSeconds = seconds;
-    } else if (tracking.lastKnownSeconds > 0) {
-      var elapsed = Math.ceil((Date.now() - tracking.startedAt) / 1000);
-      seconds = Math.max(0, tracking.lastKnownSeconds - elapsed);
-    } else if (data.waitingForGather) {
-      seconds = 30; // 兜底显示等待
-    }
-
-    if (!seconds && !data.waitingForGather && !march) {
-      clearGatherTracking();
-      state.snoozedFor = '';
-      return false;
-    }
-
-    var notice = document.getElementById('onboardingGatherCountdown');
-    if (!notice) {
-      notice = document.createElement('aside');
-      notice.id = 'onboardingGatherCountdown';
-      notice.className = 'ob-gather-countdown';
-      notice.setAttribute('role', 'status');
-      notice.setAttribute('aria-live', 'polite');
-      notice.setAttribute('aria-atomic', 'true');
-      notice.innerHTML = '<span class="ob-eyebrow">前进基地 · 采集行动</span>' +
-        '<div class="ob-report-countdown-body">' +
-        '<strong class="ob-report-seconds"></strong><span>后自动完成返城</span>' +
-        '<div class="ob-gather-actions">' +
-        '<button type="button" class="btn ob-gather-finish">立即结束采集并返回</button>' +
-        '<button type="button" class="btn ob-gather-return">返回指引</button>' +
-        '</div></div>';
-      notice.querySelector('.ob-gather-finish').onclick = function (event) {
-        if (event) { event.preventDefault(); event.stopPropagation(); }
-        return finishGatherNow();
-      };
-      notice.querySelector('.ob-gather-return').onclick = function (event) {
-        if (event) { event.preventDefault(); event.stopPropagation(); }
-        clearGatherTracking();
-        state.snoozedFor = '';
-        render();
-        return refresh();
-      };
-      if (document.body) document.body.appendChild(notice);
-      else { var view = document.getElementById('view'); view.insertBefore(notice, view.firstChild); }
-    }
-    var counter = notice.querySelector('.ob-report-seconds');
-    var label = (seconds > 0 ? seconds : 0) + 's';
-    if (counter && counter.textContent !== label) counter.textContent = label;
-    return true;
-  }
-
-  function startGatherTracking() {
-    clearGatherTracking();
-    var march = findActiveGatherMarch();
-    var initialSeconds = march ? calculateGatherRemainingSeconds(march) : 60;
-    var tracking = { key: context(), startedAt: Date.now(), lastKnownSeconds: initialSeconds, timer: null };
-    state.gatherTracking = tracking;
-    tracking.timer = setInterval(function () {
-      if (state.gatherTracking !== tracking) return;
-      if (tracking.key !== context()) { clearGatherTracking(); return; }
-      if (!updateGatherCountdown()) { render(); refresh(); }
-    }, 250);
-    updateGatherCountdown();
-  }
-
-  function updateReportReading() {
-    var reading = state.reportReading, data = state.data;
-    if (!reading) return false;
-    if (reading.key !== context() || !Core.state || !G.API.isLoggedIn() || Core.route === 'login' ||
-        !data || !data.enrolled || data.paused || data.done) {
-      clearReportReading();
-      return false;
-    }
-    var seconds = Math.max(0, Math.ceil((reading.deadline - Date.now()) / 1000));
-    if (!seconds) {
-      clearReportReading();
-      state.snoozedFor = '';
-      return false;
-    }
-    var notice = document.getElementById('onboardingReportCountdown');
-    if (!notice) {
-      notice = document.createElement('aside');
-      notice.id = 'onboardingReportCountdown';
-      notice.className = 'ob-report-countdown';
-      notice.setAttribute('role', 'status');
-      notice.setAttribute('aria-live', 'polite');
-      notice.setAttribute('aria-atomic', 'true');
-      notice.innerHTML = '<span class="ob-eyebrow">市政厅 · 战报阅读</span>' +
-        '<div class="ob-report-countdown-body"><strong class="ob-report-seconds"></strong><span>后自动返回</span>' +
-        '<button type="button" class="btn ob-report-return">返回新手指引</button></div>';
-      notice.querySelector('.ob-report-return').onclick = function () { return returnFromReportReading(reading); };
-      if (document.body) document.body.appendChild(notice);
-      else { var view = document.getElementById('view'); view.insertBefore(notice, view.firstChild); }
-    }
-    var counter = notice.querySelector('.ob-report-seconds');
-    var label = seconds + 's';
-    if (counter.textContent !== label) counter.textContent = label;
-    return true;
-  }
-
-  function startReportReading() {
-    clearReportReading();
-    var reading = { key: context(), deadline: Date.now() + 20000, timer: null };
-    state.reportReading = reading;
-    reading.timer = setInterval(function () {
-      if (state.reportReading !== reading) return;
-      if (reading.key !== context()) { clearReportReading(); return; }
-      if (!updateReportReading()) { render(); refresh(); }
-    }, 250);
-    updateReportReading();
-  }
-
-  function modalKeydown(event) {
-    var modal = document.getElementById('onboardingBar');
-    if (!modal) return;
-    var focusable = modal.querySelectorAll('button:not(:disabled)');
-    if (!focusable.length) { event.preventDefault(); event.stopPropagation(); return; }
-    var first = focusable[0], last = focusable[focusable.length - 1];
-    if (!modal.contains(document.activeElement)) { event.preventDefault(); event.stopPropagation(); first.focus(); return; }
-    if (/^[0-9*]$/.test(event.key) || event.key === 'Backspace') {
-      event.preventDefault(); event.stopPropagation(); return;
-    }
-    if (event.key !== 'Tab') return;
-    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
-  }
-
-  if (document.addEventListener) document.addEventListener('keydown', modalKeydown, true);
-
-  /** 弹窗在屏幕容器外，inert 与遮罩同时阻止背景的鼠标和键盘操作。进入实际操作页后暂时收起，目标变化时再次弹出。 */
+  /** 轻量行动卡不遮罩、不设置 inert；玩家随时可以收起并在任务页继续查看。 */
   function render() {
-    var bar = document.getElementById('onboardingBar');
     if (!Core.state || Core.route === 'login' || !G.API.isLoggedIn()) { stop(); return; }
     var data = state.data;
-    var readingReport = updateReportReading();
     var currentKey = data && data.current ? data.current.id : 'supplies';
-    // 侦察报告在到达野地时就会送达，任务弹窗必须等服务端确认侦查部队返城。
-    var waitingForScoutReturn = data && data.waitingForScoutReturn && currentKey === 'scout';
-    // 采集任务进行中或在途返城时，右侧展示倒计时弹窗，主指引弹窗保持收起。
-    if (data && data.enrolled && !data.paused && !data.done && currentKey === 'gather' && (data.waitingForGather || findActiveGatherMarch())) {
-      if (!state.gatherTracking) startGatherTracking();
-    }
-    var trackingGather = updateGatherCountdown();
-    var visible = !readingReport && !trackingGather && !waitingForScoutReturn && Core.route !== 'onboarding' && currentKey !== state.snoozedFor &&
+    var visible = Core.route !== 'onboarding' && Core.route !== 'mainQuest' &&
+      !(Core.state.player && Core.state.player.citySlot) && currentKey !== state.snoozedFor &&
+      !(data && data.scouting && currentKey === 'scout') &&
       ((data && data.enrolled && !data.paused && !data.done) || (!data && state.error));
     if (!visible) closeModal();
     else {
-      clearSpotlight();
-      if (!bar) {
-        bar = document.createElement('section'); bar.id = 'onboardingBar'; bar.className = 'modal-mask ob-mask';
-        bar.innerHTML = '<div class="ob-dialog" role="dialog" aria-modal="true" aria-labelledby="obDialogTitle" aria-describedby="obDialogDesc"></div>';
-        if (document.body) document.body.appendChild(bar);
-        else { var view = document.getElementById('view'); view.insertBefore(bar, view.firstChild); }
-        var screen = document.getElementById('screen');
-        if (screen) { state.screenWasInert = screen.inert; screen.inert = true; }
+      var card = document.getElementById('onboardingBar');
+      if (!card) {
+        card = document.createElement('section'); card.id = 'onboardingBar'; card.className = 'ob-card';
+        card.setAttribute('aria-label', '新手行动');
+        if (document.body) document.body.appendChild(card);
+        else { var view = document.getElementById('view'); view.insertBefore(card, view.firstChild); }
       }
-      var dialog = bar.querySelector ? bar.querySelector('.ob-dialog') || bar : bar;
-      if (!data) {
-        dialog.innerHTML = '<div class="ob-bar-heading"><strong id="obDialogTitle">新手行动暂时无法读取</strong></div>' +
-          '<p id="obDialogDesc" class="ob-error" role="alert">' + esc(state.error) + '</p><div class="ob-actions">' + button('重新检查', 'refresh') + '</div>';
-      } else {
-        var current = data.current;
-        var completed = Math.max(0, Number(data.completed) || 0);
-        var total = data.objectives.length;
-        var percent = total ? Math.min(100, Math.round(completed / total * 100)) : 0;
-        var remaining = (data.supplies || []).filter(function (s) { return !s.claimed; });
-        var skipRewards = {};
-        remaining.forEach(function (supply) {
-          Object.keys(labels).forEach(function (resource) {
-            skipRewards[resource] = (skipRewards[resource] || 0) + Number((supply.resources || {})[resource] || 0);
-          });
-        });
-        dialog.innerHTML = '<div class="ob-bar-heading"><div><span class="ob-eyebrow">新手战役 · 前进基地行动</span>' +
-          '<strong id="obDialogTitle">' + esc(current && current.id === 'plan' ? '基地已准备好，接下来由你指挥' : current ? current.title : '行动目标已完成') + '</strong></div>' +
-          '<span class="ob-count">' + completed + ' / ' + total + '</span></div>' +
-          '<div class="ob-progress" role="progressbar" aria-label="新手行动进度" aria-valuemin="0" aria-valuemax="' + total + '" aria-valuenow="' + completed + '"><span style="width:' + percent + '%"></span></div>' +
-          (completed === 0 ? '<p class="ob-intro">先升级后勤建筑与军工设施，再生产部队、招募军官、侦察并采集资源。操作完成后目标会自动更新。</p>' : '') +
-          '<p id="obDialogDesc">' + esc(current && current.id === 'plan' ? '指挥官，做得不错！你已经迈出了建设与远征的第一步。友情提示：打开「任务」Tab，通过主线任务继续探索新玩法；完成任务后，记得领取奖励。按自己的节奏出发吧！' : current ? current.body : '所有行动步骤已完成。') + '</p>' +
-          (current && state.actionNote ? '<p class="ob-action-note" role="status">' + esc(state.actionNote) + '</p>' : '') +
-          (current ? checklist(current) : '') +
-          (current ? '<p class="ob-reward">本步奖励：' + esc(rewardText(current.reward, current.diamond)) + '</p>' : '') +
-          '<p class="ob-completion-reward">全部完成：' + esc(rewardText(data.completionReward, data.completionDiamond)) + '</p>' +
-          (remaining.length ? '<p class="ob-skip-reward">跳过后立即获得未领行动补给：' + esc(rewardText(skipRewards)) + '</p>' : '') +
-          (state.expanded ? '<div class="ob-modal-roadmap" aria-label="行动目标">' + data.objectives.map(function (objective, index) {
-            return '<div><span>' + (index + 1) + '. ' + esc(objective.title) + '</span><span class="' + (objective.complete ? 'ob-complete' : '') + '">' +
-              (objective.complete ? '已完成' : '待完成') + '</span></div>';
-          }).join('') + '</div>' : '') +
-          '<div class="ob-actions">' + (current ? actions(current) : '') +
-          button(state.expanded ? '收起目标' : '查看全部目标', 'expand') +
-          (current && current.id === 'plan' ? '' : button(remaining.length ? '跳过指引 · 领取剩余补给' : '跳过指引', 'skip')) + '</div>';
+      if (!data) card.innerHTML = '<strong>新手行动暂时无法读取</strong><p class="ob-error" role="alert">' + esc(state.error) + '</p>' + button('重新检查', 'refresh');
+      else {
+        var completed = Math.max(0, Number(data.completed) || 0), total = data.objectives.length;
+        card.innerHTML = '<div class="ob-bar-heading"><strong>' + esc(data.current ? data.current.title : '前进基地行动') + '</strong><span>' + completed + ' / ' + total + '</span></div>' +
+          '<p>' + esc(data.current ? data.current.body : '完成核心行动后，到任务页继续探索。') + '</p>' +
+          '<div class="ob-actions">' + (data.current ? actions(data.current) : '') + button('稍后再看', 'dismiss') + button('跳过指引', 'skip') + '</div>' +
+          (data.recoveryAvailable ? '<p>首战受挫？</p>' + button('接收一次援军', 'recover') : '');
       }
-      bind(dialog);
-      if (dialog.querySelector && !dialog.contains(document.activeElement)) {
-        var firstButton = dialog.querySelector('button:not(:disabled)');
-        if (firstButton) firstButton.focus();
-      }
+      bind(card);
     }
     if (G.Main && G.Main.renderNavBar) G.Main.renderNavBar();
     if (Core.route === 'onboarding') draw(document.getElementById('view'));
+    if (Core.route === 'mainQuest' && G.MainQuest && G.MainQuest.drawQuestView) G.MainQuest.drawQuestView(document.getElementById('view'));
   }
 
   function rewardText(resources, diamond) {
@@ -892,37 +420,22 @@
   function draw(view) {
     if (!view) return;
     var data = state.data;
-    var h = '<div class="onboarding-view"><div class="ob-heading"><img src="img/resources/models/food.webp" alt="" width="40" height="40">' +
-      '<div><div class="title">前进基地行动</div><p>跟随真实行动熟悉建设、生产、出征与采集；完成后继续主线任务领取资源奖励。</p></div></div>';
-    if (state.error) h += '<p class="ob-error" role="alert">' + esc(state.error) + '</p>' + button('重新检查', 'refresh');
+    var h = '<div class="onboarding-view"><div class="title">前进基地行动</div><p>建设、组队、侦察、首战、战果。采集与其他玩法在「任务」按需探索。</p>';
+    if (state.error) h += '<p class="ob-error">' + esc(state.error) + '</p>' + button('重新检查', 'refresh');
     if (!data) h += '<p>正在读取行动记录…</p>';
-    else if (!data.enrolled) h += '<p>接管基地，完成后勤建设、军工生产、侦察占领与首次采集；老指挥官也可直接领取行动补给并继续主线。</p>' +
-      '<div class="ob-actions">' + button('开启行动', 'start') + button('跳过指引 · 领取全部补给', 'skip') + '</div>';
+    else if (!data.enrolled) h += button('开启行动', 'start') + button('跳过指引', 'skip');
     else {
-      h += '<div class="ob-roadmap"><span>① 后勤与军工建设</span><span>② 造兵、招募与侦察</span><span>③ 占领与采集</span><span>④ 主线任务</span></div>';
       h += '<div class="ob-overview"><span>已完成 ' + data.completed + ' / ' + data.objectives.length + '</span>' +
-        (data.done ? '' : button(data.paused ? '恢复弹窗' : '暂停弹窗', 'pause', data.paused ? 'false' : 'true') + button('跳过指引 · 领取剩余补给', 'skip')) + '</div>' +
-        '<p class="ob-muted">补给送达主城。跳过会一次性发放未领取的行动补给，已领部分不重复发放。</p>';
-      if (data.done) h += '<section class="ob-graduation"><h2>' + (data.skipped ? '已跳过前进基地行动' : '前进基地行动完成') + '</h2><p>' +
-        (data.skipped ? '行动补给已送达。' : '你已掌握基础后勤建设、军工生产与野地采集。') + '下一步按主线章节任务继续发展，完成任务后记得领取资源奖励。</p>' +
-        '<div class="ob-actions">' + routeButton('前往主线任务 · 领取奖励', 'mainQuest') +
-        '</div></section>';
-      if (Core.state.player && Core.state.player.citySlot !== 0) h += '<p class="ob-error">当前是分城。前进基地行动在主城进行。</p>' + button('切回主城', 'homeCity');
-      if (data.current) h += '<section class="ob-current"><h2>当前目标 · ' + esc(data.current.title) + '</h2><p>' + esc(data.current.body) +
-        '</p>' + checklist(data.current) + '<div class="ob-actions">' + actions(data.current) + '</div></section>';
-      if (data.recoveryAvailable) h += '<section class="ob-supply"><strong>重新整备</strong><p>一次性援军：30步兵、1侦察机、2卡车。</p>' + button('接收援军', 'recover') + '</section>';
-      h += '<section class="ob-objectives"><h2>行动进度与奖励</h2>';
-      data.objectives.forEach(function (o, index) {
-        var current = data.current && data.current.id === o.id;
-        h += '<details class="ob-objective"><summary><span>' + (index + 1) + '. ' + esc(o.title) +
-          '</span><span class="' + (o.complete ? 'ob-complete' : '') + '">' + (o.exempt ? '已毕业豁免' : o.complete ? '已完成' : '待完成') + '</span></summary>' +
-          '<p>' + esc(o.body) + (o.exempt ? '' : '<p class="ob-step-reward">完成奖励：' + esc(rewardText(o.reward, o.diamond)) + '</p>') + checklist(o) +
-          '<div class="ob-actions">' + (!o.complete && (o.id !== 'plan' || current) ? actions(o) : '') + '</div></details>';
-      });
-      h += '</section>';
+        (data.done ? '' : button(data.paused ? '恢复提示' : '暂停提示', 'pause', data.paused ? 'false' : 'true') + button('跳过指引', 'skip')) + '</div>';
+      if (data.done) h += '<section class="ob-graduation"><h2>' + (data.skipped ? '指引已跳过' : '新手行动完成') + '</h2><p>打开任务 Tab，继续主线章节任务，探索采集、科技、军官等玩法。</p>' + routeButton('前往任务 · 领取奖励', 'mainQuest') + '</section>';
+      else if (data.current) h += '<section class="ob-current"><h2>' + esc(data.current.title) + '</h2><p>' + esc(data.current.body) + '</p>' + actions(data.current) + '</section>';
+      if (Core.state.player && Core.state.player.citySlot !== 0) h += '<p>核心行动在主城进行。</p>' + button('切回主城', 'homeCity');
+      if (data.recoveryAvailable) h += '<p>首战受挫？可领取一次援军。</p>' + button('接收援军', 'recover');
+      h += '<section class="ob-objectives">' + data.objectives.map(function (o, index) {
+        return '<div class="ob-objective">' + (index + 1) + '. ' + esc(o.title) + '<span class="ob-step-status"> · ' + (o.complete ? '已完成' : '待完成') + '</span></div>';
+      }).join('') + '</section><p class="ob-muted">阶段补给自动到账。全部完成：' + esc(rewardText(data.completionReward, data.completionDiamond)) + '</p>';
     }
-    h += '</div>';
-    view.innerHTML = h; bind(view);
+    view.innerHTML = h + '</div>'; bind(view);
   }
 
   function highlightTarget(target) {
@@ -937,19 +450,20 @@
   }
 
   function go(route, building) {
-    clearReportReading();
     state.snoozedFor = state.data && state.data.current ? state.data.current.id : 'supplies';
     state.guidedAction = ['buildArmy', 'buildRes', 'army', 'tech'].includes(route) ? { route: route, building: building || '' } : null;
     state.actionNote = '';
     closeModal();
-    // 新版入口使用战报页；保留情报页兼容分支，避免旧页面状态中的引导倒计时丢失。
-    if ((route === 'reports' || route === 'alerts') && state.snoozedFor === 'report') startReportReading();
     G.go(route);
+    // 延迟定位只属于本次导航，不能在换账号或切换页面后覆盖新的玩家操作。
+    var navigationKey = context();
+    function stillHere() { return navigationKey === context() && Core.route === route; }
 
     if (route === 'tech' && building) {
       var branch = (G.DATA && G.DATA.techs && G.DATA.techs[building] && G.DATA.techs[building].branch) || (building === 'recon_level' ? '侦察' : '军事');
       if (G.Tech && G.Tech.setTab) G.Tech.setTab(branch);
       var locateTech = function () {
+        if (!stillHere()) return;
         var techCard = (document.querySelector && document.querySelector('[data-tech="' + building + '"]')) ||
           (document.getElementById && document.getElementById('tech-card-' + building));
         if (!techCard) return;
@@ -974,6 +488,7 @@
           if (Core.render) Core.render();
         }
         var locateArmyTargets = function () {
+          if (!stillHere()) return;
           var unitCard = (document.getElementById && document.getElementById('unit-card-' + building)) ||
             (document.querySelector && document.querySelector('[data-unit="' + building + '"]'));
           if (!unitCard) return;
@@ -1022,6 +537,7 @@
 
     if (route === 'academy') {
       var locateAcademy = function () {
+        if (!stillHere()) return;
         var officerCard = (document.querySelector && document.querySelector('.officer-card.ok')) ||
           (document.querySelector && document.querySelector('.officer-card'));
         if (officerCard) {
@@ -1052,6 +568,7 @@
       if (isUnbuilt && G.Build && G.Build.openBuildPicker) {
         G.Build.openBuildPicker(groupKey);
         var locatePicker = function () {
+          if (!stillHere()) return;
           var pickerItem = (document.querySelector && document.querySelector('.build-picker-item[data-building="' + building + '"]')) ||
             (document.getElementById && document.getElementById('build-picker-' + building));
           if (pickerItem) {
@@ -1076,6 +593,7 @@
               G.Build.openBuildingDetailModal(building, targetSlot);
             }
             setTimeout(function () {
+              if (!stillHere()) return;
               var upBtn = document.getElementById && document.getElementById('bdetailUpBtn');
               if (upBtn) {
                 showSpotlight(upBtn);
@@ -1096,9 +614,19 @@
     }
   }
 
+  /** 推荐目标只预填编队；采集优先运输单位，也允许具备基础负重的步兵。 */
   function findTarget(action) {
     if (state.busy) return;
     if (Core.state.player.citySlot !== 0) { G.toast('请从切城入口切回主城'); return; }
+    var availableArmy = Core.state.army || {};
+    var gatherUnit = action === 'gather' ? ['truck', 'transport', 'infantry'].find(function (unit) {
+      return Number(availableArmy[unit]) > 0 && G.DATA.units[unit].load > 0;
+    }) : null;
+    if (action === 'gather' && !gatherUnit) {
+      G.toast('采集需要有负重的部队，可征召步兵或卡车，或等待部队返城');
+      go('army', 'truck');
+      return Promise.resolve(null);
+    }
     var key = context(); state.busy = true; render();
     return G.API.client.post('/game/onboarding/target', { gather: action === 'gather' }).then(function (target) {
       if (key !== context()) return;
@@ -1112,20 +640,19 @@
         var scoutUnit = Number(sArmy.scout) > 0 || !Number(sArmy.recon_car) ? 'scout' : 'recon_car';
         defaultArmy[scoutUnit] = sArmy[scoutUnit] != null ? Math.min(Number(sArmy[scoutUnit]) || 0, 1) : 1;
       } else if (action === 'gather') {
-        defaultArmy.truck = sArmy.truck != null ? Math.min(Number(sArmy.truck) || 0, 2) : 2;
+        // 保留高运力编队优先级；没有运输单位时，最多预填50名步兵（基础运力500）。
+        var gatherCount = gatherUnit === 'truck' ? 2 : gatherUnit === 'transport' ? 1 : 50;
+        defaultArmy[gatherUnit] = Math.min(Number(sArmy[gatherUnit]) || 0, gatherCount);
       } else {
         defaultArmy.infantry = sArmy.infantry != null ? Math.min(Number(sArmy.infantry) || 0, 50) : 50;
       }
       world._dispatchTarget = { kind: action === 'gather' ? 'wild_gather' : 'wild', idx: idx, target: target,
         action: action === 'scout' ? 'scout' : action === 'gather' ? 'gather' : 'campaign',
-        occupyTarget: true,
+        occupyTarget: true, battleMode: 'auto',
         defaultArmy: defaultArmy };
-      // 引导要求资源随部队返城入库，这次推荐采集固定使用全自动，避免停在野地等待手动命令。
+      // 推荐采集默认全自动，玩家仍可在出征页切换为手动。
       if (action === 'gather') {
-        state.recommendedGatherTargetId = target.id;
-        world._dispatchTarget.onboardingGather = true;
         world._dispatchTarget.gatherMode = 'auto';
-        startGatherTracking();
       }
       state.snoozedFor = state.data && state.data.current ? state.data.current.id : 'supplies';
       state.guidedAction = null; state.actionNote = '';
@@ -1144,6 +671,7 @@
         G.World._refreshDispatchRoute();
       }
       var locateDispatchBtn = function () {
+        if (key !== context() || Core.route !== 'dispatch') return;
         var dispatchBtn = document.querySelector && document.querySelector('button[onclick*="launchDispatch"]');
         if (dispatchBtn) {
           highlightTarget(dispatchBtn);
@@ -1158,28 +686,64 @@
       .finally(function () { if (key === context()) { state.busy = false; render(); } });
   }
 
+  /** 只在任务首次主动进入时显示提示；完成事实仍由服务端游戏事件记录。 */
+  function beginTask(taskId) {
+    var task = state.data && (state.data.optionalTasks || []).find(function (t) { return t.id === taskId; });
+    if (!task || task.status === 'completed' || task.status === 'claimed' || state.busy) return Promise.resolve(null);
+    return mutate('tasks/begin', { taskId: taskId }).then(function (data) {
+      if (!data) return null;
+      task = (data.optionalTasks || []).find(function (t) { return t.id === taskId; });
+      if (!task) return null;
+      if (task.status === 'locked') {
+        G.toast(task.unlockHint);
+        var buildings = { tech: 'lab', officer: 'academy', truck: 'factory' };
+        if (buildings[taskId]) go('buildArmy', buildings[taskId]); else go('world');
+      } else if (taskId === 'gather') {
+        if (task.status === 'in_progress') go('world');
+        else return findTarget('gather').then(function () { if (data.showHint) showTaskNotice(task); });
+      }
+      else {
+        go(task.route, task.building);
+        if (taskId === 'equipment' && G.UnitEquipment) G.UnitEquipment.open('infantry');
+        graduationSpotlightTimer = setTimeout(clearSpotlight, 5000);
+      }
+      if (data.showHint) showTaskNotice(task);
+      return data;
+    });
+  }
+
+  /** 自行从地图进入采集时也给一次提示，保持页面与玩家当前目标不变。 */
+  function showTaskHint(taskId) {
+    var task = state.data && (state.data.optionalTasks || []).find(function (t) { return t.id === taskId; });
+    if (!task || task.hintSeen || task.status === 'claimed' || task.status === 'completed' || state.busy) return;
+    return mutate('tasks/begin', { taskId: taskId }).then(function (data) {
+      if (data && data.showHint) showTaskNotice(task);
+    });
+  }
+
+  /** 首次玩法说明由玩家主动关闭，避免长提示在短暂 toast 中来不及阅读。 */
+  function showTaskNotice(task) {
+    var old = document.getElementById('onboardingTaskHint');
+    if (old) old.remove();
+    state.snoozedFor = state.data && state.data.current ? state.data.current.id : 'supplies';
+    closeModal();
+    var notice = document.createElement('section'); notice.id = 'onboardingTaskHint'; notice.className = 'ob-card ob-task-hint';
+    notice.setAttribute('aria-label', '玩法提示');
+    notice.innerHTML = '<strong>' + esc(task.title || '玩法提示') + '</strong><p>' + esc(task.hint) + '</p><button class="btn sm">知道了</button>';
+    var close = notice.querySelector && notice.querySelector('button');
+    if (close) close.onclick = function () { notice.remove(); clearSpotlight(); };
+    if (document.body) document.body.appendChild(notice);
+    else { var view = document.getElementById('view'); view.insertBefore(notice, view.firstChild); }
+  }
+
   function bind(root) {
     root.querySelectorAll('[data-ob-action]').forEach(function (el) {
       el.onclick = function () {
         var action = el.dataset.obAction, value = el.dataset.obValue;
         if (action === 'route') { var dest = value.split(':'); go(dest[0], dest[1]); }
-        else if (action === 'expand') { state.expanded = !state.expanded; render(); }
+        else if (action === 'dismiss') { state.snoozedFor = state.data && state.data.current ? state.data.current.id : 'supplies'; clearSpotlight(); closeModal(); }
         else if (action === 'pause') mutate('pause', { paused: value === 'true' });
         else if (action === 'claim') mutate('claim', { supplyId: value });
-        else if (action === 'finish') {
-          mutate('finish').then(function (data) {
-            if (!data || !data.done) return;
-            state.snoozedFor = 'supplies';
-            closeModal();
-            if (Core.route === 'onboarding') G.go('home');
-            var taskTab = document.querySelector('#navbar [data-route="mainQuest"]');
-            if (!taskTab) return;
-            // 毕业提示仅指示入口，不再锁定玩家操作；五秒后解除聚光灯。
-            showSpotlight(taskTab);
-            detachSpotlightListeners();
-            graduationSpotlightTimer = setTimeout(clearSpotlight, 5000);
-          });
-        }
         else if (action === 'target') findTarget(value);
         else if (action === 'refresh') refresh();
         else if (action === 'homeCity') {
@@ -1193,9 +757,8 @@
 
   Core.views.onboarding = function (view) { draw(view); refresh(); };
   G.Onboarding = { init: init, refresh: refresh, stop: stop, render: render, hasSupply: hasSupply,
-    state: state, mutate: mutate, findTarget: findTarget, actionStarted: actionStarted, go: go,
-    finishGather: finishGatherNow, startGatherTracking: startGatherTracking, clearGatherTracking: clearGatherTracking,
-    showSpotlight: showSpotlight, clearSpotlight: clearSpotlight, findRecommendedDevelopBuilding: findRecommendedDevelopBuilding,
+    state: state, mutate: mutate, beginTask: beginTask, showTaskHint: showTaskHint, findTarget: findTarget, actionStarted: actionStarted, go: go,
+    showSpotlight: showSpotlight, clearSpotlight: clearSpotlight,
     getCurrentSpotlightTarget: function () { return currentSpotlightTarget; },
     getCurrentSpotlightTargets: function () { return currentSpotlightTarget ? [currentSpotlightTarget] : []; } };
 })(window.Game);

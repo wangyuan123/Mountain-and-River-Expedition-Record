@@ -1,0 +1,418 @@
+{
+  "infantry": {
+    "name": "步兵-加兰德步枪兵（M1）",
+    "cat": "inf",
+    "atkGround": 10.0,
+    "atkAir": 5.0,
+    "atkSea": 5.0,
+    "atkFort": 3.0,
+    "defense": 15.0,
+    "hp": 120.0,
+    "speed": 4.0,
+    "range": 160.0,
+    "cost": {
+      "food": 10,
+      "steel": 30,
+      "oil": 0,
+      "rare": 0
+    },
+    "weightedCost": 30,
+    "sumCost": 40
+  },
+  "truck": {
+    "name": "卡车-十轮大卡（CCKW-353）",
+    "cat": "inf",
+    "atkGround": 2.0,
+    "atkAir": 1.0,
+    "atkSea": 1.0,
+    "atkFort": 1.0,
+    "defense": 5.5,
+    "hp": 150.0,
+    "speed": 6.0,
+    "range": 0.0,
+    "cost": {
+      "food": 20,
+      "steel": 50,
+      "oil": 15,
+      "rare": 0
+    },
+    "weightedCost": 80,
+    "sumCost": 85
+  },
+  "armored": {
+    "name": "装甲车-猎鹿犬防空型（T17E2）",
+    "cat": "arm",
+    "atkGround": 18.0,
+    "atkAir": 33.5,
+    "atkSea": 45.0,
+    "atkFort": 36.0,
+    "defense": 33.0,
+    "hp": 360.0,
+    "speed": 7.0,
+    "range": 300.0,
+    "cost": {
+      "food": 40,
+      "steel": 180,
+      "oil": 60,
+      "rare": 20
+    },
+    "weightedCost": 380,
+    "sumCost": 300
+  },
+  "recon_car": {
+    "name": "侦查装甲车-灰狗（M8）",
+    "cat": "arm",
+    "atkGround": 18.0,
+    "atkAir": 5.0,
+    "atkSea": 45.0,
+    "atkFort": 36.0,
+    "defense": 33.0,
+    "hp": 360.0,
+    "speed": 7.0,
+    "range": 300.0,
+    "cost": {
+      "food": 40,
+      "steel": 180,
+      "oil": 60,
+      "rare": 20
+    },
+    "weightedCost": 380,
+    "sumCost": 300
+  },
+  "ltank": {
+    "name": "轻型坦克-斯图亚特（M5A1）",
+    "cat": "arm",
+    "atkGround": 33.0,
+    "atkAir": 10.0,
+    "atkSea": 55.0,
+    "atkFort": 45.0,
+    "defense": 53.0,
+    "hp": 270.0,
+    "speed": 6.0,
+    "range": 220.0,
+    "cost": {
+      "food": 50,
+      "steel": 240,
+      "oil": 80,
+      "rare": 25
+    },
+    "weightedCost": 500,
+    "sumCost": 395
+  },
+  "htank": {
+    "name": "重型坦克-斯大林（IS-2）",
+    "cat": "arm",
+    "atkGround": 50.0,
+    "atkAir": 15.0,
+    "atkSea": 65.0,
+    "atkFort": 50.0,
+    "defense": 63.5,
+    "hp": 385.0,
+    "speed": 6.0,
+    "range": 320.0,
+    "cost": {
+      "food": 80,
+      "steel": 450,
+      "oil": 120,
+      "rare": 50
+    },
+    "weightedCost": 890,
+    "sumCost": 700
+  },
+  "assault": {
+    "name": "突击炮-自行加榴炮（ISU-152）",
+    "cat": "arm",
+    "atkGround": 34.0,
+    "atkAir": 30.0,
+    "atkSea": 65.0,
+    "atkFort": 167.0,
+    "defense": 28.0,
+    "hp": 200.0,
+    "speed": 4.0,
+    "range": 750.0,
+    "cost": {
+      "food": 40,
+      "steel": 200,
+      "oil": 50,
+      "rare": 25
+    },
+    "weightedCost": 400,
+    "sumCost": 315
+  },
+  "rocket": {
+    "name": "反坦克火箭车-喀秋莎（BM-13）",
+    "cat": "arm",
+    "atkGround": 100.0,
+    "atkAir": 11.5,
+    "atkSea": 25.0,
+    "atkFort": 179.0,
+    "defense": 28.0,
+    "hp": 150.0,
+    "speed": 5.0,
+    "range": 1600.0,
+    "cost": {
+      "food": 100,
+      "steel": 550,
+      "oil": 150,
+      "rare": 70
+    },
+    "weightedCost": 1130,
+    "sumCost": 870
+  },
+  "scout": {
+    "name": "侦察机-闪电侦察型（F-5）",
+    "cat": "air",
+    "atkGround": 1.0,
+    "atkAir": 4.0,
+    "atkSea": 1.0,
+    "atkFort": 1.0,
+    "defense": 13.0,
+    "hp": 70.5,
+    "speed": 11.0,
+    "range": 200.0,
+    "cost": {
+      "food": 30,
+      "steel": 60,
+      "oil": 30,
+      "rare": 10
+    },
+    "weightedCost": 160,
+    "sumCost": 130
+  },
+  "special": {
+    "name": "特种兵-英国突击队（Commando）",
+    "cat": "inf",
+    "atkGround": 30.0,
+    "atkAir": 10.0,
+    "atkSea": 125.0,
+    "atkFort": 188.0,
+    "defense": 5.5,
+    "hp": 150.0,
+    "speed": 8.0,
+    "range": 180.0,
+    "cost": {
+      "food": 40,
+      "steel": 100,
+      "oil": 40,
+      "rare": 20
+    },
+    "weightedCost": 260,
+    "sumCost": 200
+  },
+  "fighter": {
+    "name": "战斗机-野马（P-51）",
+    "cat": "air",
+    "atkGround": 12.0,
+    "atkAir": 64.0,
+    "atkSea": 75.0,
+    "atkFort": 5.0,
+    "defense": 30.0,
+    "hp": 150.0,
+    "speed": 10.0,
+    "range": 350.0,
+    "cost": {
+      "food": 50,
+      "steel": 220,
+      "oil": 90,
+      "rare": 35
+    },
+    "weightedCost": 540,
+    "sumCost": 395
+  },
+  "bomber": {
+    "name": "轰炸机-飞行堡垒（B-17G）",
+    "cat": "air",
+    "atkGround": 56.0,
+    "atkAir": 12.0,
+    "atkSea": 95.0,
+    "atkFort": 429.0,
+    "defense": 22.0,
+    "hp": 195.0,
+    "speed": 8.0,
+    "range": 300.0,
+    "cost": {
+      "food": 70,
+      "steel": 350,
+      "oil": 150,
+      "rare": 60
+    },
+    "weightedCost": 890,
+    "sumCost": 630
+  },
+  "transport": {
+    "name": "运输机-空中列车（C-47）",
+    "cat": "air",
+    "atkGround": 1.0,
+    "atkAir": 1.0,
+    "atkSea": 1.0,
+    "atkFort": 1.0,
+    "defense": 10.0,
+    "hp": 220.0,
+    "speed": 8.0,
+    "range": 0.0,
+    "cost": {
+      "food": 50,
+      "steel": 180,
+      "oil": 80,
+      "rare": 20
+    },
+    "weightedCost": 420,
+    "sumCost": 330
+  },
+  "destroyer": {
+    "name": "驱逐舰-弗莱彻级（Fletcher）",
+    "cat": "nav",
+    "atkGround": 44.0,
+    "atkAir": 59.0,
+    "atkSea": 47.0,
+    "atkFort": 35.0,
+    "defense": 50.0,
+    "hp": 555.0,
+    "speed": 7.0,
+    "range": 400.0,
+    "cost": {
+      "food": 70,
+      "steel": 450,
+      "oil": 160,
+      "rare": 80
+    },
+    "weightedCost": 1090,
+    "sumCost": 760
+  },
+  "sub": {
+    "name": "潜艇-小鲨鱼级（Gato）",
+    "cat": "nav",
+    "atkGround": 1.0,
+    "atkAir": 1.0,
+    "atkSea": 66.0,
+    "atkFort": 1.0,
+    "defense": 20.0,
+    "hp": 395.0,
+    "speed": 5.0,
+    "range": 100.0,
+    "cost": {
+      "food": 60,
+      "steel": 300,
+      "oil": 80,
+      "rare": 60
+    },
+    "weightedCost": 700,
+    "sumCost": 500
+  },
+  "battleship": {
+    "name": "战列舰-衣阿华级（Iowa）",
+    "cat": "nav",
+    "atkGround": 91.0,
+    "atkAir": 35.0,
+    "atkSea": 96.0,
+    "atkFort": 108.0,
+    "defense": 120.0,
+    "hp": 1300.0,
+    "speed": 6.0,
+    "range": 1600.0,
+    "cost": {
+      "food": 120,
+      "steel": 1200,
+      "oil": 400,
+      "rare": 250
+    },
+    "weightedCost": 3000,
+    "sumCost": 1970
+  },
+  "carrier": {
+    "name": "航母-埃塞克斯级（Essex）",
+    "cat": "nav",
+    "atkGround": 82.0,
+    "atkAir": 125.0,
+    "atkSea": 80.0,
+    "atkFort": 110.0,
+    "defense": 70.0,
+    "hp": 1100.0,
+    "speed": 6.0,
+    "range": 1900.0,
+    "cost": {
+      "food": 150,
+      "steel": 1400,
+      "oil": 500,
+      "rare": 350
+    },
+    "weightedCost": 3800,
+    "sumCost": 2400
+  },
+  "bunker": {
+    "name": "碉堡",
+    "cat": "fort",
+    "atkGround": 8.0,
+    "atkAir": 1.0,
+    "atkSea": 1.0,
+    "atkFort": 1.0,
+    "defense": 24.0,
+    "hp": 260.0,
+    "range": 1050.0,
+    "speed": 0.0,
+    "cost": {
+      "steel": 80,
+      "oil": 0,
+      "rare": 0
+    },
+    "weightedCost": 80,
+    "sumCost": 80
+  },
+  "howitzer": {
+    "name": "榴弹炮",
+    "cat": "fort",
+    "atkGround": 30.0,
+    "atkAir": 1.0,
+    "atkSea": 28.0,
+    "atkFort": 30.0,
+    "defense": 6.0,
+    "hp": 80.0,
+    "range": 1850.0,
+    "speed": 0.0,
+    "cost": {
+      "steel": 60,
+      "oil": 10,
+      "rare": 5
+    },
+    "weightedCost": 100,
+    "sumCost": 75
+  },
+  "antitank": {
+    "name": "反坦克炮",
+    "cat": "fort",
+    "atkGround": 42.0,
+    "atkAir": 1.0,
+    "atkSea": 36.0,
+    "atkFort": 15.0,
+    "defense": 8.0,
+    "hp": 80.0,
+    "range": 1850.0,
+    "speed": 0.0,
+    "cost": {
+      "steel": 70,
+      "oil": 10,
+      "rare": 10
+    },
+    "weightedCost": 130,
+    "sumCost": 90
+  },
+  "flak": {
+    "name": "防空炮",
+    "cat": "fort",
+    "atkGround": 12.0,
+    "atkAir": 63.0,
+    "atkSea": 10.0,
+    "atkFort": 1.0,
+    "defense": 8.0,
+    "hp": 80.0,
+    "range": 1850.0,
+    "speed": 0.0,
+    "cost": {
+      "steel": 55,
+      "oil": 15,
+      "rare": 15
+    },
+    "weightedCost": 145,
+    "sumCost": 85
+  }
+}

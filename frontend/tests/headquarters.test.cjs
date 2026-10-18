@@ -57,8 +57,8 @@ test('岗位看板只展示有效属性倍率，司令官技能不会混入市�
 
 test('预览叠加装备后军事、防御与生命，司令部拆除后暂停，世界行军速度不受影响', () => {
   const G = setup();
-  assert.ok(Math.abs(G.Core.atkMul('inf') - 1.2 * 2 * 1.237) < 1e-9);
-  assert.ok(Math.abs(G.Core.defMul('inf', false) - 1.103) < 1e-9);
+  assert.ok(Math.abs(G.Core.atkMul('inf') - 1.1 * 2 * 1.237) < 1e-9);
+  assert.ok(Math.abs(G.Core.defMul() - 1.103) < 1e-9);
   assert.ok(Math.abs(G.Core.hpMul('inf') - 1.083) < 1e-9);
   const speed = G.Core.spdMul('inf', 'infantry');
   G.Core.state.buildings.headquarters = 0;
@@ -71,11 +71,23 @@ test('战场速度读取开战学识快照，城市当前司令官变化不改�
   const G = setup();
   G.Battle._activeTactical = { round: 0, attackerTech: {}, attackerSkills: {}, attackerCommandBonus: { knowledge: 200, rate: 0.001 } };
   const speed = G.Battle.getEffectiveSpeed('infantry');
-  assert.equal(speed, 4.8);
+  assert.equal(speed, 2.4);
   G.Core.state.officers[2].knowledge = 0;
   assert.equal(G.Battle.getEffectiveSpeed('infantry'), speed);
   assert.equal(G.Battle.getEffectiveSpeed('bunker'), 0);
-  assert.equal(G.Battle.getEffectiveSpeed('infantry', {}, {}, { knowledge: 0 }), 4);
+  assert.equal(G.Battle.getEffectiveSpeed('infantry', {}, {}, { knowledge: 0 }), 2);
+});
+
+test('升级城防不改变部队防御预览，防御科技和司令官加成继续生效', () => {
+  const G = setup();
+  G.Core.state.tech.defense_tech = 5;
+  const expected = 1.25 * 1.103;
+  for (const level of [0, 1, 10, 20]) {
+    G.Core.state.buildings.wall = level;
+    assert.ok(Math.abs(G.Core.defMul() - expected) < 1e-9);
+  }
+  G.Core.state.buildings.headquarters = 0;
+  assert.equal(G.Core.defMul(), 1.25);
 });
 
 test('战报保持原攻守身份，防守视角切换且旧战报无需新字段', () => {

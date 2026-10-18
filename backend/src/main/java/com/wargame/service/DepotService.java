@@ -103,10 +103,6 @@ public class DepotService {
         if (isEquipmentBox(itemId)) {
             return useEquipmentBox(playerId, itemId);
         }
-        // 珠宝宝箱类（开启获得珠宝珍品）
-        if (isJewelryBox(itemId)) {
-            return useJewelryBox(playerId, itemId);
-        }
         // 主线阶段专属豪华大礼包
         if (isStageGift(itemId)) {
             return useStageGift(playerId, itemId);
@@ -149,10 +145,13 @@ public class DepotService {
                 || "resBox".equals(itemId)
                 || "steelPack".equals(itemId)
                 || "supplyPack".equals(itemId)
+                || "newbiePack".equals(itemId)
                 || "resourcePack500w".equals(itemId);
     }
 
     private Map<String, Object> useResourceItem(Long playerId, String itemId) {
+        // 新手礼包与限购检查共用账号锁；开启后保留零库存记录，继续标记该账号已经购买。
+        if ("newbiePack".equals(itemId) && playerRepository.lockById(playerId).isEmpty()) return error("玩家不存在");
         // 1. 校验持有并原子扣减
         int consumed = playerItemRepository.tryConsume(playerId, itemId, 1, System.currentTimeMillis());
         if (consumed == 0) return error("道具数量不足");
@@ -198,6 +197,15 @@ public class DepotService {
                 res.setOil((res.getOil() != null ? res.getOil() : 0) + 5_000_000);
                 res.setRare((res.getRare() != null ? res.getRare() : 0) + 5_000_000);
                 msg.append("资源大礼包,粮食/钢铁/石油/稀矿各 +500万");
+            }
+            case "newbiePack" -> {
+                // 固定发放商品明示的五种资源，不按售价或任何倍率计算奖励。
+                res.setFood((res.getFood() != null ? res.getFood() : 0) + 20000);
+                res.setSteel((res.getSteel() != null ? res.getSteel() : 0) + 20000);
+                res.setOil((res.getOil() != null ? res.getOil() : 0) + 10000);
+                res.setRare((res.getRare() != null ? res.getRare() : 0) + 5000);
+                res.setGold((res.getGold() != null ? res.getGold() : 0) + 3000);
+                msg.append("开启新手礼包，获得：粮食×20000、钢铁×20000、石油×10000、稀矿×5000、黄金×3000");
             }
             default -> {
                 playerItemRepository.tryConsume(playerId, itemId, -1, System.currentTimeMillis());
@@ -576,85 +584,6 @@ public class DepotService {
     }
 
     // ================================================================
-    //  珠宝珍品箱：开启后直接向玩家发放可收藏的各类珠宝
-    // ================================================================
-
-    private record JewelryBoxDef(String boxName, Map<String, Integer> gems) {}
-
-    private static final Map<String, JewelryBoxDef> JEWELRY_BOXES = Map.of(
-        "box_gem", new JewelryBoxDef("珠宝珍品箱", Map.of(
-            "gem_pearl", 5, "gem_coral", 3, "gem_glaze", 3, "gem_amber", 2, "gem_agate", 2
-        )),
-        "box_gem_primary", new JewelryBoxDef("初级珠宝宝箱", Map.of(
-            "gem_pearl", 8, "gem_coral", 6, "gem_glaze", 5
-        )),
-        "box_gem_medium", new JewelryBoxDef("中级珠宝宝箱", Map.of(
-            "gem_amber", 8, "gem_agate", 6, "gem_crystal", 5, "gem_jadeite", 2
-        )),
-        "box_gem_senior", new JewelryBoxDef("高级珠宝宝箱", Map.of(
-            "gem_crystal", 8, "gem_jadeite", 8, "gem_jade", 6, "gem_nightpearl", 3
-        )),
-        "box_gem_supreme", new JewelryBoxDef("特级夜明珠宝箱", Map.of(
-            "gem_nightpearl", 8, "gem_jade", 10, "gem_jadeite", 10
-        )),
-        "box_gem_grand", new JewelryBoxDef("璀璨珠宝全集箱", Map.of(
-            "gem_pearl", 5, "gem_coral", 5, "gem_glaze", 5, "gem_amber", 5, "gem_agate", 5,
-            "gem_crystal", 5, "gem_jadeite", 5, "gem_jade", 5, "gem_nightpearl", 5
-        ))
-    );
-
-    private static boolean isJewelryBox(String itemId) {
-        return itemId != null && JEWELRY_BOXES.containsKey(itemId);
-    }
-
-    private Map<String, Object> useJewelryBox(Long playerId, String itemId) {
-        JewelryBoxDef boxDef = JEWELRY_BOXES.get(itemId);
-        if (boxDef == null) {
-            return error("未知的珠宝宝箱");
-        }
-
-        // 1. 原子扣减宝箱道具 1 个
-        int consumed = playerItemRepository.tryConsume(playerId, itemId, 1, System.currentTimeMillis());
-        if (consumed == 0) {
-            return error("【" + boxDef.boxName() + "】数量不足");
-        }
-
-        // 2. 发放各类珠宝到玩家背包
-        long now = System.currentTimeMillis();
-        List<String> awardedNames = new ArrayList<>();
-        Map<String, Integer> awardedItems = new LinkedHashMap<>();
-
-        for (Map.Entry<String, Integer> entry : boxDef.gems().entrySet()) {
-            String gemKey = entry.getKey();
-            int count = entry.getValue();
-            var gemDef = com.wargame.model.constants.MilitaryRankDef.GEMS.get(gemKey);
-            String name = gemDef != null ? gemDef.name() : gemKey;
-            String icon = gemDef != null ? gemDef.icon() : "💎";
-            awardedNames.add(icon + name + "×" + count);
-            awardedItems.put(gemKey, count);
-
-            Optional<PlayerItem> existing = playerItemRepository.findByPlayerIdAndItemKey(playerId, gemKey);
-            if (existing.isPresent()) {
-                PlayerItem pi = existing.get();
-                pi.setCount(pi.getCount() + count);
-                pi.setUpdatedAt(now);
-                playerItemRepository.save(pi);
-            } else {
-                PlayerItem pi = new PlayerItem();
-                pi.setPlayerId(playerId);
-                pi.setItemKey(gemKey);
-                pi.setCount(count);
-                pi.setUpdatedAt(now);
-                playerItemRepository.save(pi);
-            }
-        }
-
-        String msg = "🎉 开启【" + boxDef.boxName() + "】，获得珠宝珍品："
-                + String.join("、", awardedNames) + "！";
-        return success(msg, Map.of("boxId", itemId, "gems", awardedItems));
-    }
-
-    // ================================================================
     //  主线阶段专属大礼包
     // ================================================================
 
@@ -673,31 +602,31 @@ public class DepotService {
             "stage_gift_2", new StageGiftReward("拔寨起步礼包",
                     50_000, 50_000, 50_000, 15_000,
                     5_000, 100,
-                    Map.of("speedUp1h", 3, "box_gem_primary", 1, "skillBook", 2)),
+                    Map.of("speedUp1h", 3, "skillBook", 2)),
             "stage_gift_3", new StageGiftReward("整军备战礼包",
                     150_000, 150_000, 150_000, 50_000,
                     12_000, 200,
-                    Map.of("speedUp1h", 5, "recruitOrd", 2, "box_gem_medium", 1, "box_officer_military", 1)),
+                    Map.of("speedUp1h", 5, "recruitOrd", 2, "box_officer_military", 1)),
             "stage_gift_4", new StageGiftReward("初露锋芒礼包",
                     500_000, 500_000, 500_000, 150_000,
                     30_000, 500,
-                    Map.of("speedUp5h", 3, "box_gem_medium", 2, "shield", 1)),
+                    Map.of("speedUp5h", 3, "shield", 1)),
             "stage_gift_5", new StageGiftReward("百战精锐礼包",
                     1_500_000, 1_500_000, 1_500_000, 500_000,
                     80_000, 1_000,
-                    Map.of("speedUp12h", 2, "box_gem_senior", 2, "recruitOrd", 5, "expBookAdv", 3)),
+                    Map.of("speedUp12h", 2, "recruitOrd", 5, "expBookAdv", 3)),
             "stage_gift_6", new StageGiftReward("横扫千军礼包",
                     5_000_000, 5_000_000, 5_000_000, 1_500_000,
                     200_000, 2_000,
-                    Map.of("speedUp24h", 2, "box_gem_senior", 3, "expBookAdv", 5)),
+                    Map.of("speedUp24h", 2, "expBookAdv", 5)),
             "stage_gift_7", new StageGiftReward("威震四海礼包",
                     15_000_000, 15_000_000, 15_000_000, 5_000_000,
                     500_000, 5_000,
-                    Map.of("speedUp48h", 2, "box_gem_supreme", 2, "box_marshal_military", 1)),
+                    Map.of("speedUp48h", 2, "box_marshal_military", 1)),
             "stage_gift_8", new StageGiftReward("三军统帅大礼包",
                     50_000_000, 50_000_000, 50_000_000, 15_000_000,
                     1_500_000, 10_000,
-                    Map.of("speedUp72h", 3, "box_gem_grand", 2, "box_marshal_defense", 1, "box_marshal_logistics", 1, "expBookMax", 2))
+                    Map.of("speedUp72h", 3, "box_marshal_defense", 1, "box_marshal_logistics", 1, "expBookMax", 2))
     );
 
     public static boolean isStageGift(String itemId) {

@@ -42,6 +42,14 @@ public class AdminSystemTest extends BaseServiceTest {
     @Autowired
     private AdminOperationLogRepository logRepository;
     @Autowired
+    private com.wargame.repository.WildTileRepository wildTileRepository;
+    @Autowired
+    private com.wargame.service.MailService mailService;
+    @Autowired
+    private com.wargame.repository.MailRepository mailRepository;
+    @Autowired
+    private com.wargame.repository.ArmyUnitRepository armyUnitRepository;
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @BeforeEach
@@ -150,5 +158,109 @@ public class AdminSystemTest extends BaseServiceTest {
         assertNotNull(cmdRes.get("result"));
         Player updated = playerRepository.findById(player.getId()).orElseThrow();
         assertEquals(15, updated.getLevel());
+    }
+
+    @Test
+    void testSpawnWildTilesAndStats() {
+        // 1. 测试生成资源野地
+        List<Map<String, Object>> wilds = adminSpawnerService.spawnWildTiles("ALL_RESOURCES", 10, 1, 5, true, "admin", null);
+        assertEquals(10, wilds.size());
+        for (Map<String, Object> w : wilds) {
+            assertNotNull(w.get("id"));
+            assertNotNull(w.get("type"));
+            assertTrue(List.of("grainfield", "ironworks", "oil", "rarefactory").contains(w.get("type")));
+            int level = (Integer) w.get("level");
+            assertTrue(level >= 1 && level <= 5);
+            assertNotNull(w.get("resType"));
+        }
+
+        // 2. 统计检查
+        Map<String, Object> stats = adminSpawnerService.getWildStats();
+        assertEquals(10L, ((Number) stats.get("totalCount")).longValue());
+        assertEquals(10L, ((Number) stats.get("resourceCount")).longValue());
+        assertEquals(0L, ((Number) stats.get("occupiedCount")).longValue());
+        assertEquals(10L, ((Number) stats.get("unoccupiedCount")).longValue());
+
+        // 3. 测试生成指定类型野地
+        List<Map<String, Object>> grainfields = adminSpawnerService.spawnWildTiles("grainfield", 5, 3, 3, false, "admin", null);
+        assertEquals(5, grainfields.size());
+        for (Map<String, Object> g : grainfields) {
+            assertEquals("grainfield", g.get("type"));
+            assertEquals(3, g.get("level"));
+        }
+
+        // 4. 清理无主野地
+        Map<String, Object> clearRes = adminSpawnerService.clearUnoccupiedWilds("admin", null);
+        assertEquals(true, clearRes.get("success"));
+        assertEquals(15, clearRes.get("deletedCount"));
+
+        Map<String, Object> statsAfterClear = adminSpawnerService.getWildStats();
+        assertEquals(0L, ((Number) statsAfterClear.get("totalCount")).longValue());
+    }
+
+    @Test
+    void testBatchDeleteWildTiles() {
+        // 1. 先生成 6 块野地
+        List<Map<String, Object>> wilds = adminSpawnerService.spawnWildTiles("ALL_RESOURCES", 6, 1, 3, true, "admin", null);
+        assertEquals(6, wilds.size());
+
+        // 2. 获取可删除列表
+        List<Map<String, Object>> deletable = adminSpawnerService.getDeletableWildTiles();
+        assertTrue(deletable.size() >= 6);
+
+        // 3. 批量删除前 3 块
+        List<Long> toDelete = List.of(
+                ((Number) wilds.get(0).get("id")).longValue(),
+                ((Number) wilds.get(1).get("id")).longValue(),
+                ((Number) wilds.get(2).get("id")).longValue()
+        );
+        Map<String, Object> delRes = adminSpawnerService.deleteWildTiles(toDelete, "admin", null);
+        assertEquals(true, delRes.get("success"));
+        assertEquals(3, delRes.get("deletedCount"));
+
+        // 4. 校验剩余 3 块
+        Map<String, Object> stats = adminSpawnerService.getWildStats();
+        assertEquals(3L, ((Number) stats.get("totalCount")).longValue());
+
+        // 5. 一键清理剩余
+        Map<String, Object> clearRes = adminSpawnerService.clearUnoccupiedWilds("admin", null);
+        assertEquals(3, clearRes.get("deletedCount"));
+    }
+
+    @Test
+    void testSendCompensationMailWithArmyUnitsAndClaim() {
+        Player player = createTestPlayer("test_mail_army_user", 30);
+
+        // 1. 发送包含资源与兵力的补偿邮件 (5000黄金 + 1000步兵 + 50重型坦克)
+        List<Map<String, Object>> attachments = List.of(
+                Map.of("type", "gold", "qty", 5000),
+                Map.of("type", "infantry", "qty", 1000),
+                Map.of("type", "htank", "qty", 50)
+        );
+        Map<String, Object> sendRes = adminGmService.sendCompensationMail("SINGLE", player.getId(), "军备补充邮件", "测试发放兵力", attachments, "admin", null);
+        assertTrue(Boolean.TRUE.equals(sendRes.get("success")));
+
+        // 2. 查询该玩家收件箱中的邮件
+        List<com.wargame.model.entity.Mail> playerMails = mailRepository.findByToPlayerIdOrderByCreatedAtDesc(player.getId());
+        assertFalse(playerMails.isEmpty());
+        com.wargame.model.entity.Mail mail = playerMails.get(0);
+        assertFalse(mail.getIsClaimed());
+
+        // 3. 玩家领取附件
+        Map<String, Object> claimRes = mailService.claimAttach(player.getId(), mail.getId());
+        assertTrue(Boolean.TRUE.equals(claimRes.get("success")));
+
+        // 4. 验证邮件变为已领取
+        com.wargame.model.entity.Mail claimedMail = mailRepository.findById(mail.getId()).orElseThrow();
+        assertTrue(claimedMail.getIsClaimed());
+
+        // 5. 验证兵力已成功入驻玩家主城驻军
+        List<com.wargame.model.entity.ArmyUnit> infantryList = armyUnitRepository.findByPlayerIdAndCitySlotAndType(player.getId(), 0, "infantry");
+        assertFalse(infantryList.isEmpty());
+        assertEquals(1000, infantryList.get(0).getCount());
+
+        List<com.wargame.model.entity.ArmyUnit> htankList = armyUnitRepository.findByPlayerIdAndCitySlotAndType(player.getId(), 0, "htank");
+        assertFalse(htankList.isEmpty());
+        assertEquals(50, htankList.get(0).getCount());
     }
 }

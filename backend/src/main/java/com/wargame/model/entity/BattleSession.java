@@ -13,6 +13,20 @@ import lombok.NoArgsConstructor;
 @Table(name = "battle_sessions")
 public class BattleSession extends VersionedEntity {
 
+    /** null 表示部署前旧会话，必须沿用无需破墙的旧规则。墙体只在本场持续扣血。 */
+    @Column(name = "wall_level_snapshot")
+    private Integer wallLevelSnapshot;
+    @Column(name = "wall_max_hp", precision = 20, scale = 6)
+    private java.math.BigDecimal wallMaxHp;
+    @Column(name = "wall_hp_remaining", precision = 20, scale = 6)
+    private java.math.BigDecimal wallHpRemaining;
+    @Column(name = "wall_defense")
+    private Integer wallDefense;
+    @Column(name = "battle_phase", length = 30)
+    private String battlePhase;
+    @Column(name = "battle_rules_version", length = 100)
+    private String battleRulesVersion;
+
     /** 攻守各自城市的司令官属性快照，不能随玩家切城、换任或换装变化。 */
     @Column(name = "attacker_command_bonus", columnDefinition = "text")
     private String attackerCommandBonus;
@@ -102,8 +116,6 @@ public class BattleSession extends VersionedEntity {
     private Integer defenderCommanderMil;
     @Column(name = "defender_commander_def", nullable = false)
     private Integer defenderCommanderDef;
-    @Column(name = "defender_wall_level", nullable = false)
-    private Integer defenderWallLevel;
     @Column(name = "defender_warehouse_level", nullable = false)
     private Long defenderWarehouseLevel;
 }

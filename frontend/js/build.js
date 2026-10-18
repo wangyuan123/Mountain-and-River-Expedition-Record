@@ -532,6 +532,13 @@ window.Game = window.Game || {};
       // 工期展示: 单建筑升级在弹窗里也给出,玩家常问"我等多久"
       var durHtml = '<div class="cu-row"><span class="cu-ico">⏱</span><span class="cu-name">工期</span>' +
                     '<span class="cu-val">' + timeText(duration) + '</span></div>';
+      // 升级确认给出墙体实际成长，便于评估征服战耐久收益。
+      var wallGrowthHtml = id === 'wall'
+        ? '<div class="cu-row"><span class="cu-name">墙体生命</span><span class="cu-val">'
+          + G.fmt(fromLv * b.wallHpPerLevel * (Core.wallMul ? Core.wallMul() : 1)) + ' → ' + G.fmt(toLv * b.wallHpPerLevel * (Core.wallMul ? Core.wallMul() : 1)) + '</span></div>'
+          + '<div class="cu-row"><span class="cu-name">墙体防御</span><span class="cu-val">'
+          + Math.round(fromLv * b.wallDefensePerLevel * (Core.wallMul ? Core.wallMul() : 1)) + ' → ' + Math.round(toLv * b.wallDefensePerLevel * (Core.wallMul ? Core.wallMul() : 1)) + '（仅墙体）</span></div>'
+        : '';
 
       var mask = document.createElement('div');
       mask.className = 'modal-mask';
@@ -553,6 +560,7 @@ window.Game = window.Game || {};
             costRows +
             (G.Prerequisites ? G.Prerequisites.html('buildings', id, toLv) : '') +
             durHtml +
+            wallGrowthHtml +
             (prereqBlocked ? '<div class="cu-warn">' + G.Prerequisites.missingText(prereq.missing[0]) + '</div>' : '') +
             (enough ? '' :
               '<div class="cu-warn">' + warnText + '</div>'
@@ -770,7 +778,7 @@ window.Game = window.Game || {};
       if (b.produces) {
         var resName = G.DATA.resources[b.produces] ? G.DATA.resources[b.produces].name : b.produces;
         var resIco = G.resourceIconHtml(b.produces);
-        var mul = (Core.resBonusMul ? Core.resBonusMul() : 1);
+        var mul = (Core.resBonusMul ? Core.resBonusMul(b.produces) : 1);
         var singleProduce = 0;
         var baseProd = b.baseProduce || 0;
         if (curLv > 0) {
@@ -819,13 +827,10 @@ window.Game = window.Game || {};
           '<span class="bdetail-stat-val">每种基础资源保 ' + protect + '</span>' +
         '</div>';
       }
-      if (b.defBonus) {
-        statsRows += '<div class="bdetail-stat-row">' +
-          '<span class="bdetail-stat-lbl">守城防御提升</span>' +
-          '<span class="bdetail-stat-val">+' + (curLv * b.defBonus) + '%</span>' +
-        '</div>';
-      }
       if (id === 'wall') {
+        // 墙体自身耐久与防御独立成长，守军不享受建筑防御加成。
+        statsRows += '<div class="bdetail-stat-row"><span class="bdetail-stat-lbl">墙体生命</span><span class="bdetail-stat-val">' + G.fmt(Math.min(10, curLv) * b.wallHpPerLevel * (Core.wallMul ? Core.wallMul() : 1)) + '</span></div>';
+        statsRows += '<div class="bdetail-stat-row"><span class="bdetail-stat-lbl">墙体防御</span><span class="bdetail-stat-val">' + Math.round(Math.min(10, curLv) * b.wallDefensePerLevel * (Core.wallMul ? Core.wallMul() : 1)) + '（仅保护墙体）</span></div>';
         // 四类工事共享每级3000容量，与 FortService / 城防页面一致。
         statsRows += '<div class="bdetail-stat-row">' +
           '<span class="bdetail-stat-lbl">城防武器容量</span>' +
@@ -847,7 +852,7 @@ window.Game = window.Game || {};
       if (id === 'staff') {
         statsRows += '<div class="bdetail-stat-row">' +
           '<span class="bdetail-stat-lbl">战略指挥枢纽</span>' +
-          '<span class="bdetail-stat-val">支持军官管理、司令部与高级军研</span>' +
+          '<span class="bdetail-stat-val">支持军官管理、司令部与高级科技</span>' +
         '</div>';
       }
       if (id === 'academy') {
@@ -1521,8 +1526,12 @@ window.Game = window.Game || {};
         var protect = Math.floor(lvForCap * b.protectPer * (1 + 0.10 * ((s.tech && s.tech.log_warehouse) || 0)));
         stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🛡</span><span class="bcard-stat-name">掠夺保护</span><span class="bcard-stat-val">每资源保 ' + protect + '</span></div>';
       }
-      if (b.defBonus) stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🛡</span><span class="bcard-stat-name">守城防御</span><span class="bcard-stat-val">+' + ((s.buildings[id] || 0) * b.defBonus) + '%</span></div>';
-      if (id === 'wall') stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🏰</span><span class="bcard-stat-name">城防武器容量</span><span class="bcard-stat-val">' + G.fmt((s.buildings[id] || 0) * (b.fortCapPerLevel || 3000)) + '</span></div>';
+      if (id === 'wall') {
+        var wallLevel = Math.min(10, s.buildings[id] || 0);
+        stats += '<div class="bcard-stat"><span class="bcard-stat-ico">❤</span><span class="bcard-stat-name">墙体生命</span><span class="bcard-stat-val">' + G.fmt(wallLevel * b.wallHpPerLevel * (Core.wallMul ? Core.wallMul() : 1)) + '</span></div>';
+        stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🛡</span><span class="bcard-stat-name">墙体防御</span><span class="bcard-stat-val">' + Math.round(wallLevel * b.wallDefensePerLevel * (Core.wallMul ? Core.wallMul() : 1)) + '（仅墙体）</span></div>';
+        stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🏰</span><span class="bcard-stat-name">城防武器容量</span><span class="bcard-stat-val">' + G.fmt((s.buildings[id] || 0) * (b.fortCapPerLevel || 3000)) + '</span></div>';
+      }
       if (b.airSpdBonus) stats += '<div class="bcard-stat"><span class="bcard-stat-ico">✈</span><span class="bcard-stat-name">空军飞行航速</span><span class="bcard-stat-val">+' + ((s.buildings[id] || 0) * b.airSpdBonus) + '%</span></div>';
       if (b.resBonus) stats += '<div class="bcard-stat"><span class="bcard-stat-ico">📈</span><span class="bcard-stat-name">全资源产出</span><span class="bcard-stat-val">+' + ((s.buildings[id] || 0) * b.resBonus) + '%</span></div>';
       if (id === 'command') stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🗺️</span><span class="bcard-stat-name">本城野地上限</span><span class="bcard-stat-val">' + (WILD_BASE_CAP + (s.buildings[id] || 0)) + '</span></div>';

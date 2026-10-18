@@ -61,6 +61,10 @@ window.Game = window.Game || {};
       var h = '';
       h += '<div class="title">- 城防工事 -</div>';
       h += '<div class="desc">城防 Lv.' + wallLv + '  四类城防武器共享容量 ' + totalForts() + '/' + fortCap() + '（每级+' + (D.buildings.wall.fortCapPerLevel || 3000) + '）。城防武器在守城战中参战,会被击毁。需先建城防。</div>';
+      // 这里展示每场开战时的最大墙体属性，战斗中的剩余生命仅在战场查看。
+      h += '<div class="desc">墙体生命 ' + G.fmt(Math.min(10, wallLv) * D.buildings.wall.wallHpPerLevel * Core.wallMul())
+        + ' · 墙体防御 ' + Math.round(Math.min(10, wallLv) * D.buildings.wall.wallDefensePerLevel * Core.wallMul())
+        + '（仅保护墙体）。征服战须清除守军及工事并破墙后才可胜利。</div>';
       h += '<div class="desc">守城战:敌军来袭时由后端真实战斗自动触发。</div>';
       h += '<div class="menu">';
       var idx = 0;
@@ -69,8 +73,12 @@ window.Game = window.Game || {};
         var f = D.forts[id];
         var have = s.forts[id] || 0;
         var inpId = 'fqty_' + id;
+        var iconHtml = (G && typeof G.getUnitModelIconHtml === 'function')
+          ? G.getUnitModelIconHtml(id, f.name, 'fort-card-icon')
+          : '';
         h += '<div class="menu-item ok">';
         h += '<span class="num">[' + idx + ']</span> ';
+        if (iconHtml) h += iconHtml;
         h += '<span class="n">' + f.name + '</span> ';
         h += '<span class="lv">x' + have + '</span>';
         h += '<div class="d">对地' + f.atkGround + ' 对空' + f.atkAir + ' 对海' + f.atkSea + ' 对工事' + f.atkFort + ' 防' + f.def + ' 血' + f.hp + ' 射程' + f.range + '</div>';

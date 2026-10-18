@@ -25,6 +25,7 @@ class OnboardingConcurrencyTest extends BaseServiceTest {
             Long id = createTestPlayer("supply-race", 30).getId();
             createBuilding(id, "command", 2); createBuilding(id, "farm", 2); createBuilding(id, "factory", 1);
             onboarding.start(id);
+            onboarding.onEvent(id, "BUILD_UPGRADE_DONE", "farm", 1);
             return id;
         });
         int initialFood = getResources(playerId).getFood();
@@ -36,8 +37,8 @@ class OnboardingConcurrencyTest extends BaseServiceTest {
             Future<Void> a = executor.submit(claim), b = executor.submit(claim);
             assertTrue(ready.await(10, TimeUnit.SECONDS)); start.countDown();
             a.get(20, TimeUnit.SECONDS); b.get(20, TimeUnit.SECONDS);
-            assertEquals(initialSteel + 4000, getResources(playerId).getSteel());
-            assertEquals(initialFood + 4000, getResources(playerId).getFood());
+            assertEquals(initialSteel, getResources(playerId).getSteel());
+            assertEquals(initialFood, getResources(playerId).getFood());
         } finally { start.countDown(); executor.shutdownNow(); }
     }
 
@@ -50,6 +51,7 @@ class OnboardingConcurrencyTest extends BaseServiceTest {
             Long id = createTestPlayer("skip-race", 30).getId();
             createBuilding(id, "command", 2); createBuilding(id, "farm", 2); createBuilding(id, "factory", 1);
             onboarding.start(id);
+            onboarding.onEvent(id, "BUILD_UPGRADE_DONE", "farm", 1);
             return id;
         });
         int initialFood = getResources(playerId).getFood();
@@ -64,8 +66,8 @@ class OnboardingConcurrencyTest extends BaseServiceTest {
             first.get(20, TimeUnit.SECONDS); second.get(20, TimeUnit.SECONDS);
             onboarding.skip(playerId);
             onboarding.claim(playerId, "base");
-            assertEquals(initialSteel + 11000, getResources(playerId).getSteel());
-            assertEquals(initialFood + 12000, getResources(playerId).getFood());
+            assertEquals(initialSteel + 7000, getResources(playerId).getSteel());
+            assertEquals(initialFood + 8000, getResources(playerId).getFood());
         } finally { start.countDown(); executor.shutdownNow(); }
     }
 }

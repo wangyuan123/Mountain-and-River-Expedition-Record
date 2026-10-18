@@ -24,6 +24,7 @@ public class WorldMapService {
     private final CityStateRepository cityStates;
     private final WorldTerrainService terrain;
     @org.springframework.beans.factory.annotation.Autowired private GuildRelationService guildRelations;
+    @org.springframework.beans.factory.annotation.Autowired(required = false) private BuildingRepository buildings;
 
     public Map<String, Object> chunk(Long viewer, int cx, int cy) {
         Long world = worldId();
@@ -127,10 +128,19 @@ public class WorldMapService {
         t.put("surrenderTransferDeadlineAt", c.getSurrenderTransferDeadlineAt());
         t.put("coastal", terrain.coastal(c));
         t.put("legacyNaval", c.isLegacyNaval());
+        if (owner == null && c.getLevel() != null) {
+            t.put("wallLevel", c.getLevel());
+        }
         if (owner != null) {
             t.put("ownerId", owner.getId());
             t.put("ownerName", owner.getUsername());
             t.put("prestige", owner.getPrestige() == null ? 0 : owner.getPrestige());
+            if (buildings != null) {
+                int slot = c.getCitySlot() != null ? c.getCitySlot() : 0;
+                buildings.findByPlayerIdAndCitySlotAndType(owner.getId(), slot, "wall").stream()
+                        .map(Building::getLevel).filter(Objects::nonNull).findFirst()
+                        .ifPresent(lvl -> t.put("wallLevel", lvl));
+            }
             // 敌对军团可绕过个人宣战；关系值供地图在不伪造战争倒计时的前提下展示操作入口。
             t.put("guildRelation", guildRelations.relationshipBetweenPlayers(viewer, owner.getId()));
             t.put("guildmate", guildRelations.areGuildmates(viewer, owner.getId()));
@@ -139,14 +149,15 @@ public class WorldMapService {
             long warEnd = related && owner.getWarEndAt() != null ? owner.getWarEndAt() : 0L;
             t.put("warAt", warAt); t.put("warEndAt", warEnd);
             t.put("coolAt", warAt == 0 ? warEnd : 0L);
-            // 护盾是城市可见状态；只返回是否生效及截止时间，不暴露其他城市数据。
-            cityStates.findByPlayerIdAndCitySlot(owner.getId(), c.getCitySlot()).ifPresent(cs -> {
-                long shieldUntil = cs.getShieldUntil() == null ? 0L : cs.getShieldUntil();
-                if (shieldUntil > System.currentTimeMillis()) {
-                    t.put("cityState", "shield");
-                    t.put("shieldUntil", shieldUntil);
-                }
-            });
+            // 地图合并两类保护的有效截止时间，真实道具护盾仍独立保存在城市状态中。
+            long newbieUntil = com.wargame.model.constants.NewbieProtection.until(owner, System.currentTimeMillis());
+            long itemUntil = cityStates.findByPlayerIdAndCitySlot(owner.getId(), c.getCitySlot())
+                    .map(cs -> Objects.requireNonNullElse(cs.getShieldUntil(), 0L)).orElse(0L);
+            t.put("newbieProtectionUntil", newbieUntil);
+            if (Math.max(newbieUntil, itemUntil) > System.currentTimeMillis()) {
+                t.put("cityState", "shield");
+                t.put("shieldUntil", Math.max(newbieUntil, itemUntil));
+            }
         }
         return t;
     }

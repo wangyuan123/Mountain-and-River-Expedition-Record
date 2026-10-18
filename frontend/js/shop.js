@@ -28,6 +28,11 @@ window.Game = window.Game || {};
 
   var SHOP_ITEMS = G.Constants.shopItems.concat(SPECIFIC_SKILL_BOOKS);
 
+  /** 新手礼包开启后仍保留零库存键，账号刷新或换城市不会重新获得限购资格。 */
+  function alreadyPurchased(item) {
+    return item.id === 'newbiePack' && Object.prototype.hasOwnProperty.call(Core.state.items || {}, item.id);
+  }
+
   var Shop = {
     curCat: 'all',
 
@@ -48,6 +53,10 @@ window.Game = window.Game || {};
         if (SHOP_ITEMS[i].id === id) { it = SHOP_ITEMS[i]; break; }
       }
       if (!it) return;
+      if (alreadyPurchased(it)) {
+        G.toast('新手礼包每个账号限购1份');
+        return;
+      }
       var s = Core.state;
       var r = s.resources || (s.resources = {});
       var diamond = r.diamond != null ? r.diamond : 0;
@@ -62,7 +71,7 @@ window.Game = window.Game || {};
           return;
         }
         if (it.cat === 'gift') {
-          G.toast('已购买 ' + it.name + ',请在邮件中查收');
+          G.toast('已购买 ' + it.name + ',请在仓库的资源道具中开启');
         } else {
           G.toast('已购买 ' + it.name + ' ×1');
         }
@@ -101,13 +110,13 @@ window.Game = window.Game || {};
       h += '<div class="shop-grid">';
       for (var j = 0; j < list.length; j++) {
         var it = list[j];
-        var have = (s.items && s.items[it.id]) || 0;
-        var canBuy = diamond >= it.price;
+        var purchased = alreadyPurchased(it);
+        var canBuy = diamond >= it.price && !purchased;
         var tagHtml = it.tag ? '<span class="shop-tag">' + it.tag + '</span>' : '';
         var stockHtml = '';
         if (it.stock != null) {
-          stockHtml = '<span class="shop-stock">限购 ' + it.stock + '</span>';
-        } else if (it.cat === 'gift' || it.cat === 'officer' || it.cat === 'res' || it.cat === 'resource' || it.cat === 'util' || it.cat === 'jewelry') {
+          stockHtml = '<span class="shop-stock">每个账号限购 ' + it.stock + ' 份' + (purchased ? ' · 已购买' : '') + '</span>';
+        } else if (it.cat === 'gift' || it.cat === 'officer' || it.cat === 'res' || it.cat === 'resource' || it.cat === 'util') {
           stockHtml = '<span class="shop-stock">无限购</span>';
         }
         h += '<div class="shop-card">';
@@ -116,7 +125,7 @@ window.Game = window.Game || {};
         h += '<div class="shop-card-desc">' + it.desc + '</div>';
         h += '<div class="shop-card-foot">';
         h += '<span class="shop-price">💎 ' + it.price + '</span>';
-        h += '<button class="shop-buy' + (canBuy ? '' : ' disabled') + '"' + (canBuy ? '' : ' disabled') + ' onclick="Game.Shop.buy(\'' + it.id + '\')">购买</button>';
+        h += '<button class="shop-buy' + (canBuy ? '' : ' disabled') + '"' + (canBuy ? '' : ' disabled') + ' onclick="Game.Shop.buy(\'' + it.id + '\')">' + (purchased ? '已购买' : '购买') + '</button>';
         h += '</div>';
         h += stockHtml ? '<div class="shop-card-stock">' + stockHtml + '</div>' : '';
         h += '</div>';

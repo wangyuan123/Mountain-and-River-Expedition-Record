@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="blue-white">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <base href="../">
+  <title>城防总览单排横向滑动预览</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/themes.css">
+  <style>
+    body { background: #f0f4f8; padding: 16px 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .preview-toolbar { padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: #fff; border-bottom: 1px solid #dbe3eb; }
+    .preview-toolbar strong { margin-right: auto; font-size: 14px; color: #1e293b; }
+    #screen { width: 100%; max-width: 420px; margin: 0 auto; background: #fff; box-shadow: 0 4px 16px rgba(0,0,0,0.08); border-radius: 8px; overflow: hidden; }
+    #preview-container { padding: 12px; }
+  </style>
+</head>
+<body>
+  <div id="screen">
+    <div class="preview-toolbar">
+      <strong>🏰 城防总览单排滑动</strong>
+      <button class="btn" onclick="document.getElementById('screen').style.maxWidth='360px'">小屏 360px</button>
+      <button class="btn" onclick="document.getElementById('screen').style.maxWidth='420px'">中屏 420px</button>
+      <button class="btn" onclick="document.getElementById('screen').style.maxWidth='600px'">宽屏 600px</button>
+    </div>
+    <div id="preview-container">
+      <div id="view"></div>
+    </div>
+  </div>
+
+  <script src="js/constants.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/core.js"></script>
+  <script src="js/main-view.js"></script>
+  <script>
+    Game.Core.state = {
+      player: { cityName: '临汾指挥要塞', homeModuleOrder: ['army'] },
+      buildings: { wall: 10 },
+      forts: { bunker: 5000, howitzer: 5000, antitank: 5000, flak: 5000 },
+      resources: { food: 500000, steel: 500000, oil: 500000, rare: 500000, gold: 50000 },
+      officers: [{ name: '赵匡胤_守城伴符', role: 'commander' }],
+      army: { infantry: 10000, ltank: 500 },
+      world: { cityPos: { x: 50, y: 50 }, marches: [], incoming: [] },
+      reports: []
+    };
+    Game.Core.cityStatusText = () => ({ status: 'peace', text: '和平' });
+    Game.Core.getOfficerByRole = (r) => (r === 'commander' ? { name: '赵匡胤_守城伴符' } : null);
+    Game.Core.armyCap = () => 50000;
+    Game.Core.produceOf = () => 0;
+    Game.Core.foodPerHour = () => 0;
+    Game.Core.civilianPopulation = () => 0;
+    Game.Core.capacity = () => ({ food: 1000000, steel: 1000000, oil: 1000000, rare: 1000000, gold: 100000 });
+    Game.Core.morale = () => 100;
+    Game.Core.resentment = () => 0;
+    Game.Core.populationCapacity = () => 100000;
+    Game.Core.populationGrowthPerHour = () => 0;
+    Game.Core.popFree = () => 0;
+    Game.fmt = (n) => String(n);
+    Game.go = (r) => alert('前往路由: ' + r);
+
+    var v = document.getElementById('view');
+    Game.Core.views.home(v);
+  </script>
+</body>
+</html>

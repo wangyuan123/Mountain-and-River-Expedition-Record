@@ -1,0 +1,8 @@
+Use case: product-mockup
+Asset type: realistic miniature artillery gun icon for WWII strategy game city defense.
+Primary request: One heavy field howitzer artillery gun miniature model (155mm howitzer / 榴弹炮). Large-caliber rifled cannon barrel elevated at a steep indirect fire angle (about 35 degrees) pointing towards the left, heavy curved protective gun shield with sighting port, sturdy split-trail carriage with ground spades anchored at the rear, heavy twin rubber artillery tires, hydraulic recoil cylinders above and below the barrel, olive drab military paint with matte steel mechanical wear.
+Style/medium: premium museum-quality painted scale miniature artillery photographed as a real physical model, crisp metal casting, rivets, realistic machined steel and rubber, restrained battle wear. Never cartoon, flat vector, toy caricature, badge or game UI.
+Composition/framing: square canvas, elevated three-quarter view from above at about 25 degrees, gun barrel aiming towards upper-left, entire artillery piece fits in frame with at least 8 percent clean margin. Broad readable silhouette.
+Scene/backdrop: perfectly uniform pure white #ffffff seamless background, isolated subject, no ground base, no plinth, no scenery, no horizon. No cast shadow on background; subtle contact shading only under tires and spades.
+Lighting/mood: soft neutral studio daylight from upper left, realistic metallic highlights.
+Constraints: exactly one howitzer gun. No soldiers, no muzzle flash, no explosion, no smoke, no text, no watermark, no flags.

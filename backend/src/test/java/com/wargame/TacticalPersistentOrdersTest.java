@@ -1,6 +1,7 @@
 package com.wargame;
 
 import com.wargame.model.dto.DispatchRequest;
+import com.wargame.model.constants.UnitDef;
 import com.wargame.model.dto.GameDtos;
 import com.wargame.model.entity.BattleSession;
 import com.wargame.model.entity.March;
@@ -32,7 +33,8 @@ class TacticalPersistentOrdersTest extends BaseServiceTest {
 
         Map<String, Object> view = command(playerId, march, 0, "infantry", action);
         int firstPosition = position(view, "infantry");
-        assertEquals("HOLD".equals(action) ? 1500 : 1400, firstPosition);
+        int infantryStep = (int) (UnitDef.UNITS.get("infantry").spd() * 50);
+        assertEquals("HOLD".equals(action) ? 1500 : 1500 - infantryStep, firstPosition);
         battles.flush();
         entityManager.clear();
         view = marchService.getTacticalBattle(playerId, march.getId());

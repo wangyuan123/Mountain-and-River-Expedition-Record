@@ -32,6 +32,9 @@ test('dispatch chooses available recon inventory and keeps a single selectable u
     assert.match(view.innerHTML, /空中侦查/);
     assert.match(view.innerHTML, /地面侦查/);
     assert.match(view.innerHTML, /派出侦查部队/);
+    assert.match(view.innerHTML, /有效速度＋(5×)?自身侦察技术等级/);
+    assert.match(view.innerHTML, /守方雷达仅首回合每级\+[25]点/);
+    assert.match(view.innerHTML, /奇数回合出征方先手，偶数回合守方先手/);
   }
 });
 
@@ -130,16 +133,72 @@ test('legacy aircraft reports remain readable without new fields', () => {
   assert.match(html, /10 架 ➔ 幸存: 8 架/);
   assert.match(html, /4 架 ➔ 幸存: 3 架/);
   assert.match(html, /战平（双方侦察机均存活）/);
+  assert.doesNotMatch(html, /commander-panel|总防御|首次交火/);
+});
+
+test('recon reports show actual leaders and the first combat cycle in both perspectives', () => {
+  const { G } = setup();
+  const commanders = {
+    attacker: { name: '随队<将领>', level: 12, baseMilitary: 70, military: 88, baseDefense: 40, defense: 43,
+      skills: [{ id: 'frenzy', name: '全军冲锋', level: 5, description: '从首次交战回合起生效（若第4回合首次交战，则在第4、7、10回合生效）' },
+        { id: 'blitz', name: '闪电突击', level: 3 }] },
+    defender: { name: '目标分城守将', level: 9, military: 55, defense: 77, skills: [] }
+  };
+  for (const unit of ['scout', 'recon_car']) {
+    const data = { scoutUnit: unit, result: 'draw', commanders,
+      myArmy: { [unit]: 100 }, mySurvivors: { [unit]: 80 }, enemyArmy: { [unit]: 100 }, enemySurvivors: { [unit]: 70 },
+      combatLog: ['第1回合：交火\n我方加成<script>\n敌方绝境反击'] };
+    const attack = G.Battle.renderScoutReportBoard({ time: Date.now(), data });
+    assert.match(attack, /首次交火即生效，之后间隔两回合再触发/);
+    assert.match(attack, /第1、4、7、10回合/);
+    assert.match(attack, /总军事：88/); assert.match(attack, /总防御：43/);
+    assert.match(attack, /基础：70/); assert.match(attack, /基础：40/);
+    assert.match(attack, /全军冲锋 Lv\.5/);
+    assert.match(attack, /<b>闪电突击 Lv\.3<\/b><span>侦查交火速度 \+18%<\/span>/);
+    assert.doesNotMatch(attack, /参与先手排序|其他回合沿用常驻速度/);
+    assert.match(attack, /随队&lt;将领&gt;/); assert.match(attack, /我方加成&lt;script&gt;/);
+    assert.match(attack, /交火<\/div><div[^>]*>我方加成/);
+    assert.doesNotMatch(attack, /<script>|若第4回合首次交战/);
+    assert.ok(attack.indexOf('我方将领') < attack.indexOf('随队&lt;将领&gt;'));
+    assert.ok(attack.indexOf('随队&lt;将领&gt;') < attack.indexOf('敌方将领'));
+    const defense = G.Battle.renderScoutReportBoard({ time: Date.now(), data: { ...data, perspective: 'defender' } });
+    assert.ok(defense.indexOf('我方将领') < defense.indexOf('目标分城守将'));
+    assert.ok(defense.indexOf('目标分城守将') < defense.indexOf('敌方将领'));
+    assert.ok(defense.indexOf('敌方将领') < defense.indexOf('随队&lt;将领&gt;'));
+  }
+  const empty = G.Battle.renderScoutCommanders({ commanders: { attacker: null, defender: null } }, 'attacker');
+  assert.equal((empty.match(/无将领参战/g) || []).length, 2);
+});
+
+test('initiative reports explain opening radar and alternate ties using saved research from each perspective', () => {
+  const { G } = setup();
+  const initiative = { version: 'recon-initiative-v2-20261015', attackerReconLevel: 4, defenderReconLevel: 2, defenderRadarLevel: 3 };
+  for (const unit of ['scout', 'recon_car']) {
+    const data = { scoutUnit: unit, result: 'draw', showCityInfo: true, reconInitiative: initiative,
+      myScouts: 100, myLost: 10, enemyScouts: 100, enemyLost: 10,
+      combatLog: ['第1回合：交火\n本回合先手：敌方\n敌方雷达预警：先手+6（仅首回合）', '第2回合：交火\n本回合先手：我方'] };
+    // 报告展示保存值，不能读取玩家现在的科技来解释历史顺序。
+    G.Core.state.tech = { recon_level: 5, recon_radar: 0 };
+    const attack = G.Battle.renderScoutReportBoard({ time: Date.now(), data });
+    assert.match(attack, /有效速度＋自身侦察技术等级/);
+    assert.match(attack, /守方雷达仅首回合每级\+2点/);
+    assert.match(attack, /奇数回合出征方先手，偶数回合守方先手/);
+    assert.match(attack, /我方侦察技术 Lv\.4 \/ 敌方侦察技术 Lv\.2；敌方雷达首回合先手\+6/);
+    const defense = G.Battle.renderScoutReportBoard({ time: Date.now(), data: { ...data, perspective: 'defender' } });
+    assert.match(defense, /我方侦察技术 Lv\.2 \/ 敌方侦察技术 Lv\.4；我方雷达首回合先手\+6/);
+    assert.equal(G.Battle.renderScoutInitiative({ ...data, reconInitiative: undefined }, 'attacker'), '');
+    assert.equal(G.Battle.renderScoutInitiative({ ...data, reconInitiative: { ...initiative, version: 'historical-rule' } }, 'attacker'), '');
+  }
 });
 
 test('vehicle uses armor engine, avoids apron, and keeps documented oil consumption', () => {
   const { G } = setup();
   const base = G.World.calcDispatchSpeed({ recon_car: 10 }).slowestSpd;
-  assert.equal(base, 7);
+  assert.equal(base, 5);
   G.Core.state.buildings.apron = 10;
   G.Core.state.tech.air_engine = 10;
-  assert.equal(G.World.calcDispatchSpeed({ recon_car: 10 }).slowestSpd, 7);
+  assert.equal(G.World.calcDispatchSpeed({ recon_car: 10 }).slowestSpd, 5);
   G.Core.state.tech.arm_engine = 10;
-  assert.equal(G.World.calcDispatchSpeed({ recon_car: 10 }).slowestSpd, 10.5);
-  assert.equal(G.World.calcDispatchFuel({ recon_car: 10 }, 100, 2), 60);
+  assert.equal(G.World.calcDispatchSpeed({ recon_car: 10 }).slowestSpd, 7.5);
+  assert.equal(G.World.calcDispatchFuel({ recon_car: 10 }, 100, 2), 600);
 });

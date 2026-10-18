@@ -39,7 +39,7 @@ public class WildController {
         }
         Long playerId = authService.getCurrentPlayer().getId();
         // Compatibility endpoint: use the same timed march as the dispatch screen.
-        var march = marchService.createDefaultReconDispatch(playerId, "wild", request.wildTileId());
+        var march = marchService.createDefaultReconDispatch(playerId, "wild", request.wildTileId(), request.abandonNewbieProtection());
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("success", true);
         result.put("message", "侦查部队已出征，抵达后生成情报报告");
@@ -64,7 +64,9 @@ public class WildController {
                 request.carryRes(),
                 null,
                 null,
-                request.conquerMode()
+                request.conquerMode(),
+                null,
+                request.abandonNewbieProtection()
         );
         marchService.createDispatch(playerId, dispatch);
         Map<String, Object> result = new LinkedHashMap<>();

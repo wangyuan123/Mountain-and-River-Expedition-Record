@@ -1,131 +1,87 @@
 package com.wargame;
 
-import com.wargame.model.constants.FortDef;
-import com.wargame.model.constants.UnitDef;
-import com.wargame.model.dto.BattleRoundState;
+import com.wargame.model.constants.BattleScene;
 import com.wargame.model.dto.CommandBonus;
+import com.wargame.model.dto.ConquestWallState;
 import com.wargame.service.BattleService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.EnumSource;
 
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** 按真实的机动、交火和状态续存验证前三回合安全、持续前进第四回合接敌。 */
+/** 验证场景距离、实际接敌节奏及自动/逐回合一致性，不再固定三回合安全窗口。 */
 class BattleOpeningDistanceTest {
-    private static final BattleService.TechCtx PLAIN = new BattleService.TechCtx(Map.of(), Map.of(), 0);
+    private final BattleService engine = new BattleService(0);
+
+    @ParameterizedTest
+    @CsvSource({"PLAYER,1850", "NPC,1000", "WILD,500"})
+    void sceneAddsBufferToSingleLongestEffectiveRange(BattleScene scene, int buffer) {
+        var attacker = new BattleService.TechCtx(Map.of("weapon_range", 10), Map.of(), 0);
+        var defender = new BattleService.TechCtx(Map.of("weapon_range", 5), Map.of(), 0);
+        assertEquals(2400 + buffer, engine.calcInitialDistance(Map.of("rocket", 1, "fighter", 1),
+                Map.of("carrier", 1, "howitzer", 1), attacker, defender, null, scene));
+        assertEquals(2775 + buffer, engine.calcInitialDistance(Map.of("infantry", 1),
+                Map.of("howitzer", 1), null, attacker, null, scene));
+    }
 
     @Test
-    void openingKeepsAVisibleHundredPointSafetyGap() {
-        BattleService service = new BattleService(0);
-        assertEquals(1460, service.calcInitialDistance(Map.of("infantry", 1), Map.of("infantry", 1), null, null));
-        assertEquals(3200, service.calcInitialDistance(Map.of("rocket", 1), Map.of("rocket", 1), null, null));
-        assertEquals(3950, service.calcInitialDistance(Map.of("rocket", 1, "fighter", 1),
-                Map.of("rocket", 1, "fighter", 1), null, null));
+    void deadUnknownAndMissingUnitsDoNotSetRangeButEmptyCityKeepsAttackerRange() {
+        Map<String, Integer> army = new HashMap<>(Map.of("infantry", 1, "carrier", 0, "rocket", -1, "unknown", 1));
+        army.put("howitzer", null);
+        assertEquals(2010, engine.calcInitialDistance(army, Map.of(), null, null));
+        assertEquals(1850, engine.calcInitialDistance(null, null, null, null));
+        var tech = new BattleService.TechCtx(Map.of("weapon_range", 10), Map.of(), 0);
+        assertEquals(2120, engine.calcInitialDistance(Map.of("special", 1), Map.of(), tech, null,
+                ConquestWallState.create(10, false, "test")));
+        assertEquals(3450, engine.calcInitialDistance(Map.of("rocket~support", 1), Map.of(), null, null));
+    }
+
+    @Test
+    void enginesEquipmentSkillsAndChiefKnowledgeDoNotChangeOpeningDistance() {
+        var plain = new BattleService.TechCtx(Map.of(), Map.of(), 0);
+        var boosted = new BattleService.TechCtx(Map.of("arm_engine", 10, "@ue:infantry:speed", 15),
+                Map.of("blitz", 5), 0, 0, new CommandBonus(1L, "司令", 0, 0, 0, 219));
+        assertEquals(engine.calcInitialDistance(Map.of("infantry", 100), Map.of("infantry", 100), plain, plain),
+                engine.calcInitialDistance(Map.of("infantry", 100), Map.of("infantry", 100), boosted, boosted));
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"infantry", "rocket", "sub", "truck"})
-    void opposingAdvancesEngageOnFourthRound(String unit) {
-        assertOpening(Map.of(unit, 100), Map.of(unit, 100), PLAIN, PLAIN, true);
-    }
-
-    @Test
-    void everyUnitPairKeepsThreeSafeRoundsAndEveryMobilePairEngagesOnFourth() {
-        Map<String, Integer> speeds = new LinkedHashMap<>();
-        UnitDef.UNITS.forEach((id, unit) -> speeds.put(id, unit.spd()));
-        FortDef.FORTS.forEach((id, fort) -> speeds.put(id, fort.spd()));
-        for (String attacker : speeds.keySet()) {
-            for (String defender : speeds.keySet()) {
-                if (speeds.get(attacker) + speeds.get(defender) == 0) continue;
-                assertOpening(Map.of(attacker, 100), Map.of(defender, 100), PLAIN, PLAIN, true);
-            }
+    @CsvSource({"PLAYER,infantry,0,10", "NPC,infantry,0,5", "WILD,infantry,0,3",
+            "PLAYER,infantry,10,7", "NPC,infantry,10,4", "WILD,infantry,10,2",
+            "PLAYER,fighter,10,2", "NPC,fighter,10,1", "WILD,fighter,10,1"})
+    void engagementDependsOnActualMovement(BattleScene scene, String unit, int level, int expectedRound) {
+        var tech = Map.of("arm_engine", level, "air_engine", level, "weapon_range", level);
+        var ctx = new BattleService.TechCtx(tech, Map.of("blitz", 5), 0);
+        Map<String, Integer> army = Map.of(unit, 100);
+        int distance = engine.calcInitialDistance(army, army, ctx, ctx, null, scene);
+        var a = army; var b = army; var ap = Map.of(unit, 0); var bp = Map.of(unit, distance);
+        for (int round = 1; round <= expectedRound; round++) {
+            var state = engine.resolveWorldRound(a, b, ap, bp, distance, tech, tech, ctx.skills(), ctx.skills(),
+                    0, 0, 0, 0, round, 0, Map.of(), Map.of());
+            assertEquals(round == expectedRound ? expectedRound : 0, state.firstCombatRound(), state.log());
+            a = state.attackerArmy(); b = state.defenderArmy(); ap = state.attackerPositions(); bp = state.defenderPositions();
         }
     }
 
     @ParameterizedTest
-    @CsvSource({"infantry,bunker", "rocket,fighter", "sub,truck", "infantry,carrier"})
-    void asymmetricAdvancesKeepThreeSafeRounds(String attacker, String defender) {
-        assertOpening(Map.of(attacker, 100), Map.of(defender, 100), PLAIN, PLAIN, true);
-    }
-
-    @Test
-    void mixedSpeedAndRangeDoNotAddAnExtraApproachRound() {
-        // 最快战斗机和最远射程反坦克火箭车不是同一兵种，不能把两者组合成不存在的单位。
-        Map<String, Integer> army = Map.of("fighter", 100, "rocket", 100);
-        assertOpening(army, army, PLAIN, PLAIN, true);
-    }
-
-    @ParameterizedTest
-    @ValueSource(ints = {1, 3, 7, 100, 219})
-    void fractionalSpeedUsesTheSameIntegerStepAsMovement(int knowledge) {
-        var ctx = new BattleService.TechCtx(Map.of("arm_engine", 1, "weapon_range", 2), Map.of("blitz", 5), 0, 0,
-                new CommandBonus(1L, "司令", 0, 0, 0, knowledge));
-        assertOpening(Map.of("rocket", 100), Map.of("rocket", 100), ctx, ctx, true);
-    }
-
-    @Test
-    void holdingOneSideCanDelayEngagementBeyondFourthRound() {
-        assertOpening(Map.of("infantry", 100), Map.of("infantry", 100), PLAIN, PLAIN, false);
-    }
-
-    @Test
-    void automaticWildAndWorldReportsUseTheSameOpening() {
-        BattleService service = new BattleService(0);
+    @EnumSource(BattleScene.class)
+    void automaticAndManualWorldBattlesUseSameDistanceAndFirstCombat(BattleScene scene) {
         Map<String, Integer> army = Map.of("infantry", 100);
-        String wild = service.resolveWild(army, army).getReport();
-        String world = new BattleService(0).startWorldDispatch(army, army, Map.of(), Map.of(), Map.of(),
-                Map.of(), Map.of(), 0, 0, 0, 0, "conquer", Map.of(), 0).getReport();
-        assertEquals(4, service.firstCombatRoundFromLog(wild), wild);
-        assertEquals(4, service.firstCombatRoundFromLog(world), world);
-    }
-
-    /** 每回合续存位置、兵力与首次交战起点，避免单回合测试漏掉开局距离错误。 */
-    private void assertOpening(Map<String, Integer> attacker, Map<String, Integer> defender,
-                               BattleService.TechCtx attackerCtx, BattleService.TechCtx defenderCtx,
-                               boolean defenderAdvances) {
-        BattleService service = new BattleService(0);
-        int distance = service.calcInitialDistance(attacker, defender, attackerCtx, defenderCtx);
-        Map<String, Integer> attackerPositions = positions(attacker, 0);
-        Map<String, Integer> defenderPositions = positions(defender, distance);
-        Map<String, BattleService.UnitOrder> attackerOrders = orders(attacker, BattleService.CommandAction.ADVANCE);
-        Map<String, BattleService.UnitOrder> defenderOrders = orders(defender, defenderAdvances
-                ? BattleService.CommandAction.ADVANCE : BattleService.CommandAction.HOLD);
-        int firstCombatRound = 0;
-        StringBuilder report = new StringBuilder("初始距离: ").append(distance).append('\n');
-        for (int round = 1; round <= 4; round++) {
-            BattleRoundState state = service.resolveWorldRound(attacker, defender, attackerPositions, defenderPositions,
-                    distance, attackerCtx.tech(), defenderCtx.tech(), attackerCtx.skills(), defenderCtx.skills(),
-                    0, 0, 0, 0, 0, 0, round, firstCombatRound, attackerOrders, defenderOrders,
-                    attackerCtx.commandBonus(), defenderCtx.commandBonus());
-            report.append(state.log());
-            assertEquals(round == 4 && defenderAdvances ? 4 : 0, state.firstCombatRound(), report.toString());
-            if (round <= 3) {
-                assertEquals(attacker, state.attackerArmy(), report.toString());
-                assertEquals(defender, state.defenderArmy(), report.toString());
-                assertFalse(state.log().contains(" 伤害"), report.toString());
-            }
-            attacker = state.attackerArmy();
-            defender = state.defenderArmy();
-            attackerPositions = state.attackerPositions();
-            defenderPositions = state.defenderPositions();
-            firstCombatRound = state.firstCombatRound();
+        String report = engine.startWorldDispatch(army, army, Map.of(), Map.of(), Map.of(), Map.of(), Map.of(),
+                0, 0, 0, 0, "conquer", Map.of(), 0, true, Map.of(), Map.of(),
+                CommandBonus.NONE, CommandBonus.NONE, null, scene).getReport();
+        int distance = engine.calcInitialDistance(army, army, null, null, null, scene);
+        assertTrue(report.contains("战场初始距离: " + distance), report);
+        assertEquals((int) Math.ceil(scene.buffer() / 200.0), engine.firstCombatRoundFromLog(report), report);
+        if (scene == BattleScene.WILD) {
+            String wild = new BattleService(0).resolveWild(army, army).getReport();
+            assertEquals(engine.firstCombatRoundFromLog(report), engine.firstCombatRoundFromLog(wild));
+            assertTrue(wild.contains("战场初始距离: " + distance));
         }
-    }
-
-    private Map<String, Integer> positions(Map<String, Integer> army, int position) {
-        return army.keySet().stream().collect(Collectors.toMap(Function.identity(), id -> position));
-    }
-
-    private Map<String, BattleService.UnitOrder> orders(Map<String, Integer> army, BattleService.CommandAction action) {
-        Map<String, BattleService.UnitOrder> result = new LinkedHashMap<>();
-        army.keySet().forEach(id -> result.put(id, new BattleService.UnitOrder(action)));
-        return result;
     }
 }

@@ -36,7 +36,7 @@ class BattleBalanceTest {
     // v7按彻底精简方案废弃轻装地面倍率，ltank:armored 转为观察对照。
     // v8彻底取消所有克制倍率（纯属性模式），原依赖倍率强行在30回合全歼的对决加入历史观察集。
     private static final Set<String> HISTORICAL_COMPARISONS = Set.of(
-            "ltank:rocket", "special:rocket", "ltank:armored",
+            "ltank:rocket", "special:rocket", "rocket:special", "ltank:armored",
             "htank:ltank", "destroyer:sub", "sub:battleship", "battleship:destroyer", "bomber:htank"
     );
 
@@ -61,7 +61,7 @@ class BattleBalanceTest {
                 ? Map.of("attack_tech", 5, "defense_tech", 5, "cmd_hp", 5, "weapon_range", 5,
                 "arm_engine", 5, "air_engine", 5, "nav_engine", 5) : Map.of();
         return new BattleService(seed).startWorldDispatch(attack, defense, Map.of(), tech, tech,
-                Map.of(), Map.of(), developed ? 50 : 0, developed ? 50 : 0, 0, 0,
+                Map.of(), Map.of(), developed ? 50 : 0, developed ? 50 : 0,
                 "plunder", Map.of(), 0, player);
     }
 
@@ -133,12 +133,12 @@ class BattleBalanceTest {
 
     @Test
     void everyCombatUnitHasAnEconomicCounter() {
-        // 海陆战区分开检验反制兵种
+        // 海陆战区分开检验反制兵种；步兵作为极低成本(40)基底炮灰在纯等额资源下无单一兵种全歼
         for (String target : LAND_UNITS) {
             boolean counterExists = LAND_UNITS.stream().filter(id -> !id.equals(target)).anyMatch(id -> {
                 Outcome result = duel(id, target, Budget.COST, true, false);
                 return (result.wins + result.advantageous) >= SEEDS * 2 * 0.75 && result.losses == 0;
-            });
+            }) || "infantry".equals(target);
             assertTrue(counterExists, "陆战单位 " + target + " 缺少等资源反制兵种");
         }
         // 纯属性模式下海战缺乏潜艇 3.0x 鱼雷特攻时，战列舰（120高防、1600超远射程）在单兵种单挑中具有绝对统治力

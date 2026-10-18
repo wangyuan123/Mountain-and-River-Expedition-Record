@@ -98,15 +98,15 @@
     h += '</dl>' + fullPreviewHtml(after, preview({}), effects(draft)) + '<details><summary>本城科技与司令官后的常驻值</summary>';
     var tech = (Core.state || {}).tech || {};
     // 带兵将领的军事属性只在周期回合生效，不计入全回合常驻预览。
-    var atk = (1 + .1 * (tech.attack_tech || 0)) * (Core.commandBonusMul ? Core.commandBonusMul('military') : 1);
-    var def = Core.defMul ? Core.defMul(G.DATA.units[unit].cat, true) : 1 + .1 * (tech.defense_tech || 0);
-    var hp = Core.hpMul ? Core.hpMul(G.DATA.units[unit].cat) : 1 + .1 * (tech.cmd_hp || 0);
+    var atk = (1 + .05 * (tech.attack_tech || 0)) * (Core.commandBonusMul ? Core.commandBonusMul('military') : 1);
+    var def = Core.defMul ? Core.defMul() : 1 + .05 * (tech.defense_tech || 0);
+    var hp = Core.hpMul ? Core.hpMul(G.DATA.units[unit].cat) : 1 + .05 * (tech.cmd_hp || 0);
     h += '<dl>';
     ['ground', 'air', 'sea', 'fort'].forEach(function (k) { h += '<div><dt>' + labels[k] + '</dt><dd>' + textNum(after[k] * atk) + '</dd></div>'; });
     var engKey = G.Constants.unitSpeedTechKeys[unit] || G.Constants.unitTechKeys[G.DATA.units[unit].cat];
     var battleSpd = (1 + .05 * (tech[engKey] || 0)) * (Core.commandBonusMul ? Core.commandBonusMul('knowledge') : 1);
     var marchSpd = Core.spdMul ? Core.spdMul(G.DATA.units[unit].cat, unit) : 1 + .05 * (tech[engKey] || 0);
-    h += '<div><dt>防御（本城城墙）</dt><dd>' + textNum(after.defense * def) + '</dd></div><div><dt>生命</dt><dd>' + textNum(after.hp * hp) + '</dd></div><div><dt>战场速度</dt><dd>' + textNum(after.battleSpeed * battleSpd) + '</dd></div><div><dt>行军速度</dt><dd>' + textNum(after.marchSpeed * marchSpd) + '</dd></div><div><dt>单单位载重</dt><dd>' + textNum(after.load) + '</dd></div></dl><p>带兵将领的周期属性与技能在实际交战回合计算。</p></details>';
+    h += '<div><dt>防御</dt><dd>' + textNum(after.defense * def) + '</dd></div><div><dt>生命</dt><dd>' + textNum(after.hp * hp) + '</dd></div><div><dt>战场速度</dt><dd>' + textNum(after.battleSpeed * battleSpd) + '</dd></div><div><dt>行军速度</dt><dd>' + textNum(after.marchSpeed * marchSpd) + '</dd></div><div><dt>单单位载重</dt><dd>' + textNum(after.load) + '</dd></div></dl><p>带兵将领的周期属性与技能在实际交战回合计算。</p></details>';
     h += '<p class="unit-equipment-effects">' + esc(description(effects(draft)) || '当前草稿没有装备加成') + '</p>';
     if (effects(draft).food) h += '<p>当前出征仅扣石油，行军粮耗修正暂不扣款。</p>';
     h += '<p>已开始的战斗和已确认的行程按开始时配置完成。</p></section>';
@@ -118,7 +118,7 @@
       var seconds = Math.ceil(d.seconds / (1 + .05 * Math.max(0, facility - 1)));
       h += '<article><strong>' + esc(d.name) + '</strong><span class="unit-equipment-status">' + (saved[activeSlot] === d.key ? '已配置' : draft[activeSlot] === d.key ? '草稿已选' : inStock ? '库存 ' + inStock : '未持有') + '</span><p>' + esc(description(d.effects)) + '</p>';
       if (inStock) h += '<button type="button" class="btn ok" data-ue="choose" data-key="' + d.key + '"' + (busy ? ' disabled' : '') + '>选择装备</button>';
-      h += '<details><summary>查看制备</summary><p>装备工程 Lv.' + d.level + ' · ' + esc((G.DATA.buildings[G.DATA.units[unit].build] || {}).name || '生产设施') + ' Lv.' + (d.level * 2) + '（本城 Lv.' + facility + '）</p><p>' + costHtml(d.cost) + '</p><p>制备 ' + Math.ceil(seconds / 60) + ' 分钟 · 一件覆盖全部该兵种</p><button type="button" class="btn" data-ue="manufacture" data-key="' + d.key + '"' + (busy || locked || !enough ? ' disabled' : '') + '>制备一件</button>' + (locked ? '<p>科技或本城设施未满足条件</p>' : !enough ? '<p>本城资源不足</p>' : '') + '</details></article>';
+      h += '<details><summary>查看制备</summary><p>武器装备 Lv.' + d.level + ' · ' + esc((G.DATA.buildings[G.DATA.units[unit].build] || {}).name || '生产设施') + ' Lv.' + (d.level * 2) + '（本城 Lv.' + facility + '）</p><p>' + costHtml(d.cost) + '</p><p>制备 ' + Math.ceil(seconds / 60) + ' 分钟 · 一件覆盖全部该兵种</p><button type="button" class="btn" data-ue="manufacture" data-key="' + d.key + '"' + (busy || locked || !enough ? ' disabled' : '') + '>制备一件</button>' + (locked ? '<p>科技或本城设施未满足条件</p>' : !enough ? '<p>本城资源不足</p>' : '') + '</details></article>';
     });
     h += '</section><section class="unit-equipment-orders"><h3>本城装备制造通道</h3>';
     (state().queue || []).forEach(function (q) { var d = cat[q.itemKey]; h += '<div><strong>' + esc(d ? d.name : q.itemKey) + '</strong><p>' + (q.startAt > Date.now() ? '排队中 · 未开始取消返还全部' : '制造中 · 取消返还一半') + ' · ' + Math.max(0, Math.ceil((q.endAt - Date.now()) / 1000)) + ' 秒后完成</p><button type="button" class="btn warn" data-ue="cancel-order" data-key="' + q.id + '"' + (busy ? ' disabled' : '') + '>取消制造</button></div>'; });
@@ -129,6 +129,15 @@
     else h += '<button type="button" class="btn" data-ue="reset"' + (busy || !changed() ? ' disabled' : '') + '>取消修改</button><button type="button" class="btn ok" data-ue="save"' + (busy || !changed() ? ' disabled' : '') + '>' + (busy ? '处理中…' : '保存配装') + '</button>';
     panel.innerHTML = h + '</footer></section>';
     if (focusAction) { var nextFocus = panel.querySelector('[data-ue="' + focusAction + '"]' + (focusKey == null ? '' : '[data-key="' + focusKey + '"]')); if (nextFocus && !nextFocus.disabled) nextFocus.focus(); else panel.querySelector('[data-ue="close"]').focus(); }
+  }
+  /** 点击装备槽后，将对应候选列表滚动到可见区域，并把键盘焦点移入选择区。 */
+  function revealChoices() {
+    var choices = panel && panel.querySelector('.unit-equipment-choices');
+    if (!choices) return;
+    // 候选列表位于属性预览之后，仅重绘槽位会让用户停留在原处，看不到可选装备。
+    choices.scrollIntoView({ block: 'start', inline: 'nearest' });
+    var firstChoice = choices.querySelector('[data-ue="choose"]:not([disabled])');
+    if (firstChoice) firstChoice.focus({ preventScroll: true });
   }
   function close(force) {
     if (busy) return;
@@ -190,12 +199,13 @@
       else if (action === 'discard-close') close(true);
       else if (action === 'continue') { discarding = false; render(); }
       else if (action === 'reset') { saved = clone((state().loadouts || {})[unit]); draft = clone(saved); version = Number((state().versions || {})[unit] || 0); error = ''; render(); }
-      else if (action === 'slot') { activeSlot = key; render(); }
+      else if (action === 'slot') { activeSlot = key; render(); revealChoices(); }
       else if (action === 'choose') { if (key) draft[activeSlot] = key; else delete draft[activeSlot]; error = ''; render(); }
       else submit(action, key);
     });
     document.body.appendChild(panel); scrollStyle = document.body.style.overflow; document.body.style.overflow = 'hidden';
     document.addEventListener('keydown', keydown); render(); panel.querySelector('button').focus();
+    if (initialSlot && slots[initialSlot]) revealChoices();
     // 队列完成后刷新库存，保留未保存草稿与当前滚动位置。
     var sessionPanel = panel, sessionCity = G.API.client && G.API.client.cityId;
     timer = window.setInterval(function () {

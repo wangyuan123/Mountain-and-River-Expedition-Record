@@ -1,5 +1,5 @@
 {
-  "version": "hospital-2026-10-12-v1",
+  "version": "technology-v2-20261016",
   "status": "design-only-not-runtime-config",
   "levelAggregation": "maxCompletedSingleBuilding",
   "defaultScope": "city",
@@ -4673,272 +4673,6 @@
         }
       ]
     },
-    "hospital": {
-      "name": "战地医院",
-      "maxLevel": 10,
-      "levels": [
-        {
-          "targetLevel": 1,
-          "requires": [
-            {
-              "building": "command",
-              "level": 3,
-              "scope": "city"
-            },
-            {
-              "building": "house",
-              "level": 1,
-              "scope": "city"
-            },
-            {
-              "building": "academy",
-              "level": 1,
-              "scope": "city"
-            },
-            {
-              "building": "farm",
-              "level": 1,
-              "scope": "city"
-            }
-          ],
-          "coastalOnly": false
-        },
-        {
-          "targetLevel": 2,
-          "requires": [
-            {
-              "building": "command",
-              "level": 3,
-              "scope": "city"
-            },
-            {
-              "building": "house",
-              "level": 1,
-              "scope": "city"
-            },
-            {
-              "building": "academy",
-              "level": 1,
-              "scope": "city"
-            },
-            {
-              "building": "farm",
-              "level": 1,
-              "scope": "city"
-            }
-          ],
-          "coastalOnly": false
-        },
-        {
-          "targetLevel": 3,
-          "requires": [
-            {
-              "building": "command",
-              "level": 3,
-              "scope": "city"
-            },
-            {
-              "building": "house",
-              "level": 2,
-              "scope": "city"
-            },
-            {
-              "building": "academy",
-              "level": 1,
-              "scope": "city"
-            },
-            {
-              "building": "farm",
-              "level": 2,
-              "scope": "city"
-            }
-          ],
-          "coastalOnly": false
-        },
-        {
-          "targetLevel": 4,
-          "requires": [
-            {
-              "building": "command",
-              "level": 4,
-              "scope": "city"
-            },
-            {
-              "building": "house",
-              "level": 3,
-              "scope": "city"
-            },
-            {
-              "building": "academy",
-              "level": 2,
-              "scope": "city"
-            },
-            {
-              "building": "farm",
-              "level": 2,
-              "scope": "city"
-            }
-          ],
-          "coastalOnly": false
-        },
-        {
-          "targetLevel": 5,
-          "requires": [
-            {
-              "building": "command",
-              "level": 5,
-              "scope": "city"
-            },
-            {
-              "building": "house",
-              "level": 4,
-              "scope": "city"
-            },
-            {
-              "building": "academy",
-              "level": 3,
-              "scope": "city"
-            },
-            {
-              "building": "farm",
-              "level": 3,
-              "scope": "city"
-            }
-          ],
-          "coastalOnly": false
-        },
-        {
-          "targetLevel": 6,
-          "requires": [
-            {
-              "building": "command",
-              "level": 6,
-              "scope": "city"
-            },
-            {
-              "building": "house",
-              "level": 5,
-              "scope": "city"
-            },
-            {
-              "building": "academy",
-              "level": 4,
-              "scope": "city"
-            },
-            {
-              "building": "farm",
-              "level": 3,
-              "scope": "city"
-            }
-          ],
-          "coastalOnly": false
-        },
-        {
-          "targetLevel": 7,
-          "requires": [
-            {
-              "building": "command",
-              "level": 7,
-              "scope": "city"
-            },
-            {
-              "building": "house",
-              "level": 6,
-              "scope": "city"
-            },
-            {
-              "building": "academy",
-              "level": 5,
-              "scope": "city"
-            },
-            {
-              "building": "farm",
-              "level": 4,
-              "scope": "city"
-            }
-          ],
-          "coastalOnly": false
-        },
-        {
-          "targetLevel": 8,
-          "requires": [
-            {
-              "building": "command",
-              "level": 8,
-              "scope": "city"
-            },
-            {
-              "building": "house",
-              "level": 7,
-              "scope": "city"
-            },
-            {
-              "building": "academy",
-              "level": 6,
-              "scope": "city"
-            },
-            {
-              "building": "farm",
-              "level": 4,
-              "scope": "city"
-            }
-          ],
-          "coastalOnly": false
-        },
-        {
-          "targetLevel": 9,
-          "requires": [
-            {
-              "building": "command",
-              "level": 9,
-              "scope": "city"
-            },
-            {
-              "building": "house",
-              "level": 8,
-              "scope": "city"
-            },
-            {
-              "building": "academy",
-              "level": 7,
-              "scope": "city"
-            },
-            {
-              "building": "farm",
-              "level": 5,
-              "scope": "city"
-            }
-          ],
-          "coastalOnly": false
-        },
-        {
-          "targetLevel": 10,
-          "requires": [
-            {
-              "building": "command",
-              "level": 10,
-              "scope": "city"
-            },
-            {
-              "building": "house",
-              "level": 9,
-              "scope": "city"
-            },
-            {
-              "building": "academy",
-              "level": 8,
-              "scope": "city"
-            },
-            {
-              "building": "farm",
-              "level": 5,
-              "scope": "city"
-            }
-          ],
-          "coastalOnly": false
-        }
-      ]
-    },
     "shipyard": {
       "name": "造船厂",
       "maxLevel": 10,
@@ -5204,51 +4938,341 @@
           "coastalOnly": true
         }
       ]
+    },
+    "hospital": {
+      "name": "战地医院",
+      "maxLevel": 10,
+      "levels": [
+        {
+          "targetLevel": 1,
+          "requires": [
+            {
+              "building": "command",
+              "level": 3,
+              "scope": "city"
+            },
+            {
+              "building": "house",
+              "level": 1,
+              "scope": "city"
+            },
+            {
+              "building": "academy",
+              "level": 1,
+              "scope": "city"
+            },
+            {
+              "building": "farm",
+              "level": 1,
+              "scope": "city"
+            }
+          ],
+          "coastalOnly": false
+        },
+        {
+          "targetLevel": 2,
+          "requires": [
+            {
+              "building": "command",
+              "level": 3,
+              "scope": "city"
+            },
+            {
+              "building": "house",
+              "level": 1,
+              "scope": "city"
+            },
+            {
+              "building": "academy",
+              "level": 1,
+              "scope": "city"
+            },
+            {
+              "building": "farm",
+              "level": 1,
+              "scope": "city"
+            }
+          ],
+          "coastalOnly": false
+        },
+        {
+          "targetLevel": 3,
+          "requires": [
+            {
+              "building": "command",
+              "level": 3,
+              "scope": "city"
+            },
+            {
+              "building": "house",
+              "level": 2,
+              "scope": "city"
+            },
+            {
+              "building": "academy",
+              "level": 1,
+              "scope": "city"
+            },
+            {
+              "building": "farm",
+              "level": 2,
+              "scope": "city"
+            }
+          ],
+          "coastalOnly": false
+        },
+        {
+          "targetLevel": 4,
+          "requires": [
+            {
+              "building": "command",
+              "level": 4,
+              "scope": "city"
+            },
+            {
+              "building": "house",
+              "level": 3,
+              "scope": "city"
+            },
+            {
+              "building": "academy",
+              "level": 2,
+              "scope": "city"
+            },
+            {
+              "building": "farm",
+              "level": 2,
+              "scope": "city"
+            }
+          ],
+          "coastalOnly": false
+        },
+        {
+          "targetLevel": 5,
+          "requires": [
+            {
+              "building": "command",
+              "level": 5,
+              "scope": "city"
+            },
+            {
+              "building": "house",
+              "level": 4,
+              "scope": "city"
+            },
+            {
+              "building": "academy",
+              "level": 3,
+              "scope": "city"
+            },
+            {
+              "building": "farm",
+              "level": 3,
+              "scope": "city"
+            }
+          ],
+          "coastalOnly": false
+        },
+        {
+          "targetLevel": 6,
+          "requires": [
+            {
+              "building": "command",
+              "level": 6,
+              "scope": "city"
+            },
+            {
+              "building": "house",
+              "level": 5,
+              "scope": "city"
+            },
+            {
+              "building": "academy",
+              "level": 4,
+              "scope": "city"
+            },
+            {
+              "building": "farm",
+              "level": 3,
+              "scope": "city"
+            }
+          ],
+          "coastalOnly": false
+        },
+        {
+          "targetLevel": 7,
+          "requires": [
+            {
+              "building": "command",
+              "level": 7,
+              "scope": "city"
+            },
+            {
+              "building": "house",
+              "level": 6,
+              "scope": "city"
+            },
+            {
+              "building": "academy",
+              "level": 5,
+              "scope": "city"
+            },
+            {
+              "building": "farm",
+              "level": 4,
+              "scope": "city"
+            }
+          ],
+          "coastalOnly": false
+        },
+        {
+          "targetLevel": 8,
+          "requires": [
+            {
+              "building": "command",
+              "level": 8,
+              "scope": "city"
+            },
+            {
+              "building": "house",
+              "level": 7,
+              "scope": "city"
+            },
+            {
+              "building": "academy",
+              "level": 6,
+              "scope": "city"
+            },
+            {
+              "building": "farm",
+              "level": 4,
+              "scope": "city"
+            }
+          ],
+          "coastalOnly": false
+        },
+        {
+          "targetLevel": 9,
+          "requires": [
+            {
+              "building": "command",
+              "level": 9,
+              "scope": "city"
+            },
+            {
+              "building": "house",
+              "level": 8,
+              "scope": "city"
+            },
+            {
+              "building": "academy",
+              "level": 7,
+              "scope": "city"
+            },
+            {
+              "building": "farm",
+              "level": 5,
+              "scope": "city"
+            }
+          ],
+          "coastalOnly": false
+        },
+        {
+          "targetLevel": 10,
+          "requires": [
+            {
+              "building": "command",
+              "level": 10,
+              "scope": "city"
+            },
+            {
+              "building": "house",
+              "level": 9,
+              "scope": "city"
+            },
+            {
+              "building": "academy",
+              "level": 8,
+              "scope": "city"
+            },
+            {
+              "building": "farm",
+              "level": 5,
+              "scope": "city"
+            }
+          ],
+          "coastalOnly": false
+        }
+      ]
     }
   },
   "technologies": {
     "unit_refit": {
-      "name": "兵种装备工程",
-      "maxLevel": 3,
+      "name": "武器装备",
+      "maxLevel": 5,
       "labFloor": 2,
       "tierByLevel": [
         2,
         4,
-        6
+        6,
+        8,
+        10
       ],
       "levels": [
         {
           "targetLevel": 1,
+          "tier": 2,
           "requires": [
             {
               "building": "lab",
               "level": 2,
               "scope": "city"
             }
-          ],
-          "tier": 2
+          ]
         },
         {
           "targetLevel": 2,
+          "tier": 4,
           "requires": [
             {
               "building": "lab",
               "level": 4,
               "scope": "city"
             }
-          ],
-          "tier": 4
+          ]
         },
         {
           "targetLevel": 3,
+          "tier": 6,
           "requires": [
             {
               "building": "lab",
               "level": 6,
               "scope": "city"
             }
-          ],
-          "tier": 6
+          ]
+        },
+        {
+          "targetLevel": 4,
+          "tier": 8,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 8,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 5,
+          "tier": 10,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 10,
+              "scope": "city"
+            }
+          ]
         }
       ]
     },
@@ -6448,25 +6472,56 @@
         }
       ]
     },
-    "inf_load": {
-      "name": "步兵负重",
-      "maxLevel": 5,
-      "labFloor": 2,
+    "fire_density": {
+      "name": "火力密度",
+      "maxLevel": 10,
+      "labFloor": 3,
       "tierByLevel": [
+        1,
         2,
+        3,
         4,
+        5,
         6,
+        7,
         8,
+        9,
         10
       ],
       "levels": [
         {
           "targetLevel": 1,
+          "tier": 1,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 3,
+              "scope": "city"
+            },
+            {
+              "building": "factory",
+              "level": 1,
+              "scope": "city"
+            },
+            {
+              "building": "academy",
+              "level": 1,
+              "scope": "city"
+            },
+            {
+              "building": "raremine",
+              "level": 1,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 2,
           "tier": 2,
           "requires": [
             {
               "building": "lab",
-              "level": 2,
+              "level": 3,
               "scope": "city"
             },
             {
@@ -6475,19 +6530,45 @@
               "scope": "city"
             },
             {
-              "building": "transit",
-              "level": 2,
+              "building": "academy",
+              "level": 1,
               "scope": "city"
             },
             {
-              "building": "depot",
+              "building": "raremine",
               "level": 1,
               "scope": "city"
             }
           ]
         },
         {
-          "targetLevel": 2,
+          "targetLevel": 3,
+          "tier": 3,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 3,
+              "scope": "city"
+            },
+            {
+              "building": "factory",
+              "level": 3,
+              "scope": "city"
+            },
+            {
+              "building": "academy",
+              "level": 1,
+              "scope": "city"
+            },
+            {
+              "building": "raremine",
+              "level": 1,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 4,
           "tier": 4,
           "requires": [
             {
@@ -6501,19 +6582,45 @@
               "scope": "city"
             },
             {
-              "building": "transit",
-              "level": 4,
+              "building": "academy",
+              "level": 2,
               "scope": "city"
             },
             {
-              "building": "depot",
+              "building": "raremine",
               "level": 2,
               "scope": "city"
             }
           ]
         },
         {
-          "targetLevel": 3,
+          "targetLevel": 5,
+          "tier": 5,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 5,
+              "scope": "city"
+            },
+            {
+              "building": "factory",
+              "level": 5,
+              "scope": "city"
+            },
+            {
+              "building": "academy",
+              "level": 3,
+              "scope": "city"
+            },
+            {
+              "building": "raremine",
+              "level": 3,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 6,
           "tier": 6,
           "requires": [
             {
@@ -6527,19 +6634,50 @@
               "scope": "city"
             },
             {
-              "building": "transit",
-              "level": 6,
+              "building": "academy",
+              "level": 4,
               "scope": "city"
             },
             {
-              "building": "depot",
+              "building": "raremine",
               "level": 4,
               "scope": "city"
             }
           ]
         },
         {
-          "targetLevel": 4,
+          "targetLevel": 7,
+          "tier": 7,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 7,
+              "scope": "city"
+            },
+            {
+              "building": "factory",
+              "level": 7,
+              "scope": "city"
+            },
+            {
+              "building": "academy",
+              "level": 5,
+              "scope": "city"
+            },
+            {
+              "building": "raremine",
+              "level": 5,
+              "scope": "city"
+            },
+            {
+              "building": "staff",
+              "level": 5,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 8,
           "tier": 8,
           "requires": [
             {
@@ -6553,19 +6691,55 @@
               "scope": "city"
             },
             {
-              "building": "transit",
-              "level": 8,
+              "building": "academy",
+              "level": 6,
               "scope": "city"
             },
             {
-              "building": "depot",
+              "building": "raremine",
+              "level": 6,
+              "scope": "city"
+            },
+            {
+              "building": "staff",
               "level": 6,
               "scope": "city"
             }
           ]
         },
         {
-          "targetLevel": 5,
+          "targetLevel": 9,
+          "tier": 9,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 9,
+              "scope": "city"
+            },
+            {
+              "building": "factory",
+              "level": 9,
+              "scope": "city"
+            },
+            {
+              "building": "academy",
+              "level": 7,
+              "scope": "city"
+            },
+            {
+              "building": "raremine",
+              "level": 7,
+              "scope": "city"
+            },
+            {
+              "building": "staff",
+              "level": 7,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 10,
           "tier": 10,
           "requires": [
             {
@@ -6579,12 +6753,17 @@
               "scope": "city"
             },
             {
-              "building": "transit",
-              "level": 10,
+              "building": "academy",
+              "level": 8,
               "scope": "city"
             },
             {
-              "building": "depot",
+              "building": "raremine",
+              "level": 8,
+              "scope": "city"
+            },
+            {
+              "building": "staff",
               "level": 8,
               "scope": "city"
             }
@@ -7547,315 +7726,6 @@
             },
             {
               "building": "transit",
-              "level": 8,
-              "scope": "city"
-            }
-          ]
-        }
-      ]
-    },
-    "log_production": {
-      "name": "资源采集",
-      "maxLevel": 10,
-      "labFloor": 1,
-      "tierByLevel": [
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8,
-        9,
-        10
-      ],
-      "levels": [
-        {
-          "targetLevel": 1,
-          "tier": 1,
-          "requires": [
-            {
-              "building": "lab",
-              "level": 1,
-              "scope": "city"
-            },
-            {
-              "building": "farm",
-              "level": 1,
-              "scope": "city"
-            },
-            {
-              "building": "refinery",
-              "level": 1,
-              "scope": "city"
-            }
-          ]
-        },
-        {
-          "targetLevel": 2,
-          "tier": 2,
-          "requires": [
-            {
-              "building": "lab",
-              "level": 2,
-              "scope": "city"
-            },
-            {
-              "building": "farm",
-              "level": 2,
-              "scope": "city"
-            },
-            {
-              "building": "refinery",
-              "level": 2,
-              "scope": "city"
-            }
-          ]
-        },
-        {
-          "targetLevel": 3,
-          "tier": 3,
-          "requires": [
-            {
-              "building": "lab",
-              "level": 3,
-              "scope": "city"
-            },
-            {
-              "building": "farm",
-              "level": 3,
-              "scope": "city"
-            },
-            {
-              "building": "refinery",
-              "level": 3,
-              "scope": "city"
-            },
-            {
-              "building": "oilfield",
-              "level": 1,
-              "scope": "city"
-            },
-            {
-              "building": "raremine",
-              "level": 1,
-              "scope": "city"
-            }
-          ]
-        },
-        {
-          "targetLevel": 4,
-          "tier": 4,
-          "requires": [
-            {
-              "building": "lab",
-              "level": 4,
-              "scope": "city"
-            },
-            {
-              "building": "farm",
-              "level": 4,
-              "scope": "city"
-            },
-            {
-              "building": "refinery",
-              "level": 4,
-              "scope": "city"
-            },
-            {
-              "building": "oilfield",
-              "level": 2,
-              "scope": "city"
-            },
-            {
-              "building": "raremine",
-              "level": 2,
-              "scope": "city"
-            }
-          ]
-        },
-        {
-          "targetLevel": 5,
-          "tier": 5,
-          "requires": [
-            {
-              "building": "lab",
-              "level": 5,
-              "scope": "city"
-            },
-            {
-              "building": "farm",
-              "level": 5,
-              "scope": "city"
-            },
-            {
-              "building": "refinery",
-              "level": 5,
-              "scope": "city"
-            },
-            {
-              "building": "oilfield",
-              "level": 3,
-              "scope": "city"
-            },
-            {
-              "building": "raremine",
-              "level": 3,
-              "scope": "city"
-            }
-          ]
-        },
-        {
-          "targetLevel": 6,
-          "tier": 6,
-          "requires": [
-            {
-              "building": "lab",
-              "level": 6,
-              "scope": "city"
-            },
-            {
-              "building": "farm",
-              "level": 6,
-              "scope": "city"
-            },
-            {
-              "building": "refinery",
-              "level": 6,
-              "scope": "city"
-            },
-            {
-              "building": "oilfield",
-              "level": 4,
-              "scope": "city"
-            },
-            {
-              "building": "raremine",
-              "level": 4,
-              "scope": "city"
-            }
-          ]
-        },
-        {
-          "targetLevel": 7,
-          "tier": 7,
-          "requires": [
-            {
-              "building": "lab",
-              "level": 7,
-              "scope": "city"
-            },
-            {
-              "building": "farm",
-              "level": 7,
-              "scope": "city"
-            },
-            {
-              "building": "refinery",
-              "level": 7,
-              "scope": "city"
-            },
-            {
-              "building": "oilfield",
-              "level": 5,
-              "scope": "city"
-            },
-            {
-              "building": "raremine",
-              "level": 5,
-              "scope": "city"
-            }
-          ]
-        },
-        {
-          "targetLevel": 8,
-          "tier": 8,
-          "requires": [
-            {
-              "building": "lab",
-              "level": 8,
-              "scope": "city"
-            },
-            {
-              "building": "farm",
-              "level": 8,
-              "scope": "city"
-            },
-            {
-              "building": "refinery",
-              "level": 8,
-              "scope": "city"
-            },
-            {
-              "building": "oilfield",
-              "level": 6,
-              "scope": "city"
-            },
-            {
-              "building": "raremine",
-              "level": 6,
-              "scope": "city"
-            }
-          ]
-        },
-        {
-          "targetLevel": 9,
-          "tier": 9,
-          "requires": [
-            {
-              "building": "lab",
-              "level": 9,
-              "scope": "city"
-            },
-            {
-              "building": "farm",
-              "level": 9,
-              "scope": "city"
-            },
-            {
-              "building": "refinery",
-              "level": 9,
-              "scope": "city"
-            },
-            {
-              "building": "oilfield",
-              "level": 7,
-              "scope": "city"
-            },
-            {
-              "building": "raremine",
-              "level": 7,
-              "scope": "city"
-            }
-          ]
-        },
-        {
-          "targetLevel": 10,
-          "tier": 10,
-          "requires": [
-            {
-              "building": "lab",
-              "level": 10,
-              "scope": "city"
-            },
-            {
-              "building": "farm",
-              "level": 10,
-              "scope": "city"
-            },
-            {
-              "building": "refinery",
-              "level": 10,
-              "scope": "city"
-            },
-            {
-              "building": "oilfield",
-              "level": 8,
-              "scope": "city"
-            },
-            {
-              "building": "raremine",
               "level": 8,
               "scope": "city"
             }
@@ -9309,11 +9179,13 @@
     },
     "recon_radar": {
       "name": "雷达预警",
-      "maxLevel": 3,
+      "maxLevel": 5,
       "labFloor": 2,
       "tierByLevel": [
         2,
+        4,
         6,
+        8,
         10
       ],
       "levels": [
@@ -9345,6 +9217,32 @@
         },
         {
           "targetLevel": 2,
+          "tier": 4,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 4,
+              "scope": "city"
+            },
+            {
+              "building": "radar",
+              "level": 4,
+              "scope": "city"
+            },
+            {
+              "building": "staff",
+              "level": 4,
+              "scope": "city"
+            },
+            {
+              "building": "liaison",
+              "level": 2,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 3,
           "tier": 6,
           "requires": [
             {
@@ -9370,7 +9268,33 @@
           ]
         },
         {
-          "targetLevel": 3,
+          "targetLevel": 4,
+          "tier": 8,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 8,
+              "scope": "city"
+            },
+            {
+              "building": "radar",
+              "level": 8,
+              "scope": "city"
+            },
+            {
+              "building": "staff",
+              "level": 8,
+              "scope": "city"
+            },
+            {
+              "building": "liaison",
+              "level": 6,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 5,
           "tier": 10,
           "requires": [
             {
@@ -9398,7 +9322,7 @@
       ]
     },
     "prisoner_education": {
-      "name": "战俘思想教育",
+      "name": "战俘收编",
       "maxLevel": 10,
       "labFloor": 3,
       "tierByLevel": [
@@ -9623,6 +9547,1180 @@
             }
           ],
           "tier": 10
+        }
+      ]
+    },
+    "prod_food": {
+      "name": "粮食产量",
+      "maxLevel": 10,
+      "labFloor": 1,
+      "tierByLevel": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "levels": [
+        {
+          "targetLevel": 1,
+          "tier": 1,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 1,
+              "scope": "city"
+            },
+            {
+              "building": "farm",
+              "level": 1,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 2,
+          "tier": 2,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 2,
+              "scope": "city"
+            },
+            {
+              "building": "farm",
+              "level": 2,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 3,
+          "tier": 3,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 3,
+              "scope": "city"
+            },
+            {
+              "building": "farm",
+              "level": 3,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 4,
+          "tier": 4,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 4,
+              "scope": "city"
+            },
+            {
+              "building": "farm",
+              "level": 4,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 5,
+          "tier": 5,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 5,
+              "scope": "city"
+            },
+            {
+              "building": "farm",
+              "level": 5,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 6,
+          "tier": 6,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 6,
+              "scope": "city"
+            },
+            {
+              "building": "farm",
+              "level": 6,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 7,
+          "tier": 7,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 7,
+              "scope": "city"
+            },
+            {
+              "building": "farm",
+              "level": 7,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 8,
+          "tier": 8,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 8,
+              "scope": "city"
+            },
+            {
+              "building": "farm",
+              "level": 8,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 9,
+          "tier": 9,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 9,
+              "scope": "city"
+            },
+            {
+              "building": "farm",
+              "level": 9,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 10,
+          "tier": 10,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 10,
+              "scope": "city"
+            },
+            {
+              "building": "farm",
+              "level": 10,
+              "scope": "city"
+            }
+          ]
+        }
+      ]
+    },
+    "prod_steel": {
+      "name": "钢铁产量",
+      "maxLevel": 10,
+      "labFloor": 1,
+      "tierByLevel": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "levels": [
+        {
+          "targetLevel": 1,
+          "tier": 1,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 1,
+              "scope": "city"
+            },
+            {
+              "building": "refinery",
+              "level": 1,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 2,
+          "tier": 2,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 2,
+              "scope": "city"
+            },
+            {
+              "building": "refinery",
+              "level": 2,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 3,
+          "tier": 3,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 3,
+              "scope": "city"
+            },
+            {
+              "building": "refinery",
+              "level": 3,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 4,
+          "tier": 4,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 4,
+              "scope": "city"
+            },
+            {
+              "building": "refinery",
+              "level": 4,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 5,
+          "tier": 5,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 5,
+              "scope": "city"
+            },
+            {
+              "building": "refinery",
+              "level": 5,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 6,
+          "tier": 6,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 6,
+              "scope": "city"
+            },
+            {
+              "building": "refinery",
+              "level": 6,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 7,
+          "tier": 7,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 7,
+              "scope": "city"
+            },
+            {
+              "building": "refinery",
+              "level": 7,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 8,
+          "tier": 8,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 8,
+              "scope": "city"
+            },
+            {
+              "building": "refinery",
+              "level": 8,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 9,
+          "tier": 9,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 9,
+              "scope": "city"
+            },
+            {
+              "building": "refinery",
+              "level": 9,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 10,
+          "tier": 10,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 10,
+              "scope": "city"
+            },
+            {
+              "building": "refinery",
+              "level": 10,
+              "scope": "city"
+            }
+          ]
+        }
+      ]
+    },
+    "prod_oil": {
+      "name": "石油产量",
+      "maxLevel": 10,
+      "labFloor": 1,
+      "tierByLevel": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "levels": [
+        {
+          "targetLevel": 1,
+          "tier": 1,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 1,
+              "scope": "city"
+            },
+            {
+              "building": "oilfield",
+              "level": 1,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 2,
+          "tier": 2,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 2,
+              "scope": "city"
+            },
+            {
+              "building": "oilfield",
+              "level": 2,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 3,
+          "tier": 3,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 3,
+              "scope": "city"
+            },
+            {
+              "building": "oilfield",
+              "level": 3,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 4,
+          "tier": 4,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 4,
+              "scope": "city"
+            },
+            {
+              "building": "oilfield",
+              "level": 4,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 5,
+          "tier": 5,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 5,
+              "scope": "city"
+            },
+            {
+              "building": "oilfield",
+              "level": 5,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 6,
+          "tier": 6,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 6,
+              "scope": "city"
+            },
+            {
+              "building": "oilfield",
+              "level": 6,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 7,
+          "tier": 7,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 7,
+              "scope": "city"
+            },
+            {
+              "building": "oilfield",
+              "level": 7,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 8,
+          "tier": 8,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 8,
+              "scope": "city"
+            },
+            {
+              "building": "oilfield",
+              "level": 8,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 9,
+          "tier": 9,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 9,
+              "scope": "city"
+            },
+            {
+              "building": "oilfield",
+              "level": 9,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 10,
+          "tier": 10,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 10,
+              "scope": "city"
+            },
+            {
+              "building": "oilfield",
+              "level": 10,
+              "scope": "city"
+            }
+          ]
+        }
+      ]
+    },
+    "prod_rare": {
+      "name": "稀矿产量",
+      "maxLevel": 10,
+      "labFloor": 1,
+      "tierByLevel": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "levels": [
+        {
+          "targetLevel": 1,
+          "tier": 1,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 1,
+              "scope": "city"
+            },
+            {
+              "building": "raremine",
+              "level": 1,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 2,
+          "tier": 2,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 2,
+              "scope": "city"
+            },
+            {
+              "building": "raremine",
+              "level": 2,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 3,
+          "tier": 3,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 3,
+              "scope": "city"
+            },
+            {
+              "building": "raremine",
+              "level": 3,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 4,
+          "tier": 4,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 4,
+              "scope": "city"
+            },
+            {
+              "building": "raremine",
+              "level": 4,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 5,
+          "tier": 5,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 5,
+              "scope": "city"
+            },
+            {
+              "building": "raremine",
+              "level": 5,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 6,
+          "tier": 6,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 6,
+              "scope": "city"
+            },
+            {
+              "building": "raremine",
+              "level": 6,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 7,
+          "tier": 7,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 7,
+              "scope": "city"
+            },
+            {
+              "building": "raremine",
+              "level": 7,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 8,
+          "tier": 8,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 8,
+              "scope": "city"
+            },
+            {
+              "building": "raremine",
+              "level": 8,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 9,
+          "tier": 9,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 9,
+              "scope": "city"
+            },
+            {
+              "building": "raremine",
+              "level": 9,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 10,
+          "tier": 10,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 10,
+              "scope": "city"
+            },
+            {
+              "building": "raremine",
+              "level": 10,
+              "scope": "city"
+            }
+          ]
+        }
+      ]
+    },
+    "log_load": {
+      "name": "负重科技",
+      "maxLevel": 10,
+      "labFloor": 2,
+      "tierByLevel": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "levels": [
+        {
+          "targetLevel": 1,
+          "tier": 1,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 2,
+              "scope": "city"
+            },
+            {
+              "building": "factory",
+              "level": 2,
+              "scope": "city"
+            },
+            {
+              "building": "transit",
+              "level": 2,
+              "scope": "city"
+            },
+            {
+              "building": "depot",
+              "level": 1,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 2,
+          "tier": 2,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 2,
+              "scope": "city"
+            },
+            {
+              "building": "factory",
+              "level": 2,
+              "scope": "city"
+            },
+            {
+              "building": "transit",
+              "level": 2,
+              "scope": "city"
+            },
+            {
+              "building": "depot",
+              "level": 1,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 3,
+          "tier": 3,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 3,
+              "scope": "city"
+            },
+            {
+              "building": "factory",
+              "level": 3,
+              "scope": "city"
+            },
+            {
+              "building": "transit",
+              "level": 3,
+              "scope": "city"
+            },
+            {
+              "building": "depot",
+              "level": 1,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 4,
+          "tier": 4,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 4,
+              "scope": "city"
+            },
+            {
+              "building": "factory",
+              "level": 4,
+              "scope": "city"
+            },
+            {
+              "building": "transit",
+              "level": 4,
+              "scope": "city"
+            },
+            {
+              "building": "depot",
+              "level": 2,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 5,
+          "tier": 5,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 5,
+              "scope": "city"
+            },
+            {
+              "building": "factory",
+              "level": 5,
+              "scope": "city"
+            },
+            {
+              "building": "transit",
+              "level": 5,
+              "scope": "city"
+            },
+            {
+              "building": "depot",
+              "level": 3,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 6,
+          "tier": 6,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 6,
+              "scope": "city"
+            },
+            {
+              "building": "factory",
+              "level": 6,
+              "scope": "city"
+            },
+            {
+              "building": "transit",
+              "level": 6,
+              "scope": "city"
+            },
+            {
+              "building": "depot",
+              "level": 4,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 7,
+          "tier": 7,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 7,
+              "scope": "city"
+            },
+            {
+              "building": "factory",
+              "level": 7,
+              "scope": "city"
+            },
+            {
+              "building": "transit",
+              "level": 7,
+              "scope": "city"
+            },
+            {
+              "building": "depot",
+              "level": 5,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 8,
+          "tier": 8,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 8,
+              "scope": "city"
+            },
+            {
+              "building": "factory",
+              "level": 8,
+              "scope": "city"
+            },
+            {
+              "building": "transit",
+              "level": 8,
+              "scope": "city"
+            },
+            {
+              "building": "depot",
+              "level": 6,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 9,
+          "tier": 9,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 9,
+              "scope": "city"
+            },
+            {
+              "building": "factory",
+              "level": 9,
+              "scope": "city"
+            },
+            {
+              "building": "transit",
+              "level": 9,
+              "scope": "city"
+            },
+            {
+              "building": "depot",
+              "level": 7,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 10,
+          "tier": 10,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 10,
+              "scope": "city"
+            },
+            {
+              "building": "factory",
+              "level": 10,
+              "scope": "city"
+            },
+            {
+              "building": "transit",
+              "level": 10,
+              "scope": "city"
+            },
+            {
+              "building": "depot",
+              "level": 8,
+              "scope": "city"
+            }
+          ]
+        }
+      ]
+    },
+    "wall_reinforcement": {
+      "name": "城墙加固",
+      "maxLevel": 10,
+      "labFloor": 2,
+      "tierByLevel": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "levels": [
+        {
+          "targetLevel": 1,
+          "tier": 1,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 2,
+              "scope": "city"
+            },
+            {
+              "building": "wall",
+              "level": 1,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 2,
+          "tier": 2,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 2,
+              "scope": "city"
+            },
+            {
+              "building": "wall",
+              "level": 2,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 3,
+          "tier": 3,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 3,
+              "scope": "city"
+            },
+            {
+              "building": "wall",
+              "level": 3,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 4,
+          "tier": 4,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 4,
+              "scope": "city"
+            },
+            {
+              "building": "wall",
+              "level": 4,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 5,
+          "tier": 5,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 5,
+              "scope": "city"
+            },
+            {
+              "building": "wall",
+              "level": 5,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 6,
+          "tier": 6,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 6,
+              "scope": "city"
+            },
+            {
+              "building": "wall",
+              "level": 6,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 7,
+          "tier": 7,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 7,
+              "scope": "city"
+            },
+            {
+              "building": "wall",
+              "level": 7,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 8,
+          "tier": 8,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 8,
+              "scope": "city"
+            },
+            {
+              "building": "wall",
+              "level": 8,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 9,
+          "tier": 9,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 9,
+              "scope": "city"
+            },
+            {
+              "building": "wall",
+              "level": 9,
+              "scope": "city"
+            }
+          ]
+        },
+        {
+          "targetLevel": 10,
+          "tier": 10,
+          "requires": [
+            {
+              "building": "lab",
+              "level": 10,
+              "scope": "city"
+            },
+            {
+              "building": "wall",
+              "level": 10,
+              "scope": "city"
+            }
+          ]
         }
       ]
     }

@@ -22,7 +22,7 @@ class UnitEquipmentRulesTest {
         }
         assertEquals(Map.of("steel", 300, "oil", 0, "rare", 0), UnitEquipmentDef.ITEMS.get("ue_infantry_helmet").cost());
         assertEquals(Map.of("steel", 600, "oil", 100, "rare", 30), UnitEquipmentDef.ITEMS.get("ue_infantry_radio").cost());
-        assertEquals(3, UnitEquipmentDef.ITEMS.get("ue_htank_armor").level());
+        assertEquals(4, UnitEquipmentDef.ITEMS.get("ue_htank_armor").level());
         assertEquals(Map.of("steel", 1440, "oil", 80, "rare", 20), UnitEquipmentDef.ITEMS.get("ue_ltank_armor").cost());
         assertEquals("precision", UnitEquipmentDef.ITEMS.get("ue_destroyer_firecontrol").recipe());
     }
@@ -53,8 +53,8 @@ class UnitEquipmentRulesTest {
     }
     @Test void emptyEquipmentAndAliasedTroopsRetainBattleSemantics() {
         var a = Map.of("infantry", 30); var d = Map.of("infantry", 30);
-        BattleResult old = new BattleService(42).startWorldDispatch(a, d, Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), 0, 0, 0, 0, 0, 0, "conquer", Map.of(), 0, true);
-        BattleResult empty = new BattleService(42).startWorldDispatch(a, Map.of("infantry~1", 30), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), 0, 0, 0, 0, 0, 0, "conquer", Map.of(), 0, true);
+        BattleResult old = new BattleService(42).startWorldDispatch(a, d, Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), 0, 0, 0, 0, "conquer", Map.of(), 0, true);
+        BattleResult empty = new BattleService(42).startWorldDispatch(a, Map.of("infantry~1", 30), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), 0, 0, 0, 0, "conquer", Map.of(), 0, true);
         assertEquals(old.isWin(), empty.isWin());
         assertEquals(old.getSurvivorAttacker(), empty.getSurvivorAttacker());
         assertEquals(old.getSurvivorDefender(), UnitEquipmentEffects.aggregate(empty.getSurvivorDefender()));
@@ -64,21 +64,21 @@ class UnitEquipmentRulesTest {
         var a = Map.of("rocket", 10); var d = Map.of("ltank", 100);
         var tank = gear("ltank", "ue_ltank_armor", "ue_ltank_liner");
         var round = new BattleService(7).resolveWorldRound(a, d, Map.of("rocket", 0), Map.of("ltank", 100), 100,
-                Map.of(), tank, Map.of(), Map.of(), 0, 0, 0, 0, 0, 0, 1, 0,
+                Map.of(), tank, Map.of(), Map.of(), 0, 0, 0, 0, 1, 0,
                 Map.of("rocket", new BattleService.UnitOrder(BattleService.CommandAction.HOLD)), Map.of("ltank", new BattleService.UnitOrder(BattleService.CommandAction.HOLD)));
         assertTrue(round.log().contains("装备减伤15%"));
         assertTrue(round.log().contains("倍率×3.0"));
         var ordinary = new BattleService(7).resolveWorldRound(a, d, Map.of("rocket", 0), Map.of("ltank", 100), 100,
-                Map.of(), Map.of(), Map.of(), Map.of(), 0, 0, 0, 0, 0, 0, 1, 0,
+                Map.of(), Map.of(), Map.of(), Map.of(), 0, 0, 0, 0, 1, 0,
                 Map.of("rocket", new BattleService.UnitOrder(BattleService.CommandAction.HOLD)), Map.of("ltank", new BattleService.UnitOrder(BattleService.CommandAction.HOLD)));
         assertTrue(round.defenderArmy().get("ltank") >= ordinary.defenderArmy().get("ltank"));
     }
     @Test void reconEmptyEquipmentMatchesExistingOneProfileFormulaAndSeparatesProfiles() {
-        var r = UnitEquipmentRecon.resolve("scout", 100, Map.of("scout", 100), Map.of(), Map.of(), CommandBonus.NONE, CommandBonus.NONE, 0);
-        assertEquals(59, r.ownAlive()); assertEquals(57, r.enemyAlive().get("scout"));
+        var r = UnitEquipmentRecon.resolve("scout", 100, Map.of("scout", 100), Map.of(), Map.of(), CommandBonus.NONE, CommandBonus.NONE, 0, 0, 0);
+        assertEquals(58, r.ownAlive()); assertEquals(58, r.enemyAlive().get("scout"));
         var s = gear("scout", "ue_scout_armor", "ue_scout_radio");
         Map<String, Integer> mixed = new LinkedHashMap<>(); UnitEquipmentEffects.copyProfile(mixed, "scout~1", UnitEquipmentEffects.profile(s, "scout"));
-        var defended = UnitEquipmentRecon.resolve("scout", 100, Map.of("scout", 50, "scout~1", 50), Map.of(), mixed, CommandBonus.NONE, CommandBonus.NONE, 0);
+        var defended = UnitEquipmentRecon.resolve("scout", 100, Map.of("scout", 50, "scout~1", 50), Map.of(), mixed, CommandBonus.NONE, CommandBonus.NONE, 0, 0, 0);
         assertEquals(Set.of("scout", "scout~1"), defended.enemyAlive().keySet());
         assertTrue(defended.enemyAlive().get("scout~1") > 0);
     }

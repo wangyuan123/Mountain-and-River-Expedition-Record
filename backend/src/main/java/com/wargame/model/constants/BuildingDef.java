@@ -20,14 +20,18 @@ public record BuildingDef(
         Integer baseProduce,
         Integer capPer,
         Integer protectPer,
-        Integer defBonus,
         Integer airSpdBonus,
         Integer resBonus
 ) {
+    /** 墙体成长只作用于真实城市征服目标，不对守军提供倍率。 */
+    @com.fasterxml.jackson.annotation.JsonProperty
+    public Integer wallHpPerLevel() { return "wall".equals(key) ? com.wargame.model.dto.ConquestWallState.HP_PER_LEVEL : null; }
+    @com.fasterxml.jackson.annotation.JsonProperty
+    public Integer wallDefensePerLevel() { return "wall".equals(key) ? com.wargame.model.dto.ConquestWallState.DEFENSE_PER_LEVEL : null; }
     /** 便捷构造器，用于没有可选字段的建筑 */
     public BuildingDef(String key, String name, String desc,
                        Map<String, Integer> baseCost, double growth, String cat, Integer slots) {
-        this(key, name, desc, baseCost, growth, cat, slots, null, null, null, null, null, null, null, null);
+        this(key, name, desc, baseCost, growth, cat, slots, null, null, null, null, null, null, null);
     }
 
     public static final Map<String, BuildingDef> BUILDINGS;
@@ -37,7 +41,7 @@ public record BuildingDef(
                 Map.of("steel", 400, "food", 200), 1.6, "core", 1));
         m.put("house", new BuildingDef("house", "民居", "驻扎战备部队,提供人口与兵员上限,每级+1200",
                 Map.of("steel", 120, "food", 60), 1.5, "core", GameConstants.GROUP_SLOTS_ARMY_MAX,
-                1200, null, null, null, null, null, null, null));
+                1200, null, null, null, null, null, null));
         m.put("factory", new BuildingDef("factory", "军工厂", "生产步兵、地面装备",
                 Map.of("steel", 240, "oil", 100), 1.6, "army", GameConstants.GROUP_SLOTS_ARMY_MAX));
         m.put("lightfactory", new BuildingDef("lightfactory", "轻装战车厂", "生产轻型坦克",
@@ -52,38 +56,37 @@ public record BuildingDef(
                 Map.of("steel", 400, "oil", 180, "rare", 60), 1.7, "army", 1));
         m.put("academy", new BuildingDef("academy", "军校", "培养招募军官,等级提升整批五星概率",
                 Map.of("steel", 200, "food", 120, "gold", 200), 1.6, "core", 1));
-        m.put("staff", new BuildingDef("staff", "作战参谋部", "军事指挥、军官管理与高级军研",
+        m.put("staff", new BuildingDef("staff", "作战参谋部", "军事指挥、军官管理与高级科技",
                 Map.of("steel", 220, "food", 100), 1.6, "core", 1));
         m.put("headquarters", new BuildingDef("headquarters", "司令部", "任命司令官与提升出征队伍上限(基础5支+每级1支)，四项属性增益本城全部战斗",
                 Map.of("steel", 300, "food", 150, "gold", 150), 1.6, "core", 1));
         m.put("farm", new BuildingDef("farm", "农田", "每小时产出粮食",
                 Map.of("steel", 80), 1.5, "res", GameConstants.GROUP_SLOTS_RES_MAX,
-                null, "food", 40, null, null, null, null, null));
+                null, "food", 40, null, null, null, null));
         m.put("refinery", new BuildingDef("refinery", "炼钢厂", "每小时产出钢铁",
                 Map.of("steel", 80), 1.5, "res", GameConstants.GROUP_SLOTS_RES_MAX,
-                null, "steel", 40, null, null, null, null, null));
+                null, "steel", 40, null, null, null, null));
         m.put("oilfield", new BuildingDef("oilfield", "石油基地", "每小时产出石油",
                 Map.of("steel", 80), 1.5, "res", GameConstants.GROUP_SLOTS_RES_MAX,
-                null, "oil", 25, null, null, null, null, null));
+                null, "oil", 25, null, null, null, null));
         m.put("raremine", new BuildingDef("raremine", "稀矿厂", "每小时产出稀矿",
                 Map.of("steel", 120, "oil", 40), 1.6, "res", GameConstants.GROUP_SLOTS_RES_MAX,
-                null, "rare", 12, null, null, null, null, null));
+                null, "rare", 12, null, null, null, null));
         m.put("depot", new BuildingDef("depot", "军需仓库", "战备物资掠夺保护,被掠夺时保护资源",
                 Map.of("steel", 100), 1.5, "res", GameConstants.GROUP_SLOTS_ARMY_MAX,
-                null, null, null, null, 1000, null, null, null));
+                null, null, null, null, 1000, null, null));
         m.put("lab", new BuildingDef("lab", "军工科技研发中心", "解锁与加速科技研究",
                 Map.of("steel", 200, "food", 100, "rare", 20), 1.6, "core", 1));
         m.put("radar", new BuildingDef("radar", "防空雷达站", "预警进犯敌军与探测兵力",
                 Map.of("steel", 180, "oil", 60, "rare", 20), 1.6, "core", 1));
-        m.put("wall", new BuildingDef("wall", "城防", "基地外围城防设施,提升守城部队防御;四类城防武器共享容量,每级+3000",
-                Map.of("steel", 200, "food", 80), 1.5, "def", 1,
-                null, null, null, null, null, 5, null, null));
+        m.put("wall", new BuildingDef("wall", "城防", "征服战须先清除守军再破墙；每级墙体生命+250000、防御+20，四类工事共享容量+3000",
+                Map.of("steel", 200, "food", 80), 1.5, "def", 1));
         m.put("apron", new BuildingDef("apron", "战备机场", "空军调度阵位,空军全图航速+3%/级",
                 Map.of("steel", 220, "oil", 80, "rare", 20), 1.6, "def", 1,
-                null, null, null, null, null, null, 3, null));
+                null, null, null, null, null, 3, null));
         m.put("transit", new BuildingDef("transit", "战地兵站", "兵站后勤调度,全资源产出 +3%/级",
                 Map.of("steel", 160, "food", 80), 1.6, "res", 1,
-                null, null, null, null, null, null, null, 3));
+                null, null, null, null, null, null, 3));
         m.put("hospital", new BuildingDef("hospital", "战地医院", "支撑医疗技术研发，可进入伤兵营救治伤兵",
                 Map.of("steel", 240, "food", 160, "rare", 20), 1.6, "army", 1));
         m.put("liaison", new BuildingDef("liaison", "联络中心", "盟军情报与外交联络",

@@ -19,6 +19,7 @@ class PrivateChatServiceTest {
     ChatService chat;
     PrivateChatConversationRepository sessions;
     GameWebSocketHandler presence;
+    FriendContactRepository contacts;
     @BeforeEach void setup() {
         messages = mock(PrivateChatMessageRepository.class);
         players = mock(PlayerRepository.class);
@@ -27,12 +28,14 @@ class PrivateChatServiceTest {
         when(chat.filterContent(anyString())).thenReturn("filtered");
         sessions = mock(PrivateChatConversationRepository.class);
         presence = mock(GameWebSocketHandler.class);
-        service = new PrivateChatService(messages, players, new RateLimiter(), push, chat, sessions, presence);
+        contacts = mock(FriendContactRepository.class, CALLS_REAL_METHODS);
+        service = new PrivateChatService(messages, players, new RateLimiter(), push, chat, sessions, presence, contacts);
         var sender = new Player(); sender.setId(1L); sender.setUsername("alice"); sender.setPrestige(0);
         recipient = new Player(); recipient.setId(2L); recipient.setUsername("bob");
         when(players.findById(1L)).thenReturn(Optional.of(sender));
         when(players.lockById(1L)).thenReturn(Optional.of(sender));
         when(players.findById(2L)).thenReturn(Optional.of(recipient));
+        when(players.lockById(2L)).thenReturn(Optional.of(recipient));
         when(messages.save(any())).thenAnswer(inv -> { PrivateChatMessage m = inv.getArgument(0); m.setId(10L); return m; });
     }
     @Test void keywordsAreMaskedBeforeSavingAndInExistingConversationPreviews() {

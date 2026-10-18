@@ -57,6 +57,11 @@ function fixture() {
   c.window.document = c.document;
   c.window.PIXI = c.PIXI;
   c.window.Game = c.Game;
+  c.requests = [];
+  c.Game.API = { getMapChunk: async (cx, cy) => {
+    c.requests.push({ cx, cy });
+    return { cx, cy, targets: [], marches: [] };
+  } };
   vm.createContext(c);
 
   require('./load-constants.cjs')(c);
@@ -95,16 +100,25 @@ test('seawater connects seamlessly across x=399 and x=400 with no sky gap', () =
   const q1Sea = ocean.sea(399, 200);
   assert.equal(q1Sea, true, 'Q1 boundary cell is sea');
 
-  // Region check: Q1 gives sea region, Q2 gives uncolonized sea region (no sky gap)
+  // 四大战场的海陆采样相同，中轴两侧海水连续且可通航。
   const q1Region = terrain.region(399, 200, size);
   assert.match(q1Region, /海洋/);
   const q2Region = terrain.region(400, 200, size);
-  assert.equal(q2Region, '未开辟海域 · 无法通行');
+  assert.equal(q2Region, '东北战场 · 海域 · 可通航');
+  assert.equal(ocean.sea(400, 200), q1Sea);
 
   // Other Quadrants (Q2, Q3, Q4):
-  assert.match(terrain.region(600, 100, size), /未开辟/);
-  assert.match(terrain.region(100, 600, size), /未开辟/);
-  assert.match(terrain.region(600, 600, size), /未开辟/);
+  assert.match(terrain.region(600, 100, size), /东北战场.*可选址建城/);
+  assert.match(terrain.region(100, 600, size), /西南战场.*可选址建城/);
+  assert.match(terrain.region(600, 600, size), /东南战场.*可选址建城/);
+  for (const [x, y] of [[40, 80], [399, 200], [350, 150]]) {
+    const expected = ocean.sea(x, y);
+    for (const [mx, my] of [[799 - x, y], [x, 799 - y], [799 - x, 799 - y]]) {
+      assert.equal(ocean.sea(mx, my), expected);
+      assert.equal(ocean.sample(mx + .5, my + .5), ocean.sample(x + .5, y + .5));
+    }
+  }
+  assert.equal(ocean.sea(800, 200), false);
 
   // Outer border overflow:
   assert.equal(terrain.region(-1, 100, size), '边境天穹 · 无法通行');
@@ -130,13 +144,17 @@ test('camera allows panning across all 4 quadrants up to 800 bounds with 6-space
   assert.equal(cam.y, 800 - e.y + 6);
 });
 
-test('requestChunks filters out quadrants 2, 3, 4 and only loads quadrant 1', () => {
-  const c = fixture();
-  const v = Object.create(c.Game.TestMapView.prototype);
-  v.camera = new c.Game.MapCamera(800, 600, 600, 48); // Focused on Q4
-  v.camera.width = 400; v.camera.height = 400;
-
-  // Since camera is in Q4 (cx >= 25, cy >= 25), chunks are filtered out
-  const chunks = v.camera.chunks().filter(cell => cell.cx < 25 && cell.cy < 25);
-  assert.equal(chunks.length, 0, 'No chunks requested for uncolonized quadrants');
+test('requestChunks loads map targets in every battlefield', async () => {
+  for (const [x, y] of [[200, 200], [600, 200], [200, 600], [600, 600]]) {
+    const c = fixture();
+    const v = Object.create(c.Game.TestMapView.prototype);
+    v.camera = new c.Game.MapCamera(800, x, y, 48);
+    v.camera.width = 400; v.camera.height = 400;
+    v.requestChunks();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.ok(c.requests.length > 0);
+    const expected = v.camera.chunks().map(cell => cell.cx + ',' + cell.cy).sort();
+    assert.deepEqual(c.requests.map(cell => cell.cx + ',' + cell.cy).sort(), Array.from(expected));
+    assert.ok(c.requests.some(cell => cell.cx === Math.floor(x / 16) && cell.cy === Math.floor(y / 16)));
+  }
 });

@@ -43,27 +43,38 @@ function setup(extra = {}) {
   return c;
 }
 
+test('infantry personal cargo contributes to dispatch load and shares logistics technology', () => {
+  const { Game: g } = setup();
+  assert.equal(g.World.calcDispatchLoad({ infantry: 1 }), 10);
+  assert.equal(g.World.calcDispatchLoad({ infantry: 50 }), g.World.calcDispatchLoad({ truck: 1 }));
+  assert.equal(g.World.calcDispatchLoad({ infantry: 100, truck: 2 }), 2000);
+  g.Core.state.tech.log_load = 10;
+  assert.equal(g.World.calcDispatchLoad({ infantry: 100 }), 1500);
+  assert.equal(g.World.calcDispatchLoad({ infantry: 100, truck: 2 }), 3000);
+  g.Core.state.tech.log_load = 1;
+  assert.equal(g.World.calcDispatchLoad({ infantry: 10 }), 105);
+});
+
 test('calcDispatchSpeed selects slowest unit speed among multiple unit types', () => {
   const { Game: g } = setup();
 
-  // Single unit: scout (base speed 11)
+  // 侦察机基础速度9。
   const res1 = g.World.calcDispatchSpeed({ scout: 5 });
-  assert.equal(res1.slowestSpd, 11);
+  assert.equal(res1.slowestSpd, 9);
   assert.equal(res1.slowestUnitId, 'scout');
   assert.equal(res1.slowestUnitName, g.DATA.units.scout.name);
   assert.equal(res1.unitCount, 1);
 
-  // Mixed units: scout (11) and infantry (4)
-  // Army always travels together, so slowest speed (4) must be chosen
+  // 混编按最慢兵种：侦察机9、步兵2，整队采用步兵速度。
   const res2 = g.World.calcDispatchSpeed({ scout: 10, infantry: 50 });
-  assert.equal(res2.slowestSpd, 4);
+  assert.equal(res2.slowestSpd, 2);
   assert.equal(res2.slowestUnitId, 'infantry');
   assert.equal(res2.slowestUnitName, g.DATA.units.infantry.name);
   assert.equal(res2.unitCount, 2);
 
-  // Mixed units: ltank (6), truck (6) -> slowest is ltank (6)
+  // 轻坦与卡车基础速度均为4，同速时保留遍历到的首个兵种。
   const res3 = g.World.calcDispatchSpeed({ ltank: 20, truck: 10 });
-  assert.equal(res3.slowestSpd, 6);
+  assert.equal(res3.slowestSpd, 4);
   assert.equal(res3.slowestUnitId, 'ltank');
   assert.equal(res3.slowestUnitName, g.DATA.units.ltank.name);
 
@@ -85,58 +96,62 @@ test('calcDispatchSpeed factors in engine technology speed bonuses', () => {
   g.Core.state.tech.arm_engine = 2; // +10%
   g.Core.state.tech.air_engine = 4; // +20%
 
-  // ltank base speed = 6. With arm_engine lv 2 (1.10x) -> effective speed = 6.6
+  // 轻坦基础4，燃烧引擎2级后为4.4。
   const resArm = g.World.calcDispatchSpeed({ ltank: 10 });
-  assert.ok(Math.abs(resArm.slowestSpd - 6.6) < 1e-6);
+  assert.ok(Math.abs(resArm.slowestSpd - 4.4) < 1e-6);
 
-  // scout base speed = 11. With air_engine lv 4 (1.20x) -> effective speed = 13.2
+  // 侦察机基础9，喷气推进4级后为10.8。
   const resAir = g.World.calcDispatchSpeed({ scout: 5 });
-  assert.ok(Math.abs(resAir.slowestSpd - 13.2) < 1e-6);
+  assert.ok(Math.abs(resAir.slowestSpd - 10.8) < 1e-6);
 
-  // Combination: ltank (6.6) + scout (13.2) -> slowest is ltank (6.6)
+  // 轻坦4.4与侦察机10.8混编，采用轻坦速度。
   const resMixed = g.World.calcDispatchSpeed({ ltank: 10, scout: 5 });
-  assert.ok(Math.abs(resMixed.slowestSpd - 6.6) < 1e-6);
+  assert.ok(Math.abs(resMixed.slowestSpd - 4.4) < 1e-6);
   assert.equal(resMixed.slowestUnitId, 'ltank');
 
-  // Infantry has no engine tech, remains base speed 4
+  // 步兵也接燃烧引擎，基础2在2级科技下为2.2。
   const resWithInf = g.World.calcDispatchSpeed({ ltank: 10, scout: 5, infantry: 20 });
-  assert.equal(resWithInf.slowestSpd, 4);
+  assert.equal(resWithInf.slowestSpd, 2.2);
   assert.equal(resWithInf.slowestUnitId, 'infantry');
+
+  // 特种兵与卡车共用陆军科技，地图行军预估同步获得加成。
+  assert.ok(Math.abs(g.World.calcDispatchSpeed({ special: 10 }).slowestSpd - 6.6) < 1e-6);
+  assert.ok(Math.abs(g.World.calcDispatchSpeed({ truck: 10 }).slowestSpd - 4.4) < 1e-6);
 });
 
 test('calcDispatchMarchTime computes march seconds accurately with distance and speed boost', () => {
   const { Game: g } = setup();
 
-  // Distance: 10 tiles, Speed: 3 (infantry), secPerGrid: 9
-  // ceil(10 * 9 / 3) = 30 seconds
+  // Distance: 10 tiles, Speed: 3, secPerGrid: 18
+  // ceil(10 * 18 / 3) = 60 seconds
   const t1 = g.World.calcDispatchMarchTime(10, 3, 1.0);
-  assert.equal(t1, 30);
+  assert.equal(t1, 60);
 
-  // Distance: 15 tiles, Speed: 6.6 (ltank with tech)
-  // 15 * 9 / 6.6 = 135 / 6.6 ≈ 20.45 -> ceil = 21 seconds
-  const t2 = g.World.calcDispatchMarchTime(15, 6.6, 1.0);
-  assert.equal(t2, 21);
+  // 距离15格，轻坦2级引擎速度4.4：ceil(15 × 18 / 4.4) = 62秒。
+  const t2 = g.World.calcDispatchMarchTime(15, 4.4, 1.0);
+  assert.equal(t2, 62);
 
   // With 50% march boost (speedMul = 1.5)
-  // 10 * 9 / (3 * 1.5) = 90 / 4.5 = 20 seconds
+  // 10 * 18 / (3 * 1.5) = 180 / 4.5 = 40 seconds
   const t3 = g.World.calcDispatchMarchTime(10, 3, 1.5);
-  assert.equal(t3, 20);
+  assert.equal(t3, 40);
 
   // Minimum duration is 1 second
   const t4 = g.World.calcDispatchMarchTime(0, 14, 1.0);
   assert.equal(t4, 1);
 });
 
-test('calcDispatchFuel uses distance and route legs for oil consumption', () => {
+test('calcDispatchFuel multiplies rounded distance and route-leg oil consumption by ten', () => {
   const { Game: g } = setup();
 
-  // 10 格、30 秒单程：步兵无油耗；特种兵装备和坦克均消耗石油。
+  // 单程原始油耗 1.4，先取整为 2 再乘 10；步兵不贡献油耗。
   const oneWay = g.World.calcDispatchFuel({ infantry: 10, special: 2, ltank: 3 }, 10, 1);
-  assert.equal(oneWay, 2);
+  assert.equal(oneWay, 20);
 
   // 普通出征预扣往返油耗，驻防只需要单程油耗。
   const roundTrip = g.World.calcDispatchFuel({ infantry: 10, special: 2, ltank: 3 }, 10, 2);
-  assert.equal(roundTrip, 3);
+  assert.equal(roundTrip, 30);
+  assert.equal(g.World.calcDispatchFuel({ infantry: 10 }, 10, 2), 0);
 });
 
 test('all units define non-negative march fuel while infantry remains fuel-free', () => {
@@ -173,9 +188,12 @@ test('renderDispatch defaults all available units to 0 and exposes a one-unit sh
   assert.match(v.innerHTML, /id="dqty_infantry"[^>]*value="0"/);
   assert.match(v.innerHTML, /id="dqty_ltank"[^>]*value="0"/);
   assert.match(v.innerHTML, /id="dqty_truck"[^>]*value="0"/);
+  assert.ok(v.innerHTML.includes('步兵(M1) (负重10/人)'));
+  assert.ok(v.innerHTML.includes('卡车(CCKW-353) (辎重500/辆)'));
   assert.match(v.innerHTML, /全部设置1单位/);
   assert.match(v.innerHTML, /重置/);
   assert.match(v.innerHTML, /行军油耗/);
+  assert.ok(v.innerHTML.includes('携带资源 (部队负重内)'));
   assert.doesNotMatch(v.innerHTML, /行军粮耗|每5分钟粮耗/);
 });
 

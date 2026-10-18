@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class PrerequisiteIntegrationTest extends BaseServiceTest {
     @Autowired private PrerequisiteService prerequisites;
+    @Autowired private com.wargame.service.TechService techService;
     private Long playerId;
 
     @BeforeEach
@@ -24,6 +25,28 @@ class PrerequisiteIntegrationTest extends BaseServiceTest {
         Player player = createTestPlayer("prerequisite-player", 30);
         playerId = player.getId();
         giveResources(playerId, 100000, 100000, 100000, 100000, 100000);
+    }
+
+    @Test
+    void fireDensityRequiresCompletedLocalFacilitiesBeforeChargingAndUsesSharedQueue() {
+        int steel = getResources(playerId).getSteel();
+        var denied = techService.startResearch(playerId, "fire_density");
+        assertEquals(false, denied.get("success"));
+        assertEquals(steel, getResources(playerId).getSteel());
+        createBuilding(playerId, "lab", 3);
+        createBuilding(playerId, "factory", 1);
+        createBuilding(playerId, "academy", 1);
+        createBuilding(playerId, "raremine", 1);
+        var started = techService.startResearch(playerId, "fire_density");
+        assertEquals(true, started.get("success"));
+        assertEquals(1, started.get("targetLevel"));
+        assertEquals(steel - 300, getResources(playerId).getSteel());
+        assertEquals(false, techService.startResearch(playerId, "cmd_hp").get("success"));
+        assertEquals(0, techService.getTechLevel(playerId, "fire_density"));
+        assertEquals(true, techService.cancelResearch(playerId, null).get("success"));
+        assertEquals(steel - 60, getResources(playerId).getSteel());
+        assertTrue(prerequisites.unmet(playerId, 0, "technologies", "fire_density", 10).stream()
+                .anyMatch(m -> "staff".equals(m.get("building")) && Integer.valueOf(8).equals(m.get("required"))));
     }
 
     @Test

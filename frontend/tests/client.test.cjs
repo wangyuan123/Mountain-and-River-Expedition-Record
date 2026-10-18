@@ -328,10 +328,25 @@ function incomingContext() {
   return G;
 }
 
+test('protection ticks synchronize extension and explicit zero for account and current city', () => {
+  const G = incomingContext();
+  G.state.cityState = { newbieProtectionUntil: 1000 };
+  G.state.player.newbieProtectionUntil = 1000;
+  let invalidations = 0;
+  G.WorldMap = { invalidate() { invalidations++; } };
+  G.WS.emit('tick', { newbieProtectionUntil: 2000 });
+  assert.equal(G.state.player.newbieProtectionUntil, 2000);
+  assert.equal(G.state.cityState.newbieProtectionUntil, 2000);
+  G.WS.emit('tick', { newbieProtectionUntil: 0 });
+  assert.equal(G.state.player.newbieProtectionUntil, 0);
+  assert.equal(G.state.cityState.newbieProtectionUntil, 0);
+  assert.equal(invalidations, 2);
+});
+
 test('incoming tick updates the list and keeps the military alert red until the threat is gone', () => {
   const G = incomingContext();
   const attack = { id: 'march-7', fromName: '<敌军>', targetName: '我方城', targetX: 100, targetY: 100,
-    arriveAt: Date.now() + 60000, army: { infantry: 10 }, action: 'plunder' };
+    arriveAt: Date.now() + 60000, army: { infantry: 10 }, action: 'plunder', radarLevel: 4 };
   G.WS.emit('tick', { incoming: [attack] });
   assert.match(G._nav, /class="navitem active alert" data-route="alerts"/);
   const view = { innerHTML: '' };
@@ -343,7 +358,7 @@ test('incoming tick updates the list and keeps the military alert red until the 
   assert.equal(G.state.world.incoming[0].expanded, true);
   G.World.renderAlerts(view);
   assert.match(view.innerHTML, /我方城/);
-  assert.match(view.innerHTML, /x10/);
+  assert.match(view.innerHTML, /[×x]10/);
   G.WS.emit('tick', { incoming: [] });
   assert.doesNotMatch(G._nav, /class="navitem active alert" data-route="alerts"/);
   G.World.renderAlerts(view);
@@ -447,7 +462,7 @@ test('导航栏最后显示文字商城，顶部不再显示商城图标', () =>
 
   const labels = [...navHtml.matchAll(/class="navlabel">([^<]+)<\/span>/g)].map(m => m[1]);
   assert.deepEqual(labels, [
-    '首页', '后勤', '军工', '军官', '军队', '地图', '军情', '战报', '通讯', '电报', '任务', '军团', '仓库', '军研', '军校', '对战', '切城', '战术', '排名', '商城'
+    '首页', '后勤', '军工', '军官', '军队', '地图', '军情', '战报', '聊天', '电报', '任务', '军团', '仓库', '科技', '军校', '对战', '切城', '战术', '排名', '商城'
   ]);
   assert.match(navHtml, /class="navitem" data-route="officer" onclick="Game\.go\('officer'\)"/);
   assert.match(navHtml, /class="navitem" data-route="academy" onclick="Game\.go\('academy'\)"/);
@@ -497,7 +512,7 @@ test('导航栏军事后包含军官Tab，点击直达军官列表并在军官�
   assert.match(navHtml, /class="navitem active" data-route="officer"/);
 });
 
-test('导航栏军研后包含军校Tab，点击直达军校招募界面并在军校页保持高亮', () => {
+test('导航栏科技后包含军校Tab，点击直达军校招募界面并在军校页保持高亮', () => {
   const context = sandbox();
   for (const file of ['js/save.js', 'js/data.js', 'js/core.js', 'js/cities.js', 'js/officer.js', 'js/main-view.js']) load(context, file);
   const G = context.Game;

@@ -66,7 +66,7 @@ window.Game = window.Game || {};
       h += '<div class="rech-channels">';
       h += '<span class="rech-channel active">模拟支付</span>';
       h += '</div>';
-      h += '<div class="rech-grid' + (self.curTab === 'monthly' ? ' monthly' : '') + '">';
+      h += '<div class="rech-grid">';
       for (var j = 0; j < PACKAGES.length; j++) {
         var p = PACKAGES[j];
         if (p.cat !== self.curTab) continue;

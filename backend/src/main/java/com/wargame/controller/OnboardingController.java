@@ -21,7 +21,12 @@ public class OnboardingController {
     public Map<String, Object> status() { return onboarding.status(id()); }
 
     @PostMapping("/start")
-    public Map<String, Object> start() { return onboarding.start(id()); }
+    public Map<String, Object> start() {
+        Long id = id();
+        Map<String, Object> result = onboarding.start(id);
+        result.put("state", game.getGameState(id));
+        return result;
+    }
 
     @PostMapping("/pause")
     public Map<String, Object> pause(@RequestBody Map<String, Boolean> body) {
@@ -44,14 +49,11 @@ public class OnboardingController {
         return result;
     }
 
-    @PostMapping("/plan")
-    public Map<String, Object> plan(@RequestBody Map<String, String> body) { return onboarding.choosePlan(id(), body.get("plan")); }
-
-    /** 确认收尾并返回最新余额，完成奖励沿用一次性发放规则。 */
+    /** 引导在战报已读后自动完成，此接口可重复读取结算状态。 */
     @PostMapping("/finish")
     public Map<String, Object> finish() {
         Long id = id();
-        Map<String, Object> result = onboarding.choosePlan(id, "explore");
+        Map<String, Object> result = onboarding.finish(id);
         result.put("state", game.getGameState(id));
         return result;
     }
@@ -69,10 +71,15 @@ public class OnboardingController {
         return onboarding.target(id(), Boolean.TRUE.equals(body.get("gather")));
     }
 
-    @PostMapping("/finish-gather")
-    public Map<String, Object> finishGather() {
+    @PostMapping("/tasks/begin")
+    public Map<String, Object> beginTask(@RequestBody Map<String, String> body) {
+        return onboarding.beginTask(id(), body.get("taskId"));
+    }
+
+    @PostMapping("/tasks/claim")
+    public Map<String, Object> claimTask(@RequestBody Map<String, String> body) {
         Long id = id();
-        Map<String, Object> result = onboarding.finishGather(id);
+        Map<String, Object> result = onboarding.claimTask(id, body.get("taskId"));
         result.put("state", game.getGameState(id));
         return result;
     }

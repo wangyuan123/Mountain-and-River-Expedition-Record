@@ -36,14 +36,26 @@
 .dispatch-gather-mode > span > span { color:var(--muted, #62738d); font-size:12px; line-height:1.6; }
 .dispatch-gather-mode:focus-within { outline:2px solid var(--accent, #416993); outline-offset:2px; }
 .dispatch-gather-mode.is-disabled { opacity:.5; cursor:not-allowed; background:var(--surface-muted, #eef4fb); }
-.dispatch-occupy-switch { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:44px; cursor:pointer; }
-.dispatch-occupy-control { display:flex; align-items:center; gap:10px; }
-.dispatch-occupy-control input { appearance:none; width:40px; height:24px; margin:0; border:1px solid var(--line); border-radius:14px; background:var(--surface-muted); position:relative; }
-.dispatch-occupy-control input::after { content:''; position:absolute; width:16px; height:16px; left:3px; top:3px; border-radius:50%; background:var(--muted); }
-.dispatch-occupy-control input:checked { background:var(--accent); border-color:var(--accent); }
-.dispatch-occupy-control input:checked::after { left:19px; background:var(--surface); }
-.dispatch-occupy-control input:disabled { opacity:.55; cursor:not-allowed; }
-.dispatch-occupy-control input:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+[data-theme|="blue-white"] .dispatch-preparation { --surface:#fff; --surface-muted:#eef4fb; --ink:#334455; --muted:#62738d; --line:#d4e0ee; --accent:#416993; color-scheme:light; }
+[data-theme="paper"] .dispatch-preparation { --surface:#f6f5f0; --surface-muted:#ebe7df; --ink:#273136; --muted:#58635c; --line:#ded9cd; --accent:#3f5e4d; color-scheme:light; }
+[data-theme="dark"] .dispatch-preparation { --surface:#162032; --surface-muted:#1c2937; --ink:#e2e8f0; --muted:#a9b8c8; --line:#3a4b5e; --accent:#94bddf; color-scheme:dark; }
+.dispatch-preparation-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:4px 12px; padding:12px 2px; }
+.dispatch-preparation-heading h2 { color:var(--accent, #416993); font-size:18px; font-weight:600; }
+.dispatch-preparation-heading > span { color:var(--muted, #62738d); font-size:12px; }
+.dispatch-section-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px 12px; margin:16px 0 8px; color:var(--ink, #334455); font-size:14px; font-weight:600; }
+.dispatch-section-heading small { margin-left:6px; color:var(--muted, #62738d); font-size:11px; font-weight:400; }
+.dispatch-campaign-settings { margin:14px 0; padding:16px; border:1px solid var(--line, #d4e0ee); border-radius:10px; background:var(--surface, #fff); }
+.dispatch-campaign-choice { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.dispatch-campaign-choice label { color:var(--ink, #334455); font-size:15px; font-weight:600; }
+.dispatch-campaign-choice small { display:block; margin-top:3px; color:var(--muted, #62738d); font-size:12px; font-weight:400; }
+.dispatch-campaign-choice select { flex:0 1 168px; min-width:112px; min-height:42px; padding:8px 12px; border:1px solid var(--line, #d4e0ee); border-radius:6px; background:var(--surface, #fff); color:var(--ink, #334455); font:inherit; cursor:pointer; }
+.dispatch-campaign-choice select:focus-visible { outline:2px solid var(--accent, #416993); outline-offset:3px; }
+.dispatch-campaign-hint { margin-top:14px; padding:12px 14px; border:1px solid #d4e5f5; border-left:3px solid #6d9bc5; border-radius:6px; background:#edf6ff; color:#365b7b; }
+.dispatch-campaign-hint-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px 12px; margin-bottom:6px; font-size:13px; }
+.dispatch-campaign-hint-heading > span { padding:2px 8px; border-radius:4px; background:#dcecfb; color:#416993; font-size:11px; white-space:nowrap; }
+.dispatch-campaign-hint p { margin:0; color:inherit; font-size:12px; line-height:1.8; }
+[data-theme="dark"] .dispatch-campaign-hint { border-color:#35516c; border-left-color:#88b4dc; background:#1c3045; color:#c0dbf3; }
+[data-theme="dark"] .dispatch-campaign-hint-heading > span { background:#2a435e; color:#c0dbf3; }
 .dispatch-campaign-subtitle { margin:14px 0 8px; font-weight:600; }
 .wild-gather-march { margin:8px 0; padding:8px; border:1px solid var(--line, #d4e0ee); border-radius:6px; font-size:12px; line-height:1.6; }
 .wild-gather-march button { margin-top:6px; }

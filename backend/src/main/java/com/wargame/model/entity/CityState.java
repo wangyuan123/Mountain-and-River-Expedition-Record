@@ -23,12 +23,6 @@ public class CityState extends CityOwnedEntity {
     @Column(name = "status", length = 20)
     private String status;
 
-    @Column(name = "war_target_id")
-    private Long warTargetId;
-
-    @Column(name = "war_at")
-    private Long warAt;
-
     @Column(name = "war_end_at")
     private Long warEndAt;
 

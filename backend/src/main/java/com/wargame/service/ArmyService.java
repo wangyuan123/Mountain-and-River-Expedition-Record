@@ -506,12 +506,12 @@ public class ArmyService {
     }
 
     // ================================================================
-    //  trainMul - 对应 JS Core.trainMul: 1 + 0.10 * log_train
+    //  trainMul - 对应 JS Core.trainMul: 1 + 0.05 * log_train
     // ================================================================
 
     public double trainMul(Long playerId) {
         int logTrain = getTechLevel(playerId, "log_train");
-        return 1 + 0.10 * logTrain;
+        return 1 + 0.05 * logTrain;
     }
 
     // ================================================================

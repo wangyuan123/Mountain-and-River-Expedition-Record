@@ -42,7 +42,7 @@ public class NpcFootprintService {
         var world = worlds.lockById(worldId).orElseThrow();
         String mask = terrain.current();
         if (mask == null || mask.isEmpty()) return;
-        int size = Math.min(WorldConfig.SIZE, world.getSize() == null ? WorldConfig.SIZE : world.getSize());
+        int size = Math.min(WorldConfig.WORLD_SIZE, world.getSize() == null ? WorldConfig.WORLD_SIZE : world.getSize());
         Map<String, Integer> occupied = new HashMap<>();
         wilds.findByWorldId(worldId).forEach(w -> mark(occupied, w.getX(), w.getY(), 1, 1));
         cities.findByWorldId(worldId).forEach(c -> mark(occupied, c.getX(), c.getY(), 2, 1));

@@ -377,6 +377,46 @@ test('battle details keep movement and finishing attacks together for both sides
     detail.innerHTML.indexOf('★ 全歼敌军'));
 });
 
+test('battle details show final damage and chained kills without changing replay data', () => {
+  const { G } = setup();
+  G.fmt = String;
+  G.escapeHtml = value => String(value).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const roundLogs = Object.freeze([
+    '-- 第4回合 --',
+    '我方反坦克火箭车-喀秋莎（BM-13）(137569) [前进] 推进375 -> 坐标1500 (距敌2400)；齐射敌战斗机-野马（P-51）(88038) 对空攻击110 本次原始火力15140156 伤害3785039 击毁1261 剩余攻击额度0% 有效射程3200 目标距离2400',
+    '我方反坦克火箭车(100)齐射敌装甲车(1) [倍率×3.0 相克 指定集火] 对地攻击200 本次原始火力20000 伤害720 击毁1 剩余攻击额度90% 有效射程1600 目标距离200；余伤攻击敌重型坦克(2) [前排承伤] 对地攻击200 伤害2000 击毁2 剩余攻击额度40% 有效射程1600 目标距离300；余伤攻击敌轰炸机(100) 对空攻击23 伤害3900 击毁10 剩余攻击额度0% 有效射程1600 目标距离500',
+    '敌方步兵(20) [绝境反击] 我方反坦克火箭车(100) [火力密度×2.0 破甲6%] 伤害10 击毁1',
+    '我方特种兵(10)突袭敌步兵<script>(5) 对地攻击1 本次原始火力10 伤害0 击毁0 剩余攻击额度0% 目标距离100'
+  ]);
+  G.Battle._viewReport = { type: 'battle', time: Date.now(), win: true, roundLogs };
+  const detail = { innerHTML: '' };
+  G.Battle.renderReportDetail(detail);
+
+  assert.match(detail.innerHTML, /我方反坦克火箭车-喀秋莎（BM-13）\(137569\) \[前进\] 推进375 -&gt; 坐标1500 \(距敌2400\)；齐射敌方战斗机-野马（P-51），造成3785039点伤害，击毁1261，目标距离2400/);
+  assert.match(detail.innerHTML, /齐射敌方装甲车，造成720点伤害，击毁1，目标距离200；势不可挡，继续攻击敌方重型坦克，造成2000点伤害，击毁2，目标距离300；势不可挡，继续攻击敌方轰炸机，造成3900点伤害，击毁10，目标距离500/);
+  assert.match(detail.innerHTML, /敌方步兵\(20\) \[绝境反击\] 我方反坦克火箭车，造成10点伤害，击毁1/);
+  assert.match(detail.innerHTML, /突袭敌方步兵&lt;script&gt;，造成0点伤害，击毁0/);
+  assert.equal((detail.innerHTML.match(/势不可挡/g) || []).length, 2);
+  assert.doesNotMatch(detail.innerHTML, /对空攻击|对地攻击|原始火力|剩余攻击额度|有效射程|倍率×|前排承伤|火力密度×|<script>/);
+  assert.match(roundLogs[1], /本次原始火力15140156.*剩余攻击额度0% 有效射程3200/);
+});
+
+test('combat log summaries support legacy models, zero damage and wall follow-up attacks', () => {
+  const { G } = setup();
+  for (const [raw, expected] of [
+    ['敌方战列舰(5)炮击我轻型坦克(1944)(10) 伤害100 击毁3',
+      '敌方战列舰(5)炮击我方轻型坦克(1944)，造成100点伤害，击毁3'],
+    ['我方步兵(10)余伤攻击敌步兵(10) 对地攻击0 伤害0 击毁0 剩余攻击额度0% 目标距离0',
+      '我方步兵(10)继续攻击敌方步兵，造成0点伤害，击毁0，目标距离0'],
+    ['我方火箭车(100) [前进] 推进100 -> 坐标100；余伤攻击敌城墙，伤害900，墙体剩余生命100，有效射程1600 目标距离0',
+      '我方火箭车(100) [前进] 推进100 -> 坐标100；势不可挡，继续攻击敌方城墙，造成900点伤害，墙体剩余生命100，目标距离0'],
+    ['我方火箭车(100) 攻击敌城墙，伤害0，墙体剩余生命1000，有效射程1600 目标距离0',
+      '我方火箭车(100) 攻击敌方城墙，造成0点伤害，墙体剩余生命1000，目标距离0'],
+    ['我方步兵(10) [待命] 当前目标不可攻击，未开火',
+      '我方步兵(10) [待命] 当前目标不可攻击，未开火']
+  ]) assert.equal(G.Battle.formatCombatLogLine(raw), expected);
+});
+
 test('defender battle report maps the invader and commander to the enemy side', () => {
   const { G } = setup();
   G.fmt = String;
@@ -440,7 +480,7 @@ test('battle report wraps coordinates and includes recorded rounds in both persp
   assert.doesNotMatch(oldBoard, /历经|\(\)/);
 });
 
-test('battle commander skills show final bonuses instead of per-level rules', () => {
+test('battle commander skills show only names, levels and snapshot bonuses', () => {
   const { G } = setup();
   G.escapeHtml = value => String(value).replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const panel = G.Battle.renderCommanderPanel({
@@ -448,15 +488,19 @@ test('battle commander skills show final bonuses instead of per-level rules', ()
       name: '朱可夫', level: 100, military: 219,
       skills: [
         { name: '全军冲锋', level: 5, description: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），全军攻击力额外+10%/级' },
+        { name: '借甲御敌', level: 5, description: '首次交战回合触发，此后间隔两个回合再次触发；受击时借用交火阶段开始时存活同名敌军防御的30%，单次最高为敌军同名兵种防御的30%，仅本回合生效；参考值只含基础防御与防御科技' },
+        { name: '火力压制', level: 2, description: '首次交战回合触发，此后间隔两个回合再次触发，降低敌方自身攻击力12%，仅本回合生效，主动攻击、余伤攻击与反击均适用' },
         { name: '破甲打击', level: 5, description: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），无视敌方有效防御30%，仅本回合生效，主动攻击、余伤攻击与反击均适用' }
       ]
     },
     defender: null
   }, 'attacker');
 
-  assert.match(panel, /首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），全军攻击力额外\+50%/);
-  assert.match(panel, /无视敌方有效防御30%，仅本回合生效，主动攻击、余伤攻击与反击均适用/);
-  assert.doesNotMatch(panel, /%\/级/);
+  assert.match(panel, /<b>全军冲锋 Lv\.5<\/b><span>全军攻击力 \+50%<\/span>/);
+  assert.match(panel, /<b>借甲御敌 Lv\.5<\/b><span>借用同名敌军防御的 30%<\/span>/);
+  assert.match(panel, /<b>火力压制 Lv\.2<\/b><span>敌方自身攻击力 -12%<\/span>/);
+  assert.match(panel, /<b>破甲打击 Lv\.5<\/b><span>无视敌方有效防御 30%<\/span>/);
+  assert.doesNotMatch(panel, /%\/级|首次交战|回合|参考值|最高|主动攻击|反击/);
 });
 
 test('legacy player battle report infers defender perspective from attacker name', () => {
@@ -499,6 +543,7 @@ test('new battle reports show a recipient settlement snapshot', () => {
     plunder: { food: 120, gold: 30 }, exp: 80,
     prestigeChange: 12, prestigeAfter: 248, moraleChange: 1, moraleAfter: 71,
     enemyMoraleChange: -2, enemyMoraleAfter: 68,
+    resentmentChange: 0, resentmentAfter: 8, enemyResentmentChange: 3, enemyResentmentAfter: 13,
     losses: 40, recoveryPercent: 25, recoveredCount: 10
   }, false);
 
@@ -511,6 +556,8 @@ test('new battle reports show a recipient settlement snapshot', () => {
   assert.match(board, /\+1 <small>当前 71<\/small>/);
   assert.match(board, /敌军城市民心变化/);
   assert.match(board, /-2 <small>战后 68<\/small>/);
+  assert.match(board, /民怨变化<\/span><b>\+0 <small>战后 8<\/small>/);
+  assert.match(board, /敌军城市民怨变化<\/span><b>\+3 <small>战后 13<\/small>/);
   assert.match(board, /本方战损/);
   assert.match(board, /伤兵回收/);
   assert.match(board, /25% <small>入营 10<\/small>/);
@@ -521,14 +568,20 @@ test('defender reports show zero enemy morale and omit unrecorded enemy cities',
   G.fmt = String;
   const report = {
     time: Date.now(), perspective: 'defender', win: true, targetType: 'player',
-    moraleChange: 1, moraleAfter: 71, enemyMoraleChange: 0, enemyMoraleAfter: 0
+    moraleChange: 1, moraleAfter: 71, enemyMoraleChange: 0, enemyMoraleAfter: 0,
+    resentmentChange: 2, resentmentAfter: 12, enemyResentmentChange: 0, enemyResentmentAfter: 0
   };
   const board = G.Battle.renderReportBoard(report, false);
   assert.match(board, /敌军城市民心变化<\/span><b>\+0 <small>战后 0<\/small>/);
+  assert.match(board, /敌军城市民怨变化<\/span><b>\+0 <small>战后 0<\/small>/);
   for (const snapshot of [{ enemyMoraleChange: null, enemyMoraleAfter: null }, { enemyMoraleChange: undefined, enemyMoraleAfter: undefined }]) {
     const historical = G.Battle.renderReportBoard(Object.assign({}, report, snapshot), false);
     assert.doesNotMatch(historical, /敌军城市民心变化/);
   }
+  const historical = G.Battle.renderReportBoard(Object.assign({}, report, {
+    resentmentChange: null, resentmentAfter: null, enemyResentmentChange: null, enemyResentmentAfter: null
+  }), false);
+  assert.doesNotMatch(historical, /城市民怨变化/);
 });
 
 test('fleet conquest reports describe defeating a fleet instead of conquering a city', () => {
@@ -868,6 +921,7 @@ test('wild reports keep combat and settlement outcomes separate in every detail 
     [{ wildConquered: false, conquered: true, subject: '占领野地胜利·已占领 油田' }, '未占领', '战斗获胜，但结算记录为未占领'],
     [{ conquered: true }, '占领成功', '结算时已纳入我方领地'],
     [{ action: 'plunder', wildConquered: false }, '未占领（仅夺取资源）', '不改变野地归属'],
+    ...['feint', 'harass', 'guerrilla'].map(action => [{ action, wildConquered: false }, '未占领（骚扰打击）', '不获取资源、不改变野地归属']),
     [{ targetType: undefined, action: undefined, subject: '占领野地胜利·已占领 油田' }, '占领成功', '结算时已纳入我方领地']
   ];
   for (const [fields, result, explanation] of cases) {
@@ -906,4 +960,84 @@ test('wild occupation detection never infers conquest from victory or a target n
     { subject: '出征胜利 占领野地胜利·已占领 油田', win: true },
     { targetType: 'wild', action: 'scout', win: true }
   ]) assert.equal(G.Battle.wildOccupation(r), null);
+});
+
+test('battle report hides prisoner settlement when captured count is zero or unresearched', () => {
+  const { G } = setup();
+  G.fmt = String;
+  G.DATA = { units: { armored_car: { name: '装甲车' }, heavy_tank: { name: '重型坦克' } } };
+
+  const report = {
+    time: Date.now(), perspective: 'attacker', win: true, action: 'conquer', targetType: 'player',
+    losses: 1000, recoveryPercent: 50, recoveredCount: 500,
+    prisoners: {
+      candidateTotal: 0, acceptedTotal: 0, overflow: 0,
+      reason: 'unresearched', ratePermille: 0, capacity: 0
+    },
+    attackerBreakdown: {
+      armored_car: { losses: 800, wounded: 400, captured: 0, permanent: 400 },
+      heavy_tank: { losses: 200, wounded: 100, captured: 0, permanent: 100 }
+    },
+    defenderBreakdown: {
+      armored_car: { losses: 600, wounded: 300, captured: 0, permanent: 300 }
+    }
+  };
+
+  const board = G.Battle.renderReportBoard(report, false);
+  assert.match(board, /【战果结算】/);
+  assert.match(board, /本方战损/);
+  assert.match(board, /伤兵回收/);
+  assert.match(board, /伤兵将在 7 天内保留，可前往伤兵营治疗归队。/);
+
+  // When no prisoners captured, prisoner sections and breakdown should not be shown
+  assert.doesNotMatch(board, /俘虏结算/);
+  assert.doesNotMatch(board, /胜方未研究战俘思想教育/);
+  assert.doesNotMatch(board, /实际收容城市/);
+  assert.doesNotMatch(board, /战损分账/);
+  assert.doesNotMatch(board, /被俘/);
+  assert.doesNotMatch(board, /rb-prisoner-details/);
+});
+
+test('battle report folds prisoner details by default and hides zero captured per unit', () => {
+  const { G } = setup();
+  G.fmt = String;
+  G.DATA = { units: { armored_car: { name: '装甲车' }, heavy_tank: { name: '重型坦克' } } };
+
+  const report = {
+    time: Date.now(), perspective: 'attacker', win: true, action: 'conquer', targetType: 'player',
+    losses: 1000, recoveryPercent: 50, recoveredCount: 500,
+    prisoners: {
+      candidateTotal: 15, acceptedTotal: 10, overflow: 5,
+      reason: 'accepted', cityName: '前线基地', ratePermille: 10, capacity: 2000
+    },
+    attackerBreakdown: {
+      armored_car: { losses: 800, wounded: 400, captured: 0, permanent: 400 }
+    },
+    defenderBreakdown: {
+      armored_car: { losses: 600, wounded: 300, captured: 10, permanent: 290 },
+      heavy_tank: { losses: 200, wounded: 100, captured: 0, permanent: 100 }
+    }
+  };
+
+  const board = G.Battle.renderReportBoard(report, false);
+  assert.match(board, /【战果结算】/);
+  assert.match(board, /俘虏结算/);
+  assert.match(board, /候选 15 · 收容 10/);
+
+  // Collapsed details by default
+  assert.match(board, /<details class="rb-prisoner-details"><summary>战俘与战损分账明细（收容 10）<\/summary>/);
+  assert.doesNotMatch(board, /<details class="rb-prisoner-details" open>/);
+
+  // Content inside details
+  assert.match(board, /实际收容城市：前线基地 · 比例 1\.0% · 容量 2000/);
+  assert.match(board, /本方战损分账/);
+  assert.match(board, /敌方战损分账/);
+
+  // Captured unit displays captured count
+  assert.match(board, /损失 600 · 伤兵 300 · 被俘 10 · 永久 290/);
+
+  // Zero captured unit displays without 被俘 0
+  assert.match(board, /损失 800 · 伤兵 400 · 永久 400/);
+  assert.match(board, /损失 200 · 伤兵 100 · 永久 100/);
+  assert.doesNotMatch(board, /被俘 0/);
 });

@@ -37,8 +37,9 @@ class OceanTerrainTest extends BaseServiceTest {
         assertEquals(322,founded.getX());
         assertFalse(terrain.siteReason(w.getId(),terrain.ensure(),323,119,null).isEmpty());
         assertEquals("",terrain.siteReason(w.getId(),terrain.ensure(),398,398,null));
-        assertFalse(terrain.siteReason(w.getId(),terrain.ensure(),399,118,null).isEmpty());
-        assertFalse(terrain.siteReason(w.getId(),terrain.ensure(),400,118,null).isEmpty());
+        assertEquals("",terrain.siteReason(w.getId(),terrain.ensure(),400,118,null));
+        assertEquals("",terrain.siteReason(w.getId(),terrain.ensure(),798,798,null));
+        assertFalse(terrain.siteReason(w.getId(),terrain.ensure(),799,118,null).isEmpty());
         var path=MarchRouteService.path(terrain.ensure(),List.of(118*SIZE+322),List.of(118*SIZE+325),false);
         assertEquals(List.of(118*SIZE+322,118*SIZE+323,118*SIZE+324,118*SIZE+325),path);
         assertEquals(800,worldMapRepository.findById(w.getId()).orElseThrow().getSize());
@@ -93,7 +94,7 @@ class OceanTerrainTest extends BaseServiceTest {
         assertEquals(true,cities.site(p.getId(),70,48).get("valid"));
         PlayerCity inland=cities.foundAt(p.getId(),null,70,48,"内陆城");
         assertFalse(terrain.coastal(inland));
-        assertThrows(IllegalArgumentException.class,()->cities.foundAt(p.getId(),null,SIZE-1,SIZE-1,"边界"));
+        assertThrows(IllegalArgumentException.class,()->cities.foundAt(p.getId(),null,799,799,"边界"));
         assertEquals(80000,resourcesRepository.findByPlayerIdAndCitySlot(p.getId(),0).orElseThrow().getGold());
     }
     @Test void foundingRejectsWildNpcAndEdgeCityOverlap(){
@@ -112,7 +113,8 @@ class OceanTerrainTest extends BaseServiceTest {
         assertEquals(52,route.distance());assertTrue(route.points().size()>=2);
         NpcCity inland=createNpcCity(w.getId(),"内陆",50,40,1,Map.of());
         assertThrows(IllegalArgumentException.class,()->routes.plan(p.getId(),inland,Map.of("destroyer",1),false));
-        assertThrows(IllegalArgumentException.class,()->routes.plan(p.getId(),target,Map.of("infantry",801,"transport",1),false));
+        var liftError=assertThrows(IllegalArgumentException.class,()->routes.plan(p.getId(),target,Map.of("infantry",801,"transport",1),false));
+        assertEquals("陆军无法直接跨海，请改派空军，或编入足够的运输机空运陆军（所需运力 801，当前运力 800）。",liftError.getMessage());
         var lift=routes.plan(p.getId(),target,Map.of("infantry",800,"transport",1),false);assertEquals("airlift",lift.mode());assertEquals(0,lift.cargoLimit());
         var mixed=routes.plan(p.getId(),target,Map.of("infantry",10,"transport",1,"destroyer",1),false);assertEquals("sea",mixed.mode());assertEquals(790,mixed.cargoLimit());
         assertEquals("land",routes.plan(p.getId(),inland,Map.of("infantry",1),false).mode());
@@ -126,7 +128,8 @@ class OceanTerrainTest extends BaseServiceTest {
         var ship=routes.plan(p.getId(),fleet,Map.of("destroyer",1),false);
         assertEquals("sea",ship.mode());assertEquals(110,ship.points().get(ship.points().size()-1).get(0));
         assertEquals("air",routes.plan(p.getId(),fleet,Map.of("fighter",1),false).mode());
-        assertThrows(IllegalArgumentException.class,()->routes.plan(p.getId(),fleet,Map.of("infantry",1),false));
+        var landError=assertThrows(IllegalArgumentException.class,()->routes.plan(p.getId(),fleet,Map.of("infantry",1),false));
+        assertEquals("陆军无法直接跨海，请改派空军，或编入足够的运输机空运陆军（所需运力 1，当前运力 0）。",landError.getMessage());
         assertEquals("airlift",routes.plan(p.getId(),fleet,Map.of("infantry",1,"transport",1),false).mode());
     }
     @Test void legacyInlandFleetRetainsAnOutletButNewInlandPortIsRejected(){
@@ -180,13 +183,13 @@ class OceanTerrainTest extends BaseServiceTest {
         double distance=Math.hypot(8,3);
         assertEquals(distance,((Number)preview.get("distance")).doubleValue(),1e-9);
         var unit=com.wargame.model.constants.GameData.UNITS.get("ltank");
-        int seconds=(int)Math.ceil(distance*9/unit.spd());
+        int seconds=(int)Math.ceil(distance*18/unit.spd());
         assertEquals(seconds,preview.get("seconds"));
         March march=marchService.createDispatch(p.getId(),req);
         marchRepository.flush();
         assertEquals(distance,marchRepository.findById(march.getId()).orElseThrow().getDistance(),1e-9);
         assertEquals(seconds*1000L,march.getArriveAt()-march.getStartAt());
-        int fuel=(int)Math.ceil(100*unit.marchOil()*distance/100*2);
+        int fuel=(int)(Math.ceil(100*unit.marchOil()*distance/100*2)*10);
         assertEquals(100000-fuel,resourcesRepository.findByPlayerIdAndCitySlot(p.getId(),0).orElseThrow().getOil());
         marchService.cancelMarch(p.getId(),march.getId());
         assertTrue(march.getReturning());

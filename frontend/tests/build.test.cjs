@@ -529,7 +529,7 @@ test('本城市政厅满级展示15块野地，升级前显示下一等级名额
 
 test('作战参谋部展示战略指挥枢纽，野地名额归市政厅管理', () => {
   const { G, context, state } = setup();
-  G.DATA.buildings.staff = { name: '作战参谋部', desc: '军事指挥、军官管理与高级军研', baseCost: { steel: 220, food: 100 }, growth: 1.6, slots: 1 };
+  G.DATA.buildings.staff = { name: '作战参谋部', desc: '军事指挥、军官管理与高级科技', baseCost: { steel: 220, food: 100 }, growth: 1.6, slots: 1 };
   state.buildings.staff = 10;
   G.Build.onSlotClick('staff', null);
   const appended = context.document.body.appended;
@@ -582,8 +582,8 @@ test('军校正确展示整批五星概率与招募培养说明', () => {
 
 test('城墙、研发中心、雷达站与军需仓库展示准确属性与加成', () => {
   const { G, context, state } = setup();
-  G.DATA.buildings.wall = { name: '城防', desc: '基地外围城防设施,提升守城部队防御并增加城防武器容量', baseCost: { steel: 200, food: 80 }, growth: 1.5, defBonus: 5, slots: 1 };
-  G.DATA.buildings.lab = { name: '军工科技研发中心', desc: '解锁与加速军研进度', baseCost: { steel: 200, food: 100, rare: 20 }, growth: 1.6, slots: 1 };
+  G.DATA.buildings.wall = { name: '城防', desc: '基地外围城防设施;四类城防武器共享容量,每级+3000', baseCost: { steel: 200, food: 80 }, growth: 1.5, fortCapPerLevel: 3000, wallHpPerLevel: 250000, wallDefensePerLevel: 20, slots: 1 };
+  G.DATA.buildings.lab = { name: '军工科技研发中心', desc: '解锁与加速科技进度', baseCost: { steel: 200, food: 100, rare: 20 }, growth: 1.6, slots: 1 };
   G.DATA.buildings.depot = { name: '军需仓库', desc: '战备物资掠夺保护,被掠夺时保护资源', baseCost: { steel: 100 }, growth: 1.5, protectPer: 1000, slots: 36 };
   G.DATA.buildings.exchange = { name: '军需物资中转站', desc: '战备物资调配,按比例转换资源', baseCost: { steel: 180, food: 100, gold: 100 }, growth: 1.5, slots: 1 };
 
@@ -592,12 +592,18 @@ test('城墙、研发中心、雷达站与军需仓库展示准确属性与加�
   G.Build.onSlotClick('wall', null);
   const wallModal = context.document.body.appended.at(-1).innerHTML;
   assert.match(wallModal, /城防武器容量/);
+  assert.match(wallModal, /墙体生命/);
+  assert.match(wallModal, /2,?500,?000/);
+  assert.match(wallModal, /200（仅保护墙体）/);
+  assert.doesNotMatch(wallModal, /NaN/);
   assert.match(wallModal, /30,?000（四类共享）/);
-  assert.doesNotMatch(wallModal, /满级带兵|100,000/);
+  assert.doesNotMatch(wallModal, /满级带兵|100,000|守城防御|提升守城部队防御/);
   const wallCard = G.Build.renderBuilding('wall', G.DATA.buildings.wall, [], 0);
   assert.match(wallCard, /城防武器容量/);
+  assert.match(wallCard, /2,?500,?000/);
+  assert.match(wallCard, /200（仅墙体）/);
   assert.match(wallCard, /30,?000/);
-  assert.doesNotMatch(wallCard, /满级带兵|100,000/);
+  assert.doesNotMatch(wallCard, /满级带兵|100,000|守城防御|提升守城部队防御/);
 
   // 2. 研发中心科研加速
   state.buildings.lab = 6;

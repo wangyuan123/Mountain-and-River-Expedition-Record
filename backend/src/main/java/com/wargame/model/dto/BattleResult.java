@@ -12,6 +12,10 @@ import java.util.Map;
 @NoArgsConstructor
 public class BattleResult {
 
+    /** 独立墙体终局供战报回放，不能混入部队损失统计。 */
+    private ConquestWallState wall;
+    private String terminalReason;
+
     /** 司令官开战快照，与实际带兵将领独立记录。 */
     private Map<String, Object> commandBonuses;
 
@@ -80,6 +84,12 @@ public class BattleResult {
     private Integer defenderMoraleChange;
     private Integer attackerMoraleAfter;
     private Integer defenderMoraleAfter;
+
+    /** 民怨与民心按同一参战城市冻结；未结算的城市保持为空，零增量也须记录。 */
+    private Integer attackerResentmentChange;
+    private Integer defenderResentmentChange;
+    private Integer attackerResentmentAfter;
+    private Integer defenderResentmentAfter;
 
     public BattleResult(boolean win, Map<String, Integer> survivorAttacker, Map<String, Integer> survivorDefender,
                         Map<String, Integer> initialAttacker, Map<String, Integer> initialDefender,

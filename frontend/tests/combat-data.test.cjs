@@ -40,6 +40,14 @@ test('all displayed unit stats and recruitment costs match server definitions', 
   assert.deepEqual(matched.sort(), Object.keys(data.units).sort());
 });
 
+test('infantry carries small personal cargo while keeping its combat role and truck advantage', () => {
+  assert.equal(data.units.infantry.load, 10);
+  assert.equal(data.units.infantry.logistic, false);
+  assert.notEqual(data.units.infantry.autoAdvance, false);
+  assert.equal(data.units.infantry.load * 50, data.units.truck.load);
+  assert.match(data.combatRoles.infantry, /每人基础负重10/);
+});
+
 test('rocket is the most expensive land unit for every recruitment resource', () => {
   const landUnits = Object.values(data.units).filter((unit) => unit.branch === 'land');
   const rocket = data.units.rocket;
@@ -50,13 +58,13 @@ test('rocket is the most expensive land unit for every recruitment resource', ()
   }
 });
 
-test('military technology bonuses are 10% per level in server and client definitions', () => {
+test('military technology bonuses are 5% per level in server and client definitions', () => {
   const serverTechs = source('TechDef');
   const entries = [
-    ['attack_tech', '全军攻击 +10%/级'],
-    ['defense_tech', '全军防御 +10%/级'],
-    ['weapon_range', '全军武器射程 +10%/级'],
-    ['cmd_hp', '军队生命 +10%/级']
+    ['attack_tech', '全军攻击 +5%/级，最高 +50%'],
+    ['defense_tech', '全军防御 +5%/级，最高 +50%'],
+    ['weapon_range', '全军武器射程 +5%/级，最高 +50%'],
+    ['cmd_hp', '军队生命 +5%/级，最高 +50%']
   ];
 
   for (const [key, description] of entries) {

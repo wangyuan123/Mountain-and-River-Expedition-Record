@@ -232,7 +232,6 @@ window.Game = window.Game || {};
       shield:    { name: '护盾',     icon: '🛡️', desc: '使用后8小时免受玩家攻击',         cat: 'util' },
       marchOrd:  { name: '行军令',   icon: '🚩', desc: '行军速度+50%,持续1小时',           cat: 'util' },
       populationOrder: { name: '人口动员令', icon: '👥', desc: '使用后立即增加500空闲人口,不超过人口上限', cat: 'util' },
-      annivPack: { name: '周年庆大礼', icon: '🎉', desc: '周年庆礼包',                         cat: 'gift' },
 
       // —— 晋升珠宝（9 种珠宝，野地采集产出，用于军衔任务晋升）——
       gem_pearl:      { name: '珍珠',   icon: '⚪', desc: '稀有天然珍珠，野地采集获得，用于晋升军衔', cat: 'jewelry' },

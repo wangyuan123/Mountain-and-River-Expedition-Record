@@ -56,6 +56,25 @@ class GatherModeTest extends BaseServiceTest {
     }
 
     @Test
+    void infantryCanGatherAndReturnPersonalCargoWithoutTrucks() {
+        createArmyUnit(playerId, "infantry", 20);
+        March march = marchService.createDispatch(playerId, new DispatchRequest(
+                "wild_gather", tile.getId(), "gather", Map.of("infantry", 20), null, null));
+        marchService.processMarches(playerId, march.getArriveAt());
+        assertTrue(march.getGathering());
+        assertEquals(200, march.getGatherAmount());
+
+        marchService.processMarches(playerId, march.getGatherEndAt());
+        assertTrue(march.getReturning());
+        assertEquals(200, march.getGatherAmount());
+        assertEquals(1000, getResources(playerId).getFood(), "采集资源返城后才入库");
+        marchService.processMarches(playerId, march.getArriveAt());
+        assertFalse(marchRepository.existsById(march.getId()));
+        assertEquals(1200, getResources(playerId).getFood());
+        assertEquals(20, armyUnitRepository.findByPlayerIdAndType(playerId, "infantry").get(0).getCount());
+    }
+
+    @Test
     void invalidModesAreRejectedBeforeTroopsAreDeducted() {
         assertThrows(IllegalArgumentException.class, () -> marchService.createDispatch(playerId,
                 new DispatchRequest("wild_gather", tile.getId(), "gather", Map.of("truck", 1), null, null, "invalid")));
@@ -185,7 +204,7 @@ class GatherModeTest extends BaseServiceTest {
     }
 
     @Test
-    void zeroHarvestGivesNoResourceOrGemReward() {
+    void zeroHarvestGivesNoResourceOrItemReward() {
         March march = beginGather("manual", System.currentTimeMillis());
         march.setGatherStartAt(System.currentTimeMillis() + 60_000L);
         march.setGatherEndAt(march.getGatherStartAt() + 60_000L);
@@ -202,13 +221,14 @@ class GatherModeTest extends BaseServiceTest {
 
     private March beginGather(String mode, long gatherStart) {
         March march = createMarch(playerId, "wild_gather", String.valueOf(tile.getId()), "粮田 Lv.1",
-                10, 10, 15, 15, Map.of("truck", 10), "gather",
+                10, 10, 15, 15, Map.of("truck", 1), "gather",
                 gatherStart - 60_000L, gatherStart - 30_000L, false, false);
         march.setGatherMode(mode);
         march.setRouteData("[[10,10],[15,10],[15,15]]");
         marchRepository.save(march);
         ArmyUnit trucks = armyUnitRepository.findByPlayerIdAndType(playerId, "truck").get(0);
-        trucks.setCount(0);
+        // 一辆卡车基础负重500，保留半田采集场景，验证满载待命与提前停止。
+        trucks.setCount(9);
         armyUnitRepository.save(trucks);
         marchService.processMarches(playerId, gatherStart);
         assertTrue(march.getGathering());

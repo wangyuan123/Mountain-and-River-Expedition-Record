@@ -45,8 +45,7 @@ public class NpcJapaneseUnitTest {
                 attackerArmy, defenderArmy, Collections.emptyMap(),
                 Collections.emptyMap(), Collections.emptyMap(),
                 Collections.emptyMap(), Collections.emptyMap(),
-                10, 0, 10, 0,
-                0, 0, "conquer", Collections.emptyMap(), 0,
+                10, 0, 10, 0, "conquer", Collections.emptyMap(), 0,
                 false
         );
 
@@ -70,8 +69,7 @@ public class NpcJapaneseUnitTest {
                 attackerArmy, defenderArmy, Collections.emptyMap(),
                 Collections.emptyMap(), Collections.emptyMap(),
                 Collections.emptyMap(), Collections.emptyMap(),
-                10, 0, 10, 0,
-                0, 0, "conquer", Collections.emptyMap(), 0,
+                10, 0, 10, 0, "conquer", Collections.emptyMap(), 0,
                 true
         );
 

@@ -1,6 +1,7 @@
 package com.wargame;
 
 import com.wargame.model.dto.DispatchRequest;
+import com.wargame.model.dto.GameDtos;
 import com.wargame.model.entity.*;
 import com.wargame.repository.BattleSessionRepository;
 import com.wargame.util.JsonUtil;
@@ -102,6 +103,49 @@ class SortieBattleTest extends BaseServiceTest {
         fort(defender.getId(), 0, 10);
         March march = attack(defender, 0, Map.of("infantry", 100));
         assertEquals(Map.of("bunker", 10), JsonUtil.parseIntMap(sessions.findById(march.getBattleId()).orElseThrow().getInitialDefender()));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"infantry", "bunker"})
+    void cityWallLevelDoesNotChangeActualTroopOrFortDamage(String target) {
+        Long baselineDamage = null;
+        for (int wallLevel : new int[] {0, 1, 10, 20}) {
+            Player defender = createTestPlayer("wall-defender-" + target + wallLevel, 30);
+            if (wallLevel > 0) createBuilding(defender.getId(), "wall", wallLevel);
+            if ("bunker".equals(target)) fort(defender.getId(), 0, 10000);
+            else createArmyUnit(defender.getId(), target, 10000);
+            Player attacker = createTestPlayer("wall-attacker-" + target + wallLevel, 30);
+            long now = System.currentTimeMillis();
+            attacker.setWarAgainstId(defender.getId());
+            attacker.setWarAt(now - 60000L);
+            attacker.setWarEndAt(now + 600000L);
+            playerRepository.save(attacker);
+            PlayerCity city = new PlayerCity();
+            city.setWorldId(createTestWorld().getId());
+            city.setOwnerId(defender.getId());
+            city.setCitySlot(0);
+            city.setName("城防倍率测试城");
+            city.setX(20 + wallLevel);
+            city.setY(20);
+            city = playerCityRepository.save(city);
+            March march = createMarch(attacker.getId(), "player", city.getId().toString(), city.getName(),
+                    10, 10, city.getX(), city.getY(), Map.of("rocket", 100), "conquer", now - 60000L, now - 1L, false, false);
+            marchService.processMarches(attacker.getId(), now);
+            BattleSession session = sessions.findById(march.getBattleId()).orElseThrow();
+            // 固定交战距离并保持兵力一致，比较正式城市战斗的伤害而非随机击毁数量。
+            session.setAttackerPositions(JsonUtil.toJson(Map.of("rocket", 0)));
+            session.setDefenderPositions(JsonUtil.toJson(Map.of(target, 500)));
+            sessions.save(session);
+            Map<String, Object> response = marchService.executeTacticalRound(attacker.getId(), march.getId(),
+                    new GameDtos.BattleCommandRequest(Map.of("rocket", new GameDtos.BattleUnitOrderRequest("hold", target)), 0));
+            String log = (String) response.get("log");
+            var damage = java.util.regex.Pattern.compile("我方[^\\n]*伤害(\\d+)").matcher(log);
+            assertTrue(damage.find(), log);
+            long actualDamage = Long.parseLong(damage.group(1));
+            assertTrue(actualDamage > 0, log);
+            if (baselineDamage == null) baselineDamage = actualDamage;
+            else assertEquals(baselineDamage.longValue(), actualDamage, "城防等级" + wallLevel + "不应改变" + target + "承伤");
+        }
     }
 
     @Test

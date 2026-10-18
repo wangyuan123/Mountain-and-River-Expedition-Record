@@ -33,9 +33,6 @@ public class March extends CityOwnedEntity {
     @Column(name = "target_kind", length = 50)
     private String targetKind;
 
-    @Column(name = "target_idx")
-    private Integer targetIdx;
-
     @Column(name = "target_id", length = 100)
     private String targetId;
 

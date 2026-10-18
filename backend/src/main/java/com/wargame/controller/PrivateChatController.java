@@ -23,7 +23,11 @@ public class PrivateChatController {
     @GetMapping("/conversations")
     public List<PrivateChatDtos.Conversation> conversations() { return chat.conversations(me()); }
     @GetMapping("/{peerId}/history")
-    public Map<String, Object> history(@PathVariable Long peerId) { return Map.of("messages", chat.history(me(), peerId)); }
+    public PrivateChatDtos.History history(@PathVariable Long peerId) { return chat.historyPage(me(), peerId); }
+    @PostMapping("/{peerId}/clear")
+    public Map<String, Object> clear(@PathVariable Long peerId) {
+        chat.clear(me(), peerId); return Map.of("success", true);
+    }
     @PostMapping("/{peerId}/read")
     public Map<String, Object> read(@PathVariable Long peerId, @RequestBody PrivateChatDtos.ReadRequest request) {
         chat.read(me(), peerId, request.throughId()); return Map.of("success", true);

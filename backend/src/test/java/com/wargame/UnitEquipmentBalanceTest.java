@@ -35,11 +35,12 @@ class UnitEquipmentBalanceTest {
             assertTrue(countA > 0 && countD > 0);
             assertTrue(countA * cost(UnitDef.UNITS.get(a.unit()).cost()) + gearCost(a) <= budget);
             assertTrue(countD * cost(UnitDef.UNITS.get(d.unit()).cost()) + gearCost(d) <= budget);
-            BattleResult result = new BattleService(42).startWorldDispatch(Map.of(a.unit(), countA), Map.of(d.unit(), countD), Map.of(), tech(level, a), tech(level, d), Map.of(), Map.of(), 0, 0, 0, 0, "conquer", Map.of(), 0, true);
+            BattleResult result = new BattleService(42).startWorldDispatch(Map.of(a.unit(), countA), Map.of(d.unit(), countD), Map.of(), tech(level, a), tech(level, d), Map.of(), Map.of(), 0, 0, "conquer", Map.of(), 0, true);
             int aliveA = result.getSurvivorAttacker().getOrDefault(a.unit(), 0), aliveD = result.getSurvivorDefender().getOrDefault(d.unit(), 0);
             assertTrue(aliveA >= 0 && aliveA <= countA); assertTrue(aliveD >= 0 && aliveD <= countD);
             int rounds = result.getReport().split("-- 第", -1).length - 1;
-            assertTrue(rounds > 0 && rounds <= BattleService.MAX_ROUND);
+            assertTrue(rounds > 0 && rounds <= BattleService.CONQUER_MAX_ROUND,
+                    "budget=" + budget + ", tech=" + level + ", scenario=" + scenario + ", rounds=" + rounds);
             csv.append(budget).append(',').append(level).append(',').append(a.unit()).append(',').append(String.join("|", a.gear())).append(',').append(countA).append(',').append(d.unit()).append(',').append(String.join("|", d.gear())).append(',').append(countD).append(',').append(result.isWin()).append(',').append(aliveA).append(',').append(aliveD).append(',').append(rounds).append('\n'); cases++;
         }
         assertEquals(54, cases);

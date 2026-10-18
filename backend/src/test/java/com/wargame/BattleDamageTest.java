@@ -57,9 +57,9 @@ class BattleDamageTest {
         Map<String, Integer> targets = army("fighter", 100);
         String report = act("rocket", 100, targets, 0, false,
                 context(Map.of("attack_tech", 10), Map.of("pierce", 5)), null);
-        assertTrue(report.contains("本次原始火力2300 伤害920"), report);
+        assertTrue(report.contains("本次原始火力1725 伤害690"), report);
         assertFalse(report.contains("破甲"), report);
-        assertEquals(93, targets.get("fighter"));
+        assertEquals(95, targets.get("fighter"));
     }
 
     @Test
@@ -177,15 +177,15 @@ class BattleDamageTest {
     void rocketRangeBoundaryAndTechnologyAreReflectedInCombatLogs() throws Exception {
         String boundary = act("rocket", 1, army("htank", 100), 1600, false, null, null, "htank");
         String outside = act("rocket", 1, army("htank", 100), 1601, false, null, null, "htank");
-        String developed = act("rocket", 1, army("htank", 100), 1920, false,
+        String developed = act("rocket", 1, army("htank", 100), 1760, false,
                 context(Map.of("weapon_range", 2), Map.of()), null, "htank");
-        String developedOutside = act("rocket", 1, army("htank", 100), 1921, false,
+        String developedOutside = act("rocket", 1, army("htank", 100), 1761, false,
                 context(Map.of("weapon_range", 2), Map.of()), null, "htank");
 
         assertTrue(boundary.contains("伤害"), boundary);
         assertTrue(boundary.contains("有效射程1600 目标距离1600"), boundary);
         assertFalse(outside.contains("伤害"), outside);
-        assertTrue(developed.contains("有效射程1920 目标距离1920"), developed);
+        assertTrue(developed.contains("有效射程1760 目标距离1760"), developed);
         assertFalse(developedOutside.contains("伤害"), developedOutside);
     }
 
@@ -220,7 +220,7 @@ class BattleDamageTest {
             StringBuilder report = new StringBuilder();
             ReflectionTestUtils.invokeMethod(service, "fireUnitCombat", "infantry", army("infantry", 100), targets,
                     Map.of("infantry", 0), Map.of("infantry", 0, "bunker", fortDistance),
-                    160, report, side, null, null, 0, false, "infantry");
+                    160, report, side, null, null, false, "infantry");
 
             // 消灭一个贴脸步兵消耗 10.5 份攻击额度；剩余 89.5 份按碉堡距离计算攻坚伤害。
             assertEquals(0, targets.get("infantry"));
@@ -239,7 +239,7 @@ class BattleDamageTest {
                 army("infantry", 100), army("infantry", 100),
                 Map.of("infantry", 200), Map.of("infantry", 200), 400,
                 Map.of(), Map.of(), Map.of(), Map.of("counter", 5),
-                0, 0, 0, 0, 0, 0, 4, 4, hold, hold);
+                0, 0, 0, 0, 4, 4, hold, hold);
 
         assertTrue(state.log().contains("贴脸×2.0"), state.log());
         var counter = Pattern.compile("敌方[^\\n]*\\((\\d+)\\) \\[绝境反击\\][^\\n]*? 伤害(\\d+)")
@@ -294,7 +294,7 @@ class BattleDamageTest {
         StringBuilder report = new StringBuilder();
         if (focusTarget == null) {
             ReflectionTestUtils.invokeMethod(svc, "simAct", unit, army(unit, count), targets,
-                    distance, report, side, attackerContext, defenderContext, 0, false);
+                    distance, report, side, attackerContext, defenderContext, false);
         } else {
             // 余伤用例显式指定首个目标，避免同距离 ID 排序改变需要验证的领域切换顺序。
             Map<String, Integer> myPositions = Map.of(unit, enemy ? distance : 0);
@@ -302,7 +302,7 @@ class BattleDamageTest {
             targets.keySet().forEach(target -> foePositions.put(target, enemy ? 0 : distance));
             ReflectionTestUtils.invokeMethod(svc, "fireUnitCombat", unit, army(unit, count), targets,
                     enemy ? foePositions : myPositions, enemy ? myPositions : foePositions,
-                    distance, report, side, attackerContext, defenderContext, 0, false, focusTarget);
+                    distance, report, side, attackerContext, defenderContext, false, focusTarget);
         }
         return report.toString();
     }

@@ -134,11 +134,11 @@ window.Game = window.Game || {};
 
     getCityStatus: function () {
       var s = this.state;
-      if (!s.cityState) s.cityState = { status: 'peace', warTarget: null, warUntil: 0, shieldUntil: 0, peaceUntil: 0 };
+      if (!s.cityState) s.cityState = { status: 'peace', warUntil: 0, shieldUntil: 0, peaceUntil: 0 };
       var cs = s.cityState;
       var now = Date.now();
       var incoming = (s.world && s.world.incoming) || [];
-      if ((cs.shieldUntil && now < cs.shieldUntil) || (cs.peaceUntil && now < cs.peaceUntil)) return 'shield';
+      if (cs.newbieProtectionUntil > now || (cs.shieldUntil && now < cs.shieldUntil) || (cs.peaceUntil && now < cs.peaceUntil)) return 'shield';
       if (incoming.length > 0) return 'war';
       return 'peace';
     },
@@ -154,6 +154,10 @@ window.Game = window.Game || {};
         return { status: 'surrender', text: '归降移交中', color: 'var(--warning)', detail: transferMin ? '剩余' + transferMin + '分钟' : '等待服务器结算' };
       }
       if (status === 'shield') {
+        if (cs.newbieProtectionUntil > now) {
+          var hours = Math.ceil((cs.newbieProtectionUntil - now) / 3600000);
+          return { status: 'shield', text: '新手保护', color: 'var(--accent)', detail: '剩余' + hours + '小时；首次进入保护7天，声望不足10000延长，最长14天。可建设和打NPC，参与玩家战争须确认永久退出。' };
+        }
         var safeUntil = Math.max(cs.shieldUntil || 0, cs.peaceUntil || 0);
         var min = Math.ceil((safeUntil - now) / 60000);
         return { status: 'shield', text: '免战状态', color: 'var(--accent)', detail: '剩余' + min + '分钟' };
@@ -169,7 +173,7 @@ window.Game = window.Game || {};
 
     enterWarState: function (durationHours) {
       var s = this.state;
-      if (!s.cityState) s.cityState = { status: 'peace', warTarget: null, warUntil: 0, shieldUntil: 0, peaceUntil: 0 };
+      if (!s.cityState) s.cityState = { status: 'peace', warUntil: 0, shieldUntil: 0, peaceUntil: 0 };
       s.cityState.status = 'war';
       s.cityState.warUntil = Date.now() + (durationHours || 1) * 3600 * 1000;
     },
@@ -187,15 +191,19 @@ window.Game = window.Game || {};
 
     protectCap: function () {
       var depotLv = this.buildingLevel('depot');
-      var capMul = 1 + 0.10 * (this.state.tech.log_warehouse || 0);
+      var capMul = 1 + 0.10 * Math.max(0, Math.min(5, this.state.tech.log_warehouse || 0));
       return Math.floor(depotLv * D.buildings.depot.protectPer * capMul);
     },
 
-    resBonusMul: function () {
+    /** 城墙加固只放大当前城墙自身属性，零级城墙仍无生命和防御。 */
+    wallMul: function () { return 1 + 0.05 * Math.max(0, Math.min(10, (this.state.tech || {}).wall_reinforcement || 0)); },
+
+    /** 城内四类产量分别读取科技，避免一项研究提高全部资源。 */
+    resBonusMul: function (resource) {
       var s = this.state;
       var mayor = this.getOfficerByRole('mayor');
       var mayorLogi = mayor ? mayor.logistics : 0;
-      var bonus = 1 + 0.05 * (s.tech.log_production || 0) + mayorLogi / 100;
+      var bonus = 1 + 0.05 * (s.tech['prod_' + resource] || 0) + mayorLogi / 100;
       var harvestBonus = this.mayorSkillBonus ? this.mayorSkillBonus('harvest') : 0;
       if (harvestBonus > 0) bonus *= (1 + harvestBonus);
       bonus *= 1 + 0.03 * (s.buildings.transit || 0);
@@ -214,7 +222,7 @@ window.Game = window.Game || {};
         var curve = lv * (1 + 0.12 * (lv - 1));
         total += b.baseProduce * curve;
       }
-      return Math.floor(total * this.resBonusMul());
+      return Math.floor(total * this.resBonusMul(b.produces));
     },
 
     buildingLevels: function (id) {
@@ -424,23 +432,28 @@ window.Game = window.Game || {};
       var s = this.state;
       var cmd = this.getOfficerByRole('commander');
       var cmdMil = cmd ? cmd.military : 0;
-      var allMul = 1 + 0.10 * (s.tech.attack_tech || 0);
+      var allMul = 1 + 0.05 * (s.tech.attack_tech || 0);
       return allMul * (1 + cmdMil / 100) * this.commandBonusMul('military');
     },
 
-    defMul: function (cat, isMine) {
+    /** 防御预览叠加防御科技和司令官属性，攻守双方共用相同倍率。 */
+    defMul: function () {
       var s = this.state;
-      var allMul = 1 + 0.10 * (s.tech.defense_tech || 0);
-      var catMul = 1;
-      var wallMul = (isMine && cat !== 'air') ? (1 + 0.05 * (s.buildings.wall || 0)) : 1;
-      return allMul * catMul * wallMul * this.commandBonusMul('defense');
+      var allMul = 1 + 0.05 * (s.tech.defense_tech || 0);
+      return allMul * this.commandBonusMul('defense');
     },
 
-    rangeMul: function () { return 1 + 0.10 * (this.state.tech.weapon_range || 0); },
+    rangeMul: function () { return 1 + 0.05 * (this.state.tech.weapon_range || 0); },
+
+    /** 行动火力从参战科技快照读取；不传快照时使用账号科技，缺项按零级显示。 */
+    firepowerMul: function (tech) {
+      var levels = tech || (this.state && this.state.tech) || {};
+      return 1 + 0.05 * Math.max(0, Math.min(10, Number(levels.fire_density) || 0));
+    },
 
     hpMul: function (cat) {
       var s = this.state;
-      var allMul = 1 + 0.10 * (s.tech.cmd_hp || 0);
+      var allMul = 1 + 0.05 * (s.tech.cmd_hp || 0);
       return allMul * this.commandBonusMul('logistics');
     },
 
@@ -456,8 +469,13 @@ window.Game = window.Game || {};
       return 1 + techBonus + buildingBonus;
     },
 
+    /** 全兵种资源负重和运输机运力共用科技倍率。 */
+    loadMul: function () {
+      return 1 + 0.05 * Math.max(0, Math.min(10, Number(this.state.tech.log_load) || 0));
+    },
+
     trainMul: function () {
-      return 1 + 0.10 * (this.state.tech.log_train || 0);
+      return 1 + 0.05 * (this.state.tech.log_train || 0);
     },
 
     buildMul: function () {

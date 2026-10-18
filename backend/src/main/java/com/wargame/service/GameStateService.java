@@ -1,6 +1,7 @@
 package com.wargame.service;
 
 import com.wargame.model.constants.JapaneseOfficers;
+import com.wargame.model.constants.NewbieProtection;
 import com.wargame.model.constants.MilitaryRankDef;
 import com.wargame.model.constants.WorldConfig;
 import com.wargame.model.constants.WildTypeDef;
@@ -42,6 +43,7 @@ public class GameStateService {
     private com.wargame.service.quest.QuestService questService;
 
     @org.springframework.beans.factory.annotation.Autowired private CityService cityService;
+    @org.springframework.beans.factory.annotation.Autowired private AccountService accounts;
     @org.springframework.beans.factory.annotation.Autowired private RankService ranks;
     @org.springframework.beans.factory.annotation.Autowired private ArmyProductionQueueRepository armyQueues;
     @org.springframework.beans.factory.annotation.Autowired private TechService techService;
@@ -222,6 +224,16 @@ public class GameStateService {
     // getGameState
     // ================================================================
 
+    /** 首次读取游戏状态才开始保护；注册、后台初始化和后续登录均不会重置计时。 */
+    @Transactional
+    public void enterGame(Long playerId) {
+        Player player = playerRepository.findById(playerId).orElseThrow();
+        if (player.getNewbieProtectionStartedAt() == null) {
+            player = accounts.lockPlayer(playerId);
+            NewbieProtection.start(player, System.currentTimeMillis());
+        }
+    }
+
     @Transactional(readOnly = true)
     public Map<String, Object> getGameState(Long playerId) {
         if (playerId == null) {
@@ -251,6 +263,8 @@ public class GameStateService {
         playerInfo.put("militaryRankName", MilitaryRankDef.getRankName(rankTier));
         playerInfo.put("vipLevel", player.getVipLevel() != null ? player.getVipLevel() : 0);
         playerInfo.put("tutorialDismissed", Boolean.TRUE.equals(player.getTutorialDismissed()));
+        playerInfo.put("newbieProtectionStartedAt", player.getNewbieProtectionStartedAt());
+        playerInfo.put("newbieProtectionUntil", NewbieProtection.until(player, stateNow));
         guildMemberRepository.findByPlayerId(playerId).ifPresent(member -> guildRepository.findById(member.getGuildId()).ifPresent(guild -> {
             Map<String, Object> guildInfo = new LinkedHashMap<>();
             guildInfo.put("id", guild.getId());
@@ -321,8 +335,9 @@ public class GameStateService {
             armyMap.put(unit.getType(), unit.getCount());
         }
         state.put("army", armyMap);
+        // 首页兵力和伤兵营都按当前城市统计，分城伤兵不能混入本城提示。
         state.put("woundedCount", woundedUnitRepository
-                .findByPlayerIdAndExpiresAtGreaterThanOrderByExpiresAtAscIdAsc(playerId, System.currentTimeMillis())
+                .findByPlayerIdAndCitySlotAndExpiresAtGreaterThanOrderByExpiresAtAscIdAsc(playerId, cityScope.slot(playerId), stateNow)
                 .stream().mapToLong(WoundedUnit::getCount).sum());
 
         // 战俘绑定当前稳定城市ID，多城空位与库存不合并。
@@ -355,6 +370,7 @@ public class GameStateService {
             if (!TechDef.TECHS.containsKey(tech.getType())) continue;
             techMap.put(tech.getType(), tech.getLevel());
         }
+        state.put("technologyRulesVersion", com.wargame.model.constants.TechnologyRules.VERSION);
         state.put("tech", techMap);
         state.put("unitEquipment", unitEquipment.state(playerId));
         state.put("research", techService != null ? techService.getActiveResearch(playerId) : null);
@@ -471,17 +487,16 @@ public class GameStateService {
         Map<String, Object> csMap = new LinkedHashMap<>();
         if (cityState != null) {
             csMap.put("status", cityState.getStatus() != null ? cityState.getStatus() : "peace");
-            csMap.put("warTarget", cityState.getWarTargetId());
             csMap.put("warUntil", cityState.getWarEndAt() != null ? cityState.getWarEndAt() : 0);
             csMap.put("shieldUntil", cityState.getShieldUntil() != null ? cityState.getShieldUntil() : 0);
             csMap.put("peaceUntil", cityState.getPeaceUntil() != null ? cityState.getPeaceUntil() : 0);
         } else {
             csMap.put("status", "peace");
-            csMap.put("warTarget", null);
             csMap.put("warUntil", 0);
             csMap.put("shieldUntil", 0);
             csMap.put("peaceUntil", 0);
         }
+        csMap.put("newbieProtectionUntil", NewbieProtection.until(player, stateNow));
         state.put("cityState", csMap);
 
         // --- scalar fields ---
@@ -609,7 +624,7 @@ public class GameStateService {
             int x = player.getCityPosX() == null ? -1 : player.getCityPosX();
             int y = player.getCityPosY() == null ? -1 : player.getCityPosY();
             String key = x + "," + y;
-            if (x < 0 || x >= WorldConfig.SIZE || y < 0 || y >= WorldConfig.SIZE || used.contains(key)) {
+            if (x < 0 || x >= WorldConfig.WORLD_SIZE || y < 0 || y >= WorldConfig.WORLD_SIZE || used.contains(key)) {
                 int[] coord = freeCoord(used);
                 player.setCityPosX(coord[0]);
                 player.setCityPosY(coord[1]);
@@ -802,7 +817,6 @@ public class GameStateService {
         Academy academy = new Academy();
         academy.setPlayerId(playerId);
         academy.setCitySlot(cityScope.slot(playerId));
-        academy.setRefreshAt(0L);
         academy.setOfficers("[]");
         academyRepository.save(academy);
 
@@ -812,8 +826,6 @@ public class GameStateService {
         cs.setPlayerId(playerId);
         cs.setCitySlot(cityScope.slot(playerId));
         cs.setStatus("peace");
-        cs.setWarTargetId(null);
-        cs.setWarAt(0L);
         cs.setWarEndAt(0L);
         cs.setShieldUntil(0L);
         cs.setPeaceUntil(0L);
@@ -916,7 +928,7 @@ public class GameStateService {
             bandit.setLevel(bl.lv());
             bandit.setX(coord[0]);
             bandit.setY(coord[1]);
-            bandit.setArmy(JsonUtil.toJson(bl.army()));
+            bandit.setArmy(JsonUtil.toJson(WorldConfig.landNpcGarrison(bl.lv(), coord[0], coord[1])));
             bandit.setCommanderName(JapaneseOfficers.getCommanderForLevel(bl.lv()));
             bandit.setDefeated(false);
             banditRepository.save(bandit);

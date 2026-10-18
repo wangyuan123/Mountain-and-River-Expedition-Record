@@ -1,0 +1,26 @@
+{
+  "method": "Codex in-app browser, local standalone wrapper and sandboxed iframe",
+  "scenarioSwitches": ["0-0", "5-5", "10-10", "10-0"],
+  "verifiedReportIds": [3682, 3684],
+  "scenarioFinalValuesMatchResults": true,
+  "roundSelection": {
+    "bothReportsAtRound0": "Initial totals shown, losses zero, not yet in combat",
+    "bothReportsAtRound4": "Losses updated, labels and unit tables updated",
+    "conquestAtDensity10": "Slider ends at round 31, attacker total zero"
+  },
+  "narrowViewport": {
+    "browserWidth": 360,
+    "iframeDocumentWidth": 328,
+    "iframeDocumentScrollWidth": 328,
+    "fragmentWidth": 328,
+    "fragmentScrollWidth": 328,
+    "expandedUnitTables": 4,
+    "horizontalOverflow": false
+  },
+  "pageWarningsAndErrors": [],
+  "temporaryViewportReset": true,
+  "initialHarnessLimitations": [
+    "Sandboxed standalone headless Chromium launch failed; verification completed with the Codex in-app browser",
+    "Playwright Home key action on a native range failed; range interaction was verified through the native accessibility setValue API"
+  ]
+}

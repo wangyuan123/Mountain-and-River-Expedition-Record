@@ -3798,45 +3798,6 @@
       }
     },
     {
-      "id": "I061",
-      "category": "道具",
-      "key": "annivPack",
-      "name": "周年庆大礼",
-      "content": "前端：周年庆礼包；商城：钻石×2000 + 道具×20 + 限定头衔",
-      "sources": [
-        {
-          "path": "frontend/js/data.js",
-          "line": 235
-        },
-        {
-          "path": "frontend/js/shop.js",
-          "line": 64
-        }
-      ],
-      "status": "来源不明",
-      "evidence": "营销描述未附活动策划来源；“开7倍”“限定头衔”“周年庆”等表达及发放承诺应逐项确认。",
-      "priority": "优先评估文案",
-      "decision": "待评估",
-      "values": {
-        "frontend": {
-          "name": "周年庆大礼",
-          "icon": "🎉",
-          "desc": "周年庆礼包",
-          "cat": "gift"
-        },
-        "shop": {
-          "id": "annivPack",
-          "cat": "gift",
-          "name": "周年庆大礼",
-          "icon": "🎉",
-          "desc": "钻石×2000 + 道具×20 + 限定头衔",
-          "price": 1999,
-          "stock": 1,
-          "tag": "限定"
-        }
-      }
-    },
-    {
       "id": "I062",
       "category": "道具",
       "key": "gem_pearl",
@@ -4102,15 +4063,15 @@
       "category": "道具",
       "key": "newbiePack",
       "name": "新手礼包",
-      "content": "商城：开7倍:粮20000/钢20000/油10000/稀5000/金3000",
+      "content": "商城：开启获得：粮食×20000、钢铁×20000、石油×10000、稀矿×5000、黄金×3000",
       "sources": [
         {
-          "path": "frontend/js/shop.js",
-          "line": 61
+          "path": "frontend/js/constants.js",
+          "line": 284
         }
       ],
       "status": "来源不明",
-      "evidence": "营销描述未附活动策划来源；“开7倍”“限定头衔”“周年庆”等表达及发放承诺应逐项确认。",
+      "evidence": "2026-10-14 已改为固定资源明细，并补齐99钻账号限购一次、仓库开启和服务端发奖；原始创作来源仍待核实。",
       "priority": "优先评估文案",
       "decision": "待评估",
       "values": {
@@ -4119,68 +4080,10 @@
           "cat": "gift",
           "name": "新手礼包",
           "icon": "🎁",
-          "desc": "开7倍:粮20000/钢20000/油10000/稀5000/金3000",
+          "desc": "开启获得：粮食×20000、钢铁×20000、石油×10000、稀矿×5000、黄金×3000",
           "price": 99,
           "stock": 1,
-          "tag": "限时"
-        }
-      }
-    },
-    {
-      "id": "I072",
-      "category": "道具",
-      "key": "monthCard",
-      "name": "钻石月卡",
-      "content": "商城：立即得300钻,30天内每日登录送100钻",
-      "sources": [
-        {
-          "path": "frontend/js/shop.js",
-          "line": 62
-        }
-      ],
-      "status": "来源不明",
-      "evidence": "营销描述未附活动策划来源；“开7倍”“限定头衔”“周年庆”等表达及发放承诺应逐项确认。",
-      "priority": "优先评估文案",
-      "decision": "待评估",
-      "values": {
-        "shop": {
-          "id": "monthCard",
-          "cat": "gift",
-          "name": "钻石月卡",
-          "icon": "💳",
-          "desc": "立即得300钻,30天内每日登录送100钻",
-          "price": 1500,
-          "stock": 1,
-          "tag": "推荐"
-        }
-      }
-    },
-    {
-      "id": "I073",
-      "category": "道具",
-      "key": "warChest",
-      "name": "战备月卡",
-      "content": "商城：立即得500钻+15个常用道具组合",
-      "sources": [
-        {
-          "path": "frontend/js/shop.js",
-          "line": 63
-        }
-      ],
-      "status": "来源不明",
-      "evidence": "营销描述未附活动策划来源；“开7倍”“限定头衔”“周年庆”等表达及发放承诺应逐项确认。",
-      "priority": "优先评估文案",
-      "decision": "待评估",
-      "values": {
-        "shop": {
-          "id": "warChest",
-          "cat": "gift",
-          "name": "战备月卡",
-          "icon": "🎖️",
-          "desc": "立即得500钻+15个常用道具组合",
-          "price": 888,
-          "stock": 1,
-          "tag": "超值"
+          "tag": "新手"
         }
       }
     },
@@ -8399,7 +8302,7 @@
         }
       ],
       "status": "来源不明",
-      "evidence": "当前为模拟充值；档位数值和月卡/礼包承诺未附策划来源。",
+      "evidence": "当前为模拟充值；档位数值和礼包承诺未附策划来源。",
       "priority": "补来源记录",
       "decision": "待评估",
       "values": {
@@ -8429,7 +8332,7 @@
         }
       ],
       "status": "来源不明",
-      "evidence": "当前为模拟充值；档位数值和月卡/礼包承诺未附策划来源。",
+      "evidence": "当前为模拟充值；档位数值和礼包承诺未附策划来源。",
       "priority": "补来源记录",
       "decision": "待评估",
       "values": {
@@ -8460,7 +8363,7 @@
         }
       ],
       "status": "来源不明",
-      "evidence": "当前为模拟充值；档位数值和月卡/礼包承诺未附策划来源。",
+      "evidence": "当前为模拟充值；档位数值和礼包承诺未附策划来源。",
       "priority": "补来源记录",
       "decision": "待评估",
       "values": {
@@ -8491,7 +8394,7 @@
         }
       ],
       "status": "来源不明",
-      "evidence": "当前为模拟充值；档位数值和月卡/礼包承诺未附策划来源。",
+      "evidence": "当前为模拟充值；档位数值和礼包承诺未附策划来源。",
       "priority": "补来源记录",
       "decision": "待评估",
       "values": {
@@ -8522,7 +8425,7 @@
         }
       ],
       "status": "来源不明",
-      "evidence": "当前为模拟充值；档位数值和月卡/礼包承诺未附策划来源。",
+      "evidence": "当前为模拟充值；档位数值和礼包承诺未附策划来源。",
       "priority": "补来源记录",
       "decision": "待评估",
       "values": {
@@ -8553,7 +8456,7 @@
         }
       ],
       "status": "来源不明",
-      "evidence": "当前为模拟充值；档位数值和月卡/礼包承诺未附策划来源。",
+      "evidence": "当前为模拟充值；档位数值和礼包承诺未附策划来源。",
       "priority": "补来源记录",
       "decision": "待评估",
       "values": {
@@ -8584,7 +8487,7 @@
         }
       ],
       "status": "来源不明",
-      "evidence": "当前为模拟充值；档位数值和月卡/礼包承诺未附策划来源。",
+      "evidence": "当前为模拟充值；档位数值和礼包承诺未附策划来源。",
       "priority": "补来源记录",
       "decision": "待评估",
       "values": {
@@ -8596,66 +8499,6 @@
         "diamond": 15800,
         "desc": "钻石、资源与稀有道具组合礼包",
         "bonus": "豪华"
-      }
-    },
-    {
-      "id": "N099",
-      "category": "数值",
-      "key": "recharge.mk30",
-      "name": "钻石月卡",
-      "content": "立即获得300钻石，持续领取月卡福利",
-      "sources": [
-        {
-          "path": "frontend/js/recharge.js",
-          "line": 21
-        },
-        {
-          "path": "backend/src/main/java/com/wargame/controller/ShopController.java",
-          "line": 165
-        }
-      ],
-      "status": "来源不明",
-      "evidence": "当前为模拟充值；档位数值和月卡/礼包承诺未附策划来源。",
-      "priority": "补来源记录",
-      "decision": "待评估",
-      "values": {
-        "id": "mk30",
-        "cat": "monthly",
-        "name": "钻石月卡",
-        "icon": "💳",
-        "rmb": 30,
-        "diamond": 300,
-        "desc": "立即获得300钻石，持续领取月卡福利"
-      }
-    },
-    {
-      "id": "N100",
-      "category": "数值",
-      "key": "recharge.wk98",
-      "name": "战备月卡",
-      "content": "立即获得980钻石，享受战备补给特权",
-      "sources": [
-        {
-          "path": "frontend/js/recharge.js",
-          "line": 22
-        },
-        {
-          "path": "backend/src/main/java/com/wargame/controller/ShopController.java",
-          "line": 165
-        }
-      ],
-      "status": "来源不明",
-      "evidence": "当前为模拟充值；档位数值和月卡/礼包承诺未附策划来源。",
-      "priority": "补来源记录",
-      "decision": "待评估",
-      "values": {
-        "id": "wk98",
-        "cat": "monthly",
-        "name": "战备月卡",
-        "icon": "🎖️",
-        "rmb": 98,
-        "diamond": 980,
-        "desc": "立即获得980钻石，享受战备补给特权"
       }
     },
     {
@@ -10180,63 +10023,6 @@
         ]
       },
       "asset": "img/avatars/commander-7.svg"
-    },
-    {
-      "id": "V008",
-      "category": "头像",
-      "key": "img/avatars/commander-8.svg",
-      "name": "萌系指挥官",
-      "content": "预设头像",
-      "sources": [
-        {
-          "path": "frontend/img/avatars/commander-8.svg",
-          "line": 4
-        },
-        {
-          "path": "frontend/js/main-view.js",
-          "line": 873
-        },
-        {
-          "path": "frontend/js/main-view.js",
-          "line": 892
-        },
-        {
-          "path": "frontend/js/core.js",
-          "line": 490
-        },
-        {
-          "path": "frontend/js/core.js",
-          "line": 497
-        },
-        {
-          "path": "frontend/js/player-profile.js",
-          "line": 69
-        },
-        {
-          "path": "frontend/js/player-profile.js",
-          "line": 185
-        },
-        {
-          "path": "frontend/js/player-profile.js",
-          "line": 260
-        }
-      ],
-      "status": "来源待核",
-      "evidence": "历史描述已按用户要求删减；创作来源与权利归属仍待评估。",
-      "priority": "优先核对创作来源",
-      "decision": "待评估",
-      "values": {
-        "sha256": "d901d9536dbc2607389acb92c986cdfa4fcf888eecb800f23b8cb3e60557f432",
-        "引用数": 7,
-        "注释摘要": [
-          " Clean white/soft background ",
-          " Doodle Frame Corners ",
-          " Doodle Desk ",
-          " Tea / Coffee Cup with Steam ",
-          " Cute Stickman Head "
-        ]
-      },
-      "asset": "img/avatars/commander-8.svg"
     },
     {
       "id": "A001",
@@ -14347,7 +14133,7 @@
       "priority": "核对设计依据",
       "decision": "待评估",
       "values": {
-        "实现摘录": "165:         private static final Map<String, Integer> RECHARGE_DIAMONDS = Map.ofEntries(\n166:             Map.entry(\"p6\", 60),\n167:             Map.entry(\"p30\", 330),\n168:             Map.entry(\"p98\", 1080),\n169:             Map.entry(\"p198\", 2230),\n170:             Map.entry(\"p328\", 3780),\n171:             Map.entry(\"p648\", 7680),\n172:             Map.entry(\"p1280\", 15800),\n173:             Map.entry(\"mk30\", 300),\n174:             Map.entry(\"wk98\", 980)\n175:         );\n176: \n177:         private static final Map<String, Integer> PRICES = Map.ofEntries(\n178:             // 军官道具\n179:             Map.entry(\"expBook\", 30),\n180:             Map.entry(\"expBookAdv\", 150),\n181:             Map.entry(\"expBookMax\", 1000),\n182:             Map.entry(\"skillBook\", 80),\n183:             Map.entry(\"loyaltyBox\", 50),\n184:             Map.entry(\"renameCard\", 60),\n185:             Map.entry(\"recruitOrd\", 500),\n186:             Map.entry(\"starUp\", 300),\n187:             // 军官装备宝箱\n188:             Map.entry(\"box_recruit_military\", 200),\n189:             Map.entry(\"box_recruit_logistics\", 200),\n190:             Map.entry(\"box_recruit_knowledge\", 200),\n191:             Map.entry(\"box_officer_military\", 1200),\n192:             Map.entry(\"box_officer_logistics\", 1200),\n193:             Map.entry(\"box_officer_knowledge\", 1200),\n194:             Map.entry(\"box_marshal_military\", 5000),\n195:             Map.entry(\"box_marshal_logistics\", 5000),\n196:             Map.entry(\"box_marshal_knowledge\", 5000),\n197:             // 军官套装（27 件）—— 列兵套装 Lv.1+\n198:             Map.entry(\"recruit_military_weapon\", 80),\n199:             Map.entry(\"recruit_military_badge\", 80),\n200:             Map.entry(\"recruit_military_coat\", 80),\n201:             Map.entry(\"recruit_logistics_weapon\", 80),\n202:             Map.entry(\"recruit_logistics_badge\", 80),\n203:             Map.entry(\"recruit_logistics_coat\", 80),\n204:             Map.entry(\"recruit_knowledge_weapon\", 80),\n205:             Map.entry(\"recruit_knowledge_badge\", 80),\n206:             Map.entry(\"recruit_knowledge_coat\", 80),\n207:             // 校官套装 Lv.40+\n208:             Map.entry(\"officer_military_weapon\", 480),\n209:             Map.entry(\"officer_military_badge\", 480),\n210:             Map.entry(\"officer_military_coat\", 480),\n211:             Map.entry(\"officer_logistics_weapon\", 480),\n212:             Map.entry(\"officer_logistics_badge\", 480),\n213:             Map.entry(\"officer_logistics_coat\", 480),\n214:             Map.entry(\"officer_knowledge_weapon\", 480),\n215:             Map.entry(\"officer_knowledge_badge\", 480),\n216:             Map.entry(\"officer_knowledge_coat\", 480),\n217:             // 元帅套装 Lv.100+\n218:             Map.entry(\"marshal_military_weapon\", 2000),\n219:             Map.entry(\"marshal_military_badge\", 2000),\n220:             Map.entry(\"marshal_military_coat\", 2000),\n221:             Map.entry(\"marshal_logistics_weapon\", 2000),\n222:             Map.entry(\"marshal_logistics_badge\", 2000),\n223:             Map.entry(\"marshal_logistics_coat\", 2000),\n224:             Map.entry(\"marshal_knowledge_weapon\", 2000),\n225:             Map.entry(\"marshal_knowledge_badge\", 2000),\n226:             Map.entry(\"marshal_knowledge_coat\", 2000),\n227:             // 资源道具\n228:             Map.entry(\"goldBox\", 80),\n229:             Map.entry(\"resBox\", 120),\n230:             Map.entry(\"steelPack\", 200),\n231:             Map.entry(\"supplyPack\", 350),\n232:             Map.entry(\"resourcePack500w\", 5000),\n233:             // 功能道具 - 加速符（8 种）\n234:             Map.entry(\"speedUp10m\", 30),\n235:             Map.entry(\"speedUp1h\", 100),\n236:             Map.entry(\"speedUp5h\", 400),\n237:             Map.entry(\"speedUp12h\", 800),\n238:             Map.entry(\"speedUp24h\", 1500),\n239:             Map.entry(\"speedUp36h\", 2000),\n240:             Map.entry(\"speedUp48h\", 2500),\n241:             Map.entry(\"speedUp72h\", 3500),\n242:             Map.entry(\"shield\", 200),\n243:             Map.entry(\"marchOrd\", 100),\n244:             Map.entry(\"populationOrder\", 100),\n245:             // 礼包\n246:             Map.entry(\"newbiePack\", 99),\n247:             Map.entry(\"monthCard\", 1500),\n248:             Map.entry(\"warChest\", 888),\n249:             Map.entry(\"annivPack\", 1999)\n250:         );"
+        "实现摘录": "165:         private static final Map<String, Integer> RECHARGE_DIAMONDS = Map.ofEntries(\n166:             Map.entry(\"p6\", 60),\n167:             Map.entry(\"p30\", 330),\n168:             Map.entry(\"p98\", 1080),\n169:             Map.entry(\"p198\", 2230),\n170:             Map.entry(\"p328\", 3780),\n171:             Map.entry(\"p648\", 7680),\n172:             Map.entry(\"p1280\", 15800)\n175:         );\n176: \n177:         private static final Map<String, Integer> PRICES = Map.ofEntries(\n178:             // 军官道具\n179:             Map.entry(\"expBook\", 30),\n180:             Map.entry(\"expBookAdv\", 150),\n181:             Map.entry(\"expBookMax\", 1000),\n182:             Map.entry(\"skillBook\", 80),\n183:             Map.entry(\"loyaltyBox\", 50),\n184:             Map.entry(\"renameCard\", 60),\n185:             Map.entry(\"recruitOrd\", 500),\n186:             Map.entry(\"starUp\", 300),\n187:             // 军官装备宝箱\n188:             Map.entry(\"box_recruit_military\", 200),\n189:             Map.entry(\"box_recruit_logistics\", 200),\n190:             Map.entry(\"box_recruit_knowledge\", 200),\n191:             Map.entry(\"box_officer_military\", 1200),\n192:             Map.entry(\"box_officer_logistics\", 1200),\n193:             Map.entry(\"box_officer_knowledge\", 1200),\n194:             Map.entry(\"box_marshal_military\", 5000),\n195:             Map.entry(\"box_marshal_logistics\", 5000),\n196:             Map.entry(\"box_marshal_knowledge\", 5000),\n197:             // 军官套装（27 件）—— 列兵套装 Lv.1+\n198:             Map.entry(\"recruit_military_weapon\", 80),\n199:             Map.entry(\"recruit_military_badge\", 80),\n200:             Map.entry(\"recruit_military_coat\", 80),\n201:             Map.entry(\"recruit_logistics_weapon\", 80),\n202:             Map.entry(\"recruit_logistics_badge\", 80),\n203:             Map.entry(\"recruit_logistics_coat\", 80),\n204:             Map.entry(\"recruit_knowledge_weapon\", 80),\n205:             Map.entry(\"recruit_knowledge_badge\", 80),\n206:             Map.entry(\"recruit_knowledge_coat\", 80),\n207:             // 校官套装 Lv.40+\n208:             Map.entry(\"officer_military_weapon\", 480),\n209:             Map.entry(\"officer_military_badge\", 480),\n210:             Map.entry(\"officer_military_coat\", 480),\n211:             Map.entry(\"officer_logistics_weapon\", 480),\n212:             Map.entry(\"officer_logistics_badge\", 480),\n213:             Map.entry(\"officer_logistics_coat\", 480),\n214:             Map.entry(\"officer_knowledge_weapon\", 480),\n215:             Map.entry(\"officer_knowledge_badge\", 480),\n216:             Map.entry(\"officer_knowledge_coat\", 480),\n217:             // 元帅套装 Lv.100+\n218:             Map.entry(\"marshal_military_weapon\", 2000),\n219:             Map.entry(\"marshal_military_badge\", 2000),\n220:             Map.entry(\"marshal_military_coat\", 2000),\n221:             Map.entry(\"marshal_logistics_weapon\", 2000),\n222:             Map.entry(\"marshal_logistics_badge\", 2000),\n223:             Map.entry(\"marshal_logistics_coat\", 2000),\n224:             Map.entry(\"marshal_knowledge_weapon\", 2000),\n225:             Map.entry(\"marshal_knowledge_badge\", 2000),\n226:             Map.entry(\"marshal_knowledge_coat\", 2000),\n227:             // 资源道具\n228:             Map.entry(\"goldBox\", 80),\n229:             Map.entry(\"resBox\", 120),\n230:             Map.entry(\"steelPack\", 200),\n231:             Map.entry(\"supplyPack\", 350),\n232:             Map.entry(\"resourcePack500w\", 5000),\n233:             // 功能道具 - 加速符（8 种）\n234:             Map.entry(\"speedUp10m\", 30),\n235:             Map.entry(\"speedUp1h\", 100),\n236:             Map.entry(\"speedUp5h\", 400),\n237:             Map.entry(\"speedUp12h\", 800),\n238:             Map.entry(\"speedUp24h\", 1500),\n239:             Map.entry(\"speedUp36h\", 2000),\n240:             Map.entry(\"speedUp48h\", 2500),\n241:             Map.entry(\"speedUp72h\", 3500),\n242:             Map.entry(\"shield\", 200),\n243:             Map.entry(\"marchOrd\", 100),\n244:             Map.entry(\"populationOrder\", 100),\n245:             // 礼包\n246:             Map.entry(\"newbiePack\", 99)\n250:         );"
       }
     },
     {
@@ -14941,10 +14727,6 @@
     {
       "path": "frontend/img/units/infantry.svg",
       "sha256": "bfaa19ea938aeeceafbef0ad0f0e3b46596c4529a0ad496a7aeafa97e3558c47"
-    },
-    {
-      "path": "frontend/img/avatars/commander-8.svg",
-      "sha256": "d901d9536dbc2607389acb92c986cdfa4fcf888eecb800f23b8cb3e60557f432"
     },
     {
       "path": "frontend/img/avatars/commander-1.svg",
@@ -15731,5 +15513,5 @@
       "sha256": "7b49e0322207ae920c13071bce9b98324f11d4574be9775ff456e9dfe9da798e"
     }
   ],
-  "editorial_note": "2026-09-13：按用户要求删减部分历史描述及引用。本文件为经过编辑的审查清单，文件指纹仍对应原审查快照；来源待评估状态不代表已确认原创。"
+  "editorial_note": "2026-09-13：按用户要求删减部分历史描述及引用。本文件为经过编辑的审查清单，文件指纹仍对应原审查快照；来源待评估状态不代表已确认原创。 2026-10-14：按要求清理停用头像、未上线商品条目及对应文件指纹。"
 }

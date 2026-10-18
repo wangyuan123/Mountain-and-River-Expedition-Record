@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="blue-white-classic">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <base href="../">
+  <title>战术城墙全高全视角预览</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/themes.css">
+  <link rel="stylesheet" href="css/classic-home.css">
+  <style>
+    body { margin: 0; background: #eef2f7; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    #screen { padding: 16px; max-width: 1100px; margin: 0 auto; }
+    .preview-header { margin-bottom: 16px; padding: 12px 16px; background: #fff; border-radius: 8px; border: 1px solid #cbd5e1; }
+    .preview-header h2 { margin: 0 0 6px; font-size: 18px; color: #1e3a8a; }
+    .preview-header p { margin: 0; font-size: 13px; color: #64748b; line-height: 1.5; }
+    .preview-section { margin-bottom: 24px; background: #fff; border-radius: 8px; border: 1px solid #cbd5e1; padding: 16px; }
+    .preview-section h3 { margin: 0 0 10px; font-size: 15px; color: #334155; display: flex; align-items: center; gap: 8px; }
+    .preview-section h3 .tag { font-size: 11px; padding: 2px 6px; border-radius: 4px; background: #e0f2fe; color: #0369a1; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div id="screen">
+  <div class="preview-header">
+    <h2>🏰 战术指挥面板·35° 俯视 3D 微缩要塞城墙防线预览</h2>
+    <p><b>设计规范落实：</b><br>
+    1. <b>真正的 3D 俯视微缩模型</b>：采用项目官方 <code>gpt-image-2</code> 管线生成的 35° 俯视等距真实微缩要塞模型原画，具备真实花岗岩砖石光影、城顶巡逻马道、暗钢装甲大门与两端棱堡封闭角楼。<br>
+    2. <b>城门严格垂直居中，两侧城墙完全对称</b>：以城门中央水平线（Y = 50%）为对称轴，上下两侧城墙在垛口、射击孔与基座上实现严格对称。<br>
+    3. <b>面宽占满指挥面板高度</b>：自顶端角楼至底端角楼 100% 贯通覆盖面板高度。<br>
+    4. <b>双向战场视角自适应</b>：进攻方视角城墙在右侧且城门朝左；防守方视角城墙在左侧且城门朝右。</p>
+  </div>
+
+  <div class="preview-section">
+    <h3>
+      <span>1. 进攻方视角（Attacker View）</span>
+      <span class="tag">城墙在右侧 · 城门朝左 · 占满面板高度</span>
+    </h3>
+    <div id="view-attacker"></div>
+  </div>
+
+  <div class="preview-section">
+    <h3>
+      <span>2. 防守方视角（Defender View）</span>
+      <span class="tag">城墙在左侧 · 城门朝右 · 占满面板高度</span>
+    </h3>
+    <div id="view-defender"></div>
+  </div>
+
+  <div class="preview-section">
+    <h3>
+      <span>3. 掠夺战复刻场景（Plunder Battle · 守方有防空炮500与榴弹炮500 · 坚守城墙模型 · 无虚假血条）</span>
+      <span class="tag">城防要塞武器弧线对齐城墙 · 无重复射程文字 · 消除悬空错误</span>
+    </h3>
+    <div id="view-plunder"></div>
+  </div>
+</div>
+
+<script src="js/constants.js"></script>
+<script src="js/data.js"></script>
+<script src="js/icons.js"></script>
+<script>
+Game.Core = { state: { tech: {} }, views: {}, render: function () {}, firepowerMul: function () { return 1; } };
+Game.escapeHtml = function (value) { return String(value); };
+Game.fmt = function (value) { return Number(value).toLocaleString(); };
+Game.go = function () {};
+Game.getUnitModelIconHtml = function (id, name, cls) {
+  return '<span class="' + (cls || '') + '"><img src="img/units/models/' + id + '.webp" alt="' + (name || id) + '" onerror="this.remove()" class="unit-icon-img" style="width:100%;height:100%;object-fit:contain;"/></span>';
+};
+Game.API = {};
+</script>
+<script src="js/battle.js"></script>
+<script>
+// 1. 进攻方视角：我方在左推进，敌方防守军队与 4 座城防要塞重武器在右，城墙在右侧敌军后方，城门与炮管朝左迎敌
+Game.Battle._activeTactical = {
+  marchId: 101, side: 'attacker', round: 5, action: 'conquer', targetKind: 'player', targetName: '帝国重装要塞防线',
+  initialDistance: 2000, battlePhase: 'ATTACK_WALL',
+  attackerArmy: { special: 5000, ltank: 30, fighter: 10 },
+  defenderArmy: { special: 1200, ltank: 15, flak: 12, howitzer: 6, antitank: 4, bunker: 8 },
+  attackerPositions: { special: 1200, ltank: 800, fighter: 600 },
+  defenderPositions: { special: 1850, ltank: 1800, flak: 2000, howitzer: 2000, antitank: 2000, bunker: 2000 },
+  attackerTech: { weapon_range: 5, fire_density: 8 },
+  defenderTech: { weapon_range: 3 },
+  wall: { level: 10, maxHp: 2500000, hpRemaining: 1850000, defense: 200, phase: 'ATTACK_WALL' }
+};
+Game.Battle.renderTacticalBattle(document.getElementById('view-attacker'));
+
+// 2. 防守方视角：我方在左城防要塞阵地防守（城墙在左侧，含4大城防要塞武器），敌方在右进攻，城门与炮管朝右迎敌
+Game.Battle._activeTactical = {
+  marchId: 102, side: 'defender', round: 3, action: 'conquer', targetKind: 'player', targetName: '帝国突击集团军',
+  initialDistance: 2000, battlePhase: 'CLEAR_DEFENDERS',
+  attackerArmy: { special: 4500, ltank: 40 },
+  attackerPositions: { special: 200, ltank: 150 },
+  defenderArmy: { special: 3500, ltank: 25, mtank: 18, htank: 10, fighter: 15, bomber: 8 },
+  defenderPositions: { special: 1200, ltank: 1000, mtank: 900, htank: 700, fighter: 500, bomber: 400 },
+  forts: { flak: 16, howitzer: 8, antitank: 10, bunker: 12 },
+  attackerTech: { weapon_range: 6 },
+  defenderTech: { weapon_range: 4 },
+  wall: { level: 10, maxHp: 2500000, hpRemaining: 2500000, defense: 200, phase: 'CLEAR_DEFENDERS' }
+};
+Game.Battle.renderTacticalBattle(document.getElementById('view-defender'));
+
+// 3. 掠夺战复刻场景：无显式 wall 快照，守方拥有防空炮 500 与 榴弹炮 500，且带有常规地面与空中兵种
+Game.Battle._activeTactical = {
+  marchId: 103, side: 'attacker', round: 1, action: 'plunder', targetKind: 'player', targetName: '帝国边防前哨据点',
+  initialDistance: 2000, battlePhase: 'COMBAT',
+  attackerArmy: { special: 2000, htank: 30 },
+  defenderArmy: { infantry: 200, armored: 10000, htank: 100, fighter: 20, flak: 500, howitzer: 500 },
+  attackerPositions: { special: 300, htank: 200 },
+  defenderPositions: { infantry: 1800, armored: 1750, htank: 1700, fighter: 1600, flak: 1750, howitzer: 1750 },
+  attackerTech: { weapon_range: 0 },
+  defenderTech: { weapon_range: 0 },
+  wall: null
+};
+Game.Battle.renderTacticalBattle(document.getElementById('view-plunder'));
+</script>
+</body>
+</html>

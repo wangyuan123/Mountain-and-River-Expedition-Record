@@ -39,6 +39,51 @@ test('hidden private conversations stay unread, visible ones mark through the di
   await game.PrivateChat.refresh();
   assert.equal(reads.length, 1);
 });
+
+test('history clear boundary removes cached messages across refresh and preserves newer arrivals', async () => {
+  const { game, nodes, histories } = setup();
+  histories[2] = { messages: [{ id: 4, content: 'old' }] };
+  await game.PrivateChat.open({ id: 2, username: 'bob' });
+  histories[2] = { clearedThrough: 4, messages: [{ id: 5, content: 'new' }] };
+  await game.PrivateChat.refresh();
+  assert.equal(nodes.privateChatBox.innerHTML, 'new');
+  nodes.privateChatInput.value = 'draft';
+  histories[2] = { clearedThrough: 5, messages: [] };
+  await game.PrivateChat.cleared(2);
+  assert.equal(nodes.privateChatBox.innerHTML, '');
+  assert.equal(nodes.privateChatInput.value, '');
+  await game.PrivateChat.open({ id: 2, username: 'bob' });
+  assert.equal(nodes.privateChatBox.innerHTML, '');
+});
+
+test('opening from friends restores the visible messages tab before entering private chat', async () => {
+  const { game, nodes } = setup();
+  const selected = [];
+  nodes.chatMessagesPanel.hidden = true;
+  game.go = () => {};
+  game.MainView = {
+    selectChatTab(tab) { selected.push(tab); nodes.chatMessagesPanel.hidden = false; },
+    selectChatChannel(channel) { selected.push(channel); }
+  };
+  await game.PrivateChat.start('bob', 2);
+  assert.deepEqual(selected, ['messages', 'private']);
+  assert.equal(nodes.chatMessagesPanel.hidden, false);
+});
+
+test('blocked peer cannot send until refreshed server status reports unblocked', async () => {
+  const { game, nodes } = setup();
+  game.API.privateChatOpen = () => Promise.resolve({ id: 2, blocked: true });
+  await game.PrivateChat.open({ id: 2, username: 'bob' });
+  assert.equal(nodes.privateChatSend.disabled, true);
+  nodes.privateChatInput.value = 'blocked';
+  let sent = 0;
+  game.API.sendPrivateChat = () => { sent++; return Promise.resolve({ id: 1 }); };
+  await game.PrivateChat.send();
+  assert.equal(sent, 0);
+  game.API.privateChatConversations = () => Promise.resolve([{ peer: { id: 2, username: 'bob', blocked: false }, unread: 0 }]);
+  await game.PrivateChat.refresh();
+  assert.equal(nodes.privateChatSend.disabled, false);
+});
 test('switching peers preserves drafts and discards late history from the previous peer', async () => {
   const { game, nodes } = setup();
   let resolveOld;

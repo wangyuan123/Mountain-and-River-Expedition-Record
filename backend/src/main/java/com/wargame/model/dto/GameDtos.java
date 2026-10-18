@@ -76,7 +76,10 @@ public class GameDtos {
 
     public record MoveRequest(String direction) {}
 
-    public record DeclareWarRequest(Long targetCityId) {}
+    /** 退出新手保护必须随本次宣战显式确认，旧客户端默认不退出。 */
+    public record DeclareWarRequest(Long targetCityId, Boolean abandonNewbieProtection) {
+        public DeclareWarRequest(Long targetCityId) { this(targetCityId, false); }
+    }
 
     public record CancelMarchRequest(Long marchId) {}
 
@@ -99,7 +102,9 @@ public class GameDtos {
 
     // ===== 野地 =====
 
-    public record WildTileRequest(Long wildTileId) {}
+    public record WildTileRequest(Long wildTileId, Boolean abandonNewbieProtection) {
+        public WildTileRequest(Long wildTileId) { this(wildTileId, false); }
+    }
 
     public record WildDispatchRequest(
             Long wildTileId,
@@ -107,8 +112,13 @@ public class GameDtos {
             Long commanderId,
             Map<String, Integer> carryRes,
             String gatherMode,
-            String conquerMode
+            String conquerMode,
+            Boolean abandonNewbieProtection
     ) {
+        public WildDispatchRequest(Long wildTileId, Map<String, Integer> army, Long commanderId,
+                                   Map<String, Integer> carryRes, String gatherMode, String conquerMode) {
+            this(wildTileId, army, commanderId, carryRes, gatherMode, conquerMode, false);
+        }
         public WildDispatchRequest(Long wildTileId, Map<String, Integer> army, Long commanderId, Map<String, Integer> carryRes) {
             this(wildTileId, army, commanderId, carryRes, null, null);
         }

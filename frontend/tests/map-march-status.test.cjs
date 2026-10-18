@@ -87,7 +87,7 @@ test('animation frames move the march without redrawing the map and stop at arri
 
 test('arrival labels reflect stationing, combat, waiting and scouting instead of leaving a route behind',()=>{
  const f=fixture(),{view,march,marches,status}=f;marches.push(march);f.setNow(1000);march.targetKind='wild';
- for(const [action,label] of [['station','驻扎'],['conquer','交战'],['plunder','交战'],['scout','侦查'],['transport','抵达']]){
+ for(const [action,label] of [['station','驻扎'],['conquer','交战'],['plunder','交战'],['feint','交战'],['harass','交战'],['guerrilla','交战'],['scout','侦查'],['transport','抵达']]){
   march.action=action;view.drawRoutes();assert.equal(view.routes.lines.length,0);assert.equal(status().statusText.text,label);
  }
  march.targetKind='player';march.action='conquer';march.waitingForBattle=true;view.drawRoutes();

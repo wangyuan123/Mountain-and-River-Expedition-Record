@@ -23,7 +23,7 @@ window.Game = window.Game || {};
   function techDuration(id, currentLv, labLv) {
     var lv = currentLv != null ? currentLv : ((Core.state && Core.state.tech && Core.state.tech[id]) || 0);
     var lab = labLv != null ? labLv : ((Core.state && Core.state.buildings && Core.state.buildings.lab) || 0);
-    var base = 30.0 * Math.pow(1.8, Math.max(0, lv));
+    var base = (id.indexOf('prod_') === 0 ? 7.5 : 30.0) * Math.pow(1.8, Math.max(0, lv));
     var labSpeed = 1.0 + 0.10 * Math.max(0, lab - 1);
     var mayorSpeed = 1.0 + (Core.mayorSkillBonus ? Core.mayorSkillBonus('research') : 0);
     var duration = Math.round(base / (labSpeed * mayorSpeed));
@@ -72,6 +72,14 @@ window.Game = window.Game || {};
   function getEffectDiffText(t, lv) {
     var level = Math.max(0, Math.min(t.max, lv));
     var nextLevel = Math.min(t.max, level + 1);
+    // 同项线性累计，与攻击独立相乘；等级之间的实际输出增幅不是固定再乘 1.1。
+    if (t.affect === 'firepower_all') {
+      return {
+        curStr: '+' + (level * 5) + '%（×' + (1 + level / 20).toFixed(2) + '）',
+        nextStr: '+' + (nextLevel * 5) + '%（×' + (1 + nextLevel / 20).toFixed(2) + '）',
+        currentLabel: '当前行动火力', effectLabel: '行动火力', pct: 5, unit: '%'
+      };
+    }
     // 配方权限不会直接提高部队属性；制造时还会检查城市生产设施等级。
     if (t.affect === 'unit_recipes') {
       return {
@@ -80,12 +88,7 @@ window.Game = window.Game || {};
         currentLabel: '当前可制造配方', effectLabel: '配方权限'
       };
     }
-    // 负重和容量结算均未使用这两项科技，不能展示定义中遗留的计划加成。
-    if (t.affect === 'load' || t.affect === 'cap') {
-      var inactiveText = t.affect === 'load' ? '无额外负重加成' : '无额外容量加成';
-      return { curStr: inactiveText, nextStr: inactiveText, currentLabel: '当前实际效果', effectLabel: '实际效果' };
-    }
-    // 情报按等级解锁；雷达每级只加 2 点拦截先手值，不能套用默认百分比倍率。
+    // 先手使用点数，资源负重和仓库保护使用各自明确登记的百分比。
     if (t.affect === 'recon') {
       var intel = ['城防', '精确守军与统帅', '建筑与将领人数', '科技与可掠夺资源测算', '将领档案与战力'];
       return {
@@ -93,16 +96,16 @@ window.Game = window.Game || {};
         nextStr: '情报等级 Lv.' + nextLevel,
         currentLabel: '当前可查看',
         effectLabel: '情报等级',
-        currentText: level > 0 ? '城市：基础资源、' + intel.slice(0, level).join('、') + '；野地：精确守军' : '基础资源；城市与野地的模糊守军',
+        currentText: (level > 0 ? '城市：基础资源、' + intel.slice(0, level).join('、') + '；野地：精确守军' : '基础资源；城市与野地的模糊守军') + '；侦查交火先手+' + (level * 5) + '点',
         pct: 1, unit: '级'
       };
     }
     if (t.affect === 'radar') {
       return {
-        curStr: '+' + (level * 2) + '点',
-        nextStr: '+' + (nextLevel * 2) + '点',
-        currentLabel: '当前拦截先手值加成', effectLabel: '拦截先手值',
-        pct: 2, unit: '点'
+        curStr: '+' + (level * 5) + '点',
+        nextStr: '+' + (nextLevel * 5) + '点',
+        currentLabel: '当前首回合拦截先手值加成', effectLabel: '首回合拦截先手值',
+        pct: 5, unit: '点'
       };
     }
     // 千分比科技单独显示小数，避免浮点乘法出现0.30000000000000004%。
@@ -117,7 +120,7 @@ window.Game = window.Game || {};
     var unit = '%';
     var curStr = (cur > 0 ? '+' : '') + cur + unit;
     var nextStr = (next > 0 ? '+' : '') + next + unit;
-    var effectLabels = { train: '兵种生产速度', build: '建筑资源消耗与基础工期', res: '城内资源产量' };
+    var effectLabels = { wall_stats: '城墙生命与防御', train: '兵种生产速度', build: '建筑资源消耗与基础工期', res_food: '城内粮食产量', res_steel: '城内钢铁产量', res_oil: '城内石油产量', res_rare: '城内稀矿产量', load: '全兵种负重', cap: '仓库掠夺保护额度' };
     var effectLabel = effectLabels[t.affect];
     return { curStr: curStr, nextStr: nextStr, pct: pct, unit: unit, effectLabel: effectLabel, currentLabel: effectLabel ? '当前' + effectLabel : null };
   }
@@ -214,7 +217,7 @@ window.Game = window.Game || {};
       mask.className = 'modal-mask';
       mask.innerHTML =
         '<div class="modal-card" style="max-width:350px">' +
-          '<div class="modal-title">🔬 军研确认</div>' +
+          '<div class="modal-title">🔬 科技确认</div>' +
           '<div class="modal-body" style="font-size:13px">' +
             '<div class="cu-row cu-head">' +
               '<span class="cu-name">' + t.name + '  Lv.' + lv + ' → Lv.' + toLv + '</span>' +
@@ -264,7 +267,7 @@ window.Game = window.Game || {};
     confirmCancel: function (queueId) {
       var s = Core.state || {};
       var res = s.research;
-      var name = res ? res.name : '军研';
+      var name = res ? res.name : '科技';
       if (!confirm('确定要取消【' + name + '】的研发吗？\n将返还 80% 消耗的资源。')) return;
       G.API.techCancel(queueId).then(function (resp) {
         if (resp && resp.success === false) {
@@ -282,7 +285,7 @@ window.Game = window.Game || {};
       var s = Core.state || {};
       var res = s.research;
       if (!res) {
-        G.toast('当前没有正在研发的军研项目');
+        G.toast('当前没有正在研发的科技项目');
         return;
       }
       var speedOrder = G.Constants.speedUpOrder;
@@ -321,7 +324,7 @@ window.Game = window.Game || {};
       mask.className = 'modal-mask';
       mask.innerHTML =
         '<div class="modal-card" style="max-width:350px">' +
-          '<div class="modal-title">⚡ 军研加速</div>' +
+          '<div class="modal-title">⚡ 科技加速</div>' +
           '<div class="modal-body" style="font-size:13px;color:#666;margin-bottom:8px">目标: 【' + res.name + ' Lv.' + res.targetLevel + '】· 剩余 ' + remText + '</div>' +
           '<div class="spicker-list">' + rows + '</div>' +
           '<div class="modal-foot">' +
@@ -332,7 +335,7 @@ window.Game = window.Game || {};
 
       var close = function () { if (mask.parentNode) mask.parentNode.removeChild(mask); };
       // 必须在真正的加速选择器内切换目标，不能继续镂空背景中的研发加速按钮。
-      var guidedPicker = G.Onboarding && G.Onboarding.state && G.Onboarding.state.snoozedFor === 'reconTech' && G.Onboarding.showSpotlight;
+      var guidedPicker = G.Onboarding && G.Onboarding.state && G.Onboarding.state.guidedAction && G.Onboarding.state.guidedAction.route === 'tech' && G.Onboarding.showSpotlight;
       if (guidedPicker) {
         mask.className += ' ob-guided-picker';
         var guideSpeedRow = mask.querySelector('.spicker-row[data-sid="speedUp1h"]') || mask.querySelector('.spicker-row');
@@ -415,7 +418,7 @@ window.Game = window.Game || {};
       var res = s.research;
       if (!res) {
         return '<div class="panel" style="margin-bottom:12px;padding:8px 12px;border:1px dashed rgba(212,163,89,0.3);background:rgba(212,163,89,0.03);border-radius:6px;font-size:12px;color:var(--muted);">' +
-               '💡 军工科技研发中心空闲中：可自主选择一项战略技术开展军研' +
+               '💡 军工科技研发中心空闲中：可自主选择一项战略技术开展科技研发' +
                '</div>';
       }
 
@@ -453,16 +456,16 @@ window.Game = window.Game || {};
 
       var h = '';
       h += '<div class="title">- 军工科技研发中心 -</div>';
-      h += '<div class="desc">军工科技研发中心 Lv.' + labLv + ' · ' + branchOrder.length + ' 类军研，共 ' + Object.keys(D.techs).length + ' 项。军工科技研发中心等级越高，研发耗时越短。</div>';
+      h += '<div class="desc">军工科技研发中心 Lv.' + labLv + ' · ' + branchOrder.length + ' 类科技，共 ' + Object.keys(D.techs).length + ' 项。军工科技研发中心等级越高，研发耗时越短。</div>';
 
       // 1. 顶部正在研发卡片
       h += this.renderActiveResearchCard(s);
 
       // 2. 分类标签页
-      h += '<div class="tech-tabs" role="tablist" aria-label="军研分类">';
+      h += '<div class="tech-tabs" role="tablist" aria-label="科技分类">';
       branchOrder.forEach(function (branch, index) {
         var selected = branch === activeBranch;
-        h += '<button type="button" id="tech-tab-' + index + '" class="tech-tab' + (selected ? ' active' : '') + '" role="tab" aria-selected="' + selected + '" aria-controls="tech-panel" tabindex="' + (selected ? '0' : '-1') + '" onclick="Game.Tech.setTab(\'' + branch + '\')" onkeydown="Game.Tech.tabKey(event,' + index + ')">' + branch + '军研</button>';
+        h += '<button type="button" id="tech-tab-' + index + '" class="tech-tab' + (selected ? ' active' : '') + '" role="tab" aria-selected="' + selected + '" aria-controls="tech-panel" tabindex="' + (selected ? '0' : '-1') + '" onclick="Game.Tech.setTab(\'' + branch + '\')" onkeydown="Game.Tech.tabKey(event,' + index + ')">' + branch + '科技</button>';
       });
       h += '</div>';
 
@@ -530,7 +533,7 @@ window.Game = window.Game || {};
           if (locked) {
             h += '  <div class="cost" style="color:var(--danger);font-size:12px;">' + lockText + '</div>';
           } else if (maxed) {
-            h += '  <div class="cost" style="color:var(--ok);font-size:12px;">已达到终极军研上限</div>';
+            h += '  <div class="cost" style="color:var(--ok);font-size:12px;">已达到终极科技上限</div>';
           } else {
             h += '  <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);">';
             h += '    <span>下一级: ' + costHtml(cost) + '</span>';

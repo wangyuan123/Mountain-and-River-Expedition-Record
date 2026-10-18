@@ -45,6 +45,7 @@ window.Game = window.Game || {};
     html += '</div><p class="city-hint">' + esc(rankTip(info)) + '</p>';
     html += info.count < info.cap ? '<button class="btn ok city-wide" onclick="Game.Cities.foundForm()">＋ 建立新城（剩余 ' + (info.cap - info.count) + ' 个名额）</button>' : '<p class="city-hint">城市数量已达上限</p>';
     html += '<button class="btn city-wide" onclick="Game.Cities.close();Game.go(\'mainQuest\')">查看军衔</button>';
+    html += '<button class="btn city-wide" onclick="Game.CityTeleport.open()">传送当前城市</button>';
     contents(html);
   }
   var supportTargets = [], supportRequest = 0;
@@ -93,6 +94,8 @@ window.Game = window.Game || {};
       this.select(cityId, true);
     },
     select: function (cityId, goHome) {
+      if (G.CityTeleport && G.CityTeleport.isBusy()) return;
+      if (G.CityTeleport) G.CityTeleport.close();
       if (G.UnitEquipment && G.UnitEquipment.isBusy()) return;
       if (G.UnitEquipment && G.UnitEquipment.hasUnsaved()) { G.UnitEquipment.close(false); return; }
       if (G.UnitEquipment) G.UnitEquipment.close(true);
@@ -253,10 +256,18 @@ window.Game = window.Game || {};
         form.querySelectorAll('[data-resource]').forEach(function (input) { resources[input.dataset.resource] = Number(input.value); });
         if (!Object.keys(army).length) { G.toast('请至少选择一种兵种'); return; }
         if (transporting && !Object.keys(resources).some(function (key) { return resources[key] > 0; })) { G.toast('请填写要运输的物资'); return; }
-        button.disabled = true;
-        G.API.client.post('/game/world/dispatch', { unitEquipmentVersion: G.World && G.World._currentRoute && G.World._currentRoute.unitEquipmentVersion, targetKind: 'player', targetId: cityId, action: form.elements.action.value, army: army, carryRes: resources, commanderId: Number(form.elements.commander.value) || null }).then(function (data) {
-          G.API.applyState(data.state); G.Cities.close(); G.Core.render(); G.toast('部队已出发，可在地图查看行军进度');
-        }).catch(function (e) { button.disabled = false; error(e); });
+        var request = { unitEquipmentVersion: G.World && G.World._currentRoute && G.World._currentRoute.unitEquipmentVersion, targetKind: 'player', targetId: cityId, action: form.elements.action.value, army: army, carryRes: resources, commanderId: Number(form.elements.commander.value) || null };
+        // 驻防他人城市属于军事参与，复用出征确认；取消时保留表单和保护。
+        var send = function (confirmed) {
+          if (button.disabled || document.getElementById('cityTransferForm') !== form) return;
+          button.disabled = true;
+          if (confirmed) request.abandonNewbieProtection = true;
+          G.API.client.post('/game/world/dispatch', request).then(function (data) {
+            G.API.applyState(data.state); G.Cities.close(); G.Core.render(); G.toast('部队已出发，可在地图查看行军进度');
+          }).catch(function (e) { button.disabled = false; error(e); });
+        };
+        if (G.World && G.World.confirmPlayerWarfare) G.World.confirmPlayerWarfare(supporting && request.action === 'reinforce', send);
+        else send(false);
       });
     }
   };

@@ -423,8 +423,11 @@ public class TickService {
         population.put("growthPerHour", popGrowth);
         stateChanges.put("population", population);
 
-        playerRepository.findById(playerId).ifPresent(player ->
-                stateChanges.put("incoming", worldViewService.getIncoming(player)));
+        playerRepository.findById(playerId).ifPresent(player -> {
+            stateChanges.put("incoming", worldViewService.getIncoming(player));
+            // 跨过第7天、声望毕业或另一窗口退出后，及时同步账号所有城市的保护状态。
+            stateChanges.put("newbieProtectionUntil", com.wargame.model.constants.NewbieProtection.until(player, now));
+        });
 
         // 行军进度
         List<March> marches = marchRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
@@ -514,20 +517,21 @@ public class TickService {
             double curve = lv * (1 + 0.12 * (lv - 1));
             total += b.baseProduce() * curve;
         }
-        return Math.floor(total * resBonusMul(playerId));
+        return Math.floor(total * resBonusMul(playerId, b.produces()));
     }
 
     /**
      * resBonusMul() - matches JS Core.resBonusMul
-     * bonus = 1 + 0.05 * tech.log_production + mayor.logistics / 100
+     * bonus = 1 + 0.05 * tech.prod_<resource> + mayor.logistics / 100
      * bonus *= 1 + 0.05 * mayor.harvest
      * bonus *= 1 + 0.03 * buildings.transit
      */
-    private double resBonusMul(Long playerId) {
+    /** 城内产量只读取当前资源对应科技；野地采集不使用此倍率。 */
+    private double resBonusMul(Long playerId, String resource) {
         Officer mayor = getOfficerByRole(playerId, "mayor");
         double mayorLogi = mayor != null ? equipmentService.attributes(mayor).logistics() : 0;
         int harvestLv = getOfficerSkillLevel(mayor, "harvest");
-        int logProduction = getTechLevel(playerId, "log_production");
+        int logProduction = getTechLevel(playerId, "prod_" + resource);
         double bonus = 1 + 0.05 * logProduction + mayorLogi / 100.0;
         if (harvestLv > 0) {
             bonus *= (1.0 + 0.10 * harvestLv);
@@ -580,12 +584,6 @@ public class TickService {
     }
 
     /**
-     * capacity() - matches JS Core.capacity
-     * For food/steel/oil/rare: floor((baseCap + depotLv * depot.capPer * capGrowth) * capMul)
-     * capMul = 1 + 0.10 * tech.log_warehouse
-     * gold = 999999
-     */
-    /**
      * capacity() - resource cap based on resource building levels
      * Each building level adds 200000 to the cap (Lv1=200k, Lv2=400k, ..., Lv10=2000k)
      * food -> farm, steel -> refinery, oil -> oilfield, rare -> raremine
@@ -621,7 +619,6 @@ public class TickService {
         long warEndAt = cs.getWarEndAt() != null ? cs.getWarEndAt() : 0L;
         if ("war".equals(cs.getStatus()) && warEndAt != 0 && now >= warEndAt) {
             cs.setStatus("peace");
-            cs.setWarTargetId(null);
             cs.setWarEndAt(0L);
             cs.setPeaceUntil(now + 2 * 3600 * 1000L);
             cityStateRepository.save(cs);
@@ -671,8 +668,6 @@ public class TickService {
             cs.setPlayerId(playerId);
             cs.setCitySlot(cityScope.slot(playerId));
             cs.setStatus("peace");
-            cs.setWarTargetId(null);
-            cs.setWarAt(0L);
             cs.setWarEndAt(0L);
             cs.setShieldUntil(0L);
             cs.setPeaceUntil(0L);
@@ -688,7 +683,6 @@ public class TickService {
         long warEndAt = cs.getWarEndAt() != null ? cs.getWarEndAt() : 0L;
         if ("war".equals(cs.getStatus()) && warEndAt != 0 && now >= warEndAt) {
             cs.setStatus("peace");
-            cs.setWarTargetId(null);
             cs.setWarEndAt(0L);
             cs.setPeaceUntil(now + 2 * 3600 * 1000L);
         }

@@ -3848,8 +3848,9 @@ body[data-theme="dark"] {
   --ink: #e2e8f0;
 }
 
-/* 城市弹窗挂在 body 下，局部主题变量同时覆盖列表、建城和调遣表单。 */
-[data-theme|="blue-white"] .city-dialog-mask {
+/* 城市与确认弹窗挂在 body 或全屏元素下，需要局部主题变量覆盖。 */
+[data-theme|="blue-white"] .city-dialog-mask,
+[data-theme|="blue-white"] .confirm-dialog-mask {
   --surface: #ffffff;
   --surface-muted: #eef4fb;
   --ink: #334455;
@@ -3861,7 +3862,8 @@ body[data-theme="dark"] {
   color-scheme: light;
 }
 
-[data-theme="paper"] .city-dialog-mask {
+[data-theme="paper"] .city-dialog-mask,
+[data-theme="paper"] .confirm-dialog-mask {
   --surface: #f6f5f0;
   --surface-muted: #ebe7df;
   --ink: #273136;
@@ -3873,7 +3875,8 @@ body[data-theme="dark"] {
   color-scheme: light;
 }
 
-[data-theme="dark"] .city-dialog-mask {
+[data-theme="dark"] .city-dialog-mask,
+[data-theme="dark"] .confirm-dialog-mask {
   --surface: #111724;
   --surface-muted: #0e1422;
   --ink: #e2e8f0;

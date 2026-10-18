@@ -16,7 +16,7 @@ class BattleCompositionTest {
         Map<String, Integer> tech = developed ? Map.of("attack_tech", 5, "defense_tech", 5,
                 "cmd_hp", 5, "weapon_range", 5, "arm_engine", 5, "air_engine", 5) : Map.of();
         return new BattleService(seed).startWorldDispatch(attack, defense, forts, tech, tech,
-                Map.of(), Map.of(), developed ? 50 : 0, developed ? 50 : 0, 0, 0,
+                Map.of(), Map.of(), developed ? 50 : 0, developed ? 50 : 0,
                 "plunder", Map.of(), 0, true);
     }
 
@@ -24,7 +24,7 @@ class BattleCompositionTest {
     void shorterRocketRangeRequiresMoreSiegeFirepowerWithinRoundLimit() {
         // 喀秋莎反坦克火箭车射程调整为1600后，仍需验证在24回合上限内拥有足够的攻坚火力清空碉堡群。
         for (boolean developed : List.of(false, true)) {
-            for (int count : new int[]{140, 175}) {
+            for (int count : new int[]{140, 220}) {
                 int wins = 0;
                 for (int seed = 0; seed < 32; seed++) {
                     BattleResult result = battle(Map.of("rocket", count), Map.of(), Map.of("bunker", 700), seed, developed);

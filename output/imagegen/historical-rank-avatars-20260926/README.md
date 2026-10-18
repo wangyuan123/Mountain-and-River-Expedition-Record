@@ -26,7 +26,7 @@
 1. 检查面部、比例、服装时代感和缩小后的可辨识度，并制作总览。
 2. 新建 historical 子目录资源，更新 frontend/js/constants.js 的预设列表与默认头像。
 3. 统一 main-view.js、core.js、player-profile.js 的默认值和错误回退，并兼容旧 SVG 选择。
-4. GameController 的白名单目前仅接收 commander-1.svg 至 commander-8.svg，需同步放行新资源的精确路径。
+4. GameController 的白名单当时仅接收旧 SVG 头像，接入时需同步放行新资源的精确路径。
 5. 验证头像选择、保存、旧值映射、非法地址拒绝及 44px、72px 的显示效果。
 
 现有头像与运行时代码保持原状，待真实图片完成后接入，避免空白头像或保存失败。

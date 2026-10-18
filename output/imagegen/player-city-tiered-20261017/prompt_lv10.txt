@@ -1,0 +1,30 @@
+Use case: stylized-concept.
+Asset type: one complete realistic 3D miniature player-city fortress model asset for the WWII-inspired strategy game 山河远征录, matching its existing A / garden citadel architectural collection.
+Tier: Tier 3 (City Wall Level 10 MAX: Supreme Command Citadel / 城墙10级满级最高统帅终极钢铁要塞大本营).
+
+Primary request:
+Create the ultimate monumental fortress-city and supreme military headquarters of the highest tier. The fortress features towering, massive monolithic citadel walls, an exceptionally grand 5-6 story supreme command palace with monumental colonnades, a state-of-the-art airbase, a massive heavy armor division staging ground, advanced radar towers, and elite fortress fortifications with unmatched military prestige and authority.
+
+Camera and Framing:
+- Elevated three-quarter isometric perspective, approximately 35-40 degrees above the horizon, viewing from the south towards the north, showing front facade and right side.
+- Strictly SQUARE ground footprint aligned to cardinal directions (NOT rotated 45 degrees into diamond, NOT a floating diorama slab). The southern defensive wall runs horizontally along the lower portion.
+- Near-orthographic focal length, entire fortress fully contained within the square frame with a 6-8 percent clean margin. All-in-focus rendering from front gate to rear radar tower.
+
+Architectural Zones and Upgraded Facilities:
+1. Massive Citadel Perimeter Ramparts (10级满级巨型复合要塞高墙与棱堡):
+   Towering, massive early-20th-century monolithic fortress citadel walls (standing twice as tall as Tier 1, soaring with tremendous vertical presence). Constructed from heavy reinforced concrete armor slabs and cut granite blocks with sloped blast-resistant ramparts. Massive multi-faceted bastion fortresses at all corners, armed with heavy armored fortress artillery turrets and quad anti-aircraft flak batteries. Monumental 3-story southern barbican gate fortress with heavy blast-proof armored steel gates, stone watchtowers, fortress searchlights, and deep rows of concrete dragon's teeth anti-tank fortifications. Elevated parapets with active sentries and pillboxes.
+2. Supreme Command Citadel Palace (至高宏伟的5-6层最高统帅大本营宫殿):
+   Commanding the north-central axis with supreme dominance: an exceptionally grand 5-6 story neoclassical military-civic citadel palace with pale limestone facade, sweeping monumental columned wings, massive ceremonial marble staircase, high central portico, and a majestic soaring clock tower capped with an impressive neoclassical dome. A magnificent paved victory plaza extends in front, lined with formal sculpted gardens, ceremonial lanterns, and parade avenues.
+3. Heavy Strategic Airbase Complex (东部重装战略机场基地):
+   Expanded airfield featuring multiple reinforced blast-proof concrete aircraft hangars, advanced multi-story flight operations tower, extended concrete apron and runways with parked heavy strategic bombers (B-17 / B-29 style multi-engine bombers) and advanced fighter squadrons.
+4. Heavy Armored Staging Ground & Armaments (正南至中央重装战备大操场):
+   Expansive paved parade ground densely arrayed with elite heavy armor battalions: disciplined formations of heavy battle tanks with long rifled barrels, self-propelled artillery, Katyusha rocket launchers, half-track carriers, and armored command trucks. Western armaments complex includes multiple red-brick sawtooth workshops, industrial cranes, ammunition caches, and fuel depots.
+5. Advanced Radar & Defense Array (东北角超级预警雷达中枢与西北警卫营):
+   Northeastern elevated citadel bastion houses a massive high-gain rotating wire-mesh radar dish array and tall communications antenna masts. Northwestern sector contains reinforced barracks compound with stone-and-timber security perimeters, spotlight watchtowers, and communications bunker.
+
+Materials, Color Palette and Craftsmanship:
+Master scale-model craftsmanship with convincing physical textures. Harmonious palette matching the garden building collection: warm cream limestone and stucco, muted terracotta clay roof tiles, weathered dark timber, olive-drab military vehicles, neutral gray concrete paving, and manicured green grass accents.
+Lighting:
+Bright, natural morning daylight from upper-left casting crisp, realistic volumetric contact shadows that emphasize multi-level building relief, retaining clear interior court details.
+Background & Constraints:
+Solid uniform seamless pure white background (#ffffff) for clean transparency preparation. Flat thin ground surface with natural stone borders, NO floating dirt island, NO thick diorama pedestal block, NO water moat. NO modern skyscrapers, NO medieval fantasy spires, NO flying/airborne planes, NO text, watermarks, or UI icons.

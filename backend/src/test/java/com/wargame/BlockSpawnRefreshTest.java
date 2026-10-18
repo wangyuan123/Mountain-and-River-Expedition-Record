@@ -4,6 +4,7 @@ import com.wargame.model.constants.WorldConfig;
 import com.wargame.model.entity.Bandit;
 import com.wargame.service.WildTileRefreshScheduler;
 import com.wargame.service.WorldTerrainService;
+import com.wargame.util.JsonUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -61,7 +62,7 @@ class BlockSpawnRefreshTest extends BaseServiceTest {
         world.setTerrainData("0".repeat(WorldConfig.SIZE * WorldConfig.SIZE));
         worldMapRepository.saveAndFlush(world);
         createTestPlayer("block-spawn-player", 30);
-        for (int y = 0; y < WorldConfig.SIZE; y += 16) for (int x = 0; x < WorldConfig.SIZE; x += 16) {
+        for (int y = 0; y < WorldConfig.WORLD_SIZE; y += 16) for (int x = 0; x < WorldConfig.WORLD_SIZE; x += 16) {
             if (x == 0 && y == 0) continue;
             bandit(world.getId(), x + 8, y + 8, false);
         }
@@ -80,6 +81,8 @@ class BlockSpawnRefreshTest extends BaseServiceTest {
         assertEquals("寇 Lv.2", replacement.getName());
         assertEquals("测试军官", replacement.getCommanderName());
         assertFalse(replacement.getDefeated());
+        assertEquals(WorldConfig.landNpcGarrison(2, replacement.getX(), replacement.getY()),
+                JsonUtil.parseIntMap(replacement.getArmy()));
         assertEquals(0, npcCityRepository.findByWorldId(world.getId()).size());
     }
 

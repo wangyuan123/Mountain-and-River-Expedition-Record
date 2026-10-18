@@ -58,8 +58,8 @@ test('未参加、暂停和完成的引导只做首次读取，不开启轮询',
 test('参加中的引导每五秒刷新，重复刷新不叠加定时器或在途请求', async () => {
   const { G, timers, nodes } = setup(snapshot({ current: { id: 'base', title: '整备前进基地', body: '升级市政厅' }, objectives: [{}] }));
   await G.Onboarding.init();
-  assert.match(nodes.get('onboardingBar').innerHTML, /新手战役 · 前进基地行动/);
-  assert.match(nodes.get('onboardingBar').innerHTML, /先升级(后勤|资源)建筑与军工设施/);
+  assert.match(nodes.get('onboardingBar').innerHTML, /整备前进基地/);
+  assert.match(nodes.get('onboardingBar').innerHTML, /升级市政厅/);
   assert.equal(timers.size, 1);
   const timer = [...timers.values()][0];
   assert.equal(timer.delay, 5000);
@@ -92,22 +92,18 @@ test('首次引导读取失败时显示可重试入口而非静默消失', async
   assert.match(nodes.get('onboardingBar').innerHTML, /重新检查/);
 });
 
-test('当前目标提供资源建造、军工造兵和采集的对应入口', async () => {
-  const { G, nodes } = setup(snapshot({ objectives: [{ id: 'base', complete: false }], current: { id: 'base', title: '整备基地', body: '升级建筑' }, checks: {} }));
+test('五步入口只提供建设、组队、侦察、首战与战果', async () => {
+  const { G, nodes } = setup(snapshot({ objectives: [{ id: 'base', complete: false }], current: { id: 'base', title: '建设基地', body: '任意建筑' } }));
   await G.Onboarding.init();
-  assert.match(nodes.get('onboardingBar').innerHTML, /升级市政厅/);
-  G.Onboarding.state.data.current = { id: 'farm', title: '建设农田', body: '升级农田' };
-  G.Onboarding.render();
-  assert.match(nodes.get('onboardingBar').innerHTML, /升级农田/);
-  G.Onboarding.state.data.current = { id: 'factory', title: '建造军工厂', body: '建造设施' };
-  G.Onboarding.render();
-  assert.match(nodes.get('onboardingBar').innerHTML, /建造军工厂/);
-  G.Onboarding.state.data.current = { id: 'train', title: '组织小队', body: '生产部队' };
-  G.Onboarding.render();
-  assert.match(nodes.get('onboardingBar').innerHTML, /前往生产卡车/);
-  G.Onboarding.state.data.current = { id: 'gather', title: '运回补给', body: '采集资源' };
-  G.Onboarding.render();
-  assert.match(nodes.get('onboardingBar').innerHTML, /派出采集队/);
+  assert.match(nodes.get('onboardingBar').innerHTML, /前往建设/);
+  G.Onboarding.state.data.current = { id: 'infantry' }; G.Onboarding.render();
+  assert.match(nodes.get('onboardingBar').innerHTML, /生产一名步兵/);
+  for (const id of ['scout', 'occupy']) {
+    G.Onboarding.state.data.current = { id }; G.Onboarding.render();
+    assert.match(nodes.get('onboardingBar').innerHTML, /选择推荐野地/);
+  }
+  G.Onboarding.state.data.current = { id: 'report' }; G.Onboarding.render();
+  assert.match(nodes.get('onboardingBar').innerHTML, /查看获胜战报/);
 });
 
 test('轮询发现未参加、暂停或完成时停止后续请求并移除提示', async () => {

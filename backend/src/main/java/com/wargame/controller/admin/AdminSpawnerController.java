@@ -26,7 +26,8 @@ public class AdminSpawnerController {
         int count = body.containsKey("count") ? ((Number) body.get("count")).intValue() : 1;
         Integer minLevel = body.containsKey("minLevel") && body.get("minLevel") != null ? ((Number) body.get("minLevel")).intValue() : null;
         Integer maxLevel = body.containsKey("maxLevel") && body.get("maxLevel") != null ? ((Number) body.get("maxLevel")).intValue() : null;
-        List<Map<String, Object>> created = adminSpawnerService.spawnNpcCities(count, minLevel, maxLevel, authentication.getName(), request);
+        String battlefield = (String) body.getOrDefault("battlefield", "all");
+        List<Map<String, Object>> created = adminSpawnerService.spawnNpcCities(count, minLevel, maxLevel, battlefield, authentication.getName(), request);
         return Map.of("success", true, "count", created.size(), "cities", created);
     }
 
@@ -39,7 +40,8 @@ public class AdminSpawnerController {
                 ? (String) body.get("prefix")
                 : "远征统帅";
         Integer initialLevel = body.containsKey("initialLevel") && body.get("initialLevel") != null ? ((Number) body.get("initialLevel")).intValue() : 1;
-        List<Map<String, Object>> created = adminSpawnerService.spawnMockBots(count, prefix, initialLevel, authentication.getName(), request);
+        String battlefield = (String) body.getOrDefault("battlefield", "all");
+        List<Map<String, Object>> created = adminSpawnerService.spawnMockBots(count, prefix, initialLevel, battlefield, authentication.getName(), request);
         return Map.of("success", true, "count", created.size(), "bots", created);
     }
 
@@ -81,5 +83,51 @@ public class AdminSpawnerController {
             }
         }
         return adminSpawnerService.deleteBots(ids, authentication.getName(), request);
+    }
+
+    @GetMapping("/wild-stats")
+    public Map<String, Object> getWildStats() {
+        return adminSpawnerService.getWildStats();
+    }
+
+    @PostMapping("/spawn-wilds")
+    public Map<String, Object> spawnWilds(@RequestBody Map<String, Object> body,
+                                          Authentication authentication,
+                                          HttpServletRequest request) {
+        String type = (String) body.getOrDefault("type", "ALL_RESOURCES");
+        int count = body.containsKey("count") ? ((Number) body.get("count")).intValue() : 10;
+        Integer minLevel = body.containsKey("minLevel") && body.get("minLevel") != null ? ((Number) body.get("minLevel")).intValue() : 1;
+        Integer maxLevel = body.containsKey("maxLevel") && body.get("maxLevel") != null ? ((Number) body.get("maxLevel")).intValue() : 10;
+        boolean clearUnoccupied = Boolean.TRUE.equals(body.get("clearUnoccupied"));
+        String battlefield = (String) body.getOrDefault("battlefield", "all");
+
+        List<Map<String, Object>> created = adminSpawnerService.spawnWildTiles(type, count, minLevel, maxLevel, clearUnoccupied, battlefield, authentication.getName(), request);
+        return Map.of("success", true, "count", created.size(), "wilds", created);
+    }
+
+    @PostMapping("/clear-unoccupied-wilds")
+    public Map<String, Object> clearUnoccupiedWilds(Authentication authentication,
+                                                    HttpServletRequest request) {
+        return adminSpawnerService.clearUnoccupiedWilds(authentication.getName(), request);
+    }
+
+    @GetMapping("/deletable-wilds")
+    public Map<String, Object> getDeletableWilds() {
+        List<Map<String, Object>> list = adminSpawnerService.getDeletableWildTiles();
+        return Map.of("success", true, "count", list.size(), "list", list);
+    }
+
+    @PostMapping("/delete-wilds")
+    public Map<String, Object> deleteWilds(@RequestBody Map<String, Object> body,
+                                           Authentication authentication,
+                                           HttpServletRequest request) {
+        Object rawIds = body.get("ids");
+        List<Long> ids = new ArrayList<>();
+        if (rawIds instanceof List<?> list) {
+            for (Object item : list) {
+                if (item instanceof Number n) ids.add(n.longValue());
+            }
+        }
+        return adminSpawnerService.deleteWildTiles(ids, authentication.getName(), request);
     }
 }

@@ -68,9 +68,6 @@ public class Officer extends CityOwnedEntity {
     @Column(name = "bio", columnDefinition = "text")
     private String bio;
 
-    @Column(name = "equipment_count", nullable = false)
-    private Integer equipmentCount = 0;
-
     @Column(name = "attr_points", nullable = false)
     private Integer attrPoints = 0;
 }

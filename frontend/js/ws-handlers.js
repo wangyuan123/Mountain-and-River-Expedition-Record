@@ -109,6 +109,13 @@ window.Game = window.Game || {};
     if (data.cityState) {
       G.state.cityState = data.cityState;
     }
+    // 0 也须覆盖旧值，避免退出或到期后客户端继续显示保护。
+    if (data.newbieProtectionUntil !== undefined) {
+      var previousProtection = (G.state.player || {}).newbieProtectionUntil;
+      if (G.state.player) G.state.player.newbieProtectionUntil = data.newbieProtectionUntil;
+      if (G.state.cityState) G.state.cityState.newbieProtectionUntil = data.newbieProtectionUntil;
+      if (previousProtection !== data.newbieProtectionUntil && G.WorldMap && G.WorldMap.invalidate) G.WorldMap.invalidate();
+    }
     if (data.officers) {
       G.state.officers = data.officers;
     }
@@ -206,6 +213,18 @@ window.Game = window.Game || {};
     } else if (G.Battle && G.Battle.refreshUnread) {
       G.Battle.refreshUnread();
     }
+  });
+
+  // 城市传送后使坐标缓存失效，同账号的其他标签页同步新的城市位置。
+  G.WS.on('city_teleport', function (data) {
+    if (!data) return;
+    if (G.WorldView) G.WorldView.invalidate();
+    if (G.WorldMap) G.WorldMap.invalidate();
+    var player = (G.Core && G.Core.state && G.Core.state.player) || {};
+    if (String(data.ownerId) !== String(player.id) || (G.CityTeleport && G.CityTeleport.isBusy())) return;
+    if (G.CityTeleport) G.CityTeleport.close();
+    if (G.API && G.API.client) G.API.client.invalidateCityRequests();
+    refreshState();
   });
 
   // 城权变更后清除旧城市请求上下文，避免失守城的X-City-Id使后续状态请求一直失败。

@@ -60,7 +60,9 @@ class LandBanditPopulationTest extends BaseServiceTest {
             }
         }
         var high = land.stream().filter(b -> b.getLevel() == 30).findFirst().orElseThrow();
-        assertEquals(WorldConfig.BANDIT_LEVELS.get(29).army(), JsonUtil.parseIntMap(high.getArmy()));
+        assertEquals(WorldConfig.landNpcGarrison(30, high.getX(), high.getY()), JsonUtil.parseIntMap(high.getArmy()));
+        assertTrue(land.stream().filter(b -> b.getLevel() == 25).map(Bandit::getArmy).distinct().count() > 1,
+                "同级高阶寇应分配不同编队");
         var ids = all.stream().map(Bandit::getId).collect(Collectors.toSet());
         population.ensure(world.getId());
         assertEquals(ids, banditRepository.findByWorldId(world.getId()).stream().map(Bandit::getId).collect(Collectors.toSet()));

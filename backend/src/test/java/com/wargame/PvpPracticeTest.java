@@ -40,6 +40,23 @@ class PvpPracticeTest extends BaseServiceTest {
     private String enqueue(Long player) {
         var snapshot = snap(player); return (String) pvp.enqueue(player, id(), 0, snapshot, Map.of("queue", player)).get("ticketId");
     }
+
+    @Test void fireDensityIsFrozenInNewSnapshotsAndRaisesPowerWithoutChangingOldOnes() {
+        Long player = player();
+        var before = snap(player);
+        new TransactionTemplate(transactions).executeWithoutResult(tx -> createTechnology(player, "fire_density", 10));
+        var after = snap(player);
+        assertEquals(10, after.tech().get("fire_density"));
+        assertFalse(before.tech().containsKey("fire_density"));
+        assertEquals(before.effectiveStats().get("infantry").get("ground") * 1.5,
+                after.effectiveStats().get("infantry").get("ground"), 1e-9);
+        assertTrue(after.power() > before.power());
+        new TransactionTemplate(transactions).executeWithoutResult(tx -> {
+            var technology = technologyRepository.findByPlayerIdAndType(player, "fire_density").get(0);
+            technology.setLevel(0); technologyRepository.save(technology);
+        });
+        assertEquals(10, after.tech().get("fire_density"));
+    }
     private void update(String session, java.util.function.Consumer<PvpPracticeSession> action) {
         new TransactionTemplate(transactions).executeWithoutResult(t -> { var s = sessions.findById(session).orElseThrow(); action.accept(s); sessions.save(s); });
     }

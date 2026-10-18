@@ -77,6 +77,8 @@ class WorldMapServiceTest extends BaseServiceTest {
         assertEquals(1234L,attacker.get("warAt"));assertFalse(attacker.containsKey("forts"));assertFalse(attacker.containsKey("resources"));assertFalse(attacker.containsKey("army"));
         assertEquals(0L,maps.target(c.getId(),"player",city.getId()).get("warAt"));
         assertEquals(true,maps.target(b.getId(),"player",city.getId()).get("selfCity"));
+        createBuilding(b.getId(), "wall", 8);
+        assertEquals(8, maps.target(a.getId(),"player",city.getId()).get("wallLevel"));
         assertThrows(IllegalArgumentException.class,()->maps.target(a.getId(),"simulated_npc",city.getId()));
     }
 }

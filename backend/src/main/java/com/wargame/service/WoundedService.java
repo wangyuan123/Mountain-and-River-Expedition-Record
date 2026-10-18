@@ -51,16 +51,14 @@ public class WoundedService {
         return medicalLevel(playerId) * 5 + medic * 3;
     }
 
+    /** 出征和援军伤兵归行军的城市槽；历史坐标和玩家后来切换的城市不能改变归属。 */
     @Transactional
     public Map<String, Integer> recordOutboundLosses(Long playerId, March march,
                                                      Map<String, Integer> initial, Map<String, Integer> survivors,
                                                      Officer commander, long now) {
-        // 地图中的玩家位置可以离开城市；这种出征仍归主城救治，不能创建虚构城市。
-        PlayerCity origin = cities.findByOwnerId(playerId).stream()
-                .filter(c -> Objects.equals(c.getX(), march.getFromX()) && Objects.equals(c.getY(), march.getFromY()))
-                .findFirst().orElse(null);
-        return recordLosses(playerId, origin == null ? null : origin.getX(), origin == null ? null : origin.getY(),
-                initial, survivors, commander, now);
+        try (var ignored = cityScope.enter(playerId, Objects.requireNonNullElse(march.getCitySlot(), 0))) {
+            return recordLosses(playerId, null, null, initial, survivors, commander, now);
+        }
     }
 
     /** 只接收实际参战损失；城防不属于可治疗部队。回收率在战斗结束时锁定。 */
@@ -72,12 +70,13 @@ public class WoundedService {
         if (initial == null || initial.isEmpty()) return recovered;
         int percent = recoveryPercent(playerId, commander);
         if (percent == 0) return recovered;
-        Player player = players.findById(playerId).orElseThrow();
-        int x = cityX != null ? cityX : (cityScope.economy(playerId).getCityPosX() == null ? 0 : cityScope.economy(playerId).getCityPosX());
-        int y = cityY != null ? cityY : (cityScope.economy(playerId).getCityPosY() == null ? 0 : cityScope.economy(playerId).getCityPosY());
-        PlayerCity city = cities.findByOwnerId(playerId).stream()
+        players.findById(playerId).orElseThrow();
+        CityEconomy economy = cityScope.economy(playerId);
+        int x = cityX != null ? cityX : Objects.requireNonNullElse(economy.getCityPosX(), 0);
+        int y = cityY != null ? cityY : Objects.requireNonNullElse(economy.getCityPosY(), 0);
+        PlayerCity city = cityX == null && cityY == null ? cityScope.selected(playerId).orElse(null) : cities.findByOwnerId(playerId).stream()
                 .filter(c -> Objects.equals(c.getX(), x) && Objects.equals(c.getY(), y)).findFirst().orElse(null);
-        String name = city != null ? city.getName() : cityScope.economy(playerId).getCityName();
+        String name = city != null ? city.getName() : economy.getCityName();
         for (var entry : initial.entrySet()) {
             if (!GameData.UNITS.containsKey(entry.getKey())) continue;
             int start = Math.max(0, entry.getValue() == null ? 0 : entry.getValue());
@@ -102,7 +101,7 @@ public class WoundedService {
         return recovered;
     }
 
-    /** 黄金为制造资源总价的 10%（向上取整），钻石按每 100 黄金折算一颗。 */
+    /** 黄金为制造资源总价的 10%（每单位向上取整）。 */
     public long goldCost(String unit, int count) {
         var definition = GameData.UNITS.get(unit);
         if (definition == null) throw new IllegalArgumentException("未知兵种");
@@ -110,18 +109,22 @@ public class WoundedService {
         return Math.max(1L, (productionCost + 9) / 10) * count;
     }
 
+    /** 钻石按本次治疗的黄金总费用每 1000 黄金折算一颗，不足一颗向上取整。 */
     public long diamondCost(String unit, int count) {
-        return (goldCost(unit, count) + 99) / 100;
+        return (goldCost(unit, count) + 999) / 1000;
     }
 
+    /** 返回当前请求城市的批次与余额；坐标仅为展示快照，不能用于划分城市。 */
     @Transactional(readOnly = true)
     public Map<String, Object> getCamp(Long playerId) {
         long now = System.currentTimeMillis();
+        int citySlot = cityScope.slot(playerId);
         List<Map<String, Object>> batches = new ArrayList<>();
         long total = 0;
-        for (WoundedUnit batch : wounded.findByPlayerIdAndCitySlotAndExpiresAtGreaterThanOrderByExpiresAtAscIdAsc(playerId, cityScope.slot(playerId), now)) {
+        for (WoundedUnit batch : wounded.findByPlayerIdAndCitySlotAndExpiresAtGreaterThanOrderByExpiresAtAscIdAsc(playerId, citySlot, now)) {
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("id", batch.getId());
+            item.put("citySlot", batch.getCitySlot());
             item.put("cityId", batch.getCityId());
             item.put("cityX", batch.getCityX());
             item.put("cityY", batch.getCityY());
@@ -137,8 +140,23 @@ public class WoundedService {
             batches.add(item);
             total += batch.getCount();
         }
-        return Map.of("batches", batches, "total", total, "medicalLevel", medicalLevel(playerId),
-                "serverTime", now);
+        Map<String, Object> camp = new LinkedHashMap<>();
+        camp.put("batches", batches);
+        camp.put("total", total);
+        camp.put("medicalLevel", medicalLevel(playerId));
+        camp.put("serverTime", now);
+        camp.put("citySlot", citySlot);
+        CityEconomy economy = cityScope.economy(playerId);
+        camp.put("cityId", cityScope.selected(playerId).map(PlayerCity::getId).orElse(null));
+        camp.put("cityName", economy.getCityName());
+        camp.put("cityX", economy.getCityPosX());
+        camp.put("cityY", economy.getCityPosY());
+        // 黄金属本城，钻石沿用账号共享钱包；按钮和实际扣款使用相同的资产范围。
+        Resources wallet = cityScope.wallet(playerId);
+        camp.put("resources", Map.of(
+                "gold", resources.findByPlayerIdAndCitySlot(playerId, citySlot).map(Resources::getGold).orElse(0),
+                "diamond", Objects.requireNonNullElse(wallet.getDiamond(), 0)));
+        return camp;
     }
 
     @Transactional

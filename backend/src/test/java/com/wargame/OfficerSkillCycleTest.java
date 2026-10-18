@@ -29,7 +29,7 @@ class OfficerSkillCycleTest {
                                      Map<String, Integer> skills, Map<String, BattleService.UnitOrder> commands) {
         // 每次重建服务，以验证周期只依赖传入快照，不依赖 JVM 中的临时状态。
         return new BattleService(0).resolveWorldRound(mine, enemy, minePos, enemyPos, 400,
-                TECH, TECH, skills, skills, 0, 0, 0, 0, 0, 0,
+                TECH, TECH, skills, skills, 0, 0, 0, 0,
                 round, firstCombatRound, commands, commands);
     }
 
@@ -62,7 +62,7 @@ class OfficerSkillCycleTest {
                 Map.of("infantry", startingTroops), Map.of("infantry", startingTroops),
                 Map.of("infantry", 150), Map.of("infantry", 250), 400,
                 Map.of(), Map.of(), Map.of(), Map.of("counter", 5),
-                0, 0, 0, 0, 0, 0, 4, 4, HOLD, HOLD);
+                0, 0, 0, 0, 4, 4, HOLD, HOLD);
         var counter = Pattern.compile("敌方[^\\n]*\\((\\d+)\\) \\[绝境反击\\].*? 伤害(\\d+)")
                 .matcher(state.log());
         assertTrue(counter.find(), state.log());
@@ -146,9 +146,9 @@ class OfficerSkillCycleTest {
 
         var state = service.resolveWorldRound(ARMY, ARMY,
                 Map.of("infantry", 0), Map.of("infantry", 2_000), 2_000,
-                TECH, TECH, blitz.skills(), blitz.skills(), 0, 0, 0, 0, 0, 0,
+                TECH, TECH, blitz.skills(), blitz.skills(), 0, 0, 0, 0,
                 1, 0, orders(BattleService.CommandAction.ADVANCE), HOLD);
-        assertEquals(100, state.attackerPositions().get("infantry"));
+        assertEquals(Math.round(UnitDef.UNITS.get("infantry").spd() * 50), state.attackerPositions().get("infantry"));
         assertEquals(0, state.firstCombatRound());
         assertFalse(state.log().contains("闪电突击"), state.log());
     }
@@ -158,10 +158,10 @@ class OfficerSkillCycleTest {
         for (int round = 4; round <= 13; round++) {
             var state = new BattleService(0).resolveWorldRound(ARMY, ARMY,
                     Map.of("infantry", 1_000), Map.of("infantry", 2_000), 3_000,
-                    TECH, TECH, Map.of("blitz", 5), Map.of("blitz", 5), 0, 0, 0, 0, 0, 0,
+                    TECH, TECH, Map.of("blitz", 5), Map.of("blitz", 5), 0, 0, 0, 0,
                     round, 4, orders(BattleService.CommandAction.RETREAT), orders(BattleService.CommandAction.RETREAT));
             boolean active = round == 4 || round == 7 || round == 10 || round == 13;
-            int step = active ? 130 : 100;
+            int step = (int) Math.round(UnitDef.UNITS.get("infantry").spd() * 50 * (active ? 1.3 : 1));
             assertEquals(1_000 - step, state.attackerPositions().get("infantry"), state.log());
             assertEquals(2_000 + step, state.defenderPositions().get("infantry"), state.log());
             assertEquals(4, state.firstCombatRound());
@@ -173,7 +173,7 @@ class OfficerSkillCycleTest {
         for (int round : new int[]{4, 6, 10}) {
             var state = new BattleService(0).resolveWorldRound(ARMY, ARMY,
                     Map.of("infantry", 150), Map.of("infantry", 250), 400,
-                    TECH, TECH, Map.of("blitz", 5), Map.of(), 0, 0, 0, 0, 0, 0,
+                    TECH, TECH, Map.of("blitz", 5), Map.of(), 0, 0, 0, 0,
                     round, round == 4 ? 0 : 4, HOLD, HOLD);
             String firstShot = state.log().lines().filter(line -> line.contains(" 伤害")).findFirst().orElseThrow();
             assertTrue(firstShot.startsWith(round == 6 ? "敌方" : "我方"), state.log());
@@ -226,7 +226,7 @@ class OfficerSkillCycleTest {
         var state = new BattleService(0).resolveWorldRound(
                 Map.of("truck", 10_000), ARMY, Map.of("truck", 0), Map.of("infantry", 100), 400,
                 TECH, TECH, Map.of("bulwark", 5, "counter", 5), Map.of("frenzy", 5),
-                0, 0, 0, 0, 0, 0, 4, 0,
+                0, 0, 0, 0, 4, 0,
                 Map.of("truck", new BattleService.UnitOrder(BattleService.CommandAction.HOLD)), HOLD);
         assertEquals(4, state.firstCombatRound());
         assertTrue(state.log().contains("我方将领加成：坚守阵地"), state.log());
@@ -236,13 +236,25 @@ class OfficerSkillCycleTest {
     }
 
     @Test
-    void commanderAttributesKeepTheirIndependentTiming() {
-        var state = new BattleService(0).resolveWorldRound(ARMY, ARMY,
-                Map.of("infantry", 150), Map.of("infantry", 250), 400, TECH, TECH,
-                Map.of("frenzy", 5), Map.of(), 50, 50, 0, 0, 0, 0, 6, 4, HOLD, HOLD);
-        assertTrue(state.log().contains("军事属性 +50%攻击"));
-        assertTrue(state.log().contains("防御属性 +50%防御"));
-        assertFalse(state.log().contains("全军冲锋"));
+    void commanderAttributesShareFirstCombatTimingWithSkills() {
+        for (int round : new int[]{3, 4, 5, 6, 7, 10}) {
+            boolean active = round == 4 || round == 7 || round == 10;
+            var state = new BattleService(0).resolveWorldRound(ARMY, ARMY,
+                    Map.of("infantry", 150), Map.of("infantry", 250), 400, TECH, TECH,
+                    Map.of("frenzy", 5), Map.of(), 50, 50, 0, 0,
+                    round, round <= 4 ? 0 : 4, HOLD, HOLD);
+            // 第3回合也可首次交火，单独验证起点不会被固定属性回合掩盖。
+            boolean actualActive = active || round == 3;
+            assertEquals(actualActive, state.log().contains("军事属性 +50%攻击"), state.log());
+            assertEquals(actualActive, state.log().contains("防御属性 +50%防御"), state.log());
+            assertEquals(actualActive, state.log().contains("全军冲锋"), state.log());
+            var baseline = new BattleService(0).resolveWorldRound(ARMY, ARMY,
+                    Map.of("infantry", 150), Map.of("infantry", 250), 400, TECH, TECH,
+                    Map.of(), Map.of(), 0, 0, 0, 0,
+                    round, round <= 4 ? 0 : 4, HOLD, HOLD);
+            if (actualActive) assertTrue(state.attackerArmy().get("infantry") > baseline.attackerArmy().get("infantry"), state.log());
+            else assertEquals(baseline.attackerArmy(), state.attackerArmy(), state.log());
+        }
     }
 
     @ParameterizedTest
@@ -250,7 +262,7 @@ class OfficerSkillCycleTest {
     void fullBattleAndPersistedRoundsProduceTheSameSkillCycleAndDamage(String skill) {
         var skills = Map.of(skill, 5);
         var full = new BattleService(17).startWorldDispatch(ARMY, ARMY, Map.of(), TECH, TECH, skills, skills,
-                0, 0, 0, 0, "conquer", Map.of(), 0);
+                0, 0, "conquer", Map.of(), 0);
         var service = new BattleService(17);
         int distance = service.calcInitialDistance(ARMY, ARMY,
                 new BattleService.TechCtx(TECH, skills, 0), new BattleService.TechCtx(TECH, skills, 0));
@@ -260,9 +272,9 @@ class OfficerSkillCycleTest {
         Map<String, Integer> enemyPos = Map.of("infantry", distance);
         int firstCombatRound = 0;
         StringBuilder log = new StringBuilder();
-        for (int round = 1; round <= BattleService.MAX_ROUND; round++) {
+        for (int round = 1; round <= service.maxRoundForAction("conquer"); round++) {
             var state = service.resolveWorldRound(mine, enemy, minePos, enemyPos, distance,
-                    TECH, TECH, skills, skills, 0, 0, 0, 0, 0, 0, round, firstCombatRound, Map.of(), Map.of());
+                    TECH, TECH, skills, skills, 0, 0, 0, 0, round, firstCombatRound, Map.of(), Map.of());
             log.append(state.log());
             mine = state.attackerArmy();
             enemy = state.defenderArmy();

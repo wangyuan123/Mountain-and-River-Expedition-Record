@@ -8,7 +8,8 @@
   function updateChunk(cx, cy, targets) {
     // Retain constraints after display-cache eviction; filters and ownership do not affect terrain.
     var blocked = (targets || []).filter(function(t) {
-      return t.kind === 'wild' && t.type !== 'forest' && t.type !== 'grassland';
+      // Forest targets already draw their own large marker; keep procedural woodland clear around them.
+      return t.kind === 'wild' && t.type !== 'grassland';
     }).map(function(t) { return { x:t.x, y:t.y }; }).sort(function(a,b) { return a.y-b.y || a.x-b.x; });
     var key = cx + ',' + cy, signature = JSON.stringify(blocked);
     if ((targetChunks.get(key) || '[]') === signature) return false;
@@ -43,7 +44,7 @@
           resolve();
         };
         image.onerror = function() { resolve(); };
-        image.src = variant === 'shrub' ? 'img/map/wild-shrub-grass-patch.webp' : 'img/map/wild-forest-' + variant + '-integrated.webp';
+        image.src = variant === 'shrub' ? 'img/map/wild-shrub-grass-patch.webp?v=5.9-green-lawn' : 'img/map/wild-forest-' + variant + '-integrated.webp';
       });
     })).then(function() { meadowReady = true; });
     return meadowLoading;
@@ -91,7 +92,9 @@
         var lx = fx >= qs ? (qs * 2 - 1) - fx : fx;
         var ly = fy >= qs ? (qs * 2 - 1) - fy : fy;
         var isSea2 = G.MapOcean && G.MapOcean.sea(lx, ly);
-        return isSea2 ? '未开辟海域 · 无法通行' : '未开辟战区 · 无法通行';
+        var field = (fy >= qs ? '南' : '北');
+        field = (fx >= qs ? '东' : '西') + field + '战场';
+        return field + ' · ' + (isSea2 ? '海域 · 可通航' : '陆地 · 可选址建城');
       }
       return region(x, y, qs);
     }
@@ -157,7 +160,7 @@
       pixels.data[offset + 3] = 255;
     }
     ctx.putImageData(pixels, 0, 0);
-    // The base terrain is mirrored into unopened quadrants, so keep shrub coverage here as well.
+    // 四大战场共用镜像底图，低缩放时也保留灌木覆盖。
     if (ctx.drawImage && shrubImage) {
       var shrubStep = 26;
       for (var sy = 0; sy < resolution; sy += shrubStep) {
@@ -325,7 +328,7 @@
           if (clearance(worldX, worldY, .8) < .12) continue;
           if (G.MapOcean && G.MapOcean.sample(worldX, worldY) > -1.4) continue;
           var shrubWidth = 38 + hash(sx + 41, sy + 149) * 18;
-          var shrubHeight = shrubWidth * (.72 + hash(sx + 359, sy + 83) * .24);
+          var shrubHeight = shrubWidth * (.92 + hash(sx + 359, sy + 83) * .16);
           ctx.globalAlpha = .58 + hash(sx + 577, sy + 601) * .22;
           ctx.drawImage(shrubImage, shrubX - startX - shrubWidth / 2, shrubY - startY - shrubHeight / 2, shrubWidth, shrubHeight);
           ctx.globalAlpha = 1;

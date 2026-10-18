@@ -25,7 +25,7 @@ function fixture() {
   context.window = context; vm.createContext(context);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/cities.js'), 'utf8'), context);
   context.Game.Cities.open = () => {};
-  return { context, content, title, form, calls };
+  return { context, content, title, form, calls, inputs, cargo, button };
 }
 
 test('member city selector preserves reinforce action and submits the selected destination', async () => {
@@ -58,4 +58,31 @@ test('closed or replaced support dialogs ignore delayed member city responses', 
   const before = f.content.innerHTML;
   resolve([{ id: 22, name: '迟到结果', readyAt: 0 }]); await new Promise(setImmediate);
   assert.equal(f.content.innerHTML, before);
+});
+
+test('reinforcement waits for protection confirmation and cancel preserves the form', async () => {
+  const f = fixture(); let confirm;
+  f.context.Game.World = { confirmPlayerWarfare(needed, send) { assert.equal(needed, true); confirm = send; } };
+  f.context.Game.Cities.openSupport(2, 'reinforce', 22); await new Promise(setImmediate);
+  const formBefore = f.content.innerHTML;
+  f.form.handlers.submit({ preventDefault() {}, target: f.form });
+  assert.equal(f.calls.filter(call => typeof call === 'object').length, 0);
+  assert.equal(f.button.disabled, false);
+  assert.equal(f.content.innerHTML, formBefore);
+  confirm(true); await new Promise(setImmediate);
+  const dispatch = f.calls.find(call => typeof call === 'object');
+  assert.equal(dispatch.body.action, 'reinforce');
+  assert.equal(dispatch.body.abandonNewbieProtection, true);
+});
+
+test('peaceful support transport does not request protection exit', async () => {
+  const f = fixture();
+  f.context.Game.World = { confirmPlayerWarfare(needed, send) { assert.equal(needed, false); send(false); } };
+  f.form.elements.action.value = 'transport';
+  f.inputs[0].dataset.unit = 'truck'; f.inputs[0].value = '1'; f.cargo[0].value = '10';
+  f.context.Game.Cities.openSupport(2, 'transport', 22); await new Promise(setImmediate);
+  f.form.handlers.submit({ preventDefault() {}, target: f.form }); await new Promise(setImmediate);
+  const dispatch = f.calls.find(call => typeof call === 'object');
+  assert.equal(dispatch.body.action, 'transport');
+  assert.equal(dispatch.body.abandonNewbieProtection, undefined);
 });

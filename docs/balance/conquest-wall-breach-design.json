@@ -1,0 +1,879 @@
+{
+  "version": "conquest-wall-breach-20261016-v5",
+  "status": "implemented-in-source",
+  "sourceBattleRules": "balance-v19-technology-20261016",
+  "originalDurabilityDesignRules": "balance-v15-no-wall-defense-20261013",
+  "scope": "real-player-city-conquer",
+  "maxWallLevel": 10,
+  "growth": {
+    "maxHpPerLevel": 250000,
+    "defensePerLevel": 20,
+    "fortCapacityPerLevel": 3000
+  },
+  "formula": "damage = atkFort * survivingQuantity * attackMultiplier * firepowerMultiplier * equipmentMultiplier * pointBlankMultiplier * 100 / (100 + 5 * effectiveWallDefense)",
+  "benchmark": {
+    "unit": "special",
+    "quantity": 5000,
+    "baseAtkFort": 188,
+    "attackTechLevel": 10,
+    "fireDensityLevel": 10,
+    "engineTechLevel": 10,
+    "attackMultiplier": 1.5,
+    "firepowerMultiplier": 1.5,
+    "pointBlankMultiplier": 1.5,
+    "officerAttributesAndSkills": false,
+    "chiefBonus": false,
+    "equipmentMultiplier": 1,
+    "wallReceivesDefenderTechHpOrOfficerBonuses": false,
+    "minimumFullContactAttacks": 9,
+    "maxGearMultiplierAlsoVerified": 1.15,
+    "reinforcementLevel": 0
+  },
+  "firstRangedThenContactColumnMeaning": "hypothetical one ranged attack then contact; not the current empty-city trajectory",
+  "levels": [
+    {
+      "level": 1,
+      "maxHp": 250000,
+      "defense": 20,
+      "fortSharedCapacity": 3000,
+      "damageReductionPercent": 50.0,
+      "benchmarkContactDamage": 1586250.0,
+      "benchmarkContactAttackRounds": 1,
+      "benchmarkFirstRangedThenContactAttackRounds": 1,
+      "benchmarkMaxGearContactAttackRounds": 1,
+      "reinforcementLevel": 0,
+      "reinforcedMaxHp": 375000,
+      "reinforcedDefense": 30,
+      "reinforcedBenchmarkContactDamage": 1269000.0,
+      "reinforcedBenchmarkContactAttackRounds": 1
+    },
+    {
+      "level": 2,
+      "maxHp": 500000,
+      "defense": 40,
+      "fortSharedCapacity": 6000,
+      "damageReductionPercent": 66.666667,
+      "benchmarkContactDamage": 1057500.0,
+      "benchmarkContactAttackRounds": 1,
+      "benchmarkFirstRangedThenContactAttackRounds": 1,
+      "benchmarkMaxGearContactAttackRounds": 1,
+      "reinforcementLevel": 0,
+      "reinforcedMaxHp": 750000,
+      "reinforcedDefense": 60,
+      "reinforcedBenchmarkContactDamage": 793125.0,
+      "reinforcedBenchmarkContactAttackRounds": 1
+    },
+    {
+      "level": 3,
+      "maxHp": 750000,
+      "defense": 60,
+      "fortSharedCapacity": 9000,
+      "damageReductionPercent": 75.0,
+      "benchmarkContactDamage": 793125.0,
+      "benchmarkContactAttackRounds": 1,
+      "benchmarkFirstRangedThenContactAttackRounds": 2,
+      "benchmarkMaxGearContactAttackRounds": 1,
+      "reinforcementLevel": 0,
+      "reinforcedMaxHp": 1125000,
+      "reinforcedDefense": 90,
+      "reinforcedBenchmarkContactDamage": 576818.1818181818,
+      "reinforcedBenchmarkContactAttackRounds": 2
+    },
+    {
+      "level": 4,
+      "maxHp": 1000000,
+      "defense": 80,
+      "fortSharedCapacity": 12000,
+      "damageReductionPercent": 80.0,
+      "benchmarkContactDamage": 634500.0,
+      "benchmarkContactAttackRounds": 2,
+      "benchmarkFirstRangedThenContactAttackRounds": 2,
+      "benchmarkMaxGearContactAttackRounds": 2,
+      "reinforcementLevel": 0,
+      "reinforcedMaxHp": 1500000,
+      "reinforcedDefense": 120,
+      "reinforcedBenchmarkContactDamage": 453214.28571428574,
+      "reinforcedBenchmarkContactAttackRounds": 4
+    },
+    {
+      "level": 5,
+      "maxHp": 1250000,
+      "defense": 100,
+      "fortSharedCapacity": 15000,
+      "damageReductionPercent": 83.333333,
+      "benchmarkContactDamage": 528750.0,
+      "benchmarkContactAttackRounds": 3,
+      "benchmarkFirstRangedThenContactAttackRounds": 3,
+      "benchmarkMaxGearContactAttackRounds": 3,
+      "reinforcementLevel": 0,
+      "reinforcedMaxHp": 1875000,
+      "reinforcedDefense": 150,
+      "reinforcedBenchmarkContactDamage": 373235.29411764705,
+      "reinforcedBenchmarkContactAttackRounds": 6
+    },
+    {
+      "level": 6,
+      "maxHp": 1500000,
+      "defense": 120,
+      "fortSharedCapacity": 18000,
+      "damageReductionPercent": 85.714286,
+      "benchmarkContactDamage": 453214.28571428574,
+      "benchmarkContactAttackRounds": 4,
+      "benchmarkFirstRangedThenContactAttackRounds": 4,
+      "benchmarkMaxGearContactAttackRounds": 3,
+      "reinforcementLevel": 0,
+      "reinforcedMaxHp": 2250000,
+      "reinforcedDefense": 180,
+      "reinforcedBenchmarkContactDamage": 317250.0,
+      "reinforcedBenchmarkContactAttackRounds": 8
+    },
+    {
+      "level": 7,
+      "maxHp": 1750000,
+      "defense": 140,
+      "fortSharedCapacity": 21000,
+      "damageReductionPercent": 87.5,
+      "benchmarkContactDamage": 396562.5,
+      "benchmarkContactAttackRounds": 5,
+      "benchmarkFirstRangedThenContactAttackRounds": 5,
+      "benchmarkMaxGearContactAttackRounds": 4,
+      "reinforcementLevel": 0,
+      "reinforcedMaxHp": 2625000,
+      "reinforcedDefense": 210,
+      "reinforcedBenchmarkContactDamage": 275869.5652173913,
+      "reinforcedBenchmarkContactAttackRounds": 10
+    },
+    {
+      "level": 8,
+      "maxHp": 2000000,
+      "defense": 160,
+      "fortSharedCapacity": 24000,
+      "damageReductionPercent": 88.888889,
+      "benchmarkContactDamage": 352500.0,
+      "benchmarkContactAttackRounds": 6,
+      "benchmarkFirstRangedThenContactAttackRounds": 7,
+      "benchmarkMaxGearContactAttackRounds": 5,
+      "reinforcementLevel": 0,
+      "reinforcedMaxHp": 3000000,
+      "reinforcedDefense": 240,
+      "reinforcedBenchmarkContactDamage": 244038.46153846153,
+      "reinforcedBenchmarkContactAttackRounds": 13
+    },
+    {
+      "level": 9,
+      "maxHp": 2250000,
+      "defense": 180,
+      "fortSharedCapacity": 27000,
+      "damageReductionPercent": 90.0,
+      "benchmarkContactDamage": 317250.0,
+      "benchmarkContactAttackRounds": 8,
+      "benchmarkFirstRangedThenContactAttackRounds": 8,
+      "benchmarkMaxGearContactAttackRounds": 7,
+      "reinforcementLevel": 0,
+      "reinforcedMaxHp": 3375000,
+      "reinforcedDefense": 270,
+      "reinforcedBenchmarkContactDamage": 218793.10344827586,
+      "reinforcedBenchmarkContactAttackRounds": 16
+    },
+    {
+      "level": 10,
+      "maxHp": 2500000,
+      "defense": 200,
+      "fortSharedCapacity": 30000,
+      "damageReductionPercent": 90.909091,
+      "benchmarkContactDamage": 288409.0909090909,
+      "benchmarkContactAttackRounds": 9,
+      "benchmarkFirstRangedThenContactAttackRounds": 10,
+      "benchmarkMaxGearContactAttackRounds": 8,
+      "reinforcementLevel": 0,
+      "reinforcedMaxHp": 3750000,
+      "reinforcedDefense": 300,
+      "reinforcedBenchmarkContactDamage": 198281.25,
+      "reinforcedBenchmarkContactAttackRounds": 19
+    }
+  ],
+  "levelTenProof": {
+    "rawContactFirepower": 3172500,
+    "contactDamage": 288409.0909090909,
+    "hpAfterEightContactAttacks": 192727.27272727294,
+    "reinforcedMaxHp": 3750000,
+    "reinforcedDefense": 300,
+    "reinforcedContactDamage": 198281.25,
+    "reinforcedHpAfterEighteenContactAttacks": 180937.5
+  },
+  "emptyCityGeometry": {
+    "reinforcementLevel": 0,
+    "wallSpeed": 0,
+    "wallRange": 0,
+    "attackerBaseSpeed": 6,
+    "attackerEffectiveSpeed": 9,
+    "attackerStep": 450,
+    "attackerRange": 270,
+    "initialDistance": 2120,
+    "scene": "PLAYER",
+    "sceneBuffer": 1850,
+    "firstAttackBattleRound": 5,
+    "firstContactBattleRound": 5,
+    "breachBattleRound": 13,
+    "actualAttackRounds": 9,
+    "trace": [
+      {
+        "battleRound": 1,
+        "distance": 1670,
+        "remainingHp": 2500000.0,
+        "damage": 0.0
+      },
+      {
+        "battleRound": 2,
+        "distance": 1220,
+        "remainingHp": 2500000.0,
+        "damage": 0.0
+      },
+      {
+        "battleRound": 3,
+        "distance": 770,
+        "remainingHp": 2500000.0,
+        "damage": 0.0
+      },
+      {
+        "battleRound": 4,
+        "distance": 320,
+        "remainingHp": 2500000.0,
+        "damage": 0.0
+      },
+      {
+        "battleRound": 5,
+        "distance": 0,
+        "remainingHp": 2211590.909091,
+        "damage": 288409.090909
+      },
+      {
+        "battleRound": 6,
+        "distance": 0,
+        "remainingHp": 1923181.818182,
+        "damage": 288409.090909
+      },
+      {
+        "battleRound": 7,
+        "distance": 0,
+        "remainingHp": 1634772.727273,
+        "damage": 288409.090909
+      },
+      {
+        "battleRound": 8,
+        "distance": 0,
+        "remainingHp": 1346363.636364,
+        "damage": 288409.090909
+      },
+      {
+        "battleRound": 9,
+        "distance": 0,
+        "remainingHp": 1057954.545455,
+        "damage": 288409.090909
+      },
+      {
+        "battleRound": 10,
+        "distance": 0,
+        "remainingHp": 769545.454546,
+        "damage": 288409.090909
+      },
+      {
+        "battleRound": 11,
+        "distance": 0,
+        "remainingHp": 481136.363637,
+        "damage": 288409.090909
+      },
+      {
+        "battleRound": 12,
+        "distance": 0,
+        "remainingHp": 192727.272728,
+        "damage": 288409.090909
+      },
+      {
+        "battleRound": 13,
+        "distance": 0,
+        "remainingHp": 0.0,
+        "damage": 192727.272728
+      }
+    ]
+  },
+  "quantitySensitivity": [
+    {
+      "quantity": 2500,
+      "contactDamage": 144204.54545454544,
+      "contactAttackRounds": 18
+    },
+    {
+      "quantity": 5000,
+      "contactDamage": 288409.0909090909,
+      "contactAttackRounds": 9
+    },
+    {
+      "quantity": 10000,
+      "contactDamage": 576818.1818181818,
+      "contactAttackRounds": 5
+    },
+    {
+      "quantity": 25000,
+      "contactDamage": 1442045.4545454546,
+      "contactAttackRounds": 2
+    }
+  ],
+  "limitations": [
+    "The listed 9/19 contact attack counts apply to the declared 5000-unit v19 benchmark; officers, skills or more troops can shorten them.",
+    "Numeric tables are arithmetic references; battle-engine, real-player-city session and migration tests separately verify the source implementation. No production battle or deployment verification has run.",
+    "One round-count requirement does not uniquely determine hp and defense; linear growth is an explicit design choice."
+  ],
+  "implementationBattleRules": "balance-v19-technology-20261016",
+  "practiceBattleRules": "balance-v19-technology-20261016",
+  "phaseTransition": {
+    "afterLastDefender": "same-round-remaining-actions-if-wall-in-range",
+    "remainingActionsSharedWithDefenders": true,
+    "notYetActedUnitsCanAttackWall": true,
+    "extraMovementOnTransition": false,
+    "extraAttackBudget": false,
+    "carryOverflowToNextRound": false,
+    "recalculateForWall": [
+      "fort-attack-domain",
+      "equipment",
+      "effective-wall-defense",
+      "distance",
+      "point-blank-multiplier"
+    ],
+    "preservePositionsAndSkillTimeline": true
+  },
+  "wallBehavior": {
+    "targetId": "wall",
+    "attackDomain": "fort",
+    "position": "initialDistance",
+    "speed": 0,
+    "range": 0,
+    "attacksOrCounterattacks": false,
+    "providesTroopOrFortDefenseBonus": false,
+    "receivesDefenderBonuses": "wall_reinforcement only; no army hp/defense tech, officers, chief or equipment",
+    "countsAsTroopsForLossesOrRewards": false,
+    "startsEachNewBattleAtFullHp": true,
+    "crossBattleDamagePersistence": false,
+    "breachReducesBuildingLevelOrCapacity": false,
+    "historicalLevelAboveTen": "clamp-wall-combat-snapshot-to-10-without-rewriting-building"
+  },
+  "victory": {
+    "requiresAttackerSurvivors": true,
+    "requiresAllFrozenDefendersSupportsAndFortsEliminated": true,
+    "requiresWallHpZero": true,
+    "levelZeroWall": "no-additional-breach-requirement",
+    "totalRoundLimit": 35,
+    "phasesShareRoundLimit": true,
+    "finalRoundDamageBeforeOutcome": true,
+    "failedBattlePersistsActualDefenderLosses": true,
+    "finalSettlementOnlyOnce": true,
+    "cityTakeoverStillRequiresPostBattleMoraleZeroAndRankCapacity": true,
+    "terminalReasons": [
+      "WALL_BREACHED",
+      "DEFENDERS_ELIMINATED",
+      "WALL_NOT_BREACHED",
+      "ROUND_LIMIT",
+      "ATTACKERS_ELIMINATED"
+    ]
+  },
+  "persistence": {
+    "snapshotCity": "actual-defending-city-slot-at-battle-start",
+    "hpDecimalScale": 6,
+    "hpRounding": "HALF_UP",
+    "displayRoundingChangesDamage": false,
+    "phaseValues": [
+      "CLEAR_DEFENDERS",
+      "ATTACK_WALL",
+      "BREACHED"
+    ],
+    "sessionFields": [
+      "wallLevelSnapshot",
+      "wallMaxHp",
+      "wallHpRemaining",
+      "wallDefense",
+      "battlePhase",
+      "battleRulesVersion"
+    ],
+    "migration": "V96__conquest_wall_breach.sql",
+    "newColumnsDefault": null,
+    "sessionsWithoutSnapshot": "finish-under-legacy-victory-rule-without-inserting-wall"
+  },
+  "validation": {
+    "date": "2026-10-13",
+    "wallKernelTestsPassed": 26,
+    "wallSessionTestsPassed": 6,
+    "wallMigrationTestsPassed": 1,
+    "relatedBackendDistinctTests": 170,
+    "relatedBackendTestsPassed": 164,
+    "existingBackendFailuresReproducedOnV15": 6,
+    "relatedFrontendTestsPassed": 70,
+    "browserScreenshotVerification": "not-performed",
+    "pvpRecalibratedForWallBreach": false
+  },
+  "mobilitySceneValidation": {
+    "date": "2026-10-16",
+    "battleRules": "balance-v18-scene-distance-mobility-20261016",
+    "backendTestsPassed": 302,
+    "backendTestClasses": 21,
+    "frontendTestsPassed": 111,
+    "frontendTestFiles": 11,
+    "pvpCalibrationRows": 86,
+    "pvpPowerModelVersion": "power-v1-pvp-v1-a56acd2b1cb0ab12975aa4dd",
+    "minimumCalibrationSamplesPerRow": 5120,
+    "maximumAbsoluteCalibrationResidual": 0.020574489653837003,
+    "emptyCityTraceRoundsVerified": 9,
+    "productionDeployed": false,
+    "fullSuiteRun": false
+  },
+  "deployment": {
+    "productionDeployed": false,
+    "productionMigrationsExecuted": false,
+    "pendingMigrationsInOrder": [
+      "all pending migrations in version order, including V95__remove_battle_wall_defense.sql, V96__conquest_wall_breach.sql and V101__technology_rework.sql"
+    ]
+  },
+  "historicalBaseline": {
+    "sourceBattleRules": "balance-v18-scene-distance-mobility-20261016",
+    "benchmark": {
+      "unit": "special",
+      "quantity": 5000,
+      "baseAtkFort": 188,
+      "attackTechLevel": 10,
+      "fireDensityLevel": 10,
+      "engineTechLevel": 10,
+      "attackMultiplier": 2,
+      "firepowerMultiplier": 2,
+      "pointBlankMultiplier": 1.5,
+      "officerAttributesAndSkills": false,
+      "chiefBonus": false,
+      "equipmentMultiplier": 1,
+      "wallReceivesDefenderTechHpOrOfficerBonuses": false,
+      "minimumFullContactAttacks": 5,
+      "maxGearMultiplierAlsoVerified": 1.15
+    },
+    "levels": [
+      {
+        "level": 1,
+        "maxHp": 250000,
+        "defense": 20,
+        "fortSharedCapacity": 3000,
+        "damageReductionPercent": 50.0,
+        "benchmarkContactDamage": 2820000.0,
+        "benchmarkContactAttackRounds": 1,
+        "benchmarkFirstRangedThenContactAttackRounds": 1,
+        "benchmarkMaxGearContactAttackRounds": 1
+      },
+      {
+        "level": 2,
+        "maxHp": 500000,
+        "defense": 40,
+        "fortSharedCapacity": 6000,
+        "damageReductionPercent": 66.666667,
+        "benchmarkContactDamage": 1880000.0,
+        "benchmarkContactAttackRounds": 1,
+        "benchmarkFirstRangedThenContactAttackRounds": 1,
+        "benchmarkMaxGearContactAttackRounds": 1
+      },
+      {
+        "level": 3,
+        "maxHp": 750000,
+        "defense": 60,
+        "fortSharedCapacity": 9000,
+        "damageReductionPercent": 75.0,
+        "benchmarkContactDamage": 1410000.0,
+        "benchmarkContactAttackRounds": 1,
+        "benchmarkFirstRangedThenContactAttackRounds": 1,
+        "benchmarkMaxGearContactAttackRounds": 1
+      },
+      {
+        "level": 4,
+        "maxHp": 1000000,
+        "defense": 80,
+        "fortSharedCapacity": 12000,
+        "damageReductionPercent": 80.0,
+        "benchmarkContactDamage": 1128000.0,
+        "benchmarkContactAttackRounds": 1,
+        "benchmarkFirstRangedThenContactAttackRounds": 2,
+        "benchmarkMaxGearContactAttackRounds": 1
+      },
+      {
+        "level": 5,
+        "maxHp": 1250000,
+        "defense": 100,
+        "fortSharedCapacity": 15000,
+        "damageReductionPercent": 83.333333,
+        "benchmarkContactDamage": 940000.0,
+        "benchmarkContactAttackRounds": 2,
+        "benchmarkFirstRangedThenContactAttackRounds": 2,
+        "benchmarkMaxGearContactAttackRounds": 2
+      },
+      {
+        "level": 6,
+        "maxHp": 1500000,
+        "defense": 120,
+        "fortSharedCapacity": 18000,
+        "damageReductionPercent": 85.714286,
+        "benchmarkContactDamage": 805714.2857142857,
+        "benchmarkContactAttackRounds": 2,
+        "benchmarkFirstRangedThenContactAttackRounds": 3,
+        "benchmarkMaxGearContactAttackRounds": 2
+      },
+      {
+        "level": 7,
+        "maxHp": 1750000,
+        "defense": 140,
+        "fortSharedCapacity": 21000,
+        "damageReductionPercent": 87.5,
+        "benchmarkContactDamage": 705000.0,
+        "benchmarkContactAttackRounds": 3,
+        "benchmarkFirstRangedThenContactAttackRounds": 3,
+        "benchmarkMaxGearContactAttackRounds": 3
+      },
+      {
+        "level": 8,
+        "maxHp": 2000000,
+        "defense": 160,
+        "fortSharedCapacity": 24000,
+        "damageReductionPercent": 88.888889,
+        "benchmarkContactDamage": 626666.6666666666,
+        "benchmarkContactAttackRounds": 4,
+        "benchmarkFirstRangedThenContactAttackRounds": 4,
+        "benchmarkMaxGearContactAttackRounds": 3
+      },
+      {
+        "level": 9,
+        "maxHp": 2250000,
+        "defense": 180,
+        "fortSharedCapacity": 27000,
+        "damageReductionPercent": 90.0,
+        "benchmarkContactDamage": 564000.0,
+        "benchmarkContactAttackRounds": 4,
+        "benchmarkFirstRangedThenContactAttackRounds": 5,
+        "benchmarkMaxGearContactAttackRounds": 4
+      },
+      {
+        "level": 10,
+        "maxHp": 2500000,
+        "defense": 200,
+        "fortSharedCapacity": 30000,
+        "damageReductionPercent": 90.909091,
+        "benchmarkContactDamage": 512727.2727272727,
+        "benchmarkContactAttackRounds": 5,
+        "benchmarkFirstRangedThenContactAttackRounds": 6,
+        "benchmarkMaxGearContactAttackRounds": 5
+      }
+    ],
+    "levelTenProof": {
+      "rawContactFirepower": 5640000,
+      "contactDamage": 512727.2727272727,
+      "hpAfterFourContactAttacks": 449090.9090909091,
+      "hpAfterFourMaxGearContactAttacks": 141454.54545454544
+    },
+    "emptyCityGeometry": {
+      "wallSpeed": 0,
+      "wallRange": 0,
+      "attackerBaseSpeed": 6,
+      "attackerEffectiveSpeed": 9,
+      "attackerStep": 450,
+      "attackerRange": 360,
+      "initialDistance": 2210,
+      "scene": "PLAYER",
+      "sceneBuffer": 1850,
+      "firstAttackBattleRound": 5,
+      "firstContactBattleRound": 5,
+      "breachBattleRound": 9,
+      "actualAttackRounds": 5,
+      "trace": [
+        {
+          "battleRound": 1,
+          "distance": 1760,
+          "attacked": false,
+          "attackRound": 0,
+          "damage": 0.0,
+          "remainingHp": 2500000.0,
+          "damageBeforeHpCap": 0.0
+        },
+        {
+          "battleRound": 2,
+          "distance": 1310,
+          "attacked": false,
+          "attackRound": 0,
+          "damage": 0.0,
+          "remainingHp": 2500000.0,
+          "damageBeforeHpCap": 0.0
+        },
+        {
+          "battleRound": 3,
+          "distance": 860,
+          "attacked": false,
+          "attackRound": 0,
+          "damage": 0.0,
+          "remainingHp": 2500000.0,
+          "damageBeforeHpCap": 0.0
+        },
+        {
+          "battleRound": 4,
+          "distance": 410,
+          "attacked": false,
+          "attackRound": 0,
+          "damage": 0.0,
+          "remainingHp": 2500000.0,
+          "damageBeforeHpCap": 0.0
+        },
+        {
+          "battleRound": 5,
+          "distance": 0,
+          "attacked": true,
+          "attackRound": 1,
+          "damage": 512727.272727,
+          "remainingHp": 1987272.727273,
+          "damageBeforeHpCap": 512727.272727
+        },
+        {
+          "battleRound": 6,
+          "distance": 0,
+          "attacked": true,
+          "attackRound": 2,
+          "damage": 512727.272727,
+          "remainingHp": 1474545.454546,
+          "damageBeforeHpCap": 512727.272727
+        },
+        {
+          "battleRound": 7,
+          "distance": 0,
+          "attacked": true,
+          "attackRound": 3,
+          "damage": 512727.272727,
+          "remainingHp": 961818.181819,
+          "damageBeforeHpCap": 512727.272727
+        },
+        {
+          "battleRound": 8,
+          "distance": 0,
+          "attacked": true,
+          "attackRound": 4,
+          "damage": 512727.272727,
+          "remainingHp": 449090.909092,
+          "damageBeforeHpCap": 512727.272727
+        },
+        {
+          "battleRound": 9,
+          "distance": 0,
+          "attacked": true,
+          "attackRound": 5,
+          "damage": 449090.909092,
+          "remainingHp": 0.0,
+          "damageBeforeHpCap": 512727.272727
+        }
+      ]
+    },
+    "quantitySensitivity": [
+      {
+        "quantity": 2500,
+        "contactDamage": 256363.63636363635,
+        "contactAttackRounds": 10
+      },
+      {
+        "quantity": 5000,
+        "contactDamage": 512727.2727272727,
+        "contactAttackRounds": 5
+      },
+      {
+        "quantity": 10000,
+        "contactDamage": 1025454.5454545454,
+        "contactAttackRounds": 3
+      },
+      {
+        "quantity": 25000,
+        "contactDamage": 2563636.3636363638,
+        "contactAttackRounds": 1
+      }
+    ],
+    "limitations": [
+      "The five-round bound applies to the declared 5000-unit benchmark; officers, skills or more troops can shorten it.",
+      "Numeric tables are arithmetic references; battle-engine, real-player-city session and migration tests separately verify the source implementation. No production battle or deployment verification has run.",
+      "One round-count requirement does not uniquely determine hp and defense; linear growth is an explicit design choice."
+    ],
+    "status": "historical-v18-before-technology-rework",
+    "reinforcementLevel": 0,
+    "note": "Original five-contact-attack durability design; attack and fire density were each 2.0. Not current v19 results."
+  },
+  "reinforcementTech": {
+    "key": "wall_reinforcement",
+    "name": "城墙加固",
+    "maxLevel": 10,
+    "perLevelHpAndDefensePercent": 5,
+    "maxBonusPercent": 50,
+    "hpFormula": "250000 * clamp(wallLevel,0,10) * (1 + 0.05 * clamp(techLevel,0,10))",
+    "defenseFormula": "round(20 * clamp(wallLevel,0,10) * (1 + 0.05 * clamp(techLevel,0,10)))",
+    "fortCapacityAffected": false,
+    "snapshotAtBattleStart": true,
+    "oldSessionsUseSavedStats": true,
+    "researchRequires": "lab >= max(2,L) AND wall >= L in research city"
+  },
+  "reinforcedEmptyCityGeometry": {
+    "initialDistance": 2120,
+    "equipmentPercent": 0,
+    "attackerWin": true,
+    "attackRounds": 19,
+    "breachBattleRound": 23,
+    "defense": 300,
+    "reinforcementLevel": 10,
+    "firstAttackRound": 5,
+    "maxHp": 3750000.0,
+    "trace": [
+      {
+        "battleRound": 1,
+        "distance": 1670,
+        "remainingHp": 3750000.0,
+        "damage": 0.0
+      },
+      {
+        "battleRound": 2,
+        "distance": 1220,
+        "remainingHp": 3750000.0,
+        "damage": 0.0
+      },
+      {
+        "battleRound": 3,
+        "distance": 770,
+        "remainingHp": 3750000.0,
+        "damage": 0.0
+      },
+      {
+        "battleRound": 4,
+        "distance": 320,
+        "remainingHp": 3750000.0,
+        "damage": 0.0
+      },
+      {
+        "battleRound": 5,
+        "distance": 0,
+        "remainingHp": 3551718.75,
+        "damage": 198281.25
+      },
+      {
+        "battleRound": 6,
+        "distance": 0,
+        "remainingHp": 3353437.5,
+        "damage": 198281.25
+      },
+      {
+        "battleRound": 7,
+        "distance": 0,
+        "remainingHp": 3155156.25,
+        "damage": 198281.25
+      },
+      {
+        "battleRound": 8,
+        "distance": 0,
+        "remainingHp": 2956875.0,
+        "damage": 198281.25
+      },
+      {
+        "battleRound": 9,
+        "distance": 0,
+        "remainingHp": 2758593.75,
+        "damage": 198281.25
+      },
+      {
+        "battleRound": 10,
+        "distance": 0,
+        "remainingHp": 2560312.5,
+        "damage": 198281.25
+      },
+      {
+        "battleRound": 11,
+        "distance": 0,
+        "remainingHp": 2362031.25,
+        "damage": 198281.25
+      },
+      {
+        "battleRound": 12,
+        "distance": 0,
+        "remainingHp": 2163750.0,
+        "damage": 198281.25
+      },
+      {
+        "battleRound": 13,
+        "distance": 0,
+        "remainingHp": 1965468.75,
+        "damage": 198281.25
+      },
+      {
+        "battleRound": 14,
+        "distance": 0,
+        "remainingHp": 1767187.5,
+        "damage": 198281.25
+      },
+      {
+        "battleRound": 15,
+        "distance": 0,
+        "remainingHp": 1568906.25,
+        "damage": 198281.25
+      },
+      {
+        "battleRound": 16,
+        "distance": 0,
+        "remainingHp": 1370625.0,
+        "damage": 198281.25
+      },
+      {
+        "battleRound": 17,
+        "distance": 0,
+        "remainingHp": 1172343.75,
+        "damage": 198281.25
+      },
+      {
+        "battleRound": 18,
+        "distance": 0,
+        "remainingHp": 974062.5,
+        "damage": 198281.25
+      },
+      {
+        "battleRound": 19,
+        "distance": 0,
+        "remainingHp": 775781.25,
+        "damage": 198281.25
+      },
+      {
+        "battleRound": 20,
+        "distance": 0,
+        "remainingHp": 577500.0,
+        "damage": 198281.25
+      },
+      {
+        "battleRound": 21,
+        "distance": 0,
+        "remainingHp": 379218.75,
+        "damage": 198281.25
+      },
+      {
+        "battleRound": 22,
+        "distance": 0,
+        "remainingHp": 180937.5,
+        "damage": 198281.25
+      },
+      {
+        "battleRound": 23,
+        "distance": 0,
+        "remainingHp": 0.0,
+        "damage": 180937.5
+      }
+    ]
+  },
+  "technologyTraceFile": "conquest-wall-technology-traces-20261016.json",
+  "technologyValidation": {
+    "date": "2026-10-16",
+    "battleRules": "balance-v19-technology-20261016",
+    "wallKernelTestsPassed": 26,
+    "wallSessionTestsPassed": 7,
+    "wallMigrationTestsPassed": 1,
+    "technologyRuleTestsPassed": 8,
+    "traceVariants": 4,
+    "pvpCalibrationRows": 86,
+    "pvpPowerModelVersion": "power-v1-pvp-v1-33eefa2167e4d569f2b119a4",
+    "maximumAbsoluteCalibrationResidual": 0.018938705207404177,
+    "productionDeployed": false
+  }
+}

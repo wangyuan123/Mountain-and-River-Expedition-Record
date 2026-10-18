@@ -5,7 +5,9 @@ import java.util.Set;
 
 /** 四类攻击决定能否交战和基础火力；倍率只描述同一攻击领域内的专项克制。 */
 public final class BattleRules {
-    public static final String VERSION = "balance-v13-contact-movement-20261012";
+    public static final String VERSION = "balance-v19-technology-20261016";
+    /** 演习共用新移速与玩家距离；规则变更后旧校准不得复用。 */
+    public static final String PRACTICE_VERSION = VERSION;
     private static final Set<String> ARTILLERY = Set.of("assault", "rocket", "howitzer", "antitank", "flak");
     /**
      * 反坦克火箭车保留反装甲优势但降为×3，防空装甲车对空降为×2.5，降低爆发并延长交战消耗过程。
@@ -20,7 +22,7 @@ public final class BattleRules {
     /** 工事使用独立攻坚火力；特种兵仍按地面单位处理。 */
     public static String domain(String target) {
         target = UnitEquipmentEffects.base(target);
-        if (FortDef.FORTS.containsKey(target)) return "fort";
+        if ("wall".equals(target) || FortDef.FORTS.containsKey(target)) return "fort";
         UnitDef unit = UnitDef.UNITS.get(target);
         return unit == null ? "land" : unit.branch();
     }

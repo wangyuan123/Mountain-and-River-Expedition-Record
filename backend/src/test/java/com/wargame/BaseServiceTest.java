@@ -182,8 +182,6 @@ public abstract class BaseServiceTest {
         CityState cs = new CityState();
         cs.setPlayerId(playerId);
         cs.setStatus(status);
-        cs.setWarTargetId(null);
-        cs.setWarAt(0L);
         cs.setWarEndAt(warEndAt);
         cs.setShieldUntil(shieldUntil);
         cs.setPeaceUntil(0L);

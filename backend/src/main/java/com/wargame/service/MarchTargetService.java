@@ -368,7 +368,10 @@ public class MarchTargetService {
 
     public int getWarehouseProtection(Object target) {
         if (target instanceof PlayerCity pc && hasRealOwner(pc)) {
-            return buildingLevel(pc.getOwnerId(), "depot") * 1000;
+            try (var ignored = cityScope.enter(pc)) {
+                return (int) Math.floor(buildingLevel(pc.getOwnerId(), "depot") * 1000.0
+                        * (1 + .10 * Math.max(0, Math.min(5, getTechLevel(pc.getOwnerId(), "log_warehouse")))));
+            }
         }
         return 0;
     }

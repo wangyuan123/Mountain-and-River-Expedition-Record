@@ -109,7 +109,22 @@
         : t.name && t.name.indexOf('驱逐舰') >= 0 ? 'destroyer' : 'battleship';
       return 'img/npc/japanese-navy/' + vessel + '.webp';
     }
-    if (t.selfCity || t.kind === 'player') return 'img/cities/player-city-preview-map.png';
+    if (t.selfCity || t.kind === 'player') {
+      var wl = t.wallLevel;
+      if (wl == null && t.selfCity && typeof G !== 'undefined' && G.state && G.state.buildings) {
+        var cp = G.state.cityPos;
+        if (!cp || (t.x === cp.x && t.y === cp.y)) {
+          wl = G.state.buildings.wall;
+        }
+      }
+      var wallLvl = Math.max(0, Number(wl) || 0);
+      if (wallLvl >= 10) return 'img/cities/player-city-lv10.png';
+      if (wallLvl >= 9) return 'img/cities/player-city-lv9.png';
+      if (wallLvl >= 7) return 'img/cities/player-city-lv7-8.png';
+      if (wallLvl >= 5) return 'img/cities/player-city-lv5-6.png';
+      if (wallLvl >= 3) return 'img/cities/player-city-lv3-4.png';
+      return 'img/cities/player-city-preview-map.png';
+    }
     if (t.kind === 'wild' && t.type === 'snow' && snowCells) {
       var depth=G.MapTerrain.snowVariant(t.x,t.y,snowCells), north=G.MapTerrain.northernSnow(t.x,t.y,G.DATA.world.size);
       if(north>.72)depth='thick';else if(north>.38&&depth==='thin')depth='medium';
@@ -132,6 +147,13 @@
       return 'img/map/wild-swamp-' + sVariants[si] + '-integrated.webp';
     }
     if (t.kind === 'wild') return (G.DATA.wildTypes[t.type] || {}).icon || 'img/map/wild-forest-ridge-integrated.webp';
+    if (typeof t.level === 'number' && t.level > 0) {
+      if (t.level <= 5) return 'img/map/npc-phalanx-infantry.webp';
+      if (t.level <= 8) return 'img/map/npc-phalanx-light-armor.webp';
+      if (t.level <= 10) return 'img/map/npc-fortress-orthogonal.webp';
+      if (t.level <= 20) return 'img/map/npc-phalanx-aircraft.webp';
+      return 'img/map/npc-phalanx-mixed.webp';
+    }
     return 'img/map/npc-fortress-orthogonal.webp';
   }
   function marchUnitIcon(unitId) {
@@ -162,7 +184,7 @@
     // 代表图标不要求部队中包含该兵种，数量仍汇总真实出征兵力。
     var action = march && march.action;
     var representative = action === 'scout' ? (Number(army.recon_car) > 0 ? 'recon_car' : 'scout') : action === 'transport' ? 'truck' :
-      (action === 'conquer' || action === 'plunder') ? 'infantry' : null;
+      (['conquer', 'plunder', 'feint', 'harass', 'guerrilla'].includes(action)) ? 'infantry' : null;
     if (representative) return {
       primary:{id:representative,iconPath:marchUnitIcon(representative)},
       companions:[],total:total,extraTypes:0
@@ -279,7 +301,7 @@
     // 到点即收起路线，不依赖下一次 Tick；实际任务状态到达后会覆盖此处的动作推断。
     if (march.targetKind === 'wild_gather' || march.action === 'gather') return 'gathering';
     if (march.action === 'station') return 'stationed';
-    if (march.action === 'conquer' || march.action === 'plunder') return 'battle';
+    if (['conquer', 'plunder', 'feint', 'harass', 'guerrilla'].includes(march.action)) return 'battle';
     if (march.action === 'scout') return 'scouting';
     return 'arrived';
   }
@@ -579,11 +601,6 @@
   MapView.prototype.requestChunks = function () {
     this.lastLoad = Date.now();
     var chunks = this.camera.chunks();
-    var qs = (G.DATA && G.DATA.world && G.DATA.world.quadrantSize) || 400;
-    var maxCy = Math.ceil(qs / 16);
-    if (this.camera.size > qs) {
-      chunks = chunks.filter(function (cell) { return cell.cy < maxCy; });
-    }
     if (chunks.length) cache.request(chunks);
   };
   MapView.prototype.wake = function () {
@@ -658,9 +675,8 @@
     var halo = G.MapTerrain.padding / G.MapTerrain.density;
     this.terrainPending = false;
 
-    // 地表细化瓦片限定在第一象限沙盘地图范围内，其他象限通过镜像地表层呈现
-    var qs = (G.DATA && G.DATA.world && G.DATA.world.quadrantSize) || 400;
-    var maxTx = Math.min(Math.floor((qs - 1) / span), Math.floor((c.size - 1) / span));
+    // 四大战场都生成视口内细地形，瓦片仍按当前镜头和缓存上限逐批加载。
+    var maxTx = Math.floor((c.size - 1) / span);
     var minX = Math.max(0, Math.floor(b.minX / span)), maxX = Math.min(maxTx, Math.floor(b.maxX / span));
     var minY = Math.max(0, Math.floor(b.minY / span)), maxY = Math.min(maxTx, Math.floor(b.maxY / span));
     var missing = [];
@@ -850,7 +866,7 @@
       var art = icon(t,snowCells);
       var hasModel = Boolean(art);
       var wildAnimation = t.kind === 'wild' && Object.prototype.hasOwnProperty.call(wildAnimationTextures, t.type) ? t.type : '';
-      var path = hasModel ? (wildAnimation ? wildAnimationPath(wildAnimation, 0) : ((t.sea && t.kind === 'bandit' ? art : art.replace(/\.webp$/, '-map-embedded.png')) + '?v=5.6-npc-square')) : '';
+      var path = hasModel ? (wildAnimation ? wildAnimationPath(wildAnimation, 0) : ((t.sea && t.kind === 'bandit' ? art : art.replace(/\.webp$/, '-map-embedded.png')) + '?v=5.7-npc-phalanxes-green-lawn')) : '';
       var texture;
       if (wildAnimation) {
         texture = loadWildAnimationFrame(wildAnimation, 0);
@@ -1005,7 +1021,9 @@
     // selfCity 仅表示归属自己；只有当前城市可使用本地城市状态，其余读取各自护盾。
     var cp = G.Core.state.world.cityPos || {};
     if (t.selfCity && t.x === cp.x && t.y === cp.y && G.Core.getCityStatus) return G.Core.getCityStatus() === 'shield';
-    return t.shieldUntil != null ? t.shieldUntil > Date.now() : t.cityState === 'shield';
+    var now = Date.now();
+    if (t.coolAt > now) return true;
+    return t.shieldUntil != null ? t.shieldUntil > now : t.cityState === 'shield';
   }
   MapView.prototype.buildMinimapGround = function () {
     var ground=document.createElement('canvas'), size=this.camera.size;
@@ -1166,7 +1184,7 @@
       var fromX = march.fromX != null ? march.fromX : march.originX, fromY = march.fromY != null ? march.fromY : march.originY;
       if (fromX == null || fromY == null || march.targetX == null || march.targetY == null) return;
       var isTransport = march.action === 'transport' || march.action === 'rebase' || march.action === 'reinforce';
-      var isOffensive = march.action === 'conquer' || march.action === 'plunder' ||
+      var isOffensive = ['conquer', 'plunder', 'feint', 'harass', 'guerrilla'].includes(march.action) ||
         (!march.action && !isTransport && march.targetKind !== 'wild_gather');
       // 返程优先于原进攻类型；旧行军的折点也只取当前起终点，统一直线移动。
       var tint = !march.returning && isOffensive ? 0xe66f79 : 0x69b7ee;
@@ -1447,20 +1465,6 @@
   MapView.prototype.loadSite = function(x,y) {
     if(x<0||y<0||x>=this.camera.size||y>=this.camera.size)return;
     var self=this,seq=++this.detailSeq;
-    var qs = (G.DATA && G.DATA.world && G.DATA.world.quadrantSize) || 400;
-    if (this.camera.size > qs) {
-      var fx = Math.floor(x), fy = Math.floor(y);
-      if (fx >= qs || fy >= qs) {
-        this.selected = { kind: 'site', x: x, y: y, valid: false };
-        this.detail.hidden = false;
-        this.detail.innerHTML = '<button class="world-map-detail-close" data-map="close" aria-label="关闭">×</button>' +
-          '<div style="display:flex;align-items:center;gap:10px;padding-right:24px;margin-bottom:6px;flex-wrap:wrap;">' +
-          '<b style="font-size:15px;">未开辟战区 · (' + x + ', ' + y + ')</b></div>' +
-          '<p class="world-map-site-reason" style="margin:4px 0 2px;font-size:12px;color:#e67e22;font-weight:600;">当前不可建城：此大陆尚未开辟，暂不支持建城与部队调度。</p>';
-        this.wake();
-        return;
-      }
-    }
     this.selected={kind:'site',x:x,y:y,valid:false};this.detail.hidden=false;
     this.detail.innerHTML='<button class="world-map-detail-close" data-map="close" aria-label="关闭">×</button><p>正在检查选址 ('+x+', '+y+')…</p>';this.wake();
     G.API.client.get('/game/cities/site?x='+x+'&y='+y,{silent:true,timeout:10000}).then(function(site){
@@ -1471,6 +1475,7 @@
         '<div style="display:flex;align-items:center;gap:10px;padding-right:24px;margin-bottom:6px;flex-wrap:wrap;">' +
         '<b style="font-size:15px;">' + esc(terrainType) + ' · (' + x + ', ' + y + ')</b>' +
         (site.valid ? '<button type="button" class="page-back-button" data-map="found-city"><span>[建立城市]</span></button>' : '') +
+        '<button type="button" class="page-back-button" data-map="teleport-city"><span>[高级传送至此]</span></button>' +
         '</div>' +
         (!site.valid && site.reason ? '<p class="world-map-site-reason" style="margin:4px 0 2px;font-size:12px;color:#c0392b;font-weight:600;">当前不可建城：' + esc(site.reason) + '</p>' : '') +
         '<p class="world-map-site-rule" style="margin:4px 0 0;font-size:12px;color:var(--map-muted,#596e79);line-height:1.5;">建城判断条件：以当前格为左上角的 2×2 四格均为未占用陆地，且城市名额未满；内陆也可建城。</p>' +
@@ -1480,6 +1485,9 @@
           '<button class="world-map-button primary" type="submit" style="white-space:nowrap;min-height:30px;padding:4px 10px;">支付资源并建城</button>' +
           '</div></form>' : '');
       self.detail.innerHTML = html;
+      // 传送不受建城名额限制，独立入口会请求传送专用的四格/城市状态校验。
+      var teleportBtn = self.detail.querySelector('[data-map="teleport-city"]');
+      if (teleportBtn) teleportBtn.onclick = function () { G.CityTeleport.open('teleportAdvanced', x, y); };
       var foundBtn = self.detail.querySelector('[data-map="found-city"]');
       var form = self.detail.querySelector('form');
       if (foundBtn && form) {
@@ -1589,18 +1597,25 @@
       self.detail.innerHTML='<button class="world-map-detail-close" data-map="close" aria-label="关闭详情">×</button><p>'+esc(err.message||'目标读取失败')+'</p><button class="world-map-button" data-map="refresh">重新读取</button>';
     });
   };
+  /**
+   * 按目标最新状态展示详情，劝降资格与军事行动分别判断。
+   * @param {Object} t - 地图目标及城市归属、建设、移交状态
+   */
   MapView.prototype.renderDetail = function(t) {
     this.renderedDetail=JSON.stringify(t);
     var self=this, cp=G.Core.state.world.cityPos||G.Core.state.world.pos, distance=Math.hypot(cp.x-t.x,cp.y-t.y);
     var meta='距城市 '+Number(distance.toFixed(2))+' 格'+(t.level!=null?' · Lv.'+t.level:'');
     var text=t.kind==='wild'?(t.occupied?'我的野地':(t.claimed?'占领者：'+(t.ownerName||'未知玩家'):name(t))):(t.ownerName?'统帅：'+t.ownerName:(t.selfCity?'我的城市':(t.sea?'日寇海上编队':'寇')));
     var now=Date.now();
-    // 敌对军团沿用持续交战规则；只有个人宣战需要按时间切换行动。
-    this.detailTransitionAt=t.kind==='player'&&!t.selfCity&&t.guildRelation!=='hostile'&&t.guildRelation!=='friendly'&&t.warAt>0&&t.warEndAt>now?(t.warAt>now?t.warAt:t.warEndAt):0;
+    // 敌对军团沿用持续交战规则；只有个人宣战与护盾需要按时间切换行动。
+    var warTransition = t.kind==='player'&&!t.selfCity&&t.guildRelation!=='hostile'&&t.guildRelation!=='friendly'&&t.warAt>0&&t.warEndAt>now?(t.warAt>now?t.warAt:t.warEndAt):0;
+    var shieldEnd = (t.kind==='player'&&!t.selfCity&&isShieldedCity(t)) ? ((t.shieldUntil && t.shieldUntil > now) ? t.shieldUntil : (t.coolAt && t.coolAt > now ? t.coolAt : 0)) : 0;
+    this.detailTransitionAt = (warTransition && shieldEnd) ? Math.min(warTransition, shieldEnd) : (warTransition || shieldEnd);
     if(t.coastal)text+=' · 沿海城市';
     else if(t.legacyNaval)text+=' · 保留海军补给通道';
     if(t.defeated)text+=' · 已被击败，等待恢复';
     if(t.readyAt>now)text+=' · 城市建设中';
+    if(t.surrenderFrozen)text+=' · 归降移交中 · 城市只读';
     if(t.guildRelation==='friendly')text+=' · 友好军团，禁止交战';
     else if(t.guildRelation==='hostile')text+=' · 敌对军团，可直接交战';
     else{
@@ -1608,7 +1623,7 @@
       else if(t.warEndAt>now&&t.warAt)text+=' · 交战中';
     }
     var headArt = icon(t);
-    var headImg = headArt ? '<img class="world-map-city-model" src="' + esc(headArt) + '?v=5.6-npc-square" alt="">' : '';
+    var headImg = headArt ? '<img class="world-map-city-model" src="' + esc(headArt) + '?v=5.7-npc-phalanxes-green-lawn" alt="">' : '';
     this.detail.innerHTML='<button class="world-map-detail-close" data-map="close" aria-label="关闭详情">×</button><div class="world-map-detail-head">' + headImg + '<div><b>'+esc(name(t))+'</b><div class="world-map-detail-meta">'+esc(meta)+'</div></div></div><p>'+esc(text)+'</p>'+(!t.occupied&&!t.selfCity?'<p>守军和资源情报请通过侦察获取。</p>':'')+'<div class="world-map-actions"></div>';
     var actions=this.detail.querySelector('.world-map-actions');
     function button(label, action, primary, disabled) { var b=document.createElement('button');b.className='world-map-button'+(primary?' primary':'');b.textContent=label;b.disabled=!!disabled;b.onclick=function(){self.act(action,b);};actions.appendChild(b); }
@@ -1620,22 +1635,39 @@
       return;
     }
     if(t.defeated||t.readyAt>now)return;
+    if(t.kind==='player'&&t.surrenderFrozen)return;
+    // 劝降是外交邀请，不受宣战窗口或军团关系限制，需在同军团分支返回前提供入口。
+    if(t.kind==='player')button('劝降','surrender');
     if(t.kind==='player'&&t.guildmate){button('运输','transport');button('驻防','reinforce',true);return;}
     if(t.kind==='wild'&&t.occupied){
       var garrisonUnits = t.garrison || {};
       var hasGarrison = false;
       var garrisonList = [];
       var totalLoad = 0;
+      var stationedMarches = ((G.Core.state.world || {}).marches || []).filter(function (m) {
+        return m.targetKind === 'wild' && String(m.targetId) === String(t.id) && m.stationed && !m.returning;
+      });
       for (var uid in garrisonUnits) {
         var count = parseInt(garrisonUnits[uid], 10) || 0;
         if (count > 0) {
           hasGarrison = true;
           var udef = (G.DATA && G.DATA.units && G.DATA.units[uid]) || { name: uid, load: 10 };
           garrisonList.push(udef.name + ' ×' + count);
-          totalLoad += (udef.load || 0) * count;
+          totalLoad += (udef.load || 0) * count * 1;
         }
       }
 
+      if (stationedMarches.length) {
+        totalLoad = 0;
+        stationedMarches.forEach(function (m) {
+          var snap = m.unitEquipment || {}, baseLoad = 0;
+          Object.keys(m.army || {}).forEach(function (id) {
+            baseLoad += Math.max(0, m.army[id]) * ((G.DATA.units[id] || {}).load || 0)
+              * (G.UnitEquipment ? G.UnitEquipment.mul(snap, id, 'load') : 1);
+          });
+          totalLoad += Math.floor(baseLoad * (1 + .05 * Math.max(0, Math.min(10, snap['@log:load'] || 0))));
+        });
+      }
       var isGathering = Boolean(t.gathering);
       var extraHtml = '';
       var gatherMarches = G.World.renderGatherMarches(t.id, 'world-map-button primary');
@@ -1711,12 +1743,21 @@
       button('放弃领地', 'abandon');
       return;
     }
-    button('侦察','scout');
+    var shielded = isShieldedCity(t);
+    button('侦察','scout',false,shielded);
     if(t.kind==='player'){
-      if(t.guildRelation==='hostile'){button('讨伐','campaign',true);}
-      else if(t.guildRelation==='friendly')actions.insertAdjacentHTML('beforeend','<span class="world-map-action-note">友好军团成员不可宣战或交战</span>');
-      else if(t.warAt&&t.warAt<=now&&t.warEndAt>now){button('讨伐','campaign',true);}
-      else if(!t.warAt||t.warEndAt<=now)button('宣战','declare',true);
+      if(t.guildRelation==='friendly'){
+        actions.insertAdjacentHTML('beforeend','<span class="world-map-action-note">友好军团成员不可宣战或交战</span>');
+      } else if(shielded){
+        button('讨伐','campaign',true,true);
+        actions.insertAdjacentHTML('beforeend','<span class="world-map-shield-note">'+esc(name(t))+'处于护盾期间，无法发起侦查或攻击</span>');
+      } else if(t.guildRelation==='hostile'){
+        button('讨伐','campaign',true);
+      } else if(t.warAt&&t.warAt<=now&&t.warEndAt>now){
+        button('讨伐','campaign',true);
+      } else if(!t.warAt||t.warEndAt<=now){
+        button('宣战','declare',true);
+      }
     }else{button('讨伐','campaign',true);}
   };
   MapView.prototype.act = function(action, button) {
@@ -1726,6 +1767,10 @@
     if(action==='transport'||action==='rebase'||action==='reinforce'){
       if(t.guildmate)G.Cities.openSupport(t.ownerId,action,t.id);
       else G.Cities.openTransfer(t.id,action);
+      return;
+    }
+    if(t.kind==='player'&&!t.selfCity&&isShieldedCity(t)&&(action==='campaign'||action==='scout'||action==='declare')){
+      G.toast((name(t)||'目标城市')+'处于护盾期间，无法发起侦查或攻击');
       return;
     }
     button.disabled=true;

@@ -33,6 +33,22 @@ test('switching clears local dispatch drafts while preserving shared reports',()
   assert.equal(ctx.Game.API.client.cityId,22);
 });
 
+test('treatment completing after a city change cannot restore the previous city state', async()=>{
+  const ctx=runtime({Game:{Core:{}}});load(ctx,'api-client.js');load(ctx,'api.js');
+  const API=ctx.Game.API;
+  const previous={player:{id:1,activeCityId:11},resources:{gold:1000}};
+  const current={player:{id:1,activeCityId:22},resources:{gold:2000}};
+  API.applyState(previous);
+  let resolve;
+  API.client.post=()=>new Promise(done=>{resolve=done;});
+  const treatment=API.healWounded(1,5,'gold');
+  API.applyState(current);
+  resolve({success:true,state:previous});
+  await treatment;
+  assert.equal(ctx.Game.Core.state,current);
+  assert.equal(API.client.cityId,22);
+});
+
 test('background city ticks cannot overwrite visible city resources',()=>{
   const ctx=runtime({Game:{state:{player:{citySlot:1}}}});load(ctx,'ws-client.js');
   const events=[];ctx.Game.WS.on('tick',d=>events.push(d));

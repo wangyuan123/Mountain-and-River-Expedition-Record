@@ -26,24 +26,26 @@
       });
     }
   }
-  function at(x,y) { x=Math.max(0,Math.min(size-1,x));y=Math.max(0,Math.min(size-1,y));return depth[y*size+x]; }
+  /** 四大战场使用同一底图镜像；细地形、城市选框和全局坐标查询共用海陆采样。 */
+  function mirror(n) { return n >= size && n < size * 2 ? size * 2 - 1 - n : n; }
+  function at(x,y) { x=Math.max(0,Math.min(size-1,mirror(x)));y=Math.max(0,Math.min(size-1,mirror(y)));return depth[y*size+x]; }
   function sample(x,y) {
     if(!depth)return -1000;
     var xx=x-.5,yy=y-.5,ix=Math.floor(xx),iy=Math.floor(yy),fx=xx-ix,fy=yy-iy;
     return (at(ix,iy)*(1-fx)+at(ix+1,iy)*fx)*(1-fy)+(at(ix,iy+1)*(1-fx)+at(ix+1,iy+1)*fx)*fy;
   }
-  function sea(x,y) { return x>=0&&y>=0&&x<size&&y<size&&cells[Math.floor(y)*size+Math.floor(x)]==='1'; }
+  function sea(x,y) { x=mirror(Math.floor(x));y=mirror(Math.floor(y));return x>=0&&y>=0&&x<size&&y<size&&cells[y*size+x]==='1'; }
   function isOcean(x,y) {
     if (!cells || !cells.length) return false;
     if (x >= 0 && y >= 0 && x < size && y < size) return cells[Math.floor(y)*size+Math.floor(x)]==='1';
-    var bx = Math.max(0, Math.min(size - 1, Math.floor(x)));
-    var by = Math.max(0, Math.min(size - 1, Math.floor(y)));
+    var bx = Math.max(0, Math.min(size - 1, mirror(Math.floor(x))));
+    var by = Math.max(0, Math.min(size - 1, mirror(Math.floor(y))));
     return cells[by * size + bx] === '1';
   }
   function isIsland(x,y) {
     if (!cells || !cells.length || !mainland) return false;
-    var bx = Math.max(0, Math.min(size - 1, Math.floor(x)));
-    var by = Math.max(0, Math.min(size - 1, Math.floor(y)));
+    var bx = Math.max(0, Math.min(size - 1, mirror(Math.floor(x))));
+    var by = Math.max(0, Math.min(size - 1, mirror(Math.floor(y))));
     var idx = by * size + bx;
     return cells[idx] === '0' && mainland[idx] === 0;
   }
@@ -72,8 +74,9 @@
     return { canvas:canvas, size:size };
   }
   function nearestCoast(x,y,blocked) {
-    var best=null,distance=Infinity;
-    for(var yy=0;yy<size-1;yy++)for(var xx=0;xx<size-1;xx++){
+    var best=null,distance=Infinity, worldSize = size * 2;
+    // 海岸定位覆盖四大战场，以当前镜头为起点，不把外围战场玩家跳回西北。
+    for(var yy=0;yy<worldSize-1;yy++)for(var xx=0;xx<worldSize-1;xx++){
       if(sea(xx,yy)||sea(xx+1,yy)||sea(xx,yy+1)||sea(xx+1,yy+1))continue;
       if(![sea(xx-1,yy),sea(xx-1,yy+1),sea(xx+2,yy),sea(xx+2,yy+1),sea(xx,yy-1),sea(xx+1,yy-1),sea(xx,yy+2),sea(xx+1,yy+2)].some(Boolean))continue;
       if(blocked&&blocked(xx,yy))continue;
@@ -122,7 +125,7 @@
         if (!sea(x,y)) continue;
         // 同时检查云体四角和地图边缘，给抬升高度与投影留出余量；靠岸逐渐淡出。
         var width = 2.2+random, radius = width/2;
-        if (x-radius<0 || x+radius>=size || y-radius-.65<0 || y+radius+.3>=size) continue;
+        if (x-radius<0 || x+radius>=size*2 || y-radius-.65<0 || y+radius+.3>=size*2) continue;
         var clearance = Math.min(sample(x-radius,y-radius-.65),sample(x+radius,y-radius-.65),
           sample(x-radius,y+radius+.3),sample(x+radius,y+radius+.3));
         // 透明度 60%–90% 对应 alpha 0.1–0.4；每朵独立取值，海岸淡出仍可进一步降低 alpha。

@@ -19,10 +19,12 @@ public class PrivateChatService {
     private final ChatService chat;
     private final PrivateChatConversationRepository sessions;
     private final GameWebSocketHandler presence;
+    private final FriendContactRepository contacts;
 
     public PrivateChatService(PrivateChatMessageRepository messages, PlayerRepository players,
                               RateLimiter limiter, WebSocketPushService push, ChatService chat,
-                              PrivateChatConversationRepository sessions, GameWebSocketHandler presence) {
+                              PrivateChatConversationRepository sessions, GameWebSocketHandler presence,
+                              FriendContactRepository contacts) {
         this.messages = messages;
         this.players = players;
         this.limiter = limiter;
@@ -30,13 +32,14 @@ public class PrivateChatService {
         this.chat = chat;
         this.sessions = sessions;
         this.presence = presence;
+        this.contacts = contacts;
     }
 
     public PrivateChatDtos.Peer resolve(Long me, String username) {
         Player peer = players.findByUsername(username == null ? "" : username.trim())
                 .orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
         validatePeer(me, peer);
-        return peerDto(peer);
+        return peerDto(me, peer);
     }
 
     private Player peer(Long me, Long id) {
@@ -62,7 +65,7 @@ public class PrivateChatService {
         session.setOpenedAt(System.currentTimeMillis());
         session.setDeletedThrough(0L);
         sessions.save(session);
-        return peerDto(target);
+        return peerDto(me, target);
     }
 
     /** 消息会话与主动打开的空会话合并，返回最近 50 个对话及在线状态。 */
@@ -70,10 +73,12 @@ public class PrivateChatService {
     public List<PrivateChatDtos.Conversation> conversations(Long me) {
         Map<Long, PrivateChatDtos.Conversation> rows = new HashMap<>();
         Map<Long, Long> times = new HashMap<>();
+        Map<Long, PrivateChatConversation> owned = new HashMap<>();
+        sessions.findByOwnerId(me).forEach(c -> owned.put(c.getPeerId(), c));
         for (PrivateChatMessage m : messages.conversations(me, PageRequest.of(0, 50))) {
             Long id = me.equals(m.getSenderId()) ? m.getRecipientId() : m.getSenderId();
             Player p = players.findById(id).orElseThrow();
-            rows.put(id, new PrivateChatDtos.Conversation(peerDto(p), dto(m),
+            rows.put(id, new PrivateChatDtos.Conversation(peerDto(me, p), dto(m),
                     messages.countBySenderIdAndRecipientIdAndReadByRecipientFalse(id, me)));
             times.put(id, m.getCreatedAt());
         }
@@ -83,17 +88,22 @@ public class PrivateChatService {
                 Player p = players.findById(id).orElseThrow();
                 // 会话列表的消息查询有上限，补查较早的对话，不能误报为空会话。
                 List<PrivateChatMessage> recent = messages.history(me, id, PageRequest.of(0, 1));
-                rows.put(id, new PrivateChatDtos.Conversation(peerDto(p), recent.isEmpty() ? null : dto(recent.get(0)),
+                rows.put(id, new PrivateChatDtos.Conversation(peerDto(me, p), recent.isEmpty() ? null : dto(recent.get(0)),
                         messages.countBySenderIdAndRecipientIdAndReadByRecipientFalse(id, me)));
             }
             times.merge(id, c.getOpenedAt(), Math::max);
         }
         // 删除只隐藏自己的列表；收到删除边界之后的新消息时会话重新出现。
-        for (PrivateChatConversation c : sessions.findByOwnerId(me)) {
+        for (PrivateChatConversation c : owned.values()) {
             PrivateChatDtos.Conversation row = rows.get(c.getPeerId());
             if (c.getDeletedThrough() > 0 && row != null
                     && (row.lastMessage() == null || row.lastMessage().id() <= c.getDeletedThrough())) {
                 rows.remove(c.getPeerId());
+            } else if (row != null && c.getClearedThrough() > 0) {
+                PrivateChatDtos.Message last = row.lastMessage();
+                if (last != null && last.id() <= c.getClearedThrough()) {
+                    rows.put(c.getPeerId(), new PrivateChatDtos.Conversation(row.peer(), null, 0));
+                }
             }
         }
         return rows.values().stream().sorted(Comparator
@@ -116,9 +126,34 @@ public class PrivateChatService {
 
     @Transactional(readOnly = true)
     public List<PrivateChatDtos.Message> history(Long me, Long peer) {
+        return historyPage(me, peer).messages();
+    }
+
+    /** 返回自己的清空边界，客户端合并实时消息时也必须丢弃边界内的缓存。 */
+    @Transactional(readOnly = true)
+    public PrivateChatDtos.History historyPage(Long me, Long peer) {
+        long cleared = sessions.findByOwnerIdAndPeerId(me, peer).map(PrivateChatConversation::getClearedThrough).orElse(0L);
         List<PrivateChatMessage> result = new ArrayList<>(messages.history(me, peer, PageRequest.of(0, 50)));
         Collections.reverse(result);
-        return result.stream().map(this::dto).toList();
+        return new PrivateChatDtos.History(result.stream().filter(m -> m.getId() > cleared).map(this::dto).toList(), cleared);
+    }
+
+    /** 清空只推进当前账号的历史边界，重新打开仍为空，对方的历史保持可见。 */
+    @Transactional
+    public void clear(Long me, Long peerId) {
+        players.lockById(me).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
+        if (peerId == null || me.equals(peerId) || !players.existsById(peerId)) throw new IllegalArgumentException("玩家不存在");
+        PrivateChatConversation session = sessions.findByOwnerIdAndPeerId(me, peerId)
+                .orElseGet(() -> new PrivateChatConversation(null, me, peerId, 0L));
+        List<PrivateChatMessage> latest = messages.history(me, peerId, PageRequest.of(0, 1));
+        if (!latest.isEmpty()) {
+            long through = latest.get(0).getId();
+            session.setClearedThrough(Math.max(session.getClearedThrough(), through));
+            messages.markRead(me, peerId, through);
+        }
+        session.setOpenedAt(System.currentTimeMillis());
+        session.setDeletedThrough(0L);
+        sessions.save(session);
     }
 
     /** 已读仅推进到客户端实际展示的消息，避免并发新消息被提前清除未读。 */
@@ -131,7 +166,14 @@ public class PrivateChatService {
     /** 身份取自登录会话，持久化后仅向发送方和接收方推送。 */
     @Transactional
     public PrivateChatDtos.Message send(Long me, Long recipient, String raw) {
-        peer(me, recipient);
+        if (recipient == null || me.equals(recipient)) throw new IllegalArgumentException("请选择其他玩家");
+        // 和好友及隐私设置共用玩家锁；权限变更提交后，任何发送入口都不能绕过。
+        players.lockById(Math.min(me, recipient)).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
+        players.lockById(Math.max(me, recipient)).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
+        Player target = peer(me, recipient);
+        if (contacts.blocksChat(me, recipient)) throw new IllegalArgumentException("黑名单限制，无法发送私聊");
+        if (target.isBlockStrangerMessages() && !contacts.findByOwnerIdAndPeerId(recipient, me)
+                .map(FriendContact::isFriend).orElse(false)) throw new IllegalArgumentException("对方已屏蔽陌生人私信");
         String content = raw == null ? "" : raw.replaceAll("[\\u0000-\\u001F\\u007F-\\u009F\\u200B-\\u200F\\uFEFF]", "").trim();
         if (content.isEmpty()) throw new IllegalArgumentException("消息不能为空");
         if (content.length() > 80) throw new IllegalArgumentException("消息不能超过 80 字");
@@ -147,8 +189,8 @@ public class PrivateChatService {
         return response;
     }
 
-    private PrivateChatDtos.Peer peerDto(Player p) {
-        return new PrivateChatDtos.Peer(p.getId(), p.getUsername(), p.getAvatar(), presence.isPlayerOnline(p.getId()), p.accountActive());
+    private PrivateChatDtos.Peer peerDto(Long me, Player p) {
+        return new PrivateChatDtos.Peer(p.getId(), p.getUsername(), p.getAvatar(), presence.isPlayerOnline(p.getId()), p.accountActive(), contacts.blocksChat(me, p.getId()));
     }
 
     private PrivateChatDtos.Message dto(PrivateChatMessage m) {

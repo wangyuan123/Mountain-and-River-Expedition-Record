@@ -6,7 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/admin/players")
@@ -76,10 +76,63 @@ public class AdminPlayerController {
                                           @RequestBody Map<String, Object> body,
                                           Authentication authentication,
                                           HttpServletRequest request) {
+        Long unitId = body.get("id") != null ? ((Number) body.get("id")).longValue() : null;
+        Integer citySlot = body.get("citySlot") != null ? ((Number) body.get("citySlot")).intValue() : null;
+        String type = (String) body.get("type");
+        Integer count = body.get("count") != null ? ((Number) body.get("count")).intValue() : 0;
+        adminPlayerService.updatePlayerArmy(id, unitId, citySlot, type, count, authentication.getName(), request);
+        return Map.of("success", true, "message", "兵力更新成功");
+    }
+
+    @PutMapping("/{id}/army/batch")
+    public Map<String, Object> updateArmyBatch(@PathVariable Long id,
+                                               @RequestBody Map<String, Object> body,
+                                               Authentication authentication,
+                                               HttpServletRequest request) {
+        Object rawArmies = body.get("armies");
+        List<Map<String, Object>> armyList = new ArrayList<>();
+        if (rawArmies instanceof List<?> list) {
+            for (Object item : list) {
+                if (item instanceof Map<?, ?> m) {
+                    Map<String, Object> copy = new HashMap<>();
+                    m.forEach((k, v) -> copy.put(String.valueOf(k), v));
+                    armyList.add(copy);
+                }
+            }
+        }
+        adminPlayerService.updatePlayerArmiesBatch(id, armyList, authentication.getName(), request);
+        return Map.of("success", true, "message", "批量兵力更新成功", "count", armyList.size());
+    }
+
+    @PutMapping("/{id}/fortification")
+    public Map<String, Object> updateFortification(@PathVariable Long id,
+                                                   @RequestBody Map<String, Object> body,
+                                                   Authentication authentication,
+                                                   HttpServletRequest request) {
         String type = (String) body.get("type");
         Integer count = ((Number) body.get("count")).intValue();
-        adminPlayerService.updatePlayerArmy(id, type, count, authentication.getName(), request);
-        return Map.of("success", true, "message", "兵力更新成功");
+        adminPlayerService.updatePlayerFortification(id, type, count, authentication.getName(), request);
+        return Map.of("success", true, "message", "城防工事更新成功");
+    }
+
+    @PutMapping("/{id}/fortification/batch")
+    public Map<String, Object> updateFortificationBatch(@PathVariable Long id,
+                                                        @RequestBody Map<String, Object> body,
+                                                        Authentication authentication,
+                                                        HttpServletRequest request) {
+        Object rawForts = body.get("fortifications") != null ? body.get("fortifications") : body.get("forts");
+        List<Map<String, Object>> fortList = new ArrayList<>();
+        if (rawForts instanceof List<?> list) {
+            for (Object item : list) {
+                if (item instanceof Map<?, ?> m) {
+                    Map<String, Object> copy = new HashMap<>();
+                    m.forEach((k, v) -> copy.put(String.valueOf(k), v));
+                    fortList.add(copy);
+                }
+            }
+        }
+        adminPlayerService.updatePlayerFortificationsBatch(id, fortList, authentication.getName(), request);
+        return Map.of("success", true, "message", "批量城防更新成功", "count", fortList.size());
     }
 
     @PutMapping("/{id}/building")
@@ -104,6 +157,33 @@ public class AdminPlayerController {
         return Map.of("success", true, "message", "科技等级更新成功");
     }
 
+    @PutMapping("/{id}/buildings/max")
+    public Map<String, Object> maxBuildings(@PathVariable Long id,
+                                            @RequestBody(required = false) Map<String, Object> body,
+                                            Authentication authentication,
+                                            HttpServletRequest request) {
+        Integer targetLevel = body != null && body.get("targetLevel") != null ? ((Number) body.get("targetLevel")).intValue() : 10;
+        Integer citySlot = body != null && body.get("citySlot") != null ? ((Number) body.get("citySlot")).intValue() : null;
+        int count = adminPlayerService.maxAllPlayerBuildings(id, targetLevel, citySlot, authentication.getName(), request);
+        return Map.of("success", true, "message", "已一键将 " + count + " 座建筑等级拉满至 Lv." + targetLevel, "count", count);
+    }
+
+    @PutMapping("/{id}/technologies/max")
+    public Map<String, Object> maxTechnologies(@PathVariable Long id,
+                                               Authentication authentication,
+                                               HttpServletRequest request) {
+        int count = adminPlayerService.maxAllPlayerTechnologies(id, authentication.getName(), request);
+        return Map.of("success", true, "message", "已一键将全部 " + count + " 项科技升至满级", "count", count);
+    }
+
+    @PutMapping("/{id}/technologies/reset")
+    public Map<String, Object> resetTechnologies(@PathVariable Long id,
+                                                 Authentication authentication,
+                                                 HttpServletRequest request) {
+        int count = adminPlayerService.resetAllPlayerTechnologies(id, authentication.getName(), request);
+        return Map.of("success", true, "message", "已一键将 " + count + " 项科技重置为 Lv.0", "count", count);
+    }
+
     @PutMapping("/{id}/item")
     public Map<String, Object> updateItem(@PathVariable Long id,
                                           @RequestBody Map<String, Object> body,
@@ -113,5 +193,34 @@ public class AdminPlayerController {
         Integer count = ((Number) body.get("count")).intValue();
         adminPlayerService.updatePlayerItem(id, itemKey, count, authentication.getName(), request);
         return Map.of("success", true, "message", "道具数量更新成功");
+    }
+
+    @PutMapping("/{id}/items/batch")
+    public Map<String, Object> updateItemsBatch(@PathVariable Long id,
+                                                @RequestBody Map<String, Object> body,
+                                                Authentication authentication,
+                                                HttpServletRequest request) {
+        Object rawItems = body.get("items");
+        List<Map<String, Object>> itemList = new ArrayList<>();
+        if (rawItems instanceof List<?> list) {
+            for (Object item : list) {
+                if (item instanceof Map<?, ?> m) {
+                    Map<String, Object> copy = new HashMap<>();
+                    m.forEach((k, v) -> copy.put(String.valueOf(k), v));
+                    itemList.add(copy);
+                }
+            }
+        }
+        int count = adminPlayerService.updatePlayerItemsBatch(id, itemList, authentication.getName(), request);
+        return Map.of("success", true, "message", "批量调整道具成功", "count", count);
+    }
+
+    @DeleteMapping("/{id}/item/{itemKey}")
+    public Map<String, Object> deleteItem(@PathVariable Long id,
+                                          @PathVariable String itemKey,
+                                          Authentication authentication,
+                                          HttpServletRequest request) {
+        adminPlayerService.deletePlayerItem(id, itemKey, authentication.getName(), request);
+        return Map.of("success", true, "message", "道具已清空删除");
     }
 }

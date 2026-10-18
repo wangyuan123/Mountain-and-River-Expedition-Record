@@ -112,7 +112,7 @@ class BattleContactMovementTest {
                 Map.of("destroyer", 100_000, "htank", 100_000, "fighter", 100_000, "bomber", 100_000),
                 Map.of("htank", 2_992, "rocket", 2_025),
                 Map.of("destroyer", 2_992, "htank", 2_994, "fighter", 2_674, "bomber", 2_982),
-                6_950, Map.of(), Map.of(), Map.of(), Map.of(), 0, 0, 0, 0, 0, 0, 1, Map.of(), Map.of());
+                6_950, Map.of(), Map.of(), Map.of(), Map.of(), 0, 0, 0, 0, 1, Map.of(), Map.of());
         assertEquals(state.attackerPositions().get("htank"), state.defenderPositions().get("htank"), state.log());
         assertTrue(heavyTankLine(state, "我方").contains("贴脸×1.5"), state.log());
     }
@@ -184,7 +184,7 @@ class BattleContactMovementTest {
                                     Map<String, Integer> ap, Map<String, Integer> bp,
                                     Map<String, BattleService.UnitOrder> ao, Map<String, BattleService.UnitOrder> bo) {
         return new BattleService(0).resolveWorldRound(a, b, ap, bp, 1_000,
-                Map.of(), Map.of(), Map.of(), Map.of(), 0, 0, 0, 0, 0, 0, 1, ao, bo);
+                Map.of(), Map.of(), Map.of(), Map.of(), 0, 0, 0, 0, 1, ao, bo);
     }
 
     private String heavyTankLine(BattleRoundState state, String prefix) {

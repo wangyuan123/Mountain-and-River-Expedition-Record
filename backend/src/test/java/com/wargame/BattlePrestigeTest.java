@@ -14,7 +14,7 @@ class BattlePrestigeTest {
     void unitValuesFollowWeightedProductionCosts() {
         assertEquals(1, BattlePrestige.unitValue("infantry"));
         assertEquals(5, BattlePrestige.unitValue("ltank"));
-        assertEquals(6, BattlePrestige.unitValue("rocket"));
+        assertEquals(12, BattlePrestige.unitValue("rocket"));
         assertEquals(9, BattlePrestige.unitValue("htank"));
         assertEquals(11, BattlePrestige.unitValue("destroyer"));
         assertEquals(30, BattlePrestige.unitValue("battleship"));
@@ -28,8 +28,8 @@ class BattlePrestigeTest {
                 Map.of("infantry", 10, "rocket", 1), Map.of(),
                 Map.of("infantry", 20, "bunker", 5), Map.of("bunker", 5));
 
-        // 守方损失步兵 20 点；攻方损失步兵 10 点和反坦克火箭车 6 点，净声望为 +4。
-        assertEquals(4, attackerChange);
+        // 守方损失步兵 20 点；攻方损失步兵 10 点和反坦克火箭车 12 点，净声望为 -2。
+        assertEquals(-2, attackerChange);
         assertEquals(-attackerChange, BattlePrestige.attackerNetChange(
                 Map.of("infantry", 20, "bunker", 5), Map.of("bunker", 5),
                 Map.of("infantry", 10, "rocket", 1), Map.of()));

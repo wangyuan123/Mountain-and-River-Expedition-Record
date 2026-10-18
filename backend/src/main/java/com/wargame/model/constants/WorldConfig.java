@@ -12,11 +12,11 @@ public final class WorldConfig {
 
     private WorldConfig() {}
 
-    /** 开放战区及地形索引为 400×400；四象限展示世界为 800×800。 */
+    /** 地形存档及单战场为 400×400；四大战场共用 800×800 全局坐标。 */
     public static final int SIZE = 400;
     public static final int WORLD_SIZE = SIZE * 2;
     public static final int VIEW_RADIUS = 3;
-    public static final int MARCH_SEC_PER_GRID = 9;
+    public static final int MARCH_SEC_PER_GRID = 18;
     /** 单队行军令只加速当前路段，最多一次且保留至少十秒的抵达窗口。 */
     public static final double MARCH_ACCELERATION_MUL = 1.5;
     public static final long MARCH_ACCELERATION_MIN_MS = 10_000L;
@@ -75,29 +75,14 @@ public final class WorldConfig {
         return base;
     }
 
-    /** 海洋 NPC 统一守军：舰载机仅在 21 级解锁航母后出现。 */
+    /** 海洋 NPC 默认候选编队；地图目标通过坐标入口选择同级多编队。 */
     public static Map<String, Integer> seaNpcGarrison(int level) {
-        if (level < 1 || level > MAX_NPC_LEVEL) throw new IllegalArgumentException("海洋 NPC 等级必须为 1～30");
-        int multiplier = level + 9;
-        Map<String, Integer> army = new LinkedHashMap<>();
-        army.put("sub", 40 * level * multiplier);
-        if (level >= 4) {
-            int destroyers = level <= 10 ? 12 * (level - 3)
-                    : level <= 20 ? 84 + 18 * (level - 10) : 264 + 24 * (level - 20);
-            army.put("destroyer", destroyers * multiplier);
-        }
-        if (level >= 11) {
-            int battleships = level <= 20 ? 8 * (level - 10) : 80 + 12 * (level - 20);
-            army.put("battleship", battleships * multiplier);
-        }
-        if (level >= 21) {
-            int carrierStep = level - 20;
-            // 航母使用独立倍率 50～59；舰载机仍使用本等级的普通倍率。
-            army.put("carrier", 2 * carrierStep * (level + 29));
-            army.put("fighter", 80 * carrierStep * multiplier);
-            army.put("bomber", 40 * carrierStep * multiplier);
-        }
-        return army;
+        return SeaNpcGarrison.army(level, 0);
+    }
+
+    /** 按海洋目标坐标选择并返回稳定的同级编队；只用于新建和战败重生。 */
+    public static Map<String, Integer> seaNpcGarrison(int level, int x, int y) {
+        return SeaNpcGarrison.army(level, x * 31L + y);
     }
 
     public static final List<String> BANDIT_NAMES = List.of(
@@ -109,76 +94,36 @@ public final class WorldConfig {
         return "寇 Lv." + Math.max(1, level == null ? 1 : level);
     }
 
-        public static final List<BanditLevel> BANDIT_LEVELS = createBanditLevels();
+    public static final List<BanditLevel> BANDIT_LEVELS = createBanditLevels();
 
-        private static List<BanditLevel> createBanditLevels() {
-                List<BanditLevel> levels = new ArrayList<>(List.of(
-            new BanditLevel(1,
-                    Map.of("infantry", 60),
-                    Map.of("food", 80, "steel", 120, "oil", 60, "rare", 10, "gold", 15)),
-            new BanditLevel(2,
-                    Map.of("infantry", 120),
-                    Map.of("food", 120, "steel", 180, "oil", 90, "rare", 15, "gold", 20)),
-            new BanditLevel(3,
-                    Map.of("infantry", 150),
-                    Map.of("food", 180, "steel", 260, "oil", 140, "rare", 25, "gold", 30)),
-            new BanditLevel(4,
-                    Map.of("infantry", 165),
-                    Map.of("food", 240, "steel", 360, "oil", 200, "rare", 40, "gold", 45)),
-            new BanditLevel(5,
-                    Map.of("infantry", 180),
-                    Map.of("food", 320, "steel", 480, "oil", 280, "rare", 60, "gold", 70)),
-            new BanditLevel(6,
-                    Map.of("infantry", 210, "armored", 12),
-                    Map.of("food", 440, "steel", 660, "oil", 400, "rare", 90, "gold", 100)),
-            new BanditLevel(7,
-                    Map.of("infantry", 225, "armored", 15, "ltank", 18),
-                    Map.of("food", 600, "steel", 900, "oil", 560, "rare", 130, "gold", 150)),
-            new BanditLevel(8,
-                    Map.of("infantry", 255, "armored", 20, "ltank", 20, "assault", 15),
-                    Map.of("food", 800, "steel", 1200, "oil", 760, "rare", 180, "gold", 220))
-        ));
-
-        // 9、10 级逐级解锁重坦和反坦克火箭车；11 级起采用全兵种公式。
-        levels.add(new BanditLevel(9,
-                Map.of("infantry", 285, "armored", 25, "ltank", 25, "assault", 18, "htank", 8),
-                Map.of("food", 1440, "steel", 2160, "oil", 1260, "rare", 405, "gold", 540)));
-        levels.add(new BanditLevel(10,
-                Map.of("infantry", 315, "armored", 30, "ltank", 30, "assault", 21, "htank", 10, "rocket", 8),
-                Map.of("food", 1600, "steel", 2400, "oil", 1400, "rare", 450, "gold", 600)));
-        for (int level = 11; level <= MAX_NPC_LEVEL; level++) {
-            Map<String, Integer> army = new LinkedHashMap<>();
-            army.put("infantry", level * 8);
-            army.put("armored", level * 2);
-            army.put("ltank", level * 2);
-            army.put("htank", level * 2);
-            army.put("assault", level);
-            army.put("rocket", level);
-            army.put("fighter", level);
-            army.put("bomber", Math.max(1, level / 2));
-            army.put("special", Math.max(1, level / 2));
-
-            Map<String, Integer> rew = new LinkedHashMap<>();
-            rew.put("food", level * 160);
-            rew.put("steel", level * 240);
-            rew.put("oil", level * 140);
-            rew.put("rare", level * 45);
-            rew.put("gold", level * 60);
-            levels.add(new BanditLevel(level, army, rew));
-        }
-        // 1～10 级的基础兵力按等级逐级乘 10～19；11～30 级在历史三倍基数上追加三十倍。
-        // 陆海 NPC 资源按品类放大；经验按击杀结算，30 级钻石只在胜利时独立抽取。
-        return levels.stream().map(base -> {
-            Map<String, Integer> army = new LinkedHashMap<>();
-            int multiplier = base.lv() <= 10 ? base.lv() + 9 : 90;
-            base.army().forEach((unit, count) -> army.put(unit, count * multiplier));
+    /** 生成各级默认编队与既有奖励；地图实际守军通过生成位置选取同级的不同编队。 */
+    private static List<BanditLevel> createBanditLevels() {
+        List<Map<String, Integer>> earlyRewards = List.of(
+                Map.of("food", 80, "steel", 120, "oil", 60, "rare", 10, "gold", 15),
+                Map.of("food", 120, "steel", 180, "oil", 90, "rare", 15, "gold", 20),
+                Map.of("food", 180, "steel", 260, "oil", 140, "rare", 25, "gold", 30),
+                Map.of("food", 240, "steel", 360, "oil", 200, "rare", 40, "gold", 45),
+                Map.of("food", 320, "steel", 480, "oil", 280, "rare", 60, "gold", 70),
+                Map.of("food", 440, "steel", 660, "oil", 400, "rare", 90, "gold", 100),
+                Map.of("food", 600, "steel", 900, "oil", 560, "rare", 130, "gold", 150),
+                Map.of("food", 800, "steel", 1200, "oil", 760, "rare", 180, "gold", 220));
+        List<BanditLevel> levels = new ArrayList<>();
+        for (int level = 1; level <= MAX_NPC_LEVEL; level++) {
+            Map<String, Integer> base = level <= 8 ? earlyRewards.get(level - 1)
+                    : Map.of("food", level * 160, "steel", level * 240, "oil", level * 140,
+                            "rare", level * 45, "gold", level * 60);
             Map<String, Integer> reward = new LinkedHashMap<>();
-            base.reward().forEach((resource, amount) -> {
-                int rewardMultiplier = "rare".equals(resource) ? 45 : "gold".equals(resource) ? 15 : 30;
-                reward.put(resource, amount * rewardMultiplier);
-            });
-            return new BanditLevel(base.lv(), Map.copyOf(army), Map.copyOf(reward));
-        }).toList();
+            // 奖励独立于新守军曲线，继续沿用原资源倍率及胜利时的概率钻石结算。
+            base.forEach((resource, amount) -> reward.put(resource,
+                    amount * ("rare".equals(resource) ? 45 : "gold".equals(resource) ? 15 : 30)));
+            levels.add(new BanditLevel(level, LandNpcGarrison.army(level, 0), Map.copyOf(reward)));
+        }
+        return List.copyOf(levels);
+    }
+
+    /** 同等级按坐标分配编队；仅新建或战败迁移刷新时调用，读取存档时不重配残兵。 */
+    public static Map<String, Integer> landNpcGarrison(int level, int x, int y) {
+        return LandNpcGarrison.army(level, x * 31L + y);
     }
 
     /** 按等级返回陆海 NPC 共用的五类资源奖励；钻石只在胜利结算时单独抽取。 */

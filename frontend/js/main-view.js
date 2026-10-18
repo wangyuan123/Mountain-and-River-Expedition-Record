@@ -8,7 +8,7 @@ window.Game = window.Game || {};
   // 首页总览与军队页共用写实武器模型；没有模型时回退到通用图标。
   var UNIT_MODEL = G.UNIT_MODEL || {};
   var HOME_MODULE_IDS = (G.Constants && G.Constants.homeModuleIds) || ['officers', 'army', 'resources', 'chat'];
-  var HOME_MODULE_NAMES = (G.Constants && G.Constants.homeModuleNames) || { officers: '军官将领', army: '军队总览', resources: '后勤', chat: '世界通讯' };
+  var HOME_MODULE_NAMES = (G.Constants && G.Constants.homeModuleNames) || { officers: '军官将领', army: '军队总览', resources: '后勤', chat: '世界聊天' };
   var homeModulePending = null;
   var homeModuleSaveQueue = Promise.resolve();
 
@@ -262,6 +262,83 @@ window.Game = window.Game || {};
     modal.querySelector('.army-summary-close').focus();
   }
 
+  /** 首页城防摘要；四类工事固定展示，便于快速看到尚未修筑的防线缺口。 */
+  function renderFortSummaryList() {
+    var s = Core.state || {};
+    var forts = s.forts || {};
+    var ids = Object.keys(D.forts || {});
+    if (!ids.length) {
+      return '<div class="fort-summary-empty">暂无城防工事数据，前往 <a onclick="Game.go(\'fort\')">城防</a> 修筑</div>';
+    }
+
+    var html = '';
+    for (var i = 0; i < ids.length; i++) {
+      var id = ids[i];
+      var fort = D.forts[id] || {};
+      var count = Number(forts[id]) || 0;
+      var rawIcon = (G.UNIT_MODEL && G.UNIT_MODEL[id]) || (G.UNIT_ICON && G.UNIT_ICON[id]) || '🏰';
+      var iconHtml = /\.svg$|\.png$|\.jpg$|\.webp$/i.test(rawIcon)
+        ? '<img class="fort-summary-icon-img" src="' + rawIcon + '" alt="' + G.escapeHtml(fort.name || id) + '"/>'
+        : G.escapeHtml(rawIcon);
+      var position = ' style="--fort-summary-column:' + (i + 1) + ';--fort-summary-row:1"';
+      var title = (fort.name || id) + ' × ' + G.fmt(count) + ' · ' + (fort.desc || '');
+      html += '<div class="fort-summary-item' + (count > 0 ? '' : ' is-empty') + '"' + position + ' title="' + G.escapeHtml(title) + '">' +
+        '<span class="fort-summary-icon" aria-hidden="true">' + iconHtml + '</span>' +
+        '<span class="fort-summary-name">' + G.escapeHtml(fort.name || id) + '</span>' +
+        '<span class="fort-summary-cnt">×' + G.fmt(count) + '</span>' +
+        '<span class="fort-summary-role">' + G.escapeHtml(fort.desc || '固定城防工事') + '</span>' +
+        '</div>';
+    }
+    return html;
+  }
+
+  function fortSummaryStats() {
+    var s = Core.state || {};
+    var buildings = s.buildings || {};
+    var wall = (D.buildings && D.buildings.wall) || {};
+    var wallLevel = Math.max(0, Number(buildings.wall) || 0);
+    var capacityPerLevel = Number(wall.fortCapPerLevel) || 3000;
+    var fortCapacity = wallLevel * capacityPerLevel;
+    var totalForts = 0;
+    var forts = s.forts || {};
+    Object.keys(D.forts || {}).forEach(function (id) { totalForts += Number(forts[id]) || 0; });
+    var wallLevelForStats = Math.min(10, wallLevel);
+    // 总览读取当前城墙与账号加固科技；工事共享容量不受加固科技影响。
+    var reinforcement = Core.wallMul();
+    return {
+      wallLevel: wallLevel,
+      totalForts: totalForts,
+      fortCapacity: fortCapacity,
+      wallHp: wallLevelForStats * (Number(wall.wallHpPerLevel) || 250000) * reinforcement,
+      wallDefense: Math.round(wallLevelForStats * (Number(wall.wallDefensePerLevel) || 20) * reinforcement)
+    };
+  }
+
+  /** 与军队总览一致提供全屏查看，低屏宽下也能完整阅读四类城防。 */
+  function showFortSummaryFullscreen() {
+    if (typeof document === 'undefined' || !document.createElement || !document.body) return;
+    var previousFocus = document.activeElement;
+    var modal = document.createElement('div');
+    modal.className = 'modal-mask fort-summary-mask';
+    modal.innerHTML =
+      '<section class="modal-card fort-summary-dialog" role="dialog" aria-modal="true" aria-labelledby="fortSummaryTitle">' +
+      '<div class="modal-title fort-summary-dialog-title" id="fortSummaryTitle"><span>🏰 城防总览</span><button type="button" class="fort-summary-close" aria-label="关闭城防总览">✕</button></div>' +
+      '<div class="modal-body fort-summary-dialog-body"><div class="fort-summary fort-summary-expanded" aria-label="全部城防工事">' + renderFortSummaryList() + '</div></div>' +
+      '</section>';
+    document.body.appendChild(modal);
+
+    var close = function () {
+      document.removeEventListener('keydown', onKeydown);
+      if (modal.parentNode) modal.parentNode.removeChild(modal);
+      if (previousFocus && previousFocus.focus) previousFocus.focus();
+    };
+    var onKeydown = function (event) { if (event.key === 'Escape') close(); };
+    modal.querySelector('.fort-summary-close').onclick = close;
+    modal.addEventListener('click', function (event) { if (event.target === modal) close(); });
+    document.addEventListener('keydown', onKeydown);
+    modal.querySelector('.fort-summary-close').focus();
+  }
+
   function showUnitDetailModal(id, ev) {
     if (ev && ev.stopPropagation) ev.stopPropagation();
     var unit = D.units && D.units[id];
@@ -274,7 +351,8 @@ window.Game = window.Game || {};
       ? '<img class="unit-detail-icon" src="' + esc(rawIcon) + '" alt="' + esc(unit.name) + '" />'
       : '<span class="unit-detail-icon unit-detail-icon-text">' + esc(rawIcon || '⚔') + '</span>';
     var battleSpd = (unit.spd || 0) * 50;
-    var marchSec = (9 / (unit.spd || 1)).toFixed(1).replace(/\.0$/, '');
+    var secPerGrid = (D.world && D.world.marchSecPerGrid) || 18;
+    var marchSec = (secPerGrid / (unit.spd || 1)).toFixed(1).replace(/\.0$/, '');
     var spdTip = '战场单回合机动：' + battleSpd + ' 距离（基速档位 ' + (unit.spd || 0) + '）；大地图基础行军：' + marchSec + '秒/格';
     var stats = [
       ['对地攻击', unit.atkGround], ['对空攻击', unit.atkAir], ['对海攻击', unit.atkSea], ['对工事攻击', unit.atkFort],
@@ -612,7 +690,7 @@ window.Game = window.Game || {};
       '<span class="pop-status-badge resentment-badge" id="popResentBadge">风平浪静</span>' +
       '</div>' +
       '<div class="pop-progress-bar resentment-bar"><div class="pop-progress-fill" id="popResentFill" style="width:0%"></div></div>' +
-      '<div class="pop-bar-hint">民心决定城市的实际人口容纳率与增长速度；长期重税(>50%)滋生民怨并压抑民心。</div>' +
+      '<div class="pop-bar-hint">民心决定城市的实际人口容纳率与增长速度；长期重税(>50%)滋生民怨。守城战败按战前民心增加民怨：71～100 时征服 +3、掠夺 +2；41～70 时征服 +2；0～40 时征服 +1；民心≤70 时掠夺不增加，佯攻、袭扰、游击均不增加民怨。</div>' +
       '</div>' +
 
       '<div class="pop-tax-section">' +
@@ -964,6 +1042,7 @@ window.Game = window.Game || {};
     var statusClass = cs.status ? ' ' + cs.status : ' peace';
     h += '<span class="city-status-tag' + statusClass + '" data-status="' + (cs.status || 'peace') + '">' + cs.text + '</span>';
     h += '</div>';
+    h += '<div id="newbieProtectionNotice" class="home-alert" role="status"' + ((s.cityState || {}).newbieProtectionUntil > Date.now() ? '' : ' hidden') + '>' + ((s.cityState || {}).newbieProtectionUntil > Date.now() ? G.escapeHtml(cs.detail) : '') + '</div>';
     if (s.player.cityFrozen) h += '<div class="home-alert" role="status">城市正在归降移交，经营和军事操作已冻结；预计 ' + new Date(Number(s.player.cityTransferDeadlineAt || Date.now())).toLocaleString() + ' 完成。</div>';
     h += '<div id="editCityBox" class="edit-profile-box" style="display:none">';
     h += '<div class="edit-row"><label>城市名</label><input id="epCityName" class="qty" style="width:100%" maxlength="12" value="' + G.escapeHtml(s.player.cityName || '新城市') + '" placeholder="留空则用默认名称"></div>';
@@ -1010,9 +1089,25 @@ window.Game = window.Game || {};
     var sArmy = (Core.state && Core.state.army) || {};
     for (var ak in sArmy) totArmy += sArmy[ak] || 0;
     var cmd2 = Core.getOfficerByRole('commander');
-    h += '<span class="army-summary-strength">总兵力 <b class="home-army-tot" style="color:var(--accent)">' + G.fmt(totArmy) + '</b> / ' + G.fmt(Core.armyCap()) + '</span>';
+    h += '<span class="army-summary-strength">可用兵力 <b class="home-army-tot" style="color:var(--accent)">' + G.fmt(totArmy) + '</b> / ' + G.fmt(Core.armyCap()) + '</span>';
     h += '<span class="army-summary-commander"><span class="army-summary-commander-label">指挥官:</span> <b>' + (cmd2 ? G.escapeHtml(cmd2.name) : '未任命') + '</b></span>';
     h += '<span class="army-go">详情 &gt;</span>';
+    h += '</div>';
+    // 伤兵仅在付费治疗后归队；独立提示，不并入兵种数量或可用兵力。
+    var woundedCount = Number(Core.state && Core.state.woundedCount) || 0;
+    if (woundedCount > 0) {
+      h += '<div class="desc">待救治伤兵 <b>' + G.fmt(woundedCount) + '</b>（不计入可用兵力），需在 <a href="#wounded" onclick="Game.go(\'wounded\');return false;">伤兵营</a> 消耗黄金或钻石治疗后归队。</div>';
+    }
+
+    var fortStats = fortSummaryStats();
+    h += '<div class="zone-head fort-summary-zone-head"><span class="zone-title">🏰 城防总览</span><span class="zone-sub">城防 Lv.' + G.fmt(fortStats.wallLevel) + ' · 工事 ' + G.fmt(fortStats.totalForts) + '/' + G.fmt(fortStats.fortCapacity) + '</span><button type="button" class="fort-summary-expand" title="全屏展开城防总览" aria-label="全屏展开城防总览" onclick="Game.MainView.showFortSummaryFullscreen()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg></button><span class="fort-summary-go zone-head-action" role="button" tabindex="0" onclick="Game.go(\'fort\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.go(\'fort\');event.preventDefault();}">去城防 &gt;</span></div>';
+    h += '<div class="fort-summary" role="region" tabindex="0" aria-label="城防总览，单排横向排列，左右滑动查看全部工事">';
+    h += renderFortSummaryList();
+    h += '</div>';
+    h += '<div class="fort-summary-foot" role="button" tabindex="0" onclick="Game.go(\'fort\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.go(\'fort\');event.preventDefault();}">';
+    h += '<span class="fort-summary-wall">墙体 <b>' + G.fmt(fortStats.wallHp) + '</b> 生命 · <b>' + G.fmt(fortStats.wallDefense) + '</b> 防御</span>';
+    h += '<span class="fort-summary-capacity">工事容量 <b>' + G.fmt(fortStats.totalForts) + '</b> / ' + G.fmt(fortStats.fortCapacity) + '</span>';
+    h += '<span class="fort-go">详情 &gt;</span>';
     h += '</div>';
     modules.army = h;
     h = '';
@@ -1056,8 +1151,8 @@ window.Game = window.Game || {};
     modules.resources = h;
     h = '';
 
-    // —— 世界通讯频道 ——
-    h += '<div class="zone-head">' + homeModuleHandle('chat') + '<span class="zone-title">📡 世界通讯</span><span class="zone-sub">实时通联</span></div>';
+    // —— 世界聊天频道 ——
+    h += '<div class="zone-head">' + homeModuleHandle('chat') + '<span class="zone-title">📡 世界聊天</span><span class="zone-sub">实时通联</span></div>';
     h += renderWorldChat(20);
 
     modules.chat = h;
@@ -1129,22 +1224,25 @@ window.Game = window.Game || {};
 
   /**
    * 切换聊天内容区，保留论坛路由、聊天草稿与消息滚动位置。
-   * @param {string} tab - messages 或 forum；战友入口暂不可用
+   * @param {string} tab - messages、friends 或 forum
    */
   function selectChatTab(tab) {
-    if (tab !== 'messages' && tab !== 'forum') return;
+    if (['messages', 'friends', 'forum'].indexOf(tab) < 0) return;
     var page = document.querySelector('.chat-page');
     if (!page) return;
     var messages = page.querySelector('#chatMessagesPanel');
     var forum = page.querySelector('#chatForumPanel');
-    var selected = tab === 'forum' ? forum : messages;
+    var friends = page.querySelector('#chatFriendsPanel');
+    var selected = tab === 'forum' ? forum : tab === 'friends' ? friends : messages;
     if (!selected || !selected.hidden) return;
     var box = document.getElementById('worldChatBox');
-    if (tab === 'forum') {
-      if (box) {
+    if (tab !== 'messages') {
+      if (box && !messages.hidden) {
         messages._chatScrollTop = box.scrollTop;
         messages._chatAtBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
       }
+    }
+    if (tab === 'forum') {
       // 首次打开才加载论坛，后续仅隐藏面板，避免重置论坛登录和浏览位置。
       if (!forum.querySelector('iframe')) {
         var frame = document.createElement('iframe');
@@ -1157,11 +1255,13 @@ window.Game = window.Game || {};
     }
     messages.hidden = tab !== 'messages';
     forum.hidden = tab !== 'forum';
+    if (friends) friends.hidden = tab !== 'friends';
     if (tab === 'messages' && box) {
       box.scrollTop = messages._chatAtBottom ? box.scrollHeight : (messages._chatScrollTop || 0);
     }
-    page.querySelector('#chatPageTitle').textContent = tab === 'forum' ? '山河论坛' : (selectedChatChannel === 'private' ? '玩家私聊' : selectedChatChannel === 'guild' ? '军团频道' : '世界频道');
-    page.querySelector('#chatPageSubtitle').textContent = tab === 'forum' ? '玩家交流' : (selectedChatChannel === 'private' ? '仅双方可见' : selectedChatChannel === 'guild' ? '战术内频' : '实时通联');
+    page.querySelector('#chatPageTitle').textContent = tab === 'friends' ? '山河战友' : tab === 'forum' ? '山河论坛' : (selectedChatChannel === 'private' ? '玩家私聊' : selectedChatChannel === 'guild' ? '军团频道' : '世界频道');
+    page.querySelector('#chatPageSubtitle').textContent = tab === 'friends' ? '好友与分组' : tab === 'forum' ? '玩家交流' : (selectedChatChannel === 'private' ? '仅双方可见' : selectedChatChannel === 'guild' ? '战术内频' : '实时通联');
+    if (tab === 'friends' && G.Friends) G.Friends.refresh();
     if (tab === 'messages' && G.PrivateChat && G.PrivateChat.active) G.PrivateChat.refresh();
     var tabs = page.querySelectorAll('[data-chat-tab]');
     for (var i = 0; i < tabs.length; i++) {
@@ -1298,7 +1398,7 @@ window.Game = window.Game || {};
     }
   }
 
-  /** 独立聊天页默认展示消息；论坛在页内按需加载，战友入口暂不可用。 */
+  /** 独立聊天页默认展示消息；好友和论坛按需加载，切换时保留消息草稿。 */
   Core.views.chat = function (v) {
     // 后台状态刷新保留聊天输入和滚动位置，实时消息由 Chat 增量追加。
     if (v.querySelector && v.querySelector('.chat-page')) {
@@ -1307,15 +1407,16 @@ window.Game = window.Game || {};
       if (G.Chat) G.Chat.updateGuildSendBtnUI();
       return;
     }
-    v.innerHTML = '<section class="chat-page" aria-label="通讯">' +
+    v.innerHTML = '<section class="chat-page" aria-label="聊天">' +
       '<header class="chat-page-header page-backbar">' +
       '<button type="button" class="chat-back-button" onclick="Game.back()" aria-label="返回上一步">‹</button>' +
       '<h1 id="chatPageTitle">世界频道</h1><span id="chatPageSubtitle">实时通联</span></header>' +
       '<div id="chatMessagesPanel" class="chat-tab-panel" aria-label="消息">' + renderChatMessagesPanel() + '</div>' +
       '<div id="chatForumPanel" class="chat-tab-panel" aria-label="论坛" hidden></div>' +
-      '<nav class="chat-bottom-tabs" aria-label="通讯导航">' +
+      '<div id="chatFriendsPanel" class="chat-tab-panel" aria-label="山河战友" hidden>' + (G.Friends ? G.Friends.render() : '') + '</div>' +
+      '<nav class="chat-bottom-tabs" aria-label="聊天导航">' +
       '<button type="button" class="chat-bottom-tab active" data-chat-tab="messages" aria-controls="chatMessagesPanel" aria-current="page" onclick="Game.MainView.selectChatTab(\'messages\')"><span aria-hidden="true">☏</span>消息</button>' +
-      '<button type="button" class="chat-bottom-tab" disabled title="山河战友暂未开放"><span aria-hidden="true">♙</span>山河战友</button>' +
+      '<button type="button" class="chat-bottom-tab" data-chat-tab="friends" aria-controls="chatFriendsPanel" onclick="Game.MainView.selectChatTab(\'friends\')"><span aria-hidden="true">♙</span>山河战友</button>' +
       '<button type="button" class="chat-bottom-tab" data-chat-tab="forum" aria-controls="chatForumPanel" onclick="Game.MainView.selectChatTab(\'forum\')"><span aria-hidden="true">▤</span>论坛</button>' +
       '</nav></section>';
     var box = document.getElementById('worldChatBox');
@@ -1436,6 +1537,11 @@ window.Game = window.Game || {};
         statusTag.setAttribute('data-status', cs.status || 'peace');
       }
       if (statusTag.textContent !== cs.text) statusTag.textContent = cs.text;
+    }
+    var protectionNotice = document.getElementById('newbieProtectionNotice');
+    if (protectionNotice) {
+      protectionNotice.hidden = !((s.cityState || {}).newbieProtectionUntil > Date.now());
+      if (!protectionNotice.hidden) protectionNotice.textContent = Core.cityStatusText().detail;
     }
 
     // 2. 军情与战报警讯增量更新
@@ -1575,6 +1681,8 @@ window.Game = window.Game || {};
     selectChatChannel: selectChatChannel,
     renderArmySummaryList: renderArmySummaryList,
     showArmySummaryFullscreen: showArmySummaryFullscreen,
+    renderFortSummaryList: renderFortSummaryList,
+    showFortSummaryFullscreen: showFortSummaryFullscreen,
     renderOfficerSummaryCard: renderOfficerSummaryCard,
     showUnitDetailModal: showUnitDetailModal,
     showResourceDetail: showResourceDetail,

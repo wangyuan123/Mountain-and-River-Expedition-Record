@@ -11,10 +11,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ShipyardPvpCompatibilityTest {
     @Test
-    void productionFacilityMetadataPreservesPublishedCombatCalibrationAndExistingSessionVersion() throws Exception {
+    void productionFacilityMetadataKeepsCurrentMobilityCalibrationVersion() throws Exception {
         assertEquals("shipyard", UnitDef.UNITS.get("destroyer").build());
         assertEquals("airport", UnitDef.UNITS.get("scout").build());
-        assertEquals("pvp-v1-8cc036d5a45e2da5c776e5c1", PvpSnapshotService.RULES);
+        // 生产设施元数据仍归一化；机动与场景距离改变战斗契约，校准版本随之更新。
+        assertEquals("pvp-v1-0c2a50c520a6b51e91ad27fb", PvpSnapshotService.RULES);
         try (var stream = getClass().getResourceAsStream("/game/pvp-power-calibration-v1.json")) {
             assertNotNull(stream);
             for (JsonNode row : new ObjectMapper().readTree(stream)) {

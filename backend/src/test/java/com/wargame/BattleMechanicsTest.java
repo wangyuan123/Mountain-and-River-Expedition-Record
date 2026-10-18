@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** 覆盖伤害增长、技能归属、城墙归属和混编保护，避免调数值掩盖规则错误。 */
+/** 覆盖伤害增长、技能归属、攻守防御和混编保护，避免调数值掩盖规则错误。 */
 class BattleMechanicsTest {
     private Object side(boolean defender) throws Exception {
         return Arrays.stream(Class.forName("com.wargame.service.BattleService$Side").getEnumConstants())
@@ -27,16 +27,16 @@ class BattleMechanicsTest {
         return constructor.newInstance(tech, skills, 0);
     }
 
-    private long damage(boolean defending, Object own, Object foe, int foeWall, boolean active) throws Exception {
-        return damage("infantry", "infantry", defending, own, foe, foeWall, active);
+    private long damage(boolean defending, Object own, Object foe, boolean active) throws Exception {
+        return damage("infantry", "infantry", defending, own, foe, active);
     }
 
     private long damage(String attackerId, String defenderId, boolean defending,
-                        Object own, Object foe, int foeWall, boolean active) throws Exception {
+                        Object own, Object foe, boolean active) throws Exception {
         StringBuilder report = new StringBuilder();
         ReflectionTestUtils.invokeMethod(new BattleService(4096), "simAct", attackerId,
                 new LinkedHashMap<>(Map.of(attackerId, 100)), new LinkedHashMap<>(Map.of(defenderId, 10000)),
-                100, report, side(defending), own, foe, foeWall, active);
+                100, report, side(defending), own, foe, active);
         var matcher = Pattern.compile(" 伤害(\\d+)").matcher(report);
         assertTrue(matcher.find(), report.toString());
         return Long.parseLong(matcher.group(1));
@@ -44,24 +44,23 @@ class BattleMechanicsTest {
 
     @Test
     void attackTechnologyAddsLinearDamageOutsideOfficerRounds() throws Exception {
-        long base = damage(false, context(Map.of(), Map.of()), null, 0, false);
-        long boosted = damage(false, context(Map.of("attack_tech", 2), Map.of()), null, 0, false);
-        assertEquals(343, base);
-        assertEquals(411, boosted, "攻击科技每级增加10%伤害，并在普通回合生效");
+        long base = damage(false, context(Map.of(), Map.of()), null, false);
+        long boosted = damage(false, context(Map.of("attack_tech", 2), Map.of()), null, false);
+        assertEquals(571, base);
+        assertEquals(629, boosted, "攻击科技每级增加5%伤害，并在普通回合生效");
     }
 
     @Test
     void militaryTechnologyDoublesBaseStatsAtLevelTen() throws Exception {
         var service = new BattleService(19);
         for (int level : new int[]{0, 1, 10}) {
-            double expectedMultiplier = 1 + 0.10 * level;
+            double expectedMultiplier = 1 + 0.05 * level;
             assertEquals(expectedMultiplier, (double) ReflectionTestUtils.invokeMethod(service, "atkMul",
                     "inf", Map.of("attack_tech", level), 0));
-            assertEquals(expectedMultiplier, (double) ReflectionTestUtils.invokeMethod(service, "defMul",
-                    "inf", Map.of("defense_tech", level), 0, false));
+            assertEquals(expectedMultiplier, (double) ReflectionTestUtils.invokeMethod(service, "defMul", Map.of("defense_tech", level)));
             assertEquals(120 * expectedMultiplier, (double) ReflectionTestUtils.invokeMethod(service, "effHp",
                     "infantry", Map.of("cmd_hp", level)));
-            assertEquals((int) (100 * expectedMultiplier), (int) ReflectionTestUtils.invokeMethod(service,
+            assertEquals((int) (com.wargame.model.constants.UnitDef.UNITS.get("infantry").range() * expectedMultiplier), (int) ReflectionTestUtils.invokeMethod(service,
                     "effectiveRange", "infantry", context(Map.of("weapon_range", level), Map.of())));
         }
     }
@@ -71,24 +70,25 @@ class BattleMechanicsTest {
         Object empty = context(Map.of(), Map.of());
         Object suppression = context(Map.of(), Map.of("suppress", 1));
         for (boolean defending : new boolean[]{false, true}) {
-            assertEquals(343, damage(defending, suppression, empty, 0, true));
-            assertEquals(322, damage(defending, empty, suppression, 0, true), "交战技能回合降低敌方6%伤害");
-            assertEquals(343, damage(defending, empty, suppression, 0, false), "技能间隔回合不压制敌方攻击");
+            assertEquals(571, damage(defending, suppression, empty, true));
+            assertEquals(537, damage(defending, empty, suppression, true), "交战技能回合降低敌方6%伤害");
+            assertEquals(571, damage(defending, empty, suppression, false), "技能间隔回合不压制敌方攻击");
         }
     }
 
     @Test
-    void defenseAndPiercingWorkForBothSidesAndWallOnlyProtectsCity() throws Exception {
+    void defenseAndPiercingWorkSymmetricallyForBothSides() throws Exception {
         Object empty = context(Map.of(), Map.of());
         Object defense = context(Map.of("defense_tech", 10), Map.of());
         Object pierce = context(Map.of(), Map.of("pierce", 5));
         for (boolean defending : new boolean[]{false, true}) {
-            assertEquals(240, damage(defending, empty, defense, 0, false));
-            assertEquals(293, damage(defending, pierce, defense, 0, true));
-            assertEquals(240, damage(defending, pierce, defense, 0, false), "技能间隔回合不破甲");
+            long baseDamage = damage(defending, empty, empty, false);
+            long defendedDamage = damage(defending, empty, defense, false);
+            assertTrue(defendedDamage < baseDamage, "防御科技应减少伤害");
+            assertTrue(damage(defending, pierce, defense, true) > defendedDamage, "破甲应在技能回合增加伤害");
+            assertEquals(defendedDamage, damage(defending, pierce, defense, false), "技能间隔回合不破甲");
         }
-        assertEquals(185, damage(false, empty, defense, 10, false), "攻击守城军时城墙生效");
-        assertEquals(240, damage(true, empty, defense, 10, false), "出征军不能携带城墙防御");
+        assertEquals(damage(false, empty, defense, false), damage(true, empty, defense, false), "相同条件下攻守承伤一致");
     }
 
     @Test
@@ -96,8 +96,8 @@ class BattleMechanicsTest {
         Object empty = context(Map.of(), Map.of());
         Object bulwark = context(Map.of(), Map.of("bulwark", 5));
         for (boolean defending : new boolean[]{false, true}) {
-            assertEquals(282, damage(defending, empty, bulwark, 0, true));
-            assertEquals(343, damage(defending, empty, bulwark, 0, false));
+            assertEquals(471, damage(defending, empty, bulwark, true));
+            assertEquals(571, damage(defending, empty, bulwark, false));
         }
     }
 
@@ -107,9 +107,9 @@ class BattleMechanicsTest {
         Object learning = context(Map.of(), Map.of("learn", 5));
         Object strongerEnemy = context(Map.of("attack_tech", 20), Map.of());
 
-        assertEquals(343, damage(false, learning, empty, 0, false), "非交战技能回合不应触发师夷长技");
-        assertEquals(446, damage(false, learning, empty, 0, true), "同名敌军存在时，满级应学习敌军攻击的30%");
-        assertEquals(651, damage(false, learning, strongerEnemy, 0, true), "敌军攻击更高时，应获得更高的学习收益");
+        assertEquals(571, damage(false, learning, empty, false), "非交战技能回合不应触发师夷长技");
+        assertEquals(743, damage(false, learning, empty, true), "同名敌军存在时，满级应学习敌军攻击的30%");
+        assertEquals(914, damage(false, learning, strongerEnemy, true), "敌军攻击更高时，应获得更高的学习收益");
         String bonusLog = ReflectionTestUtils.invokeMethod(new BattleService(4096), "buildCommanderBonusLog",
                 "我方", learning, 3, true);
         assertTrue(bonusLog.contains("上限敌方同名兵种攻击30%"), "战斗详情应说明封顶以敌方攻击为准");
@@ -117,7 +117,7 @@ class BattleMechanicsTest {
         StringBuilder report = new StringBuilder();
         ReflectionTestUtils.invokeMethod(new BattleService(4096), "simAct", "infantry",
                 new LinkedHashMap<>(Map.of("infantry", 100)), new LinkedHashMap<>(Map.of("armored", 10000)),
-                100, report, side(false), learning, empty, 0, true);
+                100, report, side(false), learning, empty, true);
         assertFalse(report.toString().contains("师夷长技"), "没有同名存活敌军时不应获得学习加成");
     }
 
@@ -129,19 +129,19 @@ class BattleMechanicsTest {
         Object bulwark = context(Map.of(), Map.of("bulwark", 5));
         Object conflictingSkills = context(Map.of(), Map.of("bulwark", 5, "borrow_armor", 5));
 
-        long base = damage(false, empty, empty, 0, true);
-        long borrowed = damage(false, empty, borrowedArmor, 0, true);
-        assertEquals(base, damage(false, empty, borrowedArmor, 0, false), "非交战技能回合不应触发借甲御敌");
+        long base = damage(false, empty, empty, true);
+        long borrowed = damage(false, empty, borrowedArmor, true);
+        assertEquals(base, damage(false, empty, borrowedArmor, false), "非交战技能回合不应触发借甲御敌");
         assertTrue(borrowed < base, "同名敌军存在时，借甲御敌应降低受到的伤害");
-        assertTrue(damage(false, strongerEnemy, borrowedArmor, 0, true) < borrowed,
+        assertTrue(damage(false, strongerEnemy, borrowedArmor, true) < borrowed,
                 "敌军防御更高时，应获得更高的借甲收益");
         String bonusLog = ReflectionTestUtils.invokeMethod(new BattleService(4096), "buildCommanderBonusLog",
                 "我方", borrowedArmor, 2, true);
         assertTrue(bonusLog.contains("上限敌方同名兵种防御30%"), "战斗详情应说明封顶以敌方防御为准");
-        assertEquals(damage(false, empty, bulwark, 0, true), damage(false, empty, conflictingSkills, 0, true),
+        assertEquals(damage(false, empty, bulwark, true), damage(false, empty, conflictingSkills, true),
                 "旧存档同时拥有两个互斥技能时，应仅保留坚守阵地生效");
-        assertEquals(damage("armored", "infantry", false, empty, empty, 0, true),
-                damage("armored", "infantry", false, empty, borrowedArmor, 0, true),
+        assertEquals(damage("armored", "infantry", false, empty, empty, true),
+                damage("armored", "infantry", false, empty, borrowedArmor, true),
                 "没有同名存活敌军时不应获得借甲防御");
     }
 
@@ -153,7 +153,7 @@ class BattleMechanicsTest {
         Map<String, Integer> enemy = Map.of("htank", 100, "rocket", 100, "fighter", 120);
         assertEquals("htank", ReflectionTestUtils.invokeMethod(service, "pickTargetInRange",
                 "ltank", side(false), army, mine, enemy, 2200, null));
-        assertEquals("rocket", ReflectionTestUtils.invokeMethod(service, "pickTargetInRange",
+        assertEquals("htank", ReflectionTestUtils.invokeMethod(service, "pickTargetInRange",
                 "special", side(false), army, mine, enemy, 2200, null));
         assertEquals("fighter", ReflectionTestUtils.invokeMethod(service, "pickTargetInRange",
                 "fighter", side(false), army, mine, enemy, 2200, null));
@@ -166,12 +166,12 @@ class BattleMechanicsTest {
         var service = new BattleService(19);
         Map<String, Integer> foe = Map.of("infantry", 10);
         Map<String, Integer> mine = Map.of("infantry", 0);
-        Map<String, Integer> enemy = Map.of("infantry", 110);
+        Map<String, Integer> enemy = Map.of("infantry", 170);
         assertNull(ReflectionTestUtils.invokeMethod(service, "pickTargetInRange",
                 "infantry", side(false), foe, mine, enemy, 2200, null));
         assertEquals("infantry", ReflectionTestUtils.invokeMethod(service, "pickTargetInRange",
                 "infantry", side(false), foe, mine, enemy, 2200, context(Map.of("weapon_range", 2), Map.of())));
-        assertEquals(200, (int) ReflectionTestUtils.invokeMethod(service, "effectiveRange", "infantry",
+        assertEquals(240, (int) ReflectionTestUtils.invokeMethod(service, "effectiveRange", "infantry",
                 context(Map.of("weapon_range", 10), Map.of())));
     }
 
@@ -182,7 +182,7 @@ class BattleMechanicsTest {
         StringBuilder report = new StringBuilder();
         ReflectionTestUtils.invokeMethod(new BattleService(19), "simAct", "infantry",
                 new LinkedHashMap<>(Map.of("infantry", 10)), new LinkedHashMap<>(Map.of("fighter", 10, "armored", 10)),
-                mine, enemy, 2200, report, side(false), null, null, 0, false);
+                mine, enemy, 2200, report, side(false), null, null, false);
         assertEquals(0, mine.get("infantry"), "飞机在射程内时应使用弱对空火力");
         assertTrue(report.toString().contains("对空攻击5 本次原始火力50 伤害20"));
     }

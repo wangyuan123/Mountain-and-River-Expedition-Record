@@ -1,0 +1,8 @@
+Use case: product-mockup
+Asset type: realistic miniature military fortification icon for historical strategy game defense.
+Primary request: One WWII reinforced concrete bunker pillbox miniature model (碉堡). Low-profile hexagonal cast reinforced concrete bunker with rough weathered texture, olive drab and grey concrete finish, dark horizontal armored machine gun firing slits (embrasure) on front facets, low reinforced dome roof with subtle olive camouflage paint and battlefield wear, neat small sandbags stacked around the base. Solid, heavy, low-profile defensive bunker model.
+Style/medium: premium museum-quality painted resin/concrete scale miniature photographed as a real physical model, realistic concrete, steel, and canvas textures, restrained field wear, sophisticated realistic details. Never cartoon, flat vector, toy caricature, badge or game UI.
+Composition/framing: square canvas, elevated three-quarter isometric view from above at about 30 degrees, facing lower-left, entire bunker fits in frame with at least 10 percent clean margin. Clean silhouette.
+Scene/backdrop: perfectly uniform pure white #ffffff seamless background, isolated subject, no ground plate, no plinth, no scenery, no horizon. No cast shadow on background; subtle ambient contact shading only under the bunker base.
+Lighting/mood: crisp neutral studio daylight from upper left, realistic material highlights.
+Constraints: exactly one bunker. No people, no vehicles, no text, no labels, no watermark, no flags.

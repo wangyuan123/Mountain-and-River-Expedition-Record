@@ -12,7 +12,7 @@ function setup() {
   let battle = { ...status, status: 'BATTLING', sessionId: 's', side: 'B', round: 1, mine: snapshot, enemy: snapshot, myArmy: { infantry: 100 }, enemyArmy: { infantry: 100 }, myPositions: { infantry: 0 }, enemyPositions: { infantry: 1000 }, initialDistance: 1000, loaded: true, draft: {}, revision: 0, deadlineAt: Date.now() + 15000 };
   let handler;
   const Game = {
-    Core: { route: 'pvp', views: {} }, Constants: { pvp: { heartbeatMs: 10000, queuePollMs: 3000, battlePollMs: 2000 } },
+    Core: { route: 'pvp', views: {}, firepowerMul: tech => 1 + ((tech || {}).fire_density || 0) / 10 }, Constants: { pvp: { heartbeatMs: 10000, queuePollMs: 3000, battlePollMs: 2000 } },
     DATA: { units: { infantry: { name: '步兵', branch: 'land' }, truck: { name: '卡车', branch: 'land' } }, officerSkills: {} },
     escapeHtml: String, WS: { connected: true, on(name, fn) { listeners[name] = fn; } },
     Battle: { renderCommandBonusPanel() { return ''; }, tacticalMarkerRows() { return ['infantry']; }, renderTacticalRangeBeams() { return ''; }, renderTacticalMarkers(army, positions) { return '<span data-position="' + positions.infantry + '"></span>'; } },
