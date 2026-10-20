@@ -54,6 +54,7 @@ function setup(storage = new Map(), username = 'alice', serverOrder = null, save
   };
   const core = {
     state, views: {}, cityStatusText: () => ({ status: 'peace', text: '和平' }),
+    newbieProtectionInfo: () => ({ active: false }),
     getOfficerByRole: () => null, armyCap: () => 100,
     produceOf: () => 0, foodPerHour: () => 0, civilianPopulation: () => 10,
     capacity: () => ({ food: 100, steel: 100, oil: 100, rare: 100 }),

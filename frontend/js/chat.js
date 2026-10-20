@@ -132,6 +132,8 @@ window.Game = window.Game || {};
     var text = String(content == null ? '' : content);
     var match = /^\[战报:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\]$/.exec(text);
     if (match) return '<button class="btn sm" onclick="Game.Battle.viewSharedReport(\'' + match[1] + '\')">查看分享战报</button>';
+    var incoming = /^\[军情:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\]$/.exec(text);
+    if (incoming) return '<button type="button" class="btn sm" onclick="Game.World.viewSharedIncomingReport(\'' + incoming[1] + '\')">📢 求援战报 · 查看来袭军情</button>';
     return text.replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
@@ -512,6 +514,18 @@ window.Game = window.Game || {};
         if (msgData && msgData.id != null) {
           Chat.receiveGuild(msgData);
         }
+        return res;
+      });
+    },
+
+    /** 请求服务端保存军情并发送到军团；沿用聊天冷却和去重，HTTP 确认后立即显示消息。 */
+    shareIncoming: function (incomingId) {
+      if (guildCdRemaining > 0) return Promise.reject(new Error('发言过于频繁，请等待冷却'));
+      if (!G.API || !G.API.shareIncomingReport) return Promise.reject(new Error('军团军情分享服务不可用'));
+      startGuildCooldown(COOLDOWN_SEC);
+      return G.API.shareIncomingReport(incomingId).then(function (res) {
+        var msgData = (res && res.data) || res;
+        if (msgData && msgData.id != null) Chat.receiveGuild(msgData);
         return res;
       });
     },

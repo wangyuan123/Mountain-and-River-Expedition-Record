@@ -1,0 +1,181 @@
+{
+  "version": "unit-unlock-20261020-v4",
+  "date": "2026-10-20",
+  "status": "implemented_runtime_verified",
+  "sourcePrerequisiteVersion": "research-technology-ten-levels-20261019-v1",
+  "technologyRulesVersion": "technology-v3-20261019",
+  "conditionOperator": "AND",
+  "buildingScope": "recruitment_city",
+  "buildingLevelAggregation": "max_completed_single_building_after_pending_downgrade",
+  "technologyScope": "empire_completed",
+  "recheckOnNewRecruitment": true,
+  "productionBuildingPolicy": "retain_existing_unit_build_mapping",
+  "requirementRelevancePolicy": "unit_capability_or_capability_specific_subsystem_prerequisite_and_direct_production_support",
+  "inheritedPrerequisitesPolicy": "preserve_shared_chains_except_implemented_lab10_coastal_requirement_removal",
+  "sharedPrerequisiteAmendments": [
+    {
+      "kind": "buildings", "id": "lab", "targetLevel": 10,
+      "operation": "remove_requirement",
+      "requirement": {"building": "port", "level": 8, "scope": "owned_coastal_city"},
+      "reason": "取消通用科研中心满级对海军设施的间接依赖，允许内陆帝国研究特种兵所需的训练加速10级；舰船动力自身仍保留军港和造船厂前置"
+    }
+  ],
+  "existingUnitsPolicy": "retain_and_allow_existing_actions",
+  "existingPaidQueuesPolicy": "complete_with_original_snapshot",
+  "navalGeographyPolicy": "coastal_or_existing_legacy_naval_city",
+  "units": [
+    {
+      "id": "infantry", "name": "步兵", "branch": "land", "stage": 1,
+      "productionBuilding": "factory", "minimumProductionCityHall": 1,
+      "buildings": {"factory": 1}, "technologies": {},
+      "buildingReasons": {"factory": "步兵征召的现有生产设施"}, "technologyReasons": {},
+      "role": "基础战斗与前期运载"
+    },
+    {
+      "id": "truck", "name": "卡车", "branch": "land", "stage": 1,
+      "productionBuilding": "factory", "minimumProductionCityHall": 1,
+      "buildings": {"factory": 1}, "technologies": {},
+      "buildingReasons": {"factory": "卡车的现有生产设施"}, "technologyReasons": {},
+      "role": "基础采集与运输"
+    },
+    {
+      "id": "recon_car", "name": "侦查装甲车", "branch": "land", "stage": 2,
+      "productionBuilding": "factory", "minimumProductionCityHall": 2,
+      "buildings": {"factory": 2},
+      "technologies": {"recon_level": 1},
+      "buildingReasons": {"factory": "侦查车辆的现有生产设施"},
+      "technologyReasons": {"recon_level": "直接影响该单位执行侦查时的先手与情报内容"},
+      "role": "先于空军开放的地面侦查"
+    },
+    {
+      "id": "armored", "name": "防空装甲车", "branch": "land", "stage": 3,
+      "productionBuilding": "factory", "minimumProductionCityHall": 3,
+      "buildings": {"factory": 3},
+      "technologies": {"arm_engine": 1, "weapon_range": 1},
+      "buildingReasons": {"factory": "防空装甲车的现有生产设施"},
+      "technologyReasons": {"arm_engine": "直接提高该陆军单位移动速度", "weapon_range": "直接提高防空武器射程"},
+      "role": "早期机动与提前准备的防空反制"
+    },
+    {
+      "id": "ltank", "name": "轻型坦克", "branch": "land", "stage": 4,
+      "productionBuilding": "lightfactory", "minimumProductionCityHall": 4,
+      "buildings": {"lightfactory": 4},
+      "technologies": {"arm_engine": 2, "attack_tech": 2, "defense_tech": 2},
+      "buildingReasons": {"lightfactory": "轻坦的现有生产设施"},
+      "technologyReasons": {"arm_engine": "直接提高该陆军单位移动速度", "attack_tech": "直接提高轻坦攻击", "defense_tech": "直接提高轻坦防御"},
+      "role": "中期装甲主力"
+    },
+    {
+      "id": "scout", "name": "侦察机", "branch": "air", "stage": 4,
+      "productionBuilding": "airport", "minimumProductionCityHall": 4,
+      "buildings": {"airport": 2, "apron": 2},
+      "technologies": {"air_engine": 1, "recon_level": 2},
+      "buildingReasons": {"airport": "侦察机的现有生产设施", "apron": "直接提供空军调度与航速加成"},
+      "technologyReasons": {"air_engine": "直接提高该空军单位移动速度", "recon_level": "直接影响该单位执行侦查时的先手与情报内容"},
+      "role": "空军入门与跨地形侦查"
+    },
+    {
+      "id": "assault", "name": "突击炮", "branch": "land", "stage": 5,
+      "productionBuilding": "factory", "minimumProductionCityHall": 5,
+      "buildings": {"factory": 5, "heavyfactory": 4},
+      "technologies": {"weapon_range": 3, "fire_density": 3},
+      "buildingReasons": {"factory": "突击炮的现有总装设施", "heavyfactory": "本提案新增的重型装甲底盘与重炮工业配套"},
+      "technologyReasons": {"weapon_range": "直接提高突击炮射程", "fire_density": "直接提高攻坚行动火力"},
+      "role": "先于远程火箭开放的专业攻坚火力"
+    },
+    {
+      "id": "transport", "name": "运输机", "branch": "air", "stage": 5,
+      "productionBuilding": "airport", "minimumProductionCityHall": 5,
+      "buildings": {"airport": 5, "apron": 4},
+      "technologies": {"air_engine": 3, "log_load": 3, "log_food": 3},
+      "buildingReasons": {"airport": "运输机的现有生产设施", "apron": "直接提供空军调度与航速加成"},
+      "technologyReasons": {"air_engine": "直接提高该空军单位移动速度", "log_load": "直接提高运输机运力", "log_food": "直接降低运输机驻城耗粮"},
+      "role": "在空中侦查之后开放的空运保障"
+    },
+    {
+      "id": "htank", "name": "重型坦克", "branch": "land", "stage": 6,
+      "productionBuilding": "heavyfactory", "minimumProductionCityHall": 6,
+      "buildings": {"heavyfactory": 6},
+      "technologies": {"arm_engine": 4, "attack_tech": 4, "defense_tech": 4},
+      "buildingReasons": {"heavyfactory": "重坦的现有生产设施"},
+      "technologyReasons": {"arm_engine": "直接提高该陆军单位移动速度", "attack_tech": "直接提高重坦攻击", "defense_tech": "直接提高重坦防御"},
+      "role": "重装正面突破"
+    },
+    {
+      "id": "fighter", "name": "战斗机", "branch": "air", "stage": 6,
+      "productionBuilding": "airport", "minimumProductionCityHall": 6,
+      "buildings": {"airport": 6, "apron": 5},
+      "technologies": {"air_engine": 4, "weapon_range": 4, "attack_tech": 3},
+      "buildingReasons": {"airport": "战斗机的现有生产设施", "apron": "直接提供空军调度与航速加成"},
+      "technologyReasons": {"air_engine": "直接提高该空军单位移动速度", "weapon_range": "直接提高空战武器射程", "attack_tech": "直接提高制空攻击"},
+      "role": "在地面防空成熟后开放的制空主力"
+    },
+    {
+      "id": "destroyer", "name": "驱逐舰", "branch": "sea", "stage": 6,
+      "productionBuilding": "shipyard", "minimumProductionCityHall": 6,
+      "coastalOrLegacyNavalRequired": true,
+      "buildings": {"shipyard": 6, "port": 6},
+      "technologies": {"nav_engine": 5, "weapon_range": 4, "log_food": 4},
+      "buildingReasons": {"shipyard": "驱逐舰的现有制造设施", "port": "现有舰船征召所需的同城停泊补给设施"},
+      "technologyReasons": {"nav_engine": "直接提高该海军单位移动速度", "weapon_range": "直接提高舰载武器射程", "log_food": "直接降低舰船驻城耗粮"},
+      "role": "海军入门、护航与反潜平台"
+    },
+    {
+      "id": "rocket", "name": "反坦克火箭车", "branch": "land", "stage": 9,
+      "productionBuilding": "factory", "minimumProductionCityHall": 9,
+      "buildings": {"factory": 9, "heavyfactory": 8},
+      "technologies": {"weapon_range": 9, "fire_density": 8, "arm_engine": 7},
+      "buildingReasons": {"factory": "火箭车的现有总装设施", "heavyfactory": "本提案按用户要求新增的火箭发射平台重工业配套"},
+      "technologyReasons": {"weapon_range": "直接提高火箭射程", "fire_density": "直接提高火箭行动火力", "arm_engine": "直接提高该陆军单位移动速度"},
+      "role": "以7至9级专业条件构成的后期远程反装甲及攻坚平台，低于满级精锐门槛"
+    },
+    {
+      "id": "sub", "name": "潜艇", "branch": "sea", "stage": 7,
+      "productionBuilding": "shipyard", "minimumProductionCityHall": 7,
+      "coastalOrLegacyNavalRequired": true,
+      "buildings": {"shipyard": 7, "port": 7},
+      "technologies": {"nav_engine": 6, "weapon_range": 5, "log_food": 5},
+      "buildingReasons": {"shipyard": "潜艇的现有制造设施", "port": "现有舰船征召所需的同城停泊补给设施"},
+      "technologyReasons": {"nav_engine": "直接提高该海军单位移动速度", "weapon_range": "直接提高潜艇武器射程", "log_food": "直接降低潜艇驻城耗粮"},
+      "role": "在反潜护航平台之后开放的海上伏击"
+    },
+    {
+      "id": "special", "name": "特种兵", "branch": "land", "stage": 10,
+      "productionBuilding": "factory", "minimumProductionCityHall": 10,
+      "buildings": {"factory": 10},
+      "technologies": {"log_train": 10, "attack_tech": 9, "cmd_hp": 9},
+      "buildingReasons": {"factory": "特种兵征召的现有生产设施，高级别用于体现精锐培养门槛"},
+      "technologyReasons": {"log_train": "直接提高特种兵生产训练速度", "attack_tech": "直接提高突击攻击", "cmd_hp": "直接提高特种兵生命"},
+      "role": "满级征召与训练、9级攻击和生命共同支撑的珍贵精锐陆军"
+    },
+    {
+      "id": "bomber", "name": "轰炸机", "branch": "air", "stage": 8,
+      "productionBuilding": "airport", "minimumProductionCityHall": 8,
+      "buildings": {"airport": 8, "apron": 7},
+      "technologies": {"air_engine": 6, "weapon_range": 5, "fire_density": 5},
+      "buildingReasons": {"airport": "轰炸机的现有生产设施", "apron": "直接提供空军调度与航速加成"},
+      "technologyReasons": {"air_engine": "直接提高该空军单位移动速度", "weapon_range": "直接提高轰炸机武器射程", "fire_density": "直接提高轰炸行动火力"},
+      "role": "在制空与地面防空之后开放的重型轰炸"
+    },
+    {
+      "id": "battleship", "name": "战列舰", "branch": "sea", "stage": 10,
+      "productionBuilding": "shipyard", "minimumProductionCityHall": 10,
+      "coastalOrLegacyNavalRequired": true,
+      "buildings": {"shipyard": 10, "port": 10},
+      "technologies": {"nav_engine": 9, "weapon_range": 10, "fire_density": 10, "log_food": 9},
+      "buildingReasons": {"shipyard": "战列舰的现有制造设施", "port": "现有舰船征召所需的同城停泊补给设施"},
+      "technologyReasons": {"nav_engine": "直接提高该海军单位移动速度", "weapon_range": "直接提高主炮射程", "fire_density": "直接提高舰炮行动火力", "log_food": "直接降低主力舰驻城耗粮"},
+      "role": "满级造船、军港、舰炮射程和火力，配合9级动力及补给的珍贵主力舰"
+    },
+    {
+      "id": "carrier", "name": "航母", "branch": "sea", "stage": 10,
+      "productionBuilding": "shipyard", "minimumProductionCityHall": 10,
+      "coastalOrLegacyNavalRequired": true,
+      "buildings": {"shipyard": 10, "port": 10},
+      "technologies": {"nav_engine": 10, "weapon_range": 10, "fire_density": 10, "log_food": 10, "air_engine": 10},
+      "buildingReasons": {"shipyard": "航母的现有制造设施，要求最高级造船能力", "port": "现有舰船征召所需的同城停泊补给设施，要求最高级军港"},
+      "technologyReasons": {"nav_engine": "直接提高航母自身移动速度", "weapon_range": "当前独立战斗单位模型中直接提高航母自身攻击射程", "fire_density": "直接提高航母舰炮行动火力，与战列舰采用相同的舰炮作战科技要求", "log_food": "直接降低航母驻城耗粮", "air_engine": "航母舰载航空体系的专属研发准入条件，要求喷气推进满级；不代表提高舰体移动速度"},
+      "role": "继承战列舰全部舰炮、动力和补给科技并全部要求10级，另要求10级喷气推进的终局航母"
+    }
+  ]
+}

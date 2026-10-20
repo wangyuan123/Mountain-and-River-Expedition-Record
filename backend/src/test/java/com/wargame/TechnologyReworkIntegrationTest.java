@@ -46,15 +46,29 @@ class TechnologyReworkIntegrationTest extends BaseServiceTest {
         assertEquals(1.0, TechnologyRules.loadMultiplier(Map.of()));
     }
 
-    @Test void oldImportMapsOnceAndVersionedNewImportPreservesFiveLevelProgress() {
+    @Test void oldImportNormalizesAndFiveLevelImportExpandsOnce() {
         createTestWorld(); var p = createTestPlayer();
         imports.importFromJson(p.getId(), "{\"tech\":{\"log_production\":3,\"inf_load\":4,\"recon_radar\":2,\"unit_refit\":3}}");
         assertEquals(3, research.getTechLevel(p.getId(), "prod_food"));
         assertEquals(8, research.getTechLevel(p.getId(), "log_load"));
-        assertEquals(3, research.getTechLevel(p.getId(), "recon_radar"));
-        assertEquals(5, research.getTechLevel(p.getId(), "unit_refit"));
+        assertEquals(6, research.getTechLevel(p.getId(), "recon_radar"));
+        assertEquals(10, research.getTechLevel(p.getId(), "unit_refit"));
         imports.importFromJson(p.getId(), "{\"technologyRulesVersion\":\"technology-v2-20261016\",\"tech\":{\"recon_radar\":2,\"unit_refit\":3}}");
-        assertEquals(2, research.getTechLevel(p.getId(), "recon_radar"));
-        assertEquals(3, research.getTechLevel(p.getId(), "unit_refit"));
+        assertEquals(4, research.getTechLevel(p.getId(), "recon_radar"));
+        assertEquals(6, research.getTechLevel(p.getId(), "unit_refit"));
     }
+    @Test void newImportsRemainAtExactLevelsAndLegacyPaidQueueCanSkipOddLevel() {
+        createTestWorld(); var p = createTestPlayer(); Long id = p.getId();
+        imports.importFromJson(id, "{\"technologyRulesVersion\":\"technology-v3-20261019\",\"tech\":{\"unit_refit\":6,\"recon_radar\":9}}");
+        assertEquals(6, research.getTechLevel(id, "unit_refit"));
+        assertEquals(9, research.getTechLevel(id, "recon_radar"));
+        TechResearchQueue q = new TechResearchQueue(); q.setPlayerId(id); q.setCitySlot(0);
+        q.setTechType("unit_refit"); q.setTargetLevel(8); q.setStartedAt(1L); q.setFinishesAt(2L);
+        q.setDurationSeconds(1); q.setCostSteel(321);
+        queues.saveAndFlush(q);
+        assertEquals(1, research.settleCompletedResearch(id, System.currentTimeMillis()).size());
+        assertEquals(8, research.getTechLevel(id, "unit_refit"));
+        assertTrue(research.settleCompletedResearch(id, System.currentTimeMillis()).isEmpty());
+    }
+
 }

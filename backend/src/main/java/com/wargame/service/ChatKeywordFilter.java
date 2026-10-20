@@ -57,8 +57,8 @@ public class ChatKeywordFilter {
     /** 遮盖全部重叠命中，保留原文分隔符与非命中字符；不替代 HTML 输出转义。 */
     public String filter(String content) {
         if (content == null || content.isEmpty()) return content;
-        // 战报凭证只含严格 UUID，不包含玩家文字，不能让随机十六进制中的 dc 破坏分享。
-        if (content.matches("^\\[战报:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\]$")) return content;
+        // 战报、军情凭证只含严格 UUID，不包含玩家文字，不能让随机十六进制中的 dc 破坏分享。
+        if (content.matches("^\\[(?:战报|军情):[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\]$")) return content;
         Text text = normalize(content);
         int[] coverage = new int[text.points().size() + 1];
         Node node = root;

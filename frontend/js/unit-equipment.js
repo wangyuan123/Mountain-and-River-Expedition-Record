@@ -1,6 +1,7 @@
 /* global window, document */
 (function (G) {
   'use strict';
+  G.gameNow = G.gameNow || function () { return Date.now(); };
   var Core = G.Core;
   var slots = { protection: '防护', combat: '作战', support: '保障' };
   var icons = {
@@ -10,7 +11,7 @@
   };
   var labels = { ground: '对地攻击', air: '对空攻击', sea: '对海攻击', fort: '对工事攻击', defense: '防御', hp: '生命', speed: '速度', battleSpeed: '战场速度', marchSpeed: '行军速度', load: '载重', oil: '行军油耗', food: '行军粮耗', reduce_rocket: '反坦克火箭车伤害减免', reduce_destroyer: '驱逐舰伤害减免', against_sub: '对潜艇额外攻击' };
   var unit = null, draft = {}, saved = {}, version = 0, panel = null, activeSlot = 'protection';
-  var busy = false, error = '', discarding = false, opener = null, scrollStyle = '', timer = null;
+  var busy = false, error = '', discarding = false, opener = null, scrollStyle = '', timer = null, lastFingerprint = '';
   function state() { return (Core.state || {}).unitEquipment || {}; }
   function catalog() { return state().catalog || {}; }
   function clone(value) { return Object.assign({}, value || {}); }
@@ -82,9 +83,36 @@
     if (editable) h += '<button type="button" class="btn sm ue-config-btn" data-unit-equipment-entry="' + id + '" onclick="event.stopPropagation();Game.UnitEquipment.open(\'' + id + '\')">配置装备</button>';
     return h + '</div>';
   }
+  function ordersHtml() {
+    var cat = catalog(), h = '<h3>本城装备制造通道</h3>';
+    (state().queue || []).forEach(function (q) {
+      var d = cat[q.itemKey];
+      h += '<div><strong>' + esc(d ? d.name : q.itemKey) + '</strong><p>' + (q.startAt > G.gameNow() ? '排队中 · 未开始取消返还全部' : '制造中 · 取消返还一半') + ' · ' + Math.max(0, Math.ceil((q.endAt - G.gameNow()) / 1000)) + ' 秒后完成</p><button type="button" class="btn warn" data-ue="cancel-order" data-key="' + q.id + '"' + (busy ? ' disabled' : '') + '>取消制造</button></div>';
+    });
+    if (!(state().queue || []).length) h += '<p>暂无制备订单，完成后装备进入账号库存。</p>';
+    return h;
+  }
+  function fingerprint() {
+    var cat = catalog(), q = state().queue || [];
+    var qStr = q.map(function (item) { return item.id + ':' + item.itemKey + ':' + (item.startAt > G.gameNow() ? '0' : '1'); }).join(',');
+    var techStr = JSON.stringify((Core.state || {}).tech || {});
+    var facility = Number((state().facilities || {})[unit] || 0);
+    var itemsStr = Object.values(cat).filter(function (d) { return d.unit === unit; }).map(function (d) { return d.key + ':' + owned(d.key); }).join(',');
+    var res = (Core.state || {}).resources || {};
+    var craftableStr = Object.values(cat).filter(function (d) { return d.unit === unit; }).map(function (d) {
+      var enough = Object.keys(d.cost).every(function (k) { return Number(res[k] || 0) >= d.cost[k]; });
+      return d.key + ':' + (enough ? '1' : '0');
+    }).join(',');
+    var savedStr = JSON.stringify(saved);
+    var draftStr = JSON.stringify(draft);
+    // 配套建筑和地理条件变化也会改变制备资格，即使配方设施与科技数值未变也要刷新。
+    var unlockStr = JSON.stringify(((Core.state || {}).unitUnlocks || {})[unit] || null);
+    return [unit, activeSlot, version, facility, techStr, unlockStr, qStr, itemsStr, craftableStr, savedStr, draftStr, busy, error, discarding].join('|');
+  }
   function render() {
     if (!panel || !unit) return;
-    var focused = document.activeElement, focusAction = focused && focused.dataset && focused.dataset.ue, focusKey = focused && focused.dataset && focused.dataset.key;
+    var focused = panel.contains && panel.contains(document.activeElement) ? document.activeElement : null;
+    var focusAction = focused && focused.dataset && focused.dataset.ue, focusKey = focused && focused.dataset && focused.dataset.key;
     var cat = catalog(), after = preview(effects(draft)), before = preview(effects(saved));
     var h = '<section class="unit-equipment-drawer" role="dialog" aria-modal="true" aria-labelledby="unit-equipment-title">';
     h += '<header><div><h2 id="unit-equipment-title">' + esc(name(unit)) + ' · 统一装备</h2><p>本账号全部该兵种生效，覆盖所有城市与新训练部队</p></div><button type="button" class="btn" aria-label="关闭配装" data-ue="close">返回</button></header>';
@@ -111,23 +139,23 @@
     if (effects(draft).food) h += '<p>当前出征仅扣石油，行军粮耗修正暂不扣款。</p>';
     h += '<p>已开始的战斗和已确认的行程按开始时配置完成。</p></section>';
     h += '<section class="unit-equipment-choices"><h3>' + slots[activeSlot] + '装备</h3><button type="button" class="btn" data-ue="choose" data-key=""' + (busy ? ' disabled' : '') + '>不配置（卸下）</button>';
+    var unlock = G.Prerequisites && G.Prerequisites.checkRecruitment(unit);
+    if (G.Prerequisites) h += G.Prerequisites.recruitmentHtml(unit);
     Object.values(cat).filter(function (d) { return d.unit === unit && d.slot === activeSlot; }).forEach(function (d) {
       var inStock = owned(d.key), level = Number(tech.unit_refit || 0), facility = Number((state().facilities || {})[unit] || 0);
-      var locked = level < d.level || facility < d.level * 2;
+      var locked = !unlock || !unlock.eligible || level < d.level || facility < d.facilityLevel;
       var enough = Object.keys(d.cost).every(function (k) { return Number(((Core.state || {}).resources || {})[k] || 0) >= d.cost[k]; });
       var seconds = Math.ceil(d.seconds / (1 + .05 * Math.max(0, facility - 1)));
       h += '<article><strong>' + esc(d.name) + '</strong><span class="unit-equipment-status">' + (saved[activeSlot] === d.key ? '已配置' : draft[activeSlot] === d.key ? '草稿已选' : inStock ? '库存 ' + inStock : '未持有') + '</span><p>' + esc(description(d.effects)) + '</p>';
       if (inStock) h += '<button type="button" class="btn ok" data-ue="choose" data-key="' + d.key + '"' + (busy ? ' disabled' : '') + '>选择装备</button>';
-      h += '<details><summary>查看制备</summary><p>武器装备 Lv.' + d.level + ' · ' + esc((G.DATA.buildings[G.DATA.units[unit].build] || {}).name || '生产设施') + ' Lv.' + (d.level * 2) + '（本城 Lv.' + facility + '）</p><p>' + costHtml(d.cost) + '</p><p>制备 ' + Math.ceil(seconds / 60) + ' 分钟 · 一件覆盖全部该兵种</p><button type="button" class="btn" data-ue="manufacture" data-key="' + d.key + '"' + (busy || locked || !enough ? ' disabled' : '') + '>制备一件</button>' + (locked ? '<p>科技或本城设施未满足条件</p>' : !enough ? '<p>本城资源不足</p>' : '') + '</details></article>';
+      h += '<details><summary>查看制备</summary><p>武器装备 Lv.' + d.level + ' · ' + esc((G.DATA.buildings[G.DATA.units[unit].build] || {}).name || '生产设施') + ' Lv.' + (d.facilityLevel) + '（本城 Lv.' + facility + '）</p><p>' + costHtml(d.cost) + '</p><p>制备 ' + Math.ceil(seconds / 60) + ' 分钟 · 一件覆盖全部该兵种</p><button type="button" class="btn" data-ue="manufacture" data-key="' + d.key + '"' + (busy || locked || !enough ? ' disabled' : '') + '>制备一件</button>' + (locked ? '<p>科技或本城设施未满足条件</p>' : !enough ? '<p>本城资源不足</p>' : '') + '</details></article>';
     });
-    h += '</section><section class="unit-equipment-orders"><h3>本城装备制造通道</h3>';
-    (state().queue || []).forEach(function (q) { var d = cat[q.itemKey]; h += '<div><strong>' + esc(d ? d.name : q.itemKey) + '</strong><p>' + (q.startAt > Date.now() ? '排队中 · 未开始取消返还全部' : '制造中 · 取消返还一半') + ' · ' + Math.max(0, Math.ceil((q.endAt - Date.now()) / 1000)) + ' 秒后完成</p><button type="button" class="btn warn" data-ue="cancel-order" data-key="' + q.id + '"' + (busy ? ' disabled' : '') + '>取消制造</button></div>'; });
-    if (!(state().queue || []).length) h += '<p>暂无制备订单，完成后装备进入账号库存。</p>';
-    h += '</section></div><footer>';
+    h += '</section><section class="unit-equipment-orders">' + ordersHtml() + '</section></div><footer>';
     if (error) h += '<p role="alert">' + esc(error) + '</p>';
     if (discarding) h += '<p>存在未保存修改</p><button class="btn" data-ue="continue">继续编辑</button><button class="btn warn" data-ue="discard-close">放弃修改并关闭</button>';
     else h += '<button type="button" class="btn" data-ue="reset"' + (busy || !changed() ? ' disabled' : '') + '>取消修改</button><button type="button" class="btn ok" data-ue="save"' + (busy || !changed() ? ' disabled' : '') + '>' + (busy ? '处理中…' : '保存配装') + '</button>';
     panel.innerHTML = h + '</footer></section>';
+    lastFingerprint = fingerprint();
     if (focusAction) { var nextFocus = panel.querySelector('[data-ue="' + focusAction + '"]' + (focusKey == null ? '' : '[data-key="' + focusKey + '"]')); if (nextFocus && !nextFocus.disabled) nextFocus.focus(); else panel.querySelector('[data-ue="close"]').focus(); }
   }
   /** 点击装备槽后，将对应候选列表滚动到可见区域，并把键盘焦点移入选择区。 */
@@ -144,7 +172,7 @@
     if (!force && changed()) { discarding = true; render(); return; }
     var closedUnit = unit;
     if (timer) window.clearInterval(timer); timer = null;
-    if (panel) panel.remove(); panel = null; unit = null; draft = {}; saved = {};
+    if (panel) panel.remove(); panel = null; unit = null; draft = {}; saved = {}; lastFingerprint = '';
     document.body.style.overflow = scrollStyle;
     document.removeEventListener('keydown', keydown);
     if (opener && opener.isConnected) opener.focus();
@@ -154,9 +182,17 @@
   function refresh() {
     if (!panel || busy) return;
     if (!changed()) { saved = clone((state().loadouts || {})[unit]); draft = clone(saved); version = Number((state().versions || {})[unit] || 0); }
-    var content = panel.querySelector('.unit-equipment-content'), top = content.scrollTop;
+    var currentFp = fingerprint();
+    if (lastFingerprint && currentFp === lastFingerprint) {
+      var ordersEl = panel.querySelector('.unit-equipment-orders');
+      if (ordersEl) ordersEl.innerHTML = ordersHtml();
+      return;
+    }
+    var content = panel.querySelector('.unit-equipment-content'), top = content ? content.scrollTop : 0;
     var opened = Array.from(panel.querySelectorAll('details')).map(function (el) { return el.open; });
-    render(); panel.querySelector('.unit-equipment-content').scrollTop = top;
+    render();
+    var newContent = panel.querySelector('.unit-equipment-content');
+    if (newContent) newContent.scrollTop = top;
     Array.from(panel.querySelectorAll('details')).forEach(function (el, i) { el.open = !!opened[i]; });
   }
   function keydown(e) {
@@ -188,6 +224,7 @@
   function open(id, initialSlot) {
     if (!G.DATA.units[id] || !Object.values(catalog()).some(function (d) { return d.unit === id; })) return;
     if (panel) { close(false); return; }
+    lastFingerprint = '';
     unit = id; saved = clone((state().loadouts || {})[id]); draft = clone(saved); version = Number((state().versions || {})[id] || 0);
     activeSlot = (initialSlot && slots[initialSlot]) ? initialSlot : 'protection'; busy = false; error = ''; discarding = false; opener = document.activeElement;
     panel = document.createElement('div'); panel.className = 'unit-equipment-overlay';

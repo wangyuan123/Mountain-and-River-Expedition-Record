@@ -13,7 +13,9 @@ function setup() {
       command: 2,
       farm: [2, 1], // slot 0: Lv.2, slot 1: Lv.1
       refinery: [1],
-      radar: 1
+      radar: 1,
+      lab: 0,
+      headquarters: 0
     },
     constructions: [],
     items: { speedUp10m: 3 }
@@ -53,6 +55,8 @@ function setup() {
       DATA: {
         buildings: {
           command:  { name: '市政厅', desc: '主城', baseCost: { steel: 400, food: 200 }, growth: 1.6, slots: 1 },
+          lab:      { name: '军工科技研发中心', desc: '科研', baseCost: { steel: 200, food: 100, rare: 20 }, growth: 1.6, slots: 1 },
+          headquarters: { name: '司令部', desc: '指挥', baseCost: { steel: 300, food: 150, gold: 150 }, growth: 1.6, slots: 1 },
           farm:     { name: '农田', desc: '粮食', baseCost: { steel: 80 }, growth: 1.5, produces: 'food', baseProduce: 40, slots: 36 },
           refinery: { name: '炼钢厂', desc: '钢铁', baseCost: { steel: 80 }, growth: 1.5, produces: 'steel', slots: 36 },
           oilfield: { name: '石油基地', desc: '石油', baseCost: { steel: 80 }, growth: 1.5, produces: 'oil', slots: 36 },
@@ -142,6 +146,27 @@ test('建筑与升级入口使用全局按钮音效，弹窗保留可点击按�
   assert.match(confirmation.innerHTML, /id="cuOk"/);
   assert.match(confirmation.innerHTML, /id="cuCancel"/);
   assert.doesNotMatch(confirmation.innerHTML, /data-ui-sound/);
+});
+
+test('普通建筑保留24小时上限，关键建筑按专属曲线展示超过24小时的工期', () => {
+  const { G, context, state } = setup();
+  state.buildings.command = 10;
+  state.buildings.lab = 9;
+  state.buildings.headquarters = 9;
+
+  G.Build.onSlotClick('farm', 1);
+  assert.match(context.document.body.appended.at(-1).innerHTML, /升级至 Lv\.2[\s\S]*耗时: 1分12秒/);
+
+  state.buildings.command = 9;
+  G.Build.onSlotClick('command', null);
+  assert.match(context.document.body.appended.at(-1).innerHTML, /升级至 Lv\.10[\s\S]*耗时: 2天15小时34分/);
+
+  state.buildings.command = 10;
+  G.Build.onSlotClick('lab', null);
+  assert.match(context.document.body.appended.at(-1).innerHTML, /升级至 Lv\.10[\s\S]*耗时: 2天19小时52分/);
+
+  G.Build.onSlotClick('headquarters', null);
+  assert.match(context.document.body.appended.at(-1).innerHTML, /升级至 Lv\.10[\s\S]*耗时: 1天23小时41分/);
 });
 
 test('免费加速按钮在无道具时仍可用，超过门槛仍需道具', () => {

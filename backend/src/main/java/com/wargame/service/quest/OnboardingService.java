@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
-/** 五个核心行动与可选玩法探索；完成事实、提示偏好和奖励分别持久化。 */
+/** 建设、研究与地面侦查核心行动与可选玩法探索；完成事实、提示偏好和奖励分别持久化。 */
 @Service
 @RequiredArgsConstructor
 public class OnboardingService {
@@ -42,7 +42,10 @@ public class OnboardingService {
     public static final List<Objective> OBJECTIVES = List.of(
             new Objective("base", "建设基地", "完成任意一次建筑建造或升级，认识施工队列。", "buildRes", ""),
             new Objective("infantry", "组建部队", "生产一名步兵，认识征召与生产队列；初始部队已足够参加首战。", "army", "infantry"),
-            new Objective("scout", "执行侦察", "基础侦察部队已就绪。侦察推荐野地，取得情报后即可继续。", "world", ""),
+            new Objective("recon_build", "建设侦查生产线", "依次完成市政厅2级、军工厂2级、防空雷达站1级与科研中心1级；配套建筑按建设页前置推进。", "buildArmy", "factory"),
+            new Objective("recon_research", "研究侦察技术", "在科研中心实际完成侦察技术1级研究，开启地面侦查能力。", "tech", "recon_level"),
+            new Objective("recon_unit", "生产侦查装甲车", "在军工厂实际生产1辆侦查装甲车，用于地面侦查。", "army", "recon_car"),
+            new Objective("scout", "执行侦察", "使用侦查装甲车侦查陆路可达的推荐野地，取得情报后继续。", "world", ""),
             new Objective("occupy", "完成首次讨伐", "讨伐推荐的低难度野地，体验一次胜利；可以顺便占领资源点。", "world", ""),
             new Objective("report", "查看战果", "打开获胜的野地战报查看战果，随后到「任务」探索更多玩法。", "reports", "")
     );
@@ -61,7 +64,7 @@ public class OnboardingService {
             new Exploration("guild", "加入军团", "加入或创建军团，结识其他指挥官。", "guild", "", "在军团页选择一个军团申请加入，审核通过后完成任务；也可以自行创建军团。", Map.of("gold", 300))
     );
 
-    /** 加入只发一次基础设施与侦察能力，避免把机场与科研前置链隐藏在五步背后。 */
+    /** 加入只发一次基础设施与基础卡车；侦查车辆和科技由玩家实际建设、研究和生产。 */
     @Transactional
     public Map<String, Object> start(Long playerId) {
         Map<String, PlayerGuide> rows = locked(playerId);
@@ -71,15 +74,8 @@ public class OnboardingService {
                 Building factory = new Building(); factory.setPlayerId(playerId); factory.setCitySlot(0);
                 factory.setType("factory"); factory.setLevel(1); factory.setSlot(0); buildings.save(factory);
             }
-            if (armies.findByPlayerIdAndCitySlotAndType(playerId, 0, "scout").stream().mapToInt(a -> a.getCount()).sum() == 0) addArmy(playerId, "scout", 1);
             // 提供高运力的基础卡车，让可选采集无需先走生产教学链；步兵也可少量采集。
             if (armies.findByPlayerIdAndCitySlotAndType(playerId, 0, "truck").stream().mapToInt(a -> a.getCount()).sum() == 0) addArmy(playerId, "truck", 1);
-            Technology recon = techs.findByPlayerIdAndType(playerId, "recon_level").stream().findFirst().orElseGet(() -> {
-                Technology t = new Technology(); t.setPlayerId(playerId); t.setType("recon_level"); t.setLevel(0); return t;
-            });
-            if (recon.getLevel() < 1) {
-                recon.setLevel(1); techs.save(recon);
-            }
             mark(rows, playerId, "starter");
         }
         return snapshot(playerId, rows);
@@ -107,6 +103,7 @@ public class OnboardingService {
         if ("TECH_LEVEL".equals(event)) mark(rows, playerId, "task_tech");
         if ("ARMY_RECRUIT".equals(event) && "truck".equals(key)) mark(rows, playerId, "task_truck");
         if (rows.containsKey(ENROLLED) && !finished(rows) && scope.slot(playerId) == 0) {
+            if ("ARMY_RECRUIT".equals(event) && "recon_car".equals(key)) mark(rows, playerId, "recon_unit");
             if ("ARMY_RECRUIT".equals(event) && "infantry".equals(key)) mark(rows, playerId, "infantry");
             if ("BUILD_UPGRADE_DONE".equals(event)) mark(rows, playerId, "base");
         }
@@ -137,12 +134,12 @@ public class OnboardingService {
         return snapshot(playerId, rows);
     }
 
-    /** 五个真实目标完成后自动毕业；重复确认仅返回状态。 */
+    /** 全部真实目标完成后自动毕业；重复确认仅返回状态。 */
     @Transactional
     public Map<String, Object> finish(Long playerId) {
         Map<String, PlayerGuide> rows = locked(playerId);
         requireEnrolled(rows); evaluate(playerId, rows);
-        if (!finished(rows)) throw new IllegalArgumentException("请先完成五个核心行动");
+        if (!finished(rows)) throw new IllegalArgumentException("请先完成建设、研究与地面侦查核心行动");
         return snapshot(playerId, rows);
     }
 
@@ -154,7 +151,8 @@ public class OnboardingService {
         if (finished(rows)) throw new IllegalArgumentException("行动已结束");
         if (!done(rows, "recovery")) {
             if (!done(rows, "defeat")) throw new IllegalArgumentException("当前无需补员");
-            addArmy(playerId, "infantry", 30); addArmy(playerId, "scout", 1);
+            addArmy(playerId, "infantry", 30); addArmy(playerId, "truck", 1);
+            grantReward(rows, playerId, "recovery", new Reward(Map.of("food", 3000, "steel", 2000, "oil", 1000, "rare", 200), 0));
             mark(rows, playerId, "recovery");
         }
         return snapshot(playerId, rows);
@@ -214,13 +212,22 @@ public class OnboardingService {
         return out;
     }
 
-    /** 报告生成即可推进，胜利不限占领模式；已读战报加五个成果自动发奖毕业。 */
+    /** 报告生成即可推进，胜利不限占领模式；已读战报及全部成果自动发奖毕业。 */
     private void evaluate(Long playerId, Map<String, PlayerGuide> rows) {
         if (!officers.findByPlayerId(playerId).isEmpty()) mark(rows, playerId, "task_officer");
-        if (techs.findByPlayerId(playerId).stream().anyMatch(t -> t.getLevel() > ("recon_level".equals(t.getType()) && done(rows, "starter") ? 1 : 0))) mark(rows, playerId, "task_tech");
+        if (techs.findByPlayerId(playerId).stream().anyMatch(t -> Objects.requireNonNullElse(t.getLevel(), 0) > 0)) mark(rows, playerId, "task_tech");
         if (guildMembers.findByPlayerId(playerId).isPresent()) mark(rows, playerId, "task_guild");
         if (loadouts.findByPlayerId(playerId).stream().anyMatch(l -> !JsonUtil.parseObjMap(l.getSlots()).isEmpty())) mark(rows, playerId, "task_equipment");
         if (!rows.containsKey(ENROLLED) || finished(rows)) return;
+        // 旧玩家已侦查的事实保留，不要求重新建设或更换侦查方式。
+        if (done(rows, "scout")) {
+            mark(rows, playerId, "recon_build"); mark(rows, playerId, "recon_research"); mark(rows, playerId, "recon_unit");
+        } else {
+            if (level(playerId, "command") >= 2 && level(playerId, "factory") >= 2
+                    && level(playerId, "radar") >= 1 && level(playerId, "lab") >= 1) mark(rows, playerId, "recon_build");
+            if (techs.findByPlayerIdAndType(playerId, "recon_level").stream().anyMatch(t -> Objects.requireNonNullElse(t.getLevel(), 0) >= 1)) mark(rows, playerId, "recon_research");
+            if (armies.findByPlayerIdAndCitySlotAndType(playerId, 0, "recon_car").stream().anyMatch(a -> a.getCount() > 0)) mark(rows, playerId, "recon_unit");
+        }
         long startedAt = Objects.requireNonNullElse(rows.get(ENROLLED).getCompletedAt(), 0L);
         for (ScoutReport report : reports.findByPlayerIdAndCreatedAtGreaterThanEqual(playerId, startedAt)) {
             var data = JsonUtil.parseTree(report.getData());

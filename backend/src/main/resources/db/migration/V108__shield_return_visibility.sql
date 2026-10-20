@@ -1,0 +1,1 @@
+ALTER TABLE marches ADD COLUMN return_reason VARCHAR(30) NULL;

@@ -22,6 +22,8 @@ public record TechDef(
     static {
         Map<String, TechDef> m = new HashMap<>();
         // 指挥
+        m.put("military_theory", new TechDef("military_theory", "军事理论", "军事", "普通军校刷新整批出现五星名将的概率每级增加0.3个百分点，满级额外增加3个百分点；与军校基础概率相加，每批最多1名五星，不改变已生成名单或道具保底。",
+                10, 2, Map.of("steel", 300, "food", 240, "gold", 200), 1.8, "academy_chance"));
         m.put("attack_tech", new TechDef("attack_tech", "攻击科技", "军事", "全军攻击 +5%/级，最高 +50%",
                 10, 1, Map.of("steel", 240, "food", 120), 1.7, "atk_all"));
         m.put("defense_tech", new TechDef("defense_tech", "防御科技", "军事", "全军防御 +5%/级，最高 +50%",
@@ -55,8 +57,8 @@ public record TechDef(
                 10, 1, Map.of("steel", 80, "food", 40), 1.8, "res_oil"));
         m.put("prod_rare", new TechDef("prod_rare", "稀矿产量", "后勤", "城内稀矿产量 +5%/级，最高 +50%，不影响野地采集。",
                 10, 1, Map.of("steel", 80, "food", 40), 1.8, "res_rare"));
-        m.put("log_warehouse", new TechDef("log_warehouse", "仓储技术", "后勤", "本城军需仓库掠夺保护额度 +10%/级，最高 +50%；不增加资源储量上限。",
-                5, 2, Map.of("steel", 280, "food", 140), 1.7, "cap"));
+        m.put("log_warehouse", new TechDef("log_warehouse", "仓储技术", "后勤", "本城军需仓库掠夺保护额度 +5%/级，最高 +50%；不增加资源储量上限。",
+                10, 2, Map.of("steel", 280, "food", 140), 1.7, "cap"));
         m.put("log_food", new TechDef("log_food", "军需补给", "后勤", "养兵耗粮减少 5%/级，最高减少 50%。",
                 10, 3, Map.of("steel", 360, "food", 200), 1.8, "food_save"));
         m.put("log_train", new TechDef("log_train", "训练加速", "后勤", "兵种生产速度 +5%/级，最高 +50%，与生产设施的速度加成相加。征召数量仍受平民人口与资源限制。",
@@ -66,14 +68,14 @@ public record TechDef(
         m.put("log_medical", new TechDef("log_medical", "医疗技术", "后勤", "战损部队可回收为伤兵的比例每级增加 5 个百分点，本科技最高提供 50%，可叠加参战军官的急救技能。伤兵需在 7 天内消耗黄金或钻石治疗后归队。",
                 10, 3, Map.of("steel", 320, "food", 220, "gold", 150), 1.8, "medical"));
         // 侦察
-        m.put("recon_level", new TechDef("recon_level", "侦察技术", "侦察", "侦查交火时，攻守双方各按自身等级每级增加5点先手值，最高25点，不增加地图扫描半径。侦查成功后，基础资源始终可见，等级越高能查看的情报越详细。城市逐级解锁：Lv.1 城防；Lv.2 精确守军与统帅；Lv.3 建筑与将领人数；Lv.4 科技与可掠夺资源测算；Lv.5 将领档案与战力。野地 Lv.1 起可查看精确守军。",
-                5, 1, Map.of("steel", 180, "oil", 60), 1.6, "recon"));
-        m.put("recon_radar", new TechDef("recon_radar", "雷达预警", "侦察", "拦截敌方侦查的首回合，守方侦查部队每级增加5点先手值，最高25点，后续回合不再提供预警加值。Lv.1—5逐级开放来袭来源、兵力区间、兵种与总兵力、精确编成与将领、战斗科技与装备情报。需驻防侦察机拦截空中侦查，或侦查装甲车拦截地面侦查。",
-                5, 2, Map.of("steel", 240, "oil", 100, "rare", 20), 1.7, "radar"));
+        m.put("recon_level", new TechDef("recon_level", "侦察技术", "侦察", "侦查交火时，双方各按自身等级每级增加5点先手值，最高50点，每个交火回合生效；不增加地图扫描半径。成功侦查后城市情报Lv.1—10依次解锁：城防类型、城防数量等级、精确守军、守城将领、建筑等级、驻城将领人数、账号科技、可掠夺资源测算、驻城将领档案、战力评估。野地Lv.1起可查看精确守军。",
+                10, 1, Map.of("steel", 180, "oil", 60), 1.6, "recon"));
+        m.put("recon_radar", new TechDef("recon_radar", "雷达预警", "侦察", "拦截敌方侦查的首回合，守方每级增加2点先手值，最高20点。Lv.1—10依次解锁来源玩家与行动、出发坐标、军种构成、兵力区间、兵种名称、精确总兵力、精确编成、带兵将领、科技装备、司令官加成。不公开带兵将领的有效属性和技能。需对应侦查部队驻防才能拦截。",
+                10, 2, Map.of("steel", 240, "oil", 100, "rare", 20), 1.7, "radar"));
         m.put("prisoner_education", new TechDef("prisoner_education", "战俘收编", "后勤", "讨伐其他玩家并获胜后，按敌方各兵种损失数量计算战俘。俘获比例每级增加 0.1 个百分点，最高 1%，不足 1 个向下取整。需战俘营有空位，敌方已回收的伤兵不能被俘获。",
                 10, 3, Map.of("steel", 320, "food", 220, "gold", 150), 1.8, "capture_permille"));
-        m.put("unit_refit", new TechDef("unit_refit", "武器装备", "军事", "Lv.1—5依次解锁基础防护、常规武器与载荷、通信与机动、专用防护、高级火控与反制配方，制造需本城对应生产设施 Lv.2/4/6/8/10。装备制造并配装后才获得装备效果。",
-                5, 2, Map.of("steel", 300, "oil", 100, "rare", 50), 2.0, "unit_recipes"));
+        m.put("unit_refit", new TechDef("unit_refit", "武器装备", "军事", "Lv.1—10逐级解锁陆上防护、航空轻舰防护、陆上武器载荷、航空武器载荷、通信调度、机动节油、陆上专用防护、大型舰船防护、定向反制、高级火控配方；对应设施按配方独立要求Lv.2/4/6/8/10。制造并配装后才获得装备效果。",
+                10, 2, Map.of("steel", 300, "oil", 100, "rare", 50), 2.0, "unit_recipes"));
         TECHS = Collections.unmodifiableMap(m);
     }
 }

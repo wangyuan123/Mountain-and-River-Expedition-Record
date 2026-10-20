@@ -2,8 +2,35 @@
 window.Game = window.Game || {};
 (function (G) {
   'use strict';
+  G.gameNow = G.gameNow || function () { return Date.now(); };
   var Core = G.Core;
   var D = G.DATA;
+  var protectionTimer = null;
+
+  function stopProtectionTimer() {
+    if (protectionTimer != null) clearInterval(protectionTimer);
+    protectionTimer = null;
+  }
+
+  /** 档案打开时逐秒计算真实剩余时间，并读取最新状态以同步延期或退出。 */
+  function startProtectionTimer(drawer) {
+    stopProtectionTimer();
+    var section = document.getElementById('drawerNewbieProtection');
+    if (!section || !Core.newbieProtectionInfo) return;
+    var playerId = ((Core.state || {}).player || {}).id;
+    function update() {
+      if (document.getElementById('playerDrawerMask') !== drawer || !Core.state || (Core.state.player || {}).id !== playerId) {
+        stopProtectionTimer();
+        return;
+      }
+      var info = Core.newbieProtectionInfo();
+      section.hidden = !info.active;
+      var countdown = document.getElementById('drawerNewbieProtectionCountdown');
+      if (countdown) countdown.textContent = '还剩' + info.countdown;
+    }
+    protectionTimer = setInterval(update, 1000);
+    update();
+  }
 
   function drawerAmount(value) {
     var amount = Number(value) || 0;
@@ -14,6 +41,7 @@ window.Game = window.Game || {};
 
   G.PlayerProfile = {
     openPlayerDrawer: function () {
+      stopProtectionTimer();
       var mask = document.getElementById('playerDrawerMask');
       if (mask) mask.remove();
 
@@ -81,6 +109,12 @@ window.Game = window.Game || {};
         + '      </div>'
         + '    </div>'
         + '  </div>'
+        + '  <div id="drawerNewbieProtection" hidden><section class="drawer-section" aria-label="新手保护">'
+        + '    <div class="drawer-section-title">新手保护</div>'
+        + '    <div class="home-alert" role="status"><strong id="drawerNewbieProtectionCountdown"></strong>'
+        + '      <div>' + G.escapeHtml(Core.newbieProtectionInfo ? Core.newbieProtectionInfo().rules : '') + '</div>'
+        + '    </div>'
+        + '  </section></div>'
         + '  <div class="drawer-section">'
         + '    <div class="drawer-section-title">军衔与资产</div>'
         + '    <div class="drawer-assets-card">'
@@ -142,6 +176,7 @@ window.Game = window.Game || {};
         if (e.target === div) Game.Main.closePlayerDrawer();
       };
       document.body.appendChild(div);
+      startProtectionTimer(div);
 
       requestAnimationFrame(function () {
         div.classList.add('active');
@@ -151,6 +186,7 @@ window.Game = window.Game || {};
     },
 
     closePlayerDrawer: function () {
+      stopProtectionTimer();
       var mask = document.getElementById('playerDrawerMask');
       if (!mask) return;
       mask.classList.remove('active');
@@ -407,8 +443,8 @@ window.Game = window.Game || {};
         + '<form id="renameCityForm">'
         + '<div class="modal-body"><label for="renameCityInput">新城市名称</label>'
         + '<input id="renameCityInput" name="cityName" type="text" maxlength="12" aria-required="true" autocomplete="off" aria-describedby="renameCityHint">'
-        + '<p id="renameCityHint">最多12个字符，可用标点、符号和 emoji；不能换行。每天可修改一次，北京时间 0:00 重置。'
-        + (availableAt > Date.now() ? '这座城市今日已修改，请明日再试。' : '') + '</p>'
+        + '<p id="renameCityHint">最多12个字符，可用标点、符号和 emoji；不能换行。每天可修改一次，按游戏时间的北京时间 0:00 重置，停服顺延。'
+        + (availableAt > G.gameNow() ? '这座城市今日已修改，请明日再试。' : '') + '</p>'
         + '<p class="city-rename-cost">' + costTip + '</p></div>'
         + '<div class="modal-foot"><button type="button" class="account-confirm-cancel">取消</button>'
         + '<button type="submit" class="account-confirm-submit"' + (cardCount <= 0 && goldCount < 60 ? ' disabled title="城市改名卡或黄金不足"' : '') + '>保存名称</button></div>'
@@ -442,7 +478,7 @@ window.Game = window.Game || {};
       mask.querySelector('#renameCityForm').onsubmit = function (event) {
         event.preventDefault();
         if (saving) return;
-        if (availableAt > Date.now()) { G.toast('这座城市今天已改名，请明日 0:00 后再试'); return; }
+        if (availableAt > G.gameNow()) { G.toast('这座城市今天已改名，请明日 0:00 后再试'); return; }
         if (cardCount <= 0 && goldCount < 60) { G.toast('城市改名卡或黄金不足（需 1 张改名卡或 60 黄金）'); return; }
         var newName;
         try {

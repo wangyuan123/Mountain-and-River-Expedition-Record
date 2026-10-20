@@ -432,7 +432,165 @@
 .officer-card.tier-diamond .rarity-ssr { background: #643e9e; border-color: #9a77c7; }
 .officer-card.tier-diamond .rarity-sr { background: #286b8c; border-color: #66a9c6; }
 
-/* 军校候选人沿用正式军官卡片的边框，同时保持名单的紧凑信息密度。 */
+/* ========================================================================== */
+/* 军校候选人卡片与紧凑网格 (Academy Candidate Compact Grid & Cards)         */
+/* ========================================================================== */
+
+.academy-candidates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  gap: 8px;
+  margin: 8px 0 14px;
+}
+
+@media (max-width: 360px) {
+  .academy-candidates-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+}
+
+.academy-candidate-card {
+  position: relative;
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--line, #cbd5e1);
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  padding: 6px 8px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
+  cursor: pointer;
+  user-select: none;
+  min-height: 82px;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.academy-candidate-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  border-color: var(--accent, #3b82f6);
+}
+
+.academy-candidate-card:focus-visible {
+  outline: 2px solid var(--accent, #3b82f6);
+  outline-offset: 2px;
+}
+
+.academy-candidate-card.is-locked {
+  opacity: 0.72;
+  cursor: not-allowed;
+  background: var(--surface-muted, #f8fafc);
+}
+
+.academy-candidate-card.is-locked:hover {
+  transform: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border-color: var(--line, #cbd5e1);
+}
+
+/* 5星钻石边框特化 */
+.academy-candidate-card.tier-diamond {
+  border: 2px solid #5aa9e8;
+  background-image: linear-gradient(175deg, rgba(90, 169, 232, 0.12) 0%, rgba(138, 196, 255, 0.04) 100%),
+                    linear-gradient(var(--surface, #ffffff), var(--surface, #ffffff));
+  box-shadow: 0 0 12px rgba(90, 169, 232, 0.3), 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.academy-candidate-card.tier-diamond:hover {
+  box-shadow: 0 0 18px rgba(90, 169, 232, 0.45), 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 顶部身份行 */
+.candidate-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 18px;
+}
+
+.candidate-title-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.candidate-name {
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+/* 强制重置并紧凑排列星星，消除全局 .stars 的居中与8px外边距 */
+.academy-candidate-card .candidate-stars.stars,
+.academy-candidate-card .stars {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: left !important;
+  letter-spacing: normal !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  flex-shrink: 0;
+}
+
+.academy-candidate-card .candidate-stars .officer-gem-stars {
+  gap: 1px;
+}
+
+.academy-candidate-card .candidate-stars .officer-gem-star {
+  width: 11px;
+  height: 11px;
+  flex-basis: 11px;
+}
+
+.candidate-badge-group {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.candidate-star-pill {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--muted, #64748b);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.candidate-star-pill.star-4 {
+  background: rgba(245, 166, 35, 0.12);
+  color: #d97706;
+  border-color: rgba(245, 166, 35, 0.3);
+}
+
+.candidate-star-pill.star-5 {
+  background: rgba(234, 179, 8, 0.15);
+  color: #b45309;
+  border-color: rgba(234, 179, 8, 0.35);
+}
+
+.candidate-badge-group .tier-ribbon {
+  display: inline-flex;
+  font-size: 10px;
+  padding: 1px 4px;
+  line-height: 1.2;
+  border-radius: 3px;
+  font-weight: 700;
+}
+
 .academy-candidate-rarity {
   display: inline-block;
   margin: 4px 0 2px;
@@ -440,6 +598,146 @@
 
 .academy-candidate-rarity .tier-ribbon {
   display: inline-flex;
+}
+
+/* 四维属性微型矩阵 */
+.candidate-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 3px;
+  margin: 5px 0 4px;
+}
+
+.c-stat-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 3px;
+  border-radius: 3px;
+  background: var(--surface-muted, #f1f5f9);
+  border: 1px solid var(--line, #e2e8f0);
+  font-size: 11px;
+  line-height: 1.2;
+  box-sizing: border-box;
+}
+
+.c-stat-lbl {
+  font-size: 9px;
+  color: var(--muted, #64748b);
+  line-height: 1;
+}
+
+.c-stat-val {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  margin-left: 2px;
+}
+
+.c-stat-pill.pill-mil .c-stat-val { color: #dc2626; }
+.c-stat-pill.pill-def .c-stat-val { color: #2563eb; }
+.c-stat-pill.pill-log .c-stat-val { color: #16a34a; }
+.c-stat-pill.pill-kno .c-stat-val { color: #9333ea; }
+
+.c-stat-pill.is-peak {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.35);
+  box-shadow: 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.c-stat-pill.is-peak .c-stat-lbl {
+  font-weight: 700;
+  color: var(--ink, #1e293b);
+}
+
+/* 底部操作与技能行 */
+.candidate-footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 22px;
+}
+
+.candidate-skills-wrap {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.candidate-skill-tag {
+  display: inline-block;
+  font-size: 10px;
+  line-height: 1.2;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(59, 130, 246, 0.08);
+  color: #2563eb;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.candidate-skill-tag.is-empty {
+  background: transparent;
+  color: var(--muted, #94a3b8);
+  border: 1px dashed rgba(148, 163, 184, 0.35);
+}
+
+.officer-recruit-act {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.candidate-recruit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  border-radius: 4px;
+  border: 1px solid #2563eb;
+  background: #2563eb;
+  color: #ffffff !important;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
+}
+
+.candidate-recruit-btn:hover:not(:disabled) {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.candidate-recruit-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.candidate-recruit-btn .btn-recruit-cost {
+  font-size: 10px;
+  font-weight: 600;
+  opacity: 0.95;
+}
+
+.candidate-recruit-btn:disabled,
+.candidate-recruit-btn.is-disabled {
+  background: #94a3b8 !important;
+  border-color: #94a3b8 !important;
+  color: #f1f5f9 !important;
+  cursor: not-allowed;
+  opacity: 0.8;
+  box-shadow: none;
 }
 
 /* ========================================================================== */
@@ -836,6 +1134,52 @@
   border-color: rgba(59, 130, 246, 0.4);
   color: #93c5fd;
 }
+
+/* 暗色主题军校候选人卡片 */
+[data-theme="dark"] .academy-candidate-card {
+  background: #151d2a !important;
+  border-color: #273549 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-theme="dark"] .academy-candidate-card:hover {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6) !important;
+}
+
+[data-theme="dark"] .academy-candidate-card.is-locked {
+  background: #0f151f !important;
+  border-color: #1e2837 !important;
+}
+
+[data-theme="dark"] .academy-candidate-card.tier-diamond {
+  background: #121c2c !important;
+  border-color: #5aa9e8 !important;
+  box-shadow: 0 0 12px rgba(90, 169, 232, 0.25) !important;
+}
+
+[data-theme="dark"] .c-stat-pill {
+  background: #101722;
+  border-color: #202b3c;
+}
+
+[data-theme="dark"] .c-stat-pill.is-peak {
+  background: #17263b;
+  border-color: #2b4b75;
+}
+
+[data-theme="dark"] .candidate-star-pill {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .candidate-skill-tag {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.35);
+  color: #93c5fd;
+}
+
 
 /* 军官档案颜色沿用当前主题，避免浅色页面出现固定的深绿身份区。 */
 .officer-detail {

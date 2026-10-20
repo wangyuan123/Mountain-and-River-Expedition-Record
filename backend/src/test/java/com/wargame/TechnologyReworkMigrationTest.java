@@ -30,4 +30,35 @@ class TechnologyReworkMigrationTest {
             }
         }
     }
+    @Test void tenLevelMigrationOnlyChangesLevelsAndPreservesFrozenPaidQueues() throws Exception {
+        try (var c = DriverManager.getConnection("jdbc:h2:mem:tenLevelMigration;MODE=MySQL", "sa", ""); var s = c.createStatement()) {
+            s.execute("CREATE TABLE technologies(id BIGINT AUTO_INCREMENT PRIMARY KEY, player_id BIGINT, type VARCHAR(50), level INT, version BIGINT DEFAULT 0)");
+            s.execute("CREATE TABLE tech_research_queue(id BIGINT AUTO_INCREMENT PRIMARY KEY, tech_type VARCHAR(50), target_level INT, started_at BIGINT, finishes_at BIGINT, duration_seconds INT, cost_steel INT, prerequisite_version VARCHAR(80), prerequisite_requirements VARCHAR(100), frozen_at BIGINT)");
+            for (String key : new String[]{"unit_refit", "log_warehouse", "recon_level", "recon_radar"}) {
+                for (int level = 0; level <= 5; level++) {
+                    s.execute("INSERT INTO technologies(player_id,type,level) VALUES(" + level + ",'" + key + "'," + level + ")");
+                    s.execute("INSERT INTO tech_research_queue(tech_type,target_level,started_at,finishes_at,duration_seconds,cost_steel,prerequisite_version,prerequisite_requirements,frozen_at) VALUES('" + key + "'," + level + ",1000,987654,321,1234,'old','saved',555)");
+                }
+            }
+            s.execute("INSERT INTO technologies(player_id,type,level) VALUES(99,'attack_tech',9)");
+            ScriptUtils.executeSqlScript(c, new ClassPathResource("db/migration/V103__ten_level_research.sql"));
+            try (var r = s.executeQuery("SELECT player_id,level FROM technologies WHERE type <> 'attack_tech'")) {
+                int count = 0;
+                while (r.next()) { assertEquals(r.getInt(1) * 2, r.getInt(2)); count++; }
+                assertEquals(24, count);
+            }
+            try (var r = s.executeQuery("SELECT target_level,started_at,finishes_at,duration_seconds,cost_steel,prerequisite_version,prerequisite_requirements,frozen_at FROM tech_research_queue ORDER BY id")) {
+                int count = 0;
+                while (r.next()) {
+                    assertEquals((count % 6) * 2, r.getInt(1));
+                    assertEquals(1000, r.getLong(2)); assertEquals(987654, r.getLong(3));
+                    assertEquals(321, r.getInt(4)); assertEquals(1234, r.getInt(5));
+                    assertEquals("old", r.getString(6)); assertEquals("saved", r.getString(7)); assertEquals(555, r.getLong(8)); count++;
+                }
+                assertEquals(24, count);
+            }
+            try (var r = s.executeQuery("SELECT level FROM technologies WHERE type='attack_tech'")) { assertTrue(r.next()); assertEquals(9, r.getInt(1)); }
+        }
+    }
+
 }

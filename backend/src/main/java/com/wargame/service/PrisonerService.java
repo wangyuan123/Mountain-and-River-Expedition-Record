@@ -1,5 +1,6 @@
 package com.wargame.service;
 
+import com.wargame.util.GameClock;
 import com.wargame.model.constants.GameData;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
@@ -32,6 +33,7 @@ public class PrisonerService {
     private final WorldTerrainService terrain;
     private final org.springframework.beans.factory.ObjectProvider<QuestService> quests;
     private final EntityManager em;
+    private final UnitUnlockService unitUnlocks;
 
     public record LossSource(String id, Long ownerId, Map<String, Integer> losses, Map<String, Integer> wounded) {}
 
@@ -216,24 +218,7 @@ public class PrisonerService {
 
     /** 黄金招募与普通征召共用制造前置，当前读仍沿用玩家锁后的实体刷新。 */
     private String unavailable(Long playerId, PlayerCity city, String unit, boolean current) {
-        var def = GameData.UNITS.get(unit);
-        var cityBuildings = current ? currentBuildings(playerId, city.getCitySlot())
-                : buildings.findByPlayerIdAndCitySlot(playerId, city.getCitySlot());
-        var jobs = current ? currentRows(Construction.class, "and r.citySlot = :slot", playerId, city.getCitySlot())
-                : constructions.findByPlayerIdAndCitySlot(playerId, city.getCitySlot());
-        for (String required : def.recruitmentBuildings()) {
-            boolean present = cityBuildings.stream().anyMatch(b -> required.equals(b.getType())
-                    && Objects.requireNonNullElse(b.getLevel(), 0) > 0
-                    && jobs.stream().noneMatch(j -> required.equals(j.getBuildingType())
-                        && Objects.equals(Objects.requireNonNullElse(j.getSlot(), 0), b.getSlot())
-                        && j.getTargetLevel() != null && j.getTargetLevel() <= 0));
-            if (!present) return "需本城已完成且未拆除的" + GameData.BUILDINGS.get(required).name();
-        }
-        if ("sea".equals(def.branch())) {
-            terrain.ensure();
-            if (!terrain.canUsePort(city)) return "海军招募需要沿海城市及本城军港、造船厂";
-        }
-        return "";
+        return unitUnlocks.message(unitUnlocks.evaluate(playerId, city.getCitySlot(), unit, current));
     }
 
     @Transactional(readOnly = true)
@@ -244,7 +229,8 @@ public class PrisonerService {
                 .forEach(b -> counts.merge(b.getType(), b.getCount(), Integer::sum));
         List<Map<String, Object>> units = new ArrayList<>();
         counts.forEach((unit, count) -> units.add(Map.of("unit", unit, "count", count, "goldPerUnit", goldPerUnit(unit),
-                "unavailableReason", unavailable(playerId, city, unit, false))));
+                "unavailableReason", unavailable(playerId, city, unit, false),
+                "unlock", unitUnlocks.evaluate(playerId, city.getCitySlot(), unit, false))));
         int level = campLevel(playerId, city.getCitySlot());
         int admission = admissionCapacity(playerId, city.getCitySlot(), level);
         return Map.of("cityId", city.getId(), "cityName", city.getName(), "units", units,
@@ -272,7 +258,7 @@ public class PrisonerService {
         PlayerCity city = currentCity(cityId);
         if (city == null || !playerId.equals(city.getOwnerId()) || city.getCitySlot() == null
                 || city.getCitySlot() != scope.slot(playerId)) throw new IllegalArgumentException("城市归属或槽位已变化，请重新打开俘虏池");
-        if (city.getReadyAt() > System.currentTimeMillis()) throw new IllegalArgumentException("城市仍在建设中");
+        if (city.getReadyAt() > GameClock.now()) throw new IllegalArgumentException("城市仍在建设中");
         Optional<PrisonerOperation> previous = operations.findByPlayerIdAndOperationKey(playerId, operationKey);
         if (previous.isPresent()) {
             PrisonerOperation receipt = previous.get();
@@ -311,7 +297,7 @@ public class PrisonerService {
                 "cityId", city.getId(), "message", "recruit".equals(action) ? "招募完成，部队已在本城归队" : "已释放战俘，无资源奖励"));
         PrisonerOperation receipt = new PrisonerOperation();
         receipt.setPlayerId(playerId); receipt.setCityId(city.getId()); receipt.setOperationKey(operationKey);
-        receipt.setAction(action); receipt.setType(unit); receipt.setCount(count); receipt.setCreatedAt(System.currentTimeMillis());
+        receipt.setAction(action); receipt.setType(unit); receipt.setCount(count); receipt.setCreatedAt(GameClock.now());
         receipt.setResult(JsonUtil.toJson(result)); operations.save(receipt);
         return result;
     }

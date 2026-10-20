@@ -1,5 +1,6 @@
 package com.wargame.service;
 
+import com.wargame.util.GameClock;
 import com.wargame.model.constants.GameData;
 import com.wargame.model.constants.MilitaryRankDef;
 import com.wargame.model.constants.UnitDef;
@@ -33,6 +34,7 @@ public class ArmyService {
 
     @org.springframework.beans.factory.annotation.Autowired
     private PrerequisiteService prerequisiteService;
+    @org.springframework.beans.factory.annotation.Autowired private UnitUnlockService unitUnlocks;
 
     private static final int MAX_QUEUE_CAPACITY = 500;
 
@@ -84,10 +86,12 @@ public class ArmyService {
 
         // 与建造/拆除共用玩家锁，防止校验之后军港或造船厂被并发拆除。
         Player player = playerRepository.lockById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
-        completeProduction(playerId, System.currentTimeMillis());
+        completeProduction(playerId, GameClock.now());
 
         // 在扣款与人口扣减前统一校验；海军同时需要本城造船厂和军港。
-        var missing = prerequisiteService.unmetRecruitment(playerId, cityScope.slot(playerId), unitType);
+        var unlock = unitUnlocks.evaluate(playerId, cityScope.slot(playerId), unitType, true);
+        result.put("unlock", unlock);
+        var missing = unlock.missing();
         if (!missing.isEmpty()) {
             result.put("success", false);
             result.put("message", prerequisiteService.message(missing));
@@ -199,7 +203,7 @@ public class ArmyService {
         cityScope.saveEconomy(playerId);
         }
 
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         // 方案B: parallel 与 avgSpeed 已在上方按栋独立计算后求和得到, 这里直接使用
         int baseSeconds = 30 + u.cost().values().stream().mapToInt(Integer::intValue).sum() / 10;
         int duration = Math.max(5, (int) Math.ceil(baseSeconds * n / avgSpeed));
@@ -208,6 +212,8 @@ public class ArmyService {
         queue.setPlayerId(playerId);
         queue.setCitySlot(cityScope.slot(playerId));
         queue.setUnitType(unitType);
+        queue.setUnlockRuleVersion(unlock.ruleVersion());
+        queue.setUnlockRequirements(unlock.snapshot());
         queue.setBuildingType(u.build());
         queue.setUnitCount(n);
         queue.setStartedAt(startsAt);
@@ -300,14 +306,14 @@ public class ArmyService {
 
     @Transactional
     public List<Map<String, Object>> getProductionQueue(Long playerId) {
-        completeProduction(playerId, System.currentTimeMillis());
+        completeProduction(playerId, GameClock.now());
         List<Map<String, Object>> result = new ArrayList<>();
         for (ArmyProductionQueue q : armyProductionQueueRepository.findByPlayerIdAndCitySlotOrderByStartedAtAscIdAsc(playerId, cityScope.slot(playerId))) {
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("id", q.getId()); item.put("unitType", q.getUnitType()); item.put("count", q.getUnitCount());
             item.put("startedAt", q.getStartedAt()); item.put("finishesAt", q.getFinishesAt());
             item.put("durationSeconds", q.getDurationSeconds());
-            item.put("remainingSeconds", Math.max(0, (q.getFinishesAt() - System.currentTimeMillis() + 999) / 1000));
+            item.put("remainingSeconds", Math.max(0, (q.getFinishesAt() - GameClock.now() + 999) / 1000));
             result.add(item);
         }
         return result;
@@ -360,7 +366,7 @@ public class ArmyService {
             result.put("message", "指定的生产任务不存在或已完成");
             return result;
         }
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         if (target.getFinishesAt() != null && target.getFinishesAt() - now > 300 * 1000L) {
             result.put("message", "剩余生产时间不超过5分钟时才可免费加速");
             return result;
@@ -387,7 +393,7 @@ public class ArmyService {
     @Transactional
     public Map<String, Object> useSpeedUp(Long playerId, String itemId, Long queueId, int count) {
         Map<String, Object> result = new LinkedHashMap<>();
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         if (count <= 0) count = 1;
 
         // 1. 校验道具并原子扣减 count 个
@@ -480,7 +486,7 @@ public class ArmyService {
     }
 
     public Map<String, Integer> getArmy(Long playerId) {
-        completeProduction(playerId, System.currentTimeMillis());
+        completeProduction(playerId, GameClock.now());
         Map<String, Integer> army = new LinkedHashMap<>();
         List<ArmyUnit> units = armyUnitRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         for (ArmyUnit unit : units) {

@@ -103,6 +103,10 @@ public class March extends CityOwnedEntity {
     @Column(name = "returning")
     private Boolean returning;
 
+    /** 护盾拦截的返程单独标记，守方仅能继续观察这类已抵达本城的敌军路线。 */
+    @Column(name = "return_reason", length = 30)
+    private String returnReason;
+
     @Column(name = "gathering")
     private Boolean gathering;
 

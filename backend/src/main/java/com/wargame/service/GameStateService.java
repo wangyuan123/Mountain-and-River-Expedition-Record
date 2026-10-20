@@ -1,5 +1,6 @@
 package com.wargame.service;
 
+import com.wargame.util.GameClock;
 import com.wargame.model.constants.JapaneseOfficers;
 import com.wargame.model.constants.NewbieProtection;
 import com.wargame.model.constants.MilitaryRankDef;
@@ -48,6 +49,7 @@ public class GameStateService {
     @org.springframework.beans.factory.annotation.Autowired private ArmyProductionQueueRepository armyQueues;
     @org.springframework.beans.factory.annotation.Autowired private TechService techService;
     @org.springframework.beans.factory.annotation.Autowired private PrerequisiteService prerequisiteService;
+    @org.springframework.beans.factory.annotation.Autowired private UnitUnlockService unitUnlocks;
     @org.springframework.beans.factory.annotation.Autowired private WildOccupationService wildOccupation;
     @org.springframework.beans.factory.annotation.Autowired private TechResearchQueueRepository techResearchQueueRepository;
 
@@ -145,10 +147,10 @@ public class GameStateService {
         CityEconomy economy = cityScope.economy(playerId);
         entityManager.flush();
         entityManager.refresh(economy, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         if (cityName.equals(economy.getCityName())) throw new IllegalArgumentException("新城市名称与当前名称相同");
         if (NameChangePolicy.nextAllowedAt(economy.getCityNameRenamedAt(), now) > now)
-            throw new IllegalArgumentException("这座城市今天已改名，请明日 0:00 后再试");
+            throw new IllegalArgumentException("这座城市今天已改名，请明日 0:00 后再试（按游戏时间，停服顺延）");
         // 扣卡会清空 JPA 缓存，后续必须重新读取当前城市。
         int consumedCard = playerItemRepository.tryConsume(playerId, "cityRenameCard", 1, now);
         if (consumedCard == 0) {
@@ -230,7 +232,7 @@ public class GameStateService {
         Player player = playerRepository.findById(playerId).orElseThrow();
         if (player.getNewbieProtectionStartedAt() == null) {
             player = accounts.lockPlayer(playerId);
-            NewbieProtection.start(player, System.currentTimeMillis());
+            NewbieProtection.start(player, GameClock.now());
         }
     }
 
@@ -243,7 +245,8 @@ public class GameStateService {
                 .orElseThrow(() -> new IllegalArgumentException("Player not found: " + playerId));
 
         Map<String, Object> state = new LinkedHashMap<>();
-        long stateNow = System.currentTimeMillis();
+        long stateNow = GameClock.now();
+        state.put("serverTime", stateNow);
 
         // --- player ---
         Map<String, Object> playerInfo = new LinkedHashMap<>();
@@ -311,6 +314,7 @@ public class GameStateService {
         List<Building> buildings = buildingRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         state.put("buildings", buildBuildingsMap(buildings));
         state.put("wilds", wildOccupation.state(playerId, cityScope.slot(playerId)));
+        state.put("unitUnlocks", unitUnlocks.all(playerId, cityScope.slot(playerId)));
         state.put("coastalPortLevel", prerequisiteService.coastalPortLevel(playerId));
 
         int populationCapacity = buildings.stream()
@@ -362,7 +366,7 @@ public class GameStateService {
 
         // --- tech ---
         if (techService != null) {
-            techService.settleCompletedResearchForCity(playerId, cityScope.slot(playerId), System.currentTimeMillis());
+            techService.settleCompletedResearchForCity(playerId, cityScope.slot(playerId), GameClock.now());
         }
         List<Technology> techs = technologyRepository.findByPlayerId(playerId);
         Map<String, Object> techMap = new LinkedHashMap<>();
@@ -470,11 +474,13 @@ public class GameStateService {
         } else {
             academyMap.put("list", new ArrayList<>());
         }
-        academyMap.putAll(AcademyRefreshPolicy.snapshot(player, System.currentTimeMillis()).toState());
+        academyMap.putAll(AcademyRefreshPolicy.snapshot(player, GameClock.now()).toState());
         int academyLevel = buildings.stream().filter(b -> "academy".equals(b.getType()))
                 .mapToInt(b -> b.getLevel() != null ? b.getLevel() : 0).sum();
         academyMap.put("candidateCount", OfficerService.ACADEMY_CANDIDATE_COUNT);
-        academyMap.put("fiveStarBatchChance", OfficerService.academyFiveStarBatchChance(academyLevel));
+        int theoryLevel = ((Number) techMap.getOrDefault(
+                com.wargame.model.constants.AcademyRecruitmentRules.MILITARY_THEORY, 0)).intValue();
+        academyMap.putAll(com.wargame.model.constants.AcademyRecruitmentRules.state(academyLevel, theoryLevel));
         state.put("academy", academyMap);
 
         // --- world ---
@@ -595,7 +601,7 @@ public class GameStateService {
 
         cityScope.economy(playerId).setMorale(Math.min(100, Math.max(0, curMorale + moraleGain)));
         cityScope.economy(playerId).setResentment(Math.max(0, curResentment - resentmentLoss));
-        cityScope.economy(playerId).setLastAppeaseAt(System.currentTimeMillis());
+        cityScope.economy(playerId).setLastAppeaseAt(GameClock.now());
 
         resourcesRepository.save(resources);
         playerRepository.save(player);
@@ -611,6 +617,7 @@ public class GameStateService {
     }
 
     @EventListener(ApplicationReadyEvent.class)
+    @org.springframework.core.annotation.Order(org.springframework.core.Ordered.HIGHEST_PRECEDENCE)
     @Transactional
     public void repairExistingPlayerCoordinates() {
         Set<String> used = collectStaticCoordinates();
@@ -751,7 +758,7 @@ public class GameStateService {
         // 为步兵、侦察和运输的小批征召留出人口，同时保留税收人口。
         player.setCivilianPopulation(150);
         player.setPopulationGrowthRemainder(0.0);
-        player.setLastTick(System.currentTimeMillis());
+        player.setLastTick(GameClock.now());
         playerRepository.save(player);
         ensureRealPlayerCity(player);
 
@@ -842,7 +849,7 @@ public class GameStateService {
      * 数量比之前 [V5] seed 略高，给玩家开荒期更友好。
      */
     private void seedDefaultItems(Long playerId) {
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         Map<String, Integer> defaults = new LinkedHashMap<>();
         defaults.put("skillBook", 5);
         defaults.put("expBook", 5);

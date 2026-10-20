@@ -80,10 +80,11 @@ class OnboardingServiceUnitTest {
     @Test
     void starterIsGivenOnceAndIsNotMistakenForCompletedActions() {
         onboarding.start(1L); onboarding.start(1L);
-        assertEquals(List.of("base", "infantry", "scout", "occupy", "report"), OnboardingService.OBJECTIVES.stream().map(OnboardingService.Objective::id).toList());
+        assertEquals(List.of("base", "infantry", "recon_build", "recon_research", "recon_unit", "scout", "occupy", "report"), OnboardingService.OBJECTIVES.stream().map(OnboardingService.Objective::id).toList());
         assertEquals("base", current()); assertEquals(0L, onboarding.status(1L).get("completed"));
         assertEquals(1, facilities.size()); assertEquals("factory", facilities.get(0).getType());
-        assertEquals(1, troops.get(0).getCount()); assertEquals(1, technologies.get(0).getLevel());
+        assertTrue(troops.stream().noneMatch(a -> "scout".equals(a.getType()) || "recon_car".equals(a.getType())));
+        assertTrue(technologies.isEmpty(), "新手不再直接获赠侦察科技");
         assertEquals(1, troops.stream().filter(a -> "truck".equals(a.getType())).findFirst().orElseThrow().getCount());
         assertEquals("available", task("truck").get("status"), "赠送卡车不能冒充生产成果");
         assertEquals("locked", task("tech").get("status"));
@@ -97,7 +98,15 @@ class OnboardingServiceUnitTest {
         assertEquals("infantry", current()); assertEquals(6000, balance.getFood());
         onboarding.onEvent(1L, "BUILD_UPGRADE_DONE", "farm", 1); onboarding.claim(1L, "base");
         assertEquals(6000, balance.getFood());
-        onboarding.onEvent(1L, "ARMY_RECRUIT", "infantry", 1); assertEquals("scout", current());
+        onboarding.onEvent(1L, "ARMY_RECRUIT", "infantry", 1); assertEquals("recon_build", current());
+        for (Object[] entry : List.of(new Object[]{"command", 2}, new Object[]{"factory", 2}, new Object[]{"radar", 1}, new Object[]{"lab", 1})) {
+            Building building = new Building(); building.setPlayerId(1L); building.setCitySlot(0);
+            building.setType((String) entry[0]); building.setLevel((Integer) entry[1]); facilities.add(building);
+        }
+        assertEquals("recon_research", current());
+        Technology recon = new Technology(); recon.setPlayerId(1L); recon.setType("recon_level"); recon.setLevel(1); technologies.add(recon);
+        onboarding.onEvent(1L, "TECH_LEVEL", "recon_level", 1); assertEquals("recon_unit", current());
+        onboarding.onEvent(1L, "ARMY_RECRUIT", "recon_car", 1); assertEquals("scout", current());
         March scout = new March(); scout.setAction("scout"); scout.setTargetKind("wild"); scout.setReturning(true); movements.add(scout);
         report("scout", Map.of("targetKind", "wild", "showCityInfo", true), false);
         assertEquals("occupy", current()); assertEquals(9000, balance.getFood());
@@ -184,7 +193,9 @@ class OnboardingServiceUnitTest {
         report("battle", Map.of("targetType", "wild", "win", false), false);
         onboarding.recover(1L); onboarding.recover(1L);
         assertEquals(30, troops.stream().filter(a -> "infantry".equals(a.getType())).findFirst().orElseThrow().getCount());
-        assertEquals(2, troops.stream().filter(a -> "scout".equals(a.getType())).findFirst().orElseThrow().getCount());
+        assertEquals(30, troops.stream().filter(a -> "infantry".equals(a.getType())).findFirst().orElseThrow().getCount());
+        assertEquals(2, troops.stream().filter(a -> "truck".equals(a.getType())).findFirst().orElseThrow().getCount());
+        assertTrue(troops.stream().noneMatch(a -> "scout".equals(a.getType())));
         assertEquals(0L, onboarding.status(1L).get("completed"));
     }
 

@@ -25,6 +25,7 @@ import java.util.Objects;
 /** Evaluates the versioned building and research requirements shared by every city. */
 @Service
 public class PrerequisiteService {
+    @org.springframework.beans.factory.annotation.Autowired private UnitUnlockService unitUnlocks;
     private final ObjectMapper mapper = new ObjectMapper();
     private final JsonNode rules;
     private final BuildingRepository buildings;
@@ -71,15 +72,7 @@ public class PrerequisiteService {
 
     /** 征召只认本城已完成且未被拆除施工预占的建筑，其他城市不能代替制造或驻泊能力。 */
     public List<Map<String, Object>> unmetRecruitment(Long playerId, int citySlot, String unitType) {
-        List<Map<String, Object>> missing = new ArrayList<>();
-        for (String building : UnitDef.UNITS.get(unitType).recruitmentBuildings()) {
-            int actual = highestAvailableLevel(playerId, citySlot, building, null, null);
-            if (actual < 1) {
-                missing.add(Map.of("building", building, "name", BuildingDef.BUILDINGS.get(building).name(),
-                        "required", 1, "current", actual, "scope", "city"));
-            }
-        }
-        return missing;
+        return unitUnlocks.evaluate(playerId, citySlot, unitType, true).missing();
     }
 
     /** Returns every direct unmet requirement; levels of duplicate buildings never add together. */
@@ -102,11 +95,7 @@ public class PrerequisiteService {
     }
 
     public String message(List<Map<String, Object>> missing) {
-        if (missing.isEmpty()) return "";
-        Map<String, Object> first = missing.get(0);
-        String location = "owned_coastal_city".equals(first.get("scope")) ? "任一所属沿海城市的" : "本城";
-        return "需" + location + first.get("name") + " Lv." + first.get("required")
-                + "（当前 Lv." + first.get("current") + "）";
+        return UnitUnlockService.message(missing);
     }
 
     /** Prevents a downgrade from invalidating work already paid for and in progress. */

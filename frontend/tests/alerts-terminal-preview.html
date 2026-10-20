@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="blue-white">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>军情界面样式重构预览 - Modern Clean Text-SLG</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/themes.css">
+  <link rel="stylesheet" href="../css/text-actions.css">
+  <style>
+    body {
+      padding: 16px;
+      margin: 0;
+      background: #eaedf2;
+      color: #1e293b;
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace, sans-serif;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    html[data-theme="dark"] body {
+      background: #06090e;
+      color: #e2e8f0;
+    }
+    html[data-theme="paper"] body {
+      background: #eae8e1;
+      color: #1a1e21;
+    }
+    html[data-theme|="blue-white"] body {
+      background: #eaedf2;
+      color: #1e293b;
+    }
+    .preview-container {
+      max-width: 520px;
+      margin: 0 auto;
+    }
+    .preview-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding: 8px 12px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      color: #475569;
+      font-size: 12px;
+      transition: all 0.15s ease;
+    }
+    html[data-theme="dark"] .preview-toolbar {
+      background: #0d131f;
+      border-color: #1e293b;
+      color: #94a3b8;
+    }
+    html[data-theme="paper"] .preview-toolbar {
+      background: #fbfaf6;
+      border-color: #ded7cb;
+      color: #273136;
+    }
+    .theme-buttons {
+      display: flex;
+      gap: 6px;
+    }
+    .theme-btn {
+      padding: 3px 8px;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 3px;
+      color: #334155;
+      cursor: pointer;
+      font-size: 11px;
+      transition: all 0.15s ease;
+    }
+    html[data-theme="dark"] .theme-btn {
+      background: #111827;
+      border-color: #334155;
+      color: #e2e8f0;
+    }
+    html[data-theme="paper"] .theme-btn {
+      background: #f2efe6;
+      border-color: #ded7cb;
+      color: #273136;
+    }
+    .theme-btn.active {
+      background: #0284c7 !important;
+      border-color: #0284c7 !important;
+      color: #ffffff !important;
+      font-weight: bold;
+    }
+    html[data-theme="paper"] .theme-btn.active {
+      background: #3f5e4d !important;
+      border-color: #3f5e4d !important;
+      color: #ffffff !important;
+    }
+    html[data-theme="dark"] .theme-btn.active {
+      background: #38bdf8 !important;
+      border-color: #38bdf8 !important;
+      color: #0f172a !important;
+    }
+    .spec-card {
+      margin-top: 14px;
+      padding: 10px 12px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      font-size: 11px;
+      line-height: 1.6;
+      color: #475569;
+      transition: all 0.15s ease;
+    }
+    html[data-theme="dark"] .spec-card {
+      background: #0d131f;
+      border-color: #1e293b;
+      color: #94a3b8;
+    }
+    html[data-theme="paper"] .spec-card {
+      background: #fbfaf6;
+      border-color: #ded7cb;
+      color: #4b5563;
+    }
+    .spec-card h4 {
+      margin: 0 0 6px;
+      color: #0284c7;
+      font-size: 12px;
+    }
+    html[data-theme="dark"] .spec-card h4 {
+      color: #38bdf8;
+    }
+    html[data-theme="paper"] .spec-card h4 {
+      color: #3f5e4d;
+    }
+    .preview-toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0f172a;
+      border: 1px solid #38bdf8;
+      color: #38bdf8;
+      padding: 8px 16px;
+      font-size: 12px;
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      z-index: 9999;
+      pointer-events: none;
+      animation: fadeInOut 2.5s forwards;
+    }
+    @keyframes fadeInOut {
+      0% { opacity: 0; transform: translate(-50%, -10px); }
+      15% { opacity: 1; transform: translate(-50%, 0); }
+      85% { opacity: 1; transform: translate(-50%, 0); }
+      100% { opacity: 0; transform: translate(-50%, -10px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="preview-container">
+    <div class="preview-toolbar">
+      <span>军情终端排版 (Modern Clean Text-SLG)</span>
+      <div class="theme-buttons">
+        <button class="theme-btn active" data-theme-target="blue-white" onclick="setTheme('blue-white')">晴空蓝白 (默认)</button>
+        <button class="theme-btn" data-theme-target="paper" onclick="setTheme('paper')">沙盘米白</button>
+        <button class="theme-btn" data-theme-target="dark" onclick="setTheme('dark')">极简冷黑</button>
+      </div>
+    </div>
+
+    <!-- 军情终端实时渲染挂载容器 -->
+    <div id="screen"><div id="view"></div></div>
+
+    <div class="spec-card">
+      <h4>⚡ 重构设计特性与战术主动权</h4>
+      <div>• <b>极致信息密度</b>：单行卡片高度严格压至 38~44px，一屏可展示 6~8 条军情无需滚动翻页。</div>
+      <div>• <b>字符级视觉元素</b>：状态 Badge（<span style="color:#dc2626">[敌袭!]</span>、<span style="color:#d97706">[侦察]</span>、<span style="color:#059669">[出征]</span>、<span style="color:#0284c7">[返航]</span>、<span style="color:#818cf8">[驻防]</span>）与纯文本微型进度条（[■■■■■■■□□□] 75%）。</div>
+      <div>• <b>🎯 出城拦截战术主动权</b>：点击侦查卡片下方高亮 <code>[出城拦截]</code> 按钮，即刻进入<b>截击出征界面</b>！支持选配<b>空军战斗机</b>（野马P-51）或<b>防空装甲车</b>（猎鹿犬防空型）出城迎击，根据敌机航程与我方航速动态求解<b>相向迎面相遇拦截点</b>并在大地图生成截击行军；部队抵达拦截空域后发生空战交火，成功击落瓦解敌军情报后掉头返航，返城后安全入库归建！</div>
+      <div>• <b>📢 一键呼叫救援</b>：点击卡片或展开情报上的 <code>[呼叫救援]</code>，将当前可见军情（<b>侦查或敌袭</b>）以求援战报分享到军团，成员点击后在弹窗查询与来袭详情一致的情报；支持快捷键 <code>S</code> 紧急呼救。情报以分享时为准。</div>
+      <div>• <b>🛡️ 单城/全城护盾与钻石消耗</b>：点击敌袭卡片 <code>[开罩]</code>，弹出城防护盾系统！支持<b>勾选单个城市</b>或<b>一键全选所有城市</b>开启护盾（8小时/城），按所选城市数量精准扣除对应钻石（💎 200/城），已生效护盾自动顺延叠加！</div>
+      <div>• <b>保留经典快捷键位与极速响应</b>：支持键盘快捷键 <code>0</code> 返回大厅、<code>R</code> 刷新信号、<code>S</code> 一键呼救、<code>1~4</code> 快速切换过滤标签。</div>
+      <div>• <b>操作闭环点触即发</b>：[开罩] [布阵] [呼叫救援] [出城拦截] [电子干扰] [⚡加速50%] [召回] 均为直接触达。</div>
+    </div>
+  </div>
+
+  <script src="../js/constants.js"></script>
+  <script src="../js/data.js"></script>
+  <script src="../js/core.js"></script>
+  <script src="../js/world.js"></script>
+
+  <script>
+    // 模拟 Toast
+    Game.Core.toast = function(msg) {
+      const el = document.createElement('div');
+      el.className = 'preview-toast';
+      el.textContent = msg;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 2600);
+    };
+
+    // 模拟军团聊天
+    Game.Chat = {
+      shareIncoming: function(incomingId) {
+        console.log('[预览求援战报]', incomingId);
+        Game.Core.toast('📢 预览：打开求援战报详情');
+        var incoming = Game.Core.state.world.incoming.find(function(item) { return String(item.id) === String(incomingId); });
+        Game.API = {
+          sharedIncomingReport: function() {
+            return Promise.resolve({ incoming: incoming, ownerName: Game.Core.state.player.username, sharedAt: Date.now() });
+          }
+        };
+        Game.World.viewSharedIncomingReport('preview');
+        return Promise.resolve({ ok: true });
+      }
+    };
+
+    function setTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      document.body.setAttribute('data-theme', theme);
+      document.querySelectorAll('.theme-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-theme-target') === theme);
+      });
+    }
+
+    // 构造示范军情数据
+    const now = Date.now();
+    Game.Core.state = {
+      player: { username: '朱可夫', cityName: '主基地', guildId: 99 },
+      guild: { id: 99, name: '铁血战旗军团' },
+      buildings: { radar: 10, headquarters: 5 },
+      tech: {},
+      officers: [
+        { id: 1, name: '朱可夫', level: 30, star: 5, military: 98, defense: 92, logistics: 85, knowledge: 88, role: 'none' }
+      ],
+      cityState: { shieldUntil: 0 },
+      resources: { food: 500000, oil: 250000, steel: 120000, rare: 60000, money: 88000, diamond: 1280 },
+      cityOverview: {
+        count: 3,
+        cap: 3,
+        cities: [
+          { id: 1, citySlot: 0, name: '主基地', x: 342, y: 681, main: true, current: true, shieldUntil: 0 },
+          { id: 2, citySlot: 1, name: '前沿要塞·铁壁', x: 350, y: 690, main: false, current: false, shieldUntil: 0 },
+          { id: 3, citySlot: 2, name: '沿海基地·极光', x: 320, y: 660, main: false, current: false, shieldUntil: now + 3 * 3600 * 1000 }
+        ]
+      },
+      army: {
+        fighter: 80,        // 野马战斗机 (对空主力)
+        armored: 120,       // 猎鹿犬防空型装甲车 (防空主力)
+        recon_car: 50,      // 侦察装甲车
+        infantry: 60000,    // 步兵 (出城拦截将自动过滤)
+        htank: 500          // 重坦 (出城拦截将自动过滤)
+      },
+      world: {
+        cityPos: { x: 342, y: 681 },
+        incoming: [
+          {
+            id: 'inc-1',
+            marchId: 101,
+            attackerName: '狂怒战神',
+            guildName: '黑鹰帝国',
+            action: 'conquer',
+            fromX: 300,
+            fromY: 650,
+            targetX: 342,
+            targetY: 681,
+            arriveAt: now + 102000,
+            duration: 400000,
+            totalTroops: 152000,
+            strengthBand: '15.2w',
+            expanded: false,
+            radarLevel: 10,
+            army: { htank: 300, infantry: 8000 },
+            commander: '麦克阿瑟',
+            commanderStar: 5,
+            commanderLevel: 25,
+            combatTech: { attack_tech: 10, defense_tech: 10 },
+            commanderAttributes: { military: 95, defense: 88 },
+            skills: { strike: 5 }
+          },
+          {
+            id: 'inc-2',
+            marchId: 102,
+            attackerName: '极光要塞 · 影刃',
+            action: 'scout',
+            fromX: 320,
+            fromY: 670,
+            targetX: 342,
+            targetY: 681,
+            targetName: '城防情报',
+            arriveAt: now + 46000,
+            duration: 180000,
+            expanded: false,
+            radarLevel: 4
+          },
+          {
+            id: 'inc-3',
+            marchId: 103,
+            attackerName: '铁骑突击营',
+            guildName: '掠夺分队',
+            action: 'plunder',
+            fromX: 340,
+            fromY: 685,
+            targetX: 350,
+            targetY: 690,
+            targetName: '6级富金矿',
+            arriveAt: now + 243000,
+            duration: 300000,
+            totalTroops: 32000,
+            expanded: false,
+            radarLevel: 6
+          }
+        ],
+        marches: [
+          {
+            id: 201,
+            action: 'campaign',
+            targetKind: 'wild',
+            targetName: '8级叛军要塞',
+            targetX: 390,
+            targetY: 710,
+            fromX: 342,
+            fromY: 681,
+            distance: 38,
+            startAt: now - 100000,
+            arriveAt: now + 150000,
+            duration: 250000,
+            army: { infantry: 50000, ltank: 35000 }
+          },
+          {
+            id: 202,
+            action: 'transport',
+            returning: true,
+            originName: '前沿物资站',
+            targetName: '主基地',
+            targetX: 342,
+            targetY: 681,
+            fromX: 360,
+            fromY: 690,
+            distance: 22,
+            startAt: now - 300000,
+            arriveAt: now + 53000,
+            duration: 353000,
+            army: { truck: 200 }
+          }
+        ],
+        reinforcements: [
+          {
+            id: 301,
+            senderName: '夜行者 (铁血战旗军团盟友)',
+            army: { htank: 200, infantry: 20000 }
+          }
+        ]
+      }
+    };
+
+    Game.Core.route = 'alerts';
+    Game.Core.render();
+  </script>
+</body>
+</html>

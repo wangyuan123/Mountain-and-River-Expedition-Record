@@ -1,5 +1,6 @@
 package com.wargame.service;
 
+import com.wargame.util.GameClock;
 import com.wargame.model.constants.GameData;
 import com.wargame.model.constants.ItemDef;
 import com.wargame.model.constants.TechDef;
@@ -58,6 +59,8 @@ public class TechService {
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.repository.OfficerRepository officerRepository;
     @org.springframework.beans.factory.annotation.Autowired
+    private EquipmentService equipmentService;
+    @org.springframework.beans.factory.annotation.Autowired
     private PrerequisiteService prerequisiteService;
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -86,7 +89,7 @@ public class TechService {
         playerRepository.lockById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
 
         // 2. 先结算可能已到期的科研
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         settleCompletedResearchForCity(playerId, cityScope.slot(playerId), now);
 
         // 检查是否有正在研究的科技（科技为全帝国共享，同时只能研发一项）
@@ -182,7 +185,7 @@ public class TechService {
             result.put("message", "未找到正在进行的科技研发");
             return result;
         }
-        if (frozenQueue(playerId, q, System.currentTimeMillis())) {
+        if (frozenQueue(playerId, q, GameClock.now())) {
             result.put("success", false);
             result.put("message", "归降移交中的城市只读，不能修改科研队列");
             return result;
@@ -221,7 +224,7 @@ public class TechService {
     @Transactional
     public Map<String, Object> useSpeedUp(Long playerId, Long queueId, String itemId, int count) {
         Map<String, Object> result = new LinkedHashMap<>();
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
 
         TechResearchQueue target = null;
         if (queueId != null) {
@@ -350,7 +353,7 @@ public class TechService {
         List<TechResearchQueue> list = techResearchQueueRepository.findByPlayerIdOrderByStartedAtAscIdAsc(playerId);
         if (list == null || list.isEmpty()) return null;
         TechResearchQueue q = list.get(0);
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         long rem = Math.max(0, (q.getFinishesAt() - now) / 1000L);
         TechDef t = GameData.TECHS.get(q.getTechType());
 
@@ -392,35 +395,46 @@ public class TechService {
     }
 
     // ================================================================
-    //  calcTechDuration - 计算研发工期（秒，受科研中心等级及市长格物技能加速）
+    //  calcTechDuration - 计算研发工期（秒，受科研中心、市长有效学识及格物技能加速）
     // ================================================================
 
+    /** 开工时锁定工期：中心每级+1%（最高10%）、市长有效学识每点+0.1%、格物技能各自形成速度倍率。 */
     public int calcTechDuration(Long playerId, String techType, int currentLevel, int labLevel) {
-        // 四项产量各占原共享科技的四分之一基础工期。
-        double base = (TechnologyRules.PRODUCTION.contains(techType) ? 7.5 : 30.0) * Math.pow(1.8, Math.max(0, currentLevel));
-        double labSpeed = 1.0 + 0.10 * Math.max(0, labLevel - 1);
-        int researchLv = getMayorResearchLevel(playerId);
+        // 按目标等级查表；旧任务沿用已保存的工期与完成时间。
+        double base = TechnologyRules.baseDuration(techType, currentLevel + 1);
+        double labSpeed = 1.0 + TechnologyRules.RESEARCH_LAB_SPEED_PER_LEVEL
+                * Math.max(0, Math.min(TechnologyRules.RESEARCH_LAB_MAX_LEVEL, labLevel));
+        Officer mayor = getResearchMayor(playerId);
+        // 与前端状态采用同一份装备、套装后的有效学识，且只读取开工城市的市长。
+        int knowledge = mayor == null ? 0 : equipmentService == null
+                ? Objects.requireNonNullElse(mayor.getKnowledge(), 0) : equipmentService.attributes(mayor).knowledge();
+        double knowledgeSpeed = 1.0 + TechnologyRules.RESEARCH_KNOWLEDGE_SPEED_PER_POINT * Math.max(0, knowledge);
+        int researchLv = getMayorResearchLevel(mayor);
         double mayorSpeed = 1.0 + 0.04 * researchLv;
-        int duration = (int) Math.round(base / (labSpeed * mayorSpeed));
-        return Math.max(5, Math.min(86400, duration));
+        int duration = (int) Math.round(base / (labSpeed * knowledgeSpeed * mayorSpeed));
+        return Math.max(5, duration);
     }
 
     public int calcTechDuration(String techType, int currentLevel, int labLevel) {
         return calcTechDuration(null, techType, currentLevel, labLevel);
     }
 
-    private int getMayorResearchLevel(Long playerId) {
-        if (officerRepository == null || cityScope == null || playerId == null) return 0;
+    /** 未任命市长时不提供学识或技能加成，其他城市的军官不参与本城科研。 */
+    private Officer getResearchMayor(Long playerId) {
+        if (officerRepository == null || cityScope == null || playerId == null) return null;
+        List<Officer> list = officerRepository.findByPlayerIdAndCitySlotAndRole(playerId, cityScope.slot(playerId), "mayor");
+        return list == null || list.isEmpty() ? null : list.get(0);
+    }
+
+    private int getMayorResearchLevel(Officer mayor) {
+        if (mayor == null) return 0;
         try {
-            List<Officer> list = officerRepository.findByPlayerIdAndCitySlotAndRole(playerId, cityScope.slot(playerId), "mayor");
-            if (list == null || list.isEmpty()) return 0;
-            Officer mayor = list.get(0);
             if (mayor.getSkills() == null || mayor.getSkills().isBlank()) return 0;
             List<Map<String, Object>> skills = JsonUtil.parseList(mayor.getSkills());
             for (Map<String, Object> sk : skills) {
                 if ("research".equals(sk.get("id"))) {
                     Object lv = sk.get("lv");
-                    return lv instanceof Number ? ((Number) lv).intValue() : 0;
+                    return lv instanceof Number ? Math.max(0, Math.min(5, ((Number) lv).intValue())) : 0;
                 }
             }
         } catch (Exception ignored) {}

@@ -1,5 +1,6 @@
 package com.wargame.service;
 
+import com.wargame.util.GameClock;
 import com.wargame.model.constants.GameData;
 import com.wargame.model.constants.UnitDef;
 import com.wargame.model.constants.WorldConfig;
@@ -443,7 +444,7 @@ public class WorldService {
         // 与开盾使用同一玩家锁；仅检查发起城和被宣战城，不扩散到其他城或野地。
         attacker = accounts.lockPlayer(playerId);
         Player defender = accounts.lockPlayer(defenderId);
-        long shieldCheckAt = System.currentTimeMillis();
+        long shieldCheckAt = GameClock.now();
         NewbieProtection.start(attacker, shieldCheckAt);
         boolean ownShield = cityStates.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId))
                 .map(cs -> cs.getShieldUntil() != null && cs.getShieldUntil() > shieldCheckAt).orElse(false);
@@ -475,7 +476,7 @@ public class WorldService {
         }
         if (defender.deletionDue(System.currentTimeMillis())) throw new IllegalArgumentException("目标城池已失效");
 
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
 
         // 双向重宣检查：备战期(now<warAt) 与 交战期(warAt<=now<warEndAt) 都拒绝
         long attackerWarEnd = attacker.getWarEndAt() != null ? attacker.getWarEndAt() : 0L;
@@ -545,12 +546,14 @@ public class WorldService {
                 String targetName = target.getName();
                 String targetCoord = (target.getX() != null && target.getY() != null)
                         ? " (" + target.getX() + ", " + target.getY() + ")" : "";
+                // 邮件展示发送时的真实预计时刻；后续停服仍以游戏倒计时顺延。
+                long wallOffset = System.currentTimeMillis() - GameClock.now();
                 String startTime = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
                         .withZone(ZoneId.systemDefault())
-                        .format(Instant.ofEpochMilli(warAt));
+                        .format(Instant.ofEpochMilli(warAt + wallOffset)) + "（停服顺延）";
                 String endTime = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
                         .withZone(ZoneId.systemDefault())
-                        .format(Instant.ofEpochMilli(warEndTime));
+                        .format(Instant.ofEpochMilli(warEndTime + wallOffset)) + "（停服顺延）";
 
                 // 1. 发给宣战发起方 (attacker)
                 String attackerSubject = "【宣战公告】已对玩家「" + defenderName + "」宣战";
@@ -604,7 +607,7 @@ public class WorldService {
             return result;
         }
 
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
 
         // 优先取真实玩家的 warAt/warEndAt（双向宣战）；
         // 若城市无主（例如 NPC / 老数据），回退到 PlayerCity 上的旧字段。
@@ -769,7 +772,7 @@ public class WorldService {
         int marchSec = (int) Math.ceil((double) marchDist * WorldConfig.MARCH_SEC_PER_GRID / spd);
         if (marchSec < 1) marchSec = 1;
 
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
 
         // Create march (JS: s.world.marches.push(march))
         March march = new March();
@@ -882,7 +885,7 @@ public class WorldService {
         // 兼容没有耗尽时间的旧存档；放弃后立即隐藏，等待异地重生。
         if (wt.getDepletedAt() == null && wt.getTotalRes() != null && wt.getMined() != null
                 && wt.getTotalRes() > 0 && wt.getMined() >= wt.getTotalRes())
-            wt.setDepletedAt(System.currentTimeMillis());
+            wt.setDepletedAt(GameClock.now());
         if (wt.getDepletedAt() == null) wt.setMined(0);
         wt.setOccupiedBy(null);
         wt.setOccupiedCitySlot(0);

@@ -65,6 +65,8 @@ class FriendServiceIntegrationTest {
         assertEquals(0, requests.count());
         assertTrue(friends.profile(alice.getId(), bob.getId()).friend());
         assertTrue(friends.profile(bob.getId(), alice.getId()).friend());
+        verify(push, atLeastOnce()).pushToPlayer(eq(bob.getId()), eq("friend_request"), any());
+        verify(push, atLeastOnce()).pushToPlayer(eq(alice.getId()), eq("friend_request"), any());
     }
 
     @Test void rejectionWithdrawalAndPrivacyPoliciesCannotBeBypassed() {

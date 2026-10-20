@@ -376,20 +376,29 @@ window.Game = window.Game || {};
       h += '<div class="guild-card-section-title"><span>【全服军团列表】</span><span style="font-size:12px;color:var(--muted)">共 ' + this.list.length + ' 支兵团</span></div>';
       if (!this.list.length) {
         h += '<div style="padding:16px 14px;color:var(--muted);font-size:12.5px;">战区内暂无其他军团，长官可组建第一支远征雄狮！</div>';
-      }
-      for (var i = 0; i < this.list.length; i++) {
-        var g = this.list[i];
-        h += '<div class="guild-member-row">';
-        h += '<div class="guild-member-main">';
-        h += '<span style="display:inline-flex;align-items:center;">' + iconHtml(g.icon) + '</span>';
-        h += '<span class="guild-member-name" style="font-size:14px;">' + esc(g.name) + '</span>';
-        h += '<span style="color:#27ae60;font-weight:700;">★' + G.fmt(g.prestige || 0) + '</span>';
-        h += '<span class="guild-member-details">团长: ' + esc(g.leaderName) + ' · 规模: ' + g.members + '/' + g.maxMembers + '人</span>';
-        if (g.notice) h += '<span style="font-size:11.5px;color:var(--muted);margin-left:4px;">「' + esc(g.notice) + '」</span>';
-        h += '</div>';
-        h += '<div class="guild-member-actions">';
-        h += '<button type="button" class="guild-op-btn ok" onclick="Game.Guild.apply(' + g.id + ')">[申请加入]</button>';
-        h += '</div>';
+      } else {
+        h += '<div class="guild-recruitment-grid">';
+        for (var i = 0; i < this.list.length; i++) {
+          var g = this.list[i];
+          h += '<div class="guild-entry-card">';
+          h += '<div class="guild-entry-top">';
+          h += '<div class="guild-entry-identity">';
+          h += '<span class="guild-entry-emblem">' + iconHtml(g.icon) + '</span>';
+          h += '<span class="guild-entry-name" title="' + esc(g.name) + '">' + esc(g.name) + '</span>';
+          h += '<span class="guild-entry-prestige" title="军团总声望">★' + G.fmt(g.prestige || 0) + '</span>';
+          h += '</div>';
+          h += '<button type="button" class="guild-op-btn ok guild-entry-apply-btn" onclick="Game.Guild.apply(' + g.id + ')">[申请加入]</button>';
+          h += '</div>';
+          h += '<div class="guild-entry-meta">';
+          h += '<span>团长: <strong>' + esc(g.leaderName) + '</strong></span>';
+          h += '<span class="guild-entry-meta-sep">·</span>';
+          h += '<span>规模: <strong>' + g.members + '/' + g.maxMembers + '人</strong></span>';
+          h += '</div>';
+          if (g.notice) {
+            h += '<div class="guild-entry-notice" title="' + esc(g.notice) + '">「' + esc(g.notice) + '」</div>';
+          }
+          h += '</div>';
+        }
         h += '</div>';
       }
       h += '</div>';

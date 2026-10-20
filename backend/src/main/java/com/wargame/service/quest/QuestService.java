@@ -343,6 +343,7 @@ public class QuestService {
     /** 领取阶段通关豪华大礼包并解锁下一阶段。 */
     @Transactional
     public Map<String, Object> claimStage(Long playerId, String stageId) {
+        playerRepository.lockById(playerId).orElseThrow();
         Map<String, Object> result = new LinkedHashMap<>();
         QuestCatalog.Chapter chapter = QuestCatalog.findChapter(stageId);
         if (chapter == null) {
@@ -358,8 +359,8 @@ public class QuestService {
             return result;
         }
 
-        // 验证该阶段所有任务是否均已完成/领取
-        for (QuestCatalog.Quest q : chapter.quests()) {
+        // 已完成章节是历史成果，迁入新任务不能撤销旧的领奖资格。
+        for (QuestCatalog.Quest q : "completed".equals(stageRow.getStatus()) ? List.<QuestCatalog.Quest>of() : chapter.quests()) {
             PlayerQuest pq = playerQuestRepository.findByPlayerIdAndQuestId(playerId, q.id()).orElse(null);
             if (pq == null || (!"completed".equals(pq.getStatus()) && !"claimed".equals(pq.getStatus()))) {
                 result.put("success", false);
@@ -380,7 +381,7 @@ public class QuestService {
         String nextStageId = QuestCatalog.nextChapterId(stageId);
         if (nextStageId != null) {
             PlayerQuestStage nextStageRow = ensureStageRow(playerId, nextStageId);
-            if (!"claimed".equals(nextStageRow.getStatus())) {
+            if (!"claimed".equals(nextStageRow.getStatus()) && !"completed".equals(nextStageRow.getStatus())) {
                 nextStageRow.setStatus("in_progress");
                 playerQuestStageRepository.save(nextStageRow);
             }
@@ -481,7 +482,7 @@ public class QuestService {
             String stageStatus = stageRow.getStatus();
 
             // 若前序阶段未 claimed，当前阶段为 locked
-            if (!previousStageClaimed && !"claimed".equals(stageStatus)) {
+            if (!previousStageClaimed && !"claimed".equals(stageStatus) && !"completed".equals(stageStatus)) {
                 stageStatus = "locked";
             }
 
@@ -543,7 +544,7 @@ public class QuestService {
                         stageRow.setCompletedAt(System.currentTimeMillis());
                         playerQuestStageRepository.save(stageRow);
                     }
-                } else {
+                } else if (!"completed".equals(stageRow.getStatus())) {
                     stageStatus = "in_progress";
                 }
             }

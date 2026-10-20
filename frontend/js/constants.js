@@ -4,6 +4,23 @@ window.Game = window.Game || {};
 (function (G) {
   'use strict';
 
+  // 活动只跟随服务器已提交的时钟；失联时保留最后样本，不能按本机时间提前完成。
+  var gameTime = null;
+  G.GameTime = {
+    /** 同步游戏时间，忽略并行请求中较早的响应。切换大区或账号需先 reset。 */
+    sync: function (value) {
+      if (value == null || value === '') return;
+      var time = Number(value);
+      if (Number.isFinite(time) && time > 0) gameTime = gameTime == null ? time : Math.max(gameTime, time);
+    },
+    reset: function () { gameTime = null; },
+    now: function () { return gameTime == null ? Date.now() : gameTime; },
+    /** 将活动截止点映射成当前预计真实完成时刻；停服后预计时刻随剩余时长顺延。 */
+    toWallTime: function (deadline) { return Date.now() + Number(deadline) - this.now(); }
+  };
+  // 未连接服务器的本地试玩继续使用真实时间；联网后所有计时统一读取服务器样本。
+  G.gameNow = function () { return G.GameTime.now(); };
+
   G.Constants = {
     siteInfo: {
       operator: '山河远征网络科技有限公司',
@@ -52,7 +69,23 @@ window.Game = window.Game || {};
       { id: 'paper', name: '战术公文沙盘风', tag: '护眼米白', desc: '米白档案纸底 + 1px极细墨线 + 战备橄榄绿与印章红' },
       { id: 'dark', name: '战术夜航终端黑', tag: '极简冷黑', desc: '高纯度冷墨黑 + 雷达天青微光，夜间游玩省电护眼' }
     ],
-    pvp: { heartbeatMs: 10000, queuePollMs: 3000, battlePollMs: 2000 },
+    pvp: { minPrestige: 10000, heartbeatMs: 10000, queuePollMs: 3000, battlePollMs: 2000 },
+    // 主线入口按稳定任务 ID 对应 QuestCatalog；改名与晋升直接定位现有操作入口。
+    mainQuestDestinations: {
+      q1_1: 'buildArmy', q1_2: 'buildRes', q1_3: 'buildRes', q1_4: 'army',
+      q1_5: 'commanderName', q1_6: 'cityName', q1_7: 'officer', q1_8: 'forum', q1_9: 'rank',
+      q2_1: 'buildRes', q2_2: 'buildRes', q2_3: 'wild', q2_4: 'campaign', q2_5: 'campaign',
+      q2_6: 'tech', q2_7: 'army', q2_8: 'rank', q2_9: 'cities',
+      q3_1: 'army', q3_2: 'army', q3_3: 'academy', q3_4: 'npc', q3_5: 'npc',
+      q3_6: 'npc', q3_7: 'rank', q3_8: 'cities',
+      q4_1: 'player', q4_2: 'player', q4_3: 'campaign', q4_4: 'campaign',
+      q4_5: 'army', q4_6: 'npc', q4_7: 'buildArmy', q4_8: 'cities',
+      q5_1: 'tech', q5_2: 'tech', q5_3: 'army', q5_4: 'army', q5_5: 'army', q5_6: 'rank', q5_7: 'cities',
+      q6_1: 'army', q6_2: 'army', q6_3: 'npc', q6_4: 'tech', q6_5: 'buildArmy', q6_6: 'rank', q6_7: 'cities',
+      q7_1: 'army', q7_2: 'army', q7_3: 'tech', q7_4: 'buildArmy', q7_5: 'buildArmy',
+      q7_6: 'rank', q7_7: 'cities', q7_8: 'npc',
+      q8_1: 'buildArmy', q8_2: 'tech', q8_3: 'army', q8_4: 'army', q8_5: 'cities', q8_6: 'npc', q8_7: 'rank'
+    },
     navItems: [
       { key: '1', label: '后勤', route: 'buildRes' },
       { key: '2', label: '军工', route: 'buildArmy' },
@@ -194,8 +227,12 @@ window.Game = window.Game || {};
       neutral: { fill: 0x343b36, edge: 0xaeb8ad, ink: 0xf1f3ea }
     },
     techBranches: ['军事', '机动', '后勤', '侦察'],
+    // 与服务端 TechnologyRules 一致：中心从 Lv.1 起加速，学识按每点连续计入。
+    // 按目标等级查表，舰船动力末级对齐终局项目28天，与服务端和设计文档一致。
+    researchDuration: {"normal":[180,600,1800,10800,43200,85320,168420,332460,656400,1296000],"resource":[120,480,1500,5400,21600,46860,101640,220380,478020,1036800],"arm_engine":[300,900,2700,10800,43200,90360,188940,395100,826260,1728000],"nav_engine":[300,900,2700,10800,43200,96660,216180,483480,1081500,2419200],"air_engine":[300,900,2700,10800,43200,96660,216180,483480,1081500,2419200]},
+    researchSpeed: { labPerLevel: 0.01, labMaxLevel: 10, knowledgePerPoint: 0.001 },
     // 仅列实际生效的百分比科技；情报、配方、俘获比例及未生效科技由科技页单独说明。
-    techEffectPercent: { wall_stats: 5, atk_all: 5, def_all: 5, range_all: 5, hp_all: 5, firepower_all: 5, spd_arm: 5, spd_air: 5, spd_nav: 5, res_food: 5, res_steel: 5, res_oil: 5, res_rare: 5, load: 5, cap: 10, food_save: -5, train: 5, build: -5, medical: 5 },
+    techEffectPercent: { wall_stats: 5, atk_all: 5, def_all: 5, range_all: 5, hp_all: 5, firepower_all: 5, spd_arm: 5, spd_air: 5, spd_nav: 5, res_food: 5, res_steel: 5, res_oil: 5, res_rare: 5, load: 5, cap: 5, food_save: -5, train: 5, build: -5, medical: 5 },
     worldTargetKeys: { wild: 'wildTiles', player: 'playerCities', simulated_npc: 'simulatedNpcCities', bandit: 'bandits' },
     battleRoundLimits: { plunder: 25, conquer: 35, feint: 10, harass: 15, guerrilla: 5 },
     campaignModes: [
@@ -205,8 +242,9 @@ window.Game = window.Game || {};
       { action: 'harass', name: '袭扰', description: '以持续袭击骚扰、打击敌军，作战方式类似掠夺；即使获胜也不获得资源、不占领目标。最多战斗 15 回合，适合不喜欢冗长回合作战的玩家；到达上限仍未获胜时自动撤退。' },
       { action: 'guerrilla', name: '游击', description: '快速袭击敌军，以骚扰打击为目的，作战方式类似掠夺；即使获胜也不获得资源、不占领目标。最多战斗 5 回合，到达上限仍未获胜时自动撤退，适合速战速撤。' }
     ],
-    dispatchActionNames: { campaign: '讨伐', conquer: '征服', plunder: '掠夺', feint: '佯攻', harass: '袭扰', guerrilla: '游击', scout: '侦查', gather: '采集', station: '派遣进驻' },
+    dispatchActionNames: { campaign: '讨伐', conquer: '征服', plunder: '掠夺', feint: '佯攻', harass: '袭扰', guerrilla: '游击', scout: '侦查', gather: '采集', station: '派遣进驻', intercept_scout: '出城拦截' },
     cityStateNames: { peace: '和平', war: '战争', shield: '护盾' },
+    shieldPricePerCity: 200,
     battlefields: [
       { id: 'northwest', name: '西北战场', column: 0, row: 0 },
       { id: 'northeast', name: '东北战场', column: 1, row: 0 },
@@ -292,6 +330,7 @@ window.Game = window.Game || {};
       { id: 'shield',    cat: 'util', name: '护盾',     icon: '🛡️', desc: '本城8小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地',         price: 200,  stock: null, tag: '' },
       { id: 'marchOrd',  cat: 'util', name: '行军令',   icon: '🚩', desc: '仓库启用：行军速度+50%，持续1小时；情报使用：本队当前路段剩余时间缩短约1/3，去程与回程各限一次', price: 100, stock: null, tag: '' },
       { id: 'populationOrder', cat: 'util', name: '人口动员令', icon: '👥', desc: '使用后立即增加500空闲人口,不超过人口上限', price: 100, stock: null, tag: '推荐' },
+      { id: 'emergencyPopulationOrder', cat: 'util', name: '紧急人口动员令', icon: '📣', desc: '使用后立即增加当前城市人口容量上限30%的空闲人口,不超过人口上限', price: 100, stock: null, tag: '' },
       { id: 'cityRenameCard', cat: 'util', name: '城市改名卡', icon: '🏷️', desc: '为一座城市更换新名字', price: 60, stock: null, tag: '' },
       { id: 'teleportNormal', cat: 'util', name: '普通传送', icon: '🌀', desc: '消耗1个，将当前城市随机传送至开放地图的四格空闲陆地', price: 100, stock: null, tag: '' },
       { id: 'teleportAdvanced', cat: 'util', name: '高级传送', icon: '📍', desc: '消耗1个，将当前城市传送至指定坐标，目的地须有完整2×2空闲陆地', price: 500, stock: null, tag: '' },

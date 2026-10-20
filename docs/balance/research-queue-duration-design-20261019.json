@@ -1,0 +1,3799 @@
+{
+  "version": "research-city-dual-20261020-v7",
+  "status": "partially_implemented_four_technologies_and_regular_duration_curves",
+  "date": "2026-10-20",
+  "sources": {
+    "technologyCatalog": "frontend/js/data.js",
+    "currentPrerequisites": "backend/src/main/resources/game/tech-building-prerequisites.json",
+    "prerequisiteVersion": "military-theory-2026-10-19-v1"
+  },
+  "ownership": {
+    "technologyLevels": "empire",
+    "results": "empire_with_existing_effect_scope",
+    "task": "research_city",
+    "resourcePayment": "research_city",
+    "speedBonuses": "research_city"
+  },
+  "queuePolicy": {
+    "perCity": {
+      "resource": 1,
+      "normal": 1
+    },
+    "resourceTechnologyKeys": [
+      "prod_food",
+      "prod_steel",
+      "prod_oil",
+      "prod_rare"
+    ],
+    "labMinimumCompletedLevel": 1,
+    "requireTaskSpecificPrerequisites": true,
+    "globalConcurrentTasksPerTechnology": 1,
+    "pausedTasksOccupySlotAndTechnology": true,
+    "crossGroupSlotBorrowing": false,
+    "automaticBacklog": false,
+    "activeCityCountLimitSource": "MilitaryRankDef.getCityCap",
+    "currentMaximumCityCount": 8,
+    "legacySharedProductionLocks": [
+      "prod_food",
+      "prod_steel",
+      "prod_oil",
+      "prod_rare"
+    ],
+    "explicitQueueIdForCancelAndSpeedUp": true
+  },
+  "timing": {
+    "unit": "second",
+    "lookupIndex": "targetLevel_minus_1",
+    "endgameBaseSeconds": 2419200,
+    "minimumNewDurationSeconds": 5,
+    "maximumConfiguredBaseSeconds": 2419200,
+    "removeLegacy86400SecondCap": true,
+    "lockAtStart": true,
+    "labSpeedPerLevel": 0.01,
+    "labMaximumLevel": 10,
+    "knowledgeSpeedPerPoint": 0.001,
+    "researchSkillSpeedPerLevel": 0.04,
+    "researchSkillMaximumLevel": 5,
+    "formula": "max(5, round(baseSeconds / ((1 + 0.01 * labLevel) * (1 + 0.001 * max(0, effectiveMayorKnowledge)) * (1 + 0.04 * researchSkillLevel))))",
+    "noMayorKnowledgeAndSkill": 0,
+    "effectiveKnowledgeCeilingReference": {
+      "base": 219,
+      "gear": 90,
+      "setMain": 30,
+      "setAll": 5,
+      "total": 344
+    },
+    "baseDurationProfiles": {
+      "normal": {
+        "label": "普通科技",
+        "queueGroup": "normal",
+        "earlyBaseSecondsByTargetLevel": [
+          180,
+          600,
+          1800,
+          10800,
+          43200
+        ],
+        "targetLevel5BaseSeconds": 43200,
+        "targetLevel10BaseSeconds": 1296000,
+        "lateGrowthRatioReference": 1.9743504858348198,
+        "baseSecondsByTargetLevel": [
+          180,
+          600,
+          1800,
+          10800,
+          43200,
+          85320,
+          168420,
+          332460,
+          656400,
+          1296000
+        ]
+      },
+      "resource": {
+        "label": "资源科技",
+        "queueGroup": "resource",
+        "earlyBaseSecondsByTargetLevel": [
+          120,
+          480,
+          1500,
+          5400,
+          21600
+        ],
+        "targetLevel5BaseSeconds": 21600,
+        "targetLevel10BaseSeconds": 1036800,
+        "lateGrowthRatioReference": 2.168943542395397,
+        "baseSecondsByTargetLevel": [
+          120,
+          480,
+          1500,
+          5400,
+          21600,
+          46860,
+          101640,
+          220380,
+          478020,
+          1036800
+        ]
+      },
+      "arm_engine": {
+        "label": "燃烧引擎",
+        "queueGroup": "normal",
+        "earlyBaseSecondsByTargetLevel": [
+          300,
+          900,
+          2700,
+          10800,
+          43200
+        ],
+        "targetLevel5BaseSeconds": 43200,
+        "targetLevel10BaseSeconds": 1728000,
+        "lateGrowthRatioReference": 2.0912791051825463,
+        "baseSecondsByTargetLevel": [
+          300,
+          900,
+          2700,
+          10800,
+          43200,
+          90360,
+          188940,
+          395100,
+          826260,
+          1728000
+        ]
+      },
+      "nav_engine": {
+        "label": "舰船动力",
+        "queueGroup": "normal",
+        "earlyBaseSecondsByTargetLevel": [
+          300,
+          900,
+          2700,
+          10800,
+          43200
+        ],
+        "targetLevel5BaseSeconds": 43200,
+        "targetLevel10BaseSeconds": 2419200,
+        "lateGrowthRatioReference": 2.2368538294402893,
+        "baseSecondsByTargetLevel": [
+          300,
+          900,
+          2700,
+          10800,
+          43200,
+          96660,
+          216180,
+          483480,
+          1081500,
+          2419200
+        ]
+      },
+      "air_engine": {
+        "label": "喷气推进",
+        "queueGroup": "normal",
+        "earlyBaseSecondsByTargetLevel": [
+          300,
+          900,
+          2700,
+          10800,
+          43200
+        ],
+        "targetLevel5BaseSeconds": 43200,
+        "targetLevel10BaseSeconds": 2419200,
+        "lateGrowthRatioReference": 2.2368538294402893,
+        "baseSecondsByTargetLevel": [
+          300,
+          900,
+          2700,
+          10800,
+          43200,
+          96660,
+          216180,
+          483480,
+          1081500,
+          2419200
+        ]
+      }
+    },
+    "durationProfileSelection": "regularTechnologyCatalog.timingProfile",
+    "lastLevelDayTargetsApplyTo": "target_level_10_only_for_regular_technologies",
+    "derivation": {
+      "earlyTargetLevels": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "earlyRule": "explicit_experience_anchors",
+      "lateTargetLevels": [
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "lateFormula": "60 * round_half_up(A * (E / A)^((targetLevel - 5) / 5) / 60)",
+      "A": "same_profile.targetLevel5BaseSeconds",
+      "E": "same_profile.targetLevel10BaseSeconds",
+      "lateGrowthRatioFormula": "(E / A)^(1 / 5)",
+      "rounding": "nearest_60_seconds_half_up_before_bonuses",
+      "deriveEveryLevelFromUnroundedAnchor": true,
+      "runtimeUsesGeneratedLookupTable": true,
+      "endgameProjectsUseOwnSingleLevelDuration": true
+    },
+    "roundActualDurationOnlyAfterAllBonuses": true,
+    "allRegularTechnologiesMaxLevel": 10
+  },
+  "regularTechnologyCatalog": [
+    {
+      "key": "military_theory",
+      "name": "军事理论",
+      "branch": "军事",
+      "maxLevel": 10,
+      "queueGroup": "normal",
+      "baseCost": {
+        "steel": 300,
+        "food": 240,
+        "gold": 200
+      },
+      "costGrowth": 1.8,
+      "prerequisiteReference": {
+        "version": "military-theory-2026-10-19-v1",
+        "key": "military_theory",
+        "scope": "research_city"
+      },
+      "timingProfile": "normal"
+    },
+    {
+      "key": "wall_reinforcement",
+      "name": "城墙加固",
+      "branch": "军事",
+      "maxLevel": 10,
+      "queueGroup": "normal",
+      "baseCost": {
+        "steel": 320,
+        "food": 160,
+        "rare": 30
+      },
+      "costGrowth": 1.8,
+      "prerequisiteReference": {
+        "version": "military-theory-2026-10-19-v1",
+        "key": "wall_reinforcement",
+        "scope": "research_city"
+      },
+      "timingProfile": "normal"
+    },
+    {
+      "key": "unit_refit",
+      "name": "武器装备",
+      "branch": "军事",
+      "maxLevel": 10,
+      "queueGroup": "normal",
+      "baseCost": {
+        "steel": 300,
+        "oil": 100,
+        "rare": 50
+      },
+      "costGrowth": 2,
+      "prerequisiteReference": {
+        "version": "research-technology-ten-levels-20261019-v1",
+        "key": "unit_refit",
+        "scope": "research_city",
+        "section": "tenLevelTechnologyExpansion.prerequisiteOverrides"
+      },
+      "timingProfile": "normal"
+    },
+    {
+      "key": "prisoner_education",
+      "name": "战俘收编",
+      "branch": "后勤",
+      "maxLevel": 10,
+      "queueGroup": "normal",
+      "baseCost": {
+        "steel": 320,
+        "food": 220,
+        "gold": 150
+      },
+      "costGrowth": 1.8,
+      "prerequisiteReference": {
+        "version": "military-theory-2026-10-19-v1",
+        "key": "prisoner_education",
+        "scope": "research_city"
+      },
+      "timingProfile": "normal"
+    },
+    {
+      "key": "attack_tech",
+      "name": "攻击科技",
+      "branch": "军事",
+      "maxLevel": 10,
+      "queueGroup": "normal",
+      "baseCost": {
+        "steel": 240,
+        "food": 120
+      },
+      "costGrowth": 1.7,
+      "prerequisiteReference": {
+        "version": "military-theory-2026-10-19-v1",
+        "key": "attack_tech",
+        "scope": "research_city"
+      },
+      "timingProfile": "normal"
+    },
+    {
+      "key": "defense_tech",
+      "name": "防御科技",
+      "branch": "军事",
+      "maxLevel": 10,
+      "queueGroup": "normal",
+      "baseCost": {
+        "steel": 240,
+        "food": 120
+      },
+      "costGrowth": 1.7,
+      "prerequisiteReference": {
+        "version": "military-theory-2026-10-19-v1",
+        "key": "defense_tech",
+        "scope": "research_city"
+      },
+      "timingProfile": "normal"
+    },
+    {
+      "key": "weapon_range",
+      "name": "武器射程",
+      "branch": "军事",
+      "maxLevel": 10,
+      "queueGroup": "normal",
+      "baseCost": {
+        "steel": 280,
+        "food": 140,
+        "rare": 20
+      },
+      "costGrowth": 1.8,
+      "prerequisiteReference": {
+        "version": "military-theory-2026-10-19-v1",
+        "key": "weapon_range",
+        "scope": "research_city"
+      },
+      "timingProfile": "normal"
+    },
+    {
+      "key": "cmd_hp",
+      "name": "军队生命",
+      "branch": "军事",
+      "maxLevel": 10,
+      "queueGroup": "normal",
+      "baseCost": {
+        "steel": 300,
+        "food": 160,
+        "rare": 30
+      },
+      "costGrowth": 1.8,
+      "prerequisiteReference": {
+        "version": "military-theory-2026-10-19-v1",
+        "key": "cmd_hp",
+        "scope": "research_city"
+      },
+      "timingProfile": "normal"
+    },
+    {
+      "key": "fire_density",
+      "name": "火力密度",
+      "branch": "军事",
+      "maxLevel": 10,
+      "queueGroup": "normal",
+      "baseCost": {
+        "steel": 300,
+        "food": 160,
+        "rare": 30
+      },
+      "costGrowth": 1.8,
+      "prerequisiteReference": {
+        "version": "military-theory-2026-10-19-v1",
+        "key": "fire_density",
+        "scope": "research_city"
+      },
+      "timingProfile": "normal"
+    },
+    {
+      "key": "log_load",
+      "name": "负重科技",
+      "branch": "后勤",
+      "maxLevel": 10,
+      "queueGroup": "normal",
+      "baseCost": {
+        "steel": 200,
+        "food": 100
+      },
+      "costGrowth": 1.6,
+      "prerequisiteReference": {
+        "version": "military-theory-2026-10-19-v1",
+        "key": "log_load",
+        "scope": "research_city"
+      },
+      "timingProfile": "normal"
+    },
+    {
+      "key": "arm_engine",
+      "name": "燃烧引擎",
+      "branch": "机动",
+      "maxLevel": 10,
+      "queueGroup": "normal",
+      "baseCost": {
+        "steel": 320,
+        "oil": 120,
+        "rare": 40
+      },
+      "costGrowth": 1.8,
+      "prerequisiteReference": {
+        "version": "military-theory-2026-10-19-v1",
+        "key": "arm_engine",
+        "scope": "research_city"
+      },
+      "timingProfile": "arm_engine"
+    },
+    {
+      "key": "air_engine",
+      "name": "喷气推进",
+      "branch": "机动",
+      "maxLevel": 10,
+      "queueGroup": "normal",
+      "baseCost": {
+        "steel": 360,
+        "oil": 160,
+        "rare": 70
+      },
+      "costGrowth": 1.9,
+      "prerequisiteReference": {
+        "version": "military-theory-2026-10-19-v1",
+        "key": "air_engine",
+        "scope": "research_city"
+      },
+      "timingProfile": "air_engine"
+    },
+    {
+      "key": "nav_engine",
+      "name": "舰船动力",
+      "branch": "机动",
+      "maxLevel": 10,
+      "queueGroup": "normal",
+      "baseCost": {
+        "steel": 400,
+        "oil": 200,
+        "rare": 100
+      },
+      "costGrowth": 2,
+      "prerequisiteReference": {
+        "version": "military-theory-2026-10-19-v1",
+        "key": "nav_engine",
+        "scope": "research_city"
+      },
+      "timingProfile": "nav_engine"
+    },
+    {
+      "key": "prod_food",
+      "name": "粮食产量",
+      "branch": "后勤",
+      "maxLevel": 10,
+      "queueGroup": "resource",
+      "baseCost": {
+        "steel": 80,
+        "food": 40
+      },
+      "costGrowth": 1.8,
+      "prerequisiteReference": {
+        "version": "military-theory-2026-10-19-v1",
+        "key": "prod_food",
+        "scope": "research_city"
+      },
+      "timingProfile": "resource"
+    },
+    {
+      "key": "prod_steel",
+      "name": "钢铁产量",
+      "branch": "后勤",
+      "maxLevel": 10,
+      "queueGroup": "resource",
+      "baseCost": {
+        "steel": 80,
+        "food": 40
+      },
+      "costGrowth": 1.8,
+      "prerequisiteReference": {
+        "version": "military-theory-2026-10-19-v1",
+        "key": "prod_steel",
+        "scope": "research_city"
+      },
+      "timingProfile": "resource"
+    },
+    {
+      "key": "prod_oil",
+      "name": "石油产量",
+      "branch": "后勤",
+      "maxLevel": 10,
+      "queueGroup": "resource",
+      "baseCost": {
+        "steel": 80,
+        "food": 40
+      },
+      "costGrowth": 1.8,
+      "prerequisiteReference": {
+        "version": "military-theory-2026-10-19-v1",
+        "key": "prod_oil",
+        "scope": "research_city"
+      },
+      "timingProfile": "resource"
+    },
+    {
+      "key": "prod_rare",
+      "name": "稀矿产量",
+      "branch": "后勤",
+      "maxLevel": 10,
+      "queueGroup": "resource",
+      "baseCost": {
+        "steel": 80,
+        "food": 40
+      },
+      "costGrowth": 1.8,
+      "prerequisiteReference": {
+        "version": "military-theory-2026-10-19-v1",
+        "key": "prod_rare",
+        "scope": "research_city"
+      },
+      "timingProfile": "resource"
+    },
+    {
+      "key": "log_warehouse",
+      "name": "仓储技术",
+      "branch": "后勤",
+      "maxLevel": 10,
+      "queueGroup": "normal",
+      "baseCost": {
+        "steel": 280,
+        "food": 140
+      },
+      "costGrowth": 1.7,
+      "prerequisiteReference": {
+        "version": "research-technology-ten-levels-20261019-v1",
+        "key": "log_warehouse",
+        "scope": "research_city",
+        "section": "tenLevelTechnologyExpansion.prerequisiteOverrides"
+      },
+      "timingProfile": "normal"
+    },
+    {
+      "key": "log_food",
+      "name": "军需补给",
+      "branch": "后勤",
+      "maxLevel": 10,
+      "queueGroup": "normal",
+      "baseCost": {
+        "steel": 360,
+        "food": 200
+      },
+      "costGrowth": 1.8,
+      "prerequisiteReference": {
+        "version": "military-theory-2026-10-19-v1",
+        "key": "log_food",
+        "scope": "research_city"
+      },
+      "timingProfile": "normal"
+    },
+    {
+      "key": "log_train",
+      "name": "训练加速",
+      "branch": "后勤",
+      "maxLevel": 10,
+      "queueGroup": "normal",
+      "baseCost": {
+        "steel": 300,
+        "food": 180,
+        "gold": 100
+      },
+      "costGrowth": 1.8,
+      "prerequisiteReference": {
+        "version": "military-theory-2026-10-19-v1",
+        "key": "log_train",
+        "scope": "research_city"
+      },
+      "timingProfile": "normal"
+    },
+    {
+      "key": "log_build",
+      "name": "建筑加速",
+      "branch": "后勤",
+      "maxLevel": 10,
+      "queueGroup": "normal",
+      "baseCost": {
+        "steel": 340,
+        "food": 160,
+        "gold": 120
+      },
+      "costGrowth": 1.8,
+      "prerequisiteReference": {
+        "version": "military-theory-2026-10-19-v1",
+        "key": "log_build",
+        "scope": "research_city"
+      },
+      "timingProfile": "normal"
+    },
+    {
+      "key": "log_medical",
+      "name": "医疗技术",
+      "branch": "后勤",
+      "maxLevel": 10,
+      "queueGroup": "normal",
+      "baseCost": {
+        "steel": 320,
+        "food": 220,
+        "gold": 150
+      },
+      "costGrowth": 1.8,
+      "prerequisiteReference": {
+        "version": "military-theory-2026-10-19-v1",
+        "key": "log_medical",
+        "scope": "research_city"
+      },
+      "timingProfile": "normal"
+    },
+    {
+      "key": "recon_level",
+      "name": "侦察技术",
+      "branch": "侦察",
+      "maxLevel": 10,
+      "queueGroup": "normal",
+      "baseCost": {
+        "steel": 180,
+        "oil": 60
+      },
+      "costGrowth": 1.6,
+      "prerequisiteReference": {
+        "version": "research-technology-ten-levels-20261019-v1",
+        "key": "recon_level",
+        "scope": "research_city",
+        "section": "tenLevelTechnologyExpansion.prerequisiteOverrides"
+      },
+      "timingProfile": "normal"
+    },
+    {
+      "key": "recon_radar",
+      "name": "雷达预警",
+      "branch": "侦察",
+      "maxLevel": 10,
+      "queueGroup": "normal",
+      "baseCost": {
+        "steel": 240,
+        "oil": 100,
+        "rare": 20
+      },
+      "costGrowth": 1.7,
+      "prerequisiteReference": {
+        "version": "research-technology-ten-levels-20261019-v1",
+        "key": "recon_radar",
+        "scope": "research_city",
+        "section": "tenLevelTechnologyExpansion.prerequisiteOverrides"
+      },
+      "timingProfile": "normal"
+    }
+  ],
+  "endgameProjects": [
+    {
+      "key": "endgame_land_readiness",
+      "name": "陆军战备体系",
+      "unitBranch": "land",
+      "referenceEngine": "arm_engine",
+      "buildings": {
+        "lab": 10,
+        "factory": 10,
+        "lightfactory": 10,
+        "heavyfactory": 10,
+        "transit": 10
+      },
+      "queueGroup": "normal",
+      "category": "endgame",
+      "maxLevel": 1,
+      "baseDurationSeconds": 2419200,
+      "technologyPrerequisites": {
+        "arm_engine": 10,
+        "log_train": 10,
+        "unit_refit": 10
+      },
+      "buildingPrerequisiteScope": "research_city",
+      "coastalOnly": false,
+      "effect": {
+        "type": "new_unit_production_resource_discount",
+        "percent": 10,
+        "resources": [
+          "food",
+          "steel",
+          "oil",
+          "rare"
+        ],
+        "scope": "empire",
+        "eligibleCurrentUnitKeys": [
+          "infantry",
+          "truck",
+          "armored",
+          "recon_car",
+          "ltank",
+          "htank",
+          "assault",
+          "rocket",
+          "special"
+        ],
+        "rounding": "ceil_after_existing_batch_cost_calculation",
+        "affectsExistingProduction": false,
+        "excludes": [
+          "population",
+          "gold",
+          "diamond",
+          "production_time",
+          "fortification",
+          "equipment_manufacturing",
+          "healing"
+        ]
+      },
+      "researchCost": {
+        "steel": 253896,
+        "oil": 95212,
+        "rare": 31736
+      },
+      "researchCostRule": "4 * floor(reference_engine.baseCost[resource] * reference_engine.growth^9)",
+      "countsTowardsRegularTechnologyGraduation": false
+    },
+    {
+      "key": "endgame_air_readiness",
+      "name": "空军战备体系",
+      "unitBranch": "air",
+      "referenceEngine": "air_engine",
+      "buildings": {
+        "lab": 10,
+        "airport": 10,
+        "apron": 10,
+        "transit": 10
+      },
+      "queueGroup": "normal",
+      "category": "endgame",
+      "maxLevel": 1,
+      "baseDurationSeconds": 2419200,
+      "technologyPrerequisites": {
+        "air_engine": 10,
+        "log_train": 10,
+        "unit_refit": 10
+      },
+      "buildingPrerequisiteScope": "research_city",
+      "coastalOnly": false,
+      "effect": {
+        "type": "new_unit_production_resource_discount",
+        "percent": 10,
+        "resources": [
+          "food",
+          "steel",
+          "oil",
+          "rare"
+        ],
+        "scope": "empire",
+        "eligibleCurrentUnitKeys": [
+          "scout",
+          "fighter",
+          "bomber",
+          "transport"
+        ],
+        "rounding": "ceil_after_existing_batch_cost_calculation",
+        "affectsExistingProduction": false,
+        "excludes": [
+          "population",
+          "gold",
+          "diamond",
+          "production_time",
+          "fortification",
+          "equipment_manufacturing",
+          "healing"
+        ]
+      },
+      "researchCost": {
+        "steel": 464668,
+        "oil": 206520,
+        "rare": 90352
+      },
+      "researchCostRule": "4 * floor(reference_engine.baseCost[resource] * reference_engine.growth^9)",
+      "countsTowardsRegularTechnologyGraduation": false
+    },
+    {
+      "key": "endgame_naval_readiness",
+      "name": "海军战备体系",
+      "unitBranch": "sea",
+      "referenceEngine": "nav_engine",
+      "buildings": {
+        "lab": 10,
+        "port": 10,
+        "shipyard": 10,
+        "transit": 10
+      },
+      "coastalOnly": true,
+      "queueGroup": "normal",
+      "category": "endgame",
+      "maxLevel": 1,
+      "baseDurationSeconds": 2419200,
+      "technologyPrerequisites": {
+        "nav_engine": 10,
+        "log_train": 10,
+        "unit_refit": 10
+      },
+      "buildingPrerequisiteScope": "research_city",
+      "effect": {
+        "type": "new_unit_production_resource_discount",
+        "percent": 10,
+        "resources": [
+          "food",
+          "steel",
+          "oil",
+          "rare"
+        ],
+        "scope": "empire",
+        "eligibleCurrentUnitKeys": [
+          "destroyer",
+          "sub",
+          "battleship",
+          "carrier"
+        ],
+        "rounding": "ceil_after_existing_batch_cost_calculation",
+        "affectsExistingProduction": false,
+        "excludes": [
+          "population",
+          "gold",
+          "diamond",
+          "production_time",
+          "fortification",
+          "equipment_manufacturing",
+          "healing"
+        ]
+      },
+      "researchCost": {
+        "steel": 819200,
+        "oil": 409600,
+        "rare": 204800
+      },
+      "researchCostRule": "4 * floor(reference_engine.baseCost[resource] * reference_engine.growth^9)",
+      "countsTowardsRegularTechnologyGraduation": false
+    }
+  ],
+  "lifecycle": {
+    "cancellationRefundPercent": 80,
+    "cancellationRefundRounding": "floor_per_paid_resource",
+    "cancellationRefundCity": "original_research_city",
+    "freezeScope": "both_queues_of_frozen_city",
+    "freezeResume": "shift_each_finish_by_its_frozen_duration",
+    "otherCitiesContinueDuringFreeze": true,
+    "cityConquest": "remove_original_owner_tasks_and_global_locks_atomically_without_extra_refund",
+    "prerequisiteBuildingDowngrade": "reject_if_invalidates_either_active_queue",
+    "existingTasksOnMigration": "preserve_paid_cost_duration_finish_and_freeze_state",
+    "invalidLegacyDuplicateTasks": "report_and_stop_constraint_activation_without_deleting_tasks"
+  },
+  "analysis": {
+    "profiles": [
+      {
+        "key": "knowledge100_skill5",
+        "label": "中心10级、有效学识100、格物5级",
+        "labLevel": 10,
+        "knowledge": 100,
+        "researchSkillLevel": 5,
+        "speedMultiplier": 1.452,
+        "durationPercentOfBase": 68.87052342,
+        "endgameDurationSeconds": 1666116,
+        "durationSecondsByTimingProfile": {
+          "normal": [
+            124,
+            413,
+            1240,
+            7438,
+            29752,
+            58760,
+            115992,
+            228967,
+            452066,
+            892562
+          ],
+          "resource": [
+            83,
+            331,
+            1033,
+            3719,
+            14876,
+            32273,
+            70000,
+            151777,
+            329215,
+            714050
+          ],
+          "arm_engine": [
+            207,
+            620,
+            1860,
+            7438,
+            29752,
+            62231,
+            130124,
+            272107,
+            569050,
+            1190083
+          ],
+          "nav_engine": [
+            207,
+            620,
+            1860,
+            7438,
+            29752,
+            66570,
+            148884,
+            332975,
+            744835,
+            1666116
+          ],
+          "air_engine": [
+            207,
+            620,
+            1860,
+            7438,
+            29752,
+            66570,
+            148884,
+            332975,
+            744835,
+            1666116
+          ]
+        }
+      },
+      {
+        "key": "knowledge219_skill5",
+        "label": "中心10级、有效学识219、格物5级",
+        "labLevel": 10,
+        "knowledge": 219,
+        "researchSkillLevel": 5,
+        "speedMultiplier": 1.60908,
+        "durationPercentOfBase": 62.14731399,
+        "endgameDurationSeconds": 1503468,
+        "durationSecondsByTimingProfile": {
+          "normal": [
+            112,
+            373,
+            1119,
+            6712,
+            26848,
+            53024,
+            104669,
+            206615,
+            407935,
+            805429
+          ],
+          "resource": [
+            75,
+            298,
+            932,
+            3356,
+            13424,
+            29122,
+            63167,
+            136960,
+            297077,
+            644343
+          ],
+          "arm_engine": [
+            186,
+            559,
+            1678,
+            6712,
+            26848,
+            56156,
+            117421,
+            245544,
+            513498,
+            1073906
+          ],
+          "nav_engine": [
+            186,
+            559,
+            1678,
+            6712,
+            26848,
+            60072,
+            134350,
+            300470,
+            672123,
+            1503468
+          ],
+          "air_engine": [
+            186,
+            559,
+            1678,
+            6712,
+            26848,
+            60072,
+            134350,
+            300470,
+            672123,
+            1503468
+          ]
+        }
+      },
+      {
+        "key": "knowledge344_skill5",
+        "label": "中心10级、基础学识219及元帅学识套装、格物5级",
+        "labLevel": 10,
+        "knowledge": 344,
+        "researchSkillLevel": 5,
+        "speedMultiplier": 1.77408,
+        "durationPercentOfBase": 56.36724387,
+        "endgameDurationSeconds": 1363636,
+        "durationSecondsByTimingProfile": {
+          "normal": [
+            101,
+            338,
+            1015,
+            6088,
+            24351,
+            48093,
+            94934,
+            187399,
+            369995,
+            730519
+          ],
+          "resource": [
+            68,
+            271,
+            846,
+            3044,
+            12175,
+            26414,
+            57292,
+            124222,
+            269447,
+            584416
+          ],
+          "arm_engine": [
+            169,
+            507,
+            1522,
+            6088,
+            24351,
+            50933,
+            106500,
+            222707,
+            465740,
+            974026
+          ],
+          "nav_engine": [
+            169,
+            507,
+            1522,
+            6088,
+            24351,
+            54485,
+            121855,
+            272524,
+            609612,
+            1363636
+          ],
+          "air_engine": [
+            169,
+            507,
+            1522,
+            6088,
+            24351,
+            54485,
+            121855,
+            272524,
+            609612,
+            1363636
+          ]
+        }
+      }
+    ],
+    "regularGroupWorkloads": {
+      "normal": {
+        "technologyCount": 20,
+        "totalBaseWorkSeconds": 56114460,
+        "totalFullBonusWorkSeconds": 31630202,
+        "longestFullBonusTechnologyChainSeconds": 2454749
+      },
+      "resource": {
+        "technologyCount": 4,
+        "totalBaseWorkSeconds": 7651200,
+        "totalFullBonusWorkSeconds": 4312780,
+        "longestFullBonusTechnologyChainSeconds": 1078195
+      }
+    },
+    "perCityParallelLowerBounds": [
+      {
+        "cityCount": 1,
+        "nominalCityQueueSlots": 2,
+        "groups": {
+          "normal": {
+            "usableParallelSlots": 1,
+            "lowerBoundDays": 366.0903
+          },
+          "resource": {
+            "usableParallelSlots": 1,
+            "lowerBoundDays": 49.9164
+          }
+        },
+        "regularAllTechnologyLowerBoundDays": 366.0903
+      },
+      {
+        "cityCount": 2,
+        "nominalCityQueueSlots": 4,
+        "groups": {
+          "normal": {
+            "usableParallelSlots": 2,
+            "lowerBoundDays": 183.0452
+          },
+          "resource": {
+            "usableParallelSlots": 2,
+            "lowerBoundDays": 24.9582
+          }
+        },
+        "regularAllTechnologyLowerBoundDays": 183.0452
+      },
+      {
+        "cityCount": 4,
+        "nominalCityQueueSlots": 8,
+        "groups": {
+          "normal": {
+            "usableParallelSlots": 4,
+            "lowerBoundDays": 91.5226
+          },
+          "resource": {
+            "usableParallelSlots": 4,
+            "lowerBoundDays": 12.4791
+          }
+        },
+        "regularAllTechnologyLowerBoundDays": 91.5226
+      },
+      {
+        "cityCount": 8,
+        "nominalCityQueueSlots": 16,
+        "groups": {
+          "normal": {
+            "usableParallelSlots": 8,
+            "lowerBoundDays": 45.7613
+          },
+          "resource": {
+            "usableParallelSlots": 4,
+            "lowerBoundDays": 12.4791
+          }
+        },
+        "regularAllTechnologyLowerBoundDays": 45.7613
+      }
+    ],
+    "lowerBoundAssumptions": [
+      "all_cities_already_meet_all_prerequisites",
+      "full_bonuses_from_start_in_every_city",
+      "unlimited_required_resources",
+      "no_idle_gaps",
+      "no_speedup_items",
+      "no_freezes",
+      "endgame_projects_excluded"
+    ],
+    "lowerBoundFormula": "max_over_groups(max(totalGroupWork/usableCitySlots, longestSingleTechnologyChain))",
+    "caution": "lower_bound_not_a_forecast_or_prerequisite_aware_schedule",
+    "timingProfileSummaries": {
+      "normal": {
+        "levelCount": 10,
+        "baseChainSeconds": 2595180,
+        "fullBonusChainSeconds": 1462833,
+        "baseFinalLevelSeconds": 1296000,
+        "fullBonusFinalLevelSeconds": 730519
+      },
+      "resource": {
+        "levelCount": 10,
+        "baseChainSeconds": 1912800,
+        "fullBonusChainSeconds": 1078195,
+        "baseFinalLevelSeconds": 1036800,
+        "fullBonusFinalLevelSeconds": 584416
+      },
+      "arm_engine": {
+        "levelCount": 10,
+        "baseChainSeconds": 3286560,
+        "fullBonusChainSeconds": 1852543,
+        "baseFinalLevelSeconds": 1728000,
+        "fullBonusFinalLevelSeconds": 974026
+      },
+      "nav_engine": {
+        "levelCount": 10,
+        "baseChainSeconds": 4354920,
+        "fullBonusChainSeconds": 2454749,
+        "baseFinalLevelSeconds": 2419200,
+        "fullBonusFinalLevelSeconds": 1363636
+      },
+      "air_engine": {
+        "levelCount": 10,
+        "baseChainSeconds": 4354920,
+        "fullBonusChainSeconds": 2454749,
+        "baseFinalLevelSeconds": 2419200,
+        "fullBonusFinalLevelSeconds": 1363636
+      }
+    },
+    "regularTechnologyDurations": [
+      {
+        "key": "military_theory",
+        "timingProfile": "normal",
+        "maxLevel": 10,
+        "baseSecondsByTargetLevel": [
+          180,
+          600,
+          1800,
+          10800,
+          43200,
+          85320,
+          168420,
+          332460,
+          656400,
+          1296000
+        ],
+        "fullBonusSecondsByTargetLevel": [
+          101,
+          338,
+          1015,
+          6088,
+          24351,
+          48093,
+          94934,
+          187399,
+          369995,
+          730519
+        ],
+        "baseChainSeconds": 2595180,
+        "fullBonusChainSeconds": 1462833
+      },
+      {
+        "key": "wall_reinforcement",
+        "timingProfile": "normal",
+        "maxLevel": 10,
+        "baseSecondsByTargetLevel": [
+          180,
+          600,
+          1800,
+          10800,
+          43200,
+          85320,
+          168420,
+          332460,
+          656400,
+          1296000
+        ],
+        "fullBonusSecondsByTargetLevel": [
+          101,
+          338,
+          1015,
+          6088,
+          24351,
+          48093,
+          94934,
+          187399,
+          369995,
+          730519
+        ],
+        "baseChainSeconds": 2595180,
+        "fullBonusChainSeconds": 1462833
+      },
+      {
+        "key": "unit_refit",
+        "timingProfile": "normal",
+        "maxLevel": 10,
+        "baseSecondsByTargetLevel": [
+          180,
+          600,
+          1800,
+          10800,
+          43200,
+          85320,
+          168420,
+          332460,
+          656400,
+          1296000
+        ],
+        "fullBonusSecondsByTargetLevel": [
+          101,
+          338,
+          1015,
+          6088,
+          24351,
+          48093,
+          94934,
+          187399,
+          369995,
+          730519
+        ],
+        "baseChainSeconds": 2595180,
+        "fullBonusChainSeconds": 1462833
+      },
+      {
+        "key": "prisoner_education",
+        "timingProfile": "normal",
+        "maxLevel": 10,
+        "baseSecondsByTargetLevel": [
+          180,
+          600,
+          1800,
+          10800,
+          43200,
+          85320,
+          168420,
+          332460,
+          656400,
+          1296000
+        ],
+        "fullBonusSecondsByTargetLevel": [
+          101,
+          338,
+          1015,
+          6088,
+          24351,
+          48093,
+          94934,
+          187399,
+          369995,
+          730519
+        ],
+        "baseChainSeconds": 2595180,
+        "fullBonusChainSeconds": 1462833
+      },
+      {
+        "key": "attack_tech",
+        "timingProfile": "normal",
+        "maxLevel": 10,
+        "baseSecondsByTargetLevel": [
+          180,
+          600,
+          1800,
+          10800,
+          43200,
+          85320,
+          168420,
+          332460,
+          656400,
+          1296000
+        ],
+        "fullBonusSecondsByTargetLevel": [
+          101,
+          338,
+          1015,
+          6088,
+          24351,
+          48093,
+          94934,
+          187399,
+          369995,
+          730519
+        ],
+        "baseChainSeconds": 2595180,
+        "fullBonusChainSeconds": 1462833
+      },
+      {
+        "key": "defense_tech",
+        "timingProfile": "normal",
+        "maxLevel": 10,
+        "baseSecondsByTargetLevel": [
+          180,
+          600,
+          1800,
+          10800,
+          43200,
+          85320,
+          168420,
+          332460,
+          656400,
+          1296000
+        ],
+        "fullBonusSecondsByTargetLevel": [
+          101,
+          338,
+          1015,
+          6088,
+          24351,
+          48093,
+          94934,
+          187399,
+          369995,
+          730519
+        ],
+        "baseChainSeconds": 2595180,
+        "fullBonusChainSeconds": 1462833
+      },
+      {
+        "key": "weapon_range",
+        "timingProfile": "normal",
+        "maxLevel": 10,
+        "baseSecondsByTargetLevel": [
+          180,
+          600,
+          1800,
+          10800,
+          43200,
+          85320,
+          168420,
+          332460,
+          656400,
+          1296000
+        ],
+        "fullBonusSecondsByTargetLevel": [
+          101,
+          338,
+          1015,
+          6088,
+          24351,
+          48093,
+          94934,
+          187399,
+          369995,
+          730519
+        ],
+        "baseChainSeconds": 2595180,
+        "fullBonusChainSeconds": 1462833
+      },
+      {
+        "key": "cmd_hp",
+        "timingProfile": "normal",
+        "maxLevel": 10,
+        "baseSecondsByTargetLevel": [
+          180,
+          600,
+          1800,
+          10800,
+          43200,
+          85320,
+          168420,
+          332460,
+          656400,
+          1296000
+        ],
+        "fullBonusSecondsByTargetLevel": [
+          101,
+          338,
+          1015,
+          6088,
+          24351,
+          48093,
+          94934,
+          187399,
+          369995,
+          730519
+        ],
+        "baseChainSeconds": 2595180,
+        "fullBonusChainSeconds": 1462833
+      },
+      {
+        "key": "fire_density",
+        "timingProfile": "normal",
+        "maxLevel": 10,
+        "baseSecondsByTargetLevel": [
+          180,
+          600,
+          1800,
+          10800,
+          43200,
+          85320,
+          168420,
+          332460,
+          656400,
+          1296000
+        ],
+        "fullBonusSecondsByTargetLevel": [
+          101,
+          338,
+          1015,
+          6088,
+          24351,
+          48093,
+          94934,
+          187399,
+          369995,
+          730519
+        ],
+        "baseChainSeconds": 2595180,
+        "fullBonusChainSeconds": 1462833
+      },
+      {
+        "key": "log_load",
+        "timingProfile": "normal",
+        "maxLevel": 10,
+        "baseSecondsByTargetLevel": [
+          180,
+          600,
+          1800,
+          10800,
+          43200,
+          85320,
+          168420,
+          332460,
+          656400,
+          1296000
+        ],
+        "fullBonusSecondsByTargetLevel": [
+          101,
+          338,
+          1015,
+          6088,
+          24351,
+          48093,
+          94934,
+          187399,
+          369995,
+          730519
+        ],
+        "baseChainSeconds": 2595180,
+        "fullBonusChainSeconds": 1462833
+      },
+      {
+        "key": "arm_engine",
+        "timingProfile": "arm_engine",
+        "maxLevel": 10,
+        "baseSecondsByTargetLevel": [
+          300,
+          900,
+          2700,
+          10800,
+          43200,
+          90360,
+          188940,
+          395100,
+          826260,
+          1728000
+        ],
+        "fullBonusSecondsByTargetLevel": [
+          169,
+          507,
+          1522,
+          6088,
+          24351,
+          50933,
+          106500,
+          222707,
+          465740,
+          974026
+        ],
+        "baseChainSeconds": 3286560,
+        "fullBonusChainSeconds": 1852543
+      },
+      {
+        "key": "air_engine",
+        "timingProfile": "air_engine",
+        "maxLevel": 10,
+        "baseSecondsByTargetLevel": [
+          300,
+          900,
+          2700,
+          10800,
+          43200,
+          96660,
+          216180,
+          483480,
+          1081500,
+          2419200
+        ],
+        "fullBonusSecondsByTargetLevel": [
+          169,
+          507,
+          1522,
+          6088,
+          24351,
+          54485,
+          121855,
+          272524,
+          609612,
+          1363636
+        ],
+        "baseChainSeconds": 4354920,
+        "fullBonusChainSeconds": 2454749
+      },
+      {
+        "key": "nav_engine",
+        "timingProfile": "nav_engine",
+        "maxLevel": 10,
+        "baseSecondsByTargetLevel": [
+          300,
+          900,
+          2700,
+          10800,
+          43200,
+          96660,
+          216180,
+          483480,
+          1081500,
+          2419200
+        ],
+        "fullBonusSecondsByTargetLevel": [
+          169,
+          507,
+          1522,
+          6088,
+          24351,
+          54485,
+          121855,
+          272524,
+          609612,
+          1363636
+        ],
+        "baseChainSeconds": 4354920,
+        "fullBonusChainSeconds": 2454749
+      },
+      {
+        "key": "prod_food",
+        "timingProfile": "resource",
+        "maxLevel": 10,
+        "baseSecondsByTargetLevel": [
+          120,
+          480,
+          1500,
+          5400,
+          21600,
+          46860,
+          101640,
+          220380,
+          478020,
+          1036800
+        ],
+        "fullBonusSecondsByTargetLevel": [
+          68,
+          271,
+          846,
+          3044,
+          12175,
+          26414,
+          57292,
+          124222,
+          269447,
+          584416
+        ],
+        "baseChainSeconds": 1912800,
+        "fullBonusChainSeconds": 1078195
+      },
+      {
+        "key": "prod_steel",
+        "timingProfile": "resource",
+        "maxLevel": 10,
+        "baseSecondsByTargetLevel": [
+          120,
+          480,
+          1500,
+          5400,
+          21600,
+          46860,
+          101640,
+          220380,
+          478020,
+          1036800
+        ],
+        "fullBonusSecondsByTargetLevel": [
+          68,
+          271,
+          846,
+          3044,
+          12175,
+          26414,
+          57292,
+          124222,
+          269447,
+          584416
+        ],
+        "baseChainSeconds": 1912800,
+        "fullBonusChainSeconds": 1078195
+      },
+      {
+        "key": "prod_oil",
+        "timingProfile": "resource",
+        "maxLevel": 10,
+        "baseSecondsByTargetLevel": [
+          120,
+          480,
+          1500,
+          5400,
+          21600,
+          46860,
+          101640,
+          220380,
+          478020,
+          1036800
+        ],
+        "fullBonusSecondsByTargetLevel": [
+          68,
+          271,
+          846,
+          3044,
+          12175,
+          26414,
+          57292,
+          124222,
+          269447,
+          584416
+        ],
+        "baseChainSeconds": 1912800,
+        "fullBonusChainSeconds": 1078195
+      },
+      {
+        "key": "prod_rare",
+        "timingProfile": "resource",
+        "maxLevel": 10,
+        "baseSecondsByTargetLevel": [
+          120,
+          480,
+          1500,
+          5400,
+          21600,
+          46860,
+          101640,
+          220380,
+          478020,
+          1036800
+        ],
+        "fullBonusSecondsByTargetLevel": [
+          68,
+          271,
+          846,
+          3044,
+          12175,
+          26414,
+          57292,
+          124222,
+          269447,
+          584416
+        ],
+        "baseChainSeconds": 1912800,
+        "fullBonusChainSeconds": 1078195
+      },
+      {
+        "key": "log_warehouse",
+        "timingProfile": "normal",
+        "maxLevel": 10,
+        "baseSecondsByTargetLevel": [
+          180,
+          600,
+          1800,
+          10800,
+          43200,
+          85320,
+          168420,
+          332460,
+          656400,
+          1296000
+        ],
+        "fullBonusSecondsByTargetLevel": [
+          101,
+          338,
+          1015,
+          6088,
+          24351,
+          48093,
+          94934,
+          187399,
+          369995,
+          730519
+        ],
+        "baseChainSeconds": 2595180,
+        "fullBonusChainSeconds": 1462833
+      },
+      {
+        "key": "log_food",
+        "timingProfile": "normal",
+        "maxLevel": 10,
+        "baseSecondsByTargetLevel": [
+          180,
+          600,
+          1800,
+          10800,
+          43200,
+          85320,
+          168420,
+          332460,
+          656400,
+          1296000
+        ],
+        "fullBonusSecondsByTargetLevel": [
+          101,
+          338,
+          1015,
+          6088,
+          24351,
+          48093,
+          94934,
+          187399,
+          369995,
+          730519
+        ],
+        "baseChainSeconds": 2595180,
+        "fullBonusChainSeconds": 1462833
+      },
+      {
+        "key": "log_train",
+        "timingProfile": "normal",
+        "maxLevel": 10,
+        "baseSecondsByTargetLevel": [
+          180,
+          600,
+          1800,
+          10800,
+          43200,
+          85320,
+          168420,
+          332460,
+          656400,
+          1296000
+        ],
+        "fullBonusSecondsByTargetLevel": [
+          101,
+          338,
+          1015,
+          6088,
+          24351,
+          48093,
+          94934,
+          187399,
+          369995,
+          730519
+        ],
+        "baseChainSeconds": 2595180,
+        "fullBonusChainSeconds": 1462833
+      },
+      {
+        "key": "log_build",
+        "timingProfile": "normal",
+        "maxLevel": 10,
+        "baseSecondsByTargetLevel": [
+          180,
+          600,
+          1800,
+          10800,
+          43200,
+          85320,
+          168420,
+          332460,
+          656400,
+          1296000
+        ],
+        "fullBonusSecondsByTargetLevel": [
+          101,
+          338,
+          1015,
+          6088,
+          24351,
+          48093,
+          94934,
+          187399,
+          369995,
+          730519
+        ],
+        "baseChainSeconds": 2595180,
+        "fullBonusChainSeconds": 1462833
+      },
+      {
+        "key": "log_medical",
+        "timingProfile": "normal",
+        "maxLevel": 10,
+        "baseSecondsByTargetLevel": [
+          180,
+          600,
+          1800,
+          10800,
+          43200,
+          85320,
+          168420,
+          332460,
+          656400,
+          1296000
+        ],
+        "fullBonusSecondsByTargetLevel": [
+          101,
+          338,
+          1015,
+          6088,
+          24351,
+          48093,
+          94934,
+          187399,
+          369995,
+          730519
+        ],
+        "baseChainSeconds": 2595180,
+        "fullBonusChainSeconds": 1462833
+      },
+      {
+        "key": "recon_level",
+        "timingProfile": "normal",
+        "maxLevel": 10,
+        "baseSecondsByTargetLevel": [
+          180,
+          600,
+          1800,
+          10800,
+          43200,
+          85320,
+          168420,
+          332460,
+          656400,
+          1296000
+        ],
+        "fullBonusSecondsByTargetLevel": [
+          101,
+          338,
+          1015,
+          6088,
+          24351,
+          48093,
+          94934,
+          187399,
+          369995,
+          730519
+        ],
+        "baseChainSeconds": 2595180,
+        "fullBonusChainSeconds": 1462833
+      },
+      {
+        "key": "recon_radar",
+        "timingProfile": "normal",
+        "maxLevel": 10,
+        "baseSecondsByTargetLevel": [
+          180,
+          600,
+          1800,
+          10800,
+          43200,
+          85320,
+          168420,
+          332460,
+          656400,
+          1296000
+        ],
+        "fullBonusSecondsByTargetLevel": [
+          101,
+          338,
+          1015,
+          6088,
+          24351,
+          48093,
+          94934,
+          187399,
+          369995,
+          730519
+        ],
+        "baseChainSeconds": 2595180,
+        "fullBonusChainSeconds": 1462833
+      }
+    ]
+  },
+  "tenLevelTechnologyExpansion": {
+    "status": "implemented_in_source_pending_deployment",
+    "sourceCap": 5,
+    "targetCap": 10,
+    "technologyKeys": [
+      "log_warehouse",
+      "recon_level",
+      "recon_radar",
+      "unit_refit"
+    ],
+    "timingProfile": "normal",
+    "preserveWarehouseAndEquipmentMaximumEffects": true,
+    "warehouse": {
+      "speedOrCapacityEffect": false,
+      "protectionBonusPerLevel": 0.05,
+      "maximumProtectionBonus": 0.5,
+      "formula": "floor(sum_active_city_depot_protection_base * (1 + 0.05 * clamp(level, 0, 10)))",
+      "affectsStorageCapacity": false
+    },
+    "reconInitiative": {
+      "rulesVersion": "recon-initiative-v6-20261019",
+      "reconAppliesEveryReconCombatRound": true,
+      "radarAppliesDefenderFirstReconCombatRoundOnly": true,
+      "affectsMarchSpeedOrMapScanRadius": false,
+      "recon": {
+        "formula": "5 * clamp(level, 0, 10)",
+        "bonusPerLevel": 5,
+        "maximumBonus": 50,
+        "bonusByLevel": [
+          0,
+          5,
+          10,
+          15,
+          20,
+          25,
+          30,
+          35,
+          40,
+          45,
+          50
+        ]
+      },
+      "radar": {
+        "formula": "2 * clamp(level, 0, 10)",
+        "bonusPerLevel": 2,
+        "maximumBonus": 20,
+        "bonusByLevel": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20
+        ]
+      }
+    },
+    "reconIntelligence": {
+      "requiresSuccessfulReconnaissance": true,
+      "level0": "基础资源和模糊守军，沿用现有成功侦查规则",
+      "wildExactArmyMinimumLevel": 1,
+      "cumulative": true,
+      "newUnlockByLevel": [
+        {
+          "level": 1,
+          "unlock": "城市城防及工事类型；野地精确守军"
+        },
+        {
+          "level": 2,
+          "unlock": "城市城防及工事的精确数量、等级"
+        },
+        {
+          "level": 3,
+          "unlock": "城市各兵种精确守军数量"
+        },
+        {
+          "level": 4,
+          "unlock": "守城将领姓名、星级、等级"
+        },
+        {
+          "level": 5,
+          "unlock": "城市建筑类型及等级"
+        },
+        {
+          "level": 6,
+          "unlock": "驻城将领人数"
+        },
+        {
+          "level": 7,
+          "unlock": "目标城市所属账号的科技等级"
+        },
+        {
+          "level": 8,
+          "unlock": "按既有掠夺规则测算的可掠夺资源"
+        },
+        {
+          "level": 9,
+          "unlock": "驻城将领档案"
+        },
+        {
+          "level": 10,
+          "unlock": "驻城将领战力评估"
+        }
+      ],
+      "serverFiltersUndisclosedFields": true,
+      "reportUsesSavedVersionAndPermissions": true,
+      "commanderProfilesNeverExposeNonCityOfficers": true
+    },
+    "radarIntelligence": {
+      "level0": "敌军来袭、目标城市、预计到达时间、行军或候战状态及迎战入口",
+      "cumulative": true,
+      "newUnlockByLevel": [
+        {
+          "level": 1,
+          "unlock": "来源玩家及行动类型"
+        },
+        {
+          "level": 2,
+          "unlock": "出发城市或坐标"
+        },
+        {
+          "level": 3,
+          "unlock": "陆海空构成"
+        },
+        {
+          "level": 4,
+          "unlock": "总兵力固定估计区间"
+        },
+        {
+          "level": 5,
+          "unlock": "具体兵种名称"
+        },
+        {
+          "level": 6,
+          "unlock": "精确总兵力"
+        },
+        {
+          "level": 7,
+          "unlock": "各兵种精确数量"
+        },
+        {
+          "level": 8,
+          "unlock": "带兵将领姓名、星级、等级"
+        },
+        {
+          "level": 9,
+          "unlock": "本队适用的战斗科技及装备摘要"
+        },
+        {
+          "level": 10,
+          "unlock": "适用司令官加成；不公开带兵将领的有效属性和技能"
+        }
+      ],
+      "preserveFixedStrengthBands": true,
+      "serverFiltersUndisclosedFields": true,
+      "onlyIncomingForceData": true,
+      "unknownLegacyFieldsRemainUnknown": true
+    },
+    "weaponEquipment": {
+      "source": "backend/src/main/java/com/wargame/model/constants/UnitEquipmentDef.java",
+      "recipeCount": 68,
+      "newEquipmentAdded": false,
+      "preserveRecipeEffectsCostsTimesAndExistingEquipment": true,
+      "facilityRequirementIsExplicitNotTwiceNewTechLevel": true,
+      "levelCategories": [
+        {
+          "level": 1,
+          "name": "陆上基础防护",
+          "recipeCount": 7
+        },
+        {
+          "level": 2,
+          "name": "航空及轻型舰船基础防护",
+          "recipeCount": 6
+        },
+        {
+          "level": 3,
+          "name": "陆上常规武器及载荷",
+          "recipeCount": 8
+        },
+        {
+          "level": 4,
+          "name": "航空常规武器及载荷",
+          "recipeCount": 3
+        },
+        {
+          "level": 5,
+          "name": "通信与调度",
+          "recipeCount": 14
+        },
+        {
+          "level": 6,
+          "name": "机动、节油及任务保障",
+          "recipeCount": 16
+        },
+        {
+          "level": 7,
+          "name": "陆上专用防护",
+          "recipeCount": 3
+        },
+        {
+          "level": 8,
+          "name": "大型舰船防护",
+          "recipeCount": 2
+        },
+        {
+          "level": 9,
+          "name": "定向反制",
+          "recipeCount": 5
+        },
+        {
+          "level": 10,
+          "name": "高级火控及舰载机保障",
+          "recipeCount": 4
+        }
+      ],
+      "recipes": [
+        {
+          "key": "ue_infantry_helmet",
+          "name": "加强钢盔包",
+          "unit": "infantry",
+          "slot": "protection",
+          "sourceTechLevel": 1,
+          "requiredTechLevel": 1,
+          "requiredFacilityLevel": 2
+        },
+        {
+          "key": "ue_infantry_vest",
+          "name": "防破片护具套",
+          "unit": "infantry",
+          "slot": "protection",
+          "sourceTechLevel": 4,
+          "requiredTechLevel": 7,
+          "requiredFacilityLevel": 8
+        },
+        {
+          "key": "ue_infantry_lmg",
+          "name": "班用轻机枪组",
+          "unit": "infantry",
+          "slot": "combat",
+          "sourceTechLevel": 2,
+          "requiredTechLevel": 3,
+          "requiredFacilityLevel": 4
+        },
+        {
+          "key": "ue_infantry_radio",
+          "name": "班排无线电组",
+          "unit": "infantry",
+          "slot": "support",
+          "sourceTechLevel": 3,
+          "requiredTechLevel": 5,
+          "requiredFacilityLevel": 6
+        },
+        {
+          "key": "ue_truck_armor",
+          "name": "驾驶室防护板",
+          "unit": "truck",
+          "slot": "protection",
+          "sourceTechLevel": 1,
+          "requiredTechLevel": 1,
+          "requiredFacilityLevel": 2
+        },
+        {
+          "key": "ue_truck_cargo",
+          "name": "加强货架",
+          "unit": "truck",
+          "slot": "combat",
+          "sourceTechLevel": 2,
+          "requiredTechLevel": 3,
+          "requiredFacilityLevel": 4
+        },
+        {
+          "key": "ue_truck_economy",
+          "name": "节油维护包",
+          "unit": "truck",
+          "slot": "support",
+          "sourceTechLevel": 3,
+          "requiredTechLevel": 6,
+          "requiredFacilityLevel": 6
+        },
+        {
+          "key": "ue_truck_dispatch",
+          "name": "车队调度包",
+          "unit": "truck",
+          "slot": "support",
+          "sourceTechLevel": 3,
+          "requiredTechLevel": 5,
+          "requiredFacilityLevel": 6
+        },
+        {
+          "key": "ue_armored_armor",
+          "name": "炮位防护板",
+          "unit": "armored",
+          "slot": "protection",
+          "sourceTechLevel": 1,
+          "requiredTechLevel": 1,
+          "requiredFacilityLevel": 2
+        },
+        {
+          "key": "ue_armored_sight",
+          "name": "防空瞄具改良",
+          "unit": "armored",
+          "slot": "combat",
+          "sourceTechLevel": 2,
+          "requiredTechLevel": 3,
+          "requiredFacilityLevel": 4
+        },
+        {
+          "key": "ue_armored_radio",
+          "name": "射击通讯组",
+          "unit": "armored",
+          "slot": "support",
+          "sourceTechLevel": 3,
+          "requiredTechLevel": 5,
+          "requiredFacilityLevel": 6
+        },
+        {
+          "key": "ue_armored_economy",
+          "name": "节油维护包",
+          "unit": "armored",
+          "slot": "support",
+          "sourceTechLevel": 3,
+          "requiredTechLevel": 6,
+          "requiredFacilityLevel": 6
+        },
+        {
+          "key": "ue_recon_car_armor",
+          "name": "车体附加防护",
+          "unit": "recon_car",
+          "slot": "protection",
+          "sourceTechLevel": 1,
+          "requiredTechLevel": 1,
+          "requiredFacilityLevel": 2
+        },
+        {
+          "key": "ue_recon_car_mission",
+          "name": "侦察任务油料包",
+          "unit": "recon_car",
+          "slot": "combat",
+          "sourceTechLevel": 3,
+          "requiredTechLevel": 6,
+          "requiredFacilityLevel": 6
+        },
+        {
+          "key": "ue_recon_car_radio",
+          "name": "侦察车队电台",
+          "unit": "recon_car",
+          "slot": "support",
+          "sourceTechLevel": 3,
+          "requiredTechLevel": 5,
+          "requiredFacilityLevel": 6
+        },
+        {
+          "key": "ue_recon_car_engine",
+          "name": "机动调校",
+          "unit": "recon_car",
+          "slot": "support",
+          "sourceTechLevel": 3,
+          "requiredTechLevel": 6,
+          "requiredFacilityLevel": 6
+        },
+        {
+          "key": "ue_ltank_armor",
+          "name": "间隔装甲包",
+          "unit": "ltank",
+          "slot": "protection",
+          "sourceTechLevel": 4,
+          "requiredTechLevel": 7,
+          "requiredFacilityLevel": 8
+        },
+        {
+          "key": "ue_ltank_gun",
+          "name": "主炮弹药与瞄具改良",
+          "unit": "ltank",
+          "slot": "combat",
+          "sourceTechLevel": 2,
+          "requiredTechLevel": 3,
+          "requiredFacilityLevel": 4
+        },
+        {
+          "key": "ue_ltank_radio",
+          "name": "车载电台",
+          "unit": "ltank",
+          "slot": "support",
+          "sourceTechLevel": 3,
+          "requiredTechLevel": 5,
+          "requiredFacilityLevel": 6
+        },
+        {
+          "key": "ue_ltank_liner",
+          "name": "抗爆防破片衬层",
+          "unit": "ltank",
+          "slot": "support",
+          "sourceTechLevel": 5,
+          "requiredTechLevel": 9,
+          "requiredFacilityLevel": 10
+        },
+        {
+          "key": "ue_htank_armor",
+          "name": "附加装甲包",
+          "unit": "htank",
+          "slot": "protection",
+          "sourceTechLevel": 4,
+          "requiredTechLevel": 7,
+          "requiredFacilityLevel": 8
+        },
+        {
+          "key": "ue_htank_gun",
+          "name": "主炮弹药与瞄具改良",
+          "unit": "htank",
+          "slot": "combat",
+          "sourceTechLevel": 2,
+          "requiredTechLevel": 3,
+          "requiredFacilityLevel": 4
+        },
+        {
+          "key": "ue_htank_radio",
+          "name": "车载电台",
+          "unit": "htank",
+          "slot": "support",
+          "sourceTechLevel": 3,
+          "requiredTechLevel": 5,
+          "requiredFacilityLevel": 6
+        },
+        {
+          "key": "ue_htank_liner",
+          "name": "抗爆防破片衬层",
+          "unit": "htank",
+          "slot": "support",
+          "sourceTechLevel": 5,
+          "requiredTechLevel": 9,
+          "requiredFacilityLevel": 10
+        },
+        {
+          "key": "ue_assault_armor",
+          "name": "战斗室防护改良",
+          "unit": "assault",
+          "slot": "protection",
+          "sourceTechLevel": 1,
+          "requiredTechLevel": 1,
+          "requiredFacilityLevel": 2
+        },
+        {
+          "key": "ue_assault_charge",
+          "name": "攻坚装药保障",
+          "unit": "assault",
+          "slot": "combat",
+          "sourceTechLevel": 2,
+          "requiredTechLevel": 3,
+          "requiredFacilityLevel": 4
+        },
+        {
+          "key": "ue_assault_radio",
+          "name": "炮兵通讯组",
+          "unit": "assault",
+          "slot": "support",
+          "sourceTechLevel": 3,
+          "requiredTechLevel": 5,
+          "requiredFacilityLevel": 6
+        },
+        {
+          "key": "ue_assault_liner",
+          "name": "抗爆防破片衬层",
+          "unit": "assault",
+          "slot": "support",
+          "sourceTechLevel": 5,
+          "requiredTechLevel": 9,
+          "requiredFacilityLevel": 10
+        },
+        {
+          "key": "ue_rocket_armor",
+          "name": "弹药区防破片隔板",
+          "unit": "rocket",
+          "slot": "protection",
+          "sourceTechLevel": 1,
+          "requiredTechLevel": 1,
+          "requiredFacilityLevel": 2
+        },
+        {
+          "key": "ue_rocket_calibration",
+          "name": "发射架校准",
+          "unit": "rocket",
+          "slot": "combat",
+          "sourceTechLevel": 2,
+          "requiredTechLevel": 3,
+          "requiredFacilityLevel": 4
+        },
+        {
+          "key": "ue_rocket_radio",
+          "name": "射击诸元通讯组",
+          "unit": "rocket",
+          "slot": "support",
+          "sourceTechLevel": 3,
+          "requiredTechLevel": 5,
+          "requiredFacilityLevel": 6
+        },
+        {
+          "key": "ue_rocket_engine",
+          "name": "机动维护包",
+          "unit": "rocket",
+          "slot": "support",
+          "sourceTechLevel": 3,
+          "requiredTechLevel": 6,
+          "requiredFacilityLevel": 6
+        },
+        {
+          "key": "ue_special_armor",
+          "name": "轻型防护胸甲",
+          "unit": "special",
+          "slot": "protection",
+          "sourceTechLevel": 1,
+          "requiredTechLevel": 1,
+          "requiredFacilityLevel": 2
+        },
+        {
+          "key": "ue_special_tools",
+          "name": "爆破工具组",
+          "unit": "special",
+          "slot": "combat",
+          "sourceTechLevel": 2,
+          "requiredTechLevel": 3,
+          "requiredFacilityLevel": 4
+        },
+        {
+          "key": "ue_special_radio",
+          "name": "便携无线电",
+          "unit": "special",
+          "slot": "support",
+          "sourceTechLevel": 3,
+          "requiredTechLevel": 5,
+          "requiredFacilityLevel": 6
+        },
+        {
+          "key": "ue_special_mobility",
+          "name": "轻装机动包",
+          "unit": "special",
+          "slot": "support",
+          "sourceTechLevel": 3,
+          "requiredTechLevel": 6,
+          "requiredFacilityLevel": 6
+        },
+        {
+          "key": "ue_scout_armor",
+          "name": "乘员及油箱防护改良",
+          "unit": "scout",
+          "slot": "protection",
+          "sourceTechLevel": 1,
+          "requiredTechLevel": 2,
+          "requiredFacilityLevel": 2
+        },
+        {
+          "key": "ue_fighter_armor",
+          "name": "装甲背板与油箱防护改良",
+          "unit": "fighter",
+          "slot": "protection",
+          "sourceTechLevel": 1,
+          "requiredTechLevel": 2,
+          "requiredFacilityLevel": 2
+        },
+        {
+          "key": "ue_bomber_armor",
+          "name": "防护与灭火改良",
+          "unit": "bomber",
+          "slot": "protection",
+          "sourceTechLevel": 1,
+          "requiredTechLevel": 2,
+          "requiredFacilityLevel": 2
+        },
+        {
+          "key": "ue_transport_armor",
+          "name": "油箱与机组防护改良",
+          "unit": "transport",
+          "slot": "protection",
+          "sourceTechLevel": 1,
+          "requiredTechLevel": 2,
+          "requiredFacilityLevel": 2
+        },
+        {
+          "key": "ue_scout_mission",
+          "name": "侦察任务保障包",
+          "unit": "scout",
+          "slot": "combat",
+          "sourceTechLevel": 3,
+          "requiredTechLevel": 6,
+          "requiredFacilityLevel": 6
+        },
+        {
+          "key": "ue_scout_radio",
+          "name": "长程通讯改良",
+          "unit": "scout",
+          "slot": "support",
+          "sourceTechLevel": 3,
+          "requiredTechLevel": 5,
+          "requiredFacilityLevel": 6
+        },
+        {
+          "key": "ue_scout_engine",
+          "name": "动力调校",
+          "unit": "scout",
+          "slot": "support",
+          "sourceTechLevel": 3,
+          "requiredTechLevel": 6,
+          "requiredFacilityLevel": 6
+        },
+        {
+          "key": "ue_fighter_sight",
+          "name": "射击瞄具改良",
+          "unit": "fighter",
+          "slot": "combat",
+          "sourceTechLevel": 2,
+          "requiredTechLevel": 4,
+          "requiredFacilityLevel": 4
+        },
+        {
+          "key": "ue_fighter_radio",
+          "name": "航空无线电",
+          "unit": "fighter",
+          "slot": "support",
+          "sourceTechLevel": 3,
+          "requiredTechLevel": 5,
+          "requiredFacilityLevel": 6
+        },
+        {
+          "key": "ue_fighter_engine",
+          "name": "动力调校",
+          "unit": "fighter",
+          "slot": "support",
+          "sourceTechLevel": 3,
+          "requiredTechLevel": 6,
+          "requiredFacilityLevel": 6
+        },
+        {
+          "key": "ue_bomber_sight",
+          "name": "轰炸瞄准保障",
+          "unit": "bomber",
+          "slot": "combat",
+          "sourceTechLevel": 2,
+          "requiredTechLevel": 4,
+          "requiredFacilityLevel": 4
+        },
+        {
+          "key": "ue_bomber_radio",
+          "name": "轰炸编队通讯",
+          "unit": "bomber",
+          "slot": "support",
+          "sourceTechLevel": 3,
+          "requiredTechLevel": 5,
+          "requiredFacilityLevel": 6
+        },
+        {
+          "key": "ue_bomber_economy",
+          "name": "节油维护",
+          "unit": "bomber",
+          "slot": "support",
+          "sourceTechLevel": 3,
+          "requiredTechLevel": 6,
+          "requiredFacilityLevel": 6
+        },
+        {
+          "key": "ue_transport_cargo",
+          "name": "货舱与系固改良",
+          "unit": "transport",
+          "slot": "combat",
+          "sourceTechLevel": 2,
+          "requiredTechLevel": 4,
+          "requiredFacilityLevel": 4
+        },
+        {
+          "key": "ue_transport_economy",
+          "name": "航路保障包",
+          "unit": "transport",
+          "slot": "support",
+          "sourceTechLevel": 3,
+          "requiredTechLevel": 6,
+          "requiredFacilityLevel": 6
+        },
+        {
+          "key": "ue_transport_engine",
+          "name": "动力调校",
+          "unit": "transport",
+          "slot": "support",
+          "sourceTechLevel": 3,
+          "requiredTechLevel": 6,
+          "requiredFacilityLevel": 6
+        },
+        {
+          "key": "ue_destroyer_armor",
+          "name": "损管设施改良",
+          "unit": "destroyer",
+          "slot": "protection",
+          "sourceTechLevel": 1,
+          "requiredTechLevel": 2,
+          "requiredFacilityLevel": 2
+        },
+        {
+          "key": "ue_destroyer_economy",
+          "name": "节油航行保障",
+          "unit": "destroyer",
+          "slot": "support",
+          "sourceTechLevel": 3,
+          "requiredTechLevel": 6,
+          "requiredFacilityLevel": 6
+        },
+        {
+          "key": "ue_sub_armor",
+          "name": "舱段防护改良",
+          "unit": "sub",
+          "slot": "protection",
+          "sourceTechLevel": 1,
+          "requiredTechLevel": 2,
+          "requiredFacilityLevel": 2
+        },
+        {
+          "key": "ue_sub_economy",
+          "name": "节油航行保障",
+          "unit": "sub",
+          "slot": "support",
+          "sourceTechLevel": 3,
+          "requiredTechLevel": 6,
+          "requiredFacilityLevel": 6
+        },
+        {
+          "key": "ue_battleship_armor",
+          "name": "损管与舱段防护",
+          "unit": "battleship",
+          "slot": "protection",
+          "sourceTechLevel": 4,
+          "requiredTechLevel": 8,
+          "requiredFacilityLevel": 8
+        },
+        {
+          "key": "ue_battleship_economy",
+          "name": "节油航行保障",
+          "unit": "battleship",
+          "slot": "support",
+          "sourceTechLevel": 3,
+          "requiredTechLevel": 6,
+          "requiredFacilityLevel": 6
+        },
+        {
+          "key": "ue_carrier_armor",
+          "name": "舰内防火与损管",
+          "unit": "carrier",
+          "slot": "protection",
+          "sourceTechLevel": 4,
+          "requiredTechLevel": 8,
+          "requiredFacilityLevel": 8
+        },
+        {
+          "key": "ue_carrier_economy",
+          "name": "节油航行保障",
+          "unit": "carrier",
+          "slot": "support",
+          "sourceTechLevel": 3,
+          "requiredTechLevel": 6,
+          "requiredFacilityLevel": 6
+        },
+        {
+          "key": "ue_destroyer_firecontrol",
+          "name": "舰炮与鱼雷火控改良",
+          "unit": "destroyer",
+          "slot": "combat",
+          "sourceTechLevel": 5,
+          "requiredTechLevel": 10,
+          "requiredFacilityLevel": 10
+        },
+        {
+          "key": "ue_destroyer_sonar",
+          "name": "反潜声呐改良",
+          "unit": "destroyer",
+          "slot": "support",
+          "sourceTechLevel": 5,
+          "requiredTechLevel": 9,
+          "requiredFacilityLevel": 10
+        },
+        {
+          "key": "ue_sub_torpedo",
+          "name": "鱼雷射击诸元改良",
+          "unit": "sub",
+          "slot": "combat",
+          "sourceTechLevel": 5,
+          "requiredTechLevel": 10,
+          "requiredFacilityLevel": 10
+        },
+        {
+          "key": "ue_sub_quiet",
+          "name": "低噪维护包",
+          "unit": "sub",
+          "slot": "support",
+          "sourceTechLevel": 5,
+          "requiredTechLevel": 9,
+          "requiredFacilityLevel": 10
+        },
+        {
+          "key": "ue_battleship_firecontrol",
+          "name": "主炮火控改良",
+          "unit": "battleship",
+          "slot": "combat",
+          "sourceTechLevel": 5,
+          "requiredTechLevel": 10,
+          "requiredFacilityLevel": 10
+        },
+        {
+          "key": "ue_battleship_radio",
+          "name": "舰队射击通讯",
+          "unit": "battleship",
+          "slot": "support",
+          "sourceTechLevel": 3,
+          "requiredTechLevel": 5,
+          "requiredFacilityLevel": 6
+        },
+        {
+          "key": "ue_carrier_airgroup",
+          "name": "舰载机出动保障",
+          "unit": "carrier",
+          "slot": "combat",
+          "sourceTechLevel": 5,
+          "requiredTechLevel": 10,
+          "requiredFacilityLevel": 10
+        },
+        {
+          "key": "ue_carrier_radio",
+          "name": "舰载机指挥通讯",
+          "unit": "carrier",
+          "slot": "support",
+          "sourceTechLevel": 3,
+          "requiredTechLevel": 5,
+          "requiredFacilityLevel": 6
+        }
+      ]
+    },
+    "researchCosts": {
+      "preserveBaseCostsAndGrowth": true,
+      "formula": "floor(baseCost[resource] * costGrowth^(targetLevel - 1))",
+      "note": "new_levels_6_to_10_continue_existing_growth_and_increase_total_research_cost"
+    },
+    "prerequisiteVersion": "research-technology-ten-levels-20261019-v1",
+    "prerequisiteOverrides": {
+      "log_warehouse": {
+        "maxLevel": 10,
+        "labFloor": 2,
+        "tierByLevel": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "levels": [
+          {
+            "targetLevel": 1,
+            "tier": 1,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 2,
+                "scope": "city"
+              },
+              {
+                "building": "depot",
+                "level": 1,
+                "scope": "city"
+              },
+              {
+                "building": "exchange",
+                "level": 1,
+                "scope": "city"
+              },
+              {
+                "building": "transit",
+                "level": 1,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 2,
+            "tier": 2,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 2,
+                "scope": "city"
+              },
+              {
+                "building": "depot",
+                "level": 2,
+                "scope": "city"
+              },
+              {
+                "building": "exchange",
+                "level": 2,
+                "scope": "city"
+              },
+              {
+                "building": "transit",
+                "level": 1,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 3,
+            "tier": 3,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 3,
+                "scope": "city"
+              },
+              {
+                "building": "depot",
+                "level": 3,
+                "scope": "city"
+              },
+              {
+                "building": "exchange",
+                "level": 3,
+                "scope": "city"
+              },
+              {
+                "building": "transit",
+                "level": 1,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 4,
+            "tier": 4,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 4,
+                "scope": "city"
+              },
+              {
+                "building": "depot",
+                "level": 4,
+                "scope": "city"
+              },
+              {
+                "building": "exchange",
+                "level": 4,
+                "scope": "city"
+              },
+              {
+                "building": "transit",
+                "level": 2,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 5,
+            "tier": 5,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 5,
+                "scope": "city"
+              },
+              {
+                "building": "depot",
+                "level": 5,
+                "scope": "city"
+              },
+              {
+                "building": "exchange",
+                "level": 5,
+                "scope": "city"
+              },
+              {
+                "building": "transit",
+                "level": 3,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 6,
+            "tier": 6,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 6,
+                "scope": "city"
+              },
+              {
+                "building": "depot",
+                "level": 6,
+                "scope": "city"
+              },
+              {
+                "building": "exchange",
+                "level": 6,
+                "scope": "city"
+              },
+              {
+                "building": "transit",
+                "level": 4,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 7,
+            "tier": 7,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 7,
+                "scope": "city"
+              },
+              {
+                "building": "depot",
+                "level": 7,
+                "scope": "city"
+              },
+              {
+                "building": "exchange",
+                "level": 7,
+                "scope": "city"
+              },
+              {
+                "building": "transit",
+                "level": 5,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 8,
+            "tier": 8,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 8,
+                "scope": "city"
+              },
+              {
+                "building": "depot",
+                "level": 8,
+                "scope": "city"
+              },
+              {
+                "building": "exchange",
+                "level": 8,
+                "scope": "city"
+              },
+              {
+                "building": "transit",
+                "level": 6,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 9,
+            "tier": 9,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 9,
+                "scope": "city"
+              },
+              {
+                "building": "depot",
+                "level": 9,
+                "scope": "city"
+              },
+              {
+                "building": "exchange",
+                "level": 9,
+                "scope": "city"
+              },
+              {
+                "building": "transit",
+                "level": 7,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 10,
+            "tier": 10,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 10,
+                "scope": "city"
+              },
+              {
+                "building": "depot",
+                "level": 10,
+                "scope": "city"
+              },
+              {
+                "building": "exchange",
+                "level": 10,
+                "scope": "city"
+              },
+              {
+                "building": "transit",
+                "level": 8,
+                "scope": "city"
+              }
+            ]
+          }
+        ]
+      },
+      "recon_level": {
+        "maxLevel": 10,
+        "labFloor": 1,
+        "tierByLevel": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "levels": [
+          {
+            "targetLevel": 1,
+            "tier": 1,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 1,
+                "scope": "city"
+              },
+              {
+                "building": "radar",
+                "level": 1,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 2,
+            "tier": 2,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 2,
+                "scope": "city"
+              },
+              {
+                "building": "radar",
+                "level": 2,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 3,
+            "tier": 3,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 3,
+                "scope": "city"
+              },
+              {
+                "building": "radar",
+                "level": 3,
+                "scope": "city"
+              },
+              {
+                "building": "liaison",
+                "level": 3,
+                "scope": "city"
+              },
+              {
+                "building": "staff",
+                "level": 1,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 4,
+            "tier": 4,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 4,
+                "scope": "city"
+              },
+              {
+                "building": "radar",
+                "level": 4,
+                "scope": "city"
+              },
+              {
+                "building": "liaison",
+                "level": 4,
+                "scope": "city"
+              },
+              {
+                "building": "staff",
+                "level": 2,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 5,
+            "tier": 5,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 5,
+                "scope": "city"
+              },
+              {
+                "building": "radar",
+                "level": 5,
+                "scope": "city"
+              },
+              {
+                "building": "liaison",
+                "level": 5,
+                "scope": "city"
+              },
+              {
+                "building": "staff",
+                "level": 3,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 6,
+            "tier": 6,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 6,
+                "scope": "city"
+              },
+              {
+                "building": "radar",
+                "level": 6,
+                "scope": "city"
+              },
+              {
+                "building": "liaison",
+                "level": 6,
+                "scope": "city"
+              },
+              {
+                "building": "staff",
+                "level": 4,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 7,
+            "tier": 7,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 7,
+                "scope": "city"
+              },
+              {
+                "building": "radar",
+                "level": 7,
+                "scope": "city"
+              },
+              {
+                "building": "liaison",
+                "level": 7,
+                "scope": "city"
+              },
+              {
+                "building": "staff",
+                "level": 5,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 8,
+            "tier": 8,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 8,
+                "scope": "city"
+              },
+              {
+                "building": "radar",
+                "level": 8,
+                "scope": "city"
+              },
+              {
+                "building": "liaison",
+                "level": 8,
+                "scope": "city"
+              },
+              {
+                "building": "staff",
+                "level": 6,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 9,
+            "tier": 9,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 9,
+                "scope": "city"
+              },
+              {
+                "building": "radar",
+                "level": 9,
+                "scope": "city"
+              },
+              {
+                "building": "liaison",
+                "level": 9,
+                "scope": "city"
+              },
+              {
+                "building": "staff",
+                "level": 7,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 10,
+            "tier": 10,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 10,
+                "scope": "city"
+              },
+              {
+                "building": "radar",
+                "level": 10,
+                "scope": "city"
+              },
+              {
+                "building": "liaison",
+                "level": 10,
+                "scope": "city"
+              },
+              {
+                "building": "staff",
+                "level": 8,
+                "scope": "city"
+              }
+            ]
+          }
+        ]
+      },
+      "recon_radar": {
+        "maxLevel": 10,
+        "labFloor": 2,
+        "tierByLevel": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "levels": [
+          {
+            "targetLevel": 1,
+            "tier": 1,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 2,
+                "scope": "city"
+              },
+              {
+                "building": "radar",
+                "level": 1,
+                "scope": "city"
+              },
+              {
+                "building": "staff",
+                "level": 1,
+                "scope": "city"
+              },
+              {
+                "building": "liaison",
+                "level": 1,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 2,
+            "tier": 2,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 2,
+                "scope": "city"
+              },
+              {
+                "building": "radar",
+                "level": 2,
+                "scope": "city"
+              },
+              {
+                "building": "staff",
+                "level": 2,
+                "scope": "city"
+              },
+              {
+                "building": "liaison",
+                "level": 1,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 3,
+            "tier": 3,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 3,
+                "scope": "city"
+              },
+              {
+                "building": "radar",
+                "level": 3,
+                "scope": "city"
+              },
+              {
+                "building": "staff",
+                "level": 3,
+                "scope": "city"
+              },
+              {
+                "building": "liaison",
+                "level": 1,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 4,
+            "tier": 4,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 4,
+                "scope": "city"
+              },
+              {
+                "building": "radar",
+                "level": 4,
+                "scope": "city"
+              },
+              {
+                "building": "staff",
+                "level": 4,
+                "scope": "city"
+              },
+              {
+                "building": "liaison",
+                "level": 2,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 5,
+            "tier": 5,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 5,
+                "scope": "city"
+              },
+              {
+                "building": "radar",
+                "level": 5,
+                "scope": "city"
+              },
+              {
+                "building": "staff",
+                "level": 5,
+                "scope": "city"
+              },
+              {
+                "building": "liaison",
+                "level": 3,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 6,
+            "tier": 6,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 6,
+                "scope": "city"
+              },
+              {
+                "building": "radar",
+                "level": 6,
+                "scope": "city"
+              },
+              {
+                "building": "staff",
+                "level": 6,
+                "scope": "city"
+              },
+              {
+                "building": "liaison",
+                "level": 4,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 7,
+            "tier": 7,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 7,
+                "scope": "city"
+              },
+              {
+                "building": "radar",
+                "level": 7,
+                "scope": "city"
+              },
+              {
+                "building": "staff",
+                "level": 7,
+                "scope": "city"
+              },
+              {
+                "building": "liaison",
+                "level": 5,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 8,
+            "tier": 8,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 8,
+                "scope": "city"
+              },
+              {
+                "building": "radar",
+                "level": 8,
+                "scope": "city"
+              },
+              {
+                "building": "staff",
+                "level": 8,
+                "scope": "city"
+              },
+              {
+                "building": "liaison",
+                "level": 6,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 9,
+            "tier": 9,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 9,
+                "scope": "city"
+              },
+              {
+                "building": "radar",
+                "level": 9,
+                "scope": "city"
+              },
+              {
+                "building": "staff",
+                "level": 9,
+                "scope": "city"
+              },
+              {
+                "building": "liaison",
+                "level": 7,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 10,
+            "tier": 10,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 10,
+                "scope": "city"
+              },
+              {
+                "building": "radar",
+                "level": 10,
+                "scope": "city"
+              },
+              {
+                "building": "staff",
+                "level": 10,
+                "scope": "city"
+              },
+              {
+                "building": "liaison",
+                "level": 8,
+                "scope": "city"
+              }
+            ]
+          }
+        ]
+      },
+      "unit_refit": {
+        "maxLevel": 10,
+        "labFloor": 2,
+        "tierByLevel": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "levels": [
+          {
+            "targetLevel": 1,
+            "tier": 1,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 2,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 2,
+            "tier": 2,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 2,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 3,
+            "tier": 3,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 3,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 4,
+            "tier": 4,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 4,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 5,
+            "tier": 5,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 5,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 6,
+            "tier": 6,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 6,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 7,
+            "tier": 7,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 7,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 8,
+            "tier": 8,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 8,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 9,
+            "tier": 9,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 9,
+                "scope": "city"
+              }
+            ]
+          },
+          {
+            "targetLevel": 10,
+            "tier": 10,
+            "requires": [
+              {
+                "building": "lab",
+                "level": 10,
+                "scope": "city"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "migration": {
+      "applyOnceAfterNormalizingOlderTechnologyVersions": true,
+      "completedLevelMap": {
+        "0": 0,
+        "1": 2,
+        "2": 4,
+        "3": 6,
+        "4": 8,
+        "5": 10
+      },
+      "preserveOldCompletedLevelBenefits": true,
+      "activeLegacyResearchTarget": "map_original_target_level_using_completedLevelMap",
+      "allowLegacyCompletionToSkipOddIntermediateLevel": true,
+      "preservePaidCostFinishDurationAndFrozenState": true,
+      "legacyQueueUsesSavedPrerequisitesUntilCompletion": true,
+      "preserveOldManufacturingOrdersInventoryAndLoadouts": true,
+      "preserveOldActionBattleAndReportSnapshots": true,
+      "retainAlreadyCompletedGraduationAchievements": true,
+      "existingNewVersionImportsAreNotRemapped": true,
+      "migrationVersionRequiredForImportAndExport": true,
+      "initiativeBonusMultiplierAfterLevelMappingByTechnology": {
+        "recon_level": 2,
+        "recon_radar": 0.8
+      },
+      "initiativeChangesApplyToNewRulesOnly": true
+    },
+    "increaseReconMaximumInitiative": true,
+    "radarMaximumInitiative": 20
+  },
+  "implementation": {
+    "date": "2026-10-19",
+    "technologyRulesVersion": "technology-v3-20261019",
+    "implemented": [
+      "four_technology_ten_level_expansion",
+      "ten_level_city_recon_permissions",
+      "ten_level_incoming_radar_whitelist",
+      "68_explicit_recipe_unlock_and_facility_tiers",
+      "warehouse_five_percent_per_level",
+      "five_regular_duration_curves_without_24h_cap",
+      "versioned_import",
+      "V103_legacy_level_and_queue_target_migration"
+    ],
+    "notImplemented": [
+      "city_dual_research_queues",
+      "endgame_projects",
+      "multi_queue_protocol_and_lifecycle"
+    ],
+    "runtimeQueuePolicy": "single_research_task_per_account",
+    "productionMigrationExecuted": false
+  }
+}

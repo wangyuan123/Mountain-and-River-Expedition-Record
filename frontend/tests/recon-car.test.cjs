@@ -202,3 +202,26 @@ test('vehicle uses armor engine, avoids apron, and keeps documented oil consumpt
   assert.equal(G.World.calcDispatchSpeed({ recon_car: 10 }).slowestSpd, 7.5);
   assert.equal(G.World.calcDispatchFuel({ recon_car: 10 }, 100, 2), 600);
 });
+
+
+test('new ten-level scout reports preserve old initiative versions and show staged information locks', () => {
+  const { G } = setup();
+  const newer = { version: 'recon-initiative-v6-20261019', attackerReconLevel: 10, defenderReconLevel: 10, defenderRadarLevel: 10 };
+  const text = G.Battle.renderScoutInitiative({ reconInitiative: newer }, 'attacker');
+  assert.match(text, /有效速度＋5×自身侦察技术等级/);
+  assert.match(text, /守方雷达仅首回合每级\+2点/);
+  assert.match(text, /雷达首回合先手\+20/);
+  const previous = G.Battle.renderScoutInitiative({ reconInitiative: { ...newer, version: 'recon-initiative-v5-20261019' } }, 'defender');
+  assert.match(previous, /每级\+1点/);
+  assert.match(previous, /我方雷达首回合先手\+10/);
+  const legacy = G.Battle.renderScoutInitiative({ reconInitiative: { ...newer, version: 'recon-initiative-v3-20261016', defenderRadarLevel: 5 } }, 'attacker');
+  assert.match(legacy, /每级\+5点/);
+  assert.match(legacy, /雷达首回合先手\+25/);
+  const data = { scoutUnit: 'scout', result: 'draw', showCityInfo: true, targetKind: 'player', reconLevel: 1,
+    reconIntelligenceVersion: 'recon-intelligence-v2-20261019', fortTypes: [], myScouts: 10, myLost: 0, enemyScouts: 0, enemyLost: 0 };
+  const report = G.Battle.renderScoutReportBoard({ time: Date.now(), data });
+  assert.match(report, /数量未解锁/);
+  assert.match(report, /精确守军兵力 \(需 侦察技术 Lv.3\)/);
+  assert.match(report, /综合战力评估 \(需 侦察技术 Lv.10\)/);
+  assert.doesNotMatch(report, /精确守军兵力与统帅/);
+});

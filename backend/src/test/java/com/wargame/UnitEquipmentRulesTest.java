@@ -20,12 +20,22 @@ class UnitEquipmentRulesTest {
         for (String unit : UnitDef.UNITS.keySet()) {
             assertEquals(new HashSet<>(UnitEquipmentDef.SLOTS), UnitEquipmentDef.ITEMS.values().stream().filter(d -> d.unit().equals(unit)).map(UnitEquipmentDef::slot).collect(java.util.stream.Collectors.toSet()));
         }
-        assertEquals(Map.of("steel", 300, "oil", 0, "rare", 0), UnitEquipmentDef.ITEMS.get("ue_infantry_helmet").cost());
+        assertEquals(Map.of("steel", 300, "oil", 1, "rare", 1), UnitEquipmentDef.ITEMS.get("ue_infantry_helmet").cost());
         assertEquals(Map.of("steel", 600, "oil", 100, "rare", 30), UnitEquipmentDef.ITEMS.get("ue_infantry_radio").cost());
-        assertEquals(4, UnitEquipmentDef.ITEMS.get("ue_htank_armor").level());
-        assertEquals(Map.of("steel", 1440, "oil", 80, "rare", 20), UnitEquipmentDef.ITEMS.get("ue_ltank_armor").cost());
+        assertEquals(7, UnitEquipmentDef.ITEMS.get("ue_htank_armor").level());
+        assertEquals(Map.of("steel", 2160, "oil", 80, "rare", 20), UnitEquipmentDef.ITEMS.get("ue_ltank_armor").cost());
         assertEquals("precision", UnitEquipmentDef.ITEMS.get("ue_destroyer_firecontrol").recipe());
     }
+    @Test void everyRecipeHasAnExplicitTechTierAndIndependentFacilityRequirement() {
+        int[] counts = {7,6,8,3,14,16,3,2,5,4};
+        for (int level = 1; level <= 10; level++) {
+            int target = level;
+            var recipes = UnitEquipmentDef.ITEMS.values().stream().filter(d -> d.level() == target).toList();
+            assertEquals(counts[level - 1], recipes.size());
+            for (var recipe : recipes) assertEquals(2 * ((level + 1) / 2), recipe.facilityLevel());
+        }
+    }
+
     @Test void additiveModifiersScenesAndHistoricalSnapshotAreStable() {
         var s = gear("infantry", "ue_infantry_vest", "ue_infantry_lmg", "ue_infantry_radio");
         assertEquals(1.15, UnitEquipmentEffects.attack(s, "infantry", "infantry"), 1e-9);

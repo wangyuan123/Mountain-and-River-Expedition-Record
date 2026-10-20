@@ -1,5 +1,6 @@
 package com.wargame.service;
 
+import com.wargame.util.GameClock;
 import com.wargame.model.constants.GameConstants;
 import com.wargame.model.constants.GameData;
 import com.wargame.model.constants.BuildingDef;
@@ -72,6 +73,17 @@ public class BuildService {
 
     /** 每城开局提供 6 支施工队，新建、升级与拆除共用；与前端 build.js 保持一致。 */
     private static final int MAX_CONCURRENT = 6;
+
+    private record BuildDurationCurve(double baseSeconds, double growth, long capSeconds) {}
+
+    private static final BuildDurationCurve DEFAULT_BUILD_DURATION =
+            new BuildDurationCurve(30, 2.4, 24L * 60 * 60);
+    // 核心建筑后期工期单独拉长；需与前端 build.js 的曲线和上限保持一致。
+    private static final Map<String, BuildDurationCurve> SPECIAL_BUILD_DURATIONS = Map.of(
+            "command", new BuildDurationCurve(60, 2.5, 72L * 60 * 60),
+            "lab", new BuildDurationCurve(45, 2.6, 72L * 60 * 60),
+            "headquarters", new BuildDurationCurve(45, 2.5, 48L * 60 * 60)
+    );
 
     /** 剩余工期不超过 5 分钟时可免费完工；通过游戏状态同步给前端。 */
     public static final int FREE_SPEED_UP_SECONDS = 300;
@@ -238,14 +250,9 @@ public class BuildService {
             return result;
         }
 
-        // 10. 计算建造时间（含科技加速系数）
-        // JS: var lv = fromLevel + 1; var techMul = Math.max(0.5, Core.buildMul());
-        //     sec = 30 * pow(2.4, lv - 1); return min(86400, ceil(sec * techMul));
-        //   Lv.1=30s  Lv.2=1.2分  Lv.3=2.9分  Lv.4=6.9分  Lv.5=16.6分
-        //   Lv.6=40分  Lv.7=1.6时  Lv.8=3.8时   Lv.9=9.2时  Lv.10=22时(封顶24h)
+        // 10. 计算建造时间（按建筑曲线封顶，并应用科技和市长工期倍率）
         double techMul = Math.max(0.35, buildDurationMul(playerId));
-        double sec = 30 * Math.pow(2.4, curLv);
-        int duration = (int) Math.min(86400L, Math.ceil(sec * techMul));
+        int duration = calcBuildTime(buildingType, curLv, techMul);
 
         // 11. 扣除资源
         deductCosts(playerId, cost);
@@ -256,7 +263,7 @@ public class BuildService {
         int prestigeGain = totalCost > 0 ? Math.max(1, totalCost / 100) : 0;
 
         // 13. 创建施工记录
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         Construction construction = new Construction();
         construction.setPlayerId(playerId);
         construction.setCitySlot(cityScope.slot(playerId));
@@ -350,10 +357,9 @@ public class BuildService {
             }
         }
 
-        // 6. 计算拆除时间（与升级到当前等级消耗相同的时间）
+        // 6. 计算拆除时间（与升至当前等级使用同一建筑曲线）
         double techMul = Math.max(0.35, buildDurationMul(playerId));
-        double sec = 30 * Math.pow(2.4, curLv - 1);
-        int duration = (int) Math.min(86400L, Math.ceil(sec * techMul));
+        int duration = calcBuildTime(buildingType, curLv - 1, techMul);
 
         // 7. 目标等级：curLv - 1 (如 2级拆除后为1级，1级拆除后为0级即彻底消失)
         int targetLevel = curLv - 1;
@@ -375,7 +381,7 @@ public class BuildService {
         }
 
         // 8. 创建施工记录
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         Construction construction = new Construction();
         construction.setPlayerId(playerId);
         construction.setCitySlot(cityScope.slot(playerId));
@@ -492,7 +498,7 @@ public class BuildService {
             result.put("message", "该工程已完成或不存在，请刷新施工队列");
             return result;
         }
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         if (target.getFinishAt() - now > FREE_SPEED_UP_SECONDS * 1000L) {
             result.put("message", "剩余施工时间不超过5分钟时才可免费加速");
             return result;
@@ -531,7 +537,7 @@ public class BuildService {
     @Transactional
     public Map<String, Object> useSpeedUp(Long playerId, String itemId, Long queueId, String building, Integer slot, int count) {
         Map<String, Object> result = new LinkedHashMap<>();
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         if (count <= 0) count = 1;
 
         // 1. 校验道具并原子扣减 count 个
@@ -808,15 +814,20 @@ public class BuildService {
         return cost;
     }
 
-    // ================================================================
-    //  Helper: calcBuildTime
-    //  对应 JS G.buildDuration（不含 techMul 科技系数，由 upgrade 内部叠加）
-    //  JS: lv = fromLevel + 1; return Math.ceil(20 * Math.pow(1.45, lv - 1))
-    //  简化: ceil(20 * 1.45^currentLevel)
-    // ================================================================
-
+    /**
+     * 按建筑专属曲线计算升至下一级的基础工期，不含科技和市长加速。
+     * @param buildingType 建筑类型
+     * @param currentLevel 开工前等级
+     * @return 基础工期（秒）
+     */
     public int calcBuildTime(String buildingType, int currentLevel) {
-        return (int) Math.ceil(20 * Math.pow(1.45, currentLevel));
+        return calcBuildTime(buildingType, currentLevel, 1.0);
+    }
+
+    private int calcBuildTime(String buildingType, int currentLevel, double durationMultiplier) {
+        BuildDurationCurve curve = SPECIAL_BUILD_DURATIONS.getOrDefault(buildingType, DEFAULT_BUILD_DURATION);
+        double seconds = curve.baseSeconds() * Math.pow(curve.growth(), Math.max(0, currentLevel)) * durationMultiplier;
+        return (int) Math.min(curve.capSeconds(), Math.ceil(seconds));
     }
 
     // ================================================================

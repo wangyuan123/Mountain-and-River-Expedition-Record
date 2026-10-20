@@ -1,5 +1,6 @@
 package com.wargame.service.pvp;
 
+import com.wargame.util.GameClock;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.wargame.config.GameServerIdentity;
 import com.wargame.model.constants.UnitDef;
@@ -54,7 +55,7 @@ public class PvpPracticeService {
         protection.requireOperationAccess(p, request == null ? null : request.getHeader("X-Play-Session"), request == null ? "" : request.getRequestURI());
     }
 
-    private long now() { return System.currentTimeMillis(); }
+    private long now() { return GameClock.now(); }
     private String uuid() { return UUID.randomUUID().toString(); }
     private boolean terminal(PvpPracticeSession s) { return "FINISHED".equals(s.getStatus()) || "VOID".equals(s.getStatus()); }
     private PvpSnapshot snapshot(String text) { return PvpJson.read(text, PvpSnapshot.class); }

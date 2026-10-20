@@ -237,7 +237,8 @@ class AcademyRecruitmentTest extends BaseServiceTest {
                 assertFalse(com.wargame.model.constants.GameConstants.OFFICER_NAMES.contains(name),
                         star + "星普通军官姓名绝不能来自名将池: " + name);
                 assertFalse(com.wargame.model.constants.OfficerNameGenerator.isFamousOfficer(name));
-                assertTrue(name.length() >= 2, "随机生成的姓名长度至少为2字: " + name);
+                assertTrue(name.matches("[一-龥]+·[一-龥]+"),
+                        "普通军官应使用英美姓名的中文译名，以间隔号连接名和姓: " + name);
             }
         }
     }
@@ -260,6 +261,8 @@ class AcademyRecruitmentTest extends BaseServiceTest {
                 } else {
                     assertFalse(com.wargame.model.constants.GameConstants.OFFICER_NAMES.contains(name),
                             "候选人中非五星军官不得使用名将名字: " + name);
+                    assertTrue(name.matches("[一-龥]+·[一-龥]+"),
+                            "军校普通候选人应使用英美姓名的中文译名: " + name);
                 }
             }
             // 同一批候选人名单中名字不重复

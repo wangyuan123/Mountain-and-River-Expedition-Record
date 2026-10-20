@@ -1,5 +1,6 @@
 package com.wargame.service.pvp;
 
+import com.wargame.util.GameClock;
 import com.wargame.repository.PvpMatchTicketRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,7 +18,7 @@ public class PvpWaitEstimate {
 
     public Map<String, Object> estimate(String region, String field, String rules) {
         String key = region + ":" + field + ":" + rules;
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         return cache.compute(key, (k, old) -> {
             if (old != null && old.until > now) return old;
             var waits = new ArrayList<>(tickets.recentWaits(region, field, rules, now - 3600000, PageRequest.of(0, 100)));

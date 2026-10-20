@@ -3,6 +3,7 @@ window.Game = window.Game || {};
 
 (function (G) {
   'use strict';
+  G.gameNow = G.gameNow || function () { return Date.now(); };
 
   // —— 工具 ——
   function fmtRemain(ms) {
@@ -23,7 +24,7 @@ window.Game = window.Game || {};
     var marches = world.marches || [];
     var incoming = world.incoming || [];
     var cons = s.constructions || [];
-    var now = Date.now();
+    var now = G.gameNow();
     var shieldRem = (cityState.shieldUntil || 0) > now ? cityState.shieldUntil - now : 0;
 
     var html = '<div class="zone-head"><span class="zone-title">🚨 战情速递</span><span class="zone-sub">实时军情</span></div>';

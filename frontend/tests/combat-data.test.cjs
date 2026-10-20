@@ -48,13 +48,27 @@ test('infantry carries small personal cargo while keeping its combat role and tr
   assert.match(data.combatRoles.infantry, /每人基础负重10/);
 });
 
-test('rocket is the most expensive land unit for every recruitment resource', () => {
+test('land recruitment costs distinguish steel armor from oil intensive rocket artillery', () => {
   const landUnits = Object.values(data.units).filter((unit) => unit.branch === 'land');
   const rocket = data.units.rocket;
-  for (const resource of ['food', 'steel', 'oil', 'rare']) {
-    // 反坦克火箭车作为陆军珍贵远程火力，四项征召资源都必须高于其他陆军。
+  for (const resource of ['food', 'oil', 'rare']) {
+    // 资源分工允许重坦钢耗超过火箭车；火箭车仍是高粮、油、稀矿成本的陆军远程火力。
     assert.equal(rocket.cost[resource], Math.max(...landUnits.map((unit) => unit.cost[resource] || 0)), resource);
     assert.ok(landUnits.every((unit) => unit === rocket || rocket.cost[resource] > (unit.cost[resource] || 0)), resource);
+  }
+  assert.ok(data.units.htank.cost.steel > rocket.cost.steel);
+  const weightedCost = (unit) => unit.cost.steel + 2 * unit.cost.oil + 4 * unit.cost.rare;
+  assert.ok(landUnits.every((unit) => unit === rocket || weightedCost(rocket) > weightedCost(unit)));
+});
+
+test('capital ship recruitment scales all four resources from the revised rocket cost', () => {
+  const { rocket, battleship, carrier } = data.units;
+  assert.equal(rocket.cost.oil, 450);
+  assert.equal(rocket.cost.rare, 120);
+  // 用户指定的倍数同时覆盖粮食、钢铁、石油和稀矿，避免只按加权总价保持比例。
+  for (const resource of ['food', 'steel', 'oil', 'rare']) {
+    assert.equal(battleship.cost[resource], rocket.cost[resource] * 20, resource + ' battleship');
+    assert.equal(carrier.cost[resource], battleship.cost[resource] * 2, resource + ' carrier');
   }
 });
 

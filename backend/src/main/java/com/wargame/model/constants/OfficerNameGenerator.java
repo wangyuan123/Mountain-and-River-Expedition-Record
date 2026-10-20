@@ -1,6 +1,5 @@
 package com.wargame.model.constants;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -9,7 +8,7 @@ import java.util.random.RandomGenerator;
 /**
  * 军官姓名生成器：
  * - 五星将领：姓名必然来自历史名将库（GameConstants.OFFICER_NAMES）
- * - 非五星将领（1~4星）：姓名由百家姓及军人风格字库随机拼装生成，且绝不与五星名将重名
+ * - 非五星将领（1~4星）：使用英美常见姓名的中文译名，以“名·姓”组合，且不与五星名将重名
  */
 public final class OfficerNameGenerator {
 
@@ -17,45 +16,33 @@ public final class OfficerNameGenerator {
 
     private static final Set<String> FAMOUS_NAME_SET = new HashSet<>(GameConstants.OFFICER_NAMES);
 
-    /** 常用大姓（百家姓精选） */
+    /** 英美常见姓氏的中文译名，与名字池独立抽取，供国内测试阶段显示。 */
     public static final List<String> SURNAMES = List.of(
-            "李", "王", "张", "刘", "陈", "杨", "赵", "黄", "周", "吴",
-            "徐", "孙", "胡", "朱", "高", "林", "何", "郭", "马", "罗",
-            "梁", "宋", "郑", "谢", "韩", "唐", "冯", "于", "董", "萧",
-            "程", "曹", "袁", "邓", "许", "傅", "沈", "曾", "彭", "吕",
-            "苏", "卢", "蒋", "蔡", "贾", "丁", "魏", "薛", "叶", "阎",
-            "潘", "杜", "戴", "夏", "钟", "汪", "田", "任", "姜", "范",
-            "方", "石", "姚", "谭", "廖", "邹", "熊", "金", "陆", "郝",
-            "孔", "白", "崔", "康", "毛", "邱", "秦", "江", "史", "顾",
-            "侯", "邵", "孟", "龙", "万", "段", "雷", "钱", "汤", "尹",
-            "黎", "易", "常", "武", "乔", "贺", "赖", "龚", "文"
+            "史密斯", "约翰逊", "威廉姆斯", "布朗", "琼斯", "米勒", "戴维斯", "威尔逊",
+            "安德森", "泰勒", "托马斯", "摩尔", "杰克逊", "马丁", "李", "汤普森",
+            "怀特", "哈里斯", "克拉克", "刘易斯", "罗宾逊", "沃克", "霍尔", "艾伦",
+            "扬", "金", "赖特", "斯科特", "格林", "贝克", "亚当斯", "纳尔逊",
+            "希尔", "坎贝尔", "米切尔", "罗伯茨", "卡特", "菲利普斯", "埃文斯", "特纳",
+            "帕克", "爱德华兹", "柯林斯", "斯图尔特", "莫里斯", "罗杰斯", "里德", "库克",
+            "摩根", "贝尔", "墨菲", "贝利", "库珀", "理查森", "考克斯", "霍华德",
+            "沃德", "彼得森", "格雷", "詹姆斯", "沃森", "布鲁克斯", "凯利", "桑德斯",
+            "普赖斯", "贝内特", "伍德", "巴恩斯", "罗斯", "亨德森", "科尔曼", "詹金斯",
+            "佩里", "鲍威尔", "朗", "帕特森", "休斯", "福斯特", "巴特勒", "西蒙斯",
+            "费舍尔", "韦伯", "格雷厄姆", "埃利斯", "哈里森", "吉布森", "汉密尔顿", "雷诺兹",
+            "华莱士", "韦尔斯", "韦斯特", "科尔", "拉塞尔", "马歇尔", "查普曼", "哈德森",
+            "帕尔默", "斯宾塞", "哈维", "巴顿"
     );
 
-    /** 单字名常用字池（沉稳、刚毅、军人气质） */
-    public static final List<String> SINGLE_GIVEN_NAMES = List.of(
-            "刚", "勇", "毅", "峰", "强", "军", "平", "东", "文", "辉",
-            "力", "明", "健", "志", "良", "海", "山", "波", "宁", "龙",
-            "胜", "武", "新", "飞", "杰", "涛", "昌", "成", "康", "星",
-            "光", "天", "达", "安", "岩", "彪", "博", "诚", "震", "振",
-            "豪", "承", "功", "磊", "民", "超", "浩", "亮", "政", "斌",
-            "栋", "翔", "旭", "鹏", "泽", "晨", "泰", "雄", "钧", "策",
-            "腾", "航", "锐", "卓", "捷", "啸", "岳", "铠", "勋", "雷"
-    );
-
-    /** 双字名前缀字池 */
-    public static final List<String> DOUBLE_FIRST_CHARS = List.of(
-            "建", "志", "文", "海", "振", "天", "世", "宏", "学", "立",
-            "延", "景", "绍", "启", "维", "宗", "廷", "德", "广", "正",
-            "永", "培", "承", "修", "崇", "冠", "尚", "守", "兆", "秉",
-            "家", "成", "树", "盛", "宪", "敬", "显", "书", "传", "继"
-    );
-
-    /** 双字名后缀字池 */
-    public static final List<String> DOUBLE_SECOND_CHARS = List.of(
-            "国", "强", "华", "伟", "民", "平", "祥", "安", "峰", "杰",
-            "超", "森", "铭", "权", "洲", "辉", "远", "博", "成", "龙",
-            "生", "林", "武", "庆", "春", "清", "顺", "胜", "宇", "鹏",
-            "忠", "义", "勋", "海", "涛", "刚", "军", "明", "洋", "凯"
+    /** 英美常见名字的中文译名，按完整译名抽取，不使用中国人的名字字库。 */
+    public static final List<String> GIVEN_NAMES = List.of(
+            "詹姆斯", "约翰", "罗伯特", "威廉", "查尔斯", "乔治", "托马斯", "约瑟夫",
+            "爱德华", "理查德", "亨利", "沃尔特", "亚瑟", "弗兰克", "阿尔伯特", "塞缪尔",
+            "戴维", "路易斯", "杰克", "本杰明", "丹尼尔", "哈罗德", "雷蒙德", "弗雷德里克",
+            "保罗", "唐纳德", "肯尼斯", "安德鲁", "斯蒂芬", "彼得", "菲利普", "安东尼",
+            "帕特里克", "迈克尔", "弗朗西斯", "斯坦利", "伦纳德", "欧内斯特", "赫伯特", "塞西尔",
+            "劳伦斯", "霍华德", "尤金", "拉尔夫", "罗伊", "维克托", "文森特", "诺曼",
+            "埃德温", "阿尔弗雷德", "伯纳德", "休", "艾伦", "戈登", "道格拉斯", "马尔科姆",
+            "科林", "格雷厄姆", "布鲁斯", "伊恩"
     );
 
     /**
@@ -80,19 +67,16 @@ public final class OfficerNameGenerator {
     }
 
     /**
-     * 随机生成非五星将领姓名（保证绝不属于名将库，且尽量不与排除集合冲突）
+     * 随机生成英美姓名的中文译名，使用“名·姓”格式，避开名将及排除集合；名字池耗尽时明确失败。
+     * @param rng 随机源
+     * @param excluded 不可重复的姓名，可为 null
+     * @return 可用的英美姓名中文全名
+     * @throws IllegalStateException 所有译名组合均不可用时抛出
      */
     public static String generateRandomNonFamousName(RandomGenerator rng, Set<String> excluded) {
         for (int i = 0; i < 50; i++) {
             String surname = SURNAMES.get(rng.nextInt(SURNAMES.size()));
-            String name;
-            // 35% 概率单字名，65% 概率双字名
-            if (rng.nextDouble() < 0.35) {
-                name = surname + SINGLE_GIVEN_NAMES.get(rng.nextInt(SINGLE_GIVEN_NAMES.size()));
-            } else {
-                name = surname + DOUBLE_FIRST_CHARS.get(rng.nextInt(DOUBLE_FIRST_CHARS.size()))
-                        + DOUBLE_SECOND_CHARS.get(rng.nextInt(DOUBLE_SECOND_CHARS.size()));
-            }
+            String name = GIVEN_NAMES.get(rng.nextInt(GIVEN_NAMES.size())) + "·" + surname;
 
             // 严禁与名将池重名
             if (FAMOUS_NAME_SET.contains(name)) {
@@ -104,9 +88,16 @@ public final class OfficerNameGenerator {
             return name;
         }
 
-        // 极端防死锁回退：带随机序号确保不重名
-        String fallback = SURNAMES.get(rng.nextInt(SURNAMES.size())) + "准" + (10 + rng.nextInt(90));
-        return fallback;
+        // 连续碰撞后遍历剩余译名组合，保持“名·姓”格式和去重约束，不追加数字编号。
+        for (String givenName : GIVEN_NAMES) {
+            for (String surname : SURNAMES) {
+                String name = givenName + "·" + surname;
+                if (!FAMOUS_NAME_SET.contains(name) && (excluded == null || !excluded.contains(name))) {
+                    return name;
+                }
+            }
+        }
+        throw new IllegalStateException("No available officer name combinations");
     }
 
     /**

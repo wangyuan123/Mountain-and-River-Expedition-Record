@@ -99,6 +99,12 @@ function setupArmy() {
   });
   ctx.window = ctx;
   require('./load-constants.cjs')(ctx);
+  // 折叠和征召布局使用已同步的服务端资格，避免依赖旧的一级建筑放行规则。
+  G.Core.state.unitUnlocks = Object.fromEntries(['infantry', 'truck'].map(unitId => {
+    const requirement = { kind: 'building', id: 'factory', name: '军工厂', required: 1, current: 10, scope: 'city', met: true };
+    return [unitId, { unitId, ruleVersion: 'unit-unlock-20261020-v4', eligible: true, requirements: [requirement], missing: [] }];
+  }));
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/prerequisites.js'), 'utf8'), ctx);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/army.js'), 'utf8'), ctx);
 
   return { G, nodes, modalNodes };
@@ -134,6 +140,22 @@ test('army cards hide prototype and production details by default, keeping heade
   assert.match(html, />征召<\/button>/);
   assert.match(html, />解散<\/button>/);
   assert.doesNotMatch(html, /\[征召\]|\[解散\]/);
+});
+
+test('兵种资格变化才刷新征召卡片，并保留已展开状态', () => {
+  const { G } = setupArmy(); const view = { innerHTML: '' }; let refreshes = 0;
+  G.Core.refreshContent = () => { refreshes++; G.Army.renderView(view); };
+  G.Army.toggleUnitCard('infantry'); G.Army.renderView(view);
+  G.Army.refreshUnlocks(); assert.equal(refreshes, 0);
+  const old = G.Core.state.unitUnlocks.infantry;
+  const missing = { ...old.requirements[0], current: 0, met: false };
+  G.Core.state.unitUnlocks.infantry = { ...old, eligible: false, requirements: [missing], missing: [missing] };
+  G.Army.refreshUnlocks(); assert.equal(refreshes, 1);
+  assert.match(view.innerHTML, /id="unit-card-infantry" class="menu-item lock unit-card expanded"/);
+  G.Army.refreshUnlocks(); assert.equal(refreshes, 1);
+  G.Core.state.unitUnlocks.infantry = old; G.Army.refreshUnlocks();
+  assert.equal(refreshes, 2);
+  assert.match(view.innerHTML, /id="unit-card-infantry" class="menu-item ok unit-card expanded"/);
 });
 
 test('toggleUnitCard toggles expand state and updates toggle text and display style', () => {

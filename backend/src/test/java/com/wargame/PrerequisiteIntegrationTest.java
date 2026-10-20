@@ -166,7 +166,7 @@ class PrerequisiteIntegrationTest extends BaseServiceTest {
     }
 
     @Test
-    void dismantlingCoastalPortCannotInvalidateResearchCityLaboratory() {
+    void dismantlingCoastalPortDoesNotBlockResearchCityLaboratoryOrInvalidatePaidWork() {
         WorldMap world = createTestWorld();
         PlayerCity coast = new PlayerCity();
         coast.setWorldId(world.getId());
@@ -194,7 +194,7 @@ class PrerequisiteIntegrationTest extends BaseServiceTest {
 
         assertTrue(prerequisites.unmet(playerId, 0, "buildings", "lab", 10).stream()
                 .noneMatch(requirement -> "port".equals(requirement.get("building"))));
-        assertEquals("施工中的军工科技研发中心", prerequisites.affectedTask(playerId, 1, "port", null, 7));
+        assertNull(prerequisites.affectedTask(playerId, 1, "port", null, 7), "科研中心10级不再要求跨城军港8级");
 
         PlayerCity alternateCoast = new PlayerCity();
         alternateCoast.setWorldId(world.getId());

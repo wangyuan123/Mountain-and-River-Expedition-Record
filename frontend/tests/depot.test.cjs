@@ -36,6 +36,9 @@ test('仓库默认显示军官装备分类并生成横向 tabs', () => {
   assert.doesNotMatch(html, /📘 经验书/);
   assert.equal((html.match(/role="tab"/g) || []).length, 5);
   assert.match(html, />兵种装备<\/button>/);
+  assert.doesNotMatch(html, /zone-head/);
+  assert.doesNotMatch(html, /===\s*军官装备\s*===/);
+  assert.doesNotMatch(html, /- 仓库 -/);
 });
 
 test('切换分类只渲染当前分类并保留选中状态', () => {

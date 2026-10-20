@@ -25,6 +25,10 @@ window.Game = window.Game || {};
       if (G.Mail.isComposing && G.Mail.isComposing()) return true;
       if (G.Mail.isReplying && G.Mail.isReplying()) return true;
     }
+    // 4) 装备配置抽屉打开中 (避免后台全量刷新干扰正文与草稿)
+    if (document.querySelector && document.querySelector('.unit-equipment-overlay')) {
+      return true;
+    }
     return false;
   }
 
@@ -39,6 +43,7 @@ window.Game = window.Game || {};
         G.state = state;
         if (G.Core) G.Core.state = G.state;
       }
+      if (G.WorldMap && G.WorldMap.refreshMarches) G.WorldMap.refreshMarches();
       // 战报是历史快照，回城等后台事件无需重建正文，否则会丢失展开状态和阅读位置。
       // 新战报仍由 battle / scoutReport 事件单独更新列表。
       var readingReport = G.Core && (G.Core.route === 'reports' || G.Core.route === 'reportDetail');
@@ -67,9 +72,9 @@ window.Game = window.Game || {};
       G.state.population = data.population;
     }
     if (data.items) G.state.items = data.items;
+    if (data.unitUnlocks) G.state.unitUnlocks = data.unitUnlocks;
     if (data.unitEquipment) {
       G.state.unitEquipment = data.unitEquipment;
-      if (G.UnitEquipment) G.UnitEquipment.refresh();
     }
     if (data.constructions) {
       var previousConstructions = G.state.constructions || [];
@@ -106,6 +111,10 @@ window.Game = window.Game || {};
       G.state.world.incoming = data.incoming;
       if (G.Main && G.Main.renderNavBar) G.Main.renderNavBar();
     }
+    // 空数组也必须覆盖旧路线，避免返程结束后地图残留敌军标记。
+    if (Array.isArray(data.returningEnemyMarches) && G.state.world) G.state.world.returningEnemyMarches = data.returningEnemyMarches;
+    // 即使正在地图搜索框中输入，也要及时移除撤回的敌军并采用加速后的时间。
+    if ((data.marches || Array.isArray(data.incoming) || Array.isArray(data.returningEnemyMarches)) && G.WorldMap && G.WorldMap.refreshMarches) G.WorldMap.refreshMarches();
     if (data.cityState) {
       G.state.cityState = data.cityState;
     }
@@ -126,6 +135,11 @@ window.Game = window.Game || {};
     if (data.tech) {
       if (G.Core && G.Core.state) G.Core.state.tech = data.tech;
       if (G.state) G.state.tech = data.tech;
+    }
+    // 同一推送中的科技、设施与兵种资格全部落定后再刷新，避免用旧科技渲染制备按钮。
+    // 单独到达的资格快照也需更新，抽屉刷新会保留未保存的配装草稿。
+    if ((data.unitEquipment || data.unitUnlocks || data.tech) && G.UnitEquipment) {
+      G.UnitEquipment.refresh();
     }
     if (data.completedResearch && data.completedResearch.length > 0) {
       for (var ri = 0; ri < data.completedResearch.length; ri++) {
@@ -308,6 +322,8 @@ window.Game = window.Game || {};
       G.toast('警告: 敌军来袭! 来自' + (data.fromName || '未知'));
     } else if (data.event === 'cancelled') {
       G.toast((data.fromName || '敌军') + ' 已撤回行军');
+    } else if (data.event === 'shieldBlocked') {
+      G.toast('护盾已拦截来袭，敌军正在原路返回');
     }
     // Refresh state
     refreshState();
@@ -331,7 +347,7 @@ window.Game = window.Game || {};
 
   // When WebSocket disconnects unexpectedly, show reconnect banner
   G.WS.on('disconnected', function () {
-    showWsBanner('连接已断开，正在重连...', 'var(--danger)');
+    showWsBanner('连接已断开，计时暂停，正在重连...', 'var(--danger)');
   });
 
   // 首次连接保留登录请求；断线期间可能失去当前城市，重连时重新读取账号当前城市。
@@ -341,6 +357,7 @@ window.Game = window.Game || {};
       G.API.client.cityId = null;
     }
     if (G.PrivateChat) G.PrivateChat.refresh();
+    if (G.Friends && G.Friends.refresh) G.Friends.refresh();
     if (G.Battle) G.Battle._reportsHistoryLoaded = null;
     // Hide the disconnect banner and show a brief "reconnected" confirmation
     hideWsBanner();
@@ -364,6 +381,10 @@ window.Game = window.Game || {};
 
   G.WS.on('guild_chat', function (data) {
     if (G.Chat && G.Chat.receiveGuild) G.Chat.receiveGuild(data);
+  });
+
+  G.WS.on('friend_request', function (data) {
+    if (G.Friends && G.Friends.refresh) G.Friends.refresh();
   });
 
   // mail handler - 收到新邮件时刷新未读

@@ -1,0 +1,435 @@
+{
+  "date": "2026-10-19",
+  "ruleVersion": "balance-v20-naval-capital-ships-20261019",
+  "weights": {
+    "steel": 1,
+    "oil": 2,
+    "rare": 4
+  },
+  "quantityPerType": 1000,
+  "scope": "每个陆军或海军兵种分别以1000单位计算；等预算数量向下取整。排除粮食、人口、生产时间、建筑、行军维护与战后回收。资源权重用于价值折算，不代表原资源包下的实际可生产数量，也不代表战力等价。",
+  "units": [
+    {
+      "id": "destroyer",
+      "name": "驱逐舰",
+      "branch": "sea",
+      "logistic": false,
+      "quantity": 1000,
+      "unitWeightedCost": 1090,
+      "steel": 450000,
+      "oil": 160000,
+      "rare": 80000,
+      "weightedCost": 1090000
+    },
+    {
+      "id": "sub",
+      "name": "潜艇",
+      "branch": "sea",
+      "logistic": false,
+      "quantity": 1000,
+      "unitWeightedCost": 700,
+      "steel": 300000,
+      "oil": 80000,
+      "rare": 60000,
+      "weightedCost": 700000
+    },
+    {
+      "id": "battleship",
+      "name": "战列舰",
+      "branch": "sea",
+      "logistic": false,
+      "quantity": 1000,
+      "unitWeightedCost": 3000,
+      "steel": 1200000,
+      "oil": 400000,
+      "rare": 250000,
+      "weightedCost": 3000000
+    },
+    {
+      "id": "carrier",
+      "name": "航母",
+      "branch": "sea",
+      "logistic": false,
+      "quantity": 1000,
+      "unitWeightedCost": 3800,
+      "steel": 1400000,
+      "oil": 500000,
+      "rare": 350000,
+      "weightedCost": 3800000
+    },
+    {
+      "id": "infantry",
+      "name": "步兵",
+      "branch": "land",
+      "logistic": false,
+      "quantity": 1000,
+      "unitWeightedCost": 30,
+      "steel": 30000,
+      "oil": 0,
+      "rare": 0,
+      "weightedCost": 30000
+    },
+    {
+      "id": "truck",
+      "name": "卡车",
+      "branch": "land",
+      "logistic": true,
+      "quantity": 1000,
+      "unitWeightedCost": 80,
+      "steel": 50000,
+      "oil": 15000,
+      "rare": 0,
+      "weightedCost": 80000
+    },
+    {
+      "id": "armored",
+      "name": "装甲车",
+      "branch": "land",
+      "logistic": false,
+      "quantity": 1000,
+      "unitWeightedCost": 380,
+      "steel": 180000,
+      "oil": 60000,
+      "rare": 20000,
+      "weightedCost": 380000
+    },
+    {
+      "id": "recon_car",
+      "name": "侦查装甲车",
+      "branch": "land",
+      "logistic": false,
+      "quantity": 1000,
+      "unitWeightedCost": 380,
+      "steel": 180000,
+      "oil": 60000,
+      "rare": 20000,
+      "weightedCost": 380000
+    },
+    {
+      "id": "ltank",
+      "name": "轻型坦克",
+      "branch": "land",
+      "logistic": false,
+      "quantity": 1000,
+      "unitWeightedCost": 500,
+      "steel": 240000,
+      "oil": 80000,
+      "rare": 25000,
+      "weightedCost": 500000
+    },
+    {
+      "id": "htank",
+      "name": "重型坦克",
+      "branch": "land",
+      "logistic": false,
+      "quantity": 1000,
+      "unitWeightedCost": 890,
+      "steel": 450000,
+      "oil": 120000,
+      "rare": 50000,
+      "weightedCost": 890000
+    },
+    {
+      "id": "assault",
+      "name": "突击炮",
+      "branch": "land",
+      "logistic": false,
+      "quantity": 1000,
+      "unitWeightedCost": 400,
+      "steel": 200000,
+      "oil": 50000,
+      "rare": 25000,
+      "weightedCost": 400000
+    },
+    {
+      "id": "rocket",
+      "name": "反坦克火箭车",
+      "branch": "land",
+      "logistic": false,
+      "quantity": 1000,
+      "unitWeightedCost": 1130,
+      "steel": 550000,
+      "oil": 150000,
+      "rare": 70000,
+      "weightedCost": 1130000
+    },
+    {
+      "id": "special",
+      "name": "特种兵",
+      "branch": "land",
+      "logistic": false,
+      "quantity": 1000,
+      "unitWeightedCost": 260,
+      "steel": 100000,
+      "oil": 40000,
+      "rare": 20000,
+      "weightedCost": 260000
+    }
+  ],
+  "totals": {
+    "sea": {
+      "quantity": 4000,
+      "steel": 3350000,
+      "oil": 1140000,
+      "rare": 740000,
+      "weightedCost": 8590000
+    },
+    "land": {
+      "quantity": 9000,
+      "steel": 1980000,
+      "oil": 575000,
+      "rare": 230000,
+      "weightedCost": 4050000
+    }
+  },
+  "conversions": [
+    {
+      "navy": "destroyer",
+      "navyCount": 1000,
+      "budget": 1090000,
+      "land": [
+        {
+          "id": "infantry",
+          "name": "步兵",
+          "count": 36333,
+          "unusedBudget": 10
+        },
+        {
+          "id": "truck",
+          "name": "卡车",
+          "count": 13625,
+          "unusedBudget": 0
+        },
+        {
+          "id": "armored",
+          "name": "装甲车",
+          "count": 2868,
+          "unusedBudget": 160
+        },
+        {
+          "id": "recon_car",
+          "name": "侦查装甲车",
+          "count": 2868,
+          "unusedBudget": 160
+        },
+        {
+          "id": "ltank",
+          "name": "轻型坦克",
+          "count": 2180,
+          "unusedBudget": 0
+        },
+        {
+          "id": "htank",
+          "name": "重型坦克",
+          "count": 1224,
+          "unusedBudget": 640
+        },
+        {
+          "id": "assault",
+          "name": "突击炮",
+          "count": 2725,
+          "unusedBudget": 0
+        },
+        {
+          "id": "rocket",
+          "name": "反坦克火箭车",
+          "count": 964,
+          "unusedBudget": 680
+        },
+        {
+          "id": "special",
+          "name": "特种兵",
+          "count": 4192,
+          "unusedBudget": 80
+        }
+      ]
+    },
+    {
+      "navy": "sub",
+      "navyCount": 1000,
+      "budget": 700000,
+      "land": [
+        {
+          "id": "infantry",
+          "name": "步兵",
+          "count": 23333,
+          "unusedBudget": 10
+        },
+        {
+          "id": "truck",
+          "name": "卡车",
+          "count": 8750,
+          "unusedBudget": 0
+        },
+        {
+          "id": "armored",
+          "name": "装甲车",
+          "count": 1842,
+          "unusedBudget": 40
+        },
+        {
+          "id": "recon_car",
+          "name": "侦查装甲车",
+          "count": 1842,
+          "unusedBudget": 40
+        },
+        {
+          "id": "ltank",
+          "name": "轻型坦克",
+          "count": 1400,
+          "unusedBudget": 0
+        },
+        {
+          "id": "htank",
+          "name": "重型坦克",
+          "count": 786,
+          "unusedBudget": 460
+        },
+        {
+          "id": "assault",
+          "name": "突击炮",
+          "count": 1750,
+          "unusedBudget": 0
+        },
+        {
+          "id": "rocket",
+          "name": "反坦克火箭车",
+          "count": 619,
+          "unusedBudget": 530
+        },
+        {
+          "id": "special",
+          "name": "特种兵",
+          "count": 2692,
+          "unusedBudget": 80
+        }
+      ]
+    },
+    {
+      "navy": "battleship",
+      "navyCount": 1000,
+      "budget": 3000000,
+      "land": [
+        {
+          "id": "infantry",
+          "name": "步兵",
+          "count": 100000,
+          "unusedBudget": 0
+        },
+        {
+          "id": "truck",
+          "name": "卡车",
+          "count": 37500,
+          "unusedBudget": 0
+        },
+        {
+          "id": "armored",
+          "name": "装甲车",
+          "count": 7894,
+          "unusedBudget": 280
+        },
+        {
+          "id": "recon_car",
+          "name": "侦查装甲车",
+          "count": 7894,
+          "unusedBudget": 280
+        },
+        {
+          "id": "ltank",
+          "name": "轻型坦克",
+          "count": 6000,
+          "unusedBudget": 0
+        },
+        {
+          "id": "htank",
+          "name": "重型坦克",
+          "count": 3370,
+          "unusedBudget": 700
+        },
+        {
+          "id": "assault",
+          "name": "突击炮",
+          "count": 7500,
+          "unusedBudget": 0
+        },
+        {
+          "id": "rocket",
+          "name": "反坦克火箭车",
+          "count": 2654,
+          "unusedBudget": 980
+        },
+        {
+          "id": "special",
+          "name": "特种兵",
+          "count": 11538,
+          "unusedBudget": 120
+        }
+      ]
+    },
+    {
+      "navy": "carrier",
+      "navyCount": 1000,
+      "budget": 3800000,
+      "land": [
+        {
+          "id": "infantry",
+          "name": "步兵",
+          "count": 126666,
+          "unusedBudget": 20
+        },
+        {
+          "id": "truck",
+          "name": "卡车",
+          "count": 47500,
+          "unusedBudget": 0
+        },
+        {
+          "id": "armored",
+          "name": "装甲车",
+          "count": 10000,
+          "unusedBudget": 0
+        },
+        {
+          "id": "recon_car",
+          "name": "侦查装甲车",
+          "count": 10000,
+          "unusedBudget": 0
+        },
+        {
+          "id": "ltank",
+          "name": "轻型坦克",
+          "count": 7600,
+          "unusedBudget": 0
+        },
+        {
+          "id": "htank",
+          "name": "重型坦克",
+          "count": 4269,
+          "unusedBudget": 590
+        },
+        {
+          "id": "assault",
+          "name": "突击炮",
+          "count": 9500,
+          "unusedBudget": 0
+        },
+        {
+          "id": "rocket",
+          "name": "反坦克火箭车",
+          "count": 3362,
+          "unusedBudget": 940
+        },
+        {
+          "id": "special",
+          "name": "特种兵",
+          "count": 14615,
+          "unusedBudget": 100
+        }
+      ]
+    }
+  ],
+  "sourceSHA256": {
+    "frontend/js/data.js": "774d53f39260634970aed79ce9c917bc078dcbde3ba3574e025854e547019e5b",
+    "UnitDef": "ee3b79243aeb21f07eb56ede72766e52b3b0a89dae60c02f82283b6b9e77cb10"
+  }
+}

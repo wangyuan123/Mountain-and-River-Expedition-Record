@@ -1,5 +1,6 @@
 package com.wargame.service;
 
+import com.wargame.util.GameClock;
 import com.wargame.model.constants.JapaneseOfficers;
 import com.wargame.model.constants.WorldConfig;
 import com.wargame.model.entity.*;
@@ -124,7 +125,7 @@ public class WorldMapService {
         t.put("selfCity", self); t.put("mainCity", Integer.valueOf(0).equals(c.getCitySlot()));
         t.put("readyAt", c.getReadyAt() == null ? 0L : c.getReadyAt());
         t.put("defeated", false);
-        t.put("surrenderFrozen", c.isSurrenderFrozen(System.currentTimeMillis()));
+        t.put("surrenderFrozen", c.isSurrenderFrozen(GameClock.now()));
         t.put("surrenderTransferDeadlineAt", c.getSurrenderTransferDeadlineAt());
         t.put("coastal", terrain.coastal(c));
         t.put("legacyNaval", c.isLegacyNaval());
@@ -150,11 +151,11 @@ public class WorldMapService {
             t.put("warAt", warAt); t.put("warEndAt", warEnd);
             t.put("coolAt", warAt == 0 ? warEnd : 0L);
             // 地图合并两类保护的有效截止时间，真实道具护盾仍独立保存在城市状态中。
-            long newbieUntil = com.wargame.model.constants.NewbieProtection.until(owner, System.currentTimeMillis());
+            long newbieUntil = com.wargame.model.constants.NewbieProtection.until(owner, GameClock.now());
             long itemUntil = cityStates.findByPlayerIdAndCitySlot(owner.getId(), c.getCitySlot())
                     .map(cs -> Objects.requireNonNullElse(cs.getShieldUntil(), 0L)).orElse(0L);
             t.put("newbieProtectionUntil", newbieUntil);
-            if (Math.max(newbieUntil, itemUntil) > System.currentTimeMillis()) {
+            if (Math.max(newbieUntil, itemUntil) > GameClock.now()) {
                 t.put("cityState", "shield");
                 t.put("shieldUntil", Math.max(newbieUntil, itemUntil));
             }

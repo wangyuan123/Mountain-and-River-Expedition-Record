@@ -6,6 +6,7 @@ import com.wargame.repository.ArmyProductionQueueRepository;
 import com.wargame.repository.PlayerGuideRepository;
 import com.wargame.service.ArmyService;
 import com.wargame.service.CityScope;
+import com.wargame.service.TechService;
 import com.wargame.service.quest.OnboardingService;
 import com.wargame.util.JsonUtil;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +22,8 @@ class OnboardingTest extends BaseServiceTest {
     @Autowired ArmyProductionQueueRepository queues;
     @Autowired PlayerGuideRepository guides;
     @Autowired CityScope scope;
+    @Autowired TechService techService;
+    @Autowired com.wargame.repository.TechResearchQueueRepository researchQueues;
     Long playerId;
 
     @BeforeEach
@@ -30,38 +33,49 @@ class OnboardingTest extends BaseServiceTest {
     }
 
     @Test
-    void fiveCoreActionsHaveNoGatheringOrFacilityChain() {
-        assertEquals(List.of("base", "infantry", "scout", "occupy", "report"), OnboardingService.OBJECTIVES.stream().map(OnboardingService.Objective::id).toList());
+    void coreActionsRequireBuildingResearchAndGroundReconnaissanceWithoutGrantingAircraft() {
+        assertEquals(List.of("base", "infantry", "recon_build", "recon_research", "recon_unit", "scout", "occupy", "report"), OnboardingService.OBJECTIVES.stream().map(OnboardingService.Objective::id).toList());
         assertEquals("base", current());
         assertEquals(1, buildingRepository.findByPlayerIdAndType(playerId, "factory").get(0).getLevel());
-        assertEquals(1, armyUnitRepository.findByPlayerIdAndType(playerId, "scout").get(0).getCount());
+        assertTrue(armyUnitRepository.findByPlayerIdAndType(playerId, "scout").isEmpty());
+        assertTrue(armyUnitRepository.findByPlayerIdAndType(playerId, "recon_car").isEmpty());
         assertEquals(1, armyUnitRepository.findByPlayerIdAndType(playerId, "truck").get(0).getCount());
-        assertEquals(1, technologyRepository.findByPlayerIdAndType(playerId, "recon_level").get(0).getLevel());
+        assertTrue(technologyRepository.findByPlayerIdAndType(playerId, "recon_level").isEmpty());
         assertFalse(complete("base")); assertFalse(complete("infantry"));
         assertEquals("locked", task("gather").get("status"));
-        assertEquals("locked", task("tech").get("status"), "初始赠送侦察技术不能冒充研究完成");
+        assertEquals("locked", task("tech").get("status"));
         onboarding.start(playerId);
-        assertEquals(1, armyUnitRepository.findByPlayerIdAndType(playerId, "scout").get(0).getCount());
+        assertTrue(armyUnitRepository.findByPlayerIdAndType(playerId, "scout").isEmpty());
     }
 
     @Test
-    void realStarterEconomyCompletesFiveActionsWithoutAirportOfficerOrGathering() {
+    void realStarterEconomyCompletesGroundReconnaissanceProgressionWithoutAircraft() {
         onboarding.pause(playerId, true);
         assertThrows(IllegalArgumentException.class, () -> onboarding.claim(playerId, "base"));
         build("command");
         assertTrue(complete("base")); assertEquals("infantry", current());
         int food = getResources(playerId).getFood(); onboarding.claim(playerId, "base");
         assertEquals(food, getResources(playerId).getFood(), "建设补给自动到账后不重复发放");
-        recruit("infantry", 1); assertEquals("scout", current());
+        recruit("infantry", 1); assertEquals("recon_build", current());
+        build("depot"); build("lab"); build("factory"); build("radar");
+        assertTrue(complete("recon_build")); assertEquals("recon_research", current());
+        var started = techService.startResearch(playerId, "recon_level");
+        assertTrue((Boolean) started.get("success"), started.toString());
+        var research = researchQueues.findByPlayerIdOrderByStartedAtAscIdAsc(playerId).get(0);
+        research.setFinishesAt(System.currentTimeMillis() - 1); researchQueues.save(research);
+        techService.settleCompletedResearch(playerId, System.currentTimeMillis());
+        assertTrue(complete("recon_research")); assertEquals("recon_unit", current());
+        recruit("recon_car", 1); assertTrue(complete("recon_unit")); assertEquals("scout", current());
         Map<String, Object> target = onboarding.target(playerId, false);
         Long targetId = ((Number) target.get("id")).longValue();
         assertEquals(Map.of(), target.get("garrison"));
         assertEquals(targetId, onboarding.target(playerId, false).get("id"));
-        March scout = dispatch(targetId, "wild", "scout", Map.of("scout", 1));
+        March scout = dispatch(targetId, "wild", "scout", Map.of("recon_car", 1));
         assertEquals(true, onboarding.status(playerId).get("scouting"));
         assertFalse(complete("scout")); arrive(scout);
         assertTrue(scout.getReturning());
         assertTrue(complete("scout"), "情报生成后即可推进，无需等侦察部队返城");
+        assertTrue(armyUnitRepository.findByPlayerIdAndType(playerId, "scout").isEmpty(), "新手侦查流程不需要侦察机");
         assertEquals("occupy", current());
         assertEquals(true, onboarding.target(playerId, false).get("scouted"));
         March conquer = dispatch(targetId, "wild", "conquer", Map.of("infantry", 50));

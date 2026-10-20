@@ -21,6 +21,7 @@ window.Game = window.Game || {};
   function applyState(state) {
     if (G.Protection && !G.Protection.canRequest()) return null;
     if (state && typeof state === 'object') {
+      if (G.GameTime) G.GameTime.sync(state.serverTime);
       // 兼容后端字段：username -> name
       if (state.player && state.player.username != null && state.player.name == null) {
         state.player.name = state.player.username;
@@ -280,6 +281,8 @@ window.Game = window.Game || {};
     leaveGuild: function () { return client.post('/game/guild/leave', {}); },
     getGuildChatHistory: function () { return client.get('/game/guild/chat/history', { noCache: true }); },
     sendGuildChat: function (content) { return client.post('/game/guild/chat/send', { content: content }); },
+    shareIncomingReport: function (id) { return client.post('/game/incoming/' + encodeURIComponent(id) + '/share', {}); },
+    sharedIncomingReport: function (token) { return client.get('/game/incoming/shared/' + encodeURIComponent(token), { noCache: true }); },
     // ==================== 建筑 ====================
 
     buildUpgrade: function (building, slot) {

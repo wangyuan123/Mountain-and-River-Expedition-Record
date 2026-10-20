@@ -1,5 +1,6 @@
 package com.wargame.service;
 
+import com.wargame.util.GameClock;
 import com.wargame.model.entity.March;
 import com.wargame.model.entity.Player;
 import com.wargame.model.entity.PlayerCity;
@@ -50,7 +51,7 @@ public class GuildSupportService {
     @Transactional(readOnly = true)
     public List<Map<String, Object>> memberCities(Long viewer, Long memberId) {
         if (!relations.areGuildmates(viewer, memberId)) throw new IllegalArgumentException("只能支援同军团成员");
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         List<Map<String, Object>> result = new ArrayList<>();
         for (PlayerCity city : cities.findByOwnerIdAndCitySlotIsNotNullOrderByCitySlotAsc(memberId)) {
             if (!canReceive(viewer, city, memberId, now)) continue;
@@ -101,7 +102,7 @@ public class GuildSupportService {
         sources.put("0", ownArmy);
         Map<String, Integer> total = new LinkedHashMap<>(ownArmy);
         for (March march : stationed(city)) {
-            if (!canReceive(march.getPlayerId(), city, march.getSupportOwnerId(), System.currentTimeMillis())) continue;
+            if (!canReceive(march.getPlayerId(), city, march.getSupportOwnerId(), GameClock.now())) continue;
             Map<String, Integer> army = JsonUtil.parseIntMap(march.getArmy());
             sources.put(march.getId().toString(), army);
             owners.put(march.getId().toString(), march.getPlayerId());

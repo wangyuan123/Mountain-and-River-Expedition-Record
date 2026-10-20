@@ -45,6 +45,7 @@ class BuildServiceTest extends BaseServiceTest {
         assertEquals(true, result.get("success"));
         assertEquals("farm", result.get("buildingType"));
         assertEquals(1, result.get("targetLevel"));
+        assertEquals(30, result.get("buildTime"));
         assertNotNull(result.get("finishAt"));
 
         // Verify construction record was created
@@ -62,6 +63,37 @@ class BuildServiceTest extends BaseServiceTest {
         // Verify prestige is NOT granted prematurely on upgrade start
         Player player = playerRepository.findById(playerId).orElseThrow();
         assertEquals(0, player.getPrestige(), "开始升级时不应提前发放声望");
+    }
+
+    @Test
+    @DisplayName("建筑基础工期按普通与关键建筑曲线计算并应用各自上限")
+    void testBuildingDurationCurves() {
+        assertEquals(30, buildService.calcBuildTime("farm", 0));
+        assertEquals(79255, buildService.calcBuildTime("farm", 9));
+        assertEquals(86400, buildService.calcBuildTime("farm", 10));
+
+        assertEquals(91553, buildService.calcBuildTime("command", 8));
+        assertEquals(228882, buildService.calcBuildTime("command", 9));
+        assertEquals(259200, buildService.calcBuildTime("command", 10));
+
+        assertEquals(93973, buildService.calcBuildTime("lab", 8));
+        assertEquals(244328, buildService.calcBuildTime("lab", 9));
+        assertEquals(259200, buildService.calcBuildTime("lab", 10));
+
+        assertEquals(171662, buildService.calcBuildTime("headquarters", 9));
+        assertEquals(172800, buildService.calcBuildTime("headquarters", 10));
+    }
+
+    @Test
+    @DisplayName("市政厅升级实际工期使用专属曲线")
+    void testCommandUpgradeUsesSpecialDurationCurve() {
+        createBuilding(playerId, "command", 9);
+        giveResources(playerId, 1_000_000, 1_000_000, 1_000_000, 1_000_000, 1_000_000);
+
+        Map<String, Object> result = buildService.upgrade(playerId, "command", 0);
+
+        assertEquals(true, result.get("success"));
+        assertEquals(228882, result.get("buildTime"));
     }
 
     @Test

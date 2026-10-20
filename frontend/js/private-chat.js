@@ -69,6 +69,11 @@
       if (G.Main && G.Main.renderNavBar) G.Main.renderNavBar();
     }
     if (node('privateChatUnread')) node('privateChatUnread').textContent = total ? ' (' + total + ')' : '';
+    var msgTabBadge = node('chatMessagesTabBadge');
+    if (msgTabBadge) {
+      msgTabBadge.style.display = total > 0 ? '' : 'none';
+      msgTabBadge.textContent = total > 99 ? '99+' : String(total);
+    }
     var list = node('privateChatConversations');
     if (!list) return;
     rows.forEach(function (c) {

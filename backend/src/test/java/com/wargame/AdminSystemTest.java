@@ -247,6 +247,17 @@ public class AdminSystemTest extends BaseServiceTest {
         assertFalse(mail.getIsClaimed());
 
         // 3. 玩家领取附件
+        // 管理员赠兵也须满足归队城市的兵种条件；失败时整封附件保留待领取。
+        int goldBefore = getResources(player.getId()).getGold();
+        assertEquals(false, mailService.claimAttach(player.getId(), mail.getId()).get("success"));
+        assertFalse(mailRepository.findById(mail.getId()).orElseThrow().getIsClaimed());
+        assertEquals(goldBefore, getResources(player.getId()).getGold());
+        assertTrue(armyUnitRepository.findByPlayerId(player.getId()).isEmpty());
+        createBuilding(player.getId(), "factory", 1);
+        createBuilding(player.getId(), "heavyfactory", 6);
+        for (String technology : List.of("arm_engine", "attack_tech", "defense_tech")) {
+            createTechnology(player.getId(), technology, 4);
+        }
         Map<String, Object> claimRes = mailService.claimAttach(player.getId(), mail.getId());
         assertTrue(Boolean.TRUE.equals(claimRes.get("success")));
 

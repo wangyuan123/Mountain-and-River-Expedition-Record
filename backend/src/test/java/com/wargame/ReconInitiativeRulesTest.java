@@ -59,8 +59,8 @@ class ReconInitiativeRulesTest {
         var lowerRadar = resolve(unit, 2, 2, 1);
         var noRadar = resolve(unit, 2, 2, 0);
         int base = UnitDef.UNITS.get(unit).spd() + 10;
-        assertFirst(result, 1, false, base, base + 15);
-        assertTrue(result.log().get(0).contains("雷达预警：先手+15（仅首回合）"));
+        assertFirst(result, 1, false, base, base + 6);
+        assertTrue(result.log().get(0).contains("雷达预警：先手+6（仅首回合）"));
         for (int round = 2; round <= 10; round++) {
             assertFirst(result, round, round % 2 == 1, base, base);
             assertFalse(result.log().get(round - 1).contains("雷达预警"));
@@ -74,16 +74,16 @@ class ReconInitiativeRulesTest {
     void attackerResearchCanOvercomeOpeningRadar(String unit) {
         var result = resolve(unit, 5, 0, 2);
         int speed = UnitDef.UNITS.get(unit).spd();
-        assertFirst(result, 1, true, speed + 25, speed + 10);
+        assertFirst(result, 1, true, speed + 25, speed + 4);
         for (int round = 2; round <= 10; round++) assertFirst(result, round, true, speed + 25, speed);
     }
 
     @ParameterizedTest @ValueSource(strings = {"scout", "recon_car"})
     void blitzCanChangeLaterInitiativeWhileRadarDoesNotRepeat(String unit) {
         var blitz = new BattleService.TechCtx(Map.of(), Map.of("blitz", 5), 0, 0);
-        var result = UnitEquipmentRecon.resolve(unit, 10000, Map.of(unit, 10000), battle, blitz, plain, 0, 0, 3);
+        var result = UnitEquipmentRecon.resolve(unit, 10000, Map.of(unit, 10000), battle, blitz, plain, 0, 0, 10);
         int speed = UnitDef.UNITS.get(unit).spd(), boosted = (int) Math.round(speed * 1.3);
-        assertFirst(result, 1, false, boosted, speed + 15);
+        assertFirst(result, 1, false, boosted, speed + 20);
         for (int round = 2; round <= 10; round++) {
             boolean active = (round - 1) % 3 == 0;
             assertFirst(result, round, active || round % 2 == 1, active ? boosted : speed, speed);
@@ -98,6 +98,25 @@ class ReconInitiativeRulesTest {
         var result = UnitEquipmentRecon.resolve(unit, 10000, Map.of(unit, 10000), battle, equipped, plain, 2, 2, 0);
         int speed = UnitDef.UNITS.get(unit).spd(), boosted = (int) Math.round(speed * 1.15 * 1.2) + 10;
         for (int round = 1; round <= 10; round++) assertFirst(result, round, true, boosted, speed + 10);
+    }
+
+    @ParameterizedTest @ValueSource(strings = {"scout", "recon_car"})
+    void tenLevelBonusesClampAndRadarExpiresAfterFirstRound(String unit) {
+        var result = resolve(unit, 10, 10, 10);
+        var clamped = resolve(unit, 99, 99, 99);
+        int base = UnitDef.UNITS.get(unit).spd() + 50;
+        assertFirst(result, 1, false, base, base + 20);
+        for (int round = 2; round <= 10; round++) assertFirst(result, round, round % 2 == 1, base, base);
+        assertEquals(result.log(), clamped.log());
+    }
+
+    @ParameterizedTest @ValueSource(strings = {"scout", "recon_car"})
+    void thirdRadarLevelOvercomesOneReconLevelOnlyAtOpening(String unit) {
+        int speed = UnitDef.UNITS.get(unit).spd();
+        assertFirst(resolve(unit, 3, 2, 2), 1, true, speed + 15, speed + 14);
+        var result = resolve(unit, 3, 2, 3);
+        assertFirst(result, 1, false, speed + 15, speed + 16);
+        for (int round = 2; round <= 10; round++) assertFirst(result, round, true, speed + 15, speed + 10);
     }
 
     @Test void eliminatedFastEquipmentGroupDoesNotControlLaterInitiative() {

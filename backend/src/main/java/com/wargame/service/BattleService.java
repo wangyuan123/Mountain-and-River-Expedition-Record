@@ -683,6 +683,7 @@ public class BattleService {
         Map<String, Integer> enemy = snapshot(defenderArmy);
         Map<String, Integer> minePos = new LinkedHashMap<>(attackerPositions);
         Map<String, Integer> enemyPos = new LinkedHashMap<>(defenderPositions);
+        normalizeBattleFronts(mine, enemy, minePos, enemyPos, initialDistance);
         TechCtx attackerCtx = new TechCtx(attackerTech != null ? attackerTech : Collections.emptyMap(),
                 attackerSkills != null ? attackerSkills : Collections.emptyMap(), attackerCommanderMil, attackerCommanderDef, attackerCommandBonus);
         TechCtx defenderCtx = new TechCtx(defenderTech != null ? defenderTech : Collections.emptyMap(),
@@ -2202,6 +2203,34 @@ public class BattleService {
         return nearestLivingFoeDistance(side, unitId, foeArmy, minePos, enemyPos, initialDist);
     }
 
+    /**
+     * 修复历史会话已交叉的前排；优先保留现有接触线，未接触时取交叉区间中点。
+     * 只将越线的存活单位收回己方，正常会话坐标不变；随后仍按同步机动和速度预算推进。
+     */
+    public void normalizeBattleFronts(Map<String, Integer> mine, Map<String, Integer> enemy,
+                                      Map<String, Integer> minePos, Map<String, Integer> enemyPos, int initialDist) {
+        Set<Integer> ownFronts = new TreeSet<>(), foeFronts = new TreeSet<>();
+        mine.forEach((id, count) -> {
+            if (count != null && count > 0 && getStats(id) != null) ownFronts.add(minePos.getOrDefault(id, 0));
+        });
+        enemy.forEach((id, count) -> {
+            if (count != null && count > 0 && getStats(id) != null) foeFronts.add(enemyPos.getOrDefault(id, initialDist));
+        });
+        if (ownFronts.isEmpty() || foeFronts.isEmpty()) return;
+        int ownFront = Collections.max(ownFronts), foeFront = Collections.min(foeFronts);
+        if (ownFront <= foeFront) return;
+        ownFronts.retainAll(foeFronts);
+        int boundary = ownFronts.isEmpty() ? foeFront + (ownFront - foeFront) / 2 : Collections.min(ownFronts);
+        mine.forEach((id, count) -> {
+            if (count != null && count > 0 && getStats(id) != null)
+                minePos.put(id, Math.min(minePos.getOrDefault(id, 0), boundary));
+        });
+        enemy.forEach((id, count) -> {
+            if (count != null && count > 0 && getStats(id) != null)
+                enemyPos.put(id, Math.max(enemyPos.getOrDefault(id, initialDist), boundary));
+        });
+    }
+
     /** 双方同时前进时按速度分摊接触前的剩余距离，确保所有兵种都不能越过存活敌军。 */
     private int limitAdvanceAtContact(Side side, String unitId, int step, int rawStep,
                                       Map<String, Integer> foeArmy, Map<String, Integer> minePos,
@@ -2339,7 +2368,7 @@ public class BattleService {
         int protectPer = depot != null && depot.protectPer() != null ? depot.protectPer() : 1000;
         // 每类资源分别保护同一额度；按本城仓库总等级计算，不改变储量上限。
         return (int) Math.min(Integer.MAX_VALUE, Math.floor(Math.max(0, depotLevel) * (double) protectPer
-                * (1 + .10 * com.wargame.model.constants.TechnologyRules.level(tech, "log_warehouse", 5))));
+                * (1 + .05 * com.wargame.model.constants.TechnologyRules.level(tech, "log_warehouse", 10))));
     }
 
     /**

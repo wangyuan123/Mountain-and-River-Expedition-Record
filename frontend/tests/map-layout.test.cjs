@@ -9,6 +9,32 @@ for (const name of ['map-layout.js', 'map-camera.js', 'map-chunks.js']) {
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js', name), 'utf8'), c);
 }
 const layout = c.Game.MapLayout;
+test('real wild artwork avoids every neighboring static icon without moving target coordinates', () => {
+  const types=['forest','plains','grassland','snow','oil'];
+  for (const type of types) for (const kind of ['player','npc','simulated_npc','bandit','wild']) {
+    const wild=Object.freeze({kind:'wild',id:1,type,x:16,y:16});
+    const neighbor=Object.freeze({kind,id:2,type:'grassland',x:16,y:kind==='player'?14:15,coastal:true});
+    const targets=[wild,neighbor], sizes=layout.wildIconSizes(targets,200);
+    const center=layout.bounds(wild,200), width=sizes.get('wild:1');
+    const rect={x:center.cx-width/2,y:center.cy-width/2,right:center.cx+width/2,bottom:center.cy+width/2};
+    assert.ok(width>0 && width<=layout.markerSize(wild,1));
+    assert.equal(layout.intersects(rect,layout.iconBounds(neighbor,200)),false,type+' vs '+kind);
+    assert.equal(wild.x,16);assert.equal(wild.y,16);
+    assert.equal(layout.wildIconSizes(targets.slice().reverse(),200).get('wild:1'),width);
+  }
+});
+
+test('adjacent wild icons are disjoint at chunk boundaries and every zoom level', () => {
+  const targets=[{kind:'wild',id:1,type:'plains',x:15,y:15},{kind:'wild',id:2,type:'grassland',x:16,y:15}];
+  const sizes=layout.wildIconSizes(targets,200);
+  for(const scale of [44,64,88]) {
+    const left=15.5*scale+sizes.get('wild:1')*scale/2;
+    const right=16.5*scale-sizes.get('wild:2')*scale/2;
+    assert.ok(left<=right);
+  }
+  const solo=layout.wildIconSizes([targets[0]],200);
+  assert.equal(solo.get('wild:1'),layout.markerSize(targets[0],1),'isolated artwork keeps its existing size');
+});
 test('all four player-city cells select the same target without mutating its coordinates', () => {
   const city = Object.freeze({ kind:'player', id:1, x:100, y:100 });
   const b = layout.bounds(city, 200);

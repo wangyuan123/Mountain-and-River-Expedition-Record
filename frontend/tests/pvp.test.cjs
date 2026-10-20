@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-function setup() {
+function setup(prestige = 10000) {
   const calls = [], listeners = {}, timers = new Map(); let nextTimer = 1, token = 'one';
   const view = { innerHTML: '', scrollTop: 0, querySelector() { return this.innerHTML.includes('pvp-page') ? {} : null; } };
   const defaults = { infantry: { action: 'ADVANCE' }, truck: { action: 'HOLD' } };
@@ -12,7 +12,7 @@ function setup() {
   let battle = { ...status, status: 'BATTLING', sessionId: 's', side: 'B', round: 1, mine: snapshot, enemy: snapshot, myArmy: { infantry: 100 }, enemyArmy: { infantry: 100 }, myPositions: { infantry: 0 }, enemyPositions: { infantry: 1000 }, initialDistance: 1000, loaded: true, draft: {}, revision: 0, deadlineAt: Date.now() + 15000 };
   let handler;
   const Game = {
-    Core: { route: 'pvp', views: {}, firepowerMul: tech => 1 + ((tech || {}).fire_density || 0) / 10 }, Constants: { pvp: { heartbeatMs: 10000, queuePollMs: 3000, battlePollMs: 2000 } },
+    Core: { route: 'pvp', state: { prestige }, views: {}, firepowerMul: tech => 1 + ((tech || {}).fire_density || 0) / 10 },
     DATA: { units: { infantry: { name: '步兵', branch: 'land' }, truck: { name: '卡车', branch: 'land' } }, officerSkills: {} },
     escapeHtml: String, WS: { connected: true, on(name, fn) { listeners[name] = fn; } },
     Battle: { renderCommandBonusPanel() { return ''; }, tacticalMarkerRows() { return ['infantry']; }, renderTacticalRangeBeams() { return ''; }, renderTacticalMarkers(army, positions) { return '<span data-position="' + positions.infantry + '"></span>'; } },
@@ -29,10 +29,48 @@ function setup() {
     go(route) { this.Core.route = route; this.Pvp.render(view); }
   };
   const context = vm.createContext({ window: { Game, crypto: { randomUUID() { return 'request_' + nextTimer++; } }, confirm() { return true; } }, document: { activeElement: null, getElementById(id) { return id === 'view' ? view : null; } }, setInterval(fn) { timers.set(nextTimer, fn); return nextTimer++; }, setTimeout(fn) { timers.set(nextTimer, fn); return nextTimer++; }, clearTimeout(id) { timers.delete(id); }, Date, console });
-  vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/pvp.js'), 'utf8'), context);
+  for (const file of ['constants.js', 'pvp.js']) vm.runInContext(fs.readFileSync(path.join(__dirname, '../js', file), 'utf8'), context);
   return { Game, calls, view, timers, listeners, get status() { return status; }, set status(s) { status = s; }, get battle() { return battle; }, set battle(b) { battle = b; }, setHandler(h) { handler = h; }, setToken(t) { token = t; } };
 }
 async function settle() { for (let i = 0; i < 15; i++) await Promise.resolve(); }
+
+test('声望不足保留对战内容预览，蒙层锁定操作且不提交编队或匹配', async () => {
+  const s = setup(9999);
+  await s.Game.Pvp.start(); s.Game.Pvp.render(s.view); await settle();
+  assert.match(s.view.innerHTML, /class="pvp-content" inert aria-disabled="true"/);
+  assert.match(s.view.innerHTML, /声望达到 10000 后解锁 PvP 对战功能/);
+  assert.match(s.view.innerHTML, /当前声望：9999 \/ 10000/);
+  assert.match(s.view.innerHTML, /演习编队/);
+  assert.match(s.view.innerHTML, /本城可用/);
+  await s.Game.Pvp.savePreset(); s.Game.Pvp.queue(); await settle();
+  assert.equal(s.calls.filter(c => c.method === 'POST').length, 0);
+});
+
+test('声望达到10000立即解除蒙层，保留原有编队并允许匹配', async () => {
+  const s = setup(9999);
+  await s.Game.Pvp.start(); s.Game.Pvp.render(s.view); await settle();
+  s.Game.Core.state.prestige = 10000;
+  s.Game.Pvp.render(s.view);
+  assert.doesNotMatch(s.view.innerHTML, /pvp-prestige-overlay|\binert\b/);
+  assert.match(s.view.innerHTML, /value="100"/);
+  s.Game.Pvp.queue(); await settle();
+  assert.ok(s.calls.some(c => c.method === 'POST' && c.url === '/game/pvp/queue'));
+});
+
+test('声望变动会刷新提示，低于门槛或状态未加载时重新锁定', async () => {
+  const s = setup(10001);
+  await s.Game.Pvp.start(); s.Game.Pvp.render(s.view); await settle();
+  assert.doesNotMatch(s.view.innerHTML, /pvp-prestige-overlay/);
+  for (const prestige of [9999, 2500, 0]) {
+    s.Game.Core.state.prestige = prestige;
+    s.Game.Pvp.render(s.view);
+    assert.match(s.view.innerHTML, /class="pvp-content" inert/);
+    assert.ok(s.view.innerHTML.includes('当前声望：' + prestige + ' / 10000'));
+  }
+  s.Game.Core.state = null;
+  s.Game.Pvp.render(s.view);
+  assert.match(s.view.innerHTML, /class="pvp-content" inert/);
+});
 
 test('lobby persists input across world refresh and queues only after versioned preset save', async () => {
   const s = setup(); await s.Game.Pvp.start(); s.Game.Pvp.render(s.view); await settle();

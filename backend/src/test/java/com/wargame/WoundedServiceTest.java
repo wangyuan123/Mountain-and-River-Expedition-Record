@@ -125,14 +125,15 @@ class WoundedServiceTest extends BaseServiceTest {
 
     @Test
     void diamondsRoundUpPerThousandGoldForQuotesAndActualTreatment() {
-        assertEquals(4, service.goldCost("infantry", 1));
+        // 步兵四项资源合计43，黄金治疗单价向上取整为5，钻石边界随之变为每200人一颗。
+        assertEquals(5, service.goldCost("infantry", 1));
         assertEquals(1, service.diamondCost("infantry", 1));
-        assertEquals(1, service.diamondCost("infantry", 249));
-        assertEquals(1, service.diamondCost("infantry", 250));
-        assertEquals(2, service.diamondCost("infantry", 251));
+        assertEquals(1, service.diamondCost("infantry", 199));
+        assertEquals(1, service.diamondCost("infantry", 200));
+        assertEquals(2, service.diamondCost("infantry", 201));
         assertEquals(1552, service.diamondCost("destroyer", 20410));
         createTechnology(player.getId(), "log_medical", 10);
-        service.recordLosses(player.getId(), 10, 10, Map.of("infantry", 502), Map.of(), null, System.currentTimeMillis());
+        service.recordLosses(player.getId(), 10, 10, Map.of("infantry", 402), Map.of(), null, System.currentTimeMillis());
         var batch = batches(player.getId()).get(0);
         Resources balance = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
         balance.setGold(0);
@@ -140,15 +141,15 @@ class WoundedServiceTest extends BaseServiceTest {
         resourcesRepository.save(balance);
         var quote = (List<?>) service.getCamp(player.getId()).get("batches");
         assertEquals(2L, ((Map<?, ?>) quote.get(0)).get("diamondCost"));
-        assertThrows(IllegalArgumentException.class, () -> service.heal(player.getId(), batch.getId(), 251, "diamond"));
+        assertThrows(IllegalArgumentException.class, () -> service.heal(player.getId(), batch.getId(), 201, "diamond"));
         assertEquals(1, balance.getDiamond());
-        assertEquals(251, batch.getCount());
-        var result = service.heal(player.getId(), batch.getId(), 250, "diamond");
+        assertEquals(201, batch.getCount());
+        var result = service.heal(player.getId(), batch.getId(), 200, "diamond");
         assertEquals(1L, result.get("cost"));
         assertEquals(0, balance.getDiamond());
         assertEquals(0, balance.getGold());
         assertEquals(1, batch.getCount());
-        assertEquals(250, armyUnitRepository.findByPlayerIdAndType(player.getId(), "infantry").get(0).getCount());
+        assertEquals(200, armyUnitRepository.findByPlayerIdAndType(player.getId(), "infantry").get(0).getCount());
     }
 
     @Test

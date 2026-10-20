@@ -126,3 +126,60 @@ test('late friend responses from previous account do not render', async () => {
   finish(response); await pending;
   assert.equal(nodes.friendList.innerHTML, '');
 });
+
+test('incoming friend requests increment unread count and trigger nav bar render while outgoing requests do not', async () => {
+  const { game, response } = setup();
+  let navBarRenderCount = 0;
+  game.Main = { renderNavBar: () => { navBarRenderCount++; } };
+  response.requests = [
+    { id: 10, outgoing: false, peer: { id: 3, username: 'charlie' } },
+    { id: 11, outgoing: true, peer: { id: 4, username: 'david' } }
+  ];
+  await game.Friends.refresh();
+  assert.equal(game.Friends.unread(), 1);
+  assert.ok(navBarRenderCount > 0);
+});
+
+test('request accept and reject decrement unread count and re-render badges', async () => {
+  const { game, response } = setup();
+  let navBarRenderCount = 0;
+  game.Main = { renderNavBar: () => { navBarRenderCount++; } };
+  game.API.friendRequestAccept = () => {
+    response.requests = [];
+    return Promise.resolve();
+  };
+  response.requests = [
+    { id: 10, outgoing: false, peer: { id: 3, username: 'charlie' } }
+  ];
+  await game.Friends.refresh();
+  assert.equal(game.Friends.unread(), 1);
+  const btn = { disabled: false };
+  await game.Friends.request(10, true, btn);
+  assert.equal(game.Friends.unread(), 0);
+  assert.ok(navBarRenderCount >= 2);
+});
+
+test('acknowledging incoming friend requests clears unread badge but keeps request in list', async () => {
+  const { game, response, nodes } = setup();
+  let navBarRenderCount = 0;
+  game.Main = { renderNavBar: () => { navBarRenderCount++; } };
+  response.requests = [
+    { id: 10, outgoing: false, peer: { id: 3, username: 'charlie' } }
+  ];
+  await game.Friends.refresh();
+  assert.equal(game.Friends.unread(), 1);
+  assert.match(nodes.friendList.innerHTML, /申请添加战友/);
+
+  game.Friends.acknowledge();
+  assert.equal(game.Friends.unread(), 0);
+  assert.match(nodes.friendList.innerHTML, /申请添加战友/);
+
+  response.requests = [
+    { id: 10, outgoing: false, peer: { id: 3, username: 'charlie' } },
+    { id: 11, outgoing: false, peer: { id: 4, username: 'david' } }
+  ];
+  await game.Friends.refresh();
+  assert.equal(game.Friends.unread(), 1);
+});
+
+

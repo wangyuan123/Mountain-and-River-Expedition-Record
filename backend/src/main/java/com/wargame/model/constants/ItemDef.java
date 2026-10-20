@@ -140,6 +140,7 @@ public record ItemDef(
             Map.entry("shield",    new ItemDef("shield",    "护盾",     "🛡️", CAT_UTIL, "本城8小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地", 0)),
             Map.entry("marchOrd",  new ItemDef("marchOrd",  "行军令",   "🚩", CAT_UTIL, "仓库启用：行军速度+50%，持续1小时；情报使用：本队当前路段剩余时间缩短约1/3，去程与回程各限一次", 0)),
             Map.entry("populationOrder", new ItemDef("populationOrder", "人口动员令", "👥", CAT_UTIL, "使用后立即增加500空闲人口,不超过人口上限", 0)),
+            Map.entry("emergencyPopulationOrder", new ItemDef("emergencyPopulationOrder", "紧急人口动员令", "📣", CAT_UTIL, "使用后立即增加当前城市人口容量上限30%的空闲人口,不超过人口上限", 0)),
             Map.entry("cityRenameCard", new ItemDef("cityRenameCard", "城市改名卡", "🏷️", CAT_UTIL, "为一座城市更换新名字", 0))
 
     );

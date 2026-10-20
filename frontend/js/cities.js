@@ -2,6 +2,7 @@
 window.Game = window.Game || {};
 (function (G) {
   'use strict';
+  G.gameNow = G.gameNow || function () { return Date.now(); };
   var focusBefore = null;
   var timer = null;
   var panelMode = 'list';
@@ -9,7 +10,7 @@ window.Game = window.Game || {};
   function esc(value) { return G.escapeHtml(String(value == null ? '' : value)); }
   function overview() { return state().cityOverview || { cities: [], count: 1, cap: 1 }; }
   function rankTip(info) { return info.nextRankName ? '晋升' + info.nextRankName + '后，可拥有 ' + info.nextCap + ' 座城市' : '已达到最高城市上限'; }
-  function remaining(time) { return Math.max(1, Math.ceil((time - Date.now()) / 60000)) + ' 分钟'; }
+  function remaining(time) { return Math.max(1, Math.ceil((time - G.gameNow()) / 60000)) + ' 分钟'; }
   function error(e) { G.toast(e.message || '操作失败，请重试'); }
   function contents(html) {
     var content = document.getElementById('cityDialogContent');
@@ -32,7 +33,7 @@ window.Game = window.Game || {};
     var html = '<div class="city-overview"><b>我的城市 ' + info.count + ' / ' + info.cap + '</b><span>' + esc(info.rankName || '') + '</span></div>';
     html += '<div class="city-list">';
     info.cities.forEach(function (city) {
-      var pending = city.readyAt > Date.now();
+      var pending = city.readyAt > G.gameNow();
       html += '<div class="city-list-row' + (city.current ? ' selected' : '') + '">';
       html += '<button class="city-choice" data-ready-at="' + city.readyAt + '" data-city-id="' + city.id + '" onclick="Game.Cities.select(' + city.id + ')"' + (pending || city.current ? ' disabled' : '') + '>';
       html += '<span class="city-choice-heading"><b>' + esc(city.name) + '</b><span class="city-tag">' + (city.coastal ? '沿海' : city.legacyNaval ? '海军补给' : city.main ? '主城' : '分城') + '</span><span>Lv.' + city.level + '</span></span>';
@@ -79,7 +80,7 @@ window.Game = window.Game || {};
           var readyAt = Number(button.getAttribute('data-ready-at'));
           var city = overview().cities.find(function (c) { return String(c.id) === button.getAttribute('data-city-id'); });
           if (!city || city.current) return;
-          button.disabled = readyAt > Date.now();
+          button.disabled = readyAt > G.gameNow();
           button.querySelector('.city-ready-label').textContent = button.disabled ? '建设中 · ' + remaining(readyAt) : '点击切换';
         });
       }, 1000);
@@ -101,7 +102,7 @@ window.Game = window.Game || {};
       if (G.UnitEquipment) G.UnitEquipment.close(true);
       if (this.switching) return;
       var city = overview().cities.find(function (c) { return c.id === cityId; });
-      if (!city || city.current || city.readyAt > Date.now()) return;
+      if (!city || city.current || city.readyAt > G.gameNow()) return;
       this.switching = true;
       G.API.client.invalidateCityRequests();
       contents('<p class="city-hint" role="status">正在切换到 ' + esc(city.name) + '…</p>');
@@ -186,7 +187,7 @@ window.Game = window.Game || {};
     transferForm: function (cityId, action) {
       panelMode = 'transfer';
       var s = state(), city = overview().cities.find(function (c) { return c.id === cityId; }) || supportTargets.find(function (c) { return c.id === cityId; });
-      if (!city || city.current || city.readyAt > Date.now()) return;
+      if (!city || city.current || city.readyAt > G.gameNow()) return;
       var supporting = supportTargets.indexOf(city) >= 0;
       action = action === 'transport' ? 'transport' : supporting ? 'reinforce' : 'rebase';
       var transporting = action === 'transport';

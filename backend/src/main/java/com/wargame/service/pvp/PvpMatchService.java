@@ -1,5 +1,6 @@
 package com.wargame.service.pvp;
 
+import com.wargame.util.GameClock;
 import com.wargame.config.GameServerIdentity;
 import com.wargame.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +17,7 @@ public class PvpMatchService {
     private final PvpPracticeService practice;
     private final GameServerIdentity region;
     public int match() {
-        int matched = 0; long now = System.currentTimeMillis();
+        int matched = 0; long now = GameClock.now();
         for (var anchor : tickets.findByRegionAndStatusOrderByQueuedAtAsc(region.id(), "QUEUED", PageRequest.of(0, 50))) {
             if (anchor.getLeaseUntil() <= now || anchor.getQueuedAt() + PvpPracticeService.SEARCH_MS <= now) { practice.expireTicket(anchor.getId()); continue; }
             long wait = now - anchor.getQueuedAt(); double window = PvpPracticeService.powerWindow(wait); int rw = PvpPracticeService.ratingWindow(wait);

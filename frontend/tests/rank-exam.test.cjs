@@ -45,6 +45,7 @@ function setup(api = {}) {
     document: { getElementById: id => elements[id], querySelectorAll: selector => selector === '.rank-exam-question input' ? inputs : [] }
   });
   context.window = context;
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/constants.js'), 'utf8'), context);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/main-quest.js'), 'utf8'), context);
   const view = { innerHTML: '' };
   G.MainQuest.state.playerId = 1;

@@ -3,6 +3,7 @@ window.Game = window.Game || {};
 
 (function (G) {
   'use strict';
+  G.gameNow = G.gameNow || function () { return Date.now(); };
 
   var D = G.DATA;
   var Core = G.Core;
@@ -12,6 +13,7 @@ window.Game = window.Game || {};
   var lastRoute = null;
   var expandedUnits = {};
   var disbandModal = null;
+  var renderedUnlocks = '';
 
   function setTab(tab) {
     currentTab = tab || 'units';
@@ -149,7 +151,7 @@ window.Game = window.Game || {};
     }
     var el = document.getElementById('army-production-queue');
     if (!el) return;
-    var now = Date.now();
+    var now = G.gameNow();
     if (!queue.length) {
       el.innerHTML = '<div class="desc" style="text-align:center;padding:24px 0;">' +
         '<div style="font-size:14px;color:var(--muted);margin-bottom:12px;">' + (syncError || '暂无进行中的生产队列') + '</div>' +
@@ -226,7 +228,7 @@ window.Game = window.Game || {};
 
   function canFreeSpeedUp(item) {
     if (!item || !item.finishesAt) return false;
-    var rem = Math.max(0, Math.ceil((item.finishesAt - Date.now()) / 1000));
+    var rem = Math.max(0, Math.ceil((item.finishesAt - G.gameNow()) / 1000));
     return rem <= 300;
   }
 
@@ -269,7 +271,7 @@ window.Game = window.Game || {};
     var qItem = null;
     for (var i = 0; i < queue.length; i++) if (queue[i].id === queueId) { qItem = queue[i]; break; }
     var unitLabel = qItem ? (getUnitDisplayName(D.units[qItem.unitType] || qItem.unitType) + ' x' + qItem.count) : ('订单 #' + queueId);
-    var now = Date.now();
+    var now = G.gameNow();
     var remSec = qItem && qItem.finishesAt ? Math.max(0, Math.ceil((qItem.finishesAt - now) / 1000)) : 0;
     var remText = formatSeconds(remSec);
 
@@ -373,7 +375,8 @@ window.Game = window.Game || {};
 
     recruit: function (id, inputId) {
       var prerequisites = G.Prerequisites && G.Prerequisites.checkRecruitment(id);
-      if (prerequisites && prerequisites.missing.length) {
+      if (!prerequisites) { G.toast('兵种条件待同步，请刷新后重试'); return; }
+      if (prerequisites.missing.length) {
         G.toast(prerequisites.missing.map(G.Prerequisites.missingText).join('；'));
         return;
       }
@@ -571,6 +574,12 @@ window.Game = window.Game || {};
       }
     },
 
+    /** 只在资格快照变化后重绘兵种卡片，保留展开状态与生产队列标签。 */
+    refreshUnlocks: function () {
+      if (Core.route !== 'army' || renderedUnlocks === JSON.stringify((Core.state || {}).unitUnlocks || {})) return;
+      Core.refreshContent();
+    },
+
     renderView: function (v) {
       if (Core.route !== lastRoute) {
         currentTab = 'units';
@@ -605,7 +614,7 @@ window.Game = window.Game || {};
         var stats = getBuildStats(u.build);
         var sumLv = stats.sumLevel;
         var prerequisites = G.Prerequisites && G.Prerequisites.checkRecruitment(id);
-        var can = stats.maxBatch > 0 && (!prerequisites || !prerequisites.missing.length);
+        var can = stats.maxBatch > 0 && (prerequisites && prerequisites.eligible);
         var maxRecruit = maxRecruitable(u);
         var inpId = 'qty_' + id;
         // 兵工厂展示: 1栋时显示 Lv.x, 多栋时显示 Lv.总和(共N栋) 让玩家清楚每个兵工厂独立计算
@@ -639,19 +648,15 @@ window.Game = window.Game || {};
         if (can) {
           var parallel = stats.parallel;
           h += '<div class="d unit-prod-stat">生产: 基础 ' + (30 + Math.floor(((u.cost.food || 0) + u.cost.steel + u.cost.oil + u.cost.rare) / 10)) + '秒/个，并行 ' + parallel + ' 条 (按栋独立), 平均速度 ×' + stats.avgSpeed.toFixed(2) + '</div>';
-          h += '<div class="desc batch-hint">当前最多可征召 ' + maxRecruit + ' 个（受可用平民和资源限制）；兵工厂等级与训练科技只影响生产速度和并行数。</div>';
+          h += '<div class="desc batch-hint">当前最多可征召 ' + maxRecruit + ' 个（受可用平民和资源限制）；本城设施与已完成科技共同决定兵种准入，生产设施与训练科技影响速度和并行数。</div>';
         }
         h += '</div>';
 
         // 配装摘要不随属性详情折叠，配置归属账号而非本城兵数。
         if (G.UnitEquipment) h += G.UnitEquipment.summary(id, true);
 
-        // 海军的两项能力常驻展示，避免已建军港的玩家误以为能直接造舰。
-        if (u.branch === 'sea' && prerequisites) {
-          h += '<div class="desc">征召前置：' + prerequisites.requirements.map(function (entry) {
-            return entry.name + ' Lv.' + entry.actual + ' / Lv.' + entry.required + (entry.met ? '（已满足）' : '（未满足）');
-          }).join(' · ') + '</div>';
-        }
+        // 所有兵种展示同一服务端评估的全部条件与当前进度。
+        if (G.Prerequisites) h += G.Prerequisites.recruitmentHtml(id);
 
         // 常驻展示的单价与征召解散操作行
         h += '<div class="cost">单价: ' + costHtml(Object.assign({ pop: u.pop }, u.cost)) + '</div>';
@@ -669,10 +674,7 @@ window.Game = window.Game || {};
           h += '</div>';
         } else {
           h += '<div class="cost">' + (prerequisites && prerequisites.missing.length
-            ? prerequisites.missing.map(G.Prerequisites.missingText).join('；') : '需先建造 ' + bName) + '</div>';
-          if (prerequisites && prerequisites.missing.length) {
-            h += '<button type="button" class="btn sm" onclick="Game.Prerequisites.goTo(\'' + prerequisites.missing[0].id + '\',\'city\',event)">前往建造</button>';
-          }
+            ? prerequisites.missing.map(G.Prerequisites.missingText).join('；') : prerequisites ? '生产设施尚未可用' : '兵种条件待同步') + '</div>';
           if (have > 0) h += '<button type="button" class="btn warn recruit-btn" onclick="Game.Army.openDisbandModal(\'' + id + '\')">解散</button>';
         }
         h += '</div>';
@@ -686,6 +688,7 @@ window.Game = window.Game || {};
       h += '</div>';
 
       v.innerHTML = h + '<div class="menu-item back" onclick="Game.go(\'home\')">[0] 返回主菜单</div>';
+      renderedUnlocks = JSON.stringify(s.unitUnlocks || {});
       updateQueue(false);
       if (!refreshTimer) refreshTimer = window.setInterval(function () { if (Core.route === 'army') updateQueue(false); }, 5000);
     }

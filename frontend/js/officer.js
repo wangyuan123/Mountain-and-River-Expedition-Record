@@ -3,6 +3,7 @@ window.Game = window.Game || {};
 
 (function (G) {
   'use strict';
+  G.gameNow = G.gameNow || function () { return Date.now(); };
 
   var D = G.DATA;
   var Core = G.Core;
@@ -12,7 +13,7 @@ window.Game = window.Game || {};
   /** 按服务端额度显示刷新入口；跨日只重置日次数，未结束的轮次冷却继续保留。 */
   function academyRefreshHtml(academy) {
     academy = academy || {};
-    var now = Date.now();
+    var now = G.gameNow();
     var roundLimit = academy.refreshRoundLimit || 30;
     var dailyLimit = academy.refreshDailyLimit || 100;
     var cooldownExpired = academy.refreshAt > 0 && academy.refreshAt <= now;
@@ -20,12 +21,11 @@ window.Game = window.Game || {};
     var dailyCount = academy.refreshDailyResetAt > 0 && academy.refreshDailyResetAt <= now
       ? 0 : (academy.refreshDailyCount || 0);
     var mins = academy.refreshAt > now ? Math.ceil((academy.refreshAt - now) / 60000) : 0;
-    var h = '<div class="desc">每轮最多' + roundLimit + '次，用满后冷却1小时；每日最多' + dailyLimit +
-      '次（北京时间0点重置，账号各城市共享）。<br/>本轮已刷新 ' + roundCount + '/' + roundLimit +
+    var h = '<div class="desc">本轮已刷新 ' + roundCount + '/' + roundLimit +
       ' 次 · 今日已刷新 ' + dailyCount + '/' + dailyLimit + ' 次</div>';
     h += '<div class="academy-refresh-row">';
     if (dailyCount >= dailyLimit) {
-      h += '<button type="button" class="btn academy-refresh-btn cooling" disabled>今日刷新已达' + dailyLimit + '次（北京时间次日0点重置）</button>';
+      h += '<button type="button" class="btn academy-refresh-btn cooling" disabled>今日刷新已达' + dailyLimit + '次（游戏时间次日0点重置，停服顺延）</button>';
     } else if (mins > 0) {
       h += '<button type="button" class="btn academy-refresh-btn cooling" disabled>' +
         '<span class="refresh-icon">⏳</span> 本轮已用满' + roundLimit + '次，刷新休整中 (' + mins + ' 分钟后可再次刷新)</button>';
@@ -130,6 +130,50 @@ window.Game = window.Game || {};
   }
 
   var Officer = {
+    /** 复用科技页说明弹窗，将招募费用、批次概率和刷新额度集中展示。 */
+    showAcademyInfo: function () {
+      if (document.getElementById('academyInfoModal')) return;
+      var academy = Core.state.academy || {};
+      var mask = document.createElement('div');
+      mask.id = 'academyInfoModal';
+      mask.className = 'modal-mask';
+      var probability = '';
+      if (typeof academy.fiveStarBatchChance === 'number') {
+        probability = '当前整批概率为 <b>' + Number((academy.fiveStarBatchChance * 100).toFixed(2)) + '%</b>。';
+      }
+      if (typeof academy.baseFiveStarBatchChance === 'number' && typeof academy.militaryTheoryBonus === 'number') {
+        // 概率拆分直接读取服务端，避免说明弹窗与实际刷新规则各自计算。
+        probability += '军校基础 ' + Number((academy.baseFiveStarBatchChance * 100).toFixed(2)) +
+          '% ＋ 军事理论 Lv.' + (academy.militaryTheoryLevel || 0) + ' 加成 ' +
+          Number((academy.militaryTheoryBonus * 100).toFixed(2)) + '个百分点。';
+      }
+      mask.innerHTML =
+        '<div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="academyInfoTitle">' +
+          '<div class="modal-title" id="academyInfoTitle">军校招募说明</div>' +
+          '<div class="modal-body"><ol>' +
+            '<li><strong>招募条件：</strong>新建军校后才能招募军官，军校等级按当前城市计算。</li>' +
+            '<li><strong>刷新与费用：</strong>消耗200黄金刷新候选人名单，每次刷新' + (academy.candidateCount || 10) + '名候选人；每名候选人招募费 = 星级×80 金。</li>' +
+            '<li><strong>五星名将：</strong>每批只判定一次五星概率，每批最多1名五星，五星军官使用名将姓名。' + probability + '</li>' +
+            '<li><strong>概率成长：</strong>军校与军事理论每级各增加0.3个百分点，各自满级提供3个百分点，两者满级合计6%。</li>' +
+            '<li><strong>生效时点：</strong>以上概率适用于下一次普通刷新，已生成名单不随升级变化；征募令等道具沿用自身保底规则。</li>' +
+            '<li><strong>每轮额度：</strong>每轮最多' + (academy.refreshRoundLimit || 30) + '次，用满后冷却1小时；冷却结束后开启下一轮。</li>' +
+            '<li><strong>每日额度：</strong>每日最多' + (academy.refreshDailyLimit || 100) + '次，按游戏时间的北京时间0点重置，停服顺延；账号各城市共享刷新额度，跨日不会提前结束尚未完成的轮次冷却。</li>' +
+          '</ol></div>' +
+          '<div class="modal-foot"><button type="button" class="btn" id="academyInfoClose">知道了</button></div>' +
+        '</div>';
+      var trigger = document.activeElement;
+      var close = function () {
+        if (mask.parentNode) mask.parentNode.removeChild(mask);
+        if (trigger && trigger.isConnected && trigger.focus) trigger.focus();
+      };
+      document.body.appendChild(mask);
+      var closeButton = mask.querySelector('#academyInfoClose');
+      closeButton.onclick = close;
+      mask.addEventListener('click', function (event) { if (event.target === mask) close(); });
+      mask.onkeydown = function (event) { if (event.key === 'Escape') close(); };
+      closeButton.focus();
+    },
+
     /** 静默刷新额度与倒计时，不重建候选人列表或打断招募操作。 */
     updateAcademyRefresh: function () {
       var region = document.getElementById('academy-refresh-status');
@@ -416,6 +460,12 @@ window.Game = window.Game || {};
     },
 
     openStarUpShop: function () {
+      if (G.Shop) G.Shop.curCat = 'officer';
+      G.go('shop');
+    },
+
+    /** 从军官详情直接打开包含套装装备箱的军官商城分类。 */
+    openEquipmentShop: function () {
       if (G.Shop) G.Shop.curCat = 'officer';
       G.go('shop');
     },
@@ -739,7 +789,7 @@ window.Game = window.Game || {};
         + '<div class="d" style="margin-bottom:10px">' + costTip + '</div>'
         + '<label for="officerRenameInput" style="font-size:13px;font-weight:bold;margin-bottom:4px;display:block">新军官名称</label>'
         + '<input id="officerRenameInput" name="officerName" class="qty" type="text" style="width:100%;box-sizing:border-box;margin-bottom:6px" aria-required="true" autocomplete="off" aria-describedby="officerRenameHint" value="' + esc(o.name) + '">'
-        + '<p id="officerRenameHint" style="margin:4px 0 0;font-size:12px;color:var(--muted)">最多12个字符，可用标点、符号和 emoji；不能换行。每天可修改一次，北京时间 0:00 重置。' + (availableAt > Date.now() ? '这名军官今日已修改。' : '') + '</p>'
+        + '<p id="officerRenameHint" style="margin:4px 0 0;font-size:12px;color:var(--muted)">最多12个字符，可用标点、符号和 emoji；不能换行。每天可修改一次，按游戏时间的北京时间 0:00 重置，停服顺延。' + (availableAt > G.gameNow() ? '这名军官今日已修改。' : '') + '</p>'
         + '</div>'
         + '<div class="modal-foot" style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">'
         + '<button type="button" class="btn depot-btn account-confirm-cancel">取消</button>'
@@ -787,7 +837,7 @@ window.Game = window.Game || {};
       form.onsubmit = function (event) {
         event.preventDefault();
         if (saving) return;
-        if (availableAt > Date.now()) { G.toast('这名军官今天已改名，请明日 0:00 后再试'); return; }
+        if (availableAt > G.gameNow()) { G.toast('这名军官今天已改名，请明日 0:00 后再试'); return; }
         var newName;
         try {
           newName = G.normalizeDisplayName(input.value, 12, '军官名称');
@@ -971,42 +1021,101 @@ window.Game = window.Game || {};
       var h = '';
 
       h += '<div class="title">- 军校招募 -</div>';
-      h += '<div class="desc">军校 Lv.' + academyLv + '。消耗 200 黄金刷新候选人名单,每名候选人招募费 = 星级×80 金。';
-      h += '<br/>新建军校后才能招募军官。</div>';
+      h += '<div class="desc">军校 Lv.' + academyLv;
+      if (academyLv > 0) {
+        h += ' · 每批' + (s.academy.candidateCount || 10) + '人';
+        // 概览只保留下一次整批概率，概率构成与成长规则收进说明。
+        if (typeof s.academy.fiveStarBatchChance === 'number') {
+          h += ' · 五星名将概率 <b>' + Number((s.academy.fiveStarBatchChance * 100).toFixed(2)) + '%</b>';
+        }
+      }
+      h += ' <span role="button" tabindex="0" class="link-act" onclick="Game.Officer.showAcademyInfo()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();Game.Officer.showAcademyInfo();}">？招募说明</span></div>';
 
       if (academyLv <= 0) {
         h += '<div class="panel"><div class="d">尚未建造军校,无法招募军官。请到 <b>军工</b> 建造 <b>军校</b> 后再来。</div></div>';
       } else {
-        // 概率由后端下发，明确按整批计算，避免误解为每名候选人独立抽取。
-        var batchChance = s.academy.fiveStarBatchChance;
-        if (typeof batchChance === 'number') {
-          var candidateCount = s.academy.candidateCount || 10;
-          h += '<div class="desc">每次刷新' + candidateCount + '名候选人，整批出现1名五星的概率：<b>' +
-            Number((batchChance * 100).toFixed(2)) + '%</b>；每批最多1名五星。军校1级为0.3%，10级为3%，每级增加0.3%。</div>';
-        }
         h += '<div id="academy-refresh-status">' + academyRefreshHtml(s.academy) + '</div>';
 
         if (!s.academy.list || !s.academy.list.length) {
           h += '<div class="desc">军校暂无候选人,请刷新。</div>';
         } else {
           h += '<div class="zone-head">候选人名单 (点击卡片直接招募)</div>';
-          h += '<div class="menu">';
+          h += '<div class="academy-candidates-grid menu">';
           s.academy.list.forEach(function (o, i) {
             var cost = o.star * 80;
             var can = s.resources.gold >= cost;
             var frame = officerFrame(o);
-            var cls = (can ? 'menu-item ok' : 'menu-item lock') + ' officer-card ' + frame.tierClass;
-            h += '<div class="' + cls + '" id="academy-candidate-' + i + '" data-officer-index="' + i + '">' + frame.corners;
-            h += '<span class="n" style="color:' + D.starColor[o.star] + '">' + G.escapeHtml(o.name) + '</span> ';
-            h += '<span class="stars">' + starIcons(o.star) + '</span>';
-            if (frame.ribbon) h += '<div class="academy-candidate-rarity">' + frame.ribbon + '</div>';
-            h += '<div class="d">后勤' + o.logistics + ' 军事' + o.military + ' 防御' + (o.defense || 0) + ' 学识' + o.knowledge + skillText(o) + '</div>';
-            h += '<div class="cost">招募: 金' + cost + '</div>';
-            if (can) {
-              h += '<div class="officer-recruit-act"><span class="link-act" onclick="event.stopPropagation();Game.Officer.recruit(' + i + ')">[招募]</span></div>';
-            } else {
-              h += '<div class="officer-recruit-act"><span class="link-act disabled" title="黄金不足">[招募]</span></div>';
+            var cls = (can ? 'menu-item ok' : 'menu-item lock') + ' officer-card ' + frame.tierClass + ' academy-candidate-card' + (can ? '' : ' is-locked');
+
+            var mil = Number(o.military) || 0;
+            var def = Number(o.defense) || 0;
+            var log = Number(o.logistics) || 0;
+            var kno = Number(o.knowledge) || 0;
+            var maxVal = Math.max(mil, def, log, kno);
+            var isPeakMil = mil === maxVal && mil > 0;
+            var isPeakDef = def === maxVal && def > 0;
+            var isPeakLog = log === maxVal && log > 0;
+            var isPeakKno = kno === maxVal && kno > 0;
+
+            var skillHtml = '';
+            if (o.skills && o.skills.length) {
+              var skItems = [];
+              for (var si = 0; si < o.skills.length; si++) {
+                var sItem = o.skills[si];
+                if (!sItem) continue;
+                var skObj = sItem.id && D.officerSkills ? D.officerSkills[sItem.id] : null;
+                var skName = (skObj && skObj.name) || sItem.name || sItem.id || '特长';
+                var skLv = sItem.lv ? 'Lv' + sItem.lv : '';
+                skItems.push(skName + (skLv ? ' ' + skLv : ''));
+              }
+              if (skItems.length) {
+                skillHtml = '<span class="candidate-skill-tag" title="技能: ' + G.escapeHtml(skItems.join(', ')) + '">⚡ ' + G.escapeHtml(skItems[0]) + (skItems.length > 1 ? ' +' + (skItems.length - 1) : '') + '</span>';
+              }
             }
+            if (!skillHtml) {
+              skillHtml = '<span class="candidate-skill-tag is-empty">无特长技能</span>';
+            }
+
+            var recruitTitle = can
+              ? '招募 ' + G.escapeHtml(o.name) + ' (消耗 ' + cost + ' 黄金)'
+              : '黄金不足 (需 ' + cost + ' 黄金)';
+            var cardClickAction = can
+              ? 'Game.Officer.recruit(' + i + ')'
+              : 'event.stopPropagation();Game.toast(\'黄金不足，无法招募\');';
+
+            var recruitBtnHtml = can
+              ? '<button type="button" class="link-act candidate-recruit-btn" onclick="event.stopPropagation();Game.Officer.recruit(' + i + ')" title="' + recruitTitle + '">' +
+                  '<span class="btn-recruit-text">招募</span><span class="btn-recruit-cost">🪙' + cost + '</span></button>'
+              : '<button type="button" class="link-act disabled candidate-recruit-btn is-disabled" disabled onclick="event.stopPropagation();Game.toast(\'黄金不足，无法招募\');" title="' + recruitTitle + '">' +
+                  '<span class="btn-recruit-text">招募</span><span class="btn-recruit-cost">🪙' + cost + '</span></button>';
+
+            h += '<div class="' + cls + '" id="academy-candidate-' + i + '" data-officer-index="' + i + '" data-star="' + o.star + '" role="button" tabindex="0" onclick="' + cardClickAction + '" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + cardClickAction + '}" title="' + recruitTitle + '">' + frame.corners;
+            h += '<div class="candidate-header-row">';
+            h += '<div class="candidate-title-group">';
+            h += '<span class="candidate-name n" style="color:' + (D.starColor[o.star] || '#fff') + '">' + G.escapeHtml(o.name) + '</span>';
+            h += '<span class="candidate-stars stars">' + starIcons(o.star) + '</span>';
+            h += '</div>';
+            h += '<div class="candidate-badge-group">';
+            if (frame.ribbon) {
+              h += frame.ribbon;
+            } else {
+              h += '<span class="candidate-star-pill star-' + o.star + '">' + o.star + '星</span>';
+            }
+            h += '</div>';
+            h += '</div>';
+
+            h += '<div class="candidate-stats-grid">';
+            h += '<div class="c-stat-pill pill-mil' + (isPeakMil ? ' is-peak' : '') + '" title="军事: ' + mil + '"><span class="c-stat-lbl">军</span><span class="c-stat-val">' + mil + '</span></div>';
+            h += '<div class="c-stat-pill pill-def' + (isPeakDef ? ' is-peak' : '') + '" title="防御: ' + def + '"><span class="c-stat-lbl">防</span><span class="c-stat-val">' + def + '</span></div>';
+            h += '<div class="c-stat-pill pill-log' + (isPeakLog ? ' is-peak' : '') + '" title="后勤: ' + log + '"><span class="c-stat-lbl">后</span><span class="c-stat-val">' + log + '</span></div>';
+            h += '<div class="c-stat-pill pill-kno' + (isPeakKno ? ' is-peak' : '') + '" title="学识: ' + kno + '"><span class="c-stat-lbl">学</span><span class="c-stat-val">' + kno + '</span></div>';
+            h += '</div>';
+
+            h += '<div class="candidate-footer-row">';
+            h += '<div class="candidate-skills-wrap">' + skillHtml + '</div>';
+            h += '<div class="officer-recruit-act">' + recruitBtnHtml + '</div>';
+            h += '</div>';
+
             h += '</div>';
           });
           h += '</div>';
@@ -1080,7 +1189,7 @@ window.Game = window.Game || {};
         h += '<span>' + esc(mayor.name) + '</span> ';
         h += '<span class="card-officer-stars">' + starIcons(mayor.star) + '</span>';
         h += '</div>';
-        h += '<div class="board-slot-detail">后勤 <b>' + (mayor.logistics || 0) + '</b> · 学识 <b>' + (mayor.knowledge || 0) + '</b> (增益全城资源产出)</div>';
+        h += '<div class="board-slot-detail">后勤 <b>' + (mayor.logistics || 0) + '</b> · 学识 <b>' + (mayor.knowledge || 0) + '</b> (后勤增益资源产出，学识增益黄金与科研速度)</div>';
       } else {
         h += '<div class="board-slot-vacant">暂未任命市长</div>';
         h += '<div class="board-slot-detail">在下方列表中选择将领点击【任市长】即可任命</div>';
@@ -1333,8 +1442,9 @@ window.Game = window.Game || {};
           h += '<button type="button" class="btn sm" onclick="Game.Officer.equip(\'' + o.id + '\',\'' + options[k] + '\')">' + esc(this.equipmentName(options[k])) + ' ×' + s.items[options[k]] + '</button>';
         }
         h += '</div>';
-      } else if (!equipped.length) {
-        h += '<div class="officer-detail-note">军需商城可购买套装装备。</div>';
+      } else {
+        h += '<div class="officer-detail-note">背包中暂无可穿戴的套装装备；购买装备箱并在仓库开启后，可在此直接穿戴。</div>';
+        h += '<div class="officer-detail-actions"><button type="button" class="btn sm depot-btn" onclick="Game.Officer.openEquipmentShop()">前往军官商城选购</button></div>';
       }
       h += '</section>';
       return h;
@@ -1389,7 +1499,7 @@ window.Game = window.Game || {};
         { key: 'military', label: '军事', value: o.military || 0, effect: o.role === 'commander' ? '指挥官 · 攻击 +' + (o.military || 0) + '%' : '' },
         { key: 'defense', label: '防御', value: o.defense || 0, effect: o.role === 'commander' ? '指挥官 · 防御 +' + (o.defense || 0) + '%' : '' },
         { key: 'logistics', label: '后勤', value: o.logistics || 0, effect: o.role === 'mayor' ? '市长 · 资源 +' + (o.logistics || 0) + '%' : '' },
-        { key: 'knowledge', label: '学识', value: o.knowledge || 0, effect: o.role === 'mayor' ? '市长 · 黄金 +' + (o.knowledge || 0) + '%' : '' }
+        { key: 'knowledge', label: '学识', value: o.knowledge || 0, effect: o.role === 'mayor' ? '市长 · 黄金 +' + (o.knowledge || 0) + '% · 科研速度 +' + (Math.max(0, o.knowledge || 0) * G.Constants.researchSpeed.knowledgePerPoint * 100).toFixed(1) + '%' : '' }
       ];
       for (var ai = 0; ai < attrs.length; ai++) {
         var attr = attrs[ai];
@@ -1481,7 +1591,7 @@ window.Game = window.Game || {};
       h += '<div class="officer-loyalty-heading"><div><small>忠诚度</small><strong class="' + (loy >= 80 ? 'is-high' : loy >= 50 ? 'is-mid' : 'is-low') + '">' + loy + '<span>/100 · ' + loyLabel + '</span></strong></div><div><small>俸禄</small><strong>' + (o.salary || 0) + '<span>金 / 小时</span></strong></div></div>';
       h += '<div class="officer-detail-progress loyalty"><span style="width:' + Math.max(0, Math.min(100, loy)) + '%"></span></div>';
       h += '<div class="officer-detail-note">闲置时忠诚缓慢恢复，任职时缓慢下降；俸禄自动从黄金扣除。守城指挥官忠诚为0时，在敌方开启占领的讨伐中守城失败，会被敌方俘虏。</div>';
-      var nowMs = Date.now();
+      var nowMs = G.gameNow();
       var rewardCost = (o.star || 1) * 50 + (o.level || 1) * 2;
       var cooling = o.rewardCoolAt && nowMs < o.rewardCoolAt;
       if (cooling) {

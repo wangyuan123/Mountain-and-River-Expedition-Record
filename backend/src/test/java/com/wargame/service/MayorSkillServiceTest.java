@@ -3,8 +3,11 @@ package com.wargame.service;
 import com.wargame.BaseServiceTest;
 import com.wargame.model.constants.OfficerSkillDef;
 import com.wargame.model.constants.MilitaryRankDef;
+import com.wargame.model.constants.OfficerEquipmentDef;
 import com.wargame.model.entity.Officer;
+import com.wargame.model.entity.OfficerEquipment;
 import com.wargame.model.entity.Resources;
+import com.wargame.repository.OfficerEquipmentRepository;
 import com.wargame.util.JsonUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +23,7 @@ public class MayorSkillServiceTest extends BaseServiceTest {
     @Autowired private OfficerService officerService;
     @Autowired private CityScope cityScope;
     @Autowired private ArmyService armyService;
+    @Autowired private OfficerEquipmentRepository officerEquipmentRepository;
 
     @Test
     void skillPoolContainsAllFifteenSkills() {
@@ -151,9 +155,41 @@ public class MayorSkillServiceTest extends BaseServiceTest {
 
         int durationWithMayor = techService.calcTechDuration(playerId, "mil_infantry", 0, 5);
         assertTrue(durationWithMayor < durationWithoutMayor, "格物技能应显著缩短研发时间");
-        // base = 30, labSpeed = 1 + 0.1 * 4 = 1.4 -> durationWithoutMayor = round(30 / 1.4) = 21
-        // mayorSpeed = 1 + 0.04 * 5 = 1.2 -> durationWithMayor = round(30 / (1.4 * 1.2)) = 18
-        assertEquals(18, durationWithMayor, "格物Lv.5应加速研发");
+        // 中心Lv.5速度+5%，格物Lv.5速度+20%，按独立倍率相乘后取整。
+        assertEquals(171, durationWithoutMayor);
+        assertEquals(143, durationWithMayor, "格物Lv.5应加速研发");
+    }
+
+    @Test
+    void mayorResearchUsesEquippedKnowledgeAndSetBonusWithoutRequiringResearchSkill() {
+        Long playerId = createTestPlayer("knowledge-research-player", 30).getId();
+        Officer mayor = new Officer();
+        mayor.setPlayerId(playerId);
+        mayor.setCitySlot(0);
+        mayor.setName("科研市长");
+        mayor.setRole("mayor");
+        mayor.setKnowledge(40);
+        mayor.setSkills("[]");
+        mayor = officerRepository.saveAndFlush(mayor);
+
+        // 三件校官学识装备各+15，套装再+15，使40基础学识达到100有效学识。
+        for (String slot : List.of("weapon", "badge", "coat")) {
+            var def = OfficerEquipmentDef.ITEMS.get("officer_knowledge_" + slot);
+            OfficerEquipment gear = new OfficerEquipment();
+            gear.setPlayerId(playerId); gear.setOfficerId(mayor.getId());
+            gear.setItemKey(def.key()); gear.setSetType(def.setKey()); gear.setTier(def.tier()); gear.setSlot(slot);
+            gear.setMilitaryBonus(def.military()); gear.setDefenseBonus(def.defense());
+            gear.setLogisticsBonus(def.logistics()); gear.setKnowledgeBonus(def.knowledge());
+            gear.setCreatedAt(1L); gear.setEquippedAt(1L);
+            officerEquipmentRepository.saveAndFlush(gear);
+        }
+        assertEquals(70512, techService.calcTechDuration(playerId, "attack_tech", 5, 10));
+        mayor.setSkills("[{\"id\":\"research\",\"lv\":5}]");
+        officerRepository.saveAndFlush(mayor);
+        assertEquals(58760, techService.calcTechDuration(playerId, "attack_tech", 5, 10));
+        mayor.setRole("commander");
+        officerRepository.saveAndFlush(mayor);
+        assertEquals(77564, techService.calcTechDuration(playerId, "attack_tech", 5, 10), "非市长岗位不能提供科研加成");
     }
 
     @Test

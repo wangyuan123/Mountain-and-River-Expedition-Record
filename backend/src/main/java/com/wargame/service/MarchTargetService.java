@@ -370,7 +370,7 @@ public class MarchTargetService {
         if (target instanceof PlayerCity pc && hasRealOwner(pc)) {
             try (var ignored = cityScope.enter(pc)) {
                 return (int) Math.floor(buildingLevel(pc.getOwnerId(), "depot") * 1000.0
-                        * (1 + .10 * Math.max(0, Math.min(5, getTechLevel(pc.getOwnerId(), "log_warehouse")))));
+                        * (1 + .05 * Math.max(0, Math.min(10, getTechLevel(pc.getOwnerId(), "log_warehouse")))));
             }
         }
         return 0;

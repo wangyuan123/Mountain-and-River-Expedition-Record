@@ -1,0 +1,247 @@
+{
+  "conditions": "同数量静态齐射，无将领、司令官、装备、贴脸、反击；双方科技同档，仅测单位击毁率，不是整场模拟。",
+  "rulesVersion": "balance-v19-technology-20261016",
+  "pairs": [
+    {
+      "a": "infantry",
+      "b": "infantry",
+      "baseAttack": 10.0,
+      "counter": 1,
+      "base": {
+        "damagePerUnit": 5.714285714285714,
+        "openingKillRatePercent": 4.761904761904762,
+        "staticFullVolleys": 21.0
+      },
+      "fullTech": {
+        "damagePerUnit": 10.588235294117647,
+        "openingKillRatePercent": 5.88235294117647,
+        "staticFullVolleys": 17.0
+      },
+      "equalWeightedBudgetOpeningKillRatePercent": {
+        "base": 4.761904761904762,
+        "fullTech": 5.88235294117647
+      }
+    },
+    {
+      "a": "htank",
+      "b": "htank",
+      "baseAttack": 50.0,
+      "counter": 1,
+      "base": {
+        "damagePerUnit": 11.976047904191617,
+        "openingKillRatePercent": 3.110661793296524,
+        "staticFullVolleys": 32.1475
+      },
+      "fullTech": {
+        "damagePerUnit": 19.522776572668114,
+        "openingKillRatePercent": 3.380567371890583,
+        "staticFullVolleys": 29.58083333333333
+      },
+      "equalWeightedBudgetOpeningKillRatePercent": {
+        "base": 3.110661793296524,
+        "fullTech": 3.3805673718905824
+      }
+    },
+    {
+      "a": "rocket",
+      "b": "htank",
+      "baseAttack": 100.0,
+      "counter": 3,
+      "base": {
+        "damagePerUnit": 71.8562874251497,
+        "openingKillRatePercent": 18.663970759779144,
+        "staticFullVolleys": 5.357916666666666
+      },
+      "fullTech": {
+        "damagePerUnit": 117.13665943600869,
+        "openingKillRatePercent": 20.283404231343496,
+        "staticFullVolleys": 4.930138888888888
+      },
+      "equalWeightedBudgetOpeningKillRatePercent": {
+        "base": 14.699941571861448,
+        "fullTech": 15.975424571589125
+      }
+    },
+    {
+      "a": "armored",
+      "b": "fighter",
+      "baseAttack": 33.5,
+      "counter": 2.5,
+      "base": {
+        "damagePerUnit": 33.5,
+        "openingKillRatePercent": 22.333333333333332,
+        "staticFullVolleys": 4.477611940298507
+      },
+      "fullTech": {
+        "damagePerUnit": 57.980769230769226,
+        "openingKillRatePercent": 25.76923076923077,
+        "staticFullVolleys": 3.8805970149253732
+      },
+      "equalWeightedBudgetOpeningKillRatePercent": {
+        "base": 31.736842105263158,
+        "fullTech": 36.61943319838057
+      }
+    },
+    {
+      "a": "fighter",
+      "b": "fighter",
+      "baseAttack": 64.0,
+      "counter": 1,
+      "base": {
+        "damagePerUnit": 25.6,
+        "openingKillRatePercent": 17.066666666666666,
+        "staticFullVolleys": 5.859375
+      },
+      "fullTech": {
+        "damagePerUnit": 44.30769230769231,
+        "openingKillRatePercent": 19.69230769230769,
+        "staticFullVolleys": 5.078125
+      },
+      "equalWeightedBudgetOpeningKillRatePercent": {
+        "base": 17.066666666666666,
+        "fullTech": 19.69230769230769
+      }
+    },
+    {
+      "a": "fighter",
+      "b": "bomber",
+      "baseAttack": 64.0,
+      "counter": 1,
+      "base": {
+        "damagePerUnit": 30.476190476190474,
+        "openingKillRatePercent": 15.628815628815627,
+        "staticFullVolleys": 6.3984375
+      },
+      "fullTech": {
+        "damagePerUnit": 54.339622641509436,
+        "openingKillRatePercent": 18.57764876632801,
+        "staticFullVolleys": 5.3828125
+      },
+      "equalWeightedBudgetOpeningKillRatePercent": {
+        "base": 25.75860353638131,
+        "fullTech": 30.618717411170238
+      }
+    },
+    {
+      "a": "battleship",
+      "b": "battleship",
+      "baseAttack": 96.0,
+      "counter": 1,
+      "base": {
+        "damagePerUnit": 13.714285714285714,
+        "openingKillRatePercent": 1.054945054945055,
+        "staticFullVolleys": 94.79166666666667
+      },
+      "fullTech": {
+        "damagePerUnit": 21.6,
+        "openingKillRatePercent": 1.1076923076923078,
+        "staticFullVolleys": 90.27777777777777
+      },
+      "equalWeightedBudgetOpeningKillRatePercent": {
+        "base": 1.054945054945055,
+        "fullTech": 1.1076923076923078
+      }
+    },
+    {
+      "a": "sub",
+      "b": "battleship",
+      "baseAttack": 66.0,
+      "counter": 1,
+      "base": {
+        "damagePerUnit": 9.428571428571429,
+        "openingKillRatePercent": 0.7252747252747253,
+        "staticFullVolleys": 137.87878787878788
+      },
+      "fullTech": {
+        "damagePerUnit": 14.850000000000001,
+        "openingKillRatePercent": 0.7615384615384616,
+        "staticFullVolleys": 131.3131313131313
+      },
+      "equalWeightedBudgetOpeningKillRatePercent": {
+        "base": 3.108320251177394,
+        "fullTech": 3.263736263736264
+      }
+    },
+    {
+      "a": "rocket",
+      "b": "battleship",
+      "baseAttack": 25.0,
+      "counter": 1,
+      "base": {
+        "damagePerUnit": 3.5714285714285716,
+        "openingKillRatePercent": 0.27472527472527475,
+        "staticFullVolleys": 364.0
+      },
+      "fullTech": {
+        "damagePerUnit": 5.625,
+        "openingKillRatePercent": 0.28846153846153844,
+        "staticFullVolleys": 346.6666666666667
+      },
+      "equalWeightedBudgetOpeningKillRatePercent": {
+        "base": 0.7293591364387825,
+        "fullTech": 0.7658270932607215
+      }
+    },
+    {
+      "a": "fighter",
+      "b": "battleship",
+      "baseAttack": 75.0,
+      "counter": 1,
+      "base": {
+        "damagePerUnit": 10.714285714285714,
+        "openingKillRatePercent": 0.8241758241758241,
+        "staticFullVolleys": 121.33333333333334
+      },
+      "fullTech": {
+        "damagePerUnit": 16.875,
+        "openingKillRatePercent": 0.8653846153846154,
+        "staticFullVolleys": 115.55555555555556
+      },
+      "equalWeightedBudgetOpeningKillRatePercent": {
+        "base": 4.5787545787545785,
+        "fullTech": 4.8076923076923075
+      }
+    },
+    {
+      "a": "bomber",
+      "b": "battleship",
+      "baseAttack": 95.0,
+      "counter": 1,
+      "base": {
+        "damagePerUnit": 13.571428571428571,
+        "openingKillRatePercent": 1.043956043956044,
+        "staticFullVolleys": 95.78947368421053
+      },
+      "fullTech": {
+        "damagePerUnit": 21.375,
+        "openingKillRatePercent": 1.0961538461538463,
+        "staticFullVolleys": 91.2280701754386
+      },
+      "equalWeightedBudgetOpeningKillRatePercent": {
+        "base": 3.5189529571552045,
+        "fullTech": 3.6949006050129647
+      }
+    },
+    {
+      "a": "carrier",
+      "b": "battleship",
+      "baseAttack": 80.0,
+      "counter": 1,
+      "base": {
+        "damagePerUnit": 11.428571428571429,
+        "openingKillRatePercent": 0.8791208791208791,
+        "staticFullVolleys": 113.75
+      },
+      "fullTech": {
+        "damagePerUnit": 18.0,
+        "openingKillRatePercent": 0.9230769230769231,
+        "staticFullVolleys": 108.33333333333333
+      },
+      "equalWeightedBudgetOpeningKillRatePercent": {
+        "base": 0.6940427993059572,
+        "fullTech": 0.7287449392712552
+      }
+    }
+  ],
+  "budgetMetric": "钢铁 + 石油×2 + 稀矿×4，仅用于经济敏感性对照，不含人口、粮食、时间与战后回收。"
+}

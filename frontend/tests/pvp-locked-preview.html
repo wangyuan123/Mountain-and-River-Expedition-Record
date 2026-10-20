@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="blue-white-classic">
+<head>
+  <meta charset="UTF-8">
+  <title>PvP 声望未达标锁定提示 - 优化预览</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/classic-home.css">
+  <link rel="stylesheet" href="../css/pvp.css">
+  <link rel="stylesheet" href="../css/themes.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 16px;
+      background: #dfeaec;
+      font-family: Arial, "Microsoft YaHei", "PingFang SC", sans-serif;
+    }
+    .preview-toolbar {
+      max-width: 560px;
+      margin: 0 auto 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      font-size: 13px;
+    }
+    .theme-btn-group {
+      display: flex;
+      gap: 6px;
+    }
+    .theme-btn {
+      padding: 4px 10px;
+      font-size: 12px;
+      border: 1px solid #b8cde4;
+      border-radius: 4px;
+      background: #f0f6fc;
+      cursor: pointer;
+      color: #19458d;
+    }
+    .theme-btn.active {
+      background: #2457a5;
+      color: #fff;
+      border-color: #19458d;
+      font-weight: bold;
+    }
+    #screen-wrap {
+      max-width: 560px;
+      margin: 0 auto;
+      background: #fff;
+      border: 1px solid #d2dbdf;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      position: relative;
+      min-height: 700px;
+    }
+    .nav-mock {
+      background: #2b5c92;
+      color: #fff;
+      padding: 8px 10px;
+      font-size: 13px;
+      line-height: 1.8;
+      word-break: keep-all;
+    }
+    .nav-mock span {
+      margin-right: 8px;
+      opacity: 0.9;
+    }
+    .nav-mock span.active {
+      font-weight: bold;
+      background: rgba(255, 255, 255, 0.25);
+      padding: 2px 6px;
+      border-radius: 3px;
+      opacity: 1;
+    }
+    .back-nav {
+      padding: 8px 12px;
+      font-size: 13px;
+      color: #2457a5;
+      border-bottom: 1px solid #eef2f6;
+    }
+  </style>
+</head>
+<body>
+  <div class="preview-toolbar">
+    <span><b>风格切换预览：</b></span>
+    <div class="theme-btn-group">
+      <button class="theme-btn active" onclick="setTheme('blue-white-classic')">战术经典蓝白</button>
+      <button class="theme-btn" onclick="setTheme('paper')">战术公文沙盘</button>
+      <button class="theme-btn" onclick="setTheme('dark')">战术夜航终端</button>
+    </div>
+  </div>
+
+  <div id="screen-wrap">
+    <div class="nav-mock">
+      <span>首页</span> <span>后勤</span> <span>军工</span> <span>军官</span> <span>军队</span> <span>地图</span> <span>军情</span> <span>战报</span> <span>聊天</span> <span>电报</span> <span>任务</span> <span>军团</span> <span>仓库</span> <span>科技</span> <span>军校</span> <span class="active">对战</span>
+    </div>
+    <div class="back-nav">‹ 返回上一步</div>
+
+    <section class="pvp-page pvp-page-locked">
+      <div class="pvp-content" inert aria-disabled="true">
+        <div class="pvp-head">
+          <div><small>指挥演习 · 真人匹配</small><h2>1v1 匹配演习</h2></div>
+          <span class="pvp-badge">虚拟演习 · 实际兵力零损失</span>
+        </div>
+        <p class="pvp-description">与实力相近的在线统帅对战，练习机动、集火与将领技能。未下令时自动执行已保存的默认战术。</p>
+        <div class="pvp-record">胜 0　负 0　平 0 <small>普通匹配，无公开段位与奖励</small></div>
+        <div class="pvp-form">
+          <label>战场类别<select><option>陆空战</option></select></label>
+          <label>来源城市<select><option>主城</option></select></label>
+          <label>带兵将领<select><option>不带将领</option></select></label>
+        </div>
+        <p>本城带兵上限 25000 · 已选 <span id="pvp-selected">53</span> · 司令官 未任命</p>
+        <div class="pvp-table-wrap">
+          <table class="pvp-table">
+            <thead>
+              <tr><th>演习编队</th><th>本城可用</th><th>参战数量</th><th>默认战术</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>步兵-加兰德步枪兵 (M1)</td><td>51</td><td><input type="number" value="51"></td><td><select><option>前进 (ADVANCE)</option></select></td></tr>
+              <tr><td>卡车-十轮大卡 (CCKW-353)</td><td>1</td><td><input type="number" value="1"></td><td><select><option>保持 (HOLD)</option></select></td></tr>
+              <tr><td>装甲车-猎鹿犬防空型 (T17E2)</td><td>0</td><td><input type="number" value="0"></td><td><select><option>前进 (ADVANCE)</option></select></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="pvp-prestige-overlay" role="dialog" aria-modal="true" aria-label="PvP对战解锁条件">
+        <div class="pvp-prestige-message" role="status" aria-live="polite">
+          <div class="pvp-prestige-badge-row">
+            <div class="pvp-prestige-icon-wrap" aria-hidden="true">
+              <svg class="pvp-prestige-icon" viewBox="0 0 48 48" width="40" height="40" fill="none">
+                <circle cx="24" cy="24" r="22" stroke="currentColor" stroke-width="2" stroke-dasharray="3 3" opacity="0.35"/>
+                <path d="M24 7 L37 13 V23 C37 31.5 24 39 24 39 C24 39 11 31.5 11 23 V13 Z" fill="currentColor" fill-opacity="0.08" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+                <rect x="18" y="22" width="12" height="10" rx="2" fill="currentColor" fill-opacity="0.88"/>
+                <path d="M21 22 V18 C21 16.34 22.34 15 24 15 C25.66 15 27 16.34 27 18 V22" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+                <circle cx="24" cy="26" r="1.5" fill="#fff"/>
+              </svg>
+            </div>
+            <span class="pvp-prestige-tag">战备准入限制</span>
+          </div>
+
+          <strong class="pvp-prestige-title">声望达到 10000 后解锁 PvP 对战功能</strong>
+
+          <div class="pvp-prestige-progress-wrap">
+            <div class="pvp-prestige-val-row">
+              <p class="pvp-prestige-val">当前声望：145 / 10000</p>
+              <span class="pvp-prestige-percent">1.5%</span>
+            </div>
+            <div class="pvp-prestige-track" role="progressbar" aria-valuenow="145" aria-valuemin="0" aria-valuemax="10000">
+              <div class="pvp-prestige-bar" style="width: 1.5%"></div>
+            </div>
+            <div class="pvp-prestige-remain">还需 <b>9,855</b> 点声望解锁真人匹配权限</div>
+          </div>
+
+          <div class="pvp-prestige-guide">
+            <div class="pvp-prestige-guide-title">快速提升声望途径：</div>
+            <ul class="pvp-prestige-guide-list">
+              <li><span>⚔️</span> 出征野地据点与战术防御</li>
+              <li><span>📜</span> 推进主线任务提升军衔等级</li>
+              <li><span>🏗️</span> 升级城防工事与扩充军备规模</li>
+            </ul>
+          </div>
+
+          <div class="pvp-prestige-actions">
+            <button type="button" class="btn ok pvp-prestige-btn" onclick="alert('点击前往主线任务')">前往任务提升声望</button>
+            <button type="button" class="btn pvp-prestige-btn" onclick="alert('点击前往大地图出征')">前往地图征战</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    function setTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      document.querySelectorAll('.theme-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('onclick').includes(theme));
+      });
+      if (theme === 'dark') {
+        document.body.style.background = '#0a1018';
+      } else if (theme === 'paper') {
+        document.body.style.background = '#e8e2d5';
+      } else {
+        document.body.style.background = '#dfeaec';
+      }
+    }
+    if (location.hash) {
+      const h = location.hash.replace('#', '');
+      if (['dark', 'paper', 'blue-white-classic'].includes(h)) setTheme(h);
+    }
+  </script>
+</body>
+</html>

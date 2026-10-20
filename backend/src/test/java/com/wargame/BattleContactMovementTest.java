@@ -115,6 +115,21 @@ class BattleContactMovementTest {
                 6_950, Map.of(), Map.of(), Map.of(), Map.of(), 0, 0, 0, 0, 1, Map.of(), Map.of());
         assertEquals(state.attackerPositions().get("htank"), state.defenderPositions().get("htank"), state.log());
         assertTrue(heavyTankLine(state, "我方").contains("贴脸×1.5"), state.log());
+        for (int own : state.attackerPositions().values()) for (int foe : state.defenderPositions().values()) {
+            assertTrue(own <= foe, "历史会话的空军也不能留在敌方前排后面：" + state.log());
+        }
+    }
+
+    @Test
+    void crossedHoldingUnitsAreRestoredWithoutMovingValidRearUnits() {
+        BattleRoundState state = round(Map.of("htank", 100_000, "rocket", 100_000),
+                Map.of("fighter", 100_000, "htank", 100_000),
+                Map.of("htank", 600, "rocket", 100), Map.of("fighter", 400, "htank", 900),
+                Map.of("htank", HOLD, "rocket", HOLD), Map.of("fighter", HOLD, "htank", HOLD));
+        assertEquals(500, state.attackerPositions().get("htank"));
+        assertEquals(500, state.defenderPositions().get("fighter"));
+        assertEquals(100, state.attackerPositions().get("rocket"));
+        assertEquals(900, state.defenderPositions().get("htank"));
     }
 
     @Test

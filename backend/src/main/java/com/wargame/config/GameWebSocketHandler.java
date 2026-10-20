@@ -96,6 +96,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         });
 
         if (!validSession(session)) { closeExpired(session); return; }
+        send(session, new TextMessage("{\"type\":\"clock\",\"gameTime\":" + com.wargame.util.GameClock.now() + "}"));
         log.info("WebSocket 连接建立: playerId={}, sessionId={}, 当前在线会话数={}",
                 playerId, session.getId(), getSessionCount(playerId));
     }
@@ -131,7 +132,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         }
         if (ping && getSessions(getPlayerId(session)).contains(session)) {
             lastHeartbeats.put(session.getId(), System.currentTimeMillis());
-            send(session, new TextMessage("{\"type\":\"pong\"}"));
+            send(session, new TextMessage("{\"type\":\"pong\",\"gameTime\":" + com.wargame.util.GameClock.now() + "}"));
         }
         // 其他消息暂不处理
     }

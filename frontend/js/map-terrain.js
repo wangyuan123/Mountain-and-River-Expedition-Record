@@ -5,14 +5,17 @@
   var palette = G.Constants.terrainPalette;
   var snowImages = [], meadowImages = [], meadowLoading = null, meadowReady = false, forestImage = null, forestImages = [], shrubImage = null, snowRGB = [226, 234, 237];
   var targetChunks = new Map(), clearings = new Map(), terrainRevision = 0;
-  function updateChunk(cx, cy, targets) {
-    // Retain constraints after display-cache eviction; filters and ownership do not affect terrain.
-    var blocked = (targets || []).filter(function(t) {
-      // Forest targets already draw their own large marker; keep procedural woodland clear around them.
-      return t.kind === 'wild' && t.type !== 'grassland';
-    }).map(function(t) { return { x:t.x, y:t.y }; }).sort(function(a,b) { return a.y-b.y || a.x-b.x; });
+  /** 保存所有目标的完整图标占地；筛选、归属和展示缓存淘汰均不能释放这些区域。 */
+  function updateChunk(cx, cy, targets, size) {
+    size = size || (G.DATA && G.DATA.world ? G.DATA.world.size : 400);
+    var blocked = (targets || []).map(function(t) {
+      if (G.MapLayout && G.MapLayout.iconBounds) {
+        return G.MapLayout.iconBounds(t, size);
+      }
+      return { x: t.x || 0, y: t.y || 0, right: (t.x || 0) + 1, bottom: (t.y || 0) + 1 };
+    }).sort(function(a,b) { return a.y-b.y || a.x-b.x || a.right-b.right || a.bottom-b.bottom; });
     var key = cx + ',' + cy, signature = JSON.stringify(blocked);
-    if ((targetChunks.get(key) || '[]') === signature) return false;
+    if (targetChunks.get(key) === signature) return false;
     targetChunks.set(key, signature); clearings.set(key, blocked); terrainRevision++;
     return true;
   }
@@ -23,12 +26,42 @@
       for (var cx = Math.floor((x-margin)/16); cx <= Math.floor((x+margin)/16); cx++) {
         var targets = clearings.get(cx + ',' + cy) || [];
         for (var i=0;i<targets.length;i++) {
-          var t=targets[i], distance=Math.max(Math.abs(x-t.x-.5),Math.abs(y-t.y-.5))-(radius||0);
-          amount=Math.min(amount,smooth(1.15,2.4,distance));
+          var t=targets[i], distance=Math.max(t.x-x,x-t.right,t.y-y,y-t.bottom)-(radius||0);
+          amount=Math.min(amount,smooth(.15,1.4,distance));
         }
       }
     }
     return amount;
+  }
+  /**
+   * 每个装饰独占一格并与真实目标保留间隙；相邻未知分块先不生成，避免异步加载时穿插。
+   * @returns {boolean} 该格及可能伸入其中的目标来源分块均已确认且没有碰撞。
+   */
+  function decorationCellFree(x, y, size) {
+    if (x < 0 || y < 0 || x >= size || y >= size) return false;
+    var cell = { x:x, y:y, right:x+1, bottom:y+1 };
+    // 覆盖双格城市及素材越格；保护带依赖的邻块变化也会使 updateTerrain 重建当前瓦片。
+    for (var cy=Math.floor(Math.max(0,y-3)/16);cy<=Math.floor(Math.min(size-1,y+4)/16);cy++) {
+      for (var cx=Math.floor(Math.max(0,x-3)/16);cx<=Math.floor(Math.min(size-1,x+4)/16);cx++) {
+        var targets=clearings.get(cx+','+cy);
+        if (!targets) return false;
+        for (var i=0;i<targets.length;i++) if (G.MapLayout.intersects(cell,targets[i],.2)) return false;
+      }
+    }
+    return true;
+  }
+  /** 按森林、灌木、地貌的固定优先级为一格选择唯一装饰，跨瓦片和生成顺序保持一致。 */
+  function decorationAt(x, y, size) {
+    if (!decorationCellFree(x,y,size)) return null;
+    var px=(x+.5)*density, py=(y+.5)*density, grass=sample(x+.5,y+.5,size).grass;
+    var depth=G.MapOcean?G.MapOcean.sample(x+.5,y+.5):-1000;
+    if (northernSnow(x+.5,y+.5,size)>.12 || depth>-1.4) return null;
+    if (!(x%2) && !(y%2) && (forestImages.length || forestImage) && depth<=-1.8 && grass>=.25) {
+      var woodland=noise(px/240+31,py/240+71);
+      if (hash(x/2+719,y/2+911)<=.18+smooth(.4,.72,woodland)*.55) return 'forest';
+    }
+    if (shrubImage && grass>=.34 && hash(x+1201,y+4099)<=.13) return 'shrub';
+    return grass<=.34?'landmark':null;
   }
   /**
    * Load terrain decoration textures before map chunks are generated.
@@ -124,7 +157,7 @@
     return 'thick';
   }
   /**
-   * Rasterize the base terrain and its mirrored-world vegetation texture.
+   * Rasterize the base ground texture shared by the mirrored quadrants.
    * @param {number} size - World width represented by the terrain canvas.
    * @param {boolean} noSnow - Whether this texture suppresses snow cover.
    * @returns {HTMLCanvasElement} Base terrain canvas used by the map quadrants.
@@ -160,25 +193,7 @@
       pixels.data[offset + 3] = 255;
     }
     ctx.putImageData(pixels, 0, 0);
-    // 四大战场共用镜像底图，低缩放时也保留灌木覆盖。
-    if (ctx.drawImage && shrubImage) {
-      var shrubStep = 26;
-      for (var sy = 0; sy < resolution; sy += shrubStep) {
-        for (var sx = 0; sx < resolution; sx += shrubStep) {
-          var shrubSeed = hash(sx + 1201, sy + 4099);
-          if (shrubSeed > .24) continue;
-          var shrubX = sx + hash(sx + 211, sy + 743) * shrubStep;
-          var shrubY = sy + hash(sx + 877, sy + 317) * shrubStep;
-          var worldX = shrubX / resolution * size, worldY = shrubY / resolution * size;
-          if (sample(worldX, worldY, size, noSnow).grass < .3) continue;
-          if (G.MapOcean && G.MapOcean.sample(worldX, worldY) > -.9) continue;
-          var shrubSize = 9 + hash(sx + 41, sy + 149) * 7;
-          ctx.globalAlpha = .28 + hash(sx + 577, sy + 601) * .16;
-          ctx.drawImage(shrubImage, shrubX - shrubSize / 2, shrubY - shrubSize / 2, shrubSize, shrubSize);
-        }
-      }
-      ctx.globalAlpha = 1;
-    }
+    // 镜像底图无法表达各象限的实时占地；所有图标装饰只在可避让的细节层绘制。
     return canvas;
   }
   var tileSpan = 4, density = 64, padding = 2;
@@ -272,18 +287,20 @@
         }
       }
     }
-    // Sparse landmark clusters add visual variety without competing with city/resource markers.
-    // They are inset from tile edges so neighboring chunks remain pixel-seamless.
+    // 所有图标装饰共用单格预约，包含瓦片边界 halo；地貌笔画也限制在该格内。
     // Minimal canvas mocks used by terrain seam tests do not expose shape primitives.
     if (!ctx.fillRect) return canvas;
-    for (var gy2 = 24; gy2 < side - 24; gy2 += 52) for (var gx2 = 24; gx2 < side - 24; gx2 += 52) {
-      var seed2 = hash(Math.floor((startX + gx2) / 52) + 1701, Math.floor((startY + gy2) / 52) + 2309);
-      var ox = (hash(gx2 + cx * 19, gy2 + cy * 23) - .5) * 22, oy = (hash(gx2 + 71, gy2 + 113) - .5) * 22;
-      var dx2 = gx2 + ox, dy2 = gy2 + oy;
-      if(northernSnow((startX+dx2)/density,(startY+dy2)/density,size)>0.12)continue;
-      if(clearance((startX+dx2)/density,(startY+dy2)/density,.6)<.12)continue;
-      if(G.MapOcean&&G.MapOcean.sample((startX+dx2)/density,(startY+dy2)/density)>-1.4)continue;
-      if(sample((startX+dx2)/density,(startY+dy2)/density,size).grass > .34)continue;
+    var decorations=[], minCellX=Math.floor(startX/density), maxCellX=Math.floor((startX+side)/density);
+    var minCellY=Math.floor(startY/density), maxCellY=Math.floor((startY+side)/density);
+    for (var cellY=minCellY;cellY<=maxCellY;cellY++) for (var cellX=minCellX;cellX<=maxCellX;cellX++) {
+      var kind=decorationAt(cellX,cellY,size);
+      if (kind) decorations.push({x:cellX,y:cellY,kind:kind});
+    }
+    for (var di=0;di<decorations.length;di++) {
+      var decoration=decorations[di];
+      if (decoration.kind!=='landmark') continue;
+      var gx2=decoration.x, gy2=decoration.y, seed2=hash(gx2+1701,gy2+2309);
+      var dx2=(gx2+.5)*density-startX, dy2=(gy2+.5)*density-startY;
       if (seed2 < .18) {
         // Low rounded hill with a few exposed soil/rock facets.
         ctx.fillStyle = 'rgba(112,101,73,.25)'; ctx.fillRect(dx2-15, dy2-3, 30, 12);
@@ -314,51 +331,39 @@
       }
     }
 
-    // Shrub patches use a world-space lattice so adjacent terrain chunks redraw the same clipped plant.
+    // 灌木限制在独占格内，不能与同格森林或地貌叠画。
     if (ctx.drawImage && shrubImage) {
-      var shrubStep = 88, shrubReach = 42;
-      for (var sy = Math.floor((startY - shrubReach) / shrubStep); sy <= Math.ceil((startY + side + shrubReach) / shrubStep); sy++) {
-        for (var sx = Math.floor((startX - shrubReach) / shrubStep); sx <= Math.ceil((startX + side + shrubReach) / shrubStep); sx++) {
-          var shrubSeed = hash(sx + 1201, sy + 4099);
-          if (shrubSeed > .23) continue;
-          var shrubX = sx * shrubStep + hash(sx + 211, sy + 743) * shrubStep;
-          var shrubY = sy * shrubStep + hash(sx + 877, sy + 317) * shrubStep;
-          var worldX = shrubX / density, worldY = shrubY / density;
-          if (sample(worldX, worldY, size).grass < .34) continue;
-          if (clearance(worldX, worldY, .8) < .12) continue;
-          if (G.MapOcean && G.MapOcean.sample(worldX, worldY) > -1.4) continue;
+      for (var si=0;si<decorations.length;si++) {
+          var shrubCell=decorations[si];
+          if (shrubCell.kind!=='shrub') continue;
+          var sx=shrubCell.x, sy=shrubCell.y;
+          var shrubX=(sx+.5)*density, shrubY=(sy+.5)*density;
           var shrubWidth = 38 + hash(sx + 41, sy + 149) * 18;
           var shrubHeight = shrubWidth * (.92 + hash(sx + 359, sy + 83) * .16);
           ctx.globalAlpha = .58 + hash(sx + 577, sy + 601) * .22;
           ctx.drawImage(shrubImage, shrubX - startX - shrubWidth / 2, shrubY - startY - shrubHeight / 2, shrubWidth, shrubHeight);
           ctx.globalAlpha = 1;
-        }
       }
     }
 
-    // Woodland shares the meadow field and resource clearings. A world-space halo
-    // keeps each cluster intact across texture boundaries and while zooming.
+    // 装饰森林与目标图标共用单格中心和尺寸；跨纹理边界的 halo 保持重复绘制一致。
     if (ctx.drawImage && (forestImages.length || forestImage)) {
-      var forestStep=128, forestReach=76;
+      var forestReach=density;
       var projection=G.MapCamera?G.MapCamera.projection:{a:1,b:0,c:0,d:1};
       var determinant=projection.a*projection.d-projection.b*projection.c;
       var ia=projection.d/determinant, ib=-projection.b/determinant, ic=-projection.c/determinant, id=projection.a/determinant;
-      var treeRadius=forestReach/2*Math.max(Math.abs(ia)+Math.abs(ic),Math.abs(ib)+Math.abs(id));
-      for (var fy=Math.floor((startY-forestReach)/forestStep);fy<=Math.ceil((startY+side+forestReach)/forestStep);fy++) {
-        for (var fx=Math.floor((startX-forestReach)/forestStep);fx<=Math.ceil((startX+side+forestReach)/forestStep);fx++) {
-          var treeX=fx*forestStep+hash(fx+317,fy)*48, treeY=fy*forestStep+hash(fx,fy+613)*48;
-          if (northernSnow(treeX/density, treeY/density, size) > 0.12) continue;
-          if (northernSnow(treeX/density, (treeY - forestReach * 0.45)/density, size) > 0.12) continue;
-          var green=sample(treeX/density,treeY/density,size).grass;
-          var woodland=noise(treeX/240+31,treeY/240+71);
-          if (green<.25 || hash(fx+719,fy+911)>.18+smooth(.4,.72,woodland)*.55) continue;
-          if (clearance(treeX/density,treeY/density,treeRadius/density)<.12 || (G.MapOcean&&G.MapOcean.sample(treeX/density,treeY/density)>-1.8)) continue;
+      // 即使以后恢复斜投影，逆变换后的森林也不能伸出预约单格。
+      forestReach/=Math.max(1,Math.abs(ia)+Math.abs(ic),Math.abs(ib)+Math.abs(id));
+      for (var fi=0;fi<decorations.length;fi++) {
+          var forestCell=decorations[fi];
+          if (forestCell.kind!=='forest') continue;
+          var fx=forestCell.x/2, fy=forestCell.y/2;
+          var treeX=(forestCell.x+.5)*density, treeY=(forestCell.y+.5)*density;
           // Cancel the ground-plane skew so trees stand upright like forest targets.
           var fArt = (forestImages.length ? forestImages[Math.abs(fx + fy * 2) % forestImages.length] : null) || forestImage;
           ctx.setTransform(ia,ib,ic,id,treeX-startX,treeY-startY);
           ctx.drawImage(fArt,-forestReach/2,-forestReach/2,forestReach,forestReach);
           ctx.setTransform(1,0,0,1,0,0);
-        }
       }
     }
 

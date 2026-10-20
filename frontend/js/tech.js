@@ -3,6 +3,7 @@ window.Game = window.Game || {};
 
 (function (G) {
   'use strict';
+  G.gameNow = G.gameNow || function () { return Date.now(); };
 
   var D = G.DATA;
   var Core = G.Core;
@@ -20,14 +21,21 @@ window.Game = window.Game || {};
     return cost;
   }
 
+  /** 按开工城市的中心等级、市长有效学识和格物技能计算工期，三个速度倍率独立相乘。 */
   function techDuration(id, currentLv, labLv) {
     var lv = currentLv != null ? currentLv : ((Core.state && Core.state.tech && Core.state.tech[id]) || 0);
     var lab = labLv != null ? labLv : ((Core.state && Core.state.buildings && Core.state.buildings.lab) || 0);
-    var base = (id.indexOf('prod_') === 0 ? 7.5 : 30.0) * Math.pow(1.8, Math.max(0, lv));
-    var labSpeed = 1.0 + 0.10 * Math.max(0, lab - 1);
-    var mayorSpeed = 1.0 + (Core.mayorSkillBonus ? Core.mayorSkillBonus('research') : 0);
-    var duration = Math.round(base / (labSpeed * mayorSpeed));
-    return Math.max(5, Math.min(86400, duration));
+    var curves = G.Constants.researchDuration;
+    var curve = curves[id] || (id.indexOf('prod_') === 0 ? curves.resource : curves.normal);
+    var base = curve[Math.max(0, Math.min(9, lv))];
+    var rates = G.Constants.researchSpeed;
+    var labSpeed = 1.0 + rates.labPerLevel * Math.max(0, Math.min(rates.labMaxLevel, lab));
+    // 状态中的学识已包含装备与套装加成，不能再重复叠加装备属性。
+    var mayor = Core.getOfficerByRole ? Core.getOfficerByRole('mayor') : null;
+    var knowledgeSpeed = 1.0 + rates.knowledgePerPoint * Math.max(0, mayor ? (mayor.knowledge || 0) : 0);
+    var mayorSpeed = 1.0 + Math.max(0, Math.min(0.20, Core.mayorSkillBonus ? Core.mayorSkillBonus('research') : 0));
+    var duration = Math.round(base / (labSpeed * knowledgeSpeed * mayorSpeed));
+    return Math.max(5, duration);
   }
 
   function formatTime(seconds) {
@@ -52,7 +60,7 @@ window.Game = window.Game || {};
     if (m < 60) return m + '分' + (s > 0 ? (s + '秒') : '');
     var h = Math.floor(m / 60);
     var remM = m % 60;
-    return h + '时' + (remM > 0 ? (remM + '分') : '');
+    return (h >= 24 ? Math.floor(h / 24) + '天' : '') + (h % 24 > 0 ? (h % 24) + '时' : '') + (remM > 0 ? (remM + '分') : '');
   }
 
   function costHtml(cost) {
@@ -61,6 +69,42 @@ window.Game = window.Game || {};
       arr.push(G.resourceIconHtml(k) + cost[k]);
     }
     return arr.join(' ');
+  }
+
+  /**
+   * 打开科技研发规则说明弹窗。
+   * 说明按玩家计算工期时的先后顺序排列，避免把长规则直接铺在科技页顶部。
+   */
+  function showResearchInfo() {
+    var existing = document.getElementById('techResearchInfoModal');
+    if (existing) return;
+
+    var mask = document.createElement('div');
+    mask.id = 'techResearchInfoModal';
+    mask.className = 'modal-mask';
+    mask.innerHTML =
+      '<div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="techResearchInfoTitle">' +
+        '<div class="modal-title" id="techResearchInfoTitle">🔬 科技研发说明</div>' +
+        '<div class="modal-body">' +
+          '<ol>' +
+            '<li><strong>基础工期：</strong>资源科技首级2分钟、9→10级12天；普通科技首级3分钟、9→10级15天。机动科技首级5分钟，燃烧引擎末级20天，舰船动力和喷气推进末级均28天。前五级固定，6—10级按几何曲线递进并四舍五入到整分钟。</li>' +
+            '<li><strong>研发中心：</strong>按开始研发所在城市的中心等级计算，每级研发速度 +1%；Lv.1 为 +1%，满级 Lv.10 为 +10%。</li>' +
+            '<li><strong>市长学识：</strong>按开始研发所在城市的市长有效学识计算，每点学识使研发速度 +0.1%，100 点为 +10%；有效学识包含装备与套装加成。未任命市长时没有这项加成。</li>' +
+            '<li><strong>市长技能：</strong>本城市长的「格物致知」每级使研发速度 +4%，最高 Lv.5 为 +20%；只有任命为市长才生效。</li>' +
+            '<li><strong>工期计算：</strong>基础工期 ÷ 研发中心速度倍率 ÷ 学识速度倍率 ÷ 格物技能速度倍率，最后四舍五入到整秒；三项速度倍率分别为“1 + 对应加成”，并相乘。工期最短5秒，不设24小时上限。</li>' +
+            '<li><strong>生效时点：</strong>工期在点击开始研发时锁定。之后升级中心、更换市长、调整学识或提升技能，只影响新开始的研发。</li>' +
+            '<li><strong>加速与暂停：</strong>加速符按标注时长 × 使用数量扣减剩余时间，可直接完成研发；研发所在城市归降或移交期间暂停，完成时间按冻结时长顺延。</li>' +
+            '<li><strong>开工条件：</strong>需要满足建筑和科技前置条件并备齐资源；全帝国同时只能研发一项科技。</li>' +
+          '</ol>' +
+        '</div>' +
+        '<div class="modal-foot"><button type="button" class="btn" id="techResearchInfoClose">知道了</button></div>' +
+      '</div>';
+    document.body.appendChild(mask);
+
+    var close = function () { if (mask.parentNode) mask.parentNode.removeChild(mask); };
+    mask.querySelector('#techResearchInfoClose').onclick = close;
+    mask.addEventListener('click', function (event) { if (event.target === mask) close(); });
+    mask.onkeydown = function (event) { if (event.key === 'Escape') close(); };
   }
 
   /**
@@ -90,7 +134,7 @@ window.Game = window.Game || {};
     }
     // 先手使用点数，资源负重和仓库保护使用各自明确登记的百分比。
     if (t.affect === 'recon') {
-      var intel = ['城防', '精确守军与统帅', '建筑与将领人数', '科技与可掠夺资源测算', '将领档案与战力'];
+      var intel = ['城防类型', '城防数量与等级', '精确守军', '守城将领', '建筑等级', '驻城将领人数', '账号科技', '可掠夺资源测算', '驻城将领档案', '战力评估'];
       return {
         curStr: '情报等级 Lv.' + level,
         nextStr: '情报等级 Lv.' + nextLevel,
@@ -102,12 +146,14 @@ window.Game = window.Game || {};
     }
     if (t.affect === 'radar') {
       return {
-        curStr: '+' + (level * 5) + '点',
-        nextStr: '+' + (nextLevel * 5) + '点',
+        curStr: '+' + (level * 2) + '点',
+        nextStr: '+' + (nextLevel * 2) + '点',
         currentLabel: '当前首回合拦截先手值加成', effectLabel: '首回合拦截先手值',
-        pct: 5, unit: '点'
+        pct: 2, unit: '点'
       };
     }
+    // 军事理论提供绝对概率增量，必须显示百分点，不能混入战斗百分比。
+    if (t.affect === 'academy_chance') return { curStr: '+' + (level * 3 / 10).toFixed(1) + '个百分点', nextStr: '+' + (nextLevel * 3 / 10).toFixed(1) + '个百分点', currentLabel: '当前五星名将整批概率加成', effectLabel: '五星名将整批概率加成', pct: 0.3, unit: '个百分点' };
     // 千分比科技单独显示小数，避免浮点乘法出现0.30000000000000004%。
     if (t.affect === 'capture_permille') return { curStr: (level / 10).toFixed(1) + '%', nextStr: (nextLevel / 10).toFixed(1) + '%', currentLabel: '当前俘获比例', effectLabel: '俘获比例', pct: 0.1, unit: '%' };
     if (t.affect === 'medical') return { curStr: (level * 5) + '%', nextStr: (nextLevel * 5) + '%', currentLabel: '本科技伤兵回收率', effectLabel: '伤兵回收率', pct: 5, unit: '%' };
@@ -126,6 +172,8 @@ window.Game = window.Game || {};
   }
 
   var Tech = {
+    showResearchInfo: showResearchInfo,
+
     setTab: function (branch) {
       if (branchOrder.indexOf(branch) < 0) return;
       activeBranch = branch;
@@ -209,9 +257,17 @@ window.Game = window.Game || {};
           '<span class="cu-val" style="color:var(--accent);font-weight:bold;">' + diff.curStr + ' → ' + diff.nextStr + '</span>' +
         '</div>';
 
-      var labDiscount = labLv > 1 ? (' (军工科技研发中心 Lv.' + labLv + ' 加速 -' + Math.min(80, (labLv - 1) * 10) + '%)') : '';
+      var mayor = Core.getOfficerByRole ? Core.getOfficerByRole('mayor') : null;
+      var knowledge = mayor ? Math.max(0, mayor.knowledge || 0) : 0;
+      var knowledgeSpeed = knowledge * G.Constants.researchSpeed.knowledgePerPoint * 100;
+      var skillSpeed = Core.mayorSkillBonus ? Core.mayorSkillBonus('research') * 100 : 0;
+      var speedParts = [];
+      if (labLv > 0) speedParts.push('中心提速 ' + Math.min(G.Constants.researchSpeed.labMaxLevel, labLv) + '%');
+      if (knowledge > 0) speedParts.push('学识提速 ' + knowledgeSpeed.toFixed(1) + '%');
+      if (skillSpeed > 0) speedParts.push('格物提速 ' + skillSpeed.toFixed(0) + '%');
+      var labSpeedText = speedParts.length ? (' (' + speedParts.join('，') + ')') : '';
       var durHtml = '<div class="cu-row"><span class="cu-ico">⏱</span><span class="cu-name">研发工期</span>' +
-                    '<span class="cu-val">' + timeText(duration) + '<span class="cu-sub">' + labDiscount + '</span></span></div>';
+                    '<span class="cu-val">' + timeText(duration) + '<span class="cu-sub">' + labSpeedText + '</span></span></div>';
 
       var mask = document.createElement('div');
       mask.className = 'modal-mask';
@@ -298,7 +354,7 @@ window.Game = window.Game || {};
       }
       if (!owned.length) { G.toast('当前无加速符，可前往商城购买'); return; }
 
-      var now = Date.now();
+      var now = G.gameNow();
       var remSec = res.finishesAt ? Math.max(0, Math.ceil((res.finishesAt - now) / 1000)) : 0;
       var remText = timeText(remSec);
 
@@ -385,7 +441,7 @@ window.Game = window.Game || {};
           timerId = null;
           return;
         }
-        var now = Date.now();
+        var now = G.gameNow();
         var rem = Math.max(0, Math.ceil((res.finishesAt - now) / 1000));
         var timerEl = document.getElementById('tech-timer-text');
         var barEl = document.getElementById('tech-progress-bar');
@@ -422,7 +478,7 @@ window.Game = window.Game || {};
                '</div>';
       }
 
-      var now = Date.now();
+      var now = G.gameNow();
       var rem = Math.max(0, Math.ceil((res.finishesAt - now) / 1000));
       var total = res.durationSeconds || Math.max(1, (res.finishesAt - res.startedAt) / 1000);
       var elapsed = Math.max(0, total - rem);
@@ -456,7 +512,9 @@ window.Game = window.Game || {};
 
       var h = '';
       h += '<div class="title">- 军工科技研发中心 -</div>';
-      h += '<div class="desc">军工科技研发中心 Lv.' + labLv + ' · ' + branchOrder.length + ' 类科技，共 ' + Object.keys(D.techs).length + ' 项。军工科技研发中心等级越高，研发耗时越短。</div>';
+      h += '<div class="desc">军工科技研发中心 Lv.' + labLv + ' · ' + branchOrder.length + ' 类科技，共 ' + Object.keys(D.techs).length + ' 项。' +
+        '研发速度受中心等级、市长学识和格物致知影响。 ' +
+        '<span role="button" tabindex="0" class="link-act" onclick="Game.Tech.showResearchInfo()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();Game.Tech.showResearchInfo();}">查看研发说明</span></div>';
 
       // 1. 顶部正在研发卡片
       h += this.renderActiveResearchCard(s);
@@ -491,64 +549,68 @@ window.Game = window.Game || {};
           var isResearching = activeRes && activeRes.techType === id;
           var isBusy = activeRes && !isResearching;
 
-          var cls = 'menu-item';
-          if (isResearching) cls += ' active';
-          else if (enough && !isBusy) cls += ' ok';
-          else cls += ' lock';
+          var cls = 'menu-item tech-card';
+          if (isResearching) cls += ' active is-researching';
+          else if (enough && !isBusy) cls += ' ok is-ready';
+          else if (maxed) cls += ' is-maxed';
+          else cls += ' lock is-locked';
 
           var diff = getEffectDiffText(t, lv);
 
-          h += '<div class="' + cls + '" data-tech="' + id + '" id="tech-card-' + id + '" onclick="Game.Tech.confirmResearch(\'' + id + '\')" style="display:flex;flex-direction:column;gap:4px;cursor:pointer;">';
-          h += '  <div style="display:flex;justify-content:space-between;align-items:center;">';
-          h += '    <div>';
-          h += '      <span class="num">[' + idx + ']</span> ';
-          h += '      <span class="n" style="font-weight:bold;font-size:14px;">' + t.name + '</span> ';
-          h += '      <span class="lv" style="font-weight:bold;color:var(--accent);">Lv.' + lv + '/' + t.max + '</span>';
+          h += '<div class="' + cls + '" data-tech="' + id + '" id="tech-card-' + id + '" onclick="Game.Tech.confirmResearch(\'' + id + '\')">';
+          
+          // 头部：序号、名称、等级与右侧动作按钮
+          h += '  <div class="tech-card-header">';
+          h += '    <div class="tech-title-group">';
+          h += '      <span class="tech-num num">[' + idx + ']</span> ';
+          h += '      <span class="tech-name n">' + G.escapeHtml(t.name) + '</span> ';
+          h += '      <span class="tech-level lv">Lv.' + lv + '/' + t.max + '</span>';
           h += '    </div>';
 
           // 右侧操作标识 / 按钮
+          h += '    <div class="tech-action-group">';
           if (isResearching) {
-            var remSec = Math.max(0, Math.ceil((activeRes.finishesAt - Date.now()) / 1000));
-            h += '    <div style="display:flex;align-items:center;gap:6px;">';
-            h += '      <span class="quest-badge warn" id="tech-badge-' + id + '">⏳ 研发中 ' + formatTime(remSec) + '</span>';
-            h += '      <button class="btn sm ok" style="padding:2px 8px;font-size:12px;" onclick="event.stopPropagation();Game.Tech.openSpeedUpPicker()">⚡ 加速</button>';
-            h += '    </div>';
+            var remSec = Math.max(0, Math.ceil((activeRes.finishesAt - G.gameNow()) / 1000));
+            h += '      <span class="quest-badge warn tech-timer-badge" id="tech-badge-' + id + '">⏳ 研发中 ' + formatTime(remSec) + '</span>';
+            h += '      <button type="button" class="btn sm ok tech-btn-action" onclick="event.stopPropagation();Game.Tech.openSpeedUpPicker()">⚡ 加速</button>';
           } else if (maxed) {
-            h += '    <span class="quest-badge ok">✓ 已满级</span>';
+            h += '      <span class="quest-badge ok">✓ 已满级</span>';
           } else if (locked) {
-            h += '    <span class="quest-badge" style="opacity:0.6;">前置未满足</span>';
+            h += '      <span class="quest-badge" style="opacity:0.65;">前置未满足</span>';
           } else if (isBusy) {
-            h += '    <button class="btn sm" disabled style="opacity:0.6;padding:2px 8px;font-size:12px;" title="军工科技研发中心正忙">正忙</button>';
+            h += '      <button type="button" class="btn sm tech-btn-action" disabled style="opacity:0.65;" title="军工科技研发中心正忙">正忙</button>';
           } else if (enough) {
-            h += '    <button class="btn sm ok" style="padding:3px 12px;font-size:12px;font-weight:bold;" onclick="event.stopPropagation();Game.Tech.confirmResearch(\'' + id + '\')">🔬 研发</button>';
+            h += '      <button type="button" class="btn sm ok tech-btn-action" onclick="event.stopPropagation();Game.Tech.confirmResearch(\'' + id + '\')">🔬 研发</button>';
           } else {
-            h += '    <button class="btn sm" style="padding:2px 8px;font-size:12px;opacity:0.6;" onclick="event.stopPropagation();Game.Tech.confirmResearch(\'' + id + '\')">资源不足</button>';
+            h += '      <button type="button" class="btn sm tech-btn-action" style="opacity:0.65;" onclick="event.stopPropagation();Game.Tech.confirmResearch(\'' + id + '\')">资源不足</button>';
+          }
+          h += '    </div>';
+          h += '  </div>';
+
+          // 效果简述
+          h += '  <div class="tech-desc d">' + t.desc + '</div>';
+
+          // 状态与升级条件微型行
+          h += '  <div class="tech-info-row">';
+          h += '    <span class="tech-effect-tag"><span class="tech-effect-lbl">' + (diff.currentLabel || '当前加成') + ': </span><b style="color:var(--ink);">' + (diff.currentText || diff.curStr) + '</b></span>';
+          if (locked) {
+            h += '    <span class="tech-lock-pill cost">' + lockText + '</span>';
+          } else if (maxed) {
+            h += '    <span class="tech-meta-box cost" style="color:var(--ok);">已达科技上限</span>';
+          } else {
+            h += '    <span class="tech-meta-box cost"><span>下一级: ' + costHtml(cost) + '</span><span class="tech-duration-text">⏱ ' + timeText(duration) + '</span></span>';
           }
           h += '  </div>';
 
-          // 效果说明
-          h += '  <div class="d" style="color:var(--muted);font-size:12px;">' + t.desc + (diff.currentLabel ? '<br>' : ' · ') + (diff.currentLabel || '当前加成') + ': <b style="color:var(--ink);">' + (diff.currentText || diff.curStr) + '</b></div>';
-
-          // 费用与耗时展示
-          if (locked) {
-            h += '  <div class="cost" style="color:var(--danger);font-size:12px;">' + lockText + '</div>';
-          } else if (maxed) {
-            h += '  <div class="cost" style="color:var(--ok);font-size:12px;">已达到终极科技上限</div>';
-          } else {
-            h += '  <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);">';
-            h += '    <span>下一级: ' + costHtml(cost) + '</span>';
-            h += '    <span>⏱ 耗时: ' + timeText(duration) + '</span>';
-            h += '  </div>';
-          }
-
+          // 前置建筑折叠区（默认折叠，保持卡片紧凑）
           if (!maxed && G.Prerequisites) {
-            h += '<details class="prereq-details"' + (locked ? ' open' : '') +
-              ' onclick="event.stopPropagation()"><summary>Lv.' + (lv + 1) + ' 建筑要求</summary>' +
-              G.Prerequisites.html('technologies', id, lv + 1) + '</details>';
-          }
-          if (G.Prerequisites) {
-            h += '<button type="button" class="btn sm" onclick="event.stopPropagation();Game.Prerequisites.preview(\'technologies\',\'' +
-              id + '\',' + Math.min(t.max, lv + 1) + ')">查看各级要求</button>';
+            h += '<details class="prereq-details" onclick="event.stopPropagation()">' +
+              '<summary class="prereq-summary"><span>Lv.' + (lv + 1) + ' 建筑要求</span></summary>' +
+              G.Prerequisites.html('technologies', id, lv + 1) +
+              '<div class="prereq-preview-foot">' +
+              '<button type="button" class="link-act prereq-preview-btn" onclick="event.stopPropagation();Game.Prerequisites.preview(\'technologies\',\'' +
+              id + '\',' + Math.min(t.max, lv + 1) + ')">查看各级前置要求 &gt;</button>' +
+              '</div></details>';
           }
 
           h += '</div>';

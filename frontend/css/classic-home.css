@@ -203,6 +203,100 @@ body[data-theme="blue-white-classic"] {
 [data-theme="blue-white-classic"] .bcard-head:hover { background: #edf4fb !important; }
 [data-theme="blue-white-classic"] :focus-visible { outline: 2px solid #2457a5; outline-offset: 2px; }
 
+/* 军校候选军官卡片（覆盖经典扁平白底点线菜单规则） */
+[data-theme="blue-white-classic"] .academy-candidate-card {
+  background: #ffffff !important;
+  border: 1px solid #c8d9ea !important;
+  border-radius: 6px !important;
+  box-shadow: 0 1px 3px rgba(24, 64, 114, 0.08) !important;
+  padding: 6px 8px !important;
+  margin: 0 !important;
+}
+
+[data-theme="blue-white-classic"] .academy-candidate-card:hover {
+  background: #ffffff !important;
+  border-color: #2457a5 !important;
+  box-shadow: 0 3px 8px rgba(24, 64, 114, 0.16) !important;
+}
+
+[data-theme="blue-white-classic"] .academy-candidate-card.is-locked {
+  background: #f4f7fa !important;
+  border-color: #d8e2ec !important;
+}
+
+[data-theme="blue-white-classic"] .academy-candidate-card.tier-diamond {
+  background: #f0f6ff !important;
+  border: 2px solid #5aa9e8 !important;
+  box-shadow: 0 0 10px rgba(90, 169, 232, 0.35) !important;
+}
+
+[data-theme="blue-white-classic"] .c-stat-pill {
+  background: #f3f7fb;
+  border-color: #d5e3f0;
+}
+
+[data-theme="blue-white-classic"] .c-stat-pill.is-peak {
+  background: #e4effb;
+  border-color: #99c2ed;
+}
+
+[data-theme="blue-white-classic"] .candidate-recruit-btn {
+  background: #2457a5;
+  border-color: #2457a5;
+}
+
+[data-theme="blue-white-classic"] .candidate-recruit-btn:hover:not(:disabled) {
+  background: #194485;
+  border-color: #194485;
+}
+
+/* 科技卡片经典蓝白主题定制 */
+[data-theme="blue-white-classic"] .tech-card {
+  background: #ffffff !important;
+  border: 1px solid #c8d9ea !important;
+  border-radius: 6px !important;
+  box-shadow: 0 1px 3px rgba(24, 64, 114, 0.08) !important;
+  padding: 7px 10px !important;
+  margin: 0 !important;
+}
+
+[data-theme="blue-white-classic"] .tech-card:hover {
+  background: #ffffff !important;
+  border-color: #2457a5 !important;
+  box-shadow: 0 3px 8px rgba(24, 64, 114, 0.15) !important;
+}
+
+[data-theme="blue-white-classic"] .tech-card.is-researching {
+  background: #f0f7ff !important;
+  border: 2px solid #2457a5 !important;
+  box-shadow: 0 0 10px rgba(36, 87, 165, 0.25) !important;
+}
+
+[data-theme="blue-white-classic"] .tech-card.is-locked {
+  background: #f8fafc !important;
+  border-color: #dbe4ee !important;
+}
+
+[data-theme="blue-white-classic"] .tech-card.is-maxed {
+  background: #f6fbf8 !important;
+  border-color: #cfe3d6 !important;
+}
+
+[data-theme="blue-white-classic"] .tech-name {
+  color: #1f4f89 !important;
+}
+
+[data-theme="blue-white-classic"] .tech-level {
+  color: #2457a5 !important;
+}
+
+[data-theme="blue-white-classic"] .tech-effect-tag {
+  background: #edf4fb;
+  border-color: #cde0f5;
+  color: #2457a5;
+}
+
+
 @media (max-width: 480px) {
   [data-theme="blue-white-classic"] #screen { margin: 0 auto; min-height: 100vh; }
 }

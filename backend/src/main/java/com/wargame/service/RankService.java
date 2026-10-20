@@ -1,5 +1,6 @@
 package com.wargame.service;
 
+import com.wargame.util.GameClock;
 import com.wargame.model.constants.MilitaryRankDef;
 import com.wargame.model.constants.RankExamDef;
 import com.wargame.model.entity.*;
@@ -74,7 +75,7 @@ public class RankService {
         boolean victoriesEnough = player.getNpcVictories() >= next.npcVictories();
         int owned = owned(playerId, next.certificateKey());
         boolean prerequisites = prestigeEnough && victoriesEnough && owned > 0;
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         info.put("serverTime", now);
         Exam exam = currentExam(player);
         String status = status(exam, now);
@@ -110,7 +111,7 @@ public class RankService {
     public Map<String, Object> startExam(Long playerId) {
         Player player = accounts.lockPlayer(playerId);
         var next = requirePrerequisites(player);
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         Exam exam = currentExam(player);
         if ("passed".equals(status(exam, now))) throw new IllegalStateException("本阶笔试已合格，请授衔晋升");
         if (now < retryAt(exam, now)) throw new IllegalStateException("考试冷却中，请稍后重试");
@@ -136,7 +137,7 @@ public class RankService {
         if (exam == null || submission == null || !Objects.equals(exam.attemptId(), submission.attemptId()))
             throw new IllegalArgumentException("试卷已失效，请重新进入考试");
         if (!"active".equals(exam.status())) throw new IllegalStateException("该试卷已提交");
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         boolean expired = now >= exam.expiresAt();
         int correct = 0;
         if (!expired) {
@@ -166,7 +167,7 @@ public class RankService {
         var next = requirePrerequisites(player);
         Exam exam = currentExam(player);
         if (exam == null || !"passed".equals(exam.status())) throw new IllegalArgumentException("请先通过本阶军事笔试");
-        if (playerItemRepository.tryConsume(playerId, next.certificateKey(), 1, System.currentTimeMillis()) != 1)
+        if (playerItemRepository.tryConsume(playerId, next.certificateKey(), 1, GameClock.now()) != 1)
             throw new IllegalArgumentException("晋升凭证不足");
         // 条件更新会清空持久化上下文，必须重新取得受锁保护的玩家实体。
         player = accounts.lockPlayer(playerId);
@@ -193,8 +194,8 @@ public class RankService {
         String report = Objects.requireNonNullElse(result.getReport(), "") + "\n★ 剿寇胜场 +1，累计 " + player.getNpcVictories() + " 场。\n";
         if (key != null) {
             PlayerItem item = playerItemRepository.findByPlayerIdAndItemKey(playerId, key)
-                    .orElseGet(() -> new PlayerItem(null, playerId, key, 0, System.currentTimeMillis()));
-            item.setCount(item.getCount() + 1); item.setUpdatedAt(System.currentTimeMillis()); playerItemRepository.save(item);
+                    .orElseGet(() -> new PlayerItem(null, playerId, key, 0, GameClock.now()));
+            item.setCount(item.getCount() + 1); item.setUpdatedAt(GameClock.now()); playerItemRepository.save(item);
             report += "★ 获得【" + MilitaryRankDef.certificateRankForNpc(level).certificateName() + "】×1，已入仓库。\n";
         }
         result.setReport(report);

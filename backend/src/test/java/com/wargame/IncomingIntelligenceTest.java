@@ -105,7 +105,7 @@ class IncomingIntelligenceTest extends BaseServiceTest {
     @ValueSource(strings = {"conquer", "plunder", "feint", "harass", "guerrilla", "scout"})
     @SuppressWarnings("unchecked")
     void realDispatchAppearsOutsideMapViewAndCancellationRemovesIt(String action) {
-        createTechnology(defender.getId(), "recon_radar", 4);
+        createTechnology(defender.getId(), "recon_radar", 7);
         String unit = "scout".equals(action) ? "scout" : "infantry";
         if ("scout".equals(action)) createArmyUnit(attacker.getId(), unit, 100);
         March march = marchService.createDispatch(attacker.getId(), new DispatchRequest(
@@ -120,6 +120,7 @@ class IncomingIntelligenceTest extends BaseServiceTest {
         assertEquals("invader", incoming.get(0).get("fromName"));
         assertEquals("守方主城", incoming.get(0).get("targetName"));
         assertEquals(100, incoming.get(0).get("targetX"));
+        assertEquals(march.getStartAt(), incoming.get(0).get("startAt"));
         assertEquals(march.getArriveAt(), incoming.get(0).get("arriveAt"));
         assertEquals(Map.of(unit, 10), incoming.get(0).get("army"));
         assertTrue(views.getIncoming(attacker).isEmpty());
@@ -138,6 +139,37 @@ class IncomingIntelligenceTest extends BaseServiceTest {
         assertTrue(scoutReportRepository.findByPlayerId(attacker.getId()).isEmpty());
         assertTrue(scoutReportRepository.findByPlayerId(defender.getId()).isEmpty());
         verify(pushes).pushIncomingAttack(eq(defender.getId()), argThat(data -> "cancelled".equals(data.get("event"))));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1, 2, 6, 7, 8, 9, 10})
+    void incomingScoutCoordinatesRespectRadarAndTimingFollowsAcceleration(int radar) {
+        createTechnology(defender.getId(), "recon_radar", radar);
+        createArmyUnit(attacker.getId(), "scout", 100);
+        March march = marchService.createDispatch(attacker.getId(), new DispatchRequest(
+                "player", city.getId(), "scout", Map.of("scout", 10), null, Map.of()));
+        var view = views.getIncoming(defender).get(0);
+        assertEquals(march.getStartAt(), view.get("startAt"));
+        assertEquals(march.getArriveAt(), view.get("arriveAt"));
+        assertEquals(radar >= 2, view.containsKey("fromX"));
+        assertEquals(radar >= 2, view.containsKey("fromY"));
+        assertEquals(radar >= 6, view.containsKey("totalTroops"));
+        assertEquals(radar >= 7, view.containsKey("army"));
+        assertFalse(view.containsKey("commanderAttributes"));
+        assertFalse(view.containsKey("skills"));
+        verify(pushes).pushIncomingAttack(eq(defender.getId()), argThat(data ->
+                "started".equals(data.get("event")) && !data.containsKey("commanderAttributes") && !data.containsKey("skills")));
+        if (radar >= 2) {
+            assertEquals(march.getFromX(), view.get("fromX"));
+            assertEquals(march.getFromY(), view.get("fromY"));
+        }
+        march.setStartAt(march.getStartAt() + 1000);
+        march.setArriveAt(march.getArriveAt() - 1000);
+        marchRepository.save(march);
+        var accelerated = views.getIncoming(defender).get(0);
+        assertEquals(march.getStartAt(), accelerated.get("startAt"));
+        assertEquals(march.getArriveAt(), accelerated.get("arriveAt"));
+        assertEquals(radar >= 2, accelerated.containsKey("fromX"));
     }
 
     @Test
@@ -186,11 +218,13 @@ class IncomingIntelligenceTest extends BaseServiceTest {
         for (String key : List.of("fromName", "army", "fromX", "action", "totalTroops", "combatTech", "unitEquipment")) assertFalse(view.containsKey(key), key);
         verify(pushes).pushIncomingAttack(eq(defender.getId()), argThat(data ->
                 "started".equals(data.get("event")) && !data.containsKey("fromName") && !data.containsKey("army")));
-        createTechnology(defender.getId(), "recon_radar", 5);
+        createTechnology(defender.getId(), "recon_radar", 10);
         var full = views.getIncoming(defender).get(0);
         assertEquals(Map.of("infantry", 10), full.get("army"));
         assertNotNull(full.get("combatTech"));
         assertNotNull(full.get("intelligenceSource"));
+        assertFalse(full.containsKey("commanderAttributes"));
+        assertFalse(full.containsKey("skills"));
     }
 
 }

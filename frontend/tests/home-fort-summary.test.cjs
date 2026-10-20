@@ -51,7 +51,7 @@ test('首页城防总览展示四类工事、共享容量和墙体属性', () =>
   G.Core.populationGrowthPerHour = () => 0;
   G.Core.popFree = () => 0;
   G.Core.views.home(home);
-  assert.match(home.innerHTML, /🏰 城防总览/);
+  assert.match(home.innerHTML, /城防总览<\/span>/);
   assert.match(home.innerHTML, /单排横向排列，左右滑动/);
   assert.match(home.innerHTML, /工事 35\/150/);
   assert.match(home.innerHTML, /墙体 <b>1250000<\/b> 生命 · <b>100<\/b> 防御/);

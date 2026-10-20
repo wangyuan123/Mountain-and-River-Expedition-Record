@@ -59,6 +59,17 @@ test('page scripts initialize in HTML order and expose the extracted profile act
   assert.equal(typeof context.Game.WorldView.ensure, 'function');
 });
 
+test('军队页静默更新刷新资格，伤兵页保持原有更新方式', () => {
+  const context = sandbox(); load(context, 'js/data.js'); load(context, 'js/core.js');
+  const G = context.Game; let refreshes = 0;
+  G.Core.state = { unitUnlocks: {} };
+  G.Army = { refreshUnlocks() { refreshes++; } };
+  G.Core.route = 'army'; G.Core.silentUpdate({ unitUnlocks: {} });
+  assert.equal(refreshes, 1);
+  G.Core.route = 'wounded'; G.Core.silentUpdate({ unitUnlocks: {} });
+  assert.equal(refreshes, 1);
+});
+
 test('GET retries a transient network failure', async () => {
   let calls = 0;
   const context = sandbox({ fetch() {
@@ -314,6 +325,60 @@ for (const scenario of [
 }
 
 
+for (const route of ['buildArmy', 'buildRes']) {
+  test(`${route}施工队每秒刷新，延迟后校正，重绘和离开时清理计时器`, () => {
+    let now = 100000;
+    let nextId = 0;
+    const timers = new Map();
+    const queue = { innerHTML: '' };
+    const context = sandbox({
+      Date: class extends Date { static now() { return now; } },
+      setInterval(fn, ms) { assert.equal(ms, 1000); timers.set(++nextId, fn); return nextId; },
+      clearInterval(id) { timers.delete(id); }
+    });
+    context.document.getElementById = id => id === 'buildQueueBar' ? queue : null;
+    for (const file of ['js/data.js', 'js/core.js', 'js/build.js']) load(context, file);
+    const G = context.Game;
+    G.Core.route = route;
+    G.Core.state = {
+      buildings: { command: 2, farm: [1], house: [1] }, tech: {}, officers: [], items: {},
+      constructions: [{ id: 'house', slot: 0, queueId: 42, targetLevel: 2, finishesAt: now + 3000 }]
+    };
+    const view = { innerHTML: '', isConnected: true };
+    G.Core.views[route](view);
+    assert.match(view.innerHTML, /剩余 3秒/);
+    assert.equal(timers.size, 1);
+    const originalView = view.innerHTML;
+    G.Core.refreshContent = () => assert.fail('倒计时不能重建建筑卡片');
+    for (const [time, remaining] of [[101000, 2], [102000, 1], [123000, 0]]) {
+      now = time;
+      [...timers.values()][0]();
+      assert.match(queue.innerHTML, new RegExp(`剩余 ${remaining}秒`));
+      assert.equal(view.innerHTML, originalView);
+    }
+    assert.equal(G.Core.state.constructions.length, 1, '归零后等待服务端确认完工');
+    G.Core.state.constructions[0].finishesAt = now + 301000;
+    G.Build.silentUpdateBuild({});
+    assert.match(queue.innerHTML, /剩余 5分01秒/);
+    assert.match(queue.innerHTML, /disabled/);
+    now += 1000;
+    [...timers.values()][0]();
+    assert.match(queue.innerHTML, /剩余 5分00秒/);
+    assert.match(queue.innerHTML, /免费加速/);
+    assert.doesNotMatch(queue.innerHTML, /disabled/);
+    G.Core.views[route](view);
+    assert.equal(timers.size, 1, '重绘时不能叠加计时器');
+    G.Core.route = 'home';
+    G.Core.render();
+    assert.equal(timers.size, 0, '离开建筑页立即清理计时器');
+    G.Core.route = route;
+    G.Core.views[route](view);
+    view.isConnected = false;
+    [...timers.values()][0]();
+    assert.equal(timers.size, 0, '页面卸载后清理计时器');
+  });
+}
+
 function incomingContext() {
   const context = sandbox();
   for (const file of ['js/data.js', 'js/core.js', 'js/world.js', 'js/main-view.js', 'js/ws-client.js', 'js/ws-handlers.js']) load(context, file);
@@ -346,7 +411,7 @@ test('protection ticks synchronize extension and explicit zero for account and c
 test('incoming tick updates the list and keeps the military alert red until the threat is gone', () => {
   const G = incomingContext();
   const attack = { id: 'march-7', fromName: '<敌军>', targetName: '我方城', targetX: 100, targetY: 100,
-    arriveAt: Date.now() + 60000, army: { infantry: 10 }, action: 'plunder', radarLevel: 4 };
+    arriveAt: Date.now() + 60000, army: { infantry: 10 }, action: 'plunder', radarLevel: 7 };
   G.WS.emit('tick', { incoming: [attack] });
   assert.match(G._nav, /class="navitem active alert" data-route="alerts"/);
   const view = { innerHTML: '' };
@@ -449,6 +514,55 @@ test('军情倒计时每秒更新，延迟后按真实时间校正，重新渲�
   view.isConnected = false;
   [...timers.values()][0]();
   assert.equal(timers.size, 0);
+});
+
+test('敌军长途来袭按真实起止时间显示进度，计时更新和加速后的重新渲染保持一致', () => {
+  let now = 10_000_000;
+  let timer;
+  const context = sandbox({
+    Date: class extends Date { static now() { return now; } },
+    setInterval(fn, ms) { assert.equal(ms, 1000); timer = fn; return 1; },
+    clearInterval() { timer = null; }
+  });
+  for (const file of ['js/data.js', 'js/core.js', 'js/world.js']) load(context, file);
+  const G = context.Game;
+  const incoming = { id: 'march-1', marchId: 1, action: 'plunder',
+    startAt: now - 600000, arriveAt: now + 1800000 };
+  G.Core.route = 'alerts';
+  G.Core.state = { world: { incoming: [incoming] } };
+  let progress;
+  let renders = 0;
+  const view = {
+    isConnected: true,
+    querySelectorAll(selector) { return selector === '[data-progress-bar]' ? [progress] : []; },
+    set innerHTML(html) {
+      renders++;
+      const match = html.match(/<span class="term-pbar"([^>]*)>([^<]*)<\/span>/);
+      assert.ok(match);
+      progress = { className: 'term-pbar', textContent: match[2],
+        getAttribute(name) { return match[1].match(new RegExp(name + '="([^"]*)"'))?.[1] || null; } };
+    }
+  };
+
+  G.World.renderAlerts(view);
+  assert.equal(progress.textContent, '[■■□□□□□□□□] 25%');
+  now += 600000;
+  timer();
+  assert.equal(progress.textContent, '[■■■■■□□□□□] 50%');
+  assert.equal(renders, 1, '计时更新不重建列表');
+
+  // 服务端加速会同比压缩起止时间，保持当前路程比例，再缩短剩余时间。
+  incoming.startAt = now - 600000;
+  incoming.arriveAt = now + 600000;
+  G.World.renderAlerts(view);
+  assert.equal(progress.textContent, '[■■■■■□□□□□] 50%');
+  now += 60000;
+  timer();
+  assert.equal(progress.textContent, '[■■■■■□□□□□] 55%');
+  now = incoming.arriveAt;
+  timer();
+  assert.equal(progress.textContent, '[■■■■■■■■■■] 100%');
+  assert.equal(G.Core.state.world.incoming.length, 1, '进度满格不自行移除来袭');
 });
 
 test('导航栏最后显示文字商城，顶部不再显示商城图标', () => {

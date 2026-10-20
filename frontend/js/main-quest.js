@@ -1,6 +1,7 @@
 /* global window, document, Game */
 (function (G) {
   'use strict';
+  G.gameNow = G.gameNow || function () { return Date.now(); };
 
   var Core = G.Core;
   var D = G.DATA;
@@ -50,7 +51,7 @@
     if (G.API.getRankInfo) G.API.getRankInfo().then(function (rank) {
       // 交卷或授衔可能先于旧资格请求返回，只接受当前账号的最新请求。
       if (!isCurrentPlayer(playerId) || requestVersion !== rankRequestVersion) return;
-      rank.clockOffset = rank.serverTime ? rank.serverTime - Date.now() : 0;
+      G.GameTime.sync(rank.serverTime);
       Core.state.rankInfo = rank;
       if (Core.route === 'mainQuest') drawQuestView(v);
     }).catch(function (err) {
@@ -107,7 +108,7 @@
       if (!isCurrentPlayer(playerId)) return;
       ++rankRequestVersion;
       paper.playerId = playerId;
-      paper.clockOffset = paper.serverTime - Date.now();
+      G.GameTime.sync(paper.serverTime);
       state.paper = paper;
       state.answers = [];
       try { state.answers = JSON.parse(window.localStorage.getItem(answerKey(paper)) || '[]'); } catch (e) {}
@@ -141,7 +142,7 @@
   }
 
   function remainingSeconds() {
-    return state.paper ? Math.max(0, Math.ceil((state.paper.expiresAt - Date.now() - state.paper.clockOffset) / 1000)) : 0;
+    return state.paper ? Math.max(0, Math.ceil((state.paper.expiresAt - G.gameNow()) / 1000)) : 0;
   }
 
   /** 交卷失败保留答题记录，成功后只保存服务器返回的成绩。 */
@@ -159,7 +160,7 @@
       if (!isCurrentPlayer(paper.playerId)) return;
       ++rankRequestVersion;
       state.lastExamResult = { playerId: paper.playerId, tier: paper.tier, data: res };
-      res.rankInfo.clockOffset = res.rankInfo.serverTime ? res.rankInfo.serverTime - Date.now() : 0;
+      G.GameTime.sync(res.rankInfo.serverTime);
       Core.state.rankInfo = res.rankInfo;
       try { window.localStorage.removeItem(answerKey(paper)); } catch (e) {}
       state.paper = null;
@@ -246,7 +247,7 @@
     h += rankRequirement(cert.name, cert.owned, cert.required, rank.certificateEnough);
     h += '<div class="rank-source">' + escapeHtml(cert.source) + '</div>';
     var exam = rank.exam || {};
-    var cooling = exam.retryAt > Date.now() + (rank.clockOffset || 0);
+    var cooling = exam.retryAt > G.gameNow();
     var statuses = { not_started: '未参加', active: '进行中', failed: '未合格', expired: '已超时', passed: '已合格' };
     h += '<div class="rank-exam-status"><span>军事笔试 · ' + exam.questionCount + '题，至少答对' + exam.requiredCorrect + '题</span>' +
       '<b class="' + (rank.examPassed ? 'rank-met' : 'rank-unmet') + '">' + (statuses[exam.status] || '未参加') + '</b></div>';
@@ -256,7 +257,7 @@
     }
     h += '<div class="rank-promotion-actions">';
     if (cooling) {
-      h += '<span>下次考试：' + escapeHtml(new Date(exam.retryAt).toLocaleTimeString()) + '</span>' +
+      h += '<span>下次考试：' + escapeHtml(new Date(G.GameTime ? G.GameTime.toWallTime(exam.retryAt) : exam.retryAt).toLocaleTimeString()) + '</span>' +
         '<button type="button" class="btn" onclick="Game.Core.render()">刷新资格</button>';
     } else if (rank.canPromote) {
       h += '<button type="button" class="btn ok" onclick="Game.MainQuest.doPromoteRank()"' + (rankBusy ? ' disabled' : '') + '>授衔晋升</button>';
@@ -380,6 +381,7 @@
     }
 
     var rewardText = formatReward(q.reward);
+    var destination = (G.Constants.mainQuestDestinations || {})[q.id];
 
     return '<div class="quest-row" data-quest-id="' + q.id + '">' +
       '<div class="quest-row-top">' +
@@ -387,14 +389,54 @@
         '<div class="quest-reward">' + rewardText + '</div>' +
       '</div>' +
       '<div class="quest-desc">' + escapeHtml(q.desc) + '</div>' +
+      (q.id === 'q3_2' && G.Prerequisites ? G.Prerequisites.recruitmentHtml('destroyer') : '') +
       '<div class="quest-progress-row">' +
         '<div class="quest-progress-bar small"><div class="quest-progress-fill" style="width:' + pct + '%"></div></div>' +
         '<div class="quest-progress-text">' + progress + '/' + target + '</div>' +
       '</div>' +
       (canClaim ?
         '<button class="btn sm ok quest-claim-btn" data-id="' + q.id + '">领取奖励</button>' :
-        status === 'in_progress' && campaignTaskMode(q.id) ? '<button class="btn sm" onclick="Game.MainQuest.gotoCampaign(\'' + q.id + '\')">前往讨伐</button>' : '') +
+        status === 'in_progress' && (destination || campaignTaskMode(q.id)) ?
+          '<button type="button" class="btn sm quest-claim-btn" data-quest-goto="' + escapeHtml(q.id) +
+          '" aria-label="去完成：' + escapeHtml(q.title) + '">去完成</button>' : '') +
     '</div>';
+  }
+
+  /** 只导航进行中的任务，复用现有页面和弹窗，不代替玩家执行任务操作。 */
+  function gotoQuest(id) {
+    var quest = state.chapters.flatMap(function (chapter) { return chapter.quests || []; })
+      .find(function (q) { return q.id === id; });
+    if (!quest || (quest.status || 'in_progress') !== 'in_progress' || !Core.state) return;
+    if (campaignTaskMode(id)) { gotoCampaign(id); return; }
+    var destination = (G.Constants.mainQuestDestinations || {})[id];
+    if (!destination) return;
+    if (destination === 'commanderName') { G.Main.promptRenameCommander(); return; }
+    if (destination === 'cityName') {
+      // 任务要求修改主城名，分城中先让玩家选择主城，避免引导改错城市。
+      if ((Core.state.player || {}).mainCity === false) {
+        G.Cities.open();
+        G.toast('请先切换至主城，再从任务入口修改主城名称');
+      } else G.Main.promptRenameCityInDrawer();
+      return;
+    }
+    if (destination === 'cities') { G.Cities.open(); return; }
+    if (destination === 'rank') {
+      var panel = document.querySelector('.rank-promotion');
+      if (panel) panel.scrollIntoView({ block: 'start' });
+      return;
+    }
+    if (destination === 'forum') { Core.openForum(); return; }
+    if (destination === 'wild' || destination === 'player' || destination === 'npc') {
+      Core.state.world = Core.state.world || {};
+      Core.state.world._activeTab = destination;
+      G.go('world');
+      if (G.WorldMap) G.WorldMap.setMode('list');
+      return;
+    }
+    if (destination === 'officer' && !(Core.state.officers || []).length) destination = 'academy';
+    G.go(destination);
+    // 玩家可能上次停留在生产队列，征兵任务应回到可选择兵种的界面。
+    if (destination === 'army' && G.Army) G.Army.setTab('units');
   }
 
   /** 玩法探索位于任务页前部，各任务独立解锁，点击时才提供首次提示与定位。 */
@@ -472,6 +514,9 @@
   }
 
   function bindClaimHandlers() {
+    document.querySelectorAll('[data-quest-goto]').forEach(function (button) {
+      button.onclick = function () { gotoQuest(button.getAttribute('data-quest-goto')); };
+    });
     document.querySelectorAll('[data-exploration-start]').forEach(function (button) {
       button.onclick = function () { G.Onboarding.beginTask(button.getAttribute('data-exploration-start')); };
     });
@@ -479,7 +524,7 @@
       button.onclick = function () { G.Onboarding.mutate('tasks/claim', { taskId: button.getAttribute('data-exploration-claim') }); };
     });
     // 单项任务领取
-    var btns = document.querySelectorAll('.quest-claim-btn');
+    var btns = document.querySelectorAll('.quest-claim-btn[data-id]');
     for (var i = 0; i < btns.length; i++) {
       btns[i].onclick = function () {
         var id = this.getAttribute('data-id');
@@ -579,6 +624,7 @@
     submitRankExam: submitRankExam,
     chooseAnswer: chooseAnswer,
     gotoCampaign: gotoCampaign,
+    gotoQuest: gotoQuest,
     leaveExam: leaveExam,
     state: state
   };

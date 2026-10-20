@@ -38,3 +38,40 @@
   - `option-3-heavy.png`
 - `preview-options.png`: 3 款方案在深色背景、大地图草坪、大地图黑土及多视口尺度下的比选总览表
 - `comparison-old-vs-new.png`: 原流寇城堡与 3 款步坦方阵的同屏大地图实装效果对照
+- `npc_all_phalanxes_showcase.png`: 5 款全新正方形寇方阵模型全家福展示图
+- `npc_all_phalanxes_square_full_comparison.png`: 45°原图菱形 vs 最新正方形占满空格微缩模型全阶段比对长图
+
+---
+
+## 四、2026-10-19 全新兵种组合微缩模型方阵重构规范
+
+根据用户最新指令，彻底删除并摒弃旧版 NPC 图标，执行全新重构：
+1. **彻底消除兵种截断问题**：
+   - 摒弃以往将单张透视照片进行拉伸裁切的错误方案；
+   - 采用标准 384×384 画布，所有步兵、特种兵、装甲车、轻坦、重坦、火箭车、战斗机、轰炸机均采用独立完整的微缩模型渲染；
+   - 单位模型严格受安全边距保护（内缩至少 20~35px），确保士兵身躯、武器枪械、坦克炮管、履带、战机双翼 100% 完整展现，绝对无任何截断或肢体残缺；
+2. **采纳【方案一：纯透明背景 + 真实地表接触投影】（自然无痕嵌入各色地貌）**：
+   - 彻底剔除固定草绿色彩色底板，画布全透明（Alpha=0），彻底杜绝在黑土地、深草坪、雪地等不同地貌上的矩形接缝与色块脱节；
+   - 战车履带与士兵脚下渲染高拟真**暗色接地接触阴影（Contact Shadow）**；
+   - 战机凌空飞掠并在地表投射漫反射高度阴影，立体纵深感鲜明；
+3. **严格对应后端 LandNpcGarrison 随机编队规则**：
+   - 生成 13 种全部真实出现的随机兵种组合微缩方阵：
+     - `npc-phalanx-infantry`: Lv.1~5 纯步兵方阵
+     - `npc-phalanx-armored-infantry`: Lv.6~10 步装突击协同方阵
+     - `npc-phalanx-armored-infantry-ltank`: Lv.11~24 步坦装突击方阵 (组0)
+     - `npc-phalanx-armored-fighter-infantry`: Lv.11~15 步装战机协同方阵 (组1)
+     - `npc-phalanx-armored-fighter-infantry-ltank`: Lv.11~24 全维突击方阵 (组2)
+     - `npc-phalanx-armored-bomber-fighter-infantry`: Lv.16~24 步装双空战术方阵 (组1)
+     - `npc-phalanx-armored-bomber-infantry-ltank`: Lv.16~24 装甲重轰支援方阵 (组3)
+     - `npc-phalanx-bomber-fighter`: Lv.25~30 战巡空袭大队 (高阶0)
+     - `npc-phalanx-ltank-rocket`: Lv.25~30 战车火箭炮兵群 (高阶1)
+     - `npc-phalanx-armored-fighter-htank-infantry`: Lv.25~30 重机械化装甲军团 (高阶2)
+     - `npc-phalanx-fighter-infantry-special`: Lv.25~30 特种伞降航空队 (高阶3)
+     - `npc-phalanx-armored-bomber-ltank`: Lv.25~30 装甲轻坦轰炸队 (高阶4)
+     - `npc-phalanx-armored-htank-rocket`: Lv.25~30 重甲火箭重装旅 (高阶5)
+   - 同步兼容 5 大经典基准别名（`npc-phalanx-infantry`, `npc-phalanx-light-armor`, `npc-fortress-orthogonal`, `npc-phalanx-aircraft`, `npc-phalanx-mixed`, `npc-fortress`）；
+   - 前端 `world-map.js` 支持根据 NPC 真实守军 `t.army` 或坐标随机种子 `|x * 31 + y|` 精准呈现对应的兵种组合微缩模型方阵。
+
+
+
+

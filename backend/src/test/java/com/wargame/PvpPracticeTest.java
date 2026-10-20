@@ -74,6 +74,27 @@ class PvpPracticeTest extends BaseServiceTest {
         update(session, s -> { s.setStartsAt(System.currentTimeMillis() - 1); s.setDeadlineAt(s.getStartsAt()); }); pvp.advance(session);
         return session;
     }
+
+    @Test void outageDoesNotExpireBattleOrSkipRoundAndResumesAfterRemainingGameTime() throws Exception {
+        Long a = player(), b = player();
+        String session = battle(a, b);
+        long realDeadline = sessions.findById(session).orElseThrow().getDeadlineAt();
+        var time = new java.util.concurrent.atomic.AtomicLong(System.currentTimeMillis() - 2 * 86_400_000L);
+        update(session, s -> s.setDeadlineAt(time.get() + 15_000));
+        try (var ignored = com.wargame.util.GameClock.use(time::get)) {
+            pvp.advance(session); pvp.advance(session);
+            assertEquals("BATTLING", pvp.battle(a, session).get("status"));
+            assertEquals(1, pvp.battle(a, session).get("round"));
+            assertTrue(rounds.findBySessionIdOrderByRoundNoAsc(session).isEmpty());
+            assertEquals(time.get(), pvp.status(a).get("serverTime"));
+            time.addAndGet(15_000); pvp.advance(session);
+            assertEquals(2, pvp.battle(a, session).get("round"));
+            assertEquals(1, rounds.findBySessionIdOrderByRoundNoAsc(session).size());
+        } finally {
+            update(session, s -> s.setDeadlineAt(realDeadline));
+            pvp.surrender(a, id(), session, Map.of("end", 1));
+        }
+    }
     private List<Map<String, Object>> world(Long player) {
         List<Map<String, Object>> out = new ArrayList<>();
         for (String table : List.of("players", "resources", "army_units", "officers", "officer_equipment", "player_items", "marches", "unit_loadouts", "unit_equipment_orders", "fortifications", "buildings", "technologies", "wounded_units", "prisoner_units", "player_quests", "player_quest_stages", "player_cities", "battle_reports")) {

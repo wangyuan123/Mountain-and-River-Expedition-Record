@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <base href="../">
+  <title>山河战友界面预览</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/themes.css">
+  <link rel="stylesheet" href="css/text-actions.css">
+  <link rel="stylesheet" href="css/chat-page.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #eaedf2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    .theme-picker {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      background: #fff;
+      padding: 8px 16px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .preview-container {
+      width: 420px;
+      height: 780px;
+      min-height: 0 !important;
+      max-height: 780px;
+      flex: none;
+      box-sizing: border-box;
+      background: #ffffff;
+      border: 1px solid #d4dce6;
+      border-radius: 12px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+    .preview-phone-header {
+      background: #4a7bb5;
+      color: #fff;
+      padding: 8px 12px;
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+  </style>
+</head>
+<body data-theme="blue-white-classic">
+  <div class="theme-picker">
+    <b>切换主题预览：</b>
+    <button type="button" onclick="setTheme('blue-white-classic')">晴空蓝白 (默认)</button>
+    <button type="button" onclick="setTheme('paper')">战术公文 (米白)</button>
+    <button type="button" onclick="setTheme('dark')">夜航雷达 (冷黑)</button>
+    <button type="button" onclick="openProfileModal()">打开玩家资料弹窗</button>
+  </div>
+
+  <div class="preview-container chat-page" id="screen">
+    <!-- 模拟顶部导航栏 -->
+    <header class="chat-page-header page-backbar" style="border-bottom: 1px solid var(--line);">
+      <button type="button" class="chat-back-button" aria-label="返回上一步">‹</button>
+      <h1 id="chatPageTitle">山河战友</h1>
+      <span id="chatPageSubtitle">好友与分组</span>
+    </header>
+
+    <!-- 山河战友内容区 -->
+    <div id="chatFriendsPanel" class="chat-tab-panel">
+      <!-- 由 Friends.render() 生成的结构 -->
+    </div>
+
+    <!-- 底部 Tab 导航 -->
+    <nav class="chat-bottom-tabs" aria-label="聊天导航">
+      <button type="button" class="chat-bottom-tab" data-chat-tab="messages"><span aria-hidden="true">☏</span>消息</button>
+      <button type="button" class="chat-bottom-tab active" data-chat-tab="friends" aria-current="page"><span aria-hidden="true">♙</span>山河战友<span class="tab-badge" id="friendRequestTabBadge">1</span></button>
+      <button type="button" class="chat-bottom-tab" data-chat-tab="forum"><span aria-hidden="true">▤</span>论坛</button>
+    </nav>
+  </div>
+
+  <script src="js/constants.js"></script>
+  <script>
+    window.Game = {
+      Core: { state: { player: { id: 1, username: '雨天唐纳德' } } },
+      Chat: {
+        avatarSrc: function(avatar) { return 'img/avatars/historical/rank-captain-v1.webp'; }
+      },
+      DATA: {
+        militaryRanks: [
+          { rank: 1, name: '列兵' },
+          { rank: 2, name: '上等兵' },
+          { rank: 3, name: '下士' },
+          { rank: 4, name: '中士' },
+          { rank: 5, name: '上士' },
+          { rank: 6, name: '少尉' },
+          { rank: 7, name: '中尉' },
+          { rank: 8, name: '上尉' },
+          { rank: 9, name: '少校' }
+        ]
+      },
+      API: {
+        client: { serverId: 's1' },
+        friends: function() {
+          return Promise.resolve({
+            groups: [
+              { id: 0, name: '我的好友' },
+              { id: 101, name: '一团突击纵队' },
+              { id: 102, name: '后勤调运组' }
+            ],
+            contacts: [
+              { id: 10, username: '风暴指挥官', displayName: '铁血战神·张', avatar: '1', online: true, available: true, friend: true, blocked: false, groupId: 0, level: 35, militaryRank: 8, prestige: 8920, cityName: '雷鸣要塞' },
+              { id: 11, username: '苍穹之鹰', displayName: '苍穹之鹰', avatar: '2', online: false, available: true, friend: true, blocked: false, groupId: 101, level: 28, militaryRank: 6, prestige: 5410, cityName: '天风城' },
+              { id: 12, username: '钢铁长城', displayName: '钢铁长城', avatar: '3', online: true, available: true, friend: true, blocked: false, groupId: 101, level: 32, militaryRank: 7, prestige: 6800, cityName: '铁壁城' },
+              { id: 99, username: '恶劣喷子_99', displayName: '恶劣喷子_99', avatar: '4', online: false, available: true, friend: false, blocked: true, groupId: 0, level: 5, militaryRank: 1, prestige: 20 }
+            ],
+            requests: [
+              {
+                id: 501,
+                outgoing: true,
+                peer: { id: 2, username: '深入山林开荒种地', displayName: '深入山林开荒种地', avatar: 'soldier', online: false, available: true, level: 12, militaryRank: 3, prestige: 1240, cityName: '开拓营地' }
+              },
+              {
+                id: 502,
+                outgoing: false,
+                peer: { id: 3, username: '远征军先锋营长', displayName: '烈火先锋营', avatar: 'officer', online: true, available: true, level: 24, militaryRank: 5, prestige: 4120, cityName: '前线基地' }
+              }
+            ],
+            settings: { friendRequestPolicy: 'APPROVAL', blockStrangerMessages: false }
+          });
+        },
+        friendProfile: function(id) {
+          return Promise.resolve({
+            id: id,
+            username: id === 2 ? '深入山林开荒种地' : '烈火先锋营',
+            displayName: id === 2 ? '深入山林开荒种地' : '烈火先锋营',
+            avatar: id === 2 ? 'soldier' : 'officer',
+            online: id !== 2,
+            available: true,
+            friend: id !== 2,
+            blocked: false,
+            groupId: 0,
+            level: 18,
+            militaryRank: 4,
+            prestige: 2635,
+            cityName: '苍狼要塞'
+          });
+        }
+      },
+      toast: function(msg) { alert(msg); }
+    };
+  </script>
+  <script src="js/friends.js"></script>
+  <script>
+    document.getElementById('chatFriendsPanel').innerHTML = Game.Friends.render();
+    Game.Friends.refresh();
+
+    function setTheme(theme) {
+      document.body.setAttribute('data-theme', theme);
+      document.getElementById('screen').setAttribute('data-theme', theme);
+    }
+
+    function openProfileModal() {
+      Game.Friends.view(2);
+    }
+  </script>
+</body>
+</html>

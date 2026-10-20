@@ -1,5 +1,6 @@
 package com.wargame.service;
 
+import com.wargame.util.GameClock;
 import com.wargame.model.constants.BuildingDef;
 import com.wargame.model.constants.GameData;
 import com.wargame.model.constants.UnitDef;
@@ -21,6 +22,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class TickService {
 
     @org.springframework.beans.factory.annotation.Autowired private UnitEquipmentService unitEquipment;
+    @org.springframework.beans.factory.annotation.Autowired private UnitUnlockService unitUnlocks;
 
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
@@ -106,7 +108,7 @@ public class TickService {
         // Each city settles its own clock and queues. Slot zero also advances the scheduler's account clock.
         try (var ignored = cityScope.enter(playerId, 0)) { tickCity(playerId); }
         for (PlayerCity city : playerCities.findByOwnerIdAndCitySlotIsNotNullOrderByCitySlotAsc(playerId)) {
-            if (city.getCitySlot() == 0 || city.getReadyAt() > System.currentTimeMillis()) continue;
+            if (city.getCitySlot() == 0 || city.getReadyAt() > GameClock.now()) continue;
             try (var ignored = cityScope.enter(city)) { tickCity(playerId); }
         }
     }
@@ -115,7 +117,7 @@ public class TickService {
         Player player = playerRepository.findById(playerId).orElse(null);
         if (player == null) return;
 
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         if (cityScope.frozen(playerId)) {
             // Freeze the city clock as well as its writes; no catch-up production after handoff.
             cityScope.economy(playerId).setLastTick(now);
@@ -365,7 +367,7 @@ public class TickService {
      * 手动触发指定玩家的状态变更推送，并返回当前状态变更数据。
      */
     public Map<String, Object> pushStateChanges(Long playerId) {
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (res == null) {
             res = resourcesRepository.findByPlayerId(playerId).orElseGet(Resources::new);
@@ -392,6 +394,8 @@ public class TickService {
     public Map<String, Object> buildStateChanges(Long playerId, Resources res, long now, List<String> completedBuilds, List<String> completedResearch,
                                                 int civilians, int populationCap, int effectiveCap, int morale, int resentment, int tax) {
         Map<String, Object> stateChanges = new LinkedHashMap<>();
+        // 账号科技可由其他城市完成，周期推送本城实时资格避免卡片保留旧锁态。
+        stateChanges.put("unitUnlocks", unitUnlocks.all(playerId, cityScope.slot(playerId)));
 
         // 资源
         Map<String, Object> resources = new LinkedHashMap<>();
@@ -425,6 +429,7 @@ public class TickService {
 
         playerRepository.findById(playerId).ifPresent(player -> {
             stateChanges.put("incoming", worldViewService.getIncoming(player));
+            stateChanges.put("returningEnemyMarches", worldViewService.getReturningEnemyMarches(player));
             // 跨过第7天、声望毕业或另一窗口退出后，及时同步账号所有城市的保护状态。
             stateChanges.put("newbieProtectionUntil", com.wargame.model.constants.NewbieProtection.until(player, now));
         });
@@ -607,7 +612,7 @@ public class TickService {
         CityState cs = cityStateRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (cs == null) return "peace";
 
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
 
         // updateCityState logic inline
         long shieldUntil = cs.getShieldUntil() != null ? cs.getShieldUntil() : 0L;

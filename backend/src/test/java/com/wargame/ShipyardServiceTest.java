@@ -105,7 +105,7 @@ class ShipyardServiceTest extends BaseServiceTest {
     @ParameterizedTest
     @ValueSource(strings = {"destroyer", "sub", "battleship", "carrier"})
     void everyNavalUnitNeedsBothLocalBuildingsAndSchedulesAtShipyard(String unit) {
-        createBuilding(playerId, "port", 1);
+        createBuilding(playerId, "port", 10);
         int steel = getResources(playerId).getSteel();
         int civilians = playerRepository.findById(playerId).orElseThrow().getCivilianPopulation();
         var denied = army.recruit(playerId, unit, 1);
@@ -115,7 +115,8 @@ class ShipyardServiceTest extends BaseServiceTest {
         assertEquals(steel, getResources(playerId).getSteel());
         assertEquals(civilians, playerRepository.findById(playerId).orElseThrow().getCivilianPopulation());
         assertTrue(production.findByPlayerIdOrderByStartedAtAscIdAsc(playerId).isEmpty());
-        createBuilding(playerId, "shipyard", 1);
+        createBuilding(playerId, "shipyard", 10);
+        enableNavalResearch();
         var accepted = army.recruit(playerId, unit, 1);
         assertEquals(true, accepted.get("success"));
         assertEquals("shipyard", production.findById((Long) accepted.get("queueId")).orElseThrow().getBuildingType());
@@ -123,11 +124,11 @@ class ShipyardServiceTest extends BaseServiceTest {
 
     @Test
     void shipyardAloneCannotRecruitAndAnotherCityCannotSupplyEitherBuilding() {
-        Building shipyard = createBuilding(playerId, "shipyard", 5);
+        Building shipyard = createBuilding(playerId, "shipyard", 6);
         var missing = prerequisites.unmetRecruitment(playerId, 0, "destroyer");
-        assertEquals("port", missing.get(0).get("building"));
+        assertTrue(missing.stream().anyMatch(r -> "port".equals(r.get("id"))));
         assertEquals(false, army.recruit(playerId, "destroyer", 1).get("success"));
-        Building otherPort = createBuilding(playerId, "port", 5);
+        Building otherPort = createBuilding(playerId, "port", 6);
         otherPort.setCitySlot(1);
         buildingRepository.save(otherPort);
         assertEquals(false, army.recruit(playerId, "destroyer", 1).get("success"));
@@ -151,21 +152,25 @@ class ShipyardServiceTest extends BaseServiceTest {
     @Test
     void shipyardLevelControlsProductionSpeedAndParallelism() {
         createBuilding(playerId, "port", 10);
-        Building shipyard = createBuilding(playerId, "shipyard", 1);
+        enableNavalResearch();
+        Building shipyard = createBuilding(playerId, "shipyard", 6);
         var slow = army.recruit(playerId, "destroyer", 1);
-        shipyard.setLevel(5);
+        shipyard.setLevel(10);
         buildingRepository.save(shipyard);
         var fast = army.recruit(playerId, "destroyer", 1);
-        assertEquals(1, slow.get("parallelQueues"));
-        assertEquals(2, fast.get("parallelQueues"));
+        assertEquals(2, slow.get("parallelQueues"));
+        assertEquals(3, fast.get("parallelQueues"));
         assertTrue((int) fast.get("durationSeconds") < (int) slow.get("durationSeconds"));
     }
 
     @Test
     void navalQueuesProtectBothBuildingsUntilCancellation() {
-        createBuilding(playerId, "port", 1);
-        createBuilding(playerId, "shipyard", 1);
+        enableNavalResearch();
+        Building port = createBuilding(playerId, "port", 6);
+        Building yard = createBuilding(playerId, "shipyard", 6);
         var recruited = army.recruit(playerId, "destroyer", 1);
+        // 已付费订单保留原快照，低等级设施仍不得在生产中被完全拆除。
+        port.setLevel(1); yard.setLevel(1); buildingRepository.saveAndFlush(port); buildingRepository.saveAndFlush(yard);
         for (String building : List.of("port", "shipyard")) {
             var denied = buildService.dismantle(playerId, building, 0);
             assertEquals(false, denied.get("success"));
@@ -209,13 +214,15 @@ class ShipyardServiceTest extends BaseServiceTest {
 
     @Test
     void legacyPortQueueCompletesWithoutAddingShipyardOrChangingExistingFleet() {
-        createBuilding(playerId, "port", 1);
-        Building shipyard = createBuilding(playerId, "shipyard", 1);
+        enableNavalResearch();
+        Building port = createBuilding(playerId, "port", 6);
+        Building shipyard = createBuilding(playerId, "shipyard", 6);
         createArmyUnit(playerId, "destroyer", 7);
         var recruited = army.recruit(playerId, "destroyer", 1);
         ArmyProductionQueue queue = production.findById((Long) recruited.get("queueId")).orElseThrow();
         queue.setBuildingType("port");
         production.save(queue);
+        port.setLevel(1); buildingRepository.saveAndFlush(port);
         buildingRepository.delete(shipyard);
         assertEquals(false, buildService.dismantle(playerId, "port", 0).get("success"));
         army.completeProduction(playerId, queue.getFinishesAt() + 1L);
@@ -227,13 +234,16 @@ class ShipyardServiceTest extends BaseServiceTest {
 
     @Test
     void legacyPortQueueStillOccupiesShipyardProductionLane() {
-        createBuilding(playerId, "port", 1);
-        createBuilding(playerId, "shipyard", 1);
+        enableNavalResearch();
+        createBuilding(playerId, "port", 6);
+        createBuilding(playerId, "shipyard", 6);
         var first = army.recruit(playerId, "destroyer", 1);
         ArmyProductionQueue legacy = production.findById((Long) first.get("queueId")).orElseThrow();
         legacy.setBuildingType("port");
         production.save(legacy);
-        var second = army.recruit(playerId, "sub", 1);
+        // 六级设施有两条通道，填满空闲通道后第三单必须等待旧军港订单。
+        army.recruit(playerId, "destroyer", 1);
+        var second = army.recruit(playerId, "destroyer", 1);
         ArmyProductionQueue queued = production.findById((Long) second.get("queueId")).orElseThrow();
         assertEquals(legacy.getFinishesAt(), queued.getStartedAt());
     }
@@ -254,11 +264,19 @@ class ShipyardServiceTest extends BaseServiceTest {
 
     @Test
     void navalPrisonersCanBeRecruitedWithBothBuildings() {
-        createBuilding(playerId, "port", 1);
-        createBuilding(playerId, "shipyard", 1);
+        enableNavalResearch();
+        createBuilding(playerId, "port", 6);
+        createBuilding(playerId, "shipyard", 6);
         prisoner();
         assertEquals(true, prisoners.operate(playerId, "recruit", "destroyer", 1, "navy-success-123").get("success"));
         assertEquals(1, armyUnitRepository.findByPlayerIdAndCitySlotAndType(playerId, 0, "destroyer").get(0).getCount());
+    }
+
+    /** 科研已完成的夹具用于单独回归本城海军设施、产能与历史订单。 */
+    private void enableNavalResearch() {
+        for (String id : List.of("nav_engine", "weapon_range", "fire_density", "log_food", "air_engine")) {
+            createTechnology(playerId, id, 10);
+        }
     }
 
     private PrisonerUnit prisoner() {

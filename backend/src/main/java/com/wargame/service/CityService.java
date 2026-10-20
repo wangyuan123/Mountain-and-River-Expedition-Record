@@ -1,5 +1,6 @@
 package com.wargame.service;
 
+import com.wargame.util.GameClock;
 import com.wargame.model.constants.MilitaryRankDef;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
@@ -9,6 +10,8 @@ import java.util.*;
 
 @Service
 public class CityService {
+    public static final int SHIELD_PRICE = 200;
+    private static final long SHIELD_DURATION_MS = 8L * 3600 * 1000;
     public static final long BUILD_DURATION_MS = 30 * 60 * 1000L;
     public static final Map<String, Integer> BUILD_COST = Map.of("food", 5000, "steel", 10000, "oil", 5000, "rare", 2000, "gold", 10000);
     private final PlayerRepository players;
@@ -47,8 +50,10 @@ public class CityService {
             item.put("surrenderRecipientId", city.getSurrenderRecipientId());
             item.put("surrenderFrozenAt", city.getSurrenderFrozenAt());
             item.put("surrenderTransferDeadlineAt", city.getSurrenderTransferDeadlineAt());
-            item.put("frozen", city.isSurrenderFrozen(System.currentTimeMillis()));
-            item.put("ready", city.getReadyAt() <= System.currentTimeMillis()); item.put("incoming", incoming.contains(city.getId().toString()));
+            item.put("frozen", city.isSurrenderFrozen(GameClock.now()));
+            item.put("ready", city.getReadyAt() <= GameClock.now()); item.put("incoming", incoming.contains(city.getId().toString()));
+            item.put("shieldUntil", states.findByPlayerIdAndCitySlot(playerId, city.getCitySlot())
+                    .map(s -> Objects.requireNonNullElse(s.getShieldUntil(), 0L)).orElse(0L));
             item.put("coastal", terrain.coastal(city)); item.put("legacyNaval", city.isLegacyNaval());
             item.put("level", buildings.findByPlayerIdAndCitySlotAndType(playerId, city.getCitySlot(), "command")
                     .stream().mapToInt(b -> Objects.requireNonNullElse(b.getLevel(), 0)).max().orElse(1));
@@ -63,6 +68,36 @@ public class CityService {
         result.put("sites", wilds.findByOccupiedBy(playerId).stream()
                 .filter(this::suitable).map(w -> Map.of("id", w.getId(), "x", w.getX(), "y", w.getY(), "type", w.getType())).toList());
         return result;
+    }
+
+    /** 校验全部城市后按去重数量扣钻；与开战共用账号锁，保证扣款、单城续期原子生效。 */
+    @Transactional
+    public Map<String, Object> activateShields(Long playerId, List<Long> cityIds) {
+        players.lockById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
+        if (cityIds == null || cityIds.isEmpty()) throw new IllegalArgumentException("请选择需要开启护盾的城市");
+        List<PlayerCity> selected = new LinkedHashSet<>(cityIds).stream()
+                .map(id -> scope.requireOwned(playerId, id, true)).toList();
+        long now = GameClock.now();
+        if (selected.stream().anyMatch(c -> c.isSurrenderFrozen(now)))
+            throw new IllegalArgumentException("归降移交中的城市只读");
+        int cost = Math.multiplyExact(selected.size(), SHIELD_PRICE);
+        Resources wallet = scope.wallet(playerId);
+        int diamond = Objects.requireNonNullElse(wallet.getDiamond(), 0);
+        if (diamond < cost) throw new IllegalArgumentException("钻石余额不足，开启护盾需要 " + cost + " 钻石");
+        wallet.setDiamond(diamond - cost);
+        resources.save(wallet);
+        for (PlayerCity city : selected) {
+            CityState status = states.findByPlayerIdAndCitySlot(playerId, city.getCitySlot()).orElseGet(() -> {
+                CityState created = new CityState();
+                created.setPlayerId(playerId);
+                created.setCitySlot(city.getCitySlot());
+                return created;
+            });
+            status.setShieldUntil(Math.max(now, Objects.requireNonNullElse(status.getShieldUntil(), 0L)) + SHIELD_DURATION_MS);
+            states.save(status);
+        }
+        return Map.of("success", true, "count", selected.size(), "cost", cost,
+                "remainingDiamond", diamond - cost, "cities", selected.stream().map(PlayerCity::getName).toList());
     }
 
     private boolean suitable(WildTile tile) {
@@ -114,7 +149,7 @@ public class CityService {
         balance.setOil(balance.getOil() - BUILD_COST.get("oil")); balance.setRare(balance.getRare() - BUILD_COST.get("rare")); balance.setGold(balance.getGold() - BUILD_COST.get("gold"));
         resources.save(balance);
         int slot = owned.stream().mapToInt(PlayerCity::getCitySlot).max().orElse(0) + 1;
-        long readyAt = System.currentTimeMillis() + BUILD_DURATION_MS;
+        long readyAt = GameClock.now() + BUILD_DURATION_MS;
         PlayerCity city = new PlayerCity();
         city.setOwnerId(playerId); city.setCitySlot(slot); city.setName(name); city.setWorldId(world.getId());
         city.setX(x); city.setY(y); city.setLevel(1); city.setReadyAt(readyAt); city.setLastTick(readyAt);

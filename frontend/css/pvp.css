@@ -5,3 +5,238 @@
 .pvp-map .tactical-marker.foe{top:calc(100px + var(--marker-row,0)*80px)}
 .pvp-map .tactical-range-beam.mine{top:calc(66px + var(--marker-row,0)*80px)}
 .pvp-map .tactical-range-beam.foe{top:calc(106px + var(--marker-row,0)*80px)}
+
+/* 声望不足时保留对战内容预览，覆盖整页并隔离下层交互。 */
+.pvp-page-locked { position: relative; isolation: isolate; }
+.pvp-page-locked > .pvp-content { opacity: .35; pointer-events: none; user-select: none; filter: grayscale(15%); }
+.pvp-prestige-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: clamp(105px, 16vh, 145px) 16px 32px;
+  background: rgba(35, 52, 74, 0.22);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  cursor: not-allowed;
+  box-sizing: border-box;
+}
+.pvp-prestige-message {
+  position: sticky;
+  top: clamp(105px, 17vh, 150px);
+  width: 100%;
+  max-width: 440px;
+  padding: 24px 22px 20px;
+  border: 1px solid var(--line, #bacada);
+  border-top: 4px solid var(--accent, #2457a5);
+  border-radius: 12px;
+  background: var(--surface, #ffffff);
+  color: var(--ink, #182230);
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(18, 38, 63, 0.08), 0 18px 38px -4px rgba(18, 38, 63, 0.18);
+  cursor: default;
+  box-sizing: border-box;
+}
+.pvp-prestige-badge-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.pvp-prestige-icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--surface-muted, #edf4fb);
+  color: var(--accent, #2457a5);
+  box-shadow: inset 0 0 0 1px rgba(36, 87, 165, 0.15);
+}
+.pvp-prestige-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  padding: 2px 10px;
+  border-radius: 12px;
+  background: var(--surface-muted, #edf4fb);
+  color: var(--accent, #2457a5);
+  border: 1px solid rgba(36, 87, 165, 0.25);
+}
+.pvp-prestige-message strong.pvp-prestige-title {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink, #182230);
+  line-height: 1.45;
+  margin: 0 0 14px;
+}
+.pvp-prestige-progress-wrap {
+  background: var(--surface-muted, #f4f8fc);
+  border: 1px solid var(--line, #d3e1ef);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  text-align: left;
+}
+.pvp-prestige-val-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+.pvp-prestige-message p.pvp-prestige-val {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink, #202b38);
+}
+.pvp-prestige-percent {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent, #2457a5);
+}
+.pvp-prestige-track {
+  width: 100%;
+  height: 8px;
+  background: rgba(140, 165, 195, 0.22);
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 6px 0;
+}
+.pvp-prestige-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+.pvp-prestige-remain {
+  font-size: 12px;
+  color: var(--muted, #64748b);
+  text-align: right;
+  margin-top: 4px;
+}
+.pvp-prestige-remain b {
+  color: var(--danger, #c53030);
+}
+.pvp-prestige-guide {
+  text-align: left;
+  background: rgba(240, 246, 252, 0.6);
+  border: 1px dashed var(--line, #cbdbe9);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+}
+.pvp-prestige-guide-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink, #334155);
+  margin-bottom: 6px;
+}
+.pvp-prestige-guide-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.pvp-prestige-guide-list li {
+  font-size: 12px;
+  color: var(--muted, #64748b);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1.4;
+}
+.pvp-prestige-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.pvp-prestige-actions .pvp-prestige-btn {
+  flex: 1;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+[data-theme="dark"] .pvp-prestige-overlay {
+  background: rgba(8, 14, 23, 0.68);
+}
+[data-theme="dark"] .pvp-prestige-message {
+  --surface: #141c2b;
+  --surface-muted: #1c273c;
+  --ink: #e2e8f0;
+  --line: #2b3b52;
+  --muted: #94a3b8;
+  --accent: #60a5fa;
+  border-top-color: #3b82f6;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+[data-theme="dark"] .pvp-prestige-icon-wrap {
+  background: rgba(59, 130, 246, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.3);
+}
+[data-theme="dark"] .pvp-prestige-tag {
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+  border-color: rgba(96, 165, 250, 0.35);
+}
+[data-theme="dark"] .pvp-prestige-bar {
+  background: linear-gradient(90deg, #38bdf8, #2563eb);
+}
+[data-theme="dark"] .pvp-prestige-guide {
+  background: rgba(15, 23, 42, 0.4);
+  border-color: #2b3b52;
+}
+[data-theme="dark"] .pvp-prestige-guide-title {
+  color: #cbd5e1;
+}
+[data-theme="dark"] .pvp-prestige-remain b {
+  color: #f87171;
+}
+[data-theme="paper"] .pvp-prestige-overlay {
+  background: rgba(70, 65, 55, 0.25);
+}
+[data-theme="paper"] .pvp-prestige-message {
+  --surface: #faf7f2;
+  --surface-muted: #f0ebe1;
+  --ink: #2b261f;
+  --line: #d8cfc0;
+  --muted: #6f6759;
+  --accent: #4a6344;
+  border-top-color: #4a6344;
+  box-shadow: 0 14px 34px rgba(50, 45, 35, 0.15);
+}
+[data-theme="paper"] .pvp-prestige-tag {
+  background: #edf0ea;
+  color: #3b5037;
+  border-color: #c4cdc0;
+}
+[data-theme="paper"] .pvp-prestige-bar {
+  background: linear-gradient(90deg, #5b7556, #3b5037);
+}
+[data-theme="paper"] .pvp-prestige-guide {
+  background: rgba(255, 255, 255, 0.6);
+  border-color: #d8cfc0;
+}
+[data-theme="paper"] .pvp-prestige-remain b {
+  color: #9e362d;
+}
+@media (max-width: 480px) {
+  .pvp-prestige-overlay {
+    padding: 36px 12px 24px;
+  }
+  .pvp-prestige-message {
+    padding: 18px 14px 16px;
+    top: 6vh;
+  }
+  .pvp-prestige-actions {
+    flex-direction: column;
+  }
+}

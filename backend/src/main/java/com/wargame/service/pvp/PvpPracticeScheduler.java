@@ -1,5 +1,6 @@
 package com.wargame.service.pvp;
 
+import com.wargame.util.GameClock;
 import com.wargame.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -21,7 +22,7 @@ public class PvpPracticeScheduler {
     private final PvpMatchTicketRepository tickets;
     @Scheduled(fixedDelayString = "${game.pvp.interval:1000}")
     public void tick() {
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         for (String id : tickets.expired(now, now - PvpPracticeService.SEARCH_MS, PageRequest.of(0, 100))) {
             try { practice.expireTicket(id); } catch (Exception e) { LOG.warn("演习票据处理失败 {}", id, e); }
         }

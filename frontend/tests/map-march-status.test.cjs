@@ -2,7 +2,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 
 function fixture(){
  let now=500;
- const targets=[],marches=[],point=()=>({x:0,y:0,set(x,y=x){this.x=x;this.y=y;}});
+ const targets=[],marches=[],incoming=[],returningEnemyMarches=[],point=()=>({x:0,y:0,set(x,y=x){this.x=x;this.y=y;}});
  class Container {
   constructor(){this.children=[];this.position=point();this.scale={x:1,y:1};}
   addChild(child){this.children.push(child);}
@@ -35,7 +35,7 @@ function fixture(){
   const source=fs.readFileSync(path.join(__dirname,'../js',file),'utf8').replace('  G.WorldMap={','  G.TestMapView=MapView; G.WorldMap={');
   vm.runInContext(source,c);
  }
- c.Game.Core={state:{world:{marches}}};c.Game.DATA={world:{size:200}};c.Game.UNIT_MODEL={truck:'truck.webp',scout:'scout.webp',infantry:'infantry.webp'};
+ c.Game.Core={state:{world:{marches,incoming,returningEnemyMarches}}};c.Game.DATA={world:{size:200}};c.Game.UNIT_MODEL={truck:'truck.webp',scout:'scout.webp',infantry:'infantry.webp',recon_car:'recon-car.webp'};
  const view=Object.create(c.Game.TestMapView.prototype);
  view.camera=new c.Game.MapCamera(200,100.5,100.5,48);view.camera.width=600;view.camera.height=400;
  view.routes=new Graphics();view.routeFlow=new Graphics();view.marchLayer=new Container();view.marchMarkers=new Map();view.wake=()=>{};
@@ -43,8 +43,121 @@ function fixture(){
   route:[[100,100],[104,100],[104,102]],army:{truck:1},startAt:0,arriveAt:1000};
  const tile={kind:'wild',id:7,x:104,y:102,occupied:true,hasGarrison:false};
  const status=()=>view.marchMarkers.get('status:104:102');
- return {view,march,marches,targets,tile,status,setNow:value=>{now=value;}};
+ return {view,march,marches,incoming,returningEnemyMarches,context:c,targets,tile,status,setNow:value=>{now=value;}};
 }
+
+test('incoming scouts share route animation with own marches without ID collisions or invented troop counts',()=>{
+ const f=fixture();f.marches.push(f.march);
+ const enemy={id:1,marchId:1,fromX:0,fromY:100,targetX:104,targetY:102,action:'scout',radarLevel:2,startAt:0,arriveAt:1000};
+ f.incoming.push(enemy);f.view.drawRoutes();
+ const marker=f.view.marchMarkers.get('incoming:1');
+ assert.equal(f.view.routes.lines.length,10);assert.equal(f.view.routes.color,0xe66f79);
+ assert.ok(f.view.marchMarkers.get('1'));assert.ok(marker.icon.visible);
+ assert.equal(marker.icon.texture.asset,'scout.webp');assert.equal(marker.countText.visible,false);
+ const from=f.view.camera.screen(1,101),to=f.view.camera.screen(105,103);
+ assert.equal(marker.position.x,(from.x+to.x)/2);assert.equal(marker.position.y,(from.y+to.y)/2);
+ f.setNow(750);f.view.drawRoutes();assert.equal(marker.position.x,from.x+(to.x-from.x)*.75);
+ assert.equal(enemy.targetKind,undefined,'绘制不应修改来袭快照');
+ assert.equal(enemy.army,undefined);
+ f.incoming.length=0;f.view.drawRoutes();assert.equal(marker.destroyed,true);
+ assert.equal(f.view.marchMarkers.has('1'),true);assert.equal(f.view.routes.lines.length,5);
+});
+
+test('incoming routes require authorized source coordinates and never substitute origin or city coordinates',()=>{
+ const f=fixture();
+ const enemy={id:'march-7',targetX:104,targetY:102,originX:0,originY:0,action:'scout',startAt:0,arriveAt:1000};
+ f.incoming.push(enemy);
+ for(const fields of [{radarLevel:0},{radarLevel:1},{radarLevel:2,fromX:0}]){
+  Object.assign(enemy,fields);f.view.drawRoutes();
+  assert.equal(f.view.routes.lines.length,0);assert.equal(f.view.marchMarkers.size,0);assert.equal(f.view.animatingMarches,false);
+ }
+ enemy.fromY=0;f.view.drawRoutes();assert.equal(f.view.routes.lines.length,5);
+ delete enemy.fromX;delete enemy.fromY;f.view.drawRoutes();assert.equal(f.view.marchMarkers.size,0);
+});
+
+test('defender map draws a shield-blocked enemy return route without coloring it as an incoming attack',()=>{
+ const f=fixture();
+ const returning={id:'return-march-19',marchId:19,fromX:104,fromY:102,targetX:100,targetY:100,
+  targetKind:'player',action:'plunder',returning:true,startAt:0,arriveAt:1000};
+ f.returningEnemyMarches.push(returning);f.view.drawRoutes();
+ const marker=f.view.marchMarkers.get('incoming:return-march-19');
+ assert.ok(marker);assert.equal(marker.icon.texture.asset,'infantry.webp');
+ assert.equal(marker.countText.visible,false,'返程路线不应虚构敌军数量');
+ assert.equal(f.view.routes.lines.length,5);assert.equal(f.view.routes.color,0x69b7ee);
+ const from=f.view.camera.screen(105,103),to=f.view.camera.screen(101,101);
+ assert.equal(marker.position.x,(from.x+to.x)/2);assert.equal(marker.position.y,(from.y+to.y)/2);
+ f.setNow(750);f.view.drawRoutes();
+ assert.equal(marker.position.x,from.x+(to.x-from.x)*.75);
+ f.setNow(1000);f.view.drawRoutes();
+ assert.equal(f.view.marchMarkers.size,0);assert.equal(f.view.routes.lines.length,0);
+});
+
+test('shield return ticks replace the incoming route and clear it while map search retains focus',()=>{
+ const f=fixture(),G=f.context.Game,handlers={};
+ G.state=G.Core.state;G.Core.refreshTop=()=>{};G.Core.silentUpdate=()=>assert.fail('输入中不能重建内容');
+ f.context.document.activeElement={tagName:'INPUT'};
+ G.WS={on(event,callback){handlers[event]=callback;}};
+ G.WorldMap.refreshMarches=()=>f.view.drawRoutes();
+ vm.runInContext(fs.readFileSync(path.join(__dirname,'../js/ws-handlers.js'),'utf8'),f.context);
+ const outbound={id:'march-19',marchId:19,fromX:100,fromY:100,targetX:104,targetY:102,action:'plunder',startAt:0,arriveAt:1000};
+ handlers.tick({incoming:[outbound]});const old=f.view.marchMarkers.get('incoming:march-19');
+ const returning={...outbound,id:'return-march-19',targetKind:'player',returning:true,
+  fromX:104,fromY:102,targetX:100,targetY:100,startAt:500,arriveAt:1500};
+ handlers.tick({incoming:[],returningEnemyMarches:[returning]});
+ assert.equal(old.destroyed,true);assert.equal(G.state.world.incoming.length,0);
+ const marker=f.view.marchMarkers.get('incoming:return-march-19');assert.ok(marker);
+ const initialX=marker.position.x;f.setNow(750);
+ handlers.tick({returningEnemyMarches:[{...returning,startAt:500,arriveAt:1000}]});
+ assert.notEqual(marker.position.x,initialX);
+ handlers.tick({returningEnemyMarches:[]});
+ assert.equal(marker.destroyed,true);assert.equal(f.view.routes.lines.length,0);
+});
+
+test('enemy movement ends at arrival or authoritative battle state without firing own arrival alerts',()=>{
+ for(const change of [{arrived:true},{inBattle:true},{waitingForBattle:true},{arriveAt:500}]){
+  const f=fixture();let alerts=0;f.context.Game.World={triggerBattleAlert(){alerts++;}};
+  const enemy={id:'march-7',fromX:0,fromY:0,targetX:104,targetY:102,action:'scout',startAt:0,arriveAt:1000};
+  f.incoming.push(enemy);f.view.drawRoutes();assert.equal(f.view.marchMarkers.size,1);
+  Object.assign(enemy,change);f.view.drawRoutes();
+  assert.equal(f.view.routes.lines.length,0);assert.equal(f.view.marchMarkers.size,0);
+  assert.equal(f.view.animatingMarches,false);assert.equal(alerts,0);
+ }
+});
+
+test('legacy incoming without a valid departure time shows a static route without a fabricated position',()=>{
+ for(const startAt of [undefined,null,'invalid',1000,2000]){
+  const f=fixture();f.incoming.push({id:1,fromX:0,fromY:0,targetX:104,targetY:102,action:'scout',startAt,arriveAt:1000});
+  f.view.drawRoutes();assert.equal(f.view.routes.lines.length,5);
+  assert.equal(f.view.marchMarkers.size,0);assert.equal(f.view.animatingMarches,false);
+ }
+});
+
+test('incoming models use only disclosed equipment and quantities and support reduced motion',()=>{
+ const f=fixture();f.context.matchMedia=()=>({matches:true});
+ const enemy={id:1,fromX:0,fromY:0,targetX:104,targetY:102,action:'scout',startAt:0,arriveAt:1000,totalTroops:12};
+ f.incoming.push(enemy);f.view.drawRoutes();const marker=f.view.marchMarkers.get('incoming:1');
+ assert.equal(f.view.animatingMarches,false);assert.equal(marker.countText.text,'×12');assert.equal(marker.countText.visible,true);
+ enemy.army={recon_car:12};f.view.drawRoutes();assert.equal(marker.icon.texture.asset,'recon-car.webp');
+ enemy.action='plunder';f.view.drawRoutes();assert.equal(marker.icon.texture.asset,'infantry.webp');
+ assert.equal(f.view.routes.color,0xe66f79);
+});
+
+test('incoming ticks update positions and remove threats while the user is editing the map search',()=>{
+ const f=fixture(),c=f.context,G=c.Game,handlers={};
+ G.state=G.Core.state;G.Core.refreshTop=()=>{};G.Core.silentUpdate=()=>assert.fail('输入中不能重建内容');
+ c.document.activeElement={tagName:'INPUT'};
+ G.WS={on(event,callback){handlers[event]=callback;}};
+ G.WorldMap.refreshMarches=()=>f.view.drawRoutes();
+ vm.runInContext(fs.readFileSync(path.join(__dirname,'../js/ws-handlers.js'),'utf8'),c);
+ const enemy={id:1,fromX:0,fromY:0,targetX:104,targetY:102,action:'scout',startAt:0,arriveAt:1000};
+ handlers.tick({incoming:[enemy]});const marker=f.view.marchMarkers.get('incoming:1'),initialX=marker.position.x;
+ handlers.tick({incoming:[{...enemy,startAt:250,arriveAt:750}]});
+ assert.equal(marker.position.x,initialX);
+ f.setNow(600);handlers.tick({incoming:[{...enemy,startAt:250,arriveAt:750}]});
+ assert.notEqual(marker.position.x,initialX);
+ handlers.tick({incoming:[]});assert.equal(marker.destroyed,true);assert.equal(f.view.routes.lines.length,0);
+ assert.equal(f.view.animatingMarches,false);
+});
 
 test('arrival replaces the moving model and route with gathering, then return restores the route until home',()=>{
  const f=fixture(),{view,march,marches,status}=f;marches.push(march);

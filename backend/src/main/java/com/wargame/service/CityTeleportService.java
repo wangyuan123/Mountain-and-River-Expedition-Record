@@ -1,5 +1,6 @@
 package com.wargame.service;
 
+import com.wargame.util.GameClock;
 import com.wargame.model.constants.ItemDef;
 import com.wargame.model.constants.WorldConfig;
 import com.wargame.model.entity.*;
@@ -63,7 +64,7 @@ public class CityTeleportService {
         if (!inBattlefield(battlefield, x, y)) throw new IllegalArgumentException("传送坐标不属于所选战场，四格占地必须完整位于同一战场");
         String reason = terrain.siteReason(placement.world().getId(), placement.mask(), x, y, null);
         if (!reason.isEmpty()) throw new IllegalArgumentException(reason);
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         if (items.tryConsume(playerId, itemId, 1, now) == 0)
             throw new IllegalArgumentException(ItemDef.ITEMS.get(itemId).name() + "数量不足");
 
@@ -104,8 +105,8 @@ public class CityTeleportService {
 
     /** 保留全部行军的来源和目标坐标，必须等相关部队返城或撤防后才能移动城市。 */
     private String mobilityReason(PlayerCity city) {
-        if (city.getReadyAt() > System.currentTimeMillis()) return "城市仍在建设中，不能传送";
-        if (city.isSurrenderFrozen(System.currentTimeMillis())) return "归降移交中的城市不能传送";
+        if (city.getReadyAt() > GameClock.now()) return "城市仍在建设中，不能传送";
+        if (city.isSurrenderFrozen(GameClock.now())) return "归降移交中的城市不能传送";
         if (!marches.findCityTeleportDepartures(city.getOwnerId(), city.getCitySlot()).isEmpty())
             return "本城仍有外派、采集、驻防或返程部队，请等待部队返城后传送";
         if (!marches.findCityTeleportArrivals(city.getId().toString()).isEmpty())

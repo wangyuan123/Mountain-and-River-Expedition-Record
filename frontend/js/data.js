@@ -78,8 +78,8 @@ window.Game = window.Game || {};
       transport: '空中后勤；载重800，支持跨海运兵，保留微弱自卫火力',
       destroyer: '舰队护航与防空；400射程可在潜艇接近前开火，需避免战列舰远程压制',
       sub: '近距反舰；对海66、射程100，其他领域仅保留最低自卫火力',
-      battleship: '远程重型舰炮；1600射程与高耐久提供海上火力，对目标按对应领域属性结算',
-      carrier: '远程制空与航空支援；1900射程、对空125，海战需舰队协同',
+      battleship: '远程反舰与对岸炮击；基础射程1600、对地91、对空100、对海185、防御100、生命1050，需舰队协同掩护',
+      carrier: '远程制空与航空支援；基础射程1900、对地82、对空125、对海100、防御120、生命1300，侧重舰队防空与持续支援',
       bunker: '固定地面防御；高生命与近程火力阻滞接近部队，对空与对海火力极弱',
       howitzer: '远程地面压制与岸防；1850射程，对空火力极弱',
       antitank: '远程地面与岸防火力；1850射程、对地42，对空火力极弱',
@@ -88,26 +88,27 @@ window.Game = window.Game || {};
 
     // 名称采用真实二战装备/部队原型；history 仅用于介绍，数值仍由游戏独立平衡，来源见 docs/UNIT_HISTORY_20260918.md。
     // marchOil 为每单位每 100 格油耗，marchFood 为每单位每 5 分钟行军粮耗；food 为城内每小时耗粮，征召预备粮另按兵种珍贵程度定价。
+    // 征召造价与后端同步；战列舰四资源（含粮食）为本轮火箭车的20倍，航母为战列舰的2倍；方案见 docs/balance/unit-resource-costs-20261019.md。
     units: {
       // 普通步兵可少量自携物资，仍按战斗兵种执行作战指令；卡车负责大宗搬运。
-      infantry:  { name: '步兵-加兰德步枪兵（M1）', history: '美国｜装备M1加兰德半自动步枪的步兵，二战美军的代表性步兵装备。',     cat: 'inf',  atkGround: 10, atkAir: 5, atkSea: 5, atkFort: 3,   def: 15,  hp: 120, spd: 2, range: 160, food: 1,  marchOil: 0,  marchFood: 1,  pop: 1, build: 'factory',  cost: { food: 10, steel: 30,  oil: 0,   rare: 0  }, strongVs: null,           branch: 'land', logistic: false, load: 10 },
+      infantry:  { name: '步兵-加兰德步枪兵（M1）', history: '美国｜装备M1加兰德半自动步枪的步兵，二战美军的代表性步兵装备。',     cat: 'inf',  atkGround: 10, atkAir: 5, atkSea: 5, atkFort: 3,   def: 15,  hp: 120, spd: 2, range: 160, food: 1,  marchOil: 0,  marchFood: 1,  pop: 1, build: 'factory',  cost: { food: 10, steel: 30,  oil: 2,   rare: 1  }, strongVs: null,           branch: 'land', logistic: false, load: 10 },
       truck:     { name: '卡车-十轮大卡（CCKW-353）', history: '美国｜GMC六轮驱动运输卡车，承担盟军兵员与物资运输。',     cat: 'inf',  atkGround: 2, atkAir: 1, atkSea: 1, atkFort: 1,   def: 5.5, hp: 150, spd: 4, range: 0,   food: 2,  marchOil: 2,  marchFood: 1,  pop: 1, build: 'factory',  cost: { food: 20, steel: 50,  oil: 15,  rare: 0  }, strongVs: null,           branch: 'land', logistic: true, load: 500, autoAdvance: false },
-      armored: { name: '装甲车-猎鹿犬防空型（T17E2）', history: '美国制造、英军使用｜猎鹿犬的双联重机枪防空型，为地面部队提供机动掩护。', cat: 'arm', atkGround: 18, atkAir: 33.5, atkSea: 45, atkFort: 36, def: 33, hp: 360, spd: 5, range: 300, food: 4, marchOil: 3, marchFood: 2, pop: 2, build: 'factory', cost: { food: 40, steel: 180, oil: 60, rare: 20 }, strongVs: null, branch: 'land' },
-      recon_car: { name: '侦查装甲车-灰狗（M8）', history: '美国｜M8灰狗六轮装甲侦察车，配备主炮塔和无线电，用于侦察、警戒与地面作战支援。', cat: 'arm', atkGround: 18, atkAir: 5, atkSea: 45, atkFort: 36, def: 33, hp: 360, spd: 5, range: 300, food: 4, marchOil: 3, marchFood: 2, pop: 2, build: 'factory', cost: { food: 40, steel: 180, oil: 60, rare: 20 }, strongVs: null, branch: 'land' },
-      ltank: { name: '轻型坦克-斯图亚特（M5A1）', history: '美国｜斯图亚特系列轻型坦克，以机动侦察与步兵支援为主要任务。', cat: 'arm', atkGround: 33, atkAir: 10, atkSea: 55, atkFort: 45, def: 53, hp: 270, spd: 4, range: 220, food: 5, marchOil: 4, marchFood: 2, pop: 2, build: 'lightfactory', cost: { food: 50, steel: 240, oil: 80, rare: 25 }, strongVs: 'armored', branch: 'land' },
-      htank: { name: '重型坦克-斯大林（IS-2）', history: '苏联｜装备122毫米主炮的高机动重型坦克（速度4），用于快速突破防线与阵地掩护。', cat: 'arm', atkGround: 50, atkAir: 15, atkSea: 65, atkFort: 50, def: 63.5, hp: 385, spd: 4, range: 320, food: 8, marchOil: 7, marchFood: 3, pop: 4, build: 'heavyfactory', cost: { food: 80, steel: 450, oil: 120, rare: 50 }, strongVs: 'ltank', branch: 'land' },
+      armored: { name: '装甲车-猎鹿犬防空型（T17E2）', history: '美国制造、英军使用｜猎鹿犬的双联重机枪防空型，为地面部队提供机动掩护。', cat: 'arm', atkGround: 18, atkAir: 33.5, atkSea: 45, atkFort: 36, def: 33, hp: 360, spd: 5, range: 300, food: 4, marchOil: 3, marchFood: 2, pop: 2, build: 'factory', cost: { food: 40, steel: 270, oil: 60, rare: 20 }, strongVs: null, branch: 'land' },
+      recon_car: { name: '侦查装甲车-灰狗（M8）', history: '美国｜M8灰狗六轮装甲侦察车，配备主炮塔和无线电，用于侦察、警戒与地面作战支援。', cat: 'arm', atkGround: 18, atkAir: 5, atkSea: 45, atkFort: 36, def: 33, hp: 360, spd: 5, range: 300, food: 4, marchOil: 3, marchFood: 2, pop: 2, build: 'factory', cost: { food: 40, steel: 270, oil: 60, rare: 20 }, strongVs: null, branch: 'land' },
+      ltank: { name: '轻型坦克-斯图亚特（M5A1）', history: '美国｜斯图亚特系列轻型坦克，以机动侦察与步兵支援为主要任务。', cat: 'arm', atkGround: 33, atkAir: 10, atkSea: 55, atkFort: 45, def: 53, hp: 270, spd: 4, range: 220, food: 5, marchOil: 4, marchFood: 2, pop: 2, build: 'lightfactory', cost: { food: 50, steel: 360, oil: 80, rare: 25 }, strongVs: 'armored', branch: 'land' },
+      htank: { name: '重型坦克-斯大林（IS-2）', history: '苏联｜装备122毫米主炮的高机动重型坦克（速度4），用于快速突破防线与阵地掩护。', cat: 'arm', atkGround: 50, atkAir: 15, atkSea: 65, atkFort: 50, def: 63.5, hp: 385, spd: 4, range: 320, food: 8, marchOil: 7, marchFood: 3, pop: 4, build: 'heavyfactory', cost: { food: 80, steel: 675, oil: 120, rare: 50 }, strongVs: 'ltank', branch: 'land' },
       assault: { name: '突击炮-自行加榴炮（ISU-152）', history: '苏联｜装备152毫米加榴炮的重型自行火炮，用于摧毁工事和提供突击支援。', cat: 'arm', atkGround: 34, atkAir: 30, atkSea: 65, atkFort: 167, def: 28, hp: 200, spd: 2, range: 750, food: 4, marchOil: 5, marchFood: 2, pop: 2, build: 'factory', cost: { food: 40, steel: 200, oil: 50, rare: 25 }, strongVs: 'bunker', branch: 'land' },
-      rocket: { name: '反坦克火箭车-喀秋莎（BM-13）', history: '苏联｜车载多管火箭炮，1941年投入作战，以密集齐射实施火力覆盖。', cat: 'arm', atkGround: 100, atkAir: 11.5, atkSea: 25, atkFort: 179, def: 28, hp: 150, spd: 3, range: 1600, food: 5, marchOil: 4, marchFood: 3, pop: 3, build: 'factory', cost: { food: 100, steel: 550, oil: 150, rare: 70 }, strongVs: 'htank', branch: 'land' },
+      rocket: { name: '反坦克火箭车-喀秋莎（BM-13）', history: '苏联｜车载多管火箭炮，1941年投入作战，以密集齐射实施火力覆盖。', cat: 'arm', atkGround: 100, atkAir: 11.5, atkSea: 25, atkFort: 179, def: 28, hp: 150, spd: 3, range: 1600, food: 5, marchOil: 4, marchFood: 3, pop: 3, build: 'factory', cost: { food: 100, steel: 550, oil: 450, rare: 120 }, strongVs: 'htank', branch: 'land' },
       // 侦察机归入空军基地，避免军工厂承担空军产能。
-      scout:     { name: '侦察机-闪电侦察型（F-5）', history: '美国｜由P-38闪电改装的照相侦察机，以航空摄影获取战场情报。',   cat: 'air',  atkGround: 1, atkAir: 4, atkSea: 1, atkFort: 1,   def: 13,  hp: 70.5,spd: 9,range: 200, food: 3,  marchOil: 8,  marchFood: 1,  pop: 1, build: 'airport',  cost: { food: 30, steel: 60,  oil: 30,  rare: 10 }, strongVs: null,           branch: 'air', autoAdvance: false },
-      special: { name: '特种兵-英国突击队（Commando）', history: '英国｜1940年组建的突袭部队，接受渗透、爆破与两栖突击训练。', cat: 'inf', atkGround: 30, atkAir: 10, atkSea: 125, atkFort: 188, def: 5.5, hp: 150, spd: 6, range: 180, food: 4, marchOil: 1, marchFood: 2, pop: 2, build: 'factory', cost: { food: 40, steel: 100, oil: 40, rare: 20 }, strongVs: 'howitzer', branch: 'land' },
-      fighter: { name: '战斗机-野马（P-51）', history: '美国｜北美航空研制的战斗机，二战中承担远程护航与制空任务。', cat: 'air', atkGround: 12, atkAir: 64, atkSea: 75, atkFort: 5, def: 30, hp: 150, spd: 8, range: 350, food: 5, marchOil: 10, marchFood: 2, pop: 2, build: 'airport', cost: { food: 50, steel: 220, oil: 90, rare: 35 }, strongVs: 'bomber', branch: 'air' },
-      bomber: { name: '轰炸机-飞行堡垒（B-17G）', history: '美国｜波音四发重型轰炸机，主要执行编队轰炸并以多处机枪阵位自卫。', cat: 'air', atkGround: 56, atkAir: 12, atkSea: 95, atkFort: 429, def: 22, hp: 195, spd: 6, range: 300, food: 7, marchOil: 22, marchFood: 4, pop: 3, build: 'airport', cost: { food: 70, steel: 350, oil: 150, rare: 60 }, strongVs: 'htank', branch: 'air' },
-      transport: { name: '运输机-空中列车（C-47）', history: '美国｜由DC-3发展而来的军用运输机，执行空运、空投与伞兵运输。',   cat: 'air',  atkGround: 1, atkAir: 1, atkSea: 1, atkFort: 1,   def: 10,  hp: 220, spd: 6, range: 0,   food: 5,  marchOil: 16, marchFood: 3,  pop: 2, build: 'airport',  cost: { food: 50, steel: 180, oil: 80, rare: 20 }, strongVs: null,           branch: 'air', logistic: true, load: 800, autoAdvance: false },
+      scout:     { name: '侦察机-闪电侦察型（F-5）', history: '美国｜由P-38闪电改装的照相侦察机，以航空摄影获取战场情报。',   cat: 'air',  atkGround: 1, atkAir: 4, atkSea: 1, atkFort: 1,   def: 13,  hp: 70.5,spd: 9,range: 200, food: 3,  marchOil: 8,  marchFood: 1,  pop: 1, build: 'airport',  cost: { food: 30, steel: 60,  oil: 30,  rare: 15 }, strongVs: null,           branch: 'air', autoAdvance: false },
+      special: { name: '特种兵-英国突击队（Commando）', history: '英国｜1940年组建的突袭部队，接受渗透、爆破与两栖突击训练。', cat: 'inf', atkGround: 30, atkAir: 10, atkSea: 125, atkFort: 188, def: 5.5, hp: 150, spd: 6, range: 180, food: 4, marchOil: 1, marchFood: 2, pop: 2, build: 'factory', cost: { food: 80, steel: 100, oil: 40, rare: 20 }, strongVs: 'howitzer', branch: 'land' },
+      fighter: { name: '战斗机-野马（P-51）', history: '美国｜北美航空研制的战斗机，二战中承担远程护航与制空任务。', cat: 'air', atkGround: 12, atkAir: 64, atkSea: 75, atkFort: 5, def: 30, hp: 150, spd: 8, range: 350, food: 5, marchOil: 10, marchFood: 2, pop: 2, build: 'airport', cost: { food: 50, steel: 220, oil: 90, rare: 55 }, strongVs: 'bomber', branch: 'air' },
+      bomber: { name: '轰炸机-飞行堡垒（B-17G）', history: '美国｜波音四发重型轰炸机，主要执行编队轰炸并以多处机枪阵位自卫。', cat: 'air', atkGround: 56, atkAir: 12, atkSea: 95, atkFort: 429, def: 22, hp: 195, spd: 6, range: 300, food: 7, marchOil: 22, marchFood: 4, pop: 3, build: 'airport', cost: { food: 70, steel: 350, oil: 150, rare: 90 }, strongVs: 'htank', branch: 'air' },
+      transport: { name: '运输机-空中列车（C-47）', history: '美国｜由DC-3发展而来的军用运输机，执行空运、空投与伞兵运输。',   cat: 'air',  atkGround: 1, atkAir: 1, atkSea: 1, atkFort: 1,   def: 10,  hp: 220, spd: 6, range: 0,   food: 5,  marchOil: 16, marchFood: 3,  pop: 2, build: 'airport',  cost: { food: 50, steel: 180, oil: 80, rare: 30 }, strongVs: null,           branch: 'air', logistic: true, load: 800, autoAdvance: false },
       destroyer: { name: '驱逐舰-弗莱彻级（Fletcher）', history: '美国｜二战主力舰队驱逐舰，承担护航、防空、反潜与水面作战。', cat: 'nav', atkGround: 44, atkAir: 59, atkSea: 47, atkFort: 35, def: 50, hp: 555, spd: 5, range: 400, food: 7, marchOil: 15, marchFood: 6, pop: 3, build: 'shipyard', cost: { food: 70, steel: 450, oil: 160, rare: 80 }, strongVs: 'sub', branch: 'sea' },
       sub: { name: '潜艇-小鲨鱼级（Gato）', history: '美国｜二战远洋柴电潜艇，以鱼雷攻击敌方舰船并执行海上破交。', cat: 'nav', atkGround: 1, atkAir: 1, atkSea: 66, atkFort: 1, def: 20, hp: 395, spd: 3, range: 100, food: 6, marchOil: 9, marchFood: 4, pop: 3, build: 'shipyard', cost: { food: 60, steel: 300, oil: 80, rare: 60 }, strongVs: 'battleship', branch: 'sea' },
-      battleship: { name: '战列舰-衣阿华级（Iowa）', history: '美国｜装备406毫米主炮的高速战列舰，承担舰队作战与对岸炮击。', cat: 'nav', atkGround: 91, atkAir: 35, atkSea: 96, atkFort: 108, def: 120, hp: 1300, spd: 4, range: 1600, food: 12, marchOil: 35, marchFood: 15, pop: 6, build: 'shipyard', cost: { food: 120, steel: 1200, oil: 400, rare: 250 }, strongVs: 'destroyer', branch: 'sea' },
-      carrier: { name: '航母-埃塞克斯级（Essex）', history: '美国｜二战舰队航空母舰，以舰载机执行制空、对海与对地打击。', cat: 'nav', atkGround: 82, atkAir: 125, atkSea: 80, atkFort: 110, def: 70, hp: 1100, spd: 4, range: 1900, food: 15, marchOil: 42, marchFood: 22, pop: 8, build: 'shipyard', cost: { food: 150, steel: 1400, oil: 500, rare: 350 }, strongVs: 'bomber', branch: 'sea' }
+      battleship: { name: '战列舰-衣阿华级（Iowa）', history: '美国｜装备406毫米主炮的高速战列舰，承担舰队作战与对岸炮击。', cat: 'nav', atkGround: 91, atkAir: 100, atkSea: 185, atkFort: 108, def: 100, hp: 1050, spd: 4, range: 1600, food: 12, marchOil: 35, marchFood: 15, pop: 6, build: 'shipyard', cost: { food: 2000, steel: 11000, oil: 9000, rare: 2400 }, strongVs: 'destroyer', branch: 'sea' },
+      carrier: { name: '航母-埃塞克斯级（Essex）', history: '美国｜二战舰队航空母舰，以舰载机执行制空、对海与对地打击。', cat: 'nav', atkGround: 82, atkAir: 125, atkSea: 100, atkFort: 110, def: 120, hp: 1300, spd: 4, range: 1900, food: 15, marchOil: 42, marchFood: 22, pop: 8, build: 'shipyard', cost: { food: 4000, steel: 22000, oil: 18000, rare: 4800 }, strongVs: 'bomber', branch: 'sea' }
     },
 
     // 日军专属兵种名称与历史原型（应用于 NPC 日寇城与流寇据点，属性与盟军完全一致）
@@ -132,8 +133,9 @@ window.Game = window.Game || {};
     },
 
     techs: {
+      military_theory: { name: '军事理论', branch: '军事', desc: '普通军校刷新整批出现五星名将的概率每级增加0.3个百分点，满级额外增加3个百分点；与军校基础概率相加，每批最多1名五星，不改变已生成名单或道具保底。', max: 10, labReq: 2, baseCost: { steel: 300, food: 240, gold: 200 }, growth: 1.8, affect: 'academy_chance' },
       wall_reinforcement: { name: '城墙加固', branch: '军事', desc: '当前城墙生命与防御 +5%/级，最高各 +50%；无城墙时不产生属性，不强化驻军或城防工事。', max: 10, labReq: 2, baseCost: { steel: 320, food: 160, rare: 30 }, growth: 1.8, affect: 'wall_stats' },
-      unit_refit: { name: '武器装备', branch: '军事', desc: 'Lv.1—5依次解锁基础防护、常规武器与载荷、通信与机动、专用防护、高级火控与反制配方，制造需本城对应生产设施 Lv.2/4/6/8/10。装备制造并配装后才获得装备效果。', max: 5, labReq: 2, baseCost: { steel: 300, oil: 100, rare: 50 }, growth: 2, affect: 'unit_recipes' },
+      unit_refit: { name: '武器装备', branch: '军事', desc: 'Lv.1—10逐级解锁陆上防护、航空轻舰防护、陆上武器载荷、航空武器载荷、通信调度、机动节油、陆上专用防护、大型舰船防护、定向反制、高级火控配方；对应设施按配方独立要求Lv.2/4/6/8/10。制造并配装后才获得装备效果。', max: 10, labReq: 2, baseCost: { steel: 300, oil: 100, rare: 50 }, growth: 2, affect: 'unit_recipes' },
       prisoner_education: { name: '战俘收编', branch: '后勤', desc: '讨伐其他玩家并获胜后，按敌方各兵种损失数量计算战俘。俘获比例每级增加 0.1 个百分点，最高 1%，不足 1 个向下取整。需战俘营有空位，敌方已回收的伤兵不能被俘获。', max: 10, labReq: 3, baseCost: { steel: 320, food: 220, gold: 150 }, growth: 1.8, affect: 'capture_permille' },
       attack_tech:   { name: '攻击科技',   branch: '军事', desc: '全军攻击 +5%/级，最高 +50%',       max: 10, labReq: 1, baseCost: { steel: 240, food: 120 }, growth: 1.7, affect: 'atk_all' },
       defense_tech:  { name: '防御科技',   branch: '军事', desc: '全军防御 +5%/级，最高 +50%',       max: 10, labReq: 2, baseCost: { steel: 240, food: 120 }, growth: 1.7, affect: 'def_all' },
@@ -149,13 +151,13 @@ window.Game = window.Game || {};
       prod_steel: { name: '钢铁产量', branch: '后勤', desc: '城内钢铁产量 +5%/级，最高 +50%，不影响野地采集。', max: 10, labReq: 1, baseCost: { steel: 80, food: 40 }, growth: 1.8, affect: 'res_steel' },
       prod_oil: { name: '石油产量', branch: '后勤', desc: '城内石油产量 +5%/级，最高 +50%，不影响野地采集。', max: 10, labReq: 1, baseCost: { steel: 80, food: 40 }, growth: 1.8, affect: 'res_oil' },
       prod_rare: { name: '稀矿产量', branch: '后勤', desc: '城内稀矿产量 +5%/级，最高 +50%，不影响野地采集。', max: 10, labReq: 1, baseCost: { steel: 80, food: 40 }, growth: 1.8, affect: 'res_rare' },
-      log_warehouse: { name: '仓储技术',   branch: '后勤', desc: '本城军需仓库掠夺保护额度 +10%/级，最高 +50%；不增加资源储量上限。', max: 5, labReq: 2, baseCost: { steel: 280, food: 140 }, growth: 1.7, affect: 'cap' },
+      log_warehouse: { name: '仓储技术',   branch: '后勤', desc: '本城军需仓库掠夺保护额度 +5%/级，最高 +50%；不增加资源储量上限。', max: 10, labReq: 2, baseCost: { steel: 280, food: 140 }, growth: 1.7, affect: 'cap' },
       log_food:      { name: '军需补给',   branch: '后勤', desc: '养兵耗粮减少 5%/级，最高减少 50%。', max: 10, labReq: 3, baseCost: { steel: 360, food: 200 }, growth: 1.8, affect: 'food_save' },
       log_train:     { name: '训练加速',   branch: '后勤', desc: '兵种生产速度 +5%/级，最高 +50%，与生产设施的速度加成相加。征召数量仍受平民人口与资源限制。', max: 10, labReq: 2, baseCost: { steel: 300, food: 180, gold: 100 }, growth: 1.8, affect: 'train' },
       log_build:     { name: '建筑加速',   branch: '后勤', desc: '建筑新建和升级的资源消耗、基础工期均减少 5%/级，满级各减少 50%。', max: 10, labReq: 2, baseCost: { steel: 340, food: 160, gold: 120 }, growth: 1.8, affect: 'build' },
       log_medical:   { name: '医疗技术',   branch: '后勤', desc: '战损部队可回收为伤兵的比例每级增加 5 个百分点，本科技最高提供 50%，可叠加参战军官的急救技能。伤兵需在 7 天内消耗黄金或钻石治疗后归队。', max: 10, labReq: 3, baseCost: { steel: 320, food: 220, gold: 150 }, growth: 1.8, affect: 'medical' },
-      recon_level:   { name: '侦察技术',   branch: '侦察', desc: '侦查交火时，攻守双方各按自身等级每级增加5点先手值，最高25点，不增加地图扫描半径。侦查成功后，基础资源始终可见，等级越高能查看的情报越详细。城市逐级解锁：Lv.1 城防；Lv.2 精确守军与统帅；Lv.3 建筑与将领人数；Lv.4 科技与可掠夺资源测算；Lv.5 将领档案与战力。野地 Lv.1 起可查看精确守军。', max: 5, labReq: 1, baseCost: { steel: 180, oil: 60 }, growth: 1.6, affect: 'recon' },
-      recon_radar:   { name: '雷达预警',   branch: '侦察', desc: '拦截敌方侦查的首回合，守方侦查部队每级增加5点先手值，最高25点，后续回合不再提供预警加值。Lv.1—5逐级开放来袭来源、兵力区间、兵种与总兵力、精确编成与将领、战斗科技与装备情报。需驻防侦察机拦截空中侦查，或侦查装甲车拦截地面侦查。', max: 5, labReq: 2, baseCost: { steel: 240, oil: 100, rare: 20 }, growth: 1.7, affect: 'radar' },
+      recon_level:   { name: '侦察技术',   branch: '侦察', desc: '侦查交火时，双方各按自身等级每级增加5点先手值，最高50点，每个交火回合生效；不增加地图扫描半径。成功侦查后城市情报Lv.1—10依次解锁：城防类型、城防数量等级、精确守军、守城将领、建筑等级、驻城将领人数、账号科技、可掠夺资源测算、驻城将领档案、战力评估。野地Lv.1起可查看精确守军。', max: 10, labReq: 1, baseCost: { steel: 180, oil: 60 }, growth: 1.6, affect: 'recon' },
+      recon_radar:   { name: '雷达预警',   branch: '侦察', desc: '拦截敌方侦查的首回合，守方每级增加2点先手值，最高20点。Lv.1—10依次解锁来源玩家与行动、出发坐标、军种构成、兵力区间、兵种名称、精确总兵力、精确编成、带兵将领、科技装备、司令官加成。不公开带兵将领的有效属性和技能。需对应侦查部队驻防才能拦截。', max: 10, labReq: 2, baseCost: { steel: 240, oil: 100, rare: 20 }, growth: 1.7, affect: 'radar' },
     },
     officerNames: [
       // 中国远征军及抗日名将
@@ -174,7 +176,7 @@ window.Game = window.Game || {};
       forest:     { name: '森林',   res: null,     icon: 'img/map/wild-forest-ridge-integrated.webp' },
       hill:       { name: '丘陵',   res: null,     icon: 'img/map/wild-hill-ridge-integrated.webp' },
       swamp:      { name: '沼泽',   res: null,     icon: 'img/map/wild-swamp-deep-integrated.webp' },
-      grassland:  { name: '草原',   res: null,     icon: 'img/map/grass-medium.webp' },
+      grassland:  { name: '草原',   res: null,     icon: 'img/map/wild-grassland.webp' },
       plains:     { name: '平原',   res: null,     icon: 'img/map/wild-plains-integrated.webp' },
       snow:       { name: '雪地',   res: null,     icon: 'img/map/wild-snow.webp' },
       rock:       { name: '岩石',   res: null,     icon: 'img/map/wild-rock-integrated.webp' },
@@ -329,6 +331,7 @@ window.Game = window.Game || {};
       shield:    { name: '护盾',     icon: '🛡️', desc: '本城8小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地',         cat: 'util' },
       marchOrd:  { name: '行军令',   icon: '🚩', desc: '仓库启用：行军速度+50%，持续1小时；情报使用：本队当前路段剩余时间缩短约1/3，去程与回程各限一次', cat: 'util' },
       populationOrder: { name: '人口动员令', icon: '👥', desc: '使用后立即增加500空闲人口,不超过人口上限', cat: 'util' },
+      emergencyPopulationOrder: { name: '紧急人口动员令', icon: '📣', desc: '使用后立即增加当前城市人口容量上限30%的空闲人口,不超过人口上限', cat: 'util' },
 
     },
     historicalOfficers: [

@@ -7,9 +7,23 @@ const vm = require('node:vm');
 const rules = JSON.parse(fs.readFileSync(path.join(__dirname,
   '../../backend/src/main/resources/game/tech-building-prerequisites.json'), 'utf8'));
 
+const unitRules = JSON.parse(fs.readFileSync(path.join(__dirname, '../../backend/src/main/resources/game/unit-unlock-prerequisites.json'), 'utf8'));
+
 function setup(buildings = {}, constructions = []) {
   const toasts = [], recruits = [];
-  const state = { buildings, constructions, army: { destroyer: 7 },
+  // 测试夹具模拟服务端快照；客户端生产代码不读取门槛配置。
+  const unitUnlocks = Object.fromEntries(unitRules.units.map(unit => {
+    const requirements = Object.entries(unit.buildings).map(([id, required]) => {
+      let current = Math.max(0, ...[buildings[id] || 0].flat());
+      for (const job of constructions) if (job.id === id) current = Math.min(current, job.targetLevel);
+      return { kind: 'building', id, name: rules.buildings[id].name, required, current, scope: 'city', met: current >= required };
+    });
+    requirements.push(...Object.entries(unit.technologies).map(([id, required]) => ({ kind: 'technology', id, name: rules.technologies[id].name, required, current: 10, scope: 'empire', met: true })));
+    if (unit.coastalOrLegacyNavalRequired) requirements.push({ kind: 'geography', id: 'coastal_or_legacy_naval', name: '沿海或既有海军城市资格', required: 1, current: 1, scope: 'city', met: true });
+    const missing = requirements.filter(entry => !entry.met);
+    return [unit.id, { unitId: unit.id, ruleVersion: unitRules.version, eligible: !missing.length, requirements, missing }];
+  }));
+  const state = { buildings, constructions, unitUnlocks, army: { destroyer: 7 },
     resources: { food: 100000, steel: 100000, oil: 100000, rare: 100000 }, officers: [] };
   const context = vm.createContext({
     document: { getElementById: id => ['qty_destroyer', 'qty_scout'].includes(id) ? { value: '1' } : null },
@@ -81,7 +95,7 @@ test('造船厂/军港升级弹窗条件与舰船动力研发同步显示联动�
 });
 
 test('缺造船厂或军港时前端显示全部缺项，并拦截直接调用征召', () => {
-  for (const buildings of [{}, { port: 1 }, { shipyard: 1 }]) {
+  for (const buildings of [{}, { port: 6 }, { shipyard: 6 }]) {
     const { G, recruits, toasts } = setup(buildings);
     const check = G.Prerequisites.checkRecruitment('destroyer');
     assert.equal(check.missing.length, Object.keys(buildings).length ? 1 : 2);
@@ -89,9 +103,9 @@ test('缺造船厂或军港时前端显示全部缺项，并拦截直接调用�
     G.Army.renderView(view);
     const card = view.innerHTML.split('id="unit-card-destroyer"')[1].split('id="unit-card-sub"')[0];
     assert.match(card, /menu-item lock/);
-    assert.match(card, /征召前置：造船厂/);
+    assert.match(card, /造船厂/);
     assert.match(card, /军港/);
-    assert.match(card, /前往建造/);
+    assert.match(card, /前往建设/);
     assert.doesNotMatch(card, />征召<\/button>/);
     assert.match(card, />解散<\/button>/);
     G.Army.recruit('destroyer', 'qty_destroyer');
@@ -101,13 +115,13 @@ test('缺造船厂或军港时前端显示全部缺项，并拦截直接调用�
 });
 
 test('双建筑完成后解锁海军征召，生产按造船厂等级计算', async () => {
-  const { G, recruits } = setup({ port: 10, shipyard: 5 });
+  const { G, recruits } = setup({ port: 10, shipyard: 6 });
   assert.equal(G.Prerequisites.checkRecruitment('destroyer').missing.length, 0);
   const view = { innerHTML: '' };
   G.Army.renderView(view);
   const card = view.innerHTML.split('id="unit-card-destroyer"')[1].split('id="unit-card-sub"')[0];
   assert.match(card, /menu-item ok/);
-  assert.match(card, /造船厂 Lv.5/);
+  assert.match(card, /造船厂 Lv.6/);
   assert.match(card, /并行 2 条/);
   assert.match(card, />征召<\/button>/);
   G.Army.recruit('destroyer', 'qty_destroyer');
@@ -117,17 +131,17 @@ test('双建筑完成后解锁海军征召，生产按造船厂等级计算', as
 
 test('在建或正在拆除的造船厂不能作为征召前置，升级保留已完成等级', () => {
   for (const [buildings, targetLevel, expected] of [
-    [{ port: 1 }, 1, false], [{ port: 1, shipyard: 1 }, 0, false], [{ port: 2, shipyard: 1 }, 2, true]
+    [{ port: 6 }, 6, false], [{ port: 6, shipyard: 6 }, 5, false], [{ port: 7, shipyard: 6 }, 7, true]
   ]) {
     const { G } = setup(buildings, [{ id: 'shipyard', targetLevel }]);
     assert.equal(G.Prerequisites.checkRecruitment('destroyer').missing.length === 0, expected);
   }
-  const { G } = setup({ shipyard: 1, port: 1 }, [{ id: 'port', targetLevel: 0 }]);
+  const { G } = setup({ shipyard: 6, port: 6 }, [{ id: 'port', targetLevel: 5 }]);
   assert.equal(G.Prerequisites.checkRecruitment('destroyer').missing[0].id, 'port');
 });
 
 test('新增海军前置不影响地面及空军制造设施', () => {
-  const { G } = setup({ factory: 1, airport: 1 });
+  const { G } = setup({ factory: 1, airport: 8, apron: 7 });
   for (const id of ['infantry', 'scout', 'fighter', 'bomber', 'transport']) {
     assert.equal(G.Prerequisites.checkRecruitment(id).missing.length, 0);
   }
@@ -164,7 +178,7 @@ test('缺空军基地时侦察机锁定，军工厂不能替代其征召前置',
 });
 
 test('侦察机产能由空军基地等级决定，军工厂等级不增加其生产速度', async () => {
-  const { G, recruits } = setup({ factory: 10, airport: 5 });
+  const { G, recruits } = setup({ factory: 10, airport: 5, apron: 2 });
   const view = { innerHTML: '' };
   G.Army.renderView(view);
   const card = view.innerHTML.split('id="unit-card-scout"')[1].split('id="unit-card-')[0];

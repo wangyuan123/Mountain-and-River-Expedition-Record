@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <base href="../">
+  <title>军团列表紧凑小卡片预览</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/themes.css">
+  <link rel="stylesheet" href="css/guild.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    .preview-toolbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      background: #ffffff;
+      padding: 8px 16px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .preview-frame {
+      width: 412px;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+    .preview-header {
+      background: #2563eb;
+      color: #fff;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    .preview-content {
+      padding: 12px;
+    }
+  </style>
+</head>
+<body data-theme="blue-white-classic">
+  <div class="preview-toolbar">
+    <b>主题切换：</b>
+    <button type="button" onclick="document.body.setAttribute('data-theme', 'blue-white-classic')">晴空蓝白 (经典)</button>
+    <button type="button" onclick="document.body.setAttribute('data-theme', 'dark')">夜航冷黑</button>
+    <button type="button" onclick="document.body.setAttribute('data-theme', 'paper')">战术公文 (米白)</button>
+  </div>
+
+  <div class="preview-frame">
+    <div class="preview-header">模拟移动端显示 (宽度 412px)</div>
+    <div class="preview-content" id="screen"></div>
+  </div>
+
+  <script>
+    window.Game = {
+      Core: {
+        route: 'guild',
+        state: {
+          player: { name: '远征统帅_829395', prestige: 0 },
+          resources: { gold: 15000 }
+        },
+        views: {}
+      },
+      escapeHtml: function (value) {
+        return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) {
+          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+      },
+      fmt: function (n) { return Number(n || 0).toLocaleString(); },
+      toast: function (msg) { console.log('Toast:', msg); }
+    };
+  </script>
+  <script src="js/guild.js"></script>
+  <script>
+    window.Game.Guild.list = [
+      {
+        id: 1,
+        name: '战火·兄弟情谊',
+        icon: 'g02',
+        prestige: 15241995,
+        leaderName: '深入山林开荒种地',
+        members: 3,
+        maxMembers: 30,
+        notice: '欢迎加入『战火·兄弟情谊』'
+      },
+      {
+        id: 2,
+        name: '情义盟*并肩作战',
+        icon: 'g06',
+        prestige: 0,
+        leaderName: '雨天唐纳德',
+        members: 1,
+        maxMembers: 30,
+        notice: '欢迎加入『情义盟*并肩作战』'
+      },
+      {
+        id: 3,
+        name: '远征军滇缅公路第一装甲突击步兵大队',
+        icon: 'g01',
+        prestige: 685000,
+        leaderName: '雷霆先锋长官',
+        members: 18,
+        maxMembers: 30,
+        notice: '热烈欢迎各位长官加入本军团！不论战力高低，互相协助，共同发展，开创伟业！'
+      },
+      {
+        id: 4,
+        name: '海卫守护者',
+        icon: 'g04',
+        prestige: 92400,
+        leaderName: '深海巨鲨',
+        members: 29,
+        maxMembers: 30,
+        notice: ''
+      }
+    ];
+    document.getElementById('screen').innerHTML = Game.Guild.renderRecruitment();
+  </script>
+</body>
+</html>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>军校候选军官卡片 - 紧凑改版预览</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/officer.css">
+  <link rel="stylesheet" href="../css/classic-home.css">
+  <link rel="stylesheet" href="../css/themes.css">
+  <style>
+    body {
+      background: #0f172a;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    .preview-container {
+      max-width: 520px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    }
+    .theme-switcher {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .theme-btn {
+      padding: 4px 10px;
+      font-size: 12px;
+      border-radius: 4px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      cursor: pointer;
+    }
+    .theme-btn.active {
+      background: #2563eb;
+      color: #fff;
+      border-color: #2563eb;
+    }
+    .preview-dark {
+      background: #0b1320;
+      color: #e2e8f0;
+    }
+  </style>
+</head>
+<body data-theme="blue-white-classic">
+  <div class="preview-container" id="preview-box">
+    <div class="theme-switcher">
+      <span style="font-size: 13px; font-weight: bold; align-self: center; color: #334155;">主题预览：</span>
+      <button class="theme-btn active" onclick="switchTheme('blue-white-classic')">经典蓝白 (用户当前)</button>
+      <button class="theme-btn" onclick="switchTheme('dark')">暗夜黑</button>
+      <button class="theme-btn" onclick="switchTheme('paper')">古风纸张</button>
+    </div>
+
+    <div class="title" style="text-align: center; font-weight: bold; font-size: 16px; color: #1e3a8a; margin-bottom: 4px;">- 军校招募 -</div>
+    <div class="desc" style="font-size: 12px; color: #64748b; margin-bottom: 10px;">军校 Lv.10 · 每批10人 · 五星名将概率 <b>6.00%</b> <span class="link-act" style="color: #2563eb; cursor: pointer;">？招募说明</span></div>
+    
+    <div class="zone-head" style="font-size: 13px; font-weight: bold; color: #1e40af; border-bottom: 2px solid #bfdbfe; padding-bottom: 4px; margin-bottom: 8px;">候选人名单 (点击卡片直接招募)</div>
+
+    <div class="academy-candidates-grid menu">
+      <!-- 候选人 1: 2星 战地急救 (后勤特化) -->
+      <div class="menu-item ok officer-card tier-normal academy-candidate-card" data-star="2" title="招募 布鲁斯·李 (消耗 160 黄金)">
+        <div class="candidate-header-row">
+          <div class="candidate-title-group">
+            <span class="candidate-name n" style="color: #2563eb;">布鲁斯·李</span>
+            <span class="candidate-stars stars">
+              <span class="officer-gem-stars"><span class="officer-gem-star"></span><span class="officer-gem-star"></span><span class="officer-gem-star is-empty"></span><span class="officer-gem-star is-empty"></span><span class="officer-gem-star is-empty"></span></span>
+            </span>
+          </div>
+          <div class="candidate-badge-group">
+            <span class="candidate-star-pill star-2">2星</span>
+          </div>
+        </div>
+        <div class="candidate-stats-grid">
+          <div class="c-stat-pill pill-mil" title="军事: 55"><span class="c-stat-lbl">军</span><span class="c-stat-val">55</span></div>
+          <div class="c-stat-pill pill-def" title="防御: 54"><span class="c-stat-lbl">防</span><span class="c-stat-val">54</span></div>
+          <div class="c-stat-pill pill-log is-peak" title="后勤: 74"><span class="c-stat-lbl">后</span><span class="c-stat-val">74</span></div>
+          <div class="c-stat-pill pill-kno" title="学识: 60"><span class="c-stat-lbl">学</span><span class="c-stat-val">60</span></div>
+        </div>
+        <div class="candidate-footer-row">
+          <div class="candidate-skills-wrap"><span class="candidate-skill-tag" title="技能: 战地急救 Lv2">⚡ 战地急救 Lv2</span></div>
+          <div class="officer-recruit-act">
+            <button type="button" class="link-act candidate-recruit-btn"><span class="btn-recruit-text">招募</span><span class="btn-recruit-cost">🪙160</span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 候选人 2: 1星 精明理财 (后勤特化) -->
+      <div class="menu-item ok officer-card tier-normal academy-candidate-card" data-star="1" title="招募 安东尼·贝尔 (消耗 80 黄金)">
+        <div class="candidate-header-row">
+          <div class="candidate-title-group">
+            <span class="candidate-name n" style="color: #475569;">安东尼·贝尔</span>
+            <span class="candidate-stars stars">
+              <span class="officer-gem-stars"><span class="officer-gem-star"></span><span class="officer-gem-star is-empty"></span><span class="officer-gem-star is-empty"></span><span class="officer-gem-star is-empty"></span><span class="officer-gem-star is-empty"></span></span>
+            </span>
+          </div>
+          <div class="candidate-badge-group">
+            <span class="candidate-star-pill star-1">1星</span>
+          </div>
+        </div>
+        <div class="candidate-stats-grid">
+          <div class="c-stat-pill pill-mil" title="军事: 38"><span class="c-stat-lbl">军</span><span class="c-stat-val">38</span></div>
+          <div class="c-stat-pill pill-def" title="防御: 40"><span class="c-stat-lbl">防</span><span class="c-stat-val">40</span></div>
+          <div class="c-stat-pill pill-log is-peak" title="后勤: 52"><span class="c-stat-lbl">后</span><span class="c-stat-val">52</span></div>
+          <div class="c-stat-pill pill-kno" title="学识: 45"><span class="c-stat-lbl">学</span><span class="c-stat-val">45</span></div>
+        </div>
+        <div class="candidate-footer-row">
+          <div class="candidate-skills-wrap"><span class="candidate-skill-tag" title="技能: 精明理财 Lv1">⚡ 精明理财 Lv1</span></div>
+          <div class="officer-recruit-act">
+            <button type="button" class="link-act candidate-recruit-btn"><span class="btn-recruit-text">招募</span><span class="btn-recruit-cost">🪙80</span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 候选人 3: 4星 军屯自给 (后勤满贯) -->
+      <div class="menu-item ok officer-card tier-normal academy-candidate-card" data-star="4" title="招募 休·约翰逊 (消耗 320 黄金)">
+        <div class="candidate-header-row">
+          <div class="candidate-title-group">
+            <span class="candidate-name n" style="color: #d97706;">休·约翰逊</span>
+            <span class="candidate-stars stars">
+              <span class="officer-gem-stars"><span class="officer-gem-star"></span><span class="officer-gem-star"></span><span class="officer-gem-star"></span><span class="officer-gem-star"></span><span class="officer-gem-star is-empty"></span></span>
+            </span>
+          </div>
+          <div class="candidate-badge-group">
+            <span class="candidate-star-pill star-4">4星</span>
+          </div>
+        </div>
+        <div class="candidate-stats-grid">
+          <div class="c-stat-pill pill-mil" title="军事: 81"><span class="c-stat-lbl">军</span><span class="c-stat-val">81</span></div>
+          <div class="c-stat-pill pill-def" title="防御: 86"><span class="c-stat-lbl">防</span><span class="c-stat-val">86</span></div>
+          <div class="c-stat-pill pill-log is-peak" title="后勤: 102"><span class="c-stat-lbl">后</span><span class="c-stat-val">102</span></div>
+          <div class="c-stat-pill pill-kno" title="学识: 86"><span class="c-stat-lbl">学</span><span class="c-stat-val">86</span></div>
+        </div>
+        <div class="candidate-footer-row">
+          <div class="candidate-skills-wrap"><span class="candidate-skill-tag" title="技能: 军屯自给 Lv4">⚡ 军屯自给 Lv4</span></div>
+          <div class="officer-recruit-act">
+            <button type="button" class="link-act candidate-recruit-btn"><span class="btn-recruit-text">招募</span><span class="btn-recruit-cost">🪙320</span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 候选人 4: 5星 UR 隆美尔 (钻石边框 + 包角 + UR标) -->
+      <div class="menu-item ok officer-card tier-diamond academy-candidate-card" data-star="5" title="招募 隆美尔 (消耗 400 黄金)">
+        <span class="card-corner corner-tl"></span><span class="card-corner corner-tr"></span><span class="card-corner corner-bl"></span><span class="card-corner corner-br"></span>
+        <div class="candidate-header-row">
+          <div class="candidate-title-group">
+            <span class="candidate-name n" style="color: #b45309;">隆美尔</span>
+            <span class="candidate-stars stars">
+              <span class="officer-gem-stars"><span class="officer-gem-star"></span><span class="officer-gem-star"></span><span class="officer-gem-star"></span><span class="officer-gem-star"></span><span class="officer-gem-star"></span></span>
+            </span>
+          </div>
+          <div class="candidate-badge-group">
+            <span class="tier-ribbon rarity-ur">极度稀有（UR）</span>
+          </div>
+        </div>
+        <div class="candidate-stats-grid">
+          <div class="c-stat-pill pill-mil is-peak" title="军事: 219"><span class="c-stat-lbl">军</span><span class="c-stat-val">219</span></div>
+          <div class="c-stat-pill pill-def" title="防御: 165"><span class="c-stat-lbl">防</span><span class="c-stat-val">165</span></div>
+          <div class="c-stat-pill pill-log" title="后勤: 175"><span class="c-stat-lbl">后</span><span class="c-stat-val">175</span></div>
+          <div class="c-stat-pill pill-kno" title="学识: 155"><span class="c-stat-lbl">学</span><span class="c-stat-val">155</span></div>
+        </div>
+        <div class="candidate-footer-row">
+          <div class="candidate-skills-wrap"><span class="candidate-skill-tag" title="技能: 兵贵神速 Lv5">⚡ 兵贵神速 Lv5</span></div>
+          <div class="officer-recruit-act">
+            <button type="button" class="link-act candidate-recruit-btn"><span class="btn-recruit-text">招募</span><span class="btn-recruit-cost">🪙400</span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 候选人 5: 3星 屯田增产 (金币不足锁定状态) -->
+      <div class="menu-item lock officer-card tier-normal academy-candidate-card is-locked" data-star="3" title="黄金不足 (需 240 黄金)">
+        <div class="candidate-header-row">
+          <div class="candidate-title-group">
+            <span class="candidate-name n" style="color: #7c3aed;">詹姆斯·格雷厄姆</span>
+            <span class="candidate-stars stars">
+              <span class="officer-gem-stars"><span class="officer-gem-star"></span><span class="officer-gem-star"></span><span class="officer-gem-star"></span><span class="officer-gem-star is-empty"></span><span class="officer-gem-star is-empty"></span></span>
+            </span>
+          </div>
+          <div class="candidate-badge-group">
+            <span class="candidate-star-pill star-3">3星</span>
+          </div>
+        </div>
+        <div class="candidate-stats-grid">
+          <div class="c-stat-pill pill-mil" title="军事: 74"><span class="c-stat-lbl">军</span><span class="c-stat-val">74</span></div>
+          <div class="c-stat-pill pill-def" title="防御: 76"><span class="c-stat-lbl">防</span><span class="c-stat-val">76</span></div>
+          <div class="c-stat-pill pill-log is-peak" title="后勤: 91"><span class="c-stat-lbl">后</span><span class="c-stat-val">91</span></div>
+          <div class="c-stat-pill pill-kno" title="学识: 73"><span class="c-stat-lbl">学</span><span class="c-stat-val">73</span></div>
+        </div>
+        <div class="candidate-footer-row">
+          <div class="candidate-skills-wrap"><span class="candidate-skill-tag" title="技能: 屯田增产 Lv3">⚡ 屯田增产 Lv3</span></div>
+          <div class="officer-recruit-act">
+            <button type="button" class="link-act disabled candidate-recruit-btn is-disabled" disabled><span class="btn-recruit-text">招募</span><span class="btn-recruit-cost">🪙240</span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 候选人 6: 3星 坚守阵地 (防御特化) -->
+      <div class="menu-item ok officer-card tier-normal academy-candidate-card" data-star="3" title="招募 赫伯特·贝尔 (消耗 240 黄金)">
+        <div class="candidate-header-row">
+          <div class="candidate-title-group">
+            <span class="candidate-name n" style="color: #7c3aed;">赫伯特·贝尔</span>
+            <span class="candidate-stars stars">
+              <span class="officer-gem-stars"><span class="officer-gem-star"></span><span class="officer-gem-star"></span><span class="officer-gem-star"></span><span class="officer-gem-star is-empty"></span><span class="officer-gem-star is-empty"></span></span>
+            </span>
+          </div>
+          <div class="candidate-badge-group">
+            <span class="candidate-star-pill star-3">3星</span>
+          </div>
+        </div>
+        <div class="candidate-stats-grid">
+          <div class="c-stat-pill pill-mil" title="军事: 63"><span class="c-stat-lbl">军</span><span class="c-stat-val">63</span></div>
+          <div class="c-stat-pill pill-def" title="防御: 61"><span class="c-stat-lbl">防</span><span class="c-stat-val">61</span></div>
+          <div class="c-stat-pill pill-log is-peak" title="后勤: 85"><span class="c-stat-lbl">后</span><span class="c-stat-val">85</span></div>
+          <div class="c-stat-pill pill-kno" title="学识: 70"><span class="c-stat-lbl">学</span><span class="c-stat-val">70</span></div>
+        </div>
+        <div class="candidate-footer-row">
+          <div class="candidate-skills-wrap"><span class="candidate-skill-tag" title="技能: 坚守阵地 Lv2">⚡ 坚守阵地 Lv2</span></div>
+          <div class="officer-recruit-act">
+            <button type="button" class="link-act candidate-recruit-btn"><span class="btn-recruit-text">招募</span><span class="btn-recruit-cost">🪙240</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchTheme(theme) {
+      document.body.setAttribute('data-theme', theme);
+      document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      const box = document.getElementById('preview-box');
+      if (theme === 'dark') {
+        box.classList.add('preview-dark');
+      } else {
+        box.classList.remove('preview-dark');
+      }
+    }
+  </script>
+</body>
+</html>

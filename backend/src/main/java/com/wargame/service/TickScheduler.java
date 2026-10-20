@@ -1,5 +1,6 @@
 package com.wargame.service;
 
+import com.wargame.util.GameClock;
 import com.wargame.repository.PlayerRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +38,7 @@ public class TickScheduler {
 
     @Scheduled(fixedDelayString = "${game.tick-interval:5000}")
     public void tickAll() {
-        long cutoff = System.currentTimeMillis() - interval;
+        long cutoff = GameClock.now() - interval;
         for (int batch = 0; batch < maxBatches; batch++) {
             List<Long> ids = players.findDuePlayerIds(cursor, cutoff, PageRequest.of(0, batchSize));
             if (ids.isEmpty()) {

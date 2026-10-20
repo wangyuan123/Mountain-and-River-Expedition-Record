@@ -30,25 +30,40 @@ test('零级雷达保持未知来源、目标与迎战入口，缺少字段不�
   assert.doesNotMatch(html, /undefined|总兵力:|统帅:|战斗科技:/);
 });
 
-test('三级雷达展示兵种与总数，不展示各兵种编成和高级情报', () => {
-  const html = render({ radarLevel: 3, fromName: '敌方', branches: ['land', 'air'], strengthBand: '101—500',
+test('六级雷达展示兵种与总数，不展示各兵种编成和高级情报', () => {
+  const html = render({ radarLevel: 6, fromName: '敌方', branches: ['land', 'air'], strengthBand: '101—500',
     unitTypes: ['infantry', 'fighter'], totalTroops: 200 });
   assert.match(html, /步兵、战斗机/);
   assert.match(html, /总兵力: 200/);
   assert.doesNotMatch(html, /步兵 ×|统帅:|战斗科技:|已配装装备:/);
 });
 
-test('五级雷达按服务端对象目录解析装备并显示本队快照', () => {
-  const html = render({ radarLevel: 5, army: { infantry: 150 }, commander: '统帅甲', commanderStar: 3, commanderLevel: 8,
+test('十级雷达按服务端对象目录解析装备并显示本队快照', () => {
+  const html = render({ radarLevel: 10, army: { infantry: 150 }, commander: '统帅甲', commanderStar: 3, commanderLevel: 8,
     combatTech: { attack_tech: 10 }, unitEquipment: { '@ue:infantry:item:infantry_helmet': 1 },
-    commanderAttributes: { military: 80, defense: 70 }, skills: {},
+    commanderAttributes: { military: 80, defense: 70 }, skills: { blitz: 5 },
     commandBonus: { name: '司令甲', military: 50, defense: 40, logistics: 30, knowledge: 20 },
     intelligenceSource: '战斗属性为开战快照' });
   assert.match(html, /步兵 ×150/);
   assert.match(html, /统帅甲 3星 Lv.8/);
   assert.match(html, /攻击科技 Lv.10/);
   assert.match(html, /已配装装备: 钢盔/);
-  assert.match(html, /军事 80 \/ 防御 70/);
+  assert.match(html, /司令官: 司令甲（军事 50 \/ 防御 40 \/ 后勤 30 \/ 学识 20）/);
   assert.match(html, /战斗属性为开战快照/);
-  assert.doesNotMatch(html, /undefined/);
+  assert.doesNotMatch(html, /undefined|将领有效属性:|将领技能:|军事 80 \/ 防御 70|blitz Lv\.5/);
+});
+
+
+test('来袭攻击与侦查情报按雷达逐级开放，旧载荷的将领属性和技能始终不展示', () => {
+  const fields = { fromName: '敌方', fromX: 9, fromY: 8, action: 'plunder', branches: ['land'], strengthBand: '101—500',
+    unitTypes: ['infantry'], totalTroops: 150, army: { infantry: 150 }, commander: '统帅甲',
+    combatTech: { attack_tech: 10 }, unitEquipment: {}, commanderAttributes: { military: 80, defense: 70 }, skills: { blitz: 5 }, commandBonus: {} };
+  const labels = ['来袭玩家:', '出发地:', '军种:', '兵力区间:', '兵种:', '总兵力:', '步兵 ×150', '统帅:', '战斗科技:', '司令官:'];
+  for (const action of ['plunder', 'scout']) {
+    for (let level = 0; level <= 10; level++) {
+      const html = render({ ...fields, action, radarLevel: level });
+      labels.forEach((label, index) => assert.equal(html.includes(label), level >= index + 1, action + ' Lv.' + level + ' ' + label));
+      assert.doesNotMatch(html, /将领有效属性:|将领技能:|军事 80 \/ 防御 70|blitz Lv\.5/);
+    }
+  }
 });

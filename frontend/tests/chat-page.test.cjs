@@ -204,6 +204,35 @@ test('chat navigation shows the same red numeric badge as mail and hides it at z
   assert.doesNotMatch(chatItem, /nav-badge/);
 });
 
+test('chat navigation and bottom tab display numeric badge for friend requests and combine with private chat', () => {
+  const { game, view } = setup();
+  game.PrivateChat.unread = () => 0;
+  game.Friends = { unread: () => 1 };
+  let html = game.MainView.navBar();
+  assert.match(html, /data-route="chat"[^]*?<span class="nav-badge">1<\/span>/);
+
+  game.PrivateChat.unread = () => 2;
+  game.Friends.unread = () => 3;
+  html = game.MainView.navBar();
+  assert.match(html, /data-route="chat"[^]*?<span class="nav-badge">5<\/span>/);
+
+  game.Core.views.chat(view);
+  assert.match(view.html, /id="friendRequestTabBadge"[^>]*>3<\/span>/);
+  assert.match(view.html, /id="chatMessagesTabBadge"[^>]*>2<\/span>/);
+
+  let acknowledged = false;
+  game.Friends.acknowledge = () => { acknowledged = true; };
+  game.Friends.refresh = () => {};
+  game.MainView.selectChatTab('friends');
+  assert.ok(acknowledged);
+
+  game.PrivateChat.unread = () => 0;
+  game.Friends.unread = () => 0;
+  html = game.MainView.navBar();
+  const chatItem = html.split('data-route="chat"')[1].split('data-route="mail"')[0];
+  assert.doesNotMatch(chatItem, /nav-badge/);
+});
+
 test('guild chat reads player.guild without visiting the guild hall first', () => {
   const { game, view } = setup();
   game.Core.state.player.guild = { id: 42, name: 'test guild', role: 'member' };

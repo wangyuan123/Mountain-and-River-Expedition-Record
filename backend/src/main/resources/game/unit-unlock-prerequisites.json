@@ -1,0 +1,213 @@
+{
+  "version": "unit-unlock-20261020-v4",
+  "units": [
+    {
+      "id": "infantry",
+      "productionBuilding": "factory",
+      "buildings": {
+        "factory": 1
+      },
+      "technologies": {}
+    },
+    {
+      "id": "truck",
+      "productionBuilding": "factory",
+      "buildings": {
+        "factory": 1
+      },
+      "technologies": {}
+    },
+    {
+      "id": "recon_car",
+      "productionBuilding": "factory",
+      "buildings": {
+        "factory": 2
+      },
+      "technologies": {
+        "recon_level": 1
+      }
+    },
+    {
+      "id": "armored",
+      "productionBuilding": "factory",
+      "buildings": {
+        "factory": 3
+      },
+      "technologies": {
+        "arm_engine": 1,
+        "weapon_range": 1
+      }
+    },
+    {
+      "id": "ltank",
+      "productionBuilding": "lightfactory",
+      "buildings": {
+        "lightfactory": 4
+      },
+      "technologies": {
+        "arm_engine": 2,
+        "attack_tech": 2,
+        "defense_tech": 2
+      }
+    },
+    {
+      "id": "scout",
+      "productionBuilding": "airport",
+      "buildings": {
+        "airport": 2,
+        "apron": 2
+      },
+      "technologies": {
+        "air_engine": 1,
+        "recon_level": 2
+      }
+    },
+    {
+      "id": "assault",
+      "productionBuilding": "factory",
+      "buildings": {
+        "factory": 5,
+        "heavyfactory": 4
+      },
+      "technologies": {
+        "weapon_range": 3,
+        "fire_density": 3
+      }
+    },
+    {
+      "id": "transport",
+      "productionBuilding": "airport",
+      "buildings": {
+        "airport": 5,
+        "apron": 4
+      },
+      "technologies": {
+        "air_engine": 3,
+        "log_load": 3,
+        "log_food": 3
+      }
+    },
+    {
+      "id": "htank",
+      "productionBuilding": "heavyfactory",
+      "buildings": {
+        "heavyfactory": 6
+      },
+      "technologies": {
+        "arm_engine": 4,
+        "attack_tech": 4,
+        "defense_tech": 4
+      }
+    },
+    {
+      "id": "fighter",
+      "productionBuilding": "airport",
+      "buildings": {
+        "airport": 6,
+        "apron": 5
+      },
+      "technologies": {
+        "air_engine": 4,
+        "weapon_range": 4,
+        "attack_tech": 3
+      }
+    },
+    {
+      "id": "destroyer",
+      "productionBuilding": "shipyard",
+      "buildings": {
+        "shipyard": 6,
+        "port": 6
+      },
+      "technologies": {
+        "nav_engine": 5,
+        "weapon_range": 4,
+        "log_food": 4
+      },
+      "coastalOrLegacyNavalRequired": true
+    },
+    {
+      "id": "rocket",
+      "productionBuilding": "factory",
+      "buildings": {
+        "factory": 9,
+        "heavyfactory": 8
+      },
+      "technologies": {
+        "weapon_range": 9,
+        "fire_density": 8,
+        "arm_engine": 7
+      }
+    },
+    {
+      "id": "sub",
+      "productionBuilding": "shipyard",
+      "buildings": {
+        "shipyard": 7,
+        "port": 7
+      },
+      "technologies": {
+        "nav_engine": 6,
+        "weapon_range": 5,
+        "log_food": 5
+      },
+      "coastalOrLegacyNavalRequired": true
+    },
+    {
+      "id": "special",
+      "productionBuilding": "factory",
+      "buildings": {
+        "factory": 10
+      },
+      "technologies": {
+        "log_train": 10,
+        "attack_tech": 9,
+        "cmd_hp": 9
+      }
+    },
+    {
+      "id": "bomber",
+      "productionBuilding": "airport",
+      "buildings": {
+        "airport": 8,
+        "apron": 7
+      },
+      "technologies": {
+        "air_engine": 6,
+        "weapon_range": 5,
+        "fire_density": 5
+      }
+    },
+    {
+      "id": "battleship",
+      "productionBuilding": "shipyard",
+      "buildings": {
+        "shipyard": 10,
+        "port": 10
+      },
+      "technologies": {
+        "nav_engine": 9,
+        "weapon_range": 10,
+        "fire_density": 10,
+        "log_food": 9
+      },
+      "coastalOrLegacyNavalRequired": true
+    },
+    {
+      "id": "carrier",
+      "productionBuilding": "shipyard",
+      "buildings": {
+        "shipyard": 10,
+        "port": 10
+      },
+      "technologies": {
+        "nav_engine": 10,
+        "weapon_range": 10,
+        "fire_density": 10,
+        "log_food": 10,
+        "air_engine": 10
+      },
+      "coastalOrLegacyNavalRequired": true
+    }
+  ]
+}

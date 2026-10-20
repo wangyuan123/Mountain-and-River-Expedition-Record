@@ -2,9 +2,10 @@
 window.Game = window.Game || {};
 (function (G) {
   'use strict';
+  G.gameNow = G.gameNow || function () { return Date.now(); };
   var Core = G.Core, C = G.Constants.pvp;
   var state = null, battle = null, lobby = null, config = null, report = null;
-  var context = '', timer = null, lastPoll = 0, lastBeat = 0, offset = 0, reading = null;
+  var context = '', timer = null, lastPoll = 0, lastBeat = 0, reading = null;
   var busy = false, error = '', notice = '', pending = null, dirty = false, saving = false, saveTimer = null;
   var lobbyLoading = false, readAgain = false;
   var drafts = {}, loadedAttempt = '', rendered = '', estimate = null, dismissed = '', tab = 'lobby';
@@ -16,15 +17,17 @@ window.Game = window.Game || {};
   function name(id) { return unit(id).name || id; }
   function id() { return window.crypto && window.crypto.randomUUID ? window.crypto.randomUUID() : 'pvp_' + Date.now() + '_' + Math.random().toString(36).slice(2); }
   function key() { var c = G.API.client; return c.serverId + ':' + c.getToken(); }
-  function now() { return Date.now() + offset; }
+  function now() { return G.gameNow(); }
   function clock(ms) { var n = Math.max(0, Math.floor(ms / 1000)); return String(Math.floor(n / 60)).padStart(2, '0') + ':' + String(n % 60).padStart(2, '0'); }
   function active() { return state && ['QUEUED', 'ACCEPTING', 'LOADING', 'COUNTDOWN', 'BATTLING', 'RECOVERING'].indexOf(state.status) >= 0; }
+  /** 声望达到门槛后开放对战页操作，账号状态尚未加载时保持锁定。 */
+  function prestigeLocked() { return !(Core.state && Number(Core.state.prestige) >= C.minPrestige); }
   function reset() {
     state = battle = lobby = config = report = estimate = pending = null;
     busy = dirty = saving = false; error = notice = loadedAttempt = rendered = dismissed = ''; drafts = {}; tab = 'lobby';
     lastPoll = lastBeat = 0; lobbyLoading = false; if (saveTimer) clearTimeout(saveTimer);
   }
-  function syncClock(data) { if (data && data.serverTime) offset = data.serverTime - Date.now(); }
+  function syncClock(data) { if (data) G.GameTime.sync(data.serverTime); }
   function show() { if (Core.route === 'pvp') render(document.getElementById('view')); }
   function view() { if (Core.route !== 'pvp') G.go('pvp'); else show(); }
   function request(method, path, body) { return G.API.client.request(method, '/game/pvp/' + path, body, { silent: true, retry: 0, timeout: method === 'GET' ? 10000 : 120000 }); }
@@ -160,15 +163,16 @@ window.Game = window.Game || {};
   function setField(field) { config.battlefield = field; config.army = proportion(lobby.available.army, lobby.available.cap, field); estimate = null; rendered = ''; show(); }
   function setCity(slot) { config.citySlot = Number(slot); config.commanderId = null; config.army = {}; estimate = null; loadLobby(slot).then(function () { config.army = proportion(lobby.available.army, lobby.available.cap, config.battlefield); rendered = ''; show(); }); }
   function savePreset() {
+    if (prestigeLocked()) return Promise.resolve();
     var body = Object.assign({}, config, { presetVersion: lobby.presetVersion });
     return mutate('preset', body, function (r) { lobby.presetVersion = r.presetVersion; estimate = r.snapshot; applyStatus(r.status); notice = '演习编队与默认战术已保存'; });
   }
   function queue() {
-    if (!config || !lobby) return;
+    if (prestigeLocked() || !config || !lobby) return;
     dismissed = ''; report = battle = null; tab = 'lobby';
     // 将独立默认战术先保存；队列只使用服务端冻结后的配置版本。
     savePreset().then(function () {
-      if (pending || error || busy) return;
+      if (prestigeLocked() || pending || error || busy) return;
       return mutate('queue', { citySlot: config.citySlot, battlefield: config.battlefield, army: config.army, commanderId: config.commanderId, presetVersion: lobby.presetVersion }, applyStatus);
     });
   }
@@ -213,22 +217,74 @@ window.Game = window.Game || {};
   }
   function disabled() { return busy || pending ? ' disabled' : ''; }
 
-  /** 渲染使用内存中的编队和草稿；世界Tick重新绘制不会清掉输入或重置排队时间。 */
+  /** 生成声望未达标时的战备准入限制卡片与行动引导。 */
+  function lockedHtml(prestige) {
+    var min = C.minPrestige || 10000;
+    var pct = Math.min(100, Math.max(0, (prestige / min) * 100)).toFixed(1);
+    var needed = Math.max(0, min - prestige);
+    var fmtNeeded = typeof G !== 'undefined' && G.fmt ? G.fmt(needed) : needed;
+
+    var h = '<div class="pvp-prestige-overlay" role="dialog" aria-modal="true" aria-label="PvP对战解锁条件">';
+    h += '<div class="pvp-prestige-message" role="status" aria-live="polite">';
+    h += '<div class="pvp-prestige-badge-row">';
+    h += '<div class="pvp-prestige-icon-wrap" aria-hidden="true">';
+    h += '<svg class="pvp-prestige-icon" viewBox="0 0 48 48" width="40" height="40" fill="none">';
+    h += '<circle cx="24" cy="24" r="22" stroke="currentColor" stroke-width="2" stroke-dasharray="3 3" opacity="0.35"/>';
+    h += '<path d="M24 7 L37 13 V23 C37 31.5 24 39 24 39 C24 39 11 31.5 11 23 V13 Z" fill="currentColor" fill-opacity="0.08" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>';
+    h += '<rect x="18" y="22" width="12" height="10" rx="2" fill="currentColor" fill-opacity="0.88"/>';
+    h += '<path d="M21 22 V18 C21 16.34 22.34 15 24 15 C25.66 15 27 16.34 27 18 V22" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>';
+    h += '<circle cx="24" cy="26" r="1.5" fill="#fff"/>';
+    h += '</svg>';
+    h += '</div>';
+    h += '<span class="pvp-prestige-tag">战备准入限制</span>';
+    h += '</div>';
+    h += '<strong class="pvp-prestige-title">声望达到 ' + min + ' 后解锁 PvP 对战功能</strong>';
+    h += '<div class="pvp-prestige-progress-wrap">';
+    h += '<div class="pvp-prestige-val-row">';
+    h += '<p class="pvp-prestige-val">当前声望：' + prestige + ' / ' + min + '</p>';
+    h += '<span class="pvp-prestige-percent">' + pct + '%</span>';
+    h += '</div>';
+    h += '<div class="pvp-prestige-track" role="progressbar" aria-valuenow="' + prestige + '" aria-valuemin="0" aria-valuemax="' + min + '">';
+    h += '<div class="pvp-prestige-bar" style="width:' + pct + '%"></div>';
+    h += '</div>';
+    h += '<div class="pvp-prestige-remain">还需 <b>' + fmtNeeded + '</b> 点声望解锁真人匹配权限</div>';
+    h += '</div>';
+    h += '<div class="pvp-prestige-guide">';
+    h += '<div class="pvp-prestige-guide-title">快速提升声望途径：</div>';
+    h += '<ul class="pvp-prestige-guide-list">';
+    h += '<li><span>⚔️</span> 出征野地据点与战术防御</li>';
+    h += '<li><span>📜</span> 推进主线任务提升军衔等级</li>';
+    h += '<li><span>🏗️</span> 升级城防工事与扩充军备规模</li>';
+    h += '</ul>';
+    h += '</div>';
+    h += '<div class="pvp-prestige-actions">';
+    h += '<button type="button" class="btn ok pvp-prestige-btn" onclick="Game.go(\'mainQuest\')">前往任务提升声望</button>';
+    h += '<button type="button" class="btn pvp-prestige-btn" onclick="Game.go(\'world\')">前往地图征战</button>';
+    h += '</div>';
+    h += '</div></div>';
+    return h;
+  }
+
+  /** 保留编队和草稿；声望变化时刷新蒙层，达标后恢复操作。 */
   function render(v) {
     if (!v) return;
     if (key() !== context) start();
-    var signature = JSON.stringify([state, battle, lobby, config, report, tab, busy, pending && pending.path, error, notice, drafts, estimate]);
+    var prestige = Math.max(0, Number(Core.state && Core.state.prestige) || 0), locked = prestigeLocked();
+    var signature = JSON.stringify([state, battle, lobby, config, report, tab, busy, pending && pending.path, error, notice, drafts, estimate, prestige, locked]);
     if (rendered === signature && v.querySelector('.pvp-page')) { updateTimes(); return; }
     var focused = document.activeElement, focusId = focused && focused.id, scroll = v.scrollTop;
     rendered = signature;
-    var h = '<section class="pvp-page"><div class="pvp-head"><div><small>指挥演习 · 真人匹配</small><h2>1v1 匹配演习</h2></div><span class="pvp-badge">虚拟演习 · 实际兵力零损失</span></div>' + flash();
+    // inert 同时阻止鼠标、触摸和键盘进入预览内容，蒙层仅覆盖当前对战页。
+    var h = '<section class="pvp-page' + (locked ? ' pvp-page-locked' : '') + '"><div class="pvp-content"' + (locked ? ' inert aria-disabled="true"' : '') + '><div class="pvp-head"><div><small>指挥演习 · 真人匹配</small><h2>1v1 匹配演习</h2></div><span class="pvp-badge">虚拟演习 · 实际兵力零损失</span></div>' + flash();
     if (state && (state.status === 'QUEUED' || state.status === 'ACCEPTING')) h += queueHtml();
     else if (battle && ['LOADING', 'COUNTDOWN', 'BATTLING', 'RECOVERING'].indexOf(battle.status) >= 0 && active()) h += battleHtml();
     else if (tab === 'report' && report) h += reportHtml();
     else if (!lobby || !config) { h += '<p>正在读取演习编队…</p>'; if (!busy) loadLobby(config ? config.citySlot : null); }
     else h += lobbyHtml();
+    h += '</div>';
+    if (locked) h += lockedHtml(prestige);
     v.innerHTML = h + '</section>'; v.scrollTop = scroll;
-    if (focusId) { var next = document.getElementById(focusId); if (next) next.focus(); }
+    if (focusId && !locked) { var next = document.getElementById(focusId); if (next) next.focus(); }
     updateTimes();
   }
   function lobbyHtml() {
@@ -248,7 +304,7 @@ window.Game = window.Game || {};
     });
     h += '</tbody></table></div><div class="pvp-actions"><button class="btn ok" onclick="Game.Pvp.queue()"' + disabled() + '>开始匹配</button><button class="btn" onclick="Game.Pvp.savePreset()"' + disabled() + '>保存编队 / 查看实力</button></div>';
     if (estimate) h += summary(estimate);
-    if (state && state.cooldownUntil > now()) h += '<p>连续未确认对局，冷却至 ' + esc(new Date(state.cooldownUntil).toLocaleTimeString()) + '</p>';
+    if (state && state.cooldownUntil > now()) h += '<p>连续未确认对局，冷却至 ' + esc(new Date(G.GameTime ? G.GameTime.toWallTime(state.cooldownUntil) : state.cooldownUntil).toLocaleTimeString()) + '</p>';
     h += '<p class="pvp-muted">匹配前会重新核验并复制当前驻军、科技、配装和将领。等待时间暂无法估计。</p><h3>最近演习战报</h3>';
     if (!lobby.reports.length) h += '<p class="pvp-muted">尚无演习记录</p>';
     lobby.reports.forEach(function (r) { h += '<button class="pvp-history" onclick="Game.Pvp.report(\'' + r.sessionId + '\')">' + esc(resultNames[r.result]) + '<span>' + esc(new Date(r.createdAt).toLocaleString()) + ' →</span></button>'; });

@@ -54,30 +54,57 @@ window.Game = window.Game || {};
     return result && result.missing[0] || null;
   }
 
-  /** 征召按本城已完成建筑校验；海军同时需要制造设施和驻泊军港，与 UnitDef 保持一致。 */
+  /** 兵种条件只读服务端快照；未同步时保持锁定，不在前端复制门槛。 */
   function checkRecruitment(id) {
-    var unit = G.DATA.units && G.DATA.units[id];
-    if (!unit) return null;
-    var buildings = unit.branch === 'sea' ? [unit.build, 'port'] : [unit.build];
-    var requirements = buildings.map(function (building) {
-      var actual = currentLevel(building, 'city');
-      return {
-        id: building,
-        name: G.DATA.buildings[building].name,
-        required: 1,
-        actual: actual,
-        scope: 'city',
-        met: actual >= 1
-      };
-    });
-    return { requirements: requirements, missing: requirements.filter(function (entry) { return !entry.met; }) };
+    var state = (G.Core && G.Core.state) || {};
+    return state.unitUnlocks && state.unitUnlocks[id] || null;
+  }
+
+  /** 建设与研究分别导航，地理缺项进入城市选择。 */
+  function goToRequirement(kind, id, scope, event) {
+    // 装备抽屉覆盖其他页面；沿用原有草稿确认，确认前不跳转或丢弃配装。
+    if (G.UnitEquipment) {
+      if (G.UnitEquipment.isBusy()) return;
+      if (G.UnitEquipment.hasUnsaved()) { G.UnitEquipment.close(false); return; }
+      G.UnitEquipment.close(true);
+    }
+    if (kind === 'geography') { if (G.Cities && G.Cities.open) G.Cities.open(); return; }
+    if (kind !== 'technology') { goTo(id, scope, event); return; }
+    var mask = event && event.target && event.target.closest('.modal-mask');
+    if (mask) mask.remove();
+    G.Core.go('tech');
+    var tech = G.DATA.techs && G.DATA.techs[id];
+    if (G.Tech && G.Tech.setTab && tech) G.Tech.setTab(tech.branch);
+    var card = window.document.getElementById('tech-card-' + id);
+    if (card && card.scrollIntoView) card.scrollIntoView({ block: 'center' });
+  }
+
+  function escape(value) {
+    return String(value).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
+  }
+
+  /** 展示全部直接条件及缺项导航，征召、装备、战俘与任务共用。 */
+  function recruitmentHtml(id, result) {
+    result = result || checkRecruitment(id);
+    if (!result) return '<div class="desc">兵种条件待同步</div>';
+    return '<div class="prereq-list" aria-label="兵种解锁条件">' + result.requirements.map(function (entry) {
+      var geography = entry.kind === 'geography';
+      return '<div class="prereq-row' + (entry.met ? ' met' : '') + '"><span>' + escape(entry.name) +
+        ' <small>' + (entry.scope === 'empire' ? '全帝国' : '本城') + '</small></span><span>' +
+        (geography ? (entry.current ? '已具备' : '未具备') : 'Lv.' + entry.current + ' / Lv.' + entry.required) + '</span>' +
+        (entry.met ? '<span>已满足</span>' : '<button type="button" class="btn sm" onclick="event.stopPropagation();Game.Prerequisites.goToRequirement(\'' +
+          entry.kind + '\',\'' + entry.id + '\',\'' + entry.scope + '\',event)">' +
+          (entry.kind === 'technology' ? '前往研究' : geography ? '选择城市' : '前往建设') + '</button>') + '</div>';
+    }).join('') + '</div>';
   }
 
   function missingText(entry) {
     if (!entry) return '';
-    var where = entry.scope === 'owned_coastal_city' ? '任一沿海城' : '本城';
+    if (entry.kind === 'geography') return '需' + entry.name;
+    var where = entry.scope === 'empire' ? '全帝国' : entry.scope === 'owned_coastal_city' ? '任一沿海城' : '本城';
+    var actual = entry.current == null ? entry.actual : entry.current;
     return '需' + where + entry.name + ' Lv.' + entry.required +
-      (entry.actual == null ? '' : '（当前 Lv.' + entry.actual + '）');
+      (actual == null ? '' : '（当前 Lv.' + actual + '）');
   }
 
   function goTo(id, scope, event) {
@@ -150,6 +177,8 @@ window.Game = window.Game || {};
     setRules: setRules,
     check: check,
     checkRecruitment: checkRecruitment,
+    recruitmentHtml: recruitmentHtml,
+    goToRequirement: goToRequirement,
     firstMissing: firstMissing,
     missingText: missingText,
     html: html,

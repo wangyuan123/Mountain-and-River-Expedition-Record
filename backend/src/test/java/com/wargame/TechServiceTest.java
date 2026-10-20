@@ -5,12 +5,14 @@ import com.wargame.model.constants.ItemDef;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
 import com.wargame.service.CityScope;
+import com.wargame.service.EquipmentService;
 import com.wargame.service.SpeedUpSupport;
 import com.wargame.service.TechService;
 import com.wargame.service.PrerequisiteService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -28,6 +30,8 @@ class TechServiceTest {
     private TechResearchQueueRepository techResearchQueueRepository;
     private SpeedUpSupport speedUpSupport;
     private CityScope cityScope;
+    private OfficerRepository officerRepository;
+    private EquipmentService equipmentService;
     private TechService techService;
 
     @BeforeEach
@@ -39,6 +43,8 @@ class TechServiceTest {
         techResearchQueueRepository = mock(TechResearchQueueRepository.class);
         speedUpSupport = mock(SpeedUpSupport.class);
         cityScope = mock(CityScope.class);
+        officerRepository = mock(OfficerRepository.class);
+        equipmentService = mock(EquipmentService.class);
 
         when(cityScope.slot(anyLong())).thenReturn(0);
         when(playerRepository.lockById(anyLong())).thenReturn(Optional.of(new Player()));
@@ -50,6 +56,13 @@ class TechServiceTest {
         Field csField = TechService.class.getDeclaredField("cityScope");
         csField.setAccessible(true);
         csField.set(techService, cityScope);
+        ReflectionTestUtils.setField(techService, "officerRepository", officerRepository);
+        ReflectionTestUtils.setField(techService, "equipmentService", equipmentService);
+        when(equipmentService.attributes(any(Officer.class))).thenAnswer(invocation -> {
+            Officer officer = invocation.getArgument(0);
+            return new EquipmentService.Attributes(0, 0, 0,
+                    Objects.requireNonNullElse(officer.getKnowledge(), 0), List.of(), List.of());
+        });
         PrerequisiteService prerequisites = mock(PrerequisiteService.class);
         when(prerequisites.unmet(anyLong(), anyInt(), anyString(), anyString(), anyInt()))
                 .thenReturn(Collections.emptyList());
@@ -61,14 +74,67 @@ class TechServiceTest {
     @Test
     void testCalcTechDuration() {
         int d0 = techService.calcTechDuration("attack_tech", 0, 1);
-        assertEquals(30, d0);
+        assertEquals(178, d0);
 
         int d0Lab5 = techService.calcTechDuration("attack_tech", 0, 5);
         assertTrue(d0Lab5 < d0, "Higher lab level should reduce duration");
-        assertEquals(21, d0Lab5);
+        assertEquals(171, d0Lab5);
+        assertEquals(85320, techService.calcTechDuration("attack_tech", 5, 0));
+        assertEquals(84475, techService.calcTechDuration("attack_tech", 5, 1));
+        assertEquals(81257, techService.calcTechDuration("attack_tech", 5, 5));
+        assertEquals(77564, techService.calcTechDuration("attack_tech", 5, 10));
+        assertEquals(77564, techService.calcTechDuration("attack_tech", 5, 20));
 
         int d1 = techService.calcTechDuration("attack_tech", 1, 1);
         assertTrue(d1 > d0, "Higher tech level should increase duration");
+    }
+
+    @Test
+    void allFiftyBaseDurationValuesAndExpandedTechnologiesFollowTheDesign() {
+        Map<String, int[]> curves = Map.of(
+                "attack_tech", new int[]{180,600,1800,10800,43200,85320,168420,332460,656400,1296000},
+                "prod_food", new int[]{120,480,1500,5400,21600,46860,101640,220380,478020,1036800},
+                "arm_engine", new int[]{300,900,2700,10800,43200,90360,188940,395100,826260,1728000},
+                "nav_engine", new int[]{300,900,2700,10800,43200,96660,216180,483480,1081500,2419200},
+                "air_engine", new int[]{300,900,2700,10800,43200,96660,216180,483480,1081500,2419200});
+        curves.forEach((key, values) -> {
+            for (int index = 0; index < values.length; index++) assertEquals(values[index], techService.calcTechDuration(key, index, 0), key + " level " + (index + 1));
+        });
+        for (String key : com.wargame.model.constants.TechnologyRules.EXPANDED) {
+            assertEquals(10, GameData.TECHS.get(key).maxLevel());
+            for (int index = 0; index < 10; index++) assertEquals(curves.get("attack_tech")[index], techService.calcTechDuration(key, index, 0));
+        }
+    }
+
+    @Test
+    void researchKnowledgeIsContinuousAndMultipliesWithSkillInTheResearchCity() {
+        Long playerId = 100L;
+        Officer mayor = new Officer();
+        mayor.setRole("mayor");
+        when(cityScope.slot(playerId)).thenReturn(2);
+        when(officerRepository.findByPlayerIdAndCitySlotAndRole(playerId, 2, "mayor")).thenReturn(List.of(mayor));
+        int[][] cases = {{0, 77564}, {50, 73870}, {100, 70512}, {200, 64636}};
+        for (int[] entry : cases) {
+            mayor.setKnowledge(entry[0]);
+            assertEquals(entry[1], techService.calcTechDuration(playerId, "attack_tech", 5, 10));
+        }
+        mayor.setKnowledge(100);
+        mayor.setSkills("[{\"id\":\"research\",\"lv\":5}]");
+        assertEquals(58760, techService.calcTechDuration(playerId, "attack_tech", 5, 10));
+        assertEquals(83, techService.calcTechDuration(playerId, "prod_food", 0, 10));
+        assertEquals(892562, techService.calcTechDuration(playerId, "attack_tech", 9, 10));
+        assertEquals(1666116, techService.calcTechDuration(playerId, "nav_engine", 9, 10));
+
+        // 空缺城市不能使用另一城的市长；装备后的有效学识由统一属性服务提供。
+        when(cityScope.slot(playerId)).thenReturn(0);
+        assertEquals(77564, techService.calcTechDuration(playerId, "attack_tech", 5, 10));
+        when(cityScope.slot(playerId)).thenReturn(2);
+        when(equipmentService.attributes(mayor)).thenReturn(new EquipmentService.Attributes(0, 0, 0, 200, List.of(), List.of()));
+        assertEquals(53864, techService.calcTechDuration(playerId, "attack_tech", 5, 10));
+        mayor.setKnowledge(null);
+        mayor.setSkills(null);
+        when(equipmentService.attributes(mayor)).thenReturn(new EquipmentService.Attributes(0, 0, 0, 0, List.of(), List.of()));
+        assertEquals(77564, techService.calcTechDuration(playerId, "attack_tech", 5, 10));
     }
 
     @Test
@@ -87,18 +153,22 @@ class TechServiceTest {
     }
 
     @Test
-    void testStartResearchSuccess() {
+    void testStartResearchLocksMayorAndLabBonusesInQueue() {
         Long playerId = 100L;
-        // Lab level 1
         Building lab = new Building();
         lab.setType("lab");
-        lab.setLevel(1);
+        lab.setLevel(10);
         when(buildingRepository.findByPlayerIdAndCitySlotAndType(playerId, 0, "lab"))
                 .thenReturn(List.of(lab));
 
-        // Tech level 0
+        Technology tech = new Technology();
+        tech.setLevel(5);
         when(technologyRepository.findByPlayerIdAndType(playerId, "attack_tech"))
-                .thenReturn(Collections.emptyList());
+                .thenReturn(List.of(tech));
+        Officer mayor = new Officer();
+        mayor.setKnowledge(100);
+        mayor.setSkills("[{\"id\":\"research\",\"lv\":5}]");
+        when(officerRepository.findByPlayerIdAndCitySlotAndRole(playerId, 0, "mayor")).thenReturn(List.of(mayor));
 
         // No active queue
         when(techResearchQueueRepository.findByPlayerIdOrderByStartedAtAscIdAsc(playerId))
@@ -113,10 +183,19 @@ class TechServiceTest {
         Map<String, Object> result = techService.startResearch(playerId, "attack_tech");
         assertTrue((Boolean) result.get("success"));
         assertEquals("attack_tech", result.get("techType"));
-        assertEquals(1, result.get("targetLevel"));
-        assertNotNull(result.get("durationSeconds"));
+        assertEquals(6, result.get("targetLevel"));
+        assertEquals(58760, result.get("durationSeconds"));
 
-        verify(techResearchQueueRepository, times(1)).save(any(TechResearchQueue.class));
+        var saved = org.mockito.ArgumentCaptor.forClass(TechResearchQueue.class);
+        verify(techResearchQueueRepository).save(saved.capture());
+        TechResearchQueue queue = saved.getValue();
+        assertEquals(58760000L, queue.getFinishesAt() - queue.getStartedAt());
+        when(techResearchQueueRepository.findByPlayerIdOrderByStartedAtAscIdAsc(playerId)).thenReturn(List.of(queue));
+        mayor.setKnowledge(200);
+        lab.setLevel(1);
+        Map<String, Object> active = techService.getActiveResearch(playerId);
+        assertEquals(58760, active.get("durationSeconds"));
+        assertEquals(result.get("finishesAt"), active.get("finishesAt"), "已开工队列不能重新计算加成");
     }
 
     @Test

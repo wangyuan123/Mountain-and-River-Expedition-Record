@@ -1,5 +1,6 @@
 package com.wargame.service;
 
+import com.wargame.util.GameClock;
 import com.wargame.model.constants.JapaneseOfficers;
 import com.wargame.model.constants.WorldConfig;
 import com.wargame.model.constants.MilitaryRankDef;
@@ -119,7 +120,7 @@ public class WorldViewService {
                 pcMap.put("reward", JsonUtil.parseObjMap(pc.getResources()));
                 pcMap.put("defeated", false);
                 pcMap.put("prestige", pc.getPrestige() != null ? pc.getPrestige() : 0);
-                pcMap.put("surrenderFrozen", pc.isSurrenderFrozen(System.currentTimeMillis()));
+                pcMap.put("surrenderFrozen", pc.isSurrenderFrozen(GameClock.now()));
                 pcMap.put("surrenderTransferDeadlineAt", pc.getSurrenderTransferDeadlineAt());
 
                 // 坐标上的真实玩家优先于历史 owner_id；无真实 owner 的 PlayerCity 视为模拟 NPC。
@@ -158,11 +159,11 @@ public class WorldViewService {
                 // coolAt 表示战后保护期 (仅当未处于战争状态时), 战争窗口用 warAt/warEndAt 表达
                 pcMap.put("coolAt", pcWarAt == 0 ? pcWarEnd : 0L);
                 // 列表与坐标地图共用新手保护规则，避免敌对关系绕过受保护城市的行动限制。
-                long newbieUntil = com.wargame.model.constants.NewbieProtection.until(owner, System.currentTimeMillis());
+                long newbieUntil = com.wargame.model.constants.NewbieProtection.until(owner, GameClock.now());
                 long itemUntil = cityStates.findByPlayerIdAndCitySlot(cityOwner, pc.getCitySlot())
                         .map(cs -> Objects.requireNonNullElse(cs.getShieldUntil(), 0L)).orElse(0L);
                 pcMap.put("newbieProtectionUntil", newbieUntil);
-                if (Math.max(newbieUntil, itemUntil) > System.currentTimeMillis()) pcMap.put("shieldUntil", Math.max(newbieUntil, itemUntil));
+                if (Math.max(newbieUntil, itemUntil) > GameClock.now()) pcMap.put("shieldUntil", Math.max(newbieUntil, itemUntil));
                 playerCities.add(pcMap);
             }
         }
@@ -257,7 +258,7 @@ public class WorldViewService {
         Long playerId = player.getId();
         if (playerId != null) {
             List<March> entities = marchRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
-            long now = System.currentTimeMillis();
+            long now = GameClock.now();
             for (March m : entities) {
                 marches.add(toMarchMap(m, now));
             }
@@ -266,6 +267,7 @@ public class WorldViewService {
         world.put("reinforcements", getReinforcements(playerId));
 
         world.put("incoming", getIncoming(player));
+        world.put("returningEnemyMarches", getReturningEnemyMarches(player));
 
         return world;
     }
@@ -273,7 +275,7 @@ public class WorldViewService {
     /** 来袭情报直接关联实际行军，避免再创建一份会重复结算战斗的 IncomingMarch。 */
     public List<Map<String, Object>> getIncoming(Player player) {
         Long playerId = player.getId();
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         List<Map<String, Object>> incoming = new ArrayList<>();
         int radar = intelligence.radar(playerId);
         if (playerId != null) {
@@ -326,6 +328,8 @@ public class WorldViewService {
                 info.put("targetX", march.getTargetX());
                 info.put("targetY", march.getTargetY());
                 info.put("army", JsonUtil.parseObjMap(march.getArmy()));
+                // 来袭地图与出征方共用权威起止时间，支持途中加速后的移动插值。
+                info.put("startAt", march.getStartAt());
                 info.put("arriveAt", march.getArriveAt());
                 info.put("action", march.getAction());
                 info.put("inBattle", march.getBattleId() != null);
@@ -341,6 +345,38 @@ public class WorldViewService {
             }
         }
         return incoming;
+    }
+
+    /**
+     * 为守方地图展示护盾拦截后的敌军返程；只公开路线所需数据，不将其混入来袭列表或战斗提醒。
+     * @param player 当前查看地图的玩家
+     * @return 可用于地图渲染的敌军返程情报
+     */
+    public List<Map<String, Object>> getReturningEnemyMarches(Player player) {
+        Long playerId = player.getId();
+        List<PlayerCity> cities = playerCityRepository.findByOwnerId(playerId);
+        if (cities.isEmpty()) return List.of();
+        List<String> cityIds = cities.stream().map(city -> String.valueOf(city.getId())).toList();
+        List<Map<String, Object>> returning = new ArrayList<>();
+        long now = GameClock.now();
+        for (March march : marchRepository.findReturningEnemyPlayerMarches(playerId, cityIds)) {
+            if (march.getArriveAt() == null || march.getArriveAt() <= now) continue;
+            Map<String, Object> info = new LinkedHashMap<>();
+            info.put("id", "return-march-" + march.getId());
+            info.put("marchId", march.getId());
+            info.put("targetKind", "player");
+            // 护盾拦截已通过双方邮件确认；仅该地图叠层公开反向路线，不包含敌方兵力或其他情报。
+            info.put("fromX", march.getFromX());
+            info.put("fromY", march.getFromY());
+            info.put("targetX", march.getTargetX());
+            info.put("targetY", march.getTargetY());
+            info.put("startAt", march.getStartAt());
+            info.put("arriveAt", march.getArriveAt());
+            info.put("action", march.getAction());
+            info.put("returning", true);
+            returning.add(info);
+        }
+        return returning;
     }
 
     public List<Map<String, Object>> getReinforcements(Long playerId) {

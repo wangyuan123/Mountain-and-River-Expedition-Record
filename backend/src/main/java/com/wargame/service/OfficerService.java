@@ -1,7 +1,9 @@
 package com.wargame.service;
 
+import com.wargame.util.GameClock;
 import com.wargame.model.constants.GameConstants;
 import com.wargame.model.constants.GameData;
+import com.wargame.model.constants.AcademyRecruitmentRules;
 import com.wargame.model.constants.OfficerEquipmentDef;
 import com.wargame.model.constants.OfficerSkillDef;
 import com.wargame.model.constants.HistoricalOfficers;
@@ -39,6 +41,9 @@ public class OfficerService {
 
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private TechService techService;
 
     @org.springframework.beans.factory.annotation.Autowired private com.wargame.repository.MarchRepository marches;
     private final OfficerRepository officerRepository;
@@ -112,12 +117,12 @@ public class OfficerService {
         Player player = playerRepository.findById(playerId).orElseThrow();
         entityManager.flush();
         entityManager.refresh(player, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         AcademyRefreshPolicy.Snapshot quota = AcademyRefreshPolicy.snapshot(player, now);
         result.putAll(quota.toState());
         if (quota.dailyCount() >= AcademyRefreshPolicy.DAILY_LIMIT) {
             result.put("success", false);
-            result.put("message", "今日军校刷新已达100次，请于北京时间次日0点后再刷新");
+            result.put("message", "今日军校刷新已达100次，请于游戏时间次日0点后再刷新（停服顺延）");
             return result;
         }
         if (quota.refreshAt() > now) {
@@ -137,7 +142,10 @@ public class OfficerService {
         setGold(res, getGold(res) - ACADEMY_REFRESH_COST);
         resourcesRepository.save(res);
 
-        List<Map<String, Object>> list = genAcademyCandidates(academyLv, ThreadLocalRandom.current());
+        // 持有账号锁时先结算到期科研，使本次刷新与随后返回的状态使用相同等级。
+        techService.settleCompletedResearchForCity(playerId, cityScope.slot(playerId), now);
+        int theoryLevel = techService.getTechLevel(playerId, AcademyRecruitmentRules.MILITARY_THEORY);
+        List<Map<String, Object>> list = genAcademyCandidates(academyLv, theoryLevel, ThreadLocalRandom.current());
 
         AcademyRefreshPolicy.recordSuccess(player, quota, now);
         playerRepository.save(player);
@@ -148,6 +156,8 @@ public class OfficerService {
         result.put("success", true);
         result.put("message", "军校已刷新");
         result.put("list", list);
+        result.put("candidateCount", ACADEMY_CANDIDATE_COUNT);
+        result.putAll(AcademyRecruitmentRules.state(academyLv, theoryLevel));
         result.putAll(AcademyRefreshPolicy.snapshot(player, now).toState());
         return result;
     }
@@ -222,7 +232,7 @@ public class OfficerService {
         officer.setSalary(getInt(o, "salary"));
         officer.setExp(0L);
         officer.setRole("idle");
-        officer.setRecruitAt(System.currentTimeMillis());
+        officer.setRecruitAt(GameClock.now());
         officer.setRewardAt(0L);
         officer.setSkills(o.get("skills") != null ? JsonUtil.toJson(o.get("skills")) : "[]");
         officer.setBio(o.get("bio") != null ? o.get("bio").toString() : "");
@@ -363,7 +373,7 @@ public class OfficerService {
             return result;
         }
 
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         long rewardAt = officer.getRewardAt() != null ? officer.getRewardAt() : 0L;
 
         // JS: if (o.rewardCoolAt && now < o.rewardCoolAt)
@@ -421,7 +431,7 @@ public class OfficerService {
         // Server-side consumption: must own at least 1 universal skill book.
         // Historical BUG: client only tracked skill book count locally,
         // so a refresh-tab would let players learn skills indefinitely.
-        int consumed = playerItemRepository.tryConsume(playerId, "skillBook", 1, System.currentTimeMillis());
+        int consumed = playerItemRepository.tryConsume(playerId, "skillBook", 1, GameClock.now());
         if (consumed == 0) {
             result.put("success", false);
             result.put("message", "通用技能书不足");
@@ -434,7 +444,7 @@ public class OfficerService {
         // JS: if (o.skills.length >= 3)
         if (skills.size() >= MAX_SKILLS) {
             // Refund: we just consumed a book, give it back since we won't add a skill.
-            playerItemRepository.tryConsume(playerId, "skillBook", -1, System.currentTimeMillis());
+            playerItemRepository.tryConsume(playerId, "skillBook", -1, GameClock.now());
             result.put("success", false);
             result.put("message", "技能已满3个，请先废弃一个");
             return result;
@@ -459,7 +469,7 @@ public class OfficerService {
 
         if (pool.isEmpty()) {
             // Refund the skill book we just consumed.
-            playerItemRepository.tryConsume(playerId, "skillBook", -1, System.currentTimeMillis());
+            playerItemRepository.tryConsume(playerId, "skillBook", -1, GameClock.now());
             result.put("success", false);
             result.put("message", "已学完全部技能");
             return result;
@@ -541,7 +551,7 @@ public class OfficerService {
             }
         }
 
-        int consumed = playerItemRepository.tryConsume(playerId, itemId, 1, System.currentTimeMillis());
+        int consumed = playerItemRepository.tryConsume(playerId, itemId, 1, GameClock.now());
         if (consumed == 0) {
             result.put("success", false);
             result.put("message", skill.name() + "技能书不足");
@@ -603,7 +613,7 @@ public class OfficerService {
             result.put("message", level >= skill.max() ? "技能已满级" : "技能等级无效");
             return result;
         }
-        if (playerItemRepository.tryConsume(playerId, itemId, 1, System.currentTimeMillis()) == 0) {
+        if (playerItemRepository.tryConsume(playerId, itemId, 1, GameClock.now()) == 0) {
             result.put("success", false);
             result.put("message", skill.name() + "技能书不足");
             return result;
@@ -707,7 +717,7 @@ public class OfficerService {
         }
 
         if ("expBookMax".equals(itemId)) {
-            int consumed = playerItemRepository.tryConsume(playerId, "expBookMax", 1, System.currentTimeMillis());
+            int consumed = playerItemRepository.tryConsume(playerId, "expBookMax", 1, GameClock.now());
             if (consumed == 0) {
                 result.put("success", false);
                 result.put("message", "满级经验书不足");
@@ -735,7 +745,7 @@ public class OfficerService {
         String bookName = isAdv ? "高级经验书" : "经验书";
         int singleGain = isAdv ? 100000 : 10000;
 
-        int consumed = playerItemRepository.tryConsume(playerId, itemId, count, System.currentTimeMillis());
+        int consumed = playerItemRepository.tryConsume(playerId, itemId, count, GameClock.now());
         if (consumed == 0) {
             result.put("success", false);
             result.put("message", bookName + "不足");
@@ -1013,15 +1023,15 @@ public class OfficerService {
             result.put("message", "新名称与当前军官名称相同");
             return result;
         }
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         if (NameChangePolicy.nextAllowedAt(officer.getNameRenamedAt(), now) > now) {
             result.put("success", false);
-            result.put("message", "这名军官今天已改名，请明日 0:00 后再试");
+            result.put("message", "这名军官今天已改名，请明日 0:00 后再试（按游戏时间，停服顺延）");
             return result;
         }
 
         // 消耗判定：优先消耗军官改名卡，若无军官改名卡则尝试消耗 60 黄金
-        int consumedCard = playerItemRepository.tryConsume(playerId, "renameCard", 1, System.currentTimeMillis());
+        int consumedCard = playerItemRepository.tryConsume(playerId, "renameCard", 1, GameClock.now());
         boolean usedCard = consumedCard > 0;
         int goldCost = 60;
         if (!usedCard) {
@@ -1061,7 +1071,7 @@ public class OfficerService {
         if (def == null) return equipmentError("无效的装备");
         int level = officer.getLevel() != null ? officer.getLevel() : 1;
         if (level < def.requiredLevel()) return equipmentError("军官等级不足，需要 Lv." + def.requiredLevel());
-        if (playerItemRepository.tryConsume(playerId, itemId, 1, System.currentTimeMillis()) == 0) {
+        if (playerItemRepository.tryConsume(playerId, itemId, 1, GameClock.now()) == 0) {
             return equipmentError("装备不在库存中");
         }
 
@@ -1081,7 +1091,7 @@ public class OfficerService {
             }
         }
 
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         OfficerEquipment equipment;
         if (existingSameSlot != null) {
             // 复用已有实体直接更新字段，发出 UPDATE 语句，杜绝先删后插时的 uk_officer_equipment_slot 唯一键冲突
@@ -1180,7 +1190,7 @@ public class OfficerService {
     }
 
     private void addToInventory(Long playerId, String itemKey) {
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         playerItemRepository.findByPlayerIdAndItemKey(playerId, itemKey).ifPresentOrElse(item -> {
             item.setCount(item.getCount() + 1);
             item.setUpdatedAt(now);
@@ -1215,13 +1225,17 @@ public class OfficerService {
 
     /** 军校整批出现一名五星的概率：每级增加 0.3%，1 级 0.3%，10 级满级 3%。 */
     public static double academyFiveStarBatchChance(int academyLevel) {
-        if (academyLevel <= 0) return 0;
-        return Math.min(10, academyLevel) * 0.003;
+        return AcademyRecruitmentRules.fiveStarBatchChance(academyLevel, 0);
     }
 
-    /** 整批只判定一次五星；命中后随机放入一个位置，其余候选人仅生成 1～4 星。 */
+    /** 未提供军事理论的旧调用保持仅使用军校基础概率。 */
     List<Map<String, Object>> genAcademyCandidates(int academyLevel, RandomGenerator rng) {
-        boolean hasFiveStar = rng.nextDouble() < academyFiveStarBatchChance(academyLevel);
+        return genAcademyCandidates(academyLevel, 0, rng);
+    }
+
+    /** 建筑与科研概率相加后整批只判定一次；命中最多一名五星名将。 */
+    List<Map<String, Object>> genAcademyCandidates(int academyLevel, int theoryLevel, RandomGenerator rng) {
+        boolean hasFiveStar = rng.nextDouble() < AcademyRecruitmentRules.fiveStarBatchChance(academyLevel, theoryLevel);
         int fiveStarSlot = hasFiveStar ? rng.nextInt(ACADEMY_CANDIDATE_COUNT) : -1;
         List<Map<String, Object>> list = new ArrayList<>();
         Set<String> batchNames = new HashSet<>();

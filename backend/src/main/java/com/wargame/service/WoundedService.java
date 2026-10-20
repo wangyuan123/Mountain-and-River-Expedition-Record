@@ -1,5 +1,6 @@
 package com.wargame.service;
 
+import com.wargame.util.GameClock;
 import com.wargame.model.constants.GameData;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
@@ -93,7 +94,9 @@ public class WoundedService {
             batch.setType(entry.getKey());
             batch.setCount(count);
             batch.setCreatedAt(now);
-            batch.setExpiresAt(protection.treatmentDeadline(playerId, now + RETENTION_MS));
+            // 合规开放日历使用真实日期，输入输出需换算回活动的游戏时间轴。
+            long wallOffset = System.currentTimeMillis() - GameClock.now();
+            batch.setExpiresAt(protection.treatmentDeadline(playerId, now + RETENTION_MS + wallOffset) - wallOffset);
             batch.setRecoveryPercent(percent);
             wounded.save(batch);
             recovered.put(entry.getKey(), count);
@@ -117,7 +120,7 @@ public class WoundedService {
     /** 返回当前请求城市的批次与余额；坐标仅为展示快照，不能用于划分城市。 */
     @Transactional(readOnly = true)
     public Map<String, Object> getCamp(Long playerId) {
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         int citySlot = cityScope.slot(playerId);
         List<Map<String, Object>> batches = new ArrayList<>();
         long total = 0;
@@ -168,7 +171,7 @@ public class WoundedService {
         WoundedUnit batch = wounded.findForTreatment(playerId, batchId)
                 .orElseThrow(() -> new IllegalArgumentException("伤兵不存在或已治疗"));
         if (batch.getCitySlot() != cityScope.slot(playerId)) throw new IllegalArgumentException("请切换到伤兵所属城市后治疗");
-        if (batch.getExpiresAt() <= System.currentTimeMillis()) throw new IllegalArgumentException("该批伤兵已超过救治期限");
+        if (batch.getExpiresAt() <= GameClock.now()) throw new IllegalArgumentException("该批伤兵已超过救治期限");
         if (count > batch.getCount()) throw new IllegalArgumentException("治疗数量超过剩余伤兵");
         long cost = "gold".equals(currency) ? goldCost(batch.getType(), count) : diamondCost(batch.getType(), count);
         int available = "gold".equals(currency) ? Objects.requireNonNullElse(balance.getGold(), 0) : Objects.requireNonNullElse(balance.getDiamond(), 0);
@@ -189,6 +192,6 @@ public class WoundedService {
 
     @Transactional
     public void expireWounded() {
-        wounded.deleteExpired(System.currentTimeMillis());
+        wounded.deleteExpired(GameClock.now());
     }
 }

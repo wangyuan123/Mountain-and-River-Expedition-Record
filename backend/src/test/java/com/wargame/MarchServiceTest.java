@@ -18,6 +18,7 @@ import org.springframework.test.util.AopTestUtils;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Map;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -27,6 +28,8 @@ class MarchServiceTest extends BaseServiceTest {
     @Autowired private BattleSessionRepository battleSessionRepository;
     @Autowired private com.wargame.repository.PlayerItemRepository playerItemRepository;
     @Autowired private WorldViewService worldViewService;
+    @Autowired private com.wargame.repository.MailRepository mailRepository;
+    @Autowired private com.wargame.service.CityService cityService;
 
     private Long playerId;
     private Long worldId;
@@ -1010,6 +1013,8 @@ class MarchServiceTest extends BaseServiceTest {
         assertEquals(0, ((Number) defenderView.get("firstCombatRound")).intValue());
         assertEquals(20, ((Number) ((Map<?, ?>) defenderView.get("attackerArmy")).get("infantry")).intValue(),
                 "防守视图中的我军应是守城部队");
+        assertEquals(Map.of("infantry", 0), defenderView.get("attackerPositions"));
+        assertEquals(Map.of("infantry", 2010), defenderView.get("defenderPositions"));
 
         Long outsiderId = createTestPlayer("tactical-outsider", 30).getId();
         IllegalArgumentException forbidden = assertThrows(IllegalArgumentException.class,
@@ -1020,6 +1025,9 @@ class MarchServiceTest extends BaseServiceTest {
                 new GameDtos.BattleCommandRequest(Map.of(
                         "infantry", new GameDtos.BattleUnitOrderRequest("HOLD", null)), 0));
         assertEquals(1, ((Number) afterCommand.get("round")).intValue(), "防守方指令应结算一个回合");
+        Map<?, ?> attackPositions = (Map<?, ?>) marchService.getTacticalBattle(playerId, march.getId()).get("attackerPositions");
+        assertEquals(2010 - ((Number) attackPositions.get("infantry")).intValue(),
+                ((Map<?, ?>) afterCommand.get("defenderPositions")).get("infantry"));
         assertEquals(afterCommand.get("firstCombatRound"),
                 marchService.getTacticalBattle(playerId, march.getId()).get("firstCombatRound"),
                 "刷新及切换攻守视角后，机动速度必须沿用同一交战起点");
@@ -1289,21 +1297,81 @@ class MarchServiceTest extends BaseServiceTest {
         March march = createMarch(playerId, "player", city.getId().toString(), city.getName(),
                 10, 10, 20, 20, Map.of("infantry", 10), action, now - 60_000L, now, false, false);
         march.setCarryRes(JsonUtil.toJson(Map.of("food", 100)));
+        march.setRouteData("[{\"x\":10,\"y\":10},{\"x\":10,\"y\":20},{\"x\":20,\"y\":20}]");
         marchRepository.save(march);
         marchService.processMarches(playerId, now);
+        marchService.processMarches(playerId, now + 1L);
         March returning = marchRepository.findById(march.getId()).orElseThrow();
         assertTrue(returning.getReturning());
         assertEquals(now + 60_000L, returning.getArriveAt());
         assertEquals(Map.of("infantry", 10), JsonUtil.parseIntMap(returning.getArmy()));
         assertEquals(Map.of("food", 100), JsonUtil.parseIntMap(returning.getCarryRes()));
         assertNull(returning.getBattleId());
+        assertEquals(20, returning.getFromX());
+        assertEquals(20, returning.getFromY());
+        assertEquals(10, returning.getTargetX());
+        assertEquals(10, returning.getTargetY());
+        assertEquals(JsonUtil.parseList("[{\"x\":20,\"y\":20},{\"x\":10,\"y\":20},{\"x\":10,\"y\":10}]"),
+                JsonUtil.parseList(returning.getRouteData()));
+        assertTrue(worldViewService.getIncoming(playerRepository.findById(defenderId).orElseThrow()).isEmpty(),
+                "返程部队不再作为来袭目标参与战斗");
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> visibleReturns = (List<Map<String, Object>>) worldViewService
+                .getWorld(defenderId, 20, 20, 0).get("returningEnemyMarches");
+        assertEquals(1, visibleReturns.size(), "护盾拦截后守方地图应继续展示敌军返程路线");
+        assertEquals("shield", returning.getReturnReason());
+        assertEquals("player", visibleReturns.get(0).get("targetKind"));
+        assertEquals(true, visibleReturns.get(0).get("returning"));
+        assertEquals(20, visibleReturns.get(0).get("fromX"));
+        assertEquals(10, visibleReturns.get(0).get("targetX"));
+        assertFalse(visibleReturns.get(0).containsKey("army"), "返程路线不额外泄露敌军兵力");
+        assertEquals(visibleReturns, tickService.pushStateChanges(defenderId).get("returningEnemyMarches"),
+                "实时推送与地图读取使用同一份护盾返程情报");
+        assertEquals(1, marchRepository.findByPlayerId(playerId).size(), "攻方仍保留自己的返程行军");
+        for (Long recipient : java.util.List.of(playerId, defenderId)) {
+            var mails = mailRepository.findByToPlayerIdOrderByCreatedAtDesc(recipient);
+            assertEquals(1, mails.size(), "重复抵达处理不重复发送护盾通知");
+            assertTrue(mails.get(0).getBody().contains("护盾期间不可发生交火"));
+            assertTrue(mails.get(0).getIsSystem());
+        }
         assertTrue(scoutReportRepository.findByPlayerId(playerId).isEmpty());
         assertEquals(defenderId, playerCityRepository.findById(city.getId()).orElseThrow().getOwnerId());
         int foodBefore = getResources(playerId).getFood();
         marchService.processMarches(playerId, returning.getArriveAt());
         assertTrue(marchRepository.findById(march.getId()).isEmpty());
+        assertTrue(worldViewService.getReturningEnemyMarches(playerRepository.findById(defenderId).orElseThrow()).isEmpty());
+        assertEquals(List.of(), tickService.pushStateChanges(defenderId).get("returningEnemyMarches"));
         assertEquals(10, armyUnitRepository.findByPlayerIdAndType(playerId, "infantry").get(0).getCount());
         assertEquals(foodBefore + 100, getResources(playerId).getFood());
+    }
+
+    @ParameterizedTest
+    @CsvSource({"true", "false"})
+    void shieldPurchasedBeforeOpeningBattlePersistsAndReturnsMarch(boolean defenderOpens) {
+        Long defenderId = createTestPlayer("shield-open-defender", 30).getId();
+        PlayerCity city = createTestCity("护盾城", defenderId, 20, 20);
+        city.setCitySlot(0);
+        city = playerCityRepository.save(city);
+        Resources wallet = getResources(defenderId);
+        wallet.setDiamond(500);
+        resourcesRepository.save(wallet);
+        long now = System.currentTimeMillis();
+        March march = createMarch(playerId, "player", city.getId().toString(), city.getName(),
+                10, 10, 20, 20, Map.of("infantry", 10), "plunder", now - 60_000L, now - 1L, false, false);
+        assertEquals(200, cityService.activateShields(defenderId, java.util.List.of(city.getId())).get("cost"));
+        assertEquals(300, getResources(defenderId).getDiamond());
+        assertTrue(cityStateRepository.findByPlayerIdAndCitySlot(defenderId, 0).orElseThrow().getShieldUntil() > now);
+        assertTrue(((Number) ((Map<?, ?>) ((java.util.List<?>) cityService.overview(defenderId).get("cities")).get(0)).get("shieldUntil")).longValue() > now);
+
+        Map<String, Object> result = marchService.getTacticalBattle(defenderOpens ? defenderId : playerId, march.getId());
+        assertEquals(true, result.get("cancelled"));
+        assertEquals("shield", result.get("reason"));
+        assertTrue(marchRepository.findById(march.getId()).orElseThrow().getReturning());
+        assertTrue(battleSessionRepository.findByMarchId(march.getId()).isEmpty());
+        assertTrue(scoutReportRepository.findByPlayerId(playerId).isEmpty());
+        assertTrue(worldViewService.getIncoming(playerRepository.findById(defenderId).orElseThrow()).isEmpty());
+        assertEquals(1, mailRepository.findByToPlayerIdOrderByCreatedAtDesc(playerId).size());
+        assertEquals(1, mailRepository.findByToPlayerIdOrderByCreatedAtDesc(defenderId).size());
     }
 
     @Test

@@ -6,7 +6,7 @@ import java.util.*;
 
 /** 独立侦查拦截保留原公式；配置组分别承伤，不用平均防御替代真实耐久。 */
 public final class UnitEquipmentRecon {
-    public static final String INITIATIVE_RULES_VERSION = "recon-initiative-v3-20261016";
+    public static final String INITIATIVE_RULES_VERSION = "recon-initiative-v6-20261019";
     private UnitEquipmentRecon() {}
     public record Result(int ownAlive, Map<String, Integer> enemyAlive, double ownPower, double enemyPower,
                          int attackerInitiative, int defenderInitiative, List<String> log) {}
@@ -81,9 +81,10 @@ public final class UnitEquipmentRecon {
         double enemyPower = alive.entrySet().stream().mapToDouble(e -> e.getValue() *
                 (attack(battle, u, e.getKey(), unit, dc, ac, true, aSources, false)
                         + durability(battle, u, e.getKey(), dc, ac, true, aSources))).sum();
-        int radarBonus = Math.max(0, Math.min(5, defenderRadarLevel)) * 5;
-        attackerReconLevel = Math.max(0, Math.min(5, attackerReconLevel)) * 5;
-        defenderReconLevel = Math.max(0, Math.min(5, defenderReconLevel)) * 5;
+        // 雷达仅为守方首次交火提供每级2点先手，10级封顶20点，不随将领技能窗口重触发。
+        int radarBonus = 2 * Math.max(0, Math.min(10, defenderRadarLevel));
+        attackerReconLevel = Math.max(0, Math.min(10, attackerReconLevel)) * 5;
+        defenderReconLevel = Math.max(0, Math.min(10, defenderReconLevel)) * 5;
         int aInitiative = initiative(battle, u, unit, ac, true, attackerReconLevel);
         Map<String, Integer> initiative = initiatives(battle, u, alive, dc, true, defenderReconLevel + radarBonus);
         int dInitiative = initiative.values().stream().mapToInt(Integer::intValue).max().orElse(0);

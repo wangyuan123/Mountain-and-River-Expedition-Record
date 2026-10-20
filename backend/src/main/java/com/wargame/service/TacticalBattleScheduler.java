@@ -1,5 +1,6 @@
 package com.wargame.service;
 
+import com.wargame.util.GameClock;
 import com.wargame.repository.BattleSessionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +30,7 @@ public class TacticalBattleScheduler {
 
     @Scheduled(fixedDelayString = "${game.tactical-battle-interval:1000}")
     public void resolveTimedOutRounds() {
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         // 页面截止时提交已选命令；后台延迟兜底，避免先结算而丢弃玩家的本回合指令。
         for (Long battleSessionId : battleSessions.findDueRoundIds(now - COMMAND_SUBMISSION_GRACE_MS, PageRequest.of(0, batchSize))) {
             try {

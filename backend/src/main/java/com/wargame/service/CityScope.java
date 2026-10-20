@@ -1,5 +1,6 @@
 package com.wargame.service;
 
+import com.wargame.util.GameClock;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
 import org.springframework.stereotype.Component;
@@ -39,7 +40,7 @@ public class CityScope {
     public PlayerCity requireOwned(Long playerId, Long cityId, boolean ready) {
         PlayerCity city = cities.findById(cityId).filter(c -> playerId.equals(c.getOwnerId()) && c.getCitySlot() != null)
                 .orElseThrow(() -> new IllegalArgumentException("城市不存在或不属于你"));
-        if (ready && city.getReadyAt() > System.currentTimeMillis()) throw new IllegalArgumentException("城市仍在建设中");
+        if (ready && city.getReadyAt() > GameClock.now()) throw new IllegalArgumentException("城市仍在建设中");
         return city;
     }
 
@@ -48,7 +49,7 @@ public class CityScope {
     }
 
     public boolean frozen(Long playerId) {
-        return selected(playerId).map(city -> city.isSurrenderFrozen(System.currentTimeMillis())).orElse(false);
+        return selected(playerId).map(city -> city.isSurrenderFrozen(GameClock.now())).orElse(false);
     }
 
     public void assertWritable(Long playerId) {

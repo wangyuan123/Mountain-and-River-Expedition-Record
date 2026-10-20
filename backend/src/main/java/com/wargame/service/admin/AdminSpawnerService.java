@@ -1,5 +1,6 @@
 package com.wargame.service.admin;
 
+import com.wargame.util.GameClock;
 import com.wargame.model.constants.JapaneseOfficers;
 import com.wargame.model.constants.WildTypeDef;
 import com.wargame.model.constants.WorldConfig;
@@ -131,7 +132,77 @@ public class AdminSpawnerService {
 
     @Transactional
     public List<Map<String, Object>> spawnNpcCities(int count, Integer minLevel, Integer maxLevel, String battlefield, String adminUsername, HttpServletRequest req) {
-        throw new IllegalArgumentException("NPC城市/要塞已取消");
+        if (count <= 0 || count > 50) {
+            throw new IllegalArgumentException("单次生成 NPC 据点数量需在 1 ~ 50 之间");
+        }
+        WorldMap world = worldMapRepository.findFirstByOrderByIdAsc()
+                .orElseThrow(() -> new IllegalStateException("世界地图未初始化"));
+        Long worldId = world.getId();
+
+        int minL = (minLevel != null && minLevel >= 1) ? minLevel : 1;
+        int maxL = (maxLevel != null && maxLevel >= 1) ? maxLevel : 10;
+        if (minL > maxL) {
+            int tmp = minL;
+            minL = maxL;
+            maxL = tmp;
+        }
+
+        BattlefieldBounds bounds = getBounds(battlefield, 1);
+        String mask = worldTerrainService.current();
+        if (mask == null) {
+            mask = WorldTerrainService.generate();
+        }
+
+        Set<String> used = new HashSet<>(worldTerrainService.occupiedCoordinates(worldId));
+        int W = bounds.maxX() - bounds.minX() + 1;
+        int H = bounds.maxY() - bounds.minY() + 1;
+        int totalCells = W * H;
+        int startOffset = ThreadLocalRandom.current().nextInt(totalCells);
+        List<int[]> candidates = new ArrayList<>();
+
+        for (int i = 0; i < totalCells && candidates.size() < count; i++) {
+            int idx = (startOffset + i) % totalCells;
+            int x = bounds.minX() + (idx % W);
+            int y = bounds.minY() + (idx / W);
+            String coordKey = x + "," + y;
+            if (!used.contains(coordKey) && !WorldTerrainService.sea(mask, x, y)) {
+                candidates.add(new int[]{x, y});
+                used.add(coordKey);
+            }
+        }
+
+        if (candidates.isEmpty()) {
+            throw new IllegalStateException("所选区域（" + bounds.name() + "）陆地上已无可用空闲坐标生成据点");
+        }
+
+        List<Map<String, Object>> results = new ArrayList<>();
+        for (int[] coord : candidates) {
+            int level = ThreadLocalRandom.current().nextInt(minL, maxL + 1);
+            Bandit npc = new Bandit();
+            npc.setWorldId(worldId);
+            npc.setX(coord[0]);
+            npc.setY(coord[1]);
+            npc.setLevel(level);
+            npc.setName(WorldConfig.landBanditName(level));
+            npc.setArmy(JsonUtil.toJson(WorldConfig.landNpcGarrison(level, coord[0], coord[1])));
+            npc.setCommanderName(JapaneseOfficers.getCommanderForLevel(level));
+            npc.setDefeated(false);
+            banditRepository.save(npc);
+
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("id", npc.getId());
+            item.put("name", npc.getName());
+            item.put("level", npc.getLevel());
+            item.put("x", npc.getX());
+            item.put("y", npc.getY());
+            item.put("commanderName", npc.getCommanderName());
+            item.put("battlefield", getBattlefieldName(coord[0], coord[1]));
+            results.add(item);
+        }
+
+        auditLogService.record(adminUsername, "SPAWN_NPC", "WORLD", String.valueOf(worldId),
+                String.format("在【%s】批量生成 %d 个 NPC 据点，等级区间 [%d, %d]", bounds.name(), results.size(), minL, maxL), req);
+        return results;
     }
 
     @Transactional
@@ -410,7 +481,7 @@ public class AdminSpawnerService {
      */
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getDeletableBots() {
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         List<Player> allPlayers = playerRepository.findAll();
         List<Player> bots = allPlayers.stream()
                 .filter(p -> Boolean.TRUE.equals(p.getIsBot())
@@ -508,7 +579,7 @@ public class AdminSpawnerService {
         if (ids == null || ids.isEmpty()) {
             throw new IllegalArgumentException("请选择要删除的模拟玩家");
         }
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         List<Player> allPlayers = playerRepository.findAll();
         List<March> allMarches = marchRepository.findAll();
         List<BattleSession> allBattles = battleSessionRepository.findAll();

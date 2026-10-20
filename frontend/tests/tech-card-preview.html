@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>科技界面卡片 - 紧凑改版预览</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/prerequisites.css">
+  <link rel="stylesheet" href="../css/classic-home.css">
+  <link rel="stylesheet" href="../css/themes.css">
+  <style>
+    body {
+      background: #0f172a;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    .preview-container {
+      max-width: 480px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 14px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    }
+    .theme-switcher {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .theme-btn {
+      padding: 4px 10px;
+      font-size: 12px;
+      border-radius: 4px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      cursor: pointer;
+    }
+    .theme-btn.active {
+      background: #2563eb;
+      color: #fff;
+      border-color: #2563eb;
+    }
+    .preview-dark {
+      background: #0b1320;
+      color: #e2e8f0;
+    }
+  </style>
+</head>
+<body data-theme="blue-white-classic">
+  <div class="preview-container" id="preview-box">
+    <div class="theme-switcher">
+      <span style="font-size: 13px; font-weight: bold; align-self: center; color: #334155;">主题预览：</span>
+      <button class="theme-btn active" onclick="switchTheme('blue-white-classic')">经典蓝白 (用户当前)</button>
+      <button class="theme-btn" onclick="switchTheme('dark')">暗夜黑</button>
+      <button class="theme-btn" onclick="switchTheme('paper')">古风纸张</button>
+    </div>
+
+    <div class="title" style="text-align: center; font-weight: bold; font-size: 15px; color: #1e3a8a; margin-bottom: 4px;">- 军工科技研发中心 -</div>
+    <div class="desc" style="font-size: 12px; color: #64748b; margin-bottom: 10px;">军工科技研发中心 Lv.1 · 4 类科技，共 20 项。研发速度受中心等级、市长学识和格物致知影响。<span class="link-act" style="color: #2563eb; cursor: pointer;">查看研发说明</span></div>
+    
+    <div class="panel" style="margin-bottom:10px;padding:7px 10px;border:1px dashed rgba(212,163,89,0.3);background:rgba(212,163,89,0.03);border-radius:6px;font-size:12px;color:var(--muted);">
+      💡 军工科技研发中心空闲中：可自主选择一项战略技术开展科技研发
+    </div>
+
+    <!-- 分类标签页 -->
+    <div class="tech-tabs" role="tablist">
+      <button class="tech-tab active">军事科技</button>
+      <button class="tech-tab">机动科技</button>
+      <button class="tech-tab">后勤科技</button>
+      <button class="tech-tab">侦察科技</button>
+    </div>
+
+    <!-- 紧凑科技卡片列表 -->
+    <div class="menu tech-panel" id="tech-panel">
+      <!-- 科技卡片 1: 前置未满足 (默认折叠前置详情，极大节省空间) -->
+      <div class="menu-item tech-card lock is-locked" data-tech="military_theory">
+        <div class="tech-card-header">
+          <div class="tech-title-group">
+            <span class="tech-num num">[1]</span>
+            <span class="tech-name n">军事理论</span>
+            <span class="tech-level lv">Lv.0/10</span>
+          </div>
+          <div class="tech-action-group">
+            <span class="quest-badge" style="opacity:0.65;">前置未满足</span>
+          </div>
+        </div>
+        <div class="tech-desc d">普通军校刷新整批出现五星名将的概率每级增加0.3个百分点，满级额外增加3个百分点；与军校基础概率相加，每批最多1名五星。</div>
+        <div class="tech-info-row">
+          <span class="tech-effect-tag"><span class="tech-effect-lbl">五星名将概率加成: </span><b style="color:var(--ink);">+0.0个百分点</b></span>
+          <span class="tech-lock-pill cost">⚠️ 需军工科技研发中心 Lv.2</span>
+        </div>
+        <details class="prereq-details">
+          <summary class="prereq-summary"><span>Lv.1 建筑要求</span></summary>
+          <div class="prereq-list">
+            <div class="prereq-row"><span>军工科技研发中心 <small>本城</small></span><span>Lv.1 / Lv.2</span><button type="button" class="btn sm">前往</button></div>
+            <div class="prereq-row met"><span>军校 <small>本城</small></span><span>Lv.2 / Lv.1</span><span>已满足</span></div>
+          </div>
+          <div class="prereq-preview-foot">
+            <button type="button" class="link-act prereq-preview-btn">查看各级前置要求 &gt;</button>
+          </div>
+        </details>
+      </div>
+
+      <!-- 科技卡片 2: 正在研发状态 (专属流光边框 + 倒计时) -->
+      <div class="menu-item tech-card active is-researching" data-tech="wall_reinforcement">
+        <div class="tech-card-header">
+          <div class="tech-title-group">
+            <span class="tech-num num">[2]</span>
+            <span class="tech-name n">城墙加固</span>
+            <span class="tech-level lv">Lv.1/10</span>
+          </div>
+          <div class="tech-action-group">
+            <span class="quest-badge warn tech-timer-badge">⏳ 研发中 08:45</span>
+            <button type="button" class="btn sm ok tech-btn-action">⚡ 加速</button>
+          </div>
+        </div>
+        <div class="tech-desc d">当前城墙生命与防御 +5%/级，最高各 +50%；无城墙时不产生属性，不强化驻军或城防工事。</div>
+        <div class="tech-info-row">
+          <span class="tech-effect-tag"><span class="tech-effect-lbl">城墙生命与防御: </span><b style="color:var(--ink);">+5%</b></span>
+          <span class="tech-meta-box cost"><span>下一级: 铁500 粮400</span><span class="tech-duration-text">⏱ 15分</span></span>
+        </div>
+      </div>
+
+      <!-- 科技卡片 3: 可研发状态 (高对比度研发按钮) -->
+      <div class="menu-item tech-card ok is-ready" data-tech="attack_tech">
+        <div class="tech-card-header">
+          <div class="tech-title-group">
+            <span class="tech-num num">[3]</span>
+            <span class="tech-name n">武器装备</span>
+            <span class="tech-level lv">Lv.2/10</span>
+          </div>
+          <div class="tech-action-group">
+            <button type="button" class="btn sm ok tech-btn-action">🔬 研发</button>
+          </div>
+        </div>
+        <div class="tech-desc d">研发并改装各类部队常规主战武器，提升全部队基础攻击力。</div>
+        <div class="tech-info-row">
+          <span class="tech-effect-tag"><span class="tech-effect-lbl">部队攻击加成: </span><b style="color:var(--ink);">+10%</b></span>
+          <span class="tech-meta-box cost"><span>下一级: 铁800 粮600 金400</span><span class="tech-duration-text">⏱ 30分</span></span>
+        </div>
+        <details class="prereq-details">
+          <summary class="prereq-summary"><span>Lv.3 建筑要求</span></summary>
+          <div class="prereq-list">
+            <div class="prereq-row met"><span>军工科技研发中心 <small>本城</small></span><span>Lv.3 / Lv.3</span><span>已满足</span></div>
+          </div>
+          <div class="prereq-preview-foot">
+            <button type="button" class="link-act prereq-preview-btn">查看各级前置要求 &gt;</button>
+          </div>
+        </details>
+      </div>
+
+      <!-- 科技卡片 4: 已满级状态 -->
+      <div class="menu-item tech-card is-maxed" data-tech="radar">
+        <div class="tech-card-header">
+          <div class="tech-title-group">
+            <span class="tech-num num">[4]</span>
+            <span class="tech-name n">雷达监测</span>
+            <span class="tech-level lv">Lv.10/10</span>
+          </div>
+          <div class="tech-action-group">
+            <span class="quest-badge ok">✓ 已满级</span>
+          </div>
+        </div>
+        <div class="tech-desc d">雷达站信号分析能力，全面提升敌情侦察精度与预警时间。</div>
+        <div class="tech-info-row">
+          <span class="tech-effect-tag"><span class="tech-effect-lbl">侦察探测精度: </span><b style="color:var(--ink);">+50%</b></span>
+          <span class="tech-meta-box cost" style="color:var(--ok);">已达终极科技上限</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchTheme(theme) {
+      document.body.setAttribute('data-theme', theme);
+      document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      const box = document.getElementById('preview-box');
+      if (theme === 'dark') {
+        box.classList.add('preview-dark');
+      } else {
+        box.classList.remove('preview-dark');
+      }
+    }
+  </script>
+</body>
+</html>

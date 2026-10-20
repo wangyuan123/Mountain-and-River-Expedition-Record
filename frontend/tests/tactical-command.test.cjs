@@ -98,6 +98,28 @@ test('点击战场装备组打开同兵种快捷指挥，展示统一兵力、�
   assert.equal(focused(), 'popup');
 });
 
+test('敌我不同兵种同坐标时标记也留出间距且我军图标仍可打开指挥弹窗', () => {
+  const { Game, view, run } = setup();
+  const battle = Game.Battle._activeTactical;
+  battle.attackerArmy = { rocket: 10 };
+  battle.defenderArmy = { htank: 8 };
+  battle.attackerPositions = { rocket: 1500 };
+  battle.defenderPositions = { htank: 1500 };
+  Game.Battle.resetTacticalOrders();
+  Game.Core.render();
+
+  const mineMarker = view.innerHTML.match(/<div class="tactical-marker mine" data-unit-id="rocket"[^>]+>/)[0];
+  const foeMarker = view.innerHTML.match(/<div class="tactical-marker foe" data-unit-id="htank"[^>]+>/)[0];
+  assert.match(mineMarker, /left:min\([^;]+ - var\(--tactical-icon-half, 11.25px\) - 7.5px\)\)/);
+  assert.match(foeMarker, /left:max\([^;]+ \+ var\(--tactical-icon-half, 11.25px\) \+ 7.5px\)\)/);
+  assert.match(mineMarker, /data-tactical-command-unit="rocket"/);
+  assert.doesNotMatch(foeMarker, /data-tactical-command-unit=/);
+
+  run(mineMarker.match(/onclick="([^"]+)"/)[1]);
+  assert.equal(Game.Battle._tacticalCommandUnitId, 'rocket');
+  assert.match(view.innerHTML, /id="tacticalUnitCommand"/);
+});
+
 test('快捷前进、后退、待命分别更新同一份命令，保留集火并返回所点图标', () => {
   for (const [action, label] of [['ADVANCE', '前进'], ['RETREAT', '后退'], ['HOLD', '待命']]) {
     const { Game, view, run, focused } = setup();
@@ -541,4 +563,23 @@ test('两个入口的城墙集火候选与阶段、攻守权限相同，纯展�
   Battle.openTacticalUnitCommand('howitzer');
   assert.equal(Battle._tacticalCommandUnitId, null);
   assert.equal(Battle.canEditTacticalUnit('wall'), false);
+});
+
+test('护盾拦截战场请求时刷新军情并保持关闭指挥界面', async () => {
+  const { Game } = setup();
+  const routes = [], toasts = [];
+  let refreshed = false;
+  Game.Core.go = route => routes.push(route);
+  Game.toast = text => toasts.push(text);
+  const active = Game.Battle._activeTactical;
+  Game.API = {
+    getTacticalBattle: async () => ({ cancelled: true, reason: 'shield', message: '护盾期间不可发生交火' }),
+    getGameState: async force => { assert.equal(force, true); return { world: { incoming: [] } }; },
+    applyState: state => { assert.deepEqual(state.world.incoming, []); refreshed = true; }
+  };
+  await Game.Battle.openTactical(42);
+  assert.ok(refreshed);
+  assert.deepEqual(routes, ['alerts']);
+  assert.equal(Game.Battle._activeTactical, active);
+  assert.deepEqual(toasts, ['护盾期间不可发生交火']);
 });

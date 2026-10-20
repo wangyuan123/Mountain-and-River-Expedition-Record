@@ -71,6 +71,7 @@ public class WebSocketPushService {
         message.put("type", type);
         message.put("data", data);
         message.put("timestamp", System.currentTimeMillis());
+        message.put("gameTime", com.wargame.util.GameClock.now());
         if (playerId != null && cityScope != null && java.util.Set.of("tick", "march", "army", "build", "resources").contains(type)) {
             message.put("citySlot", cityScope.slot(playerId));
         }

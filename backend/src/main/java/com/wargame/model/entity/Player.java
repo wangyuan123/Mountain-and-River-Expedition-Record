@@ -239,7 +239,7 @@ public class Player extends VersionedEntity implements CityEconomy {
 
     /** 所有声望写入统一记录新手毕业，先检查旧值以防通过降声望重新开盾。 */
     public void setPrestige(Integer prestige) {
-        long now = System.currentTimeMillis();
+        long now = com.wargame.util.GameClock.now();
         com.wargame.model.constants.NewbieProtection.finishForPrestige(this, now);
         this.prestige = prestige;
         com.wargame.model.constants.NewbieProtection.finishForPrestige(this, now);

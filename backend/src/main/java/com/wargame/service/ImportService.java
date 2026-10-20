@@ -1,5 +1,6 @@
 package com.wargame.service;
 
+import com.wargame.util.GameClock;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.wargame.model.constants.WorldConfig;
 import com.wargame.model.constants.TechDef;
@@ -213,7 +214,7 @@ public class ImportService {
         player.setTax(root.path("tax").isNumber() ? root.path("tax").asInt() : 30);
         player.setMorale(root.path("morale").isNumber() ? root.path("morale").asInt() : 70);
         player.setPrestige(Math.max(0, root.path("prestige").asInt(0)));
-        player.setLastTick(root.path("lastTick").asLong(System.currentTimeMillis()));
+        player.setLastTick(root.path("lastTick").asLong(GameClock.now()));
     }
 
     private void importResources(Long playerId, JsonNode root) {
@@ -316,14 +317,12 @@ public class ImportService {
         if (techNode.isMissingNode() || !techNode.isObject()) return;
 
         // 新存档显式携带规则版本；旧格式只在导入时映射一次，不能重复扩展新等级。
-        boolean current = com.wargame.model.constants.TechnologyRules.VERSION.equals(root.path("technologyRulesVersion").asText());
+        String version = root.path("technologyRulesVersion").asText();
         Map<String, Integer> levels = new LinkedHashMap<>();
         techNode.fields().forEachRemaining(entry -> {
             String key = entry.getKey();
             int level = Math.max(0, entry.getValue().asInt(0));
-            Map<String, Integer> mapped = current
-                    ? (TechDef.TECHS.containsKey(key) ? Map.of(key, Math.min(TechDef.TECHS.get(key).maxLevel(), level)) : Map.of())
-                    : com.wargame.model.constants.TechnologyRules.legacyTargets(key, level);
+            Map<String, Integer> mapped = com.wargame.model.constants.TechnologyRules.importTargets(version, key, level);
             mapped.forEach((k, v) -> levels.merge(k, v, Math::max));
         });
         levels.forEach((key, level) -> {
@@ -637,7 +636,7 @@ public class ImportService {
 
             // Store the entire report data as JSON
             report.setData(JsonUtil.toJson(rNode));
-            report.setCreatedAt(rNode.path("time").asLong(System.currentTimeMillis()));
+            report.setCreatedAt(rNode.path("time").asLong(GameClock.now()));
 
             scoutReportRepository.save(report);
         }

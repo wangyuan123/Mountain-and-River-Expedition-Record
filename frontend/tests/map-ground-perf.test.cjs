@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
 
-function fixture({ textureFactory, reducedMotion = false, drawImages } = {}) {
+function fixture({ textureFactory, reducedMotion = false, drawImages, drawTransforms, drawLandmarks } = {}) {
   const c = {
     console, Date, Map, Set, WeakMap, Uint8Array, Float32Array, Math, Promise,
     performance: { now: () => Date.now() },
@@ -14,8 +14,14 @@ function fixture({ textureFactory, reducedMotion = false, drawImages } = {}) {
           createImageData: (w, h) => ({ data: new Uint8ClampedArray(w * h * 4) }),
           putImageData: () => {},
           drawImage: (...args) => { if (drawImages) drawImages.push(args); },
-          beginPath: () => {}, moveTo: () => {}, quadraticCurveTo: () => {},
-          stroke: () => {}, fillRect: () => {}, lineTo: () => {}, setTransform: () => {}
+          beginPath: () => {}, moveTo(x, y) { this.start = [x, y]; }, quadraticCurveTo: () => {},
+          stroke: () => {},
+          fillRect: (...args) => { if (drawLandmarks) drawLandmarks.push(args); },
+          lineTo(x, y) {
+            if (drawLandmarks && this.start) drawLandmarks.push([Math.min(this.start[0], x) - this.lineWidth / 2, Math.min(this.start[1], y) - this.lineWidth / 2, Math.abs(this.start[0] - x) + this.lineWidth, Math.abs(this.start[1] - y) + this.lineWidth]);
+            this.start = [x, y];
+          },
+          setTransform: (...args) => { if (drawTransforms) drawTransforms.push(args); }
         }),
         width: 100, height: 100,
         classList: { toggle: () => false, add: () => {}, remove: () => {} },
@@ -47,7 +53,7 @@ function fixture({ textureFactory, reducedMotion = false, drawImages } = {}) {
         destroy() {}
       },
       Container: class {
-        constructor() { this.children = []; this.position = { set: () => {} }; }
+        constructor() { this.children = []; this.position = { set: (x, y) => { this.x = x; this.y = y; } }; }
         addChild(ch) { this.children.push(ch); }
         removeChild(ch) {
           const idx = this.children.indexOf(ch);
@@ -138,6 +144,158 @@ function pendingTextures() {
   return { textures, textureFactory };
 }
 
+async function decorationFixture() {
+  const drawImages = [], drawTransforms = [], drawLandmarks = [], c = fixture({ drawImages, drawTransforms, drawLandmarks });
+  c.Image = class {
+    set src(value) { this.path = value; if (this.onload) this.onload(); }
+    get src() { return this.path; }
+  };
+  await c.Game.MapTerrain.loadMeadows();
+  c.Game.MapOcean = { sample: () => -1000, paint: (channel, surface) => surface };
+  return { c, terrain: c.Game.MapTerrain, drawImages, drawTransforms, drawLandmarks };
+}
+
+function knownTerrain(terrain, size) {
+  for (let y = 0; y < Math.ceil(size / 16); y++) {
+    for (let x = 0; x < Math.ceil(size / 16); x++) terrain.updateChunk(x, y, [], size);
+  }
+}
+
+function vegetationBounds(terrain, drawImages, drawTransforms, tx, ty, size = 200) {
+  drawImages.length = 0; drawTransforms.length = 0;
+  terrain.createTile(tx, ty, size);
+  let forestIndex = 0;
+  return drawImages.map(([image, left, top, width, height]) => {
+    const forest = /wild-forest-/.test(image.src);
+    const transform = forest ? drawTransforms[forestIndex++ * 2] : [1, 0, 0, 1, 0, 0];
+    const x = tx * terrain.tileSpan - terrain.padding / terrain.density + (left + transform[4]) / terrain.density;
+    const y = ty * terrain.tileSpan - terrain.padding / terrain.density + (top + transform[5]) / terrain.density;
+    return { x, y, right: x + width / terrain.density, bottom: y + height / terrain.density, forest };
+  });
+}
+
+function overlaps(a, b) {
+  return a.x < b.right && a.right > b.x && a.y < b.bottom && a.bottom > b.y;
+}
+
+test('unknown chunks never receive icons and empty responses release decoration cells', async () => {
+  const { terrain, drawImages, drawTransforms } = await decorationFixture();
+  assert.equal(vegetationBounds(terrain, drawImages, drawTransforms, 5, 5).length, 0);
+  assert.equal(terrain.updateChunk(1, 1, [], 200), true);
+  assert.equal(terrain.updateChunk(1, 1, [], 200), false);
+  assert.ok(vegetationBounds(terrain, drawImages, drawTransforms, 5, 5).length > 0);
+});
+
+test('decorations avoid every target kind including city far corners and chunk edges', async () => {
+  const { terrain, drawImages, drawTransforms } = await decorationFixture();
+  knownTerrain(terrain, 200);
+  const kinds = ['player', 'npc', 'simulated_npc', 'bandit', 'wild'];
+  const types = ['forest', 'grassland', 'plains', 'oil', 'grainfield', 'ironworks', 'rarefactory', 'rock', 'snow'];
+  const originals = vegetationBounds(terrain, drawImages, drawTransforms, 5, 5);
+  assert.ok(originals.some(icon => icon.forest));
+  for (const kind of kinds) for (const type of kind === 'wild' ? types : ['city']) {
+    const icon = originals.find(icon => icon.forest), span = kind === 'player' ? 2 : 1;
+    const target = { kind, type, x: Math.floor(icon.x) - span + 1, y: Math.floor(icon.y) - span + 1, coastal: true };
+    terrain.updateChunk(Math.floor(target.x / 16), Math.floor(target.y / 16), [target], 200);
+    const b = { x: target.x - .2, y: target.y - .2, right: target.x + span + .2, bottom: target.y + span + .2 };
+    const icons = vegetationBounds(terrain, drawImages, drawTransforms, 5, 5);
+    assert.ok(icons.every(icon => !overlaps(icon, b)), kind + ':' + type + ' must reserve its complete footprint');
+    terrain.updateChunk(Math.floor(target.x / 16), Math.floor(target.y / 16), [], 200);
+  }
+  terrain.updateChunk(0, 0, [{ kind: 'player', x: 15, y: 15 }], 200);
+  const neighbor = vegetationBounds(terrain, drawImages, drawTransforms, 4, 4);
+  assert.ok(neighbor.every(icon => !overlaps(icon, { x: 14.8, y: 14.8, right: 17.2, bottom: 17.2 })));
+});
+
+test('forest and shrub icons never overlap each other across terrain tiles', async () => {
+  const { terrain, drawImages, drawTransforms } = await decorationFixture();
+  knownTerrain(terrain, 200);
+  const icons = new Map();
+  for (const [tx, ty] of [[4, 4], [5, 4], [4, 5], [5, 5], [6, 5]]) {
+    for (const icon of vegetationBounds(terrain, drawImages, drawTransforms, tx, ty)) {
+      icons.set([icon.x, icon.y, icon.right, icon.bottom].join(','), icon);
+    }
+  }
+  const all = [...icons.values()];
+  assert.ok(all.some(icon => icon.forest) && all.some(icon => !icon.forest));
+  for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) {
+    assert.equal(overlaps(all[i], all[j]), false, 'distinct decoration footprints must be disjoint');
+  }
+});
+
+test('landmark strokes stay inside their own cell and never cross bitmap decorations', async () => {
+  const { terrain, drawImages, drawTransforms, drawLandmarks } = await decorationFixture();
+  knownTerrain(terrain, 200);
+  let count = 0;
+  for (const [tx, ty] of [[4, 4], [5, 5], [10, 10], [20, 20], [30, 30]]) {
+    drawLandmarks.length = 0;
+    const icons = vegetationBounds(terrain, drawImages, drawTransforms, tx, ty);
+    for (const [x, y, width, height] of drawLandmarks) {
+      const left = tx * terrain.tileSpan + (x - terrain.padding) / terrain.density;
+      const top = ty * terrain.tileSpan + (y - terrain.padding) / terrain.density;
+      const rect = { x: left, y: top, right: left + width / terrain.density, bottom: top + height / terrain.density };
+      assert.equal(Math.floor(rect.x), Math.floor(rect.right));
+      assert.equal(Math.floor(rect.y), Math.floor(rect.bottom));
+      assert.ok(icons.every(icon => !overlaps(icon, rect)));
+      count++;
+    }
+  }
+  assert.ok(count > 0, 'control scene must include actual landmark strokes');
+});
+
+test('edge city bounds and target moves refresh reservations without retaining obsolete cells', async () => {
+  const { terrain, c } = await decorationFixture();
+  knownTerrain(terrain, 200);
+  const city = { kind: 'player', x: 199, y: 199, coastal: true };
+  const b = c.Game.MapLayout.iconBounds(city, 200);
+  assert.equal(b.x, 198);
+  assert.equal(b.right, 200);
+  assert.ok(b.y < 198 && b.bottom > 200, 'coastal artwork extends beyond its logical footprint');
+  assert.equal(terrain.updateChunk(12, 12, [city], 200), true);
+  const revision = terrain.revision();
+  assert.equal(terrain.updateChunk(12, 12, [{ ...city, name: 'renamed' }], 200), false);
+  assert.equal(terrain.revision(), revision);
+  assert.equal(terrain.updateChunk(12, 12, [{ ...city, x: 195, y: 195 }], 200), true);
+  assert.equal(terrain.updateChunk(12, 12, [], 200), true);
+});
+
+test('mirrored base terrain contains no icons that bypass target occupancy', async () => {
+  const { terrain, drawImages } = await decorationFixture();
+  terrain.create(200, false);
+  assert.equal(drawImages.length, 0);
+});
+
+test('target arrivals, moves and removal invalidate neighboring decorations before redraw', () => {
+  const c = fixture(), view = Object.create(c.Game.TestMapView.prototype);
+  view.camera = new c.Game.MapCamera(200, 16, 16, 44);
+  view.groundTiles = new Map();
+  view.groundDetails = new c.PIXI.Container();
+  const chunk = { cx: 1, cy: 1, data: { targets: [] } };
+  c.Game.TestMapCache.entries.set('1,1', chunk);
+  let destroyed = 0;
+  function addTile(key) {
+    const tile = { destroy: () => { destroyed++; } };
+    view.groundTiles.set(key, tile); view.groundDetails.addChild(tile);
+    return tile;
+  }
+  const far = addTile('20,20');
+  function affectedTiles() { ['2,2', '3,4', '4,3', '5,5', '9,9'].forEach(addTile); }
+  affectedTiles();
+  view.updateTerrain();
+  assert.equal(destroyed, 5, 'initial empty response also releases unknown-chunk reservations');
+  assert.equal(view.groundTiles.get('20,20'), far);
+  affectedTiles(); view.updateTerrain();
+  assert.equal(destroyed, 5, 'unchanged target geometry keeps terrain textures cached');
+  chunk.data.targets = [{ kind: 'player', x: 31, y: 31, coastal: true }];
+  view.updateTerrain();
+  assert.equal(destroyed, 10, 'cross-chunk city arrives before the next render');
+  affectedTiles(); chunk.data.targets[0].x = 20; view.updateTerrain();
+  assert.equal(destroyed, 15);
+  affectedTiles(); chunk.data.targets = []; view.updateTerrain();
+  assert.equal(destroyed, 20);
+  assert.equal(view.groundTiles.size, 1, 'unrelated terrain is retained through every target update');
+});
+
 test('resource icons stay on the first frame until all frames load, then keep their phase through redraws', () => {
   const pending = pendingTextures(), { v } = resourceFixture(pending);
   v.draw();
@@ -166,6 +324,20 @@ test('resource icons stay on the first frame until all frames load, then keep th
   v.draw();
   assert.ok(markers.every(marker => /frame_06/.test(marker.sprite.texture.path)), 'Chunk and countdown redraws preserve the animation clock');
   assert.equal(pending.textures.size, 36, 'Redraws reuse the loaded textures');
+});
+
+test('renderer constrains a wild icon beside coastal city artwork at every zoom', () => {
+  const { c, v }=resourceFixture();
+  const wild={kind:'wild',id:1,type:'oil',x:50,y:50,level:1};
+  const city={kind:'player',id:2,x:50,y:48,coastal:true};
+  c.Game.TestMapCache.targets=()=>[wild,city];
+  for (const scale of [44,64,88]) {
+    v.camera.scale=scale;v.draw();
+    const resource=v.markers.get('wild:1'), player=v.markers.get('player:2');
+    assert.ok(resource.sprite.width>0 && resource.sprite.width<scale);
+    assert.ok(resource.y-resource.sprite.height/2>=player.y+player.sprite.height/2-1e-9);
+    assert.equal(wild.x,50);assert.equal(wild.y,50);
+  }
 });
 
 test('a missing animation frame keeps the resource visible as a static image', () => {
@@ -241,6 +413,7 @@ test('procedural woodland leaves forest target cells clear for their full map ic
   };
   await c.Game.MapTerrain.loadMeadows();
   const woodlandImages = () => drawImages.filter(([image]) => /^img\/map\/wild-forest-(dense|ridge|edge)-integrated\.webp$/.test(image.src));
+  knownTerrain(c.Game.MapTerrain, 200);
 
   c.Game.MapTerrain.createTile(5, 5, 200);
   const withoutForestTarget = woodlandImages().length;
@@ -252,6 +425,52 @@ test('procedural woodland leaves forest target cells clear for their full map ic
 
   assert.ok(woodlandImages().length < withoutForestTarget,
     'a forest target reserves its cell and nearby halo from overlapping procedural trees');
+});
+
+test('decorative forests share the selected cell center and size across tiles and zoom levels', async () => {
+  const drawImages = [], drawTransforms = [], c = fixture({ drawImages, drawTransforms });
+  c.Image = class {
+    set src(value) { this.path = value; if (this.onload) this.onload(); }
+    get src() { return this.path; }
+  };
+  await c.Game.MapTerrain.loadMeadows();
+  c.Game.MapOcean = { sample: () => -1000, paint: (channel, surface) => surface };
+  const terrain = c.Game.MapTerrain, density = terrain.density;
+  knownTerrain(terrain, 800);
+  const camera = new c.Game.MapCamera(800, 10.3, 116.7, 44);
+  camera.width = 390; camera.height = 550;
+  const sightings = new Map();
+  let count = 0, repeated = 0;
+  for (const [tx, ty] of [[1, 28], [1, 29], [2, 29], [5, 5], [99, 99], [100, 99], [199, 199]]) {
+    drawImages.length = 0; drawTransforms.length = 0;
+    terrain.createTile(tx, ty, 800);
+    const forests = drawImages.filter(([image]) => /wild-forest-(dense|ridge|edge)-integrated\.webp$/.test(image.src));
+    assert.equal(drawTransforms.length, forests.length * 2);
+    forests.forEach(([image, left, top, width, height], index) => {
+      const transform = drawTransforms[index * 2];
+      const x = (tx * terrain.tileSpan * density - terrain.padding + transform[4]) / density;
+      const y = (ty * terrain.tileSpan * density - terrain.padding + transform[5]) / density;
+      assert.equal(x - Math.floor(x), .5, 'decorative forest must be centered horizontally in its cell');
+      assert.equal(y - Math.floor(y), .5, 'decorative forest must be centered vertically in its cell');
+      assert.equal(width, density, 'forest canvas must fit one cell');
+      assert.equal(height, density);
+      assert.equal(left, -width / 2); assert.equal(top, -height / 2);
+      const key = x + ',' + y;
+      if (sightings.has(key)) { assert.equal(sightings.get(key), image.src); repeated++; }
+      sightings.set(key, image.src); count++;
+      for (const scale of [44, 64, 88]) {
+        camera.scale = scale;
+        const center = camera.screen(x, y);
+        const selection = camera.polygon(Math.floor(x), Math.floor(y), 1);
+        assert.ok(Math.abs(center.x - scale / 2 - selection[0]) < 1e-9);
+        assert.ok(Math.abs(center.y - scale / 2 - selection[1]) < 1e-9);
+        assert.ok(Math.abs(center.x + scale / 2 - selection[4]) < 1e-9);
+        assert.ok(Math.abs(center.y + scale / 2 - selection[5]) < 1e-9);
+      }
+    });
+  }
+  assert.ok(count > 0, 'control tiles must contain decorative forests');
+  assert.ok(repeated > 0, 'neighboring tile halos must retain the same forest placement and variant');
 });
 
 test('draw preserves groundTiles across revisions and updates without wiping', () => {

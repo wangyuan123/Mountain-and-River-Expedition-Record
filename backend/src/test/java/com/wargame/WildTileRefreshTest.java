@@ -17,6 +17,7 @@ class WildTileRefreshTest extends BaseServiceTest {
     @Autowired WorldMapService maps;
     @Autowired WorldTerrainService terrain;
     @Autowired com.wargame.service.LandBanditPopulationService landBandits;
+    @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     @Test @SuppressWarnings("unchecked")
     void depletedWildDisappearsAndRespawnsAwayFromOriginalPosition() {
@@ -47,10 +48,29 @@ class WildTileRefreshTest extends BaseServiceTest {
     }
 
     @Test
-    void refreshRunsAtEightFixedBeijingTimes() throws NoSuchMethodException {
+    void refreshChecksPersistedGamePeriodsInsteadOfRealWorldCron() throws NoSuchMethodException {
         Scheduled schedule = WildTileRefreshScheduler.class.getMethod("refreshWorldTargets")
                 .getAnnotation(Scheduled.class);
-        assertEquals("0 0 0,3,6,9,12,15,18,21 * * *", schedule.cron());
-        assertEquals("Asia/Shanghai", schedule.zone());
+        assertEquals(1_000L, schedule.fixedDelay());
+        assertEquals("", schedule.cron());
+    }
+
+    @Test
+    void refreshBoundaryStaysAtBeijingThreeOClockAndDoesNotRepeatWhileClockIsFrozen() throws Exception {
+        var scheduler = org.mockito.Mockito.spy(new WildTileRefreshScheduler(worldMapRepository, wildTileRepository,
+                playerCityRepository, npcCityRepository, banditRepository, playerRepository, marchRepository, terrain, landBandits));
+        org.springframework.test.util.ReflectionTestUtils.setField(scheduler, "jdbc", jdbc);
+        org.mockito.Mockito.doNothing().when(scheduler).refreshDepletedWilds();
+        jdbc.update("DELETE FROM game_schedule WHERE task_key='world-refresh'");
+        long boundary = java.time.Instant.parse("2026-10-20T19:00:00Z").toEpochMilli();
+        var time = new java.util.concurrent.atomic.AtomicLong(boundary - 1);
+        try (var ignored = com.wargame.util.GameClock.use(time::get)) {
+            scheduler.refreshWorldTargets();
+            org.mockito.Mockito.verify(scheduler, org.mockito.Mockito.never()).refreshDepletedWilds();
+            time.set(boundary);
+            scheduler.refreshWorldTargets();
+            scheduler.refreshWorldTargets();
+            org.mockito.Mockito.verify(scheduler, org.mockito.Mockito.times(1)).refreshDepletedWilds();
+        }
     }
 }

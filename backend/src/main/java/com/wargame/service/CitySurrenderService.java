@@ -1,5 +1,6 @@
 package com.wargame.service;
 
+import com.wargame.util.GameClock;
 import com.wargame.model.constants.MilitaryRankDef;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
@@ -46,7 +47,7 @@ public class CitySurrenderService {
 
     @Transactional
     public Map<String, Object> offer(Long initiatorId, Long cityId) {
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         PlayerCity city = cities.findForUpdate(cityId).orElseThrow(() -> new IllegalArgumentException("目标城市不存在"));
         if (city.getOwnerId() == null || city.getCitySlot() == null) throw new IllegalArgumentException("只能向真实玩家城市提出劝降");
         if (initiatorId.equals(city.getOwnerId())) throw new IllegalArgumentException("不能向自己的城市提出劝降");
@@ -98,7 +99,7 @@ public class CitySurrenderService {
     public Map<String, Object> respond(Long defenderId, Long offerId, String decision) {
         CitySurrenderOffer offer = offers.findForUpdate(offerId).orElseThrow(() -> new IllegalArgumentException("劝降邀请不存在"));
         if (!defenderId.equals(offer.getDefenderId())) throw new IllegalArgumentException("无权处理该劝降邀请");
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         if (!PENDING.equals(offer.getStatus())) return dto(offer, defenderId);
         if (now >= offer.getResponseExpiresAt()) {
             expireLocked(offer, now);
@@ -141,7 +142,7 @@ public class CitySurrenderService {
 
     @Scheduled(fixedDelayString = "${game.surrender-interval:1000}")
     public void settleDue() {
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         for (CitySurrenderOffer offer : offers.findPendingDue(now, PageRequest.of(0, 100))) {
             try { expire(offer.getId(), now); } catch (Exception ignored) { }
         }
@@ -250,7 +251,11 @@ public class CitySurrenderService {
     }
 
     private static String displayName(Player player) { return player == null ? "对方玩家" : (player.getDisplayName() == null || player.getDisplayName().isBlank() ? player.getUsername() : player.getDisplayName()); }
-    private static String format(Long time) { return time == null ? "-" : new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date(time)); }
+    /** 邮件中的绝对时间仅为发送时预计值，后续停服顺延，实际期限以游戏倒计时为准。 */
+    private static String format(Long time) {
+        return time == null ? "-" : new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm")
+                .format(new Date(System.currentTimeMillis() + time - GameClock.now())) + "（停服顺延）";
+    }
 
     private Map<Long, Player> lockPair(Long first, Long second) {
         Map<Long, Player> result = new HashMap<>();

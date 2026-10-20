@@ -4,6 +4,7 @@ import com.wargame.service.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.Map;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/game/cities")
@@ -17,6 +18,15 @@ public class CityController {
     }
     public record Selection(Long cityId) {}
     public record Founding(Long wildId, String name, Integer x, Integer y) {}
+    public record ShieldSelection(List<Long> cityIds) {}
+    /** 按服务端价格为所选自有城市开盾，扣钻和续期在同一事务提交。 */
+    @PostMapping("/shield") @Transactional
+    public Map<String, Object> shield(@RequestBody ShieldSelection request) {
+        Long id = auth.getCurrentPlayer().getId();
+        Map<String, Object> result = new java.util.LinkedHashMap<>(cities.activateShields(id, request.cityIds()));
+        result.put("state", state.getGameState(id));
+        return result;
+    }
     @GetMapping("/site") public Map<String,Object> site(@RequestParam int x,@RequestParam int y) { return cities.site(auth.getCurrentPlayer().getId(),x,y); }
     @GetMapping public Map<String, Object> list() { return cities.overview(auth.getCurrentPlayer().getId()); }
     @PostMapping("/switch") @Transactional

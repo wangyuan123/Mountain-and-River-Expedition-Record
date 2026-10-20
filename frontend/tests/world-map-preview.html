@@ -38,12 +38,28 @@ Game.API={getToken:function(){return 'preview:'+previewGeneration;},getMapChunk:
 Game.Core.route='world';Game.Core.renderTop=function(){};Game.Core.footer=function(){return '';};Game.Core.render=function(){var v=document.getElementById('view');if(!Game.WorldMap.mounted(v))v.innerHTML='';if(Game.WorldMap.isMap())Game.WorldMap.render(v);else v.innerHTML='<button onclick="Game.WorldMap.setMode(\'map\')">返回大地图</button>';};
 Game.toast=function(t){log.textContent=t;};Game.go=function(r){log.textContent='进入：'+r;};Game.World={renderGatherMarches:function(){return '';},mapAction:function(t,action){log.textContent='目标 '+t.kind+':'+t.id+'，操作 '+action;}};
 window.addEventListener('error',function(e){log.textContent='ERROR: '+e.message;});
-</script><script src="js/map-camera.js?v=1.5-isometric-diamond"></script><script src="js/map-chunks.js"></script><script src="js/map-layout.js?v=4.0-hit-test"></script><script src="js/map-terrain.js?v=4.12-forest-clearance"></script><script src="js/world-map.js?v=4.43-seamless-grass"></script><script>
+</script><script src="js/map-camera.js?v=1.5-isometric-diamond"></script><script src="js/map-chunks.js"></script><script src="js/map-layout.js?v=4.1-icon-bounds"></script><script src="js/map-terrain.js?v=4.22-strict-decoration-clearance"></script><script src="js/world-map.js?v=5.24-strict-decoration-clearance"></script><script>
 if(new URLSearchParams(location.search).has('showcase')){document.querySelector('.fixture-tools').hidden=true;document.getElementById('fixture-log').hidden=true;}
 // A repeatable mixed meadow scene, with resource clearings across a chunk boundary.
 if(new URLSearchParams(location.search).has('meadow')){
   sampleTargets=[['forest',100,86],['forest',103,89],['grassland',102,87],['grassland',105,88],['oil',103,84],['grainfield',99,91],['ironworks',108,88],['rarefactory',95,87]].map(function(p,i){return {kind:'wild',id:i+1,type:p[0],x:p[1],y:p[2],level:3,occupied:false};});
   Game.Core.state.world.cityPos={x:101,y:87};Game.Core.state.world.pos={x:101,y:87};Game.Core.state.world.marches=[];
+}
+// 固定混合场景覆盖跨分块的双格城市、NPC、资源和自然野地，检查装饰的严格避让。
+if(new URLSearchParams(location.search).has('clearance')){
+  sampleTargets=[
+    {id:1,kind:'player',selfCity:true,x:95,y:95,name:'主城',coastal:true},
+    {id:2,kind:'npc',x:99,y:95,name:'NPC据点',level:5},
+    {id:3,kind:'simulated_npc',x:92,y:97,name:'模拟城',level:3},
+    {id:4,kind:'bandit',x:100,y:99,name:'流寇',level:5},
+    {id:5,kind:'wild',type:'forest',x:98,y:98,level:3},
+    {id:6,kind:'wild',type:'grassland',x:94,y:100,level:3},
+    {id:7,kind:'wild',type:'oil',x:98,y:92,level:3},
+    {id:8,kind:'wild',type:'ironworks',x:101,y:96,level:3},
+    {id:9,kind:'wild',type:'rarefactory',x:91,y:93,level:3},
+    {id:10,kind:'wild',type:'grainfield',x:97,y:101,level:3}
+  ];
+  Game.Core.state.world.cityPos={x:95,y:95};Game.Core.state.world.pos={x:95,y:95};Game.Core.state.world.marches=[];
 }
 // Fixed ownership examples use the same renderer and viewer-specific API fields as the live map.
 if(new URLSearchParams(location.search).has('ownership')){
@@ -57,6 +73,19 @@ if(new URLSearchParams(location.search).has('ownership')){
   ];
   Game.Core.state.world.marches=[];
   document.getElementById('fixture-head').textContent='战略地图 · 归属标识预览';
+}
+// 来袭预览按真实接口权限裁剪，incoming=0/1 不含来源坐标。
+if(new URLSearchParams(location.search).has('incoming')){
+  var radar=Math.max(0,Math.min(10,Number(new URLSearchParams(location.search).get('incoming'))||0)), incomingNow=Date.now();
+  sampleTargets=[{id:1,kind:'player',selfCity:true,x:100,y:100,name:'我的主城',ownerName:'指挥官'},
+    {id:2,kind:'player',selfCity:false,x:104,y:96,name:'敌方城市',ownerName:'侦查方'}];
+  var incomingScout={id:'march-77',marchId:77,targetCityId:1,targetName:'我的主城',targetX:100,targetY:100,
+    radarLevel:radar,startAt:incomingNow-120000,arriveAt:incomingNow+120000,arrived:false};
+  if(radar>=1){incomingScout.action='scout';incomingScout.fromName='侦查方';}
+  if(radar>=2){incomingScout.fromX=104;incomingScout.fromY=96;}
+  if(radar>=6)incomingScout.totalTroops=12;
+  if(radar>=7)incomingScout.army={scout:12};
+  Game.Core.state.world.marches=[];Game.Core.state.world.incoming=[incomingScout];
 }
 if(new URLSearchParams(location.search).has('gathering')){
   sampleTargets=[{id:10,kind:'wild',type:'ironworks',x:100,y:100,level:1,occupied:true,claimed:true,gathering:true,gatherStartAt:Date.now(),gatherEndAt:Date.now()+20000,gatherLoad:800,gatherRes:'steel',garrison:{truck:999}}];

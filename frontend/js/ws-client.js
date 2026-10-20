@@ -155,6 +155,7 @@ window.Game = window.Game || {};
       }
 
       var current = (G.Core && G.Core.state) || G.state;
+      if (G.GameTime) G.GameTime.sync(msg.gameTime);
       if (msg.citySlot != null && ((G.Cities && G.Cities.switching) ||
           (current && current.player && msg.citySlot !== (current.player.citySlot || 0)))) return;
       switch (msg.type) {

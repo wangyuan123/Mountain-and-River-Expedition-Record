@@ -48,12 +48,12 @@
     var s = Core.state;
     var w = s.world || {};
     var parts = [];
-    if (w.shieldUntil && w.shieldUntil > Date.now()) {
-      var sh = Math.ceil((w.shieldUntil - Date.now()) / 3600000);
+    if (w.shieldUntil && w.shieldUntil > G.gameNow()) {
+      var sh = Math.ceil((w.shieldUntil - G.gameNow()) / 3600000);
       parts.push('🛡️ 护盾 ' + sh + 'h');
     }
-    if (w.marchBoostUntil && w.marchBoostUntil > Date.now()) {
-      var mh = Math.ceil((w.marchBoostUntil - Date.now()) / 3600000);
+    if (w.marchBoostUntil && w.marchBoostUntil > G.gameNow()) {
+      var mh = Math.ceil((w.marchBoostUntil - G.gameNow()) / 3600000);
       parts.push('🚩 行军加速 ' + mh + 'h');
     }
     return parts;
@@ -264,7 +264,7 @@
     confirmRename: function () {
       var o = Depot._pendingOfficer;
       if (!o) { G.go('depot'); return; }
-      if (Number(o.nameRenameAvailableAt) > Date.now()) {
+      if (Number(o.nameRenameAvailableAt) > G.gameNow()) {
         G.toast('这名军官今天已改名，请明日 0:00 后再试');
         return;
       }
@@ -293,7 +293,6 @@
       var s = Core.state;
       s.items = s.items || {};
       var h = '';
-      h += '<div class="title">- 仓库 -</div>';
 
       // 状态条：生效中的功能道具
       var status = statusText();
@@ -320,7 +319,6 @@
       for (var ci = 0; ci < catOrder.length; ci++) {
         var cat = catOrder[ci];
         if (cat !== activeCat) continue;
-        h += '<div class="zone-head">=== ' + cats[cat] + ' ===</div>';
         h += '<div class="menu">';
         var hasInCat = false;
 
@@ -480,7 +478,7 @@
       h += '<div class="d">为 <b>' + G.escapeHtml(o.name) + '</b> 更换新名字</div>';
       h += '<div class="edit-row" style="margin-top:6px"><label>新名字</label><input id="renameInput" class="qty" style="width:100%" value="' + G.escapeHtml(o.name) + '" /></div>';
       h += '<div class="d" style="color:var(--muted);margin-top:4px">最多12个字符，可用标点、符号和 emoji；不能换行。</div>';
-      h += '<div class="d" style="color:var(--muted);margin-top:4px">每天可修改一次，北京时间 0:00 重置。' + (Number(o.nameRenameAvailableAt) > Date.now() ? '这名军官今日已修改。' : '') + '</div>';
+      h += '<div class="d" style="color:var(--muted);margin-top:4px">每天可修改一次，按游戏时间的北京时间 0:00 重置，停服顺延。' + (Number(o.nameRenameAvailableAt) > G.gameNow() ? '这名军官今日已修改。' : '') + '</div>';
       h += '<div class="d" style="color:var(--muted);margin-top:4px">改名后将消耗 1 张【军官改名卡】,不可撤销</div>';
       h += '<div class="btn-row" style="margin-top:6px"><button type="button" class="btn depot-btn" onclick="Game.Depot.confirmRename()">[确认改名]</button><button type="button" class="btn depot-btn warn" onclick="Game.Depot.cancelRename()">[取消(退回军官改名卡)]</button></div>';
       h += '</div>';

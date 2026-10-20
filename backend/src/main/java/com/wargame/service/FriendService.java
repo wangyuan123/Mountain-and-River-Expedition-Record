@@ -17,11 +17,13 @@ public class FriendService {
     private final GameWebSocketHandler presence;
     private final FriendRequestRepository requests;
     private final RateLimiter limiter;
+    private final WebSocketPushService pushService;
 
     public FriendService(FriendContactRepository contacts, FriendGroupRepository groups,
-                         PlayerRepository players, GameWebSocketHandler presence, FriendRequestRepository requests, RateLimiter limiter) {
+                         PlayerRepository players, GameWebSocketHandler presence, FriendRequestRepository requests, RateLimiter limiter,
+                         WebSocketPushService pushService) {
         this.contacts = contacts; this.groups = groups; this.players = players; this.presence = presence; this.requests = requests;
-        this.limiter = limiter;
+        this.limiter = limiter; this.pushService = pushService;
     }
 
     @Transactional(readOnly = true)
@@ -85,6 +87,7 @@ public class FriendService {
             return new FriendDtos.AddResult(profile(me, peerId), false);
         }
         requests.save(new FriendRequest(me, peerId));
+        if (pushService != null) pushService.pushToPlayer(peerId, "friend_request", Map.of("type", "request", "senderId", me));
         return new FriendDtos.AddResult(profile(me, peerId), true);
     }
 
@@ -154,11 +157,17 @@ public class FriendService {
         lockPair(request.getSenderId(), request.getRecipientId());
         // 加锁后重读，避免另一设备已撤回的申请被再次接受。
         request = requests.findLockedById(requestId).orElseThrow(() -> new IllegalArgumentException("申请已处理或不存在"));
+        Long senderId = request.getSenderId();
+        Long recipientId = request.getRecipientId();
         if (accept) {
             if (contacts.blocksChat(request.getSenderId(), request.getRecipientId())) throw new IllegalArgumentException("请先解除黑名单限制");
             if (!player(request.getSenderId()).accountActive()) throw new IllegalArgumentException("该玩家账号不可用");
             befriend(request.getSenderId(), request.getRecipientId(), null);
         } else requests.delete(request);
+        if (pushService != null) {
+            pushService.pushToPlayer(senderId, "friend_request", Map.of("type", accept ? "accepted" : "rejected", "recipientId", recipientId));
+            pushService.pushToPlayer(recipientId, "friend_request", Map.of("type", "handled", "requestId", requestId));
+        }
     }
 
     @Transactional

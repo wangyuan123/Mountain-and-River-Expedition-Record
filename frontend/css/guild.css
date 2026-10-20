@@ -170,6 +170,241 @@
   margin-left: auto;
 }
 
+/* ========================================================================== */
+/* 全服军团列表紧凑小卡片 (Recruitment Legion Compact Cards)                    */
+/* ========================================================================== */
+
+.guild-recruitment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 8px;
+  padding: 10px;
+}
+
+.guild-entry-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  box-sizing: border-box;
+  min-width: 0;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.guild-entry-card:hover {
+  border-color: var(--accent, #3b82f6);
+  background: var(--surface-muted, #f8fafc);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.guild-entry-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.guild-entry-identity {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.guild-entry-emblem {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.guild-entry-emblem .guild-emblem {
+  width: 22px;
+  height: 22px;
+}
+
+.guild-entry-emblem .guild-emblem-legacy {
+  font-size: 18px;
+}
+
+.guild-entry-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ink, #1e293b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.guild-entry-prestige {
+  color: #27ae60;
+  font-weight: 700;
+  font-size: 12px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.guild-entry-apply-btn {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  color: #16a34a;
+  cursor: pointer;
+  line-height: 1.4;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.guild-entry-apply-btn:hover {
+  background: #16a34a;
+  color: #ffffff;
+  border-color: #16a34a;
+  text-decoration: none;
+}
+
+.guild-entry-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--muted, #64748b);
+  line-height: 1.35;
+}
+
+.guild-entry-meta strong {
+  color: var(--ink, #334155);
+  font-weight: 600;
+}
+
+.guild-entry-meta-sep {
+  color: var(--line, #cbd5e1);
+  font-weight: normal;
+}
+
+.guild-entry-notice {
+  font-size: 11px;
+  color: var(--muted, #64748b);
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: var(--surface-muted, #f8fafc);
+  border-radius: 3px;
+  padding: 2px 6px;
+  border-left: 2px solid var(--accent, #3b82f6);
+  margin-top: 1px;
+}
+
+/* 主题适配 */
+[data-theme="dark"] .guild-entry-card {
+  background: var(--surface, #111724);
+  border-color: var(--line, #2b3b52);
+}
+
+[data-theme="dark"] .guild-entry-card:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--accent, #38bdf8);
+}
+
+[data-theme="dark"] .guild-entry-name {
+  color: var(--ink, #e2e8f0);
+}
+
+[data-theme="dark"] .guild-entry-prestige {
+  color: #4ade80;
+}
+
+[data-theme="dark"] .guild-entry-meta strong {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .guild-entry-meta-sep {
+  color: #475569;
+}
+
+[data-theme="dark"] .guild-entry-notice {
+  background: rgba(255, 255, 255, 0.04);
+  border-left-color: #60a5fa;
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .guild-header-card,
+[data-theme="dark"] .guild-notice-card,
+[data-theme="dark"] .guild-members-card {
+  background: #111827;
+  border-color: #1e293b;
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .guild-card-section-title {
+  background: #162032;
+  border-bottom-color: #1e293b;
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .guild-entry-card {
+  background: #162032;
+  border-color: #24344d;
+}
+
+[data-theme="dark"] .guild-entry-card:hover {
+  background: #1c2a42;
+  border-color: #38bdf8;
+}
+
+[data-theme="dark"] .guild-entry-apply-btn {
+  background: rgba(74, 222, 128, 0.12);
+  border-color: rgba(74, 222, 128, 0.3);
+  color: #4ade80;
+}
+
+[data-theme="dark"] .guild-entry-apply-btn:hover {
+  background: #22c55e;
+  color: #0d1b12;
+}
+
+[data-theme="paper"] .guild-header-card,
+[data-theme="paper"] .guild-notice-card,
+[data-theme="paper"] .guild-members-card {
+  background: #faf8f2;
+  border-color: #ded9cd;
+  color: #273136;
+}
+
+[data-theme="paper"] .guild-card-section-title {
+  background: #f2efe7;
+  border-bottom-color: #ded9cd;
+  color: #273136;
+}
+
+[data-theme="paper"] .guild-entry-card {
+  background: #fdfcf9;
+  border-color: #ded9cd;
+}
+
+[data-theme="paper"] .guild-entry-card:hover {
+  background: #f5f2ea;
+  border-color: #3f5e4d;
+}
+
+[data-theme="paper"] .guild-entry-notice {
+  background: rgba(0, 0, 0, 0.03);
+  border-left-color: #3f5e4d;
+}
+
 /* 操作链接按钮 */
 .guild-op-btn {
   appearance: none;

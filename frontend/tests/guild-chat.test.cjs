@@ -195,6 +195,25 @@ test('sendGuild immediately appends message to guildLog and DOM without reload',
   assert.equal(box.children.length, 1);
 });
 
+test('shareIncoming confirms the persisted report message and deduplicates WebSocket delivery', async () => {
+  const { chat, context } = fixture();
+  const content = '[军情:dc123456-1234-1234-1234-123456789abc]';
+  const response = { id: 9, guildId: 10, playerId: 5, username: '守城者', content, ts: 3000 };
+  let confirm;
+  context.Game.API.shareIncomingReport = id => {
+    assert.equal(id, 'march-37');
+    return new Promise(resolve => { confirm = resolve; });
+  };
+  const pending = chat.shareIncoming('march-37');
+  assert.equal(chat.guildLog.length, 0);
+  await assert.rejects(chat.shareIncoming('march-38'), /发言过于频繁/);
+  chat.receiveGuild(response);
+  confirm(response);
+  assert.equal(await pending, response);
+  assert.equal(chat.guildLog.length, 1);
+  assert.equal(chat.guildLog[0].content, content);
+});
+
 test('ws-client routes guild_chat message to registered listener', () => {
   const context = {
     Game: {},

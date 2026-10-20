@@ -50,6 +50,7 @@ window.Game = window.Game || {};
     }
 
     setToken(token, username) {
+      G.GameTime.reset();
       this.cityId = null; this.invalidateCityRequests();
       localStorage.setItem(this.tokenKey, token);
       localStorage.setItem(this.serverKey, this.serverId);
@@ -57,6 +58,7 @@ window.Game = window.Game || {};
     }
 
     clearToken() {
+      G.GameTime.reset();
       if (G.Protection) G.Protection.reset();
       this.cityId = null; this.invalidateCityRequests();
       localStorage.removeItem(this.tokenKey);
@@ -74,6 +76,7 @@ window.Game = window.Game || {};
 
     /** 切换大区后令旧请求失效；入口由部署配置指定，不能从用户输入拼接。 */
     setServer(region) {
+      G.GameTime.reset();
       this.invalidateCityRequests();
       this.cityId = null;
       this.serverId = region.id;
@@ -213,6 +216,7 @@ window.Game = window.Game || {};
         // 始终尝试解析为 JSON（后端错误也是 JSON）
         return res.text().then(function (text) {
           if (context.revision !== self.cityRevision) throw new Error('城市或账号已切换，已忽略旧页面响应');
+          if (res.headers && res.headers.get) G.GameTime.sync(res.headers.get('X-Game-Time'));
           var data = null;
           if (text) {
             try { data = JSON.parse(text); } catch (e) { data = null; }

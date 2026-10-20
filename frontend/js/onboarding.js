@@ -350,7 +350,7 @@
       applyBalances(data);
       if (action === 'claim') G.toast('补给已送达主城');
       if (action === 'skip') G.toast('行动补给已送达主城，可继续主线任务');
-      if (action === 'recover') G.toast('援军已抵达主城：30步兵、1侦察机');
+      if (action === 'recover') G.toast('援军已抵达主城：30步兵、1卡车及资源');
       if (action === 'tasks/claim') G.toast('探索任务奖励已到账');
       if (action === 'start' || (action === 'pause' && !data.paused)) state.snoozedFor = '';
       if (action === 'pause' || action === 'skip') {
@@ -367,6 +367,9 @@
   function actions(objective) {
     if (objective.id === 'base') return routeButton('前往建设', 'buildRes') + routeButton('军工建筑', 'buildArmy');
     if (objective.id === 'infantry') return routeButton('生产一名步兵', 'army', 'infantry');
+    if (objective.id === 'recon_build') return routeButton('市政厅2级', 'buildArmy', 'command') + routeButton('军工厂2级', 'buildArmy', 'factory') + routeButton('防空雷达站1级', 'buildArmy', 'radar') + routeButton('科研中心1级', 'buildArmy', 'lab');
+    if (objective.id === 'recon_research') return routeButton('研究侦察技术1级', 'tech', 'recon_level');
+    if (objective.id === 'recon_unit') return routeButton('生产侦查装甲车', 'army', 'recon_car');
     if (objective.id === 'scout' || objective.id === 'occupy') return button('选择推荐野地', 'target', objective.id);
     if (objective.id === 'report') return routeButton('查看获胜战报', 'reports');
     return '';
@@ -420,7 +423,7 @@
   function draw(view) {
     if (!view) return;
     var data = state.data;
-    var h = '<div class="onboarding-view"><div class="title">前进基地行动</div><p>建设、组队、侦察、首战、战果。采集与其他玩法在「任务」按需探索。</p>';
+    var h = '<div class="onboarding-view"><div class="title">前进基地行动</div><p>建设、组队、侦查生产线、研究、生产侦查车、侦察、首战、战果。采集与其他玩法在「任务」按需探索。</p>';
     if (state.error) h += '<p class="ob-error">' + esc(state.error) + '</p>' + button('重新检查', 'refresh');
     if (!data) h += '<p>正在读取行动记录…</p>';
     else if (!data.enrolled) h += button('开启行动', 'start') + button('跳过指引', 'skip');
@@ -637,8 +640,9 @@
       var sArmy = (Core.state && Core.state.army) || {};
       var defaultArmy = {};
       if (action === 'scout') {
-        var scoutUnit = Number(sArmy.scout) > 0 || !Number(sArmy.recon_car) ? 'scout' : 'recon_car';
-        defaultArmy[scoutUnit] = sArmy[scoutUnit] != null ? Math.min(Number(sArmy[scoutUnit]) || 0, 1) : 1;
+        var scoutUnit = Number(sArmy.recon_car) > 0 ? 'recon_car' : Number(sArmy.scout) > 0 ? 'scout' : null;
+        if (!scoutUnit) { G.toast('请先完成侦察研究并生产侦查装甲车'); go('army', 'recon_car'); return; }
+        defaultArmy[scoutUnit] = 1;
       } else if (action === 'gather') {
         // 保留高运力编队优先级；没有运输单位时，最多预填50名步兵（基础运力500）。
         var gatherCount = gatherUnit === 'truck' ? 2 : gatherUnit === 'transport' ? 1 : 50;

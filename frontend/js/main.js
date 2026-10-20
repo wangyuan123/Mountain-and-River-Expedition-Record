@@ -3,6 +3,7 @@ window.Game = window.Game || {};
 
 (function (G) {
   'use strict';
+  G.gameNow = G.gameNow || function () { return Date.now(); };
 
   var Core = G.Core;
   var D = G.DATA;
@@ -335,6 +336,7 @@ window.Game = window.Game || {};
         if (G.Chat) G.Chat.loadHistory();
         if (G.Mail) G.Mail.seed();
         if (G.PrivateChat) G.PrivateChat.refresh();
+        if (G.Friends) G.Friends.refresh();
         if (G.Task && G.Task.Quests) { G.Task.Quests.init(); G.Task.Quests.onEvent('login', 1, true); }
         if (Main._showWelcomeAfterStart) {
           Main._showWelcomeAfterStart = false;
@@ -431,7 +433,7 @@ window.Game = window.Game || {};
 
     saveCity: function () {
       var s = Core.state;
-      if (Number(s.player.cityNameRenameAvailableAt) > Date.now()) {
+      if (Number(s.player.cityNameRenameAvailableAt) > G.gameNow()) {
         G.toast('这座城市今天已改名，请明日 0:00 后再试');
         return;
       }

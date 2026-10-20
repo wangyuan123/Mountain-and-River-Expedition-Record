@@ -350,6 +350,7 @@ window.Game = window.Game || {};
     var iconHtml = /\.svg$|\.png$|\.jpg$|\.gif$|\.webp$/i.test(rawIcon)
       ? '<img class="unit-detail-icon" src="' + esc(rawIcon) + '" alt="' + esc(unit.name) + '" />'
       : '<span class="unit-detail-icon unit-detail-icon-text">' + esc(rawIcon || '⚔') + '</span>';
+    var role = (D.combatRoles && D.combatRoles[id]) || (unit && unit.desc) || '暂无战斗定位说明';
     var battleSpd = (unit.spd || 0) * 50;
     var secPerGrid = (D.world && D.world.marchSecPerGrid) || 18;
     var marchSec = (secPerGrid / (unit.spd || 1)).toFixed(1).replace(/\.0$/, '');
@@ -380,10 +381,15 @@ window.Game = window.Game || {};
       '</section>';
     document.body.appendChild(modal);
 
-    var close = function () { if (modal.parentNode) modal.parentNode.removeChild(modal); };
+    var close = function () {
+      document.removeEventListener('keydown', onKeydown);
+      if (modal.parentNode) modal.parentNode.removeChild(modal);
+    };
+    var onKeydown = function (event) { if (event.key === 'Escape') close(); };
     var closeBtn = modal.querySelector('.unit-detail-close');
     if (closeBtn) closeBtn.onclick = close;
     modal.addEventListener('click', function (event) { if (event.target === modal) close(); });
+    document.addEventListener('keydown', onKeydown);
   }
 
   function renderOfficerSummaryCard() {
@@ -406,7 +412,7 @@ window.Game = window.Game || {};
     var html = '';
 
     html += '<div class="zone-head">' + homeModuleHandle('officers')
-      + '<span class="zone-title">🎖️ 军官将领</span>'
+      + '<span class="zone-title"><img class="home-overview-icon" src="img/avatars/historical/rank-major-v1.webp" alt="" aria-hidden="true" draggable="false"/> 军官将领</span>'
       + '<span class="zone-sub">已招募 ' + totalCount + ' 名</span>'
       + '<span class="home-officer-go zone-head-action" onclick="event.stopPropagation();Game.go(\'academy\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.stopPropagation();Game.go(\'academy\');event.preventDefault();}" role="button" tabindex="0" title="点击前往军校 · 招募将领">去招募 &gt;</span>'
       + '</div>';
@@ -551,8 +557,10 @@ window.Game = window.Game || {};
       var active = (Core.route === it.route || (Core.route === 'wounded' && it.route === 'army') || (Core.route === 'officerDetail' && it.route === 'officer')) ? ' active' : '';
       var hasBattleAlert = G.World && G.World.hasBattleAlert ? G.World.hasBattleAlert() : false;
       var alertCls = (it.route === 'alerts' && (hasIncoming || hasBattleAlert)) ? ' alert' : '';
-      var chatUnread = it.route === 'chat' && G.PrivateChat && G.PrivateChat.unread ? G.PrivateChat.unread() : 0;
-      var chatBadge = chatUnread > 0 ? '<span class="nav-badge">' + chatUnread + '</span>' : '';
+      var chatPrivateUnread = (it.route === 'chat' && G.PrivateChat && G.PrivateChat.unread) ? G.PrivateChat.unread() : 0;
+      var friendRequestsUnread = (it.route === 'chat' && G.Friends && G.Friends.unread) ? G.Friends.unread() : 0;
+      var chatUnread = chatPrivateUnread + friendRequestsUnread;
+      var chatBadge = chatUnread > 0 ? '<span class="nav-badge">' + (chatUnread > 99 ? '99+' : chatUnread) + '</span>' : '';
       var mailUnread = (it.route === 'mail' && G.Mail && G.Mail.unread && G.Mail.unread() > 0) ? G.Mail.unread() : 0;
       var mailBadge = mailUnread ? '<span class="nav-badge">' + mailUnread + '</span>' : '';
       var reportsUnread = (it.route === 'reports' && G.Battle && G.Battle.unreadCount && G.Battle.unreadCount() > 0) ? G.Battle.unreadCount() : 0;
@@ -648,6 +656,7 @@ window.Game = window.Game || {};
   function showPopulationDetailModal() {
     var modal = document.createElement('div');
     modal.className = 'modal-mask';
+    var recruitInFlight = false;
 
     modal.innerHTML =
       '<div class="modal-card pop-detail-modal" style="max-width:440px">' +
@@ -676,6 +685,13 @@ window.Game = window.Game || {};
       '<div class="pop-recruit-desc">消耗军需仓库中的【人口动员令】，立即自四方动员 <b class="positive">+500</b> 空闲平民进城（受民居容量限制）。</div>' +
       '</div>' +
       '<button class="btn ok pop-recruit-action-btn" id="popRecruitBtn">立即召集 (+500)</button>' +
+      '</div>' +
+      '<div class="pop-recruit-card">' +
+      '<div class="pop-recruit-info">' +
+      '<span class="pop-recruit-badge" id="popEmergencyOrderCountBadge">拥有紧急动员令: 0 张</span>' +
+      '<div class="pop-recruit-desc">消耗【紧急人口动员令】，立即增加当前城市人口容量上限 <b class="positive">30%</b> 的空闲平民（不超过民居容量）。</div>' +
+      '</div>' +
+      '<button class="btn ok pop-recruit-action-btn" id="popEmergencyRecruitBtn">紧急召集 (+30%)</button>' +
       '</div>' +
       '</div>' +
 
@@ -757,6 +773,7 @@ window.Game = window.Game || {};
       var mayorKnow = (mayor && mayor.knowledge) ? mayor.knowledge : 0;
 
       modal.querySelector('#popSliderNum').textContent = taxVal + '%';
+      var sliderEl = modal.querySelector('#popTaxSlider');
       if (sliderEl) sliderEl.style.setProperty('--p', taxVal + '%');
 
       var prevFinanceBonus = Core.mayorSkillBonus ? Core.mayorSkillBonus('finance') : 0;
@@ -801,6 +818,7 @@ window.Game = window.Game || {};
 
       modal.querySelector('#popCivilianVal').textContent = G.fmt(civ);
       modal.querySelector('#popCapVal').textContent = G.fmt(cap);
+      modal.querySelector('#popEffCapVal').textContent = G.fmt(effCap);
       var growthEl = modal.querySelector('#popGrowthVal');
       if (growthEl) {
         if (civ >= effCap && growth === 0) {
@@ -889,6 +907,17 @@ window.Game = window.Game || {};
       if (quickBtnEl) {
         quickBtnEl.textContent = popOrders > 0 ? '召集(+500)' : '召集';
       }
+      var emergencyOrders = (s.items && s.items.emergencyPopulationOrder) || 0;
+      var emergencyBadge = modal.querySelector('#popEmergencyOrderCountBadge');
+      emergencyBadge.textContent = '拥有紧急动员令: ' + emergencyOrders + ' 张';
+      emergencyBadge.className = 'pop-recruit-badge' + (emergencyOrders > 0 ? ' has-items' : '');
+      var emergencyBtn = modal.querySelector('#popEmergencyRecruitBtn');
+      var emergencyAdded = Math.min(Math.floor(cap * 30 / 100), Math.max(0, cap - civ));
+      emergencyBtn.textContent = emergencyOrders > 0 ? '紧急召集 (+' + G.fmt(emergencyAdded) + ')' : '获取紧急动员令 (去商城)';
+      emergencyBtn.className = 'btn ' + (emergencyOrders > 0 ? 'ok' : 'sub') + ' pop-recruit-action-btn';
+      [quickBtnEl, mainRecruitBtn, emergencyBtn].forEach(function (btn) {
+        if (btn) btn.disabled = recruitInFlight;
+      });
 
       var goldBtn = modal.querySelector('#popAppeaseGoldBtn');
       if (currentGold < goldCost) {
@@ -909,7 +938,9 @@ window.Game = window.Game || {};
       }
     }
 
-    function handleRecruitPopulation() {
+    /** 按所选动员令召集；数量与人口由后端结算，缺货时使用主题确认框前往商城。 */
+    function handleRecruitPopulation(itemId) {
+      if (recruitInFlight) return;
       var civ = Core.civilianPopulation();
       var cap = Core.populationCapacity();
       if (civ >= cap) {
@@ -918,43 +949,51 @@ window.Game = window.Game || {};
       }
       var s = Core.state || {};
       var items = s.items || {};
-      var popOrders = items.populationOrder || 0;
+      var info = D.items[itemId];
+      var emergency = itemId === 'emergencyPopulationOrder';
+      var popOrders = items[itemId] || 0;
       if (popOrders <= 0) {
-        if (confirm('仓库中暂无【人口动员令】（每张使用可立即增加500空闲平民）。\n是否立即前往商城购买？')) {
-          modal.remove();
-          Game.go('shop');
-        }
+        G.World.showConfirm({
+          title: '获取' + info.name,
+          message: '仓库中暂无【' + info.name + '】（' + info.desc + '）。是否立即前往商城购买？',
+          okText: '前往商城',
+          onConfirm: function () {
+            closeModal();
+            G.go('shop');
+          }
+        });
         return;
       }
 
-      var quickBtn = modal.querySelector('#popRecruitQuickBtn');
-      var mainBtn = modal.querySelector('#popRecruitBtn');
-      if (quickBtn) quickBtn.disabled = true;
-      if (mainBtn) mainBtn.disabled = true;
+      recruitInFlight = true;
+      refreshModal();
+      var expectedAdded = Math.min(emergency ? Math.floor(cap * 30 / 100) : 500, Math.max(0, cap - civ));
 
-      G.API.depotUse('populationOrder', null, null).then(function (resp) {
+      G.API.depotUse(itemId, null, null).then(function (resp) {
         if (resp && resp.success === false) {
           G.toast(resp.message || '召集失败');
           if (resp.state) G.API.applyState(resp.state);
           return;
         }
-        G.toast((resp && resp.message) || '👥 召集成功，空闲平民 +500！');
+        G.toast((resp && resp.message) || '👥 召集成功，空闲平民 +' + expectedAdded + '！');
         if (G.MainQuest && G.MainQuest.refresh) G.MainQuest.refresh();
         if (Core.route === 'home') Core.render();
-        refreshModal();
       }).catch(function (err) {
         G.toast((err && err.message) || '召集失败');
       }).finally(function () {
-        if (quickBtn) quickBtn.disabled = false;
-        if (mainBtn) mainBtn.disabled = false;
+        recruitInFlight = false;
+        refreshModal();
       });
     }
 
     var quickRecruitBtn = modal.querySelector('#popRecruitQuickBtn');
-    if (quickRecruitBtn) quickRecruitBtn.onclick = handleRecruitPopulation;
+    if (quickRecruitBtn) quickRecruitBtn.onclick = function () { handleRecruitPopulation('populationOrder'); };
 
     var mainRecruitBtn = modal.querySelector('#popRecruitBtn');
-    if (mainRecruitBtn) mainRecruitBtn.onclick = handleRecruitPopulation;
+    if (mainRecruitBtn) mainRecruitBtn.onclick = function () { handleRecruitPopulation('populationOrder'); };
+
+    var emergencyRecruitBtn = modal.querySelector('#popEmergencyRecruitBtn');
+    emergencyRecruitBtn.onclick = function () { handleRecruitPopulation('emergencyPopulationOrder'); };
 
     var slider = modal.querySelector('#popTaxSlider');
     slider.oninput = function () {
@@ -1042,11 +1081,13 @@ window.Game = window.Game || {};
     var statusClass = cs.status ? ' ' + cs.status : ' peace';
     h += '<span class="city-status-tag' + statusClass + '" data-status="' + (cs.status || 'peace') + '">' + cs.text + '</span>';
     h += '</div>';
-    h += '<div id="newbieProtectionNotice" class="home-alert" role="status"' + ((s.cityState || {}).newbieProtectionUntil > Date.now() ? '' : ' hidden') + '>' + ((s.cityState || {}).newbieProtectionUntil > Date.now() ? G.escapeHtml(cs.detail) : '') + '</div>';
-    if (s.player.cityFrozen) h += '<div class="home-alert" role="status">城市正在归降移交，经营和军事操作已冻结；预计 ' + new Date(Number(s.player.cityTransferDeadlineAt || Date.now())).toLocaleString() + ' 完成。</div>';
+    h += '<div id="newbieProtectionNotice" class="home-alert newbie-protection-notice" role="status"' + (shouldShowNewbieProtectionNotice() ? '' : ' hidden') + '>' +
+      '<span id="newbieProtectionNoticeText">' + (shouldShowNewbieProtectionNotice() ? G.escapeHtml(cs.detail) : '') + '</span>' +
+      '<button type="button" class="drawer-close-btn newbie-protection-close" aria-label="永久关闭首页新手保护提示" title="关闭首页提示" onclick="Game.MainView.dismissNewbieProtectionNotice()">✕</button></div>';
+    if (s.player.cityFrozen) h += '<div class="home-alert" role="status">城市正在归降移交，经营和军事操作已冻结；预计 ' + new Date(G.GameTime ? G.GameTime.toWallTime(s.player.cityTransferDeadlineAt || G.gameNow()) : Number(s.player.cityTransferDeadlineAt || Date.now())).toLocaleString() + ' 完成（停服顺延）。</div>';
     h += '<div id="editCityBox" class="edit-profile-box" style="display:none">';
     h += '<div class="edit-row"><label>城市名</label><input id="epCityName" class="qty" style="width:100%" maxlength="12" value="' + G.escapeHtml(s.player.cityName || '新城市') + '" placeholder="留空则用默认名称"></div>';
-    h += '<div class="d" style="color:var(--muted);margin-top:4px">最多12个字符，可用标点、符号和 emoji；每天可修改一次，北京时间 0:00 重置。' + (Number(s.player.cityNameRenameAvailableAt) > Date.now() ? '这座城市今日已修改。' : '') + '</div>';
+    h += '<div class="d" style="color:var(--muted);margin-top:4px">最多12个字符，可用标点、符号和 emoji；每天可修改一次，按游戏时间的北京时间 0:00 重置，停服顺延。' + (Number(s.player.cityNameRenameAvailableAt) > (G.gameNow ? G.gameNow() : Date.now()) ? '这座城市今日已修改。' : '') + '</div>';
     h += '<div class="d" style="color:var(--muted);margin-top:4px">' + ((Number(s.items && s.items.cityRenameCard) || 0) > 0 ? '优先消耗 1 张城市改名卡。' : '消耗 60 黄金。') + '</div>';
     h += '<div class="btn-row" style="margin-top:4px"><button class="btn ok sm" onclick="Game.Main.saveCity()">保存</button><button class="btn sm" onclick="Game.Main.toggleEditCity()">取消</button></div>';
     h += '</div>';
@@ -1080,7 +1121,7 @@ window.Game = window.Game || {};
     h = '';
 
     // 军队总览（活动与任务块已迁移到顶部菜单"任务"页内）
-    h += '<div class="zone-head">' + homeModuleHandle('army') + '<span class="zone-title">🪖 军队总览</span><span class="zone-sub">带兵上限 ' + G.fmt(Core.armyCap()) + '</span><button type="button" class="army-summary-expand" title="全屏展开军队总览" aria-label="全屏展开军队总览" onclick="Game.MainView.showArmySummaryFullscreen()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg></button><span class="army-dispatch-go zone-head-action" role="button" tabindex="0" onclick="Game.go(\'world\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.go(\'world\');event.preventDefault();}">去出征 &gt;</span></div>';
+    h += '<div class="zone-head">' + homeModuleHandle('army') + '<span class="zone-title"><img class="home-overview-icon" src="' + UNIT_MODEL.special + '" alt="" aria-hidden="true" draggable="false"/> 军队总览</span><span class="zone-sub">带兵上限 ' + G.fmt(Core.armyCap()) + '</span><button type="button" class="army-summary-expand" title="全屏展开军队总览" aria-label="全屏展开军队总览" onclick="Game.MainView.showArmySummaryFullscreen()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg></button><span class="army-dispatch-go zone-head-action" role="button" tabindex="0" onclick="Game.go(\'world\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.go(\'world\');event.preventDefault();}">去出征 &gt;</span></div>';
     h += '<div class="army-summary" role="region" tabindex="0" aria-label="军队总览，三排排列，左右滑动查看全部兵种">';
     h += renderArmySummaryList();
     h += '</div>';
@@ -1100,7 +1141,7 @@ window.Game = window.Game || {};
     }
 
     var fortStats = fortSummaryStats();
-    h += '<div class="zone-head fort-summary-zone-head"><span class="zone-title">🏰 城防总览</span><span class="zone-sub">城防 Lv.' + G.fmt(fortStats.wallLevel) + ' · 工事 ' + G.fmt(fortStats.totalForts) + '/' + G.fmt(fortStats.fortCapacity) + '</span><button type="button" class="fort-summary-expand" title="全屏展开城防总览" aria-label="全屏展开城防总览" onclick="Game.MainView.showFortSummaryFullscreen()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg></button><span class="fort-summary-go zone-head-action" role="button" tabindex="0" onclick="Game.go(\'fort\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.go(\'fort\');event.preventDefault();}">去城防 &gt;</span></div>';
+    h += '<div class="zone-head fort-summary-zone-head"><span class="zone-title"><img class="home-overview-icon" src="img/buildings/garden/wall.webp" alt="" aria-hidden="true" draggable="false"/> 城防总览</span><span class="zone-sub">城防 Lv.' + G.fmt(fortStats.wallLevel) + ' · 工事 ' + G.fmt(fortStats.totalForts) + '/' + G.fmt(fortStats.fortCapacity) + '</span><button type="button" class="fort-summary-expand" title="全屏展开城防总览" aria-label="全屏展开城防总览" onclick="Game.MainView.showFortSummaryFullscreen()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg></button><span class="fort-summary-go zone-head-action" role="button" tabindex="0" onclick="Game.go(\'fort\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.go(\'fort\');event.preventDefault();}">去城防 &gt;</span></div>';
     h += '<div class="fort-summary" role="region" tabindex="0" aria-label="城防总览，单排横向排列，左右滑动查看全部工事">';
     h += renderFortSummaryList();
     h += '</div>';
@@ -1112,7 +1153,7 @@ window.Game = window.Game || {};
     modules.army = h;
     h = '';
 
-    h += '<div class="zone-head">' + homeModuleHandle('resources') + '<span class="zone-title">资源</span></div>';
+    h += '<div class="zone-head">' + homeModuleHandle('resources') + '<span class="zone-title"><img class="home-overview-icon" src="' + D.resources.gold.icon + '" alt="" aria-hidden="true" draggable="false"/> 资源</span></div>';
     h += '<div class="res-grid">';
     var resKeys = G.Constants.resourceKeysWithGold;
     for (var ri = 0; ri < resKeys.length; ri++) {
@@ -1261,7 +1302,10 @@ window.Game = window.Game || {};
     }
     page.querySelector('#chatPageTitle').textContent = tab === 'friends' ? '山河战友' : tab === 'forum' ? '山河论坛' : (selectedChatChannel === 'private' ? '玩家私聊' : selectedChatChannel === 'guild' ? '军团频道' : '世界频道');
     page.querySelector('#chatPageSubtitle').textContent = tab === 'friends' ? '好友与分组' : tab === 'forum' ? '玩家交流' : (selectedChatChannel === 'private' ? '仅双方可见' : selectedChatChannel === 'guild' ? '战术内频' : '实时通联');
-    if (tab === 'friends' && G.Friends) G.Friends.refresh();
+    if (tab === 'friends' && G.Friends) {
+      if (G.Friends.acknowledge) G.Friends.acknowledge();
+      G.Friends.refresh();
+    }
     if (tab === 'messages' && G.PrivateChat && G.PrivateChat.active) G.PrivateChat.refresh();
     var tabs = page.querySelectorAll('[data-chat-tab]');
     for (var i = 0; i < tabs.length; i++) {
@@ -1407,18 +1451,22 @@ window.Game = window.Game || {};
       if (G.Chat) G.Chat.updateGuildSendBtnUI();
       return;
     }
-    v.innerHTML = '<section class="chat-page" aria-label="聊天">' +
-      '<header class="chat-page-header page-backbar">' +
-      '<button type="button" class="chat-back-button" onclick="Game.back()" aria-label="返回上一步">‹</button>' +
-      '<h1 id="chatPageTitle">世界频道</h1><span id="chatPageSubtitle">实时通联</span></header>' +
-      '<div id="chatMessagesPanel" class="chat-tab-panel" aria-label="消息">' + renderChatMessagesPanel() + '</div>' +
-      '<div id="chatForumPanel" class="chat-tab-panel" aria-label="论坛" hidden></div>' +
-      '<div id="chatFriendsPanel" class="chat-tab-panel" aria-label="山河战友" hidden>' + (G.Friends ? G.Friends.render() : '') + '</div>' +
-      '<nav class="chat-bottom-tabs" aria-label="聊天导航">' +
-      '<button type="button" class="chat-bottom-tab active" data-chat-tab="messages" aria-controls="chatMessagesPanel" aria-current="page" onclick="Game.MainView.selectChatTab(\'messages\')"><span aria-hidden="true">☏</span>消息</button>' +
-      '<button type="button" class="chat-bottom-tab" data-chat-tab="friends" aria-controls="chatFriendsPanel" onclick="Game.MainView.selectChatTab(\'friends\')"><span aria-hidden="true">♙</span>山河战友</button>' +
-      '<button type="button" class="chat-bottom-tab" data-chat-tab="forum" aria-controls="chatForumPanel" onclick="Game.MainView.selectChatTab(\'forum\')"><span aria-hidden="true">▤</span>论坛</button>' +
-      '</nav></section>';
+      var friendReqCount = G.Friends && G.Friends.unread ? G.Friends.unread() : 0;
+      var friendBadgeHtml = '<span class="tab-badge" id="friendRequestTabBadge"' + (friendReqCount > 0 ? '' : ' style="display:none;"') + '>' + (friendReqCount > 99 ? '99+' : friendReqCount) + '</span>';
+      var pmUnreadCount = G.PrivateChat && G.PrivateChat.unread ? G.PrivateChat.unread() : 0;
+      var pmBadgeHtml = '<span class="tab-badge" id="chatMessagesTabBadge"' + (pmUnreadCount > 0 ? '' : ' style="display:none;"') + '>' + (pmUnreadCount > 99 ? '99+' : pmUnreadCount) + '</span>';
+      v.innerHTML = '<section class="chat-page" aria-label="聊天">' +
+        '<header class="chat-page-header page-backbar">' +
+        '<button type="button" class="chat-back-button" onclick="Game.back()" aria-label="返回上一步">‹</button>' +
+        '<h1 id="chatPageTitle">世界频道</h1><span id="chatPageSubtitle">实时通联</span></header>' +
+        '<div id="chatMessagesPanel" class="chat-tab-panel" aria-label="消息">' + renderChatMessagesPanel() + '</div>' +
+        '<div id="chatForumPanel" class="chat-tab-panel" aria-label="论坛" hidden></div>' +
+        '<div id="chatFriendsPanel" class="chat-tab-panel" aria-label="山河战友" hidden>' + (G.Friends && G.Friends.render ? G.Friends.render() : '') + '</div>' +
+        '<nav class="chat-bottom-tabs" aria-label="聊天导航">' +
+        '<button type="button" class="chat-bottom-tab active" data-chat-tab="messages" aria-controls="chatMessagesPanel" aria-current="page" onclick="Game.MainView.selectChatTab(\'messages\')"><span aria-hidden="true">☏</span>消息' + pmBadgeHtml + '</button>' +
+        '<button type="button" class="chat-bottom-tab" data-chat-tab="friends" aria-controls="chatFriendsPanel" onclick="Game.MainView.selectChatTab(\'friends\')"><span aria-hidden="true">♙</span>山河战友' + friendBadgeHtml + '</button>' +
+        '<button type="button" class="chat-bottom-tab" data-chat-tab="forum" aria-controls="chatForumPanel" onclick="Game.MainView.selectChatTab(\'forum\')"><span aria-hidden="true">▤</span>论坛</button>' +
+        '</nav></section>';
     var box = document.getElementById('worldChatBox');
     if (box) box.scrollTop = box.scrollHeight;
     selectedChatChannel = 'world';
@@ -1519,6 +1567,46 @@ window.Game = window.Game || {};
     return '列兵';
   }
 
+  var hiddenProtectionNotices = {};
+
+  /** 关闭偏好仅属于当前账号，不能让其他账号继承；不改变服务端保护状态。 */
+  function protectionNoticeStorageKey() {
+    var player = (Core.state || {}).player || {};
+    var id = player.id != null ? player.id : player.username;
+    return id != null ? 'wargame_newbie_notice_hidden_' + id : null;
+  }
+
+  function shouldShowNewbieProtectionNotice() {
+    if (!Core.newbieProtectionInfo().active) return false;
+    var key = protectionNoticeStorageKey();
+    if (!key) return true;
+    if (hiddenProtectionNotices[key]) return false;
+    try { return window.localStorage.getItem(key) !== '1'; } catch (e) { return true; }
+  }
+
+  /** 只在二次确认后隐藏首页说明，档案中始终可查看有效保护的倒计时。 */
+  function dismissNewbieProtectionNotice() {
+    var key = protectionNoticeStorageKey();
+    if (!key || !shouldShowNewbieProtectionNotice()) return;
+    G.World.showConfirm({
+      title: '永久关闭首页提示？',
+      message: '是否永久关闭当前账号的首页新手保护提示？关闭后，可点击头像，在「指挥官档案」中查看新手保护倒计时和规则。',
+      subMessage: '此操作仅关闭首页提示，新手保护仍然生效。',
+      okText: '永久关闭提示',
+      cancelText: '保留提示',
+      onConfirm: function () {
+        // 确认期间若切换账号，不能把旧账号的选择应用到新账号。
+        if (protectionNoticeStorageKey() !== key) return;
+        hiddenProtectionNotices[key] = true;
+        var saved = false;
+        try { window.localStorage.setItem(key, '1'); saved = true; } catch (e) {}
+        var notice = document.getElementById('newbieProtectionNotice');
+        if (notice) notice.hidden = true;
+        G.toast(saved ? '首页提示已关闭，可点击头像在指挥官档案中查看保护倒计时' : '首页提示已关闭；浏览器无法保存设置，刷新后可能重新显示。倒计时可在指挥官档案中查看');
+      }
+    });
+  }
+
   function silentUpdateHome(tickData) {
     var v = document.getElementById('view');
     if (!v || Core.route !== 'home') return;
@@ -1540,8 +1628,9 @@ window.Game = window.Game || {};
     }
     var protectionNotice = document.getElementById('newbieProtectionNotice');
     if (protectionNotice) {
-      protectionNotice.hidden = !((s.cityState || {}).newbieProtectionUntil > Date.now());
-      if (!protectionNotice.hidden) protectionNotice.textContent = Core.cityStatusText().detail;
+      protectionNotice.hidden = !shouldShowNewbieProtectionNotice();
+      var protectionText = document.getElementById('newbieProtectionNoticeText');
+      if (!protectionNotice.hidden && protectionText) protectionText.textContent = Core.cityStatusText().detail;
     }
 
     // 2. 军情与战报警讯增量更新
@@ -1689,6 +1778,7 @@ window.Game = window.Game || {};
     showPopulationDetailModal: showPopulationDetailModal,
     getCurrentAvatar: getCurrentAvatar,
     getMilitaryRankTitle: getMilitaryRankTitle,
+    dismissNewbieProtectionNotice: dismissNewbieProtectionNotice,
     presetAvatars: PRESET_AVATARS,
     silentUpdateHome: silentUpdateHome
   };

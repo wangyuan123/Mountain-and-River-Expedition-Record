@@ -137,7 +137,21 @@ test('军官详情界面正确渲染修改名称入口按钮', () => {
   assert.match(container.innerHTML, /officer-rename-trigger/, '详情顶部卡片应包含改名按钮');
   assert.match(container.innerHTML, /✏️ 修改名称/, '详情顶部应有改名文案');
   assert.match(container.innerHTML, /Game\.Officer\.promptRename\('101'\)/, '点击事件应绑定对应军官ID');
+  assert.match(container.innerHTML, /背包中暂无可穿戴的套装装备/);
+  assert.match(container.innerHTML, /onclick="Game\.Officer\.openEquipmentShop\(\)">前往军官商城选购<\/button>/);
   assert.match(container.innerHTML, /\[修改名称\]/, '底部操作栏也应包含修改名称操作按钮');
+});
+
+test('军官详情的套装商城入口打开军官商品分类', () => {
+  const context = setupTestEnvironment();
+  let route = null;
+  context.Game.Shop = { curCat: 'all' };
+  context.Game.go = (nextRoute) => { route = nextRoute; };
+
+  context.Game.Officer.openEquipmentShop();
+
+  assert.equal(context.Game.Shop.curCat, 'officer');
+  assert.equal(route, 'shop');
 });
 
 test('军官改名弹窗支持改名卡与金币提示，并提供无障碍和键盘交互', () => {

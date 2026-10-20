@@ -146,8 +146,46 @@ test('军队总览三排浏览，全屏入口展示全部兵种并可关闭', ()
 
   G.MainView.showArmySummaryFullscreen();
   closeButton.onclick();
-  assert.equal(body.modal, null);
   G.MainView.showArmySummaryFullscreen();
   body.modal.click({ target: body.modal });
   assert.equal(body.modal, null);
 });
+
+test('点击首页兵种图标可打开兵种详细属性与战斗定位弹窗，且支持Esc与关闭按钮', () => {
+  const closeButton = { onclick: null };
+  const listeners = {};
+  const body = {
+    modal: null,
+    appendChild(element) { element.parentNode = this; this.modal = element; },
+    removeChild(element) { element.parentNode = null; this.modal = null; }
+  };
+  const document = {
+    body,
+    createElement() {
+      return {
+        querySelector(selector) {
+          if (selector === '.unit-detail-close') return closeButton;
+          return null;
+        },
+        addEventListener(type, handler) { this[type] = handler; }
+      };
+    },
+    addEventListener(type, handler) { listeners[type] = handler; },
+    removeEventListener(type, handler) { if (listeners[type] === handler) delete listeners[type]; }
+  };
+  const G = setup(document);
+  G.Core.state.army = { infantry: 100, scout: 5 };
+
+  for (const [id, unit] of Object.entries(G.DATA.units)) {
+    G.MainView.showUnitDetailModal(id);
+    assert.ok(body.modal, `点击 ${id} 必须正常弹出兵种详情窗口`);
+    assert.match(body.modal.innerHTML, new RegExp(unit.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.match(body.modal.innerHTML, /战斗定位/);
+    assert.match(body.modal.innerHTML, /属性信息/);
+    assert.match(body.modal.innerHTML, /历史信息/);
+    assert.ok(listeners.keydown, '必须注册 Esc 快捷关闭监听');
+    listeners.keydown({ key: 'Escape' });
+    assert.equal(body.modal, null, '按下 Esc 必须关闭弹窗');
+  }
+});
+

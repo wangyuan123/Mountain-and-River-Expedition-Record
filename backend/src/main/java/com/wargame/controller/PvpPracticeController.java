@@ -1,5 +1,6 @@
 package com.wargame.controller;
 
+import com.wargame.util.GameClock;
 import com.wargame.model.dto.pvp.*;
 import com.wargame.service.AuthService;
 import com.wargame.service.BattleService.UnitOrder;
@@ -31,7 +32,7 @@ public class PvpPracticeController {
         Long player = me(); var preset = practice.preset(player);
         int slot = citySlot == null ? ((PvpPreset) preset.get("preset")).citySlot() : citySlot;
         Map<String, Object> out = new LinkedHashMap<>(preset); out.put("available", snapshots.available(player, slot));
-        out.put("reports", practice.history(player, 0)); out.put("serverTime", System.currentTimeMillis()); out.put("rulesVersion", PvpSnapshotService.RULES); return out;
+        out.put("reports", practice.history(player, 0)); out.put("serverTime", GameClock.now()); out.put("rulesVersion", PvpSnapshotService.RULES); return out;
     }
     @PostMapping("/preset")
     public Map<String, Object> preset(@RequestBody PresetRequest req) {

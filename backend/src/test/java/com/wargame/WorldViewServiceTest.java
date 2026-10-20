@@ -91,4 +91,33 @@ class WorldViewServiceTest extends BaseServiceTest {
         assertEquals(List.of(due.getId()), ids);
         assertTrue(playerRepository.findDuePlayerIds(due.getId(), 500, PageRequest.of(0, 1)).isEmpty());
     }
+
+    @Test
+    void shieldReturnVisibilityIsLimitedToTheDefenderAndEndsAtArrival() {
+        Player defender = createTestPlayer("return-defender", 30);
+        Player attacker = createTestPlayer("return-attacker", 30);
+        Player spectator = createTestPlayer("return-spectator", 30);
+        var city = new com.wargame.model.entity.PlayerCity();
+        city.setWorldId(createTestWorld().getId());
+        city.setOwnerId(defender.getId());
+        city.setName("护盾城");
+        city.setX(20);
+        city.setY(20);
+        city = playerCityRepository.save(city);
+        long now = System.currentTimeMillis();
+        var march = createMarch(attacker.getId(), "player", city.getId().toString(), "敌方主城",
+                20, 20, 10, 10, Map.of("infantry", 10), "plunder", now, now + 60_000, true, false);
+        assertTrue(views.getReturningEnemyMarches(defender).isEmpty(), "普通撤军不得通过护盾规则泄露路线");
+        march.setReturnReason("shield");
+        marchRepository.save(march);
+        var returns = views.getReturningEnemyMarches(defender);
+        assertEquals(1, returns.size(), "守方无需额外升级雷达即可看到护盾拦截后的返程");
+        assertEquals(java.util.Set.of("id", "marchId", "targetKind", "fromX", "fromY", "targetX",
+                "targetY", "startAt", "arriveAt", "action", "returning"), returns.get(0).keySet());
+        assertTrue(views.getReturningEnemyMarches(attacker).isEmpty());
+        assertTrue(views.getReturningEnemyMarches(spectator).isEmpty());
+        march.setArriveAt(now - 1);
+        marchRepository.save(march);
+        assertTrue(views.getReturningEnemyMarches(defender).isEmpty(), "归队结算前到达时也应收起返程路线");
+    }
 }

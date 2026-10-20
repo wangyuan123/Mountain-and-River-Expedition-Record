@@ -83,9 +83,9 @@ test('战术单位按服务端坐标横向定位，并保留纵向行序', () =>
     600,
     'mine'
   );
-  const positions = [...markers.matchAll(/style="left:(\d+)%;--marker-row:(\d+)"/g)];
+  const positions = [...markers.matchAll(/style="left:calc\([^;]*\* ([\d.]+)\);--marker-row:(\d+)"/g)];
 
-  assert.deepEqual(positions.map((match) => match[1]), ['3', '50', '97']);
+  assert.deepEqual(positions.map((match) => Number(match[1])), [0, 0.5, 1]);
   assert.deepEqual(positions.map((match) => match[2]), ['0', '1', '2']);
   assert.match(markers, /战场位置 300/);
   assert.deepEqual(Array.from(Battle.tacticalMarkerRows({ truck: 1, tank: 1, artillery: 1 }, { truck: 0 })), ['truck', 'artillery', 'tank']);
@@ -104,12 +104,12 @@ test('战术地图把敌我相同兵种放入同一水平行', () => {
   Battle.renderTacticalBattle(view);
 
   const rows = {};
-  for (const match of view.innerHTML.matchAll(/class="tactical-marker (mine|foe)" data-unit-id="[^"]+" style="left:(\d+)%;--marker-row:(\d+)" title="([^"]+)/g)) {
-    rows[`${match[1]}:${match[4].split(' ')[0]}`] = { left: Number(match[2]), row: Number(match[3]) };
+  for (const match of view.innerHTML.matchAll(/class="tactical-marker (mine|foe)" data-unit-id="[^"]+" style="left:([^;]+);--marker-row:(\d+)" title="([^"]+)/g)) {
+    rows[`${match[1]}:${match[4].split(' ')[0]}`] = { left: match[2], row: Number(match[3]) };
   }
   assert.equal(rows['mine:tank'].row, rows['foe:tank'].row);
-  assert.equal(rows['mine:tank'].left, 3);
-  assert.equal(rows['foe:tank'].left, 97);
+  assert.match(rows['mine:tank'].left, /^min\(calc\([^;]+ \* 0\.000000\)/);
+  assert.match(rows['foe:tank'].left, /^max\(calc\([^;]+ \* 1\.000000\)/);
   assert.deepEqual(Array.from(Battle.tacticalMarkerRows({ truck: 1, tank: 1 }, { tank: 1, artillery: 1 })), ['truck', 'artillery', 'tank']);
 });
 
@@ -159,7 +159,7 @@ test('兵种按配置顺序共用行号，单方兵种在另一侧留空', () =>
 
   assert.deepEqual(Array.from(Battle.tacticalMarkerRows(Battle._activeTactical.attackerArmy, Battle._activeTactical.defenderArmy)), ['armored', 'htank', 'rocket']);
   const rows = {};
-  for (const match of view.innerHTML.matchAll(/class="tactical-marker (mine|foe)" data-unit-id="[^"]+" style="left:\d+%;--marker-row:(\d+)" title="([^ ]+)/g)) {
+  for (const match of view.innerHTML.matchAll(/class="tactical-marker (mine|foe)" data-unit-id="[^"]+" style="left:[^;]+;--marker-row:(\d+)" title="([^ ]+)/g)) {
     rows[`${match[1]}:${match[3]}`] = Number(match[2]);
   }
   assert.deepEqual(rows, {

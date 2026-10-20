@@ -53,6 +53,9 @@ class ChatKeywordFilterTest {
         assertEquals("<img src=x onerror=alert(1)>", filter.filter("<img src=x onerror=alert(1)>"));
         String share = "[战报:dc123456-1234-1234-1234-123456789abc]";
         assertEquals(share, filter.filter(share));
+        String incoming = "[军情:dc123456-1234-1234-1234-123456789abc]";
+        assertEquals(incoming, filter.filter(incoming));
+        assertNotEquals(incoming + "微信", filter.filter(incoming + "微信"));
         assertNotEquals(share + "微信", filter.filter(share + "微信"));
         assertNull(filter.filter(null));
         assertEquals("", filter.filter(""));

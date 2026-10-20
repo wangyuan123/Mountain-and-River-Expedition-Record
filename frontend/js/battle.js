@@ -3,6 +3,7 @@ window.Game = window.Game || {};
 
 (function (G) {
   'use strict';
+  G.gameNow = G.gameNow || function () { return Date.now(); };
 
   var D = G.DATA;
   var Core = G.Core;
@@ -830,9 +831,11 @@ window.Game = window.Game || {};
     /** 根据报告保存的规则说明先手，仅新规则快照展示，避免把历史战损解释成新先手规则。 */
     renderScoutInitiative: function (data, perspective) {
       var snapshot = data.reconInitiative;
-      if (!snapshot || ['recon-initiative-v2-20261015', 'recon-initiative-v3-20261016'].indexOf(snapshot.version) < 0) return '';
-      var current = snapshot.version === 'recon-initiative-v3-20261016';
-      var radarPerLevel = current ? 5 : 2;
+      if (!snapshot || ['recon-initiative-v2-20261015', 'recon-initiative-v3-20261016', 'recon-initiative-v5-20261019', 'recon-initiative-v6-20261019'].indexOf(snapshot.version) < 0) return '';
+      var current = snapshot.version !== 'recon-initiative-v2-20261015';
+      // 先手加值按战报保存的版本解释，避免本次雷达调整改变历史报告含义。
+      var radarPerLevel = snapshot.version === 'recon-initiative-v6-20261019' ? 2
+        : (snapshot.version === 'recon-initiative-v5-20261019' ? 1 : (current ? 5 : 2));
       var defending = perspective === 'defender';
       var mine = defending ? snapshot.defenderReconLevel : snapshot.attackerReconLevel;
       var enemy = defending ? snapshot.attackerReconLevel : snapshot.defenderReconLevel;
@@ -904,6 +907,7 @@ window.Game = window.Game || {};
         overwhelming_victory: (isZeroEnemy ? '大胜（无对应拦截）' : '大胜（碾压全歼）')
       }[data.result] || (isWin ? (isZeroEnemy ? '大胜（无对应拦截）' : '大胜') : '侦查失败');
       var rLv = (data.reconLevel != null) ? data.reconLevel : 0;
+      var tenLevelIntel = data.reconIntelligenceVersion === 'recon-intelligence-v2-20261019';
       var tierName = data.tierName || '常规侦查';
 
       var h = '';
@@ -929,7 +933,7 @@ window.Game = window.Game || {};
       }
       if (data.showCityInfo) {
         h += '<div class="rb-side w">【目标情报】</div>';
-        if (data.commander) h += '<div class="rb-line"><b>统帅:</b> ' + esc(data.commander) + '</div>';
+        if (data.commander) h += '<div class="rb-line"><b>统帅:</b> ' + esc(data.commander) + (tenLevelIntel && data.commanderStar ? ' ' + data.commanderStar + '星' : '') + (tenLevelIntel && data.commanderLevel ? ' Lv.' + data.commanderLevel : '') + '</div>';
         if (data.prestige != null) h += '<div class="rb-line"><b>声望:</b> ' + G.fmt(data.prestige) + '</div>';
         if (data.cityDesc) h += '<div class="rb-line"><b>简介:</b> ' + esc(data.cityDesc) + '</div>';
         if (data.lastActive) h += '<div class="rb-line"><b>活跃:</b> ' + esc(data.lastActive) + '</div>';
@@ -957,7 +961,9 @@ window.Game = window.Game || {};
                (data.warehouseProtection > 0 ? ' <span class="rb-dim">(地窖保护 ' + G.fmt(data.warehouseProtection) + ')</span>' : '') + '</div>';
         }
 
-        // 城防工事 (Lv.1+)
+        // 新报告Lv.1仅识别类型，Lv.2才展示数量和城墙等级；工事没有独立等级。
+        if (data.wallLevel != null) h += '<div class="rb-line"><b>城墙:</b> ' + (data.wallLevel > 0 ? 'Lv.' + data.wallLevel : '无城墙') + '</div>';
+        else if (data.wallPresent != null) h += '<div class="rb-line"><b>城墙:</b> ' + (data.wallPresent ? '已建成（等级未解锁）' : '无城墙') + '</div>';
         if (data.forts) {
           var fortStr = '';
           for (var fid in data.forts) {
@@ -967,11 +973,13 @@ window.Game = window.Game || {};
             }
           }
           h += '<div class="rb-line"><b>城防工事:</b> ' + (fortStr ? esc(fortStr.trim()) : '无防御工事') + '</div>';
+        } else if (data.fortTypes) {
+          h += '<div class="rb-line"><b>城防类型:</b> ' + esc(data.fortTypes.map(function (id) { return (D.forts[id] || {}).name || id; }).join('、') || '无城防工事') + '（数量未解锁）</div>';
         } else if (data.fortsVague) {
           h += '<div class="rb-line rc-dim"><b>城防工事:</b> ' + esc(data.fortsVague) + '</div>';
         }
 
-        // 守军兵力 (Lv.0 模糊 / Lv.2+ 精确)
+        // 新报告Lv.3精确守军；野地仍在Lv.1解锁，历史报告按字段展示。
         var isJpnTarget = data.targetKind === 'npc' || data.targetKind === 'bandit' ||
           (data.targetName && (data.targetName.indexOf('日寇') >= 0 || data.targetName.indexOf('流寇') >= 0 || data.targetName.indexOf('据点') >= 0));
         if (data.army) {
@@ -995,7 +1003,7 @@ window.Game = window.Game || {};
           h += '<div class="rb-line rc-dim"><b>守军编制:</b> ' + esc(data.armyVague) + '</div>';
         }
 
-        // 城市主要建筑 (Lv.3+)
+        // 城市主要建筑（新报告Lv.5解锁，历史报告依据字段快照显示）
         if (data.buildings) {
           var bStr = '';
           for (var bid in data.buildings) {
@@ -1008,7 +1016,7 @@ window.Game = window.Game || {};
           if (bStr) h += '<div class="rb-line"><b>主要建筑:</b> ' + esc(bStr.trim()) + '</div>';
         }
 
-        // 军事科研科技 (Lv.4+)
+        // 科研科技（新报告Lv.7解锁）
         if (data.techs) {
           var tStr = '';
           for (var tid in data.techs) {
@@ -1020,7 +1028,7 @@ window.Game = window.Game || {};
           if (tStr) h += '<div class="rb-line"><b>军事科研:</b> ' + esc(tStr.trim()) + '</div>';
         }
 
-        // 驻留将领 (Lv.3 数量 / Lv.5 全维档案)
+        // 驻留将领（新报告Lv.6数量、Lv.9档案）
         if (data.officers && data.officers.length) {
           h += '<div class="rb-line"><b>驻留将领:</b> 共 ' + data.officers.length + ' 名</div>';
           for (var oi = 0; oi < data.officers.length; oi++) {
@@ -1034,10 +1042,10 @@ window.Game = window.Game || {};
                  '</div>';
           }
         } else if (data.officerCount != null) {
-          h += '<div class="rb-line"><b>驻留将领:</b> 共 ' + data.officerCount + ' 名 <span class="rb-dim">(将领档案需 Lv.5 解锁)</span></div>';
+          h += '<div class="rb-line"><b>驻留将领:</b> 共 ' + data.officerCount + ' 名 <span class="rb-dim">(将领档案需 Lv.' + (tenLevelIntel ? 9 : 5) + ' 解锁)</span></div>';
         }
 
-        // 防守综合战力 (Lv.5+)
+        // 防守综合战力（新报告Lv.10解锁）
         if (data.defensePower != null) {
           h += '<div class="rb-line" style="color:#ffb870"><b>防守战力:</b> ' + G.fmt(data.defensePower) +
                ' <span class="rb-threat-badge">' + esc(data.threatLevel || '') + '</span></div>';
@@ -1046,11 +1054,17 @@ window.Game = window.Game || {};
         // 迷雾锁定提示 (仅对城市类目标展示)
         if (data.targetKind !== 'wild' && data.targetKind !== 'wild_gather') {
           var locks = [];
+          // 历史报告按保存的五级权限解释，新报告才使用十级解锁。
+          if (tenLevelIntel) {
+            var unlocks = ['城防类型', '城防数量与等级', '精确守军兵力', '守城将领姓名星级等级', '主要建筑等级', '驻城将领人数', '账号科技', '可掠夺资源测算', '驻城将领档案', '综合战力评估'];
+            unlocks.forEach(function (label, index) { if (rLv < index + 1) locks.push(label + ' (需 侦察技术 Lv.' + (index + 1) + ')'); });
+          } else {
           if (rLv < 1) locks.push('外围城防工事 (需 侦察技术 Lv.1)');
           if (rLv < 2) locks.push('精确守军兵力与统帅 (需 侦察技术 Lv.2)');
           if (rLv < 3) locks.push('主要城建建筑等级 (需 侦察技术 Lv.3)');
           if (rLv < 4) locks.push('战略科技与可掠夺测算 (需 侦察技术 Lv.4)');
           if (rLv < 5) locks.push('将领全维档案与综合战力 (需 侦察技术 Lv.5)');
+          }
           if (locks.length) {
             h += '<div class="rb-fog-box">';
             h += '<div class="rb-line rc-dim" style="font-size:12px;"><b>🔒 侦测迷雾（未达标情报）:</b></div>';
@@ -1279,7 +1293,16 @@ window.Game = window.Game || {};
      */
     openTactical: function (marchId) {
       var self = this;
-      G.API.getTacticalBattle(marchId).then(function (battle) {
+      return G.API.getTacticalBattle(marchId).then(function (battle) {
+        if (battle.cancelled) {
+          G.toast(battle.message);
+          if (G.API.getGameState) return G.API.getGameState(true).then(function (state) {
+            G.API.applyState(state);
+            Core.go('alerts');
+          });
+          Core.go('alerts');
+          return;
+        }
         self.resetTacticalPanel(battle.marchId);
         self._activeTactical = battle;
         self.resetTacticalOrders();
@@ -1502,7 +1525,7 @@ window.Game = window.Game || {};
     /** 按服务端回合截止时间更新显示；失败重试也使用同一计时器。 */
     updateTacticalCountdown: function () {
       var battle = this._activeTactical;
-      var remaining = Math.max(0, (this._tacticalRetryAt || this._tacticalDeadline) - Date.now());
+      var remaining = Math.max(0, (this._tacticalRetryAt || this._tacticalDeadline) - G.gameNow());
       var label = battle && battle.finished ? '已结束' : this._tacticalSubmitting ? '结算中…'
         : this._tacticalAutoExecuteFailed && !this._tacticalRetryAt ? '等待手动重试'
           : remaining > 0 ? Math.ceil(remaining / 1000) + ' 秒'
@@ -1527,7 +1550,7 @@ window.Game = window.Game || {};
       if (this._tacticalDeadlineKey !== key) {
         this._tacticalDeadlineKey = key;
         // 兼容旧会话时也只在首次进入该回合生成截止时间，不能随重绘续期。
-        this._tacticalDeadline = Number.isFinite(serverDeadline) && serverDeadline > 0 ? serverDeadline : Date.now() + 15000;
+        this._tacticalDeadline = Number.isFinite(serverDeadline) && serverDeadline > 0 ? serverDeadline : G.gameNow() + 15000;
       }
       var self = this;
       function update() {
@@ -1595,7 +1618,7 @@ window.Game = window.Game || {};
         self._tacticalAutoExecuteError = err.message || '本回合指令未能执行';
         var retryable = !err.status || err.status >= 500;
         if (retryable) {
-          self._tacticalRetryAt = Date.now() + 5000;
+          self._tacticalRetryAt = G.gameNow() + 5000;
         }
         if (!automatic || !retryable) G.toast(self._tacticalAutoExecuteError);
         Core.render();
@@ -2133,7 +2156,6 @@ window.Game = window.Game || {};
       });
       markers.forEach(function (marker, index) {
         var rowIndex = rowIndexes && rowIndexes[marker.unitId] != null ? rowIndexes[marker.unitId] : index;
-        var positionPercent = Math.max(3, Math.min(97, Math.round((Number(marker.position) || 0) / dist * 100)));
         var isWall = marker.unitId === 'wall';
         var isMine = side === 'mine';
         var wallImg = isMine ? 'img/cities/tactical-city-wall-right.webp?v=20261015-forward' : 'img/cities/tactical-city-wall-left.webp?v=20261015-forward';
@@ -2192,14 +2214,33 @@ window.Game = window.Game || {};
           antitank: 'calc(70.94% - 17px)',
           bunker: 'calc(90.83% - 17px)'
         }[marker.unitId] : null;
+        var coordinateLeft = function (ratio) {
+          return 'calc(var(--battle-left-pad, 4%) + (100% - var(--battle-left-pad, 4%) - var(--battle-right-pad, 4%)) * ' + ratio.toFixed(6) + ')';
+        };
+        var markerLeft = coordinateLeft(posRatio);
+        // 共用前排中线限定显示边界：图标各退半宽加7.5px，贴近及同坐标时边缘始终相隔15px。
+        // 仅调整图标位置，射程、接触伤害和指令仍使用服务端真实坐标。
+        if (!isWall && opponentArmy) {
+          var ownPositions = Object.keys(army || {}).filter(function (id) { return army[id] > 0 && id !== 'wall'; }).map(function (id) {
+            return Number(positions && positions[id] != null ? positions[id] : (isMine ? 0 : dist));
+          });
+          var foePositions = Object.keys(opponentArmy).filter(function (id) { return opponentArmy[id] > 0 && id !== 'wall'; }).map(function (id) {
+            return Number(opponentPositions && opponentPositions[id] != null ? opponentPositions[id] : (isMine ? dist : 0));
+          });
+          if (ownPositions.length && foePositions.length) {
+            var ownFront = isMine ? Math.max.apply(Math, ownPositions) : Math.min.apply(Math, ownPositions);
+            var foeFront = isMine ? Math.min.apply(Math, foePositions) : Math.max.apply(Math, foePositions);
+            var contactRatio = Math.max(0, Math.min(1, (ownFront + foeFront) / 2 / dist));
+            var contactLimit = 'calc(' + coordinateLeft(contactRatio) + (isMine ? ' - ' : ' + ') + 'var(--tactical-icon-half, 11.25px)' + (isMine ? ' - ' : ' + ') + '7.5px)';
+            markerLeft = (isMine ? 'min(' : 'max(') + markerLeft + ', ' + contactLimit + ')';
+          }
+        }
 
         var markerPositionStyle = isWall
           ? (isMine ? 'left:0;right:auto;--marker-row:' + rowIndex : 'right:0;left:auto;--marker-row:' + rowIndex)
           : (fortAnchor && hasWallOnField
             ? (isMine ? 'left:calc(var(--battle-left-pad, 112px) - 22px);top:' + fortAnchor + ';--marker-row:' + rowIndex : 'right:calc(var(--battle-right-pad, 112px) - 22px);left:auto;top:' + fortAnchor + ';--marker-row:' + rowIndex)
-            : (hasWallOnField
-              ? 'left:' + positionPercent + '%;left:calc(var(--battle-left-pad, 4%) + (100% - var(--battle-left-pad, 4%) - var(--battle-right-pad, 4%)) * ' + posRatio.toFixed(4) + ');--marker-row:' + rowIndex
-              : 'left:' + positionPercent + '%;--marker-row:' + rowIndex));
+            : 'left:' + markerLeft + ';--marker-row:' + rowIndex);
         html += '<div class="tactical-marker ' + side + (isWall ? ' tactical-wall-marker' : '') + '" data-unit-id="' + esc(marker.unitId) + '" style="' + markerPositionStyle + '" title="' + title + '" data-in-range="' + inRange + '"' + self.tacticalCommandAttributes(marker.unitId, side) + '>'
           + icon
           + (isWall

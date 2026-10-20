@@ -44,6 +44,21 @@ public interface MarchRepository extends JpaRepository<March, Long> {
             @org.springframework.data.repository.query.Param("defenderId") Long defenderId,
             @org.springframework.data.repository.query.Param("cityIds") List<String> cityIds);
 
+    /** 仅公开护盾拦截后的敌军返程；原目标 ID 保留为守方城市，不暴露其他撤军路线。 */
+    @org.springframework.data.jpa.repository.Query("""
+            select m from March m
+            where m.targetKind = 'player' and m.targetId in :cityIds
+              and m.playerId <> :defenderId
+              and m.returning = true
+              and m.returnReason = 'shield'
+              and m.battleId is null
+              and (m.action in ('conquer', 'plunder', 'feint', 'harass', 'guerrilla', 'scout') or m.action like 'tactical%')
+            order by m.arriveAt, m.id
+            """)
+    List<March> findReturningEnemyPlayerMarches(
+            @org.springframework.data.repository.query.Param("defenderId") Long defenderId,
+            @org.springframework.data.repository.query.Param("cityIds") List<String> cityIds);
+
     /**
      * 查询指向玩家城市的全部未完成行军。范围故意宽于地图来袭列表，
      * 劝降还必须拦截同城运输/驻防以及展示查询尚未列出的新 action。

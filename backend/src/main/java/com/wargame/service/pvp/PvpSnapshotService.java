@@ -1,5 +1,6 @@
 package com.wargame.service.pvp;
 
+import com.wargame.util.GameClock;
 import com.wargame.model.constants.*;
 import com.wargame.model.dto.CommandBonus;
 import com.wargame.model.dto.pvp.*;
@@ -113,7 +114,7 @@ public class PvpSnapshotService {
     private void requireCity(Long player, int slot) {
         if (slot < 0 || slot > 100) throw new IllegalArgumentException("来源城市无效");
         var c = cities.findByOwnerIdAndCitySlot(player, slot);
-        if (slot != 0 && c.isEmpty() || c.isPresent() && c.get().getReadyAt() > System.currentTimeMillis()) throw new IllegalArgumentException("城市不存在或尚未建成");
+        if (slot != 0 && c.isEmpty() || c.isPresent() && c.get().getReadyAt() > GameClock.now()) throw new IllegalArgumentException("城市不存在或尚未建成");
     }
 
     /** 大厅展示当前合法候选和驻军，仅返回本人资料。 */
@@ -127,7 +128,7 @@ public class PvpSnapshotService {
                     .map(o -> Map.of("id", o.getId(), "name", o.getName(), "attributes", equipment.attributes(o), "skills", targets.getCommanderSkills(o))).toList();
             List<Map<String, Object>> cityList = new ArrayList<>();
             cityList.add(Map.of("slot", 0, "name", "主城"));
-            cities.findByOwnerIdAndCitySlotIsNotNullOrderByCitySlotAsc(player).stream().filter(c -> c.getCitySlot() != 0 && c.getReadyAt() <= System.currentTimeMillis())
+            cities.findByOwnerIdAndCitySlotIsNotNullOrderByCitySlotAsc(player).stream().filter(c -> c.getCitySlot() != 0 && c.getReadyAt() <= GameClock.now())
                     .forEach(c -> cityList.add(Map.of("slot", c.getCitySlot(), "name", "城市 " + c.getCitySlot())));
             return Map.of("army", targets.getArmyMap(player), "cap", armies.armyCap(player), "officers", candidates, "cities", cityList,
                     "chief", Objects.requireNonNullElse(targets.getCommanderInChief(player, slot), new Officer()).getName() == null ? "未任命" : targets.getCommanderInChief(player, slot).getName());

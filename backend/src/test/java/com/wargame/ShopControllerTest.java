@@ -205,6 +205,42 @@ public class ShopControllerTest extends BaseServiceTest {
     }
 
     @Test
+    @DisplayName("紧急人口动员令可购买入仓并通过仓库接口增加当前城市容量30%的人口")
+    void buyAndUseEmergencyPopulationOrder() {
+        Resources resources = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
+        resources.setDiamond(200);
+        resourcesRepository.save(resources);
+        player.setCivilianPopulation(100);
+        playerRepository.save(player);
+        createBuilding(player.getId(), "house", 10);
+
+        Map<String, Object> purchased = shopController.buy(new GameDtos.ShopBuyRequest("emergencyPopulationOrder")).getBody();
+        assertNotNull(purchased);
+        assertEquals(true, purchased.get("success"));
+        assertEquals(100, purchased.get("price"));
+        assertEquals("已购买 紧急人口动员令", purchased.get("message"));
+        assertEquals(100, resourcesRepository.findByPlayerId(player.getId()).orElseThrow().getDiamond());
+        assertEquals(1, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "emergencyPopulationOrder").orElseThrow().getCount());
+
+        Map<String, Object> used = depotController.useItem(new GameDtos.DepotUseRequest("emergencyPopulationOrder", null, null)).getBody();
+        assertNotNull(used);
+        assertEquals(true, used.get("success"));
+        Map<?, ?> state = (Map<?, ?>) used.get("state");
+        assertEquals(3700, ((Map<?, ?>) state.get("population")).get("civilian"));
+        assertEquals(12000, ((Map<?, ?>) state.get("population")).get("capacity"));
+        assertEquals(0, ((Map<?, ?>) state.get("items")).get("emergencyPopulationOrder"));
+        assertEquals(3700, playerRepository.findById(player.getId()).orElseThrow().getCivilianPopulation());
+        assertEquals("util", ItemDef.ITEMS.get("emergencyPopulationOrder").cat());
+        assertEquals("紧急人口动员令", ItemDef.ITEMS.get("emergencyPopulationOrder").name());
+
+        resources = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
+        resources.setDiamond(99);
+        resourcesRepository.save(resources);
+        assertEquals(false, shopController.buy(new GameDtos.ShopBuyRequest("emergencyPopulationOrder")).getBody().get("success"));
+        assertEquals(0, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "emergencyPopulationOrder").orElseThrow().getCount());
+    }
+
+    @Test
     @DisplayName("购买城市改名卡成功，扣除60钻石并入仓")
     void buyCityRenameCard() {
         Resources resources = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();

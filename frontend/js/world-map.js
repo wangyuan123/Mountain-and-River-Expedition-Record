@@ -1,6 +1,7 @@
 /* global window, document, PIXI, requestAnimationFrame, cancelAnimationFrame */
 (function (G) {
   'use strict';
+  G.gameNow = G.gameNow || function () { return Date.now(); };
   var instance = null, camera = null, owner = '', mode = 'map', enginePromise = null, pendingFocus = null;
   function loadEngine() {
     if (window.PIXI) return Promise.resolve();
@@ -18,7 +19,7 @@
   var wildAnimationFrameCount = 12, wildAnimationTextures = { oil: [], ironworks: [], rarefactory: [] };
   function wildAnimationPath(type, index) {
     var frame = String(index % wildAnimationFrameCount).padStart(2, '0');
-    return 'img/map/wild-' + type + '-frames/frame_' + frame + '.png?v=5.11-pumpjack-animation';
+    return 'img/map/wild-' + type + '-frames/frame_' + frame + '.png?v=5.11-pumpjack-animation' + '&t=20261020-clean-blend-v2';
   }
   /**
    * Cache one resource frame; redraw only for the still image or a complete loop.
@@ -75,29 +76,14 @@
     return t.name || (t.selfCity ? '我的城市' : '未知目标');
   }
   function markerSize(t, scale) {
-    // 城市、据点与流寇共用四格展示占地，模型宽度与点击范围保持一致。
-    var span = G.MapLayout.footprintSpan(t);
-    var projection = G.MapCamera.projection;
-    var size = span * scale * (Math.abs(projection.a) + Math.abs(projection.c));
-    if (t.kind === 'wild') {
-      if (t.type === 'snow') return size * 1.035;
-      if (t.type === 'grassland' || t.type === 'plains') return size * 1.18;
-    }
-    return size;
+    return G.MapLayout.markerSize(t, scale);
   }
   function markerCenter(t) {
     var b = G.MapLayout.bounds(t, G.DATA.world.size);
     return { x:b.cx, y:b.cy, footprint:b.span };
   }
   function markerHeight(t, width) {
-    if (t.sea && t.kind === 'bandit') return width;
-    if (t.kind === 'wild') return width;
-    // 据点与流寇保持原素材比例，宽度按统一占地缩放。
-    if (t.kind === 'npc' || t.kind === 'simulated_npc' || t.kind === 'bandit') return width;
-    // Player-city artwork spans two cells; compensate for its deeper ground plane.
-    var sourceDepth = t.coastal === true ? .60 : .78;
-    var groundDepth = 0.5;
-    return width * groundDepth / sourceDepth * 1.28;
+    return G.MapLayout.markerHeight(t, width);
   }
   function icon(t, snowCells) {
     if (t.sea && t.kind === 'bandit') {
@@ -130,7 +116,6 @@
       if(north>.72)depth='thick';else if(north>.38&&depth==='thin')depth='medium';
       return 'img/map/snow-'+depth+'.webp';
     }
-    if (t.kind === 'wild' && t.type === 'grassland') return '';
     if (t.kind === 'wild' && t.type === 'forest') {
       var fVariants = ['dense', 'ridge', 'edge'];
       var fi = (typeof t.x === 'number' && typeof t.y === 'number') ? Math.abs(t.x + t.y * 2) % 3 : 0;
@@ -148,6 +133,36 @@
     }
     if (t.kind === 'wild') return (G.DATA.wildTypes[t.type] || {}).icon || 'img/map/wild-forest-ridge-integrated.webp';
     if (typeof t.level === 'number' && t.level > 0) {
+      if (t.army) {
+        var armyObj = typeof t.army === 'string' ? (function () { try { return JSON.parse(t.army); } catch (e) { return null; } })() : t.army;
+        if (armyObj && typeof armyObj === 'object') {
+          var ukeys = Object.keys(armyObj).filter(function (k) { return Number(armyObj[k]) > 0; }).sort();
+          if (ukeys.length > 0) return 'img/map/npc-phalanx-' + ukeys.join('-') + '.webp';
+        }
+      }
+      if (typeof t.x === 'number' && typeof t.y === 'number') {
+        var seed = Math.abs(t.x * 31 + t.y);
+        if (t.level <= 5) return 'img/map/npc-phalanx-infantry.webp';
+        if (t.level <= 10) return 'img/map/npc-phalanx-armored-infantry.webp';
+        if (t.level <= 24) {
+          var choices = [
+            'npc-phalanx-armored-infantry-ltank',
+            t.level < 16 ? 'npc-phalanx-armored-fighter-infantry' : 'npc-phalanx-armored-bomber-fighter-infantry',
+            'npc-phalanx-armored-fighter-infantry-ltank'
+          ];
+          if (t.level >= 16) choices.push('npc-phalanx-armored-bomber-infantry-ltank');
+          return 'img/map/' + choices[seed % choices.length] + '.webp';
+        }
+        var highChoices = [
+          'npc-phalanx-bomber-fighter',
+          'npc-phalanx-ltank-rocket',
+          'npc-phalanx-armored-fighter-htank-infantry',
+          'npc-phalanx-fighter-infantry-special',
+          'npc-phalanx-armored-bomber-ltank',
+          'npc-phalanx-armored-htank-rocket'
+        ];
+        return 'img/map/' + highChoices[seed % highChoices.length] + '.webp';
+      }
       if (t.level <= 5) return 'img/map/npc-phalanx-infantry.webp';
       if (t.level <= 8) return 'img/map/npc-phalanx-light-armor.webp';
       if (t.level <= 10) return 'img/map/npc-fortress-orthogonal.webp';
@@ -183,7 +198,9 @@
     });
     // 代表图标不要求部队中包含该兵种，数量仍汇总真实出征兵力。
     var action = march && march.action;
-    var representative = action === 'scout' ? (Number(army.recon_car) > 0 ? 'recon_car' : 'scout') : action === 'transport' ? 'truck' :
+    var representative = action === 'scout' ? (Number(army.recon_car) > 0 ? 'recon_car' : 'scout') :
+      action === 'transport' ? 'truck' :
+      action === 'intercept_scout' ? (Number(army.fighter) > 0 ? 'fighter' : (Number(army.armored) > 0 ? 'armored' : null)) :
       (['conquer', 'plunder', 'feint', 'harass', 'guerrilla'].includes(action)) ? 'infantry' : null;
     if (representative) return {
       primary:{id:representative,iconPath:marchUnitIcon(representative)},
@@ -325,7 +342,7 @@
     if (relation === 'neutral' && !(G.DATA.wildTypes[t.type] || {}).res) return '';
     var title = relation === 'own' ? '我的' : name(t);
     var gathering = relation === 'own' && t.gathering
-      ? (Date.now() >= t.gatherEndAt ? (t.gatherMode === 'auto' ? ' · 待自动返城' : ' · 待收获') : ' · 采集中')
+      ? (G.gameNow() >= t.gatherEndAt ? (t.gatherMode === 'auto' ? ' · 待自动返城' : ' · 待收获') : ' · 采集中')
       : (relation === 'own' && t.gatherHarvested != null ? ' · 待回城' : '');
     return title + (t.level != null ? ' · ' + t.level + '级' : '') + gathering;
   }
@@ -463,31 +480,13 @@
     this.marchTimer = setInterval(function () {
       if (document.hidden) return;
       var reduced = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      if (reduced ? (G.Core.state.world.marches || []).length : (self.visibleSea && !self.waterSurface)) self.wake();
+      if (reduced ? ((G.Core.state.world.marches || []).length || (G.Core.state.world.incoming || []).length || (G.Core.state.world.returningEnemyMarches || []).length) : (self.visibleSea && !self.waterSurface)) self.wake();
     }, 1000);
     var motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     if (motionQuery.addEventListener) this.on(motionQuery, 'change', this.wake.bind(this));
     cache.changed = function () {
       if (self.destroyed) return;
-      if (G.MapTerrain.updateChunk) {
-        cache.entries.forEach(function (e) {
-          if (e.data && G.MapTerrain.updateChunk(e.cx, e.cy, e.data.targets)) {
-            var span = G.MapTerrain.tileSpan || 4;
-            var minTx = Math.floor((e.cx * 16 - 2) / span), maxTx = Math.floor(((e.cx + 1) * 16 + 2) / span);
-            var minTy = Math.floor((e.cy * 16 - 2) / span), maxTy = Math.floor(((e.cy + 1) * 16 + 2) / span);
-            for (var ty = minTy; ty <= maxTy; ty++) {
-              for (var tx = minTx; tx <= maxTx; tx++) {
-                var k = tx + ',' + ty, tile = self.groundTiles.get(k);
-                if (tile) {
-                  self.groundDetails.removeChild(tile);
-                  tile.destroy({ texture: true, baseTexture: true });
-                  self.groundTiles.delete(k);
-                }
-              }
-            }
-          }
-        });
-      }
+      self.updateTerrain();
       self.resolveCoordinate(); self.wake();
     };
     this.resize();
@@ -499,6 +498,25 @@
       this.wake();
     }
   }
+  /** 目标抵达、移动或移除后，先清理保护带内的旧装饰瓦片，再与目标一起重绘。 */
+  MapView.prototype.updateTerrain = function () {
+    if (!G.MapTerrain.updateChunk) return;
+    var self=this;
+    cache.entries.forEach(function (e) {
+      if (!e.data || !G.MapTerrain.updateChunk(e.cx,e.cy,e.data.targets,self.camera.size)) return;
+      var span=G.MapTerrain.tileSpan||4;
+      // 双格城市可能跨块伸出，未知邻块保护带再外扩一格以覆盖纹理 halo。
+      var minTx=Math.floor((e.cx*16-5)/span), maxTx=Math.floor(((e.cx+1)*16+5)/span);
+      var minTy=Math.floor((e.cy*16-5)/span), maxTy=Math.floor(((e.cy+1)*16+5)/span);
+      for (var ty=minTy;ty<=maxTy;ty++) for (var tx=minTx;tx<=maxTx;tx++) {
+        var key=tx+','+ty, tile=self.groundTiles.get(key);
+        if (!tile) continue;
+        self.groundDetails.removeChild(tile);
+        tile.destroy({texture:true,baseTexture:true});
+        self.groundTiles.delete(key);
+      }
+    });
+  };
   MapView.prototype.on = function (node, event, fn, opts) { node.addEventListener(event, fn, opts); this.listeners.push(function () { node.removeEventListener(event, fn, opts); }); };
   MapView.prototype.syncToolbar = function () {
     if (!this.toolbar || this.destroyed) return;
@@ -514,19 +532,19 @@
     if (target && target.kind === 'wild' && target.occupied && target.gathering && !this.detail.hidden) {
       var panel = this.detail.querySelector('.wild-gather-panel');
       if (panel) {
-        var state = gatherProgress(target, Date.now());
+        var state = gatherProgress(target, G.gameNow());
         panel.querySelector('[data-gather-time]').textContent = state.tip;
         panel.querySelector('[data-gather-progress]').style.width = state.percent + '%';
         panel.querySelector('[data-gather-amount]').textContent = '已开采：' + G.fmt(state.mined) + ' / ' + G.fmt(state.load);
       }
     }
     // 出征采集记录保存在 marches 中；无需打开详情或等待下一次服务器推送即可逐秒更新图上倒计时。
-    if (this.visible.some(function (t) { return !!gatherCountdown(t, Date.now()); })) this.wake();
+    if (this.visible.some(function (t) { return !!gatherCountdown(t, G.gameNow()); })) this.wake();
   };
   /** 战争时间跨过开战或结束边界时，更新已打开详情中的行动按钮。 */
   MapView.prototype.updateWarDetail = function () {
     if (this.destroyed || document.hidden || this.detail.hidden || !this.selected) return;
-    if (this.detailTransitionAt && Date.now() >= this.detailTransitionAt) {
+    if (this.detailTransitionAt && G.gameNow() >= this.detailTransitionAt) {
       this.renderDetail(this.selected);
       this.wake();
     }
@@ -844,8 +862,10 @@
     this.coordEl.textContent = '视角 (' + Math.floor(c.x) + ', ' + Math.floor(c.y) + ')';
     this.regionEl.textContent = G.MapTerrain.region(c.x, c.y, c.size);
     var snowCells = new Set();
-    // Include two neighbors beyond the display bounds, independent of filters.
-    cache.targets({minX:b.minX-2,minY:b.minY-2,maxX:b.maxX+2,maxY:b.maxY+2}).forEach(function(t){
+    // 图标碰撞与雪地连接均读取筛选前的邻近目标，避免视口/分块边缘漏判。
+    var nearbyTargets=cache.targets({minX:b.minX-4,minY:b.minY-4,maxX:b.maxX+4,maxY:b.maxY+4});
+    var wildSizes=G.MapLayout.wildIconSizes(nearbyTargets,c.size);
+    nearbyTargets.forEach(function(t){
       if(t.kind==='wild'&&t.type==='snow')snowCells.add(t.x+','+t.y);
     });
     this.visible = cache.targets(b).filter(function (t) { return self.allowed(t); });
@@ -866,7 +886,7 @@
       var art = icon(t,snowCells);
       var hasModel = Boolean(art);
       var wildAnimation = t.kind === 'wild' && Object.prototype.hasOwnProperty.call(wildAnimationTextures, t.type) ? t.type : '';
-      var path = hasModel ? (wildAnimation ? wildAnimationPath(wildAnimation, 0) : ((t.sea && t.kind === 'bandit' ? art : art.replace(/\.webp$/, '-map-embedded.png')) + '?v=5.7-npc-phalanxes-green-lawn')) : '';
+      var path = hasModel ? (wildAnimation ? wildAnimationPath(wildAnimation, 0) : ((t.sea && t.kind === 'bandit' ? art : art.replace(/\.webp$/, '-map-embedded.png')) + '?v=5.9-npc-phalanxes-transparent-embedded' + '&t=20261020-clean-grain-v2')) : '';
       var texture;
       if (wildAnimation) {
         texture = loadWildAnimationFrame(wildAnimation, 0);
@@ -917,6 +937,7 @@
         marker.sprite.visible = false;
       }
       var center = markerCenter(t), pos = c.screen(center.x, center.y), size = markerSize(t, c.scale);
+      if (t.kind==='wild' && wildSizes.has(key)) size=wildSizes.get(key)*c.scale;
       marker.target = t;
       marker.position.set(pos.x, pos.y); marker.captions.position.set(pos.x, pos.y); marker.alpha = 1; marker.sprite.alpha = t.defeated ? .42 : 1;
       self.markerLayer.addChild(marker);
@@ -969,7 +990,7 @@
       }
       var info = '', title = '', combatStatus = '';
       if (isCity) {
-        var now = Date.now(), status = '';
+        var now = G.gameNow(), status = '';
         if (t.kind === 'player' || t.selfCity) {
           var cp = G.Core.state.world.cityPos || G.Core.state.world.pos || {};
           var ownState = t.selfCity && t.x === cp.x && t.y === cp.y && G.Core.getCityStatus ? G.Core.getCityStatus() : '';
@@ -992,7 +1013,7 @@
         title = caption + '·' + (combatStatus ? status.slice(0, -combatStatus.length) : status);
         info = coordinates;
       }
-      if (!isCity) info = gatherCountdown(t, Date.now());
+      if (!isCity) info = gatherCountdown(t, G.gameNow());
       marker.info.visible = isCity || !!info;
       if (marker.info.text !== info) marker.info.text = info;
       marker.info.y = -height/2-4;
@@ -1021,7 +1042,7 @@
     // selfCity 仅表示归属自己；只有当前城市可使用本地城市状态，其余读取各自护盾。
     var cp = G.Core.state.world.cityPos || {};
     if (t.selfCity && t.x === cp.x && t.y === cp.y && G.Core.getCityStatus) return G.Core.getCityStatus() === 'shield';
-    var now = Date.now();
+    var now = G.gameNow();
     if (t.coolAt > now) return true;
     return t.shieldUntil != null ? t.shieldUntil > now : t.cityState === 'shield';
   }
@@ -1124,9 +1145,9 @@
     var centerPt=minimapPoint(c.x, c.y, c.size, side);
     ctx.beginPath();ctx.arc(centerPt.x,centerPt.y,2.5,0,Math.PI*2);ctx.fillStyle='#fff9e5';ctx.fill();
   };
-  /** 在途绘制路线与移动编队，抵达后汇总为目标下方的状态标记，返城抵达即清除。 */
+  /** 绘制己方行军及已获来源坐标的敌军来袭；己方抵达汇总状态，敌军抵达或撤回即移除路线。 */
   MapView.prototype.drawRoutes = function () {
-    var self = this, camera = this.camera, routeGraphics = this.routes, now = Date.now(), animating = false;
+    var self = this, camera = this.camera, routeGraphics = this.routes, now = G.gameNow(), animating = false;
     var flowGraphics = this.routeFlow;
     var reducedMotion = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     routeGraphics.clear();
@@ -1166,11 +1187,24 @@
         .moveTo(start.x + nx, start.y + ny).lineTo(end.x + nx, end.y + ny)
         .moveTo(start.x - nx, start.y - ny).lineTo(end.x - nx, end.y - ny);
     }
-    (G.Core.state.world.marches || []).forEach(function (march) {
+    function drawMarch(march, incoming) {
       if (march.targetX == null || march.targetY == null) return;
       var state = marchMapState(march, now);
-      if (state === 'home') return;
+      // 来袭不能触发己方抵达提醒，也不推测已抵达敌军的后续行动。
+      if (incoming && (march.arrived || state !== 'moving')) return;
+      if (state === 'home') {
+        if (march.action === 'intercept_scout' && G.World && G.World.resolveInterceptionArrival) {
+          G.World.resolveInterceptionArrival(march);
+        }
+        return;
+      }
       if (state !== 'moving') {
+        if (march.action === 'intercept_scout') {
+          if (G.World && G.World.resolveInterceptionArrival) {
+            G.World.resolveInterceptionArrival(march);
+          }
+          return;
+        }
         if (!march.returning && !march._arrivalAlerted) {
           march._arrivalAlerted = true;
           if (G.World && G.World.triggerBattleAlert) {
@@ -1180,18 +1214,24 @@
         addStatus(march.targetX, march.targetY, march.targetKind === 'wild_gather' ? 'wild' : march.targetKind, state);
         return;
       }
-      animating = !reducedMotion;
-      var fromX = march.fromX != null ? march.fromX : march.originX, fromY = march.fromY != null ? march.fromY : march.originY;
+      // 雷达未解锁来源时不借用其他字段补坐标，避免绕过服务端情报裁剪。
+      var fromX = march.fromX != null ? march.fromX : (incoming ? null : march.originX), fromY = march.fromY != null ? march.fromY : (incoming ? null : march.originY);
       if (fromX == null || fromY == null || march.targetX == null || march.targetY == null) return;
+      var targetKind = incoming ? 'player' : march.targetKind;
       var isTransport = march.action === 'transport' || march.action === 'rebase' || march.action === 'reinforce';
       var isOffensive = ['conquer', 'plunder', 'feint', 'harass', 'guerrilla'].includes(march.action) ||
         (!march.action && !isTransport && march.targetKind !== 'wild_gather');
-      // 返程优先于原进攻类型；旧行军的折点也只取当前起终点，统一直线移动。
-      var tint = !march.returning && isOffensive ? 0xe66f79 : 0x69b7ee;
+      var isInterception = march.action === 'intercept_scout';
+      // 返程优先于原进攻类型；截击使用战术青蓝色，鲜明区分友军与敌军
+      var tint = isInterception ? 0x06b6d4 : ((!march.returning && (incoming || isOffensive)) ? 0xe66f79 : 0x69b7ee);
       var start = endpoint(fromX, fromY, march.returning ? march.targetKind : 'player');
-      var end = endpoint(march.targetX, march.targetY, march.returning ? 'player' : march.targetKind);
+      var end = endpoint(march.targetX, march.targetY, march.returning ? 'player' : targetKind);
       var points = [start, end];
       drawLightBand(start, end, tint);
+      // 历史来袭没有出发时间时仅保留路线，不伪造部队当前位置。
+      if (incoming && (march.startAt == null || march.arriveAt == null ||
+          !isFinite(Number(march.startAt)) || !isFinite(Number(march.arriveAt)) || Number(march.arriveAt) <= Number(march.startAt))) return;
+      animating = !reducedMotion;
       var lengths = [], total = 0;
       for (var pointIndex = 1; pointIndex < points.length; pointIndex++) {
         var segment = Math.hypot(points[pointIndex].x-points[pointIndex-1].x,points[pointIndex].y-points[pointIndex-1].y);
@@ -1251,7 +1291,7 @@
       }
       var formation = marchFormation(march), primary = formation.primary, iconPath = primary && primary.iconPath;
       var heading = marchHeading(points, segmentIndex, primary && primary.id);
-      var markerKey = String(march.id != null ? march.id : [fromX, fromY, march.targetX, march.targetY].join(':'));
+      var markerKey = (incoming ? 'incoming:' : '') + String(march.id != null ? march.id : (march.marchId != null ? march.marchId : [fromX, fromY, march.targetX, march.targetY].join(':')));
       keep.add(markerKey);
       var marker = self.marchMarkers.get(markerKey);
       if (!marker) {
@@ -1289,11 +1329,16 @@
         sprite.visible = true;
       });
       for (var companionIndex = formation.companions.length; companionIndex < marker.companions.length; companionIndex++) marker.companions[companionIndex].visible = false;
-      marker.countText.text = '×' + (typeof G.fmt === 'function' ? G.fmt(formation.total) : formation.total) + (formation.extraTypes ? ' +' + formation.extraTypes : '');
+      var visibleTotal = incoming && march.totalTroops != null ? Number(march.totalTroops) : formation.total;
+      marker.countText.text = '×' + (typeof G.fmt === 'function' ? G.fmt(visibleTotal) : visibleTotal) + (formation.extraTypes ? ' +' + formation.extraTypes : '');
       marker.countText.style.fontSize = Math.max(9, Math.round(iconSize * .22));
       marker.countText.position.set(iconSize * .4, iconSize * .46);
-      marker.countText.visible = !!iconPath && formation.total > 0;
-    });
+      marker.countText.visible = !!iconPath && visibleTotal > 0;
+    }
+    (G.Core.state.world.marches || []).forEach(function (march) { drawMarch(march, false); });
+    (G.Core.state.world.incoming || []).forEach(function (march) { drawMarch(march, true); });
+    // 返程敌军只作为已知路线绘制，不重新进入来袭卡片或触发战斗提醒。
+    (G.Core.state.world.returningEnemyMarches || []).forEach(function (march) { drawMarch(march, true); });
     // 正式进驻后行军记录会被删除，驻扎/采集标记改由本方野地概览维持。
     targets.forEach(function (target) {
       if (target.kind !== 'wild' || !target.occupied) return;
@@ -1589,7 +1634,7 @@
     G.API.getMapTarget(t.kind,t.id).then(function(fresh){
       if(self.destroyed||seq!==self.detailSeq||identity()!==owner)return;
       // 接口数据相同也可能已跨过时间边界，不能继续复用旧的战争行动。
-      if(quiet && self.renderedDetail===JSON.stringify(fresh) && !(self.detailTransitionAt && Date.now()>=self.detailTransitionAt)) return;
+      if(quiet && self.renderedDetail===JSON.stringify(fresh) && !(self.detailTransitionAt && G.gameNow()>=self.detailTransitionAt)) return;
       self.selected=fresh;self.renderDetail(fresh);self.wake();
     }).catch(function(err){
       if(self.destroyed||seq!==self.detailSeq)return;
@@ -1606,7 +1651,7 @@
     var self=this, cp=G.Core.state.world.cityPos||G.Core.state.world.pos, distance=Math.hypot(cp.x-t.x,cp.y-t.y);
     var meta='距城市 '+Number(distance.toFixed(2))+' 格'+(t.level!=null?' · Lv.'+t.level:'');
     var text=t.kind==='wild'?(t.occupied?'我的野地':(t.claimed?'占领者：'+(t.ownerName||'未知玩家'):name(t))):(t.ownerName?'统帅：'+t.ownerName:(t.selfCity?'我的城市':(t.sea?'日寇海上编队':'寇')));
-    var now=Date.now();
+    var now=G.gameNow();
     // 敌对军团沿用持续交战规则；只有个人宣战与护盾需要按时间切换行动。
     var warTransition = t.kind==='player'&&!t.selfCity&&t.guildRelation!=='hostile'&&t.guildRelation!=='friendly'&&t.warAt>0&&t.warEndAt>now?(t.warAt>now?t.warAt:t.warEndAt):0;
     var shieldEnd = (t.kind==='player'&&!t.selfCity&&isShieldedCity(t)) ? ((t.shieldUntil && t.shieldUntil > now) ? t.shieldUntil : (t.coolAt && t.coolAt > now ? t.coolAt : 0)) : 0;
@@ -1623,8 +1668,8 @@
       else if(t.warEndAt>now&&t.warAt)text+=' · 交战中';
     }
     var headArt = icon(t);
-    var headImg = headArt ? '<img class="world-map-city-model" src="' + esc(headArt) + '?v=5.7-npc-phalanxes-green-lawn" alt="">' : '';
-    this.detail.innerHTML='<button class="world-map-detail-close" data-map="close" aria-label="关闭详情">×</button><div class="world-map-detail-head">' + headImg + '<div><b>'+esc(name(t))+'</b><div class="world-map-detail-meta">'+esc(meta)+'</div></div></div><p>'+esc(text)+'</p>'+(!t.occupied&&!t.selfCity?'<p>守军和资源情报请通过侦察获取。</p>':'')+'<div class="world-map-actions"></div>';
+    var headImg = headArt ? '<img class="world-map-city-model" src="' + esc(headArt) + '?v=5.9-npc-phalanxes-transparent-embedded" alt="">' : '';
+    this.detail.innerHTML='<button class="world-map-detail-close" data-map="close" aria-label="关闭详情">×</button><div class="world-map-detail-head">' + headImg + '<div><b>'+esc(name(t)+'（'+t.x+', '+t.y+'）')+'</b><div class="world-map-detail-meta">'+esc(meta)+'</div></div></div><p>'+esc(text)+'</p>'+(!t.occupied&&!t.selfCity?'<p>守军和资源情报请通过侦察获取。</p>':'')+'<div class="world-map-actions"></div>';
     var actions=this.detail.querySelector('.world-map-actions');
     function button(label, action, primary, disabled) { var b=document.createElement('button');b.className='world-map-button'+(primary?' primary':'');b.textContent=label;b.disabled=!!disabled;b.onclick=function(){self.act(action,b);};actions.appendChild(b); }
     if(t.selfCity){
@@ -1763,7 +1808,7 @@
   MapView.prototype.act = function(action, button) {
     var self=this,t=this.selected,seq=this.detailSeq;if(!t)return;
     // selfCity 表示归属自己，不等于当前城市；先按所选城市 ID 切换，再进入该城首页。
-    if(action==='enterCity'){if(t.kind==='player'&&t.selfCity&&!(t.readyAt>Date.now()))G.Cities.enter(t.id);return;}
+    if(action==='enterCity'){if(t.kind==='player'&&t.selfCity&&!(t.readyAt>G.gameNow()))G.Cities.enter(t.id);return;}
     if(action==='transport'||action==='rebase'||action==='reinforce'){
       if(t.guildmate)G.Cities.openSupport(t.ownerId,action,t.id);
       else G.Cities.openTransfer(t.id,action);
@@ -1848,6 +1893,8 @@
     unmount:function(){if(instance){instance.destroy();instance=null;}if(terrainTexture){terrainTexture.destroy(true);terrainTexture=null;}if(terrainTextureNoSnow){terrainTextureNoSnow.destroy(true);terrainTextureNoSnow=null;}terrainWorldSize=-1;},
     setMode:function(next){mode=next;this.unmount();if(next==='map'&&G.Core.state.world){G.Core.state.world._activeTab='all';if(camera){camera.scale=camera.minScale;camera.clamp();}}if(camera&&G.Core.state.world){G.Core.state.world._mapPos={x:Math.floor(camera.x),y:Math.floor(camera.y)};G.Core.state.world._scan={r:8,at:Date.now()};}G.Core.render();},
     invalidate:function(){cache.invalidate();if(instance){instance.requestChunks();if(instance.selected){if(instance.selected.kind==='site')instance.loadSite(instance.selected.x,instance.selected.y);else instance.loadDetail(instance.selected,true);}instance.wake();}},
+    /** 行军快照更新后唤醒地图；不重新请求地形，也不打断坐标输入。 */
+    refreshMarches:function(){if(instance)instance.wake();},
     // Exposed camera/cache metrics are useful for automated interaction and load checks.
     metrics:function(){return { mounted:!!instance,x:camera&&camera.x,y:camera&&camera.y,scale:camera&&camera.scale,chunks:cache.entries.size,pending:cache.active,markers:instance?instance.markers.size:0,water:instance&&instance.waterSurface?'webgl':'canvas' };},
     focusCoordinate: function (x, y) {

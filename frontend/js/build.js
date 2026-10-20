@@ -3,12 +3,20 @@ window.Game = window.Game || {};
 
 (function (G) {
   'use strict';
+  G.gameNow = G.gameNow || function () { return Date.now(); };
 
   var D = G.DATA;
   var Core = G.Core;
   var WILD_BASE_CAP = (G.Constants && G.Constants.wildOccupation && G.Constants.wildOccupation.baseCap) || 2;
   // 每城开局提供 6 支施工队，新建、升级与拆除共用；与后端 BuildService.MAX_CONCURRENT 保持一致。
   var MAX_CONCURRENT = (G.Constants && G.Constants.buildMaxConcurrent) || 6;
+  var DEFAULT_BUILD_DURATION = { baseSeconds: 30, growth: 2.4, capSeconds: 24 * 60 * 60 };
+  // 核心建筑后期工期单独拉长；需与服务端 BuildService 的曲线保持一致。
+  var SPECIAL_BUILD_DURATIONS = {
+    command: { baseSeconds: 60, growth: 2.5, capSeconds: 72 * 60 * 60 },
+    lab: { baseSeconds: 45, growth: 2.6, capSeconds: 72 * 60 * 60 },
+    headquarters: { baseSeconds: 45, growth: 2.5, capSeconds: 48 * 60 * 60 }
+  };
 
   function buildCost(id, fromLevel) {
     var b = D.buildings[id];
@@ -24,14 +32,18 @@ window.Game = window.Game || {};
     return Math.min(10, (Core.state.buildings.command || 1));
   }
 
+  /**
+   * 计算建筑升至目标等级的工期，应用建筑加速与市长营造倍率及建筑专属上限。
+   * @param {string} id - 建筑类型
+   * @param {number} [fromLevel] - 当前等级，省略时读取当前城等级
+   * @returns {number} 升级工期（秒）
+   */
   function buildDuration(id, fromLevel) {
     var lv = ((fromLevel == null) ? (Core.state.buildings[id] || 0) : fromLevel) + 1;
-    var techMul = Math.max(0.5, Core.buildMul());
-    // 30秒基础, 每级 ×2.4, 封顶 24 小时
-    //   Lv.1=30s  Lv.2=1.2分  Lv.3=2.9分  Lv.4=6.9分  Lv.5=16.6分
-    //   Lv.6=40分  Lv.7=1.6时  Lv.8=3.8时   Lv.9=9.2时  Lv.10=22时
-    var sec = 30 * Math.pow(2.4, lv - 1);
-    return Math.min(86400, Math.ceil(sec * techMul));
+    var curve = SPECIAL_BUILD_DURATIONS[id] || DEFAULT_BUILD_DURATION;
+    var techMul = Math.max(0.35, Core.buildMul());
+    var sec = curve.baseSeconds * Math.pow(curve.growth, lv - 1);
+    return Math.min(curve.capSeconds, Math.ceil(sec * techMul));
   }
 
   function fmtVal(val) {
@@ -112,7 +124,7 @@ window.Game = window.Game || {};
     canFreeSpeedUp: function (job) {
       var seconds = Core.state.freeBuildSpeedUpSeconds;
       if (seconds == null) seconds = 300;
-      return !!job && job.finishesAt > 0 && job.finishesAt - Date.now() <= seconds * 1000;
+      return !!job && job.finishesAt > 0 && job.finishesAt - G.gameNow() <= seconds * 1000;
     },
 
     renderSpeedUpButton: function (job, count, attrs) {
@@ -234,7 +246,7 @@ window.Game = window.Game || {};
         lvText = fromLv === 0 ? ('新建为 Lv.' + targetLv) : ('Lv.' + fromLv + ' → Lv.' + targetLv);
       }
 
-      var now = Date.now();
+      var now = G.gameNow();
       var remainSec = Math.max(0, Math.ceil((job.finishesAt - now) / 1000));
       var totalSec = (job.startedAt && job.finishesAt > job.startedAt) ? Math.max(1, Math.round((job.finishesAt - job.startedAt) / 1000)) : 0;
       var pct = 0;
@@ -245,7 +257,7 @@ window.Game = window.Game || {};
         pct = remainSec === 0 ? 100 : 50;
       }
 
-      var d = new Date(job.finishesAt);
+      var d = new Date(G.GameTime ? G.GameTime.toWallTime(job.finishesAt) : job.finishesAt);
       var pad = function (n) { return n < 10 ? '0' + n : '' + n; };
       var finishTimeStr = pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
 
@@ -336,7 +348,7 @@ window.Game = window.Game || {};
 
       var timer = setInterval(function () {
         if (!mask.parentNode) { clearInterval(timer); return; }
-        var curNow = Date.now();
+        var curNow = G.gameNow();
         var curRemain = Math.max(0, Math.ceil((job.finishesAt - curNow) / 1000));
         Build.updateSpeedUpButton(speedBtn, job, speedTotal);
         var remainEl = mask.querySelector('#detailRemainTime');
@@ -363,7 +375,7 @@ window.Game = window.Game || {};
     showBusyJobs: function () {
       var jobs = (Core.state.constructions || []).slice().sort(function (a, b) { return (a.finishesAt || 0) - (b.finishesAt || 0); });
       Build._busyJobs = jobs;
-      var now = Date.now();
+      var now = G.gameNow();
       var mask = document.createElement('div');
       mask.className = 'modal-mask';
 
@@ -426,7 +438,7 @@ window.Game = window.Game || {};
 
       var timer = setInterval(function () {
         if (!mask.parentNode) { clearInterval(timer); return; }
-        var curNow = Date.now();
+        var curNow = G.gameNow();
         var allDone = true;
         for (var k = 0; k < jobs.length; k++) {
           var sRemain = Math.max(0, Math.ceil((jobs[k].finishesAt - curNow) / 1000));
@@ -821,7 +833,7 @@ window.Game = window.Game || {};
         '</div>';
       }
       if (b.protectPer) {
-        var protect = Math.floor(curLv * b.protectPer * (1 + 0.10 * ((s.tech && s.tech.log_warehouse) || 0)));
+        var protect = Math.floor(curLv * b.protectPer * (1 + 0.05 * Math.max(0, Math.min(10, (s.tech && s.tech.log_warehouse) || 0))));
         statsRows += '<div class="bdetail-stat-row">' +
           '<span class="bdetail-stat-lbl">资源掠夺保护</span>' +
           '<span class="bdetail-stat-val">每种基础资源保 ' + protect + '</span>' +
@@ -963,7 +975,7 @@ window.Game = window.Game || {};
       var opContent = '';
       if (isJob) {
         var isDis = job.action === 'dismantle' || (job.fromLevel != null && job.targetLevel < job.fromLevel);
-        var remSec = Math.max(0, Math.ceil((job.finishesAt - Date.now()) / 1000));
+        var remSec = Math.max(0, Math.ceil((job.finishesAt - G.gameNow()) / 1000));
         var totalSec = Math.max(1, Math.ceil((job.finishesAt - job.startedAt) / 1000));
         var pct = Math.min(100, Math.max(0, Math.floor((1 - remSec / totalSec) * 100)));
         var speedTotal = 0;
@@ -1158,7 +1170,7 @@ window.Game = window.Game || {};
         }
 
         timer = setInterval(function () {
-          var rem = Math.max(0, Math.ceil((job.finishesAt - Date.now()) / 1000));
+          var rem = Math.max(0, Math.ceil((job.finishesAt - G.gameNow()) / 1000));
           Build.updateSpeedUpButton(speedBtn, job, speedTotal);
           var tSec = Math.max(1, Math.ceil((job.finishesAt - job.startedAt) / 1000));
           var curPct = Math.min(100, Math.max(0, Math.floor((1 - rem / tSec) * 100)));
@@ -1523,7 +1535,7 @@ window.Game = window.Game || {};
       }
       if (b.protectPer) {
         var lvForCap = multi ? totalLv : (s.buildings[id] || 0);
-        var protect = Math.floor(lvForCap * b.protectPer * (1 + 0.10 * ((s.tech && s.tech.log_warehouse) || 0)));
+        var protect = Math.floor(lvForCap * b.protectPer * (1 + 0.05 * Math.max(0, Math.min(10, (s.tech && s.tech.log_warehouse) || 0))));
         stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🛡</span><span class="bcard-stat-name">掠夺保护</span><span class="bcard-stat-val">每资源保 ' + protect + '</span></div>';
       }
       if (id === 'wall') {
@@ -1765,7 +1777,7 @@ window.Game = window.Game || {};
     renderGroup: function (v, groupKey) {
       var s = Core.state;
       var jobs = this.getConstructions();
-      var now = Date.now();
+      var now = G.gameNow();
       var self = this;
       var g = this.GROUPS[groupKey];
       var h = '';
@@ -1789,10 +1801,31 @@ window.Game = window.Game || {};
       h += '<div class="menu-item back" onclick="Game.go(\'home\')">[0] 返回主菜单</div>';
       h += '</div>';
       v.innerHTML = h;
+      this.startQueueTimer(v);
     },
 
     renderResView: function (v) { this.renderGroup(v, 'res'); },
     renderArmyView: function (v) { this.renderGroup(v, 'army'); },
+
+    /** 每秒按最新完工时间刷新施工队，避免倒计时依赖服务端推送频率。 */
+    startQueueTimer: function (view) {
+      this.stopQueueTimer();
+      var self = this;
+      this._queueTimer = setInterval(function () {
+        if (!Core.state || (Core.route !== 'buildRes' && Core.route !== 'buildArmy') || view.isConnected === false) {
+          self.stopQueueTimer();
+          return;
+        }
+        // 复用局部刷新，保留建筑卡片；剩余秒数由 finishesAt 与当前时间计算，延迟后不会累计误差。
+        self.silentUpdateBuild();
+      }, 1000);
+    },
+
+    /** 重绘或离开建筑页时清理计时器，防止重复刷新。 */
+    stopQueueTimer: function () {
+      if (this._queueTimer != null) clearInterval(this._queueTimer);
+      this._queueTimer = null;
+    },
 
     // 弹出加速符选择器(智能计算最少需要消耗数量)
     openSpeedUpPicker: function (jobOrIdx) {
@@ -1823,7 +1856,7 @@ window.Game = window.Game || {};
       if (job && job.slot != null) jobName += ' #' + (job.slot + 1);
       var jobLabel = job ? (jobName + ' Lv.' + (job.targetLevel != null ? job.targetLevel : 0)) : '施工';
 
-      var now = Date.now();
+      var now = G.gameNow();
       var remSec = job && job.finishesAt ? Math.max(0, Math.ceil((job.finishesAt - now) / 1000)) : 0;
       var remText = timeText(remSec);
 
@@ -1897,7 +1930,7 @@ window.Game = window.Game || {};
     },
 
     renderQueueHtml: function (jobs, s) {
-      var now = Date.now();
+      var now = G.gameNow();
       var qh = '';
       if (jobs && jobs.length) {
         for (var ji = 0; ji < jobs.length; ji++) {

@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>全新水稻田微缩模型大地图实机效果对比</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", sans-serif;
+      background: #151a22;
+      color: #e6edf3;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 22px;
+      color: #f0f6fc;
+    }
+    p.sub {
+      margin: 0 0 20px;
+      font-size: 14px;
+      color: #ffd700;
+    }
+    .controls {
+      margin-bottom: 24px;
+      display: flex;
+      gap: 12px;
+    }
+    button {
+      padding: 8px 16px;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      background: #21262d;
+      color: #c9d1d9;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    button.active {
+      background: #1f6feb;
+      border-color: #388bfd;
+      color: #fff;
+      font-weight: 600;
+    }
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 24px;
+      max-width: 1200px;
+    }
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 12px;
+      background: rgba(255, 215, 0, 0.15);
+      color: #ffd700;
+      border: 1px solid rgba(255, 215, 0, 0.3);
+    }
+    .card-desc {
+      font-size: 12px;
+      color: #8b949e;
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+    .map-cell-box {
+      width: 100%;
+      aspect-ratio: 1;
+      max-width: 384px;
+      margin: 0 auto;
+      border: 2px solid #e3b341;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      background-size: cover;
+    }
+    .map-cell-box.grass {
+      background-color: #686747;
+      background-image: radial-gradient(circle at 50% 50%, #72714e 0%, #686747 100%);
+    }
+    .map-cell-box.soil {
+      background-color: #5c513e;
+      background-image: radial-gradient(circle at 50% 50%, #665b46 0%, #5c513e 100%);
+    }
+    .map-cell-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      pointer-events: none;
+    }
+    .corner-tick {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border-color: #fff;
+    }
+    .tl { top: -2px; left: -2px; border-top: 3px solid #fff; border-left: 3px solid #fff; }
+    .tr { top: -2px; right: -2px; border-top: 3px solid #fff; border-right: 3px solid #fff; }
+    .bl { bottom: -2px; left: -2px; border-bottom: 3px solid #fff; border-left: 3px solid #fff; }
+    .br { bottom: -2px; right: -2px; border-bottom: 3px solid #fff; border-right: 3px solid #fff; }
+  </style>
+</head>
+<body>
+  <h1>战略地图水稻田微缩模型 · 实机效果对比预览</h1>
+  <p class="sub">★ 连成一片金黄水稻 · 纯透明落地 · 四周保留26px+安全呼吸空间 · 彻底解决边缘半截水稻截断问题</p>
+
+  <div class="controls">
+    <button id="btnGrass" class="active" onclick="setTerrain('grass')">草坪地貌 (橄榄金绿 #686747)</button>
+    <button id="btnSoil" onclick="setTerrain('soil')">黑土地貌 (深棕褐 #5c513e)</button>
+  </div>
+
+  <div class="preview-grid">
+    <!-- Card 1 -->
+    <div class="card">
+      <div class="card-title">
+        <span>款式一：【石渠水网·金稻方阵】</span>
+        <span class="badge">正向 0 度 · 纯透明</span>
+      </div>
+      <div class="card-desc">
+        前沿青石引水渠与木质水闸，连成一片的饱满金稻田，田间2名戴斗笠农夫挥镰割稻与运粮。四周留有 27px 间隔空间，零截断。
+      </div>
+      <div class="map-cell-box grass" id="box1">
+        <div class="corner-tick tl"></div>
+        <div class="corner-tick tr"></div>
+        <div class="corner-tick bl"></div>
+        <div class="corner-tick br"></div>
+        <img src="../img/map/wild-grainfield-v1-waterway.png" alt="款式一 水稻田">
+      </div>
+    </div>
+
+    <!-- Card 2 -->
+    <div class="card">
+      <div class="card-title">
+        <span>款式二：【丰收木车·金稻平原】</span>
+        <span class="badge">正向 0 度 · 纯透明</span>
+      </div>
+      <div class="card-desc">
+        前沿平整田埂小道与细流泥沟，停靠满载粮袋的双轮运粮木车，农夫弯腰割稻捆扎。四周留有 26px 间隔空间，零截断。
+      </div>
+      <div class="map-cell-box grass" id="box2">
+        <div class="corner-tick tl"></div>
+        <div class="corner-tick tr"></div>
+        <div class="corner-tick bl"></div>
+        <div class="corner-tick br"></div>
+        <img src="../img/map/wild-grainfield-v2-cart.png" alt="款式二 水稻田">
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function setTerrain(type) {
+      document.getElementById('btnGrass').classList.toggle('active', type === 'grass');
+      document.getElementById('btnSoil').classList.toggle('active', type === 'soil');
+      var b1 = document.getElementById('box1');
+      var b2 = document.getElementById('box2');
+      b1.className = 'map-cell-box ' + type;
+      b2.className = 'map-cell-box ' + type;
+    }
+  </script>
+</body>
+</html>

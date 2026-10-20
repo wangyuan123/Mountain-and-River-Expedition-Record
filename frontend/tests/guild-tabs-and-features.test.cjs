@@ -223,3 +223,31 @@ test('guild tabs navigation supports horizontal scroll and scrolls active tab in
   assert.equal(guild.currentTab, 'manage');
   assert.equal(scrolled, true);
 });
+
+test('renderRecruitment renders compact cards with emblem, prestige, meta and apply action', () => {
+  const { guild, context } = fixture();
+  context.Game.Core.state = {
+    resources: { gold: 10000 },
+    player: { name: '长官A', prestige: 100 }
+  };
+  guild.list = [
+    { id: 1, name: '战火·兄弟情谊', icon: 'g02', prestige: 15241995, leaderName: '深入山林开荒种地', members: 3, maxMembers: 30, notice: '欢迎加入『战火·兄弟情谊』' },
+    { id: 2, name: '情义盟*并肩作战', icon: 'g06', prestige: 0, leaderName: '雨天唐纳德', members: 1, maxMembers: 30, notice: '' }
+  ];
+
+  const html = guild.renderRecruitment();
+  assert.match(html, /class="guild-recruitment-grid"/);
+  assert.match(html, /class="guild-entry-card"/);
+  assert.match(html, /战火·兄弟情谊/);
+  assert.match(html, /★15241995/);
+  assert.match(html, /深入山林开荒种地/);
+  assert.match(html, /3\/30人/);
+  assert.match(html, /欢迎加入『战火·兄弟情谊』/);
+  assert.match(html, /Game\.Guild\.apply\(1\)/);
+  assert.match(html, /Game\.Guild\.apply\(2\)/);
+
+  const css = fs.readFileSync(path.join(__dirname, '../css/guild.css'), 'utf8');
+  assert.match(css, /\.guild-recruitment-grid\s*\{[^}]*display:\s*grid;/);
+  assert.match(css, /\.guild-entry-card\s*\{[^}]*display:\s*flex;/);
+  assert.match(css, /\.guild-entry-apply-btn/);
+});

@@ -19,6 +19,36 @@ class MultiCityControllerTest extends BaseServiceTest {
     @Autowired ObjectMapper json;
     @Autowired CityService cities;
 
+    @Test void shieldEndpointReturnsPersistedStateAndRejectsInsufficientBalance() throws Exception {
+        createTestWorld();
+        JsonNode registration = json.readTree(http.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"username\":\"shield-http\",\"password\":\"test-password-123\",\"agreementVersion\":\"2026-09-28-v1\"}"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        Long id = registration.path("playerId").asLong();
+        String auth = "Bearer " + registration.path("token").asText();
+        PlayerCity city = playerCityRepository.findByOwnerIdAndCitySlot(id, 0).orElseThrow();
+        Resources wallet = getResources(id);
+        wallet.setDiamond(300);
+        resourcesRepository.save(wallet);
+        String body = json.writeValueAsString(Map.of("cityIds", java.util.List.of(city.getId())));
+        long before = com.wargame.util.GameClock.now();
+        JsonNode result = json.readTree(http.perform(post("/api/game/cities/shield").header("Authorization", auth)
+                .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        assertTrue(result.path("success").asBoolean());
+        assertEquals(200, result.path("cost").asInt());
+        assertEquals(100, result.path("state").path("resources").path("diamond").asInt());
+        long shieldUntil = cityStateRepository.findByPlayerIdAndCitySlot(id, 0).orElseThrow().getShieldUntil();
+        assertTrue(shieldUntil >= before + 8L * 3600 * 1000);
+        assertEquals(shieldUntil, result.path("state").path("cityState").path("shieldUntil").asLong());
+        JsonNode error = json.readTree(http.perform(post("/api/game/cities/shield").header("Authorization", auth)
+                .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest()).andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8));
+        assertTrue(error.path("error").asText().contains("钻石余额不足"));
+        assertEquals(100, getResources(id).getDiamond());
+        assertEquals(shieldUntil, cityStateRepository.findByPlayerIdAndCitySlot(id, 0).orElseThrow().getShieldUntil());
+    }
+
     @Test void cityHeaderPinsMutationsAndRejectsForeignCitiesEvenAfterAnotherTabSwitches() throws Exception {
         WorldMap world = createTestWorld();
         JsonNode registration = json.readTree(http.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON)

@@ -74,13 +74,13 @@ class ReconArmoredCarTest extends BaseServiceTest {
         assertEquals(initiative, defense.get("reconInitiative"));
         int speed = UnitDef.UNITS.get(unit).spd();
         assertEquals(speed + 20, attack.get("attackerInitiative"));
-        assertEquals(speed + 25, attack.get("defenderInitiative"));
-        assertEquals("defender", attack.get("firstStrike"));
+        assertEquals(speed + 16, attack.get("defenderInitiative"));
+        assertEquals("attacker", attack.get("firstStrike"));
         assertEquals(attack.get("firstStrike"), defense.get("firstStrike"));
         List<?> logs = (List<?>) attack.get("combatLog"), defenseLogs = (List<?>) defense.get("combatLog");
         assertEquals(10, logs.size());
-        assertTrue(logs.get(0).toString().contains("本回合先手：敌方"));
-        assertTrue(defenseLogs.get(0).toString().contains("我方雷达预警：先手+15（仅首回合）"));
+        assertTrue(logs.get(0).toString().contains("本回合先手：我方"));
+        assertTrue(defenseLogs.get(0).toString().contains("我方雷达预警：先手+6（仅首回合）"));
         for (int round = 2; round <= 10; round++) {
             assertTrue(logs.get(round - 1).toString().contains("本回合先手：我方（我方" + (speed + 20) + " / 敌方" + (speed + 10) + "）"));
             assertTrue(defenseLogs.get(round - 1).toString().contains("本回合先手：敌方"));
@@ -170,7 +170,7 @@ class ReconArmoredCarTest extends BaseServiceTest {
         item.setCreatedAt(0L); item.setEquippedAt(0L); equipment.saveAndFlush(item);
     }
 
-    @ParameterizedTest @ValueSource(ints = {0, 1, 2, 3, 4, 5})
+    @ParameterizedTest @ValueSource(ints = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10})
     void bothModesRespectTheSameWildIntelligenceTierAndReturn(int level) {
         if (level > 0) createTechnology(player.getId(), "recon_level", level);
         for (String unit : new String[]{"recon_car", "scout"}) {
@@ -206,7 +206,7 @@ class ReconArmoredCarTest extends BaseServiceTest {
         assertTrue(marchRepository.findByPlayerId(player.getId()).isEmpty());
     }
 
-    @ParameterizedTest @ValueSource(ints = {0, 1, 2, 3, 4, 5})
+    @ParameterizedTest @ValueSource(ints = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10})
     void bothModesRespectAllCityIntelligencePermissions(int level) {
         if (level > 0) createTechnology(player.getId(), "recon_level", level);
         PlayerCity city = new PlayerCity();
@@ -220,11 +220,19 @@ class ReconArmoredCarTest extends BaseServiceTest {
             var data = scoutReportRepository.findByPlayerId(player.getId()).stream()
                     .map(r -> JsonUtil.parseObjMap(r.getData())).filter(r -> unit.equals(r.get("scoutUnit"))).findFirst().orElseThrow();
             assertEquals(true, data.get("showCityInfo"));
-            assertEquals(level >= 1, data.containsKey("forts"));
-            assertEquals(level >= 2, data.containsKey("army"));
-            assertEquals(level >= 3, data.containsKey("buildings"));
-            assertEquals(level >= 4, data.containsKey("techs"));
-            assertEquals(level >= 5, data.containsKey("officers"));
+            assertEquals("recon-intelligence-v2-20261019", data.get("reconIntelligenceVersion"));
+            assertEquals(level >= 1, data.containsKey("fortTypes"));
+            assertEquals(level >= 1, data.containsKey("wallPresent"));
+            assertEquals(level >= 2, data.containsKey("wallLevel"));
+            assertEquals(level >= 2, data.containsKey("forts"));
+            assertEquals(level >= 4, data.containsKey("commander"));
+            assertEquals(level >= 6, data.containsKey("officerCount"));
+            assertEquals(level >= 8, data.containsKey("plunderable"));
+            assertEquals(level >= 10, data.containsKey("defensePower"));
+            assertEquals(level >= 3, data.containsKey("army"));
+            assertEquals(level >= 5, data.containsKey("buildings"));
+            assertEquals(level >= 7, data.containsKey("techs"));
+            assertEquals(level >= 9, data.containsKey("officers"));
         }
     }
 
@@ -327,11 +335,13 @@ class ReconArmoredCarTest extends BaseServiceTest {
 
     @Test void manufactureUsesFactoryAndDocumentedResourcesAndPopulation() {
         player.setCivilianPopulation(10); playerRepository.save(player);
-        createBuilding(player.getId(), "factory", 1); createBuilding(player.getId(), "house", 1);
+        createBuilding(player.getId(), "factory", 2); createBuilding(player.getId(), "house", 1);
+        createTechnology(player.getId(), "recon_level", 1);
         assertEquals(true, armyService.recruit(player.getId(), "recon_car", 1).get("success"));
         var queue = queues.findByPlayerIdOrderByStartedAtAscIdAsc(player.getId()).get(0);
         assertEquals("factory", queue.getBuildingType());
-        assertEquals(40, queue.getCostFood()); assertEquals(180, queue.getCostSteel());
+        // 沿用当前资源造价设计，解锁门槛不会另行收取费用。
+        assertEquals(40, queue.getCostFood()); assertEquals(270, queue.getCostSteel());
         assertEquals(60, queue.getCostOil()); assertEquals(20, queue.getCostRare());
         assertEquals(8, player.getCivilianPopulation());
     }

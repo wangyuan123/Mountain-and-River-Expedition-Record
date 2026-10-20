@@ -3,6 +3,7 @@ window.Game = window.Game || {};
 
 (function (G) {
   'use strict';
+  G.gameNow = G.gameNow || function () { return Date.now(); };
 
   var Core = G.Core;
 
@@ -84,7 +85,7 @@ window.Game = window.Game || {};
   }
   function toast(msg) { if (G.toast) G.toast(msg); }
   function surrenderRemaining(deadline) {
-    var ms = Math.max(0, Number(deadline || 0) - Date.now());
+    var ms = Math.max(0, Number(deadline || 0) - G.gameNow());
     var hours = Math.floor(ms / 3600000), mins = Math.floor((ms % 3600000) / 60000);
     return hours + '小时' + pad2(mins) + '分';
   }
@@ -216,18 +217,18 @@ window.Game = window.Game || {};
       });
     },
 
-    /** 领取附件 */
+    /** 领取附件，成功后同步本地领取状态并刷新详情。 */
     claimAttach: function (id) {
       G.API.claimMailAttach(id).then(function (data) {
         if (data && data.success) {
           toast('附件已领取');
-          // 本地同步 claimed
+          // 按钮传入字符串 ID，接口返回数字 ID；统一比较类型才能更新对应邮件。
           for (var i = 0; i < mails.length; i++) {
-            if (mails[i].id === id) { mails[i].claimed = true; break; }
+            if (String(mails[i].id) === String(id)) { mails[i].claimed = true; break; }
           }
           render();
-        } else if (data && data.error) {
-          toast(data.error);
+        } else if (data) {
+          toast(data.message || data.error || '领取失败');
         }
       }).catch(function (err) {
         toast('领取失败: ' + (err.message || err));

@@ -126,6 +126,14 @@ test('全部 9 款变体的 WebP 与 embedded-PNG 物理文件均真实存在且
     const stat = fs.statSync(p);
     assert.ok(stat.size > 5000, `文件有效大小检查: ${rel} (${stat.size} bytes)`);
   }
+  for (const rel of [
+    'img/map/wild-grassland.webp',
+    'img/map/wild-grassland-map-embedded.png'
+  ]) {
+    const p = path.join(root, rel);
+    assert.ok(fs.existsSync(p), `文件必须存在: ${rel}`);
+    assert.ok(fs.statSync(p).size > 5000, `文件有效大小检查: ${rel}`);
+  }
 });
 
 test('Game.WorldMap.icon 导出方法可正确解析野地变体图标', () => {
@@ -139,13 +147,16 @@ test('Game.WorldMap.icon 导出方法可正确解析野地变体图标', () => {
   assert.match(swampArt, /^img\/map\/wild-swamp-(deep|creek|marsh)-integrated\.webp$/);
 });
 
-test('草原已删除独立地图模型，icon 返回空字符串以保留大地图原生平原地表', () => {
+test('草原和平原使用各自的地形图标', () => {
   const c = setup();
-  for (let x = 0; x < 5; x++) {
-    for (let y = 0; y < 5; y++) {
-      const art = c.Game.TestMapIcon({ kind: 'wild', type: 'grassland', x, y });
-      assert.equal(art, '', `坐标 (${x},${y}) 的草原不应返回任何独立模型贴图`);
-    }
-  }
+  const dataContext = { window: { Game: {} } };
+  vm.createContext(dataContext);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/data.js'), 'utf8'), dataContext);
+  c.Game.DATA.wildTypes = dataContext.window.Game.DATA.wildTypes;
+  const grassland = c.Game.TestMapIcon({ kind: 'wild', type: 'grassland', x: 5, y: 8 });
+  const plains = c.Game.TestMapIcon({ kind: 'wild', type: 'plains', x: 5, y: 8 });
+  assert.equal(grassland, 'img/map/wild-grassland.webp');
+  assert.equal(plains, 'img/map/wild-plains-integrated.webp');
+  assert.notEqual(grassland, plains, '草原与平原不能共用同一个图标');
 });
 

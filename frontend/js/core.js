@@ -3,6 +3,7 @@ window.Game = window.Game || {};
 
 (function (G) {
   'use strict';
+  G.gameNow = G.gameNow || function () { return Date.now(); };
 
   var D = G.DATA;
 
@@ -132,11 +133,32 @@ window.Game = window.Game || {};
 
     tick: function () {},
 
+    /** 首页与档案共用服务端保护截止时间；显式归零优先于账号上的旧值。 */
+    newbieProtectionInfo: function () {
+      var s = this.state || {};
+      var cs = s.cityState || {};
+      var player = s.player || {};
+      var until = Number(cs.newbieProtectionUntil != null ? cs.newbieProtectionUntil : player.newbieProtectionUntil) || 0;
+      var now = G.gameNow();
+      var remaining = Math.max(0, until - now);
+      // 先向上取整到分钟再拆分，避免出现60分钟或尚未到期却显示0分钟。
+      var totalMinutes = Math.ceil(remaining / 60000);
+      var days = Math.floor(totalMinutes / 1440);
+      var hours = Math.floor((totalMinutes % 1440) / 60);
+      var minutes = totalMinutes % 60;
+      return {
+        until: until,
+        active: until > now,
+        countdown: (days > 0 ? days + '天' : '') + (days > 0 || hours > 0 ? hours + '小时' : '') + minutes + '分钟',
+        rules: '首次进入保护7天，声望不足10000延长，最长14天。可建设和打NPC，参与玩家战争须确认永久退出。'
+      };
+    },
+
     getCityStatus: function () {
       var s = this.state;
       if (!s.cityState) s.cityState = { status: 'peace', warUntil: 0, shieldUntil: 0, peaceUntil: 0 };
       var cs = s.cityState;
-      var now = Date.now();
+      var now = G.gameNow();
       var incoming = (s.world && s.world.incoming) || [];
       if (cs.newbieProtectionUntil > now || (cs.shieldUntil && now < cs.shieldUntil) || (cs.peaceUntil && now < cs.peaceUntil)) return 'shield';
       if (incoming.length > 0) return 'war';
@@ -147,7 +169,7 @@ window.Game = window.Game || {};
       var status = this.getCityStatus();
       var s = this.state;
       var cs = s.cityState;
-      var now = Date.now();
+      var now = G.gameNow();
       if (s.player && s.player.cityFrozen) {
         var transferMin = s.player.cityTransferDeadlineAt && s.player.cityTransferDeadlineAt > now
           ? Math.ceil((s.player.cityTransferDeadlineAt - now) / 60000) : 0;
@@ -155,8 +177,8 @@ window.Game = window.Game || {};
       }
       if (status === 'shield') {
         if (cs.newbieProtectionUntil > now) {
-          var hours = Math.ceil((cs.newbieProtectionUntil - now) / 3600000);
-          return { status: 'shield', text: '新手保护', color: 'var(--accent)', detail: '剩余' + hours + '小时；首次进入保护7天，声望不足10000延长，最长14天。可建设和打NPC，参与玩家战争须确认永久退出。' };
+          var protection = this.newbieProtectionInfo();
+          return { status: 'shield', text: '新手保护', color: 'var(--accent)', detail: '还剩' + protection.countdown + '；' + protection.rules };
         }
         var safeUntil = Math.max(cs.shieldUntil || 0, cs.peaceUntil || 0);
         var min = Math.ceil((safeUntil - now) / 60000);
@@ -175,7 +197,7 @@ window.Game = window.Game || {};
       var s = this.state;
       if (!s.cityState) s.cityState = { status: 'peace', warUntil: 0, shieldUntil: 0, peaceUntil: 0 };
       s.cityState.status = 'war';
-      s.cityState.warUntil = Date.now() + (durationHours || 1) * 3600 * 1000;
+      s.cityState.warUntil = G.gameNow() + (durationHours || 1) * 3600 * 1000;
     },
 
     capacity: function () {
@@ -191,7 +213,7 @@ window.Game = window.Game || {};
 
     protectCap: function () {
       var depotLv = this.buildingLevel('depot');
-      var capMul = 1 + 0.10 * Math.max(0, Math.min(5, this.state.tech.log_warehouse || 0));
+      var capMul = 1 + 0.05 * Math.max(0, Math.min(10, this.state.tech.log_warehouse || 0));
       return Math.floor(depotLv * D.buildings.depot.protectPer * capMul);
     },
 
@@ -452,16 +474,18 @@ window.Game = window.Game || {};
     },
 
     hpMul: function (cat) {
-      var s = this.state;
-      var allMul = 1 + 0.05 * (s.tech.cmd_hp || 0);
+      var s = this.state || {};
+      var tech = s.tech || {};
+      var allMul = 1 + 0.05 * (tech.cmd_hp || 0);
       return allMul * this.commandBonusMul('logistics');
     },
 
     /** 行军倍率按兵种匹配引擎科技；省略 unitId 时保持类别计算兼容。 */
     spdMul: function (cat, unitId) {
-      var s = this.state;
+      var s = this.state || {};
+      var tech = s.tech || {};
       var catKey = G.Constants.unitSpeedTechKeys[unitId] || G.Constants.unitTechKeys[cat];
-      var techBonus = catKey ? 0.05 * (s.tech[catKey] || 0) : 0;
+      var techBonus = catKey ? 0.05 * (tech[catKey] || 0) : 0;
       var buildingBonus = 0;
       if (cat === 'air' && s.buildings && s.buildings.apron) {
         buildingBonus = 0.03 * s.buildings.apron;
@@ -471,22 +495,26 @@ window.Game = window.Game || {};
 
     /** 全兵种资源负重和运输机运力共用科技倍率。 */
     loadMul: function () {
-      return 1 + 0.05 * Math.max(0, Math.min(10, Number(this.state.tech.log_load) || 0));
+      var tech = (this.state && this.state.tech) || {};
+      return 1 + 0.05 * Math.max(0, Math.min(10, Number(tech.log_load) || 0));
     },
 
     trainMul: function () {
-      return 1 + 0.05 * (this.state.tech.log_train || 0);
+      var tech = (this.state && this.state.tech) || {};
+      return 1 + 0.05 * (tech.log_train || 0);
     },
 
     buildMul: function () {
-      var mul = 1 - 0.05 * (this.state.tech.log_build || 0);
+      var tech = (this.state && this.state.tech) || {};
+      var mul = 1 - 0.05 * (tech.log_build || 0);
       var constructBonus = this.mayorSkillBonus ? this.mayorSkillBonus('construct') : 0;
       if (constructBonus > 0) mul *= (1 - constructBonus);
       return Math.max(0.35, mul);
     },
 
     medicalMul: function () {
-      var v = 0.05 * (this.state.tech.log_medical || 0);
+      var tech = (this.state && this.state.tech) || {};
+      var v = 0.05 * (tech.log_medical || 0);
       return Math.max(0, Math.min(0.5, v));
     },
 
@@ -729,7 +757,7 @@ window.Game = window.Game || {};
         '<div class="topbar-player-meta">' +
         '<div class="topbar-player-name">' + nameStr + '</div>' +
         '<div class="topbar-online-status">' +
-        G.WS.statusHtml() +
+        ((G.WS && typeof G.WS.statusHtml === 'function') ? G.WS.statusHtml() : '') +
         '</div>' +
         '</div>' +
         '</div>' +
@@ -761,6 +789,7 @@ window.Game = window.Game || {};
       if (this.route !== 'wounded' && G.Wounded) G.Wounded.stop();
       if (this.route !== 'prisoners' && G.Prisoners) G.Prisoners.stop();
       if (this.route !== 'tech' && G.Tech && G.Tech.stopTimer) G.Tech.stopTimer();
+      if (this.route !== 'buildRes' && this.route !== 'buildArmy' && G.Build && G.Build.stopQueueTimer) G.Build.stopQueueTimer();
       var screen = $('screen');
       if (screen && screen.classList) screen.classList.toggle('chat-open', this.route === 'chat');
       this.renderTop();
@@ -882,6 +911,13 @@ window.Game = window.Game || {};
         return;
       }
 
+      // 军队属于静态页，但科技、建筑和地理资格变化仍须刷新征召卡片。
+      // 生产倒计时独立更新；输入中的刷新由 tick 调用方延后。
+      if (route === 'army') {
+        if (G.Army && G.Army.refreshUnlocks) G.Army.refreshUnlocks();
+        return;
+      }
+
       // 1. Static / transactional pages: skip DOM updates completely.
       // Data is already synced in G.state, topbar resources are updated by refreshTop.
       if (G.Constants.staticRoutes[route]) {
@@ -909,8 +945,8 @@ window.Game = window.Game || {};
         return;
       }
 
-      // 4. Army production: handled by army.js own queue timer
-      if (route === 'army' || route === 'wounded' || route === 'prisoners') {
+      // 4. 恢复与战俘页面使用各自的轮询更新。
+      if (route === 'wounded' || route === 'prisoners') {
         return;
       }
 

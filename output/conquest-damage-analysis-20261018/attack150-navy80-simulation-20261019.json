@@ -1,0 +1,3871 @@
+{
+  "date": "2026-10-19",
+  "scope": "兵种四项基础攻击乘1.5，海军防御和生命乘0.8；工事自身属性和墙体属性不变",
+  "sourceSHA256": {
+    "service/BattleService.java": "8babf52e8bc8231fa04eecbed2fc8301b9474a2adc09969330eaefca84265ff2",
+    "model/constants/UnitDef.java": "dec4f66e05657a6f6e9ec128dba3e1d414be014655fadcc1b35e0a6d91b8a28b",
+    "model/constants/BattleRules.java": "d98edccb8c29031cfa2184585c494a0dcde6677399a7a67f8d2adaca65dac566",
+    "model/constants/BattleScene.java": "7b58acf3dfa72ccd8d93327d8b33987617aa0cef33f32341afa9ce9a195de65e",
+    "model/constants/UnitEquipmentEffects.java": "13f9afc390767b868603fe4c06f88c73124128030e461d8706d4fe13ad6287a8",
+    "model/dto/BattleRoundState.java": "0588722c421f668642bdcbbaae46b1da1d5042b42cf9ef9ee4cdd64f23846add",
+    "model/dto/CommandBonus.java": "9a424a944c4f1dd79ea3612100b059ccfa87555b6eea2397272d0eb173bfce53"
+  },
+  "variants": [
+    {
+      "variant": "baseline",
+      "ruleVersion": "balance-v19-technology-20261016",
+      "seeds": 32,
+      "techBothSides": {
+        "arm_engine": 10,
+        "defense_tech": 10,
+        "nav_engine": 10,
+        "fire_density": 10,
+        "cmd_hp": 10,
+        "attack_tech": 10,
+        "weapon_range": 10,
+        "air_engine": 10
+      },
+      "skills": {},
+      "assumptions": "自动前进、无装备、无司令官加成、无城墙；真实战报仅复用兵力，不是精确重放",
+      "unitAttributes": {
+        "armored": {
+          "defense": 33.0,
+          "groundAttack": 18.0,
+          "hp": 360.0,
+          "seaAttack": 45.0,
+          "airAttack": 33.5,
+          "fortAttack": 36.0
+        },
+        "assault": {
+          "defense": 28.0,
+          "groundAttack": 34.0,
+          "hp": 200.0,
+          "seaAttack": 65.0,
+          "airAttack": 30.0,
+          "fortAttack": 167.0
+        },
+        "battleship": {
+          "defense": 120.0,
+          "groundAttack": 91.0,
+          "hp": 1300.0,
+          "seaAttack": 96.0,
+          "airAttack": 35.0,
+          "fortAttack": 108.0
+        },
+        "bomber": {
+          "defense": 22.0,
+          "groundAttack": 56.0,
+          "hp": 195.0,
+          "seaAttack": 95.0,
+          "airAttack": 12.0,
+          "fortAttack": 429.0
+        },
+        "carrier": {
+          "defense": 70.0,
+          "groundAttack": 82.0,
+          "hp": 1100.0,
+          "seaAttack": 80.0,
+          "airAttack": 125.0,
+          "fortAttack": 110.0
+        },
+        "destroyer": {
+          "defense": 50.0,
+          "groundAttack": 44.0,
+          "hp": 555.0,
+          "seaAttack": 47.0,
+          "airAttack": 59.0,
+          "fortAttack": 35.0
+        },
+        "fighter": {
+          "defense": 30.0,
+          "groundAttack": 12.0,
+          "hp": 150.0,
+          "seaAttack": 75.0,
+          "airAttack": 64.0,
+          "fortAttack": 5.0
+        },
+        "htank": {
+          "defense": 63.5,
+          "groundAttack": 50.0,
+          "hp": 385.0,
+          "seaAttack": 65.0,
+          "airAttack": 15.0,
+          "fortAttack": 50.0
+        },
+        "infantry": {
+          "defense": 15.0,
+          "groundAttack": 10.0,
+          "hp": 120.0,
+          "seaAttack": 5.0,
+          "airAttack": 5.0,
+          "fortAttack": 3.0
+        },
+        "ltank": {
+          "defense": 53.0,
+          "groundAttack": 33.0,
+          "hp": 270.0,
+          "seaAttack": 55.0,
+          "airAttack": 10.0,
+          "fortAttack": 45.0
+        },
+        "recon_car": {
+          "defense": 33.0,
+          "groundAttack": 18.0,
+          "hp": 360.0,
+          "seaAttack": 45.0,
+          "airAttack": 5.0,
+          "fortAttack": 36.0
+        },
+        "rocket": {
+          "defense": 28.0,
+          "groundAttack": 100.0,
+          "hp": 150.0,
+          "seaAttack": 25.0,
+          "airAttack": 11.5,
+          "fortAttack": 179.0
+        },
+        "scout": {
+          "defense": 13.0,
+          "groundAttack": 1.0,
+          "hp": 70.5,
+          "seaAttack": 1.0,
+          "airAttack": 4.0,
+          "fortAttack": 1.0
+        },
+        "special": {
+          "defense": 5.5,
+          "groundAttack": 30.0,
+          "hp": 150.0,
+          "seaAttack": 125.0,
+          "airAttack": 10.0,
+          "fortAttack": 188.0
+        },
+        "sub": {
+          "defense": 20.0,
+          "groundAttack": 1.0,
+          "hp": 395.0,
+          "seaAttack": 66.0,
+          "airAttack": 1.0,
+          "fortAttack": 1.0
+        },
+        "transport": {
+          "defense": 10.0,
+          "groundAttack": 1.0,
+          "hp": 220.0,
+          "seaAttack": 1.0,
+          "airAttack": 1.0,
+          "fortAttack": 1.0
+        },
+        "truck": {
+          "defense": 5.5,
+          "groundAttack": 2.0,
+          "hp": 150.0,
+          "seaAttack": 1.0,
+          "airAttack": 1.0,
+          "fortAttack": 1.0
+        }
+      },
+      "scenarios": [
+        {
+          "id": "battleship-1.0-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "battleship": 10000
+          },
+          "initialDefender": {
+            "battleship": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3400,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 0,
+          "losses": 0,
+          "timeouts": 32,
+          "attackerRemaining": 6861.375,
+          "defenderRemaining": 6862.53125,
+          "attackerRemainingPct": 68.61375,
+          "defenderRemainingPct": 68.6253125,
+          "attackerRemainingUnits": {
+            "battleship": 6861.375
+          },
+          "defenderRemainingUnits": {
+            "battleship": 6862.53125
+          }
+        },
+        {
+          "id": "battleship-1.5-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "battleship": 15000
+          },
+          "initialDefender": {
+            "battleship": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3400,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 0,
+          "losses": 0,
+          "timeouts": 32,
+          "attackerRemaining": 12220.5625,
+          "defenderRemaining": 4934.0,
+          "attackerRemainingPct": 81.47041666666667,
+          "defenderRemainingPct": 49.34,
+          "attackerRemainingUnits": {
+            "battleship": 12220.5625
+          },
+          "defenderRemainingUnits": {
+            "battleship": 4934.0
+          }
+        },
+        {
+          "id": "battleship-2.0-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "battleship": 20000
+          },
+          "initialDefender": {
+            "battleship": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3400,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 0,
+          "losses": 0,
+          "timeouts": 32,
+          "attackerRemaining": 17578.875,
+          "defenderRemaining": 3006.96875,
+          "attackerRemainingPct": 87.894375,
+          "defenderRemainingPct": 30.0696875,
+          "attackerRemainingUnits": {
+            "battleship": 17578.875
+          },
+          "defenderRemainingUnits": {
+            "battleship": 3006.96875
+          }
+        },
+        {
+          "id": "destroyer-1.0-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "destroyer": 10000
+          },
+          "initialDefender": {
+            "destroyer": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 1600,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 0,
+          "losses": 0,
+          "timeouts": 32,
+          "attackerRemaining": 4025.46875,
+          "defenderRemaining": 4032.03125,
+          "attackerRemainingPct": 40.2546875,
+          "defenderRemainingPct": 40.3203125,
+          "attackerRemainingUnits": {
+            "destroyer": 4025.46875
+          },
+          "defenderRemainingUnits": {
+            "destroyer": 4032.03125
+          }
+        },
+        {
+          "id": "destroyer-1.5-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "destroyer": 15000
+          },
+          "initialDefender": {
+            "destroyer": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 1600,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            32,
+            32
+          ],
+          "meanEndRound": 32.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 11176.21875,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 74.508125,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "destroyer": 11176.21875
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "destroyer-2.0-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "destroyer": 20000
+          },
+          "initialDefender": {
+            "destroyer": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 1600,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            22,
+            22
+          ],
+          "meanEndRound": 22.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 17313.75,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 86.56875,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "destroyer": 17313.75
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "sub-1.0-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "sub": 10000
+          },
+          "initialDefender": {
+            "sub": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 1150,
+          "firstCombatRange": [
+            3,
+            3
+          ],
+          "endRoundRange": [
+            32,
+            33
+          ],
+          "meanEndRound": 32.375,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 991.34375,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 9.9134375,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "sub": 991.34375
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "sub-1.5-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "sub": 15000
+          },
+          "initialDefender": {
+            "sub": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 1150,
+          "firstCombatRange": [
+            3,
+            3
+          ],
+          "endRoundRange": [
+            10,
+            10
+          ],
+          "meanEndRound": 10.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 11225.375,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 74.83583333333333,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "sub": 11225.375
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "sub-2.0-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "sub": 20000
+          },
+          "initialDefender": {
+            "sub": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 1150,
+          "firstCombatRange": [
+            3,
+            3
+          ],
+          "endRoundRange": [
+            8,
+            8
+          ],
+          "meanEndRound": 8.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 17375.09375,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 86.87546875,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "sub": 17375.09375
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "carrier-1.0-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "carrier": 10000
+          },
+          "initialDefender": {
+            "carrier": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3850,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 0,
+          "losses": 0,
+          "timeouts": 32,
+          "attackerRemaining": 5523.9375,
+          "defenderRemaining": 5524.71875,
+          "attackerRemainingPct": 55.239375,
+          "defenderRemainingPct": 55.2471875,
+          "attackerRemainingUnits": {
+            "carrier": 5523.9375
+          },
+          "defenderRemainingUnits": {
+            "carrier": 5524.71875
+          }
+        },
+        {
+          "id": "carrier-1.5-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "carrier": 15000
+          },
+          "initialDefender": {
+            "carrier": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3850,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 0,
+          "losses": 0,
+          "timeouts": 32,
+          "attackerRemaining": 11430.5625,
+          "defenderRemaining": 2381.15625,
+          "attackerRemainingPct": 76.20375,
+          "defenderRemainingPct": 23.8115625,
+          "attackerRemainingUnits": {
+            "carrier": 11430.5625
+          },
+          "defenderRemainingUnits": {
+            "carrier": 2381.15625
+          }
+        },
+        {
+          "id": "carrier-2.0-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "carrier": 20000
+          },
+          "initialDefender": {
+            "carrier": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3850,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            33,
+            33
+          ],
+          "meanEndRound": 33.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 17318.25,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 86.59125,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "carrier": 17318.25
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "mixed-1.0-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "battleship": 10000,
+            "carrier": 7895,
+            "destroyer": 27523,
+            "sub": 42857
+          },
+          "initialDefender": {
+            "carrier": 7895,
+            "sub": 42857,
+            "destroyer": 27523,
+            "battleship": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3850,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 0,
+          "losses": 0,
+          "timeouts": 32,
+          "attackerRemaining": 27569.25,
+          "defenderRemaining": 24329.71875,
+          "attackerRemainingPct": 31.231096006796943,
+          "defenderRemainingPct": 27.56127867459643,
+          "attackerRemainingUnits": {
+            "battleship": 6697.34375,
+            "carrier": 4360.5,
+            "destroyer": 12027.40625,
+            "sub": 4484.0
+          },
+          "defenderRemainingUnits": {
+            "battleship": 6695.5625,
+            "carrier": 4362.0625,
+            "destroyer": 12000.78125,
+            "sub": 1271.3125
+          }
+        },
+        {
+          "id": "mixed-1.5-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "battleship": 15000,
+            "carrier": 11843,
+            "destroyer": 41285,
+            "sub": 64286
+          },
+          "initialDefender": {
+            "carrier": 7895,
+            "sub": 42857,
+            "destroyer": 27523,
+            "battleship": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3850,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            33,
+            34
+          ],
+          "meanEndRound": 33.28125,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 100775.65625,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 76.10649648073466,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "battleship": 12730.71875,
+            "carrier": 9133.9375,
+            "destroyer": 30804.75,
+            "sub": 48106.25
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "mixed-2.0-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "battleship": 20000,
+            "carrier": 15790,
+            "destroyer": 55046,
+            "sub": 85714
+          },
+          "initialDefender": {
+            "carrier": 7895,
+            "sub": 42857,
+            "destroyer": 27523,
+            "battleship": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3850,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            24,
+            24
+          ],
+          "meanEndRound": 24.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 154215.125,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 87.34926366468423,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "battleship": 18232.6875,
+            "carrier": 13836.4375,
+            "destroyer": 47681.65625,
+            "sub": 74464.34375
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "battleship-1.0-PLAYER",
+          "scene": "PLAYER",
+          "initialAttacker": {
+            "battleship": 10000
+          },
+          "initialDefender": {
+            "battleship": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 4250,
+          "firstCombatRange": [
+            4,
+            4
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 0,
+          "losses": 0,
+          "timeouts": 32,
+          "attackerRemaining": 7015.15625,
+          "defenderRemaining": 7016.21875,
+          "attackerRemainingPct": 70.1515625,
+          "defenderRemainingPct": 70.1621875,
+          "attackerRemainingUnits": {
+            "battleship": 7015.15625
+          },
+          "defenderRemainingUnits": {
+            "battleship": 7016.21875
+          }
+        },
+        {
+          "id": "battleship-1.5-PLAYER",
+          "scene": "PLAYER",
+          "initialAttacker": {
+            "battleship": 15000
+          },
+          "initialDefender": {
+            "battleship": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 4250,
+          "firstCombatRange": [
+            4,
+            4
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 0,
+          "losses": 0,
+          "timeouts": 32,
+          "attackerRemaining": 12332.8125,
+          "defenderRemaining": 5205.96875,
+          "attackerRemainingPct": 82.21875,
+          "defenderRemainingPct": 52.0596875,
+          "attackerRemainingUnits": {
+            "battleship": 12332.8125
+          },
+          "defenderRemainingUnits": {
+            "battleship": 5205.96875
+          }
+        },
+        {
+          "id": "battleship-2.0-PLAYER",
+          "scene": "PLAYER",
+          "initialAttacker": {
+            "battleship": 20000
+          },
+          "initialDefender": {
+            "battleship": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 4250,
+          "firstCombatRange": [
+            4,
+            4
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 0,
+          "losses": 0,
+          "timeouts": 32,
+          "attackerRemaining": 17649.8125,
+          "defenderRemaining": 3397.125,
+          "attackerRemainingPct": 88.2490625,
+          "defenderRemainingPct": 33.97125,
+          "attackerRemainingUnits": {
+            "battleship": 17649.8125
+          },
+          "defenderRemainingUnits": {
+            "battleship": 3397.125
+          }
+        },
+        {
+          "id": "destroyer-1.0-PLAYER",
+          "scene": "PLAYER",
+          "initialAttacker": {
+            "destroyer": 10000
+          },
+          "initialDefender": {
+            "destroyer": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 2450,
+          "firstCombatRange": [
+            3,
+            3
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 0,
+          "losses": 0,
+          "timeouts": 32,
+          "attackerRemaining": 4142.625,
+          "defenderRemaining": 4133.34375,
+          "attackerRemainingPct": 41.42625,
+          "defenderRemainingPct": 41.3334375,
+          "attackerRemainingUnits": {
+            "destroyer": 4142.625
+          },
+          "defenderRemainingUnits": {
+            "destroyer": 4133.34375
+          }
+        },
+        {
+          "id": "destroyer-1.5-PLAYER",
+          "scene": "PLAYER",
+          "initialAttacker": {
+            "destroyer": 15000
+          },
+          "initialDefender": {
+            "destroyer": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 2450,
+          "firstCombatRange": [
+            3,
+            3
+          ],
+          "endRoundRange": [
+            33,
+            33
+          ],
+          "meanEndRound": 33.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 11183.46875,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 74.55645833333334,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "destroyer": 11183.46875
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "destroyer-2.0-PLAYER",
+          "scene": "PLAYER",
+          "initialAttacker": {
+            "destroyer": 20000
+          },
+          "initialDefender": {
+            "destroyer": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 2450,
+          "firstCombatRange": [
+            3,
+            3
+          ],
+          "endRoundRange": [
+            23,
+            23
+          ],
+          "meanEndRound": 23.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 17324.3125,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 86.6215625,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "destroyer": 17324.3125
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "sub-1.0-PLAYER",
+          "scene": "PLAYER",
+          "initialAttacker": {
+            "sub": 10000
+          },
+          "initialDefender": {
+            "sub": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 2000,
+          "firstCombatRange": [
+            5,
+            5
+          ],
+          "endRoundRange": [
+            34,
+            35
+          ],
+          "meanEndRound": 34.375,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 991.34375,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 9.9134375,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "sub": 991.34375
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "sub-1.5-PLAYER",
+          "scene": "PLAYER",
+          "initialAttacker": {
+            "sub": 15000
+          },
+          "initialDefender": {
+            "sub": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 2000,
+          "firstCombatRange": [
+            5,
+            5
+          ],
+          "endRoundRange": [
+            12,
+            12
+          ],
+          "meanEndRound": 12.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 11225.375,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 74.83583333333333,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "sub": 11225.375
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "sub-2.0-PLAYER",
+          "scene": "PLAYER",
+          "initialAttacker": {
+            "sub": 20000
+          },
+          "initialDefender": {
+            "sub": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 2000,
+          "firstCombatRange": [
+            5,
+            5
+          ],
+          "endRoundRange": [
+            10,
+            10
+          ],
+          "meanEndRound": 10.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 17375.09375,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 86.87546875,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "sub": 17375.09375
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "carrier-1.0-PLAYER",
+          "scene": "PLAYER",
+          "initialAttacker": {
+            "carrier": 10000
+          },
+          "initialDefender": {
+            "carrier": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 4700,
+          "firstCombatRange": [
+            4,
+            4
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 0,
+          "losses": 0,
+          "timeouts": 32,
+          "attackerRemaining": 5720.15625,
+          "defenderRemaining": 5720.96875,
+          "attackerRemainingPct": 57.2015625,
+          "defenderRemainingPct": 57.2096875,
+          "attackerRemainingUnits": {
+            "carrier": 5720.15625
+          },
+          "defenderRemainingUnits": {
+            "carrier": 5720.96875
+          }
+        },
+        {
+          "id": "carrier-1.5-PLAYER",
+          "scene": "PLAYER",
+          "initialAttacker": {
+            "carrier": 15000
+          },
+          "initialDefender": {
+            "carrier": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 4700,
+          "firstCombatRange": [
+            4,
+            4
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 0,
+          "losses": 0,
+          "timeouts": 32,
+          "attackerRemaining": 11520.53125,
+          "defenderRemaining": 2781.6875,
+          "attackerRemainingPct": 76.80354166666666,
+          "defenderRemainingPct": 27.816875,
+          "attackerRemainingUnits": {
+            "carrier": 11520.53125
+          },
+          "defenderRemainingUnits": {
+            "carrier": 2781.6875
+          }
+        },
+        {
+          "id": "carrier-2.0-PLAYER",
+          "scene": "PLAYER",
+          "initialAttacker": {
+            "carrier": 20000
+          },
+          "initialDefender": {
+            "carrier": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 4700,
+          "firstCombatRange": [
+            4,
+            4
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 17318.25,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 86.59125,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "carrier": 17318.25
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "mixed-1.0-PLAYER",
+          "scene": "PLAYER",
+          "initialAttacker": {
+            "battleship": 10000,
+            "carrier": 7895,
+            "destroyer": 27523,
+            "sub": 42857
+          },
+          "initialDefender": {
+            "carrier": 7895,
+            "sub": 42857,
+            "destroyer": 27523,
+            "battleship": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 4700,
+          "firstCombatRange": [
+            3,
+            3
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 0,
+          "losses": 0,
+          "timeouts": 32,
+          "attackerRemaining": 28285.5625,
+          "defenderRemaining": 25669.3125,
+          "attackerRemainingPct": 32.04255168507505,
+          "defenderRemainingPct": 29.07880203908241,
+          "attackerRemainingUnits": {
+            "battleship": 6768.1875,
+            "carrier": 4515.71875,
+            "destroyer": 12169.65625,
+            "sub": 4832.0
+          },
+          "defenderRemainingUnits": {
+            "battleship": 6768.53125,
+            "carrier": 4517.25,
+            "destroyer": 12188.1875,
+            "sub": 2195.34375
+          }
+        },
+        {
+          "id": "mixed-1.5-PLAYER",
+          "scene": "PLAYER",
+          "initialAttacker": {
+            "battleship": 15000,
+            "carrier": 11843,
+            "destroyer": 41285,
+            "sub": 64286
+          },
+          "initialDefender": {
+            "carrier": 7895,
+            "sub": 42857,
+            "destroyer": 27523,
+            "battleship": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 4700,
+          "firstCombatRange": [
+            3,
+            3
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 100672.5625,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 76.02863934327186,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "battleship": 12667.8125,
+            "carrier": 9142.96875,
+            "destroyer": 30754.9375,
+            "sub": 48106.84375
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "mixed-2.0-PLAYER",
+          "scene": "PLAYER",
+          "initialAttacker": {
+            "battleship": 20000,
+            "carrier": 15790,
+            "destroyer": 55046,
+            "sub": 85714
+          },
+          "initialDefender": {
+            "carrier": 7895,
+            "sub": 42857,
+            "destroyer": 27523,
+            "battleship": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 4700,
+          "firstCombatRange": [
+            3,
+            3
+          ],
+          "endRoundRange": [
+            26,
+            26
+          ],
+          "meanEndRound": 26.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 154137.125,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 87.30508354573774,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "battleship": 18170.59375,
+            "carrier": 13843.46875,
+            "destroyer": 47658.8125,
+            "sub": 74464.25
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "battleship-equal-officers100",
+          "scene": "NPC",
+          "initialAttacker": {
+            "battleship": 10000
+          },
+          "initialDefender": {
+            "battleship": 10000
+          },
+          "commanders": [
+            100,
+            100,
+            100,
+            100
+          ],
+          "distance": 3400,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 0,
+          "losses": 0,
+          "timeouts": 32,
+          "attackerRemaining": 6814.75,
+          "defenderRemaining": 6813.75,
+          "attackerRemainingPct": 68.1475,
+          "defenderRemainingPct": 68.1375,
+          "attackerRemainingUnits": {
+            "battleship": 6814.75
+          },
+          "defenderRemainingUnits": {
+            "battleship": 6813.75
+          }
+        },
+        {
+          "id": "sub-vs-battleship-equal-cost",
+          "scene": "NPC",
+          "initialAttacker": {
+            "sub": 42857
+          },
+          "initialDefender": {
+            "battleship": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3400,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 0,
+          "losses": 0,
+          "timeouts": 32,
+          "attackerRemaining": 3664.21875,
+          "defenderRemaining": 6097.125,
+          "attackerRemainingPct": 8.549872249574165,
+          "defenderRemainingPct": 60.97125,
+          "attackerRemainingUnits": {
+            "sub": 3664.21875
+          },
+          "defenderRemainingUnits": {
+            "battleship": 6097.125
+          }
+        },
+        {
+          "id": "destroyer-vs-sub-equal-cost",
+          "scene": "NPC",
+          "initialAttacker": {
+            "destroyer": 27523
+          },
+          "initialDefender": {
+            "sub": 42857
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 1600,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 0,
+          "losses": 0,
+          "timeouts": 32,
+          "attackerRemaining": 1213.96875,
+          "defenderRemaining": 12473.6875,
+          "attackerRemainingPct": 4.410742833266722,
+          "defenderRemainingPct": 29.10536785122617,
+          "attackerRemainingUnits": {
+            "destroyer": 1213.96875
+          },
+          "defenderRemainingUnits": {
+            "sub": 12473.6875
+          }
+        },
+        {
+          "id": "composition-3722-no-officer",
+          "scene": "NPC",
+          "initialAttacker": {
+            "battleship": 10000,
+            "carrier": 5000
+          },
+          "initialDefender": {
+            "destroyer": 13056,
+            "bomber": 6800,
+            "carrier": 540,
+            "sub": 34000,
+            "fighter": 13600,
+            "battleship": 4760
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3850,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            31,
+            31
+          ],
+          "meanEndRound": 31.0,
+          "wins": 0,
+          "losses": 32,
+          "timeouts": 0,
+          "attackerRemaining": 0.0,
+          "defenderRemaining": 67234.84375,
+          "attackerRemainingPct": 0.0,
+          "defenderRemainingPct": 92.41140765022816,
+          "attackerRemainingUnits": {},
+          "defenderRemainingUnits": {
+            "battleship": 2278.875,
+            "bomber": 5376.875,
+            "destroyer": 13056.0,
+            "fighter": 12523.09375,
+            "sub": 34000.0
+          }
+        },
+        {
+          "id": "composition-3722-assumed-officer219",
+          "scene": "NPC",
+          "initialAttacker": {
+            "battleship": 10000,
+            "carrier": 5000
+          },
+          "initialDefender": {
+            "destroyer": 13056,
+            "bomber": 6800,
+            "carrier": 540,
+            "sub": 34000,
+            "fighter": 13600,
+            "battleship": 4760
+          },
+          "commanders": [
+            219,
+            75,
+            0,
+            0
+          ],
+          "distance": 3850,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 0,
+          "losses": 0,
+          "timeouts": 32,
+          "attackerRemaining": 5633.84375,
+          "defenderRemaining": 47430.9375,
+          "attackerRemainingPct": 37.55895833333334,
+          "defenderRemainingPct": 65.19178830611908,
+          "attackerRemainingUnits": {
+            "battleship": 645.96875,
+            "carrier": 4987.875
+          },
+          "defenderRemainingUnits": {
+            "destroyer": 7453.90625,
+            "fighter": 5977.03125,
+            "sub": 34000.0
+          }
+        },
+        {
+          "id": "composition-3725-no-officer",
+          "scene": "NPC",
+          "initialAttacker": {
+            "battleship": 10000,
+            "carrier": 5000
+          },
+          "initialDefender": {
+            "destroyer": 14280,
+            "bomber": 8400,
+            "carrier": 660,
+            "sub": 36400,
+            "fighter": 16800,
+            "battleship": 5320
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3850,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            27,
+            27
+          ],
+          "meanEndRound": 27.0,
+          "wins": 0,
+          "losses": 32,
+          "timeouts": 0,
+          "attackerRemaining": 0.0,
+          "defenderRemaining": 78005.21875,
+          "attackerRemainingPct": 0.0,
+          "defenderRemainingPct": 95.29100751282678,
+          "attackerRemainingUnits": {},
+          "defenderRemainingUnits": {
+            "battleship": 3202.125,
+            "bomber": 8400.0,
+            "destroyer": 14280.0,
+            "fighter": 15723.09375,
+            "sub": 36400.0
+          }
+        },
+        {
+          "id": "composition-3725-assumed-officer219",
+          "scene": "NPC",
+          "initialAttacker": {
+            "battleship": 10000,
+            "carrier": 5000
+          },
+          "initialDefender": {
+            "destroyer": 14280,
+            "bomber": 8400,
+            "carrier": 660,
+            "sub": 36400,
+            "fighter": 16800,
+            "battleship": 5320
+          },
+          "commanders": [
+            219,
+            75,
+            0,
+            0
+          ],
+          "distance": 3850,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 0,
+          "losses": 0,
+          "timeouts": 32,
+          "attackerRemaining": 1788.8125,
+          "defenderRemaining": 62587.40625,
+          "attackerRemainingPct": 11.925416666666667,
+          "defenderRemainingPct": 76.456640911312,
+          "attackerRemainingUnits": {
+            "carrier": 1788.8125
+          },
+          "defenderRemainingUnits": {
+            "battleship": 198.40625,
+            "destroyer": 14156.65625,
+            "fighter": 11832.34375,
+            "sub": 36400.0
+          }
+        },
+        {
+          "id": "htank-1.0-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "htank": 10000
+          },
+          "initialDefender": {
+            "htank": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 1480,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 0,
+          "losses": 0,
+          "timeouts": 32,
+          "attackerRemaining": 1819.90625,
+          "defenderRemaining": 1809.9375,
+          "attackerRemainingPct": 18.1990625,
+          "defenderRemainingPct": 18.099375,
+          "attackerRemainingUnits": {
+            "htank": 1819.90625
+          },
+          "defenderRemainingUnits": {
+            "htank": 1809.9375
+          }
+        },
+        {
+          "id": "landmixed-1.0-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "armored": 23421,
+            "assault": 23421,
+            "htank": 10000,
+            "rocket": 8061
+          },
+          "initialDefender": {
+            "htank": 10000,
+            "armored": 23421,
+            "assault": 23421,
+            "rocket": 8061
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3400,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            28,
+            28
+          ],
+          "meanEndRound": 28.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 26301.65625,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 40.524561653544524,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "armored": 13696.25,
+            "assault": 6659.90625,
+            "htank": 3466.875,
+            "rocket": 2478.625
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "htank-1.5-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "htank": 15000
+          },
+          "initialDefender": {
+            "htank": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 1480,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            18,
+            18
+          ],
+          "meanEndRound": 18.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 11183.8125,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 74.55875,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "htank": 11183.8125
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "landmixed-1.5-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "armored": 35132,
+            "assault": 35132,
+            "htank": 15000,
+            "rocket": 12092
+          },
+          "initialDefender": {
+            "htank": 10000,
+            "armored": 23421,
+            "assault": 23421,
+            "rocket": 8061
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3400,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            12,
+            12
+          ],
+          "meanEndRound": 12.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 80213.625,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 82.39207136694195,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "armored": 28379.09375,
+            "assault": 29372.59375,
+            "htank": 13054.09375,
+            "rocket": 9407.84375
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "fighter-vs-battleship-equal-cost",
+          "scene": "NPC",
+          "initialAttacker": {
+            "fighter": 55556
+          },
+          "initialDefender": {
+            "battleship": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3400,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            30,
+            30
+          ],
+          "meanEndRound": 30.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 39362.6875,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 70.85227068183454,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "fighter": 39362.6875
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "bomber-vs-battleship-equal-cost",
+          "scene": "NPC",
+          "initialAttacker": {
+            "bomber": 33708
+          },
+          "initialDefender": {
+            "battleship": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3400,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 0,
+          "losses": 0,
+          "timeouts": 32,
+          "attackerRemaining": 11793.90625,
+          "defenderRemaining": 3135.1875,
+          "attackerRemainingPct": 34.98844858787231,
+          "defenderRemainingPct": 31.351875,
+          "attackerRemainingUnits": {
+            "bomber": 11793.90625
+          },
+          "defenderRemainingUnits": {
+            "battleship": 3135.1875
+          }
+        },
+        {
+          "id": "rocket-vs-htank-equal-cost",
+          "scene": "NPC",
+          "initialAttacker": {
+            "rocket": 8061
+          },
+          "initialDefender": {
+            "htank": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3400,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            8,
+            8
+          ],
+          "meanEndRound": 8.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 7706.34375,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 95.60034425009304,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "rocket": 7706.34375
+          },
+          "defenderRemainingUnits": {}
+        }
+      ]
+    },
+    {
+      "variant": "attack150-navy-defense80-hp80",
+      "ruleVersion": "balance-v19-technology-20261016",
+      "seeds": 32,
+      "techBothSides": {
+        "defense_tech": 10,
+        "arm_engine": 10,
+        "air_engine": 10,
+        "weapon_range": 10,
+        "attack_tech": 10,
+        "cmd_hp": 10,
+        "fire_density": 10,
+        "nav_engine": 10
+      },
+      "skills": {},
+      "assumptions": "自动前进、无装备、无司令官加成、无城墙；真实战报仅复用兵力，不是精确重放",
+      "unitAttributes": {
+        "armored": {
+          "groundAttack": 27.0,
+          "defense": 33.0,
+          "fortAttack": 54.0,
+          "airAttack": 50.25,
+          "seaAttack": 67.5,
+          "hp": 360.0
+        },
+        "assault": {
+          "groundAttack": 51.0,
+          "defense": 28.0,
+          "fortAttack": 250.5,
+          "airAttack": 45.0,
+          "seaAttack": 97.5,
+          "hp": 200.0
+        },
+        "battleship": {
+          "groundAttack": 136.5,
+          "defense": 96.0,
+          "fortAttack": 162.0,
+          "airAttack": 52.5,
+          "seaAttack": 144.0,
+          "hp": 1040.0
+        },
+        "bomber": {
+          "groundAttack": 84.0,
+          "defense": 22.0,
+          "fortAttack": 643.5,
+          "airAttack": 18.0,
+          "seaAttack": 142.5,
+          "hp": 195.0
+        },
+        "carrier": {
+          "groundAttack": 123.0,
+          "defense": 56.0,
+          "fortAttack": 165.0,
+          "airAttack": 187.5,
+          "seaAttack": 120.0,
+          "hp": 880.0
+        },
+        "destroyer": {
+          "groundAttack": 66.0,
+          "defense": 40.0,
+          "fortAttack": 52.5,
+          "airAttack": 88.5,
+          "seaAttack": 70.5,
+          "hp": 444.0
+        },
+        "fighter": {
+          "groundAttack": 18.0,
+          "defense": 30.0,
+          "fortAttack": 7.5,
+          "airAttack": 96.0,
+          "seaAttack": 112.5,
+          "hp": 150.0
+        },
+        "htank": {
+          "groundAttack": 75.0,
+          "defense": 63.5,
+          "fortAttack": 75.0,
+          "airAttack": 22.5,
+          "seaAttack": 97.5,
+          "hp": 385.0
+        },
+        "infantry": {
+          "groundAttack": 15.0,
+          "defense": 15.0,
+          "fortAttack": 4.5,
+          "airAttack": 7.5,
+          "seaAttack": 7.5,
+          "hp": 120.0
+        },
+        "ltank": {
+          "groundAttack": 49.5,
+          "defense": 53.0,
+          "fortAttack": 67.5,
+          "airAttack": 15.0,
+          "seaAttack": 82.5,
+          "hp": 270.0
+        },
+        "recon_car": {
+          "groundAttack": 27.0,
+          "defense": 33.0,
+          "fortAttack": 54.0,
+          "airAttack": 7.5,
+          "seaAttack": 67.5,
+          "hp": 360.0
+        },
+        "rocket": {
+          "groundAttack": 150.0,
+          "defense": 28.0,
+          "fortAttack": 268.5,
+          "airAttack": 17.25,
+          "seaAttack": 37.5,
+          "hp": 150.0
+        },
+        "scout": {
+          "groundAttack": 1.5,
+          "defense": 13.0,
+          "fortAttack": 1.5,
+          "airAttack": 6.0,
+          "seaAttack": 1.5,
+          "hp": 70.5
+        },
+        "special": {
+          "groundAttack": 45.0,
+          "defense": 5.5,
+          "fortAttack": 282.0,
+          "airAttack": 15.0,
+          "seaAttack": 187.5,
+          "hp": 150.0
+        },
+        "sub": {
+          "groundAttack": 1.5,
+          "defense": 16.0,
+          "fortAttack": 1.5,
+          "airAttack": 1.5,
+          "seaAttack": 99.0,
+          "hp": 316.0
+        },
+        "transport": {
+          "groundAttack": 1.5,
+          "defense": 10.0,
+          "fortAttack": 1.5,
+          "airAttack": 1.5,
+          "seaAttack": 1.5,
+          "hp": 220.0
+        },
+        "truck": {
+          "groundAttack": 3.0,
+          "defense": 5.5,
+          "fortAttack": 1.5,
+          "airAttack": 1.5,
+          "seaAttack": 1.5,
+          "hp": 150.0
+        }
+      },
+      "scenarios": [
+        {
+          "id": "battleship-1.0-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "battleship": 10000
+          },
+          "initialDefender": {
+            "battleship": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3400,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 0,
+          "losses": 0,
+          "timeouts": 32,
+          "attackerRemaining": 4224.6875,
+          "defenderRemaining": 4229.15625,
+          "attackerRemainingPct": 42.246875,
+          "defenderRemainingPct": 42.2915625,
+          "attackerRemainingUnits": {
+            "battleship": 4224.6875
+          },
+          "defenderRemainingUnits": {
+            "battleship": 4229.15625
+          }
+        },
+        {
+          "id": "battleship-1.5-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "battleship": 15000
+          },
+          "initialDefender": {
+            "battleship": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3400,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            33,
+            33
+          ],
+          "meanEndRound": 33.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 11176.3125,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 74.50875,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "battleship": 11176.3125
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "battleship-2.0-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "battleship": 20000
+          },
+          "initialDefender": {
+            "battleship": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3400,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            23,
+            23
+          ],
+          "meanEndRound": 23.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 17316.0625,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 86.5803125,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "battleship": 17316.0625
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "destroyer-1.0-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "destroyer": 10000
+          },
+          "initialDefender": {
+            "destroyer": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 1600,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 0,
+          "losses": 0,
+          "timeouts": 32,
+          "attackerRemaining": 1258.875,
+          "defenderRemaining": 1385.34375,
+          "attackerRemainingPct": 12.58875,
+          "defenderRemainingPct": 13.8534375,
+          "attackerRemainingUnits": {
+            "destroyer": 1258.875
+          },
+          "defenderRemainingUnits": {
+            "destroyer": 1385.34375
+          }
+        },
+        {
+          "id": "destroyer-1.5-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "destroyer": 15000
+          },
+          "initialDefender": {
+            "destroyer": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 1600,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            15,
+            15
+          ],
+          "meanEndRound": 15.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 11151.3125,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 74.34208333333333,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "destroyer": 11151.3125
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "destroyer-2.0-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "destroyer": 20000
+          },
+          "initialDefender": {
+            "destroyer": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 1600,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            11,
+            11
+          ],
+          "meanEndRound": 11.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 17282.21875,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 86.41109375,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "destroyer": 17282.21875
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "sub-1.0-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "sub": 10000
+          },
+          "initialDefender": {
+            "sub": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 1150,
+          "firstCombatRange": [
+            3,
+            3
+          ],
+          "endRoundRange": [
+            13,
+            13
+          ],
+          "meanEndRound": 13.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 2105.8125,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 21.058125,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "sub": 2105.8125
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "sub-1.5-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "sub": 15000
+          },
+          "initialDefender": {
+            "sub": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 1150,
+          "firstCombatRange": [
+            3,
+            3
+          ],
+          "endRoundRange": [
+            6,
+            6
+          ],
+          "meanEndRound": 6.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 11400.96875,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 76.00645833333333,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "sub": 11400.96875
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "sub-2.0-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "sub": 20000
+          },
+          "initialDefender": {
+            "sub": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 1150,
+          "firstCombatRange": [
+            3,
+            3
+          ],
+          "endRoundRange": [
+            5,
+            5
+          ],
+          "meanEndRound": 5.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 17552.84375,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 87.76421875,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "sub": 17552.84375
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "carrier-1.0-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "carrier": 10000
+          },
+          "initialDefender": {
+            "carrier": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3850,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 0,
+          "losses": 0,
+          "timeouts": 32,
+          "attackerRemaining": 2612.3125,
+          "defenderRemaining": 2639.8125,
+          "attackerRemainingPct": 26.123125,
+          "defenderRemainingPct": 26.398125,
+          "attackerRemainingUnits": {
+            "carrier": 2612.3125
+          },
+          "defenderRemainingUnits": {
+            "carrier": 2639.8125
+          }
+        },
+        {
+          "id": "carrier-1.5-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "carrier": 15000
+          },
+          "initialDefender": {
+            "carrier": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3850,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            22,
+            22
+          ],
+          "meanEndRound": 22.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 11167.78125,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 74.451875,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "carrier": 11167.78125
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "carrier-2.0-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "carrier": 20000
+          },
+          "initialDefender": {
+            "carrier": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3850,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            15,
+            15
+          ],
+          "meanEndRound": 15.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 17315.90625,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 86.57953125,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "carrier": 17315.90625
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "mixed-1.0-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "battleship": 10000,
+            "carrier": 7895,
+            "destroyer": 27523,
+            "sub": 42857
+          },
+          "initialDefender": {
+            "carrier": 7895,
+            "battleship": 10000,
+            "destroyer": 27523,
+            "sub": 42857
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3850,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 0,
+          "losses": 0,
+          "timeouts": 32,
+          "attackerRemaining": 20071.1875,
+          "defenderRemaining": 7586.0,
+          "attackerRemainingPct": 22.737114131973946,
+          "defenderRemainingPct": 8.593599546870575,
+          "attackerRemainingUnits": {
+            "battleship": 4472.09375,
+            "carrier": 2063.90625,
+            "destroyer": 4509.75,
+            "sub": 9025.4375
+          },
+          "defenderRemainingUnits": {
+            "battleship": 1312.0,
+            "carrier": 2082.96875,
+            "destroyer": 4191.03125
+          }
+        },
+        {
+          "id": "mixed-1.5-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "battleship": 15000,
+            "carrier": 11843,
+            "destroyer": 41285,
+            "sub": 64286
+          },
+          "initialDefender": {
+            "carrier": 7895,
+            "battleship": 10000,
+            "destroyer": 27523,
+            "sub": 42857
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3850,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            18,
+            18
+          ],
+          "meanEndRound": 18.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 100643.75,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 76.00687993716676,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "battleship": 11952.4375,
+            "carrier": 8945.4375,
+            "destroyer": 30883.125,
+            "sub": 48862.75
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "mixed-2.0-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "battleship": 20000,
+            "carrier": 15790,
+            "destroyer": 55046,
+            "sub": 85714
+          },
+          "initialDefender": {
+            "carrier": 7895,
+            "battleship": 10000,
+            "destroyer": 27523,
+            "sub": 42857
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3850,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            14,
+            14
+          ],
+          "meanEndRound": 14.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 154132.96875,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 87.30272939677145,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "battleship": 17464.875,
+            "carrier": 13670.96875,
+            "destroyer": 47770.46875,
+            "sub": 75226.65625
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "battleship-1.0-PLAYER",
+          "scene": "PLAYER",
+          "initialAttacker": {
+            "battleship": 10000
+          },
+          "initialDefender": {
+            "battleship": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 4250,
+          "firstCombatRange": [
+            4,
+            4
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 0,
+          "losses": 0,
+          "timeouts": 32,
+          "attackerRemaining": 4444.46875,
+          "defenderRemaining": 4448.625,
+          "attackerRemainingPct": 44.4446875,
+          "defenderRemainingPct": 44.48625,
+          "attackerRemainingUnits": {
+            "battleship": 4444.46875
+          },
+          "defenderRemainingUnits": {
+            "battleship": 4448.625
+          }
+        },
+        {
+          "id": "battleship-1.5-PLAYER",
+          "scene": "PLAYER",
+          "initialAttacker": {
+            "battleship": 15000
+          },
+          "initialDefender": {
+            "battleship": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 4250,
+          "firstCombatRange": [
+            4,
+            4
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 11176.3125,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 74.50875,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "battleship": 11176.3125
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "battleship-2.0-PLAYER",
+          "scene": "PLAYER",
+          "initialAttacker": {
+            "battleship": 20000
+          },
+          "initialDefender": {
+            "battleship": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 4250,
+          "firstCombatRange": [
+            4,
+            4
+          ],
+          "endRoundRange": [
+            25,
+            25
+          ],
+          "meanEndRound": 25.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 17316.0625,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 86.5803125,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "battleship": 17316.0625
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "destroyer-1.0-PLAYER",
+          "scene": "PLAYER",
+          "initialAttacker": {
+            "destroyer": 10000
+          },
+          "initialDefender": {
+            "destroyer": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 2450,
+          "firstCombatRange": [
+            3,
+            3
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 0,
+          "losses": 0,
+          "timeouts": 32,
+          "attackerRemaining": 1465.1875,
+          "defenderRemaining": 1341.3125,
+          "attackerRemainingPct": 14.651875,
+          "defenderRemainingPct": 13.413125,
+          "attackerRemainingUnits": {
+            "destroyer": 1465.1875
+          },
+          "defenderRemainingUnits": {
+            "destroyer": 1341.3125
+          }
+        },
+        {
+          "id": "destroyer-1.5-PLAYER",
+          "scene": "PLAYER",
+          "initialAttacker": {
+            "destroyer": 15000
+          },
+          "initialDefender": {
+            "destroyer": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 2450,
+          "firstCombatRange": [
+            3,
+            3
+          ],
+          "endRoundRange": [
+            16,
+            16
+          ],
+          "meanEndRound": 16.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 11201.09375,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 74.67395833333333,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "destroyer": 11201.09375
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "destroyer-2.0-PLAYER",
+          "scene": "PLAYER",
+          "initialAttacker": {
+            "destroyer": 20000
+          },
+          "initialDefender": {
+            "destroyer": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 2450,
+          "firstCombatRange": [
+            3,
+            3
+          ],
+          "endRoundRange": [
+            12,
+            12
+          ],
+          "meanEndRound": 12.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 17349.90625,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 86.74953125,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "destroyer": 17349.90625
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "sub-1.0-PLAYER",
+          "scene": "PLAYER",
+          "initialAttacker": {
+            "sub": 10000
+          },
+          "initialDefender": {
+            "sub": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 2000,
+          "firstCombatRange": [
+            5,
+            5
+          ],
+          "endRoundRange": [
+            15,
+            15
+          ],
+          "meanEndRound": 15.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 2105.8125,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 21.058125,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "sub": 2105.8125
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "sub-1.5-PLAYER",
+          "scene": "PLAYER",
+          "initialAttacker": {
+            "sub": 15000
+          },
+          "initialDefender": {
+            "sub": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 2000,
+          "firstCombatRange": [
+            5,
+            5
+          ],
+          "endRoundRange": [
+            8,
+            8
+          ],
+          "meanEndRound": 8.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 11400.96875,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 76.00645833333333,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "sub": 11400.96875
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "sub-2.0-PLAYER",
+          "scene": "PLAYER",
+          "initialAttacker": {
+            "sub": 20000
+          },
+          "initialDefender": {
+            "sub": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 2000,
+          "firstCombatRange": [
+            5,
+            5
+          ],
+          "endRoundRange": [
+            7,
+            7
+          ],
+          "meanEndRound": 7.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 17552.84375,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 87.76421875,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "sub": 17552.84375
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "carrier-1.0-PLAYER",
+          "scene": "PLAYER",
+          "initialAttacker": {
+            "carrier": 10000
+          },
+          "initialDefender": {
+            "carrier": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 4700,
+          "firstCombatRange": [
+            4,
+            4
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 0,
+          "losses": 0,
+          "timeouts": 32,
+          "attackerRemaining": 2828.375,
+          "defenderRemaining": 2853.5,
+          "attackerRemainingPct": 28.28375,
+          "defenderRemainingPct": 28.535,
+          "attackerRemainingUnits": {
+            "carrier": 2828.375
+          },
+          "defenderRemainingUnits": {
+            "carrier": 2853.5
+          }
+        },
+        {
+          "id": "carrier-1.5-PLAYER",
+          "scene": "PLAYER",
+          "initialAttacker": {
+            "carrier": 15000
+          },
+          "initialDefender": {
+            "carrier": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 4700,
+          "firstCombatRange": [
+            4,
+            4
+          ],
+          "endRoundRange": [
+            24,
+            24
+          ],
+          "meanEndRound": 24.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 11167.78125,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 74.451875,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "carrier": 11167.78125
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "carrier-2.0-PLAYER",
+          "scene": "PLAYER",
+          "initialAttacker": {
+            "carrier": 20000
+          },
+          "initialDefender": {
+            "carrier": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 4700,
+          "firstCombatRange": [
+            4,
+            4
+          ],
+          "endRoundRange": [
+            17,
+            17
+          ],
+          "meanEndRound": 17.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 17315.90625,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 86.57953125,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "carrier": 17315.90625
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "mixed-1.0-PLAYER",
+          "scene": "PLAYER",
+          "initialAttacker": {
+            "battleship": 10000,
+            "carrier": 7895,
+            "destroyer": 27523,
+            "sub": 42857
+          },
+          "initialDefender": {
+            "carrier": 7895,
+            "battleship": 10000,
+            "destroyer": 27523,
+            "sub": 42857
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 4700,
+          "firstCombatRange": [
+            3,
+            3
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 0,
+          "losses": 0,
+          "timeouts": 32,
+          "attackerRemaining": 20042.9375,
+          "defenderRemaining": 8617.03125,
+          "attackerRemainingPct": 22.70511186632682,
+          "defenderRemainingPct": 9.761576040781648,
+          "attackerRemainingUnits": {
+            "battleship": 4437.40625,
+            "carrier": 2233.6875,
+            "destroyer": 4345.90625,
+            "sub": 9025.9375
+          },
+          "defenderRemainingUnits": {
+            "battleship": 1745.75,
+            "carrier": 2251.96875,
+            "destroyer": 4619.3125
+          }
+        },
+        {
+          "id": "mixed-1.5-PLAYER",
+          "scene": "PLAYER",
+          "initialAttacker": {
+            "battleship": 15000,
+            "carrier": 11843,
+            "destroyer": 41285,
+            "sub": 64286
+          },
+          "initialDefender": {
+            "carrier": 7895,
+            "battleship": 10000,
+            "destroyer": 27523,
+            "sub": 42857
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 4700,
+          "firstCombatRange": [
+            3,
+            3
+          ],
+          "endRoundRange": [
+            19,
+            19
+          ],
+          "meanEndRound": 19.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 100311.8125,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 75.75619836271089,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "battleship": 11824.25,
+            "carrier": 8959.8125,
+            "destroyer": 30665.21875,
+            "sub": 48862.53125
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "mixed-2.0-PLAYER",
+          "scene": "PLAYER",
+          "initialAttacker": {
+            "battleship": 20000,
+            "carrier": 15790,
+            "destroyer": 55046,
+            "sub": 85714
+          },
+          "initialDefender": {
+            "carrier": 7895,
+            "battleship": 10000,
+            "destroyer": 27523,
+            "sub": 42857
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 4700,
+          "firstCombatRange": [
+            3,
+            3
+          ],
+          "endRoundRange": [
+            15,
+            15
+          ],
+          "meanEndRound": 15.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 153835.125,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 87.13402718776551,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "battleship": 17349.40625,
+            "carrier": 13712.15625,
+            "destroyer": 47546.6875,
+            "sub": 75226.875
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "battleship-equal-officers100",
+          "scene": "NPC",
+          "initialAttacker": {
+            "battleship": 10000
+          },
+          "initialDefender": {
+            "battleship": 10000
+          },
+          "commanders": [
+            100,
+            100,
+            100,
+            100
+          ],
+          "distance": 3400,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 0,
+          "losses": 0,
+          "timeouts": 32,
+          "attackerRemaining": 4141.78125,
+          "defenderRemaining": 4147.1875,
+          "attackerRemainingPct": 41.4178125,
+          "defenderRemainingPct": 41.471875,
+          "attackerRemainingUnits": {
+            "battleship": 4141.78125
+          },
+          "defenderRemainingUnits": {
+            "battleship": 4147.1875
+          }
+        },
+        {
+          "id": "sub-vs-battleship-equal-cost",
+          "scene": "NPC",
+          "initialAttacker": {
+            "sub": 42857
+          },
+          "initialDefender": {
+            "battleship": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3400,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            17,
+            17
+          ],
+          "meanEndRound": 17.0,
+          "wins": 0,
+          "losses": 32,
+          "timeouts": 0,
+          "attackerRemaining": 0.0,
+          "defenderRemaining": 7929.8125,
+          "attackerRemainingPct": 0.0,
+          "defenderRemainingPct": 79.298125,
+          "attackerRemainingUnits": {},
+          "defenderRemainingUnits": {
+            "battleship": 7929.8125
+          }
+        },
+        {
+          "id": "destroyer-vs-sub-equal-cost",
+          "scene": "NPC",
+          "initialAttacker": {
+            "destroyer": 27523
+          },
+          "initialDefender": {
+            "sub": 42857
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 1600,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            24,
+            24
+          ],
+          "meanEndRound": 24.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 4943.5625,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 17.961568506340154,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "destroyer": 4943.5625
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "composition-3725-no-officer",
+          "scene": "NPC",
+          "initialAttacker": {
+            "carrier": 5000,
+            "battleship": 10000
+          },
+          "initialDefender": {
+            "carrier": 660,
+            "bomber": 8400,
+            "destroyer": 14280,
+            "battleship": 5320,
+            "fighter": 16800,
+            "sub": 36400
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3850,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            18,
+            18
+          ],
+          "meanEndRound": 18.0,
+          "wins": 0,
+          "losses": 32,
+          "timeouts": 0,
+          "attackerRemaining": 0.0,
+          "defenderRemaining": 66662.8125,
+          "attackerRemainingPct": 0.0,
+          "defenderRemainingPct": 81.43514842413877,
+          "attackerRemainingUnits": {},
+          "defenderRemainingUnits": {
+            "battleship": 2259.65625,
+            "bomber": 312.875,
+            "destroyer": 14280.0,
+            "fighter": 13410.28125,
+            "sub": 36400.0
+          }
+        },
+        {
+          "id": "composition-3725-assumed-officer219",
+          "scene": "NPC",
+          "initialAttacker": {
+            "carrier": 5000,
+            "battleship": 10000
+          },
+          "initialDefender": {
+            "carrier": 660,
+            "bomber": 8400,
+            "destroyer": 14280,
+            "battleship": 5320,
+            "fighter": 16800,
+            "sub": 36400
+          },
+          "commanders": [
+            219,
+            75,
+            0,
+            0
+          ],
+          "distance": 3850,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            30,
+            30
+          ],
+          "meanEndRound": 30.0,
+          "wins": 0,
+          "losses": 32,
+          "timeouts": 0,
+          "attackerRemaining": 0.0,
+          "defenderRemaining": 25389.40625,
+          "attackerRemainingPct": 0.0,
+          "defenderRemainingPct": 31.015644087466406,
+          "attackerRemainingUnits": {},
+          "defenderRemainingUnits": {
+            "sub": 25389.40625
+          }
+        },
+        {
+          "id": "composition-3722-no-officer",
+          "scene": "NPC",
+          "initialAttacker": {
+            "carrier": 5000,
+            "battleship": 10000
+          },
+          "initialDefender": {
+            "carrier": 540,
+            "bomber": 6800,
+            "destroyer": 13056,
+            "battleship": 4760,
+            "fighter": 13600,
+            "sub": 34000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3850,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            20,
+            20
+          ],
+          "meanEndRound": 20.0,
+          "wins": 0,
+          "losses": 32,
+          "timeouts": 0,
+          "attackerRemaining": 0.0,
+          "defenderRemaining": 56368.15625,
+          "attackerRemainingPct": 0.0,
+          "defenderRemainingPct": 77.47561197701907,
+          "attackerRemainingUnits": {},
+          "defenderRemainingUnits": {
+            "battleship": 1127.8125,
+            "destroyer": 12811.875,
+            "fighter": 8428.46875,
+            "sub": 34000.0
+          }
+        },
+        {
+          "id": "composition-3722-assumed-officer219",
+          "scene": "NPC",
+          "initialAttacker": {
+            "carrier": 5000,
+            "battleship": 10000
+          },
+          "initialDefender": {
+            "carrier": 540,
+            "bomber": 6800,
+            "destroyer": 13056,
+            "battleship": 4760,
+            "fighter": 13600,
+            "sub": 34000
+          },
+          "commanders": [
+            219,
+            75,
+            0,
+            0
+          ],
+          "distance": 3850,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            29,
+            29
+          ],
+          "meanEndRound": 29.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 6499.5,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 43.33,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "battleship": 1512.5,
+            "carrier": 4987.0
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "htank-1.0-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "htank": 10000
+          },
+          "initialDefender": {
+            "htank": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 1480,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            35,
+            35
+          ],
+          "meanEndRound": 35.0,
+          "wins": 0,
+          "losses": 0,
+          "timeouts": 32,
+          "attackerRemaining": 784.90625,
+          "defenderRemaining": 763.375,
+          "attackerRemainingPct": 7.8490625,
+          "defenderRemainingPct": 7.63375,
+          "attackerRemainingUnits": {
+            "htank": 784.90625
+          },
+          "defenderRemainingUnits": {
+            "htank": 763.375
+          }
+        },
+        {
+          "id": "landmixed-1.0-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "armored": 23421,
+            "assault": 23421,
+            "htank": 10000,
+            "rocket": 8061
+          },
+          "initialDefender": {
+            "htank": 10000,
+            "rocket": 8061,
+            "assault": 23421,
+            "armored": 23421
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3400,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            16,
+            16
+          ],
+          "meanEndRound": 16.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 33916.125,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 52.256636827265304,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "armored": 12487.84375,
+            "assault": 12690.78125,
+            "htank": 4950.1875,
+            "rocket": 3787.3125
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "htank-1.5-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "htank": 15000
+          },
+          "initialDefender": {
+            "htank": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 1480,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            12,
+            12
+          ],
+          "meanEndRound": 12.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 11166.9375,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 74.44625,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "htank": 11166.9375
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "landmixed-1.5-NPC",
+          "scene": "NPC",
+          "initialAttacker": {
+            "armored": 35132,
+            "assault": 35132,
+            "htank": 15000,
+            "rocket": 12092
+          },
+          "initialDefender": {
+            "htank": 10000,
+            "rocket": 8061,
+            "assault": 23421,
+            "armored": 23421
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3400,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            9,
+            9
+          ],
+          "meanEndRound": 9.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 83217.46875,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 85.47749368297794,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "armored": 25885.9375,
+            "assault": 33476.03125,
+            "htank": 13902.21875,
+            "rocket": 9953.28125
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "fighter-vs-battleship-equal-cost",
+          "scene": "NPC",
+          "initialAttacker": {
+            "fighter": 55556
+          },
+          "initialDefender": {
+            "battleship": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3400,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            15,
+            15
+          ],
+          "meanEndRound": 15.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 42856.75,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 77.14153286773706,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "fighter": 42856.75
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "bomber-vs-battleship-equal-cost",
+          "scene": "NPC",
+          "initialAttacker": {
+            "bomber": 33708
+          },
+          "initialDefender": {
+            "battleship": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3400,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            22,
+            22
+          ],
+          "meanEndRound": 22.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 16888.34375,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 50.10188605078913,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "bomber": 16888.34375
+          },
+          "defenderRemainingUnits": {}
+        },
+        {
+          "id": "rocket-vs-htank-equal-cost",
+          "scene": "NPC",
+          "initialAttacker": {
+            "rocket": 8061
+          },
+          "initialDefender": {
+            "htank": 10000
+          },
+          "commanders": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "distance": 3400,
+          "firstCombatRange": [
+            2,
+            2
+          ],
+          "endRoundRange": [
+            6,
+            6
+          ],
+          "meanEndRound": 6.0,
+          "wins": 32,
+          "losses": 0,
+          "timeouts": 0,
+          "attackerRemaining": 8061.0,
+          "defenderRemaining": 0.0,
+          "attackerRemainingPct": 100.0,
+          "defenderRemainingPct": 0.0,
+          "attackerRemainingUnits": {
+            "rocket": 8061.0
+          },
+          "defenderRemainingUnits": {}
+        }
+      ]
+    }
+  ]
+}

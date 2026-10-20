@@ -5,7 +5,7 @@ import java.util.Set;
 
 /** 四类攻击决定能否交战和基础火力；倍率只描述同一攻击领域内的专项克制。 */
 public final class BattleRules {
-    public static final String VERSION = "balance-v19-technology-20261016";
+    public static final String VERSION = "balance-v20-naval-capital-ships-20261019";
     /** 演习共用新移速与玩家距离；规则变更后旧校准不得复用。 */
     public static final String PRACTICE_VERSION = VERSION;
     private static final Set<String> ARTILLERY = Set.of("assault", "rocket", "howitzer", "antitank", "flak");

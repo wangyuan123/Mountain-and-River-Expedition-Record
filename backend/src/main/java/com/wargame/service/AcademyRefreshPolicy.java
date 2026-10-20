@@ -8,7 +8,7 @@ import java.time.ZoneId;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** 军校每轮30次、用满冷却一小时；每日100次按北京时间统计。 */
+/** 军校每轮30次、用满冷却一小时；每日100次按游戏时间的北京时间统计，停服顺延。 */
 public final class AcademyRefreshPolicy {
     public static final int ROUND_LIMIT = 30;
     public static final int DAILY_LIMIT = 100;

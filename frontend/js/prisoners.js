@@ -65,6 +65,7 @@ window.Game = window.Game || {};
         self.quantities[unit.unit] = qty;
         h += '<div class="prisoner-unit"><div class="prisoner-unit-head"><b>' + esc(def.name) + '</b><strong>' + G.fmt(unit.count) + '</strong></div>' +
           '<div class="desc">黄金单价 ' + G.fmt(unit.goldPerUnit) + (unit.unavailableReason ? ' · ' + esc(unit.unavailableReason) : '') + '</div>' +
+          (G.Prerequisites ? G.Prerequisites.recruitmentHtml(unit.unit, unit.unlock) : '') +
           '<div class="prisoner-controls"><label>数量 <input class="qty" type="number" min="1" max="' + unit.count + '" value="' + (Number.isFinite(qty) ? qty : '') + '"' + (self.pending || self.attempt ? ' disabled' : '') + ' oninput="Game.Prisoners.changeQuantity(\'' + unit.unit + '\',this.value)"></label>' +
           '<div class="btn-row" id="prisoner-actions-' + unit.unit + '">' + self.buttons(unit, qty) + '</div></div></div>';
       });

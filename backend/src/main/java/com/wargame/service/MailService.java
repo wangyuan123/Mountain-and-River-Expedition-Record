@@ -44,6 +44,8 @@ public class MailService {
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
 
+    @org.springframework.beans.factory.annotation.Autowired private UnitUnlockService unitUnlocks;
+
     private static final Logger log = LoggerFactory.getLogger(MailService.class);
 
     /** 允许的附件资源类型 - 与 Resources 字段对齐 */
@@ -229,6 +231,7 @@ public class MailService {
      */
     @Transactional
     public Map<String, Object> claimAttach(Long playerId, Long mailId) {
+        accounts.lockPlayer(playerId);
         Mail mail = mailRepository.findById(mailId)
                 .orElseThrow(() -> new IllegalArgumentException("邮件不存在"));
         if (!mail.getToPlayerId().equals(playerId)) {
@@ -267,6 +270,14 @@ public class MailService {
             }
         }
 
+        // 整封附件先完成资格检查，未达标时资源、部队与待领取标记全部保留。
+        List<UnitUnlockService.Result> blocked = armyDeltas.keySet().stream()
+                .map(unit -> unitUnlocks.evaluate(playerId, cityScope.slot(playerId), unit, true))
+                .filter(unlock -> !unlock.eligible()).toList();
+        if (!blocked.isEmpty()) {
+            return Map.of("success", false, "message", blocked.stream().map(unitUnlocks::message).reduce((a, b) -> a + "；" + b).orElse(""),
+                    "unlocks", blocked, "missingPrerequisites", blocked.stream().flatMap(u -> u.missing().stream()).toList());
+        }
         if (!resList.isEmpty()) {
             applyResources(playerId, resList, +1);
         }
@@ -349,14 +360,14 @@ public class MailService {
 
         Mail announce = new Mail();
         announce.setFromPlayerId(null);
-        announce.setFromName("盟军总指挥部");
+        announce.setFromName("远征军司令部");
         announce.setToPlayerId(playerId);
         announce.setToName(p.getUsername());
         announce.setType("alliance");
         announce.setIsSystem(true);
-        announce.setSubject("战时通告：东线战事升级");
-        announce.setBody("各位指挥官，东线斯大林格勒方向战事告急，盟军总指挥部号召各部加快战备建设，"
-                + "优先发展钢铁与石油产能。同时请保持对资源点的监控，避免被敌军抢占。");
+        announce.setSubject("战区通告：滇缅战备指引");
+        announce.setBody("指挥官，您已抵达滇缅战区，将与英美盟军协同对日作战，共同守护滇缅公路这条国际援华通道。"
+                + "请先建设前进基地，保障粮食、钢铁与石油供应，再逐步训练部队、侦察周边敌情，为后续协同作战做好准备。");
         announce.setAttachJson("[]");
         announce.setIsRead(true);
         announce.setIsClaimed(true);

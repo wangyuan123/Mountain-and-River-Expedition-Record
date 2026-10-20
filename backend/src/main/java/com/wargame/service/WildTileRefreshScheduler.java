@@ -15,7 +15,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/** 耗尽且废弃的野地、已击败据点先从地图消失，在北京时间固定刷新点迁移至空闲位置。 */
+/** 耗尽且废弃的野地、已击败据点按游戏时间每三小时刷新，停服期间暂停。 */
 @Component
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "game.scheduling.enabled", havingValue = "true", matchIfMissing = true)
@@ -29,11 +29,24 @@ public class WildTileRefreshScheduler {
     private final MarchRepository marches;
     private final WorldTerrainService terrain;
     private final LandBanditPopulationService landBandits;
+    @org.springframework.beans.factory.annotation.Autowired private org.springframework.jdbc.core.JdbcTemplate jdbc;
 
-    /** 北京时间每天 0、3、6、9、12、15、18、21 点刷新；24 点即次日 0 点。 */
-    @Scheduled(cron = "0 0 0,3,6,9,12,15,18,21 * * *", zone = "Asia/Shanghai")
+    /** 周期检查与世界刷新同事务，重启不提前刷新，多实例不重复刷新。 */
+    @Scheduled(fixedDelay = 1_000)
     @Transactional
     public void refreshWorldTargets() {
+        // 保留原北京时间 0、3、6…点边界，只将时钟切换为停服会暂停的游戏时间。
+        long period = (com.wargame.util.GameClock.now() + 28_800_000L) / 10_800_000L;
+        var rows = jdbc.queryForList("SELECT last_period FROM game_schedule WHERE task_key = 'world-refresh' FOR UPDATE", Long.class);
+        if (rows.isEmpty()) {
+            jdbc.update("INSERT INTO game_schedule (task_key, last_period) VALUES ('world-refresh', ?)", period);
+            return;
+        }
+        long previous = rows.get(0);
+        if (period <= previous) return;
+        jdbc.update("UPDATE game_schedule SET last_period = ? WHERE task_key = 'world-refresh'", period);
+        // 首次启用只建立周期基线，不将部署前已经经过的刷新点补算。
+        if (previous == 0) return;
         refreshDepletedWilds();
         // 先迁移已击败目标，再检查等级缺额，避免把等待刷新的目标当成缺失重复补点。
         for (var world : worlds.findAll()) landBandits.ensure(world.getId());

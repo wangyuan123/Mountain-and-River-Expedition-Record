@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="blue-white-classic">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <base href="../">
+  <title>兵种统一装备 · 主题与配装抽屉预览</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/themes.css">
+  <link rel="stylesheet" href="css/classic-home.css">
+  <link rel="stylesheet" href="css/unit-equipment.css">
+  <style>
+    body { margin: 0; padding: 12px; }
+    .preview-bar {
+      max-width: 600px;
+      margin: 0 auto 16px;
+      padding: 10px 14px;
+      background: var(--surface, #fff);
+      border: 1px solid var(--line, #cbd5e1);
+      border-radius: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 13px;
+    }
+    .preview-bar select, .preview-bar button {
+      padding: 5px 10px;
+      font-size: 13px;
+      border-radius: 4px;
+      border: 1px solid var(--line, #cbd5e1);
+      background: var(--surface, #fff);
+      color: var(--ink, #1e293b);
+      cursor: pointer;
+    }
+    #screen {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 16px;
+      background: var(--surface, #fff);
+      border: 1px solid var(--line, #cbd5e1);
+      border-radius: 8px;
+      min-height: 400px;
+    }
+  </style>
+</head>
+<body>
+  <div class="preview-bar">
+    <div><strong>兵种统一装备</strong> · 主题适配预览</div>
+    <div>
+      <label for="themeSelect">切换主题：</label>
+      <select id="themeSelect">
+        <option value="blue-white-classic">经典家园蓝白（推荐）</option>
+        <option value="blue-white">晴空蓝白文字风</option>
+        <option value="paper">战术公文沙盘风（米白）</option>
+        <option value="dark">战术夜航终端黑（冷黑）</option>
+      </select>
+      <button id="openBtn" type="button" class="btn ok">打开配置装备抽屉</button>
+    </div>
+  </div>
+  <div id="screen">
+    <div id="summaryArea"></div>
+  </div>
+  <div id="toast"></div>
+
+  <script src="js/constants.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/unit-equipment.js"></script>
+  <script>
+    var G = window.Game = window.Game || {};
+    G.toast = function (msg) {
+      var t = document.getElementById('toast');
+      if (t) { t.textContent = msg; t.style.display = 'block'; setTimeout(function () { t.style.display = 'none'; }, 2000); }
+    };
+    G.Core = {
+      state: {
+        tech: { attack_tech: 2, defense_tech: 3, cmd_hp: 2, unit_refit: 3 },
+        resources: { steel: 50000, oil: 20000, rare: 5000 },
+        items: { ue_infantry_helmet: 1, ue_infantry_vest: 0, ue_infantry_lmg: 1, ue_infantry_radio: 1 },
+        unitEquipment: {
+          loadouts: { infantry: { protection: 'ue_infantry_helmet' } },
+          versions: { infantry: 1 },
+          facilities: { infantry: 4 },
+          queue: []
+        }
+      },
+      render: function () {
+        var el = document.getElementById('summaryArea');
+        if (el) el.innerHTML = '<h3>兵种卡片内装备摘要：</h3>' + G.UnitEquipment.summary('infantry', true);
+      }
+    };
+    G.API = {
+      client: { cityId: 1 },
+      getGameState: function () { return Promise.resolve(G.Core.state); },
+      applyState: function () {},
+      saveUnitLoadout: function (unit, draft, version) {
+        G.Core.state.unitEquipment.loadouts[unit] = Object.assign({}, draft);
+        G.Core.state.unitEquipment.versions[unit] = version + 1;
+        return Promise.resolve({ success: true, message: '配装方案已保存' });
+      },
+      manufactureUnitEquipment: function (key) {
+        return Promise.resolve({ success: true, message: '制造已开始' });
+      },
+      cancelUnitEquipmentOrder: function (id) {
+        return Promise.resolve({ success: true, message: '已取消制造' });
+      }
+    };
+
+    var themeSel = document.getElementById('themeSelect');
+    themeSel.addEventListener('change', function () {
+      var t = themeSel.value;
+      document.documentElement.setAttribute('data-theme', t);
+      document.body.setAttribute('data-theme', t);
+    });
+
+    document.getElementById('openBtn').addEventListener('click', function () {
+      G.UnitEquipment.open('infantry');
+    });
+
+    G.Core.render();
+    // 默认直接打开抽屉便于视觉检查
+    setTimeout(function () {
+      G.UnitEquipment.open('infantry');
+    }, 200);
+  </script>
+</body>
+</html>

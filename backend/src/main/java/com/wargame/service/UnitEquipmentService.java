@@ -1,5 +1,6 @@
 package com.wargame.service;
 
+import com.wargame.util.GameClock;
 import com.wargame.model.constants.*;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
@@ -21,6 +22,7 @@ public class UnitEquipmentService {
     private final TechnologyRepository technologies;
     private final AccountService accounts;
     private final CityScope scope;
+    private final UnitUnlockService unitUnlocks;
 
     public Map<String, Map<String, String>> loadouts(Long player) {
         Map<String, Map<String, String>> result = new LinkedHashMap<>();
@@ -69,7 +71,7 @@ public class UnitEquipmentService {
             if (Objects.equals(old.get(e.getKey()), e.getValue())) continue;
             PlayerItem item = items.findByPlayerIdAndItemKey(player, e.getValue()).orElseThrow(() -> new IllegalArgumentException("装备库存不足"));
             if (item.getCount() < 1) throw new IllegalArgumentException("装备库存不足");
-            item.setCount(item.getCount() - 1); item.setUpdatedAt(System.currentTimeMillis()); items.save(item);
+            item.setCount(item.getCount() - 1); item.setUpdatedAt(GameClock.now()); items.save(item);
         }
         old.forEach((slot, key) -> { if (!Objects.equals(next.get(slot), key)) grant(player, key); });
         if (row == null) { row = new UnitLoadout(); row.setPlayerId(player); row.setUnitType(unit); }
@@ -80,14 +82,17 @@ public class UnitEquipmentService {
     @Transactional
     public void manufacture(Long player, String key) {
         accounts.lockPlayer(player);
-        long now = System.currentTimeMillis();
+        long now = GameClock.now();
         complete(player, now);
         UnitEquipmentDef d = UnitEquipmentDef.ITEMS.get(key);
         if (d == null) throw new IllegalArgumentException("装备配方不存在");
+        // 新制造与征召使用相同资格；已入库装备与旧订单不重新校验。
+        var unlock = unitUnlocks.evaluate(player, scope.slot(player), d.unit(), true);
+        if (!unlock.eligible()) throw new IllegalArgumentException(unitUnlocks.message(unlock));
         int tech = technologies.findByPlayerIdAndType(player, "unit_refit").stream().mapToInt(t -> Objects.requireNonNullElse(t.getLevel(), 0)).max().orElse(0);
         int factory = facilityLevel(player, d.unit());
         if (tech < d.level()) throw new IllegalArgumentException("需武器装备 Lv." + d.level());
-        if (factory < d.level() * 2) throw new IllegalArgumentException("本城对应生产设施需 Lv." + d.level() * 2);
+        if (factory < d.facilityLevel()) throw new IllegalArgumentException("本城对应生产设施需 Lv." + d.facilityLevel());
         List<UnitEquipmentOrder> lane = orders.findByPlayerIdAndCitySlotOrderByStartAtAscIdAsc(player, scope.slot(player));
         if (lane.size() >= 100) throw new IllegalArgumentException("装备制造队列已满");
         Resources res = resources.findByPlayerIdAndCitySlot(player, scope.slot(player)).orElseThrow();
@@ -95,6 +100,7 @@ public class UnitEquipmentService {
         res.setSteel(res.getSteel() - d.cost().get("steel")); res.setOil(res.getOil() - d.cost().get("oil")); res.setRare(res.getRare() - d.cost().get("rare")); resources.save(res);
         long start = lane.isEmpty() ? now : Math.max(now, lane.get(lane.size() - 1).getEndAt());
         UnitEquipmentOrder order = new UnitEquipmentOrder(); order.setPlayerId(player); order.setCitySlot(scope.slot(player));
+        order.setUnlockRuleVersion(unlock.ruleVersion()); order.setUnlockRequirements(unlock.snapshot());
         order.setItemKey(key); order.setCost(JsonUtil.toJson(d.cost())); order.setStartAt(start);
         order.setEndAt(start + (long) Math.ceil(d.seconds() * 1000 / (1 + .05 * (factory - 1)))); orders.save(order);
     }
@@ -102,7 +108,7 @@ public class UnitEquipmentService {
     @Transactional
     public void cancel(Long player, Long id) {
         accounts.lockPlayer(player);
-        long now = System.currentTimeMillis(); complete(player, now);
+        long now = GameClock.now(); complete(player, now);
         UnitEquipmentOrder order = orders.findById(id).filter(o -> player.equals(o.getPlayerId()) && o.getCitySlot() == scope.slot(player)).orElseThrow(() -> new IllegalArgumentException("制造订单不存在"));
         double refund = order.getStartAt() > now ? 1 : .5;
         Map<String, Integer> cost = JsonUtil.parseIntMap(order.getCost());
@@ -143,11 +149,11 @@ public class UnitEquipmentService {
         PlayerItem item = items.findByPlayerIdAndItemKey(player, key).orElseGet(() -> {
             PlayerItem value = new PlayerItem(); value.setPlayerId(player); value.setItemKey(key); value.setCount(0); return value;
         });
-        item.setCount(item.getCount() + 1); item.setUpdatedAt(System.currentTimeMillis()); items.save(item);
+        item.setCount(item.getCount() + 1); item.setUpdatedAt(GameClock.now()); items.save(item);
     }
 
     private int facilityLevel(Long player, String unit) {
-        return buildings.findByPlayerIdAndCitySlotAndType(player, scope.slot(player), UnitDef.UNITS.get(unit).build()).stream().mapToInt(b -> Objects.requireNonNullElse(b.getLevel(), 0)).max().orElse(0);
+        return unitUnlocks.availableBuildingLevel(player, scope.slot(player), UnitDef.UNITS.get(unit).build());
     }
 
     /** 旧版客户端存档不具有制造凭证，仅清理城市订单，不从 JSON 生成物品。 */

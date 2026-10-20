@@ -27,6 +27,12 @@ class UnitEquipmentServiceTest extends BaseServiceTest {
     private void item(Long player, String key) { PlayerItem i = new PlayerItem(); i.setPlayerId(player); i.setItemKey(key); i.setCount(1); i.setUpdatedAt(1L); items.save(i); }
     private int inventory(Long player, String key) { return items.findByPlayerIdAndItemKey(player, key).map(PlayerItem::getCount).orElse(0); }
     private void tech(Long player, int level) { Technology t = new Technology(); t.setPlayerId(player); t.setType("unit_refit"); t.setLevel(level); technologyRepository.save(t); }
+    private void legacyNavalCity(Long playerId) {
+        WorldMap world = createTestWorld();
+        PlayerCity city = new PlayerCity(); city.setWorldId(world.getId()); city.setOwnerId(playerId);
+        city.setCitySlot(0); city.setName("旧港城"); city.setX(10); city.setY(10); city.setLegacyNaval(true);
+        playerCityRepository.save(city);
+    }
     @Test void oneEquipmentAppliesAcrossCitiesWithoutTroopCountAndSurvivesAnnihilation() {
         Player p = createTestPlayer(); item(p.getId(), "ue_infantry_helmet");
         equipment.save(p.getId(), "infantry", Map.of("protection", "ue_infantry_helmet"), 0L);
@@ -54,7 +60,7 @@ class UnitEquipmentServiceTest extends BaseServiceTest {
         assertThrows(IllegalArgumentException.class, () -> equipment.save(p.getId(), "motor", Map.of(), null));
     }
     @Test void cityLaneManufacturesOnceAndRefundsOnlyFrozenCost() {
-        Player p = createTestPlayer(); tech(p.getId(), 2); createBuilding(p.getId(), "factory", 4);
+        Player p = createTestPlayer(); tech(p.getId(), 3); createBuilding(p.getId(), "factory", 4);
         giveResources(p.getId(), 100000, 100000, 100000, 100000, 100000);
         equipment.manufacture(p.getId(), "ue_infantry_helmet"); equipment.manufacture(p.getId(), "ue_infantry_lmg");
         var lane = orders.findByPlayerIdAndCitySlotOrderByStartAtAscIdAsc(p.getId(), 0);
@@ -68,18 +74,36 @@ class UnitEquipmentServiceTest extends BaseServiceTest {
         equipment.complete(p.getId(), System.currentTimeMillis()); equipment.complete(p.getId(), System.currentTimeMillis());
         assertEquals(1, inventory(p.getId(), "ue_infantry_helmet")); assertTrue(orders.findByPlayerId(p.getId()).isEmpty());
     }
-    @Test void scoutEquipmentRequiresAirportInsteadOfFactory() {
-        Player p = createTestPlayer(); tech(p.getId(), 1); createBuilding(p.getId(), "factory", 10);
+    @Test void scoutEquipmentRequiresAllScoutProductionPrerequisites() {
+        Player p = createTestPlayer(); tech(p.getId(), 2); createBuilding(p.getId(), "factory", 10);
         giveResources(p.getId(), 100000, 100000, 100000, 100000, 100000);
         assertThrows(IllegalArgumentException.class, () -> equipment.manufacture(p.getId(), "ue_scout_armor"));
         assertTrue(orders.findByPlayerId(p.getId()).isEmpty());
         assertEquals(100000, getResources(p.getId()).getSteel());
         assertEquals(0, ((Map<?, ?>) equipment.state(p.getId()).get("facilities")).get("scout"));
-        createBuilding(p.getId(), "airport", 2);
+        createBuilding(p.getId(), "airport", 2); createBuilding(p.getId(), "apron", 2);
+        createTechnology(p.getId(), "air_engine", 1); createTechnology(p.getId(), "recon_level", 2);
         equipment.manufacture(p.getId(), "ue_scout_armor");
         assertEquals(1, orders.findByPlayerId(p.getId()).size());
         assertEquals(2, ((Map<?, ?>) equipment.state(p.getId()).get("facilities")).get("scout"));
     }
+    @Test void highestRecipeRequiresTechTenAndFacilityTenInsteadOfTwenty() {
+        Player p = createTestPlayer(); tech(p.getId(), 9);
+        legacyNavalCity(p.getId());
+        Building facility = createBuilding(p.getId(), "shipyard", 10);
+        createBuilding(p.getId(), "port", 6);
+        createTechnology(p.getId(), "nav_engine", 5); createTechnology(p.getId(), "weapon_range", 4); createTechnology(p.getId(), "log_food", 4);
+        giveResources(p.getId(), 1000000, 1000000, 1000000, 1000000, 1000000);
+        assertThrows(IllegalArgumentException.class, () -> equipment.manufacture(p.getId(), "ue_destroyer_firecontrol"));
+        var technology = technologyRepository.findByPlayerIdAndType(p.getId(), "unit_refit").get(0);
+        technology.setLevel(10); technologyRepository.saveAndFlush(technology);
+        facility.setLevel(9); buildingRepository.saveAndFlush(facility);
+        assertThrows(IllegalArgumentException.class, () -> equipment.manufacture(p.getId(), "ue_destroyer_firecontrol"));
+        facility.setLevel(10); buildingRepository.saveAndFlush(facility);
+        equipment.manufacture(p.getId(), "ue_destroyer_firecontrol");
+        assertEquals(1, orders.findByPlayerId(p.getId()).size());
+    }
+
     @Test void alreadyManufacturedGearIsUsableWithoutTechnologyOrFacilities() {
         Player p = createTestPlayer(); item(p.getId(), "ue_htank_armor");
         equipment.save(p.getId(), "htank", Map.of("protection", "ue_htank_armor"), null);
