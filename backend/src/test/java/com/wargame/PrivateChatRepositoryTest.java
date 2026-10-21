@@ -14,9 +14,10 @@ import static org.junit.jupiter.api.Assertions.*;
 class PrivateChatRepositoryTest {
     @Autowired PrivateChatMessageRepository repository;
     @Test void historyAndConversationsAreScopedToParticipant() {
-        var a = repository.save(new PrivateChatMessage(null, 1L, 2L, "hello", 1L, false));
-        var b = repository.save(new PrivateChatMessage(null, 2L, 1L, "reply", 2L, false));
-        repository.save(new PrivateChatMessage(null, 3L, 4L, "secret", 3L, false));
+        long now = System.currentTimeMillis();
+        var a = repository.save(new PrivateChatMessage(null, 1L, 2L, "hello", now, false));
+        var b = repository.save(new PrivateChatMessage(null, 2L, 1L, "reply", now + 1, false));
+        repository.save(new PrivateChatMessage(null, 3L, 4L, "secret", now + 2, false));
         var page = PageRequest.of(0, 50);
         assertEquals(java.util.List.of(b.getId(), a.getId()), repository.history(1L, 2L, page).stream().map(PrivateChatMessage::getId).toList());
         assertTrue(repository.history(3L, 2L, page).isEmpty());
@@ -24,9 +25,10 @@ class PrivateChatRepositoryTest {
         assertEquals(b.getId(), repository.conversations(1L, page).get(0).getId());
     }
     @Test void readDoesNotConsumeNewMessagesOrOtherRecipients() {
-        var old = repository.save(new PrivateChatMessage(null, 2L, 1L, "old", 1L, false));
-        repository.save(new PrivateChatMessage(null, 2L, 1L, "new", 2L, false));
-        repository.save(new PrivateChatMessage(null, 2L, 3L, "other", 3L, false));
+        long now = System.currentTimeMillis();
+        var old = repository.save(new PrivateChatMessage(null, 2L, 1L, "old", now, false));
+        repository.save(new PrivateChatMessage(null, 2L, 1L, "new", now + 1, false));
+        repository.save(new PrivateChatMessage(null, 2L, 3L, "other", now + 2, false));
         repository.markRead(1L, 2L, old.getId());
         assertEquals(1, repository.countBySenderIdAndRecipientIdAndReadByRecipientFalse(2L, 1L));
         assertEquals(1, repository.countBySenderIdAndRecipientIdAndReadByRecipientFalse(2L, 3L));

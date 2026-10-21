@@ -187,6 +187,8 @@ window.Game = window.Game || {};
       gatherComplete: '采集完成，部队已自动按原路线返城，资源抵达后入库',
       gatherStopped: '采集已终止，部队原地待命，请下达回城命令',
       shieldBlocked: '目标城市护盾生效，部队正在返程',
+      interceptCancelled: '拦截目标已离开，部队正在返城',
+      interceptionRescheduled: '敌军行军时间变化，拦截交火时间已更新',
       returning: '部队已开始按原路线返城，抵达后部队与资源入库',
       returned: '部队已返回城市' + (data.amount ? '，带回' + data.amount + ' ' + (data.resource || '') : '')
     };
@@ -216,7 +218,7 @@ window.Game = window.Game || {};
     if (!exists) {
       // 默认未读（若后端没带 readAt 字段）
       if (data.readAt == null) data.readAt = 0;
-      G.state.reports.unshift(data);
+      G.state.reports.unshift(G.Battle && G.Battle.summarizeLiveReport ? G.Battle.summarizeLiveReport(data) : data);
       // 防止无限增长, 只保留最近 100 条
       if (G.state.reports.length > 100) G.state.reports.length = 100;
     }
@@ -270,7 +272,11 @@ window.Game = window.Game || {};
         }
       });
     }
-    if (data.win) {
+    if (data.action === 'intercept_scout') {
+      var defending = data.perspective === 'defender';
+      G.toast(defending ? (data.win ? '拦截成功，拦截战报已送达' : '拦截失败，敌军突破拦截后继续行进')
+        : (data.win ? '突围成功，部队沿原路线继续行进' : '突围失败，拦截战报已送达'));
+    } else if (data.win) {
       var plunder = data.plunder || {};
       var names = G.Constants.battleResourceNames;
       var resources = Object.keys(names).filter(function (key) {
@@ -300,7 +306,7 @@ window.Game = window.Game || {};
         }
       }
       if (!dup) {
-        G.state.reports.unshift(data);
+        G.state.reports.unshift(G.Battle && G.Battle.summarizeLiveReport ? G.Battle.summarizeLiveReport(data) : data);
         if (G.state.reports.length > 100) G.state.reports.length = 100;
       }
     }
@@ -318,6 +324,23 @@ window.Game = window.Game || {};
   // incoming handler - being attacked
   G.WS.on('incoming', function (data) {
     if (!data) return;
+    if (data.intelligenceType === 'field_interception') {
+      // 先同步野外急报，避免等待全量查询时漏掉短途截击；终结事件立即移除旧卡片。
+      var world = G.state && G.state.world;
+      if (world) {
+        var previous = (world.incoming || []).find(function (item) { return String(item.id) === String(data.id); });
+        world.incoming = (world.incoming || []).filter(function (item) { return String(item.id) !== String(data.id); });
+        if (data.event !== 'cancelled' && data.event !== 'resolved') {
+          world.incoming.push(Object.assign({}, data, { expanded: previous ? !!previous.expanded : true }));
+        }
+      }
+      if (G.Main && G.Main.renderNavBar) G.Main.renderNavBar();
+      if (G.WorldMap && G.WorldMap.refreshMarches) G.WorldMap.refreshMarches();
+      if (!data.event || data.event === 'started') G.toast('野外急报：行军 #' + data.interceptedMarchId + ' 遭遇敌军拦截，请查看军情');
+      else if (data.event === 'cancelled') G.toast('敌方拦截已取消，部队继续执行原行军');
+      refreshState();
+      return;
+    }
     if (!data.event || data.event === 'started') {
       G.toast('警告: 敌军来袭! 来自' + (data.fromName || '未知'));
     } else if (data.event === 'cancelled') {

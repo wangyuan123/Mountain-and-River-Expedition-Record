@@ -1,4 +1,4 @@
-<!doctype html><html lang="zh-CN" data-theme="3gqq"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><base href="../"><title>战略地图 · 交互验证</title><link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="css/themes.css"><link rel="stylesheet" href="css/world-map.css?v=4.17-north-up"><style>body{margin:0}#fixture-head{padding:14px;background:#527cac;color:white;font:600 15px sans-serif}.fixture-tools{padding:6px 12px;font:11px sans-serif;background:#edf4fb;color:#426078}.fixture-tools button{margin:4px;padding:4px 8px}#fixture-log{white-space:pre-wrap;font:11px monospace;padding:8px;color:#375975}</style></head><body><div id="screen"><div id="fixture-head">战略地图 · 野地分布预览 <button id="scatter" style="float:right;padding:4px 10px;border:0;border-radius:4px;color:#375975;background:white;cursor:pointer">换一批分布</button></div><div class="fixture-tools"><button id="rerender">模拟页面刷新</button><button id="netfail">切换弱网失败</button><button id="pinch">验证双指缩放</button><button id="theme">切换主题</button><div id="fixture-metrics"></div></div><div style="padding:6px 14px;background:#edf4fb"><button id="snow-preview" class="btn">查看雪地渐变</button> <button id="north-preview" class="btn">北方雪带</button></div><div id="view"></div><div id="fixture-log"></div></div>
+<!doctype html><html lang="zh-CN" data-theme="3gqq"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><base href="../"><title>战略地图 · 交互验证</title><link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="css/themes.css"><link rel="stylesheet" href="css/world-map.css?v=4.17-north-up"><link rel="stylesheet" href="css/text-actions.css?v=1.4-tactical-selected"><style>body{margin:0}#fixture-head{padding:14px;background:#527cac;color:white;font:600 15px sans-serif}.fixture-tools{padding:6px 12px;font:11px sans-serif;background:#edf4fb;color:#426078}.fixture-tools button{margin:4px;padding:4px 8px}#fixture-log{white-space:pre-wrap;font:11px monospace;padding:8px;color:#375975}</style></head><body><div id="screen"><div id="fixture-head">战略地图 · 野地分布预览 <button id="scatter" style="float:right;padding:4px 10px;border:0;border-radius:4px;color:#375975;background:white;cursor:pointer">换一批分布</button></div><div class="fixture-tools"><button id="rerender">模拟页面刷新</button><button id="netfail">切换弱网失败</button><button id="pinch">验证双指缩放</button><button id="theme">切换主题</button><div id="fixture-metrics"></div></div><div style="padding:6px 14px;background:#edf4fb"><button id="snow-preview" class="btn">查看雪地渐变</button> <button id="north-preview" class="btn">北方雪带</button></div><div id="view"></div><div id="fixture-log"></div></div>
 <script src="js/constants.js"></script><script src="js/data.js?v=4.4-snow-depth"></script><script src="js/icons.js?v=1.0-resource-images"></script><script src="js/core.js"></script>
 <script>
 // Emulate browsers without element fullscreen to verify the landscape fallback.
@@ -35,6 +35,28 @@ function scatterWilds(){
 scatterWilds();
 Game.state=Game.Core.state={player:{activeCityId:1},world:{cityPos:{x:100,y:100},pos:{x:100,y:100},marches:[{fromX:100,fromY:100,targetX:98,targetY:102,startAt:Date.now()-5000,arriveAt:Date.now()+120000}]} };
 Game.API={getToken:function(){return 'preview:'+previewGeneration;},getMapChunk:function(cx,cy){requests++;return new Promise(function(resolve,reject){setTimeout(function(){if(failed){reject(Error('演示弱网'));return;}resolve({cx:cx,cy:cy,targets:sampleTargets.filter(function(t){return Math.floor(t.x/16)===cx&&Math.floor(t.y/16)===cy;})});},140);});},getMapTarget:function(kind,id){return Promise.resolve(Object.assign({},sampleTargets.find(function(t){return t.kind===kind&&t.id===id;}),{totalRes:10000,mined:1000}));}};
+// 预览只模拟收藏接口，不读写真实账号；弱网开关同时覆盖收藏读取和写入。
+var previewFavorites=[];
+Game.API.client={
+  get:function(url){
+    if(failed)return Promise.reject(Error('演示弱网'));
+    if(url==='/game/world/map/favorites')return Promise.resolve(previewFavorites.slice());
+    var query=new URL(url,location.origin).searchParams;
+    return Promise.resolve({x:Number(query.get('x')),y:Number(query.get('y')),cityType:'平原',valid:false,reason:'当前为地图交互预览'});
+  },
+  post:function(url,body){
+    if(failed)return Promise.reject(Error('演示弱网'));
+    var target=sampleTargets.find(function(t){return t.kind===body.kind&&t.id===body.targetId;});
+    if(!previewFavorites.some(function(item){return item.x===body.x&&item.y===body.y;}))previewFavorites.unshift({x:body.x,y:body.y,name:target?(target.kind==='player'?target.ownerName:Game.DATA.wildTypes[target.type]&&Game.DATA.wildTypes[target.type].name)||target.name:'坐标标记'});
+    return Promise.resolve(previewFavorites.slice());
+  },
+  delete:function(url){
+    if(failed)return Promise.reject(Error('演示弱网'));
+    var query=new URL(url,location.origin).searchParams;
+    previewFavorites=previewFavorites.filter(function(item){return item.x!==Number(query.get('x'))||item.y!==Number(query.get('y'));});
+    return Promise.resolve(previewFavorites.slice());
+  }
+};
 Game.Core.route='world';Game.Core.renderTop=function(){};Game.Core.footer=function(){return '';};Game.Core.render=function(){var v=document.getElementById('view');if(!Game.WorldMap.mounted(v))v.innerHTML='';if(Game.WorldMap.isMap())Game.WorldMap.render(v);else v.innerHTML='<button onclick="Game.WorldMap.setMode(\'map\')">返回大地图</button>';};
 Game.toast=function(t){log.textContent=t;};Game.go=function(r){log.textContent='进入：'+r;};Game.World={renderGatherMarches:function(){return '';},mapAction:function(t,action){log.textContent='目标 '+t.kind+':'+t.id+'，操作 '+action;}};
 window.addEventListener('error',function(e){log.textContent='ERROR: '+e.message;});

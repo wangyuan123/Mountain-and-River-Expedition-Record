@@ -330,6 +330,8 @@ window.Game = window.Game || {};
       speedUp72h: { name: '72时加速符',icon: '⚡', desc: '立即缩短72小时建筑/造兵时间',    cat: 'util', seconds: 259200},
       shield:    { name: '护盾',     icon: '🛡️', desc: '本城8小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地',         cat: 'util' },
       marchOrd:  { name: '行军令',   icon: '🚩', desc: '仓库启用：行军速度+50%，持续1小时；情报使用：本队当前路段剩余时间缩短约1/3，去程与回程各限一次', cat: 'util' },
+      signalJammingOrder: { name: '通讯干扰令', icon: '📡', desc: '对指向己方城市的敌军行军使用：延长剩余行军时间20%，最多2分钟；每支行军单程限用一次', cat: 'util' },
+      feintOrder: { name: '佯动诱敌令', icon: '🎭', desc: '对指向己方城市的敌军行军使用：延长剩余行军时间40%，最多4分钟；每支行军单程限用一次', cat: 'util' },
       populationOrder: { name: '人口动员令', icon: '👥', desc: '使用后立即增加500空闲人口,不超过人口上限', cat: 'util' },
       emergencyPopulationOrder: { name: '紧急人口动员令', icon: '📣', desc: '使用后立即增加当前城市人口容量上限30%的空闲人口,不超过人口上限', cat: 'util' },
 

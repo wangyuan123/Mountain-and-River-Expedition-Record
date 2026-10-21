@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="3gqq">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><base href="../../frontend/"><title>城外伏击 · 本地验收</title>
+<link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="css/themes.css"><link rel="stylesheet" href="css/text-actions.css"></head>
+<body><div id="screen"><div class="panel"><b>城外伏击 · 本地验收预览（模拟接口）</b>
+<div class="btn-row"><button class="btn" onclick="showFixture('ambush')">伏击预览</button><button class="btn" onclick="showFixture('urgent')">紧急迎击</button><button class="btn" onclick="showFixture('failure')">无法拦截</button><button class="btn" onclick="showFixture('report')">双方战报</button><button class="btn" onclick="showFixture('alerts')">部署军情</button></div></div><div id="view"></div><p id="notice" role="status"></p></div>
+<script src="js/constants.js"></script><script src="js/data.js"></script>
+<script>
+var mode='ambush';
+Game.fmt=function(n){return Number(n).toLocaleString();};Game.escapeHtml=function(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;');};
+Game.gameNow=Date.now;Game.toast=function(t){document.getElementById('notice').textContent=t;};Game.go=function(){};
+Game.Core={route:'dispatch',views:{},state:{player:{id:1,cityName:'前沿基地',username:'守方'},buildings:{headquarters:3,radar:10},cityState:{},officers:[],techs:{},reports:[],army:{infantry:2000,htank:500,fighter:200,armored:100},resources:{oil:100000},unitEquipment:{catalog:{}},world:{cityPos:{x:100,y:100},marches:[],incoming:[],reinforcements:[]}},spdMul:function(){return 1;},armyCap:function(){return 10000;},maxMarches:function(){return 7;},refreshTop:function(){},render:function(){},renderNavBar:function(){}};
+Game.state=Game.Core.state;
+Game.API={client:{post:function(){if(mode==='failure')return Promise.reject(Error('敌军即将抵城，无法完成出城拦截'));var now=Date.now();return Promise.resolve({mode:'land',distance:3.4,seconds:8,plannedAt:now,deployAt:now+8000,readyAt:now+13000,clashAt:now+(mode==='urgent'?10000:16000),opening:mode==='urgent'?'urgent':'ambush',preparationMs:5000,targetX:98,targetY:98,oil:164});}},getToken:function(){return null;}};
+</script><script src="js/world.js"></script><script src="js/battle.js"></script><script>
+function showFixture(next){
+ mode=next;var view=document.getElementById('view'),now=Date.now();document.getElementById('notice').textContent='';
+ if(Game.World._disposeInterceptionPreview)Game.World._disposeInterceptionPreview();
+ if(next==='report'){
+   var base={id:1,time:now,type:'battle',action:'intercept_scout',targetType:'interception',attackerWin:true,attackerName:'来袭军',defenderName:'拦截军',fromCoord:'80,80',toCoord:'100,100',toName:'原进攻目标',interceptCoord:'98,98',originalAction:'plunder',initialAttacker:{rocket:1000},initialDefender:{infantry:1000},survivorAttacker:{rocket:968},survivorDefender:{},losses:1000,recoveredCount:0,recoveryPercent:0,rounds:5,roundLogs:['第 1 回合 · 伏击发动：拦截部队优先开火，来袭部队以幸存兵力还击。','第 2 回合起恢复常规行动顺序。'],interceptionOpening:{version:'interception-ambush-v1-20261021',mode:'ambush',firstStrikeSide:'defender',firstCombatRound:1,distance:160,prepared:true,ambushConsumed:true}};
+   var defense=Object.assign({},base,{perspective:'defender',win:false,subject:'拦截失败 · 城外截击',troopDisposition:'destroyed'}),attack=Object.assign({},base,{id:2,perspective:'attacker',win:true,subject:'突围成功 · 城外截击',troopDisposition:'continuing',losses:32});
+   view.innerHTML=Game.Battle.renderReportCard(defense)+Game.Battle.renderReportBoard(defense)+Game.Battle.renderReportBoard(attack);return;
+ }
+ if(next==='alerts'){
+   Game.Core.route='alerts';Game.Core.state.world.marches=[{id:90,action:'intercept_scout',targetKind:'incoming_march',targetName:'交火点',fromX:100,fromY:100,targetX:98,targetY:98,startAt:now-20000,deployAt:now-2000,readyAt:now+3000,arriveAt:now+16000,interceptionOpening:'ambush',distance:3.4,army:{infantry:1000,htank:100},version:1}];Game.World.renderAlerts(view);return;
+ }
+ Game.Core.route='dispatch';Game.Core.state.world.marches=[];
+ Game.Core.state.world._dispatchTarget={kind:'incoming_scout',marchId:91,action:'intercept_scout',target:{id:91,name:'来袭敌军',x:80,y:80},interceptTarget:{action:'plunder',fromX:80,fromY:80,startAt:now-60000,arriveAt:now+60000},defaultArmy:{infantry:1000,htank:100}};
+ Game.World.renderDispatch(view);
+}
+showFixture('ambush');
+</script></body></html>

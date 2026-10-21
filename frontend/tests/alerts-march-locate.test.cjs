@@ -147,6 +147,37 @@ test('点击军情目的地链接经过真实路由切换后仍定位到截图�
   assert.deepEqual(game.WorldMap.focused, { x: 377, y: 248 });
 });
 
+test('来袭与侦查明细的出发地和目的地点击后切换地图并定位，坐标零值有效且不触发卡片收起', () => {
+  for (const action of ['conquer', 'scout']) {
+    for (const [label, x, y] of [['出发地', 5, 387], ['目的地', 0, 106]]) {
+      const { game, state, routes, context } = setup();
+      state.world.incoming = [{
+        id: 'incoming-101', action, radarLevel: 10, expanded: true,
+        fromX: '5', fromY: '387', targetX: 0, targetY: 106,
+        targetName: '守方分城', arriveAt: Date.now() + 54000
+      }];
+      const view = { innerHTML: '', querySelectorAll: () => [] };
+      game.World.renderAlerts(view);
+      const click = view.innerHTML.match(new RegExp(label + ': <a [^>]*onclick="([^"]+)"'));
+      assert.ok(click, action + ' ' + label);
+      let prevented = false;
+      let stopped = false;
+      vm.runInContext('(function (event) { ' + click[1] + ' })', context)({
+        preventDefault() { prevented = true; },
+        stopPropagation() { stopped = true; }
+      });
+      assert.equal(prevented, true);
+      assert.equal(stopped, true);
+      assert.deepEqual(routes, ['world']);
+      assert.equal(game.Core.route, 'world');
+      assert.equal(state.world._searchCoord, x + ',' + y);
+      assert.deepEqual(game.WorldMap.focused, { x, y });
+      assert.equal(state.world.incoming[0].expanded, true);
+      assert.deepEqual(state.world.cityPos, { x: 0, y: 105 });
+    }
+  }
+});
+
 test('已经处于地图时定位不会重新进入路由，普通进入地图仍回到主城', () => {
   const { game, state, routes } = setup();
   game.World.locateTarget(377, 248);

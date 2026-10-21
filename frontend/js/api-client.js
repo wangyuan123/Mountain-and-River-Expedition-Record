@@ -50,6 +50,7 @@ window.Game = window.Game || {};
     }
 
     setToken(token, username) {
+      this.resetRetentionCaches();
       G.GameTime.reset();
       this.cityId = null; this.invalidateCityRequests();
       localStorage.setItem(this.tokenKey, token);
@@ -58,6 +59,7 @@ window.Game = window.Game || {};
     }
 
     clearToken() {
+      this.resetRetentionCaches();
       G.GameTime.reset();
       if (G.Protection) G.Protection.reset();
       this.cityId = null; this.invalidateCityRequests();
@@ -76,6 +78,7 @@ window.Game = window.Game || {};
 
     /** 切换大区后令旧请求失效；入口由部署配置指定，不能从用户输入拼接。 */
     setServer(region) {
+      this.resetRetentionCaches();
       G.GameTime.reset();
       this.invalidateCityRequests();
       this.cityId = null;
@@ -86,6 +89,12 @@ window.Game = window.Game || {};
         this.baseURL = port && port !== 8080 && port !== 80
           ? 'http://' + window.location.hostname + ':8080/api' : '/api';
       }
+    }
+
+    /** 账号、大区或退出登录时立即丢弃正文、战报详情与分页状态。 */
+    resetRetentionCaches() {
+      if (G.Mail && G.Mail.resetRetentionCache) G.Mail.resetRetentionCache();
+      if (G.Battle && G.Battle.resetRetentionCache) G.Battle.resetRetentionCache();
     }
 
     // ===== 加载指示器 =====

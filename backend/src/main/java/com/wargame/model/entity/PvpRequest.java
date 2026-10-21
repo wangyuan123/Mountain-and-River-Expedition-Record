@@ -8,6 +8,7 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Entity
+@EntityListeners(com.wargame.service.RetentionEntityListener.class)
 @Table(name = "pvp_requests")
 public class PvpRequest extends VersionedEntity {
     @Id
@@ -23,4 +24,13 @@ public class PvpRequest extends VersionedEntity {
     private String response;
     @Column(name = "created_at", nullable = false)
     private long createdAt;
+    @Column(name = "persisted_real_at", nullable = false)
+    private long persistedRealAt;
+    @Column(name = "retention_expires_at", nullable = false)
+    private long retentionExpiresAt;
+
+    @PrePersist
+    private void initializeRetention() {
+        if (persistedRealAt <= 0) persistedRealAt = System.currentTimeMillis();
+    }
 }

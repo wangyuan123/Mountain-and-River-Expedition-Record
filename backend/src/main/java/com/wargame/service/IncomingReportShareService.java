@@ -17,6 +17,7 @@ import java.util.*;
 
 @Service @RequiredArgsConstructor
 public class IncomingReportShareService {
+    @org.springframework.beans.factory.annotation.Autowired private com.wargame.config.RetentionPolicy retentionPolicy = new com.wargame.config.RetentionPolicy();
     private final SharedIncomingReportRepository shares;
     private final GuildMemberRepository members;
     private final PlayerRepository players;
@@ -41,7 +42,8 @@ public class IncomingReportShareService {
         snapshot.put("ownerName", player.getUsername());
         String token = UUID.randomUUID().toString();
         try {
-            shares.save(new SharedIncomingReport(token, owner, member.getGuildId(), mapper.writeValueAsString(snapshot)));
+            shares.save(new SharedIncomingReport(token, owner, member.getGuildId(), mapper.writeValueAsString(snapshot),
+                    System.currentTimeMillis() + Math.max(1, retentionPolicy.getIncomingShareHours()) * 3_600_000L));
         } catch (JsonProcessingException e) {
             throw new IllegalArgumentException("来袭军情无法分享");
         }
@@ -55,6 +57,7 @@ public class IncomingReportShareService {
                 .orElseThrow(() -> new IllegalArgumentException("分享军情不存在"));
         members.findByPlayerId(reader).filter(member -> share.getGuildId().equals(member.getGuildId()))
                 .orElseThrow(() -> new IllegalArgumentException("仅该军团成员可查看此军情"));
+        if (share.getExpiresAt() <= System.currentTimeMillis()) throw new IllegalArgumentException("分享军情已过期");
         try {
             Map<String, Object> snapshot = mapper.readValue(share.getData(), new TypeReference<LinkedHashMap<String, Object>>() {});
             privacy.anonymize(List.of(snapshot));

@@ -338,8 +338,94 @@ window.Game = window.Game || {};
     }).catch(function (err) { G.toast(err.message || '加速失败'); });
   }
 
+  function showArmyDetailModal() {
+    if (typeof document === 'undefined' || !document.createElement || !document.body) return;
+    var existing = document.getElementById('armyDetailModal');
+    if (existing && existing.parentNode && existing.parentNode.removeChild) {
+      existing.parentNode.removeChild(existing);
+    }
+    var previousFocus = document.activeElement;
+    var civ = Core.civilianPopulation ? Core.civilianPopulation() : 0;
+    var civCap = Core.populationCapacity ? Core.populationCapacity() : 0;
+    var popFree = Core.popFree ? Core.popFree() : 0;
+    var popGrowth = Core.populationGrowthPerHour ? Core.populationGrowthPerHour() : 0;
+    var totalArmy = Army.totalArmy ? Army.totalArmy() : 0;
+    var armyCap = Core.armyCap ? Core.armyCap() : 0;
+    var foodPerHour = Core.foodPerHour ? Core.foodPerHour() : 0;
+    var cmd = Core.getOfficerByRole ? Core.getOfficerByRole('commander') : null;
+
+    var mask = document.createElement('div');
+    mask.id = 'armyDetailModal';
+    mask.className = 'modal-mask army-rules-mask';
+    mask.innerHTML =
+      '<div class="modal-card army-rules-dialog" role="dialog" aria-modal="true" aria-labelledby="armyRulesTitle">' +
+        '<div class="modal-title army-rules-title" id="armyRulesTitle">' +
+          '<span>🎖 兵种整编与战备规则说明</span>' +
+          '<button type="button" class="army-rules-close" aria-label="关闭说明">✕</button>' +
+        '</div>' +
+        '<div class="modal-body army-rules-body">' +
+          '<div class="army-rules-section">' +
+            '<div class="army-rules-sec-title">👥 平民人口与征兵返还</div>' +
+            '<div class="army-rules-sec-desc">' +
+              '• <strong>当前平民状态：</strong>本城平民 <b>' + G.fmt(civ) + ' / ' + G.fmt(civCap) + '</b>，可征召空闲平民 <b>' + G.fmt(popFree) + '</b>，自然增长率 <b>+' + G.fmt(popGrowth) + '/h</b>。<br/>' +
+              '• <strong>征召与解散返还：</strong>创建征兵队列时立即扣除对应平民人口；若在生产队列中<strong>取消征兵</strong>或在部队卡片中<strong>解散部队</strong>，将<strong>全额返还</strong>平民人口。<br/>' +
+              '• <strong>人口增长机制：</strong>民居等级决定平民上限，保持城市低怨恨度与充足粮食可保障人口高速增长。' +
+            '</div>' +
+          '</div>' +
+          '<div class="army-rules-section">' +
+            '<div class="army-rules-sec-title">🪖 编制规模与军事指挥官</div>' +
+            '<div class="army-rules-sec-desc">' +
+              '• <strong>带兵上限：</strong>当前本城驻军 <b>' + G.fmt(totalArmy) + ' / ' + G.fmt(armyCap) + '</b>。带兵上限受城市指挥所等级与统帅科技共同影响。<br/>' +
+              '• <strong>指挥官任命：</strong>' + (cmd ? '当前已任命【<b>' + G.escapeHtml(cmd.name) + '</b>】担任军事指挥官。' : '当前<b>未任命军事指挥官</b>。') + '任命指挥官可依据其统御值大幅提升本城部队编制上限，并在城市保卫战中提供攻击、防御等全军战力加成。' +
+            '</div>' +
+          '</div>' +
+          '<div class="army-rules-section">' +
+            '<div class="army-rules-sec-title">🌾 养兵粮饷与维持消耗</div>' +
+            '<div class="army-rules-sec-desc">' +
+              '• <strong>常驻粮耗：</strong>现役驻军每小时消耗粮食 <b>-' + G.fmt(foodPerHour) + '/h</b>。<br/>' +
+              '• <strong>断粮惩罚：</strong>当城市粮食储量降为 0 时，全军陷入饥饿状态，部队士气与战斗力将大幅衰减（降低 50% 以上），请注意保持粮仓储备充足。' +
+            '</div>' +
+          '</div>' +
+          '<div class="army-rules-section">' +
+            '<div class="army-rules-sec-title">🎯 四维打击与协同克制</div>' +
+            '<div class="army-rules-sec-desc">' +
+              '• <strong>多维打击：</strong>战斗包含【对地】、【对空】、【对海】、【对工事】四类独立打击属性。<br/>' +
+              '• <strong>协同搭配：</strong>所有兵种均具备基础自卫火力，但在非擅长领域攻击效率极低；建议出征与驻防时搭配防空机炮、装甲护航与攻坚单位，避免单一兵种被克制歼灭。' +
+            '</div>' +
+          '</div>' +
+          '<div class="army-rules-section">' +
+            '<div class="army-rules-sec-title">⚡ 行军补给与速度限制</div>' +
+            '<div class="army-rules-sec-desc">' +
+              '• <strong>行军速度：</strong>混合编队的大地图行军速度取决于编队中<strong>最慢兵种</strong>；长途奔袭或紧急拦截建议选用高机动轻装部队。<br/>' +
+              '• <strong>行军补给：</strong>部队外出作战需按格数持续消耗燃油，按耗时消耗口粮，出征前请确保物资配给充盈。' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="modal-foot army-rules-foot">' +
+          '<button type="button" class="btn ok army-rules-confirm-btn">我知道了</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(mask);
+
+    var close = function () {
+      if (document.removeEventListener) document.removeEventListener('keydown', onKeydown);
+      if (mask.parentNode && mask.parentNode.removeChild) mask.parentNode.removeChild(mask);
+      if (previousFocus && previousFocus.focus) previousFocus.focus();
+    };
+    var onKeydown = function (e) { if (e.key === 'Escape') close(); };
+    var closeBtn = mask.querySelector ? mask.querySelector('.army-rules-close') : null;
+    var confirmBtn = mask.querySelector ? mask.querySelector('.army-rules-confirm-btn') : null;
+    if (closeBtn) closeBtn.onclick = close;
+    if (confirmBtn) confirmBtn.onclick = close;
+    if (mask.addEventListener) mask.addEventListener('click', function (e) { if (e.target === mask) close(); });
+    if (document.addEventListener) document.addEventListener('keydown', onKeydown);
+    if (confirmBtn && confirmBtn.focus) confirmBtn.focus();
+  }
+
   var Army = {
     setTab: setTab,
+    showArmyDetailModal: showArmyDetailModal,
+    showArmyRulesModal: showArmyDetailModal,
     canFreeSpeedUp: canFreeSpeedUp,
     freeSpeedUp: freeSpeedUp,
     onSliderChange: function (id, val) {
@@ -591,10 +677,46 @@ window.Game = window.Game || {};
       var badgeStyle = queue.length > 0 ? 'inline-block' : 'none';
       var badgeText = queue.length > 0 ? queue.length : '0';
 
+      var civ = Core.civilianPopulation();
+      var civCap = Core.populationCapacity();
+      var popFree = Core.popFree();
+      var popGrowth = Core.populationGrowthPerHour();
+      var totalArmy = this.totalArmy();
+      var armyCap = Core.armyCap();
+      var foodPerHour = Core.foodPerHour();
+
       var h = '<div class="title">- 兵种整编 -</div>';
-      h += '<div class="desc">平民: ' + Core.civilianPopulation() + '/' + Core.populationCapacity() + ' (可征召 ' + Core.popFree() + '，增长 +' + G.fmt(Core.populationGrowthPerHour()) + '/h)  带兵: ' + this.totalArmy() + '/' + Core.armyCap() + (cmd ? '  指挥官:' + cmd.name : '  未任命指挥官') + '</div>';
-      h += '<div class="desc">养兵耗粮: ' + G.fmt(Core.foodPerHour()) + '/h；创建征兵队列立即扣除平民，取消或解散返还</div>';
-      h += '<div class="desc">按目标使用对地、对空、对海或对工事攻击；所有兵种均有基础火力，弱项攻击效率很低，请搭配护航与攻坚部队。</div>';
+      h += '<div class="army-overview-card">' +
+        '<div class="army-ov-header">' +
+          '<div class="army-ov-title-wrap">' +
+            '<span class="army-ov-badge">战备概览</span>' +
+            '<span class="army-ov-cmd" title="' + (cmd ? ('守城指挥官: ' + G.escapeHtml(cmd.name)) : '当前城市未任命指挥官') + '">' +
+              (cmd ? ('🎖 指挥官: <b>' + G.escapeHtml(cmd.name) + '</b>') : '⚠ <span class="army-ov-cmd-none">未任命指挥官</span>') +
+            '</span>' +
+          '</div>' +
+          '<button type="button" class="army-rules-btn" onclick="Game.Army.showArmyDetailModal()" title="查看兵种整编与战备规则说明">' +
+            '<span>查看详情说明</span>' +
+            '<span class="army-rules-icon">ℹ</span>' +
+          '</button>' +
+        '</div>' +
+        '<div class="army-ov-grid">' +
+          '<div class="army-ov-cell">' +
+            '<div class="army-ov-k">平民人口</div>' +
+            '<div class="army-ov-v"><span class="army-ov-main">' + G.fmt(civ) + '</span><span class="army-ov-cap">/' + G.fmt(civCap) + '</span></div>' +
+            '<div class="army-ov-sub">可征 ' + G.fmt(popFree) + ' · +' + G.fmt(popGrowth) + '/h</div>' +
+          '</div>' +
+          '<div class="army-ov-cell">' +
+            '<div class="army-ov-k">现役部队</div>' +
+            '<div class="army-ov-v"><span class="army-ov-main">' + G.fmt(totalArmy) + '</span><span class="army-ov-cap">/' + G.fmt(armyCap) + '</span></div>' +
+            '<div class="army-ov-sub">' + (cmd ? '将领统率' : '守备编制') + '</div>' +
+          '</div>' +
+          '<div class="army-ov-cell">' +
+            '<div class="army-ov-k">养兵耗粮</div>' +
+            '<div class="army-ov-v army-ov-food">-' + G.fmt(foodPerHour) + '<small>/h</small></div>' +
+            '<div class="army-ov-sub">驻军开销</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
 
       h += '<div class="army-tabs">' +
         '<div id="army-tab-units" class="army-tab' + (!isQueueTab ? ' active' : '') + '" onclick="Game.Army.setTab(\'units\')">军队</div>' +

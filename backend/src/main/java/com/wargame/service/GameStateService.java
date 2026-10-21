@@ -21,6 +21,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 public class GameStateService {
+    @org.springframework.beans.factory.annotation.Autowired private MailGiftActivityService giftActivities;
 
     @org.springframework.beans.factory.annotation.Autowired private UnitEquipmentService unitEquipment;
 
@@ -234,6 +235,7 @@ public class GameStateService {
             player = accounts.lockPlayer(playerId);
             NewbieProtection.start(player, GameClock.now());
         }
+        giftActivities.issueOnLogin(playerId);
     }
 
     @Transactional(readOnly = true)
@@ -288,7 +290,7 @@ public class GameStateService {
         state.put("player", playerInfo);
         playerInfo.put("npcVictories", player.getNpcVictories());
         state.put("rankInfo", ranks.getRankInfo(playerId));
-        state.put("unreadReportCount", scoutReportRepository.countUnreadByPlayerId(playerId));
+        state.put("unreadReportCount", scoutReportRepository.countVisibleUnreadByPlayerId(playerId, System.currentTimeMillis()));
 
         // --- resources ---
         Resources resources = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);

@@ -38,6 +38,30 @@ window.Game = window.Game || {};
   // The backend sends battle results via WebSocket; the frontend just displays them.
 
   var Battle = {
+    _reportDetails: {},
+    _reportDetailOrder: [],
+    _reportDetailMeta: {},
+    _reportsPreviousCursors: [],
+    _reportsPageCursor: null,
+    _reportsNextCursor: null,
+    _reportsHasMore: false,
+    retentionContext: function () { return G.API.retentionContext ? G.API.retentionContext() : G.API.getToken ? G.API.getToken() : ''; },
+    resetRetentionCache: function () {
+      this._reportDetails = {}; this._reportDetailMeta = {}; this._reportDetailOrder = [];
+      this._viewReport = null; this._reportsNextCursor = null; this._reportsPageCursor = null;
+      this._reportsPreviousCursors = []; this._reportsHasMore = false;
+      this._reportsHistoryLoaded = null; this._reportsHistoryLoading = null;
+      this._reportsPageRequest = (this._reportsPageRequest || 0) + 1;
+      this._unreadRequest = (this._unreadRequest || 0) + 1;
+      this._cacheIdentity = null;
+      if (Core.state) { Core.state.reports = []; Core.state.unreadReportCount = 0; }
+    },
+    ensureRetentionContext: function () {
+      var key = this.retentionContext();
+      if (this._cacheIdentity != null && this._cacheIdentity !== key) this.resetRetentionCache();
+      this._cacheIdentity = key;
+      return key;
+    },
     /** 优先使用服务端总数，不受当前已加载战报条数限制。 */
     unreadCount: function () {
       if (G.state && typeof G.state.unreadReportCount === 'number') return G.state.unreadReportCount;
@@ -81,10 +105,20 @@ window.Game = window.Game || {};
     },
 
     renderReportsList: function (v) {
+      this.ensureRetentionContext();
+      this._viewReport = null;
       var s = Core.state;
+      if (this._refreshOnReturn || Date.now() - (this._reportsRefreshedAt || 0) > 60000) {
+        this._reportsHistoryLoaded = null; this._refreshOnReturn = false;
+      }
+      if (s.reports) {
+        var visible = s.reports.filter(function (r) { return r.starred || !r.summaryExpiresAt || r.summaryExpiresAt > Date.now(); });
+        if (visible.length !== s.reports.length) s.reports = visible;
+      }
       var reports = s.reports || (s.reports = []);
       var h = '';
       h += '<div class="menu">';
+      h += '<div class="rc-line">普通战报详情保留 30 天，随后战果摘要再保留 30 天；每个账号每个大区可收藏 50 份。</div>';
       var unread = this.unreadCount();
       if (unread > 0) {
         h += '<div class="btn-row" style="margin-bottom:6px">';
@@ -100,6 +134,9 @@ window.Game = window.Game || {};
           h += this.renderReportCard(r);
         }
       }
+      if (this._reportsPreviousCursors.length) h += '<button class="btn" onclick="Game.Battle.previousReportsPage()">上一页</button>';
+      if (this._reportsPageCursor) h += '<button class="btn" onclick="Game.Battle.firstReportsPage()">最新战报</button>';
+      if (this._reportsHasMore) h += '<button class="btn" onclick="Game.Battle.loadMoreReports()">下一页</button>';
       if (!reports.length) {
         h += '<div class="reports-empty" id="reportsEmpty">' +
           '<div class="reports-empty-icon">⚔</div>' +
@@ -118,12 +155,17 @@ window.Game = window.Game || {};
       if (G.API && typeof G.API.getReports === 'function' && this._reportsHistoryLoaded !== reports && this._reportsHistoryLoading !== reports) {
         var self = this;
         this._reportsHistoryLoading = reports;
-        var token = G.API.getToken();
-        G.API.getReports(50).then(function (list) {
-          if (G.API.getToken() !== token || Core.state.reports !== reports) return;
+        var token = this.retentionContext();
+        var request = this._reportsPageRequest = (this._reportsPageRequest || 0) + 1;
+        G.API.getReports(20, this._reportsPageCursor).then(function (page) {
+          if (self.retentionContext() !== token || request !== self._reportsPageRequest) return;
           self._reportsHistoryLoading = null;
+          var list = Array.isArray(page) ? page : page && page.items;
           if (!Array.isArray(list)) return;
-          self._reportsHistoryLoaded = reports;
+          self._reportsRefreshedAt = Date.now();
+          self._reportsHasMore = Array.isArray(page) ? list.length >= 20 : !!page.hasMore;
+          self._reportsNextCursor = Array.isArray(page) ? (list.length ? String(list[list.length - 1].time || 0) + ':' + String(list[list.length - 1].id) : null) : page.nextCursor;
+          if (!Array.isArray(page)) Core.state.reports = list.slice(0, 100);
           if (!Array.isArray(Core.state.reports)) Core.state.reports = [];
           // 合并去重
           var existingIds = {};
@@ -135,7 +177,9 @@ window.Game = window.Game || {};
             Core.state.reports.push(list[k]);
           }
           // 按时间倒序
-          Core.state.reports.sort(function (a, b) { return (b.time || 0) - (a.time || 0); });
+          Core.state.reports.sort(function (a, b) { return (b.time || 0) - (a.time || 0) || Number(b.id || 0) - Number(a.id || 0); });
+          if (Core.state.reports.length > 100) Core.state.reports.length = 100;
+          self._reportsHistoryLoaded = Core.state.reports;
           // 只局部更新一次，不再触发新的历史请求
           if (Core.route === 'reports') self.renderReportsList(v);
           else self.refreshUnread();
@@ -143,6 +187,95 @@ window.Game = window.Game || {};
           if (self._reportsHistoryLoading === reports) self._reportsHistoryLoading = null;
         });
       }
+    },
+
+    loadMoreReports: function () {
+      if (!this._reportsHasMore || !this._reportsNextCursor || !G.API.getReports) return Promise.resolve();
+      this._reportsPreviousCursors.push(this._reportsPageCursor);
+      if (this._reportsPreviousCursors.length > 100) this._reportsPreviousCursors.shift();
+      this._reportsPageCursor = this._reportsNextCursor;
+      this._reportsHistoryLoaded = null;
+      Core.state.reports = [];
+      Core.render();
+    },
+    previousReportsPage: function () {
+      if (!this._reportsPreviousCursors.length) return;
+      this._reportsPageCursor = this._reportsPreviousCursors.pop(); this._reportsHistoryLoaded = null;
+      Core.state.reports = []; Core.render();
+    },
+    firstReportsPage: function () {
+      this._reportsPageCursor = null; this._reportsPreviousCursors = []; this._reportsHistoryLoaded = null;
+      Core.state.reports = []; Core.render();
+    },
+
+    cacheReportDetail: function (report) {
+      this.ensureRetentionContext();
+      var id = String(report.id);
+      var size = encodeURIComponent(JSON.stringify(report)).replace(/%[0-9A-F]{2}/g, 'x').length;
+      if (size > 5 * 1024 * 1024) return report;
+      this._reportDetails[id] = report;
+      this._reportDetailMeta[id] = { bytes: size, expiresAt: Math.min(Date.now() + 60000, report.starred ? Infinity : Number(report.detailsAvailable === false ? report.summaryExpiresAt : report.detailExpiresAt) || Infinity) };
+      this._reportDetailOrder = this._reportDetailOrder.filter(function (key) { return key !== id; });
+      this._reportDetailOrder.push(id);
+      var self = this;
+      function totalBytes() { return self._reportDetailOrder.reduce(function (n, key) { return n + self._reportDetailMeta[key].bytes; }, 0); }
+      while (this._reportDetailOrder.length > 5 || totalBytes() > 5 * 1024 * 1024) {
+        var removed = this._reportDetailOrder.shift(); delete this._reportDetails[removed]; delete this._reportDetailMeta[removed];
+      }
+      return report;
+    },
+
+    reportDetail: function (report) {
+      var context = this.ensureRetentionContext();
+      var cached = this._reportDetails[String(report.id)];
+      var meta = this._reportDetailMeta[String(report.id)];
+      if (cached && meta && meta.expiresAt > Date.now()) return Promise.resolve(cached);
+      delete this._reportDetails[String(report.id)]; delete this._reportDetailMeta[String(report.id)];
+      this._reportDetailOrder = this._reportDetailOrder.filter(function (key) { return key !== String(report.id); });
+      if (!G.API.getReportDetail) return Promise.resolve(report);
+      var self = this;
+      return G.API.getReportDetail(report.id).then(function (detail) {
+        if (self.retentionContext() !== context) throw new Error('账号或大区已切换');
+        return self.cacheReportDetail(detail);
+      }).catch(function (err) {
+        if (self.retentionContext() === context && /过期|不存在/.test(err.message || '')) {
+          Core.state.reports = (Core.state.reports || []).filter(function (r) { return String(r.id) !== String(report.id); });
+          self._reportsHistoryLoaded = null; self.syncUnread();
+        }
+        throw err;
+      });
+    },
+
+    /** 实时推送只进入摘要窗口，完整日志归入同一个有界详情缓存。 */
+    summarizeLiveReport: function (report) {
+      this.cacheReportDetail(report);
+      var keys = ['id', 'type', 'time', 'readAt', 'starred', 'detailExpiresAt', 'summaryExpiresAt', 'subject', 'action', 'originalAction', 'perspective', 'attackerName', 'defenderName', 'fromName', 'toName', 'fromCoord', 'toCoord', 'interceptCoord', 'win', 'attackerWon', 'result', 'targetType', 'cityConquered', 'wildConquered', 'wildOccupation', 'occupationFailure', 'intercepted', 'attackerContinued', 'attackerRetreated', 'defenderRetreated', 'interceptionOpening', 'targetName', 'x', 'y', 'showCityInfo', 'detailLevel', 'scoutMode', 'isCity'];
+      // 与服务端卡片投影一致，保留真实胜负、接管结论和部队去向，不能从当前状态推断。
+      keys = keys.concat(['attackerWin', 'troopDisposition', 'wildOccupationReason', 'conquered', 'cityTakeoverReason', 'targetSea', 'sea', 'scoutType']);
+      function pick(source) { var out = {}; keys.forEach(function (key) { if (source[key] != null) out[key] = source[key]; }); return out; }
+      var summary = pick(report);
+      if (report.data && typeof report.data === 'object') summary.data = pick(report.data);
+      summary.summaryOnly = true; summary.detailsAvailable = true;
+      this._reportsHistoryLoaded = null;
+      return summary;
+    },
+
+    toggleStar: function (reportId) {
+      var report = this.findReport(reportId);
+      if (!report || !G.API.starReport) return;
+      if (report.starred && report.detailExpiresAt && report.detailExpiresAt <= Date.now() && typeof window.confirm === 'function' && !window.confirm('取消收藏后将按原期限过期，详情可能立即不可用。确定取消？')) return;
+      var context = this.retentionContext();
+      var self = this;
+      var action = report.starred ? G.API.unstarReport(reportId) : G.API.starReport(reportId);
+      action.then(function () {
+        if (self.retentionContext() !== context) return;
+        report.starred = !report.starred;
+        delete self._reportDetails[String(reportId)]; delete self._reportDetailMeta[String(reportId)];
+        self._reportDetailOrder = self._reportDetailOrder.filter(function (key) { return key !== String(reportId); });
+        self._reportsHistoryLoaded = null;
+        G.toast(report.starred ? '已收藏战报' : '已取消收藏');
+        if (Core.route === 'reports') Core.render();
+      }).catch(function (err) { G.toast(err.message || '操作失败'); });
     },
 
     /** 一键全部已读，以请求前的列表为准，保留请求期间新到达的战报。 */
@@ -202,6 +335,7 @@ window.Game = window.Game || {};
     },
 
     reportTitle: function (r) {
+      if (r.action === 'intercept_scout') return '拦截战报';
       var titles = G.Constants.battleReportTitles;
       if (titles[r.action]) return titles[r.action];
       // 历史战报未保存行动字段，只根据旧标题的行动前缀判断，避免误匹配玩家名。
@@ -270,6 +404,41 @@ window.Game = window.Game || {};
       }).join('；');
     },
 
+    /**
+     * 原始战斗日志固定以攻方为“我方”；仅在展示时转换守方视角，保留原文供历史兵力解析。
+     * @param {string} line - 服务端保存的单行攻方日志
+     * @param {Object} report - 含接收者视角和胜负的战报
+     * @returns {string} 当前接收者视角的展示文本，尚未进行 HTML 转义
+     */
+    formatReportCombatLogLine: function (line, report) {
+      // 先统一攻击目标的“我/敌”简称，再转换阵营，兼容反击、余伤攻击和旧型号名称。
+      var text = this.formatCombatLogLine(line);
+      if (!this.isDefenderReport(report)) return text;
+      if (/^(我方|敌方)(将领加成|司令官)[:：]/.test(text)) {
+        // 技能中的“敌方防御”等描述相对于施放者，仅交换将领归属。
+        return (text.indexOf('我方') === 0 ? '敌方' : '我方') + text.slice(2);
+      }
+      if (/^(我方|敌方)/.test(text)) {
+        var sides = { '我方': '敌方', '敌方': '我方', '距我': '距敌', '距敌': '距我' };
+        return text.replace(/我方|敌方|距我(?=\d)|距敌(?=\d)/g, function (side) { return sides[side]; });
+      }
+      if (/^攻方伤兵入营/.test(text)) return text.replace(/^攻方/, '敌方');
+      if (/^守方伤兵入营/.test(text)) return text.replace(/^守方/, '我方');
+      // 经验和战利品记录属于攻方，不能作为守方奖励展示。
+      if (/^获得经验\s*[:：]/.test(text)) return '敌方' + text;
+      if (/^✗|^★.*(?:胜利|成功)[!！]/.test(text)) {
+        var won = this.battleReportWon(report);
+        var interception = this.interceptionOutcome(report);
+        return (won ? '★ ' : '✗ ') + (interception ? interception.result : (won ? '防守成功' : '防守失败')) + '！';
+      }
+      if (/^★/.test(text)) {
+        return '敌方战果：' + text.slice(1).trim().replace(/我方|敌方/g, function (side) {
+          return side === '我方' ? '敌方' : '我方';
+        });
+      }
+      return text;
+    },
+
     wildOccupation: function (r) {
       var subject = r.subject || '';
       var legacyWild = /^(占领野地|掠夺野地)/.test(subject);
@@ -335,6 +504,22 @@ window.Game = window.Game || {};
       return !!r.win;
     },
 
+    /** 按拦截方与来袭方视角描述城外交火；突围不代表已完成侦查或攻城。 */
+    interceptionOutcome: function (r) {
+      if (r.action !== 'intercept_scout') return null;
+      var defense = this.isDefenderReport(r);
+      var won = this.battleReportWon(r);
+      var disposition = r.troopDisposition;
+      var movement = { continuing: '幸存部队沿原行军路线继续前往原目标', returning: '幸存部队返城', destroyed: '无幸存部队' }[disposition] || '部队去向未记录';
+      return {
+        result: defense ? (won ? '拦截成功' : '拦截失败') : (won ? '突围成功' : '突围失败'),
+        movement: movement,
+        detail: defense
+          ? (won ? '我方出城截击，已阻止敌方本次来袭行军。' : '敌方突破我方拦截，幸存部队沿原路线继续前往原目标。')
+          : (won ? '我方突破敌方城外拦截，幸存部队沿原路线继续行进；抵达目标后再执行原任务。' : '我方遭遇敌方城外截击，未能突破拦截，本次来袭行军已被阻止。')
+      };
+    },
+
     /**
      * 读取当前战报接收者视角中的敌方统帅，兼容未保存双方统帅快照的历史战报。
      * @param {Object} r - 战报数据
@@ -346,25 +531,39 @@ window.Game = window.Game || {};
       return commander && commander.name ? commander.name : '无统帅参战';
     },
 
+    /** 只解释本场持久化的已知规则版本，历史战报不推定伏击。 */
+    interceptionOpeningText: function (r) {
+      var opening = r.action === 'intercept_scout' && r.interceptionOpening;
+      if (!opening || opening.version !== 'interception-ambush-v1-20261021') return '';
+      if (opening.mode !== 'ambush') return opening.mode === 'urgent' ? '紧急迎击 · 按常规顺序交战' : '';
+      return '伏击先手 · ' + (this.isDefenderReport(r) ? '设伏完成，我方取得首次交火先手' : '遭遇伏击，敌方取得首次交火先手')
+        + ' · 首次交火第 ' + Number(opening.firstCombatRound) + ' 回合 · 伏击距离 ' + Number(opening.distance);
+    },
+
     renderReportCard: function (r) {
+      if (r.summaryPending) return this.renderPendingReportCard(r);
       var d = new Date(r.time);
       var ts = (d.getMonth() + 1) + '-' + String(d.getDate()).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
       var unread = !r.readAt;
       var won = this.battleReportWon(r);
+      var interception = this.interceptionOutcome(r);
       var h = '';
       h += '<div class="report-card ' + (won ? 'win' : 'lose') + (unread ? ' unread' : '') + '">';
       h += '<div class="rc-head" onclick="Game.Battle.toggleReport(\'' + r.id + '\')" style="cursor:pointer">';
       h += '<span class="rc-subject">' + (unread ? '<span class="unread-dot"></span>' : '') + this.reportTitle(r) + '</span>';
       h += '<span class="rc-time">' + ts + '</span>';
-      h += '<span class="rc-result ' + (won ? 'w' : 'l') + '">' + (won ? '胜' : '败') + '</span>';
+      h += '<span class="rc-result ' + (won ? 'w' : 'l') + '">' + (interception ? interception.result : (won ? '胜' : '败')) + '</span>';
       h += '</div>';
       h += '<div class="rc-body" onclick="Game.Battle.toggleReport(\'' + r.id + '\')" style="cursor:pointer">';
       h += '<div class="rc-line">' + G.escapeHtml(r.attackerName || r.fromName || '我方') + ' → ' + G.escapeHtml(r.toName || '目标') + this.reportCoord(r.toCoord) + '</div>';
+      if (interception) h += '<div class="rc-line">拦截地点' + this.reportCoord(r.interceptCoord) + ' · ' + interception.movement + '</div>';
+      var openingText = this.interceptionOpeningText(r);
+      if (openingText) h += '<div class="rc-line">' + G.escapeHtml(openingText) + '</div>';
       var occupation = this.wildOccupation(r);
       if (occupation) h += '<div class="rc-line"><b>占领结果:</b> ' + occupation.text + '</div>';
       h += '</div>';
       h += '<div id="rdetail_' + r.id + '" class="rc-expand" style="display:none"></div>';
-      h += '<div class="btn-row" style="margin-top:4px"><button id="rcta_' + r.id + '" class="btn sm" onclick="Game.Battle.viewReportDetail(\'' + r.id + '\')">查看完整战报</button><button class="btn sm" onclick="Game.Battle.shareReport(\'' + r.id + '\')" style="margin-left:6px;background:var(--accent,#8c6d3b);color:#fff">分享战报</button></div>';
+      h += '<div class="btn-row" style="margin-top:4px"><button id="rcta_' + r.id + '" class="btn sm" onclick="Game.Battle.viewReportDetail(\'' + r.id + '\')">' + (r.detailsAvailable === false ? '查看战果摘要' : '查看完整战报') + '</button><button class="btn sm" onclick="Game.Battle.toggleStar(\'' + r.id + '\')">' + (r.starred ? '取消收藏' : '收藏战报') + '</button>' + (r.detailsAvailable === false ? '' : '<button class="btn sm" onclick="Game.Battle.shareReport(\'' + r.id + '\')" style="margin-left:6px;background:var(--accent,#8c6d3b);color:#fff">分享战报</button>') + '</div>';
       h += '</div>';
       return h;
     },
@@ -402,8 +601,8 @@ window.Game = window.Game || {};
       var h = '<div class="rb-settlement"><div class="rb-settlement-title">【战果结算】</div><div class="rb-settlement-grid">';
       if (resourceText) h += '<div class="rb-settlement-item"><span>资源' + (defense ? '损失' : '战果') + '</span><b>' + resourceText + '</b></div>';
       if (!defense && report.exp > 0) h += '<div class="rb-settlement-item"><span>将领经验</span><b>+' + fmt(report.exp) + '</b></div>';
-      h += '<div class="rb-settlement-item"><span>声望变化</span><b>' + signed(report.prestigeChange) + ' <small>当前 ' + fmt(Math.max(0, Number(report.prestigeAfter) || 0)) + '</small></b></div>';
-      h += '<div class="rb-settlement-item"><span>民心变化</span><b>' + signed(report.moraleChange) + ' <small>当前 ' + fmt(Math.max(0, Number(report.moraleAfter) || 0)) + '</small></b></div>';
+      if (report.prestigeAfter != null || report.prestigeChange != null) h += '<div class="rb-settlement-item"><span>声望变化</span><b>' + signed(report.prestigeChange) + ' <small>当前 ' + fmt(Math.max(0, Number(report.prestigeAfter) || 0)) + '</small></b></div>';
+      if (report.moraleAfter != null || report.moraleChange != null) h += '<div class="rb-settlement-item"><span>民心变化</span><b>' + signed(report.moraleChange) + ' <small>当前 ' + fmt(Math.max(0, Number(report.moraleAfter) || 0)) + '</small></b></div>';
       if (report.enemyMoraleAfter != null || report.enemyMoraleChange != null) {
         h += '<div class="rb-settlement-item"><span>敌军城市民心变化</span><b>' + signed(report.enemyMoraleChange) + ' <small>战后 ' + fmt(Math.max(0, Number(report.enemyMoraleAfter) || 0)) + '</small></b></div>';
       }
@@ -469,6 +668,7 @@ window.Game = window.Game || {};
     },
 
     renderScoutReportCard: function (r) {
+      if (r.summaryPending) return this.renderPendingReportCard(r);
       var d = new Date(r.time);
       var ts = (d.getMonth() + 1) + '-' + String(d.getDate()).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
       var data = r.data || {};
@@ -490,7 +690,7 @@ window.Game = window.Game || {};
       h += '<div class="rc-line">' + this.scoutReportInfo(data).mode + '</div>';
       h += '</div>';
       h += '<div id="rdetail_' + r.id + '" class="rc-expand" style="display:none"></div>';
-      h += '<div class="btn-row" style="margin-top:6px"><button id="rcta_' + r.id + '" class="btn sm" onclick="Game.Battle.viewReportDetail(\'' + r.id + '\')">查看完整战报</button></div>';
+      h += '<div class="btn-row" style="margin-top:6px"><button id="rcta_' + r.id + '" class="btn sm" onclick="Game.Battle.viewReportDetail(\'' + r.id + '\')">' + (r.detailsAvailable === false ? '查看侦查摘要' : '查看完整战报') + '</button><button class="btn sm" onclick="Game.Battle.toggleStar(\'' + r.id + '\')">' + (r.starred ? '取消收藏' : '收藏战报') + '</button></div>';
       h += '</div>';
       return h;
     },
@@ -507,12 +707,23 @@ window.Game = window.Game || {};
       var ts = (d.getMonth() + 1) + '-' + String(d.getDate()).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') + ':' + String(d.getSeconds()).padStart(2, '0');
       var defense = this.isDefenderReport(r);
       var won = this.battleReportWon(r);
+      var interception = this.interceptionOutcome(r);
       var h = '';
       h += '<div class="report-board ' + (won ? 'win' : 'lose') + '">';
       h += '<div class="rb-subject">【' + this.reportTitle(r) + '】' + esc(r.subject || '交锋战情') + '</div>';
       h += '<div class="rb-meta-box">';
       h += '<div class="rb-line"><b>出发地:</b> ' + esc(r.fromName || '我方') + this.reportCoord(r.fromCoord) + '</div>';
       h += '<div class="rb-line"><b>目的地:</b> ' + esc(r.toName || '目标') + this.reportCoord(r.toCoord) + '</div>';
+      if (interception) {
+        var openingText = this.interceptionOpeningText(r);
+        if (openingText) h += '<div class="rb-line"><b>交火战术:</b> ' + esc(openingText) + '</div>';
+        h += '<div class="rb-line"><b>拦截地点:</b>' + this.reportCoord(r.interceptCoord) + '</div>';
+        h += '<div class="rb-line"><b>来袭部队:</b> ' + esc(r.attackerName || '未知敌军') + '</div>';
+        h += '<div class="rb-line"><b>拦截部队:</b> ' + esc(r.defenderName || '未知敌军') + '</div>';
+        h += '<div class="rb-line"><b>交战身份:</b> ' + (defense ? '我方出城拦截 · 敌方来袭突围' : '我方来袭突围 · 敌方出城拦截') + '</div>';
+        if (r.originalAction === 'scout') h += '<div class="rb-line"><b>原行军任务:</b> 侦查 · 抵达原目标后执行</div>';
+        h += '<div class="rb-line"><b>部队去向:</b> ' + interception.movement + '</div>';
+      }
       // 新版战报保存了攻守视角与双方统帅快照；旧版仍沿用原详情布局，避免将敌军区名称提前到摘要中。
       if (r.perspective === 'attacker' || r.perspective === 'defender') {
         h += '<div class="rb-line"><b>敌方统帅:</b> ' + esc(this.enemyCommanderName(r)) + '</div>';
@@ -529,6 +740,7 @@ window.Game = window.Game || {};
 
       var conquestOutcome = this.conquestOutcome(r);
       var resText = defense ? (won ? '防守成功' : '防守失败') : (won ? '战斗大捷' : '战斗失利');
+      if (interception) resText = interception.result;
       var takenOver = this.cityTakenOver(r);
       var defeatedNpc = won && (r.targetType === 'npc' || r.targetType === 'bandit');
       if (!defense && (takenOver || defeatedNpc)) resText = conquestOutcome.result;
@@ -558,7 +770,9 @@ window.Game = window.Game || {};
       var roundCount = this.reportRoundCount(r.roundLogs);
       var roundText = roundCount > 0 ? '，历经' + roundCount + '回合' : '';
       var narrative;
-      if (defense) {
+      if (interception) {
+        narrative = '双方部队在城外拦截地点' + this.reportCoord(r.interceptCoord) + '发生交火' + roundText + '。' + interception.detail;
+      } else if (defense) {
         narrative = esc(r.attackerName || '敌军') + ' 对我方城市 ' + esc(r.toName || '目标') + this.reportCoord(r.toCoord) + ' 发起了' + actName + roundText + '。';
         narrative += won ? ' 我方防守成功，已击退来袭部队！' : ' 我方防守失败，来袭部队突破了城防。';
       } else {
@@ -1111,19 +1325,38 @@ window.Game = window.Game || {};
       if (box.style.display === 'none') {
         var r = this.findReport(reportId);
         if (!r) return;
-        if (r.type === 'scout') {
-          box.innerHTML = this.renderScoutReportBoard(r);
+        var self = this;
+        var needsFetch = (r.summaryOnly || r.detailsAvailable === true && !Array.isArray(r.roundLogs)
+          && !(r.data && (Array.isArray(r.data.roundLogs) || Array.isArray(r.data.combatLog)))) && G.API.getReportDetail;
+        if (needsFetch) {
+          box.innerHTML = '<div class="rc-line">正在加载战报详情…</div>';
+          this.reportDetail(r).then(function (detail) {
+            if (box.style.display !== 'block') return;
+            box.innerHTML = self.renderReportPreview(detail);
+          }).catch(function (err) { box.innerHTML = '<div class="rc-line">' + G.escapeHtml(err.message || '详情加载失败') + '</div>'; });
         } else {
-          box.innerHTML = this.renderReportBoard(r, false);
+          box.innerHTML = this.renderReportPreview(r);
         }
         box.style.display = 'block';
-        if (actionButton) actionButton.innerHTML = r.type === 'scout' ? '查看侦查详情' : '查看战斗详情';
+        if (actionButton) actionButton.innerHTML = r.detailsAvailable === false ? '查看战果摘要' : (r.type === 'scout' ? '查看侦查详情' : '查看战斗详情');
         // 展开预览即视为已读
         this.markOneRead(reportId);
       } else {
         box.style.display = 'none';
         if (actionButton) actionButton.innerHTML = '查看完整战报';
       }
+    },
+
+    renderReportPreview: function (report) {
+      if (report.summaryUnavailable) return '<div class="rb-line">详细日志已过期，旧战果摘要尚未通过完整性校验，原始记录暂时保留等待核查。</div>';
+      var html = report.type === 'scout' ? this.renderScoutReportBoard(report) : this.renderReportBoard(report, false);
+      if (report.detailsAvailable === false) html += '<div class="rb-line rc-dim">详细日志已过期，以上为保留的战果摘要。</div>';
+      return html;
+    },
+
+    /** 旧记录尚未完成摘要回填时，不用缺失字段推断胜负或历史兵力。 */
+    renderPendingReportCard: function (report) {
+      return '<div class="report-card"><div class="rc-head">战报摘要整理中</div><div class="rc-body">' + G.escapeHtml(report.targetName || report.data && report.data.targetName || '历史战报') + '</div><button class="btn sm" onclick="Game.Battle.viewReportDetail(\'' + report.id + '\')">查看战报</button></div>';
     },
 
     /** 分享菜单保留论坛入口，私聊可选择最近会话或输入完整玩家名。 */
@@ -1161,7 +1394,9 @@ window.Game = window.Game || {};
 
     /** 接收方读取分享快照，不修改持有人的战报或已读状态。 */
     viewSharedReport: function (token) {
+      var context = this.ensureRetentionContext();
       return G.API.sharedBattleReport(token).then(function (report) {
+        if (G.Battle.retentionContext() !== context) return;
         G.Battle._viewReport = report;
         Core.history.push(Core.route);
         Core.route = 'reportDetail';
@@ -1172,11 +1407,19 @@ window.Game = window.Game || {};
     viewReportDetail: function (reportId) {
       var r = this.findReport(reportId);
       if (!r) { G.toast('战报不存在'); return; }
-      this._viewReport = r;
       this.markOneRead(reportId);
-      Core.history.push(Core.route);
-      Core.route = 'reportDetail';
-      Core.render();
+      var self = this;
+      var needsFetch = (r.summaryOnly || r.detailsAvailable === true && !Array.isArray(r.roundLogs)
+        && !(r.data && (Array.isArray(r.data.roundLogs) || Array.isArray(r.data.combatLog)))) && G.API.getReportDetail;
+      function show(detail) {
+        self._refreshOnReturn = true;
+        self._viewReport = detail;
+        Core.history.push(Core.route);
+        Core.route = 'reportDetail';
+        Core.render();
+      }
+      if (!needsFetch) { show(r); return; }
+      this.reportDetail(r).then(show).catch(function (err) { G.toast(err.message || '战报详情加载失败'); });
     },
 
     findReport: function (reportId) {
@@ -2263,7 +2506,18 @@ window.Game = window.Game || {};
     renderReportDetail: function (v) {
       var r = this._viewReport;
       if (!r) { G.go('reports'); return; }
+      if (r.expiresAt && r.expiresAt <= Date.now()) { this._viewReport = null; v.innerHTML = '<div class="rb-line">分享战报已过期</div>'; return; }
+      if (!r.starred && r.detailsAvailable !== false && r.detailExpiresAt && r.detailExpiresAt <= Date.now()) {
+        this._viewReport = null; this._reportsHistoryLoaded = null; G.go('reports'); return;
+      }
       var h = '';
+      if (r.detailsAvailable === false) {
+        h += '<div class="rb-line rc-dim">详细战斗日志已过期，以下为保留的战果摘要。</div>';
+        h += this.renderReportPreview(r);
+        h += '<div class="btn-row report-detail-actions"><button class="btn" onclick="Game.go(\'reports\')">↩ 返回战报</button><button class="btn warn" onclick="Game.go(\'home\')">🏠 返回首页</button></div>';
+        v.innerHTML = h;
+        return;
+      }
       if (r.type === 'scout') {
         h += this.renderScoutReportBoard(r);
         h += '<div class="btn-row report-detail-actions" style="margin-top:10px">';
@@ -2303,7 +2557,7 @@ window.Game = window.Game || {};
         h += '<div class="blog" style="max-height:480px;overflow-y:auto;">';
         var displayLogs = this.groupRoundSideLogs(logs);
         for (var j = 0; j < displayLogs.length; j++) {
-          var line = this.formatCombatLogLine(displayLogs[j]);
+          var line = this.formatReportCombatLogLine(displayLogs[j], r);
           var lineCls = 'logline';
           if (line.indexOf('我方将领加成：') === 0) lineCls += ' mine commander-bonus';
           else if (line.indexOf('敌方将领加成：') === 0) lineCls += ' enemy commander-bonus';

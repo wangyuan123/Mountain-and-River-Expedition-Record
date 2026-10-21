@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>游戏音效设计与试听 · 山河远征录</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/themes.css">
+  <link rel="stylesheet" href="css/sound.css">
+  <style>
+    body {
+      background: var(--bg, #f4f1ea);
+      color: var(--ink, #2b2b2b);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      margin: 0;
+      padding: 24px 16px 60px;
+    }
+    .preview-container {
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    .preview-header {
+      border-bottom: 2px solid var(--accent, #1a56db);
+      padding-bottom: 14px;
+      margin-bottom: 20px;
+    }
+    .preview-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--accent, #1a56db);
+      margin: 0 0 6px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .preview-subtitle {
+      font-size: 14px;
+      color: var(--muted, #666);
+      margin: 0;
+      line-height: 1.5;
+    }
+    .settings-banner {
+      background: var(--surface, #fff);
+      border: 1px solid var(--border, #d8d4c8);
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .settings-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .toggle-btn {
+      padding: 8px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+    }
+    .toggle-btn.active {
+      background: #16a34a;
+      color: #fff;
+    }
+    .toggle-btn.disabled {
+      background: #9ca3af;
+      color: #fff;
+    }
+    .sound-card {
+      background: var(--surface, #fff);
+      border: 1px solid var(--border, #d8d4c8);
+      border-radius: 8px;
+      margin-bottom: 20px;
+      padding: 18px 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+      transition: transform 0.1s ease, border-color 0.15s ease;
+    }
+    .sound-card:hover {
+      border-color: var(--accent, #1a56db);
+    }
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px dashed var(--border, #e5e0d4);
+    }
+    .card-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--ink, #1f2937);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-scene {
+      font-size: 12px;
+      padding: 3px 8px;
+      background: #eef2ff;
+      color: #3730a3;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+    .card-desc {
+      font-size: 13px;
+      color: var(--muted, #4b5563);
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+    .option-box {
+      background: #faf8f5;
+      border: 1px solid #e9e4d9;
+      border-radius: 6px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+    }
+    .option-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .option-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1f2937;
+    }
+    .badge-rec {
+      background: #fef3c7;
+      color: #92400e;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+    .option-detail {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+    .action-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .play-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #1a56db;
+      color: #fff;
+      font-weight: 600;
+      padding: 6px 16px;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background 0.15s ease;
+    }
+    .play-btn:hover:not(:disabled) {
+      background: #1e40af;
+    }
+    .play-btn:disabled {
+      background: #cbd5e1;
+      cursor: not-allowed;
+    }
+    .play-btn.sec {
+      background: #4b5563;
+    }
+    .play-btn.sec:hover:not(:disabled) {
+      background: #374151;
+    }
+    .status-text {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-left: auto;
+    }
+    .status-text.playing {
+      color: #059669;
+      font-weight: 600;
+    }
+    .visualizer-box {
+      margin-top: 10px;
+      height: 4px;
+      background: #e2e8f0;
+      border-radius: 2px;
+      overflow: hidden;
+      position: relative;
+    }
+    .visualizer-bar {
+      height: 100%;
+      width: 0%;
+      background: #2563eb;
+      transition: width 0.05s linear;
+    }
+    .notice-box {
+      background: #fffbeb;
+      border-left: 4px solid #f59e0b;
+      padding: 12px 16px;
+      margin-bottom: 24px;
+      border-radius: 0 6px 6px 0;
+      font-size: 13px;
+      color: #92400e;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="preview-container">
+    <header class="preview-header">
+      <h1 class="preview-title">🎵 游戏情境音效试听与评审</h1>
+      <p class="preview-subtitle">专为《山河远征录》打造的四组核心军事战术情境音效。支持 Web Audio 纯代码合成与无损 WAV 播放，严格受设置开关控制。</p>
+    </header>
+
+    <div class="notice-box">
+      <strong>⚠️ 设置生效规则：</strong>所有情境音效均与全局设置联动。当关闭音效或音量置为 0% 时，游戏内点击出征、拦截交火、指挥战胜、建筑升级均保持绝对静音。您可在下方直接测试音效开关的静音效果！
+    </div>
+
+    <!-- 全局音效开关与音量模拟 -->
+    <section class="settings-banner" aria-label="音效全局控制">
+      <div class="settings-row">
+        <div class="settings-group">
+          <label style="font-weight:600;font-size:14px;">全局音效状态：</label>
+          <button id="masterToggle" class="toggle-btn active" onclick="toggleSound()">🔊 音效已开启</button>
+        </div>
+        <div class="settings-group">
+          <label for="volumeSlider" style="font-size:13px;color:var(--muted);">反馈音量：</label>
+          <input id="volumeSlider" type="range" min="0" max="100" value="60" oninput="changeVolume(this.value)" style="width:120px;">
+          <span id="volumeLabel" style="font-size:13px;font-weight:600;min-width:36px;">60%</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 1. 准备出征界面 · 部队出征音效 -->
+    <article class="sound-card" id="card-dispatch">
+      <div class="card-head">
+        <div class="card-title">🚩 1. 准备出征界面 · 部队出征音效</div>
+        <span class="card-scene">触发场景：出征准备页点击【出发!】/【出征讨伐】/【立即出征】</span>
+      </div>
+      <div class="card-desc">
+        当玩家编组部队完毕并点击提交出征时播放。音效需传达严谨军纪、出征号召力与昂扬战意，避免枯燥的普通点击感。
+      </div>
+
+      <!-- 方案 A -->
+      <div class="option-box">
+        <div class="option-head">
+          <div class="option-name">方案 A：战术军号与军鼓齐鸣 <span class="badge-rec">推荐 · 经典军事战术</span></div>
+        </div>
+        <div class="option-detail">
+          <strong>声学设计：</strong>由低沉有力的两记进军军鼓起步 (120Hz/45Hz) 营造行军步伐，随即接入明快坚定的四音军号动机（G3-C4-E4-G4，196Hz 至 392Hz），尾音伴随深沉的军靴踏步共振（时长约 1.1 秒）。
+        </div>
+        <div class="action-row">
+          <button class="play-btn" onclick="playSound('dispatch', this)">▶ 试听 方案 A</button>
+          <audio id="audio-dispatch" src="audio/dispatch.wav" preload="auto"></audio>
+          <a href="audio/dispatch.wav" target="_blank" style="font-size:12px;color:#2563eb;text-decoration:none;">下载 WAV</a>
+          <span class="status-text" id="status-dispatch">就绪</span>
+        </div>
+        <div class="visualizer-box"><div class="visualizer-bar" id="bar-dispatch"></div></div>
+      </div>
+
+      <!-- 方案 B -->
+      <div class="option-box">
+        <div class="option-head">
+          <div class="option-name">方案 B：装甲集群机动推进</div>
+        </div>
+        <div class="option-detail">
+          <strong>声学设计：</strong>沉重柴油引擎加速轰鸣 (48Hz~82Hz) + 坦克履带与机械传动啮合的清脆金属咬合音，伴随一声短促嘹亮的行军哨笛（时长约 1.1 秒）。
+        </div>
+        <div class="action-row">
+          <button class="play-btn sec" onclick="playSound('dispatch_b', this)">▶ 试听 方案 B</button>
+          <audio id="audio-dispatch_b" src="audio/dispatch_b.wav" preload="auto"></audio>
+          <a href="audio/dispatch_b.wav" target="_blank" style="font-size:12px;color:#2563eb;text-decoration:none;">下载 WAV</a>
+          <span class="status-text" id="status-dispatch_b">就绪</span>
+        </div>
+        <div class="visualizer-box"><div class="visualizer-bar" id="bar-dispatch_b"></div></div>
+      </div>
+    </article>
+
+    <!-- 2. 拦截战交火时 · 交火音效 -->
+    <article class="sound-card" id="card-firefight">
+      <div class="card-head">
+        <div class="card-title">⚔️ 2. 拦截战交火时 · 交火音效</div>
+        <span class="card-scene">触发场景：大地图截击战相遇、抵达拦截空域双方交战</span>
+      </div>
+      <div class="card-desc">
+        当野外截击部队与敌军来袭部队在拦截点交汇、或空战击落侦察机时播放。音效需具备强烈的战场临场感与火力对抗冲击力。
+      </div>
+
+      <!-- 方案 A -->
+      <div class="option-box">
+        <div class="option-head">
+          <div class="option-name">方案 A：截击机炮点射与凌空空爆 <span class="badge-rec">推荐 · 空地立体交锋</span></div>
+        </div>
+        <div class="option-detail">
+          <strong>声学设计：</strong>防空机炮/重机枪三连点射（“哒-哒-哒”，每发含 6500Hz 超音速破空破裂音与重机枪机械后坐撞击），紧随防空弹穿空尖啸与沉闷震撼的凌空爆炸次低频爆震波 (130Hz~32Hz)（时长约 1.0 秒）。
+        </div>
+        <div class="action-row">
+          <button class="play-btn" onclick="playSound('firefight', this)">▶ 试听 方案 A</button>
+          <audio id="audio-firefight" src="audio/firefight.wav" preload="auto"></audio>
+          <a href="audio/firefight.wav" target="_blank" style="font-size:12px;color:#2563eb;text-decoration:none;">下载 WAV</a>
+          <span class="status-text" id="status-firefight">就绪</span>
+        </div>
+        <div class="visualizer-box"><div class="visualizer-bar" id="bar-firefight"></div></div>
+      </div>
+
+      <!-- 方案 B -->
+      <div class="option-box">
+        <div class="option-head">
+          <div class="option-name">方案 B：防空阵地密集齐射</div>
+        </div>
+        <div class="option-detail">
+          <strong>声学设计：</strong>地面防空火力五连发高速齐射连轰 + 凌空近炸引信破片散布声，突出重火力压制（时长约 1.1 秒）。
+        </div>
+        <div class="action-row">
+          <button class="play-btn sec" onclick="playSound('firefight_b', this)">▶ 试听 方案 B</button>
+          <audio id="audio-firefight_b" src="audio/firefight_b.wav" preload="auto"></audio>
+          <a href="audio/firefight_b.wav" target="_blank" style="font-size:12px;color:#2563eb;text-decoration:none;">下载 WAV</a>
+          <span class="status-text" id="status-firefight_b">就绪</span>
+        </div>
+        <div class="visualizer-box"><div class="visualizer-bar" id="bar-firefight_b"></div></div>
+      </div>
+    </article>
+
+    <!-- 3. 战斗指挥页面战胜后 · 胜利音效 -->
+    <article class="sound-card" id="card-victory">
+      <div class="card-head">
+        <div class="card-title">🏆 3. 战斗指挥页面战胜后 · 胜利音效</div>
+        <span class="card-scene">触发场景：在线战术指挥回合战结束且判定获胜时</span>
+      </div>
+      <div class="card-desc">
+        在战术指挥页面决出胜负、敌军溃败且我方大捷时播放。需给指挥官最强烈的胜利犒赏感、庄严感与凯旋荣誉感。
+      </div>
+
+      <!-- 方案 A -->
+      <div class="option-box">
+        <div class="option-head">
+          <div class="option-name">方案 A：凯旋辉煌军乐号角 <span class="badge-rec">推荐 · 史诗大捷盛乐</span></div>
+        </div>
+        <div class="option-detail">
+          <strong>声学设计：</strong>大调上行三和弦明亮号角阶进 (C5/E5 -> E5/G5 -> G5/B5)，最终在宏伟高亢的盛大主和弦 (C4+G4+C5+E5+C6) 达到巅峰！终曲伴有军鼓战胜定音冲击与金光璀璨的钟琴泛音余响 (2093Hz/2637Hz)（时长约 1.4 秒）。
+        </div>
+        <div class="action-row">
+          <button class="play-btn" onclick="playSound('victory', this)">▶ 试听 方案 A</button>
+          <audio id="audio-victory" src="audio/victory.wav" preload="auto"></audio>
+          <a href="audio/victory.wav" target="_blank" style="font-size:12px;color:#2563eb;text-decoration:none;">下载 WAV</a>
+          <span class="status-text" id="status-victory">就绪</span>
+        </div>
+        <div class="visualizer-box"><div class="visualizer-bar" id="bar-victory"></div></div>
+      </div>
+
+      <!-- 方案 B -->
+      <div class="option-box">
+        <div class="option-head">
+          <div class="option-name">方案 B：战术果决斩获胜歌</div>
+        </div>
+        <div class="option-detail">
+          <strong>声学设计：</strong>利落短促的军号断奏动机 (C5-G4-C5-E5-G5)，收结于威武挺拔的高八度全军冲锋和弦，干练而现代（时长约 1.1 秒）。
+        </div>
+        <div class="action-row">
+          <button class="play-btn sec" onclick="playSound('victory_b', this)">▶ 试听 方案 B</button>
+          <audio id="audio-victory_b" src="audio/victory_b.wav" preload="auto"></audio>
+          <a href="audio/victory_b.wav" target="_blank" style="font-size:12px;color:#2563eb;text-decoration:none;">下载 WAV</a>
+          <span class="status-text" id="status-victory_b">就绪</span>
+        </div>
+        <div class="visualizer-box"><div class="visualizer-bar" id="bar-victory_b"></div></div>
+      </div>
+    </article>
+
+    <!-- 4. 建筑升级完成 · 升级完成音效 -->
+    <article class="sound-card" id="card-upgrade">
+      <div class="card-head">
+        <div class="card-title">🔨 4. 建筑升级时 · 升级完成音效</div>
+        <span class="card-scene">触发场景：建筑升级倒计时结束或使用加速道具秒建完成</span>
+      </div>
+      <div class="card-desc">
+        当城市建筑完成阶段性提升、战力与产能晋阶时播放。既有重工兴建的坚实敲击感，又有成就达成的清澈空灵回响。
+      </div>
+
+      <!-- 方案 A -->
+      <div class="option-box">
+        <div class="option-head">
+          <div class="option-name">方案 A：工坊锻造金鸣与落成音阶 <span class="badge-rec">推荐 · 匠心落成</span></div>
+        </div>
+        <div class="option-detail">
+          <strong>声学设计：</strong>两记清脆坚实的工匠铁锤击铁音（1480Hz/1760Hz 丰富非整数倍金属泛音）模拟封顶落成，随后升起一串极为悦耳的大三和弦水晶钟琴音阶（E5 -> G#5 -> B5 -> 高音 E6），空灵悠长（时长约 1.15 秒）。
+        </div>
+        <div class="action-row">
+          <button class="play-btn" onclick="playSound('upgrade', this)">▶ 试听 方案 A</button>
+          <audio id="audio-upgrade" src="audio/upgrade.wav" preload="auto"></audio>
+          <a href="audio/upgrade.wav" target="_blank" style="font-size:12px;color:#2563eb;text-decoration:none;">下载 WAV</a>
+          <span class="status-text" id="status-upgrade">就绪</span>
+        </div>
+        <div class="visualizer-box"><div class="visualizer-bar" id="bar-upgrade"></div></div>
+      </div>
+
+      <!-- 方案 B -->
+      <div class="option-box">
+        <div class="option-head">
+          <div class="option-name">方案 B：机械咬合落锁与主城落成钟鸣</div>
+        </div>
+        <div class="option-detail">
+          <strong>声学设计：</strong>连续三级精细机械棘轮咔嗒就位 + 厚实门栓落锁声 (240Hz/60Hz)，随即敲响宏亮的主城大钟 (F#5 740Hz + C#6 1108Hz)（时长约 1.2 秒）。
+        </div>
+        <div class="action-row">
+          <button class="play-btn sec" onclick="playSound('upgrade_b', this)">▶ 试听 方案 B</button>
+          <audio id="audio-upgrade_b" src="audio/upgrade_b.wav" preload="auto"></audio>
+          <a href="audio/upgrade_b.wav" target="_blank" style="font-size:12px;color:#2563eb;text-decoration:none;">下载 WAV</a>
+          <span class="status-text" id="status-upgrade_b">就绪</span>
+        </div>
+        <div class="visualizer-box"><div class="visualizer-bar" id="bar-upgrade_b"></div></div>
+      </div>
+    </article>
+  </div>
+
+  <script>
+    var soundEnabled = true;
+    var soundVolume = 0.6;
+    var activeAudio = null;
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      var btn = document.getElementById('masterToggle');
+      if (soundEnabled) {
+        btn.textContent = '🔊 音效已开启';
+        btn.className = 'toggle-btn active';
+      } else {
+        btn.textContent = '🔇 音效已关闭 (全部静音)';
+        btn.className = 'toggle-btn disabled';
+        if (activeAudio) {
+          activeAudio.pause();
+          activeAudio.currentTime = 0;
+        }
+      }
+      updateButtonsState();
+    }
+
+    function changeVolume(val) {
+      soundVolume = Number(val) / 100;
+      document.getElementById('volumeLabel').textContent = val + '%';
+      if (activeAudio) activeAudio.volume = soundVolume;
+      updateButtonsState();
+    }
+
+    function updateButtonsState() {
+      var muted = !soundEnabled || soundVolume === 0;
+      document.querySelectorAll('.play-btn').forEach(function(b) {
+        b.title = muted ? '音效已在设置中关闭或音量为0' : '点击试听';
+      });
+    }
+
+    function playSound(key, btn) {
+      if (!soundEnabled || soundVolume === 0) {
+        alert('当前音效处于【关闭】状态或音量为 0%，根据设定保持静音。\n请先在上方开启音效！');
+        return;
+      }
+      var audio = document.getElementById('audio-' + key);
+      var status = document.getElementById('status-' + key);
+      var bar = document.getElementById('bar-' + key);
+      if (!audio) return;
+
+      if (activeAudio) {
+        activeAudio.pause();
+        activeAudio.currentTime = 0;
+      }
+
+      audio.volume = soundVolume;
+      audio.currentTime = 0;
+      activeAudio = audio;
+
+      if (status) {
+        status.textContent = '▶ 播放中...';
+        status.className = 'status-text playing';
+      }
+
+      var duration = audio.duration || 1.2;
+      var start = Date.now();
+      if (bar) bar.style.width = '0%';
+
+      var progressTimer = setInterval(function() {
+        var elapsed = (Date.now() - start) / 1000;
+        var p = Math.min(100, (elapsed / duration) * 100);
+        if (bar) bar.style.width = p + '%';
+        if (elapsed >= duration) clearInterval(progressTimer);
+      }, 30);
+
+      audio.play().catch(function(e) {
+        console.warn('播放受阻:', e);
+      });
+
+      audio.onended = function() {
+        clearInterval(progressTimer);
+        if (bar) bar.style.width = '100%';
+        if (status) {
+          status.textContent = '播放完毕';
+          status.className = 'status-text';
+        }
+        setTimeout(function() {
+          if (bar) bar.style.width = '0%';
+        }, 500);
+      };
+    }
+  </script>
+</body>
+</html>

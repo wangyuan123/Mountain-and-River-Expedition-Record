@@ -208,7 +208,10 @@ class PvpPracticeTest extends BaseServiceTest {
         pvp.surrender(a, id(), session, Map.of("surrender", 1));
         for (int i = 0; i < 52; i++) { PvpPracticeReport r = new PvpPracticeReport(); r.setId(id()); r.setSessionId(id()); r.setPlayerId(a); r.setCreatedAt(i); r.setResult("DRAW"); r.setData("{}"); reports.save(r); }
         String second = battle(a, b); pvp.surrender(a, id(), second, Map.of("surrender", 2));
-        assertEquals(50, reports.findByPlayerIdOrderByCreatedAtDesc(a, org.springframework.data.domain.PageRequest.of(0, 100)).size());
+        // 接口仅展示五十份；物理删除必须经过独立观察期开关。
+        assertEquals(54, reports.findByPlayerIdOrderByCreatedAtDesc(a, org.springframework.data.domain.PageRequest.of(0, 100)).size());
+        assertEquals(50, java.util.stream.IntStream.range(0, 5).map(i -> pvp.history(a, i).size()).sum());
+        assertTrue(pvp.history(a, 5).isEmpty());
     }
 
     @Test void validationRejectsInvalidNumbersCitiesMixedDomainsAndOfficers() {

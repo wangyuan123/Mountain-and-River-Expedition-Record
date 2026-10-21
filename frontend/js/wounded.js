@@ -4,8 +4,86 @@ window.Game = window.Game || {};
   'use strict';
   var Core = G.Core;
   function currentCityId() { return (Core.state && Core.state.player || {}).activeCityId; }
+
+  function showWoundedRulesModal() {
+    if (typeof document === 'undefined' || !document.createElement || !document.body) return;
+    var existing = document.getElementById('woundedRulesModal');
+    if (existing && existing.parentNode && existing.parentNode.removeChild) {
+      existing.parentNode.removeChild(existing);
+    }
+    var previousFocus = document.activeElement;
+    var data = Camp.data || {};
+    var medLv = data.medicalLevel != null ? data.medicalLevel : 0;
+    var medPct = medLv * 5;
+
+    var mask = document.createElement('div');
+    mask.id = 'woundedRulesModal';
+    mask.className = 'modal-mask wounded-rules-mask';
+    mask.innerHTML =
+      '<div class="modal-card wounded-rules-dialog" role="dialog" aria-modal="true" aria-labelledby="woundedRulesTitle">' +
+        '<div class="modal-title wounded-rules-title" id="woundedRulesTitle">' +
+          '<span>🏥 伤兵营救治与医疗规则说明</span>' +
+          '<button type="button" class="wounded-rules-close" aria-label="关闭说明">✕</button>' +
+        '</div>' +
+        '<div class="modal-body wounded-rules-body">' +
+          '<div class="wounded-rules-section">' +
+            '<div class="wounded-rules-sec-title">⏱ 7 天时限与倒计时机制</div>' +
+            '<div class="wounded-rules-sec-desc">' +
+              '• <strong>救治窗口：</strong>每批伤兵自产生之时起<strong>独立计时</strong>，最长保留 <strong>7 天</strong>。<br/>' +
+              '• <strong>超时清空：</strong>超过 7 天未救治的伤兵将伤重阵亡全部消失，无法再恢复。<br/>' +
+              '• <strong>不暂停计时：</strong>资源不足或玩家离线期间，倒计时<strong>不会暂停</strong>，请尽早调拨资金救治。' +
+            '</div>' +
+          '</div>' +
+          '<div class="wounded-rules-section">' +
+            '<div class="wounded-rules-sec-title">💉 医疗技术与军官急救技能</div>' +
+            '<div class="wounded-rules-sec-desc">' +
+              '• <strong>当前医疗技术：</strong>当前科技 Lv.' + medLv + '，提供 <strong>' + medPct + '%</strong> 伤兵回收率（每级 +5%，最高 Lv.10 达 50%）。<br/>' +
+              '• <strong>军官急救加成：</strong>若参战将领拥有「急救」技能，每级额外提供 +3% 回收率（最高 Lv.5 额外 +15%）。<br/>' +
+              '• <strong>结算即固化：</strong>伤兵批次的回收比例在战斗结算时瞬时确定并永久固化，无基础保底回收率。' +
+            '</div>' +
+          '</div>' +
+          '<div class="wounded-rules-section">' +
+            '<div class="wounded-rules-sec-title">💰 治疗费用与货币折算</div>' +
+            '<div class="wounded-rules-sec-desc">' +
+              '• <strong>黄金治疗：</strong>费用为该兵种制造成本资源总价的 <strong>10%</strong>（每单位向上取整）。<br/>' +
+              '• <strong>钻石治疗：</strong>按每 <strong>1000 黄金折算 1 颗钻石</strong>，不足 1 颗按 1 颗计（向上取整）。<br/>' +
+              '• <strong>即时归队：</strong>使用黄金或钻石治疗效果完全相同，治疗后部队立即归队恢复战力。' +
+            '</div>' +
+          '</div>' +
+          '<div class="wounded-rules-section">' +
+            '<div class="wounded-rules-sec-title">🎯 快捷选择与批量救治</div>' +
+            '<div class="wounded-rules-sec-desc">' +
+              '• <strong>灵活调节：</strong>支持拖动滑块微调或直接在输入框键入治疗数量。<br/>' +
+              '• <strong>一键 MAX：</strong>点击【黄金 MAX】或【钻石 MAX】将自动根据当前资产余额，一键选定最大可承受的救治数量（不自动提交，便于确认）。<br/>' +
+              '• <strong>超额置灰：</strong>若所选数量超出当前持有黄金或钻石，对应治疗按钮将自动禁用置灰；点击对应 MAX 按钮即可一键恢复至当前余额可治疗的最大数量。' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="modal-foot wounded-rules-foot">' +
+          '<button type="button" class="btn ok wounded-rules-confirm-btn">我知道了</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(mask);
+
+    var close = function () {
+      if (document.removeEventListener) document.removeEventListener('keydown', onKeydown);
+      if (mask.parentNode && mask.parentNode.removeChild) mask.parentNode.removeChild(mask);
+      if (previousFocus && previousFocus.focus) previousFocus.focus();
+    };
+    var onKeydown = function (e) { if (e.key === 'Escape') close(); };
+    var closeBtn = mask.querySelector ? mask.querySelector('.wounded-rules-close') : null;
+    var confirmBtn = mask.querySelector ? mask.querySelector('.wounded-rules-confirm-btn') : null;
+    if (closeBtn) closeBtn.onclick = close;
+    if (confirmBtn) confirmBtn.onclick = close;
+    if (mask.addEventListener) mask.addEventListener('click', function (e) { if (e.target === mask) close(); });
+    if (document.addEventListener) document.addEventListener('keydown', onKeydown);
+    if (confirmBtn && confirmBtn.focus) confirmBtn.focus();
+  }
+
   var Camp = {
     data: null, quantities: {}, pending: false, timer: null, request: 0, generation: 0,
+    showWoundedRulesModal: showWoundedRulesModal,
+    showRulesModal: showWoundedRulesModal,
     stop: function () {
       if (this.timer) window.clearInterval(this.timer);
       this.timer = null;
@@ -87,10 +165,19 @@ window.Game = window.Game || {};
       var h = '<div class="desc">当前救治城市：' + esc(cityName + cityPosition) + ' <button class="btn sm" onclick="Game.Cities.open()">切换城市</button></div>' +
         '<div class="wounded-overview"><div><span>待救治部队</span><strong>' + G.fmt(total) + '</strong></div>' +
         '<div><span>医疗技术 Lv.' + data.medicalLevel + '</span><strong>' + (data.medicalLevel * 5) + '%</strong></div></div>';
-      h += '<div class="wounded-notice"><b>请在受伤后 7 天内治疗</b><p>每批伤兵独立计时，超过 7 天未治疗将全部消失。资源不足时也不会暂停计时。</p>' +
-        '<p>医疗技术每级回收 5%（最高 50%），参战军官急救每级额外回收 3%（最高 15%）。比例在战斗结束时确定，无基础回收率。</p>' +
-        '<p>黄金或钻石均可立即治疗，恢复数量相同。黄金为制造资源总价的 10%（每单位向上取整），钻石按每 1000 黄金折算 1 颗、不足 1 颗按 1 颗计。</p></div>';
-      h += '<div class="desc" id="wounded-balance">' + self.balanceText() + '</div>';
+      h += '<div class="wounded-notice-card">' +
+        '<div class="wounded-notice-head">' +
+          '<div class="wounded-notice-title-wrap">' +
+            '<span class="wounded-notice-badge">救治须知</span>' +
+            '<span class="wounded-notice-digest">伤兵留存 7 天（最高 50% 回收）；黄金或钻石（每 1000 黄金折算 1 颗）均可即时救治。</span>' +
+          '</div>' +
+          '<button type="button" class="wounded-rules-btn" onclick="Game.Wounded.showWoundedRulesModal()" title="查看伤兵救治与医疗规则说明">' +
+            '<span>详细说明</span>' +
+            '<span class="wounded-rules-icon">ℹ</span>' +
+          '</button>' +
+        '</div>' +
+        '<div class="desc wounded-balance-text" id="wounded-balance">' + self.balanceText() + '</div>' +
+      '</div>';
       if (!batches.length) return h + '<div class="wounded-empty">本城暂无可治疗的伤兵<p>切换城市后可查看和治疗该城伤兵。</p></div>';
       batches.forEach(function (batch) {
         var unit = G.DATA.units[batch.unit];

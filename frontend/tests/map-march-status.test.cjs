@@ -32,7 +32,7 @@ function fixture(){
  }};
  c.window=c;vm.createContext(c);require('./load-constants.cjs')(c);
  for(const file of ['map-camera.js','map-layout.js','world-map.js']){
-  const source=fs.readFileSync(path.join(__dirname,'../js',file),'utf8').replace('  G.WorldMap={','  G.TestMapView=MapView; G.WorldMap={');
+  const source=fs.readFileSync(path.join(__dirname,'../js',file),'utf8').replace('  G.WorldMap={','  G.TestMapView=MapView; G.TestMountMapView=function(view){instance=view;}; G.WorldMap={');
   vm.runInContext(source,c);
  }
  c.Game.Core={state:{world:{marches,incoming,returningEnemyMarches}}};c.Game.DATA={world:{size:200}};c.Game.UNIT_MODEL={truck:'truck.webp',scout:'scout.webp',infantry:'infantry.webp',recon_car:'recon-car.webp'};
@@ -196,6 +196,101 @@ test('animation frames move the march without redrawing the map and stop at arri
  assert.equal(fullDraws,0);assert.equal(renders,2);assert.equal(view.animatingMarches,false);
  assert.equal(view.marchMarkers.has('1'),false);
  assert.equal(scheduled,1);
+});
+
+for(const reducedMotion of [false,true])test('periodic march snapshots update only dynamic layers, including the final removal, reduced motion='+reducedMotion,()=>{
+ const f=fixture(),{view,march,context:c}=f,G=c.Game,handlers={};
+ c.matchMedia=()=>({matches:reducedMotion});c.document.activeElement={tagName:'INPUT'};
+ G.state=G.Core.state;G.Core.refreshTop=()=>{};
+ G.WS={on(event,callback){handlers[event]=callback;}};
+ vm.runInContext(fs.readFileSync(path.join(__dirname,'../js/ws-handlers.js'),'utf8'),c);
+ G.TestMountMapView(view);
+ let fullDraws=0,requests=0,renders=0;
+ view.dirty=false;view.pointers=new Map();view.vx=view.vy=0;view.lastLoad=0;view.markers=new Map();
+ view.wake=G.TestMapView.prototype.wake;view.scheduleFrame=()=>{};
+ view.app={stage:{},renderer:{render(){renders++;}}};
+ view.draw=function(){fullDraws++;this.drawRoutes();};view.requestChunks=()=>{requests++;};
+ let previousX;
+ for(let tick=0;tick<6;tick++){
+  f.setNow(500+tick*5000);
+  handlers.tick({marches:[{...march,arriveAt:50000}],incoming:[],returningEnemyMarches:[]});
+  view.frame(tick*5000+16);
+  const currentX=view.marchMarkers.get('1').position.x;
+  if(previousX!=null)assert.ok(currentX>previousX,'周期同步仍须及时更新部队位置');
+  previousX=currentX;
+ }
+ handlers.tick({marches:[],incoming:[],returningEnemyMarches:[]});view.frame(30016);
+ assert.equal(view.marchMarkers.size,0,'最后一队结束时，即使没有连续动画，也须清理图层');
+ assert.equal(fullDraws,0,'镜头未变时，普通行军推送不能重绘整张地图');
+ assert.equal(requests,0,'普通行军推送不能发起地块检查');
+ assert.equal(renders,7);
+ view.wake();view.frame(30032);
+ assert.equal(fullDraws,1,'镜头或地形变化仍须执行整图重绘');
+ assert.equal(requests,1);
+});
+
+test('server clock samples animate own, incoming and returning marches between pushes without early arrival',()=>{
+ const f=fixture(),{view,march,marches,incoming,returningEnemyMarches,context:c}=f,G=c.Game;
+ Object.assign(march,{startAt:0,arriveAt:5000});marches.push(march);
+ incoming.push({...march,id:2,targetKind:'player',action:'scout'});
+ returningEnemyMarches.push({...march,id:3,targetKind:'player',returning:true});
+ let alerts=0;G.World={triggerBattleAlert(){alerts++;}};
+ G.GameTime.sync(1000);f.setNow(2000);G.GameTime.sync(2000);
+ view.drawRoutes();
+ const positions=()=>['1','incoming:2','incoming:3'].map(key=>view.marchMarkers.get(key).position.x);
+ const initial=positions(),initialArrow=view.routeFlow.lines[0].x;
+ let fullDraws=0,renders=0,scheduled=0;
+ view.dirty=false;view.pointers=new Map();view.vx=view.vy=0;view.lastLoad=2000;
+ view.app={stage:{},renderer:{render(){renders++;}}};
+ view.draw=()=>{fullDraws++;};view.scheduleFrame=()=>{scheduled++;};
+ f.setNow(2250);view.frame(16);const quarter=positions();
+ f.setNow(2500);view.frame(32);const halfway=positions();
+ initial.forEach((x,i)=>{assert.ok(quarter[i]>x);assert.ok(halfway[i]>quarter[i]);});
+ assert.notEqual(view.routeFlow.lines[0].x,initialArrow,'路线箭头也应平滑流动');
+ assert.equal(G.gameNow(),2000);assert.equal(alerts,0);assert.equal(fullDraws,0);
+ assert.equal(renders,2);assert.equal(scheduled,2);
+ f.setNow(4500);view.drawRoutes();const stopped=positions();
+ f.setNow(86400000);view.drawRoutes();assert.deepEqual(positions(),stopped,'没有新样本时不应自行抵达');
+ G.GameTime.sync(5000);view.drawRoutes();
+ assert.equal(view.marchMarkers.has('1'),false);assert.equal(view.marchMarkers.has('incoming:2'),false);
+ assert.equal(view.marchMarkers.has('incoming:3'),false);assert.equal(view.animatingMarches,false);
+});
+
+test('jittered websocket checkpoints keep march models and arrows moving on every animation frame',()=>{
+ const f=fixture(),{view,march,marches,incoming,returningEnemyMarches,context:c}=f,G=c.Game;
+ Object.assign(march,{startAt:0,arriveAt:120000});marches.push(march);
+ incoming.push({...march,id:2,targetKind:'player',action:'scout'});
+ returningEnemyMarches.push({...march,id:3,targetKind:'player',returning:true});
+ vm.runInContext(fs.readFileSync(path.join(__dirname,'../js/ws-client.js'),'utf8'),c);
+ let fullDraws=0,renders=0,elapsed=0,checkpoint=10000,previousPositions,previousArrow;
+ view.dirty=false;view.pointers=new Map();view.vx=view.vy=0;view.lastLoad=0;
+ view.app={stage:{},renderer:{render(){renders++;}}};
+ view.draw=()=>{fullDraws++;};view.scheduleFrame=()=>{};
+ const sample=time=>G.WS.handleMessage(JSON.stringify({type:'clock',gameTime:time}));
+ f.setNow(0);sample(checkpoint);view.drawRoutes();
+ const intervals=[1020,1035,1010,1080,1020,1040,1180,1005];
+ for(let tick=0;tick<16;tick++){
+  const interval=intervals[tick%intervals.length];
+  for(let frame=0;frame<60;frame++){
+   elapsed+=interval/60;f.setNow(elapsed);sample(checkpoint);view.frame(elapsed);
+   const positions=['1','incoming:2','incoming:3'].map(key=>view.marchMarkers.get(key).position.x);
+   const arrow=view.routeFlow.lines[0].x;
+   if(tick>=1){
+    positions.forEach((x,i)=>assert.ok(x>previousPositions[i],'正常推送抖动不能让己方、来袭或返程部队停帧'));
+    assert.notEqual(arrow,previousArrow,'箭头不能在等待下一次检查点时原地停帧');
+   }
+   previousPositions=positions;previousArrow=arrow;
+  }
+  checkpoint=10000+elapsed;sample(checkpoint);
+ }
+ assert.equal(fullDraws,0);assert.equal(renders,16*60);
+ f.setNow(elapsed+5000);view.frame(elapsed+5000);
+ const stoppedPositions=['1','incoming:2','incoming:3'].map(key=>view.marchMarkers.get(key).position.x);
+ const stoppedArrow=view.routeFlow.lines[0].x;
+ f.setNow(elapsed+86400000);view.frame(elapsed+86400000);
+ assert.deepEqual(['1','incoming:2','incoming:3'].map(key=>view.marchMarkers.get(key).position.x),stoppedPositions);
+ assert.equal(view.routeFlow.lines[0].x,stoppedArrow,'断线缓冲耗尽后箭头也要暂停');
+ assert.equal(G.gameNow(),checkpoint);
 });
 
 test('arrival labels reflect stationing, combat, waiting and scouting instead of leaving a route behind',()=>{

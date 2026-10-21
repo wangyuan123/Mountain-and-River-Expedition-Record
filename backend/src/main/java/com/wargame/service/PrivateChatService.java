@@ -75,11 +75,13 @@ public class PrivateChatService {
         Map<Long, Long> times = new HashMap<>();
         Map<Long, PrivateChatConversation> owned = new HashMap<>();
         sessions.findByOwnerId(me).forEach(c -> owned.put(c.getPeerId(), c));
-        for (PrivateChatMessage m : messages.conversations(me, PageRequest.of(0, 50))) {
+        long now = System.currentTimeMillis();
+        for (PrivateChatMessage m : messages.conversationsVisible(me, now, PageRequest.of(0, 50))) {
             Long id = me.equals(m.getSenderId()) ? m.getRecipientId() : m.getSenderId();
             Player p = players.findById(id).orElseThrow();
+            long cleared = Optional.ofNullable(owned.get(id)).map(PrivateChatConversation::getClearedThrough).orElse(0L);
             rows.put(id, new PrivateChatDtos.Conversation(peerDto(me, p), dto(m),
-                    messages.countBySenderIdAndRecipientIdAndReadByRecipientFalse(id, me)));
+                    messages.countUnreadVisible(id, me, now, cleared)));
             times.put(id, m.getCreatedAt());
         }
         for (PrivateChatConversation c : sessions.findTop50ByOwnerIdOrderByOpenedAtDesc(me)) {
@@ -87,9 +89,10 @@ public class PrivateChatService {
             if (!rows.containsKey(id)) {
                 Player p = players.findById(id).orElseThrow();
                 // 会话列表的消息查询有上限，补查较早的对话，不能误报为空会话。
-                List<PrivateChatMessage> recent = messages.history(me, id, PageRequest.of(0, 1));
+                long cleared = c.getClearedThrough();
+                List<PrivateChatMessage> recent = messages.historyVisible(me, id, cleared, now, PageRequest.of(0, 1));
                 rows.put(id, new PrivateChatDtos.Conversation(peerDto(me, p), recent.isEmpty() ? null : dto(recent.get(0)),
-                        messages.countBySenderIdAndRecipientIdAndReadByRecipientFalse(id, me)));
+                        messages.countUnreadVisible(id, me, now, cleared)));
             }
             times.merge(id, c.getOpenedAt(), Math::max);
         }
@@ -117,11 +120,11 @@ public class PrivateChatService {
         players.lockById(me).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
         PrivateChatConversation session = sessions.findByOwnerIdAndPeerId(me, peerId)
                 .orElseGet(() -> new PrivateChatConversation(null, me, peerId, System.currentTimeMillis()));
-        List<PrivateChatMessage> latest = messages.history(me, peerId, PageRequest.of(0, 1));
+        List<PrivateChatMessage> latest = messages.historyVisible(me, peerId, 0L, System.currentTimeMillis(), PageRequest.of(0, 1));
         long through = latest.isEmpty() ? 1L : latest.get(0).getId();
         session.setDeletedThrough(through);
         sessions.save(session);
-        messages.markRead(me, peerId, through);
+        messages.markRead(me, peerId, through, 0L, System.currentTimeMillis());
     }
 
     @Transactional(readOnly = true)
@@ -133,9 +136,9 @@ public class PrivateChatService {
     @Transactional(readOnly = true)
     public PrivateChatDtos.History historyPage(Long me, Long peer) {
         long cleared = sessions.findByOwnerIdAndPeerId(me, peer).map(PrivateChatConversation::getClearedThrough).orElse(0L);
-        List<PrivateChatMessage> result = new ArrayList<>(messages.history(me, peer, PageRequest.of(0, 50)));
+        List<PrivateChatMessage> result = new ArrayList<>(messages.historyVisible(me, peer, cleared, System.currentTimeMillis(), PageRequest.of(0, 50)));
         Collections.reverse(result);
-        return new PrivateChatDtos.History(result.stream().filter(m -> m.getId() > cleared).map(this::dto).toList(), cleared);
+        return new PrivateChatDtos.History(result.stream().map(this::dto).toList(), cleared);
     }
 
     /** 清空只推进当前账号的历史边界，重新打开仍为空，对方的历史保持可见。 */
@@ -145,11 +148,12 @@ public class PrivateChatService {
         if (peerId == null || me.equals(peerId) || !players.existsById(peerId)) throw new IllegalArgumentException("玩家不存在");
         PrivateChatConversation session = sessions.findByOwnerIdAndPeerId(me, peerId)
                 .orElseGet(() -> new PrivateChatConversation(null, me, peerId, 0L));
-        List<PrivateChatMessage> latest = messages.history(me, peerId, PageRequest.of(0, 1));
+        List<PrivateChatMessage> latest = messages.historyVisible(me, peerId, 0L, System.currentTimeMillis(), PageRequest.of(0, 1));
         if (!latest.isEmpty()) {
             long through = latest.get(0).getId();
+            // 先将原可见窗口标为已读，再推进清空边界，避免新边界排除本次清空的消息。
+            messages.markRead(me, peerId, through, session.getClearedThrough(), System.currentTimeMillis());
             session.setClearedThrough(Math.max(session.getClearedThrough(), through));
-            messages.markRead(me, peerId, through);
         }
         session.setOpenedAt(System.currentTimeMillis());
         session.setDeletedThrough(0L);
@@ -160,7 +164,8 @@ public class PrivateChatService {
     @Transactional
     public void read(Long me, Long peer, Long through) {
         if (through == null || through < 1) throw new IllegalArgumentException("无效的已读消息");
-        messages.markRead(me, peer, through);
+        long cleared = sessions.findByOwnerIdAndPeerId(me, peer).map(PrivateChatConversation::getClearedThrough).orElse(0L);
+        messages.markRead(me, peer, through, cleared, System.currentTimeMillis());
     }
 
     /** 身份取自登录会话，持久化后仅向发送方和接收方推送。 */

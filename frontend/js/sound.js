@@ -52,10 +52,23 @@ window.Game = window.Game || {};
     } catch (e) { return null; }
   }
 
-  /** 缓存短促的按钮合成音；无需下载素材。 */
+  function findCue(name) {
+    if (config.cues && Object.prototype.hasOwnProperty.call(config.cues, name)) {
+      return config.cues[name];
+    }
+    var gameSound = G.Constants && G.Constants.gameSound;
+    if (gameSound && gameSound.cues && Object.prototype.hasOwnProperty.call(gameSound.cues, name)) {
+      return gameSound.cues[name];
+    }
+    return null;
+  }
+
+  /** 缓存短促的按钮及情境合成音；无需下载素材。 */
   function bufferFor(name) {
     if (buffers[name]) return buffers[name];
-    var layers = config.cues[name].layers;
+    var cue = findCue(name);
+    if (!cue || !cue.layers) return null;
+    var layers = cue.layers;
     var rate = context.sampleRate;
     var duration = 0;
     layers.forEach(function (layer) {
@@ -69,9 +82,29 @@ window.Game = window.Game || {};
       var count = Math.floor(layer.duration * rate);
       var phase = 0;
       var filtered = 0;
+      var envType = layer.envelope;
       for (var i = 0; i < count; i++) {
         var progress = i / count;
-        var envelope = Math.min(1, i / (rate * 0.003)) * Math.pow(1 - progress, 3);
+        var envelope;
+        if (envType === 'punch') {
+          envelope = Math.min(1, i / (rate * 0.0015)) * Math.pow(1 - progress, 4);
+        } else if (envType === 'chime') {
+          envelope = Math.min(1, i / (rate * 0.002)) * Math.exp(-3.5 * progress);
+        } else if (envType === 'brass') {
+          if (progress < 0.15) envelope = progress / 0.15;
+          else if (progress < 0.75) envelope = 1.0 - (progress - 0.15) * 0.2;
+          else envelope = 0.88 * Math.pow((1.0 - progress) / 0.25, 1.8);
+        } else if (envType === 'sustain') {
+          var att = Math.min(1, i / (rate * 0.02));
+          var rel = Math.min(1, (count - i) / (rate * 0.04));
+          envelope = att * rel;
+        } else if (envType === 'explosion') {
+          var attExp = Math.min(1, i / (rate * 0.005));
+          envelope = attExp * (0.6 * Math.exp(-4.0 * progress) + 0.4 * Math.pow(1 - progress, 2));
+        } else {
+          envelope = Math.min(1, i / (rate * 0.003)) * Math.pow(1 - progress, 3);
+        }
+
         var frequency = layer.from + (layer.to - layer.from) * progress;
         phase += 2 * Math.PI * frequency / rate;
         var wave;
@@ -80,9 +113,13 @@ window.Game = window.Game || {};
           var noise = (seed >>> 0) / 2147483648 - 1;
           filtered += Math.min(1, 2 * Math.PI * frequency / rate) * (noise - filtered);
           wave = filtered;
+        } else if (layer.wave === 'brass') {
+          wave = Math.sin(phase) * 0.55 + Math.sin(phase * 2) * 0.25 + Math.sin(phase * 3) * 0.12 + Math.sin(phase * 4) * 0.08;
+        } else if (layer.wave === 'sawtooth') {
+          wave = (Math.sin(phase) - 0.5 * Math.sin(phase * 2) + 0.33 * Math.sin(phase * 3) - 0.25 * Math.sin(phase * 4)) * 0.7;
         } else {
           wave = Math.sin(phase);
-          if (layer.wave === 'metal') wave = wave * 0.7 + Math.sin(phase * 2.76) * 0.3;
+          if (layer.wave === 'metal') wave = wave * 0.55 + Math.sin(phase * 2.76) * 0.25 + Math.sin(phase * 5.40) * 0.12 + Math.sin(phase * 8.91) * 0.08;
         }
         samples[start + i] += wave * envelope * layer.gain;
       }
@@ -113,13 +150,18 @@ window.Game = window.Game || {};
 
   function emit(name, token, requestedAt) {
     if (token !== generation || !audible() || !context || context.state !== 'running') return;
+    var cue = findCue(name);
+    if (!cue) return;
     var now = Date.now();
-    // 不补播旧操作；快速连点共享冷却时间，避免噪声堆积。
-    if (now - requestedAt > config.maxDelayMs || now - lastPlayed < config.cooldownMs) return;
+    var isEvent = cue && cue.isEvent;
+    // 不补播旧操作；快速连点共享冷却时间，避免噪声堆积。情境音效不与按钮连击共用短冷却。
+    if (!isEvent && (now - requestedAt > config.maxDelayMs || now - lastPlayed < config.cooldownMs)) return;
     try {
-      if (voices.length >= config.maxVoices) return;
+      if (voices.length >= (isEvent ? config.maxVoices + 2 : config.maxVoices)) return;
+      var buf = bufferFor(name);
+      if (!buf) return;
       var source = context.createBufferSource();
-      source.buffer = bufferFor(name);
+      source.buffer = buf;
       source.connect(master);
       source.onended = function () { release(source); };
       source.start();
@@ -131,9 +173,9 @@ window.Game = window.Game || {};
     }
   }
 
-  /** 播放一种交互音；未知音色、静音和后台页面均安静跳过。 */
+  /** 播放一种交互音或情境音；未知音色、静音和后台页面均安静跳过。 */
   function play(name, requestedAt) {
-    if (!Object.prototype.hasOwnProperty.call(config.cues, name) || !audible()) return;
+    if (!findCue(name) || !audible()) return;
     var audio = prepare();
     if (!audio) return;
     var token = generation;
@@ -250,14 +292,25 @@ window.Game = window.Game || {};
       Object.keys(config.cues).forEach(function (name) {
         soundOptions += '<option value="' + name + '"' + (name === preferences.sound ? ' selected' : '') + '>' + config.cues[name].label + '</option>';
       });
-      var html = '<div class="zone-head"><span class="zone-title">按钮音效</span></div>' +
-        '<section class="panel sound-settings" aria-label="按钮音效设置" data-ui-sound="none">' +
-        '<div class="sound-setting-row"><span id="uiSoundLabel">操作反馈</span><button type="button" class="btn sm" id="uiSoundEnabled" aria-describedby="uiSoundLabel" aria-pressed="' + preferences.enabled + '" onclick="Game.Sound.toggle()">' + (disabled ? '音效已关闭' : '音效已开启') + '</button></div>' +
-        '<div class="sound-setting-row"><label for="uiSoundChoice">按钮声音</label><select id="uiSoundChoice" onchange="Game.Sound.setSound(this.value)"' + (disabled ? ' disabled' : '') + '>' + soundOptions + '</select></div>' +
-        '<div class="sound-setting-row"><label for="uiSoundVolume">音量</label><input id="uiSoundVolume" type="range" min="0" max="100" step="1" value="' + percent + '"' + (disabled ? ' disabled' : '') + ' oninput="Game.Sound.setVolume(Number(this.value)/100)" onchange="Game.Sound.play(Game.Sound.get().sound)"/><output id="uiSoundVolumeValue" for="uiSoundVolume">' + percent + '%</output></div>' +
+      var html = '<section class="panel sound-settings settings-card" aria-label="按钮音效设置" data-ui-sound="none">' +
+        '<div class="settings-card-head">' +
+          '<span class="settings-card-title" id="uiSoundLabel"><span class="settings-icon">🔊</span> 按钮音效</span>' +
+          '<button type="button" class="btn sm sound-toggle-btn' + (disabled ? ' is-disabled' : ' is-active') + '" id="uiSoundEnabled" aria-describedby="uiSoundLabel" aria-pressed="' + preferences.enabled + '" onclick="Game.Sound.toggle()">' + (disabled ? '音效已关闭' : '音效已开启') + '</button>' +
+        '</div>' +
+        '<div class="sound-setting-row">' +
+          '<label for="uiSoundChoice" class="settings-label">按键声音</label>' +
+          '<select id="uiSoundChoice" class="settings-select" onchange="Game.Sound.setSound(this.value)"' + (disabled ? ' disabled' : '') + '>' + soundOptions + '</select>' +
+        '</div>' +
+        '<div class="sound-setting-row">' +
+          '<label for="uiSoundVolume" class="settings-label">反馈音量</label>' +
+          '<div class="sound-volume-wrap">' +
+            '<input id="uiSoundVolume" type="range" min="0" max="100" step="1" value="' + percent + '"' + (disabled ? ' disabled' : '') + ' oninput="Game.Sound.setVolume(Number(this.value)/100)" onchange="Game.Sound.play(Game.Sound.get().sound)"/>' +
+            '<output id="uiSoundVolumeValue" for="uiSoundVolume">' + percent + '%</output>' +
+          '</div>' +
+        '</div>' +
         '<div class="sound-previews" aria-label="试听音效">';
       Object.keys(config.cues).forEach(function (name) {
-        html += '<button type="button" class="btn sm" data-sound-preview="' + name + '"' + (disabled || !percent ? ' disabled' : '') + ' onclick="Game.Sound.play(&quot;' + name + '&quot;)">试听 · ' + config.cues[name].label + '</button>';
+        html += '<button type="button" class="btn sm sound-preview-btn" data-sound-preview="' + name + '"' + (disabled || !percent ? ' disabled' : '') + ' onclick="Game.Sound.play(&quot;' + name + '&quot;)">试听 · ' + config.cues[name].label + '</button>';
       });
       return html + '</div></section>';
     }

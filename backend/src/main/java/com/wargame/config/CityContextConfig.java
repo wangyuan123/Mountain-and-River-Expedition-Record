@@ -49,7 +49,8 @@ public class CityContextConfig implements WebMvcConfigurer {
         if (uri == null) return false;
         if (uri.contains("/game/surrender") || uri.contains("/game/mail") || uri.contains("/game/chat")
                 || uri.contains("/game/guild") || uri.contains("/game/private") || uri.contains("/game/shop")
-                || uri.contains("/game/quest") || uri.contains("/game/rank") || uri.contains("/game/cities/switch")) return false;
+                || uri.contains("/game/quest") || uri.contains("/game/rank") || uri.contains("/game/cities/switch")
+                || uri.endsWith("/game/world/march-stratagem")) return false;
         return uri.contains("/game/build") || uri.contains("/game/army") || uri.contains("/game/tech")
                 || uri.contains("/game/officer") || uri.contains("/game/fort") || uri.contains("/game/depot")
                 || uri.contains("/game/market") || uri.contains("/game/cities/teleport") || uri.contains("/game/wounded") || uri.contains("/game/unit-equipment")

@@ -18,6 +18,8 @@ import java.util.*;
 
 @Service
 public class ForumService {
+    @org.springframework.beans.factory.annotation.Autowired private com.wargame.config.RetentionPolicy retentionPolicy;
+    @org.springframework.beans.factory.annotation.Autowired private ReportPrivacyService reportPrivacy;
 
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.quest.QuestService questService;
@@ -105,11 +107,19 @@ public class ForumService {
         Object battleReportData = null;
         if (topic.getBattleReportId() != null) {
             ScoutReport sr = scoutReportRepository.findById(topic.getBattleReportId()).orElse(null);
-            if (sr != null && sr.getData() != null && !sr.getData().isBlank()) {
+            long realNow = System.currentTimeMillis();
+            if (sr != null && sr.getPlayerId().equals(topic.getAuthorId()) && sr.getData() != null && !sr.getData().isBlank()
+                    && topic.getBattleReportExpiresAt() != null && topic.getBattleReportExpiresAt() > realNow
+                    && (sr.getStarredAt() != null || sr.getDetailExpiresAt() != null && sr.getDetailExpiresAt() > realNow)) {
                 try {
-                    battleReportData = JsonUtil.parseObjMap(sr.getData());
+                    Map<String, Object> snapshot = JsonUtil.parseObjMap(sr.getData());
+                    // 论坛嵌入与聊天分享使用同一脱敏和真实到期边界。
+                    reportPrivacy.anonymize(List.of(snapshot));
+                    snapshot.put("expiresAt", sr.getStarredAt() != null ? topic.getBattleReportExpiresAt()
+                            : Math.min(topic.getBattleReportExpiresAt(), sr.getDetailExpiresAt()));
+                    battleReportData = snapshot;
                 } catch (Exception ignored) {}
-            }
+            } else battleReportData = Map.of("detailsAvailable", false, "expired", true, "message", "分享战报已过期");
         }
 
         List<TipDto> recentTips = tipRepository.findTop20ByTopicIdOrderByCreatedAtDesc(topicId)
@@ -174,10 +184,14 @@ public class ForumService {
         }
 
         Long battleReportId = null;
+        Long battleReportExpiresAt = null;
         if (req.battleReportId() != null) {
             ScoutReport sr = scoutReportRepository.findById(req.battleReportId()).orElse(null);
+            long realNow = System.currentTimeMillis();
+            if (sr == null || !playerId.equals(sr.getPlayerId()) || sr.getData() == null || (sr.getStarredAt() == null && (sr.getDetailExpiresAt() == null || sr.getDetailExpiresAt() <= realNow))) throw new IllegalArgumentException("战报不存在、无权分享或详情已过期");
             if (sr != null) {
                 battleReportId = sr.getId();
+                battleReportExpiresAt = sr.getStarredAt() != null ? realNow + retentionPolicy.days(retentionPolicy.getReportShareDays()) : Math.min(sr.getDetailExpiresAt(), realNow + retentionPolicy.days(retentionPolicy.getReportShareDays()));
                 if (!"BOUNTY".equals(type)) {
                     type = "BATTLE";
                 }
@@ -202,6 +216,7 @@ public class ForumService {
         topic.setBountyGold(bountyGold);
         topic.setBountyStatus(bountyStatus);
         topic.setBattleReportId(battleReportId);
+        topic.setBattleReportExpiresAt(battleReportExpiresAt);
         topic.setCreatedAt(now);
         topic.setUpdatedAt(now);
 

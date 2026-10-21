@@ -23,7 +23,7 @@ async function setup() {
       }
     }
   };
-  const context = vm.createContext({ Game: game, document: { getElementById: () => null }, Date });
+  const context = vm.createContext({ Game: game, document: { getElementById: () => null }, Date, setTimeout, clearTimeout });
   context.window = context;
   require('./load-constants.cjs')(context);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/mail.js'), 'utf8'), context);
@@ -39,6 +39,28 @@ async function setup() {
   }
   return { game, view, requests, messages, stored, clickClaim };
 }
+
+test('late response from a previous account cannot replace the current mail body', async () => {
+  const f = await setup();
+  let resolveDetail;
+  f.game.API.getMailDetail = () => new Promise(resolve => { resolveDetail = resolve; });
+  f.game.Mail.open('12');
+  f.game.API.retentionContext = () => 'other-account';
+  f.game.Mail.unread();
+  resolveDetail({ id: 12, subject: '旧账号正文', body: '私密内容', attach: [] });
+  await flush();
+  assert.doesNotMatch(f.view.innerHTML, /私密内容|旧账号正文/);
+});
+
+test('rendering applies an elapsed mail expiry immediately', async () => {
+  const f = await setup();
+  f.stored[0].subject = '已过期新手礼包';
+  f.stored[0].retentionExpiresAt = Date.now() - 1;
+  f.game.Mail.setFolder('system');
+  await flush();
+  assert.doesNotMatch(f.view.innerHTML, /已过期新手礼包/);
+  assert.match(f.view.innerHTML, /新手礼包/);
+});
 
 test('点击实际领取按钮后立即显示已领取，重新打开和刷新邮件仍保持状态', async () => {
   const f = await setup();

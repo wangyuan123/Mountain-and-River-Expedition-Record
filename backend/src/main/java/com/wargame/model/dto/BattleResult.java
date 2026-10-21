@@ -16,6 +16,9 @@ public class BattleResult {
     private ConquestWallState wall;
     private String terminalReason;
 
+    /** 城外拦截开局规则快照，双方战报共享；旧报告没有此字段。 */
+    private Map<String, Object> interceptionOpening;
+
     /** 司令官开战快照，与实际带兵将领独立记录。 */
     private Map<String, Object> commandBonuses;
 

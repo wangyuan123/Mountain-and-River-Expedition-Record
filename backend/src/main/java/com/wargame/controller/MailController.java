@@ -6,10 +6,10 @@ import com.wargame.service.MailService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 邮件 REST 接口。
@@ -40,19 +40,20 @@ public class MailController {
 
     @GetMapping("/list")
     public ResponseEntity<Map<String, Object>> list(
-            @RequestParam(value = "folder", defaultValue = "inbox") String folder) {
+            @RequestParam(value = "folder", defaultValue = "inbox") String folder,
+            @RequestParam(value = "cursor", required = false) String cursor,
+            @RequestParam(value = "limit", defaultValue = "20") int limit) {
         Long playerId = authService.getCurrentPlayer().getId();
-        List<Map<String, Object>> mails = switch (folder) {
-            case "outbox" -> mailService.listOutbox(playerId);
-            case "system" -> mailService.listSystem(playerId);
-            case "unread" -> mailService.listUnread(playerId);
-            default       -> mailService.listInbox(playerId);
-        };
-        Map<String, Object> out = new LinkedHashMap<>();
-        out.put("folder", folder);
-        out.put("mails", mails);
-        out.put("unread", mailService.unreadCount(playerId));
-        return ResponseEntity.ok(out);
+        if (!java.util.Set.of("inbox", "outbox", "system", "unread").contains(folder)) {
+            throw new IllegalArgumentException("邮件文件夹无效");
+        }
+        return ResponseEntity.ok(mailService.listPage(playerId, folder, cursor, limit));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Map<String, Object>> detail(@PathVariable("id") Long id) {
+        Long playerId = authService.getCurrentPlayer().getId();
+        return ResponseEntity.ok(mailService.detail(playerId, id));
     }
 
     @GetMapping("/unread-count")
@@ -87,10 +88,17 @@ public class MailController {
         return ResponseEntity.ok(out);
     }
 
+    @PostMapping("/read-all")
+    public Map<String, Object> readAll() {
+        Long playerId = authService.getCurrentPlayer().getId();
+        int updated = mailService.markAllRead(playerId);
+        return Map.of("success", true, "updated", updated, "unread", mailService.unreadCount(playerId));
+    }
+
     @PostMapping("/{id}/claim")
     public ResponseEntity<Map<String, Object>> claim(@PathVariable("id") Long id) {
         Long playerId = authService.getCurrentPlayer().getId();
-        Map<String, Object> result = mailService.claimAttach(playerId, id);
+        Map<String, Object> result = new LinkedHashMap<>(mailService.claimAttach(playerId, id));
         // 附件已入账 resources, 随响应返回最新 state
         result.put("state", gameStateService.getGameState(playerId));
         result.put("unread", mailService.unreadCount(playerId));

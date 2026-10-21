@@ -15,6 +15,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.*;
 
@@ -38,8 +40,13 @@ import java.util.*;
  */
 @Service
 public class MailService {
+    private static final long DAY_MS = 24L * 60 * 60 * 1000;
 
     @org.springframework.beans.factory.annotation.Autowired private AccountService accounts;
+    @org.springframework.beans.factory.annotation.Autowired private JdbcTemplate jdbc;
+    @org.springframework.beans.factory.annotation.Autowired private com.wargame.config.RetentionPolicy policy;
+    @org.springframework.beans.factory.annotation.Autowired private com.wargame.repository.CitySurrenderOfferRepository surrenderOffers;
+    @jakarta.persistence.PersistenceContext private jakarta.persistence.EntityManager entityManager;
 
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
@@ -78,25 +85,104 @@ public class MailService {
     // ================================================================
 
     public List<Map<String, Object>> listInbox(Long playerId) {
-        return toDto(mailRepository.findByToPlayerIdOrderByCreatedAtDesc(playerId));
+        return listPage(playerId, "inbox", null, 100).get("mails") instanceof List<?> list ? (List<Map<String, Object>>) list : List.of();
     }
 
     public List<Map<String, Object>> listOutbox(Long playerId) {
-        return toDto(mailRepository.findByFromPlayerIdOrderByCreatedAtDesc(playerId));
+        return listPage(playerId, "outbox", null, 100).get("mails") instanceof List<?> list ? (List<Map<String, Object>>) list : List.of();
     }
 
     public List<Map<String, Object>> listSystem(Long playerId) {
-        return toDto(mailRepository.findByToPlayerIdAndIsSystemTrueOrderByCreatedAtDesc(playerId));
+        return listPage(playerId, "system", null, 100).get("mails") instanceof List<?> list ? (List<Map<String, Object>>) list : List.of();
     }
 
     public List<Map<String, Object>> listUnread(Long playerId) {
-        List<Map<String, Object>> all = toDto(mailRepository.findByToPlayerIdOrderByCreatedAtDesc(playerId));
-        all.removeIf(m -> Boolean.TRUE.equals(m.get("read")));
-        return all;
+        return listPage(playerId, "unread", null, 100).get("mails") instanceof List<?> list ? (List<Map<String, Object>>) list : List.of();
     }
 
     public long unreadCount(Long playerId) {
-        return mailRepository.countByToPlayerIdAndIsReadFalse(playerId);
+        long now = System.currentTimeMillis();
+        return jdbc.queryForObject("SELECT COUNT(*) FROM mails WHERE to_player_id = ? AND is_read = FALSE " +
+                "AND (retention_expires_at IS NULL OR retention_expires_at > ?) " +
+                "AND (attachment_policy <> 'TIMED_GIFT' OR is_claimed=TRUE OR cleanup_after IS NULL OR cleanup_after > ?)",
+                Long.class, playerId, now, now);
+    }
+
+    /** 邮件列表只取预览字段，使用 (created_at,id) 游标避免全量加载正文与附件。 */
+    public Map<String, Object> listPage(Long playerId, String folder, String cursor, int requestedLimit) {
+        int limit = Math.max(1, Math.min(100, requestedLimit));
+        long now = System.currentTimeMillis();
+        long cursorTime = 0, cursorId = 0;
+        if (cursor != null && !cursor.isBlank()) {
+            String[] parts = cursor.split(":", -1);
+            try {
+                if (parts.length != 2) throw new NumberFormatException();
+                cursorTime = Long.parseLong(parts[0]);
+                cursorId = Long.parseLong(parts[1]);
+                if (cursorTime < 0 || cursorId < 1) throw new NumberFormatException();
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("邮件分页游标无效");
+            }
+        }
+        StringBuilder sql = new StringBuilder("SELECT id, from_player_id, from_name, to_name, type, is_system, subject, LEFT(body, 120) AS body_preview, " +
+                "is_read, is_claimed, created_at, surrender_offer_id, attachment_policy, attachment_expires_at, attachment_expired_at, retention_expires_at, " +
+                "(attach_json IS NOT NULL AND attach_json NOT IN ('', '[]', 'null')) AS has_attachment " +
+                "FROM mails WHERE ");
+        List<Object> args = new ArrayList<>();
+        if ("outbox".equals(folder)) {
+            sql.append("from_player_id = ? ");
+        } else {
+            sql.append("to_player_id = ? ");
+        }
+        args.add(playerId);
+        if ("system".equals(folder)) sql.append("AND is_system = TRUE ");
+        if ("unread".equals(folder)) {
+            sql.append("AND is_read = FALSE ");
+        }
+        sql.append("AND (retention_expires_at IS NULL OR retention_expires_at > ?) "); args.add(now);
+        sql.append("AND (attachment_policy <> 'TIMED_GIFT' OR is_claimed=TRUE OR cleanup_after IS NULL OR cleanup_after > ?) "); args.add(now);
+        if (cursor != null && !cursor.isBlank()) {
+            sql.append("AND (created_at < ? OR (created_at = ? AND id < ?)) ");
+            args.add(cursorTime); args.add(cursorTime); args.add(cursorId);
+        }
+        sql.append("ORDER BY created_at DESC, id DESC LIMIT ?"); args.add(limit + 1);
+        List<Map<String, Object>> rows = jdbc.query(sql.toString(), (rs, n) -> {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("id", rs.getLong("id"));
+            item.put("from", Boolean.TRUE.equals(rs.getObject("is_system")) && "战争指挥部".equals(rs.getString("from_name")) ? "系统" : rs.getString("from_name"));
+            item.put("to", rs.getString("to_name"));
+            item.put("type", rs.getString("type"));
+            item.put("system", rs.getBoolean("is_system"));
+            item.put("subject", rs.getString("subject"));
+            item.put("bodyPreview", rs.getString("body_preview"));
+            item.put("read", rs.getBoolean("is_read"));
+            item.put("claimed", rs.getBoolean("is_claimed"));
+            item.put("ts", rs.getLong("created_at"));
+            item.put("surrenderOfferId", (Long) rs.getObject("surrender_offer_id"));
+            item.put("hasAttachment", rs.getBoolean("has_attachment"));
+            item.put("attachmentExpiresAt", rs.getObject("attachment_expires_at"));
+            item.put("retentionExpiresAt", rs.getObject("retention_expires_at"));
+            item.put("attachmentExpired", !rs.getBoolean("is_claimed") && (rs.getObject("attachment_expired_at") != null ||
+                    ("TIMED_GIFT".equals(rs.getString("attachment_policy")) && rs.getObject("attachment_expires_at") != null && rs.getLong("attachment_expires_at") <= now)));
+            return item;
+        }, args.toArray());
+        boolean hasMore = rows.size() > limit;
+        if (hasMore) rows.remove(rows.size() - 1);
+        String nextCursor = null;
+        if (hasMore && !rows.isEmpty()) {
+            Map<String, Object> last = rows.get(rows.size() - 1);
+            nextCursor = last.get("ts") + ":" + last.get("id");
+        }
+        Map<String, Object> page = new LinkedHashMap<>();
+        page.put("folder", folder);
+        page.put("mails", rows);
+        page.put("items", rows);
+        page.put("hasMore", hasMore);
+        page.put("nextCursor", nextCursor);
+        page.put("unread", unreadCount(playerId));
+        page.put("retentionPolicy", Map.of("processedReadDays", policy.getProcessedMailDays(), "unreadWithoutPendingAttachmentDays", policy.getUnreadMailDays(),
+                "timedGiftGraceDays", policy.getGiftNoticeDays(), "protectedAttachmentsExpire", false));
+        return page;
     }
 
     // ================================================================
@@ -153,6 +239,9 @@ public class MailService {
         mail.setAttachJson(JsonUtil.toJson(normalizedAttach));
         mail.setIsRead(false);
         mail.setIsClaimed(normalizedAttach.isEmpty());
+        mail.setAttachmentPolicy(normalizedAttach.isEmpty() ? "NONE" : "PROTECTED");
+        mail.setAttachmentSourceType("PLAYER_TRANSFER");
+        mail.setAttachmentSourceId(UUID.randomUUID().toString());
         mail.setCreatedAt(System.currentTimeMillis());
         mail = mailRepository.save(mail);
 
@@ -185,6 +274,18 @@ public class MailService {
     public Mail sendSystem(Long toPlayerId, String fromName, String type,
                            String subject, String body, List<Map<String, Object>> attach,
                            Long surrenderOfferId) {
+        if (attach != null && !attach.isEmpty()) log.warn("Unclassified system attachment protected: player={} type={}", toPlayerId, type);
+        return sendSystem(toPlayerId, fromName, type, subject, body, attach, surrenderOfferId,
+                attach == null || attach.isEmpty() ? "NONE" : "PROTECTED", "LEGACY_UNKNOWN", null, null);
+    }
+
+    /** 新增资产入口显式声明来源；限时福利必须带业务 ID 和不可变截止时间。 */
+    @Transactional
+    public Mail sendSystem(Long toPlayerId, String fromName, String type, String subject, String body,
+                           List<Map<String, Object>> attach, Long surrenderOfferId,
+                           String attachmentPolicy, String sourceType, String sourceId, Long expiresAt) {
+        if (!Set.of("NONE", "PROTECTED", "TIMED_GIFT").contains(attachmentPolicy)) throw new IllegalArgumentException("附件策略无效");
+        if ("TIMED_GIFT".equals(attachmentPolicy) && (expiresAt == null || sourceId == null || expiresAt <= System.currentTimeMillis())) throw new IllegalArgumentException("限时赠礼必须有有效业务来源和领取期限");
         Player to = playerRepository.findById(toPlayerId)
                 .orElseThrow(() -> new IllegalArgumentException("收件人不存在: " + toPlayerId));
         to = accounts.lockPlayer(toPlayerId);
@@ -203,6 +304,10 @@ public class MailService {
         mail.setIsClaimed(false);
         mail.setCreatedAt(System.currentTimeMillis());
         mail.setSurrenderOfferId(surrenderOfferId);
+        mail.setAttachmentPolicy(attachmentPolicy);
+        mail.setAttachmentSourceType(sourceType == null ? "LEGACY_UNKNOWN" : sourceType);
+        mail.setAttachmentSourceId(sourceId);
+        mail.setAttachmentExpiresAt(expiresAt);
         mail = mailRepository.save(mail);
         pushService.pushToPlayer(to.getId(), "mail", Map.of(
                 "id", mail.getId(),
@@ -218,11 +323,31 @@ public class MailService {
 
     @Transactional
     public void markRead(Long playerId, Long mailId) {
-        int n = mailRepository.markRead(mailId, playerId);
-        if (n == 0) {
+        Mail mail = mailRepository.findByIdForUpdate(mailId).orElse(null);
+        if (mail == null || !playerId.equals(mail.getToPlayerId())) {
             // 不抛错: 标记已读对前端 UI 是幂等的
             log.debug("markRead noop: player={} mail={} (not owner or already read)", playerId, mailId);
+            return;
         }
+        long now = System.currentTimeMillis();
+        if (mail.getRetentionExpiresAt() != null && mail.getRetentionExpiresAt() <= now) return;
+        if (!Boolean.TRUE.equals(mail.getIsRead())) {
+            mail.setIsRead(true);
+            updateRetention(mail, now);
+            mailRepository.saveAndFlush(mail);
+        }
+    }
+
+    /** 数据库批量已读，不加载正文；有效关联业务和待领资产不启动普通保留倒计时。 */
+    @Transactional
+    public int markAllRead(Long playerId) {
+        entityManager.flush();
+        long now = System.currentTimeMillis();
+        String processed = "(is_claimed=TRUE OR attach_json IS NULL OR TRIM(attach_json) IN ('','[]','null')) AND NOT EXISTS (SELECT 1 FROM city_surrender_offers o WHERE o.id=mails.surrender_offer_id AND o.status IN ('PENDING','ACCEPTED'))";
+        int changed = jdbc.update("UPDATE mails SET processed_real_at=CASE WHEN " + processed + " THEN ? ELSE processed_real_at END, " +
+                "retention_expires_at=CASE WHEN " + processed + " THEN ?+processed_retention_ms ELSE retention_expires_at END,is_read=TRUE WHERE to_player_id=? AND is_read=FALSE AND (retention_expires_at IS NULL OR retention_expires_at>?)", now, now, playerId, now);
+        entityManager.clear();
+        return changed;
     }
 
     /**
@@ -232,7 +357,7 @@ public class MailService {
     @Transactional
     public Map<String, Object> claimAttach(Long playerId, Long mailId) {
         accounts.lockPlayer(playerId);
-        Mail mail = mailRepository.findById(mailId)
+        Mail mail = mailRepository.findByIdForUpdate(mailId)
                 .orElseThrow(() -> new IllegalArgumentException("邮件不存在"));
         if (!mail.getToPlayerId().equals(playerId)) {
             throw new IllegalArgumentException("无权领取该邮件附件");
@@ -240,6 +365,7 @@ public class MailService {
         if (Boolean.TRUE.equals(mail.getIsClaimed())) {
             throw new IllegalArgumentException("附件已领取");
         }
+        if (expiredGift(mail, System.currentTimeMillis())) return expireGift(mail, System.currentTimeMillis());
         List<Map<String, Object>> attach = parseAttach(mail.getAttachJson());
         if (attach.isEmpty()) {
             throw new IllegalArgumentException("该邮件没有附件");
@@ -278,6 +404,9 @@ public class MailService {
             return Map.of("success", false, "message", blocked.stream().map(unitUnlocks::message).reduce((a, b) -> a + "；" + b).orElse(""),
                     "unlocks", blocked, "missingPrerequisites", blocked.stream().flatMap(u -> u.missing().stream()).toList());
         }
+        // 必要锁及资格检查之后重新取真实时间；锁等待和慢检查不能绕过领取截止。
+        long now = System.currentTimeMillis();
+        if (expiredGift(mail, now)) return expireGift(mail, now);
         if (!resList.isEmpty()) {
             applyResources(playerId, resList, +1);
         }
@@ -285,7 +414,13 @@ public class MailService {
             applyArmyUnits(playerId, armyDeltas);
         }
 
-        mailRepository.markClaimed(mailId, playerId);
+        mail.setIsClaimed(true);
+        mail.setIsRead(true);
+        mail.setAttachmentPolicy("NONE");
+        mail.setCleanupAfter(null);
+        mail.setRetentionExpiresAt(null);
+        updateRetention(mail, now);
+        mailRepository.saveAndFlush(mail);
         log.info("Mail claim: player={} mail={} attach={}", playerId, mailId, attach);
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("success", true);
@@ -301,6 +436,90 @@ public class MailService {
             // 不存在或不归该玩家所有, 直接吞掉错误, 避免前端做一次额外查询
             log.debug("delete mail noop: player={} mail={}", playerId, mailId);
         }
+    }
+
+    /** 按需读取邮件正文与附件；列表永远不加载这些完整字段。 */
+    @Transactional(readOnly = true)
+    public Map<String, Object> detail(Long playerId, Long mailId) {
+        Mail mail = mailRepository.findOwned(mailId, playerId)
+                .orElseThrow(() -> new IllegalArgumentException("邮件不存在或无权查看"));
+        long now = System.currentTimeMillis();
+        if ((mail.getRetentionExpiresAt() != null && mail.getRetentionExpiresAt() <= now) ||
+                (!Boolean.TRUE.equals(mail.getIsClaimed()) && "TIMED_GIFT".equals(mail.getAttachmentPolicy()) && mail.getCleanupAfter() != null && mail.getCleanupAfter() <= now)) {
+            throw new IllegalArgumentException("邮件已过期");
+        }
+        Map<String, Object> result = toDto(mail);
+        result.put("attachmentExpired", mail.getAttachmentExpiredAt() != null ||
+                ("TIMED_GIFT".equals(mail.getAttachmentPolicy()) && mail.getAttachmentExpiresAt() != null && mail.getAttachmentExpiresAt() <= now));
+        result.put("attachmentExpiresAt", mail.getAttachmentExpiresAt());
+        return result;
+    }
+
+    private boolean expiredGift(Mail mail, long now) {
+        return !Boolean.TRUE.equals(mail.getIsClaimed()) && "TIMED_GIFT".equals(mail.getAttachmentPolicy()) && mail.getAttachmentExpiresAt() != null && mail.getAttachmentExpiresAt() <= now;
+    }
+
+    private Map<String, Object> expireGift(Mail mail, long now) {
+        mail.setAttachmentExpiredAt(mail.getAttachmentExpiredAt() == null ? now : mail.getAttachmentExpiredAt());
+        if (mail.getCleanupAfter() == null) mail.setCleanupAfter(mail.getAttachmentExpiresAt() + policy.days(policy.getGiftNoticeDays()));
+        mail.setRetentionExpiresAt(mail.getCleanupAfter());
+        mailRepository.saveAndFlush(mail);
+        return new LinkedHashMap<>(Map.of("success", false, "message", "附件已过期"));
+    }
+
+    private boolean activeBusiness(Mail mail) {
+        return mail.getSurrenderOfferId() != null && surrenderOffers.findById(mail.getSurrenderOfferId())
+                .map(o -> Set.of("PENDING", "ACCEPTED").contains(o.getStatus())).orElse(false);
+    }
+
+    /** 关联业务终结后才开始计时；不使用可暂停的游戏时间反推真实期限。 */
+    private void updateRetention(Mail mail, long now) {
+        if (activeBusiness(mail)) { mail.setRetentionExpiresAt(null); mail.setProcessedRealAt(null); return; }
+        if (expiredGift(mail, now)) { expireGift(mail, now); return; }
+        if (mail.hasPendingAttachment()) return;
+        if (Boolean.TRUE.equals(mail.getIsRead())) {
+            if (mail.getProcessedRealAt() == null) mail.setProcessedRealAt(now);
+            mail.setRetentionExpiresAt(mail.getProcessedRealAt() + mail.getProcessedRetentionMs());
+        } else if (mail.getRetentionExpiresAt() == null) {
+            mail.setRetentionExpiresAt(mail.getCreatedAt() + mail.getUnreadRetentionMs());
+        }
+    }
+
+    /** 业务终结和邮件期限在同一事务提交；只锁邮件，不在邮件锁后反向锁账号。 */
+    @Transactional
+    public void businessEnded(Long offerId, long endedAt) {
+        entityManager.flush();
+        jdbc.update("UPDATE mails SET processed_real_at=CASE WHEN is_read=TRUE THEN ? ELSE NULL END,retention_expires_at=CASE WHEN is_read=TRUE THEN ?+processed_retention_ms ELSE created_at+unread_retention_ms END WHERE surrender_offer_id=? AND retention_expires_at IS NULL AND (is_claimed=TRUE OR attach_json IS NULL OR TRIM(attach_json) IN ('','[]','null'))", endedAt, endedAt, offerId);
+        // JDBC 批量更新后刷新实体，避免同一事务已有邮件对象在提交时覆盖期限。
+        entityManager.clear();
+    }
+
+    /** 后台与领取共用账号→邮件锁顺序；终结状态不可逆，复核后才允许删除。 */
+    @Transactional
+    public boolean refreshRetention(long id, long now) {
+        Long player = jdbc.query("SELECT to_player_id FROM mails WHERE id=?", rs -> rs.next() ? rs.getLong(1) : null, id);
+        if (player == null) return false;
+        accounts.lockPlayer(player);
+        Mail mail = mailRepository.findByIdForUpdate(id).orElse(null);
+        if (mail == null || activeBusiness(mail)) return false;
+        Long before = mail.getRetentionExpiresAt();
+        if (mail.getSurrenderOfferId() != null && mail.getProcessedRealAt() == null && Boolean.TRUE.equals(mail.getIsRead()) && !mail.hasPendingAttachment()) {
+            surrenderOffers.findById(mail.getSurrenderOfferId()).map(com.wargame.model.entity.CitySurrenderOffer::getEndedRealAt)
+                    .ifPresent(mail::setProcessedRealAt);
+        }
+        updateRetention(mail, now);
+        mailRepository.saveAndFlush(mail);
+        return !Objects.equals(before, mail.getRetentionExpiresAt());
+    }
+
+    @Transactional
+    public boolean deleteExpired(long id, long now) {
+        refreshRetention(id, now);
+        Mail mail = mailRepository.findByIdForUpdate(id).orElse(null);
+        if (mail == null || activeBusiness(mail) || mail.hasPendingAttachment() || mail.getRetentionExpiresAt() == null || mail.getRetentionExpiresAt() > now) return false;
+        mailRepository.delete(mail);
+        mailRepository.flush();
+        return true;
     }
 
     // ================================================================
@@ -337,12 +556,18 @@ public class MailService {
         )));
         welcome.setIsRead(false);
         welcome.setIsClaimed(false);
+        welcome.setAttachmentPolicy("PROTECTED");
+        welcome.setAttachmentSourceType("NEW_PLAYER");
+        welcome.setAttachmentSourceId("welcome:" + playerId);
         welcome.setCreatedAt(now - 3600_000L);
         mailRepository.save(welcome);
 
         Mail reward = new Mail();
         reward.setFromPlayerId(null);
         reward.setFromName("系统");
+        reward.setAttachmentPolicy("PROTECTED");
+        reward.setAttachmentSourceType("NEW_PLAYER");
+        reward.setAttachmentSourceId("reward:" + playerId);
         reward.setToPlayerId(playerId);
         reward.setToName(p.getUsername());
         reward.setType("reward");
@@ -532,6 +757,9 @@ public class MailService {
         d.put("claimed", Boolean.TRUE.equals(m.getIsClaimed()));
         d.put("ts", m.getCreatedAt());
         d.put("surrenderOfferId", m.getSurrenderOfferId());
+        d.put("attachmentExpired", m.getAttachmentExpiredAt() != null);
+        d.put("retentionExpiresAt", m.getRetentionExpiresAt());
+        d.put("attachmentExpiresAt", m.getAttachmentExpiresAt());
         return d;
     }
 }

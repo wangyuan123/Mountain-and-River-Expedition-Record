@@ -304,7 +304,7 @@ public class PvpPracticeService {
         if (p.getConfirmationExits() >= 3) { p.setCooldownUntil(now() + 60000); p.setConfirmationExits(0); }
     }
     private void abortAcceptance(PvpPracticeSession s, Long declining) {
-        s.setStatus("VOID"); s.setResult("VOID"); s.setReason("MATCH_NOT_ACCEPTED"); s.setSettledAt(now());
+        s.setStatus("VOID"); s.setResult("VOID"); s.setReason("MATCH_NOT_ACCEPTED"); s.setSettledAt(now()); s.setSettledRealAt(System.currentTimeMillis());
         for (String id : List.of(s.getTicketA(), s.getTicketB())) {
             var t = tickets.findById(id).orElseThrow(); var p = state(t.getPlayerId());
             t.setStatus("CLOSED"); p.setActiveTicketId(null);
@@ -482,7 +482,7 @@ public class PvpPracticeService {
     private void remember(PvpPlayerState p, Long foe) { var r = recent(p); r.add(0, foe); p.setRecentOpponents(PvpJson.write(r.subList(0, Math.min(5, r.size())))); }
     private void finish(PvpPracticeSession s, String result, String reason) {
         if (s.getSettledAt() != 0) return;
-        s.setSettledAt(now()); s.setResult(result); s.setReason(reason); s.setStatus("VOID".equals(result) ? "VOID" : "FINISHED");
+        s.setSettledAt(now()); s.setSettledRealAt(System.currentTimeMillis()); s.setResult(result); s.setReason(reason); s.setStatus("VOID".equals(result) ? "VOID" : "FINISHED");
         var a = state(s.getPlayerA()); var b = state(s.getPlayerB());
         boolean rated = !"VOID".equals(result) && !farming(a, b.getPlayerId()) && !farming(b, a.getPlayerId());
         int oldA = a.getRating(), oldB = b.getRating();
@@ -512,7 +512,7 @@ public class PvpPracticeService {
             payload.put("mode", "PVP_PRACTICE"); payload.put("actualLoss", 0); payload.put("rated", rated); payload.put("rulesVersion", s.getRulesVersion());
             payload.put("seed", s.getSeed()); payload.put("createdAt", s.getCreatedAt()); payload.put("settledAt", s.getSettledAt());
             report.setData(PvpJson.write(payload)); reports.save(report);
-            var old = reports.findByPlayerIdOrderByCreatedAtDesc(p.getPlayerId(), PageRequest.of(1, 50)); reports.deleteAll(old);
+            // 最近五十份在读取时限制；物理回收统一经过观察期与清理开关。
         }
         changedBoth(s, "pvpFinished");
     }
@@ -550,12 +550,15 @@ public class PvpPracticeService {
     @Transactional(readOnly = true)
     public List<Map<String, Object>> history(Long player, int page) {
         if (page < 0 || page > 10) throw new IllegalArgumentException("页码无效");
-        return reports.findByPlayerIdOrderByCreatedAtDesc(player, PageRequest.of(page, 10)).stream()
-                .map(r -> Map.<String, Object>of("sessionId", r.getSessionId(), "result", r.getResult(), "createdAt", r.getCreatedAt())).toList();
+        if (page >= 5) return List.of();
+        return jdbc.query("SELECT session_id,result,created_at FROM pvp_practice_reports WHERE player_id=? AND retention_expires_at>? ORDER BY created_at DESC,id DESC LIMIT 10 OFFSET ?",
+                (rs, n) -> Map.<String, Object>of("sessionId", rs.getString(1), "result", rs.getString(2), "createdAt", rs.getLong(3)), player, System.currentTimeMillis(), page * 10);
     }
     @Transactional(readOnly = true)
     public Map<String, Object> report(Long player, String id) {
         var report = reports.findBySessionIdAndPlayerId(id, player).orElseThrow(() -> new IllegalArgumentException("战报不存在或无权访问"));
+        long newer = jdbc.queryForObject("SELECT COUNT(*) FROM pvp_practice_reports WHERE player_id=? AND retention_expires_at>? AND (created_at>? OR (created_at=? AND id>?))", Long.class, player, System.currentTimeMillis(), report.getCreatedAt(), report.getCreatedAt(), report.getId());
+        if (report.getRetentionExpiresAt() <= System.currentTimeMillis() || newer >= 50) throw new IllegalArgumentException("演习战报已过期");
         Map<String, Object> out = new LinkedHashMap<>(PvpJson.read(report.getData(), new TypeReference<Map<String, Object>>() {}));
         out.put("rounds", rounds.findBySessionIdOrderByRoundNoAsc(id).stream().map(r -> PvpJson.read(r.getData(), new TypeReference<Map<String, Object>>() {})).toList());
         return out;

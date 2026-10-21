@@ -2659,6 +2659,42 @@ body[data-theme="paper"] {
   color: #526b4d;
 }
 
+/* 设置界面紧凑卡片 - 沙盘公文风 */
+[data-theme="paper"] .settings-card {
+  background: #fdfaf3 !important;
+  border: 1px solid #ded6c5 !important;
+  border-radius: 6px !important;
+  box-shadow: 0 1px 3px rgba(60, 50, 30, 0.05) !important;
+  color: #273136 !important;
+}
+
+[data-theme="paper"] .settings-card-head {
+  border-bottom: 1px solid #ebe4d5 !important;
+}
+
+[data-theme="paper"] .settings-card-title {
+  color: #3e533a !important;
+}
+
+[data-theme="paper"] .settings-select {
+  background: #f5efe1 !important;
+  border-color: #ded5c2 !important;
+  color: #273136 !important;
+}
+
+[data-theme="paper"] .settings-status-pill.success {
+  background: #e4eee7 !important;
+  color: #2f6b43 !important;
+  border-color: #c8dcce !important;
+}
+
+[data-theme="paper"] .settings-app-ver {
+  background: #f5efe1 !important;
+  border-color: #ded5c2 !important;
+  color: #3e533a !important;
+}
+
+
 
 
 [data-theme="paper"] .home-officer-item {
@@ -3286,6 +3322,66 @@ body[data-theme="dark"] {
   border-color: rgba(59, 130, 246, 0.35);
   color: #93c5fd;
 }
+
+/* 设置界面紧凑卡片 - 夜航终端风 */
+[data-theme="dark"] .settings-card {
+  background: #151d2a !important;
+  border: 1px solid #273549 !important;
+  border-radius: 6px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .settings-card-head {
+  border-bottom: 1px solid #202d3f !important;
+}
+
+[data-theme="dark"] .settings-card-title {
+  color: #7cc7ec !important;
+}
+
+[data-theme="dark"] .settings-label,
+[data-theme="dark"] .settings-account-name,
+[data-theme="dark"] .settings-app-name {
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .settings-select {
+  background: #1c2738 !important;
+  border-color: #2b3b52 !important;
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .settings-status-pill.success {
+  background: #143522 !important;
+  color: #4ade80 !important;
+  border-color: #1e5631 !important;
+}
+
+[data-theme="dark"] .settings-status-pill.warning {
+  background: #332408 !important;
+  color: #facc15 !important;
+  border-color: #59400e !important;
+}
+
+[data-theme="dark"] .settings-status-pill.muted {
+  background: #1e293b !important;
+  color: #94a3b8 !important;
+  border-color: #334155 !important;
+}
+
+[data-theme="dark"] .settings-app-ver {
+  background: #1c2738 !important;
+  border-color: #2b3b52 !important;
+  color: #7cc7ec !important;
+}
+
+[data-theme="dark"] .settings-account-sub-row,
+[data-theme="dark"] .sound-settings .sound-previews,
+[data-theme="dark"] .settings-danger-row {
+  border-top-color: #202d3f !important;
+}
+
 
 
 [data-theme="dark"] .home-officer-item {
@@ -4931,3 +5027,400 @@ body[data-theme="dark"] {
 .home-officer-name {
   font-size: 15px !important;
 }
+
+/* 军队页 - 顶部战备概览看板与说明弹窗各主题覆盖 */
+[data-theme|="blue-white"] .army-overview-card {
+  background: #ffffff !important;
+  border: 1px solid #d4dce6 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+[data-theme|="blue-white"] .army-ov-badge {
+  background: #eef4fb !important;
+  color: #3b82f6 !important;
+  border-color: #93c5fd !important;
+}
+[data-theme|="blue-white"] .army-ov-cell {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+[data-theme|="blue-white"] .army-rules-btn {
+  color: #2563eb !important;
+  border-color: #93c5fd !important;
+  background: #ffffff !important;
+}
+[data-theme|="blue-white"] .army-rules-btn:hover {
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+
+[data-theme="paper"] .army-overview-card {
+  background: #fbfaf6 !important;
+  border: 1px solid #ded9cd !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+}
+[data-theme="paper"] .army-ov-badge {
+  background: #ebe7df !important;
+  color: #3f5e4d !important;
+  border-color: #8fa798 !important;
+}
+[data-theme="paper"] .army-ov-cell {
+  background: #f4f2ec !important;
+  border: 1px solid #e5e0d4 !important;
+}
+[data-theme="paper"] .army-rules-btn {
+  color: #3f5e4d !important;
+  border-color: #8fa798 !important;
+  background: #fbfaf6 !important;
+}
+[data-theme="paper"] .army-rules-btn:hover {
+  background: #3f5e4d !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .army-overview-card {
+  background: #111724 !important;
+  border: 1px solid #1e293b !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3) !important;
+}
+[data-theme="dark"] .army-ov-badge {
+  background: #162032 !important;
+  color: #38bdf8 !important;
+  border-color: #0284c7 !important;
+}
+[data-theme="dark"] .army-ov-cmd {
+  color: #cbd5e1 !important;
+}
+[data-theme="dark"] .army-ov-cell {
+  background: #0f1420 !important;
+  border: 1px solid #1e293b !important;
+}
+[data-theme="dark"] .army-ov-k {
+  color: #94a3b8 !important;
+}
+[data-theme="dark"] .army-ov-v {
+  color: #f1f5f9 !important;
+}
+[data-theme="dark"] .army-ov-v .army-ov-main {
+  color: #38bdf8 !important;
+}
+[data-theme="dark"] .army-ov-v .army-ov-cap {
+  color: #64748b !important;
+}
+[data-theme="dark"] .army-ov-sub {
+  color: #64748b !important;
+}
+[data-theme="dark"] .army-rules-btn {
+  color: #38bdf8 !important;
+  border-color: #0284c7 !important;
+  background: #162032 !important;
+}
+[data-theme="dark"] .army-rules-btn:hover {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+/* 军队说明弹窗主题变量覆盖 */
+[data-theme|="blue-white"] .army-rules-mask {
+  --surface: #ffffff;
+  --surface-muted: #eef4fb;
+  --ink: #334455;
+  --muted: #62738d;
+  --line: #d4e0ee;
+  --accent: #4a7bb5;
+  --accent-soft: #eef4fb;
+  --accent-dark: #24569a;
+  --danger: #d9534f;
+  color-scheme: light;
+}
+
+[data-theme="paper"] .army-rules-mask {
+  --surface: #f6f5f0;
+  --surface-muted: #ebe7df;
+  --ink: #273136;
+  --muted: #58635c;
+  --line: #ded9cd;
+  --accent: #3f5e4d;
+  --accent-soft: #ebe7df;
+  --accent-dark: #2f493c;
+  --danger: #a33a2b;
+  color-scheme: light;
+}
+
+[data-theme="dark"] .army-rules-mask {
+  --surface: #111724;
+  --surface-muted: #0e1422;
+  --ink: #e2e8f0;
+  --muted: #94a3b8;
+  --line: #2b3b52;
+  --accent: #38bdf8;
+  --accent-soft: #0e2238;
+  --accent-dark: #0284c7;
+  --danger: #ff9990;
+  color-scheme: dark;
+}
+
+/* 伤兵营救治看板与说明弹窗各主题覆盖 */
+[data-theme|="blue-white"] .wounded-notice-card {
+  background: #ffffff !important;
+  border: 1px solid #d4dce6 !important;
+  border-left: 3px solid #f59e0b !important;
+}
+[data-theme|="blue-white"] .wounded-rules-btn {
+  color: #2563eb !important;
+  border-color: #93c5fd !important;
+  background: #ffffff !important;
+}
+[data-theme|="blue-white"] .wounded-rules-btn:hover {
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+
+[data-theme="paper"] .wounded-notice-card {
+  background: #fbfaf6 !important;
+  border: 1px solid #ded9cd !important;
+  border-left: 3px solid #b45309 !important;
+}
+[data-theme="paper"] .wounded-rules-btn {
+  color: #3f5e4d !important;
+  border-color: #8fa798 !important;
+  background: #fbfaf6 !important;
+}
+[data-theme="paper"] .wounded-rules-btn:hover {
+  background: #3f5e4d !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .wounded-notice-card {
+  background: #111724 !important;
+  border: 1px solid #1e293b !important;
+  border-left: 3px solid #38bdf8 !important;
+}
+[data-theme="dark"] .wounded-notice-digest {
+  color: #cbd5e1 !important;
+}
+[data-theme="dark"] .wounded-rules-btn {
+  color: #38bdf8 !important;
+  border-color: #0284c7 !important;
+  background: #162032 !important;
+}
+[data-theme="dark"] .wounded-rules-btn:hover {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+[data-theme|="blue-white"] .wounded-rules-mask {
+  --surface: #ffffff;
+  --surface-muted: #eef4fb;
+  --ink: #334455;
+  --muted: #62738d;
+  --line: #d4e0ee;
+  --accent: #4a7bb5;
+  --accent-soft: #eef4fb;
+  --accent-dark: #24569a;
+  --danger: #d9534f;
+  color-scheme: light;
+}
+
+[data-theme="paper"] .wounded-rules-mask {
+  --surface: #f6f5f0;
+  --surface-muted: #ebe7df;
+  --ink: #273136;
+  --muted: #58635c;
+  --line: #ded9cd;
+  --accent: #3f5e4d;
+  --accent-soft: #ebe7df;
+  --accent-dark: #2f493c;
+  --danger: #a33a2b;
+  color-scheme: light;
+}
+
+[data-theme="dark"] .wounded-rules-mask {
+  --surface: #111724;
+  --surface-muted: #0e1422;
+  --ink: #e2e8f0;
+  --muted: #94a3b8;
+  --line: #2b3b52;
+  --accent: #38bdf8;
+  --accent-soft: #0e2238;
+  --accent-dark: #0284c7;
+  --danger: #ff9990;
+  color-scheme: dark;
+}
+
+/* 城防工事页 - 顶部战备概览看板、卡片与说明弹窗各主题覆盖 */
+[data-theme|="blue-white"] .fort-overview-card,
+[data-theme|="blue-white"] .fort-card {
+  background: #ffffff !important;
+  border: 1px solid #d4dce6 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+[data-theme|="blue-white"] .fort-ov-badge {
+  background: #eef4fb !important;
+  color: #3b82f6 !important;
+  border-color: #93c5fd !important;
+}
+[data-theme|="blue-white"] .fort-ov-cell {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+[data-theme|="blue-white"] .fort-rules-btn {
+  color: #2563eb !important;
+  border-color: #93c5fd !important;
+  background: #ffffff !important;
+}
+[data-theme|="blue-white"] .fort-rules-btn:hover {
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+[data-theme|="blue-white"] .fort-stats-wrap {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="paper"] .fort-overview-card,
+[data-theme="paper"] .fort-card {
+  background: #fbfaf6 !important;
+  border: 1px solid #ded9cd !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+}
+[data-theme="paper"] .fort-ov-badge {
+  background: #ebe7df !important;
+  color: #3f5e4d !important;
+  border-color: #8fa798 !important;
+}
+[data-theme="paper"] .fort-ov-cell {
+  background: #f4f2ec !important;
+  border: 1px solid #e5e0d4 !important;
+}
+[data-theme="paper"] .fort-rules-btn {
+  color: #3f5e4d !important;
+  border-color: #8fa798 !important;
+  background: #fbfaf6 !important;
+}
+[data-theme="paper"] .fort-rules-btn:hover {
+  background: #3f5e4d !important;
+  color: #ffffff !important;
+}
+[data-theme="paper"] .fort-stats-wrap {
+  background: #f4f2ec !important;
+  border-color: #e5e0d4 !important;
+}
+
+[data-theme="dark"] .fort-overview-card,
+[data-theme="dark"] .fort-card {
+  background: #111724 !important;
+  border: 1px solid #1e293b !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3) !important;
+}
+[data-theme="dark"] .fort-ov-badge {
+  background: #162032 !important;
+  color: #38bdf8 !important;
+  border-color: #0284c7 !important;
+}
+[data-theme="dark"] .fort-ov-lv {
+  color: #cbd5e1 !important;
+}
+[data-theme="dark"] .fort-ov-cell {
+  background: #0f1420 !important;
+  border: 1px solid #1e293b !important;
+}
+[data-theme="dark"] .fort-ov-k {
+  color: #94a3b8 !important;
+}
+[data-theme="dark"] .fort-ov-v {
+  color: #f1f5f9 !important;
+}
+[data-theme="dark"] .fort-ov-v .fort-ov-main {
+  color: #38bdf8 !important;
+}
+[data-theme="dark"] .fort-ov-v .fort-ov-cap {
+  color: #64748b !important;
+}
+[data-theme="dark"] .fort-ov-sub {
+  color: #64748b !important;
+}
+[data-theme="dark"] .fort-rules-btn {
+  color: #38bdf8 !important;
+  border-color: #0284c7 !important;
+  background: #162032 !important;
+}
+[data-theme="dark"] .fort-rules-btn:hover {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+}
+[data-theme="dark"] .fort-name {
+  color: #f1f5f9 !important;
+}
+[data-theme="dark"] .fort-role-pill {
+  background: #162032 !important;
+  color: #94a3b8 !important;
+  border-color: #1e293b !important;
+}
+[data-theme="dark"] .fort-have-badge {
+  background: #0e2238 !important;
+  border-color: #0284c7 !important;
+}
+[data-theme="dark"] .fort-have-badge .fort-have-val {
+  color: #38bdf8 !important;
+}
+[data-theme="dark"] .fort-stats-wrap {
+  background: #0f1420 !important;
+  border-color: #1e293b !important;
+}
+[data-theme="dark"] .fort-pill {
+  color: #cbd5e1 !important;
+}
+[data-theme="dark"] .fort-pill.atk {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+[data-theme="dark"] .fort-brief {
+  color: #94a3b8 !important;
+}
+[data-theme="dark"] .fort-cost-wrap {
+  color: #cbd5e1 !important;
+}
+[data-theme="dark"] .fort-action-row {
+  border-top-color: #1e293b !important;
+}
+
+[data-theme|="blue-white"] .fort-rules-mask {
+  --surface: #ffffff;
+  --surface-muted: #eef4fb;
+  --ink: #334455;
+  --muted: #62738d;
+  --line: #d4e0ee;
+  --accent: #4a7bb5;
+  --accent-soft: #eef4fb;
+  --accent-dark: #24569a;
+  --danger: #d9534f;
+  color-scheme: light;
+}
+
+[data-theme="paper"] .fort-rules-mask {
+  --surface: #f6f5f0;
+  --surface-muted: #ebe7df;
+  --ink: #273136;
+  --muted: #58635c;
+  --line: #ded9cd;
+  --accent: #3f5e4d;
+  --accent-soft: #ebe7df;
+  --accent-dark: #2f493c;
+  --danger: #a33a2b;
+  color-scheme: light;
+}
+
+[data-theme="dark"] .fort-rules-mask {
+  --surface: #111724;
+  --surface-muted: #0e1422;
+  --ink: #e2e8f0;
+  --muted: #94a3b8;
+  --line: #2b3b52;
+  --accent: #38bdf8;
+  --accent-soft: #0e2238;
+  --accent-dark: #0284c7;
+  --danger: #ff9990;
+  color-scheme: dark;
+}
+
+
+

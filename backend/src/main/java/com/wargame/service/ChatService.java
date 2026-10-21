@@ -17,6 +17,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.scheduling.annotation.Scheduled;
 
 @Service
 public class ChatService {
@@ -29,10 +32,12 @@ public class ChatService {
     public static final long DAILY_WINDOW_MS = 86400000L; // 24 小时
     public static final int DAILY_MAX_COUNT = 100; // 每天最多发言 100 次
     private static final long REPEAT_BLOCK_MS = 60000L; // 60 秒内禁止连续发送相同内容
+    private static final long REPEAT_RETENTION_MS = 120_000L;
 
 
     private record LastMessage(String content, long timestamp) {}
     private final ConcurrentMap<Long, LastMessage> lastMessages = new ConcurrentHashMap<>();
+    private final AtomicInteger sendsSinceSweep = new AtomicInteger();
 
     private final ChatMessageRepository chatMessageRepository;
     private final PlayerRepository playerRepository;
@@ -53,7 +58,7 @@ public class ChatService {
     }
 
     public List<ChatDtos.MessageResponse> history() {
-        List<ChatMessage> messages = chatMessageRepository.findTop50ByOrderByCreatedAtDesc();
+        List<ChatMessage> messages = chatMessageRepository.findRecentVisible(System.currentTimeMillis(), PageRequest.of(0, 50));
         Map<Long, String> avatars = new LinkedHashMap<>();
         List<Long> playerIds = messages.stream()
                 .map(ChatMessage::getPlayerId)
@@ -120,6 +125,7 @@ public class ChatService {
 
         // 重复发言按原文判断，避免敏感词被打码后绕过相同内容拦截。
         lastMessages.put(playerId, new LastMessage(originalContent, now));
+        sweepDuplicateMessagesOccasionally(now);
 
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("id", response.id());
@@ -169,5 +175,23 @@ public class ChatService {
 
     private ChatDtos.MessageResponse toDto(ChatMessage message, String avatar) {
         return new ChatDtos.MessageResponse(message.getId(), message.getPlayerId(), message.getUsername(), message.getPlayerId() == null ? message.getContent() : filterContent(message.getContent()), message.getCreatedAt(), avatar);
+    }
+
+    @Scheduled(fixedDelay = 60_000, scheduler = "retentionTaskScheduler")
+    public void evictExpiredDuplicateMessages() {
+        sweepDuplicateMessages(System.currentTimeMillis());
+    }
+
+    private void sweepDuplicateMessagesOccasionally(long now) {
+        if (sendsSinceSweep.incrementAndGet() >= 100) {
+            sendsSinceSweep.set(0);
+            sweepDuplicateMessages(now);
+        }
+    }
+
+    private void sweepDuplicateMessages(long now) {
+        lastMessages.forEach((playerId, message) -> {
+            if (now - message.timestamp() >= REPEAT_RETENTION_MS) lastMessages.remove(playerId, message);
+        });
     }
 }

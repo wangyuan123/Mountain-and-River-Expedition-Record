@@ -11,6 +11,27 @@ public interface MarchRepository extends JpaRepository<March, Long> {
 
     List<March> findByPlayerId(Long playerId);
 
+    /** 查询拦截关系的账号连通分量，双方 Tick 和操作在写入前按账号 ID 统一加锁。 */
+    @org.springframework.data.jpa.repository.Query("""
+            select i from March i, March e
+            where i.targetKind = 'incoming_march' and i.targetId = cast(e.id as string)
+              and i.action = 'intercept_scout' and (i.returning = false or i.returning is null)
+              and (i.playerId in :players or e.playerId in :players)
+            """)
+    List<March> findRelatedInterceptions(@org.springframework.data.repository.query.Param("players") List<Long> players);
+
+
+    /** 只查询明确指向我方在途行军的敌方截击，返程截击和旧来袭表 ID 不参与匹配。 */
+    @org.springframework.data.jpa.repository.Query("""
+            select m from March m
+            where m.targetKind = 'incoming_march' and m.targetId in :marchIds
+              and m.action = 'intercept_scout'
+              and (m.returning = false or m.returning is null)
+            order by m.arriveAt, m.id
+            """)
+    List<March> findActiveInterceptions(
+            @org.springframework.data.repository.query.Param("marchIds") List<String> marchIds);
+
     List<March> findByTargetKindAndTargetIdAndStationedTrueOrderByIdAsc(String targetKind, String targetId);
 
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)

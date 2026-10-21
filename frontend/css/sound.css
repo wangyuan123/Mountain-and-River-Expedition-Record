@@ -1,9 +1,13 @@
-.sound-settings .sound-setting-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-.sound-settings .sound-setting-row > span:first-child { flex: 1; }
-.sound-settings .sound-setting-row label { min-width: 4em; }
-.sound-settings select { max-width: 70%; min-width: 0; padding: 5px 8px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 4px; font: inherit; }
-.sound-settings input[type=range] { flex: 1; min-width: 60px; min-height: 32px; accent-color: var(--accent); cursor: pointer; }
+.sound-settings .sound-setting-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; padding: 2px 0; }
+.sound-settings .sound-setting-row label { min-width: 4.5em; flex-shrink: 0; font-size: 13px; font-weight: 500; color: var(--ink); }
+.sound-settings select { max-width: 65%; min-width: 0; padding: 3px 8px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 4px; font: inherit; font-size: 13px; }
+.sound-settings .sound-volume-wrap { display: flex; align-items: center; gap: 8px; flex: 1; }
+.sound-settings input[type=range] { flex: 1; min-width: 60px; height: 18px; margin: 0; accent-color: var(--accent); cursor: pointer; }
 .sound-settings input:disabled { cursor: default; opacity: 0.5; }
-.sound-settings output { min-width: 4ch; text-align: right; font-variant-numeric: tabular-nums; color: var(--ink); }
-.sound-settings .sound-previews { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.sound-settings output { min-width: 3.5ch; text-align: right; font-variant-numeric: tabular-nums; font-size: 12px; font-weight: 600; color: var(--accent); }
+.sound-settings .sound-previews { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--line-light, rgba(0, 0, 0, 0.08)); }
+.sound-settings .sound-preview-btn { font-size: 11px; padding: 2px 8px; line-height: 1.4; border-radius: 4px; }
+.sound-settings .sound-toggle-btn { font-size: 11px; padding: 2px 8px; border-radius: 10px; line-height: 1.4; font-weight: 500; }
+.sound-settings .sound-toggle-btn.is-active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.sound-settings .sound-toggle-btn.is-disabled { background: var(--surface-muted, #f1f5f9); color: var(--muted); border-color: var(--line); }
 .sound-settings button:focus-visible, .sound-settings input:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }

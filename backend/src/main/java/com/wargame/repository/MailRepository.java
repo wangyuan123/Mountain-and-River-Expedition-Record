@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
 
 import java.util.List;
 
@@ -19,6 +21,13 @@ public interface MailRepository extends JpaRepository<Mail, Long> {
     List<Mail> findByFromPlayerIdOrderByCreatedAtDesc(Long fromPlayerId);
 
     List<Mail> findBySurrenderOfferId(Long surrenderOfferId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT m FROM Mail m WHERE m.id = :id")
+    java.util.Optional<Mail> findByIdForUpdate(@Param("id") Long id);
+
+    @Query("SELECT m FROM Mail m WHERE m.id = :id AND (m.toPlayerId = :playerId OR m.fromPlayerId = :playerId)")
+    java.util.Optional<Mail> findOwned(@Param("id") Long id, @Param("playerId") Long playerId);
 
     /** 未读数量 */
     long countByToPlayerIdAndIsReadFalse(Long toPlayerId);

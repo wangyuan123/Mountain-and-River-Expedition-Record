@@ -113,7 +113,7 @@ class GuildRelationBroadcastTest {
 
         // 2. 拉取历史
         GuildChatMessage historyMsg = new GuildChatMessage(999L, 10L, 100L, "指挥官赵", "今晚八点集中进攻！", 2000L);
-        when(chatRepo.findTop50ByGuildIdOrderByCreatedAtDesc(10L)).thenReturn(List.of(historyMsg));
+        when(chatRepo.findRecentVisible(eq(10L), anyLong(), any())).thenReturn(List.of(historyMsg));
 
         List<ChatDtos.GuildMessageResponse> history = chatService.history(100L);
         assertEquals(1, history.size());
@@ -124,7 +124,7 @@ class GuildRelationBroadcastTest {
         var filtered = chatService.send(100L, "q_q卖号");
         assertEquals("*_***", filtered.content());
         verify(chatRepo).save(argThat(m -> m.getContent().equals("*_***")));
-        when(chatRepo.findTop50ByGuildIdOrderByCreatedAtDesc(10L)).thenReturn(List.of(
+        when(chatRepo.findRecentVisible(eq(10L), anyLong(), any())).thenReturn(List.of(
                 new GuildChatMessage(1000L, 10L, 100L, "指挥官赵", "V.X代充", 3000L)));
         assertEquals("*.***", chatService.history(100L).get(0).content());
     }

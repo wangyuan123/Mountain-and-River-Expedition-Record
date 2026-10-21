@@ -60,6 +60,18 @@
     <div class="title" style="text-align: center; font-weight: bold; font-size: 16px; color: #1e3a8a; margin-bottom: 4px;">- 军校招募 -</div>
     <div class="desc" style="font-size: 12px; color: #64748b; margin-bottom: 10px;">军校 Lv.10 · 每批10人 · 五星名将概率 <b>6.00%</b> <span class="link-act" style="color: #2563eb; cursor: pointer;">？招募说明</span></div>
     
+    <div class="desc" style="font-size: 12px; color: #64748b; margin-bottom: 6px;">本轮已刷新 0/30 次 · 今日已刷新 0/100 次</div>
+    <div class="academy-refresh-row" style="margin-bottom: 12px;">
+      <button type="button" class="btn ok academy-refresh-btn with-ripple" id="previewRefreshBtn" onclick="triggerPreviewRefresh(event)">
+        <span class="btn-ripple-container"></span><span class="refresh-icon">⟳</span> 刷新候选人 (200金)
+      </button>
+      <label class="academy-fast-refresh-label" title="勾选后刷新军校将跳过调遣动画，立即展示候选名单">
+        <input type="checkbox" id="previewFastRefreshCheckbox" class="academy-fast-refresh-input">
+        <span>极速刷新</span>
+      </label>
+    </div>
+
+    <div id="academy-candidates-region">
     <div class="zone-head" style="font-size: 13px; font-weight: bold; color: #1e40af; border-bottom: 2px solid #bfdbfe; padding-bottom: 4px; margin-bottom: 8px;">候选人名单 (点击卡片直接招募)</div>
 
     <div class="academy-candidates-grid menu">
@@ -226,6 +238,7 @@
         </div>
       </div>
     </div>
+    </div><!-- /#academy-candidates-region -->
   </div>
 
   <script>
@@ -239,6 +252,233 @@
       } else {
         box.classList.remove('preview-dark');
       }
+    }
+
+    var previewTimers = [];
+    var initialCardsHtml = '';
+    var previewAudioCtx = null;
+    function getPreviewAudioCtx() {
+      if (!previewAudioCtx && window.AudioContext) previewAudioCtx = new AudioContext();
+      if (previewAudioCtx && previewAudioCtx.state === 'suspended') previewAudioCtx.resume();
+      return previewAudioCtx;
+    }
+    function playPreviewStamp() {
+      var ctx = getPreviewAudioCtx();
+      if (!ctx) return;
+      var now = ctx.currentTime;
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(140, now);
+      osc.frequency.exponentialRampToValueAtTime(42, now + 0.11);
+      gain.gain.setValueAtTime(0.35, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.12);
+
+      var oscM = ctx.createOscillator();
+      var gainM = ctx.createGain();
+      oscM.type = 'triangle';
+      oscM.frequency.setValueAtTime(320, now);
+      oscM.frequency.exponentialRampToValueAtTime(80, now + 0.06);
+      gainM.gain.setValueAtTime(0.18, now);
+      gainM.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+      oscM.connect(gainM);
+      gainM.connect(ctx.destination);
+      oscM.start(now);
+      oscM.stop(now + 0.07);
+    }
+    function playPreviewFlip() {
+      var ctx = getPreviewAudioCtx();
+      if (!ctx) return;
+      var now = ctx.currentTime;
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(680, now);
+      osc.frequency.exponentialRampToValueAtTime(380, now + 0.035);
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.035);
+    }
+    function playPreviewFiveStar() {
+      var ctx = getPreviewAudioCtx();
+      if (!ctx) return;
+      var now = ctx.currentTime;
+      var freqs = [523.25, 659.25, 783.99, 1046.50];
+      freqs.forEach(function (f, idx) {
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = (idx === 3) ? 'sine' : 'triangle';
+        var startTime = now + idx * 0.03;
+        var duration = 0.55 - idx * 0.05;
+        osc.frequency.setValueAtTime(f, startTime);
+        gain.gain.setValueAtTime(0.2, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+      });
+      var shimmer = ctx.createOscillator();
+      var shimmerGain = ctx.createGain();
+      shimmer.type = 'sine';
+      shimmer.frequency.setValueAtTime(1200, now);
+      shimmer.frequency.exponentialRampToValueAtTime(2600, now + 0.28);
+      shimmerGain.gain.setValueAtTime(0.12, now);
+      shimmerGain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      shimmer.connect(shimmerGain);
+      shimmerGain.connect(ctx.destination);
+      shimmer.start(now);
+      shimmer.stop(now + 0.3);
+    }
+
+    window.addEventListener('DOMContentLoaded', function () {
+      var reg = document.getElementById('academy-candidates-region');
+      if (reg) initialCardsHtml = reg.innerHTML;
+    });
+
+    function clearPreviewTimers() {
+      for (var i = 0; i < previewTimers.length; i++) clearTimeout(previewTimers[i]);
+      previewTimers = [];
+    }
+
+    function triggerPreviewRefresh(e) {
+      var isFast = document.getElementById('previewFastRefreshCheckbox').checked;
+      var btn = document.getElementById('previewRefreshBtn');
+      var reg = document.getElementById('academy-candidates-region');
+      if (!initialCardsHtml && reg) initialCardsHtml = reg.innerHTML;
+
+      if (isFast) {
+        btn.innerHTML = '<span class="refresh-icon">✓</span> 极速刷新成功';
+        playPreviewFlip();
+        setTimeout(function () {
+          btn.innerHTML = '<span class="btn-ripple-container"></span><span class="refresh-icon">⟳</span> 刷新候选人 (200金)';
+        }, 600);
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="refresh-icon">⏳</span> 调遣将领中...';
+      clearPreviewTimers();
+
+      // 第一阶段：公文袋与扫描
+      var dossierHtml = '<div class="academy-dispatch-dossier" onclick="skipPreviewAnim()" role="button" tabindex="0" title="点击任意处跳过动画">' +
+        '<div class="dossier-skip-tip">点击跳过 ⏩</div>' +
+        '<div class="dossier-folder">' +
+          '<div class="dossier-header">' +
+            '<span class="dossier-badge">WAR DEPARTMENT · 机密调令</span>' +
+            '<span class="dossier-code">NO.AC-2026</span>' +
+          '</div>' +
+          '<div class="dossier-crest">🎖️</div>' +
+          '<div class="dossier-title">战区将校晋升调遣指令</div>' +
+          '<div class="dossier-typing-text" id="previewTyping">正在联络各战区司令部...</div>' +
+          '<div class="dossier-scan-radar"><div class="radar-sweep"></div></div>' +
+        '</div>' +
+        '<div class="dossier-seal-wrap">' +
+          '<div class="dossier-seal-stamp">' +
+            '<div class="seal-inner">' +
+              '<span class="seal-star">★ ★ ★</span>' +
+              '<span class="seal-text">批准调派</span>' +
+              '<span class="seal-sub">TOP SECRET</span>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+      reg.innerHTML = dossierHtml;
+
+      var t1 = setTimeout(function () {
+        var typ = document.getElementById('previewTyping');
+        if (typ) typ.innerHTML = '调阅将校考评档案与战功...';
+      }, 300);
+      previewTimers.push(t1);
+
+      var tStamp = setTimeout(function () {
+        playPreviewStamp();
+      }, 350);
+      previewTimers.push(tStamp);
+
+      // 第二阶段：600ms 后破封展开并 3D 翻牌
+      var t2 = setTimeout(function () {
+        var tempDiv = document.createElement('div');
+        tempDiv.innerHTML = initialCardsHtml;
+        var cards = tempDiv.querySelectorAll('.academy-candidate-card');
+
+        var gridHtml = '<div class="zone-head" style="font-size: 13px; font-weight: bold; color: #1e40af; border-bottom: 2px solid #bfdbfe; padding-bottom: 4px; margin-bottom: 8px;">候选人名单 (点击卡片直接招募)</div>' +
+          '<div class="academy-candidates-grid menu academy-anim-cards-grid" onclick="skipPreviewAnim()" title="点击跳过动画">';
+
+        cards.forEach(function (card, i) {
+          var star = card.getAttribute('data-star');
+          var isFiveStar = (star === '5');
+          gridHtml += '<div class="academy-anim-card-wrap' + (isFiveStar ? ' has-five-star' : '') + '" id="prev-card-wrap-' + i + '">' +
+            '<div class="card-flip-inner">' +
+              '<div class="card-face-back">' +
+                '<div class="card-back-crest">🎖️</div>' +
+                '<div class="card-back-label">军校调令</div>' +
+                '<div class="card-back-stars">★★★★★</div>' +
+              '</div>' +
+              '<div class="card-face-front">' +
+                card.outerHTML +
+                (isFiveStar ? '<div class="star5-burst-glow"></div>' : '') +
+              '</div>' +
+            '</div>' +
+          '</div>';
+        });
+        gridHtml += '</div>';
+        reg.innerHTML = gridHtml;
+
+        var delay = 40;
+        var step = 45;
+        cards.forEach(function (card, i) {
+          var isFiveStar = (card.getAttribute('data-star') === '5');
+          (function (idx, curTime, is5) {
+            var tf = setTimeout(function () {
+              var w = document.getElementById('prev-card-wrap-' + idx);
+              if (w) {
+                w.classList.add('is-flipped');
+                if (is5) {
+                  w.classList.add('is-star5-spotlight');
+                  playPreviewFiveStar();
+                } else {
+                  playPreviewFlip();
+                }
+              }
+            }, curTime);
+            previewTimers.push(tf);
+          })(i, delay, isFiveStar);
+
+          delay += step;
+          if (isFiveStar) delay += 200; // 5星悬停0.2s特写
+        });
+
+        var tEnd = setTimeout(function () {
+          finishPreviewAnim();
+        }, delay + 250);
+        previewTimers.push(tEnd);
+
+      }, 600);
+      previewTimers.push(t2);
+    }
+
+    function skipPreviewAnim() {
+      clearPreviewTimers();
+      finishPreviewAnim();
+    }
+
+    function finishPreviewAnim() {
+      clearPreviewTimers();
+      var btn = document.getElementById('previewRefreshBtn');
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<span class="btn-ripple-container"></span><span class="refresh-icon">⟳</span> 刷新候选人 (200金)';
+      }
+      var reg = document.getElementById('academy-candidates-region');
+      if (reg && initialCardsHtml) reg.innerHTML = initialCardsHtml;
     }
   </script>
 </body>

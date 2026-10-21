@@ -341,7 +341,27 @@ public class WorldViewService {
                 // 防守方可在抵达后直接进入同一战术会话，首次读取会由战斗接口补建会话。
                 info.put("arrived", march.getBattleId() != null
                         || now >= Objects.requireNonNullElse(march.getArriveAt(), Long.MAX_VALUE));
+                info.put("countermeasuresUsed", Boolean.TRUE.equals(march.getStratagemUsed()));
                 incoming.add(intelligence.view(radar, info, march));
+            }
+        }
+        // 野外急报按被截击行军的归属查询；切换城市和地图视野都不应隐藏本账号的遭遇。
+        Map<String, March> outbound = new LinkedHashMap<>();
+        for (March march : marchRepository.findByPlayerId(playerId)) {
+            if (!Boolean.TRUE.equals(march.getReturning()) && march.getBattleId() == null
+                    && ("scout".equals(march.getAction()) || BattleService.isOffensiveAction(march.getAction())
+                    || (march.getAction() != null && march.getAction().startsWith("tactical")))
+                    && "player".equals(march.getTargetKind())) {
+                outbound.put(String.valueOf(march.getId()), march);
+            }
+        }
+        if (!outbound.isEmpty()) {
+            for (March interceptor : marchRepository.findActiveInterceptions(new ArrayList<>(outbound.keySet()))) {
+                March intercepted = outbound.get(interceptor.getTargetId());
+                if (playerId.equals(interceptor.getPlayerId()) || interceptor.getArriveAt() == null
+                        || intercepted.getArriveAt() == null || interceptor.getArriveAt() > intercepted.getArriveAt()) continue;
+                Player source = playerRepository.findById(interceptor.getPlayerId()).orElse(null);
+                incoming.add(intelligence.fieldInterception(interceptor, intercepted, source));
             }
         }
         return incoming;
@@ -389,6 +409,7 @@ public class WorldViewService {
         mMap.put("version", m.getVersion());
         mMap.put("outboundAccelerated", Boolean.TRUE.equals(m.getOutboundAccelerated()));
         mMap.put("returnAccelerated", Boolean.TRUE.equals(m.getReturnAccelerated()));
+        mMap.put("stratagemUsed", Boolean.TRUE.equals(m.getStratagemUsed()));
         mMap.put("targetKind", m.getTargetKind());
         mMap.put("targetId", m.getTargetId());
         mMap.put("targetName", m.getTargetName());
@@ -408,6 +429,17 @@ public class WorldViewService {
         mMap.put("carryRes", JsonUtil.parseObjMap(m.getCarryRes()));
         mMap.put("startAt", m.getStartAt());
         mMap.put("arriveAt", m.getArriveAt());
+        mMap.put("deployAt", m.getInterceptDeployAt());
+        mMap.put("readyAt", m.getInterceptReadyAt());
+        if (!Boolean.TRUE.equals(m.getReturning()) && m.getInterceptDeployAt() != null) {
+            boolean used = "incoming_march".equals(m.getTargetKind())
+                    ? marchRepository.findById(Long.valueOf(m.getTargetId())).map(March::getAmbushUsed).orElse(true)
+                    : incomingMarchRepository.findById(Long.valueOf(m.getTargetId())).map(IncomingMarch::getAmbushUsed).orElse(true);
+            boolean ambush = !used && m.getInterceptReadyAt() <= m.getArriveAt();
+            mMap.put("interceptionPhase", now < m.getInterceptDeployAt() ? "deploying"
+                    : ambush && now < m.getInterceptReadyAt() ? "preparing" : "waiting");
+            mMap.put("interceptionOpening", ambush ? "ambush" : "urgent");
+        }
         mMap.put("returning", Boolean.TRUE.equals(m.getReturning()));
         mMap.put("stationed", Boolean.TRUE.equals(m.getStationed()));
         mMap.put("battleWon", Boolean.TRUE.equals(m.getBattleWon()));

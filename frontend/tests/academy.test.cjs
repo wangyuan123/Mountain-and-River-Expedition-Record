@@ -222,3 +222,40 @@ test('资金不足时候选卡片标记锁定状态并禁用招募按钮', () =>
   assert.match(html, /onclick="event\.stopPropagation\(\);Game\.toast\('黄金不足，无法招募'\);"/);
 });
 
+test('军校界面包含极速刷新勾选框，且支持状态读取与持久化切换', () => {
+  const G = setup(0.03);
+  const view = { innerHTML: '' };
+  G.Officer.renderAcademyView(view);
+  assert.match(view.innerHTML, /id="academy-fast-refresh-checkbox"/);
+  assert.match(view.innerHTML, /Game\.Officer\.toggleFastRefresh\(this\.checked\)/);
+  assert.match(view.innerHTML, /极速刷新/);
+  assert.match(view.innerHTML, /id="academy-candidates-region"/);
+
+  // 初始默认未勾选
+  assert.equal(G.Officer.isFastRefresh(), false);
+
+  // 切换为开启
+  G.Officer.toggleFastRefresh(true);
+  assert.equal(G.Officer.isFastRefresh(), true);
+
+  // 开启后渲染时应当带 checked
+  const viewChecked = { innerHTML: '' };
+  G.Officer.renderAcademyView(viewChecked);
+  assert.match(viewChecked.innerHTML, /id="academy-fast-refresh-checkbox"[^>]*checked/);
+
+  // 切换为关闭
+  G.Officer.toggleFastRefresh(false);
+  assert.equal(G.Officer.isFastRefresh(), false);
+});
+
+test('CSS 包含军校机密调令公文袋、3D翻牌和5星悬停特写与光环样式规范', () => {
+  const css = fs.readFileSync(path.join(__dirname, '../css/officer.css'), 'utf8');
+  assert.match(css, /\.academy-dispatch-dossier\s*\{/);
+  assert.match(css, /\.dossier-seal-stamp\s*\{/);
+  assert.match(css, /\.academy-anim-cards-grid\s*\{[^}]*perspective:\s*1200px;/);
+  assert.match(css, /\.card-flip-inner\s*\{[^}]*transform-style:\s*preserve-3d;/);
+  assert.match(css, /\.card-face-back\s*\{[^}]*backface-visibility:\s*hidden;/);
+  assert.match(css, /\.academy-anim-card-wrap\.has-five-star\.is-star5-spotlight/);
+  assert.match(css, /\.star5-burst-glow\s*\{/);
+});
+

@@ -36,6 +36,55 @@ function setup(initialCount = 0) {
 }
 const flush = () => new Promise(resolve => setImmediate(resolve));
 
+for (const attackerWin of [true, false]) {
+  for (const perspective of ['attacker', 'defender']) {
+    test(`interception report shows the recipient outcome and actual troop movement: ${perspective}, attackerWin=${attackerWin}`, () => {
+      const { G } = setup();
+      const defense = perspective === 'defender';
+      const result = defense ? (attackerWin ? '拦截失败' : '拦截成功') : (attackerWin ? '突围成功' : '突围失败');
+      const report = { id: 702, type: 'battle', action: 'intercept_scout', targetType: 'interception', perspective,
+        attackerWin, win: defense ? !attackerWin : attackerWin, time: Date.now(), subject: result + ' · 城外截击',
+        attackerName: '来袭玩家', defenderName: '截击玩家', fromCoord: '0,0', toCoord: '10,10', toName: '原侦查目标',
+        interceptCoord: '5,5', originalAction: 'scout', troopDisposition: defense ? 'returning' : attackerWin ? 'continuing' : 'destroyed',
+        initialAttacker: { scout: 5 }, survivorAttacker: attackerWin ? { scout: 4 } : {},
+        initialDefender: { fighter: 2 }, survivorDefender: { fighter: 1 },
+        losses: 1, recoveryPercent: 0, recoveredCount: 0, roundLogs: ['-- 第1回合 --'], commanders: {} };
+      const card = G.Battle.renderReportCard(report);
+      const board = G.Battle.renderReportBoard(report);
+      assert.match(card, /拦截战报/);
+      assert.ok(card.includes(result));
+      assert.match(card, /拦截地点 \(5,5\)/);
+      assert.ok(board.includes(result));
+      assert.match(board, /交战身份/);
+      assert.match(board, /来袭部队:<\/b> 来袭玩家/);
+      assert.match(board, /拦截部队:<\/b> 截击玩家/);
+      assert.match(board, /原行军任务/);
+      assert.match(board, /部队去向/);
+      assert.doesNotMatch(board, /突破了城防|防守成功|防守失败|战斗大捷|战斗失利|接管结果|占领结果|已获情报|城市民心|民心变化|声望变化/);
+      if (attackerWin) assert.match(board, /沿原路线继续/);
+      if (!defense && attackerWin) assert.match(board, /抵达目标后再执行原任务/);
+      if (!defense && !attackerWin) assert.match(board, /无幸存部队/);
+    });
+  }
+}
+
+test('interception websocket uses breakthrough messaging and stores one unread battle report', () => {
+  const { G, load } = setup();
+  const handlers = {};
+  const toasts = [];
+  G.WS = { on: (event, handler) => { handlers[event] = handler; } };
+  G.toast = message => toasts.push(message);
+  G.API.getState = async () => G.state;
+  load('ws-handlers.js');
+  const report = { id: 880, action: 'intercept_scout', type: 'battle', perspective: 'attacker', win: true, time: Date.now() };
+  handlers.battle(report);
+  handlers.battle(report);
+  assert.equal(G.state.reports.length, 1);
+  assert.equal(G.state.reports[0].readAt, 0);
+  assert.ok(toasts.some(message => message.includes('突围成功') && message.includes('沿原路线继续行进')));
+  assert.ok(!toasts.includes('战斗胜利'));
+});
+
 for (const type of ['battle', 'scout']) {
   for (const route of ['reports', 'reportDetail']) {
     test(`return arrival syncs state without replacing the ${type} ${route} being read`, async () => {
@@ -415,6 +464,96 @@ test('combat log summaries support legacy models, zero damage and wall follow-up
     ['我方步兵(10) [待命] 当前目标不可攻击，未开火',
       '我方步兵(10) [待命] 当前目标不可攻击，未开火']
   ]) assert.equal(G.Battle.formatCombatLogLine(raw), expected);
+});
+
+test('defender interception details show the 500 armored cars, commanders and victory on the recipient side', () => {
+  const { G } = setup();
+  G.fmt = String;
+  const armored = '装甲车-猎鹿犬防空型（T17E2）';
+  const recon = '侦查装甲车-灰狗（M8）';
+  G.DATA.units = { armored: { name: armored }, recon_car: { name: recon } };
+  const roundLogs = [
+    '-- 第1回合 --',
+    `我方${recon}(100) [前进] 推进375 -> 坐标375 (距敌1550)`,
+    `敌方${armored}(500) [前进] 推进375 -> 坐标1925 (距我1550)`,
+    '-- 第9回合 --',
+    '我方将领加成：军事属性 +100%攻击；坚守阵地 +50%防御',
+    '敌方将领加成：军事属性 +219%攻击；破甲打击 30%无视敌方防御',
+    `敌方${armored}(498) [前进] 已接触前排 坐标1150 (距我0)；扫射我${recon}(4) 伤害2160 击毁4 目标距离0`,
+    '✗ 部队溃败,失败!',
+    '获得经验: 34',
+    `攻方伤兵入营：${recon}×50（7天内可付费治疗）`,
+    `守方伤兵入营：${armored}×1（7天内可付费治疗）`
+  ];
+  const report = { type: 'battle', action: 'intercept_scout', targetType: 'interception',
+    perspective: 'defender', win: true, attackerWin: false, roundLogs,
+    initialAttacker: { recon_car: 100 }, survivorAttacker: {},
+    initialDefender: { armored: 500 }, survivorDefender: { armored: 498 } };
+  const before = JSON.stringify(report);
+  G.Battle._viewReport = report;
+  const detail = { innerHTML: '' };
+  G.Battle.renderReportDetail(detail);
+  const logs = detail.innerHTML.slice(detail.innerHTML.indexOf('<div class="blog"'));
+
+  assert.ok(logs.includes(`<div class="logline mine">我方${armored}(500)`));
+  assert.ok(logs.includes(`<div class="logline enemy">敌方${recon}(100)`));
+  assert.match(logs, /坐标1925 \(距敌1550\)/);
+  assert.match(logs, /坐标375 \(距我1550\)/);
+  assert.ok(logs.includes(`扫射敌方${recon}，造成2160点伤害，击毁4，目标距离0`));
+  assert.match(logs, /logline mine commander-bonus">我方将领加成：军事属性 \+219%攻击；破甲打击 30%无视敌方防御/);
+  assert.match(logs, /logline enemy commander-bonus">敌方将领加成：军事属性 \+100%攻击/);
+  assert.match(logs, /logline win">★ 拦截成功！/);
+  assert.match(logs, /logline enemy">敌方获得经验: 34/);
+  assert.ok(logs.includes(`我方伤兵入营：${armored}×1`));
+  assert.ok(logs.includes(`敌方伤兵入营：${recon}×50`));
+  assert.doesNotMatch(logs, /✗ 部队溃败/);
+  assert.equal(JSON.stringify(report), before, 'display conversion must preserve raw logs for troop recovery');
+});
+
+for (const attackerWin of [true, false]) {
+  for (const perspective of ['attacker', 'defender']) {
+    test(`interception detail outcome respects ${perspective}, attackerWin=${attackerWin}`, () => {
+      const { G } = setup();
+      const defense = perspective === 'defender';
+      const terminal = attackerWin ? '★ 全歼敌军,胜利!' : '✗ 部队溃败,失败!';
+      G.Battle._viewReport = { type: 'battle', action: 'intercept_scout', targetType: 'interception',
+        perspective, attackerWin, win: defense ? !attackerWin : attackerWin,
+        roundLogs: ['-- 第1回合 --', terminal, '获得经验: 34'] };
+      const detail = { innerHTML: '' };
+      G.Battle.renderReportDetail(detail);
+      const logs = detail.innerHTML.slice(detail.innerHTML.indexOf('<div class="blog"'));
+      if (defense) {
+        assert.ok(logs.includes(attackerWin ? 'logline lose">✗ 拦截失败！' : 'logline win">★ 拦截成功！'));
+        assert.match(logs, /敌方获得经验: 34/);
+      } else {
+        assert.ok(logs.includes(terminal));
+        assert.match(logs, /logline">获得经验: 34/);
+      }
+    });
+  }
+}
+
+test('legacy defender details swap targets and counterattacks without changing skill-relative enemies', () => {
+  const { G } = setup();
+  G.state.player.name = '守方';
+  G.Battle._viewReport = { type: 'battle', targetType: 'player', attackerName: '攻方', win: false,
+    roundLogs: [
+      '-- 第1回合 --',
+      '我方将领加成：师夷长技 +30%同名兵种攻击（本回合，上限敌方同名兵种攻击30%）；火力压制 -12%敌方攻击',
+      '敌方司令官：将领（常驻，技能不参与）攻击+10%',
+      '我方火箭车(100)齐射敌装甲车(1) 伤害720 击毁1；余伤攻击敌重型坦克(2) 伤害2000 击毁2',
+      '敌方步兵(20) [绝境反击] 我火箭车(100) 伤害10 击毁1',
+      '✗ 回合耗尽,被迫撤退'
+    ] };
+  const detail = { innerHTML: '' };
+  G.Battle.renderReportDetail(detail);
+  const logs = detail.innerHTML.slice(detail.innerHTML.indexOf('<div class="blog"'));
+  assert.match(logs, /敌方将领加成：师夷长技 \+30%同名兵种攻击（本回合，上限敌方同名兵种攻击30%）；火力压制 -12%敌方攻击/);
+  assert.match(logs, /我方司令官：将领/);
+  assert.match(logs, /敌方火箭车\(100\)齐射我方装甲车/);
+  assert.match(logs, /继续攻击我方重型坦克/);
+  assert.match(logs, /我方步兵\(20\) \[绝境反击\] 敌方火箭车/);
+  assert.match(logs, /logline win">★ 防守成功！/);
 });
 
 test('defender battle report maps the invader and commander to the enemy side', () => {
@@ -1040,4 +1179,17 @@ test('battle report folds prisoner details by default and hides zero captured pe
   assert.match(board, /损失 800 · 伤兵 400 · 永久 400/);
   assert.match(board, /损失 200 · 伤兵 100 · 永久 100/);
   assert.doesNotMatch(board, /被俘 0/);
+});
+
+test('伏击战报使用持久化规则与实际先手，旧战报和未知版本不追补标签', () => {
+  const { G } = setup();
+  const base = { id: 44, time: Date.now(), type: 'battle', action: 'intercept_scout', perspective: 'defender', win: true,
+    interceptionOpening: { version: 'interception-ambush-v1-20261021', mode: 'ambush', firstCombatRound: 1, distance: 320 } };
+  assert.match(G.Battle.renderReportCard(base), /伏击先手.*我方取得首次交火先手/);
+  assert.match(G.Battle.renderReportBoard(base), /首次交火第 1 回合.*伏击距离 320/);
+  assert.match(G.Battle.renderReportCard({ ...base, perspective: 'attacker' }), /遭遇伏击，敌方取得首次交火先手/);
+  assert.match(G.Battle.renderReportCard({ ...base, interceptionOpening: { ...base.interceptionOpening, mode: 'urgent' } }), /紧急迎击/);
+  for (const opening of [undefined, { ...base.interceptionOpening, version: 'future-version' }]) {
+    assert.doesNotMatch(G.Battle.renderReportCard({ ...base, interceptionOpening: opening }), /伏击先手|紧急迎击/);
+  }
 });

@@ -74,6 +74,11 @@ public class Player extends VersionedEntity implements CityEconomy {
     @Column(name = "home_module_order", length = 128)
     private String homeModuleOrder;
 
+    /** 账号级坐标收藏快照；固定保存坐标，城市搬迁后不跟随目标移动。 */
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @Column(name = "map_favorites", columnDefinition = "TEXT")
+    private String mapFavorites;
+
     @Column(name = "pos_x")
     private Integer posX = 0;
 

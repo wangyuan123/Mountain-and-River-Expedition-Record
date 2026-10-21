@@ -97,6 +97,21 @@ public class March extends CityOwnedEntity {
     @Column(name = "outbound_accelerated", nullable = false)
     private Boolean outboundAccelerated = false;
 
+    /** 防守方对本次单程来袭使用过计谋后锁定，避免重复拖延。 */
+    @Column(name = "stratagem_used", nullable = false)
+    private Boolean stratagemUsed = false;
+
+    /** 伏击的移动到达与交火时间分开；arriveAt 始终表示预计交火时间。 */
+    private Long interceptDeployAt;
+    private Long interceptReadyAt;
+    private Double interceptEnemyProgress;
+    private Long interceptEnemyStartAt;
+    @Column(columnDefinition = "longtext")
+    private String interceptRouteSnapshot;
+    /** 同一敌军去程首次伏击实际开火后永久消费，召回拦截队不能刷新。 */
+    @Column(nullable = false)
+    private Boolean ambushUsed = false;
+
     @Column(name = "return_accelerated", nullable = false)
     private Boolean returnAccelerated = false;
 

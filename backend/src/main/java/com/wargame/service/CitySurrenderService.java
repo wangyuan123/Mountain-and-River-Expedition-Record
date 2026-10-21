@@ -114,6 +114,7 @@ public class CitySurrenderService {
         if ("reject".equalsIgnoreCase(decision)) {
             offer.setStatus(REJECTED); offers.save(offer);
             sendRejected(offer, initiator, defender);
+            finishMailRetention(offer);
             return dto(offer, defenderId);
         }
         ensureAcceptable(offer, city, initiator, defender, now);
@@ -181,6 +182,7 @@ public class CitySurrenderService {
                 offer.getCityName() + "（" + offer.getCityX() + "," + offer.getCityY() + "）已完成和平移交，现归你管理。城市及电报列明的城内资产已完整转入新的城市槽位；本次移交不产生战斗、掠夺、声望、经验或俘虏奖励。", List.of(), offer.getId());
         push.pushToPlayer(defender.getId(), "city_ownership", Map.of("cityId", offer.getCityId(), "gained", false));
         push.pushToPlayer(initiator.getId(), "city_ownership", Map.of("cityId", offer.getCityId(), "gained", true));
+        finishMailRetention(offer);
     }
 
     /**
@@ -224,12 +226,21 @@ public class CitySurrenderService {
         Player defender = players.findById(offer.getDefenderId()).orElse(null);
         if (defender != null) mail.sendSystem(defender.getId(), "系统", "surrender", "【劝降已过期】" + offer.getCityName(), "你收到的 " + displayName(initiator) + " 对 " + offer.getCityName() + "（" + offer.getCityX() + "," + offer.getCityY() + "）的劝降提议已超过 24 小时答复期限，现已自动失效。城市未被冻结，归属、资产和队列均未改变。", List.of(), offer.getId());
         if (initiator != null) mail.sendSystem(initiator.getId(), "系统", "surrender", "【劝降已过期】" + offer.getCityName(), "你对 " + offer.getCityName() + "（" + offer.getCityX() + "," + offer.getCityY() + "）发出的劝降提议在 24 小时内未获答复，现已自动失效。城市未被冻结，若需继续协商，请重新发起提议。", List.of(), offer.getId());
+        finishMailRetention(offer);
     }
 
     private void cancelLocked(CitySurrenderOffer offer, PlayerCity city, long now, String reason) {
         offer.setStatus(CANCELLED); offer.setCancelledAt(now); offer.setCancelReason(reason); offers.save(offer);
         if (city != null) { city.setSurrenderOfferId(null); city.setSurrenderRecipientId(null); city.setSurrenderFrozenAt(null); city.setSurrenderTransferDeadlineAt(null); cities.save(city); }
         for (Long playerId : List.of(offer.getInitiatorId(), offer.getDefenderId())) mail.sendSystem(playerId, "系统", "surrender", "【劝降已取消】" + offer.getCityName(), offer.getCityName() + "（" + offer.getCityX() + "," + offer.getCityY() + "）的劝降流程已取消，原因：" + reason + "。城市冻结状态已解除，未完成的移交不会执行。", List.of(), offer.getId());
+        finishMailRetention(offer);
+    }
+
+    /** 在终结事务内启动已处理邮件的倒计时，不依赖维护任务是否已开启。 */
+    private void finishMailRetention(CitySurrenderOffer offer) {
+        offer.setEndedRealAt(System.currentTimeMillis());
+        offers.saveAndFlush(offer);
+        mail.businessEnded(offer.getId(), offer.getEndedRealAt());
     }
 
     private void sendRejected(CitySurrenderOffer offer, Player initiator, Player defender) {

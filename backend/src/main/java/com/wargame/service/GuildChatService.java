@@ -14,6 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.scheduling.annotation.Scheduled;
 
 @Service
 public class GuildChatService {
@@ -21,9 +24,11 @@ public class GuildChatService {
     public static final int MAX_LENGTH = 80;
     public static final long COOLDOWN_MS = 5000L; // 5 秒单次发言冷却
     private static final long REPEAT_BLOCK_MS = 60000L; // 60 秒内禁止连续发送相同内容
+    private static final long REPEAT_RETENTION_MS = 120_000L;
 
     private record LastMessage(String content, long timestamp) {}
     private final ConcurrentMap<Long, LastMessage> lastMessages = new ConcurrentHashMap<>();
+    private final AtomicInteger sendsSinceSweep = new AtomicInteger();
 
     private final GuildChatMessageRepository guildChatMessageRepository;
     private final GuildMemberRepository guildMemberRepository;
@@ -50,7 +55,7 @@ public class GuildChatService {
         GuildMember member = guildMemberRepository.findByPlayerId(playerId)
                 .orElseThrow(() -> new IllegalArgumentException("尚未加入任何军团"));
         Long guildId = member.getGuildId();
-        List<GuildChatMessage> messages = guildChatMessageRepository.findTop50ByGuildIdOrderByCreatedAtDesc(guildId);
+        List<GuildChatMessage> messages = guildChatMessageRepository.findRecentVisible(guildId, System.currentTimeMillis(), PageRequest.of(0, 50));
 
         List<GuildMember> allMembers = guildMemberRepository.findByGuildIdOrderByJoinedAtAsc(guildId);
         Map<Long, String> roles = new HashMap<>();
@@ -124,6 +129,10 @@ public class GuildChatService {
         message = guildChatMessageRepository.save(message);
 
         lastMessages.put(playerId, new LastMessage(originalContent, now));
+        if (sendsSinceSweep.incrementAndGet() >= 100) {
+            sendsSinceSweep.set(0);
+            evictExpiredDuplicateMessages(now);
+        }
 
         ChatDtos.GuildMessageResponse response = new ChatDtos.GuildMessageResponse(
                 message.getId(),
@@ -189,6 +198,15 @@ public class GuildChatService {
     private String normalize(String content) {
         if (content == null) return "";
         return content.replaceAll("[\\u0000-\\u001F\\u007F-\\u009F\\u200B-\\u200F\\uFEFF]", "").trim();
+    }
+
+    @Scheduled(fixedDelay = 60_000, scheduler = "retentionTaskScheduler")
+    public void evictExpiredDuplicateMessages() { evictExpiredDuplicateMessages(System.currentTimeMillis()); }
+
+    private void evictExpiredDuplicateMessages(long now) {
+        lastMessages.forEach((playerId, message) -> {
+            if (now - message.timestamp() >= REPEAT_RETENTION_MS) lastMessages.remove(playerId, message);
+        });
     }
 
 

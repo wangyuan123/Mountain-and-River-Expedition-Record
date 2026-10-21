@@ -46,12 +46,13 @@ public class AdminGmService {
         }
         List<Map<String, Object>> safeAttach = attachments != null ? attachments : List.of();
         int sentCount = 0;
+        String sourceId = UUID.randomUUID().toString();
 
         if ("ALL".equalsIgnoreCase(targetType)) {
             List<Player> allPlayers = playerRepository.findAll();
             for (Player p : allPlayers) {
                 if (p.accountActive()) {
-                    mailService.sendSystem(p.getId(), "战备指挥部", "reward", title, body, safeAttach);
+                    mailService.sendSystem(p.getId(), "战备指挥部", "reward", title, body, safeAttach, null, "PROTECTED", "GM_COMPENSATION", sourceId, null);
                     sentCount++;
                 }
             }
@@ -63,7 +64,7 @@ public class AdminGmService {
             }
             Player target = playerRepository.findById(targetPlayerId)
                     .orElseThrow(() -> new IllegalArgumentException("目标玩家不存在: " + targetPlayerId));
-            mailService.sendSystem(target.getId(), "战备指挥部", "reward", title, body, safeAttach);
+            mailService.sendSystem(target.getId(), "战备指挥部", "reward", title, body, safeAttach, null, "PROTECTED", "GM_COMPENSATION", sourceId, null);
             sentCount = 1;
             auditLogService.record(adminUsername, "SEND_COMPENSATION_SINGLE", "MAIL", String.valueOf(targetPlayerId),
                     String.format("向玩家 %s(ID:%d) 发送补偿邮件: %s, 附件:%s", target.getUsername(), targetPlayerId, title, JsonUtil.toJson(safeAttach)), req);

@@ -102,6 +102,7 @@ public class TickService {
 
     @Transactional
     public void tick(Long playerId) {
+        marchService.lockInterceptionParticipants(playerId);
         Player current = playerRepository.lockById(playerId).orElse(null);
         // 恢复期继续结算；到期后绝不能补建已经清除的个人资产。
         if (current == null || !current.isGameInitialized() || current.deletionDue(System.currentTimeMillis())) return;

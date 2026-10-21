@@ -35,6 +35,10 @@ public class IncomingMarch extends VersionedEntity {
     @Column(name = "arrive_at")
     private Long arriveAt;
 
+    /** 旧来袭记录也独立保存本次去程的伏击消费状态。 */
+    @Column(nullable = false)
+    private Boolean ambushUsed = false;
+
     @Column(name = "action", length = 50)
     private String action;
 }

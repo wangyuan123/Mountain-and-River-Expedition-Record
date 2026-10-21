@@ -395,7 +395,8 @@
   function MapView(v) {
     this.view = v; this.destroyed = false; this.pointers = new Map(); this.listeners = [];
     this.markers = new Map(); this.visible = []; this.filter = 'all'; this.selected = null;
-    this.detailSeq = 0; this.vx = 0; this.vy = 0; this.lastLoad = 0; this.raf = 0; this.dirty = true; this.animatingMarches = false;
+    this.favorites = []; this.favoritesLoaded = false; this.favoriteVersion = 0;
+    this.detailSeq = 0; this.vx = 0; this.vy = 0; this.lastLoad = 0; this.raf = 0; this.dirty = true; this.marchesDirty = false; this.animatingMarches = false;
     var cp = G.Core.state.world.cityPos || G.Core.state.world.pos || { x: 100, y: 100 };
     var homeCenter = markerCenter({ kind:'player', x:cp.x, y:cp.y });
     if (pendingFocus) {
@@ -416,7 +417,7 @@
       '<button type="button" class="page-back-button" data-map="list"><span>查看列表地图&gt;</span></button><button type="button" class="world-map-button world-map-icon-button" data-map="full" aria-expanded="false" aria-label="全屏显示地图" title="全屏显示地图"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg></button></div>' +
       '<div class="world-map-filters" aria-label="目标筛选" style="display:none">' + [['all','全部'],['player','玩家'],['npc','流寇'],['wild','野地'],['owned','我的领地']].map(function (f) { return '<button data-filter="' + f[0] + '" aria-pressed="' + (f[0] === 'all') + '">' + f[1] + '</button>'; }).join('') + '</div>' +
       '<div class="world-map-stage"><button type="button" class="world-map-button world-map-icon-button world-map-exit-full" data-map="exit-full" aria-label="收起全屏地图" title="收起全屏地图"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 9h6V3m12 6h-6V3M3 15h6v6m12-6h-6v6"/></svg></button><div class="world-map-canvas"></div><aside class="world-map-minimap collapsed"><button class="minimap-toggle" type="button" aria-expanded="false" aria-label="展开世界缩略图"><span>世界缩略图</span><span class="minimap-toggle-icon">+</span></button><div class="minimap-body"><div class="minimap-surface"><canvas width="280" height="280" tabindex="0" role="img" aria-label="世界缩略图，北方朝上；点击或拖动定位，方向键移动视野"></canvas><span class="minimap-north" aria-hidden="true">北 ↑</span><span class="minimap-region minimap-region-nw">西北战场</span><span class="minimap-region minimap-region-ne">东北战场</span><span class="minimap-region minimap-region-sw">西南战场</span><span class="minimap-region minimap-region-se">东南战场</span></div><div class="minimap-key"><span>◆ 城市</span><span>◇ 视野</span></div></div><div class="world-map-hud"><b class="map-coordinate"></b><span class="map-terrain-region"></span></div></aside>' +
-      '<div class="world-map-controls"><button class="world-map-button" data-map="plus" aria-label="放大地图">+</button><button class="world-map-button" data-map="minus" aria-label="缩小地图">−</button><button class="world-map-button home" data-map="home">主城</button><button class="world-map-button" data-map="coast">海岸</button></div>' +
+      '<div class="world-map-controls"><button class="world-map-button" data-map="plus" aria-label="放大地图">+</button><button class="world-map-button" data-map="minus" aria-label="缩小地图">−</button><button class="world-map-button home" data-map="home">主城</button><button class="world-map-button" data-map="coast">海岸</button><button type="button" class="world-map-button home" data-map="favorites" aria-haspopup="dialog">收藏</button></div>' +
       '<div class="world-map-loading" role="status"></div><div class="world-map-crosshair"></div>' +
       '<div class="world-map-legend"><span class="own"><i class="map-key-shield" aria-hidden="true">✓</i> 我的城市 / 野地</span><span class="other">◆ 其他玩家</span><span class="neutral">◇ 无主野地</span><span class="map-legend-hint">点击标识或目标查看详情</span></div>' +
       '<div class="world-map-detail" hidden></div></div></section>';
@@ -497,7 +498,130 @@
       this.requestChunks();
       this.wake();
     }
+    this.refreshFavorites().catch(function () {});
   }
+  /** 同步账号收藏；版本号避免较早的读取覆盖刚完成的收藏或移除。 */
+  MapView.prototype.refreshFavorites = function () {
+    var self = this, key = identity(), version = this.favoriteVersion;
+    if (this.favoriteBusy && this.favoriteMutation) return this.favoriteMutation.then(function () { return self.favorites; });
+    if (this.favoriteRequest) return this.favoriteRequest;
+    this.favoriteRequest = G.API.client.get('/game/world/map/favorites', {silent:true}).then(function (items) {
+      if (!self.destroyed && identity() === key && self.favoriteVersion === version) {
+        self.favorites = items; self.favoritesLoaded = true; self.updateFavoriteButton();
+      }
+      return items;
+    }).finally(function () { self.favoriteRequest = null; });
+    return this.favoriteRequest;
+  };
+  MapView.prototype.isFavorite = function (target) {
+    return (this.favorites || []).some(function (item) { return item.x === target.x && item.y === target.y; });
+  };
+  MapView.prototype.favoriteButtonHtml = function (target) {
+    var saved = this.isFavorite(target);
+    return '<button type="button" class="world-map-button" data-map="favorite-toggle" aria-pressed="' + saved + '"' + (this.favoriteBusy ? ' disabled' : '') + '>' + (saved ? '移除收藏' : '收藏坐标') + '</button>';
+  };
+  MapView.prototype.updateFavoriteButton = function () {
+    var button = this.detail.querySelector('[data-map="favorite-toggle"]');
+    if (!button || !this.selected) return;
+    var saved = this.isFavorite(this.selected);
+    button.textContent = saved ? '移除收藏' : '收藏坐标';
+    button.setAttribute('aria-pressed', String(saved));
+    button.disabled = !!this.favoriteBusy;
+  };
+  /** 写入期间禁止重复提交；返回完整列表，保持详情与弹窗状态一致。 */
+  MapView.prototype.saveFavorite = function (target, remove) {
+    var self = this, key = identity();
+    if (this.favoriteBusy) return Promise.resolve(false);
+    this.favoriteBusy = true; this.favoriteVersion++; this.updateFavoriteButton();
+    var request = remove ? G.API.client.delete('/game/world/map/favorites?x=' + target.x + '&y=' + target.y, {silent:true})
+      : G.API.client.post('/game/world/map/favorites', {x:target.x, y:target.y, kind:target.kind, targetId:target.id}, {silent:true});
+    this.favoriteMutation = request.then(function (items) {
+      if (self.destroyed || identity() !== key) return false;
+      self.favoriteVersion++;
+      self.favorites = items; self.favoritesLoaded = true;
+      G.toast(remove ? '已移除收藏' : '坐标已收藏');
+      return true;
+    }).finally(function () { self.favoriteBusy = false; self.favoriteMutation = null; if (!self.destroyed) self.updateFavoriteButton(); });
+    return this.favoriteMutation;
+  };
+  MapView.prototype.toggleFavorite = function () {
+    var self = this, target = this.selected, key = identity();
+    if (!target || this.favoriteBusy) return;
+    return (this.favoritesLoaded ? Promise.resolve() : this.refreshFavorites()).then(function () {
+      if (self.destroyed || identity() !== key) return;
+      return self.saveFavorite(target, self.isFavorite(target));
+    }).catch(function (error) { if (!self.destroyed && identity() === key) G.toast(error.message || '收藏操作失败，请重试'); });
+  };
+  /** 收藏弹窗沿用现有弹窗/按钮样式；全屏时挂载在地图内，避免被全屏层遮挡。 */
+  MapView.prototype.openFavorites = function () {
+    if (this.favoriteDialog) { this.favoriteDialog.querySelector('[data-favorite-close]').focus(); return; }
+    var self = this, key = identity(), trigger = document.activeElement, mask = document.createElement('div');
+    mask.className = 'modal-mask';
+    mask.innerHTML = '<section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="mapFavoritesTitle"><div class="modal-title" id="mapFavoritesTitle">坐标收藏</div>' +
+      '<div class="modal-body"><p>点击名称定位；选中地图目标后可在详情中收藏坐标。最多收藏100个，按账号保存。</p><p>收藏记录固定坐标，目标迁移后仍定位到原位置。</p><div data-favorite-list role="status">正在读取收藏…</div><p data-favorite-error role="alert" hidden></p></div>' +
+      '<div class="modal-foot"><button type="button" data-favorite-close>关闭</button></div></section>';
+    (this.fullscreen ? this.shell : document.body).appendChild(mask);
+    this.favoriteDialog = mask;
+    function close(restoreFocus) {
+      document.removeEventListener('keydown', onKey, true); mask.remove();
+      if (self.favoriteDialog === mask) { self.favoriteDialog = null; self.closeFavorites = null; }
+      if (restoreFocus !== false && trigger && trigger.isConnected) trigger.focus();
+    }
+    function onKey(event) {
+      event.stopPropagation();
+      if (event.key === 'Escape') { event.preventDefault(); close(); return; }
+      if (event.key !== 'Tab') return;
+      var controls = Array.from(mask.querySelectorAll('button:not([disabled])')), index = controls.indexOf(document.activeElement);
+      if (!controls.length) { event.preventDefault(); return; }
+      if (event.shiftKey && index <= 0) { event.preventDefault(); controls[controls.length - 1].focus(); }
+      else if (!event.shiftKey && (index < 0 || index === controls.length - 1)) { event.preventDefault(); controls[0].focus(); }
+    }
+    function render() {
+      var items = self.favorites;
+      // 按钮由弹窗原生规则统一渲染，避免页面文字按钮的悬浮颜色覆盖弹窗文字。
+      mask.querySelector('[data-favorite-list]').innerHTML = items.length ? '<ul>' + items.map(function (item, index) {
+        return '<li><button type="button" data-favorite-go="' + index + '">' + esc(item.name) + '（' + item.x + ', ' + item.y + '）</button> ' +
+          '<button type="button" data-favorite-remove="' + index + '" aria-label="移除 ' + esc(item.name) + '（' + item.x + ', ' + item.y + '）">移除</button></li>';
+      }).join('') + '</ul>' : '<p>暂无收藏。点击地图中的城市、野地或空地，再选择「收藏坐标」。</p>';
+    }
+    this.closeFavorites = close;
+    document.addEventListener('keydown', onKey, true);
+    mask.querySelector('[data-favorite-close]').focus();
+    mask.onclick = function (event) {
+      event.stopPropagation();
+      var button = event.target.closest('button');
+      if (event.target === mask || button && button.hasAttribute('data-favorite-close')) { close(); return; }
+      if (!button || button.disabled) return;
+      var go = button.getAttribute('data-favorite-go'), remove = button.getAttribute('data-favorite-remove');
+      if (go !== null) {
+        var target = self.favorites[Number(go)];
+        if (!target) return;
+        close(false); G.WorldMap.focusCoordinate(target.x, target.y); self.app.view.focus();
+      } else if (remove !== null && !self.favoriteBusy) {
+        var item = self.favorites[Number(remove)];
+        if (!item) return;
+        var error = mask.querySelector('[data-favorite-error]'); error.hidden = true;
+        var controls = Array.from(mask.querySelectorAll('[data-favorite-remove]'));
+        controls.forEach(function (control) { control.disabled = true; });
+        self.saveFavorite(item, true).then(function (changed) {
+          if (changed && self.favoriteDialog === mask) {
+            render();
+            var next = mask.querySelector('[data-favorite-remove="' + Math.min(Number(remove), self.favorites.length - 1) + '"]') || mask.querySelector('[data-favorite-close]');
+            next.focus();
+          }
+        }).catch(function (err) {
+          if (self.favoriteDialog === mask) { error.textContent = err.message || '移除失败，请重试'; error.hidden = false; }
+        }).finally(function () { controls.forEach(function (control) { control.disabled = false; }); });
+      } else if (button.hasAttribute('data-favorite-retry')) refresh();
+    };
+    function refresh() {
+      mask.querySelector('[data-favorite-list]').textContent = '正在读取收藏…';
+      self.refreshFavorites().then(function () { if (self.favoriteDialog === mask && identity() === key) render(); }).catch(function () {
+        if (self.favoriteDialog === mask && identity() === key) mask.querySelector('[data-favorite-list]').innerHTML = '<p>收藏读取失败，请重试。</p><button type="button" data-favorite-retry>重试</button>';
+      });
+    }
+    refresh();
+  };
   /** 目标抵达、移动或移除后，先清理保护带内的旧装饰瓦片，再与目标一起重绘。 */
   MapView.prototype.updateTerrain = function () {
     if (!G.MapTerrain.updateChunk) return;
@@ -638,12 +762,13 @@
     } else if (!this.pointers.size) { this.vx = 0; this.vy = 0; }
     if (this.dirty) {
       this.updateShieldBreath(time);
-      this.draw(); this.dirty = false;
+      this.draw(); this.dirty = false; this.marchesDirty = false;
       if (Date.now() - this.lastLoad > 150) this.requestChunks();
-    } else if (this.animatingWater || this.animatingMarches || this.animatingClouds || this.animatingShields || this.animatingWilds || (this.selected && this.showSelectionOutline())) {
+    } else if (this.marchesDirty || this.animatingWater || this.animatingMarches || this.animatingClouds || this.animatingShields || this.animatingWilds || (this.selected && this.showSelectionOutline())) {
       // 海面只更新时间 uniform；其他动画也不重建静态地形与据点。
       if (this.animatingWater) this.drawWater();
-      if (this.animatingMarches) this.drawRoutes();
+      // 周期行军快照只更新动态层；空快照也须执行一次，以移除最后一队的旧标记。
+      if (this.marchesDirty || this.animatingMarches) { this.drawRoutes(); this.marchesDirty = false; }
       if (this.animatingClouds) this.drawClouds();
       if (this.animatingShields) this.updateShieldBreath(time);
       if (this.animatingWilds) this.updateWildAnimations(time);
@@ -1150,6 +1275,8 @@
     var self = this, camera = this.camera, routeGraphics = this.routes, now = G.gameNow(), animating = false;
     var flowGraphics = this.routeFlow;
     var reducedMotion = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // 位置与箭头平滑跟随已确认样本；抵达、交战和提醒仍使用上面的业务时间。
+    var animationNow = !reducedMotion && G.GameTime && G.GameTime.animationNow ? G.GameTime.animationNow() : now;
     routeGraphics.clear();
     if (flowGraphics) flowGraphics.clear();
     var targets = cache.targets({ minX:0, minY:0, maxX:camera.size-1, maxY:camera.size-1 }), keep = new Set(), statuses = new Map();
@@ -1226,8 +1353,15 @@
       var tint = isInterception ? 0x06b6d4 : ((!march.returning && (incoming || isOffensive)) ? 0xe66f79 : 0x69b7ee);
       var start = endpoint(fromX, fromY, march.returning ? march.targetKind : 'player');
       var end = endpoint(march.targetX, march.targetY, march.returning ? 'player' : targetKind);
+      // 本方截击使用持久化路线的精确端点，到位后停驻；野外敌情仍只使用公开坐标。
+      if (!incoming && isInterception && Array.isArray(march.route) && march.route.length >= 2) {
+        var first = march.route[0], last = march.route[march.route.length - 1];
+        start = endpoint(Array.isArray(first) ? first[0] : first.x, Array.isArray(first) ? first[1] : first.y, march.returning ? null : 'player');
+        end = endpoint(Array.isArray(last) ? last[0] : last.x, Array.isArray(last) ? last[1] : last.y, march.returning ? 'player' : null);
+      }
+      var holding = !march.returning && isInterception && march.deployAt != null && now >= march.deployAt;
       var points = [start, end];
-      drawLightBand(start, end, tint);
+      if (!holding) drawLightBand(start, end, tint);
       // 历史来袭没有出发时间时仅保留路线，不伪造部队当前位置。
       if (incoming && (march.startAt == null || march.arriveAt == null ||
           !isFinite(Number(march.startAt)) || !isFinite(Number(march.arriveAt)) || Number(march.arriveAt) <= Number(march.startAt))) return;
@@ -1237,11 +1371,11 @@
         var segment = Math.hypot(points[pointIndex].x-points[pointIndex-1].x,points[pointIndex].y-points[pointIndex-1].y);
         lengths.push(segment); total += segment;
       }
-      if (flowGraphics && points.length >= 2) {
+      if (!holding && flowGraphics && points.length >= 2) {
         var arrowColor = tint;
         var step = 38;
         var flowSpeed = reducedMotion ? 0 : 0.038;
-        var phase = reducedMotion ? 0 : ((now * flowSpeed) % step);
+        var phase = reducedMotion ? 0 : ((animationNow * flowSpeed) % step);
         var distAccum = 0;
         for (var pi = 0; pi < points.length - 1; pi++) {
           var p1 = points[pi], p2 = points[pi + 1];
@@ -1280,7 +1414,8 @@
           }
         }
       }
-      var duration = march.arriveAt-march.startAt, ratio = duration > 0 ? Math.max(0,Math.min(1,(now-march.startAt)/duration)) : 1, travel = ratio*total, position = points[points.length-1];
+      var movementEnd = !march.returning && isInterception && march.deployAt != null ? march.deployAt : march.arriveAt;
+      var duration = movementEnd-march.startAt, ratio = duration > 0 ? Math.max(0,Math.min(1,(animationNow-march.startAt)/duration)) : 1, travel = ratio*total, position = points[points.length-1];
       for (var segmentIndex = 0; segmentIndex < lengths.length; segmentIndex++) {
         if (travel <= lengths[segmentIndex]) {
           var fraction = lengths[segmentIndex] ? travel/lengths[segmentIndex] : 1;
@@ -1313,6 +1448,7 @@
       marker.position.set(position.x, position.y); marker.visible = !!iconPath;
       marker.models.visible = !!iconPath;
       marker.icon.visible = !!iconPath;
+      marker.incomingMarch = incoming && !march.returning && march.marchId != null && march.intelligenceType !== 'field_interception' ? march : null;
       marker.models.rotation = heading.rotation;
       marker.models.scale.x = heading.scaleX * (heading.depthScale || 1);
       sizeMarchSprite(marker.icon, iconSize);
@@ -1334,6 +1470,10 @@
       marker.countText.style.fontSize = Math.max(9, Math.round(iconSize * .22));
       marker.countText.position.set(iconSize * .4, iconSize * .46);
       marker.countText.visible = !!iconPath && visibleTotal > 0;
+      marker.marchHit = marker.incomingMarch && iconPath ? {
+        x: position.x - iconSize * .7, y: position.y - iconSize * .7,
+        width: iconSize * 1.4, height: iconSize * 1.65
+      } : null;
     }
     (G.Core.state.world.marches || []).forEach(function (march) { drawMarch(march, false); });
     (G.Core.state.world.incoming || []).forEach(function (march) { drawMarch(march, true); });
@@ -1368,6 +1508,131 @@
       marker.statusPlate.clear();
       marker.statusPlate.lineStyle(1, 0xe3ece5, .95).beginFill(armyStatusStyles[states[0]].fill, .96).drawRoundedRect(-width/2, -11, width, 22, 5).endFill();
     });
+
+    // 拦截交汇点战斗图标（在拦截交汇坐标处渲染醒目的战斗冲突徽章与脉冲波纹）
+    var interceptionClashes = new Map();
+    var allMarches = (G.Core && G.Core.state && G.Core.state.world && G.Core.state.world.marches) || [];
+    // 攻方依靠野外急报定位同一交汇点，复用截击标记，不需要雷达或精确编成。
+    allMarches = allMarches.concat((G.Core.state.world.incoming || []).filter(function (m) { return m.intelligenceType === 'field_interception'; }));
+    allMarches.forEach(function (m) {
+      if (m.action === 'intercept_scout' && !m.returning && m.targetX != null && m.targetY != null) {
+        var key = m.targetX + ':' + m.targetY;
+        if (!interceptionClashes.has(key)) {
+          var routeEnd = m.intelligenceType !== 'field_interception' && Array.isArray(m.route) && m.route[m.route.length - 1];
+          interceptionClashes.set(key, { x: routeEnd ? (Array.isArray(routeEnd) ? routeEnd[0] : routeEnd.x) : m.targetX,
+            y: routeEnd ? (Array.isArray(routeEnd) ? routeEnd[1] : routeEnd.y) : m.targetY, march: m });
+        }
+      }
+    });
+
+    interceptionClashes.forEach(function (clash, key) {
+      var markerKey = 'intercept_clash:' + key;
+      keep.add(markerKey);
+      var marker = self.marchMarkers.get(markerKey);
+      if (!marker) {
+        marker = new PIXI.Container();
+        marker.pulseRing = new PIXI.Graphics();
+        marker.addChild(marker.pulseRing);
+        marker.badgeBase = new PIXI.Graphics();
+        marker.addChild(marker.badgeBase);
+        marker.combatIcon = new PIXI.Text('⚔', {
+          fontFamily: '-apple-system, "Segoe UI Emoji", "Apple Color Emoji", sans-serif',
+          fontSize: 18,
+          fill: 0xffe484,
+          stroke: 0x520a0a,
+          strokeThickness: 3,
+          fontWeight: 'bold'
+        });
+        marker.combatIcon.anchor.set(0.5);
+        marker.addChild(marker.combatIcon);
+        marker.tagPlate = new PIXI.Graphics();
+        marker.addChild(marker.tagPlate);
+        marker.tagText = new PIXI.Text('截击交火', {
+          fontFamily: '-apple-system, PingFang SC, Microsoft YaHei, sans-serif',
+          fontSize: 10,
+          fill: 0xffffff,
+          fontWeight: '600'
+        });
+        marker.tagText.anchor.set(0.5);
+        marker.addChild(marker.tagText);
+        self.marchLayer.addChild(marker);
+        self.marchMarkers.set(markerKey, marker);
+      }
+
+      var pos = endpoint(clash.x, clash.y, 'wild');
+      marker.position.set(pos.x, pos.y);
+
+      // 动态脉冲波纹动画
+      var step = 40;
+      var flowSpeed = reducedMotion ? 0 : 0.045;
+      var phase = reducedMotion ? 0 : ((animationNow * flowSpeed) % step);
+      var pulseProgress = phase / step;
+      var pulseRadius = 13 + pulseProgress * 15;
+      var pulseAlpha = Math.max(0, 0.7 * (1 - pulseProgress));
+
+      marker.pulseRing.clear();
+      if (!reducedMotion) {
+        animating = true;
+        marker.pulseRing.lineStyle(2, 0xef4444, pulseAlpha);
+        if (marker.pulseRing.drawCircle) {
+          marker.pulseRing.drawCircle(0, 0, pulseRadius);
+          marker.pulseRing.lineStyle(1.5, 0xf59e0b, pulseAlpha * 0.75);
+          marker.pulseRing.drawCircle(0, 0, pulseRadius * 0.65);
+        } else if (marker.pulseRing.drawRoundedRect) {
+          marker.pulseRing.drawRoundedRect(-pulseRadius, -pulseRadius, pulseRadius * 2, pulseRadius * 2, pulseRadius);
+        }
+      }
+
+      // 战术战斗底盘（圆形防空交战盾徽）
+      var badgeR = 14;
+      marker.badgeBase.clear();
+      marker.badgeBase.lineStyle(2, 0xef4444, 0.95);
+      marker.badgeBase.beginFill(0x1e0a0a, 0.9);
+      if (marker.badgeBase.drawCircle) {
+        marker.badgeBase.drawCircle(0, 0, badgeR);
+      } else if (marker.badgeBase.drawRoundedRect) {
+        marker.badgeBase.drawRoundedRect(-badgeR, -badgeR, badgeR * 2, badgeR * 2, badgeR);
+      }
+      marker.badgeBase.endFill();
+
+      // 内层细金圈
+      marker.badgeBase.lineStyle(1, 0xfbbf24, 0.85);
+      if (marker.badgeBase.drawCircle) {
+        marker.badgeBase.drawCircle(0, 0, badgeR - 2.5);
+      } else if (marker.badgeBase.drawRoundedRect) {
+        marker.badgeBase.drawRoundedRect(-badgeR + 2.5, -badgeR + 2.5, (badgeR - 2.5) * 2, (badgeR - 2.5) * 2, badgeR - 2.5);
+      }
+
+      // 准星十字刻度
+      marker.badgeBase.lineStyle(1.5, 0xef4444, 0.9);
+      marker.badgeBase.moveTo(0, -badgeR - 3).lineTo(0, -badgeR + 2);
+      marker.badgeBase.moveTo(0, badgeR - 2).lineTo(0, badgeR + 3);
+      marker.badgeBase.moveTo(-badgeR - 3, 0).lineTo(-badgeR + 2, 0);
+      marker.badgeBase.moveTo(badgeR - 2, 0).lineTo(badgeR + 3, 0);
+
+      // 核心战斗图标微缩放
+      var scale = reducedMotion ? 1 : (1 + Math.sin(animationNow * 0.006) * 0.08);
+      marker.combatIcon.scale.set(scale);
+
+      // 倒计时或铭牌标签
+      var m = clash.march;
+      var remSec = m && m.arriveAt ? Math.max(0, Math.ceil((m.arriveAt - now) / 1000)) : 0;
+      var label = remSec > 0 ? ('截击 ' + remSec + 's') : '交火中';
+      if (remSec > 0 && m.intelligenceType !== 'field_interception' && m.deployAt != null) {
+        label = now < m.deployAt ? '出城部署' : m.interceptionOpening !== 'ambush' ? '紧急迎击' : now < m.readyAt ? '设伏准备' : '伏击待发';
+        label += ' · ' + remSec + 's';
+      }
+      if (marker.tagText.text !== label) marker.tagText.text = label;
+      var tagW = Math.max(46, Math.ceil(marker.tagText.width) + 12);
+      var tagH = 15;
+      marker.tagPlate.clear();
+      marker.tagPlate.lineStyle(1, 0xef4444, 0.85);
+      marker.tagPlate.beginFill(0x2d0a0a, 0.92);
+      marker.tagPlate.drawRoundedRect(-tagW / 2, badgeR + 3, tagW, tagH, 3);
+      marker.tagPlate.endFill();
+      marker.tagText.position.set(0, badgeR + 3 + tagH / 2);
+    });
+
     this.marchMarkers.forEach(function (marker, markerKey) {
       if (keep.has(markerKey)) return;
       self.marchLayer.removeChild(marker); marker.destroy({children:true}); self.marchMarkers.delete(markerKey);
@@ -1401,6 +1666,8 @@
       else if (action === 'plus' || action === 'minus') { self.camera.zoom(action === 'plus' ? 1.3 : 1/1.3, self.camera.width/2, self.camera.height/2); self.requestChunks(); self.wake(); }
       else if (action === 'coast') {var known=cache.targets({minX:0,minY:0,maxX:self.camera.size-1,maxY:self.camera.size-1}).map(function(t){return G.MapLayout.bounds(t,self.camera.size);});var coast=G.MapOcean&&G.MapOcean.nearestCoast(self.camera.x,self.camera.y,function(x,y){return known.some(function(b){return x<b.x+b.span&&x+2>b.x&&y<b.y+b.span&&y+2>b.y;});});if(coast){self.focus(coast.x,coast.y);self.loadSite(coast.x,coast.y);}else G.toast('暂无可选海岸');}
       else if (action === 'home') { var cp = G.Core.state.world.cityPos || G.Core.state.world.pos; self.focus(cp.x, cp.y, 'player'); }
+      else if (action === 'favorites') self.openFavorites();
+      else if (action === 'favorite-toggle') self.toggleFavorite();
       else if (action === 'refresh') { cache.invalidate(); self.requestChunks(); if (self.selected) {if(self.selected.kind==='site')self.loadSite(self.selected.x,self.selected.y);else self.loadDetail(self.selected);} self.wake(); }
       else if (action === 'close') self.closeDetail();
     }
@@ -1467,6 +1734,88 @@
     this.on(document,'visibilitychange',function(){ if(!document.hidden){self.vx=self.vy=0;self.requestChunks();self.updateGathering();self.wake();} });
   };
   MapView.prototype.focus = function(x,y,kind) { var center=markerCenter({kind:kind||'wild',x:x,y:y});this.vx=this.vy=0; this.camera.x=center.x;this.camera.y=center.y;this.camera.clamp();this.closeDetail();this.requestChunks();this.wake(); };
+  /** 点击己方雷达投影出的敌军行军标记，弹窗只读取服务端已授权的情报字段。 */
+  MapView.prototype.openIncomingMarch = function (march) {
+    if (!march || march.intelligenceType === 'field_interception') return;
+    if (this.closeIncomingMarch) this.closeIncomingMarch(false);
+    var self = this, mask = document.createElement('div');
+    var playerName = march.attackerName || march.fromName || march.sourcePlayer || '未知敌军';
+    var targetX = march.targetX == null ? '?' : march.targetX, targetY = march.targetY == null ? '?' : march.targetY;
+    var now = G.gameNow(), remaining = Number(march.arriveAt) > now ? Math.ceil((Number(march.arriveAt) - now) / 1000) : 0;
+    var activeCityId = G.Core && G.Core.state && G.Core.state.player && G.Core.state.player.activeCityId;
+    var isCurrentCityThreat = march.targetCityId == null || String(march.targetCityId) === String(activeCityId);
+    var active = march.marchId != null && isCurrentCityThreat && remaining > 0 && !march.arrived && !march.inBattle && !march.waitingForBattle;
+    var items = G.Core && G.Core.state && G.Core.state.items || {};
+    var used = march.countermeasuresUsed === true;
+    var detail = G.World && typeof G.World.renderIncomingIntelligence === 'function'
+      ? G.World.renderIncomingIntelligence(march)
+      : '<div>目的地：(' + esc(targetX) + ',' + esc(targetY) + ')</div><div>情报等级：Lv.' + esc(march.radarLevel || 0) + '</div>';
+    var intelId = String(march.marchId);
+    mask.className = 'modal-mask incoming-march-dialog-mask';
+    mask.setAttribute('role', 'dialog'); mask.setAttribute('aria-modal', 'true'); mask.setAttribute('aria-labelledby', 'incomingMarchTitle');
+    mask.innerHTML = '<section class="modal-card" role="document"><div class="modal-title" id="incomingMarchTitle">敌军行军情报 · ' + esc(playerName) +
+      '<button type="button" data-incoming-close aria-label="关闭详情">×</button></div><div class="modal-body">' +
+      '<div class="term-expanded-intel">' + detail + '</div><p class="desc">目标坐标：(' + esc(targetX) + ',' + esc(targetY) + ') · ' +
+      (remaining > 0 ? '预计抵达 ' + esc(Math.floor(remaining / 60)) + '分' + esc(remaining % 60) + '秒' : '敌军已抵达或正在交战') + '</p>' +
+      (!isCurrentCityThreat ? '<p role="status">该行军目标属于其他城市；切换到目标城市后可实施拦截或计谋。</p>' : '') +
+      (used ? '<p role="status">本次行军已使用过一次计谋。</p>' : '') +
+      '</div><div class="modal-foot"><button type="button" class="btn" data-incoming-close>关闭</button>' +
+      (active ? '<button type="button" class="btn ok" data-incoming-intercept>出城拦截</button>' : '') +
+      (active && !used ? '<span data-stratagem-actions><button type="button" class="btn" data-incoming-stratagem="signalJammingOrder"' +
+        (Number(items.signalJammingOrder) > 0 ? '' : ' disabled') + '>📡 通讯干扰令 ×' + esc(items.signalJammingOrder || 0) + '</button>' +
+        '<button type="button" class="btn" data-incoming-stratagem="feintOrder"' + (Number(items.feintOrder) > 0 ? '' : ' disabled') +
+        '>🎭 佯动诱敌令 ×' + esc(items.feintOrder || 0) + '</button></span>' : '') +
+      '</div></section>';
+    var previousFocus = document.activeElement, closed = false, pending = false;
+    (document.fullscreenElement || document.body).appendChild(mask);
+    function close(restoreFocus) {
+      if (closed) return;
+      closed = true; document.removeEventListener('keydown', onKey, true);
+      if (mask.parentNode) mask.parentNode.removeChild(mask);
+      if (self.incomingDialog === mask) self.incomingDialog = null;
+      if (restoreFocus !== false && previousFocus && previousFocus.isConnected && previousFocus.focus) previousFocus.focus();
+    }
+    function onKey(event) { if (event.key === 'Escape') { event.preventDefault(); close(); } }
+    this.incomingDialog = mask;
+    this.closeIncomingMarch = close;
+    document.addEventListener('keydown', onKey, true);
+    mask.addEventListener('click', function (event) {
+      event.stopPropagation();
+      var button = event.target.closest && event.target.closest('button');
+      if (event.target === mask || button && button.hasAttribute('data-incoming-close')) { close(); return; }
+      if (!button || pending || button.disabled) return;
+      if (button.hasAttribute('data-incoming-intercept')) {
+        close(false);
+        if (G.World && G.World.openScoutInterception) G.World.openScoutInterception(march, true);
+        else G.toast('出城拦截暂不可用');
+        return;
+      }
+      var itemKey = button.getAttribute('data-incoming-stratagem');
+      if (!itemKey || !G.API || !G.API.applyMarchStratagem) return;
+      var itemName = itemKey === 'signalJammingOrder' ? '通讯干扰令' : '佯动诱敌令';
+      if (G.World && G.World.showConfirm) G.World.showConfirm({
+        title: '使用' + itemName,
+        message: '对这支敌军行军使用 1 件' + itemName + '？',
+        subMessage: itemKey === 'signalJammingOrder' ? '延长剩余行军时间 20%，最多 2 分钟；每支行军单程限用一次。' : '延长剩余行军时间 40%，最多 4 分钟；每支行军单程限用一次。',
+        okText: '确认使用',
+        onConfirm: function () {
+          if (closed || pending) return;
+          pending = true;
+          mask.querySelectorAll('[data-incoming-stratagem], [data-incoming-intercept]').forEach(function (control) { control.disabled = true; });
+          G.API.applyMarchStratagem(Number(intelId), itemKey, Number(march.arriveAt)).then(function (result) {
+            close(false); G.toast(result.message || (itemName + '已生效，敌军行军受到拖延'));
+            if (G.WorldMap && G.WorldMap.invalidate) G.WorldMap.invalidate();
+          }).catch(function (error) {
+            pending = false;
+            mask.querySelectorAll('[data-incoming-stratagem], [data-incoming-intercept]').forEach(function (control) { control.disabled = false; });
+            G.toast(error && error.message || '计谋使用失败，请刷新军情后重试');
+          });
+        }
+      });
+    });
+    var closeButton = mask.querySelector('[data-incoming-close]');
+    if (closeButton && closeButton.focus) closeButton.focus();
+  };
   MapView.prototype.pick = function(p) {
     // Captions are above all artwork and stay clickable outside the ground cell.
     var captions = this.captionLayer ? this.captionLayer.children : [];
@@ -1480,7 +1829,12 @@
     // 抵达标记位于模型下方，点击时仍进入对应目标，不能误触空地建城。
     var armyMarkers = this.marchLayer ? this.marchLayer.children : [];
     for (var k=armyMarkers.length-1;k>=0;k--) {
-      var armyMarker = armyMarkers[k], statusHit = armyMarker.statusHit;
+      var armyMarker = armyMarkers[k], marchHit = armyMarker.marchHit;
+      if (marchHit && armyMarker.visible && armyMarker.incomingMarch && p.x>=marchHit.x && p.x<=marchHit.x+marchHit.width &&
+          p.y>=marchHit.y && p.y<=marchHit.y+marchHit.height) {
+        this.openIncomingMarch(armyMarker.incomingMarch); return;
+      }
+      var statusHit = armyMarker.statusHit;
       if (statusHit && armyMarker.statusTarget && p.x>=statusHit.x && p.x<=statusHit.x+statusHit.width &&
           p.y>=statusHit.y && p.y<=statusHit.y+statusHit.height) {
         this.loadDetail(armyMarker.statusTarget); return;
@@ -1521,6 +1875,7 @@
         '<b style="font-size:15px;">' + esc(terrainType) + ' · (' + x + ', ' + y + ')</b>' +
         (site.valid ? '<button type="button" class="page-back-button" data-map="found-city"><span>[建立城市]</span></button>' : '') +
         '<button type="button" class="page-back-button" data-map="teleport-city"><span>[高级传送至此]</span></button>' +
+        self.favoriteButtonHtml(self.selected) +
         '</div>' +
         (!site.valid && site.reason ? '<p class="world-map-site-reason" style="margin:4px 0 2px;font-size:12px;color:#c0392b;font-weight:600;">当前不可建城：' + esc(site.reason) + '</p>' : '') +
         '<p class="world-map-site-rule" style="margin:4px 0 0;font-size:12px;color:var(--map-muted,#596e79);line-height:1.5;">建城判断条件：以当前格为左上角的 2×2 四格均为未占用陆地，且城市名额未满；内陆也可建城。</p>' +
@@ -1669,7 +2024,7 @@
     }
     var headArt = icon(t);
     var headImg = headArt ? '<img class="world-map-city-model" src="' + esc(headArt) + '?v=5.9-npc-phalanxes-transparent-embedded" alt="">' : '';
-    this.detail.innerHTML='<button class="world-map-detail-close" data-map="close" aria-label="关闭详情">×</button><div class="world-map-detail-head">' + headImg + '<div><b>'+esc(name(t)+'（'+t.x+', '+t.y+'）')+'</b><div class="world-map-detail-meta">'+esc(meta)+'</div></div></div><p>'+esc(text)+'</p>'+(!t.occupied&&!t.selfCity?'<p>守军和资源情报请通过侦察获取。</p>':'')+'<div class="world-map-actions"></div>';
+    this.detail.innerHTML='<button class="world-map-detail-close" data-map="close" aria-label="关闭详情">×</button><div class="world-map-detail-head">' + headImg + '<div><b>'+esc(name(t)+'（'+t.x+', '+t.y+'）')+'</b><div class="world-map-detail-meta">'+esc(meta)+'</div></div></div><p>'+esc(text)+'</p>'+(!t.occupied&&!t.selfCity?'<p>守军和资源情报请通过侦察获取。</p>':'')+'<div class="world-map-actions">'+this.favoriteButtonHtml(t)+'</div>';
     var actions=this.detail.querySelector('.world-map-actions');
     function button(label, action, primary, disabled) { var b=document.createElement('button');b.className='world-map-button'+(primary?' primary':'');b.textContent=label;b.disabled=!!disabled;b.onclick=function(){self.act(action,b);};actions.appendChild(b); }
     if(t.selfCity){
@@ -1828,6 +2183,8 @@
     }).catch(function(err){G.toast(err.message||'操作失败');}).finally(function(){if(!self.destroyed)button.disabled=false;});
   };
   MapView.prototype.destroy = function() {
+    if (this.closeFavorites) this.closeFavorites(false);
+    if (this.closeIncomingMarch) this.closeIncomingMarch(false);
     this.destroyed=true;this.exitFullscreen();this.detailSeq++;this.vx=this.vy=0;
     if(this.toolbar&&this.toolbar.parentNode!==this.shell)this.shell.insertBefore(this.toolbar,this.shell.firstChild);
     if(this.raf)cancelAnimationFrame(this.raf);clearInterval(this.refreshTimer);clearInterval(this.marchTimer);clearInterval(this.gatherTimer);
@@ -1893,8 +2250,8 @@
     unmount:function(){if(instance){instance.destroy();instance=null;}if(terrainTexture){terrainTexture.destroy(true);terrainTexture=null;}if(terrainTextureNoSnow){terrainTextureNoSnow.destroy(true);terrainTextureNoSnow=null;}terrainWorldSize=-1;},
     setMode:function(next){mode=next;this.unmount();if(next==='map'&&G.Core.state.world){G.Core.state.world._activeTab='all';if(camera){camera.scale=camera.minScale;camera.clamp();}}if(camera&&G.Core.state.world){G.Core.state.world._mapPos={x:Math.floor(camera.x),y:Math.floor(camera.y)};G.Core.state.world._scan={r:8,at:Date.now()};}G.Core.render();},
     invalidate:function(){cache.invalidate();if(instance){instance.requestChunks();if(instance.selected){if(instance.selected.kind==='site')instance.loadSite(instance.selected.x,instance.selected.y);else instance.loadDetail(instance.selected,true);}instance.wake();}},
-    /** 行军快照更新后唤醒地图；不重新请求地形，也不打断坐标输入。 */
-    refreshMarches:function(){if(instance)instance.wake();},
+    /** 普通行军同步只调度动态层，避免每次 tick 重建地形、据点和文字；地图变动仍由 invalidate 刷新。 */
+    refreshMarches:function(){if(instance&&!instance.destroyed){instance.marchesDirty=true;instance.scheduleFrame();}},
     // Exposed camera/cache metrics are useful for automated interaction and load checks.
     metrics:function(){return { mounted:!!instance,x:camera&&camera.x,y:camera&&camera.y,scale:camera&&camera.scale,chunks:cache.entries.size,pending:cache.active,markers:instance?instance.markers.size:0,water:instance&&instance.waterSurface?'webgl':'canvas' };},
     focusCoordinate: function (x, y) {

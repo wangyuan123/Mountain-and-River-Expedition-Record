@@ -6,15 +6,39 @@ window.Game = window.Game || {};
 
   // 活动只跟随服务器已提交的时钟；失联时保留最后样本，不能按本机时间提前完成。
   var gameTime = null;
+  var animationFrom = null, animationStartedAt = 0, animationDuration = 0, animationInterval = 1000;
+  function animationClockNow() {
+    return typeof performance !== 'undefined' && typeof performance.now === 'function' ? performance.now() : Date.now();
+  }
+  /** 仅用于地图运动：缓冲已确认样本并逐帧插值，绝不外推服务器尚未确认的进度。 */
+  function animationNow() {
+    if (gameTime == null) return Date.now();
+    if (!animationDuration) return gameTime;
+    var ratio = Math.max(0, Math.min(1, (animationClockNow() - animationStartedAt) / animationDuration));
+    return animationFrom + (gameTime - animationFrom) * ratio;
+  }
   G.GameTime = {
     /** 同步游戏时间，忽略并行请求中较早的响应。切换大区或账号需先 reset。 */
     sync: function (value) {
       if (value == null || value === '') return;
       var time = Number(value);
-      if (Number.isFinite(time) && time > 0) gameTime = gameTime == null ? time : Math.max(gameTime, time);
+      if (!Number.isFinite(time) || time <= 0 || (gameTime != null && time <= gameTime)) return;
+      var sampledAt = animationClockNow();
+      if (gameTime != null) {
+        var interval = sampledAt - animationStartedAt;
+        // 保留有效检查点的最长到达间隔，避免 HTTP/WS 密集响应挤掉缓冲；长断线不计入采样。
+        if (interval <= 5000) animationInterval = Math.max(animationInterval, Math.min(2000, interval));
+      }
+      // 相同检查点不能重新开始插值，否则频繁 HTTP/WS 响应会让地图一直停在起点。
+      animationFrom = gameTime == null ? time : animationNow();
+      gameTime = time;
+      animationStartedAt = sampledAt;
+      // 多留 25% 播放余量（1.25～2.5 秒），不再恰好一秒追平后停等下一次推送。
+      animationDuration = time > animationFrom ? animationInterval * 1.25 : 0;
     },
-    reset: function () { gameTime = null; },
+    reset: function () { gameTime = animationFrom = null; animationStartedAt = animationDuration = 0; animationInterval = 1000; },
     now: function () { return gameTime == null ? Date.now() : gameTime; },
+    animationNow: animationNow,
     /** 将活动截止点映射成当前预计真实完成时刻；停服后预计时刻随剩余时长顺延。 */
     toWallTime: function (deadline) { return Date.now() + Number(deadline) - this.now(); }
   };
@@ -62,7 +86,93 @@ window.Game = window.Game || {};
         ] }
       }
     },
-    themeStorageKey: 'wargame_theme_pref',
+    // 游戏情境音效（部队出征、拦截交火、战斗指挥战胜、建筑升级完成）
+    // 严格遵循用户在设置中的音效开关与音量偏好，关闭时全静音。
+    gameSound: {
+      cues: {
+        dispatch: {
+          label: '部队出征',
+          isEvent: true,
+          file: 'audio/dispatch.wav',
+          layers: [
+            { wave: 'sine',  at: 0.00, duration: 0.12, from: 120, to: 45, gain: 0.35, envelope: 'punch' },
+            { wave: 'noise', at: 0.00, duration: 0.08, from: 3200, to: 800, gain: 0.25, envelope: 'decay' },
+            { wave: 'sine',  at: 0.14, duration: 0.10, from: 110, to: 45, gain: 0.30, envelope: 'punch' },
+            { wave: 'noise', at: 0.14, duration: 0.07, from: 3400, to: 900, gain: 0.22, envelope: 'decay' },
+            { wave: 'brass', at: 0.22, duration: 0.14, from: 196, to: 196, gain: 0.32, envelope: 'brass' },
+            { wave: 'brass', at: 0.36, duration: 0.14, from: 261.6, to: 261.6, gain: 0.35, envelope: 'brass' },
+            { wave: 'brass', at: 0.50, duration: 0.14, from: 329.6, to: 329.6, gain: 0.38, envelope: 'brass' },
+            { wave: 'brass', at: 0.64, duration: 0.42, from: 392.0, to: 392.0, gain: 0.42, envelope: 'brass' },
+            { wave: 'sine',  at: 0.64, duration: 0.40, from: 196.0, to: 196.0, gain: 0.20, envelope: 'brass' },
+            { wave: 'sine',  at: 0.64, duration: 0.22, from: 140, to: 40, gain: 0.40, envelope: 'punch' },
+            { wave: 'noise', at: 0.64, duration: 0.15, from: 4000, to: 600, gain: 0.20, envelope: 'decay' }
+          ]
+        },
+        firefight: {
+          label: '拦截战交火',
+          isEvent: true,
+          file: 'audio/firefight.wav',
+          layers: [
+            { wave: 'noise', at: 0.00, duration: 0.045, from: 6500, to: 1800, gain: 0.45, envelope: 'punch' },
+            { wave: 'metal', at: 0.00, duration: 0.06,  from: 1850, to: 450,  gain: 0.35, envelope: 'decay' },
+            { wave: 'sine',  at: 0.00, duration: 0.08,  from: 260,  to: 80,   gain: 0.40, envelope: 'punch' },
+            { wave: 'noise', at: 0.09, duration: 0.045, from: 6500, to: 1800, gain: 0.45, envelope: 'punch' },
+            { wave: 'metal', at: 0.09, duration: 0.06,  from: 1850, to: 450,  gain: 0.35, envelope: 'decay' },
+            { wave: 'sine',  at: 0.09, duration: 0.08,  from: 260,  to: 80,   gain: 0.40, envelope: 'punch' },
+            { wave: 'noise', at: 0.18, duration: 0.045, from: 6500, to: 1800, gain: 0.45, envelope: 'punch' },
+            { wave: 'metal', at: 0.18, duration: 0.06,  from: 1850, to: 450,  gain: 0.35, envelope: 'decay' },
+            { wave: 'sine',  at: 0.18, duration: 0.08,  from: 260,  to: 80,   gain: 0.40, envelope: 'punch' },
+            { wave: 'sine',  at: 0.15, duration: 0.25,  from: 2200, to: 750,  gain: 0.18, envelope: 'sustain' },
+            { wave: 'noise', at: 0.26, duration: 0.65,  from: 2200, to: 150,  gain: 0.45, envelope: 'explosion' },
+            { wave: 'sine',  at: 0.26, duration: 0.55,  from: 130,  to: 32,   gain: 0.50, envelope: 'explosion' },
+            { wave: 'metal', at: 0.28, duration: 0.20,  from: 980,  to: 350,  gain: 0.15, envelope: 'decay' }
+          ]
+        },
+        victory: {
+          label: '战斗指挥战胜',
+          isEvent: true,
+          file: 'audio/victory.wav',
+          layers: [
+            { wave: 'brass', at: 0.00, duration: 0.18, from: 523.25, to: 523.25, gain: 0.30, envelope: 'brass' },
+            { wave: 'brass', at: 0.00, duration: 0.18, from: 659.25, to: 659.25, gain: 0.28, envelope: 'brass' },
+            { wave: 'brass', at: 0.16, duration: 0.18, from: 659.25, to: 659.25, gain: 0.32, envelope: 'brass' },
+            { wave: 'brass', at: 0.16, duration: 0.18, from: 783.99, to: 783.99, gain: 0.30, envelope: 'brass' },
+            { wave: 'brass', at: 0.32, duration: 0.20, from: 783.99, to: 783.99, gain: 0.35, envelope: 'brass' },
+            { wave: 'brass', at: 0.32, duration: 0.20, from: 987.77, to: 987.77, gain: 0.32, envelope: 'brass' },
+            { wave: 'brass', at: 0.50, duration: 0.85, from: 261.63, to: 261.63, gain: 0.30, envelope: 'brass' },
+            { wave: 'brass', at: 0.50, duration: 0.85, from: 523.25, to: 523.25, gain: 0.38, envelope: 'brass' },
+            { wave: 'brass', at: 0.50, duration: 0.85, from: 659.25, to: 659.25, gain: 0.32, envelope: 'brass' },
+            { wave: 'brass', at: 0.50, duration: 0.85, from: 1046.5, to: 1046.5, gain: 0.35, envelope: 'brass' },
+            { wave: 'sine',  at: 0.50, duration: 0.60, from: 2093.0, to: 2093.0, gain: 0.18, envelope: 'chime' },
+            { wave: 'sine',  at: 0.56, duration: 0.55, from: 2637.0, to: 2637.0, gain: 0.15, envelope: 'chime' },
+            { wave: 'metal', at: 0.50, duration: 0.40, from: 1568.0, to: 1568.0, gain: 0.14, envelope: 'decay' },
+            { wave: 'sine',  at: 0.50, duration: 0.45, from: 130,    to: 55,    gain: 0.35, envelope: 'punch' }
+          ]
+        },
+        upgrade: {
+          label: '建筑升级完成',
+          isEvent: true,
+          file: 'audio/upgrade.wav',
+          layers: [
+            { wave: 'noise', at: 0.00, duration: 0.025, from: 6800, to: 2400, gain: 0.35, envelope: 'punch' },
+            { wave: 'metal', at: 0.00, duration: 0.16,  from: 1480, to: 1400, gain: 0.38, envelope: 'decay' },
+            { wave: 'sine',  at: 0.00, duration: 0.10,  from: 320,  to: 180,  gain: 0.20, envelope: 'punch' },
+            { wave: 'noise', at: 0.12, duration: 0.025, from: 7200, to: 2600, gain: 0.38, envelope: 'punch' },
+            { wave: 'metal', at: 0.12, duration: 0.18,  from: 1760, to: 1680, gain: 0.42, envelope: 'decay' },
+            { wave: 'sine',  at: 0.12, duration: 0.10,  from: 440,  to: 220,  gain: 0.22, envelope: 'punch' },
+            { wave: 'sine',  at: 0.26, duration: 0.50,  from: 659.25, to: 659.25, gain: 0.30, envelope: 'chime' },
+            { wave: 'metal', at: 0.26, duration: 0.30,  from: 1318.5, to: 1318.5, gain: 0.12, envelope: 'decay' },
+            { wave: 'sine',  at: 0.38, duration: 0.55,  from: 830.61, to: 830.61, gain: 0.32, envelope: 'chime' },
+            { wave: 'metal', at: 0.38, duration: 0.32,  from: 1661.2, to: 1661.2, gain: 0.14, envelope: 'decay' },
+            { wave: 'sine',  at: 0.50, duration: 0.55,  from: 987.77, to: 987.77, gain: 0.34, envelope: 'chime' },
+            { wave: 'metal', at: 0.50, duration: 0.35,  from: 1975.5, to: 1975.5, gain: 0.15, envelope: 'decay' },
+            { wave: 'sine',  at: 0.62, duration: 0.50,  from: 1318.51, to: 1318.51, gain: 0.38, envelope: 'chime' },
+            { wave: 'sine',  at: 0.62, duration: 0.45,  from: 2637.02, to: 2637.02, gain: 0.16, envelope: 'chime' },
+            { wave: 'metal', at: 0.62, duration: 0.40,  from: 3955.5,  to: 3955.5,  gain: 0.10, envelope: 'decay' }
+          ]
+        }
+      }
+    },
     defaultTheme: 'blue-white-classic',
     themes: [
       { id: 'blue-white-classic', name: '战术经典蓝白风（推荐）', tag: '怀旧文字风', desc: '白底蓝字、渐变导航与浅蓝分隔线，重温早期手机家园的简洁排版' },
@@ -329,6 +439,8 @@ window.Game = window.Game || {};
       { id: 'speedUp72h', cat: 'util', name: '72时加速符',icon: '⚡', desc: '立即缩短72小时建筑/造兵时间',    price: 3500, stock: null, tag: '限时' },
       { id: 'shield',    cat: 'util', name: '护盾',     icon: '🛡️', desc: '本城8小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地',         price: 200,  stock: null, tag: '' },
       { id: 'marchOrd',  cat: 'util', name: '行军令',   icon: '🚩', desc: '仓库启用：行军速度+50%，持续1小时；情报使用：本队当前路段剩余时间缩短约1/3，去程与回程各限一次', price: 100, stock: null, tag: '' },
+      { id: 'signalJammingOrder', cat: 'util', name: '通讯干扰令', icon: '📡', desc: '对指向己方城市的敌军行军使用：延长剩余行军时间20%，最多2分钟；每支行军单程限用一次', price: 150, stock: null, tag: '' },
+      { id: 'feintOrder', cat: 'util', name: '佯动诱敌令', icon: '🎭', desc: '对指向己方城市的敌军行军使用：延长剩余行军时间40%，最多4分钟；每支行军单程限用一次', price: 250, stock: null, tag: '' },
       { id: 'populationOrder', cat: 'util', name: '人口动员令', icon: '👥', desc: '使用后立即增加500空闲人口,不超过人口上限', price: 100, stock: null, tag: '推荐' },
       { id: 'emergencyPopulationOrder', cat: 'util', name: '紧急人口动员令', icon: '📣', desc: '使用后立即增加当前城市人口容量上限30%的空闲人口,不超过人口上限', price: 100, stock: null, tag: '' },
       { id: 'cityRenameCard', cat: 'util', name: '城市改名卡', icon: '🏷️', desc: '为一座城市更换新名字', price: 60, stock: null, tag: '' },

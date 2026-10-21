@@ -2565,6 +2565,247 @@ button.drawer-rank-tip:hover { border-color: var(--accent); }
 .btn.sm { min-height: 26px; padding: 3px 8px; font-size: 11px; }
 .btn:disabled { background: #c7c8c2; border-color: #c7c8c2; color: #f7f7f5; }
 
+/* 兵种整编 - 战备概览看板 */
+.army-overview-card {
+  background: var(--surface, #fff);
+  border: 1px solid var(--line, #d4dce6);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin: 6px 0 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.army-ov-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+  border-bottom: 1px dashed var(--line, #e2e8f0);
+}
+
+.army-ov-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.army-ov-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 4px;
+  background: var(--accent-soft, #eef4fb);
+  color: var(--accent, #3b82f6);
+  border: 1px solid var(--accent, #3b82f6);
+  letter-spacing: .02em;
+  flex-shrink: 0;
+}
+
+.army-ov-cmd {
+  font-size: 12px;
+  color: var(--ink, #333);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.army-ov-cmd-none {
+  color: var(--muted, #888);
+}
+
+.army-rules-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent, #3b82f6);
+  background: transparent;
+  border: 1px solid var(--accent, #3b82f6);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all .14s ease;
+  flex-shrink: 0;
+  line-height: 1.2;
+}
+
+.army-rules-btn:hover {
+  background: var(--accent, #3b82f6);
+  color: #fff;
+}
+
+.army-rules-icon {
+  display: inline-block;
+  font-style: normal;
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+.army-ov-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.army-ov-cell {
+  background: var(--accent-soft, rgba(59, 130, 246, 0.04));
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 6px;
+  padding: 5px 6px;
+  text-align: center;
+  min-width: 0;
+}
+
+.army-ov-k {
+  font-size: 11px;
+  color: var(--muted, #64748b);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.army-ov-v {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink, #1e293b);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.army-ov-v .army-ov-main {
+  color: var(--accent-dark, var(--accent, #2563eb));
+}
+
+.army-ov-v .army-ov-cap {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted, #64748b);
+  margin-left: 1px;
+}
+
+.army-ov-v.army-ov-food {
+  color: var(--danger, #dc2626);
+}
+
+.army-ov-v.army-ov-food small {
+  font-size: 10px;
+  font-weight: normal;
+  opacity: 0.85;
+}
+
+.army-ov-sub {
+  font-size: 10px;
+  color: var(--muted, #8a99ad);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 380px) {
+  .army-ov-grid {
+    gap: 4px;
+  }
+  .army-ov-cell {
+    padding: 4px 3px;
+  }
+  .army-ov-v {
+    font-size: 12px;
+  }
+  .army-ov-sub {
+    font-size: 9px;
+  }
+  .army-rules-btn {
+    padding: 2px 6px;
+    font-size: 10px;
+  }
+}
+
+/* 详情弹窗样式 */
+.army-rules-dialog {
+  max-width: 440px;
+  background: var(--surface, #fff);
+  color: var(--ink, #1e293b);
+  border-color: var(--line, #cbd5e1);
+}
+
+.army-rules-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid var(--line, #e2e8f0);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.army-rules-close {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: var(--muted, #64748b);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.army-rules-close:hover {
+  background: var(--accent-soft, #f1f5f9);
+  color: var(--ink, #0f172a);
+}
+
+.army-rules-body {
+  padding: 12px 16px;
+  max-height: 68vh;
+  overflow-y: auto;
+  font-size: 13px;
+  line-height: 1.55;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.army-rules-section {
+  background: var(--accent-soft, rgba(59, 130, 246, 0.03));
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.army-rules-sec-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-dark, var(--accent, #1d4ed8));
+  margin-bottom: 4px;
+}
+
+.army-rules-sec-desc {
+  font-size: 12px;
+  color: var(--ink, #334155);
+  line-height: 1.6;
+}
+
+.army-rules-foot {
+  padding: 10px 16px;
+  border-top: 1px solid var(--line, #e2e8f0);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.army-rules-confirm-btn {
+  min-width: 80px;
+  padding: 5px 14px;
+}
+
 /* 兵种整编 Tab 导航 */
 .army-tabs {
   display: flex;
@@ -4202,7 +4443,24 @@ body.theme-classic .unit-card-details,
   user-select: none;
   line-height: 1.2;
 }
-.army-dispatch-go { font-size: 15px; }
+.army-dispatch-go,
+.fort-summary-go {
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.zone-head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.zone-head-actions .zone-head-action {
+  margin-left: 0;
+  margin-right: 2px;
+}
 .build-zone-link-wrap { display: flex; justify-content: flex-end; }
 .build-zone-link { margin: 0 4px 8px 0; color: var(--accent); font-size: 11.5px; }
 .build-zone-link:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
@@ -4245,13 +4503,16 @@ body.theme-classic .unit-card-details,
   justify-content: center;
   width: 28px;
   height: 28px;
-  margin-left: auto;
   padding: 3px;
   border: 0;
   border-radius: 4px;
   background: transparent;
   color: var(--accent, #004499);
   cursor: pointer;
+  flex-shrink: 0;
+}
+.zone-head > .army-summary-expand {
+  margin-left: auto;
 }
 .army-summary-expand:hover,
 .army-summary-expand:focus-visible {
@@ -4421,20 +4682,32 @@ body.theme-classic .unit-card-details,
 .army-summary-expanded .army-summary-item { grid-row: auto; grid-column: auto; }
 
 /* 首页 城防总览 块 */
-.fort-summary-zone-head { margin-top: 14px; }
+.fort-summary-zone-head {
+  margin-top: 14px;
+  flex-wrap: nowrap;
+}
+.fort-summary-zone-head .zone-sub {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .fort-summary-expand {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 28px;
   height: 28px;
-  margin-left: auto;
   padding: 3px;
   border: 0;
   border-radius: 4px;
   background: transparent;
   color: var(--accent, #004499);
   cursor: pointer;
+  flex-shrink: 0;
+}
+.zone-head > .fort-summary-expand {
+  margin-left: auto;
 }
 .fort-summary-expand:hover,
 .fort-summary-expand:focus-visible {
@@ -4556,10 +4829,11 @@ body.theme-classic .unit-card-details,
   text-decoration: underline;
 }
 .fort-summary-foot {
-  display: grid;
-  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 6px 12px;
+  justify-content: space-between;
+  gap: 4px 12px;
   margin-top: 6px;
   padding: 0 4px;
   color: var(--muted, #64748b);
@@ -4569,17 +4843,12 @@ body.theme-classic .unit-card-details,
 .fort-summary-wall,
 .fort-summary-capacity { min-width: 0; overflow-wrap: anywhere; }
 .fort-summary-foot b { color: var(--ink, #1f2937); font-variant-numeric: tabular-nums; }
-.fort-go {
-  justify-self: end;
-  color: var(--accent, #004499);
-  font-weight: 600;
-  white-space: nowrap;
-}
 @media (max-width: 480px) {
-  .fort-summary-foot { grid-template-columns: minmax(0, 1fr) max-content; }
-  .fort-summary-wall,
-  .fort-summary-capacity { grid-column: 1; }
-  .fort-go { grid-column: 2; grid-row: 1 / 3; }
+  .fort-summary-foot {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+  }
 }
 .modal-mask.fort-summary-mask { padding: 0; }
 .modal-card.fort-summary-dialog {
@@ -4621,6 +4890,482 @@ body.theme-classic .unit-card-details,
   border-right: none;
   border-bottom: 1px dashed var(--line, #e2e8f0);
   padding: 4px 0;
+}
+
+/* 城防工事 - 战备概览看板与紧凑卡片 */
+.fort-ov-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.fort-overview-card {
+  background: var(--surface, #fff);
+  border: 1px solid var(--line, #d4dce6);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin: 6px 0 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.fort-ov-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+  border-bottom: 1px dashed var(--line, #e2e8f0);
+}
+
+.fort-ov-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.fort-ov-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 4px;
+  background: var(--accent-soft, #eef4fb);
+  color: var(--accent, #3b82f6);
+  border: 1px solid var(--accent, #3b82f6);
+  letter-spacing: .02em;
+  flex-shrink: 0;
+}
+
+.fort-ov-lv {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink, #333);
+}
+
+.fort-rules-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent, #3b82f6);
+  background: transparent;
+  border: 1px solid var(--accent, #3b82f6);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all .14s ease;
+  flex-shrink: 0;
+  line-height: 1.2;
+}
+
+.fort-rules-btn:hover {
+  background: var(--accent, #3b82f6);
+  color: #fff;
+}
+
+.fort-rules-icon {
+  display: inline-block;
+  font-style: normal;
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+.fort-ov-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.fort-ov-cell {
+  background: var(--accent-soft, rgba(59, 130, 246, 0.04));
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 6px;
+  padding: 5px 6px;
+  text-align: center;
+  min-width: 0;
+}
+
+.fort-ov-k {
+  font-size: 11px;
+  color: var(--muted, #64748b);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fort-ov-v {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink, #1e293b);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fort-ov-v .fort-ov-main {
+  color: var(--accent-dark, var(--accent, #2563eb));
+}
+
+.fort-ov-v .fort-ov-cap {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted, #64748b);
+  margin-left: 1px;
+}
+
+.fort-ov-v.fort-ov-hp {
+  color: var(--ink, #1e293b);
+}
+
+.fort-ov-v.fort-ov-def {
+  color: var(--accent, #3b82f6);
+}
+
+.fort-ov-sub {
+  font-size: 10px;
+  color: var(--muted, #8a99ad);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 城防规则说明弹窗 */
+.fort-rules-dialog {
+  max-width: 440px;
+  background: var(--surface, #fff);
+  color: var(--ink, #1e293b);
+  border-color: var(--line, #cbd5e1);
+}
+
+.fort-rules-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid var(--line, #e2e8f0);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.fort-rules-close {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--muted, #64748b);
+  padding: 4px;
+  line-height: 1;
+  border-radius: 4px;
+}
+
+.fort-rules-close:hover {
+  color: var(--ink, #1e293b);
+  background: var(--surface-muted, #f1f5f9);
+}
+
+.fort-rules-body {
+  padding: 12px 16px;
+  max-height: 60vh;
+  overflow-y: auto;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.fort-rules-section {
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed var(--line, #e2e8f0);
+}
+
+.fort-rules-section:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.fort-rules-sec-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink, #1e293b);
+  margin-bottom: 4px;
+}
+
+.fort-rules-sec-desc {
+  font-size: 12px;
+  color: var(--muted, #475569);
+  line-height: 1.55;
+}
+
+.fort-rules-foot {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 16px;
+  border-top: 1px solid var(--line, #e2e8f0);
+  background: var(--surface-muted, #f8fafc);
+  border-radius: 0 0 8px 8px;
+}
+
+.fort-rules-confirm-btn {
+  min-width: 80px;
+}
+
+/* 工事紧凑网格布局 */
+.fort-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+@media (min-width: 580px) {
+  .fort-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* 工事卡片 */
+.fort-card {
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: border-color .15s ease, box-shadow .15s ease;
+  position: relative;
+}
+
+.fort-card:hover {
+  border-color: var(--accent, #93c5fd);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
+}
+
+.fort-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.fort-card-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.fort-idx {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted, #8a99ad);
+  flex-shrink: 0;
+}
+
+.fort-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink, #1e293b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fort-role-pill {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--surface-muted, #f1f5f9);
+  color: var(--muted, #64748b);
+  border: 1px solid var(--line, #cbd5e1);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.fort-have-badge {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--accent-soft, rgba(59, 130, 246, 0.08));
+  color: var(--accent-dark, var(--accent, #2563eb));
+  border: 1px solid var(--accent, rgba(59, 130, 246, 0.25));
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.fort-have-lbl {
+  font-size: 10px;
+  color: var(--muted, #64748b);
+}
+
+.fort-have-val {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* 属性数据标签栏 */
+.fort-stats-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: var(--surface-muted, #f8fafc);
+  border: 1px solid var(--line, #edf2f7);
+  border-radius: 5px;
+  padding: 4px 6px;
+}
+
+.fort-stat-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.fort-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink, #334155);
+  padding: 1px 4px;
+  border-radius: 3px;
+  line-height: 1.2;
+}
+
+.fort-pill.atk {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.fort-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.fort-dot.atk-g { background: #10b981; }
+.fort-dot.atk-a { background: #3b82f6; }
+.fort-dot.atk-s { background: #06b6d4; }
+.fort-dot.atk-f { background: #f59e0b; }
+
+.fort-pill.def { color: #2563eb; }
+.fort-pill.hp { color: #059669; }
+.fort-pill.range { color: #d97706; }
+
+/* 简炼描述 */
+.fort-brief {
+  font-size: 11px;
+  color: var(--muted, #64748b);
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 操作与单价底栏 */
+.fort-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding-top: 4px;
+  border-top: 1px dashed var(--line, #e2e8f0);
+}
+
+.fort-cost-wrap {
+  font-size: 11px;
+  color: var(--ink, #334155);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: wrap;
+  min-width: 0;
+  flex: 1;
+}
+
+.fort-cost-lbl {
+  font-size: 11px;
+  color: var(--muted, #64748b);
+  margin-right: 2px;
+}
+
+.fort-ctrl-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.fort-qty-input {
+  width: 54px !important;
+  height: 26px !important;
+  padding: 2px 4px !important;
+  font-size: 12px !important;
+  text-align: center !important;
+  border: 1px solid var(--line, #cbd5e1) !important;
+  border-radius: 4px !important;
+  background: var(--surface, #fff) !important;
+  color: var(--ink, #1e293b) !important;
+}
+
+.fort-act-btn {
+  min-height: 26px !important;
+  padding: 2px 8px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+}
+
+@media (max-width: 380px) {
+  .fort-ov-grid {
+    gap: 4px;
+  }
+  .fort-ov-cell {
+    padding: 4px 3px;
+  }
+  .fort-ov-v {
+    font-size: 12px;
+  }
+  .fort-rules-btn {
+    padding: 2px 6px;
+    font-size: 10px;
+  }
+  .fort-card {
+    padding: 7px 8px;
+    gap: 5px;
+  }
+  .fort-pill {
+    font-size: 10px;
+    padding: 1px 3px;
+  }
+  .fort-qty-input {
+    width: 48px !important;
+  }
+  .fort-act-btn {
+    padding: 2px 6px !important;
+    font-size: 10px !important;
+  }
 }
 
 /* 首页兵种详情弹窗 */
@@ -8065,6 +8810,166 @@ span.tcard-mini-icon .map-icon {
 .wounded-overview strong { display:block; margin-top:6px; font-size:25px; color:var(--accent); }
 .wounded-notice { padding:12px 14px; border-left:3px solid var(--gold); background:var(--gold-soft); color:var(--ink); font-size:12px; line-height:1.7; }
 .wounded-notice p { margin:5px 0 0; }
+
+/* 伤兵营 - 救治概览看板与详细说明弹窗 */
+.wounded-notice-card {
+  padding: 8px 10px;
+  margin: 8px 0 10px;
+  border: 1px solid var(--line, #d4dce6);
+  border-left: 3px solid var(--gold, #d97706);
+  border-radius: 6px;
+  background: var(--surface, #fff);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.wounded-notice-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+  border-bottom: 1px dashed var(--line, #e2e8f0);
+}
+
+.wounded-notice-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.wounded-notice-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 4px;
+  background: var(--gold-soft, #fef3c7);
+  color: var(--gold, #b45309);
+  border: 1px solid var(--gold, #d97706);
+  letter-spacing: .02em;
+  flex-shrink: 0;
+}
+
+.wounded-notice-digest {
+  font-size: 12px;
+  color: var(--ink, #333);
+  line-height: 1.4;
+}
+
+.wounded-rules-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent, #3b82f6);
+  background: transparent;
+  border: 1px solid var(--accent, #3b82f6);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all .14s ease;
+  flex-shrink: 0;
+  line-height: 1.2;
+}
+
+.wounded-rules-btn:hover {
+  background: var(--accent, #3b82f6);
+  color: #fff;
+}
+
+.wounded-rules-icon {
+  display: inline-block;
+  font-style: normal;
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+.wounded-balance-text {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted, #64748b);
+  line-height: 1.5;
+}
+
+/* 伤兵营详细说明弹窗 */
+.wounded-rules-dialog {
+  max-width: 440px;
+  background: var(--surface, #fff);
+  color: var(--ink, #1e293b);
+  border-color: var(--line, #cbd5e1);
+}
+
+.wounded-rules-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid var(--line, #e2e8f0);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.wounded-rules-close {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: var(--muted, #64748b);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.wounded-rules-close:hover {
+  background: var(--accent-soft, #f1f5f9);
+  color: var(--ink, #0f172a);
+}
+
+.wounded-rules-body {
+  padding: 12px 16px;
+  max-height: 68vh;
+  overflow-y: auto;
+  font-size: 13px;
+  line-height: 1.55;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.wounded-rules-section {
+  background: var(--accent-soft, rgba(59, 130, 246, 0.03));
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.wounded-rules-sec-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-dark, var(--accent, #1d4ed8));
+  margin-bottom: 4px;
+}
+
+.wounded-rules-sec-desc {
+  font-size: 12px;
+  color: var(--ink, #334155);
+  line-height: 1.6;
+}
+
+.wounded-rules-foot {
+  padding: 10px 16px;
+  border-top: 1px solid var(--line, #e2e8f0);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.wounded-rules-confirm-btn {
+  min-width: 80px;
+  padding: 5px 14px;
+}
 .wounded-cities { display:flex; flex-wrap:wrap; gap:8px; margin:16px 0 12px; }
 .wounded-card { padding:14px; margin-bottom:10px; border:1px solid var(--line); border-radius:8px; background:var(--surface); }
 .wounded-card-head { display:flex; justify-content:space-between; gap:12px; color:var(--accent); }
@@ -8076,7 +8981,8 @@ span.tcard-mini-icon .map-icon {
 .wounded-controls .qty { width:100px; }
 .wounded-payments { display:grid; gap:8px; }
 .wounded-payment-row { display:flex; justify-content:flex-end; gap:8px; }
-.wounded-balance-warning { margin-top:8px; padding:8px 10px; border:1px solid #ead393; border-radius:4px; background:#fff5d6; color:#76531b; font-size:12px; line-height:1.6; }
+/* 兵种卡片内不再机械重复显示冗长的 MAX 解释说明，相关规则已统一收敛至顶部概览与详细说明弹窗中 */
+.wounded-balance-warning { display: none !important; }
 @media(max-width:600px) {
   .wounded-controls { grid-template-columns:minmax(0,1fr); gap:10px; }
   .wounded-payments { justify-self:end; }
@@ -8807,3 +9713,208 @@ body.theme-classic .rb-prisoner-details summary:hover,
 .conquest-wall-panel small { color:var(--muted); }
 .conquest-wall-hp { height:10px; background:rgba(128,128,128,.2); border-radius:5px; overflow:hidden; }
 .conquest-wall-hp > div { height:100%; background:#c39c50; }
+
+/* 设置界面 (Settings View) - 紧凑高利用率卡片布局 */
+.settings-view {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 6px 0 10px;
+}
+
+.settings-card {
+  position: relative;
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--line, #cbd5e1);
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  padding: 8px 10px;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.settings-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--line-light, rgba(0, 0, 0, 0.06));
+}
+
+.settings-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-dark, var(--accent, #1f5095));
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.settings-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.settings-row-between {
+  justify-content: space-between;
+}
+
+.settings-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink, #222);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.settings-select {
+  padding: 4px 8px;
+  font-size: 13px;
+  color: var(--ink, #222);
+  background: var(--surface, #fff);
+  border: 1px solid var(--line, #cbd5e1);
+  border-radius: 4px;
+  max-width: 65%;
+  min-width: 0;
+  font-family: inherit;
+}
+
+.settings-status-pill {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.settings-status-pill.success {
+  background: #e6f4ea;
+  color: #1e7e34;
+  border: 1px solid #c3e6cb;
+}
+
+.settings-status-pill.warning {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+}
+
+.settings-status-pill.muted {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+.settings-account-user-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.settings-account-name {
+  font-size: 13px;
+  color: var(--ink, #222);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-subtext {
+  font-size: 12px;
+  color: var(--muted, #64748b);
+}
+
+.settings-account-sub-row {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--line-light, rgba(0, 0, 0, 0.06));
+}
+
+.settings-protection-btn {
+  width: 100%;
+  font-size: 12px;
+  padding: 4px 8px;
+  text-align: center;
+}
+
+.settings-about-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.settings-app-info {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.settings-app-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink, #222);
+}
+
+.settings-app-ver {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent, #2457a5);
+  background: var(--surface-muted, #edf4fb);
+  border: 1px solid var(--line, #cbd5e1);
+  padding: 0 4px;
+  border-radius: 3px;
+}
+
+.settings-app-tag {
+  font-size: 11px;
+  color: var(--muted, #64748b);
+}
+
+.settings-exit-btn {
+  font-size: 12px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+
+.settings-danger-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--line-light, rgba(0, 0, 0, 0.06));
+}
+
+.settings-danger-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-danger-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--danger, #b03020);
+}
+
+.settings-danger-desc {
+  font-size: 11px;
+  color: var(--muted, #64748b);
+}
+

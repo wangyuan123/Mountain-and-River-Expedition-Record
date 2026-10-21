@@ -8,6 +8,7 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Entity
+@EntityListeners(com.wargame.service.RetentionEntityListener.class)
 @Table(name = "pvp_practice_sessions")
 public class PvpPracticeSession extends VersionedEntity {
     @Id
@@ -51,4 +52,16 @@ public class PvpPracticeSession extends VersionedEntity {
     private long settledAt;
     @Column(name = "created_at", nullable = false)
     private long createdAt;
+    @Column(name = "settled_real_at")
+    private Long settledRealAt;
+    @Column(name = "history_retention_ms", nullable = false)
+    private long historyRetentionMs;
+    @Column(name = "retention_expires_at")
+    private Long retentionExpiresAt;
+
+    /** 结算才启动真实时间期限，使用创建会话时保存的配置。 */
+    public void setSettledRealAt(Long value) {
+        settledRealAt = value;
+        if (value != null && historyRetentionMs > 0) retentionExpiresAt = value + historyRetentionMs;
+    }
 }

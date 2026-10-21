@@ -17,6 +17,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
 public class ChatServiceTest {
@@ -123,7 +124,7 @@ public class ChatServiceTest {
         var response = chatService.send(player.getId(), "加V.X卖号");
         assertEquals("**.***", response.content());
         Mockito.verify(chatRepo).save(org.mockito.ArgumentMatchers.argThat(m -> m.getContent().equals("**.***")));
-        when(chatRepo.findTop50ByOrderByCreatedAtDesc()).thenReturn(java.util.List.of(
+        when(chatRepo.findRecentVisible(anyLong(), any())).thenReturn(java.util.List.of(
                 new ChatMessage(2L, player.getId(), "TestCommander", "q_q收金币", 1L)));
         assertEquals("*_****", chatService.history().get(0).content());
     }

@@ -1121,7 +1121,7 @@ window.Game = window.Game || {};
     h = '';
 
     // 军队总览（活动与任务块已迁移到顶部菜单"任务"页内）
-    h += '<div class="zone-head">' + homeModuleHandle('army') + '<span class="zone-title"><img class="home-overview-icon" src="' + UNIT_MODEL.special + '" alt="" aria-hidden="true" draggable="false"/> 军队总览</span><span class="zone-sub">带兵上限 ' + G.fmt(Core.armyCap()) + '</span><button type="button" class="army-summary-expand" title="全屏展开军队总览" aria-label="全屏展开军队总览" onclick="Game.MainView.showArmySummaryFullscreen()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg></button><span class="army-dispatch-go zone-head-action" role="button" tabindex="0" onclick="Game.go(\'world\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.go(\'world\');event.preventDefault();}">去出征 &gt;</span></div>';
+    h += '<div class="zone-head">' + homeModuleHandle('army') + '<span class="zone-title"><img class="home-overview-icon" src="' + UNIT_MODEL.special + '" alt="" aria-hidden="true" draggable="false"/> 军队总览</span><span class="zone-sub">带兵上限 ' + G.fmt(Core.armyCap()) + '</span><span class="zone-head-actions"><button type="button" class="army-summary-expand" title="全屏展开军队总览" aria-label="全屏展开军队总览" onclick="Game.MainView.showArmySummaryFullscreen()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg></button><span class="army-dispatch-go zone-head-action" role="button" tabindex="0" onclick="Game.go(\'world\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.go(\'world\');event.preventDefault();}">去出征 &gt;</span></span></div>';
     h += '<div class="army-summary" role="region" tabindex="0" aria-label="军队总览，三排排列，左右滑动查看全部兵种">';
     h += renderArmySummaryList();
     h += '</div>';
@@ -1141,14 +1141,13 @@ window.Game = window.Game || {};
     }
 
     var fortStats = fortSummaryStats();
-    h += '<div class="zone-head fort-summary-zone-head"><span class="zone-title"><img class="home-overview-icon" src="img/buildings/garden/wall.webp" alt="" aria-hidden="true" draggable="false"/> 城防总览</span><span class="zone-sub">城防 Lv.' + G.fmt(fortStats.wallLevel) + ' · 工事 ' + G.fmt(fortStats.totalForts) + '/' + G.fmt(fortStats.fortCapacity) + '</span><button type="button" class="fort-summary-expand" title="全屏展开城防总览" aria-label="全屏展开城防总览" onclick="Game.MainView.showFortSummaryFullscreen()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg></button><span class="fort-summary-go zone-head-action" role="button" tabindex="0" onclick="Game.go(\'fort\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.go(\'fort\');event.preventDefault();}">去城防 &gt;</span></div>';
+    h += '<div class="zone-head fort-summary-zone-head"><span class="zone-title"><img class="home-overview-icon" src="img/buildings/garden/wall.webp" alt="" aria-hidden="true" draggable="false"/> 城防总览</span><span class="zone-sub">城防 Lv.' + G.fmt(fortStats.wallLevel) + ' · 工事 ' + G.fmt(fortStats.totalForts) + '/' + G.fmt(fortStats.fortCapacity) + '</span><span class="zone-head-actions"><button type="button" class="fort-summary-expand" title="全屏展开城防总览" aria-label="全屏展开城防总览" onclick="Game.MainView.showFortSummaryFullscreen()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg></button><span class="fort-summary-go zone-head-action" role="button" tabindex="0" onclick="Game.go(\'fort\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.go(\'fort\');event.preventDefault();}">去城防 &gt;</span></span></div>';
     h += '<div class="fort-summary" role="region" tabindex="0" aria-label="城防总览，单排横向排列，左右滑动查看全部工事">';
     h += renderFortSummaryList();
     h += '</div>';
     h += '<div class="fort-summary-foot" role="button" tabindex="0" onclick="Game.go(\'fort\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.go(\'fort\');event.preventDefault();}">';
     h += '<span class="fort-summary-wall">墙体 <b>' + G.fmt(fortStats.wallHp) + '</b> 生命 · <b>' + G.fmt(fortStats.wallDefense) + '</b> 防御</span>';
     h += '<span class="fort-summary-capacity">工事容量 <b>' + G.fmt(fortStats.totalForts) + '</b> / ' + G.fmt(fortStats.fortCapacity) + '</span>';
-    h += '<span class="fort-go">详情 &gt;</span>';
     h += '</div>';
     modules.army = h;
     h = '';
@@ -1475,14 +1474,13 @@ window.Game = window.Game || {};
 
   Core.views.settings = function (v) {
     var h = '';
-    h += '<div class="title">- 设置 -</div>';
+    h += '<div class="settings-view">';
 
-    h += '<div class="zone-head"><span class="zone-title">游戏设置</span></div>';
-    h += '<div class="panel">';
+    h += '<div class="settings-card">';
+    h += '<div class="settings-row settings-row-between">';
+    h += '<span class="settings-label"><span class="settings-icon">🎨</span> 界面风格</span>';
     var curTheme = (G.Theme && G.Theme.get) ? G.Theme.get() : 'blue-white-classic';
-    h += '<div class="btn-row" style="margin-bottom:8px;align-items:center;">';
-    h += '<span style="flex:1;font-size:14px">🎨 界面风格</span>';
-    h += '<select id="themeSelector" style="padding:4px 8px;font-size:13px;border-radius:4px;" onchange="if(Game.Theme)Game.Theme.set(this.value)">';
+    h += '<select id="themeSelector" class="settings-select" onchange="if(Game.Theme)Game.Theme.set(this.value)">';
     if (G.Theme && G.Theme.THEMES) {
       for (var ti = 0; ti < G.Theme.THEMES.length; ti++) {
         var tObj = G.Theme.THEMES[ti];
@@ -1500,55 +1498,70 @@ window.Game = window.Game || {};
 
     if (G.Sound) h += G.Sound.renderSettings();
 
-    h += '<div class="zone-head"><span class="zone-title">账号与安全</span></div>';
-    h += '<div class="panel">';
+    h += '<div class="settings-card settings-account-card">';
+    h += '<div class="settings-card-head">';
+    h += '<span class="settings-card-title"><span class="settings-icon">👤</span> 账号与安全</span>';
     if (G.API && G.API.isLoggedIn()) {
-      h += '<div class="d">登录账号: <b>' + G.escapeHtml(G.API.getUsername() || '未知') + '</b></div>';
-      h += '<div class="d">游戏进度由服务器自动保存</div>';
-      h += '<div class="btn-row" style="margin-top:6px">';
+      h += '<span class="settings-status-pill success">云端已同步</span>';
+      h += '</div>';
+      h += '<div class="settings-account-body">';
+      h += '<div class="settings-account-user-row">';
+      h += '<span class="settings-account-name">当前登录：<b>' + G.escapeHtml(G.API.getUsername() || '未知') + '</b></span>';
       h += '<button class="btn sm" onclick="Game.Main.logout()">切换账号</button>';
+      h += '</div>';
       if (G.Protection && G.Protection.data && G.Protection.data.enabled !== false) {
-        h += '<button class="btn sm" onclick="Game.Protection.open()">实名、防沉迷与家长监护</button>';
+        h += '<div class="settings-account-sub-row">';
+        h += '<button class="btn sm settings-protection-btn" onclick="Game.Protection.open()">🛡️ 实名、防沉迷与家长监护</button>';
+        h += '</div>';
       }
       h += '</div>';
     } else if (G.Main && G.Main.guestMode) {
-      h += '<div class="d">当前模式: <b style="color:var(--muted)">游客模式</b></div>';
-      h += '<div class="d">请登录账号继续游戏</div>';
-      h += '<div class="btn-row" style="margin-top:6px">';
-      h += '<button class="btn sm ok" onclick="Game.go(\'login\')">登录/注册账号</button>';
+      h += '<span class="settings-status-pill warning">游客模式</span>';
+      h += '</div>';
+      h += '<div class="settings-account-body">';
+      h += '<div class="settings-account-user-row">';
+      h += '<span class="settings-subtext">建议登录账号以保证进度不丢失</span>';
+      h += '<button class="btn sm ok" onclick="Game.go(\'login\')">登录/注册</button>';
+      h += '</div>';
       h += '</div>';
     } else {
-      h += '<div class="d">未登录</div>';
-      h += '<div class="btn-row" style="margin-top:6px">';
-      h += '<button class="btn sm ok" onclick="Game.go(\'login\')">登录</button>';
+      h += '<span class="settings-status-pill muted">未登录</span>';
+      h += '</div>';
+      h += '<div class="settings-account-body">';
+      h += '<div class="settings-account-user-row">';
+      h += '<span class="settings-subtext">登录后可保存多端游戏进度</span>';
+      h += '<button class="btn sm ok" onclick="Game.go(\'login\')">立即登录</button>';
+      h += '</div>';
       h += '</div>';
     }
     h += '</div>';
 
-    h += '<div class="zone-head"><span class="zone-title">关于</span></div>';
-    h += '<div class="panel">';
-    h += '<div class="d">山河远征录 - 文字战争策略游戏</div>';
-    h += '<div class="d">版本: 1.0.0</div>';
+    h += '<div class="settings-card settings-about-card">';
+    h += '<div class="settings-about-row">';
+    h += '<div class="settings-app-info">';
+    h += '<span class="settings-app-name">山河远征录</span>';
+    h += '<span class="settings-app-ver">v1.0.0</span>';
+    h += '<span class="settings-app-tag">文字战争策略</span>';
+    h += '</div>';
+    if (G.API && G.API.isLoggedIn()) {
+      h += '<button class="btn sm warn settings-exit-btn" onclick="Game.Main.logout(\'exit\')">退出登录</button>';
+    }
     h += '</div>';
 
     if (G.API && G.API.isLoggedIn()) {
-      h += '<div style="margin-top:16px">';
-      h += '<button class="btn warn" style="width:100%;padding:12px;font-size:16px;color:#fff;background:var(--danger);border:0;border-radius:8px" onclick="Game.Main.logout(\'exit\')">退出登录</button>';
-      h += '</div>';
-
       if (!(G.Main && G.Main.guestMode) && (G.API.getUsername() || '').indexOf('游客_') !== 0) {
-        h += '<div class="zone-head" style="margin-top:18px;color:var(--danger)"><span class="zone-title">危险操作</span></div>';
-        h += '<div class="panel" style="border-left:3px solid var(--danger)">';
-        h += '<div class="d" style="color:var(--danger)">注销账号</div>';
-        h += '<div class="d" style="font-size:12px;color:var(--muted)">';
-        h += '申请后进入恢复期，到期将永久清理游戏进度。查看详情后需验证密码并确认操作。';
+        h += '<div class="settings-danger-row">';
+        h += '<div class="settings-danger-info">';
+        h += '<span class="settings-danger-title">注销账号</span>';
+        h += '<span class="settings-danger-desc">永久注销并清理本账号所有游戏进度</span>';
         h += '</div>';
-        h += '<div class="btn-row" style="margin-top:6px">';
         h += '<button class="btn sm account-delete-entry" onclick="Game.Main.openDisableAccount()">注销账号</button>';
-        h += '</div>';
         h += '</div>';
       }
     }
+    h += '</div>';
+
+    h += '</div>';
 
     h += '<div class="menu-item back" onclick="Game.go(\'home\')">[0] 返回主菜单</div>';
     v.innerHTML = h;

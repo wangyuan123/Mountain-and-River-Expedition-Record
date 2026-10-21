@@ -47,6 +47,9 @@ public class CitySurrenderOffer extends VersionedEntity {
     private Long completedAt;
     @Column(name = "cancelled_at")
     private Long cancelledAt;
+    /** 终结时刻使用真实时间；不能用暂停的游戏时间计算邮件生命周期。 */
+    @Column(name = "ended_real_at")
+    private Long endedRealAt;
     @Column(name = "cancel_reason", length = 255)
     private String cancelReason;
 }

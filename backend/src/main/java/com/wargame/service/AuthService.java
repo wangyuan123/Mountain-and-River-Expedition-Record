@@ -15,6 +15,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 public class AuthService {
+    @org.springframework.beans.factory.annotation.Autowired private MailGiftActivityService giftActivities;
 
     /** 变更协议正文时递增版本，旧页面提交会被服务端拒绝并要求重新确认。 */
     public static final String CURRENT_REGISTRATION_AGREEMENT_VERSION = "2026-09-28-v1";
@@ -107,6 +108,7 @@ public class AuthService {
     public java.util.Map<String, Object> login(String username, String password, HttpServletRequest req) {
         Player player = verifyCredentials(username, password, req);
         if (!player.accountActive()) return accountService.recoveryRequired(player);
+        giftActivities.issueOnLogin(player.getId());
         return java.util.Map.of("token", jwtUtil.generateToken(username, player.getId(), player.getAuthVersion()),
                 "username", username, "playerId", player.getId());
     }

@@ -56,10 +56,14 @@ test('首页城防总览展示四类工事、共享容量和墙体属性', () =>
   assert.match(home.innerHTML, /工事 35\/150/);
   assert.match(home.innerHTML, /墙体 <b>1250000<\/b> 生命 · <b>100<\/b> 防御/);
   assert.match(home.innerHTML, /Game\.MainView\.showFortSummaryFullscreen\(\)/);
+  assert.match(home.innerHTML, /<span class="zone-head-actions"><button[^>]*class="fort-summary-expand"[^>]*>.*?<\/button><span class="fort-summary-go zone-head-action"[^>]*>去城防 &gt;<\/span><\/span>/s);
+  assert.match(home.innerHTML, /<span class="zone-head-actions"><button[^>]*class="army-summary-expand"[^>]*>.*?<\/button><span class="army-dispatch-go zone-head-action"[^>]*>去出征 &gt;<\/span><\/span>/s);
+  assert.doesNotMatch(home.innerHTML, /class="fort-go"/);
   G.Core.state.tech = { wall_reinforcement: 10 };
   G.Core.views.home(home);
   assert.match(home.innerHTML, /墙体 <b>1875000<\/b> 生命 · <b>150<\/b> 防御/);
   assert.match(home.innerHTML, /工事 35\/150/);
+  assert.doesNotMatch(home.innerHTML, /class="fort-go"/);
 });
 
 test('城防总览全屏入口可用 Escape 和关闭按钮退出', () => {

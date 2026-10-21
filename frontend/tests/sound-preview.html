@@ -18,13 +18,20 @@
 <body>
   <main>
     <h1>按钮音效试听</h1>
-    <p>选择按钮声音后，点击下方按钮试听游戏中的反馈。</p>
+    <p>选择按钮声音后，点击下方按钮试听游戏中的反馈。👉 <a href="../sound-preview.html" style="color:var(--accent);font-weight:bold;">点击打开【核心军事战术情境音效专题评审页】</a></p>
     <div class="preview-actions">
       <button class="btn">查看建筑</button>
       <button class="btn">确认升级</button>
       <button class="btn">打开地图</button>
       <button class="btn">返回</button>
       <button class="btn" disabled>不可用按钮</button>
+    </div>
+    <h2>四项情境音效快捷试听</h2>
+    <div class="preview-actions" style="margin-top:8px;">
+      <button type="button" class="btn ok" onclick="Game.Sound.play('dispatch')">🚩 试听 · 部队出征</button>
+      <button type="button" class="btn danger" onclick="Game.Sound.play('firefight')">⚔️ 试听 · 拦截交火</button>
+      <button type="button" class="btn" style="background:#d97706;color:#fff;" onclick="Game.Sound.play('victory')">🏆 试听 · 战斗指挥战胜</button>
+      <button type="button" class="btn" style="background:#059669;color:#fff;" onclick="Game.Sound.play('upgrade')">🔨 试听 · 建筑升级完成</button>
     </div>
     <output id="audioStatus" aria-live="polite">尚未播放；首次点击后启用音频。</output>
     <div id="settings"></div>

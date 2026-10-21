@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.*;
 
-/** 来袭情报唯一权限边界；世界状态、军情和推送共享白名单，未解锁字段不会到达客户端。 */
+/** 军情权限边界：城市来袭按雷达解锁，野外截击固定为粗略白名单；查询与推送共用投影。 */
 @Service
 @RequiredArgsConstructor
 public class IncomingIntelligenceService {
@@ -23,6 +23,52 @@ public class IncomingIntelligenceService {
         return technologies.findByPlayerIdAndType(defender, "recon_radar").stream()
                 .mapToInt(t -> Objects.requireNonNullElse(t.getLevel(), 0)).max().stream()
                 .map(n -> Math.max(0, Math.min(10, n))).findFirst().orElse(0);
+    }
+
+    /**
+     * 在途编队遭遇截击时只提供野外急报；本城雷达等级不能提高此处的情报权限。
+     * @param interceptor 敌方截击编队
+     * @param intercepted 我方被截击行军
+     * @param sourcePlayer 敌方玩家身份，只允许读取公开名称
+     * @return 不含精确兵力、科技、装备或将领属性的固定白名单
+     */
+    public Map<String, Object> fieldInterception(March interceptor, March intercepted, Player sourcePlayer) {
+        Map<String, Object> raw = new LinkedHashMap<>();
+        raw.put("id", "interception-" + interceptor.getId());
+        raw.put("marchId", interceptor.getId());
+        raw.put("fromName", sourcePlayer == null ? "未知敌军" : sourcePlayer.getUsername());
+        raw.put("action", "intercept_scout");
+        raw.put("fromX", interceptor.getFromX());
+        raw.put("fromY", interceptor.getFromY());
+        raw.put("targetX", interceptor.getTargetX());
+        raw.put("targetY", interceptor.getTargetY());
+        raw.put("targetName", "拦截交火位置");
+        raw.put("startAt", interceptor.getStartAt());
+        raw.put("arriveAt", interceptor.getArriveAt());
+        raw.put("army", JsonUtil.parseIntMap(interceptor.getArmy()));
+        // 复用固定兵力分档与兵种白名单，但不把雷达授权语义带入野外情报。
+        Map<String, Object> out = project(raw, 5);
+        out.remove("radarLevel");
+        out.put("intelligenceType", "field_interception");
+        out.put("interceptedMarchId", intercepted.getId());
+        out.put("interceptedCitySlot", Objects.requireNonNullElse(intercepted.getCitySlot(), 0));
+        out.put("sourceCommanderName", sourcePlayer == null ? "未知"
+                : sourcePlayer.getDisplayName() == null || sourcePlayer.getDisplayName().isBlank()
+                ? sourcePlayer.getUsername() : sourcePlayer.getDisplayName());
+        out.put("intelligenceSource", "野外目视与前线急报；无雷达支援，仅提供粗略情报");
+        out.put("intelligenceAt", GameClock.now());
+        putFieldOfficer(out, "commander", targets.getOfficerById(interceptor.getPlayerId(), interceptor.getCommanderId()));
+        putFieldOfficer(out, "commandChief", targets.getCommanderInChief(interceptor.getPlayerId(), Objects.requireNonNullElse(interceptor.getCitySlot(), 0)));
+        return out;
+    }
+
+    /** 仅公开将领的身份、星级和等级，不复用携带属性与加成的战斗对象。 */
+    private static void putFieldOfficer(Map<String, Object> out, String key, Officer officer) {
+        out.put(key, officer == null ? "未任命" : officer.getName());
+        if (officer != null) {
+            out.put(key + "Star", officer.getStar());
+            out.put(key + "Level", officer.getLevel());
+        }
     }
 
     /** 先按授权补充本队情报，再白名单投影；旧来袭缺少高级快照时保持未知。 */
@@ -74,7 +120,7 @@ public class IncomingIntelligenceService {
     public static Map<String, Object> project(Map<String, Object> raw, int radar) {
         int level = Math.max(0, Math.min(10, radar));
         Map<String, Object> out = new LinkedHashMap<>();
-        for (String key : List.of("id", "marchId", "targetCityId", "targetName", "targetX", "targetY", "arriveAt", "arrived", "inBattle", "waitingForBattle", "event", "startAt")) {
+        for (String key : List.of("id", "marchId", "targetCityId", "targetName", "targetX", "targetY", "arriveAt", "arrived", "inBattle", "waitingForBattle", "event", "startAt", "countermeasuresUsed")) {
             if (raw.containsKey(key)) out.put(key, raw.get(key));
         }
         out.put("radarLevel", level);

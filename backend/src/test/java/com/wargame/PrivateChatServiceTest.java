@@ -36,6 +36,7 @@ class PrivateChatServiceTest {
         when(players.lockById(1L)).thenReturn(Optional.of(sender));
         when(players.findById(2L)).thenReturn(Optional.of(recipient));
         when(players.lockById(2L)).thenReturn(Optional.of(recipient));
+        when(players.existsById(anyLong())).thenReturn(true);
         when(messages.save(any())).thenAnswer(inv -> { PrivateChatMessage m = inv.getArgument(0); m.setId(10L); return m; });
     }
     @Test void keywordsAreMaskedBeforeSavingAndInExistingConversationPreviews() {
@@ -46,7 +47,7 @@ class PrivateChatServiceTest {
         verify(messages).save(argThat(m -> m.getContent().equals("*.***")));
         verify(push).pushToPlayer(eq(2L), eq("private_chat"), argThat(value ->
                 ((com.wargame.model.dto.PrivateChatDtos.Message) value).content().equals("*.***")));
-        when(messages.history(eq(1L), eq(2L), any())).thenReturn(java.util.List.of(
+        when(messages.historyVisible(eq(1L), eq(2L), anyLong(), anyLong(), any())).thenReturn(java.util.List.of(
                 new PrivateChatMessage(11L, 1L, 2L, "q_q卖号", 1L, false)));
         assertEquals("*_***", service.history(1L, 2L).get(0).content());
     }
@@ -81,12 +82,22 @@ class PrivateChatServiceTest {
         assertEquals(1, service.conversations(1L).size());
     }
     @Test void deletingConversationOnlyUpdatesOwnerAndReadBoundary() {
-        when(messages.history(eq(1L), eq(2L), any())).thenReturn(java.util.List.of(
+        when(messages.historyVisible(eq(1L), eq(2L), anyLong(), anyLong(), any())).thenReturn(java.util.List.of(
                 new PrivateChatMessage(15L, 2L, 1L, "hello", 1L, false)));
         service.deleteConversation(1L, 2L);
         verify(sessions).save(argThat(c -> c.getOwnerId().equals(1L) && c.getDeletedThrough().equals(15L)));
-        verify(messages).markRead(1L, 2L, 15L);
+        verify(messages).markRead(eq(1L), eq(2L), eq(15L), eq(0L), anyLong());
         verifyNoInteractions(push);
+    }
+    @Test void clearingMarksMessagesReadBeforeAdvancingVisibleBoundary() {
+        var session = new PrivateChatConversation(1L, 1L, 2L, 10L);
+        session.setClearedThrough(10L);
+        when(sessions.findByOwnerIdAndPeerId(1L, 2L)).thenReturn(Optional.of(session));
+        when(messages.historyVisible(eq(1L), eq(2L), eq(0L), anyLong(), any())).thenReturn(java.util.List.of(
+                new PrivateChatMessage(15L, 2L, 1L, "new message", 15L, false)));
+        service.clear(1L, 2L);
+        verify(messages).markRead(eq(1L), eq(2L), eq(15L), eq(10L), anyLong());
+        assertEquals(15L, session.getClearedThrough());
     }
     @Test void sendsOnlyToBothParticipantsWithoutPrestigeRequirement() {
         var response = service.send(1L, 2L, "hello");

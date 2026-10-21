@@ -380,6 +380,7 @@ window.Game = window.Game || {};
   }
 
   G.BattleDefaults = {
+    open: function () { G.go('battleDefaults'); },
     toggleActionMenu: toggleActionMenu,
     chooseAction: chooseAction,
     handleActionKey: handleActionKey,

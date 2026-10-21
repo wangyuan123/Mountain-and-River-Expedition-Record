@@ -18,6 +18,7 @@ class ReportShareServiceTest {
         var direct = mock(PrivateChatService.class);
         var service = new ReportShareService(reports, shares, world, guild, direct, mock(ReportPrivacyService.class), new ObjectMapper());
         var report = new ScoutReport(); report.setId(3L); report.setPlayerId(1L); report.setType("battle");
+        report.setData("{}"); report.setDetailExpiresAt(System.currentTimeMillis() + 86_400_000L);
         when(reports.findById(3L)).thenReturn(Optional.of(report));
         assertThrows(IllegalArgumentException.class, () -> service.share(2L, 3L, "world", null));
         verifyNoInteractions(shares, world, guild, direct);

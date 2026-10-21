@@ -7,6 +7,7 @@ import com.wargame.repository.*;
 import com.wargame.security.RateLimiter;
 import com.wargame.service.*;
 import jakarta.persistence.EntityManager;
+import com.wargame.config.GameSchedulingConfig;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -19,7 +20,7 @@ import static org.mockito.Mockito.*;
 
 @DataJpaTest(properties = {"spring.flyway.enabled=false", "spring.jpa.show-sql=false"})
 @ActiveProfiles("test")
-@Import({FriendService.class, PrivateChatService.class, RateLimiter.class})
+@Import({FriendService.class, PrivateChatService.class, RateLimiter.class, GameSchedulingConfig.class})
 class FriendServiceIntegrationTest {
     @Autowired FriendService friends;
     @Autowired PrivateChatService chat;

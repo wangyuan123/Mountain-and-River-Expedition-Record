@@ -362,5 +362,7 @@ test('production page loads sound before interactions and exposes settings in th
   assert.match(view.innerHTML, /id="uiSoundEnabled"/);
   assert.match(view.innerHTML, /试听 · 确认/);
   assert.match(view.innerHTML, /试听 · 清脆机械碰撞/);
+  assert.match(view.innerHTML, /class="settings-view"/);
+  assert.match(view.innerHTML, /class="[^"]*settings-card[^"]*"/);
   assert.equal(f.contexts.length, 0);
 });

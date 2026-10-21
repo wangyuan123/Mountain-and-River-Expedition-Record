@@ -62,6 +62,7 @@ public class ForumTopic {
 
     @Column(name = "battle_report_id")
     private Long battleReportId;
+    private Long battleReportExpiresAt;
 
     @Column(name = "view_count", nullable = false)
     private Integer viewCount = 0;

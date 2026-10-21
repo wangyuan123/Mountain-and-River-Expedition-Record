@@ -1,14 +1,13 @@
 package com.wargame.model.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 @Entity
+@EntityListeners(com.wargame.service.RetentionEntityListener.class)
 @Table(name = "guild_chat_messages")
 public class GuildChatMessage {
 
@@ -30,4 +29,17 @@ public class GuildChatMessage {
 
     @Column(name = "created_at", nullable = false)
     private Long createdAt;
+
+    @Column(name = "retention_expires_at", nullable = false)
+    private Long retentionExpiresAt;
+
+    /** 兼容现有军团聊天发送调用，默认按三十天期限保存。 */
+    public GuildChatMessage(Long id, Long guildId, Long playerId, String username, String content, Long createdAt) {
+        this.id = id;
+        this.guildId = guildId;
+        this.playerId = playerId;
+        this.username = username;
+        this.content = content;
+        this.createdAt = createdAt;
+    }
 }

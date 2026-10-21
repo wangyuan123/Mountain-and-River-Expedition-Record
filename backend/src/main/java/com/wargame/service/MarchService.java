@@ -136,13 +136,38 @@ public class MarchService {
     // processMarches - 对应 JS core.js processMarches(now)
     // ========================================================================
 
+    /** 在任何账号/行军写锁前锁定整个拦截关系，避免攻守双方 Tick 以相反顺序互相等待。 */
+    @Transactional
+    public void lockInterceptionParticipants(Long playerId) {
+        lockInterceptionParticipants(playerId, null);
+    }
+
+    private void lockInterceptionParticipants(Long playerId, Long additionalPlayer) {
+        Set<Long> participants = new TreeSet<>();
+        participants.add(playerId);
+        if (additionalPlayer != null) participants.add(additionalPlayer);
+        int previousSize;
+        do {
+            previousSize = participants.size();
+            for (March interceptor : marchRepository.findRelatedInterceptions(new ArrayList<>(participants))) {
+                participants.add(interceptor.getPlayerId());
+                marchRepository.findById(Long.valueOf(interceptor.getTargetId())).ifPresent(enemy -> participants.add(enemy.getPlayerId()));
+            }
+        } while (participants.size() != previousSize);
+        participants.forEach(accounts::lockPlayer);
+    }
+
     @Transactional
     public void processMarches(Long playerId, long now) {
+        lockInterceptionParticipants(playerId);
         Player account = playerRepository.lockById(playerId).orElse(null);
         if (account == null || account.deletionDue(System.currentTimeMillis())) return;
         processStationedGathering(playerId, now);
         List<March> marches = marchRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
         if (marches == null || marches.isEmpty()) return;
+        marches.forEach(em::refresh);
+        processInterceptionQueue(marches, now);
+        marches = marchRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
 
         for (int i = marches.size() - 1; i >= 0; i--) {
             March m = marches.get(i);
@@ -336,7 +361,7 @@ public class MarchService {
 
             // 3cc. 出城拦截抵达拦截点 -> 发生空域防空交火结算并掉头返程
             if ("intercept_scout".equals(m.getAction()) && !returning) {
-                resolveInterception(playerId, m, now);
+                // 队列已按交火时间/ID统一结算；尚未交火的设伏部队继续停驻。
                 continue;
             }
 
@@ -796,8 +821,12 @@ public class MarchService {
      */
     @Transactional
     public Map<String, Object> getTacticalBattle(Long playerId, Long marchId) {
+        lockInterceptionParticipants(playerId);
         TacticalBattleAccess access = tacticalBattleAccess(playerId, marchId);
         March march = access.march();
+        processInterceptionQueue(List.of(march), GameClock.now());
+        if (!marchRepository.existsById(marchId) || Boolean.TRUE.equals(march.getReturning()))
+            return Map.of("marchId", marchId, "cancelled", true, "reason", "intercepted", "message", "部队已在城外交火，请查看拦截战报");
         if (march.getBattleId() == null) {
             if (!"player".equals(march.getTargetKind())
                     && ("auto".equals(march.getBattleMode())
@@ -1250,9 +1279,10 @@ public class MarchService {
         if (marchId == null || returning == null || version == null) {
             throw new IllegalArgumentException("请刷新情报后重新选择行军加速");
         }
-        accounts.lockPlayer(playerId);
-        March march = marchRepository.findById(marchId)
+        lockInterceptionParticipants(playerId);
+        March march = marchRepository.findSupportForUpdate(marchId)
                 .orElseThrow(() -> new IllegalArgumentException("行军任务不存在"));
+        em.refresh(march);
         if (!playerId.equals(march.getPlayerId()) || march.getCitySlot() != cityScope.slot(playerId)) {
             throw new IllegalArgumentException("无权加速该行军任务");
         }
@@ -1260,6 +1290,8 @@ public class MarchService {
         if (returning != isReturning || version != march.getVersion()) {
             throw new IllegalArgumentException("行军状态已变化，请刷新情报后重新确认");
         }
+        if (settleInterceptionBeforeOrder(march, GameClock.now()))
+            return new LinkedHashMap<>(Map.of("success", false, "message", "部队已在城外交火，请查看拦截战报后重新操作"));
         if (march.getBattleId() != null || Boolean.TRUE.equals(march.getStationed())
                 || (!isReturning && (Boolean.TRUE.equals(march.getGathering()) || Boolean.TRUE.equals(march.getGatherStopped())))) {
             throw new IllegalArgumentException("只能加速正在移动的部队");
@@ -1268,7 +1300,8 @@ public class MarchService {
             throw new IllegalArgumentException("本段行军已经加速");
         }
         long now = GameClock.now();
-        Long start = march.getStartAt(), arrive = march.getArriveAt();
+        Long start = march.getStartAt(), arrive = !isReturning && march.getInterceptDeployAt() != null
+                ? march.getInterceptDeployAt() : march.getArriveAt();
         if (start == null || arrive == null || start > now || arrive <= start
                 || arrive - now <= WorldConfig.MARCH_ACCELERATION_MIN_MS) {
             throw new IllegalArgumentException("剩余行军时间不足或已到达，无法加速");
@@ -1284,14 +1317,23 @@ public class MarchService {
             throw new IllegalArgumentException("行军令数量不足");
         }
         march.setBaseDurationMs(baseDuration);
-        march.setArriveAt(now + acceleratedRemaining);
-        march.setStartAt(march.getArriveAt() - acceleratedDuration);
+        if (!isReturning && march.getInterceptDeployAt() != null) {
+            march.setInterceptDeployAt(now + acceleratedRemaining);
+            march.setInterceptReadyAt(march.getInterceptDeployAt() + InterceptionPlanner.PREPARATION_MS);
+            march.setStartAt(march.getInterceptDeployAt() - acceleratedDuration);
+        } else {
+            march.setArriveAt(now + acceleratedRemaining);
+            march.setStartAt(march.getArriveAt() - acceleratedDuration);
+        }
         if (isReturning) march.setReturnAccelerated(true);
         else march.setOutboundAccelerated(true);
         // 扣令会清空持久化上下文；合并原版本后立即 flush，冲突时整个事务回滚。
         march = marchRepository.saveAndFlush(march);
-        Map<String, Object> timing = Map.of("startAt", march.getStartAt(), "arriveAt", march.getArriveAt(),
-                "version", march.getVersion(), "returning", isReturning);
+        processInterceptionQueue(List.of(march), now);
+        Map<String, Object> timing = new LinkedHashMap<>();
+        timing.put("startAt", march.getStartAt()); timing.put("arriveAt", march.getArriveAt());
+        timing.put("deployAt", march.getInterceptDeployAt()); timing.put("readyAt", march.getInterceptReadyAt());
+        timing.put("version", march.getVersion()); timing.put("returning", isReturning);
         pushService.pushMarchUpdate(playerId, marchEvent("accelerated", march, timing));
         if (!isReturning) notifyIncomingChange(march, "accelerated");
         Map<String, Object> result = new LinkedHashMap<>(timing);
@@ -1301,14 +1343,85 @@ public class MarchService {
         return result;
     }
 
+    /**
+     * 对指向己方城市的敌军在途行军使用一次拖延计谋，并按比例拉伸整段时间轴以保持当前位置。
+     * @param expectedArriveAt 弹窗展示的抵达时间，用于拒绝过期情报
+     */
     @Transactional
-    public void cancelMarch(Long playerId, Long marchId) {
-        accounts.lockPlayer(playerId);
-        March march = marchRepository.findById(marchId)
+    public Map<String, Object> applyMarchStratagem(Long playerId, Long marchId, String itemKey, Long expectedArriveAt) {
+        if (marchId == null || expectedArriveAt == null) throw new IllegalArgumentException("请刷新军情后重新选择计谋");
+        long maxDelay;
+        double ratio;
+        String itemName;
+        if ("signalJammingOrder".equals(itemKey)) {
+            maxDelay = 120_000L; ratio = 0.20; itemName = "通讯干扰令";
+        } else if ("feintOrder".equals(itemKey)) {
+            maxDelay = 240_000L; ratio = 0.40; itemName = "佯动诱敌令";
+        } else throw new IllegalArgumentException("未知计谋道具");
+
+        March snapshot = marchRepository.findById(marchId)
+                .orElseThrow(() -> new IllegalArgumentException("敌军行军已不存在"));
+        if (snapshot.getPlayerId() == null || playerId.equals(snapshot.getPlayerId())) {
+            throw new IllegalArgumentException("只能对敌方行军使用计谋");
+        }
+        lockInterceptionParticipants(playerId, snapshot.getPlayerId());
+        March march = marchRepository.findSupportForUpdate(marchId)
+                .orElseThrow(() -> new IllegalArgumentException("敌军行军已不存在"));
+        em.refresh(march);
+        long now = GameClock.now();
+        if (!canIntercept(playerId, cityScope.slot(playerId), march) || march.getBattleId() != null
+                || Boolean.TRUE.equals(march.getReturning()) || Boolean.TRUE.equals(march.getStationed())
+                || Boolean.TRUE.equals(march.getGathering()) || Boolean.TRUE.equals(march.getGatherStopped())) {
+            throw new IllegalArgumentException("该敌军当前不能使用计谋");
+        }
+        if (settleInterceptionBeforeOrder(march, now))
+            return new LinkedHashMap<>(Map.of("success", false, "message", "敌军已在城外交火，请刷新军情后重新操作"));
+        if (Boolean.TRUE.equals(march.getStratagemUsed())) throw new IllegalArgumentException("该行军本次单程已经受过计谋影响");
+        Long start = march.getStartAt(), arrive = march.getArriveAt();
+        if (start == null || arrive == null || start > now || arrive <= now || arrive <= start
+                || !expectedArriveAt.equals(arrive)) {
+            throw new IllegalArgumentException("行军状态已变化或已抵达，请刷新军情后重试");
+        }
+        long remaining = arrive - now;
+        long delay = Math.min(maxDelay, (long) Math.ceil(remaining * ratio));
+        if (delay <= 0) throw new IllegalArgumentException("剩余行军时间过短，无法拖延");
+
+        double progress = Math.max(0.0, Math.min(1.0, (double) (now - start) / (arrive - start)));
+        long extendedArrival = arrive + delay;
+        // 先求出延长后剩余路程占整段行程的比例，保持当下地图位置不跳回。
+        long extendedDuration = Math.round((extendedArrival - now) / Math.max(0.000001, 1.0 - progress));
+        long adjustedStart = now - Math.round(progress * extendedDuration);
+        if (playerItemRepository.tryConsume(playerId, itemKey, 1, now) == 0) {
+            throw new IllegalArgumentException(itemName + "数量不足");
+        }
+        march.setStartAt(adjustedStart);
+        march.setArriveAt(extendedArrival);
+        march.setStratagemUsed(true);
+        march = marchRepository.saveAndFlush(march);
+
+        Map<String, Object> timing = Map.of("startAt", march.getStartAt(), "arriveAt", march.getArriveAt(),
+                "delayMs", delay, "itemKey", itemKey, "itemName", itemName);
+        processInterceptionQueue(List.of(march), now);
+        notifyIncomingChange(march, "stratagemDelayed");
+        pushService.pushMarchUpdate(march.getPlayerId(), marchEvent("stratagemDelayed", march, timing));
+        Map<String, Object> result = new LinkedHashMap<>(timing);
+        result.put("success", true);
+        result.put("message", itemName + "生效，敌军行军已拖延 " + Math.max(1, (delay + 999) / 1000) + " 秒");
+        return result;
+    }
+
+    /** 召回前先结算已发生的截击；返回实际结果，避免已交火或全歼时仍提示召回成功。 */
+    @Transactional
+    public Map<String, Object> cancelMarch(Long playerId, Long marchId) {
+        lockInterceptionParticipants(playerId);
+        March march = marchRepository.findSupportForUpdate(marchId)
                 .orElseThrow(() -> new IllegalArgumentException("行军任务不存在"));
+        em.refresh(march);
         if (!playerId.equals(march.getPlayerId()) || march.getCitySlot() != cityScope.slot(playerId)) {
             throw new IllegalArgumentException("无权取消该行军任务");
         }
+        if (settleInterceptionBeforeOrder(march, GameClock.now()))
+            return new LinkedHashMap<>(Map.of("success", false, "message", "部队已在城外交火，请查看拦截战报后重新操作"));
         if (Boolean.TRUE.equals(march.getReturning()) || Boolean.TRUE.equals(march.getGathering())) {
             throw new IllegalArgumentException("行军已进入返程或采集阶段，无法取消");
         }
@@ -1327,7 +1440,8 @@ public class MarchService {
         // 能继续展示返城进度，部队与资源在返程到达后统一归队。
         long now = GameClock.now();
         long outboundStart = march.getStartAt() != null ? march.getStartAt() : now;
-        long outboundEnd = march.getArriveAt() != null ? march.getArriveAt() : now;
+        long outboundEnd = march.getInterceptDeployAt() != null ? march.getInterceptDeployAt()
+                : march.getArriveAt() != null ? march.getArriveAt() : now;
         long duration = Math.max(1000L, outboundEnd - outboundStart);
         long travelled = Boolean.TRUE.equals(march.getStationed()) ? duration : Math.max(1000L, Math.min(duration, now - outboundStart));
         long returnDuration = baseMarchDuration(march);
@@ -1337,11 +1451,13 @@ public class MarchService {
         // 以已走过的路线比例计算基础返程耗时，去程加速不会免费带到回程。
         march.setStartAt(now + returnTravelled - returnDuration);
         march.setArriveAt(now + returnTravelled);
-        marchRepository.save(march);
+        marchRepository.saveAndFlush(march);
         notifyIncomingChange(march, "cancelled");
+        processInterceptionQueue(List.of(march), now);
         if (march.getSupportOwnerId() != null) {
             pushService.pushToPlayer(march.getSupportOwnerId(), "support_update", Map.of("marchId", march.getId()));
         }
+        return new LinkedHashMap<>(Map.of("success", true, "message", "部队已撤回，正在返城，抵达后归还部队和携带资源"));
     }
 
     /** 城主只能遣返驻扎在当前城市的援军，返城资产仍归原派兵人。 */
@@ -1639,7 +1755,7 @@ public class MarchService {
     @Transactional
     public Map<String,Object> previewRoute(Long playerId,DispatchRequest req) {
         if ("incoming_scout".equals(req.targetKind()) || "intercept_scout".equals(req.action())) {
-            return Map.of("mode", "air", "points", List.of(), "distance", 10.0, "seconds", 15, "reservedLoad", 0, "cargoLimit", 0, "oil", 10, "unitEquipment", Map.of(), "unitEquipmentVersion", "1");
+            return previewInterception(playerId, req);
         }
         if ("npc".equals(req.targetKind())) throw new IllegalArgumentException("NPC城市/要塞已取消");
         Object target=targets.findTargetByLongId(req.targetKind(),req.targetId());
@@ -1698,22 +1814,12 @@ public class MarchService {
     }
 
     /**
-     * 出城拦截敌方侦察部队：可选配空军或防空装甲车进行截击，成功拦截后瓦解敌方侦查企图。
+     * 出城拦截来袭部队：侦查仅可用空军或装甲车，普通敌袭可用所有兵种。
      */
     @Transactional
     public March interceptScout(Long playerId, DispatchRequest req) {
         Map<String, Integer> reqArmy = req.army() != null ? req.army() : Collections.emptyMap();
         if (reqArmy.isEmpty()) throw new IllegalArgumentException("请配置拦截部队");
-        for (String unitId : reqArmy.keySet()) {
-            UnitDef u = UnitDef.UNITS.get(unitId);
-            if (u == null) throw new IllegalArgumentException("未知兵种: " + unitId);
-            boolean isAir = "air".equals(u.branch()) || "air".equals(u.cat());
-            boolean isAntiAirArmored = "armored".equals(unitId) || "recon_car".equals(unitId)
-                    || (u.name() != null && u.name().contains("防空"));
-            if (!isAir && !isAntiAirArmored) {
-                throw new IllegalArgumentException("出城拦截仅支持配置空军或防空装甲车");
-            }
-        }
 
         int citySlot = cityScope.slot(playerId);
         int maxMarches = getMaxMarches(playerId, citySlot);
@@ -1722,81 +1828,69 @@ public class MarchService {
             throw new IllegalArgumentException("当前城池出征队伍已达上限 (" + activeMarches + "/" + maxMarches + ")，请等待部队返城或升级司令部");
         }
 
-        Player player = accounts.lockPlayer(playerId);
+        Long enemyOwner = req.targetId() != null && !"incoming_scout".equals(req.targetKind())
+                ? marchRepository.findById(req.targetId()).map(March::getPlayerId).orElse(null) : null;
+        lockInterceptionParticipants(playerId, enemyOwner);
         CityEconomy city = cityScope.economy(playerId);
         int cityX = Objects.requireNonNullElse(city.getCityPosX(), 0);
         int cityY = Objects.requireNonNullElse(city.getCityPosY(), 0);
         long now = GameClock.now();
+        for (var entry : reqArmy.entrySet()) {
+            int count = Objects.requireNonNullElse(entry.getValue(), 0);
+            int available = armyUnitRepository.findByPlayerIdAndCitySlotAndType(playerId, citySlot, entry.getKey())
+                    .stream().mapToInt(unit -> Objects.requireNonNullElse(unit.getCount(), 0)).sum();
+            if (count <= 0 || count > available) throw new IllegalArgumentException("拦截兵力不足或数量无效");
+        }
+        if (reqArmy.values().stream().mapToLong(Integer::longValue).sum() > armyService.armyCap(playerId)) {
+            throw new IllegalArgumentException("出征兵力超过带兵上限");
+        }
+        if (req.commanderId() != null) {
+            Officer officer = targets.getOfficerById(playerId, req.commanderId());
+            if (officer == null || !Objects.equals(officer.getCitySlot(), citySlot)
+                    || Set.of("commander_in_chief", "mayor", "commander").contains(Objects.requireNonNullElse(officer.getRole(), ""))
+                    || marchRepository.existsByPlayerIdAndCommanderId(playerId, officer.getId())) {
+                throw new IllegalArgumentException("该军官无法随队拦截");
+            }
+        }
 
         Long targetId = req.targetId();
         March incomingMarch = null;
         IncomingMarch incomingEntity = null;
-        if (targetId != null) {
-            incomingMarch = marchRepository.findById(targetId).orElse(null);
+        if (targetId != null && !"incoming_scout".equals(req.targetKind())) {
+            incomingMarch = marchRepository.findSupportForUpdate(targetId).orElse(null);
+            if (incomingMarch != null) em.refresh(incomingMarch);
         }
-        if (incomingMarch == null) {
-            List<IncomingMarch> incomingList = incomingMarchRepository.findByTargetPlayerId(playerId);
-            for (IncomingMarch im : incomingList) {
-                if ("scout".equals(im.getAction())) {
-                    incomingEntity = im;
-                    break;
-                }
-            }
+        if (incomingMarch == null && !"incoming_march".equals(req.targetKind())) {
+            incomingEntity = targetId == null ? null : incomingMarchRepository.findById(targetId)
+                    .filter(im -> playerId.equals(im.getTargetPlayerId()) && "scout".equals(im.getAction())
+                            && Objects.requireNonNullElse(im.getArriveAt(), 0L) > now).orElse(null);
         }
-
-        int enemyFromX = incomingMarch != null ? Objects.requireNonNullElse(incomingMarch.getFromX(), cityX - 30)
-                : (incomingEntity != null ? Objects.requireNonNullElse(incomingEntity.getFromX(), cityX - 30) : cityX - 30);
-        int enemyFromY = incomingMarch != null ? Objects.requireNonNullElse(incomingMarch.getFromY(), cityY - 30)
-                : (incomingEntity != null ? Objects.requireNonNullElse(incomingEntity.getFromY(), cityY - 30) : cityY - 30);
-        long enemyStartAt = incomingMarch != null ? Objects.requireNonNullElse(incomingMarch.getStartAt(), now - 30000L)
-                : now - 30000L;
-        long enemyArriveAt = incomingMarch != null ? Objects.requireNonNullElse(incomingMarch.getArriveAt(), now + 60000L)
-                : (incomingEntity != null ? Objects.requireNonNullElse(incomingEntity.getArriveAt(), now + 60000L) : now + 60000L);
-
-        // 计算拦截点和时间
-        int targetX;
-        int targetY;
-        long durationMs;
-        double marchDist;
-
-        if (req.targetX() != null && req.targetY() != null) {
-            targetX = req.targetX();
-            targetY = req.targetY();
-            marchDist = Math.hypot(cityX - targetX, cityY - targetY);
-            double slowest = 10.0;
-            for (String uid : reqArmy.keySet()) {
-                UnitDef u = UnitDef.UNITS.get(uid);
-                if (u != null) slowest = Math.min(slowest, u.spd());
-            }
-            int sec = Math.max(3, (int) Math.ceil(marchDist * WorldConfig.MARCH_SEC_PER_GRID / Math.max(0.1, slowest)));
-            durationMs = sec * 1000L;
-        } else {
-            double totalDur = Math.max(1000.0, (double) (enemyArriveAt - enemyStartAt));
-            double p = Math.max(0.0, Math.min(0.95, (double) (now - enemyStartAt) / totalDur));
-            double ex = enemyFromX + (cityX - enemyFromX) * p;
-            double ey = enemyFromY + (cityY - enemyFromY) * p;
-            double remDist = Math.max(0.5, Math.hypot(ex - cityX, ey - cityY));
-            double remSec = Math.max(1.0, (enemyArriveAt - now) / 1000.0);
-            double vEnemy = Math.max(0.1, remDist / remSec);
-            double slowest = 10.0;
-            for (String uid : reqArmy.keySet()) {
-                UnitDef u = UnitDef.UNITS.get(uid);
-                if (u != null) slowest = Math.min(slowest, u.spd());
-            }
-            double vOur = Math.max(0.1, slowest / (double) WorldConfig.MARCH_SEC_PER_GRID);
-            double tMeet = remDist / (vOur + vEnemy);
-            long sec = Math.max(3L, Math.min((long) remSec, (long) Math.ceil(tMeet)));
-            durationMs = sec * 1000L;
-            marchDist = Math.max(1.0, Math.min(remDist * 0.9, vOur * sec));
-            targetX = (int) Math.round(cityX + (ex - cityX) * (marchDist / remDist));
-            targetY = (int) Math.round(cityY + (ey - cityY) * (marchDist / remDist));
+        if (incomingMarch != null && !canIntercept(playerId, citySlot, incomingMarch)) {
+            throw new IllegalArgumentException("目标已不再是当前城市的可拦截敌军");
         }
+        if (incomingMarch == null && incomingEntity == null) {
+            throw new IllegalArgumentException("来袭目标已结束，无法出城拦截");
+        }
+        // 按真实来袭动作限制兵种，不能因目标来自真实行军就绕过侦查拦截限制。
+        requireInterceptionUnits(reqArmy, incomingMarch == null || "scout".equals(incomingMarch.getAction()));
+
+        Map<String, Integer> actionEquipment = TechnologyRules.actionSnapshot(targets.getCombatTechMap(playerId));
+        if (req.unitEquipmentVersion() != null && !req.unitEquipmentVersion().equals(UnitEquipmentEffects.actionVersion(actionEquipment)))
+            throw new IllegalArgumentException("装备配置已更新，请重新预览拦截部署计划");
+        March enemyTimeline = incomingMarch != null ? incomingMarch : legacyInterceptionTarget(incomingEntity, cityX, cityY, now - 30_000L);
+        InterceptionPlanner.Plan plan = planInterception(playerId, reqArmy, enemyTimeline, actionEquipment, now);
+        int targetX = (int) Math.round(plan.point().x()), targetY = (int) Math.round(plan.point().y());
+        long durationMs = plan.deployAt() - now;
+        double marchDist = plan.distance();
 
         // 预扣油耗
-        int fuel = calcMarchFuel(reqArmy, marchDist, 2);
+        int fuel = calcMarchFuel(reqArmy, marchDist, 2, actionEquipment);
         Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, citySlot).orElse(null);
-        if (res != null && res.getOil() != null && fuel > 0) {
-            res.setOil(Math.max(0, res.getOil() - fuel));
+        if (res == null || Objects.requireNonNullElse(res.getOil(), 0) < fuel) {
+            throw new IllegalArgumentException("石油不足，无法准备拦截补给");
+        }
+        if (fuel > 0) {
+            res.setOil(res.getOil() - fuel);
             resourcesRepository.save(res);
         }
 
@@ -1805,10 +1899,12 @@ public class MarchService {
             String uid = entry.getKey();
             int n = entry.getValue();
             List<ArmyUnit> existing = armyUnitRepository.findByPlayerIdAndCitySlotAndType(playerId, citySlot, uid);
-            if (!existing.isEmpty()) {
-                ArmyUnit unit = existing.get(0);
-                unit.setCount(Math.max(0, (unit.getCount() != null ? unit.getCount() : 0) - n));
+            for (ArmyUnit unit : existing) {
+                int removed = Math.min(n, Objects.requireNonNullElse(unit.getCount(), 0));
+                unit.setCount(Objects.requireNonNullElse(unit.getCount(), 0) - removed);
                 armyUnitRepository.save(unit);
+                n -= removed;
+                if (n == 0) break;
             }
         }
 
@@ -1816,77 +1912,396 @@ public class MarchService {
         March march = new March();
         march.setPlayerId(playerId);
         march.setCitySlot(citySlot);
-        march.setTargetKind("incoming_scout");
+        // 两张表的自增 ID 可能相同，持久化来源类型，结算时只能命中选定的来袭。
+        march.setTargetKind(incomingMarch != null ? "incoming_march" : "incoming_scout");
         march.setTargetId(String.valueOf(targetId != null ? targetId : (incomingEntity != null ? incomingEntity.getId() : 0L)));
-        march.setTargetName("拦截敌方侦察机 [" + targetX + "," + targetY + "]");
+        march.setTargetName("拦截敌军 [" + targetX + "," + targetY + "]");
         march.setFromX(cityX);
         march.setFromY(cityY);
         march.setTargetX(targetX);
         march.setTargetY(targetY);
         march.setDistance(marchDist);
         march.setStartAt(now);
-        march.setArriveAt(now + durationMs);
+        march.setArriveAt(plan.clashAt());
+        march.setInterceptDeployAt(plan.deployAt());
+        march.setInterceptReadyAt(plan.readyAt());
+        march.setInterceptEnemyProgress(plan.enemyProgress());
+        march.setInterceptEnemyStartAt(enemyTimeline.getStartAt());
+        march.setInterceptRouteSnapshot(InterceptionPlanner.signature(enemyTimeline));
+        march.setRouteMode(plan.route().mode());
+        march.setRouteData(JsonUtil.toJson(List.of(List.of((double) cityX, (double) cityY), List.of(plan.point().x(), plan.point().y()))));
         march.setBaseDurationMs(durationMs);
         march.setArmy(JsonUtil.toJson(reqArmy));
+        march.setUnitEquipmentSnapshot(JsonUtil.toJson(actionEquipment));
         march.setAction("intercept_scout");
         march.setCommanderId(req.commanderId());
+        if (req.commanderId() != null) {
+            Officer officer = targets.getOfficerById(playerId, req.commanderId());
+            officer.setRole("march");
+            officerRepository.save(officer);
+        }
         march = marchRepository.save(march);
 
+        notifyIncomingChange(march, "started");
         pushService.pushMarchUpdate(playerId, marchEvent("interceptDispatched", march, Map.of(
                 "interceptX", targetX,
                 "interceptY", targetY,
-                "durationSec", durationMs / 1000L
+                "durationSec", durationMs / 1000L,
+                "deployAt", plan.deployAt(), "readyAt", plan.readyAt(), "arriveAt", plan.clashAt()
         )));
         return march;
     }
 
+    /** 预览与正式出征使用同一目标、兵种限制和服务端路线，预览不扣兵、不扣油。 */
+    private Map<String, Object> previewInterception(Long playerId, DispatchRequest req) {
+        long now = GameClock.now();
+        var city = cityScope.economy(playerId);
+        March enemy = req.targetId() == null || "incoming_scout".equals(req.targetKind()) ? null
+                : marchRepository.findById(req.targetId()).orElse(null);
+        if (enemy != null && !canIntercept(playerId, cityScope.slot(playerId), enemy))
+            throw new IllegalArgumentException("目标已不再是当前城市的可拦截敌军");
+        if (enemy == null && !"incoming_march".equals(req.targetKind())) {
+            IncomingMarch legacy = req.targetId() == null ? null : incomingMarchRepository.findById(req.targetId())
+                    .filter(im -> playerId.equals(im.getTargetPlayerId()) && "scout".equals(im.getAction())).orElse(null);
+            if (legacy != null) enemy = legacyInterceptionTarget(legacy, city.getCityPosX(), city.getCityPosY(), now - 30_000L);
+        }
+        if (enemy == null) throw new IllegalArgumentException("来袭目标已结束，无法出城拦截");
+        Map<String, Integer> army = req.army() == null ? Map.of() : req.army();
+        if (army.isEmpty()) throw new IllegalArgumentException("请选择出征部队以计算路线");
+        for (var entry : army.entrySet()) {
+            int available = armyUnitRepository.findByPlayerIdAndCitySlotAndType(playerId, cityScope.slot(playerId), entry.getKey())
+                    .stream().mapToInt(unit -> Objects.requireNonNullElse(unit.getCount(), 0)).sum();
+            if (entry.getValue() == null || entry.getValue() <= 0 || entry.getValue() > available)
+                throw new IllegalArgumentException("拦截兵力不足或数量无效");
+        }
+        requireInterceptionUnits(army, "scout".equals(enemy.getAction()));
+        Map<String, Integer> equipment = TechnologyRules.actionSnapshot(targets.getCombatTechMap(playerId));
+        var plan = planInterception(playerId, army, enemy, equipment, now);
+        Map<String, Object> result = new LinkedHashMap<>(plan.preview(now));
+        if (Boolean.TRUE.equals(enemy.getAmbushUsed())) result.put("opening", "urgent");
+        result.put("oil", calcMarchFuel(army, plan.distance(), 2, equipment));
+        result.put("unitEquipment", equipment);
+        result.put("unitEquipmentVersion", UnitEquipmentEffects.actionVersion(equipment));
+        return result;
+    }
+
+    private void requireInterceptionUnits(Map<String, Integer> army, boolean scout) {
+        for (String id : army.keySet()) {
+            UnitDef unit = UnitDef.UNITS.get(id);
+            if (unit == null) throw new IllegalArgumentException("未知兵种: " + id);
+            if (scout && !"air".equals(unit.branch()) && !Set.of("armored", "recon_car").contains(id))
+                throw new IllegalArgumentException("侦查拦截仅支持空军或装甲车");
+        }
+    }
+
+    private March legacyInterceptionTarget(IncomingMarch incoming, int cityX, int cityY, long start) {
+        March enemy = new March();
+        enemy.setFromX(Objects.requireNonNullElse(incoming.getFromX(), cityX - 30));
+        enemy.setFromY(Objects.requireNonNullElse(incoming.getFromY(), cityY - 30));
+        enemy.setTargetX(cityX); enemy.setTargetY(cityY); enemy.setStartAt(start);
+        enemy.setArriveAt(incoming.getArriveAt()); enemy.setAction(incoming.getAction());
+        enemy.setAmbushUsed(incoming.getAmbushUsed());
+        return enemy;
+    }
+
+    private InterceptionPlanner.Plan planInterception(Long playerId, Map<String, Integer> army, March enemy,
+                                                      Map<String, Integer> equipment, long now) {
+        requireInterceptionUnits(army, "scout".equals(enemy.getAction()));
+        double slowest = Double.MAX_VALUE;
+        for (String id : army.keySet()) {
+            UnitDef unit = UnitDef.UNITS.get(id);
+            slowest = Math.min(slowest, unit.spd() * getUnitTechSpdMul(playerId, unit.speedCategory())
+                    * UnitEquipmentEffects.speed(equipment, id, false));
+        }
+        var state = cityStateRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
+        double boost = state != null && Objects.requireNonNullElse(state.getMarchBoostUntil(), 0L) > now ? 1.5 : 1;
+        var city = cityScope.economy(playerId);
+        return InterceptionPlanner.plan(enemy, city.getCityPosX(), city.getCityPosY(),
+                slowest * boost / WorldConfig.MARCH_SEC_PER_GRID, now, point -> {
+                    WildTile target = new WildTile();
+                    target.setX((int) Math.round(point.x())); target.setY((int) Math.round(point.y()));
+                    return routes.plan(playerId, target, army, false, "intercept_scout", equipment);
+                });
+    }
+
+    /** 指令到达时先补算已到期的交火，不能通过晚到的召回或加速跳过既成伏击。 */
+    private boolean settleInterceptionBeforeOrder(March march, long now) {
+        String army = march.getArmy();
+        boolean returning = Boolean.TRUE.equals(march.getReturning());
+        processInterceptionQueue(List.of(march), now);
+        return !marchRepository.existsById(march.getId()) || !Objects.equals(army, march.getArmy())
+                || returning != Boolean.TRUE.equals(march.getReturning());
+    }
+
+    /** 双方任一经济 Tick 都先处理城外截击，晚到的 Tick 也不能先把敌军送入城市战斗。 */
+    private void processInterceptionQueue(List<March> owned, long now) {
+        Set<String> targetIds = new HashSet<>();
+        Map<Long, March> pending = new LinkedHashMap<>();
+        for (March march : owned) {
+            targetIds.add(String.valueOf(march.getId()));
+            if (Boolean.TRUE.equals(march.getReturning())) continue;
+            if ("intercept_scout".equals(march.getAction())) {
+                pending.put(march.getId(), march);
+                if ("incoming_march".equals(march.getTargetKind())) targetIds.add(march.getTargetId());
+            }
+        }
+        if (!targetIds.isEmpty()) for (March march : marchRepository.findActiveInterceptions(new ArrayList<>(targetIds)))
+            pending.put(march.getId(), march);
+        List<March> sorted = new ArrayList<>();
+        for (March snapshot : pending.values()) {
+            March march = marchRepository.findSupportForUpdate(snapshot.getId()).orElse(null);
+            if (march == null) continue;
+            em.refresh(march);
+            if (Boolean.TRUE.equals(march.getReturning())) continue;
+            if (refreshInterceptionTiming(march)) sorted.add(march);
+            else returnInvalidInterception(march, now);
+        }
+        sorted.sort(Comparator.comparing((March m) -> Objects.requireNonNullElse(m.getArriveAt(), Long.MAX_VALUE)).thenComparing(March::getId));
+        for (March snapshot : sorted) {
+            if (Objects.requireNonNullElse(snapshot.getArriveAt(), Long.MAX_VALUE) > now) continue;
+            March march = marchRepository.findSupportForUpdate(snapshot.getId()).orElse(null);
+            if (march == null) continue;
+            em.refresh(march);
+            if (Boolean.TRUE.equals(march.getReturning())) continue;
+            try (var scope = cityScope.enter(march.getPlayerId(), Objects.requireNonNullElse(march.getCitySlot(), 0))) {
+                if (!refreshInterceptionTiming(march)) returnInvalidInterception(march, now);
+                else if (march.getArriveAt() <= now) resolveInterception(march.getPlayerId(), march, now);
+            }
+        }
+    }
+
+    /** 加减速只改变同一路线交火时间；敌军早于己方到位或改道后，原设伏不能凭空命中。 */
+    private boolean refreshInterceptionTiming(March interceptor) {
+        if (interceptor.getInterceptEnemyProgress() == null) return true;
+        March enemy;
+        if ("incoming_march".equals(interceptor.getTargetKind())) {
+            enemy = marchRepository.findSupportForUpdate(Long.valueOf(interceptor.getTargetId())).orElse(null);
+            if (enemy != null) em.refresh(enemy);
+            if (enemy == null || !canIntercept(interceptor.getPlayerId(), interceptor.getCitySlot(), enemy)) return false;
+        } else {
+            IncomingMarch legacy = incomingMarchRepository.findById(Long.valueOf(interceptor.getTargetId())).orElse(null);
+            if (legacy == null || !interceptor.getPlayerId().equals(legacy.getTargetPlayerId())) return false;
+            enemy = legacyInterceptionTarget(legacy, interceptor.getFromX(), interceptor.getFromY(), interceptor.getInterceptEnemyStartAt());
+        }
+        if (!InterceptionPlanner.signature(enemy).equals(interceptor.getInterceptRouteSnapshot())) return false;
+        long clashAt = InterceptionPlanner.crossingAt(enemy, interceptor.getInterceptEnemyProgress());
+        if (clashAt < interceptor.getInterceptDeployAt() || clashAt >= enemy.getArriveAt()) return false;
+        if (!Objects.equals(interceptor.getArriveAt(), clashAt)) {
+            interceptor.setArriveAt(clashAt);
+            marchRepository.save(interceptor);
+            pushService.pushMarchUpdate(interceptor.getPlayerId(), marchEvent("interceptionRescheduled", interceptor, Map.of("arriveAt", clashAt)));
+            notifyIncomingChange(interceptor, "rescheduled");
+        }
+        return true;
+    }
+
+    /** 失效设伏按实际已行进比例返城；在交火点等待的时间不能增加回程长度。 */
+    private void returnInvalidInterception(March march, long now) {
+        try (var scope = cityScope.enter(march.getPlayerId(), Objects.requireNonNullElse(march.getCitySlot(), 0))) {
+            long travel = Math.max(1_000L, Objects.requireNonNullElse(march.getInterceptDeployAt(), march.getArriveAt()) - march.getStartAt());
+            double fraction = Math.max(0, Math.min(1, (double) (now - march.getStartAt()) / travel));
+            long duration = baseMarchDuration(march);
+            long back = Math.max(1_000L, Math.round(duration * fraction));
+            startReturnMarch(march, now);
+            march.setStartAt(now + back - duration); march.setArriveAt(now + back);
+            marchRepository.save(march);
+            notifyIncomingChange(march, "cancelled");
+            pushService.pushMarchUpdate(march.getPlayerId(), marchEvent("interceptCancelled", march, Map.of("message", "拦截目标已离开，部队正在返城")));
+        }
+    }
+
+    /** 城外截击只作用于本账号城市尚未开战的敌对行军，不能误伤返程、支援或其他城市部队。 */
+    private boolean canIntercept(Long playerId, Integer citySlot, March enemy) {
+        String action = enemy == null ? null : enemy.getAction();
+        boolean attackAction = action == null || "scout".equals(action) || BattleService.isOffensiveAction(action)
+                || action.startsWith("tactical");
+        if (enemy == null || playerId.equals(enemy.getPlayerId()) || !attackAction
+                || !"player".equals(enemy.getTargetKind()) || Boolean.TRUE.equals(enemy.getReturning())
+                || enemy.getBattleId() != null) return false;
+        try {
+            return playerCityRepository.findById(Long.valueOf(enemy.getTargetId()))
+                    .filter(city -> playerId.equals(city.getOwnerId())
+                            && (citySlot == null || Objects.requireNonNullElse(city.getCitySlot(), 0) == citySlot)).isPresent();
+        } catch (NumberFormatException | NullPointerException ignored) {
+            return false;
+        }
+    }
+
     /**
-     * 拦截部队到达截击点后发生交火判定，击落敌方侦察机并开始返航。
+     * 截击在城外按正式战斗规则结算。来袭方仍是攻方；突围获胜只更新幸存兵力，
+     * 保留原行军路线、目标与到达时间，不能套用攻城战后的自动返程。
      */
     private void resolveInterception(Long playerId, March m, long now) {
         Long targetId = null;
         try { targetId = Long.valueOf(m.getTargetId()); } catch (Exception ignored) {}
-        March enemyMarch = targetId != null ? marchRepository.findById(targetId).orElse(null) : null;
-        IncomingMarch enemyIncoming = null;
-        if (enemyMarch == null) {
-            List<IncomingMarch> list = incomingMarchRepository.findByTargetPlayerId(playerId);
-            for (IncomingMarch im : list) {
-                if ("scout".equals(im.getAction())) {
-                    enemyIncoming = im;
-                    break;
-                }
-            }
+        March enemyMarch = targetId != null && "incoming_march".equals(m.getTargetKind())
+                ? marchRepository.findById(targetId).orElse(null) : null;
+        IncomingMarch enemyIncoming = targetId != null && !"incoming_march".equals(m.getTargetKind())
+                ? incomingMarchRepository.findById(targetId).orElse(null) : null;
+        if (enemyMarch != null) {
+            // 与敌方经济 Tick 共用账号锁，并刷新实体，避免重复消灭已返程或已完成的编队。
+            accounts.lockPlayer(enemyMarch.getPlayerId());
+            enemyMarch = marchRepository.findSupportForUpdate(enemyMarch.getId()).orElse(null);
+            if (enemyMarch != null) em.refresh(enemyMarch);
+            if (enemyMarch != null && !canIntercept(playerId, Objects.requireNonNullElse(m.getCitySlot(), 0), enemyMarch)) enemyMarch = null;
+        }
+        if (enemyIncoming != null && (!playerId.equals(enemyIncoming.getTargetPlayerId())
+                || !"scout".equals(enemyIncoming.getAction()))) enemyIncoming = null;
+        // Tick 可能晚于约定交汇时间；只允许原定在目标抵城前发生的截击，不能追击已越过交汇点的旧目标。
+        long interceptionAt = Objects.requireNonNullElse(m.getArriveAt(), now);
+        if (enemyMarch != null && (Objects.requireNonNullElse(enemyMarch.getArriveAt(), 0L) < interceptionAt
+                || m.getInterceptDeployAt() != null && Objects.requireNonNullElse(enemyMarch.getArriveAt(), 0L) <= interceptionAt)) enemyMarch = null;
+        if (enemyIncoming != null && Objects.requireNonNullElse(enemyIncoming.getArriveAt(), 0L) < interceptionAt) enemyIncoming = null;
+        int x = Objects.requireNonNullElse(m.getTargetX(), 0);
+        int y = Objects.requireNonNullElse(m.getTargetY(), 0);
+        if (enemyMarch == null && enemyIncoming == null) {
+            notifyIncomingChange(m, "cancelled");
+            startReturnMarch(m, now);
+            marchRepository.save(m);
+            pushService.pushMarchUpdate(playerId, marchEvent("interceptCancelled", m, Map.of("message", "拦截目标已离开，部队正在返城")));
+            return;
         }
 
-        boolean shotDown = false;
-        Map<String, Integer> army = JsonUtil.parseIntMap(m.getArmy());
-        double antiAir = 0;
-        for (var entry : army.entrySet()) {
-            UnitDef u = UnitDef.UNITS.get(entry.getKey());
-            if (u != null) antiAir += u.atkAir() * entry.getValue();
+        Long attackerId = enemyMarch != null ? enemyMarch.getPlayerId() : null;
+        Map<String, Integer> attackerArmy = JsonUtil.parseIntMap(enemyMarch != null ? enemyMarch.getArmy() : enemyIncoming.getArmy());
+        Map<String, Integer> defenderArmy = JsonUtil.parseIntMap(m.getArmy());
+        Officer attackerCommander = enemyMarch != null && enemyMarch.getCommanderId() != null
+                ? targets.getOfficerById(attackerId, enemyMarch.getCommanderId()) : null;
+        Officer defenderCommander = m.getCommanderId() != null ? targets.getOfficerById(playerId, m.getCommanderId()) : null;
+        Map<String, Integer> attackerTech = attackerId != null ? new LinkedHashMap<>(targets.getTechMap(attackerId)) : new LinkedHashMap<>();
+        if (enemyMarch != null) attackerTech.putAll(JsonUtil.parseIntMap(enemyMarch.getUnitEquipmentSnapshot()));
+        Map<String, Integer> defenderTech = new LinkedHashMap<>(targets.getTechMap(playerId));
+        defenderTech.putAll(JsonUtil.parseIntMap(m.getUnitEquipmentSnapshot()));
+        CommandBonus attackerChief = attackerId != null ? commandBonus(attackerId, Objects.requireNonNullElse(enemyMarch.getCitySlot(), 0)) : CommandBonus.NONE;
+        CommandBonus defenderChief = commandBonus(playerId, Objects.requireNonNullElse(m.getCitySlot(), 0));
+        EquipmentService.Attributes a = equipmentService.attributes(attackerCommander);
+        EquipmentService.Attributes d = equipmentService.attributes(defenderCommander);
+        boolean prepared = m.getInterceptReadyAt() != null && m.getInterceptReadyAt() <= interceptionAt;
+        boolean ambushAvailable = prepared && !Boolean.TRUE.equals(enemyMarch != null ? enemyMarch.getAmbushUsed() : enemyIncoming.getAmbushUsed());
+        BattleResult result = battleService.startWorldDispatch(attackerArmy, defenderArmy, Map.of(),
+                attackerTech, defenderTech, targets.getCommanderSkills(attackerCommander), targets.getCommanderSkills(defenderCommander),
+                a.military(), a.defense(), d.military(), d.defense(), "intercept_scout", Map.of(), 0, true,
+                attackerId != null ? battleActionPreferences.orders(attackerId, false, attackerArmy) : Map.of(),
+                battleActionPreferences.orders(playerId, true, defenderArmy), attackerChief, defenderChief, null, BattleScene.PLAYER, ambushAvailable);
+        Map<String, Object> opening = new LinkedHashMap<>(Objects.requireNonNullElse(result.getInterceptionOpening(), Map.of()));
+        opening.put("prepared", prepared);
+        opening.put("deployAt", Objects.requireNonNullElse(m.getInterceptDeployAt(), m.getStartAt()));
+        opening.put("clashAt", interceptionAt);
+        result.setInterceptionOpening(opening);
+        if (Boolean.TRUE.equals(opening.get("ambushConsumed"))) {
+            if (enemyMarch != null) { enemyMarch.setAmbushUsed(true); marchRepository.saveAndFlush(enemyMarch); }
+            else { enemyIncoming.setAmbushUsed(true); incomingMarchRepository.saveAndFlush(enemyIncoming); }
         }
-        if (antiAir >= 10 || army.containsKey("fighter") || army.containsKey("armored")) {
-            shotDown = true;
+        recordCommandBonuses(result, attackerChief, defenderChief);
+        recordUnitEquipment(result, attackerTech, defenderTech);
+        if (attackerId != null) recordBattleWounded(attackerId, enemyMarch, null, null,
+                result.getInitialAttacker(), result.getSurvivorAttacker(), attackerCommander, now, result, "攻方");
+        recordBattleWounded(playerId, m, null, null, result.getInitialDefender(), result.getSurvivorDefender(),
+                defenderCommander, now, result, "守方");
+        if (attackerCommander != null && result.getExpGained() > 0) {
+            attackerCommander.setExp(Objects.requireNonNullElse(attackerCommander.getExp(), 0L) + result.getExpGained());
+            officerRepository.save(attackerCommander);
         }
+        pushInterceptionReport(playerId, true, enemyMarch, enemyIncoming, m, result, attackerCommander, defenderCommander, now);
+        if (attackerId != null) pushInterceptionReport(attackerId, false, enemyMarch, null, m, result, attackerCommander, defenderCommander, now);
 
-        if (shotDown) {
-            if (enemyMarch != null) {
+        // 在全歼导致目标行军删除前通知攻方清除急报。
+        notifyIncomingChange(m, "resolved");
+        if (enemyMarch != null) {
+            enemyMarch.setArmy(JsonUtil.toJson(result.getSurvivorAttacker()));
+            if (result.getSurvivorAttacker().isEmpty()) {
                 marchRepository.delete(enemyMarch);
-                notifyIncomingChange(enemyMarch, "intercepted");
+                if (attackerCommander != null) { attackerCommander.setRole("idle"); officerRepository.save(attackerCommander); }
             }
-            if (enemyIncoming != null) {
-                incomingMarchRepository.delete(enemyIncoming);
+            else {
+                if (!result.isWin()) {
+                    long outboundDuration = Math.max(1000L, enemyMarch.getArriveAt() - enemyMarch.getStartAt());
+                    double progress = Math.max(0, Math.min(1, (double) (interceptionAt - enemyMarch.getStartAt()) / outboundDuration));
+                    long returnDuration = baseMarchDuration(enemyMarch);
+                    long returnRemaining = Math.max(1000L, Math.round(returnDuration * progress));
+                    try (var ignored = cityScope.enter(attackerId, Objects.requireNonNullElse(enemyMarch.getCitySlot(), 0))) {
+                        startReturnMarch(enemyMarch, now);
+                    }
+                    // 沿原路线从交火时的位置掉头，避免返程标记先跳到原侦查目的地。
+                    enemyMarch.setStartAt(now + returnRemaining - returnDuration);
+                    enemyMarch.setArriveAt(now + returnRemaining);
+                }
+                marchRepository.save(enemyMarch);
             }
-        }
+            notifyIncomingChange(enemyMarch, result.isWin() ? "interceptionFailed" : "intercepted");
+            pushService.pushMarchUpdate(attackerId, marchEvent(result.isWin() ? "interceptionPassed" : "intercepted", enemyMarch,
+                    Map.of("interceptX", x, "interceptY", y)));
+        } else if (result.isWin()) {
+            enemyIncoming.setArmy(JsonUtil.toJson(result.getSurvivorAttacker()));
+            incomingMarchRepository.save(enemyIncoming);
+        } else incomingMarchRepository.delete(enemyIncoming);
 
-        // 拦截完成，部队掉头返城
-        startReturnMarch(m, now);
-        marchRepository.save(m);
-        pushService.pushMarchUpdate(playerId, marchEvent("interceptBattle", m, Map.of(
-                "won", shotDown,
-                "interceptX", Objects.requireNonNullElse(m.getOriginX(), 0),
-                "interceptY", Objects.requireNonNullElse(m.getOriginY(), 0)
-        )));
+        m.setArmy(JsonUtil.toJson(result.getSurvivorDefender()));
+        if (result.getSurvivorDefender().isEmpty()) marchRepository.delete(m);
+        else { startReturnMarch(m, now); marchRepository.save(m); }
+        pushService.pushMarchUpdate(playerId, marchEvent("interceptBattle", m, Map.of("won", !result.isWin(), "interceptX", x, "interceptY", y)));
+    }
+
+    /** 双方共享同一场交火快照，各自保存胜负和部队去向；此战不代表攻城或已取得侦查情报。 */
+    private void pushInterceptionReport(Long recipientId, boolean defender, March enemy, IncomingMarch incoming,
+                                        March interceptor, BattleResult result, Officer attackerCommander, Officer defenderCommander, long now) {
+        boolean won = defender ? !result.isWin() : result.isWin();
+        String attackerDisposition = result.getSurvivorAttacker().isEmpty() ? "destroyed" : result.isWin() ? "continuing" : "returning";
+        String defenderDisposition = result.getSurvivorDefender().isEmpty() ? "destroyed" : "returning";
+        String attackerName = enemy != null ? playerRepository.findById(enemy.getPlayerId()).map(Player::getUsername).orElse("未知敌军") : incoming.getFromName();
+        String defenderName = playerRepository.findById(interceptor.getPlayerId()).map(Player::getUsername).orElse("拦截部队");
+        Map<String, Object> report = new LinkedHashMap<>();
+        report.put("type", "battle");
+        report.put("action", "intercept_scout");
+        report.put("targetType", "interception");
+        report.put("perspective", defender ? "defender" : "attacker");
+        report.put("win", won);
+        report.put("attackerWin", result.isWin());
+        report.put("intercepted", !result.isWin());
+        report.put("subject", (defender ? (won ? "拦截成功" : "拦截失败") : (won ? "突围成功" : "突围失败")) + " · 城外截击");
+        report.put("time", now);
+        report.put("readAt", 0L);
+        report.put("citySlot", defender ? interceptor.getCitySlot() : enemy.getCitySlot());
+        report.put("marchId", defender ? interceptor.getId() : enemy.getId());
+        report.put("attackerName", attackerName);
+        report.put("defenderName", defenderName);
+        report.put("fromName", attackerName);
+        report.put("fromCoord", (enemy != null ? enemy.getFromX() : incoming.getFromX()) + "," + (enemy != null ? enemy.getFromY() : incoming.getFromY()));
+        report.put("toName", enemy != null ? enemy.getTargetName() : cityScope.economy(interceptor.getPlayerId()).getCityName());
+        report.put("toCoord", (enemy != null ? enemy.getTargetX() : interceptor.getFromX()) + "," + (enemy != null ? enemy.getTargetY() : interceptor.getFromY()));
+        report.put("interceptCoord", interceptor.getTargetX() + "," + interceptor.getTargetY());
+        report.put("originalAction", enemy != null ? enemy.getAction() : incoming.getAction());
+        report.put("interceptionOpening", result.getInterceptionOpening());
+        report.put("attackerMarchDisposition", attackerDisposition);
+        report.put("defenderMarchDisposition", defenderDisposition);
+        report.put("troopDisposition", defender ? defenderDisposition : attackerDisposition);
+        report.put("initialAttacker", result.getInitialAttacker());
+        report.put("initialDefender", result.getInitialDefender());
+        report.put("survivorAttacker", result.getSurvivorAttacker());
+        report.put("survivorDefender", result.getSurvivorDefender());
+        report.put("losses", defender ? result.getDefenderLosses() : result.getAttackerLosses());
+        report.put("recoveredCount", defender ? result.getDefenderRecoveredCount() : result.getAttackerRecoveredCount());
+        report.put("recoveryPercent", defender ? result.getDefenderRecoveryPercent() : result.getAttackerRecoveryPercent());
+        if (!defender) report.put("exp", attackerCommander != null ? result.getExpGained() : 0);
+        Map<String, Object> commanders = new LinkedHashMap<>();
+        commanders.put("attacker", buildCommanderReport(attackerCommander));
+        commanders.put("defender", buildCommanderReport(defenderCommander));
+        report.put("commanders", commanders);
+        report.put("commandBonuses", result.getCommandBonuses());
+        report.put("unitEquipment", result.getUnitEquipment());
+        report.put("roundLogs", splitReportLines(result.getReport()));
+        ScoutReport saved = new ScoutReport();
+        saved.setPlayerId(recipientId);
+        saved.setType("battle");
+        saved.setTargetName("城外截击");
+        saved.setTargetX(interceptor.getTargetX());
+        saved.setTargetY(interceptor.getTargetY());
+        saved.setCreatedAt(now);
+        saved.setReadAt(0L);
+        saved.setData(JsonUtil.toJson(report));
+        saved = scoutReportRepository.save(saved);
+        report.put("id", saved.getId());
+        pushService.pushBattleReport(recipientId, report);
     }
 
     /**
@@ -2169,6 +2584,16 @@ public class MarchService {
     }
 
     private void notifyIncomingChange(March march, String event) {
+        if ("intercept_scout".equals(march.getAction()) && "incoming_march".equals(march.getTargetKind())) {
+            March intercepted = marchRepository.findById(Long.valueOf(march.getTargetId())).orElse(null);
+            if (intercepted != null && !march.getPlayerId().equals(intercepted.getPlayerId())) {
+                Player source = playerRepository.findById(march.getPlayerId()).orElse(null);
+                Map<String, Object> notification = incomingIntelligence.fieldInterception(march, intercepted, source);
+                notification.put("event", event);
+                pushService.pushIncomingAttack(intercepted.getPlayerId(), notification);
+            }
+            return;
+        }
         if (!"player".equals(march.getTargetKind())) return;
         Object target = targets.findTargetById("player", march.getTargetId());
         if (!(target instanceof PlayerCity city) || !targets.hasRealOwner(city)
@@ -2181,7 +2606,7 @@ public class MarchService {
                 .map(Player::getUsername).orElse("未知敌军");
         Map<String, Object> notification = new LinkedHashMap<>(Map.of(
                 "id", "march-" + march.getId(), "event", event, "fromName", fromName));
-        if ("accelerated".equals(event)) {
+        if ("accelerated".equals(event) || "stratagemDelayed".equals(event)) {
             notification.put("startAt", march.getStartAt());
             notification.put("arriveAt", march.getArriveAt());
         }
@@ -2194,6 +2619,8 @@ public class MarchService {
 
     @Transactional
     public void processIncoming(Long playerId, long now) {
+        lockInterceptionParticipants(playerId);
+        processInterceptionQueue(marchRepository.findByPlayerId(playerId), now);
         Player account = playerRepository.lockById(playerId).orElse(null);
         if (account == null || account.deletionDue(System.currentTimeMillis())) return;
         List<IncomingMarch> incoming = incomingMarchRepository.findByTargetPlayerId(playerId);
@@ -3447,6 +3874,8 @@ public class MarchService {
         m.setOriginX(m.getTargetX());
         m.setOriginY(m.getTargetY());
         m.setReturning(true);
+        m.setInterceptDeployAt(null);
+        m.setInterceptReadyAt(null);
         m.setStationed(false);
         swapCoords(m);
         m.setStartAt(now);

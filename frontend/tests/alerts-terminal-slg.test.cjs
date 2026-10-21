@@ -110,7 +110,7 @@ function setup(initialState = {}) {
   require('./load-constants.cjs')(context);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/world.js'), 'utf8'), context);
 
-  return { game, routes, toasts, nodes };
+  return { game, routes, toasts, nodes, context };
 }
 
 test('军情监控头渲染全域监控状态、120KM雷达范围与防务状态', () => {
@@ -174,7 +174,7 @@ test('敌袭卡片展示 [敌袭!] 字符Badge、进度条、测距、目标与�
   assert.match(view.innerHTML, />呼叫救援</);
 });
 
-test('侦察卡片展示 [侦察] 字符Badge与出城拦截、呼叫救援、电子干扰、防空击落操作闭环', () => {
+test('侦察卡片展示 [侦察] 字符Badge与出城拦截、呼叫救援操作闭环，精简移除无效的电子干扰与击落按钮', () => {
   const now = Date.now();
   const { game } = setup({
     world: {
@@ -207,8 +207,8 @@ test('侦察卡片展示 [侦察] 字符Badge与出城拦截、呼叫救援、�
   assert.match(view.innerHTML, /目标: 城防情报/);
   assert.match(view.innerHTML, />出城拦截</);
   assert.match(view.innerHTML, />呼叫救援</);
-  assert.match(view.innerHTML, />电子干扰</);
-  assert.match(view.innerHTML, />击落</);
+  assert.doesNotMatch(view.innerHTML, />电子干扰</);
+  assert.doesNotMatch(view.innerHTML, />击落</);
 });
 
 test('出征卡片展示 [出征] 字符Badge、进度条与加速召回按钮', () => {
@@ -321,7 +321,7 @@ test('过滤标签支持全部、敌袭、侦察、我军与驻防的分流切�
 });
 
 test('快捷操作闭环调用能正确弹出对应战术反馈', () => {
-  const { game, toasts } = setup();
+  const { game, toasts, routes } = setup();
 
   game.World.applyElectronicJamming(0);
   assert.ok(toasts.some(t => t.includes('电子干扰')));
@@ -334,6 +334,9 @@ test('快捷操作闭环调用能正确弹出对应战术反馈', () => {
 
   game.World.refreshAlerts();
   assert.ok(toasts.some(t => t.includes('雷达信号已刷新')));
+
+  game.World.openDefenseFormation();
+  assert.ok(routes.includes('battleDefaults'), '点击布阵应当跳转至 battleDefaults 战术布阵页');
 });
 
 test('侦察卡片展示 [出城拦截] 按钮，点击进入拦截出征界面', () => {
@@ -379,13 +382,104 @@ test('侦察卡片展示 [出城拦截] 按钮，点击进入拦截出征界面'
   assert.match(dt.targetName, /黑鹰侦察队/);
 });
 
-test('出城拦截出征界面仅筛选展示空军战机与防空装甲车，步兵等非对空兵种被排除', () => {
+test('普通敌军来袭行军卡片也提供出城拦截，并关联真实行军目标', () => {
+  const now = Date.now();
+  const { game, routes } = setup({
+    world: {
+      cityPos: { x: 342, y: 681 },
+      incoming: [{ id: 'march-91', marchId: 91, attackerName: '来袭军团', action: 'plunder',
+        fromX: 300, fromY: 650, targetX: 342, targetY: 681, targetCityId: 12, arriveAt: now + 50000,
+        startAt: now - 10000, expanded: false }],
+      marches: [],
+      reinforcements: []
+    }
+  });
+
+  const view = { innerHTML: '', querySelectorAll: () => [] };
+  game.World.renderAlerts(view);
+
+  assert.match(view.innerHTML, /openScoutInterception\(0\)\">出城拦截/);
+  game.World.openScoutInterception(0);
+
+  assert.equal(routes.at(-1), 'dispatch');
+  assert.equal(game.Core.state.world._dispatchTarget.action, 'intercept_scout');
+  assert.equal(game.Core.state.world._dispatchTarget.marchId, 91);
+  assert.match(game.Core.state.world._dispatchTarget.targetName, /来袭军团.*行军部队/);
+});
+
+test('普通敌军来袭拦截出征可配置并提交任意可用兵种', async () => {
+  const now = Date.now();
+  const { game, nodes } = setup({
+    world: {
+      cityPos: { x: 342, y: 681 },
+      marches: [],
+      incoming: [],
+      _dispatchTarget: {
+        kind: 'incoming_scout',
+        action: 'intercept_scout',
+        marchId: 91,
+        targetName: '来袭军团的行军部队',
+        target: { id: 'march-91', name: '来袭军团的行军部队', x: 300, y: 650 },
+        interceptTarget: { arriveAt: now + 50000 }
+      }
+    }
+  });
+
+  const view = { innerHTML: '', querySelectorAll: () => [] };
+  game.World.renderDispatch(view);
+
+  assert.match(view.innerHTML, /id="dqty_infantry"/);
+  assert.match(view.innerHTML, /id="dqty_htank"/);
+  assert.match(view.innerHTML, /任意可用兵种组成截击编队/);
+  assert.doesNotMatch(view.innerHTML, /侦查拦截仅/);
+
+  let request;
+  game.API.worldDispatch = async body => { request = body; };
+  nodes.set('dqty_infantry', { value: '10' });
+  nodes.set('dqty_htank', { value: '2' });
+  game.World._currentRoute = game.World.calcInterceptionPlan({ infantry: 10, htank: 2 }, game.Core.state.world._dispatchTarget);
+  game.World._currentRoute.plannedAt = game.gameNow();
+  game.World._interceptionPreviewKey = JSON.stringify(game.World.interceptionPreviewRequest({ infantry: 10, htank: 2 }, game.Core.state.world._dispatchTarget));
+  await game.World.launchDispatch();
+  assert.equal(request.targetKind, 'incoming_march');
+  assert.equal(request.targetId, 91);
+  assert.equal(request.army.infantry, 10);
+  assert.equal(request.army.htank, 2);
+});
+
+test('真实侦查行军的拦截仍只展示空军和装甲车，且拒绝提交步兵', () => {
+  const now = Date.now();
+  const { game, nodes, routes, toasts } = setup({
+    world: {
+      cityPos: { x: 342, y: 681 },
+      marches: [],
+      incoming: [{ id: 'march-92', marchId: 92, attackerName: '侦查部队', action: 'scout',
+        fromX: 300, fromY: 650, arriveAt: now + 50000, startAt: now - 10000 }]
+    }
+  });
+  game.World.openScoutInterception(0);
+  const view = { innerHTML: '', querySelectorAll: () => [] };
+  game.World.renderDispatch(view);
+
+  assert.match(view.innerHTML, /id="dqty_fighter"/);
+  assert.match(view.innerHTML, /id="dqty_armored"/);
+  assert.doesNotMatch(view.innerHTML, /id="dqty_infantry"|id="dqty_htank"/);
+  nodes.set('dqty_infantry', { value: '1' });
+  game.World.launchDispatch();
+
+  assert.match(toasts.at(-1), /侦查拦截仅支持配置空军或装甲车/);
+  assert.equal(game.Core.state.army.infantry, 500);
+  assert.equal(game.Core.state.world.marches.length, 0);
+  assert.equal(routes.at(-1), 'dispatch');
+});
+
+test('侦查拦截出征界面仅筛选展示空军与装甲车，步兵等非拦截兵种被排除', () => {
   const now = Date.now();
   const { game } = setup({
     army: {
       infantry: 500, // 步兵（非防空对空）
       fighter: 20,   // 空军战机
-      armored: 15,   // 防空装甲车
+      armored: 15,   // 装甲车
       htank: 10      // 重型坦克（非防空对空）
     },
     world: {
@@ -415,13 +509,13 @@ test('出城拦截出征界面仅筛选展示空军战机与防空装甲车，�
 
   // 标题与说明
   assert.match(view.innerHTML, /出城拦截 · 截击出征/);
-  assert.match(view.innerHTML, /可选配空军或防空装甲车/);
+  assert.match(view.innerHTML, /可选配空军或装甲车/);
 
-  // 空军与防空装甲车应出现在列表中
+  // 空军与装甲车应出现在列表中
   assert.match(view.innerHTML, /dqty_fighter/);
   assert.match(view.innerHTML, /战斗机/);
   assert.match(view.innerHTML, /dqty_armored/);
-  assert.match(view.innerHTML, /防空装甲车/);
+  assert.match(view.innerHTML, /装甲车/);
   assert.match(view.innerHTML, /对空 64/);
 
   // 步兵与重型坦克等非对空兵种必须被排除
@@ -429,7 +523,7 @@ test('出城拦截出征界面仅筛选展示空军战机与防空装甲车，�
   assert.doesNotMatch(view.innerHTML, /dqty_htank/);
 });
 
-test('出城拦截出征界面根据编队动态更新截击防空总战力与预估成功率', () => {
+test('出城拦截出征界面更新防空战力，胜负以实际交战为准', () => {
   const { game, nodes } = setup({
     world: {
       cityPos: { x: 342, y: 681 },
@@ -465,7 +559,7 @@ test('出城拦截出征界面根据编队动态更新截击防空总战力与�
   nodes.set('dqty_fighter', { value: '2' });
   game.World.updateDispatchStats();
   assert.equal(powerEl.textContent, '128');
-  assert.match(rateEl.textContent, /100% \(确保击落\)/);
+  assert.equal(rateEl.textContent, '以实际交战结果为准');
 });
 
 test('calcInterceptionPlan: 根据敌机到达剩余时间与拦截兵种移速，精确计算迎头相遇拦截坐标与所需耗时', () => {
@@ -536,6 +630,7 @@ test('执行出城拦截：计算迎头截击点并生成出城行军路线，�
   nodes.set('dqty_fighter', { value: '5' });
   nodes.set('dqty_armored', { value: '0' });
 
+  game.API.client = null;
   await game.World.launchDispatch();
 
   // 1. 验证出征兵力从城内扣除
@@ -557,7 +652,7 @@ test('执行出城拦截：计算迎头截击点并生成出城行军路线，�
 
   // 4. 验证跳转至大地图视图，供玩家查看迎头截击动画
   assert.equal(routes.at(-1), 'world', '应跳转至世界大地图查看行军');
-  assert.ok(toasts.some(t => t.includes('截击机群已紧急起飞') && t.includes('空域拦截')));
+  assert.ok(toasts.some(t => t.includes('截击部队已出发') && t.includes('拦截')));
 
   // 5. 到达拦截空域触发交火：判定防空火力击落敌机，解除侦查警报并掉头返航
   game.World.resolveInterceptionArrival(march);
@@ -572,6 +667,41 @@ test('执行出城拦截：计算迎头截击点并生成出城行军路线，�
   assert.equal(game.Core.state.army.fighter, 20, '返航归建后5架战机恢复入库');
   assert.equal(game.Core.state.world.marches.length, 0, '返航完成后大地图行军移除');
   assert.ok(toasts.some(t => t.includes('截击机群已完成拦截巡航任务') && t.includes('安全返航归建基地')));
+});
+
+test('联网出城拦截采用后端状态，前端不重复扣兵和结算敌军行军', async () => {
+  const now = Date.now();
+  const { game, nodes } = setup({
+    army: { fighter: 20 }, resources: { oil: 10000 },
+    world: { cityPos: { x: 342, y: 681 }, marches: [], incoming: [{ id: 'march-42', marchId: 42, action: 'scout' }],
+      _dispatchTarget: { kind: 'incoming_scout', action: 'intercept_scout', marchId: 42,
+        target: { id: 'march-42' }, interceptTarget: { fromX: 300, fromY: 650, startAt: now - 10000, arriveAt: now + 40000 } } }
+  });
+  nodes.set('dqty_fighter', { value: '5' });
+  let request;
+  game.API.worldDispatch = async body => {
+    request = body;
+    game.Core.state = { player: {}, army: { fighter: 15 }, resources: { oil: 9000 },
+      world: { cityPos: { x: 342, y: 681 }, incoming: [{ id: 'march-42', marchId: 42, action: 'scout' }],
+        marches: [{ id: 99, action: 'intercept_scout', targetId: '42', targetKind: 'incoming_march',
+          army: { fighter: 5 }, fromX: 342, fromY: 681, targetX: 320, targetY: 670, startAt: now - 10000, arriveAt: now - 1, returning: false }] } };
+    return game.Core.state;
+  };
+  game.World._currentRoute = game.World.calcInterceptionPlan({ fighter: 5 }, game.Core.state.world._dispatchTarget);
+  game.World._currentRoute.plannedAt = game.gameNow();
+  game.World._interceptionPreviewKey = JSON.stringify(game.World.interceptionPreviewRequest({ fighter: 5 }, game.Core.state.world._dispatchTarget));
+  await game.World.launchDispatch();
+  assert.equal(request.targetKind, 'incoming_march');
+  assert.equal(request.targetId, 42);
+  assert.equal(game.Core.state.army.fighter, 15);
+  assert.equal(game.Core.state.resources.oil, 9000);
+  assert.equal(game.Core.state.world.marches.length, 1);
+  const march = game.Core.state.world.marches[0];
+  game.World.resolveInterceptionArrival(march);
+  game.World.checkMarchArrivals();
+  assert.equal(march.returning, false);
+  assert.equal(game.Core.state.world.incoming.length, 1);
+  assert.equal(game.Core.state.army.fighter, 15);
 });
 
 test('出城拦截界面点击返回安全返回军情监控', () => {
@@ -971,4 +1101,91 @@ test('城防护盾：当前分城护盾不会误用到主城，采用后端 slot
   const cities = game.World.getPlayerCities();
   assert.equal(cities[0].shieldUntil, 0);
   assert.equal(cities[1].slot, 3);
+});
+
+function interceptionPreviewFixture() {
+  const f = setup({ world: { cityPos: { x: 342, y: 681 }, marches: [], incoming: [],
+    _dispatchTarget: { action: 'intercept_scout', marchId: 91, target: { id: 91 }, interceptTarget: { action: 'plunder' } } } });
+  const timers = new Map(), listeners = new Map(), requests = [];
+  let next = 0, army = {};
+  f.context.setTimeout = (run, delay) => { timers.set(++next, { run, delay }); return next; };
+  f.context.clearTimeout = id => timers.delete(id);
+  const hint = { isConnected: true, textContent: '', setAttribute() {}, querySelector: () => null };
+  const container = { addEventListener: (event, fn) => listeners.set(event, fn), removeEventListener: event => listeners.delete(event) };
+  f.game.API.client.post = (url, body) => new Promise((resolve, reject) => requests.push({ url, body, resolve, reject }));
+  const dt = f.game.Core.state.world._dispatchTarget;
+  f.game.World.bindRoutePreview(container, hint, () => f.game.World.interceptionPreviewRequest(army, dt), { interception: true, updateOnInput: true });
+  return Object.assign(f, { hint, container, requests, timers,
+    select(value) { army = value; for (const id of Object.keys(f.game.DATA.units)) f.nodes.delete('dqty_' + id);
+      for (const [id, n] of Object.entries(value)) f.nodes.set('dqty_' + id, { value: String(n) }); listeners.get('input')(); },
+    run(delay) { for (const [id, timer] of timers) if (timer.delay === delay) { timers.delete(id); timer.run(); return; } },
+    route: { distance: 2.5, seconds: 8, plannedAt: f.game.gameNow(), deployAt: f.game.gameNow() + 8000,
+      readyAt: f.game.gameNow() + 13000, clashAt: f.game.gameNow() + 16000, opening: 'ambush', oil: 123, targetX: 340, targetY: 680 } });
+}
+const settlePreview = async () => { await Promise.resolve(); await Promise.resolve(); };
+
+test('拦截权威预览不为空编队发请求，数量变化重算，旧异步结果不能覆盖新计划', async () => {
+  const f = interceptionPreviewFixture();
+  f.run(300);
+  assert.equal(f.requests.length, 0);
+  f.select({ infantry: 10 }); f.run(300);
+  assert.equal(f.game.World._dispatchRoutePending, true);
+  f.select({ infantry: 20 }); f.run(300);
+  assert.equal(f.requests.length, 2);
+  f.requests[1].resolve(f.route); await settlePreview();
+  assert.equal(f.game.World._currentRoute.oil, 123);
+  assert.match(f.hint.textContent, /服务端部署计划.*伏击拦截.*部署到达.*预计交火/);
+  f.requests[0].resolve({ ...f.route, oil: 999 }); await settlePreview();
+  assert.equal(f.game.World._currentRoute.oil, 123);
+  assert.equal(JSON.parse(f.game.World._interceptionPreviewKey).army.infantry, 20);
+  f.container._disposeRoutePreview();
+});
+
+test('预览中或失败时禁止派遣，失败显示实际原因，关闭页面后忽略未完成响应', async () => {
+  const f = interceptionPreviewFixture();
+  let dispatched = 0;
+  f.game.API.worldDispatch = async () => { dispatched++; };
+  f.select({ infantry: 10 }); f.run(300);
+  await f.game.World.launchDispatch();
+  assert.equal(dispatched, 0);
+  f.requests[0].reject(new Error('敌军即将抵城，无法完成出城拦截')); await settlePreview();
+  assert.match(f.hint.textContent, /敌军即将抵城/);
+  assert.match(f.game.World._dispatchRouteError, /无法完成出城拦截/);
+  // 点击派遣可能启动一次新预览，旧失败仍不能放行出征。
+  await f.game.World.launchDispatch();
+  assert.equal(dispatched, 0);
+  f.run(300);
+  const pending = f.requests.at(-1);
+  f.container._disposeRoutePreview(); f.hint.isConnected = false;
+  pending.resolve(f.route); await settlePreview();
+  assert.equal(f.game.World._currentRoute, null);
+});
+
+test('只有匹配当前兵力且未过期的服务端计划可派遣，过期后重新预览', async () => {
+  const f = interceptionPreviewFixture();
+  let dispatched = 0;
+  f.game.API.worldDispatch = async () => { dispatched++; };
+  f.select({ infantry: 10 }); f.run(300);
+  f.requests[0].resolve(f.route); await settlePreview();
+  f.game.World._currentRoute.plannedAt = f.game.gameNow() - 5001;
+  await f.game.World.launchDispatch();
+  assert.equal(dispatched, 0);
+  f.run(300);
+  f.requests.at(-1).resolve({ ...f.route, plannedAt: f.game.gameNow() }); await settlePreview();
+  await f.game.World.launchDispatch();
+  assert.equal(dispatched, 1);
+  f.container._disposeRoutePreview();
+});
+
+test('拦截等待准备不会显示可进入城市战场或继续消耗行军令', () => {
+  const { game } = setup();
+  const now = game.gameNow();
+  const march = { id: 400, action: 'intercept_scout', targetKind: 'incoming_march', targetX: 340, targetY: 680,
+    fromX: 342, fromY: 681, army: { infantry: 10 }, startAt: now - 20000, deployAt: now - 2000,
+    readyAt: now + 3000, arriveAt: now + 10000, interceptionOpening: 'ambush', version: 1 };
+  game.Core.state.world.marches.push(march);
+  const view = { innerHTML: '' }; game.World.renderAlerts(view);
+  assert.match(view.innerHTML, /设伏准备/);
+  assert.doesNotMatch(view.innerHTML, /openTactical|data-accelerate-id="400"/);
+  assert.equal(game.World.canAccelerateMarch(march, now), false);
 });

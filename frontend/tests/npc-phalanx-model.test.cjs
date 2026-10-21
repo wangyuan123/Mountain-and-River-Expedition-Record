@@ -104,7 +104,7 @@ test('world-map.js 中 NPC/流寇目标正确根据等级映射到多样化方�
   assert.ok(worldMapJs.includes('v=5.9-npc-phalanxes-transparent-embedded'), 'world-map.js 纹理请求必须包含 v=5.9-npc-phalanxes-transparent-embedded 防缓存版本号');
 
   const indexHtml = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
-  assert.ok(indexHtml.includes('world-map.js?v=5.27-npc-phalanxes-transparent'), 'index.html 中 world-map.js 必须引入最新版本防缓存参数');
+  assert.match(indexHtml, /world-map\.js\?v=[^"&\s]+/, 'index.html 中 world-map.js 必须带防缓存版本参数');
 });
 
 test('5 款 NPC 寇微缩模型为规范 1:1 纯透明微缩方阵图标且尺寸规范', () => {

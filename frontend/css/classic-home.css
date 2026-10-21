@@ -296,7 +296,37 @@ body[data-theme="blue-white-classic"] {
   color: #2457a5;
 }
 
+/* 设置界面紧凑卡片蓝白风格覆盖 */
+[data-theme="blue-white-classic"] .settings-card {
+  background: #ffffff !important;
+  border: 1px solid #c5d7e8 !important;
+  border-radius: 4px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+  padding: 8px 10px !important;
+  margin: 0 !important;
+}
+
+[data-theme="blue-white-classic"] .settings-card-head {
+  border-bottom: 1px solid #e5eff7 !important;
+}
+
+[data-theme="blue-white-classic"] .settings-card-title {
+  color: #1f5095 !important;
+}
+
+[data-theme="blue-white-classic"] .settings-select {
+  background: #fbfdff !important;
+  border-color: #b7cee5 !important;
+  color: #1f375b !important;
+}
+
+[data-theme="blue-white-classic"] .settings-status-pill.success {
+  background: #e9f5ec !important;
+  color: #1d7334 !important;
+  border-color: #bfe5c9 !important;
+}
 
 @media (max-width: 480px) {
   [data-theme="blue-white-classic"] #screen { margin: 0 auto; min-height: 100vh; }
 }
+

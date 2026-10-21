@@ -1,0 +1,2 @@
+ALTER TABLE marches
+    ADD COLUMN stratagem_used BOOLEAN NOT NULL DEFAULT FALSE;

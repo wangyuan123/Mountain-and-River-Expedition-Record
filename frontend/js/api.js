@@ -96,6 +96,7 @@ window.Game = window.Game || {};
 
     // ===== Token / 登录态（委托给 client）=====
     getToken: function () { return client.getToken(); },
+    retentionContext: function () { return client.serverId + ':' + client.getToken(); },
     setToken: function (token, username) { return client.setToken(token, username); },
     clearToken: function () { return client.clearToken(); },
     isLoggedIn: function () { return client.isLoggedIn(); },
@@ -205,10 +206,18 @@ window.Game = window.Game || {};
 
     // 战报列表（侦查和战斗报告均由后端持久化）
     // 注意: client.get 第二个参数是 options 不是 params, query string 必须手拼
-    getReports: function (limit) {
-      var n = Math.max(1, Math.min(200, parseInt(limit, 10) || 50));
-      return client.get('/game/reports?limit=' + n);
+    getReports: function (limit, cursor) {
+      var n = Math.max(1, Math.min(100, parseInt(limit, 10) || 50));
+      var url = '/game/reports?paged=true&limit=' + n;
+      if (cursor) url += '&cursor=' + encodeURIComponent(cursor);
+      return client.get(url);
     },
+
+    getReportDetail: function (id) {
+      return client.get('/game/reports/' + encodeURIComponent(id), { noCache: true });
+    },
+    starReport: function (id) { return client.post('/game/reports/' + encodeURIComponent(id) + '/star', {}); },
+    unstarReport: function (id) { return client.delete('/game/reports/' + encodeURIComponent(id) + '/star', { silent: true }); },
 
     getUnreadReports: function () {
       return client.get('/game/reports/unread');
@@ -579,8 +588,10 @@ window.Game = window.Game || {};
     },
 
     cancelMarch: function (marchId) {
-      return client.post('/game/world/cancel-march', { marchId: marchId })
-        .then(extractState).then(applyState);
+      return client.post('/game/world/cancel-march', { marchId: marchId }).then(function (data) {
+        if (data && data.state) applyState(data.state);
+        return data;
+      });
     },
 
     /** 携带确认时的阶段和版本，消耗请求不自动重试。 */
@@ -591,6 +602,17 @@ window.Game = window.Game || {};
           if (client.getToken() === token && client.cityId === city && data && data.state) applyState(data.state);
           return data;
         });
+    },
+
+    /** 对指定来袭行军使用一次计谋；确认时携带抵达时间，防止旧情报消耗道具。 */
+    applyMarchStratagem: function (marchId, itemKey, expectedArriveAt) {
+      var token = client.getToken(), city = client.cityId;
+      return client.post('/game/world/march-stratagem', {
+        marchId: Number(marchId), itemKey: itemKey, expectedArriveAt: Number(expectedArriveAt)
+      }, { timeout: 15000 }).then(function (data) {
+        if (client.getToken() === token && client.cityId === city && data && data.state) applyState(data.state);
+        return data;
+      });
     },
 
     /** 获取已到达部队的逐回合战场状态。 */
@@ -794,7 +816,7 @@ window.Game = window.Game || {};
       return client.post('/game/reports/' + encodeURIComponent(id) + '/share', { channel: channel, recipientId: recipientId });
     },
     sharedBattleReport: function (token) {
-      return client.get('/game/reports/shared/' + encodeURIComponent(token));
+      return client.get('/game/reports/shared/' + encodeURIComponent(token), { noCache: true });
     },
 
     sendWorldChat: function (content) {
@@ -847,8 +869,14 @@ window.Game = window.Game || {};
     // ==================== 邮件 ====================
 
     // 拉取邮件列表: folder = inbox | outbox | system | unread
-    listMail: function (folder) {
-      return client.get('/game/mail/list?folder=' + (folder || 'inbox'));
+    listMail: function (folder, cursor, limit) {
+      var query = '?folder=' + encodeURIComponent(folder || 'inbox') + '&limit=' + Math.max(1, Math.min(100, Number(limit) || 20));
+      if (cursor) query += '&cursor=' + encodeURIComponent(cursor);
+      return client.get('/game/mail/list' + query);
+    },
+
+    getMailDetail: function (mailId) {
+      return client.get('/game/mail/' + encodeURIComponent(mailId), { noCache: true });
     },
 
     // 未读数 (用于导航栏红点)

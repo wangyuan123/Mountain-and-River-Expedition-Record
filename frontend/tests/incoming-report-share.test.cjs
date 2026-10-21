@@ -43,8 +43,15 @@ function setup(level = 10) {
     createElement() {
       const button = { focus() { this.focused = true; } };
       return {
-        innerHTML: '', button, setAttribute(name, value) { this[name] = value; },
+        innerHTML: '', button, links: [], setAttribute(name, value) { this[name] = value; },
         querySelector: selector => selector === '[data-incoming-close]' ? button : null,
+        querySelectorAll(selector) {
+          if (selector !== '[data-intel-coordinate]') return [];
+          this.links = Array.from(this.innerHTML.matchAll(/<a [^>]*data-intel-coordinate[^>]*onclick="([^"]+)"/g), match => ({
+            handler: match[1], addEventListener(type, listener) { this[type] = listener; }
+          }));
+          return this.links;
+        },
         remove() { nodes.delete(this.id); }
       };
     },
@@ -72,12 +79,29 @@ test('每级雷达的军团弹窗与来袭详情共用全部情报字段，不�
       assert.ok(modal.innerHTML.includes(detail));
       const labels = ['来袭玩家:', '出发地:', '军种:', '兵力区间:', '兵种:', '总兵力:', '步兵 ×150', '统帅:', '战斗科技:', '司令官:'];
       labels.forEach((label, index) => assert.equal(modal.innerHTML.includes(label), level >= index + 1, action + ' Lv.' + level + ' ' + label));
-      assert.ok(modal.innerHTML.includes('目的地: (0,2) 守方分城'));
+      assert.match(modal.innerHTML, /目的地: <a [^>]*>\(0,2\)<\/a> 守方分城/);
       assert.match(modal.innerHTML, /分享时间:.*情报以分享时为准/);
       assert.ok(modal.innerHTML.includes('到达倒计时（分享时）:'));
       assert.doesNotMatch(modal.innerHTML, /接收者城市|startIncomingBattle|requestGuildAid|openScoutInterception|undefined/);
       assert.equal(game.Core.route, 'chat');
     }
+  }
+});
+
+test('军团分享军情的坐标点击会定位分享中的目标并关闭弹窗', async () => {
+  for (const [index, x, y] of [[0, 10, 20], [1, 0, 2]]) {
+    const { game, nodes, context } = setup();
+    const locations = [];
+    game.World.locateTarget = (x, y) => locations.push({ x, y });
+    await game.World.viewSharedIncomingReport(token);
+    const modal = nodes.get('sharedIncomingReportModal');
+    const link = modal.links[index];
+    vm.runInContext('(function (event) { ' + link.handler + ' })', context)({
+      preventDefault() {}, stopPropagation() {}
+    });
+    link.click();
+    assert.deepEqual(locations, [{ x, y }]);
+    assert.equal(nodes.size, 0);
   }
 });
 

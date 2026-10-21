@@ -9,6 +9,7 @@ window.Game = window.Game || {};
   var Core = G.Core;
   var skillDetailModal = null;
   var skillUpgradeModal = null;
+  var academyAnimTimers = [];
 
   /** 按服务端额度显示刷新入口；跨日只重置日次数，未结束的轮次冷却继续保留。 */
   function academyRefreshHtml(academy) {
@@ -30,10 +31,22 @@ window.Game = window.Game || {};
       h += '<button type="button" class="btn academy-refresh-btn cooling" disabled>' +
         '<span class="refresh-icon">⏳</span> 本轮已用满' + roundLimit + '次，刷新休整中 (' + mins + ' 分钟后可再次刷新)</button>';
     } else {
-      h += '<button type="button" class="btn ok academy-refresh-btn with-ripple" onclick="Game.Officer.onRefreshClick(event)">' +
-        '<span class="btn-ripple-container"></span><span class="refresh-icon">⟳</span> 刷新候选人 (200金)</button>';
+      var isRefreshing = Officer && Officer._isAcademyRefreshing;
+      if (isRefreshing) {
+        h += '<button type="button" class="btn ok academy-refresh-btn cooling" disabled>' +
+          '<span class="refresh-icon">⏳</span> 调遣将领中...</button>';
+      } else {
+        h += '<button type="button" class="btn ok academy-refresh-btn with-ripple" onclick="Game.Officer.onRefreshClick(event)">' +
+          '<span class="btn-ripple-container"></span><span class="refresh-icon">⟳</span> 刷新候选人 (200金)</button>';
+      }
     }
-    return h + '</div>';
+    var isFast = Officer && Officer.isFastRefresh ? Officer.isFastRefresh() : false;
+    h += '<label class="academy-fast-refresh-label" title="勾选后刷新军校将跳过调遣动画，立即展示候选名单">' +
+      '<input type="checkbox" id="academy-fast-refresh-checkbox" class="academy-fast-refresh-input"' + (isFast ? ' checked' : '') + ' onchange="Game.Officer.toggleFastRefresh(this.checked)">' +
+      '<span>极速刷新</span>' +
+      '</label>';
+    h += '</div>';
+    return h;
   }
 
   function starIcons(star) {
@@ -74,6 +87,86 @@ window.Game = window.Game || {};
         '<span class="card-corner corner-bl"></span><span class="card-corner corner-br"></span>'
       : '';
     return { tierClass: tierClass, ribbon: ribbon, corners: corners };
+  }
+
+  function renderCandidateCardHtml(o, i, s) {
+    s = s || Core.state || {};
+    var cost = o.star * 80;
+    var can = !!(s.resources && s.resources.gold >= cost);
+    var frame = officerFrame(o);
+    var cls = (can ? 'menu-item ok' : 'menu-item lock') + ' officer-card ' + frame.tierClass + ' academy-candidate-card' + (can ? '' : ' is-locked');
+
+    var mil = Number(o.military) || 0;
+    var def = Number(o.defense) || 0;
+    var log = Number(o.logistics) || 0;
+    var kno = Number(o.knowledge) || 0;
+    var maxVal = Math.max(mil, def, log, kno);
+    var isPeakMil = mil === maxVal && mil > 0;
+    var isPeakDef = def === maxVal && def > 0;
+    var isPeakLog = log === maxVal && log > 0;
+    var isPeakKno = kno === maxVal && kno > 0;
+
+    var skillHtml = '';
+    if (o.skills && o.skills.length) {
+      var skItems = [];
+      for (var si = 0; si < o.skills.length; si++) {
+        var sItem = o.skills[si];
+        if (!sItem) continue;
+        var skObj = sItem.id && D.officerSkills ? D.officerSkills[sItem.id] : null;
+        var skName = (skObj && skObj.name) || sItem.name || sItem.id || '特长';
+        var skLv = sItem.lv ? 'Lv' + sItem.lv : '';
+        skItems.push(skName + (skLv ? ' ' + skLv : ''));
+      }
+      if (skItems.length) {
+        skillHtml = '<span class="candidate-skill-tag" title="技能: ' + G.escapeHtml(skItems.join(', ')) + '">⚡ ' + G.escapeHtml(skItems[0]) + (skItems.length > 1 ? ' +' + (skItems.length - 1) : '') + '</span>';
+      }
+    }
+    if (!skillHtml) {
+      skillHtml = '<span class="candidate-skill-tag is-empty">无特长技能</span>';
+    }
+
+    var recruitTitle = can
+      ? '招募 ' + G.escapeHtml(o.name) + ' (消耗 ' + cost + ' 黄金)'
+      : '黄金不足 (需 ' + cost + ' 黄金)';
+    var cardClickAction = can
+      ? 'Game.Officer.recruit(' + i + ')'
+      : 'event.stopPropagation();Game.toast(\'黄金不足，无法招募\');';
+
+    var recruitBtnHtml = can
+      ? '<button type="button" class="link-act candidate-recruit-btn" onclick="event.stopPropagation();Game.Officer.recruit(' + i + ')" title="' + recruitTitle + '">' +
+          '<span class="btn-recruit-text">招募</span><span class="btn-recruit-cost">🪙' + cost + '</span></button>'
+      : '<button type="button" class="link-act disabled candidate-recruit-btn is-disabled" disabled onclick="event.stopPropagation();Game.toast(\'黄金不足，无法招募\');" title="' + recruitTitle + '">' +
+          '<span class="btn-recruit-text">招募</span><span class="btn-recruit-cost">🪙' + cost + '</span></button>';
+
+    var h = '<div class="' + cls + '" id="academy-candidate-' + i + '" data-officer-index="' + i + '" data-star="' + o.star + '" role="button" tabindex="0" onclick="' + cardClickAction + '" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + cardClickAction + '}" title="' + recruitTitle + '">' + frame.corners;
+    h += '<div class="candidate-header-row">';
+    h += '<div class="candidate-title-group">';
+    h += '<span class="candidate-name n" style="color:' + (D.starColor[o.star] || '#fff') + '">' + G.escapeHtml(o.name) + '</span>';
+    h += '<span class="candidate-stars stars">' + starIcons(o.star) + '</span>';
+    h += '</div>';
+    h += '<div class="candidate-badge-group">';
+    if (frame.ribbon) {
+      h += frame.ribbon;
+    } else {
+      h += '<span class="candidate-star-pill star-' + o.star + '">' + o.star + '星</span>';
+    }
+    h += '</div>';
+    h += '</div>';
+
+    h += '<div class="candidate-stats-grid">';
+    h += '<div class="c-stat-pill pill-mil' + (isPeakMil ? ' is-peak' : '') + '" title="军事: ' + mil + '"><span class="c-stat-lbl">军</span><span class="c-stat-val">' + mil + '</span></div>';
+    h += '<div class="c-stat-pill pill-def' + (isPeakDef ? ' is-peak' : '') + '" title="防御: ' + def + '"><span class="c-stat-lbl">防</span><span class="c-stat-val">' + def + '</span></div>';
+    h += '<div class="c-stat-pill pill-log' + (isPeakLog ? ' is-peak' : '') + '" title="后勤: ' + log + '"><span class="c-stat-lbl">后</span><span class="c-stat-val">' + log + '</span></div>';
+    h += '<div class="c-stat-pill pill-kno' + (isPeakKno ? ' is-peak' : '') + '" title="学识: ' + kno + '"><span class="c-stat-lbl">学</span><span class="c-stat-val">' + kno + '</span></div>';
+    h += '</div>';
+
+    h += '<div class="candidate-footer-row">';
+    h += '<div class="candidate-skills-wrap">' + skillHtml + '</div>';
+    h += '<div class="officer-recruit-act">' + recruitBtnHtml + '</div>';
+    h += '</div>';
+
+    h += '</div>';
+    return h;
   }
 
   function roleText(r) {
@@ -129,7 +222,130 @@ window.Game = window.Game || {};
     return null;
   }
 
+  var AcademyAudio = {
+    ctx: null,
+    getCtx: function () {
+      if (!AcademyAudio.ctx && typeof window !== 'undefined') {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) {
+          try { AcademyAudio.ctx = new AC(); } catch (e) {}
+        }
+      }
+      if (AcademyAudio.ctx && AcademyAudio.ctx.state === 'suspended') {
+        try { AcademyAudio.ctx.resume().catch(function () {}); } catch (e) {}
+      }
+      return AcademyAudio.ctx;
+    },
+    isAudible: function () {
+      if (typeof document !== 'undefined' && document.hidden) return false;
+      if (G.Sound && G.Sound.get) {
+        var s = G.Sound.get();
+        return s.enabled && s.volume > 0;
+      }
+      return true;
+    },
+    getVolume: function () {
+      if (G.Sound && G.Sound.get) {
+        var s = G.Sound.get();
+        return Math.max(0, Math.min(1, s.volume != null ? s.volume : 0.4));
+      }
+      return 0.4;
+    },
+    playStamp: function () {
+      if (!AcademyAudio.isAudible()) return;
+      var ctx = AcademyAudio.getCtx();
+      if (!ctx || ctx.state !== 'running') return;
+      try {
+        var vol = AcademyAudio.getVolume();
+        var now = ctx.currentTime;
+
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.exponentialRampToValueAtTime(42, now + 0.11);
+        gain.gain.setValueAtTime(0.35 * vol, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.12);
+
+        var oscM = ctx.createOscillator();
+        var gainM = ctx.createGain();
+        oscM.type = 'triangle';
+        oscM.frequency.setValueAtTime(320, now);
+        oscM.frequency.exponentialRampToValueAtTime(80, now + 0.06);
+        gainM.gain.setValueAtTime(0.18 * vol, now);
+        gainM.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+        oscM.connect(gainM);
+        gainM.connect(ctx.destination);
+        oscM.start(now);
+        oscM.stop(now + 0.07);
+      } catch (e) {}
+    },
+    playFlip: function () {
+      if (!AcademyAudio.isAudible()) return;
+      var ctx = AcademyAudio.getCtx();
+      if (!ctx || ctx.state !== 'running') return;
+      try {
+        var vol = AcademyAudio.getVolume();
+        var now = ctx.currentTime;
+
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(680, now);
+        osc.frequency.exponentialRampToValueAtTime(380, now + 0.035);
+        gain.gain.setValueAtTime(0.08 * vol, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.035);
+      } catch (e) {}
+    },
+    playFiveStar: function () {
+      if (!AcademyAudio.isAudible()) return;
+      var ctx = AcademyAudio.getCtx();
+      if (!ctx || ctx.state !== 'running') return;
+      try {
+        var vol = AcademyAudio.getVolume();
+        var now = ctx.currentTime;
+
+        var freqs = [523.25, 659.25, 783.99, 1046.50];
+        freqs.forEach(function (f, idx) {
+          var osc = ctx.createOscillator();
+          var gain = ctx.createGain();
+          osc.type = (idx === 3) ? 'sine' : 'triangle';
+          var startTime = now + idx * 0.03;
+          var duration = 0.55 - idx * 0.05;
+          osc.frequency.setValueAtTime(f, startTime);
+          gain.gain.setValueAtTime(0.18 * vol, startTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(startTime);
+          osc.stop(startTime + duration);
+        });
+
+        var shimmer = ctx.createOscillator();
+        var shimmerGain = ctx.createGain();
+        shimmer.type = 'sine';
+        shimmer.frequency.setValueAtTime(1200, now);
+        shimmer.frequency.exponentialRampToValueAtTime(2600, now + 0.28);
+        shimmerGain.gain.setValueAtTime(0.12 * vol, now);
+        shimmerGain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        shimmer.connect(shimmerGain);
+        shimmerGain.connect(ctx.destination);
+        shimmer.start(now);
+        shimmer.stop(now + 0.3);
+      } catch (e) {}
+    }
+  };
+
   var Officer = {
+    Audio: AcademyAudio,
     /** 复用科技页说明弹窗，将招募费用、批次概率和刷新额度集中展示。 */
     showAcademyInfo: function () {
       if (document.getElementById('academyInfoModal')) return;
@@ -174,6 +390,29 @@ window.Game = window.Game || {};
       closeButton.focus();
     },
 
+    _isAcademyRefreshing: false,
+    _fastRefresh: null,
+
+    isFastRefresh: function () {
+      if (Officer._fastRefresh == null) {
+        try {
+          Officer._fastRefresh = (typeof window !== 'undefined' && window.localStorage && window.localStorage.getItem('sf_academy_fast_refresh') === 'true');
+        } catch (e) {
+          Officer._fastRefresh = false;
+        }
+      }
+      return !!Officer._fastRefresh;
+    },
+
+    toggleFastRefresh: function (val) {
+      Officer._fastRefresh = !!val;
+      try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          window.localStorage.setItem('sf_academy_fast_refresh', String(Officer._fastRefresh));
+        }
+      } catch (e) {}
+    },
+
     /** 静默刷新额度与倒计时，不重建候选人列表或打断招募操作。 */
     updateAcademyRefresh: function () {
       var region = document.getElementById('academy-refresh-status');
@@ -206,7 +445,168 @@ window.Game = window.Game || {};
           }, 700);
         }
       }
-      return Officer.refreshAcademy();
+
+      if (Officer.isFastRefresh() || typeof document === 'undefined' || !document.getElementById('academy-candidates-region')) {
+        return Officer.refreshAcademy();
+      }
+      return Officer.refreshAcademyWithAnimation();
+    },
+
+    clearAcademyAnimTimers: function () {
+      for (var i = 0; i < academyAnimTimers.length; i++) {
+        clearTimeout(academyAnimTimers[i]);
+      }
+      academyAnimTimers = [];
+    },
+
+    skipAcademyAnim: function () {
+      if (!Officer._isAcademyRefreshing) return;
+      Officer.clearAcademyAnimTimers();
+      Officer.finishAcademyAnim();
+    },
+
+    finishAcademyAnim: function () {
+      Officer.clearAcademyAnimTimers();
+      Officer._isAcademyRefreshing = false;
+      G.toast('军校已刷新');
+      if (G.MainQuest && G.MainQuest.refresh) G.MainQuest.refresh();
+      Core.render();
+    },
+
+    refreshAcademyWithAnimation: function () {
+      if (Officer._isAcademyRefreshing) return;
+      var region = document.getElementById('academy-candidates-region');
+      if (!region) {
+        return Officer.refreshAcademy();
+      }
+
+      Officer._isAcademyRefreshing = true;
+      Officer.clearAcademyAnimTimers();
+      Officer.updateAcademyRefresh();
+
+      // 第一阶段：展示机密档案袋与雷达扫描
+      var dossierHtml = '<div class="academy-dispatch-dossier" onclick="Game.Officer.skipAcademyAnim()" role="button" tabindex="0" title="点击任意处跳过动画">' +
+        '<div class="dossier-skip-tip">点击跳过 ⏩</div>' +
+        '<div class="dossier-folder">' +
+          '<div class="dossier-header">' +
+            '<span class="dossier-badge">WAR DEPARTMENT · 机密调令</span>' +
+            '<span class="dossier-code">NO.AC-2026</span>' +
+          '</div>' +
+          '<div class="dossier-crest">🎖️</div>' +
+          '<div class="dossier-title">战区将校晋升调遣指令</div>' +
+          '<div class="dossier-typing-text" id="academyDossierTyping">正在联络各战区司令部...</div>' +
+          '<div class="dossier-scan-radar"><div class="radar-sweep"></div></div>' +
+        '</div>' +
+        '<div class="dossier-seal-wrap">' +
+          '<div class="dossier-seal-stamp">' +
+            '<div class="seal-inner">' +
+              '<span class="seal-star">★ ★ ★</span>' +
+              '<span class="seal-text">批准调派</span>' +
+              '<span class="seal-sub">TOP SECRET</span>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+      region.innerHTML = dossierHtml;
+
+      var textTimer = setTimeout(function () {
+        var typingElem = document.getElementById('academyDossierTyping');
+        if (typingElem) typingElem.innerHTML = '调阅将校考评档案与战功...';
+      }, 300);
+      academyAnimTimers.push(textTimer);
+
+      var stampTimer = setTimeout(function () {
+        AcademyAudio.playStamp();
+      }, 350);
+      academyAnimTimers.push(stampTimer);
+
+      var minDelayPromise = new Promise(function (resolve) {
+        var t = setTimeout(resolve, 600);
+        academyAnimTimers.push(t);
+      });
+
+      var apiPromise = G.API.refreshAcademy();
+
+      return Promise.all([apiPromise, minDelayPromise]).then(function (results) {
+        var resp = results[0];
+        if (!resp || resp.success === false) {
+          Officer._isAcademyRefreshing = false;
+          Officer.clearAcademyAnimTimers();
+          G.toast((resp && resp.message) || '刷新失败');
+          Core.render();
+          return;
+        }
+
+        var s = Core.state;
+        var list = (s && s.academy && s.academy.list) || [];
+        if (!list.length) {
+          Officer.finishAcademyAnim();
+          return;
+        }
+
+        var flipGridHtml = '<div class="zone-head">候选人名单 (点击卡片直接招募)</div>';
+        flipGridHtml += '<div class="academy-candidates-grid menu academy-anim-cards-grid" id="academyAnimCardsGrid" onclick="Game.Officer.skipAcademyAnim()" title="点击跳过动画">';
+
+        list.forEach(function (o, i) {
+          var isFiveStar = Number(o.star) === 5;
+          var cardFrontHtml = renderCandidateCardHtml(o, i, s);
+          flipGridHtml += '<div class="academy-anim-card-wrap' + (isFiveStar ? ' has-five-star' : '') + '" id="academy-anim-wrap-' + i + '">' +
+            '<div class="card-flip-inner">' +
+              '<div class="card-face-back">' +
+                '<div class="card-back-crest">🎖️</div>' +
+                '<div class="card-back-label">军校调令</div>' +
+                '<div class="card-back-stars">★★★★★</div>' +
+              '</div>' +
+              '<div class="card-face-front">' +
+                cardFrontHtml +
+                (isFiveStar ? '<div class="star5-burst-glow"></div>' : '') +
+              '</div>' +
+            '</div>' +
+          '</div>';
+        });
+
+        flipGridHtml += '</div>';
+        region.innerHTML = flipGridHtml;
+
+        var currentDelay = 40;
+        var flipStep = 45;
+
+        for (var idx = 0; idx < list.length; idx++) {
+          (function (cardIdx, delayTime) {
+            var t = setTimeout(function () {
+              var wrap = document.getElementById('academy-anim-wrap-' + cardIdx);
+              if (wrap) {
+                wrap.classList.add('is-flipped');
+                if (list[cardIdx] && Number(list[cardIdx].star) === 5) {
+                  wrap.classList.add('is-star5-spotlight');
+                  AcademyAudio.playFiveStar();
+                } else {
+                  AcademyAudio.playFlip();
+                }
+              }
+            }, delayTime);
+            academyAnimTimers.push(t);
+          })(idx, currentDelay);
+
+          currentDelay += flipStep;
+          if (Number(list[idx].star) === 5) {
+            currentDelay += 200; // 5星名将悬停特写0.2s
+          }
+        }
+
+        var finishDelay = currentDelay + 250;
+        var endTimer = setTimeout(function () {
+          Officer.finishAcademyAnim();
+        }, finishDelay);
+        academyAnimTimers.push(endTimer);
+
+      }).catch(function (err) {
+        Officer._isAcademyRefreshing = false;
+        Officer.clearAcademyAnimTimers();
+        G.toast(err.message || '刷新失败');
+        Core.render();
+      });
     },
 
     refreshAcademy: function () {
@@ -1036,90 +1436,18 @@ window.Game = window.Game || {};
       } else {
         h += '<div id="academy-refresh-status">' + academyRefreshHtml(s.academy) + '</div>';
 
+        h += '<div id="academy-candidates-region">';
         if (!s.academy.list || !s.academy.list.length) {
           h += '<div class="desc">军校暂无候选人,请刷新。</div>';
         } else {
           h += '<div class="zone-head">候选人名单 (点击卡片直接招募)</div>';
           h += '<div class="academy-candidates-grid menu">';
           s.academy.list.forEach(function (o, i) {
-            var cost = o.star * 80;
-            var can = s.resources.gold >= cost;
-            var frame = officerFrame(o);
-            var cls = (can ? 'menu-item ok' : 'menu-item lock') + ' officer-card ' + frame.tierClass + ' academy-candidate-card' + (can ? '' : ' is-locked');
-
-            var mil = Number(o.military) || 0;
-            var def = Number(o.defense) || 0;
-            var log = Number(o.logistics) || 0;
-            var kno = Number(o.knowledge) || 0;
-            var maxVal = Math.max(mil, def, log, kno);
-            var isPeakMil = mil === maxVal && mil > 0;
-            var isPeakDef = def === maxVal && def > 0;
-            var isPeakLog = log === maxVal && log > 0;
-            var isPeakKno = kno === maxVal && kno > 0;
-
-            var skillHtml = '';
-            if (o.skills && o.skills.length) {
-              var skItems = [];
-              for (var si = 0; si < o.skills.length; si++) {
-                var sItem = o.skills[si];
-                if (!sItem) continue;
-                var skObj = sItem.id && D.officerSkills ? D.officerSkills[sItem.id] : null;
-                var skName = (skObj && skObj.name) || sItem.name || sItem.id || '特长';
-                var skLv = sItem.lv ? 'Lv' + sItem.lv : '';
-                skItems.push(skName + (skLv ? ' ' + skLv : ''));
-              }
-              if (skItems.length) {
-                skillHtml = '<span class="candidate-skill-tag" title="技能: ' + G.escapeHtml(skItems.join(', ')) + '">⚡ ' + G.escapeHtml(skItems[0]) + (skItems.length > 1 ? ' +' + (skItems.length - 1) : '') + '</span>';
-              }
-            }
-            if (!skillHtml) {
-              skillHtml = '<span class="candidate-skill-tag is-empty">无特长技能</span>';
-            }
-
-            var recruitTitle = can
-              ? '招募 ' + G.escapeHtml(o.name) + ' (消耗 ' + cost + ' 黄金)'
-              : '黄金不足 (需 ' + cost + ' 黄金)';
-            var cardClickAction = can
-              ? 'Game.Officer.recruit(' + i + ')'
-              : 'event.stopPropagation();Game.toast(\'黄金不足，无法招募\');';
-
-            var recruitBtnHtml = can
-              ? '<button type="button" class="link-act candidate-recruit-btn" onclick="event.stopPropagation();Game.Officer.recruit(' + i + ')" title="' + recruitTitle + '">' +
-                  '<span class="btn-recruit-text">招募</span><span class="btn-recruit-cost">🪙' + cost + '</span></button>'
-              : '<button type="button" class="link-act disabled candidate-recruit-btn is-disabled" disabled onclick="event.stopPropagation();Game.toast(\'黄金不足，无法招募\');" title="' + recruitTitle + '">' +
-                  '<span class="btn-recruit-text">招募</span><span class="btn-recruit-cost">🪙' + cost + '</span></button>';
-
-            h += '<div class="' + cls + '" id="academy-candidate-' + i + '" data-officer-index="' + i + '" data-star="' + o.star + '" role="button" tabindex="0" onclick="' + cardClickAction + '" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + cardClickAction + '}" title="' + recruitTitle + '">' + frame.corners;
-            h += '<div class="candidate-header-row">';
-            h += '<div class="candidate-title-group">';
-            h += '<span class="candidate-name n" style="color:' + (D.starColor[o.star] || '#fff') + '">' + G.escapeHtml(o.name) + '</span>';
-            h += '<span class="candidate-stars stars">' + starIcons(o.star) + '</span>';
-            h += '</div>';
-            h += '<div class="candidate-badge-group">';
-            if (frame.ribbon) {
-              h += frame.ribbon;
-            } else {
-              h += '<span class="candidate-star-pill star-' + o.star + '">' + o.star + '星</span>';
-            }
-            h += '</div>';
-            h += '</div>';
-
-            h += '<div class="candidate-stats-grid">';
-            h += '<div class="c-stat-pill pill-mil' + (isPeakMil ? ' is-peak' : '') + '" title="军事: ' + mil + '"><span class="c-stat-lbl">军</span><span class="c-stat-val">' + mil + '</span></div>';
-            h += '<div class="c-stat-pill pill-def' + (isPeakDef ? ' is-peak' : '') + '" title="防御: ' + def + '"><span class="c-stat-lbl">防</span><span class="c-stat-val">' + def + '</span></div>';
-            h += '<div class="c-stat-pill pill-log' + (isPeakLog ? ' is-peak' : '') + '" title="后勤: ' + log + '"><span class="c-stat-lbl">后</span><span class="c-stat-val">' + log + '</span></div>';
-            h += '<div class="c-stat-pill pill-kno' + (isPeakKno ? ' is-peak' : '') + '" title="学识: ' + kno + '"><span class="c-stat-lbl">学</span><span class="c-stat-val">' + kno + '</span></div>';
-            h += '</div>';
-
-            h += '<div class="candidate-footer-row">';
-            h += '<div class="candidate-skills-wrap">' + skillHtml + '</div>';
-            h += '<div class="officer-recruit-act">' + recruitBtnHtml + '</div>';
-            h += '</div>';
-
-            h += '</div>';
+            h += renderCandidateCardHtml(o, i, s);
           });
           h += '</div>';
         }
+        h += '</div>';
       }
 
       h += '<div class="menu-item back" onclick="Game.go(\'buildArmy\')">[0] 返回军工</div>';

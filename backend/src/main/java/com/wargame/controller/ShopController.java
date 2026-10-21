@@ -272,6 +272,8 @@ public class ShopController {
             Map.entry("teleportNormal", 100),
             Map.entry("teleportAdvanced", 500),
             Map.entry("marchOrd", 100),
+            Map.entry("signalJammingOrder", 150),
+            Map.entry("feintOrder", 250),
             Map.entry("populationOrder", 100),
             Map.entry("emergencyPopulationOrder", 100),
             // 礼包
@@ -355,6 +357,8 @@ public class ShopController {
             Map.entry("teleportNormal", "普通传送"),
             Map.entry("teleportAdvanced", "高级传送"),
             Map.entry("marchOrd", "行军令"),
+            Map.entry("signalJammingOrder", "通讯干扰令"),
+            Map.entry("feintOrder", "佯动诱敌令"),
             Map.entry("populationOrder", "人口动员令"),
             Map.entry("emergencyPopulationOrder", "紧急人口动员令"),
             Map.entry("newbiePack", "新手礼包")

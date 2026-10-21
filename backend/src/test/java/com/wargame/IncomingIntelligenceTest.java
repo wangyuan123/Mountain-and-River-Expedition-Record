@@ -4,6 +4,7 @@ import com.wargame.model.dto.DispatchRequest;
 import com.wargame.model.entity.March;
 import com.wargame.model.entity.Player;
 import com.wargame.model.entity.PlayerCity;
+import com.wargame.model.entity.Officer;
 import com.wargame.service.WebSocketPushService;
 import com.wargame.service.WorldViewService;
 import com.wargame.util.JsonUtil;
@@ -53,6 +54,124 @@ class IncomingIntelligenceTest extends BaseServiceTest {
     private March dispatch() {
         return marchService.createDispatch(attacker.getId(), new DispatchRequest(
                 "player", city.getId(), "plunder", Map.of("infantry", 10), null, Map.of()));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 5, 10})
+    void fieldInterceptionShowsOnlyRoughIntelRegardlessOfHomeRadar(int radar) {
+        createTechnology(attacker.getId(), "recon_radar", radar);
+        defender.setDisplayName("前线统帅");
+        playerRepository.save(defender);
+        createBuilding(defender.getId(), "headquarters", 1);
+        Officer commander = createOfficer(defender.getId(), "march", 80, 70, 60);
+        commander.setName("截击将领");
+        commander.setStar(3);
+        commander.setLevel(8);
+        officerRepository.save(commander);
+        Officer chief = createOfficer(defender.getId(), "commander_in_chief", 90, 85, 80);
+        chief.setName("截击统帅");
+        officerRepository.save(chief);
+        March outbound = fieldTarget();
+        March interceptor = fieldInterceptor(outbound, Map.of("fighter", 123, "armored", 2));
+        interceptor.setCommanderId(commander.getId());
+        interceptor.setInterceptDeployAt(System.currentTimeMillis() + 1_000L);
+        interceptor.setInterceptReadyAt(System.currentTimeMillis() + 6_000L);
+        interceptor.setInterceptEnemyProgress(0.5);
+        interceptor.setInterceptRouteSnapshot("private-route");
+        marchRepository.saveAndFlush(interceptor);
+
+        var incoming = views.getIncoming(attacker);
+        assertEquals(1, incoming.size());
+        var data = incoming.get(0);
+        assertEquals("interception-" + interceptor.getId(), data.get("id"));
+        assertEquals("field_interception", data.get("intelligenceType"));
+        assertEquals(outbound.getId(), data.get("interceptedMarchId"));
+        assertEquals("defender", data.get("fromName"));
+        assertEquals("前线统帅", data.get("sourceCommanderName"));
+        assertEquals(100, data.get("fromX"));
+        assertEquals(50, data.get("targetX"));
+        assertEquals(interceptor.getArriveAt(), data.get("arriveAt"));
+        assertEquals(List.of("armored", "fighter"), data.get("unitTypes"));
+        assertEquals("101—500", data.get("strengthBand"));
+        assertEquals("截击将领", data.get("commander"));
+        assertEquals(3, data.get("commanderStar"));
+        assertEquals(8, data.get("commanderLevel"));
+        assertEquals("截击统帅", data.get("commandChief"));
+        for (String key : List.of("army", "totalTroops", "combatTech", "unitEquipment", "commanderAttributes", "skills", "commandBonus", "radarLevel", "deployAt", "readyAt", "interceptionOpening", "interceptionPhase", "ambushUsed", "interceptEnemyProgress", "interceptRouteSnapshot")) {
+            assertFalse(data.containsKey(key), key);
+        }
+        assertFalse(JsonUtil.toJson(data).contains("military"));
+        assertEquals(incoming.size(), ((List<?>) views.getWorld(attacker.getId(), 0, 0, 1).get("incoming")).size(),
+                "野外急报不受当前地图视野限制");
+
+        interceptor.setArmy(JsonUtil.toJson(Map.of("fighter", 499)));
+        marchRepository.saveAndFlush(interceptor);
+        assertEquals("101—500", views.getIncoming(attacker).get(0).get("strengthBand"),
+                "同档兵力不能通过情报推断精确数量");
+    }
+
+    @Test
+    void fieldInterceptionDispatchPushAndRecallUseTheSameSafeProjection() {
+        March outbound = fieldTarget();
+        createArmyUnit(defender.getId(), "fighter", 5);
+        March interceptor = marchService.createDispatch(defender.getId(), new DispatchRequest(
+                "incoming_march", outbound.getId(), "intercept_scout", Map.of("fighter", 2), null, null));
+        verify(pushes).pushIncomingAttack(eq(attacker.getId()), argThat(data ->
+                "started".equals(data.get("event")) && "field_interception".equals(data.get("intelligenceType"))
+                        && outbound.getId().equals(data.get("interceptedMarchId"))
+                        && "1—100".equals(data.get("strengthBand")) && !data.containsKey("army")
+                        && !data.containsKey("totalTroops") && !data.containsKey("commandBonus")));
+        assertEquals(1, views.getIncoming(attacker).size());
+
+        marchService.cancelMarch(defender.getId(), interceptor.getId());
+        assertTrue(views.getIncoming(attacker).isEmpty());
+        verify(pushes).pushIncomingAttack(eq(attacker.getId()), argThat(data ->
+                "cancelled".equals(data.get("event")) && ("interception-" + interceptor.getId()).equals(data.get("id"))));
+    }
+
+    @Test
+    void destroyedTargetReceivesIntelRemovalAndBothBattleReports() {
+        March outbound = fieldTarget();
+        March interceptor = fieldInterceptor(outbound, Map.of("fighter", 100));
+        long now = System.currentTimeMillis();
+        interceptor.setArriveAt(now);
+        marchRepository.saveAndFlush(interceptor);
+
+        marchService.processMarches(defender.getId(), now);
+
+        assertTrue(marchRepository.findById(outbound.getId()).isEmpty());
+        assertTrue(views.getIncoming(attacker).isEmpty());
+        verify(pushes).pushIncomingAttack(eq(attacker.getId()), argThat(data ->
+                "resolved".equals(data.get("event")) && "field_interception".equals(data.get("intelligenceType"))));
+        assertEquals(1, scoutReportRepository.findByPlayerId(attacker.getId()).size());
+        assertEquals(1, scoutReportRepository.findByPlayerId(defender.getId()).size());
+    }
+
+    @Test
+    void fieldIntelExcludesWithdrawnTargetsAndLegacyIncomingIds() {
+        March outbound = fieldTarget();
+        March interceptor = fieldInterceptor(outbound, Map.of("fighter", 2));
+        interceptor.setTargetKind("incoming_scout");
+        marchRepository.saveAndFlush(interceptor);
+        assertTrue(views.getIncoming(attacker).isEmpty());
+        interceptor.setTargetKind("incoming_march");
+        marchRepository.saveAndFlush(interceptor);
+        assertEquals(1, views.getIncoming(attacker).size());
+        outbound.setReturning(true);
+        marchRepository.saveAndFlush(outbound);
+        assertTrue(views.getIncoming(attacker).isEmpty());
+    }
+
+    private March fieldTarget() {
+        long now = System.currentTimeMillis();
+        return createMarch(attacker.getId(), "player", String.valueOf(city.getId()), city.getName(),
+                0, 0, 100, 100, Map.of("scout", 1), "scout", now - 10_000L, now + 120_000L, false, false);
+    }
+
+    private March fieldInterceptor(March outbound, Map<String, Integer> army) {
+        long now = System.currentTimeMillis();
+        return createMarch(defender.getId(), "incoming_march", String.valueOf(outbound.getId()), "城外截击",
+                100, 100, 50, 50, army, "intercept_scout", now - 5_000L, now + 60_000L, false, false);
     }
 
     @ParameterizedTest

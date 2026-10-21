@@ -113,10 +113,7 @@ public class WorldController {
             throw new IllegalArgumentException("行军ID不能为空");
         }
         Long playerId = authService.getCurrentPlayer().getId();
-        marchService.cancelMarch(playerId, request.marchId());
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("success", true);
-        result.put("message", "部队已撤回，正在返城");
+        Map<String, Object> result = marchService.cancelMarch(playerId, request.marchId());
         result.put("state", gameStateService.getGameState(playerId));
         return ResponseEntity.ok(result);
     }
@@ -126,6 +123,14 @@ public class WorldController {
     public Map<String, Object> speedUpMarch(@RequestBody GameDtos.SpeedUpMarchRequest request) {
         Long playerId = authService.getCurrentPlayer().getId();
         Map<String, Object> result = marchService.speedUpMarch(playerId, request.marchId(), request.returning(), request.version());
+        result.put("state", gameStateService.getGameState(playerId));
+        return result;
+    }
+
+    @PostMapping("/march-stratagem")
+    public Map<String, Object> applyMarchStratagem(@RequestBody GameDtos.MarchStratagemRequest request) {
+        Long playerId = authService.getCurrentPlayer().getId();
+        Map<String, Object> result = marchService.applyMarchStratagem(playerId, request.marchId(), request.itemKey(), request.expectedArriveAt());
         result.put("state", gameStateService.getGameState(playerId));
         return result;
     }
