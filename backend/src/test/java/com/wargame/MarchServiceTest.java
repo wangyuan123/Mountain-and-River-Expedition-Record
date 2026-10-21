@@ -1537,7 +1537,7 @@ class MarchServiceTest extends BaseServiceTest {
     @CsvSource({"5000, 7000", "7000, 5000"})
     @DisplayName("侦查交火后双方幸存时战平，并按侦查科技展示情报")
     void testScoutDrawStillRevealsIntelligence(int attackingScouts, int defendingScouts) {
-        createTechnology(playerId, "recon_level", 2);
+        createTechnology(playerId, "recon_level", 3);
         Long defenderId = createTestPlayer("scout_draw_defender_" + attackingScouts, 30).getId();
         PlayerCity city = createTestCity("侦查战平城", defenderId, 27, 27);
         city.setArmy(JsonUtil.toJson(Map.of("scout", defendingScouts, "infantry", 100)));
@@ -1565,7 +1565,7 @@ class MarchServiceTest extends BaseServiceTest {
     }
 
     @Test
-    @DisplayName("分层侦查阶梯: 侦查科技 Lv.2 时解锁外围城防、精确守军与统帅")
+    @DisplayName("分层侦查阶梯: 侦查科技 Lv.2 时解锁外围城防、城墙等级与模糊守军")
     void testScoutReportAtReconLevel2() {
         createTechnology(playerId, "recon_level", 2);
 
@@ -1595,18 +1595,20 @@ class MarchServiceTest extends BaseServiceTest {
         Map<String, Object> data = JsonUtil.parseObjMap(reports.get(0).getData());
 
         assertEquals(2, data.get("reconLevel"));
-        assertEquals("战术全貌", data.get("tierName"));
+        assertEquals("工事详探", data.get("tierName"));
         assertNotNull(data.get("resources"));
         assertNotNull(data.get("forts"), "Lv.2应解锁城防设施");
-        assertNotNull(data.get("army"), "Lv.2应解锁精确守军");
-        assertNotNull(data.get("commander"), "Lv.2应解锁统帅");
+        assertNotNull(data.get("wallLevel"), "Lv.2应解锁城墙等级");
+        assertNotNull(data.get("armyVague"), "Lv.2应展示模糊守军");
+        assertNull(data.get("army"), "Lv.2不应解锁精确守军");
+        assertNull(data.get("commander"), "Lv.2不应解锁统帅");
         assertNull(data.get("buildings"), "Lv.2不应解锁建筑");
         assertNull(data.get("techs"), "Lv.2不应解锁科技");
         assertNull(data.get("officers"), "Lv.2不应解锁军官明细列表");
     }
 
     @Test
-    @DisplayName("分层侦查阶梯: 侦查科技 Lv.5 时解锁全维绝密情报（建筑、科技、可掠夺、将领档案、战力评分）")
+    @DisplayName("分层侦查阶梯: 侦查科技 Lv.5 时解锁工业设施与守军、统帅")
     void testScoutReportAtReconLevel5() {
         createTechnology(playerId, "recon_level", 5);
 
@@ -1636,17 +1638,17 @@ class MarchServiceTest extends BaseServiceTest {
         Map<String, Object> data = JsonUtil.parseObjMap(reports.get(0).getData());
 
         assertEquals(5, data.get("reconLevel"));
-        assertEquals("全维绝密", data.get("tierName"));
+        assertEquals("工业设施", data.get("tierName"));
         assertNotNull(data.get("resources"));
         assertNotNull(data.get("forts"));
         assertNotNull(data.get("army"));
         assertNotNull(data.get("commander"));
         assertNotNull(data.get("buildings"), "Lv.5应包含建筑等级");
-        assertNotNull(data.get("techs"), "Lv.5应包含科技等级");
-        assertNotNull(data.get("plunderable"), "Lv.5应包含可掠夺资源");
-        assertNotNull(data.get("officers"), "Lv.5应包含将领全维档案");
-        assertNotNull(data.get("defensePower"), "Lv.5应包含防守战力评分");
-        assertNotNull(data.get("threatLevel"), "Lv.5应包含威胁评估等级");
+        assertNull(data.get("techs"), "Lv.5不应包含科技等级");
+        assertNull(data.get("plunderable"), "Lv.5不应包含可掠夺资源");
+        assertNull(data.get("officers"), "Lv.5不应包含将领全维档案");
+        assertNull(data.get("defensePower"), "Lv.5不应包含防守战力评分");
+        assertNull(data.get("threatLevel"), "Lv.5不应包含威胁评估等级");
     }
 
     @Test
@@ -1680,13 +1682,13 @@ class MarchServiceTest extends BaseServiceTest {
         assertEquals(4, data.get("reconLevel"), "我方侦查科技应为4");
         assertFalse(data.containsKey("defenderStealth"));
         assertFalse(data.containsKey("effectiveReconLevel"));
-        assertEquals("电磁与科研", data.get("tierName"));
+        assertEquals("守将识别", data.get("tierName"));
         assertNotNull(data.get("forts"));
         assertNotNull(data.get("army"));
-        assertNotNull(data.get("buildings"), "Lv.4应显示建筑");
-        assertNotNull(data.get("techs"), "Lv.4应显示科技");
-        assertFalse(((Map<?, ?>) data.get("techs")).containsKey("recon_stealth"));
-        assertNotNull(data.get("plunderable"));
+        assertNotNull(data.get("commander"), "Lv.4应显示守将");
+        assertNull(data.get("buildings"), "Lv.4不应显示建筑");
+        assertNull(data.get("techs"), "Lv.4不应显示科技");
+        assertNull(data.get("plunderable"), "Lv.4不应显示可掠夺资源");
         assertTrue((Boolean) data.get("showCityInfo"));
     }
 

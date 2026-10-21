@@ -47,7 +47,7 @@ class DeclareWarMailTest extends BaseServiceTest {
         // 验证攻击者（宣战发起方）收到的系统邮件
         List<Map<String, Object>> attackerMails = mailService.listSystem(attacker.getId());
         assertEquals(1, attackerMails.size(), "发起方应收到1封系统宣战邮件");
-        Map<String, Object> attackerMail = attackerMails.get(0);
+        Map<String, Object> attackerMail = mailService.detail(attacker.getId(), (Long) attackerMails.get(0).get("id"));
         assertEquals("系统", attackerMail.get("from"));
         assertEquals("combat", attackerMail.get("type"));
         String attackerSubj = (String) attackerMail.get("subject");
@@ -61,7 +61,7 @@ class DeclareWarMailTest extends BaseServiceTest {
         // 验证防守方（被宣战方）收到的系统邮件
         List<Map<String, Object>> defenderMails = mailService.listSystem(defender.getId());
         assertEquals(1, defenderMails.size(), "防守方应收到1封系统警报邮件");
-        Map<String, Object> defenderMail = defenderMails.get(0);
+        Map<String, Object> defenderMail = mailService.detail(defender.getId(), (Long) defenderMails.get(0).get("id"));
         assertEquals("系统", defenderMail.get("from"));
         assertEquals("combat", defenderMail.get("type"));
         String defenderSubj = (String) defenderMail.get("subject");

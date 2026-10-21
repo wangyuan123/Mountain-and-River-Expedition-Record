@@ -15,7 +15,7 @@ class ShipyardPvpCompatibilityTest {
         assertEquals("shipyard", UnitDef.UNITS.get("destroyer").build());
         assertEquals("airport", UnitDef.UNITS.get("scout").build());
         // 生产设施元数据仍归一化；机动与场景距离改变战斗契约，校准版本随之更新。
-        assertEquals("pvp-v1-0c2a50c520a6b51e91ad27fb", PvpSnapshotService.RULES);
+        assertEquals("pvp-v1-7d0aa90b2879baa174c11814", PvpSnapshotService.RULES);
         try (var stream = getClass().getResourceAsStream("/game/pvp-power-calibration-v1.json")) {
             assertNotNull(stream);
             for (JsonNode row : new ObjectMapper().readTree(stream)) {

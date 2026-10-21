@@ -55,6 +55,7 @@ class ComplianceBoundaryTest {
 
     @Test void revokedWebSocketStopsPayloadsAndClosesWithGameCode() throws Exception {
         Fixture f = new Fixture(); f.handler.afterConnectionEstablished(f.session);
+        clearInvocations(f.session);
         doThrow(new GameAccessException("PLAY_WINDOW_CLOSED", "休息时间")).when(f.protection).requireAccess(f.player, "session", "/ws/game");
         f.handler.sendToPlayer(7L, "{\"type\":\"tick\"}");
         verify(f.session, never()).sendMessage(any());

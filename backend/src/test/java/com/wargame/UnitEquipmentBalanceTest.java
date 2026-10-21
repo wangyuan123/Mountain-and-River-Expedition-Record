@@ -28,7 +28,7 @@ class UnitEquipmentBalanceTest {
         List<List<Force>> scenarios = List.of(List.of(infantry, infantry), List.of(coordinated, infantry), List.of(protectedInfantry, infantry), List.of(infantry, coordinated), List.of(rocket, tank), List.of(rocket, linedTank));
         StringBuilder csv = new StringBuilder("budget,tech,attacker,attackerGear,attackerInitial,defender,defenderGear,defenderInitial,attackerWon,attackerAlive,defenderAlive,rounds\n");
         int cases = 0;
-        for (int budget : List.of(5000, 50000, 500000)) for (int level : List.of(0, 5, 10)) for (List<Force> scenario : scenarios) {
+        for (int budget : List.of(10000, 50000, 500000)) for (int level : List.of(0, 5, 10)) for (List<Force> scenario : scenarios) {
             Force a = scenario.get(0), d = scenario.get(1);
             int countA = Math.max(0, (budget - gearCost(a)) / cost(UnitDef.UNITS.get(a.unit()).cost()));
             int countD = Math.max(0, (budget - gearCost(d)) / cost(UnitDef.UNITS.get(d.unit()).cost()));

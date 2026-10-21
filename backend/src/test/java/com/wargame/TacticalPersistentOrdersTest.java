@@ -107,12 +107,12 @@ class TacticalPersistentOrdersTest extends BaseServiceTest {
         assertEquals(BattleService.CommandAction.RETREAT, order(attackView, "infantry").action());
         Map<String, Object> defendView = marchService.getTacticalBattle(defenderId, march.getId());
         assertEquals(BattleService.CommandAction.HOLD, order(defendView, "infantry").action());
-        assertEquals(3500, position(defendView, "infantry"));
+        assertEquals(1500, position(defendView, "infantry"));
 
         session = battles.findByMarchId(march.getId()).orElseThrow();
         marchService.processTimedOutTacticalBattle(session.getId(), session.getRoundDeadlineAt());
         assertTrue(position(marchService.getTacticalBattle(attackerId, march.getId()), "infantry") < previous);
-        assertEquals(3500, position(marchService.getTacticalBattle(defenderId, march.getId()), "infantry"));
+        assertEquals(1500, position(marchService.getTacticalBattle(defenderId, march.getId()), "infantry"));
     }
 
     @Test

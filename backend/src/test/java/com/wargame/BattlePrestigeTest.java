@@ -13,12 +13,12 @@ class BattlePrestigeTest {
     @Test
     void unitValuesFollowWeightedProductionCosts() {
         assertEquals(1, BattlePrestige.unitValue("infantry"));
-        assertEquals(5, BattlePrestige.unitValue("ltank"));
-        assertEquals(12, BattlePrestige.unitValue("rocket"));
-        assertEquals(9, BattlePrestige.unitValue("htank"));
+        assertEquals(7, BattlePrestige.unitValue("ltank"));
+        assertEquals(20, BattlePrestige.unitValue("rocket"));
+        assertEquals(12, BattlePrestige.unitValue("htank"));
         assertEquals(11, BattlePrestige.unitValue("destroyer"));
-        assertEquals(30, BattlePrestige.unitValue("battleship"));
-        assertEquals(38, BattlePrestige.unitValue("carrier"));
+        assertEquals(386, BattlePrestige.unitValue("battleship"));
+        assertEquals(772, BattlePrestige.unitValue("carrier"));
         assertEquals(0, BattlePrestige.unitValue("bunker"));
     }
 
@@ -28,8 +28,8 @@ class BattlePrestigeTest {
                 Map.of("infantry", 10, "rocket", 1), Map.of(),
                 Map.of("infantry", 20, "bunker", 5), Map.of("bunker", 5));
 
-        // 守方损失步兵 20 点；攻方损失步兵 10 点和反坦克火箭车 12 点，净声望为 -2。
-        assertEquals(-2, attackerChange);
+        // 守方损失步兵 20 点；攻方损失步兵 10 点和反坦克火箭车 20 点，净声望为 -10。
+        assertEquals(-10, attackerChange);
         assertEquals(-attackerChange, BattlePrestige.attackerNetChange(
                 Map.of("infantry", 20, "bunker", 5), Map.of("bunker", 5),
                 Map.of("infantry", 10, "rocket", 1), Map.of()));

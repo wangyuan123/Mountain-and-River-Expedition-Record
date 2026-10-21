@@ -104,9 +104,9 @@ public class AdminSystemTest extends BaseServiceTest {
         List<Map<String, Object>> bots = adminSpawnerService.spawnMockBots(2, "TestBot", 3, "admin", null);
         assertEquals(2, bots.size());
 
-        assertEquals("NPC城市/要塞已取消", assertThrows(IllegalArgumentException.class,
-                () -> adminSpawnerService.spawnNpcCities(2, 3, 5, "admin", null)).getMessage());
-        assertEquals(0, npcCityRepository.count());
+        List<Map<String, Object>> npcCities = adminSpawnerService.spawnNpcCities(2, 3, 5, "admin", null);
+        assertEquals(2, npcCities.size());
+        assertTrue(banditRepository.count() >= 2);
 
         assertTrue(logRepository.count() > 0, "应有操作审计日志产生");
     }

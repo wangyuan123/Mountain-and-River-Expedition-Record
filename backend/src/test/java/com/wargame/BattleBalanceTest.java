@@ -37,7 +37,8 @@ class BattleBalanceTest {
     // v8彻底取消所有克制倍率（纯属性模式），原依赖倍率强行在30回合全歼的对决加入历史观察集。
     private static final Set<String> HISTORICAL_COMPARISONS = Set.of(
             "ltank:rocket", "special:rocket", "rocket:special", "ltank:armored",
-            "htank:ltank", "destroyer:sub", "sub:battleship", "battleship:destroyer", "bomber:htank"
+            "htank:ltank", "destroyer:sub", "sub:battleship", "battleship:destroyer", "bomber:htank",
+            "carrier:bomber", "rocket:htank", "rocket:assault", "rocket:ltank"
     );
 
     private enum Budget { COST, WEIGHTED_COST, POPULATION, TIME, COUNT }

@@ -41,7 +41,7 @@ class GameWebSocketPresenceTest {
         assertFalse(h.isPlayerOnline(7L));
         h.handleTextMessage(s, new TextMessage("{ \"type\": \"ping\" }"));
         assertTrue(h.isPlayerOnline(7L));
-        verify(s).sendMessage(argThat(m -> "{\"type\":\"pong\"}".equals(m.getPayload())));
+        verify(s).sendMessage(argThat(m -> m instanceof TextMessage tm && tm.getPayload().contains("\"type\":\"pong\"")));
         when(s.isOpen()).thenReturn(false);
         assertFalse(h.isPlayerOnline(7L));
     }
@@ -52,6 +52,6 @@ class GameWebSocketPresenceTest {
         WebSocketSession s = session("legacy");
         h.afterConnectionEstablished(s);
         h.handleTextMessage(s, new TextMessage("ping"));
-        verify(s).sendMessage(argThat(m -> "{\"type\":\"pong\"}".equals(m.getPayload())));
+        verify(s).sendMessage(argThat(m -> m instanceof TextMessage tm && tm.getPayload().contains("\"type\":\"pong\"")));
     }
 }

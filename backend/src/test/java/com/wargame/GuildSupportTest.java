@@ -232,7 +232,7 @@ class GuildSupportTest extends BaseServiceTest {
         March reinforcement = dispatch("reinforce", Map.of(unit, 20, "infantry", 100), Map.of()); arrive(reinforcement);
         // 精确情报统计全部驻军，即使城主把战术迎战编队设为空。
         receiver.setSortieArmy("{}"); playerRepository.save(receiver);
-        createTechnology(outsider.getId(), "recon_level", 2);
+        createTechnology(outsider.getId(), "recon_level", 3);
         createArmyUnit(outsider.getId(), unit, 1000);
         giveResources(outsider.getId(), 100000, 100000, 100000, 100000, 100000);
         March scouting = marchService.createDispatch(outsider.getId(), request(destination, "scout", Map.of(unit, 1000), Map.of()));
