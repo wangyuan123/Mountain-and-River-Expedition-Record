@@ -23,12 +23,12 @@ class InterceptionAmbushEngineTest {
     void slowerShorterRangeInterceptorFiresFirstWithoutMovementAndIncomingUsesSurvivors() {
         var result = battle(Map.of("rocket", 1_000), Map.of("infantry", 1_000), true, Map.of(), Map.of());
         String first = round(result, 1), second = round(result, 2);
-        assertTrue(first.indexOf("敌方步兵") < first.indexOf("我方反坦克火箭车"), first);
+        assertTrue(first.indexOf("敌方步兵") < first.indexOf("我方反坦克火箭"), first);
         assertFalse(first.contains("[前进]"), first);
         assertFalse(first.contains("贴脸×"), first);
         assertEquals(1, first.lines().filter(l -> l.startsWith("敌方步兵") && l.contains("击毁")).count(), first);
-        assertFalse(first.contains("我方反坦克火箭车-喀秋莎（BM-13）(1000)"), first);
-        assertTrue(second.indexOf("我方反坦克火箭车") < second.indexOf("敌方步兵"), second);
+        assertFalse(first.contains("我方反坦克火箭-喀秋莎（BM-13）(1000)"), first);
+        assertTrue(second.indexOf("我方反坦克火箭") < second.indexOf("敌方步兵"), second);
         assertEquals(160, result.getInterceptionOpening().get("distance"));
         assertEquals(true, result.getInterceptionOpening().get("ambushConsumed"));
         assertEquals(1, result.getInterceptionOpening().get("firstCombatRound"));

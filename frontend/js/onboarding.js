@@ -348,6 +348,9 @@
       state.data = data; state.error = '';
       if (data.state) { G.API.applyState(data.state); delete data.state; Core.renderTop(); }
       applyBalances(data);
+      if (action === 'claim' || action === 'tasks/claim') {
+        if (G.Sound && typeof G.Sound.play === 'function') G.Sound.play('coins');
+      }
       if (action === 'claim') G.toast('补给已送达主城');
       if (action === 'skip') G.toast('行动补给已送达主城，可继续主线任务');
       if (action === 'recover') G.toast('援军已抵达主城：30步兵、1卡车及资源');
@@ -367,7 +370,7 @@
   function actions(objective) {
     if (objective.id === 'base') return routeButton('前往建设', 'buildRes') + routeButton('军工建筑', 'buildArmy');
     if (objective.id === 'infantry') return routeButton('生产一名步兵', 'army', 'infantry');
-    if (objective.id === 'recon_build') return routeButton('市政厅2级', 'buildArmy', 'command') + routeButton('军工厂2级', 'buildArmy', 'factory') + routeButton('防空雷达站1级', 'buildArmy', 'radar') + routeButton('科研中心1级', 'buildArmy', 'lab');
+    if (objective.id === 'recon_build') return routeButton('市政厅2级', 'buildArmy', 'command') + routeButton('军工厂2级', 'buildArmy', 'factory') + routeButton('城防雷达1级', 'buildArmy', 'radar') + routeButton('科研中心1级', 'buildArmy', 'lab');
     if (objective.id === 'recon_research') return routeButton('研究侦察技术1级', 'tech', 'recon_level');
     if (objective.id === 'recon_unit') return routeButton('生产侦查装甲车', 'army', 'recon_car');
     if (objective.id === 'scout' || objective.id === 'occupy') return button('选择推荐野地', 'target', objective.id);
@@ -385,7 +388,8 @@
     if (!Core.state || Core.route === 'login' || !G.API.isLoggedIn()) { stop(); return; }
     var data = state.data;
     var currentKey = data && data.current ? data.current.id : 'supplies';
-    var visible = Core.route !== 'onboarding' && Core.route !== 'mainQuest' &&
+    // 配兵页面需要完整操作区；离开后恢复当前提示，不改变完成事实或暂停偏好。
+    var visible = Core.route !== 'dispatch' && Core.route !== 'onboarding' && Core.route !== 'mainQuest' &&
       !(Core.state.player && Core.state.player.citySlot) && currentKey !== state.snoozedFor &&
       !(data && data.scouting && currentKey === 'scout') &&
       ((data && data.enrolled && !data.paused && !data.done) || (!data && state.error));
@@ -654,9 +658,10 @@
         action: action === 'scout' ? 'scout' : action === 'gather' ? 'gather' : 'campaign',
         occupyTarget: true, battleMode: 'auto',
         defaultArmy: defaultArmy };
-      // 推荐采集默认全自动，玩家仍可在出征页切换为手动。
+      // 采集统一手动收获和回城，新手推荐也不绕过玩家操作。
       if (action === 'gather') {
-        world._dispatchTarget.gatherMode = 'auto';
+        world._dispatchTarget.gatherMode = 'manual';
+        world._dispatchTarget.gatherAfterAction = 'retain';
       }
       state.snoozedFor = state.data && state.data.current ? state.data.current.id : 'supplies';
       state.guidedAction = null; state.actionNote = '';

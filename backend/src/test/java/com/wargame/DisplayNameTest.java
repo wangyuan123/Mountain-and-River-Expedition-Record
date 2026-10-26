@@ -44,6 +44,13 @@ class DisplayNameTest extends BaseServiceTest {
         Player player = createTestPlayer("login-user", 30);
         assertEquals("login-user", ((Map<?, ?>) gameStateService.getGameState(player.getId()).get("player")).get("name"));
 
+        PlayerItem card = new PlayerItem();
+        card.setPlayerId(player.getId());
+        card.setItemKey("commanderRenameCard");
+        card.setCount(1);
+        card.setUpdatedAt(System.currentTimeMillis());
+        playerItemRepository.save(card);
+
         gameStateService.setDisplayName(player.getId(), "剑客☆🎖️");
         entityManager.flush();
         entityManager.clear();

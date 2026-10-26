@@ -20,6 +20,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -71,6 +73,29 @@ public class ShopControllerTest extends BaseServiceTest {
         SecurityContextHolder.clearContext();
     }
 
+    @ParameterizedTest
+    @CsvSource({"shield2h,2,60", "shield,8,200", "shield12h,12,280", "shield24h,24,500", "shield72h,72,1350"})
+    void buyAndUseShieldTier(String itemId, int hours, int price) {
+        Resources resources = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
+        resources.setDiamond(2000);
+        resourcesRepository.save(resources);
+        Map<String, Object> purchased = shopController.buy(new GameDtos.ShopBuyRequest(itemId)).getBody();
+        assertNotNull(purchased);
+        assertEquals(true, purchased.get("success"));
+        assertEquals(price, purchased.get("price"));
+        assertEquals(2000 - price, resourcesRepository.findByPlayerId(player.getId()).orElseThrow().getDiamond());
+        assertEquals(1, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), itemId).orElseThrow().getCount());
+        long before = System.currentTimeMillis();
+        Map<String, Object> used = depotService.useItem(player.getId(), itemId, null, null);
+        long after = System.currentTimeMillis();
+        assertEquals(true, used.get("success"));
+        long until = (Long) used.get("shieldUntil");
+        assertTrue(until >= before + hours * 3600_000L);
+        assertTrue(until <= after + hours * 3600_000L);
+        assertEquals(0, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), itemId).orElseThrow().getCount());
+        assertEquals(until, cityStateRepository.findByPlayerIdAndCitySlot(player.getId(), cityScope.slot(player.getId())).orElseThrow().getShieldUntil());
+    }
+
     @Test
     @DisplayName("新手礼包购买入仓、开启固定发奖，重复购买和重复开启均不增加奖励")
     void buyAndOpenNewbiePackOnce() {
@@ -107,6 +132,19 @@ public class ShopControllerTest extends BaseServiceTest {
         assertEquals(101, resourcesRepository.findByPlayerId(player.getId()).orElseThrow().getDiamond());
         assertEquals(0, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "newbiePack").orElseThrow().getCount());
         assertEquals("resource", ItemDef.ITEMS.get("newbiePack").cat());
+    }
+
+    @Test
+    @DisplayName("统帅改名卡不在商城上架且伪造购买请求不会扣钻石")
+    void commanderRenameCardIsNotPurchasable() {
+        Resources resources = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
+        resources.setDiamond(500);
+        resourcesRepository.save(resources);
+        Map<String, Object> result = shopController.buy(new GameDtos.ShopBuyRequest("commanderRenameCard")).getBody();
+        assertNotNull(result);
+        assertEquals(false, result.get("success"));
+        assertEquals(500, resourcesRepository.findByPlayerId(player.getId()).orElseThrow().getDiamond());
+        assertTrue(playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "commanderRenameCard").isEmpty());
     }
 
     @Test
@@ -569,5 +607,80 @@ public class ShopControllerTest extends BaseServiceTest {
         assertEquals(false, full.get("success"));
         assertEquals("该军官已满星(5★)", full.get("message"));
         assertEquals(1, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "starUp").orElseThrow().getCount());
+    }
+
+    @Test
+    @DisplayName("批量购买道具成功：扣除对应倍数钻石并入仓指定数量")
+    void testBatchBuyItemsSuccess() {
+        Resources res = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
+        res.setDiamond(1000);
+        resourcesRepository.save(res);
+
+        // 批量购买 5 个 10分加速符（单价 30，总价 150）
+        Map<String, Object> buyResult = shopController.buy(new GameDtos.ShopBuyRequest("speedUp10m", 5)).getBody();
+        assertNotNull(buyResult);
+        assertTrue((Boolean) buyResult.get("success"));
+        assertEquals(30, buyResult.get("price"));
+        assertEquals(5, buyResult.get("count"));
+        assertEquals(150, buyResult.get("totalCost"));
+        assertEquals("已购买 10分加速符 ×5", buyResult.get("message"));
+        assertEquals(850, resourcesRepository.findByPlayerId(player.getId()).orElseThrow().getDiamond());
+
+        PlayerItem pi = playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "speedUp10m").orElseThrow();
+        assertEquals(5, pi.getCount());
+
+        // 再批量购买 3 个 10分加速符，叠加至 8 个
+        Map<String, Object> buyMore = shopController.buy(new GameDtos.ShopBuyRequest("speedUp10m", 3)).getBody();
+        assertNotNull(buyMore);
+        assertTrue((Boolean) buyMore.get("success"));
+        assertEquals(760, resourcesRepository.findByPlayerId(player.getId()).orElseThrow().getDiamond());
+        assertEquals(8, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "speedUp10m").orElseThrow().getCount());
+    }
+
+    @Test
+    @DisplayName("批量购买钻石不足时拒绝购买，余额与道具数量不改变")
+    void testBatchBuyInsufficientDiamonds() {
+        Resources res = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
+        res.setDiamond(100);
+        resourcesRepository.save(res);
+
+        // 购买 5 个 10分加速符需要 150 钻石，余额 100
+        Map<String, Object> buyResult = shopController.buy(new GameDtos.ShopBuyRequest("speedUp10m", 5)).getBody();
+        assertNotNull(buyResult);
+        assertFalse((Boolean) buyResult.get("success"));
+        assertEquals("钻石不足", buyResult.get("message"));
+        assertEquals(100, resourcesRepository.findByPlayerId(player.getId()).orElseThrow().getDiamond());
+        assertTrue(playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "speedUp10m").isEmpty());
+    }
+
+    @Test
+    @DisplayName("批量购买数量非法（<=0或>999）时被拒绝")
+    void testBatchBuyInvalidCount() {
+        Resources res = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
+        res.setDiamond(1000);
+        resourcesRepository.save(res);
+
+        Map<String, Object> buy0 = shopController.buy(new GameDtos.ShopBuyRequest("speedUp10m", 0)).getBody();
+        // count 为 0 时 DTO count() 兜底为 1，1个购买成功
+        assertNotNull(buy0);
+        assertTrue((Boolean) buy0.get("success"));
+
+        Map<String, Object> buyOver = shopController.buy(new GameDtos.ShopBuyRequest("speedUp10m", 1000)).getBody();
+        assertNotNull(buyOver);
+        assertFalse((Boolean) buyOver.get("success"));
+        assertEquals("购买数量无效", buyOver.get("message"));
+    }
+
+    @Test
+    @DisplayName("新手礼包不可批量购买")
+    void testNewbiePackCannotBeBatchBought() {
+        Resources res = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
+        res.setDiamond(1000);
+        resourcesRepository.save(res);
+
+        Map<String, Object> buyResult = shopController.buy(new GameDtos.ShopBuyRequest("newbiePack", 2)).getBody();
+        assertNotNull(buyResult);
+        assertFalse((Boolean) buyResult.get("success"));
+        assertEquals("新手礼包每个账号限购1份", buyResult.get("message"));
     }
 }

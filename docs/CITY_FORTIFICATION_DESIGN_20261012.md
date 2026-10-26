@@ -179,6 +179,20 @@
 
 这里的墙体生命表示当前建筑等级与城墙加固科技对应的最大生命，战斗中的剩余生命由该战斗的墙体快照与战斗界面展示。工事数量展示实际库存，前述超容量部署方案仍待实施。本次总览复用既有城市状态与页面路由，无新增接口或数据库迁移。
 
+### 城防武器详情弹窗（2026-10-22）
+
+首页及全屏城防总览中的四类工事卡片均支持点击、Enter／空格打开详情，零库存工事同样可查看。复用 `MainView.showUnitDetailModal` 和既有兵种详情样式，不跳转到修筑页，不修改城防库存或战斗规则。
+
+详情展示模型、名称、当前城市的部署数量、历史信息、战斗定位与基础属性。历史来自 `D.forts[id].history`，定位复用 `D.combatRoles[id]`，数值直接读取 `D.forts` 的四类攻击、防御、生命、移速和射程，不叠加当前科技、将领或战斗临时效果。固定工事标明不可机动和行军，不出现虚构的行军速度、行军消耗或人口占用。
+
+支持关闭按钮、Escape 和点击遮罩退出，移除详情监听并恢复打开前焦点。全屏城防总览上叠加详情时，首次 Escape 只关闭详情，再次 Escape 关闭总览。介绍中的历史例子不代表游戏模型绑定该型号；游戏平衡数值不等同于真实装备参数。
+
+历史背景参考（2026-10-22核对）：
+- 碉堡：RAF Museum，British Defences，`https://www.rafmuseum.org.uk/research/online-exhibitions/history-of-the-battle-of-britain/british-defences`。
+- 榴弹炮：National Army Museum，25 pounder gun in action on the Rapido Sector of the Cassino front, Italy, 1944，`https://collection.nam.ac.uk/detail.php?acc=1985-11-36--160`。
+- 反坦克炮：National Army Museum，6-pounder anti-tank gun on carriage, 1942 (c)，`https://collection.nam.ac.uk/detail.php?acc=1978-10-99-1`。
+- 防空炮：National Army Museum，Bofors anti-aircraft gun goes on public display for first time，`https://www.nam.ac.uk/press/bofors-anti-aircraft-gun-goes-public-display-first-time`。
+
 ## 已实现的出兵容量
 
 `主动攻击上限 = floor(军衔基础上限 × (1 + 0.04 × 三军统帅等级))`
@@ -202,3 +216,5 @@
 源代码修改需后端重启、前端刷新后生效。本次未执行部署或重启。
 
 2026-10-15首页城防总览实现阶段：新增 `frontend/tests/home-fort-summary.test.cjs`，2项测试通过，覆盖四类工事及零库存、首页共享容量与墙体属性、全屏列表、关闭按钮初始焦点、`Escape` 退出、键盘监听清理和焦点恢复。前端全量 `node --test frontend/tests/*.test.cjs` 共698项全部通过，本次实现涉及的前端文件 `git diff --check` 通过；该记录未包含浏览器视觉验收或生产部署。本次文档同步补充展示规则和验证范围，未新增运行时代码。
+
+2026-10-22城防武器详情实现阶段：`node --test frontend/tests/home-fort-summary.test.cjs frontend/tests/home-unit-models.test.cjs` 共13项全部通过，其中城防用例7项，覆盖四类工事的点击与键盘入口、零库存、历史与定位、八项基础属性、固定工事不显示行军消耗、内容转义、无效类型、库存不变、关闭与监听清理，以及全屏叠加时逐层退出和焦点恢复。`node --test frontend/tests/*.test.cjs` 共983项全部通过；相关JavaScript文件的 `node --check` 及本次涉及文件的 `git diff --check` 通过。未执行浏览器视觉验收或生产部署；本次仅修改前端展示与设计文档，前端刷新后生效，无需数据库迁移。

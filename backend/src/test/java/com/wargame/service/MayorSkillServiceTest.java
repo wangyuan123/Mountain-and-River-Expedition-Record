@@ -155,9 +155,9 @@ public class MayorSkillServiceTest extends BaseServiceTest {
 
         int durationWithMayor = techService.calcTechDuration(playerId, "mil_infantry", 0, 5);
         assertTrue(durationWithMayor < durationWithoutMayor, "格物技能应显著缩短研发时间");
-        // 中心Lv.5速度+5%，格物Lv.5速度+20%，按独立倍率相乘后取整。
-        assertEquals(171, durationWithoutMayor);
-        assertEquals(143, durationWithMayor, "格物Lv.5应加速研发");
+        // 中心只控制准入，格物Lv.5速度+20%。
+        assertEquals(180, durationWithoutMayor);
+        assertEquals(150, durationWithMayor, "格物Lv.5应加速研发");
     }
 
     @Test
@@ -183,13 +183,13 @@ public class MayorSkillServiceTest extends BaseServiceTest {
             gear.setCreatedAt(1L); gear.setEquippedAt(1L);
             officerEquipmentRepository.saveAndFlush(gear);
         }
-        assertEquals(70512, techService.calcTechDuration(playerId, "attack_tech", 5, 10));
+        assertEquals(77564, techService.calcTechDuration(playerId, "attack_tech", 5, 10));
         mayor.setSkills("[{\"id\":\"research\",\"lv\":5}]");
         officerRepository.saveAndFlush(mayor);
-        assertEquals(58760, techService.calcTechDuration(playerId, "attack_tech", 5, 10));
+        assertEquals(64636, techService.calcTechDuration(playerId, "attack_tech", 5, 10));
         mayor.setRole("commander");
         officerRepository.saveAndFlush(mayor);
-        assertEquals(77564, techService.calcTechDuration(playerId, "attack_tech", 5, 10), "非市长岗位不能提供科研加成");
+        assertEquals(85320, techService.calcTechDuration(playerId, "attack_tech", 5, 10), "非市长岗位不能提供科研加成");
     }
 
     @Test

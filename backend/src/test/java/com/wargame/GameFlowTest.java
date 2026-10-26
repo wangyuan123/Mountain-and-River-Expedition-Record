@@ -75,7 +75,7 @@ class GameFlowTest extends BaseServiceTest {
         assertTrue(reportList.get(0).path("win").asBoolean());
 
         Resources before = getResources(playerId);
-        int beforeTotal = before.getFood() + before.getSteel() + before.getOil() + before.getRare();
+        long beforeTotal = before.getFood() + before.getSteel() + before.getOil() + before.getRare();
         March returning = marchRepository.findByPlayerId(playerId).get(0);
         returning.setArriveAt(System.currentTimeMillis() - 1);
         marchRepository.save(returning);

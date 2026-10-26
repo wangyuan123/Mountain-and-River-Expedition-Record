@@ -1,0 +1,28 @@
+Browser tab: 2, Title: "山河远征录 - 文字战争策略游戏", URL: "http://localhost:8081/".
+The following is a diff from the previous accessibility tree with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 140-373
+~			134 button 返回上一步
+~			135 text [全域预警监控] 正常运行 | 雷达范围: 120KM | 防务: 无护盾保护
+~			136 button [全部(0)]
+~			137 button [敌袭] 敌军来袭 (0)
+~			138 button [侦察(0)]
+~			139 button [我军(0)]
++			140 button [驻防(0)]
++			141 text -------------------------------------------------------------------------
++			142 text 暂无敌方来袭军情。
++			143 text 暂无行军中的部队。
++			144 text -------------------------------------------------------------------------
++			145 text [0] 返回指挥大厅
++			146 text [R] 刷新雷达信号
++			147 text [S] 一键呼叫救援
++			148 text 自动轮询: 3s 响应: 12ms
++			149 container 底部快捷导航
++				150 button 首页
++				151 button 地图
++				152 button 任务
++				153 button 邮件
++				154 button 设置
++				155 button 返回顶部
++			156 text 查看军情 [0]返回
++			157 text 北京时间：2026年10月23日 22:41:38
+The focused UI element is 1 AXWebArea 山河远征录 - 文字战争策略游戏, URL: localhost:8081/

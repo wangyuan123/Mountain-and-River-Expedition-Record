@@ -63,7 +63,7 @@ public final class UnitEquipmentRecon {
     }
 
     /**
-     * 保留侦查的战力悬殊捷径、伤害余量和10回合上限；双方侦察技术常驻增加先手，雷达仅首回合。
+     * 侦查统一按先手和存活兵力逐回合交火，保留伤害余量和10回合上限；雷达仅首回合增加先手。
      * 首回合即交火，将领属性与技能在1/4/7/10回合生效；仅复用加成计算，不进入普通战斗引擎。
      */
     public static Result resolve(String unit, int own, Map<String, Integer> defense, BattleService battle,
@@ -74,7 +74,7 @@ public final class UnitEquipmentRecon {
         Map<String, Integer> alive = new LinkedHashMap<>();
         defense.forEach((id, n) -> { if (UnitEquipmentEffects.base(id).equals(unit) && n > 0) alive.put(id, n); });
         Set<String> aSources = own > 0 ? Set.of(unit) : Set.of(), dSources = livingTypes(alive);
-        // 原侦查战力判定读取首次交火的有效攻击、防御；有将领也不能跳过悬殊兵力规则。
+        // 战力读取首次交火的有效攻击和耐久，仅供报告展示，实际战损由逐回合交火决定。
         double ownAttack = attack(battle, u, unit, unit, ac, dc, true, dSources, false);
         double ownDurability = durability(battle, u, unit, ac, dc, true, dSources);
         double ownPower = own * (ownAttack + ownDurability);
@@ -91,9 +91,7 @@ public final class UnitEquipmentRecon {
         boolean officerCombat = hasOfficerEffects(battle, ac) || hasOfficerEffects(battle, dc);
         List<String> log = new ArrayList<>();
         int ownAlive = own;
-        if (enemyPower > 0 && ownPower / enemyPower < .3) {
-            damage(battle, alive, u, ownPower, dc, ac, true, aSources, false); ownAlive = 0;
-        } else for (int round = 1; round <= 10 && ownAlive > 0 && total(alive) > 0; round++) {
+        for (int round = 1; round <= 10 && ownAlive > 0 && total(alive) > 0; round++) {
             boolean active = battle.isSkillRoundActive(round, 1);
             // 同名参照在回合开始固定；周期外所有属性和技能关闭，常驻配装、司令官仍沿用原计算。
             Set<String> enemySources = livingTypes(alive);

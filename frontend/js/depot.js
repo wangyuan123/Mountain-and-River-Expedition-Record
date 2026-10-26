@@ -5,31 +5,8 @@
   var EQUIPMENT_NAMES = G.Constants.equipmentNames;
   var SLOT_ICONS = G.Constants.equipmentSlotIcons;
 
-  function equipmentInfo(itemId) {
-    var m = /^(recruit|officer|marshal)_(military|defense|logistics|knowledge)_(weapon|badge|coat)$/.exec(itemId || '');
-    if (!m) return null;
-    var tiers = G.Constants.equipmentTiers;
-    var branchNames = G.Constants.equipmentBranches;
-    var slotNames = G.Constants.equipmentSlots;
-    var t = tiers[m[1]];
-    var bName = branchNames[m[2]];
-    var sName = slotNames[m[3]];
-    var realName = EQUIPMENT_NAMES[itemId] || (t.name + bName + sName);
-    var setBonusText = m[1] === 'marshal' ? (bName + '+30，全属性+5') : (bName + '+' + (m[1] === 'recruit' ? '3' : '15'));
-    return {
-      name: realName,
-      icon: SLOT_ICONS[m[3]] || '🎖️',
-      cat: 'equipment',
-      tier: m[1],
-      tierName: t.name,
-      branch: m[2],
-      branchName: bName,
-      slot: m[3],
-      slotName: sName,
-      level: t.level,
-      desc: t.name + bName + '套装·' + sName + '：Lv.' + t.level + '可穿戴，' + bName + '+' + t.main + '，其余属性各+' + t.sub + '。集齐同套3件激活套装效果（' + setBonusText + '）。'
-    };
-  }
+  /** 只接受共享目录中的装备键，所有六档十二部位使用相同元数据。 */
+  function equipmentInfo(itemId) { return G.Constants.equipmentItems[itemId] || null; }
 
   function fmt(n) { return G.fmt ? G.fmt(n) : n; }
   function fmtTime(ts) {
@@ -49,17 +26,18 @@
     var w = s.world || {};
     var parts = [];
     if (w.shieldUntil && w.shieldUntil > G.gameNow()) {
-      var sh = Math.ceil((w.shieldUntil - G.gameNow()) / 3600000);
-      parts.push('🛡️ 护盾 ' + sh + 'h');
+      parts.push('🛡️ 护盾 ' + G.formatDuration((w.shieldUntil - G.gameNow()) / 1000));
     }
     if (w.marchBoostUntil && w.marchBoostUntil > G.gameNow()) {
-      var mh = Math.ceil((w.marchBoostUntil - G.gameNow()) / 3600000);
-      parts.push('🚩 行军加速 ' + mh + 'h');
+      parts.push('🚩 行军加速 ' + G.formatDuration((w.marchBoostUntil - G.gameNow()) / 1000));
     }
     return parts;
   }
 
   var Depot = {
+    equipmentTier: '', equipmentBranch: '', equipmentSlot: '',
+    filterEquipment: function (key, value) { this[key] = value; Core.render(); },
+
     /** 切换仓库物品分类（保存在当前状态，刷新后仍保持本次选择） */
     setTab: function (cat) {
       var valid = G.Constants.depotCategoryOrder;
@@ -85,6 +63,11 @@
 
       if (itemId === 'cityRenameCard') {
         G.Main.promptRenameCityInDrawer();
+        return;
+      }
+
+      if (itemId === 'commanderRenameCard') {
+        G.Main.promptRenameCommander();
         return;
       }
 
@@ -149,6 +132,13 @@
           G.toast(resp.message || '使用失败');
           if (resp.state) G.API.applyState(resp.state);
           return;
+        }
+        var info = D.items[itemId] || equipmentInfo(itemId);
+        var isBox = (info && info.isBox) || itemId.indexOf('box_') === 0 || itemId === 'newbiePack';
+        var isResource = (info && info.cat === 'res') || itemId.indexOf('res_') === 0 || itemId.indexOf('gold_') === 0;
+        if (G.Sound && typeof G.Sound.play === 'function') {
+          if (isBox) G.Sound.play('chest');
+          else if (isResource) G.Sound.play('coins');
         }
         G.toast(resp.message || '使用成功');
         if (G.MainQuest && G.MainQuest.refresh) G.MainQuest.refresh();
@@ -222,6 +212,11 @@
       var s = Core.state;
       var itemId = s._depotSelectOfficer || Depot._depotItem;
       if (!itemId) { G.toast('请先选择道具'); G.go('depot'); return; }
+
+      if (itemId === 'universalSkillBook') {
+        G.Officer.openUniversalSkillBook(officerId);
+        return;
+      }
 
       // 改名卡：先选完军官再让用户输入新名字
       if (itemId === 'renameCard') {
@@ -325,8 +320,15 @@
         if (cat === 'unitEquipment' && G.UnitEquipment) {
           h += G.UnitEquipment.inventoryHtml(); hasInCat = true;
         } else if (cat === 'equipment') {
+          var self = this;
+          [['equipmentTier', '档次', G.Constants.equipmentTiers], ['equipmentBranch', '分支', G.Constants.equipmentBranches], ['equipmentSlot', '部位', G.Constants.equipmentSlots]].forEach(function (filter) {
+            h += '<label>' + filter[1] + ' <select onchange="Game.Depot.filterEquipment(\'' + filter[0] + '\',this.value)"><option value="">全部</option>';
+            Object.keys(filter[2]).forEach(function (key) { var value = filter[2][key]; h += '<option value="' + key + '"' + (self[filter[0]] === key ? ' selected' : '') + '>' + (value.name || value) + '</option>'; });
+            h += '</select></label>';
+          });
           var eqKeys = Object.keys(s.items || {}).filter(function (k) {
-            return equipmentInfo(k) && (s.items[k] || 0) > 0;
+            var info = equipmentInfo(k);
+            return info && (s.items[k] || 0) > 0 && (!self.equipmentTier || info.tier === self.equipmentTier) && (!self.equipmentBranch || info.branch === self.equipmentBranch) && (!self.equipmentSlot || info.slot === self.equipmentSlot);
           });
           var tierOrder = G.Constants.equipmentTierOrder;
           var branchOrder = G.Constants.equipmentBranchOrder;
@@ -341,10 +343,18 @@
             return (slotOrder[infoA.slot] || 0) - (slotOrder[infoB.slot] || 0);
           });
 
+          var previousSet = null;
           for (var ei = 0; ei < eqKeys.length; ei++) {
             var eqId = eqKeys[ei];
             var eqInfo = equipmentInfo(eqId);
             var eqCnt = s.items[eqId];
+            if (eqInfo.setKey !== previousSet) {
+              if (previousSet) h += '</details>';
+              var set = G.Constants.equipmentSets[eqInfo.setKey];
+              var completeCount = Math.min.apply(null, set.keys.map(function (key) { return s.items[key] || 0; }));
+              h += '<details><summary>' + set.name + ' · 仓库完整套数 ' + completeCount + '</summary>';
+              previousSet = eqInfo.setKey;
+            }
             hasInCat = true;
             h += '<div class="menu-item ok">';
             h += '<div class="depot-item-head">' +
@@ -354,6 +364,7 @@
             h += '<div class="d">' + eqInfo.desc + '</div>';
             h += '</div>';
           }
+          if (previousSet) h += '</details>';
         } else {
           for (var iid in D.items) {
             var info = D.items[iid];
@@ -367,8 +378,10 @@
             if (cnt > 0) {
               if (iid.indexOf('rank_certificate_') === 0) {
                 btnHtml = '<button type="button" class="btn depot-btn" onclick="Game.go(\'mainQuest\')">[前往晋升军衔]</button>';
+              } else if (iid === 'officerPreparationParts') {
+                btnHtml = '<button type="button" class="btn depot-btn" onclick="Game.go(\'officer\')">[前往军官整备]</button>';
               } else {
-                var btnLabel = iid === 'newbiePack' ? '开启礼包' : iid === 'cityRenameCard' ? '修改城市名' : (info.isBox || iid.indexOf('box_') === 0) ? '开启宝箱' : (iid === 'expBook' || iid === 'expBookAdv' || iid === 'expBookMax' || iid === 'loyaltyBox' || iid === 'renameCard' || iid === 'skillBook' || iid.indexOf('skillBook_') === 0 || iid === 'starUp') ? '选择军官使用' : '使用';
+                var btnLabel = iid === 'newbiePack' ? '开启礼包' : iid === 'cityRenameCard' ? '修改城市名' : (info.isBox || iid.indexOf('box_') === 0) ? '开启宝箱' : (iid === 'expBook' || iid === 'expBookAdv' || iid === 'expBookMax' || iid === 'loyaltyBox' || iid === 'renameCard' || iid === 'skillBook' || iid === 'universalSkillBook' || iid.indexOf('skillBook_') === 0 || iid === 'starUp') ? '选择军官使用' : '使用';
                 btnHtml = '<button type="button" class="btn depot-btn" onclick="Game.Depot.useItem(\'' + iid + '\')">[' + btnLabel + ']</button>';
               }
             }
@@ -425,8 +438,14 @@
             equipTip = ' <span style="color:var(--danger)">(需Lv.' + info.level + ')</span>';
           }
         }
+        var fullSkills = itemId === 'universalSkillBook' && (o.skills || []).length >= 3;
+        if (fullSkills) {
+          canEquip = false;
+          equipTip = '（技能已满3个，请先废弃一个）';
+        }
         var itemCls = canEquip ? 'menu-item ok' : 'menu-item lock';
         var clickAttr = canEquip ? 'onclick="Game.Depot.useOnOfficer(\'' + o.id + '\')"' : 'onclick="Game.toast(\'军官等级不足，需达到Lv.' + info.level + '\')"';
+        if (fullSkills) clickAttr = 'onclick="Game.toast(\'技能已满3个，请先废弃一个\')"';
         var skillStr = (Core && Core.skillText) ? Core.skillText(o) : '';
         if (!skillStr && o.skills && o.skills.length) {
           var skillParts = [];
@@ -459,7 +478,7 @@
         h += '<div class="' + itemCls + '" style="cursor:pointer" ' + clickAttr + '>';
         h += '<span class="n" style="color:' + (D.starColor[o.star] || '#bbb') + '">' + G.escapeHtml(o.name) + '</span> ';
         h += '<span class="stars">' + starStr + '</span> ';
-        h += '<span class="lv">Lv.' + o.level + (o.role === 'mayor' ? ' [市长]' : (o.role === 'commander' ? ' [司令]' : (o.role === 'commander_in_chief' ? ' [司令官]' : ''))) + equipTip + '</span> ';
+        h += '<span class="lv">Lv.' + o.level + (o.role === 'mayor' ? ' [市长]' : (o.role === 'commander' ? ' [司令]' : (o.role === 'commander_in_chief' ? ' [司令官]' : ''))) + (itemId === 'universalSkillBook' ? ' · 技能 ' + (o.skills || []).length + '/3' : '') + equipTip + '</span> ';
         h += '<div class="d">将' + o.military + ' 军' + o.logistics + ' 智' + o.knowledge + ' 忠' + (o.loyalty || 0) + skillStr + '</div>';
         if (curEquipTip) h += curEquipTip;
         h += '</div>';

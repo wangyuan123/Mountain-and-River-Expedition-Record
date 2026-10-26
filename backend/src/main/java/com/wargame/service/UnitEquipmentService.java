@@ -96,7 +96,7 @@ public class UnitEquipmentService {
         List<UnitEquipmentOrder> lane = orders.findByPlayerIdAndCitySlotOrderByStartAtAscIdAsc(player, scope.slot(player));
         if (lane.size() >= 100) throw new IllegalArgumentException("装备制造队列已满");
         Resources res = resources.findByPlayerIdAndCitySlot(player, scope.slot(player)).orElseThrow();
-        if (Objects.requireNonNullElse(res.getSteel(), 0) < d.cost().get("steel") || Objects.requireNonNullElse(res.getOil(), 0) < d.cost().get("oil") || Objects.requireNonNullElse(res.getRare(), 0) < d.cost().get("rare")) throw new IllegalArgumentException("本城制造资源不足");
+        if (Objects.requireNonNullElse(res.getSteel(), 0L) < d.cost().get("steel") || Objects.requireNonNullElse(res.getOil(), 0L) < d.cost().get("oil") || Objects.requireNonNullElse(res.getRare(), 0L) < d.cost().get("rare")) throw new IllegalArgumentException("本城制造资源不足");
         res.setSteel(res.getSteel() - d.cost().get("steel")); res.setOil(res.getOil() - d.cost().get("oil")); res.setRare(res.getRare() - d.cost().get("rare")); resources.save(res);
         long start = lane.isEmpty() ? now : Math.max(now, lane.get(lane.size() - 1).getEndAt());
         UnitEquipmentOrder order = new UnitEquipmentOrder(); order.setPlayerId(player); order.setCitySlot(scope.slot(player));
@@ -113,9 +113,9 @@ public class UnitEquipmentService {
         double refund = order.getStartAt() > now ? 1 : .5;
         Map<String, Integer> cost = JsonUtil.parseIntMap(order.getCost());
         Resources res = resources.findByPlayerIdAndCitySlot(player, order.getCitySlot()).orElseThrow();
-        res.setSteel(res.getSteel() + (int) Math.floor(cost.getOrDefault("steel", 0) * refund));
-        res.setOil(res.getOil() + (int) Math.floor(cost.getOrDefault("oil", 0) * refund));
-        res.setRare(res.getRare() + (int) Math.floor(cost.getOrDefault("rare", 0) * refund)); resources.save(res);
+        res.addResource("steel", (int) Math.floor(cost.getOrDefault("steel", 0) * refund));
+        res.addResource("oil", (int) Math.floor(cost.getOrDefault("oil", 0) * refund));
+        res.addResource("rare", (int) Math.floor(cost.getOrDefault("rare", 0) * refund)); resources.save(res);
         orders.delete(order); orders.flush();
         long tail = now;
         for (var o : orders.findByPlayerIdAndCitySlotOrderByStartAtAscIdAsc(player, scope.slot(player))) {

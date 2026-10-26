@@ -1,0 +1,14 @@
+Browser tab: 2, Title: "山河远征录 - 文字战争策略游戏", URL: "http://localhost:8081/".
+The following is a diff from the previous accessibility tree with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 138, 276, 296-297, 301, 305, 373
++			373 text 📋 战报 11 条 >
+~					273 button 粮食 粮食: 393404461 -84555823/h, Help: 粮食 当前: 393404461 (已达生产容量，-84555823/h)
++						374 text 393404461
+~					293 button 黄金 黄金: 751402 +981/h, Help: 黄金 当前: 751402 (+981/h)
++						375 text 751402
++						376 text +981/h
+~					298 button 平民 平民: 977/12000 +360/h 可征召 977 · 民心 71, Help: 平民 当前: 977/12000 (+360/h)
++						377 text 977
++						378 text 可征召 977 · 民心 71
++			379 text 北京时间：2026年10月23日 22:51:38
+The focused UI element is 1 AXWebArea 山河远征录 - 文字战争策略游戏, URL: localhost:8081/

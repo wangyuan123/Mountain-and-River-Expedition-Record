@@ -97,7 +97,7 @@ class WildOccupationTest extends BaseServiceTest {
     @Test void fullCityRejectsBeforeConsumingTroopsAndFuel() {
         hall(0, 1); owned(0, 6); createArmyUnit(player.getId(), "infantry", 100);
         WildTile target = tile(0, false);
-        int oil = resourcesRepository.findByPlayerIdAndCitySlot(player.getId(), 0).orElseThrow().getOil();
+        long oil = resourcesRepository.findByPlayerIdAndCitySlot(player.getId(), 0).orElseThrow().getOil();
         IllegalArgumentException error = assertThrows(IllegalArgumentException.class, () -> marchService.createDispatch(
                 player.getId(), new DispatchRequest("wild", target.getId(), "conquer", Map.of("infantry", 50), null, null)));
         assertTrue(error.getMessage().contains("6/6"));

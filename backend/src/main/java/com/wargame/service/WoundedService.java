@@ -157,7 +157,7 @@ public class WoundedService {
         // 黄金属本城，钻石沿用账号共享钱包；按钮和实际扣款使用相同的资产范围。
         Resources wallet = cityScope.wallet(playerId);
         camp.put("resources", Map.of(
-                "gold", resources.findByPlayerIdAndCitySlot(playerId, citySlot).map(Resources::getGold).orElse(0),
+                "gold", resources.findByPlayerIdAndCitySlot(playerId, citySlot).map(Resources::getGold).orElse(0L),
                 "diamond", Objects.requireNonNullElse(wallet.getDiamond(), 0)));
         return camp;
     }
@@ -174,9 +174,9 @@ public class WoundedService {
         if (batch.getExpiresAt() <= GameClock.now()) throw new IllegalArgumentException("该批伤兵已超过救治期限");
         if (count > batch.getCount()) throw new IllegalArgumentException("治疗数量超过剩余伤兵");
         long cost = "gold".equals(currency) ? goldCost(batch.getType(), count) : diamondCost(batch.getType(), count);
-        int available = "gold".equals(currency) ? Objects.requireNonNullElse(balance.getGold(), 0) : Objects.requireNonNullElse(balance.getDiamond(), 0);
+        long available = "gold".equals(currency) ? Objects.requireNonNullElse(balance.getGold(), 0L) : Objects.requireNonNullElse(balance.getDiamond(), 0).longValue();
         if (available < cost) throw new IllegalArgumentException("gold".equals(currency) ? "黄金不足，可减少数量或选择钻石治疗" : "钻石不足，可减少数量或选择黄金治疗");
-        if ("gold".equals(currency)) balance.setGold((int) (available - cost));
+        if ("gold".equals(currency)) balance.setGold(available - cost);
         else balance.setDiamond((int) (available - cost));
         List<ArmyUnit> units = army.findByPlayerIdAndCitySlotAndType(playerId, cityScope.slot(playerId), batch.getType());
         ArmyUnit unit = units.isEmpty() ? new ArmyUnit(null, playerId, batch.getType(), 0) : units.get(0);

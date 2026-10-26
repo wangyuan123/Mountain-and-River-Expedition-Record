@@ -82,7 +82,7 @@ class MultiCityTest extends BaseServiceTest {
         gameStateService.setTax(player.getId(), 10);
         gameStateService.setCityName(player.getId(), "新北山城");
         Map<String, Object> state = gameStateService.getGameState(player.getId());
-        assertEquals(940, ((Map<String,Object>)state.get("resources")).get("gold"));
+        assertEquals(940L, ((Map<String,Object>)state.get("resources")).get("gold"));
         assertEquals(987, ((Map<String,Object>)state.get("resources")).get("diamond"));
         assertEquals(3, ((Map<String,Object>)state.get("tech")).get("log_food"));
         assertEquals(10, branch.getTax()); assertEquals(30, player.getTax());
@@ -99,7 +99,7 @@ class MultiCityTest extends BaseServiceTest {
     @Test @SuppressWarnings("unchecked") void cityRenamesHaveIndependentDailyLimits() {
         PlayerCity other = branch();
         playerItems.save(new PlayerItem(null, player.getId(), "cityRenameCard", 1, System.currentTimeMillis()));
-        int mainGold = balance(0).getGold();
+        long mainGold = balance(0).getGold();
         gameStateService.setCityName(player.getId(), "今日主城");
         assertEquals(0, playerItems.findByPlayerIdAndItemKey(player.getId(), "cityRenameCard").orElseThrow().getCount());
         assertEquals(mainGold, balance(0).getGold());
@@ -107,7 +107,7 @@ class MultiCityTest extends BaseServiceTest {
         assertEquals("今日主城", playerRepository.findById(player.getId()).orElseThrow().getCityName());
 
         cities.select(player.getId(), other.getId());
-        int branchGold = balance(1).getGold();
+        long branchGold = balance(1).getGold();
         gameStateService.setCityName(player.getId(), "今日分城");
         assertEquals(branchGold - 60, balance(1).getGold());
         assertThrows(IllegalArgumentException.class, () -> gameStateService.setCityName(player.getId(), "分城再改"));
@@ -211,7 +211,7 @@ class MultiCityTest extends BaseServiceTest {
             assertEquals(400000L, tickService.capacity(player.getId()).get("steel"));
         }
         balance(1).setSteel(399900);
-        int originSteel = balance(0).getSteel();
+        long originSteel = balance(0).getSteel();
         March march = marchService.createDispatch(player.getId(), new DispatchRequest(
                 "player", branch.getId(), "transport", Map.of("truck", 1), null, Map.of("steel", 450)));
         assertEquals(originSteel - 450, balance(0).getSteel());
@@ -225,7 +225,7 @@ class MultiCityTest extends BaseServiceTest {
         March next = marchService.createDispatch(player.getId(), new DispatchRequest(
                 "player", branch.getId(), "transport", Map.of("truck", 1), null, Map.of("steel", 450)));
         next.setArriveAt(0L); marchService.processMarches(player.getId(), System.currentTimeMillis());
-        assertEquals(400800, balance(1).getSteel(), "已超容量仍应接收后续运输");
+        assertEquals(400800, balance(1).getSteel(), "已超生产容量仍应接收后续运输");
         march.setArriveAt(0L); marchService.processMarches(player.getId(), System.currentTimeMillis());
         assertEquals(400800, balance(1).getSteel(), "返程不能重复入库");
     }

@@ -1,0 +1,3 @@
+Browser tab: 2, Title: "山河远征录 - 文字战争策略游戏", URL: "http://localhost:8081/".
+There has been no change in the accessibility tree.
+The focused UI element is 243 button [ 📜 查看战斗详情 (共 19 回合) ▾ ], ID: btnBattleDetails

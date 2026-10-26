@@ -1,0 +1,59 @@
+{
+  "revision": 6,
+  "cities": [
+    {
+      "citySlot": 0,
+      "revision": 3,
+      "name": "新城市",
+      "level": 10,
+      "radius": 10.0,
+      "enabled": false,
+      "x": 101.0,
+      "y": 115.0,
+      "cityId": 1
+    }
+  ],
+  "contacts": [],
+  "history": [
+    {
+      "id": "radar-1",
+      "marchId": 1,
+      "targetName": "新城市",
+      "targetX": 120,
+      "targetY": 110,
+      "arriveAt": 1792864121518,
+      "inBattle": false,
+      "waitingForBattle": false,
+      "startAt": 1792863761518,
+      "radarLevel": 0,
+      "targetKind": "player",
+      "targetId": "2",
+      "threatenedPlayers": [
+        {
+          "playerId": 2,
+          "name": "远征统帅_257377"
+        }
+      ],
+      "contactId": 1,
+      "intelligenceType": "regional_radar",
+      "threatKind": "attack",
+      "firstSeenAt": 1792863762526,
+      "lastSeenAt": 1792863762526,
+      "read": false,
+      "sources": [],
+      "reminderGroup": "9f13bc6b-5d66-413f-a9db-c9a9354cf06a",
+      "status": "monitoring_disabled",
+      "snapshotAt": 1792863762526,
+      "snapshotSources": [
+        {
+          "citySlot": 0,
+          "name": "新城市",
+          "revision": 2,
+          "cityId": 1
+        }
+      ]
+    }
+  ],
+  "unread": 0,
+  "nextBeforeId": null
+}

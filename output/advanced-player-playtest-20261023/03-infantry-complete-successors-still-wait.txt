@@ -1,0 +1,32 @@
+Browser tab: 1, Title: "山河远征录 - 文字战争策略游戏", URL: "http://localhost:8081/".
+The following is a diff from the previous accessibility tree with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 1185, 1189-1214, 1224-1227
++				1224 text 2
++				1225 container army-queue-item-55
++					1226 image 卡车-十轮大卡（CCKW-353）
++					1227 container 卡车-十轮大卡（CCKW-353）
++						1228 text 卡车(CCKW-353)  x10
++					1229 text 剩余 1小时17分钟29秒
++					1230 button [ ⚡加速 ], Help: 加速生产
++						1231 text [
++						1232 text ⚡加速
++						1233 text ]
++					1234 button [ 取消 ], Help: 取消生产
++						1235 text [
++						1236 text 取消
++						1237 text ]
++				1238 container army-queue-item-56
++					1239 image 侦查装甲车-灰狗（M8）
++					1240 container 侦查装甲车-灰狗（M8）
++						1241 text 侦查装甲车(M8)  x3
++					1242 text 剩余 1小时20分钟29秒
++					1243 button [ ⚡加速 ], Help: 加速生产
++						1244 text [
++						1245 text ⚡加速
++						1246 text ]
++					1247 button [ 取消 ], Help: 取消生产
++						1248 text [
++						1249 text 取消
++						1250 text ]
++			1251 text 北京时间：2026年10月23日 17:19:31
+The focused UI element is 0 AXWebArea 山河远征录 - 文字战争策略游戏, URL: localhost:8081/

@@ -102,13 +102,15 @@ test('首页仅统计可用兵力，伤兵单独提示且治疗后才归队', ()
 test('军队总览三排浏览，全屏入口展示全部兵种并可关闭', () => {
   const css = fs.readFileSync(path.join(__dirname, '../css/style.css'), 'utf8');
   const source = fs.readFileSync(path.join(__dirname, '../js/main-view.js'), 'utf8');
-  assert.match(css, /\.army-summary\s*\{[^}]*grid-template-rows: repeat\(3, minmax\(64px, auto\)\)/s);
+  assert.match(css, /\.army-summary\s*\{[^}]*grid-template-rows: repeat\(3, minmax\(46px, auto\)\)/s);
   assert.match(css, /\.army-summary\s*\{[^}]*grid-auto-flow: row;/s);
   assert.match(css, /\.army-summary-item\s*\{[^}]*grid-column: var\(--army-summary-column, auto\);[^}]*grid-row: var\(--army-summary-row, auto\);/s);
   assert.match(css, /\.army-summary\s*\{[^}]*scrollbar-width:\s*thin;[^}]*scrollbar-color:\s*#a8afa4 #eeebe3;/s);
   assert.match(css, /\.home-officer-list::-webkit-scrollbar,\s*\.army-summary::-webkit-scrollbar\s*\{[^}]*height:\s*6px;/s);
   assert.match(css, /\.army-summary-expanded\s*\{[^}]*grid-auto-flow: row;[^}]*grid-template-rows: none;/s);
   assert.match(css, /\.army-summary-expanded \.army-summary-item\s*\{[^}]*grid-row: auto;[^}]*grid-column: auto;/s);
+  assert.match(css, /\.army-summary-icon\s*\{[^}]*width:\s*48px;[^}]*height:\s*44px;/s);
+  assert.match(css, /\.army-summary-name\s*\{[^}]*white-space:\s*nowrap;[^}]*font-size:\s*13px;/s);
   assert.match(source, /class="army-summary-expand"/);
   assert.match(source, /Game\.MainView\.showArmySummaryFullscreen\(\)/);
 
@@ -149,6 +151,32 @@ test('军队总览三排浏览，全屏入口展示全部兵种并可关闭', ()
   G.MainView.showArmySummaryFullscreen();
   body.modal.click({ target: body.modal });
   assert.equal(body.modal, null);
+});
+
+test('军队全屏弹窗固定标题，仅内容区纵向滚动且不继承首页横向滚动限制', () => {
+  const css = fs.readFileSync(path.join(__dirname, '../css/style.css'), 'utf8');
+  const source = fs.readFileSync(path.join(__dirname, '../js/main-view.js'), 'utf8');
+  const index = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
+  const dialog = css.match(/\.modal-card\.army-summary-dialog\s*\{([^}]*)\}/)[1];
+  const title = css.match(/\.army-summary-dialog-title\s*\{([^}]*)\}/)[1];
+  const body = css.match(/\.modal-body\.army-summary-dialog-body\s*\{([^}]*)\}/)[1];
+  const list = css.match(/\.army-summary-expanded\s*\{([^}]*)\}/)[1];
+
+  assert.match(source, /class="modal-body army-summary-dialog-body"/);
+  assert.match(dialog, /height:\s*100vh;/);
+  assert.match(dialog, /height:\s*100dvh;/);
+  assert.match(dialog, /overflow:\s*hidden;/);
+  assert.match(title, /flex:\s*0 0 auto;/);
+  assert.match(body, /flex:\s*1 1 0;/);
+  assert.match(body, /min-height:\s*0;/);
+  assert.match(body, /overflow-x:\s*hidden;/);
+  assert.match(body, /overflow-y:\s*auto;/);
+  assert.match(body, /overscroll-behavior-y:\s*contain;/);
+  assert.match(body, /-webkit-overflow-scrolling:\s*touch;/);
+  assert.match(list, /overflow:\s*visible;/);
+  assert.match(list, /overscroll-behavior:\s*auto;/);
+  assert.match(list, /scroll-snap-type:\s*none;/);
+  assert.match(index, /css\/style\.css\?v=20261025-army-fullscreen-scroll/);
 });
 
 test('点击首页兵种图标可打开兵种详细属性与战斗定位弹窗，且支持Esc与关闭按钮', () => {

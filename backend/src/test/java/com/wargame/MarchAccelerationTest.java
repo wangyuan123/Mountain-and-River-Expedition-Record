@@ -189,10 +189,11 @@ class MarchAccelerationTest extends BaseServiceTest {
         marchService.processMarches(playerId, arrival);
         March gathering = marchRepository.findById(march.getId()).orElseThrow();
         assertTrue(gathering.getGathering());
-        if ("manual".equals(mode)) {
-            marchService.stopGatherMarch(playerId, gathering.getId());
-            marchService.cancelMarch(playerId, gathering.getId());
-        } else marchService.processMarches(playerId, gathering.getGatherEndAt());
+        // 旧 auto 记录也统一走手动收获和回城；采满本身不能触发自动返城。
+        marchService.processMarches(playerId, gathering.getGatherEndAt());
+        assertFalse(gathering.getReturning());
+        marchService.stopGatherMarch(playerId, gathering.getId());
+        marchService.cancelMarch(playerId, gathering.getId());
         March returning = marchRepository.findById(march.getId()).orElseThrow();
         assertTrue(returning.getReturning());
         assertEquals(300_000L, returning.getArriveAt() - returning.getStartAt());
@@ -203,7 +204,7 @@ class MarchAccelerationTest extends BaseServiceTest {
         March march = moving(true);
         march.setGatherStopped(true);
         march.setCarryRes("{\"food\":120}");
-        int food = getResources(playerId).getFood();
+        long food = getResources(playerId).getFood();
         March returning = accelerate(march);
         marchService.processMarches(playerId, returning.getArriveAt());
         marchService.processMarches(playerId, returning.getArriveAt() + 1);

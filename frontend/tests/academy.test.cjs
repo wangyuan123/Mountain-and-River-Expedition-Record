@@ -28,6 +28,7 @@ function setup(chance, refreshAt = 0, quota = {}, list = []) {
   } });
   context.Game.testDocument = document;
   context.window = context;
+  require('./load-constants.cjs')(context);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/officer.js'), 'utf8'), context);
   return context.Game;
 }
@@ -95,7 +96,7 @@ test('军校冷却中不提供立即刷新或自动刷新提示', () => {
   const G = setup(0.03, Date.now() + 3600000, { refreshRoundCount: 30, refreshDailyCount: 30 });
   const view = { innerHTML: '' };
   G.Officer.renderAcademyView(view);
-  assert.match(view.innerHTML, /分钟后可再次刷新/);
+  assert.match(view.innerHTML, /分钟\d+秒后可再次刷新/);
   assert.match(view.innerHTML, /本轮已用满30次/);
   assert.doesNotMatch(view.innerHTML, /onclick="Game\.Officer\.refreshAcademy|自动|立即刷新/);
 });

@@ -1328,16 +1328,494 @@
 .officer-attr-effect { display: block; min-height: 16px; margin-top: 3px; color: var(--od-accent); font-size: 10px; }
 .officer-wash-row { justify-content: flex-end; margin-top: 8px; }
 
-.officer-equipment-list { border-top: 1px solid var(--od-line); }
-.officer-equipment-row { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 7px 2px; border-bottom: 1px solid var(--od-line); }
-.officer-equipment-slot { flex: 0 0 35px; color: var(--od-muted); font-size: 11px; }
-.officer-equipment-info { flex: 1; min-width: 0; }
-.officer-equipment-info strong,
-.officer-equipment-info small { display: block; }
-.officer-equipment-info strong { overflow-wrap: anywhere; font-size: 12px; }
-.officer-equipment-info small { color: var(--od-muted); font-size: 10px; line-height: 1.4; }
-.officer-equipment-empty { color: var(--od-muted); font-size: 11px; }
-.officer-set-bonus { margin-top: 9px; padding: 6px 8px; border-left: 2px solid var(--od-gold); background: var(--od-soft); color: var(--od-ink); font-size: 11px; }
+/* ========================================================================== */
+/* 军官装备十二件套 (Officer 12-Piece Equipment UI)                           */
+/* ========================================================================== */
+
+.officer-equipment-tip {
+  margin: 0 0 7px;
+  padding: 4px 8px;
+  background: var(--od-soft);
+  border-radius: 4px;
+  color: var(--od-muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.officer-equipment-locked-hint {
+  color: var(--od-danger);
+  font-weight: 600;
+}
+.officer-equipment-empty-tip {
+  margin: 8px 0;
+  padding: 6px 10px;
+  background: var(--od-soft);
+  border: 1px dashed var(--od-line);
+  border-radius: 4px;
+  color: var(--od-muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+.officer-equipment-group-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 5px;
+  padding: 3px 6px;
+  background: var(--od-soft);
+  border-left: 3px solid var(--od-accent);
+  border-radius: 0 3px 3px 0;
+  color: var(--od-ink);
+  font-size: 11px;
+  font-weight: 700;
+}
+.officer-equipment-group-bar {
+  display: none;
+}
+
+.officer-equipment-card {
+  margin-bottom: 5px;
+  padding: 6px 8px;
+  background: var(--od-surface);
+  border: 1px solid var(--od-line);
+  border-radius: 5px;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.officer-equipment-card:hover {
+  border-color: var(--od-accent);
+}
+
+.officer-equipment-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  padding: 0;
+  border-bottom: 0;
+}
+.officer-equipment-slot {
+  flex: 0 0 38px;
+  padding: 2px 4px;
+  background: var(--od-soft);
+  border: 1px solid var(--od-line);
+  border-radius: 3px;
+  color: var(--od-accent);
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+.officer-equipment-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.officer-equipment-item-title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 7px;
+}
+.officer-equipment-item-name {
+  color: var(--od-ink);
+  font-size: 12px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.officer-equipment-bonuses {
+  color: var(--od-accent);
+  font-size: 11px;
+  font-weight: 500;
+}
+.officer-equipment-empty {
+  color: var(--od-muted);
+  font-size: 11px;
+  font-style: normal;
+}
+.officer-equipment-prep-status {
+  color: var(--od-muted);
+  font-size: 10px;
+  line-height: 1.3;
+}
+.officer-equipment-unequip-btn {
+  flex-shrink: 0;
+  min-height: 24px !important;
+  padding: 2px 8px !important;
+  font-size: 10px !important;
+}
+
+.officer-equipment-sub-row {
+  margin-top: 5px;
+  padding-top: 4px;
+  border-top: 1px dashed var(--od-line);
+}
+
+.officer-equipment-replace-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 11px;
+  color: var(--od-muted);
+}
+.officer-equipment-sub-label {
+  flex-shrink: 0;
+  color: var(--od-muted);
+  font-size: 10px;
+}
+.officer-equipment-select {
+  flex: 1;
+  min-width: 0;
+  height: 25px;
+  padding: 1px 6px;
+  background: var(--od-soft);
+  color: var(--od-ink);
+  border: 1px solid var(--od-line);
+  border-radius: 3px;
+  font-size: 11px;
+  outline: none;
+}
+.officer-equipment-select:focus {
+  border-color: var(--od-accent);
+}
+.officer-equipment-btn {
+  flex-shrink: 0;
+  min-height: 24px !important;
+  padding: 2px 8px !important;
+  font-size: 10px !important;
+  border-color: var(--od-accent) !important;
+  border-radius: 3px !important;
+  background: var(--od-accent) !important;
+  color: var(--od-action-ink) !important;
+  box-shadow: none !important;
+}
+.officer-equipment-btn:disabled {
+  border-color: var(--od-line) !important;
+  background: var(--od-soft) !important;
+  color: var(--od-muted) !important;
+  cursor: not-allowed;
+}
+.officer-equipment-preview {
+  margin-top: 3px;
+  padding-left: 28px;
+  color: var(--od-accent);
+  font-size: 10px;
+  line-height: 1.3;
+}
+
+.officer-equipment-prep-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.officer-equipment-prep-desc {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px 4px;
+  font-size: 10px;
+  line-height: 1.3;
+}
+.officer-equipment-prep-target {
+  color: var(--od-accent);
+  font-weight: 700;
+}
+.officer-equipment-prep-cost {
+  color: var(--od-ink);
+  font-weight: 600;
+}
+.officer-equipment-sep {
+  color: var(--od-muted);
+}
+.officer-equipment-prep-cond {
+  color: var(--od-muted);
+}
+.officer-equipment-prep-gain {
+  color: var(--od-gold, #c98818);
+  font-weight: 600;
+}
+.officer-equipment-prep-note {
+  color: var(--od-muted);
+  font-size: 10px;
+}
+.officer-equipment-prep-btn {
+  flex-shrink: 0;
+  min-height: 24px !important;
+  padding: 2px 8px !important;
+  font-size: 10px !important;
+}
+
+.officer-equipment-resonance-section {
+  margin: 10px 0 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.officer-equipment-set-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.officer-equipment-set-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  background: var(--od-soft);
+  border: 1px solid var(--od-line);
+  border-radius: 12px;
+  font-size: 11px;
+}
+.officer-equipment-set-chip .chip-name {
+  color: var(--od-ink);
+  font-weight: 600;
+}
+.officer-equipment-set-chip .chip-count {
+  color: var(--od-accent);
+  font-weight: 700;
+}
+.officer-equipment-set-chip .chip-stage {
+  color: var(--od-muted);
+  font-size: 10px;
+}
+.officer-set-bonus {
+  margin-top: 2px;
+  padding: 6px 8px;
+  border-left: 2px solid var(--od-gold, #c98818);
+  background: var(--od-soft);
+  color: var(--od-ink);
+  font-size: 11px;
+}
+
+.officer-equipment-collapsible {
+  margin-top: 8px;
+  background: var(--od-surface);
+  border: 1px solid var(--od-line);
+  border-radius: 5px;
+  overflow: hidden;
+}
+.officer-equipment-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  background: var(--od-soft);
+  color: var(--od-accent);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+}
+.officer-equipment-summary:hover {
+  filter: brightness(0.97);
+}
+.officer-equipment-collapsible[open] > .officer-equipment-summary {
+  border-bottom: 1px solid var(--od-line);
+}
+.officer-equipment-collapsible-body {
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.officer-equipment-form-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.officer-equipment-form-label {
+  flex-shrink: 0;
+  color: var(--od-muted);
+  font-size: 11px;
+}
+.officer-equipment-preview-box {
+  padding: 6px 8px;
+  background: var(--od-soft);
+  border-radius: 4px;
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.officer-equipment-preview-box .preview-line {
+  color: var(--od-muted);
+}
+.officer-equipment-preview-box .preview-line strong {
+  color: var(--od-accent);
+}
+.officer-equipment-preview-box .is-missing {
+  color: var(--od-danger);
+}
+.officer-equipment-preview-box .is-ready {
+  color: var(--od-accent);
+}
+.officer-equipment-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.officer-loadout-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.officer-loadout-card {
+  padding: 6px 8px;
+  background: var(--od-soft);
+  border: 1px solid var(--od-line);
+  border-radius: 4px;
+}
+.officer-loadout-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.officer-loadout-title {
+  color: var(--od-ink);
+  font-size: 11px;
+  font-weight: 700;
+}
+.officer-loadout-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.officer-loadout-body {
+  margin-top: 4px;
+  font-size: 10px;
+  color: var(--od-muted);
+  line-height: 1.4;
+}
+.officer-loadout-body .loadout-net {
+  color: var(--od-accent);
+}
+.officer-loadout-body .is-missing {
+  color: var(--od-danger);
+}
+.officer-loadout-body .loadout-names {
+  color: var(--od-muted);
+  overflow-wrap: anywhere;
+}
+.officer-loadout-empty {
+  margin-top: 2px;
+  color: var(--od-muted);
+  font-size: 10px;
+}
+
+.officer-overview-head-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.officer-overview-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.officer-overview-task-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 6px;
+  background: var(--od-soft);
+  border-radius: 3px;
+  font-size: 11px;
+}
+.officer-overview-task-row .task-name {
+  color: var(--od-ink);
+  font-weight: 600;
+}
+.officer-overview-task-row .task-progress {
+  color: var(--od-accent);
+  font-size: 10px;
+  margin-left: auto;
+}
+.officer-overview-task-row.is-weekly {
+  border-left: 2px solid var(--od-gold, #c98818);
+}
+.officer-equipment-collapsible-inner {
+  margin-top: 6px;
+  border-top: 1px dashed var(--od-line);
+  padding-top: 6px;
+}
+.officer-equipment-subsummary {
+  color: var(--od-accent);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+.officer-achievements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 5px;
+}
+.officer-achievement-row {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 10px;
+  color: var(--od-muted);
+  line-height: 1.35;
+}
+.officer-achievement-row.is-unlocked {
+  color: var(--od-ink);
+}
+.officer-achievement-row.is-unlocked .achievement-icon-name {
+  color: var(--od-gold, #c98818);
+  font-weight: 700;
+}
+.officer-achievement-row .achievement-desc {
+  color: var(--od-muted);
+}
+.officer-collection-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 5px;
+}
+.officer-set-subdetails {
+  background: var(--od-soft);
+  border-radius: 3px;
+  padding: 3px 6px;
+}
+.officer-set-subdetails summary {
+  color: var(--od-ink);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.officer-set-sublist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+  padding: 4px 0 2px;
+}
+.officer-item-pill {
+  padding: 1px 5px;
+  background: var(--od-surface);
+  border: 1px solid var(--od-line);
+  border-radius: 2px;
+  color: var(--od-muted);
+  font-size: 9px;
+}
+.officer-item-pill.is-got {
+  border-color: var(--od-accent);
+  color: var(--od-accent);
+  font-weight: 600;
+}
 .officer-detail-subhead { margin: 12px 0 5px; color: var(--od-muted); font-size: 11px; }
 
 .officer-exp-caption { display: flex; align-items: baseline; justify-content: space-between; gap: 5px; margin-bottom: 6px; font-size: 11px; }
@@ -1474,20 +1952,10 @@
 [data-theme="blue-white-classic"] .officer-attr-track { height: 4px; }
 [data-theme="blue-white-classic"] .officer-attr-effect { min-height: 0; margin-top: 2px; font-size: 11px; }
 [data-theme="blue-white-classic"] .officer-wash-row { margin-top: 2px; }
-[data-theme="blue-white-classic"] .officer-equipment-list { border-top: 0; }
-[data-theme="blue-white-classic"] .officer-equipment-row { min-height: 0; padding: 5px 2px; }
-[data-theme="blue-white-classic"] .officer-equipment-list.is-empty {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-  border-bottom: 1px dotted var(--od-line);
-}
-[data-theme="blue-white-classic"] .officer-equipment-list.is-empty .officer-equipment-row {
-  gap: 4px;
-  border-bottom: 0;
-  white-space: nowrap;
-}
-[data-theme="blue-white-classic"] .officer-equipment-list.is-empty .officer-equipment-slot { flex-basis: auto; }
+[data-theme="blue-white-classic"] .officer-equipment-card { padding: 4px 6px; margin-bottom: 4px; }
+[data-theme="blue-white-classic"] .officer-equipment-group-title { margin: 6px 0 4px; padding: 2px 5px; }
+[data-theme="blue-white-classic"] .officer-equipment-row { min-height: 0; padding: 1px 0; }
+[data-theme="blue-white-classic"] .officer-equipment-sub-row { margin-top: 3px; padding-top: 3px; }
 [data-theme="blue-white-classic"] .officer-detail-subhead { margin: 6px 0 2px; }
 [data-theme="blue-white-classic"] .officer-exp-caption { margin-bottom: 3px; }
 [data-theme="blue-white-classic"] .officer-detail-progress { height: 5px; }

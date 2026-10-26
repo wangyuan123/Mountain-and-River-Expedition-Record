@@ -101,6 +101,8 @@ class ConcurrencyTest extends BaseServiceTest {
         Resources initial = getResources(player.getId());
         initial.setDiamond(200);
         resourcesRepository.save(initial);
+        // 本例只验证并发写入不丢失，预期结算量跟随当前农田每小时产量。
+        long settledFood = initial.getFood() + (long) tickService.produceOf(player.getId(), "farm");
         CyclicBarrier reads = new CyclicBarrier(2);
         ExecutorService workers = Executors.newFixedThreadPool(2);
         java.util.function.Function<Boolean, Boolean> operation = settle -> {
@@ -129,13 +131,13 @@ class ConcurrencyTest extends BaseServiceTest {
             boolean buyCommitted = buy.get(20, TimeUnit.SECONDS);
             assertNotEquals(tickCommitted, buyCommitted, "A stale writer must roll back");
             Resources result = getResources(player.getId());
-            assertEquals(tickCommitted ? 1040 : 1000, result.getFood());
+            assertEquals(tickCommitted ? settledFood : 1000, result.getFood());
             assertEquals(buyCommitted ? 0 : 200, result.getDiamond());
             assertEquals(buyCommitted ? 1 : 0, items.findByPlayerIdAndItemKey(player.getId(), "box_recruit_military")
                     .map(item -> item.getCount()).orElse(0));
             if (!tickCommitted) {
                 tickService.tick(player.getId());
-                assertEquals(1040, getResources(player.getId()).getFood());
+                assertEquals(settledFood, getResources(player.getId()).getFood());
                 assertEquals(0, getResources(player.getId()).getDiamond(), "Fresh settlement preserves the purchase");
             }
         } finally {

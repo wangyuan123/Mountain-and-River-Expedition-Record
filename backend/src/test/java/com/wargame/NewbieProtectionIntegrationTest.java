@@ -87,7 +87,7 @@ class NewbieProtectionIntegrationTest extends BaseServiceTest {
 
     @Test
     void scoutingWithoutConfirmationDoesNotDeductArmyOrSupplies() {
-        int oilBefore = getResources(newcomer.getId()).getOil();
+        long oilBefore = getResources(newcomer.getId()).getOil();
         var error = assertThrows(GameAccessException.class,
                 () -> marchService.createDispatch(newcomer.getId(), request("player", city.getId(), "scout", false)));
         assertEquals("NEWBIE_PROTECTION_CONFIRM_REQUIRED", error.getCode());
@@ -186,6 +186,8 @@ class NewbieProtectionIntegrationTest extends BaseServiceTest {
         var world = worldMapRepository.findById(city.getWorldId()).orElseThrow();
         world.setTerrainData("0".repeat(WorldTerrainService.SIZE * WorldTerrainService.SIZE));
         var guild = new Guild();
+        // 接收许可已满足后，仍须单独确认退出新手保护。
+        city.setAcceptGarrison(true);
         guild.setName("新手支援军团");
         guild.setLeaderPlayerId(newcomer.getId());
         guild.setCreatedAt(1L);

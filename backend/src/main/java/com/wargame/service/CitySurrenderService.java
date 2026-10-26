@@ -209,10 +209,7 @@ public class CitySurrenderService {
         for (MarketOrder order : marketOrders.findBySellerIdOrderByCreatedAtDesc(playerId)) {
             if (!Objects.equals(slot, order.getSellerCitySlot()) || !"ACTIVE".equals(order.getStatus())) continue;
             switch (order.getResourceType()) {
-                case "food" -> stock.setFood(Objects.requireNonNullElse(stock.getFood(), 0) + order.getAmount());
-                case "steel" -> stock.setSteel(Objects.requireNonNullElse(stock.getSteel(), 0) + order.getAmount());
-                case "oil" -> stock.setOil(Objects.requireNonNullElse(stock.getOil(), 0) + order.getAmount());
-                case "rare" -> stock.setRare(Objects.requireNonNullElse(stock.getRare(), 0) + order.getAmount());
+                case "food", "steel", "oil", "rare" -> stock.addResource(order.getResourceType(), order.getAmount());
                 default -> throw new IllegalStateException("未知市场资源");
             }
             order.setStatus("CANCELLED"); order.setCompletedAt(java.time.LocalDateTime.now());
@@ -261,7 +258,7 @@ public class CitySurrenderService {
         return "致 " + defender + "：\n\n我方 " + initiator + " 向贵方提出和平移交提议：若你接受，" + city.getName() + "（" + city.getX() + "," + city.getY() + "）将移交给我方管理，城市中的建筑、普通资源、部队、城防、军官及军官装备完整保留。\n\n你有 24 小时作出决定。接受后，该城市立即进入“归降移交中”状态并冻结所有经营和军事写操作；冻结持续 24 小时，倒计时结束后完成城市移交。\n\n移交完成后，城市归属、城市槽位和城内资产一次性变更。该城所属野地随城市转移；账号科技、军衔、声望、任务、军团关系、其他城市领地、钻石和账号道具不随城市转移。接受后双方均不能撤销。若 24 小时内未答复，本提议自动失效；城市不会被冻结，现有归属和资产不变。\n\n答复截止时间：" + format(offer.getResponseExpiresAt());
     }
 
-    private static String displayName(Player player) { return player == null ? "对方玩家" : (player.getDisplayName() == null || player.getDisplayName().isBlank() ? player.getUsername() : player.getDisplayName()); }
+    private static String displayName(Player player) { return player == null ? "对方玩家" : com.wargame.util.PlayerNames.commanderName(player); }
     /** 邮件中的绝对时间仅为发送时预计值，后续停服顺延，实际期限以游戏倒计时为准。 */
     private static String format(Long time) {
         return time == null ? "-" : new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm")

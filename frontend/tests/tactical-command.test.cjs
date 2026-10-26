@@ -71,6 +71,81 @@ function popupHtml(view) {
   return view.innerHTML.slice(view.innerHTML.indexOf('id="tacticalUnitCommand"'));
 }
 
+test('协防面板按来源显示独立军官，同兵种命令与来源筛选互不影响', () => {
+  const { Game, view } = setup();
+  Game.Battle._activeTactical.unitContexts = {
+    'rocket~a': { title: '【本城·守将张某】', military: 100, defense: 80, firstCombatRound: 2, skills: {} },
+    'rocket~b': { title: '【援军·玩家A·将领李某】', military: 20, defense: 30, firstCombatRound: 0, skills: {} }
+  };
+  Game.Battle._activeTactical.formationEvents = [
+    { type: 'MOVEMENT', round: 2, formationId: 'formation-1', formation: '【本城·守将张某】', unit: 'rocket', countBefore: 10, from: 0, to: 300 },
+    { type: 'FIRE', round: 2, batch: 1, formationId: 'formation-2', formation: '【援军·玩家A·将领李某】', unit: 'rocket', countBefore: 20, target: '敌军', targetUnit: 'htank', damage: 12 }
+  ];
+  Game.Battle._tacticalCommandView = 'text'; Game.Core.render();
+  assert.match(view.innerHTML, /参战来源与独立加成（2）/);
+  assert.match(view.innerHTML, /将领军事 100／防御 80/); assert.match(view.innerHTML, /将领军事 20／防御 30/);
+  const before = JSON.stringify(Game.Battle._tacticalOrders);
+  Game.Battle._formationLogSource = 'formation-2';
+  const filtered = Game.Battle.renderFormationEvents(Game.Battle._activeTactical.formationEvents);
+  assert.match(filtered, /攻击 敌军/); assert.doesNotMatch(filtered, /移动300/);
+  assert.equal(JSON.stringify(Game.Battle._tacticalOrders), before);
+});
+
+test('同名编队保持独立标识，显示贡献合计取已展示分项之和', () => {
+  const { Game } = setup();
+  const rows = ['formation-1', 'formation-2'].map(id => ({ formationId: id, formation: '同名将领', kind: 'support', unit: 'rocket',
+    initial: 10, survivors: 7, losses: 3, wounded: 2, damage: 1.6 }));
+  const html = Game.Battle.renderFormationContributions(rows);
+  assert.match(html, /formation-1/); assert.match(html, /formation-2/);
+  assert.match(html, /守方合计<\/th><td>20<\/td><td>3.2<\/td><td>6<\/td><td>4<\/td><td>14/);
+});
+
+test('贡献小数按伤害类型统一分配尾差，拆组不增伤且不改写服务端数据', () => {
+  const { Game } = setup();
+  const rows = ['formation-1', 'formation-2'].map(id => ({ formationId: id, kind: 'support', unit: 'rocket', damage: .018,
+    unitDamage: .006, wallDamage: .006, fortDamage: .006 }));
+  const before = JSON.stringify(rows), displayed = Game.Battle.formationDamageDisplay(rows);
+  for (const key of ['unitDamage', 'wallDamage', 'fortDamage']) assert.equal(displayed.reduce((n, row) => n + Math.round(row[key] * 100), 0), 1);
+  assert.equal(displayed.reduce((n, row) => n + Math.round(row.damage * 100), 0), 3);
+  assert.equal(JSON.stringify(rows), before);
+});
+
+test('后台已结束的战斗通过只读请求恢复终局，停止旧回合重试', async () => {
+  const { Game, view, timers } = setup();
+  const final = { ...Game.Battle._activeTactical, round: 16, finished: true,
+    attackerArmy: { rocket: 25 }, wall: { level: 10, hpRemaining: 0, maxHp: 2500000 },
+    terminalReason: 'WALL_BREACHED', result: { win: true }, log: '最终回合' };
+  let commands = 0, reads = 0;
+  Game.API = {
+    commandTacticalBattle() { commands++; return Promise.reject(Object.assign(new Error('当前行军没有可指挥的战斗'), { status: 400 })); },
+    getTacticalBattle() { reads++; return Promise.resolve(final); }
+  };
+  await Game.Battle.executeTacticalRound();
+  assert.equal(Game.Battle._activeTactical, final);
+  assert.match(view.innerHTML, /征服大捷/);
+  assert.doesNotMatch(view.innerHTML, /重试第|请手动重试/);
+  assert.equal(timers(), 0);
+  await Game.Battle.executeTacticalRound();
+  assert.equal(commands, 1);
+  assert.equal(reads, 1);
+});
+
+test('不可恢复的历史战斗提供战报入口，不再重放命令或伪造胜负', async () => {
+  const { Game, view, timers } = setup();
+  let commands = 0;
+  Game.API = {
+    commandTacticalBattle() { commands++; return Promise.reject(Object.assign(new Error('行军任务不存在'), { status: 400 })); },
+    getTacticalBattle() { return Promise.reject(new Error('行军任务不存在')); }
+  };
+  await Game.Battle.executeTacticalRound();
+  assert.match(view.innerHTML, /查看战报确认最终战果/);
+  assert.doesNotMatch(view.innerHTML, /重试第|请手动重试/);
+  assert.equal(Game.Battle._activeTactical.finished, undefined);
+  assert.equal(timers(), 0);
+  await Game.Battle.executeTacticalRound();
+  assert.equal(commands, 1);
+});
+
 test('实时战场记录沿用战报的伤害和连击文案，保留服务端原始日志', () => {
   const { Game, view } = setup();
   const raw = '我方火箭车(100)齐射敌重型坦克(1) 对地攻击200 本次原始火力20000 伤害1000 击毁1 剩余攻击额度40% 有效射程1600 目标距离300；余伤攻击敌步兵(20) 对地攻击200 伤害600 击毁10 剩余攻击额度0% 有效射程1600 目标距离500';
@@ -214,8 +289,8 @@ test('弹窗与面板共用截止时间，到时关闭弹窗并只提交一回�
   Game.Battle.openTacticalUnitCommand('rocket~a');
   setNow(5000);
   tick();
-  assert.equal(countdowns.tacticalCountdown.textContent, '11 秒');
-  assert.equal(countdowns.tacticalUnitCommandCountdown.textContent, '11 秒');
+  assert.equal(countdowns.tacticalCountdown.textContent, '11秒');
+  assert.equal(countdowns.tacticalUnitCommandCountdown.textContent, '11秒');
   setNow(16000);
   tick();
   assert.equal(removed(), 1);
@@ -341,7 +416,7 @@ test('快速切换、日志和重绘共用一个计时器，不延长服务端�
     Battle.toggleTacticalLog();
     Game.Core.render();
   }
-  assert.equal(countdowns.tacticalCountdown.textContent, '4 秒');
+  assert.equal(countdowns.tacticalCountdown.textContent, '4秒');
   assert.equal(Battle._tacticalDeadline, 16000);
   assert.equal(timers(), 1);
   assert.equal(timerCount(), 1);
@@ -351,16 +426,16 @@ test('快速切换、日志和重绘共用一个计时器，不延长服务端�
   assert.doesNotMatch(view.innerHTML, /id="tacticalLog" hidden/);
 });
 
-test('旧会话缺截止时间时仅初始化一次，切换视图不重新生成十五秒', () => {
+test('旧会话缺截止时间时仅初始化一次十二秒窗口，切换视图不延长', () => {
   const { Game, setNow } = setup();
   const Battle = Game.Battle;
   delete Battle._activeTactical.roundDeadlineAt;
   Battle.resetTacticalPanel(42);
   Game.Core.render();
-  assert.equal(Battle._tacticalDeadline, 16000);
+  assert.equal(Battle._tacticalDeadline, 13000);
   setNow(12000);
   Battle.setTacticalCommandView('text');
-  assert.equal(Battle._tacticalDeadline, 16000);
+  assert.equal(Battle._tacticalDeadline, 13000);
 });
 
 test('提交期间两视图禁用命令和执行，但Tab可切换，下一回合保留视图和日志状态', async () => {
@@ -423,7 +498,7 @@ test('网络失败在公共区域显示，共享单一重试计时器且手动�
   for (const mode of ['text', 'battlefield', 'text']) {
     Battle.setTacticalCommandView(mode);
     assert.match(view.innerHTML, /本回合执行失败：网络暂不可用/);
-    assert.match(view.innerHTML, /5 秒后自动重试/);
+    assert.match(view.innerHTML, /5秒后自动重试/);
     assert.match(view.innerHTML, /id="tacticalLog" hidden/);
   }
   setNow(20000);

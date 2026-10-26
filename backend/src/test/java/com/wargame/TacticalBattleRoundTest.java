@@ -109,14 +109,14 @@ class TacticalBattleRoundTest {
                 Map.of(), Map.of());
 
         String report = state.log();
-        String attackerPrefix = "我方反坦克火箭车-喀秋莎（BM-13）(1)";
+        String attackerPrefix = "我方反坦克火箭-喀秋莎（BM-13）(1)";
         String attackerLine = report.lines()
                 .filter(line -> line.startsWith(attackerPrefix))
                 .findFirst()
                 .orElseThrow();
 
         assertTrue(attackerLine.contains("[前进] 推进150 -> 坐标150 (距敌1600)"), report);
-        assertTrue(attackerLine.contains("；齐射敌反坦克火箭车-喀秋莎（BM-13）"), report);
+        assertTrue(attackerLine.contains("；齐射敌反坦克火箭-喀秋莎（BM-13）"), report);
         assertTrue(attackerLine.contains("有效射程1600 目标距离1600"), report);
         assertFalse(attackerLine.contains("；" + attackerPrefix), report);
         assertEquals(1, report.lines()
@@ -138,7 +138,7 @@ class TacticalBattleRoundTest {
                     Map.of(), Map.of());
             assertEquals(Math.min(round * 150, 1_000), state.attackerPositions().get("rocket"), state.log());
             assertEquals(1_000, state.defenderPositions().get("truck"));
-            assertFalse(state.log().contains("我方反坦克火箭车-喀秋莎（BM-13）(1) [待命]"));
+            assertFalse(state.log().contains("我方反坦克火箭-喀秋莎（BM-13）(1) [待命]"));
             attackerPositions = state.attackerPositions();
             defenderPositions = state.defenderPositions();
         }

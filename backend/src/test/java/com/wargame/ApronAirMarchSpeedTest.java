@@ -27,7 +27,8 @@ class ApronAirMarchSpeedTest extends BaseServiceTest {
         BuildingDef apronDef = BuildingDef.BUILDINGS.get("apron");
         assertNotNull(apronDef);
         assertEquals(3, apronDef.airSpdBonus());
-        assertTrue(apronDef.desc().contains("航速"));
+        assertTrue(apronDef.desc().contains("空军世界行军速度+3%/级"));
+        assertTrue(apronDef.desc().contains("不提高战场移动速度"));
     }
 
     @Test

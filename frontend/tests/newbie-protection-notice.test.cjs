@@ -97,16 +97,16 @@ function setup(storage = new Map()) {
   };
 }
 
-test('新手保护按天小时分钟显示，总分钟数向上取整且到期即失效', () => {
+test('新手保护精确到秒，省略前导零单位且到期即失效', () => {
   const f = setup();
   for (const [remaining, expected] of [
-    [167 * 3600000, '6天23小时0分钟'], [48 * 3600000, '2天0小时0分钟'],
-    [2 * 86400000 + 3 * 3600000 + 4 * 60000, '2天3小时4分钟'],
-    [24 * 3600000 + 1, '1天0小时1分钟'], [24 * 3600000, '1天0小时0分钟'],
-    [24 * 3600000 - 1, '1天0小时0分钟'], [23 * 3600000, '23小时0分钟'],
-    [24 * 3600000 - 60000, '23小时59分钟'],
-    [3600001, '1小时1分钟'], [3600000 - 1, '1小时0分钟'],
-    [59 * 60000, '59分钟'], [60001, '2分钟'], [60000, '1分钟'], [1000, '1分钟']
+    [167 * 3600000, '6天23小时0分钟0秒'], [48 * 3600000, '2天0小时0分钟0秒'],
+    [2 * 86400000 + 3 * 3600000 + 4 * 60000, '2天3小时4分钟0秒'],
+    [24 * 3600000 + 1, '1天0小时0分钟1秒'], [24 * 3600000, '1天0小时0分钟0秒'],
+    [24 * 3600000 - 1, '1天0小时0分钟0秒'], [23 * 3600000, '23小时0分钟0秒'],
+    [24 * 3600000 - 60000, '23小时59分钟0秒'],
+    [3600001, '1小时0分钟1秒'], [3600000 - 1, '1小时0分钟0秒'],
+    [59 * 60000, '59分钟0秒'], [60001, '1分钟1秒'], [60000, '1分钟0秒'], [1000, '1秒']
   ]) {
     f.G.Core.state.cityState.newbieProtectionUntil = f.now() + remaining;
     assert.equal(f.G.Core.newbieProtectionInfo().countdown, expected);
@@ -114,7 +114,7 @@ test('新手保护按天小时分钟显示，总分钟数向上取整且到期�
   }
   f.G.Core.state.cityState.newbieProtectionUntil = f.now();
   assert.equal(f.G.Core.newbieProtectionInfo().active, false);
-  assert.equal(f.G.Core.newbieProtectionInfo().countdown, '0分钟');
+  assert.equal(f.G.Core.newbieProtectionInfo().countdown, '0秒');
 });
 
 test('首页关闭需二次确认，取消不隐藏，确认后刷新、切城、重载均保持隐藏且不退出保护', () => {
@@ -176,10 +176,10 @@ test('首页局部更新保留关闭按钮，保护到期或服务端明确归�
   notice.innerHTML = closeMarkup;
   f.G.MainView.silentUpdateHome({});
   assert.equal(notice.innerHTML, closeMarkup);
-  assert.match(f.elements.get('newbieProtectionNoticeText').textContent, /还剩6天23小时0分钟/);
+  assert.match(f.elements.get('newbieProtectionNoticeText').textContent, /还剩6天23小时0分钟0秒/);
   f.setTime(f.now() + 60000);
   f.G.MainView.silentUpdateHome({});
-  assert.match(f.elements.get('newbieProtectionNoticeText').textContent, /还剩6天22小时59分钟/);
+  assert.match(f.elements.get('newbieProtectionNoticeText').textContent, /还剩6天22小时59分钟0秒/);
   f.G.Core.state.player.newbieProtectionUntil = f.now() + 7 * 86400000;
   f.G.Core.state.cityState.newbieProtectionUntil = 0;
   f.G.MainView.silentUpdateHome({});
@@ -192,7 +192,7 @@ test('首页局部更新保留关闭按钮，保护到期或服务端明确归�
   assert.equal(notice.hidden, true);
 });
 
-test('首页隐藏后档案仍展示倒计时和规则，逐分钟变化及服务端延期每秒校准', () => {
+test('首页隐藏后档案仍展示倒计时和规则，逐秒变化及服务端延期每秒校准', () => {
   const f = setup(new Map([['wargame_newbie_notice_hidden_1', '1']]));
   f.renderHome();
   assert.equal(f.elements.get('newbieProtectionNotice').hidden, true);
@@ -201,15 +201,15 @@ test('首页隐藏后档案仍展示倒计时和规则，逐分钟变化及服�
   const section = f.elements.get('drawerNewbieProtection');
   const countdown = f.elements.get('drawerNewbieProtectionCountdown');
   assert.equal(section.hidden, false);
-  assert.equal(countdown.textContent, '还剩1天0小时0分钟');
+  assert.equal(countdown.textContent, '还剩1天0小时0分钟0秒');
   assert.match(f.elements.get('playerDrawerMask').innerHTML, /首次进入保护7天/);
   assert.equal(f.intervals.size, 1);
-  f.setTime(f.now() + 60000);
+  f.setTime(f.now() + 1000);
   f.tick();
-  assert.equal(countdown.textContent, '还剩23小时59分钟');
+  assert.equal(countdown.textContent, '还剩23小时59分钟59秒');
   f.G.Core.state.cityState.newbieProtectionUntil = f.now() + 7 * 86400000;
   f.tick();
-  assert.equal(countdown.textContent, '还剩7天0小时0分钟');
+  assert.equal(countdown.textContent, '还剩7天0小时0分钟0秒');
   f.G.Core.state.cityState.newbieProtectionUntil = 0;
   f.tick();
   assert.equal(section.hidden, true);

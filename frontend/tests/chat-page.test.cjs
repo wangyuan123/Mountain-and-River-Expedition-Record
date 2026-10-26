@@ -103,6 +103,7 @@ test('chat route renders world messages and preserves the draft and scroll durin
   game.Chat.log.push({ id: 1, playerId: 2, username: 'bob', content: '世界消息', ts: Date.now() });
   game.Core.render();
   assert.match(view.innerHTML, /世界消息/);
+  assert.match(view.innerHTML, /id="worldChatInput"[^>]*placeholder="善言结善缘 恶语伤人心"/);
   assert.ok(classes.has('chat-open'));
   const rendered = view.innerHTML;
   box.scrollTop = 40;
@@ -115,6 +116,7 @@ test('chat route renders world messages and preserves the draft and scroll durin
   game.state.prestige = 9999;
   game.Core.silentUpdate({});
   assert.equal(input.disabled, true);
+  assert.equal(input.placeholder, '声望达到 10,000 后可发言');
   assert.equal(game.Chat.canSend(), false);
 });
 
@@ -265,6 +267,7 @@ test('membership changes update only the guild panel while unchanged membership 
   game.Core.state.player.guild = { id: 42 };
   game.Core.views.chat(view);
   assert.match(html, /id="chatPageGuildInput"/);
+  assert.match(html, /id="chatPageGuildInput"[^>]*placeholder="善言结善缘 恶语伤人心"/);
   assert.equal(writes, 1);
   game.Core.views.chat(view);
   assert.equal(writes, 1);

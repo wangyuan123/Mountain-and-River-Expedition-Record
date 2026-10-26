@@ -61,7 +61,7 @@ test('接受劝降使用主题弹窗展示城名、期限和资产范围，确�
   await flush();
   assert.deepEqual(f.requests, [[12, 'accept']]);
   assert.equal(f.dialog, undefined);
-  assert.deepEqual(f.toasts, ['已接受劝降，城市将在 24 小时后完成移交']);
+  assert.deepEqual(f.toasts, ['已接受劝降，城市将在 1天0小时0分钟0秒后完成移交']);
 });
 
 test('取消接受劝降不提交答复，拒绝劝降仍可直接提交', async () => {

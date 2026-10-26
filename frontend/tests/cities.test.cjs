@@ -64,6 +64,25 @@ test('navigation switch retains an escaped current-city tooltip and incoming war
   assert.match(html,/切换/);assert.match(html,/分城/);assert.match(html,/&lt;北城&gt;/);assert.match(html,/city-alert-dot/);
 });
 
+test('top rank describes its capacity without claiming unused city slots are full',()=>{
+  const content={innerHTML:''};
+  const overview={cities:[],count:3,cap:8,rankName:'上将'};
+  const ctx=runtime({document:{getElementById(id){return id==='cityDialogContent'?content:null;}},
+    Game:{Core:{state:{cityOverview:overview}},escapeHtml:String}});
+  load(ctx,'cities.js');
+  ctx.Game.Cities.back();
+  assert.match(content.innerHTML,/当前军衔最多可拥有 8 座城市/);
+  assert.match(content.innerHTML,/剩余 5 个名额/);
+  assert.doesNotMatch(content.innerHTML,/已达到最高城市上限|城市数量已达上限/);
+  overview.count=8;
+  ctx.Game.Cities.back();
+  assert.match(content.innerHTML,/城市数量已达上限/);
+  assert.doesNotMatch(content.innerHTML,/建立新城/);
+  overview.nextRankName='上将';overview.nextCap=9;
+  ctx.Game.Cities.back();
+  assert.match(content.innerHTML,/晋升上将后，可拥有 9 座城市/);
+});
+
 test('city transfer offers logistics for transport and every available unit for dispatch',()=>{
   const content={innerHTML:''};
   const number={dataset:{resource:'gold'},value:'0',max:'50'};

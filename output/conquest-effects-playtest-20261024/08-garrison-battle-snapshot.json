@@ -1,0 +1,5 @@
+{
+  "sources": "{\"0\":{\"playerId\":176,\"army\":{\"infantry\":1000},\"playerName\":\"test1\"},\"258\":{\"playerId\":158,\"army\":{\"htank\":10000},\"playerName\":\"远征军_570712\"}}",
+  "support": "{\"258\":{\"htank\":10000}}",
+  "initialDefender": "{\"infantry\":1000,\"htank\":10000}"
+}

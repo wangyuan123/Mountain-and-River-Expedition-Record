@@ -72,7 +72,7 @@ class MilitaryTheoryTest extends BaseServiceTest {
         Building academy = createBuilding(id, "academy", target);
         Building staff = createBuilding(id, "staff", Math.max(0, target - 2));
         List<Building> required = target < 3 ? List.of(lab, academy) : List.of(lab, academy, staff);
-        int gold = getResources(id).getGold();
+        long gold = getResources(id).getGold();
         for (Building building : required) {
             int level = building.getLevel();
             building.setLevel(level - 1);

@@ -1,5 +1,7 @@
 package com.wargame.service;
 
+import com.wargame.util.DurationText;
+
 import com.wargame.util.GameClock;
 import com.wargame.model.constants.GameConstants;
 import com.wargame.model.constants.GameData;
@@ -35,6 +37,7 @@ import java.util.random.RandomGenerator;
  */
 @Service
 public class OfficerService {
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private GarrisonFoodService garrisonFood;
 
     @jakarta.persistence.PersistenceContext
     private jakarta.persistence.EntityManager entityManager;
@@ -126,9 +129,8 @@ public class OfficerService {
             return result;
         }
         if (quota.refreshAt() > now) {
-            long mins = (long) Math.ceil((quota.refreshAt() - now) / 60000.0);
             result.put("success", false);
-            result.put("message", "本轮已刷新30次，军校 " + mins + " 分钟后可再次刷新");
+            result.put("message", "本轮已刷新30次，军校 " + DurationText.millis(quota.refreshAt() - now) + "后可再次刷新");
             return result;
         }
 
@@ -258,6 +260,7 @@ public class OfficerService {
     /** 每城每职只任命一人；司令部落成后解锁司令官，行军军官不能改任。 */
     @Transactional
     public Map<String, Object> appoint(Long playerId, Long officerId, String role) {
+        if (garrisonFood != null) garrisonFood.beforeChange(playerId);
         Map<String, Object> result = new LinkedHashMap<>();
 
         if (role == null || !Set.of("mayor", "commander", "commander_in_chief").contains(role)) {
@@ -323,6 +326,8 @@ public class OfficerService {
 
     @Transactional
     public Map<String, Object> dismiss(Long playerId, Long officerId) {
+        if (garrisonFood != null) garrisonFood.beforeChange(playerId);
+        equipmentProgress.lockPlayer(playerId);
         Map<String, Object> result = new LinkedHashMap<>();
 
         List<Officer> officers = officerRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
@@ -345,11 +350,12 @@ public class OfficerService {
         int refund = star * DISMISS_REFUND_PER_STAR;
         Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (res != null) {
-            setGold(res, getGold(res) + refund);
+            res.addResource("gold", refund);
             resourcesRepository.save(res);
         }
 
         String name = target.getName();
+        equipmentService.unequip(playerId, officerId, "all");
         officerRepository.delete(target);
 
         result.put("success", true);
@@ -378,9 +384,8 @@ public class OfficerService {
 
         // JS: if (o.rewardCoolAt && now < o.rewardCoolAt)
         if (rewardAt > 0 && now < rewardAt) {
-            long remainMin = (long) Math.ceil((rewardAt - now) / 60000.0);
             result.put("success", false);
-            result.put("message", "赏赐冷却中，还需 " + remainMin + " 分钟");
+            result.put("message", "赏赐冷却中，还需 " + DurationText.millis(rewardAt - now));
             return result;
         }
 
@@ -407,7 +412,7 @@ public class OfficerService {
         officerRepository.save(officer);
 
         result.put("success", true);
-        result.put("message", "赏赐成功! 忠诚度 +" + gain + "，消耗黄金" + cost + "，30分钟后可再次赏赐");
+        result.put("message", "赏赐成功! 忠诚度 +" + gain + "，消耗黄金" + cost + "，" + DurationText.millis(REWARD_COOLDOWN) + "后可再次赏赐");
         result.put("loyalty", officer.getLoyalty());
         result.put("cost", cost);
         return result;
@@ -419,22 +424,14 @@ public class OfficerService {
 
     @Transactional
     public Map<String, Object> learnSkill(Long playerId, Long officerId) {
+        playerRepository.lockById(playerId).orElseThrow();
+        if (garrisonFood != null) garrisonFood.beforeChange(playerId);
         Map<String, Object> result = new LinkedHashMap<>();
 
-        Officer officer = findOfficer(playerId, officerId);
+        Officer officer = findOfficerForSkillChange(playerId, officerId);
         if (officer == null) {
             result.put("success", false);
             result.put("message", "军官不存在");
-            return result;
-        }
-
-        // Server-side consumption: must own at least 1 universal skill book.
-        // Historical BUG: client only tracked skill book count locally,
-        // so a refresh-tab would let players learn skills indefinitely.
-        int consumed = playerItemRepository.tryConsume(playerId, "skillBook", 1, GameClock.now());
-        if (consumed == 0) {
-            result.put("success", false);
-            result.put("message", "通用技能书不足");
             return result;
         }
 
@@ -443,8 +440,6 @@ public class OfficerService {
 
         // JS: if (o.skills.length >= 3)
         if (skills.size() >= MAX_SKILLS) {
-            // Refund: we just consumed a book, give it back since we won't add a skill.
-            playerItemRepository.tryConsume(playerId, "skillBook", -1, GameClock.now());
             result.put("success", false);
             result.put("message", "技能已满3个，请先废弃一个");
             return result;
@@ -468,8 +463,6 @@ public class OfficerService {
         }
 
         if (pool.isEmpty()) {
-            // Refund the skill book we just consumed.
-            playerItemRepository.tryConsume(playerId, "skillBook", -1, GameClock.now());
             result.put("success", false);
             result.put("message", "已学完全部技能");
             return result;
@@ -484,6 +477,12 @@ public class OfficerService {
         int lv = 1 + ThreadLocalRandom.current().nextInt(Math.max(1, star));
         if (lv > pickInfo.max()) lv = pickInfo.max();
 
+        if (playerItemRepository.tryConsume(playerId, "skillBook", 1, GameClock.now()) == 0) {
+            result.put("success", false);
+            result.put("message", "普通技能书不足");
+            return result;
+        }
+
         Map<String, Object> newSkill = new LinkedHashMap<>();
         newSkill.put("id", pickId);
         newSkill.put("lv", lv);
@@ -493,7 +492,7 @@ public class OfficerService {
         officerRepository.save(officer);
 
         result.put("success", true);
-        result.put("message", "学习成功: " + pickInfo.name() + " Lv." + lv + " (消耗1本通用技能书)");
+        result.put("message", "学习成功: " + pickInfo.name() + " Lv." + lv + " (消耗1本普通技能书)");
         result.put("skillId", pickId);
         result.put("skillName", pickInfo.name());
         result.put("level", lv);
@@ -512,15 +511,28 @@ public class OfficerService {
      */
     @Transactional
     public Map<String, Object> learnSpecificSkill(Long playerId, Long officerId, String itemId, String skillId) {
+        return learnChosenSkill(playerId, officerId, itemId, skillId, false);
+    }
+
+    /** 通用书只能从正式池学习新技能 Lv.1，不接受历史别名，也不能升级已有技能。 */
+    @Transactional
+    public Map<String, Object> learnUniversalSkill(Long playerId, Long officerId, String skillId) {
+        return learnChosenSkill(playerId, officerId, "universalSkillBook", skillId, true);
+    }
+
+    /** 在玩家写锁内校验、扣书并写入技能；两类指定学习共享槽位、重复与互斥规则。 */
+    private Map<String, Object> learnChosenSkill(Long playerId, Long officerId, String itemId, String skillId, boolean universal) {
+        playerRepository.lockById(playerId).orElseThrow();
+        if (garrisonFood != null) garrisonFood.beforeChange(playerId);
         Map<String, Object> result = new LinkedHashMap<>();
-        OfficerSkillDef skill = GameData.OFFICER_SKILLS.get(skillId);
-        if (skill == null || !("skillBook_" + skillId).equals(itemId)) {
+        OfficerSkillDef skill = skillId == null ? null : GameData.OFFICER_SKILLS.get(skillId);
+        if (skill == null || (!universal && !("skillBook_" + skillId).equals(itemId))) {
             result.put("success", false);
-            result.put("message", "无效的指定技能书");
+            result.put("message", universal ? "请选择技能池中的有效技能" : "无效的指定技能书");
             return result;
         }
 
-        Officer officer = findOfficer(playerId, officerId);
+        Officer officer = findOfficerForSkillChange(playerId, officerId);
         if (officer == null) {
             result.put("success", false);
             result.put("message", "军官不存在");
@@ -551,10 +563,11 @@ public class OfficerService {
             }
         }
 
+        String bookName = universal ? "通用技能书" : skill.name() + "技能书";
         int consumed = playerItemRepository.tryConsume(playerId, itemId, 1, GameClock.now());
         if (consumed == 0) {
             result.put("success", false);
-            result.put("message", skill.name() + "技能书不足");
+            result.put("message", bookName + "不足");
             return result;
         }
 
@@ -566,7 +579,9 @@ public class OfficerService {
         officerRepository.save(officer);
 
         result.put("success", true);
-        result.put("message", "学习成功: " + skill.name() + " Lv.1 (消耗1本" + skill.name() + "技能书)");
+        result.put("message", universal
+                ? officer.getName() + " 已学会「" + skill.name() + "」Lv.1 (消耗1本" + bookName + ")"
+                : "学习成功: " + skill.name() + " Lv.1 (消耗1本" + bookName + ")");
         result.put("skillId", skillId);
         result.put("skillName", skill.name());
         result.put("level", 1);
@@ -585,8 +600,10 @@ public class OfficerService {
      */
     @Transactional
     public Map<String, Object> upgradeSkill(Long playerId, Long officerId, int skillIdx, String itemId) {
+        playerRepository.lockById(playerId).orElseThrow();
+        if (garrisonFood != null) garrisonFood.beforeChange(playerId);
         Map<String, Object> result = new LinkedHashMap<>();
-        Officer officer = findOfficer(playerId, officerId);
+        Officer officer = findOfficerForSkillChange(playerId, officerId);
         if (officer == null) {
             result.put("success", false);
             result.put("message", "军官不存在");
@@ -634,9 +651,11 @@ public class OfficerService {
 
     @Transactional
     public Map<String, Object> abandonSkill(Long playerId, Long officerId, int skillIdx) {
+        playerRepository.lockById(playerId).orElseThrow();
+        if (garrisonFood != null) garrisonFood.beforeChange(playerId);
         Map<String, Object> result = new LinkedHashMap<>();
 
-        Officer officer = findOfficer(playerId, officerId);
+        Officer officer = findOfficerForSkillChange(playerId, officerId);
         if (officer == null) {
             result.put("success", false);
             result.put("message", "军官不存在");
@@ -773,6 +792,7 @@ public class OfficerService {
 
     @Transactional
     public Map<String, Object> levelUp(Long playerId, Long officerId, boolean all) {
+        if (garrisonFood != null) garrisonFood.beforeChange(playerId);
         Map<String, Object> result = new LinkedHashMap<>();
         Officer officer = findOfficer(playerId, officerId);
         if (officer == null) {
@@ -840,6 +860,7 @@ public class OfficerService {
 
     @Transactional
     public Map<String, Object> assignAttr(Long playerId, Long officerId, String attr, int points) {
+        if (garrisonFood != null) garrisonFood.beforeChange(playerId);
         Map<String, Object> result = new LinkedHashMap<>();
         if (points <= 0) {
             result.put("success", false);
@@ -919,6 +940,7 @@ public class OfficerService {
 
     @Transactional
     public Map<String, Object> wash(Long playerId, Long officerId) {
+        if (garrisonFood != null) garrisonFood.beforeChange(playerId);
         Map<String, Object> result = new LinkedHashMap<>();
         Officer officer = findOfficer(playerId, officerId);
         if (officer == null) {
@@ -1063,164 +1085,25 @@ public class OfficerService {
         return result;
     }
 
+    @org.springframework.beans.factory.annotation.Autowired private EquipmentService equipmentService;
+    @org.springframework.beans.factory.annotation.Autowired private OfficerEquipmentProgressService equipmentProgress;
+
+    /** 单件穿卸与属性接口委托共享结算，避免详情漏算防御或共鸣阶段。 */
     @Transactional
     public Map<String, Object> equip(Long playerId, Long officerId, String itemId) {
-        Officer officer = findOfficer(playerId, officerId);
-        OfficerEquipmentDef def = OfficerEquipmentDef.ITEMS.get(itemId);
-        if (officer == null) return equipmentError("军官不存在");
-        if (def == null) return equipmentError("无效的装备");
-        int level = officer.getLevel() != null ? officer.getLevel() : 1;
-        if (level < def.requiredLevel()) return equipmentError("军官等级不足，需要 Lv." + def.requiredLevel());
-        if (playerItemRepository.tryConsume(playerId, itemId, 1, GameClock.now()) == 0) {
-            return equipmentError("装备不在库存中");
-        }
-
-        // 同槽位只能装备一件，若已有装备则自动卸下返还背包，并就地复用记录更新（避免 Hibernate flush 顺序导致的唯一键冲突）
-        List<OfficerEquipment> current = equipmentRepository.findByPlayerIdAndOfficerId(playerId, officerId);
-        OfficerEquipment existingSameSlot = null;
-        for (OfficerEquipment old : current) {
-            OfficerEquipmentDef oldDef = OfficerEquipmentDef.ITEMS.get(old.getItemKey());
-            if (oldDef != null && oldDef.slot().equals(def.slot())) {
-                addToInventory(playerId, old.getItemKey());
-                if (existingSameSlot == null) {
-                    existingSameSlot = old;
-                } else {
-                    equipmentRepository.delete(old);
-                    equipmentRepository.flush();
-                }
-            }
-        }
-
-        long now = GameClock.now();
-        OfficerEquipment equipment;
-        if (existingSameSlot != null) {
-            // 复用已有实体直接更新字段，发出 UPDATE 语句，杜绝先删后插时的 uk_officer_equipment_slot 唯一键冲突
-            equipment = existingSameSlot;
-        } else {
-            equipment = new OfficerEquipment();
-            equipment.setPlayerId(playerId);
-            equipment.setOfficerId(officerId);
-            equipment.setCreatedAt(now);
-        }
-
-        equipment.setItemKey(def.key());
-        equipment.setSetType(def.setKey());
-        equipment.setTier(def.tier());
-        equipment.setSlot(def.slot());
-        equipment.setMilitaryBonus(def.military());
-        equipment.setLogisticsBonus(def.logistics());
-        equipment.setKnowledgeBonus(def.knowledge());
-        equipment.setEquippedAt(now);
-        equipmentRepository.saveAndFlush(equipment);
-        officerRepository.save(officer);
-        return equipmentSuccess("已为 " + officer.getName() + " 装备 " + def.name());
+        return equipmentService.equip(playerId, officerId, itemId);
     }
-
     @Transactional
     public Map<String, Object> unequip(Long playerId, Long officerId, String itemId) {
-        Officer officer = findOfficer(playerId, officerId);
-        if (officer == null) return equipmentError("军官不存在");
-        OfficerEquipment equipment = equipmentRepository.findByPlayerIdAndOfficerId(playerId, officerId).stream()
-                .filter(e -> itemId != null && itemId.equals(e.getItemKey())).findFirst().orElse(null);
-        if (equipment == null) return equipmentError("该装备未穿戴");
-        addToInventory(playerId, equipment.getItemKey());
-        equipmentRepository.delete(equipment);
-        equipmentRepository.flush();
-        officerRepository.save(officer);
-        OfficerEquipmentDef def = OfficerEquipmentDef.ITEMS.get(itemId);
-        return equipmentSuccess("已卸下 " + (def != null ? def.name() : itemId));
+        return equipmentService.unequip(playerId, officerId, itemId);
     }
-
-    /**
-     * 计算军官装备后的总属性（含套装加成）。
-     * 用于前端展示及战斗属性叠加。
-     */
     public Map<String, Object> computeAttributes(Long playerId, Long officerId) {
-        Officer officer = findOfficer(playerId, officerId);
-        Map<String, Object> result = new LinkedHashMap<>();
-        if (officer == null) { result.put("success", false); result.put("message", "军官不存在"); return result; }
-        int military = officer.getMilitary() != null ? officer.getMilitary() : 0;
-        int logistics = officer.getLogistics() != null ? officer.getLogistics() : 0;
-        int knowledge = officer.getKnowledge() != null ? officer.getKnowledge() : 0;
-        List<OfficerEquipment> equipped = equipmentRepository.findByPlayerIdAndOfficerId(playerId, officerId);
-        Map<String, List<OfficerEquipment>> sets = new HashMap<>();
-        for (OfficerEquipment e : equipped) {
-            military += e.getMilitaryBonus() != null ? e.getMilitaryBonus() : 0;
-            logistics += e.getLogisticsBonus() != null ? e.getLogisticsBonus() : 0;
-            knowledge += e.getKnowledgeBonus() != null ? e.getKnowledgeBonus() : 0;
-            sets.computeIfAbsent(e.getSetType(), k -> new ArrayList<>()).add(e);
-        }
-        List<Map<String, Object>> bonuses = new ArrayList<>();
-        for (Map.Entry<String, List<OfficerEquipment>> entry : sets.entrySet()) {
-            if (entry.getValue().size() < 3) continue;
-            OfficerEquipmentDef def = OfficerEquipmentDef.ITEMS.get(entry.getValue().get(0).getItemKey());
-            if (def == null) continue;
-            int setMain = def.tier() == 1 ? 3 : def.tier() == 2 ? 15 : 30;
-            int all = def.tier() == 3 ? 5 : 0;
-            if (def.branch().equals("military")) military += setMain;
-            if (def.branch().equals("logistics")) logistics += setMain;
-            if (def.branch().equals("knowledge")) knowledge += setMain;
-            military += all; logistics += all; knowledge += all;
-            Map<String, Object> bonus = new LinkedHashMap<>();
-            bonus.put("setName", def.setName());
-            bonus.put("description", "集齐3件：" + branchName(def.branch()) + "+" + setMain + (all > 0 ? "，全属性+" + all : ""));
-            bonus.put("military", (def.branch().equals("military") ? setMain : 0) + all);
-            bonus.put("logistics", (def.branch().equals("logistics") ? setMain : 0) + all);
-            bonus.put("knowledge", (def.branch().equals("knowledge") ? setMain : 0) + all);
-            bonuses.add(bonus);
-        }
-        result.put("success", true);
-        result.put("military", military);
-        result.put("logistics", logistics);
-        result.put("knowledge", knowledge);
-        result.put("bonuses", bonuses);
-        result.put("equipment", equipped.stream().map(e -> {
-            Map<String, Object> em = new LinkedHashMap<>();
-            em.put("itemKey", e.getItemKey());
-            OfficerEquipmentDef d = OfficerEquipmentDef.ITEMS.get(e.getItemKey());
-            em.put("name", d != null ? d.name() : e.getItemKey());
-            em.put("setType", e.getSetType());
-            em.put("tier", e.getTier());
-            em.put("military", e.getMilitaryBonus());
-            em.put("logistics", e.getLogisticsBonus());
-            em.put("knowledge", e.getKnowledgeBonus());
-            return em;
-        }).toList());
-        return result;
-    }
-
-    private void addToInventory(Long playerId, String itemKey) {
-        long now = GameClock.now();
-        playerItemRepository.findByPlayerIdAndItemKey(playerId, itemKey).ifPresentOrElse(item -> {
-            item.setCount(item.getCount() + 1);
-            item.setUpdatedAt(now);
-            playerItemRepository.save(item);
-        }, () -> {
-            PlayerItem item = new PlayerItem();
-            item.setPlayerId(playerId);
-            item.setItemKey(itemKey);
-            item.setCount(1);
-            item.setUpdatedAt(now);
-            playerItemRepository.save(item);
-        });
-    }
-
-    private static Map<String, Object> equipmentError(String message) {
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("success", false);
-        result.put("message", message);
-        return result;
-    }
-
-    private static Map<String, Object> equipmentSuccess(String message) {
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("success", true);
-        result.put("message", message);
-        return result;
-    }
-
-    private static String branchName(String branch) {
-        return switch (branch) { case "military" -> "军事"; case "logistics" -> "后勤"; default -> "学识"; };
+        var officer = findOfficer(playerId, officerId);
+        if (officer == null) return new LinkedHashMap<>(Map.of("success", false, "message", "军官不存在"));
+        var a = equipmentService.attributes(officer); var prep = equipmentProgress.preparation(playerId, officerId);
+        return new LinkedHashMap<>(Map.of("success", true, "military", a.military(), "defense", a.defense(),
+                "logistics", a.logistics(), "knowledge", a.knowledge(), "bonuses", a.bonuses(), "preparation", prep,
+                "equipment", a.equipment().stream().map(e -> equipmentService.equipmentView(e, prep)).toList()));
     }
 
     /** 军校整批出现一名五星的概率：每级增加 0.3%，1 级 0.3%，10 级满级 3%。 */
@@ -1399,6 +1282,13 @@ public class OfficerService {
     //  Helper methods
     // ================================================================
 
+    /** 写锁内刷新技能快照，避免预先加载的军官覆盖并发提交。 */
+    private Officer findOfficerForSkillChange(Long playerId, Long officerId) {
+        Officer officer = findOfficer(playerId, officerId);
+        if (officer != null) entityManager.refresh(officer, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+        return officer;
+    }
+
     private Academy getOrCreateAcademy(Long playerId) {
         return academyRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElseGet(() -> {
             Academy a = new Academy();
@@ -1431,11 +1321,11 @@ public class OfficerService {
         return sum;
     }
 
-    private int getGold(Resources r) {
-        return r.getGold() != null ? r.getGold() : 0;
+    private long getGold(Resources r) {
+        return r.getGold() != null ? r.getGold() : 0L;
     }
 
-    private void setGold(Resources r, int value) {
+    private void setGold(Resources r, long value) {
         r.setGold(value);
     }
 

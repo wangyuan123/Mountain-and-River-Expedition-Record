@@ -108,6 +108,15 @@ class MarchServiceTest extends BaseServiceTest {
         March settled = marchRepository.findById(march.getId()).orElseThrow();
         assertTrue(settled.getReturning());
         assertNull(settled.getBattleId());
+        assertEquals(true, marchService.getTacticalBattle(playerId, march.getId()).get("finished"),
+                "后台已结算时，旧页面仍应读到终局而非行军错误");
+        marchRepository.delete(settled);
+        marchRepository.flush();
+        assertEquals(true, marchService.executeTacticalRound(playerId, march.getId(),
+                new GameDtos.BattleCommandRequest(Map.of(), 0)).get("finished"),
+                "返城删除行军后，迟到的回合请求仍须幂等返回终局");
+        Long outsider = createTestPlayer("outcome-outsider", 30).getId();
+        assertThrows(IllegalArgumentException.class, () -> marchService.getTacticalBattle(outsider, march.getId()));
         assertTrue(wildTileRepository.findById(wildTile.getId()).orElseThrow().getOccupied());
         assertTrue(scoutReportRepository.findByPlayerId(playerId).stream()
                 .anyMatch(report -> report.getData().contains("\"wildConquered\":true")));
@@ -166,7 +175,8 @@ class MarchServiceTest extends BaseServiceTest {
         int resourcesTaken = JsonUtil.parseIntMap(returning.getCarryRes()).getOrDefault("steel", 0);
         assertTrue(resourcesTaken > 0);
         assertTrue(resourcesTaken <= marchService.calcArmyLoad(JsonUtil.parseIntMap(returning.getArmy())));
-        assertEquals(resourcesTaken, settled.getMined());
+        assertEquals(100_000 - resourcesTaken, settled.getTotalRes());
+        assertEquals(0, settled.getMined());
         Map<String, Object> report = JsonUtil.parseObjMap(scoutReportRepository.findByPlayerId(playerId).get(0).getData());
         assertEquals(false, report.get("wildConquered"));
         assertEquals("returning", report.get("troopDisposition"));
@@ -366,7 +376,7 @@ class MarchServiceTest extends BaseServiceTest {
     }
 
     @Test
-    @DisplayName("战术战斗: 未进入指挥时每 15 秒自动执行一回合，运输单位保持待命")
+    @DisplayName("战术战斗: 未进入指挥时每 12 秒自动执行一回合，运输单位保持待命")
     void tacticalBattleAutoAdvancesAfterRoundTimeout() {
         Bandit npc = new Bandit();
         npc.setWorldId(worldId);
@@ -391,16 +401,16 @@ class MarchServiceTest extends BaseServiceTest {
         assertEquals("manual", marchRepository.findById(march.getId()).orElseThrow().getBattleMode());
         assertEquals(0, ((Number) initial.get("round")).intValue());
         assertEquals(0, ((Number) initial.get("firstCombatRound")).intValue(), "交战前的视图不能预先启用闪电突击");
-        assertEquals(arrival + 15_000L, ((Number) initial.get("roundDeadlineAt")).longValue());
+        assertEquals(arrival + 12_000L, ((Number) initial.get("roundDeadlineAt")).longValue());
 
         BattleSession session = battleSessionRepository.findByMarchId(march.getId()).orElseThrow();
-        marchService.processTimedOutTacticalBattle(session.getId(), arrival + 14_999L);
+        marchService.processTimedOutTacticalBattle(session.getId(), arrival + 11_999L);
         assertEquals(0, ((Number) marchService.getTacticalBattle(playerId, march.getId()).get("round")).intValue());
 
-        marchService.processTimedOutTacticalBattle(session.getId(), arrival + 15_000L);
+        marchService.processTimedOutTacticalBattle(session.getId(), arrival + 12_000L);
         Map<String, Object> autoResolved = marchService.getTacticalBattle(playerId, march.getId());
         assertEquals(1, ((Number) autoResolved.get("round")).intValue());
-        assertEquals(arrival + 30_000L, ((Number) autoResolved.get("roundDeadlineAt")).longValue());
+        assertEquals(arrival + 24_000L, ((Number) autoResolved.get("roundDeadlineAt")).longValue());
         assertTrue(((Number) ((Map<?, ?>) autoResolved.get("attackerPositions")).get("infantry")).intValue() > 0,
                 "可攻击步兵应按默认战术前进");
         assertEquals(0, ((Number) ((Map<?, ?>) autoResolved.get("attackerPositions")).get("truck")).intValue(),
@@ -445,7 +455,7 @@ class MarchServiceTest extends BaseServiceTest {
     }
 
     @Test
-    @DisplayName("战术战斗: 历史会话缺失截止时间时进入指挥应补发 15 秒倒计时")
+    @DisplayName("战术战斗: 历史会话缺失截止时间时进入指挥应补发 12 秒倒计时")
     void tacticalBattleRestoresMissingRoundDeadline() {
         Bandit npc = new Bandit();
         npc.setWorldId(worldId);
@@ -469,8 +479,9 @@ class MarchServiceTest extends BaseServiceTest {
         long before = System.currentTimeMillis();
         Map<String, Object> recovered = marchService.getTacticalBattle(playerId, march.getId());
 
-        assertTrue(((Number) recovered.get("roundDeadlineAt")).longValue() >= before + 14_000L,
-                "历史战斗进入指挥后必须重新获得完整的 15 秒决策窗口");
+        long deadline = ((Number) recovered.get("roundDeadlineAt")).longValue();
+        assertTrue(deadline >= before + 11_000L && deadline <= System.currentTimeMillis() + 12_000L,
+                "历史战斗进入指挥后必须重新获得完整的 12 秒决策窗口");
     }
 
     @Test
@@ -724,16 +735,20 @@ class MarchServiceTest extends BaseServiceTest {
         // gatherAmount = min(remaining=1000, load=1000) = 1000
         assertEquals(1000, gatheringMarch.getGatherAmount(), "采集量应为min(1000, 1000)=1000");
 
-        // Step 2: Fast-forward to after gather end - should start returning
-        long gatherEndTime = gatheringMarch.getGatherEndAt();
-        long afterGather = gatherEndTime + 1000;
-
+        // 采满仍需玩家先收获、再下令回城，不能由 Tick 代替操作。
+        long afterGather = gatheringMarch.getGatherEndAt() + 1000;
         marchService.processMarches(playerId, afterGather);
-
+        assertTrue(gatheringMarch.getGathering());
+        assertFalse(gatheringMarch.getReturning());
+        gatheringMarch.setGatherStartAt(System.currentTimeMillis() - 120_000L);
+        gatheringMarch.setGatherEndAt(System.currentTimeMillis() - 60_000L);
+        marchService.stopGatherMarch(playerId, gatherMarch.getId());
+        assertFalse(gatheringMarch.getReturning());
+        marchService.cancelMarch(playerId, gatherMarch.getId());
         March returningMarch = marchRepository.findById(gatherMarch.getId()).orElseThrow();
-        assertFalse(returningMarch.getGathering(), "采集完成后应停止采集");
-        assertTrue(returningMarch.getReturning(), "采集完成后应开始返程");
-        assertTrue(returningMarch.getArriveAt() > afterGather, "返程到达时间应在未来");
+        assertFalse(returningMarch.getGathering(), "手动收获后应停止采集");
+        assertTrue(returningMarch.getReturning(), "手动下令后应开始返程");
+        assertTrue(returningMarch.getArriveAt() > returningMarch.getStartAt(), "返程仍需实际行军时间");
 
         // Step 3: Fast-forward to after return arrival - should collect resources
         long returnArrive = returningMarch.getArriveAt();
@@ -741,7 +756,7 @@ class MarchServiceTest extends BaseServiceTest {
 
         // Record resources before collection
         Resources beforeReturn = getResources(playerId);
-        int foodBefore = beforeReturn.getFood();
+        long foodBefore = beforeReturn.getFood();
         long itemsBefore = playerItemRepository.count();
 
         marchService.processMarches(playerId, afterReturn);
@@ -763,7 +778,8 @@ class MarchServiceTest extends BaseServiceTest {
 
         // Wild tile mined should increase
         WildTile finalTile = wildTileRepository.findById(gatherTile.getId()).orElseThrow();
-        assertTrue(finalTile.getMined() >= 500, "野地已采集量应增加");
+        assertEquals(0, finalTile.getTotalRes(), "野地资源被全部采完应为0");
+        assertEquals(0, finalTile.getMined());
     }
 
     @ParameterizedTest
@@ -860,7 +876,7 @@ class MarchServiceTest extends BaseServiceTest {
         assertFalse(reports.isEmpty());
         ScoutReport r = reports.get(0);
         Map<String, Object> data = JsonUtil.parseObjMap(r.getData());
-        assertEquals("marchplayer", data.get("attackerName"));
+        assertEquals("统帅" + playerId, data.get("attackerName"));
         assertEquals(0, data.get("myLost"));
         assertEquals(928, data.get("myScouts"));
         assertEquals(0, data.get("enemyScouts"));
@@ -971,7 +987,7 @@ class MarchServiceTest extends BaseServiceTest {
         for (Long recipient : java.util.List.of(playerId, defenderId)) {
             Map<String, Object> report = JsonUtil.parseObjMap(scoutReportRepository.findByPlayerId(recipient).get(0).getData());
             assertEquals("conquer", report.get("action"));
-            assertEquals("marchplayer", report.get("attackerName"));
+            assertEquals("统帅" + playerId, report.get("attackerName"));
             assertEquals("20,20", report.get("toCoord"));
             assertNotNull(report.get("prestigeChange"));
             assertNotNull(report.get("prestigeAfter"));
@@ -1336,7 +1352,7 @@ class MarchServiceTest extends BaseServiceTest {
         }
         assertTrue(scoutReportRepository.findByPlayerId(playerId).isEmpty());
         assertEquals(defenderId, playerCityRepository.findById(city.getId()).orElseThrow().getOwnerId());
-        int foodBefore = getResources(playerId).getFood();
+        long foodBefore = getResources(playerId).getFood();
         marchService.processMarches(playerId, returning.getArriveAt());
         assertTrue(marchRepository.findById(march.getId()).isEmpty());
         assertTrue(worldViewService.getReturningEnemyMarches(playerRepository.findById(defenderId).orElseThrow()).isEmpty());
@@ -1779,14 +1795,15 @@ class MarchServiceTest extends BaseServiceTest {
         assertTrue(gatheringTile.getGatherLoad() > 0, "采集载荷应大于0");
 
         // 3. 结算收获
-        int steelBefore = getResources(playerId).getSteel();
+        long steelBefore = getResources(playerId).getSteel();
         Map<String, Object> harvestRes = marchService.harvestWild(playerId, tile.getId());
         assertTrue((boolean) harvestRes.get("success"));
         int harvestAmount = (int) harvestRes.get("harvestAmount");
         assertTrue(harvestAmount >= 0);
         WildTile harvestedTile = wildTileRepository.findById(tile.getId()).orElseThrow();
         assertFalse(harvestedTile.getGathering(), "收获后采集中状态应结束");
-        assertEquals(harvestAmount, harvestedTile.getMined(), "野地已开采量应累加");
+        assertEquals(tile.getTotalRes() - harvestAmount, harvestedTile.getTotalRes(), "野地资源总数应扣减");
+        assertEquals(0, harvestedTile.getMined());
 
         // 4. 撤回驻军
         int infBefore = armyUnitRepository.findByPlayerIdAndType(playerId, "infantry").get(0).getCount();
@@ -1813,11 +1830,11 @@ class MarchServiceTest extends BaseServiceTest {
     }
 
     @Test
-    @DisplayName("采集返程到达时资源入库不超过资源上限")
+    @DisplayName("采集返程入库后保留周期巡检前的超额库存")
     void testGatherReturnCappedAtCapacity() {
-        // refinery Lv 1 -> cap = 200,000
+        // refinery Lv 1 -> production capacity = 200,000; inventory cap = 1,000,000,000
         createBuilding(playerId, "refinery", 1);
-        giveResources(playerId, 1000, 199_000, 1000, 500, 500);
+        giveResources(playerId, 1000, 999_999_000, 1000, 500, 500);
 
         long now = System.currentTimeMillis();
         // Returning march carrying 5000 steel
@@ -1831,6 +1848,6 @@ class MarchServiceTest extends BaseServiceTest {
         marchService.processMarches(playerId, now + 2000);
 
         Resources res = getResources(playerId);
-        assertEquals(200_000, res.getSteel(), "钢铁入库后应截断于上限200,000，不应溢出至204,000");
+        assertEquals(1_000_004_000L, res.getSteel(), "入库不即时截断，周期巡检处理10亿以上的超额部分");
     }
 }

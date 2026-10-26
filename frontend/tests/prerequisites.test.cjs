@@ -45,6 +45,24 @@ function environment(buildings, constructions, coastalPortLevel, unitUnlocks, eq
   return api;
 }
 
+test('联防雷达逐级校验本城已完成的市政厅、研发中心和联络中心，无军团前置', () => {
+  assert.equal(rules.buildings.radar.name, '城防雷达');
+  assert.equal(rules.buildings.guild_radar.name, '联防雷达');
+  for (let level = 1; level <= 10; level++) {
+    const buildings = { command: Math.max(3, level), lab: Math.ceil(level / 2), liaison: Math.ceil(level / 2) };
+    const result = environment(buildings).check('buildings', 'guild_radar', level);
+    assert.equal(result.missing.length, 0);
+    assert.deepEqual(Array.from(result.requirements, entry => [entry.id, entry.required, entry.scope]),
+      Object.entries(buildings).map(([id, required]) => [id, required, 'city']));
+    for (const id of Object.keys(buildings)) {
+      const below = { ...buildings, [id]: buildings[id] - 1 };
+      const pending = [{ id, targetLevel: buildings[id] }];
+      const missing = environment(below, pending).check('buildings', 'guild_radar', level).missing;
+      assert.deepEqual(Array.from(missing, entry => entry.id), [id]);
+    }
+  }
+});
+
 test('attack research reports every missing factory without adding duplicate building levels', () => {
   const api = environment({ lab: 7, lightfactory: 7, heavyfactory: 6,
     factory: [4, 2], staff: 5 });

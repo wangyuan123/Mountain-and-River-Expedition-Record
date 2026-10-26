@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
+@EntityListeners(com.wargame.service.RadarChangeListener.class)
 @Table(name = "marches")
 public class March extends CityOwnedEntity {
 
@@ -22,6 +23,13 @@ public class March extends CityOwnedEntity {
 
     @Column(name = "route_mode", length = 30)
     private String routeMode;
+
+    /** 上次驻防计费的游戏时刻；null 旧驻军从首次新规则结算起算，不追扣。 */
+    @Column(name = "garrison_food_at")
+    private Long garrisonFoodAt;
+    /** 原城失守且暂无合法路线，保留原玩家资产等待安置。 */
+    @Column(name = "displaced", nullable = false)
+    private boolean displaced;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -126,7 +134,24 @@ public class March extends CityOwnedEntity {
     private Boolean gathering;
 
     @Column(name = "gather_mode", nullable = false, length = 10)
-    private String gatherMode = "auto";
+    private String gatherMode = "manual";
+
+    /** 历史自动采集字段仅供兼容存档；新采集固定保留野地，由玩家手动放弃。 */
+    @Column(name = "gather_after_action", nullable = false, length = 10)
+    private String gatherAfterAction = "retain";
+
+    private Long gatherOccupationVersion;
+    private Integer gatherOwnerCitySlot;
+
+    /** 野地消耗与到城入库分开结算；返程不能再次扣减野地储量。 */
+    @Column(nullable = false)
+    private Boolean gatherResourceSettled = false;
+
+    @Column(length = 12)
+    private String gatherAfterActionResult;
+
+    @Column(length = 255)
+    private String gatherAfterActionReason;
 
     @Column(name = "gather_start_at")
     private Long gatherStartAt;

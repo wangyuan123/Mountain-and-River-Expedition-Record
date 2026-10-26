@@ -15,7 +15,7 @@ import java.util.*;
 public class RetentionBatchService {
     private static final Logger log = LoggerFactory.getLogger(RetentionBatchService.class);
     public static final int BATCH_SIZE = 200;
-    public static final List<String> CATEGORIES = List.of("summaries", "chat", "guild", "private", "mailState", "mails", "details", "reports", "shares", "incoming", "pvpReports", "pvpSessions", "pvpTickets", "pvpRequests", "activities");
+    public static final List<String> CATEGORIES = List.of("summaries", "chat", "guild", "private", "mailState", "mails", "details", "reports", "shares", "incoming", "pvpReports", "pvpSessions", "pvpTickets", "pvpRequests", "activities", "radar");
     private final JdbcTemplate jdbc;
     private final MailService mails;
     private final RetentionPolicy policy;
@@ -43,6 +43,7 @@ public class RetentionBatchService {
             case "reports" -> "SELECT id FROM scout_reports WHERE summary_expires_at<=? AND starred_at IS NULL AND data IS NULL AND summary_json IS NOT NULL ORDER BY summary_expires_at,id LIMIT 200";
             case "shares" -> "SELECT token FROM shared_reports WHERE expires_at<=? ORDER BY expires_at,token LIMIT 200";
             case "incoming" -> "SELECT token FROM shared_incoming_reports WHERE expires_at<=? ORDER BY expires_at,token LIMIT 200";
+            case "radar" -> "SELECT c.id FROM radar_contacts c WHERE c.status<>'active' AND c.expires_at<=? AND NOT EXISTS(SELECT 1 FROM marches m WHERE m.id=c.march_id AND (m.returning=FALSE OR m.returning IS NULL)) ORDER BY c.expires_at,c.id LIMIT 200";
             case "pvpReports" -> "SELECT r.id FROM pvp_practice_reports r WHERE r.retention_expires_at<=? OR (SELECT COUNT(*) FROM pvp_practice_reports n WHERE n.player_id=r.player_id AND n.retention_expires_at>" + now + " AND (n.created_at>r.created_at OR (n.created_at=r.created_at AND n.id>r.id)))>=50 ORDER BY r.persisted_real_at,r.id LIMIT 200";
             case "pvpSessions" -> "SELECT s.id FROM pvp_practice_sessions s WHERE s.status IN ('FINISHED','VOID') AND s.retention_expires_at<=? AND NOT EXISTS(SELECT 1 FROM pvp_practice_reports r WHERE r.session_id=s.id) AND NOT EXISTS(SELECT 1 FROM pvp_player_states p WHERE p.active_session_id=s.id OR p.active_ticket_id IN (SELECT t.id FROM pvp_match_tickets t WHERE t.session_id=s.id)) AND NOT EXISTS(SELECT 1 FROM pvp_match_tickets t WHERE t.session_id=s.id AND t.status IN ('QUEUED','ACCEPTING')) ORDER BY s.retention_expires_at,s.id LIMIT 200";
             case "pvpTickets" -> "SELECT t.id FROM pvp_match_tickets t WHERE t.retention_expires_at<=? AND t.session_id IS NULL AND t.status IN ('CLOSED','EXPIRED','CANCELLED') AND NOT EXISTS(SELECT 1 FROM pvp_player_states p WHERE p.active_ticket_id=t.id) ORDER BY t.retention_expires_at,t.id LIMIT 200";
@@ -76,6 +77,7 @@ public class RetentionBatchService {
             case "reports" -> deleteReport(Long.parseLong(id), now, remaining);
             case "shares" -> jdbc.update("DELETE FROM shared_reports WHERE token=? AND expires_at<=?", id, now);
             case "incoming" -> jdbc.update("DELETE FROM shared_incoming_reports WHERE token=? AND expires_at<=?", id, now);
+            case "radar" -> jdbc.update("DELETE FROM radar_contacts WHERE id=? AND status<>'active' AND expires_at<=? AND NOT EXISTS(SELECT 1 FROM marches m WHERE m.id=radar_contacts.march_id AND (m.returning=FALSE OR m.returning IS NULL))", id, now);
             case "pvpReports" -> deletePvpReport(id, now);
             case "pvpSessions" -> deleteSession(id, cutoff, remaining);
             case "pvpTickets" -> deleteTicket(id, cutoff);

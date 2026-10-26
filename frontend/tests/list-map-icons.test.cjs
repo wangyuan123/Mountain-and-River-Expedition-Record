@@ -46,6 +46,7 @@ function setupWorld() {
     localStorage: { getItem: () => null, setItem() {} }
   });
   context.window = context;
+  require('./load-constants.cjs')(context);
 
   // Load icons.js first, then world.js
   const iconsJs = fs.readFileSync(path.join(__dirname, '../js/icons.js'), 'utf8');

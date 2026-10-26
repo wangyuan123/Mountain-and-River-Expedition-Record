@@ -59,6 +59,32 @@ test('page scripts initialize in HTML order and expose the extracted profile act
   assert.equal(typeof context.Game.WorldView.ensure, 'function');
 });
 
+test('world chat restores the full cooldown from unified and legacy duration messages', async () => {
+  for (const [message, expected] of [
+    ['发言过于频繁，请 1分钟5秒后再试', 65],
+    ['发言过于频繁，请 5分钟0秒后再试', 300],
+    ['发言过于频繁，请 5 秒后再试', 5]
+  ]) {
+    const cooldowns = [];
+    const input = { value: '测试消息' };
+    const button = { disabled: false, classList: { add() {}, remove() {} } };
+    const context = sandbox({
+      document: { readyState: 'loading', addEventListener() {}, getElementById(id) {
+        return { worldChatInput: input, worldChatSendBtn: button }[id] || null;
+      } },
+      Game: { Core: {}, toast() {}, Chat: {
+        send: () => Promise.reject(new Error(message)),
+        startCooldown: seconds => cooldowns.push(seconds)
+      } }
+    });
+    load(context, 'js/main.js');
+    context.Game.Main.sendChat();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.deepEqual(cooldowns, [expected]);
+    assert.equal(input.value, '测试消息');
+  }
+});
+
 test('军队页静默更新刷新资格，伤兵页保持原有更新方式', () => {
   const context = sandbox(); load(context, 'js/data.js'); load(context, 'js/core.js');
   const G = context.Game; let refreshes = 0;
@@ -137,6 +163,20 @@ test('battle victory toast shows occupation and only resources actually gained',
     win: true, plunder: { food: 1200, steel: 0, oil: 80, rare: 0, gold: 0 }
   } }));
   assert.deepEqual(messages, ['战斗胜利，野地已占领', '战斗胜利，获得资源：粮 1200、油 80']);
+});
+
+test('gathering notifications keep harvest separate from the return command', () => {
+  const messages = [];
+  const context = sandbox({ Game: { toast(message) { messages.push(message); }, Core: {} } });
+  load(context, 'js/ws-client.js');
+  load(context, 'js/ws-handlers.js');
+  for (const event of ['gatherStopped', 'returning']) {
+    context.Game.WS.handleMessage(JSON.stringify({ type: 'march', data: { event, targetName: '粮田' } }));
+  }
+  assert.deepEqual(messages, [
+    '采集已终止，部队原地待命，请下达回城命令',
+    '部队已开始按原路线返城，抵达后部队与资源入库'
+  ]);
 });
 
 test('construction ticks retain queue IDs when an older server payload omits them', () => {
@@ -240,36 +280,36 @@ test('dispatch blocks an army selection above the troop cap before requesting th
 });
 
 
-test('resource buildings share town hall capacity including new construction reservations', () => {
+test('resource buildings share fixed 35-slot capacity including new construction reservations', () => {
   const context = sandbox();
   for (const file of ['js/data.js', 'js/core.js', 'js/build.js']) load(context, file);
   const core = context.Game.Core;
   core.state = { buildings: { command: 10, farm: Array(35).fill(1), house: Array(20).fill(1) }, constructions: [] };
-  assert.equal(core.groupSlotsCap('res'), 36);
-  assert.equal(core.groupSlotsCap('army'), 36);
-  assert.equal(core.groupSlotsRemaining('res'), 1);
+  assert.equal(core.groupSlotsCap('res'), 35);
+  assert.equal(core.groupSlotsCap('army'), 35);
+  assert.equal(core.groupSlotsRemaining('res'), 0);
   core.state.constructions = [{ id: 'refinery', slot: 0, targetLevel: 1 }];
   assert.equal(core.groupSlotsRemaining('res'), 0);
   core.state.constructions = [{ id: 'farm', slot: 0, targetLevel: 2 }];
-  assert.equal(core.groupSlotsRemaining('res'), 1);
+  assert.equal(core.groupSlotsRemaining('res'), 0);
   const gridHtml = context.Game.Build.renderSlotGrid('res', core.state.constructions, core.state);
-  assert.equal((gridHtml.match(/class="slot-card slot-card-(?:occupied|empty)/g) || []).length, 36);
+  assert.equal((gridHtml.match(/class="slot-card slot-card-(?:occupied|empty)/g) || []).length, 35);
   core.state.buildings = { command: 0, farm: Array(9).fill(1), refinery: Array(9).fill(1), oilfield: Array(9).fill(1), raremine: Array(9).fill(1) };
   core.state.constructions = [];
-  assert.equal(core.groupSlotsCap('res'), 16);
+  assert.equal(core.groupSlotsCap('res'), 35);
   assert.equal(core.groupSlotsUsed('res'), 36);
   assert.equal(core.groupSlotsRemaining('res'), 0);
-  for (const [level, cap] of [[0, 16], [1, 18], [5, 26], [9, 34], [10, 36], [11, 36]]) {
+  for (const level of [0, 1, 5, 9, 10, 11]) {
     core.state.buildings.command = level;
-    assert.equal(core.groupSlotsCap('res'), cap);
+    assert.equal(core.groupSlotsCap('res'), 35);
   }
   for (const type of ['farm', 'refinery', 'oilfield', 'raremine']) {
-    assert.equal(context.Game.DATA.buildings[type].slots, 36);
+    assert.equal(context.Game.DATA.buildings[type].slots, 35);
   }
 });
 
 
-test('military quota shares 36 slots while functional buildings remain single-instance', () => {
+test('military quota shares 35 slots while functional buildings remain single-instance', () => {
   const context = sandbox();
   for (const file of ['js/data.js', 'js/core.js', 'js/build.js']) load(context, file);
   const { Core: core, DATA: data, Build: build } = context.Game;
@@ -277,17 +317,17 @@ test('military quota shares 36 slots while functional buildings remain single-in
   assert.equal(core.groupSlotsUsed('army'), 35);
   core.state.constructions = [{ id: 'radar', slot: null, targetLevel: 1 }];
   assert.equal(core.groupSlotsRemaining('army'), 0);
-  assert.equal(core.groupSlotsRemaining('res'), 36);
+  assert.equal(core.groupSlotsRemaining('res'), 35);
   core.state.constructions = [{ id: 'house', slot: 0, targetLevel: 2 }];
-  assert.equal(core.groupSlotsRemaining('army'), 1);
+  assert.equal(core.groupSlotsRemaining('army'), 0);
   const gridHtml = build.renderSlotGrid('army', core.state.constructions, core.state);
-  assert.equal((gridHtml.match(/class="slot-card slot-card-(?:occupied|empty)/g) || []).length, 36);
-  for (const [level, cap] of [[0,16], [1,18], [5,26], [10,36], [11,36]]) {
+  assert.equal((gridHtml.match(/class="slot-card slot-card-(?:occupied|empty)/g) || []).length, 35);
+  for (const level of [0, 1, 5, 10, 11]) {
     core.state.buildings.command = level;
-    assert.equal(core.groupSlotsCap('army'), cap);
+    assert.equal(core.groupSlotsCap('army'), 35);
   }
   for (const type of build.GROUPS.army.order) {
-    assert.equal(data.buildings[type].slots, ['house', 'factory', 'depot'].includes(type) ? 36 : 1);
+    assert.equal(data.buildings[type].slots, ['house', 'factory', 'depot'].includes(type) ? 35 : 1);
   }
 });
 
@@ -359,11 +399,11 @@ for (const route of ['buildArmy', 'buildRes']) {
     assert.equal(G.Core.state.constructions.length, 1, '归零后等待服务端确认完工');
     G.Core.state.constructions[0].finishesAt = now + 301000;
     G.Build.silentUpdateBuild({});
-    assert.match(queue.innerHTML, /剩余 5分01秒/);
+    assert.match(queue.innerHTML, /剩余 5分钟1秒/);
     assert.match(queue.innerHTML, /disabled/);
     now += 1000;
     [...timers.values()][0]();
-    assert.match(queue.innerHTML, /剩余 5分00秒/);
+    assert.match(queue.innerHTML, /剩余 5分钟0秒/);
     assert.match(queue.innerHTML, /免费加速/);
     assert.doesNotMatch(queue.innerHTML, /disabled/);
     G.Core.views[route](view);
@@ -576,11 +616,11 @@ test('导航栏最后显示文字商城，顶部不再显示商城图标', () =>
 
   const labels = [...navHtml.matchAll(/class="navlabel">([^<]+)<\/span>/g)].map(m => m[1]);
   assert.deepEqual(labels, [
-    '首页', '后勤', '军工', '军官', '军队', '地图', '军情', '战报', '聊天', '电报', '任务', '军团', '仓库', '科技', '军校', '对战', '切城', '战术', '排名', '商城'
+    '首页', '后勤', '军工', '军官', '军队', '地图', '警报', '战报', '聊天', '电报', '任务', '军团', '仓库', '科技', '军校', '对战', '切城', '战术', '排名', '商城'
   ]);
   assert.match(navHtml, /class="navitem" data-route="officer" onclick="Game\.go\('officer'\)"/);
   assert.match(navHtml, /class="navitem" data-route="academy" onclick="Game\.go\('academy'\)"/);
-  assert.match(navHtml, /军情/);
+  assert.match(navHtml, /class="navitem" data-route="alerts" onclick="Game\.go\('alerts'\)">[\s\S]*?class="navlabel">警报<\/span>/);
   assert.match(navHtml, /class="nav-pages"/);
   const topbar = { innerHTML: '' };
   context.document.getElementById = id => id === 'topbar' ? topbar : null;

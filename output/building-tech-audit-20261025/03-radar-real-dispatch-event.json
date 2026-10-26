@@ -1,0 +1,111 @@
+{
+  "revision": 11,
+  "cities": [
+    {
+      "citySlot": 0,
+      "revision": 4,
+      "name": "新城市",
+      "level": 10,
+      "radius": 10.0,
+      "enabled": true,
+      "x": 101.0,
+      "y": 115.0,
+      "cityId": 1
+    }
+  ],
+  "contacts": [
+    {
+      "id": "radar-2",
+      "marchId": 2,
+      "targetName": "新城市",
+      "targetX": 120,
+      "targetY": 110,
+      "arriveAt": 1792864122526,
+      "inBattle": false,
+      "startAt": 1792863762526,
+      "radarLevel": 7,
+      "fromName": "远征统帅_003042",
+      "action": "plunder",
+      "fromX": 80,
+      "fromY": 110,
+      "branches": [
+        "land"
+      ],
+      "strengthBand": "1—100",
+      "unitTypes": [
+        "infantry"
+      ],
+      "totalTroops": 100,
+      "army": {
+        "infantry": 100
+      },
+      "intelligenceType": "regional_radar",
+      "threatKind": "attack",
+      "targetKind": "player",
+      "targetId": "2",
+      "waitingForBattle": false,
+      "threatenedPlayers": [
+        {
+          "playerId": 2,
+          "name": "远征统帅_257377"
+        }
+      ],
+      "contactId": 2,
+      "firstSeenAt": 1792863762526,
+      "lastSeenAt": 1792863762526,
+      "read": false,
+      "sources": [
+        {
+          "citySlot": 0,
+          "name": "新城市",
+          "revision": 4,
+          "cityId": 1
+        }
+      ],
+      "reminderGroup": "b4c06730-8159-45cc-84c9-90503a32e762",
+      "status": "active"
+    }
+  ],
+  "history": [
+    {
+      "id": "radar-1",
+      "marchId": 1,
+      "targetName": "新城市",
+      "targetX": 120,
+      "targetY": 110,
+      "arriveAt": 1792864121518,
+      "inBattle": false,
+      "waitingForBattle": false,
+      "startAt": 1792863761518,
+      "radarLevel": 0,
+      "targetKind": "player",
+      "targetId": "2",
+      "threatenedPlayers": [
+        {
+          "playerId": 2,
+          "name": "远征统帅_257377"
+        }
+      ],
+      "contactId": 1,
+      "intelligenceType": "regional_radar",
+      "threatKind": "attack",
+      "firstSeenAt": 1792863762526,
+      "lastSeenAt": 1792863762526,
+      "read": false,
+      "sources": [],
+      "reminderGroup": "9f13bc6b-5d66-413f-a9db-c9a9354cf06a",
+      "status": "monitoring_disabled",
+      "snapshotAt": 1792863762526,
+      "snapshotSources": [
+        {
+          "citySlot": 0,
+          "name": "新城市",
+          "revision": 2,
+          "cityId": 1
+        }
+      ]
+    }
+  ],
+  "unread": 1,
+  "nextBeforeId": null
+}

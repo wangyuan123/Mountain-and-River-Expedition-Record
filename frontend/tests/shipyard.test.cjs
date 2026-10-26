@@ -149,7 +149,7 @@ test('新增海军前置不影响地面及空军制造设施', () => {
 
 test('军工厂只生产地面部队，全部空军兵种使用空军基地', () => {
   const { G } = setup({ factory: 10 });
-  assert.equal(G.DATA.buildings.factory.desc, '生产步兵、地面装备');
+  assert.match(G.DATA.buildings.factory.desc, /生产步兵、卡车、装甲车、侦查装甲车/);
   assert.match(G.DATA.buildings.airport.desc, /侦察机/);
   for (const [id, unit] of Object.entries(G.DATA.units)) {
     if (unit.build === 'factory') assert.equal(unit.branch, 'land', id);

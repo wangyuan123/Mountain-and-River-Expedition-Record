@@ -1,0 +1,39 @@
+Browser tab: 2, Title: "山河远征录 - 文字战争策略游戏", URL: "http://localhost:8081/".
+The following is a diff from the previous accessibility tree with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 447
+~				277 button 头像 远征统帅_163822 已连接, Help: 点击展开指挥官档案、主题与设置
+~					278 image 头像
++					447 text 远征统帅_163822
++					448 text 已连接
++				449 text 🎖️ 论坛
++				450 text 💎 100
+~				279 container Description: 左右滑动查看更多导航, ID: gameNavViewport
++					451 container 第1组导航
++						452 text 首页
++						453 text 后勤
++						454 text 军工
++						455 text 军官
++						456 text 军队
++						457 text 地图
++						458 text 军情
++						459 container
++							460 text 战报 1
++						461 text 聊天
++						462 container
++							463 text 电报 3
++						464 container
++							465 text 任务 !
++						466 text 军团
++						467 text 仓库
++						468 text 科技
++						469 text 军校
++						470 text 对战
+~					280 container 第2组导航
+~						281 pop up button Description: 切换城市, Help: 当前城市：新城市（主城）
++						471 text 战术
++						472 text 排名
++						473 text 商城
+~					283 button 切换到第1组导航
+~					284 button 切换到第2组导航
++			474 text 北京时间：2026年10月23日 21:11:22
+The focused UI element is 0 AXWebArea 山河远征录 - 文字战争策略游戏, URL: localhost:8081/

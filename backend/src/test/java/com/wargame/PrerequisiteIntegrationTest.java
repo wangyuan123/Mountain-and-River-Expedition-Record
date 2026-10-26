@@ -28,8 +28,71 @@ class PrerequisiteIntegrationTest extends BaseServiceTest {
     }
 
     @Test
+    void laboratoryUnlocksKindsAndLimitsTargetsBeforeChargingResources() {
+        Building lab = createBuilding(playerId, "lab", 1);
+        createBuilding(playerId, "farm", 10);
+        var foodTech = new com.wargame.model.entity.Technology();
+        foodTech.setPlayerId(playerId);
+        foodTech.setType("prod_food");
+        foodTech.setLevel(1);
+        technologyRepository.saveAndFlush(foodTech);
+        long steel = getResources(playerId).getSteel();
+        var denied = techService.startResearch(playerId, "prod_food");
+        assertEquals(false, denied.get("success"));
+        assertEquals(steel, getResources(playerId).getSteel());
+        assertTrue(((List<Map<String, Object>>) denied.get("missingPrerequisites")).stream()
+                .anyMatch(item -> "lab".equals(item.get("building")) && Integer.valueOf(2).equals(item.get("required"))));
+        lab.setLevel(2);
+        buildingRepository.saveAndFlush(lab);
+        var started = techService.startResearch(playerId, "prod_food");
+        assertEquals(true, started.get("success"));
+        assertEquals(2, started.get("targetLevel"));
+        assertEquals(480, started.get("durationSeconds"));
+        assertEquals(1, techService.getTechLevel(playerId, "prod_food"));
+        techService.cancelResearch(playerId, null);
+
+        lab.setLevel(3);
+        buildingRepository.saveAndFlush(lab);
+        createBuilding(playerId, "airport", 1);
+        createBuilding(playerId, "apron", 1);
+        createBuilding(playerId, "oilfield", 1);
+        assertEquals(false, techService.startResearch(playerId, "air_engine").get("success"));
+        lab.setLevel(4);
+        buildingRepository.saveAndFlush(lab);
+        var air = techService.startResearch(playerId, "air_engine");
+        assertEquals(true, air.get("success"));
+        assertEquals(1, air.get("targetLevel"));
+        assertEquals(300, air.get("durationSeconds"));
+    }
+
+    @Test
+    void laboratoryRequirementsUseCompletedLevelsInTheResearchCity() {
+        Building lab = createBuilding(playerId, "lab", 1);
+        createBuilding(playerId, "farm", 2);
+        Building otherCityLab = createBuilding(playerId, "lab", 10);
+        otherCityLab.setCitySlot(1);
+        buildingRepository.saveAndFlush(otherCityLab);
+        Construction pending = new Construction();
+        pending.setPlayerId(playerId);
+        pending.setCitySlot(0);
+        pending.setBuildingType("lab");
+        pending.setSlot(0);
+        pending.setTargetLevel(2);
+        pending.setStartAt(System.currentTimeMillis());
+        pending.setFinishAt(System.currentTimeMillis() + 60000);
+        constructionRepository.saveAndFlush(pending);
+        var missing = prerequisites.unmet(playerId, 0, "technologies", "prod_food", 2);
+        assertEquals(1, missing.size());
+        assertEquals("lab", missing.get(0).get("building"));
+        assertEquals(1, missing.get(0).get("current"));
+        lab.setLevel(2);
+        buildingRepository.saveAndFlush(lab);
+        assertTrue(prerequisites.unmet(playerId, 0, "technologies", "prod_food", 2).isEmpty());
+    }
+
+    @Test
     void fireDensityRequiresCompletedLocalFacilitiesBeforeChargingAndUsesSharedQueue() {
-        int steel = getResources(playerId).getSteel();
+        long steel = getResources(playerId).getSteel();
         var denied = techService.startResearch(playerId, "fire_density");
         assertEquals(false, denied.get("success"));
         assertEquals(steel, getResources(playerId).getSteel());
@@ -52,7 +115,7 @@ class PrerequisiteIntegrationTest extends BaseServiceTest {
     @Test
     void commandSecondLevelNeedsBasicInfrastructureBeforePaying() {
         createBuilding(playerId, "command", 1);
-        int steel = getResources(playerId).getSteel();
+        long steel = getResources(playerId).getSteel();
         Map<String, Object> denied = buildService.upgrade(playerId, "command", 0);
         assertEquals(false, denied.get("success"));
         assertEquals(steel, getResources(playerId).getSteel());
@@ -62,6 +125,27 @@ class PrerequisiteIntegrationTest extends BaseServiceTest {
         createBuilding(playerId, "refinery", 1);
         createBuilding(playerId, "house", 1);
         assertEquals(true, buildService.upgrade(playerId, "command", 0).get("success"));
+    }
+
+    @Test
+    void guildRadarUsesItsOwnLocalPrerequisitesWithoutReplacingDefenseResearch() {
+        createBuilding(playerId, "command", 3); createBuilding(playerId, "lab", 1);
+        var missing = prerequisites.unmet(playerId, 0, "buildings", "guild_radar", 1);
+        assertEquals(1, missing.size()); assertEquals("liaison", missing.get(0).get("building"));
+        long steel = getResources(playerId).getSteel();
+        assertEquals(false, buildService.upgrade(playerId, "guild_radar", 0).get("success"));
+        assertEquals(steel, getResources(playerId).getSteel());
+        Building otherCity = createBuilding(playerId, "liaison", 10); otherCity.setCitySlot(1); buildingRepository.saveAndFlush(otherCity);
+        assertEquals(false, buildService.upgrade(playerId, "guild_radar", 0).get("success"));
+        createBuilding(playerId, "liaison", 1);
+        assertEquals(true, buildService.upgrade(playerId, "guild_radar", 0).get("success"));
+        buildService.completeUpgrade(playerId, System.currentTimeMillis() + 60000);
+        assertEquals(1, buildService.buildingLevel(playerId, "guild_radar"));
+        assertEquals(0, buildService.buildingLevel(playerId, "radar"));
+        assertTrue(prerequisites.unmet(playerId, 0, "technologies", "recon_level", 1).stream()
+                .anyMatch(item -> "radar".equals(item.get("building"))));
+        createBuilding(playerId, "radar", 1);
+        assertTrue(prerequisites.unmet(playerId, 0, "technologies", "recon_level", 1).isEmpty());
     }
 
     @Test

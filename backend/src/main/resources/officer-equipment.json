@@ -1,0 +1,593 @@
+{
+  "version": "officer-equipment-expansion-design-v1-20261023",
+  "status": "implemented",
+  "rules": {
+    "box_reward_mode": "complete_fixed_set",
+    "box_pieces": 12,
+    "quantity_per_slot": 1,
+    "max_equipped_slots": 12,
+    "resonance_thresholds": [
+      3,
+      6,
+      9,
+      12
+    ],
+    "resonance_mode": "cumulative_same_tier_same_branch_distinct_equipped_slots",
+    "buy_and_open_require_officer_level": false,
+    "item_key_template": "{tier_key}_{branch_key}_{slot_key}",
+    "set_key_template": "{tier_key}_{branch_key}",
+    "box_key_template": "box_{tier_key}_{branch_key}",
+    "new_slot_name_template": "{tier_name}{branch_slot_name}"
+  },
+  "branches": [
+    {
+      "key": "military",
+      "name": "军事"
+    },
+    {
+      "key": "defense",
+      "name": "防御"
+    },
+    {
+      "key": "logistics",
+      "name": "后勤"
+    },
+    {
+      "key": "knowledge",
+      "name": "学识"
+    }
+  ],
+  "slots": [
+    {
+      "key": "weapon",
+      "name": "武器",
+      "group": "core",
+      "budget": "core"
+    },
+    {
+      "key": "badge",
+      "name": "徽章",
+      "group": "core",
+      "budget": "core"
+    },
+    {
+      "key": "coat",
+      "name": "外套",
+      "group": "core",
+      "budget": "core"
+    },
+    {
+      "key": "helmet",
+      "name": "头盔",
+      "group": "clothing",
+      "budget": "major"
+    },
+    {
+      "key": "gloves",
+      "name": "手套",
+      "group": "clothing",
+      "budget": "minor"
+    },
+    {
+      "key": "belt",
+      "name": "腰带",
+      "group": "clothing",
+      "budget": "minor"
+    },
+    {
+      "key": "trousers",
+      "name": "裤装",
+      "group": "clothing",
+      "budget": "medium"
+    },
+    {
+      "key": "boots",
+      "name": "军靴",
+      "group": "clothing",
+      "budget": "major"
+    },
+    {
+      "key": "backpack",
+      "name": "背包",
+      "group": "kit",
+      "budget": "minor"
+    },
+    {
+      "key": "radio",
+      "name": "通讯器",
+      "group": "kit",
+      "budget": "major"
+    },
+    {
+      "key": "map",
+      "name": "图囊",
+      "group": "kit",
+      "budget": "medium"
+    },
+    {
+      "key": "watch",
+      "name": "军表",
+      "group": "kit",
+      "budget": "medium"
+    }
+  ],
+  "new_slot_branch_names": {
+    "military": {
+      "helmet": "突击头盔",
+      "gloves": "射击手套",
+      "belt": "战术腰带",
+      "trousers": "突击军裤",
+      "boots": "突击军靴",
+      "backpack": "弹药背包",
+      "radio": "突击电台",
+      "map": "作战图囊",
+      "watch": "战术军表"
+    },
+    "defense": {
+      "helmet": "守备钢盔",
+      "gloves": "防护手套",
+      "belt": "守备腰带",
+      "trousers": "防护军裤",
+      "boots": "防护军靴",
+      "backpack": "应急背包",
+      "radio": "守备电台",
+      "map": "工事图囊",
+      "watch": "值勤军表"
+    },
+    "logistics": {
+      "helmet": "工勤头盔",
+      "gloves": "作业手套",
+      "belt": "工具腰带",
+      "trousers": "工勤军裤",
+      "boots": "勤务军靴",
+      "backpack": "补给背包",
+      "radio": "调度电台",
+      "map": "补给图囊",
+      "watch": "运输军表"
+    },
+    "knowledge": {
+      "helmet": "参谋头盔",
+      "gloves": "测绘手套",
+      "belt": "参谋腰带",
+      "trousers": "参谋军裤",
+      "boots": "参谋军靴",
+      "backpack": "文书背包",
+      "radio": "指挥电台",
+      "map": "测绘图囊",
+      "watch": "校时军表"
+    }
+  },
+  "tiers": [
+    {
+      "key": "recruit",
+      "name": "列兵",
+      "persisted_tier_id": 1,
+      "progression_order": 1,
+      "required_level": 1,
+      "box_diamonds": 200,
+      "base_main": {
+        "core": 5,
+        "major": 1,
+        "medium": 1,
+        "minor": 1
+      },
+      "core_each_secondary": 1,
+      "new_slot_each_secondary": 0,
+      "resonance_increment_main": [
+        3,
+        1,
+        1,
+        1
+      ],
+      "resonance_increment_all": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "effective_preparation_cap": 1,
+      "expected_full_set": {
+        "main": 30,
+        "each_secondary": 3
+      },
+      "core_names": {
+        "military": [
+          "列兵军刀",
+          "列兵臂章",
+          "列兵作训服"
+        ],
+        "defense": [
+          "列兵护身盾",
+          "列兵坚守勋章",
+          "列兵防弹背心"
+        ],
+        "logistics": [
+          "列兵工具包",
+          "列兵通行证",
+          "列兵工作服"
+        ],
+        "knowledge": [
+          "列兵笔记本",
+          "列兵学员章",
+          "列兵学员服"
+        ]
+      }
+    },
+    {
+      "key": "sergeant",
+      "name": "士官",
+      "persisted_tier_id": 4,
+      "progression_order": 2,
+      "required_level": 20,
+      "box_diamonds": 500,
+      "base_main": {
+        "core": 9,
+        "major": 1,
+        "medium": 1,
+        "minor": 1
+      },
+      "core_each_secondary": 2,
+      "new_slot_each_secondary": 0,
+      "resonance_increment_main": [
+        8,
+        2,
+        2,
+        2
+      ],
+      "resonance_increment_all": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "effective_preparation_cap": 2,
+      "expected_full_set": {
+        "main": 50,
+        "each_secondary": 6
+      },
+      "core_names": {
+        "military": [
+          "士官战刀",
+          "士官突击章",
+          "士官作战服"
+        ],
+        "defense": [
+          "士官防护盾",
+          "士官坚守章",
+          "士官防护甲"
+        ],
+        "logistics": [
+          "士官维修包",
+          "士官勤务章",
+          "士官勤务服"
+        ],
+        "knowledge": [
+          "士官观测镜",
+          "士官研习章",
+          "士官参谋服"
+        ]
+      }
+    },
+    {
+      "key": "officer",
+      "name": "校官",
+      "persisted_tier_id": 2,
+      "progression_order": 3,
+      "required_level": 40,
+      "box_diamonds": 1200,
+      "base_main": {
+        "core": 15,
+        "major": 3,
+        "medium": 2,
+        "minor": 1
+      },
+      "core_each_secondary": 3,
+      "new_slot_each_secondary": 0,
+      "resonance_increment_main": [
+        15,
+        3,
+        3,
+        3
+      ],
+      "resonance_increment_all": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "effective_preparation_cap": 3,
+      "expected_full_set": {
+        "main": 87,
+        "each_secondary": 9
+      },
+      "core_names": {
+        "military": [
+          "校官军刀",
+          "校官勋章",
+          "校官军服"
+        ],
+        "defense": [
+          "校官防暴盾",
+          "校官铁壁勋章",
+          "校官重装防弹甲"
+        ],
+        "logistics": [
+          "校官补给箱",
+          "校官调度章",
+          "校官军需服"
+        ],
+        "knowledge": [
+          "校官战术罗盘",
+          "校官参谋章",
+          "校官参谋服"
+        ]
+      }
+    },
+    {
+      "key": "brigadier",
+      "name": "准将",
+      "persisted_tier_id": 5,
+      "progression_order": 4,
+      "required_level": 60,
+      "box_diamonds": 2400,
+      "base_main": {
+        "core": 20,
+        "major": 3,
+        "medium": 2,
+        "minor": 1
+      },
+      "core_each_secondary": 4,
+      "new_slot_each_secondary": 0,
+      "resonance_increment_main": [
+        20,
+        4,
+        4,
+        4
+      ],
+      "resonance_increment_all": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "effective_preparation_cap": 4,
+      "expected_full_set": {
+        "main": 110,
+        "each_secondary": 12
+      },
+      "core_names": {
+        "military": [
+          "准将指挥刀",
+          "准将先锋勋章",
+          "准将指挥服"
+        ],
+        "defense": [
+          "准将卫戍盾",
+          "准将壁垒勋章",
+          "准将卫戍甲"
+        ],
+        "logistics": [
+          "准将军需箱",
+          "准将统筹勋章",
+          "准将军需服"
+        ],
+        "knowledge": [
+          "准将观测仪",
+          "准将谋略勋章",
+          "准将参谋服"
+        ]
+      }
+    },
+    {
+      "key": "general",
+      "name": "上将",
+      "persisted_tier_id": 6,
+      "progression_order": 5,
+      "required_level": 80,
+      "box_diamonds": 3600,
+      "base_main": {
+        "core": 25,
+        "major": 4,
+        "medium": 3,
+        "minor": 2
+      },
+      "core_each_secondary": 4,
+      "new_slot_each_secondary": 0,
+      "resonance_increment_main": [
+        25,
+        5,
+        5,
+        5
+      ],
+      "resonance_increment_all": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "effective_preparation_cap": 5,
+      "expected_full_set": {
+        "main": 142,
+        "each_secondary": 12
+      },
+      "core_names": {
+        "military": [
+          "上将统御佩剑",
+          "上将决胜勋章",
+          "上将统御军服"
+        ],
+        "defense": [
+          "上将要塞盾",
+          "上将磐石勋章",
+          "上将要塞护甲"
+        ],
+        "logistics": [
+          "上将补给总箱",
+          "上将军需勋章",
+          "上将勤务礼服"
+        ],
+        "knowledge": [
+          "上将测距仪",
+          "上将战略勋章",
+          "上将战略军服"
+        ]
+      }
+    },
+    {
+      "key": "marshal",
+      "name": "元帅",
+      "persisted_tier_id": 3,
+      "progression_order": 6,
+      "required_level": 100,
+      "box_diamonds": 5000,
+      "base_main": {
+        "core": 30,
+        "major": 4,
+        "medium": 3,
+        "minor": 2
+      },
+      "core_each_secondary": 5,
+      "new_slot_each_secondary": 0,
+      "resonance_increment_main": [
+        30,
+        6,
+        6,
+        6
+      ],
+      "resonance_increment_all": [
+        5,
+        0,
+        0,
+        2
+      ],
+      "effective_preparation_cap": 5,
+      "expected_full_set": {
+        "main": 172,
+        "each_secondary": 22
+      },
+      "core_names": {
+        "military": [
+          "元帅佩剑",
+          "元帅将星",
+          "元帅礼服"
+        ],
+        "defense": [
+          "元帅重装盾",
+          "元帅不屈之星",
+          "元帅钛金铠"
+        ],
+        "logistics": [
+          "元帅辎重车",
+          "元帅军需印",
+          "元帅长袍"
+        ],
+        "knowledge": [
+          "元帅望远镜",
+          "元帅军师印",
+          "元帅军礼服"
+        ]
+      }
+    }
+  ],
+  "preparation": {
+    "binding": "player_officer_slot",
+    "main_attribute_per_effective_level": 1,
+    "empty_slot_bonus": 0,
+    "persist_on_gear_change": true,
+    "persist_on_officer_dismissal": false,
+    "success_rate": 1,
+    "gold_source": "player_main_city_gold",
+    "material_key": "officerPreparationParts",
+    "material_name": "军备零件",
+    "steps": [
+      {
+        "target_level": 1,
+        "required_officer_level": 1,
+        "parts": 20,
+        "gold": 1000
+      },
+      {
+        "target_level": 2,
+        "required_officer_level": 20,
+        "parts": 40,
+        "gold": 2000
+      },
+      {
+        "target_level": 3,
+        "required_officer_level": 40,
+        "parts": 60,
+        "gold": 3000
+      },
+      {
+        "target_level": 4,
+        "required_officer_level": 60,
+        "parts": 80,
+        "gold": 4000
+      },
+      {
+        "target_level": 5,
+        "required_officer_level": 80,
+        "parts": 100,
+        "gold": 5000
+      }
+    ],
+    "daily": {
+      "available_tasks": 4,
+      "max_claims": 3,
+      "parts_per_claim": 40,
+      "timezone": "Asia/Shanghai",
+      "reset": "00:00"
+    },
+    "weekly": {
+      "daily_claims_required": 15,
+      "parts": 240,
+      "max_claims": 1,
+      "timezone": "Asia/Shanghai",
+      "reset": "monday_00:00"
+    },
+    "parts_sold_in_shop": false,
+    "gear_dismantles_into_parts": false,
+    "expected_full_officer_cost": {
+      "parts": 3600,
+      "gold": 180000
+    },
+    "pacing_example": {
+      "assumptions": "120 parts daily; 240 extra on days 7,14,21,...; enough gold and officer level; one officer and no other spending",
+      "all_slots_level_1_day": 2,
+      "all_slots_level_2_day": 6,
+      "all_slots_level_3_day": 10,
+      "all_slots_level_4_day": 16,
+      "all_slots_level_5_day": 24,
+      "four_officers_all_slots_level_5_day": 94
+    }
+  },
+  "legacy": {
+    "tiers": [
+      "recruit",
+      "officer",
+      "marshal"
+    ],
+    "slots": [
+      "weapon",
+      "badge",
+      "coat"
+    ],
+    "unopened_box_reward_pieces": 12,
+    "backfill_new_slots_each": "min(owned_weapon, owned_badge, owned_coat) per player and legacy set; owned includes inventory plus equipped",
+    "backfill_auto_equips": false,
+    "idempotency_scope": [
+      "player_id",
+      "legacy_set_key",
+      "migration_version"
+    ]
+  },
+  "expected_catalog": {
+    "tiers": 6,
+    "branches": 4,
+    "slots": 12,
+    "sets": 24,
+    "items": 288,
+    "box_types": 24,
+    "one_of_each_box_total_diamonds": 51600
+  }
+}

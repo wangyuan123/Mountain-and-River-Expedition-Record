@@ -1,0 +1,124 @@
+[
+  {
+    "marchId": 254,
+    "round": 13,
+    "firstCombatRound": 8,
+    "attackerArmy": {
+      "infantry": 17526
+    },
+    "defenderArmy": {},
+    "finished": true,
+    "terminalReason": "DEFENDERS_ELIMINATED",
+    "scenario": "04-no-gear-no-skill",
+    "attackerWon": true,
+    "startSnapshot": {
+      "attackerDef": 68,
+      "attackerMil": 169,
+      "defenderDef": 277,
+      "defenderMil": 122,
+      "attackerSkills": "{}",
+      "defenderSkills": "{\"bulwark\":3}",
+      "initialAttacker": "{\"infantry\":20000}",
+      "initialDefender": "{\"infantry\":20000}"
+    }
+  },
+  {
+    "marchId": 255,
+    "round": 12,
+    "firstCombatRound": 8,
+    "attackerArmy": {
+      "infantry": 18220
+    },
+    "defenderArmy": {},
+    "finished": true,
+    "terminalReason": "DEFENDERS_ELIMINATED",
+    "scenario": "05-gear-no-skill",
+    "attackerWon": true,
+    "startSnapshot": {
+      "attackerDef": 90,
+      "attackerMil": 341,
+      "defenderDef": 277,
+      "defenderMil": 122,
+      "attackerSkills": "{}",
+      "defenderSkills": "{\"bulwark\":3}",
+      "initialAttacker": "{\"infantry\":20000}",
+      "initialDefender": "{\"infantry\":20000}"
+    }
+  },
+  {
+    "marchId": 256,
+    "round": 11,
+    "firstCombatRound": 8,
+    "attackerArmy": {
+      "infantry": 18828
+    },
+    "defenderArmy": {},
+    "finished": true,
+    "terminalReason": "DEFENDERS_ELIMINATED",
+    "scenario": "06-gear-and-skill",
+    "attackerWon": true,
+    "startSnapshot": {
+      "attackerDef": 90,
+      "attackerMil": 341,
+      "defenderDef": 277,
+      "defenderMil": 122,
+      "attackerSkills": "{\"frenzy\":5,\"pierce\":5}",
+      "defenderSkills": "{\"bulwark\":3}",
+      "initialAttacker": "{\"infantry\":20000}",
+      "initialDefender": "{\"infantry\":20000}"
+    }
+  },
+  {
+    "marchId": 257,
+    "round": 6,
+    "firstCombatRound": 5,
+    "attackerArmy": {
+      "htank": 1000
+    },
+    "defenderArmy": {},
+    "finished": true,
+    "terminalReason": "DEFENDERS_ELIMINATED",
+    "scenario": "07-without-garrison",
+    "attackerWon": true
+  },
+  {
+    "marchId": 259,
+    "round": 8,
+    "firstCombatRound": 4,
+    "attackerArmy": {},
+    "defenderArmy": {
+      "infantry": 1000,
+      "htank": 9774
+    },
+    "finished": true,
+    "terminalReason": "ATTACKERS_ELIMINATED",
+    "scenario": "08-with-garrison",
+    "attackerWon": false
+  },
+  {
+    "marchId": 260,
+    "round": 5,
+    "firstCombatRound": 5,
+    "attackerArmy": {
+      "htank": 100000
+    },
+    "defenderArmy": {},
+    "finished": true,
+    "terminalReason": "DEFENDERS_ELIMINATED",
+    "scenario": "10-conquest-capture",
+    "attackerWon": true
+  },
+  {
+    "marchId": 262,
+    "round": 4,
+    "firstCombatRound": 4,
+    "attackerArmy": {
+      "htank": 100000
+    },
+    "defenderArmy": {},
+    "finished": true,
+    "terminalReason": "DEFENDERS_ELIMINATED",
+    "scenario": "12-fixed-conquest",
+    "attackerWon": true
+  }
+]

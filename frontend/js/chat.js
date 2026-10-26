@@ -246,7 +246,7 @@ window.Game = window.Game || {};
     var input = document.getElementById('worldChatInput');
     if (input) {
       input.disabled = !canSend();
-      input.placeholder = canSend() ? '输入电报简讯... (最多 80 字，Enter 发送)' : '声望达到 10,000 后可发言';
+      input.placeholder = canSend() ? '善言结善缘 恶语伤人心' : '声望达到 10,000 后可发言';
     }
     if (!canSend()) {
       btn.disabled = true;
@@ -255,7 +255,7 @@ window.Game = window.Game || {};
     } else if (cdRemaining > 0) {
       btn.disabled = true;
       btn.classList.add('disabled');
-      btn.textContent = cdRemaining + 's';
+      btn.textContent = G.formatDuration(cdRemaining);
     } else {
       btn.disabled = false;
       btn.classList.remove('disabled');
@@ -380,7 +380,7 @@ window.Game = window.Game || {};
       if (guildCdRemaining > 0) {
         btn.disabled = true;
         btn.classList.add('disabled');
-        btn.textContent = guildCdRemaining + 's';
+        btn.textContent = G.formatDuration(guildCdRemaining);
       } else {
         btn.disabled = false;
         btn.classList.remove('disabled');

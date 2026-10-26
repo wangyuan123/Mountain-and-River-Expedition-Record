@@ -1,0 +1,169 @@
+Browser tab: 2, Title: "山河远征录 - 文字战争策略游戏", URL: "http://localhost:8081/".
+0 AXWebArea 山河远征录 - 文字战争策略游戏, URL: localhost:8081/
+	1 container screen
+		2 container header
+			3 container topbar
+				137 button 头像 远征统帅_163822 已连接, Help: 点击展开指挥官档案、主题与设置
+					138 image 头像
+					139 text 远征统帅_163822
+					140 text 已连接
+				141 text 🎖️ 论坛
+				142 text 💎 100
+				143 text ⚔ 军情 1 起 (行军1/来袭0) 点击查看
+			11 container navbar
+				108 container Description: 左右滑动查看更多导航, ID: gameNavViewport
+					109 container 第1组导航
+						110 text 首页
+						111 text 后勤
+						112 text 军工
+						113 text 军官
+						114 text 军队
+						115 text 地图
+						116 text 军情
+						117 container
+							118 text 战报 1
+						119 text 聊天
+						120 container
+							121 text 电报 3
+						122 container
+							123 text 任务 !
+						124 text 军团
+						125 text 仓库
+						126 text 科技
+						127 text 军校
+						128 text 对战
+					129 container 第2组导航
+						130 pop up button Description: 切换城市, Help: 当前城市：新城市（主城）
+						131 text 战术
+						132 text 排名
+						133 text 商城
+				134 container 导航分页
+					135 button 切换到第1组导航
+					136 button 切换到第2组导航
+		100 container view
+			144 button 返回上一步
+			145 text 战术指挥：战火_$@焚天灭地城
+			146 text 所有兵种接敌后不可越线，空军也必须消灭敌方前排后才能继续向后推进。
+			147 text 未指定目标时优先攻击射程内的敌方同类型兵种，否则攻击射程内最近的敌军；也可手动指定射程内的任意敌军。
+			148 text 已提交的指令在本场后续所有回合持续生效，直到再次修改。地图战场点击我军图标下令，文本战场使用兵种卡片。
+			149 button [ 返回军情 ]
+				150 text [
+				151 text 返回军情
+				152 text ]
+			153 text 🏰 清除守军 · 城墙 Lv.10
+			154 text 墙体生命 2,500,000 / 2,500,000 · 墙体防御 200
+			155 progress indicator Description: 墙体生命, Value: 2500000
+			156 text 清除守军与工事后，射程内余伤可继续攻墙；破墙后才可赢得征服战。
+			157 text 当前回合
+			158 text 第 14 回合
+			159 text / 共 35 回合
+			160 text 本回合倒计时
+			161 text 12秒
+			162 text 已选命令在倒计时结束后提交，也可点击下方执行按钮
+			163 text 我方司令官
+			164 text 未任命，常驻加成为0
+			165 text 敌方司令官
+			166 text 未任命，常驻加成为0
+			167 tab group 战场显示方式
+				168 tab (selected, settable, boolean) 地图战场, Value: 1, ID: tacticalTab-battlefield
+				169 tab (selectable, settable, boolean) 文本战场, Value: 0, ID: tacticalTab-text
+			170 container Description: 地图战场, ID: tacticalPanel-battlefield
+				171 container
+					172 text 我军阵地 敌军阵地
+					173 container 碉堡 🏰城防射程: 1575（覆盖至坐标 3125），距最近我军 2232 [未覆盖我军]
+						174 text ×5000
+						175 image
+						176 text 🏰 碉堡 射程 1575
+					177 pop up button Description: 指挥驱逐舰-弗莱彻级（Fletcher）, Help: 驱逐舰-弗莱彻级（Fletcher） ×81116，战场位置 2468，射程 600（科技加成 +200），距敌军 0（🎯已在射程内）
+						178 image 驱逐舰-弗莱彻级（Fletcher）
+						179 text ×81116
+						180 text 🎯600 · 前进
+					181 pop up button Description: 指挥战列舰-衣阿华级（Iowa）, Help: 战列舰-衣阿华级（Iowa） ×181543，战场位置 2468，射程 2400（科技加成 +800），距敌军 0（🎯已在射程内）
+						182 image 战列舰-衣阿华级（Iowa）
+						183 text ×181543
+						184 text 🎯2400 · 前进
+					185 pop up button Description: 指挥航母-埃塞克斯级（Essex）, Help: 航母-埃塞克斯级（Essex） ×195613，战场位置 2468，射程 2850（科技加成 +950），距敌军 0（🎯已在射程内）
+						186 image 航母-埃塞克斯级（Essex）
+						187 text ×195613
+						188 text 🎯2850 · 前进
+					189 container 航母-埃塞克斯级（Essex） ×22565，战场位置 2468，射程 2850（科技加成 +950），距我军 0（🎯已在射程内）
+						190 image 航母-埃塞克斯级（Essex）
+						191 text ×22565
+						192 text 🎯2850
+					193 container 驱逐舰-弗莱彻级（Fletcher） ×32738，战场位置 2468，射程 600（科技加成 +200），距我军 0（🎯已在射程内）
+						194 image 驱逐舰-弗莱彻级（Fletcher）
+						195 text ×32738
+						196 text 🎯600
+					197 container 重型坦克-斯大林（IS-2） ×40874，战场位置 2468，射程 480（科技加成 +160），距我军 0（🎯已在射程内）
+						198 image 重型坦克-斯大林（IS-2）
+						199 text ×40874
+						200 text 🎯480
+					201 container 步兵-加兰德步枪兵（M1） ×63059，战场位置 2600，射程 240（科技加成 +80），距我军 132（🎯已在射程内）
+						202 image 步兵-加兰德步枪兵（M1）
+						203 text ×63059
+						204 text 🎯240
+					205 container 轻型坦克-斯图亚特（M5A1） ×30124，战场位置 2468，射程 330（科技加成 +110），距我军 0（🎯已在射程内）
+						206 image 轻型坦克-斯图亚特（M5A1）
+						207 text ×30124
+						208 text 🎯330
+					209 container 侦查装甲车-灰狗（M8） ×427，战场位置 2468，射程 450（科技加成 +150），距我军 0（🎯已在射程内）
+						210 image 侦查装甲车-灰狗（M8）
+						211 text ×427
+						212 text 🎯450
+					213 container 侦察机-闪电侦察型（F-5） ×53315，战场位置 4700，射程 300（科技加成 +100），距我军 2232（未进入射程）
+						214 image 侦察机-闪电侦察型（F-5）
+						215 text ×53315
+						216 text 射程 300
+					217 container 潜艇-小鲨鱼级（Gato） ×12670，战场位置 2468，射程 150（科技加成 +50），距我军 0（🎯已在射程内）
+						218 image 潜艇-小鲨鱼级（Gato）
+						219 text ×12670
+						220 text 🎯150
+					221 container 运输机-空中列车（C-47） ×63760，战场位置 4700，射程 0，无武器射程
+						222 image 运输机-空中列车（C-47）
+						223 text ×63760
+						224 text 无射程
+					225 container 卡车-十轮大卡（CCKW-353） ×63760，战场位置 4700，射程 0，无武器射程
+						226 image 卡车-十轮大卡（CCKW-353）
+						227 text ×63760
+						228 text 无射程
+					229 container 城墙，生命 2,500,000/2,500,000，防御 200，战场位置 4700，射程 0，无武器射程
+						230 image 攻方敌军城墙（城门朝左）
+						231 container
+							232 text 城墙 Lv.10 生命 2,500,000 / 2,500,000
+							233 progress indicator Description: 城墙生命, Value: 2500000
+							234 text 防御 200 / 200
+							235 progress indicator Description: 城墙防御, Value: 200
+					236 text 战场宽度 4700 · 🎯 绿色光带为有效射程已接敌
+			237 text 我军本回合命令
+			238 checkbox [ 全部待命 ], Value: 0
+				239 text [
+				240 text 全部待命
+				241 text ]
+			242 checkbox ✓ [ 全部前进 ], Value: 1
+				243 text ✓ [
+				244 text 全部前进
+				245 text ]
+			246 checkbox [ 全部后退 ], Value: 0
+				247 text [
+				248 text 全部后退
+				249 text ]
+			250 button [ 执行第 15 回合 ]
+				251 text [
+				252 text 执行第 15 回合
+				253 text ]
+			254 button (collapsed) [ 战场记录（403） 展开 ], ID: tacticalLogToggle, Secondary Actions: Expand
+				255 text [
+				256 text 战场记录（403） 展开
+				257 text ]
+		63 container Description: 游戏导航与备案信息, ID: footbar
+			258 container 底部快捷导航
+				259 button 首页
+				260 button 地图
+				261 button 任务
+				262 button 邮件
+				263 button 设置
+				264 button 返回顶部
+			265 text [1]立即结算/下一回合 [0]撤退
+			266 text 北京时间：2026年10月23日 22:15:52
+
+The focused UI element is 0 AXWebArea 山河远征录 - 文字战争策略游戏, URL: localhost:8081/

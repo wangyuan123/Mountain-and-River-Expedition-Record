@@ -26,7 +26,7 @@ function setup() {
   }
   const Game = {
     Core: { route: 'battleDefaults', state: { player: { id: 10 }, army: { infantry: 50000, rocket: 50000 } }, views: {}, render() {} },
-    DATA: { units: { infantry: { name: '步兵' }, rocket: { name: '反坦克火箭车' } } },
+    DATA: { units: { infantry: { name: '步兵' }, rocket: { name: '反坦克火箭' } } },
     API: {
       getBattleDefaults() { calls.push('load'); return Promise.resolve(JSON.parse(JSON.stringify(saved))); },
       saveBattleDefaults(value) { calls.push(JSON.parse(JSON.stringify(value))); return Promise.resolve(value); }

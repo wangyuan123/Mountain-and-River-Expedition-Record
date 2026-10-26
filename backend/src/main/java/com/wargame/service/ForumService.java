@@ -163,7 +163,7 @@ public class ForumService {
         int playerPrestige = player.getPrestige() != null ? player.getPrestige() : 0;
         int minReq = Math.max(50, board.getMinPrestige());
         if (playerPrestige < minReq) {
-            throw new IllegalArgumentException("您的军望不足 " + minReq + "，暂无法在此板块发帖");
+            throw new IllegalArgumentException("您的声望不足 " + minReq + "，暂无法在此板块发帖");
         }
 
         String type = (req.topicType() != null && !req.topicType().isBlank()) ? req.topicType().toUpperCase() : "NORMAL";
@@ -174,7 +174,7 @@ public class ForumService {
             bountyGold = (req.bountyGold() != null && req.bountyGold() > 0) ? req.bountyGold() : 100;
             Resources res = resourcesRepository.findFirstByPlayerIdOrderByCitySlotAsc(playerId)
                     .orElseThrow(() -> new IllegalStateException("未找到玩家主城金库资源"));
-            int currentGold = res.getGold() != null ? res.getGold() : 0;
+            long currentGold = res.getGold() != null ? res.getGold() : 0L;
             if (currentGold < bountyGold) {
                 throw new IllegalArgumentException("黄金储备不足，当前拥有 " + currentGold + "，需要 " + bountyGold + " 黄金用于悬赏");
             }
@@ -428,7 +428,7 @@ public class ForumService {
         Resources solverRes = resourcesRepository.findFirstByPlayerIdOrderByCitySlotAsc(reply.getAuthorId())
                 .orElse(null);
         if (solverRes != null) {
-            solverRes.setGold(Objects.requireNonNullElse(solverRes.getGold(), 0) + bountyGold);
+            solverRes.addResource("gold", bountyGold);
             resourcesRepository.save(solverRes);
         }
 
@@ -454,7 +454,7 @@ public class ForumService {
         Resources senderRes = resourcesRepository.findFirstByPlayerIdOrderByCitySlotAsc(playerId)
                 .orElseThrow(() -> new IllegalStateException("金库资源异常"));
 
-        int currentGold = senderRes.getGold() != null ? senderRes.getGold() : 0;
+        long currentGold = senderRes.getGold() != null ? senderRes.getGold() : 0L;
         if (currentGold < req.amountGold()) {
             throw new IllegalArgumentException("黄金储备不足，当前拥有 " + currentGold + "，打赏需要 " + req.amountGold());
         }
@@ -465,7 +465,7 @@ public class ForumService {
         Resources authorRes = resourcesRepository.findFirstByPlayerIdOrderByCitySlotAsc(topic.getAuthorId())
                 .orElse(null);
         if (authorRes != null) {
-            authorRes.setGold(Objects.requireNonNullElse(authorRes.getGold(), 0) + req.amountGold());
+            authorRes.addResource("gold", req.amountGold());
             resourcesRepository.save(authorRes);
         }
 
@@ -527,7 +527,7 @@ public class ForumService {
 
         GuildInfo guildInfo = getPlayerGuildInfo(playerId);
         Resources res = resourcesRepository.findFirstByPlayerIdOrderByCitySlotAsc(playerId).orElse(null);
-        int gold = res != null && res.getGold() != null ? res.getGold() : 0;
+        int gold = (int) Math.min(Integer.MAX_VALUE, res != null && res.getGold() != null ? res.getGold() : 0L);
         int rank = p.getMilitaryRank() != null ? p.getMilitaryRank() : 1;
         int prestige = p.getPrestige() != null ? p.getPrestige() : 0;
 
@@ -545,6 +545,7 @@ public class ForumService {
                 guildInfo.guildName(),
                 guildInfo.guildRole(),
                 gold,
+                p.getCityName(),
                 p.getCityPosX(),
                 p.getCityPosY(),
                 prestige >= 50,

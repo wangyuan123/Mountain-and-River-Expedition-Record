@@ -122,7 +122,7 @@ public class MarchTargetService {
             if (hasRealOwner(p)) {
                 Resources r = resourcesRepository.findByPlayerIdAndCitySlot(p.getOwnerId(), Objects.requireNonNullElse(p.getCitySlot(), 0)).orElse(null);
                 if (r == null) return Collections.emptyMap();
-                return Map.of("food", Objects.requireNonNullElse(r.getFood(), 0), "steel", Objects.requireNonNullElse(r.getSteel(), 0), "oil", Objects.requireNonNullElse(r.getOil(), 0), "rare", Objects.requireNonNullElse(r.getRare(), 0), "gold", Objects.requireNonNullElse(r.getGold(), 0));
+                return Map.of("food", (int) Math.min(Integer.MAX_VALUE, Objects.requireNonNullElse(r.getFood(), 0L)), "steel", (int) Math.min(Integer.MAX_VALUE, Objects.requireNonNullElse(r.getSteel(), 0L)), "oil", (int) Math.min(Integer.MAX_VALUE, Objects.requireNonNullElse(r.getOil(), 0L)), "rare", (int) Math.min(Integer.MAX_VALUE, Objects.requireNonNullElse(r.getRare(), 0L)), "gold", (int) Math.min(Integer.MAX_VALUE, Objects.requireNonNullElse(r.getGold(), 0L)));
             }
             return JsonUtil.parseIntMap(p.getResources());
         }

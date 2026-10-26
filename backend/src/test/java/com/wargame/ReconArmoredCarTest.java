@@ -148,6 +148,41 @@ class ReconArmoredCarTest extends BaseServiceTest {
     }
 
     @ParameterizedTest @ValueSource(strings = {"scout", "recon_car"})
+    void overwhelmingOpeningInterceptionPreservesGarrisonAndRecordsBothReports(String unit) {
+        Player defender = createTestPlayer("opening-interceptor", 30);
+        createTechnology(defender.getId(), "recon_radar", 1);
+        PlayerCity target = new PlayerCity();
+        target.setOwnerId(defender.getId()); target.setCitySlot(0); target.setWorldId(world.getId());
+        target.setName("先手拦截城市"); target.setX(20); target.setY(10); target.setLevel(1);
+        target = playerCityRepository.saveAndFlush(target);
+        createArmyUnit(defender.getId(), unit, 1000000);
+        March march = marchService.createDispatch(player.getId(), new DispatchRequest("player", target.getId(),
+                "scout", Map.of(unit, 100), null, null));
+        marchService.processMarches(player.getId(), march.getArriveAt());
+
+        Map<String, Object> attack = report();
+        Map<String, Object> defense = JsonUtil.parseObjMap(scoutReportRepository.findByPlayerId(defender.getId()).get(0).getData());
+        assertEquals("defender", attack.get("firstStrike"));
+        assertEquals("defender", defense.get("firstStrike"));
+        assertEquals(100, attack.get("myLost"));
+        assertEquals(0, attack.get("enemyLost"));
+        assertEquals(0, defense.get("myLost"));
+        assertEquals(100, defense.get("enemyLost"));
+        assertEquals(Map.of(unit, 0), attack.get("mySurvivors"));
+        assertEquals(Map.of(unit, 1000000), attack.get("enemySurvivors"));
+        assertEquals(attack.get("enemySurvivors"), defense.get("mySurvivors"));
+        assertEquals(attack.get("mySurvivors"), defense.get("enemySurvivors"));
+        List<?> attackLogs = (List<?>) attack.get("combatLog"), defenseLogs = (List<?>) defense.get("combatLog");
+        assertEquals(1, attackLogs.size());
+        assertEquals(1, defenseLogs.size());
+        assertTrue(attackLogs.get(0).toString().contains("本回合先手：敌方"));
+        assertTrue(defenseLogs.get(0).toString().contains("本回合先手：我方"));
+        assertEquals(1000000, armyUnitRepository.findByPlayerIdAndType(defender.getId(), unit).get(0).getCount());
+        assertEquals(1900, armyUnitRepository.findByPlayerIdAndType(player.getId(), unit).get(0).getCount());
+        assertTrue(marchRepository.findById(march.getId()).isEmpty());
+    }
+
+    @ParameterizedTest @ValueSource(strings = {"scout", "recon_car"})
     void unselectedHomeCommanderDoesNotJoinRecon(String unit) {
         Officer home = createOfficer(player.getId(), "commander", 219, 219, 10, 10);
         home.setSkills("[{\"id\":\"frenzy\",\"lv\":5}]"); officerRepository.saveAndFlush(home);
@@ -194,7 +229,7 @@ class ReconArmoredCarTest extends BaseServiceTest {
     }
 
     @Test void invalidCompositionIsRejectedBeforeInventoryOrResourcesChange() {
-        int oil = getResources(player.getId()).getOil();
+        long oil = getResources(player.getId()).getOil();
         for (var army : java.util.List.of(Map.of("recon_car", 1, "scout", 1), Map.of("recon_car", 1, "infantry", 1),
                 Map.of("recon_car", 1, "transport", 1), Map.of("unknown", 1))) {
             DispatchRequest req = request(army);

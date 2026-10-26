@@ -28,8 +28,8 @@ class OnboardingConcurrencyTest extends BaseServiceTest {
             onboarding.onEvent(id, "BUILD_UPGRADE_DONE", "farm", 1);
             return id;
         });
-        int initialFood = getResources(playerId).getFood();
-        int initialSteel = getResources(playerId).getSteel();
+        long initialFood = getResources(playerId).getFood();
+        long initialSteel = getResources(playerId).getSteel();
         ExecutorService executor = Executors.newFixedThreadPool(2);
         CountDownLatch ready = new CountDownLatch(2), start = new CountDownLatch(1);
         Callable<Void> claim = () -> { ready.countDown(); assertTrue(start.await(10, TimeUnit.SECONDS)); onboarding.claim(playerId, "base"); return null; };
@@ -54,8 +54,8 @@ class OnboardingConcurrencyTest extends BaseServiceTest {
             onboarding.onEvent(id, "BUILD_UPGRADE_DONE", "farm", 1);
             return id;
         });
-        int initialFood = getResources(playerId).getFood();
-        int initialSteel = getResources(playerId).getSteel();
+        long initialFood = getResources(playerId).getFood();
+        long initialSteel = getResources(playerId).getSteel();
         ExecutorService executor = Executors.newFixedThreadPool(2);
         CountDownLatch ready = new CountDownLatch(2), start = new CountDownLatch(1);
         Callable<Void> skip = () -> { ready.countDown(); assertTrue(start.await(10, TimeUnit.SECONDS)); onboarding.skip(playerId); return null; };

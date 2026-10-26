@@ -16,10 +16,7 @@ window.Game = window.Game || {};
   }
 
   function fmtTime(seconds) {
-    if (seconds < 60) return seconds + '秒';
-    var m = Math.floor(seconds / 60);
-    var s = seconds % 60;
-    return m + '分' + (s > 0 ? s + '秒' : '');
+    return G.formatDuration(seconds);
   }
 
   var BEIJING_TIME_FORMATTER = new Intl.DateTimeFormat('zh-CN', {
@@ -133,6 +130,26 @@ window.Game = window.Game || {};
 
     tick: function () {},
 
+    /**
+     * 区分普通野地采集与真实交战；采集往返、采集中及停采待命不构成军情警报。
+     * @param {Object} march - 服务端行军快照
+     * @returns {boolean} 是否为无需警报的普通采集任务
+     */
+    isRoutineGatherMarch: function (march) {
+      if (!march || march.inBattle || march.battleId != null || march.waitingForBattle) return false;
+      return march.action === 'gather' || march.targetKind === 'wild_gather' || !!march.gathering || !!march.gatherStopped;
+    },
+
+    /**
+     * 仅为警讯统计行军；军情列表和地图仍保留全部采集任务。
+     * @returns {Object[]} 不含普通采集任务的行军快照
+     */
+    militaryAlertMarches: function () {
+      return ((this.state && this.state.world && this.state.world.marches) || []).filter(function (march) {
+        return march && !Core.isRoutineGatherMarch(march);
+      });
+    },
+
     /** 首页与档案共用服务端保护截止时间；显式归零优先于账号上的旧值。 */
     newbieProtectionInfo: function () {
       var s = this.state || {};
@@ -141,15 +158,10 @@ window.Game = window.Game || {};
       var until = Number(cs.newbieProtectionUntil != null ? cs.newbieProtectionUntil : player.newbieProtectionUntil) || 0;
       var now = G.gameNow();
       var remaining = Math.max(0, until - now);
-      // 先向上取整到分钟再拆分，避免出现60分钟或尚未到期却显示0分钟。
-      var totalMinutes = Math.ceil(remaining / 60000);
-      var days = Math.floor(totalMinutes / 1440);
-      var hours = Math.floor((totalMinutes % 1440) / 60);
-      var minutes = totalMinutes % 60;
       return {
         until: until,
         active: until > now,
-        countdown: (days > 0 ? days + '天' : '') + (days > 0 || hours > 0 ? hours + '小时' : '') + minutes + '分钟',
+        countdown: G.formatDuration(remaining / 1000),
         rules: '首次进入保护7天，声望不足10000延长，最长14天。可建设和打NPC，参与玩家战争须确认永久退出。'
       };
     },
@@ -171,9 +183,9 @@ window.Game = window.Game || {};
       var cs = s.cityState;
       var now = G.gameNow();
       if (s.player && s.player.cityFrozen) {
-        var transferMin = s.player.cityTransferDeadlineAt && s.player.cityTransferDeadlineAt > now
-          ? Math.ceil((s.player.cityTransferDeadlineAt - now) / 60000) : 0;
-        return { status: 'surrender', text: '归降移交中', color: 'var(--warning)', detail: transferMin ? '剩余' + transferMin + '分钟' : '等待服务器结算' };
+        var transferRemaining = s.player.cityTransferDeadlineAt && s.player.cityTransferDeadlineAt > now
+          ? s.player.cityTransferDeadlineAt - now : 0;
+        return { status: 'surrender', text: '归降移交中', color: 'var(--warning)', detail: transferRemaining ? '剩余' + G.formatDuration(transferRemaining / 1000) : '等待服务器结算' };
       }
       if (status === 'shield') {
         if (cs.newbieProtectionUntil > now) {
@@ -181,14 +193,13 @@ window.Game = window.Game || {};
           return { status: 'shield', text: '新手保护', color: 'var(--accent)', detail: '还剩' + protection.countdown + '；' + protection.rules };
         }
         var safeUntil = Math.max(cs.shieldUntil || 0, cs.peaceUntil || 0);
-        var min = Math.ceil((safeUntil - now) / 60000);
-        return { status: 'shield', text: '免战状态', color: 'var(--accent)', detail: '剩余' + min + '分钟' };
+        return { status: 'shield', text: '免战状态', color: 'var(--accent)', detail: '剩余' + G.formatDuration((safeUntil - now) / 1000) };
       }
       if (status === 'war') {
-        var warMin = cs.warUntil && cs.warUntil > now
-          ? Math.ceil((cs.warUntil - now) / 60000)
+        var warRemaining = cs.warUntil && cs.warUntil > now
+          ? cs.warUntil - now
           : 0;
-        return { status: 'war', text: '战争', color: 'var(--danger)', detail: warMin ? '剩余' + warMin + '分钟' : '有敌军来袭' };
+        return { status: 'war', text: '战争', color: 'var(--danger)', detail: warRemaining ? '剩余' + G.formatDuration(warRemaining / 1000) : '有敌军来袭' };
       }
       return { status: 'peace', text: '和平', color: 'var(--accent)', detail: '正常发展' };
     },
@@ -206,9 +217,19 @@ window.Game = window.Game || {};
         steel: this.buildingLevel('refinery') * 200000,
         oil: this.buildingLevel('oilfield') * 200000,
         rare: this.buildingLevel('raremine') * 200000,
-        gold: 999999
+        gold: 20000000
       };
       return caps;
+    },
+
+    inventoryCapacity: function () {
+      return {
+        food: 1000000000,
+        steel: 1000000000,
+        oil: 1000000000,
+        rare: 1000000000,
+        gold: 1000000000
+      };
     },
 
     protectCap: function () {
@@ -285,11 +306,9 @@ window.Game = window.Game || {};
       return used;
     },
 
-    /** 两区沿用市政厅每级增加2个卡槽的规则，满级上限与后端统一为36个。 */
+    /** 两区各固定35个卡槽，市政厅等级仅限制建筑等级。 */
     groupSlotsCap: function (groupKey) {
-      var base = (D.groupSlots && D.groupSlots[groupKey]) || 16;
-      var commandLv = this.buildingLevel('command');
-      return Math.min(36, base + Math.max(0, commandLv) * 2);
+      return (D.groupSlots && D.groupSlots[groupKey]) || 35;
     },
 
     groupSlotsRemaining: function (groupKey) {
@@ -307,6 +326,8 @@ window.Game = window.Game || {};
 
     foodPerHour: function () {
       var s = this.state, sum = 0;
+      // 服务端粮账包含外来驻军与战斗中的存活编队，不能只统计本城库存。
+      if (s.foodSupply && Number.isFinite(s.foodSupply.totalPerHour)) return s.foodSupply.totalPerHour;
       for (var id in s.army) sum += (D.units[id] ? D.units[id].food : 0) * s.army[id];
       var techLv = this.techLevel ? this.techLevel('log_food') : 0;
       var foodSave = 1 - 0.05 * techLv;
@@ -317,6 +338,18 @@ window.Game = window.Game || {};
       }
       if (foodSave < 0.1) foodSave = 0.1;
       return Math.round(sum * foodSave);
+    },
+
+    /** 城市状态只调整自然生产，不改变建筑基础产能或野地采集。 */
+    cityProductionPerHour: function (buildingId) {
+      var status = this.getCityStatus();
+      return this.produceOf(buildingId) * (status === 'war' ? 0.7 : (status === 'shield' ? 1.1 : 1));
+    },
+
+    /** 采用实际粮账产量，包含城市战时／保护期的生产倍率。 */
+    foodProductionPerHour: function () {
+      var supply = (this.state || {}).foodSupply;
+      return supply && Number.isFinite(supply.productionPerHour) ? supply.productionPerHour : this.cityProductionPerHour('farm');
     },
 
     popMax: function () {
@@ -362,9 +395,9 @@ window.Game = window.Game || {};
       var r = s.resources || {};
       var cur = r[key] || 0;
       var caps = this.capacity ? this.capacity() : {};
-      var cap = (caps && caps[key] != null) ? caps[key] : (key === 'gold' ? 999999 : 0);
+      var cap = (caps && caps[key] != null) ? caps[key] : (key === 'gold' ? 20000000 : 0);
       if (key === 'food') {
-        var foodProd = this.produceOf('farm');
+        var foodProd = this.foodProductionPerHour();
         var foodUse = this.foodPerHour();
         if (cur >= cap) {
           return foodProd >= foodUse ? 0 : foodProd - foodUse;
@@ -374,15 +407,15 @@ window.Game = window.Game || {};
       if (key === 'steel' || key === 'oil' || key === 'rare') {
         var bType = key === 'steel' ? 'refinery' : (key === 'oil' ? 'oilfield' : 'raremine');
         if (cur >= cap) return 0;
-        return this.produceOf(bType);
+        return this.cityProductionPerHour(bType);
       }
       if (key === 'gold') {
         var mayor = this.getOfficerByRole('mayor');
         var financeBonus = this.mayorSkillBonus ? this.mayorSkillBonus('finance') : 0;
         var taxRate = Math.floor(this.civilianPopulation() * ((s.tax != null ? s.tax : 30) / 100) * (1 + (mayor ? mayor.knowledge / 100 : 0)) * (1 + financeBonus) * 2);
         var salary = this.officerSalaryPerHour();
-        if (cur >= 999999) {
-          return taxRate >= salary ? 0 : -salary;
+        if (cur >= cap) {
+          return salary > 0 ? -salary : 0;
         }
         return taxRate - salary;
       }
@@ -504,9 +537,14 @@ window.Game = window.Game || {};
       return 1 + 0.05 * (tech.log_train || 0);
     },
 
-    buildMul: function () {
+    /** 建筑资源折扣只来自科技；市长营造只缩短工期，不减少材料。 */
+    buildCostMul: function () {
       var tech = (this.state && this.state.tech) || {};
-      var mul = 1 - 0.05 * (tech.log_build || 0);
+      return 1 - 0.05 * Math.max(0, Math.min(10, Number(tech.log_build) || 0));
+    },
+
+    buildMul: function () {
+      var mul = this.buildCostMul();
       var constructBonus = this.mayorSkillBonus ? this.mayorSkillBonus('construct') : 0;
       if (constructBonus > 0) mul *= (1 - constructBonus);
       return Math.max(0.35, mul);
@@ -766,7 +804,7 @@ window.Game = window.Game || {};
         '<span class="diamond" title="充值" onclick="Game.go(\'recharge\')">💎 ' + fmt(diamond) + '</span>' +
         '</div>' +
         '</div>';
-      var marches = s.world.marches || [];
+      var marches = this.militaryAlertMarches();
       var incoming = s.world.incoming || [];
       var alertCount = marches.length + incoming.length;
       if (alertCount > 0) {
@@ -784,6 +822,7 @@ window.Game = window.Game || {};
         this.state = null; G.state = null;
       }
       if (G.WorldMap && (this.route !== 'world' || !G.WorldMap.isMap())) G.WorldMap.unmount();
+      if (this.route !== 'world' && G.World && G.World.stopListGatherTimer) G.World.stopListGatherTimer();
       if (this.route !== 'alerts' && G.World && G.World.stopAlertTimer) G.World.stopAlertTimer();
       if (this.route !== 'battle' && G.Battle && G.Battle.stopTacticalTimer) G.Battle.stopTacticalTimer();
       if (this.route !== 'wounded' && G.Wounded) G.Wounded.stop();
@@ -862,7 +901,7 @@ window.Game = window.Game || {};
         diamondEl.textContent = newDiaText;
       }
       // In-place march/alert bar update
-      var marches = (s.world && s.world.marches) || [];
+      var marches = this.militaryAlertMarches();
       var incoming = (s.world && s.world.incoming) || [];
       var alertCount = marches.length + incoming.length;
       var marchBar = top.querySelector('.march-bar');

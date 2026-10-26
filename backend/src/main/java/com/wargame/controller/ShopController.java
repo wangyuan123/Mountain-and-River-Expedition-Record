@@ -59,6 +59,7 @@ public class ShopController {
         // 当前只有模拟发钻接口，生产不提供付费服务，不能伪装成真实支付或绕过额度账本。
         if (protection.enabled()) throw new com.wargame.security.GameAccessException("PAYMENT_DISABLED", "当前未开放充值服务");
         Long playerId = authService.getCurrentPlayer().getId();
+        playerRepository.lockById(playerId).orElseThrow();
         Map<String, Object> result = new LinkedHashMap<>();
         Integer diamonds = ShopItemPrices.getRechargeDiamond(request.pkgId());
         if (diamonds == null) {
@@ -94,12 +95,20 @@ public class ShopController {
     @Transactional
     public ResponseEntity<Map<String, Object>> buy(@RequestBody GameDtos.ShopBuyRequest request) {
         Long playerId = authService.getCurrentPlayer().getId();
+        playerRepository.lockById(playerId).orElseThrow();
         Map<String, Object> result = new LinkedHashMap<>();
 
         String itemId = normalizeItemId(request.itemId());
         if (itemId == null || itemId.isBlank()) {
             result.put("success", false);
             result.put("message", "道具ID不能为空");
+            return ResponseEntity.ok(result);
+        }
+
+        int count = request.count();
+        if (count < 1 || count > 999) {
+            result.put("success", false);
+            result.put("message", "购买数量无效");
             return ResponseEntity.ok(result);
         }
 
@@ -113,6 +122,11 @@ public class ShopController {
 
         // 新手礼包只从商城发放，库存行即购买凭据；开启后数量为零也不恢复购买资格。
         if ("newbiePack".equals(itemId)) {
+            if (count > 1) {
+                result.put("success", false);
+                result.put("message", "新手礼包每个账号限购1份");
+                return ResponseEntity.ok(result);
+            }
             playerRepository.lockById(playerId).orElseThrow();
             if (playerItemRepository.findByPlayerIdAndItemKey(playerId, itemId).isPresent()) {
                 result.put("success", false);
@@ -128,15 +142,23 @@ public class ShopController {
             return ResponseEntity.ok(result);
         }
 
+        long totalCostLong = (long) price * count;
+        if (totalCostLong > Integer.MAX_VALUE) {
+            result.put("success", false);
+            result.put("message", "购买总额超出上限");
+            return ResponseEntity.ok(result);
+        }
+        int totalCost = (int) totalCostLong;
+
         int diamond = res.getDiamond() != null ? res.getDiamond() : 0;
-        if (diamond < price) {
+        if (diamond < totalCost) {
             result.put("success", false);
             result.put("message", "钻石不足");
             return ResponseEntity.ok(result);
         }
 
         // 扣钻石
-        res.setDiamond(diamond - price);
+        res.setDiamond(diamond - totalCost);
         // Detect a stale balance before inserting an item (which may have a unique key).
         resourcesRepository.saveAndFlush(res);
 
@@ -145,22 +167,24 @@ public class ShopController {
         Optional<PlayerItem> existing = playerItemRepository.findByPlayerIdAndItemKey(playerId, itemId);
         if (existing.isPresent()) {
             PlayerItem pi = existing.get();
-            pi.setCount(pi.getCount() + 1);
+            pi.setCount(pi.getCount() + count);
             pi.setUpdatedAt(System.currentTimeMillis());
             playerItemRepository.save(pi);
         } else {
             PlayerItem pi = new PlayerItem();
             pi.setPlayerId(playerId);
             pi.setItemKey(itemId);
-            pi.setCount(1);
+            pi.setCount(count);
             pi.setUpdatedAt(System.currentTimeMillis());
             playerItemRepository.save(pi);
         }
 
         result.put("success", true);
-        result.put("message", "已购买 " + (itemName != null ? itemName : itemId));
+        result.put("message", count > 1 ? "已购买 " + (itemName != null ? itemName : itemId) + " ×" + count : "已购买 " + (itemName != null ? itemName : itemId));
         result.put("itemId", itemId);
         result.put("price", price);
+        result.put("count", count);
+        result.put("totalCost", totalCost);
         result.put("diamond", res.getDiamond());
         result.put("state", gameStateService.getGameState(playerId));
         return ResponseEntity.ok(result);
@@ -196,63 +220,12 @@ public class ShopController {
             Map.entry("expBookAdv", 150),
             Map.entry("expBookMax", 1000),
             Map.entry("skillBook", 80),
+            Map.entry("universalSkillBook", 200),
             Map.entry("loyaltyBox", 50),
             Map.entry("renameCard", 60),
             Map.entry("cityRenameCard", 60),
             Map.entry("recruitOrd", 500),
             Map.entry("starUp", 300),
-            // 军官装备宝箱
-            Map.entry("box_recruit_military", 200),
-            Map.entry("box_recruit_defense", 200),
-            Map.entry("box_recruit_logistics", 200),
-            Map.entry("box_recruit_knowledge", 200),
-            Map.entry("box_officer_military", 1200),
-            Map.entry("box_officer_defense", 1200),
-            Map.entry("box_officer_logistics", 1200),
-            Map.entry("box_officer_knowledge", 1200),
-            Map.entry("box_marshal_military", 5000),
-            Map.entry("box_marshal_defense", 5000),
-            Map.entry("box_marshal_logistics", 5000),
-            Map.entry("box_marshal_knowledge", 5000),
-            // 军官套装（36 件）—— 列兵套装 Lv.1+
-            Map.entry("recruit_military_weapon", 80),
-            Map.entry("recruit_military_badge", 80),
-            Map.entry("recruit_military_coat", 80),
-            Map.entry("recruit_defense_weapon", 80),
-            Map.entry("recruit_defense_badge", 80),
-            Map.entry("recruit_defense_coat", 80),
-            Map.entry("recruit_logistics_weapon", 80),
-            Map.entry("recruit_logistics_badge", 80),
-            Map.entry("recruit_logistics_coat", 80),
-            Map.entry("recruit_knowledge_weapon", 80),
-            Map.entry("recruit_knowledge_badge", 80),
-            Map.entry("recruit_knowledge_coat", 80),
-            // 校官套装 Lv.40+
-            Map.entry("officer_military_weapon", 480),
-            Map.entry("officer_military_badge", 480),
-            Map.entry("officer_military_coat", 480),
-            Map.entry("officer_defense_weapon", 480),
-            Map.entry("officer_defense_badge", 480),
-            Map.entry("officer_defense_coat", 480),
-            Map.entry("officer_logistics_weapon", 480),
-            Map.entry("officer_logistics_badge", 480),
-            Map.entry("officer_logistics_coat", 480),
-            Map.entry("officer_knowledge_weapon", 480),
-            Map.entry("officer_knowledge_badge", 480),
-            Map.entry("officer_knowledge_coat", 480),
-            // 元帅套装 Lv.100+
-            Map.entry("marshal_military_weapon", 2000),
-            Map.entry("marshal_military_badge", 2000),
-            Map.entry("marshal_military_coat", 2000),
-            Map.entry("marshal_defense_weapon", 2000),
-            Map.entry("marshal_defense_badge", 2000),
-            Map.entry("marshal_defense_coat", 2000),
-            Map.entry("marshal_logistics_weapon", 2000),
-            Map.entry("marshal_logistics_badge", 2000),
-            Map.entry("marshal_logistics_coat", 2000),
-            Map.entry("marshal_knowledge_weapon", 2000),
-            Map.entry("marshal_knowledge_badge", 2000),
-            Map.entry("marshal_knowledge_coat", 2000),
             // 资源道具
             Map.entry("goldBox", 80),
             Map.entry("resBox", 120),
@@ -268,7 +241,11 @@ public class ShopController {
             Map.entry("speedUp36h", 2000),
             Map.entry("speedUp48h", 2500),
             Map.entry("speedUp72h", 3500),
+            Map.entry("shield2h", 60),
             Map.entry("shield", 200),
+            Map.entry("shield12h", 280),
+            Map.entry("shield24h", 500),
+            Map.entry("shield72h", 1350),
             Map.entry("teleportNormal", 100),
             Map.entry("teleportAdvanced", 500),
             Map.entry("marchOrd", 100),
@@ -284,62 +261,13 @@ public class ShopController {
             Map.entry("expBook", "经验书"),
             Map.entry("expBookAdv", "高级经验书"),
             Map.entry("expBookMax", "满级经验书"),
-            Map.entry("skillBook", "通用技能书"),
+            Map.entry("skillBook", "普通技能书"),
+            Map.entry("universalSkillBook", "通用技能书"),
             Map.entry("loyaltyBox", "忠诚宝箱"),
             Map.entry("renameCard", "军官改名卡"),
             Map.entry("cityRenameCard", "城市改名卡"),
             Map.entry("recruitOrd", "征募令"),
             Map.entry("starUp", "星耀符"),
-            // 军官装备宝箱
-            Map.entry("box_recruit_military", "列兵军事装备箱"),
-            Map.entry("box_recruit_defense", "列兵防御装备箱"),
-            Map.entry("box_recruit_logistics", "列兵后勤装备箱"),
-            Map.entry("box_recruit_knowledge", "列兵学识装备箱"),
-            Map.entry("box_officer_military", "校官军事装备箱"),
-            Map.entry("box_officer_defense", "校官防御装备箱"),
-            Map.entry("box_officer_logistics", "校官后勤装备箱"),
-            Map.entry("box_officer_knowledge", "校官学识装备箱"),
-            Map.entry("box_marshal_military", "元帅军事装备箱"),
-            Map.entry("box_marshal_defense", "元帅防御装备箱"),
-            Map.entry("box_marshal_logistics", "元帅后勤装备箱"),
-            Map.entry("box_marshal_knowledge", "元帅学识装备箱"),
-            // 军官套装
-            Map.entry("recruit_military_weapon", "列兵军刀"),
-            Map.entry("recruit_military_badge", "列兵臂章"),
-            Map.entry("recruit_military_coat", "列兵作训服"),
-            Map.entry("recruit_defense_weapon", "列兵护身盾"),
-            Map.entry("recruit_defense_badge", "列兵坚守勋章"),
-            Map.entry("recruit_defense_coat", "列兵防弹背心"),
-            Map.entry("recruit_logistics_weapon", "列兵工具包"),
-            Map.entry("recruit_logistics_badge", "列兵通行证"),
-            Map.entry("recruit_logistics_coat", "列兵工作服"),
-            Map.entry("recruit_knowledge_weapon", "列兵笔记本"),
-            Map.entry("recruit_knowledge_badge", "列兵学员章"),
-            Map.entry("recruit_knowledge_coat", "列兵学员服"),
-            Map.entry("officer_military_weapon", "校官军刀"),
-            Map.entry("officer_military_badge", "校官勋章"),
-            Map.entry("officer_military_coat", "校官军服"),
-            Map.entry("officer_defense_weapon", "校官防暴盾"),
-            Map.entry("officer_defense_badge", "校官铁壁勋章"),
-            Map.entry("officer_defense_coat", "校官重装防弹甲"),
-            Map.entry("officer_logistics_weapon", "校官补给箱"),
-            Map.entry("officer_logistics_badge", "校官调度章"),
-            Map.entry("officer_logistics_coat", "校官军需服"),
-            Map.entry("officer_knowledge_weapon", "校官战术罗盘"),
-            Map.entry("officer_knowledge_badge", "校官参谋章"),
-            Map.entry("officer_knowledge_coat", "校官参谋服"),
-            Map.entry("marshal_military_weapon", "元帅佩剑"),
-            Map.entry("marshal_military_badge", "元帅将星"),
-            Map.entry("marshal_military_coat", "元帅礼服"),
-            Map.entry("marshal_defense_weapon", "元帅重装盾"),
-            Map.entry("marshal_defense_badge", "元帅不屈之星"),
-            Map.entry("marshal_defense_coat", "元帅钛金铠"),
-            Map.entry("marshal_logistics_weapon", "元帅辎重车"),
-            Map.entry("marshal_logistics_badge", "元帅军需印"),
-            Map.entry("marshal_logistics_coat", "元帅长袍"),
-            Map.entry("marshal_knowledge_weapon", "元帅望远镜"),
-            Map.entry("marshal_knowledge_badge", "元帅军师印"),
-            Map.entry("marshal_knowledge_coat", "元帅军礼服"),
             Map.entry("goldBox", "黄金箱"),
             Map.entry("resBox", "资源箱"),
             Map.entry("steelPack", "钢铁大礼包"),
@@ -353,7 +281,11 @@ public class ShopController {
             Map.entry("speedUp36h", "36时加速符"),
             Map.entry("speedUp48h", "48时加速符"),
             Map.entry("speedUp72h", "72时加速符"),
-            Map.entry("shield", "护盾"),
+            Map.entry("shield2h", "2小时护盾"),
+            Map.entry("shield", "8小时护盾"),
+            Map.entry("shield12h", "12小时护盾"),
+            Map.entry("shield24h", "24小时护盾"),
+            Map.entry("shield72h", "72小时护盾"),
             Map.entry("teleportNormal", "普通传送"),
             Map.entry("teleportAdvanced", "高级传送"),
             Map.entry("marchOrd", "行军令"),
@@ -368,10 +300,13 @@ public class ShopController {
         static Integer getPrice(String itemId) {
             // 下架或未知商品返回空值供购买接口拒绝，避免三元表达式将空价格拆箱。
             if (specificSkillBookName(itemId) != null) return 160;
-            return PRICES.get(itemId);
+            Integer boxPrice = com.wargame.model.constants.OfficerEquipmentDef.boxPrice(itemId);
+            return boxPrice != null ? boxPrice : PRICES.get(itemId);
         }
 
         static String getItemName(String itemId) {
+            String boxName = com.wargame.model.constants.OfficerEquipmentDef.boxName(itemId);
+            if (boxName != null) return boxName;
             String specificBookName = specificSkillBookName(itemId);
             return specificBookName != null ? specificBookName : NAMES.get(itemId);
         }

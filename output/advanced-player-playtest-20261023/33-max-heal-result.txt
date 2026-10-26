@@ -1,0 +1,854 @@
+Browser tab: 2, Title: "山河远征录 - 文字战争策略游戏", URL: "http://localhost:8081/".
+1 AXWebArea 山河远征录 - 文字战争策略游戏, URL: localhost:8081/
+	2 container
+		3 container screen
+			4 container header
+				5 container topbar
+					6 button 头像 远征统帅_163822 已连接, Help: 点击展开指挥官档案、主题与设置
+						7 image 头像
+						8 text 远征统帅_163822
+						9 text 已连接
+					10 text 🎖️ 论坛
+					11 text 💎 100
+				12 container navbar
+					13 container Description: 左右滑动查看更多导航, ID: gameNavViewport
+						14 container 第1组导航
+							15 text 首页
+							16 text 后勤
+							17 text 军工
+							18 text 军官
+							19 text 军队
+							20 text 地图
+							21 text 军情
+							22 container
+								23 text 战报 1
+							24 text 聊天
+							25 container
+								26 text 电报 3
+							27 container
+								28 text 任务 !
+							29 text 军团
+							30 text 仓库
+							31 text 科技
+							32 text 军校
+							33 text 对战
+						34 container 第2组导航
+							35 pop up button Description: 切换城市, Help: 当前城市：新城市（主城）
+							36 text 战术
+							37 text 排名
+							38 text 商城
+					39 container 导航分页
+						40 button 切换到第1组导航
+						41 button 切换到第2组导航
+			42 container view
+				43 button 返回上一步
+				44 text 伤兵营
+				45 container wounded-content
+					46 container
+						47 text 当前救治城市：新城市 (3,388) 
+						48 button [ 切换城市 ]
+							49 text [
+							50 text 切换城市
+							51 text ]
+					52 text 待救治部队
+					53 text 1352740
+					54 text 医疗技术 Lv.10
+					55 text 50%
+					56 text 救治须知 伤兵留存 7 天（最高 50% 回收）；黄金或钻石（每 1000 黄金折算 1 颗）均可即时救治。
+					57 button 详细说明 ℹ, Help: 查看伤兵救治与医疗规则说明
+						58 text 详细说明
+						59 text ℹ
+					60 text 本城可用黄金 505 · 账号钻石 100，可拖动滑块、输入数量，或点击对应货币的 MAX。
+					61 text 侦察机-闪电侦察型（F-5）
+					62 text 300000
+					63 container
+						64 text 本次回收 50% ·  剩余 6天21小时16分钟3秒
+					65 container
+						66 text 治疗数量
+						67 stepper (settable, integer) 治疗数量 / 300000, Value: 300000, ID: wounded-qty-24605
+						68 text / 300000
+					69 slider (settable, integer) Description: 侦察机-闪电侦察型（F-5）治疗数量, Value: 300000, ID: wounded-range-24605
+					70 container wounded-pay-24605
+						71 button Description: 黄金 MAX, Help: 按黄金余额最多治疗 36 名，仅设置数量
+							72 text [
+							73 text 黄金 MAX
+							74 text ]
+						75 button (disabled) [ 黄金治疗 · 4200000 ]
+							76 text [
+							77 text 黄金治疗 · 4200000
+							78 text ]
+						79 button Description: 钻石 MAX, Help: 按钻石余额最多治疗 7142 名，仅设置数量
+							80 text [
+							81 text 钻石 MAX
+							82 text ]
+						83 button (disabled) [ 钻石治疗 · 4200 ]
+							84 text [
+							85 text 钻石治疗 · 4200
+							86 text ]
+					87 text 侦察机-闪电侦察型（F-5）
+					88 text 200000
+					89 container
+						90 text 本次回收 50% ·  剩余 6天21小时27分钟42秒
+					91 container
+						92 text 治疗数量
+						93 stepper (settable, integer) 治疗数量 / 200000, Value: 200000, ID: wounded-qty-24608
+						94 text / 200000
+					95 slider (settable, integer) Description: 侦察机-闪电侦察型（F-5）治疗数量, Value: 200000, ID: wounded-range-24608
+					96 container wounded-pay-24608
+						97 button Description: 黄金 MAX, Help: 按黄金余额最多治疗 36 名，仅设置数量
+							98 text [
+							99 text 黄金 MAX
+							100 text ]
+						101 button (disabled) [ 黄金治疗 · 2800000 ]
+							102 text [
+							103 text 黄金治疗 · 2800000
+							104 text ]
+						105 button Description: 钻石 MAX, Help: 按钻石余额最多治疗 7142 名，仅设置数量
+							106 text [
+							107 text 钻石 MAX
+							108 text ]
+						109 button (disabled) [ 钻石治疗 · 2800 ]
+							110 text [
+							111 text 钻石治疗 · 2800
+							112 text ]
+					113 text 装甲车-猎鹿犬防空型（T17E2）
+					114 text 28125
+					115 container
+						116 text 本次回收 50% ·  剩余 6天21小时38分钟22秒
+					117 container
+						118 text 治疗数量
+						119 stepper (settable, integer) 治疗数量 / 28125, Value: 28125, ID: wounded-qty-24611
+						120 text / 28125
+					121 slider (settable, integer) Description: 装甲车-猎鹿犬防空型（T17E2）治疗数量, Value: 28125, ID: wounded-range-24611
+					122 container wounded-pay-24611
+						123 button Description: 黄金 MAX, Help: 按黄金余额最多治疗 12 名，仅设置数量
+							124 text [
+							125 text 黄金 MAX
+							126 text ]
+						127 button (disabled) [ 黄金治疗 · 1096875 ]
+							128 text [
+							129 text 黄金治疗 · 1096875
+							130 text ]
+						131 button Description: 钻石 MAX, Help: 按钻石余额最多治疗 2564 名，仅设置数量
+							132 text [
+							133 text 钻石 MAX
+							134 text ]
+						135 button (disabled) [ 钻石治疗 · 1097 ]
+							136 text [
+							137 text 钻石治疗 · 1097
+							138 text ]
+					139 text 突击炮-自行加榴炮（ISU-152）
+					140 text 28125
+					141 container
+						142 text 本次回收 50% ·  剩余 6天21小时38分钟22秒
+					143 container
+						144 text 治疗数量
+						145 stepper (settable, integer) 治疗数量 / 28125, Value: 28125, ID: wounded-qty-24612
+						146 text / 28125
+					147 slider (settable, integer) Description: 突击炮-自行加榴炮（ISU-152）治疗数量, Value: 28125, ID: wounded-range-24612
+					148 container wounded-pay-24612
+						149 button Description: 黄金 MAX, Help: 按黄金余额最多治疗 15 名，仅设置数量
+							150 text [
+							151 text 黄金 MAX
+							152 text ]
+						153 button (disabled) [ 黄金治疗 · 900000 ]
+							154 text [
+							155 text 黄金治疗 · 900000
+							156 text ]
+						157 button Description: 钻石 MAX, Help: 按钻石余额最多治疗 3125 名，仅设置数量
+							158 text [
+							159 text 钻石 MAX
+							160 text ]
+						161 button (disabled) [ 钻石治疗 · 900 ]
+							162 text [
+							163 text 钻石治疗 · 900
+							164 text ]
+					165 text 战列舰-衣阿华级（Iowa）
+					166 text 10790
+					167 container
+						168 text 本次回收 50% ·  剩余 6天21小时38分钟22秒
+					169 container
+						170 text 治疗数量
+						171 stepper (settable, integer) 治疗数量 / 10790, Value: 10790, ID: wounded-qty-24613
+						172 text / 10790
+					173 slider (settable, integer) Description: 战列舰-衣阿华级（Iowa）治疗数量, Value: 10790, ID: wounded-range-24613
+					174 container wounded-pay-24613
+						175 button Description: 黄金 MAX, Help: 按黄金余额最多治疗 0 名，仅设置数量
+							176 text [
+							177 text 黄金 MAX
+							178 text ]
+						179 button (disabled) [ 黄金治疗 · 26327600 ]
+							180 text [
+							181 text 黄金治疗 · 26327600
+							182 text ]
+						183 button Description: 钻石 MAX, Help: 按钻石余额最多治疗 40 名，仅设置数量
+							184 text [
+							185 text 钻石 MAX
+							186 text ]
+						187 button (disabled) [ 钻石治疗 · 26328 ]
+							188 text [
+							189 text 钻石治疗 · 26328
+							190 text ]
+					191 text 轰炸机-飞行堡垒（B-17G）
+					192 text 28125
+					193 container
+						194 text 本次回收 50% ·  剩余 6天21小时38分钟22秒
+					195 container
+						196 text 治疗数量
+						197 stepper (settable, integer) 治疗数量 / 28125, Value: 28125, ID: wounded-qty-24614
+						198 text / 28125
+					199 slider (settable, integer) Description: 轰炸机-飞行堡垒（B-17G）治疗数量, Value: 28125, ID: wounded-range-24614
+					200 container wounded-pay-24614
+						201 button Description: 黄金 MAX, Help: 按黄金余额最多治疗 7 名，仅设置数量
+							202 text [
+							203 text 黄金 MAX
+							204 text ]
+						205 button (disabled) [ 黄金治疗 · 1856250 ]
+							206 text [
+							207 text 黄金治疗 · 1856250
+							208 text ]
+						209 button Description: 钻石 MAX, Help: 按钻石余额最多治疗 1515 名，仅设置数量
+							210 text [
+							211 text 钻石 MAX
+							212 text ]
+						213 button (disabled) [ 钻石治疗 · 1857 ]
+							214 text [
+							215 text 钻石治疗 · 1857
+							216 text ]
+					217 text 航母-埃塞克斯级（Essex）
+					218 text 2338
+					219 container
+						220 text 本次回收 50% ·  剩余 6天21小时38分钟22秒
+					221 container
+						222 text 治疗数量
+						223 stepper (settable, integer) 治疗数量 / 2338, Value: 2338, ID: wounded-qty-24615
+						224 text / 2338
+					225 slider (settable, integer) Description: 航母-埃塞克斯级（Essex）治疗数量, Value: 2338, ID: wounded-range-24615
+					226 container wounded-pay-24615
+						227 button Description: 黄金 MAX, Help: 按黄金余额最多治疗 0 名，仅设置数量
+							228 text [
+							229 text 黄金 MAX
+							230 text ]
+						231 button (disabled) [ 黄金治疗 · 11409440 ]
+							232 text [
+							233 text 黄金治疗 · 11409440
+							234 text ]
+						235 button Description: 钻石 MAX, Help: 按钻石余额最多治疗 20 名，仅设置数量
+							236 text [
+							237 text 钻石 MAX
+							238 text ]
+						239 button (disabled) [ 钻石治疗 · 11410 ]
+							240 text [
+							241 text 钻石治疗 · 11410
+							242 text ]
+					243 text 驱逐舰-弗莱彻级（Fletcher）
+					244 text 20574
+					245 container
+						246 text 本次回收 50% ·  剩余 6天21小时38分钟22秒
+					247 container
+						248 text 治疗数量
+						249 stepper (settable, integer) 治疗数量 / 20574, Value: 20574, ID: wounded-qty-24616
+						250 text / 20574
+					251 slider (settable, integer) Description: 驱逐舰-弗莱彻级（Fletcher）治疗数量, Value: 20574, ID: wounded-range-24616
+					252 container wounded-pay-24616
+						253 button Description: 黄金 MAX, Help: 按黄金余额最多治疗 6 名，仅设置数量
+							254 text [
+							255 text 黄金 MAX
+							256 text ]
+						257 button (disabled) [ 黄金治疗 · 1563624 ]
+							258 text [
+							259 text 黄金治疗 · 1563624
+							260 text ]
+						261 button Description: 钻石 MAX, Help: 按钻石余额最多治疗 1315 名，仅设置数量
+							262 text [
+							263 text 钻石 MAX
+							264 text ]
+						265 button (disabled) [ 钻石治疗 · 1564 ]
+							266 text [
+							267 text 钻石治疗 · 1564
+							268 text ]
+					269 text 战斗机-野马（P-51）
+					270 text 28125
+					271 container
+						272 text 本次回收 50% ·  剩余 6天21小时38分钟22秒
+					273 container
+						274 text 治疗数量
+						275 stepper (settable, integer) 治疗数量 / 28125, Value: 28125, ID: wounded-qty-24617
+						276 text / 28125
+					277 slider (settable, integer) Description: 战斗机-野马（P-51）治疗数量, Value: 28125, ID: wounded-range-24617
+					278 container wounded-pay-24617
+						279 button Description: 黄金 MAX, Help: 按黄金余额最多治疗 12 名，仅设置数量
+							280 text [
+							281 text 黄金 MAX
+							282 text ]
+						283 button (disabled) [ 黄金治疗 · 1181250 ]
+							284 text [
+							285 text 黄金治疗 · 1181250
+							286 text ]
+						287 button Description: 钻石 MAX, Help: 按钻石余额最多治疗 2380 名，仅设置数量
+							288 text [
+							289 text 钻石 MAX
+							290 text ]
+						291 button (disabled) [ 钻石治疗 · 1182 ]
+							292 text [
+							293 text 钻石治疗 · 1182
+							294 text ]
+					295 text 重型坦克-斯大林（IS-2）
+					296 text 28125
+					297 container
+						298 text 本次回收 50% ·  剩余 6天21小时38分钟22秒
+					299 container
+						300 text 治疗数量
+						301 stepper (settable, integer) 治疗数量 / 28125, Value: 28125, ID: wounded-qty-24618
+						302 text / 28125
+					303 slider (settable, integer) Description: 重型坦克-斯大林（IS-2）治疗数量, Value: 28125, ID: wounded-range-24618
+					304 container wounded-pay-24618
+						305 button Description: 黄金 MAX, Help: 按黄金余额最多治疗 5 名，仅设置数量
+							306 text [
+							307 text 黄金 MAX
+							308 text ]
+						309 button (disabled) [ 黄金治疗 · 2615625 ]
+							310 text [
+							311 text 黄金治疗 · 2615625
+							312 text ]
+						313 button Description: 钻石 MAX, Help: 按钻石余额最多治疗 1075 名，仅设置数量
+							314 text [
+							315 text 钻石 MAX
+							316 text ]
+						317 button (disabled) [ 钻石治疗 · 2616 ]
+							318 text [
+							319 text 钻石治疗 · 2616
+							320 text ]
+					321 text 轻型坦克-斯图亚特（M5A1）
+					322 text 28125
+					323 container
+						324 text 本次回收 50% ·  剩余 6天21小时38分钟22秒
+					325 container
+						326 text 治疗数量
+						327 stepper (settable, integer) 治疗数量 / 28125, Value: 28125, ID: wounded-qty-24619
+						328 text / 28125
+					329 slider (settable, integer) Description: 轻型坦克-斯图亚特（M5A1）治疗数量, Value: 28125, ID: wounded-range-24619
+					330 container wounded-pay-24619
+						331 button Description: 黄金 MAX, Help: 按黄金余额最多治疗 9 名，仅设置数量
+							332 text [
+							333 text 黄金 MAX
+							334 text ]
+						335 button (disabled) [ 黄金治疗 · 1462500 ]
+							336 text [
+							337 text 黄金治疗 · 1462500
+							338 text ]
+						339 button Description: 钻石 MAX, Help: 按钻石余额最多治疗 1923 名，仅设置数量
+							340 text [
+							341 text 钻石 MAX
+							342 text ]
+						343 button (disabled) [ 钻石治疗 · 1463 ]
+							344 text [
+							345 text 钻石治疗 · 1463
+							346 text ]
+					347 text 侦查装甲车-灰狗（M8）
+					348 text 14120
+					349 container
+						350 text 本次回收 50% ·  剩余 6天21小时38分钟22秒
+					351 container
+						352 text 治疗数量
+						353 stepper (settable, integer) 治疗数量 / 14120, Value: 14120, ID: wounded-qty-24620
+						354 text / 14120
+					355 slider (settable, integer) Description: 侦查装甲车-灰狗（M8）治疗数量, Value: 14120, ID: wounded-range-24620
+					356 container wounded-pay-24620
+						357 button Description: 黄金 MAX, Help: 按黄金余额最多治疗 12 名，仅设置数量
+							358 text [
+							359 text 黄金 MAX
+							360 text ]
+						361 button (disabled) [ 黄金治疗 · 550680 ]
+							362 text [
+							363 text 黄金治疗 · 550680
+							364 text ]
+						365 button Description: 钻石 MAX, Help: 按钻石余额最多治疗 2564 名，仅设置数量
+							366 text [
+							367 text 钻石 MAX
+							368 text ]
+						369 button (disabled) [ 钻石治疗 · 551 ]
+							370 text [
+							371 text 钻石治疗 · 551
+							372 text ]
+					373 text 反坦克火箭车-喀秋莎（BM-13）
+					374 text 28125
+					375 container
+						376 text 本次回收 50% ·  剩余 6天21小时38分钟22秒
+					377 container
+						378 text 治疗数量
+						379 stepper (settable, integer) 治疗数量 / 28125, Value: 28125, ID: wounded-qty-24621
+						380 text / 28125
+					381 slider (settable, integer) Description: 反坦克火箭车-喀秋莎（BM-13）治疗数量, Value: 28125, ID: wounded-range-24621
+					382 container wounded-pay-24621
+						383 button Description: 黄金 MAX, Help: 按黄金余额最多治疗 4 名，仅设置数量
+							384 text [
+							385 text 黄金 MAX
+							386 text ]
+						387 button (disabled) [ 黄金治疗 · 3431250 ]
+							388 text [
+							389 text 黄金治疗 · 3431250
+							390 text ]
+						391 button Description: 钻石 MAX, Help: 按钻石余额最多治疗 819 名，仅设置数量
+							392 text [
+							393 text 钻石 MAX
+							394 text ]
+						395 button (disabled) [ 钻石治疗 · 3432 ]
+							396 text [
+							397 text 钻石治疗 · 3432
+							398 text ]
+					399 text 特种兵-英国突击队（Commando）
+					400 text 28125
+					401 container
+						402 text 本次回收 50% ·  剩余 6天21小时38分钟22秒
+					403 container
+						404 text 治疗数量
+						405 stepper (settable, integer) 治疗数量 / 28125, Value: 28125, ID: wounded-qty-24622
+						406 text / 28125
+					407 slider (settable, integer) Description: 特种兵-英国突击队（Commando）治疗数量, Value: 28125, ID: wounded-range-24622
+					408 container wounded-pay-24622
+						409 button Description: 黄金 MAX, Help: 按黄金余额最多治疗 21 名，仅设置数量
+							410 text [
+							411 text 黄金 MAX
+							412 text ]
+						413 button (disabled) [ 黄金治疗 · 675000 ]
+							414 text [
+							415 text 黄金治疗 · 675000
+							416 text ]
+						417 button Description: 钻石 MAX, Help: 按钻石余额最多治疗 4166 名，仅设置数量
+							418 text [
+							419 text 钻石 MAX
+							420 text ]
+						421 button (disabled) [ 钻石治疗 · 675 ]
+							422 text [
+							423 text 钻石治疗 · 675
+							424 text ]
+					425 text 潜艇-小鲨鱼级（Gato）
+					426 text 88
+					427 container
+						428 text 本次回收 50% ·  剩余 6天21小时38分钟22秒
+					429 container
+						430 text 治疗数量
+						431 stepper (settable, integer) 治疗数量 / 88, Value: 88, ID: wounded-qty-24623
+						432 text / 88
+					433 slider (settable, integer) Description: 潜艇-小鲨鱼级（Gato）治疗数量, Value: 88, ID: wounded-range-24623
+					434 container wounded-pay-24623
+						435 button Description: 黄金 MAX, Help: 按黄金余额最多治疗 10 名，仅设置数量
+							436 text [
+							437 text 黄金 MAX
+							438 text ]
+						439 button (disabled) [ 黄金治疗 · 4400 ]
+							440 text [
+							441 text 黄金治疗 · 4400
+							442 text ]
+						443 button Description: 钻石 MAX, Help: 按钻石余额最多治疗 88 名，仅设置数量
+							444 text [
+							445 text 钻石 MAX
+							446 text ]
+						447 button [ 钻石治疗 · 5 ]
+							448 text [
+							449 text 钻石治疗 · 5
+							450 text ]
+					451 text 侦查装甲车-灰狗（M8）
+					452 text 234426
+					453 container
+						454 text 本次回收 50% ·  剩余 6天21小时53分钟36秒
+					455 container
+						456 text 治疗数量
+						457 stepper (settable, integer) 治疗数量 / 234426, Value: 234426, ID: wounded-qty-24624
+						458 text / 234426
+					459 slider (settable, integer) Description: 侦查装甲车-灰狗（M8）治疗数量, Value: 234426, ID: wounded-range-24624
+					460 container wounded-pay-24624
+						461 button Description: 黄金 MAX, Help: 按黄金余额最多治疗 12 名，仅设置数量
+							462 text [
+							463 text 黄金 MAX
+							464 text ]
+						465 button (disabled) [ 黄金治疗 · 9142614 ]
+							466 text [
+							467 text 黄金治疗 · 9142614
+							468 text ]
+						469 button Description: 钻石 MAX, Help: 按钻石余额最多治疗 2564 名，仅设置数量
+							470 text [
+							471 text 钻石 MAX
+							472 text ]
+						473 button (disabled) [ 钻石治疗 · 9143 ]
+							474 text [
+							475 text 钻石治疗 · 9143
+							476 text ]
+					477 text 卡车-十轮大卡（CCKW-353）
+					478 text 5000
+					479 container
+						480 text 本次回收 50% ·  剩余 6天22小时0分钟51秒
+					481 container
+						482 text 治疗数量
+						483 stepper (settable, integer) 治疗数量 / 5000, Value: 5000, ID: wounded-qty-24627
+						484 text / 5000
+					485 slider (settable, integer) Description: 卡车-十轮大卡（CCKW-353）治疗数量, Value: 5000, ID: wounded-range-24627
+					486 container wounded-pay-24627
+						487 button Description: 黄金 MAX, Help: 按黄金余额最多治疗 56 名，仅设置数量
+							488 text [
+							489 text 黄金 MAX
+							490 text ]
+						491 button (disabled) [ 黄金治疗 · 45000 ]
+							492 text [
+							493 text 黄金治疗 · 45000
+							494 text ]
+						495 button Description: 钻石 MAX, Help: 按钻石余额最多治疗 5000 名，仅设置数量
+							496 text [
+							497 text 钻石 MAX
+							498 text ]
+						499 button [ 钻石治疗 · 45 ]
+							500 text [
+							501 text 钻石治疗 · 45
+							502 text ]
+					503 text 重型坦克-斯大林（IS-2）
+					504 text 50000
+					505 container
+						506 text 本次回收 50% ·  剩余 6天22小时0分钟51秒
+					507 container
+						508 text 治疗数量
+						509 stepper (settable, integer) 治疗数量 / 50000, Value: 50000, ID: wounded-qty-24628
+						510 text / 50000
+					511 slider (settable, integer) Description: 重型坦克-斯大林（IS-2）治疗数量, Value: 50000, ID: wounded-range-24628
+					512 container wounded-pay-24628
+						513 button Description: 黄金 MAX, Help: 按黄金余额最多治疗 5 名，仅设置数量
+							514 text [
+							515 text 黄金 MAX
+							516 text ]
+						517 button (disabled) [ 黄金治疗 · 4650000 ]
+							518 text [
+							519 text 黄金治疗 · 4650000
+							520 text ]
+						521 button Description: 钻石 MAX, Help: 按钻石余额最多治疗 1075 名，仅设置数量
+							522 text [
+							523 text 钻石 MAX
+							524 text ]
+						525 button (disabled) [ 钻石治疗 · 4650 ]
+							526 text [
+							527 text 钻石治疗 · 4650
+							528 text ]
+					529 text 突击炮-自行加榴炮（ISU-152）
+					530 text 45000
+					531 container
+						532 text 本次回收 50% ·  剩余 6天22小时0分钟51秒
+					533 container
+						534 text 治疗数量
+						535 stepper (settable, integer) 治疗数量 / 45000, Value: 45000, ID: wounded-qty-24629
+						536 text / 45000
+					537 slider (settable, integer) Description: 突击炮-自行加榴炮（ISU-152）治疗数量, Value: 45000, ID: wounded-range-24629
+					538 container wounded-pay-24629
+						539 button Description: 黄金 MAX, Help: 按黄金余额最多治疗 15 名，仅设置数量
+							540 text [
+							541 text 黄金 MAX
+							542 text ]
+						543 button (disabled) [ 黄金治疗 · 1440000 ]
+							544 text [
+							545 text 黄金治疗 · 1440000
+							546 text ]
+						547 button Description: 钻石 MAX, Help: 按钻石余额最多治疗 3125 名，仅设置数量
+							548 text [
+							549 text 钻石 MAX
+							550 text ]
+						551 button (disabled) [ 钻石治疗 · 1440 ]
+							552 text [
+							553 text 钻石治疗 · 1440
+							554 text ]
+					555 text 反坦克火箭车-喀秋莎（BM-13）
+					556 text 50000
+					557 container
+						558 text 本次回收 50% ·  剩余 6天22小时0分钟51秒
+					559 container
+						560 text 治疗数量
+						561 stepper (settable, integer) 治疗数量 / 50000, Value: 50000, ID: wounded-qty-24630
+						562 text / 50000
+					563 slider (settable, integer) Description: 反坦克火箭车-喀秋莎（BM-13）治疗数量, Value: 50000, ID: wounded-range-24630
+					564 container wounded-pay-24630
+						565 button Description: 黄金 MAX, Help: 按黄金余额最多治疗 4 名，仅设置数量
+							566 text [
+							567 text 黄金 MAX
+							568 text ]
+						569 button (disabled) [ 黄金治疗 · 6100000 ]
+							570 text [
+							571 text 黄金治疗 · 6100000
+							572 text ]
+						573 button Description: 钻石 MAX, Help: 按钻石余额最多治疗 819 名，仅设置数量
+							574 text [
+							575 text 钻石 MAX
+							576 text ]
+						577 button (disabled) [ 钻石治疗 · 6100 ]
+							578 text [
+							579 text 钻石治疗 · 6100
+							580 text ]
+					581 text 战斗机-野马（P-51）
+					582 text 50000
+					583 container
+						584 text 本次回收 50% ·  剩余 6天22小时0分钟51秒
+					585 container
+						586 text 治疗数量
+						587 stepper (settable, integer) 治疗数量 / 50000, Value: 50000, ID: wounded-qty-24631
+						588 text / 50000
+					589 slider (settable, integer) Description: 战斗机-野马（P-51）治疗数量, Value: 50000, ID: wounded-range-24631
+					590 container wounded-pay-24631
+						591 button Description: 黄金 MAX, Help: 按黄金余额最多治疗 12 名，仅设置数量
+							592 text [
+							593 text 黄金 MAX
+							594 text ]
+						595 button (disabled) [ 黄金治疗 · 2100000 ]
+							596 text [
+							597 text 黄金治疗 · 2100000
+							598 text ]
+						599 button Description: 钻石 MAX, Help: 按钻石余额最多治疗 2380 名，仅设置数量
+							600 text [
+							601 text 钻石 MAX
+							602 text ]
+						603 button (disabled) [ 钻石治疗 · 2100 ]
+							604 text [
+							605 text 钻石治疗 · 2100
+							606 text ]
+					607 text 轰炸机-飞行堡垒（B-17G）
+					608 text 50000
+					609 container
+						610 text 本次回收 50% ·  剩余 6天22小时0分钟51秒
+					611 container
+						612 text 治疗数量
+						613 stepper (settable, integer) 治疗数量 / 50000, Value: 50000, ID: wounded-qty-24632
+						614 text / 50000
+					615 slider (settable, integer) Description: 轰炸机-飞行堡垒（B-17G）治疗数量, Value: 50000, ID: wounded-range-24632
+					616 container wounded-pay-24632
+						617 button Description: 黄金 MAX, Help: 按黄金余额最多治疗 7 名，仅设置数量
+							618 text [
+							619 text 黄金 MAX
+							620 text ]
+						621 button (disabled) [ 黄金治疗 · 3300000 ]
+							622 text [
+							623 text 黄金治疗 · 3300000
+							624 text ]
+						625 button Description: 钻石 MAX, Help: 按钻石余额最多治疗 1515 名，仅设置数量
+							626 text [
+							627 text 钻石 MAX
+							628 text ]
+						629 button (disabled) [ 钻石治疗 · 3300 ]
+							630 text [
+							631 text 钻石治疗 · 3300
+							632 text ]
+					633 text 战斗机-野马（P-51）
+					634 text 25000
+					635 container
+						636 text 本次回收 50% ·  剩余 6天22小时47分钟45秒
+					637 container
+						638 text 治疗数量
+						639 stepper (settable, integer) 治疗数量 / 25000, Value: 25000, ID: wounded-qty-24646
+						640 text / 25000
+					641 slider (settable, integer) Description: 战斗机-野马（P-51）治疗数量, Value: 25000, ID: wounded-range-24646
+					642 container wounded-pay-24646
+						643 button Description: 黄金 MAX, Help: 按黄金余额最多治疗 12 名，仅设置数量
+							644 text [
+							645 text 黄金 MAX
+							646 text ]
+						647 button (disabled) [ 黄金治疗 · 1050000 ]
+							648 text [
+							649 text 黄金治疗 · 1050000
+							650 text ]
+						651 button Description: 钻石 MAX, Help: 按钻石余额最多治疗 2380 名，仅设置数量
+							652 text [
+							653 text 钻石 MAX
+							654 text ]
+						655 button (disabled) [ 钻石治疗 · 1050 ]
+							656 text [
+							657 text 钻石治疗 · 1050
+							658 text ]
+					659 text 轰炸机-飞行堡垒（B-17G）
+					660 text 25000
+					661 container
+						662 text 本次回收 50% ·  剩余 6天22小时47分钟45秒
+					663 container
+						664 text 治疗数量
+						665 stepper (settable, integer) 治疗数量 / 25000, Value: 25000, ID: wounded-qty-24647
+						666 text / 25000
+					667 slider (settable, integer) Description: 轰炸机-飞行堡垒（B-17G）治疗数量, Value: 25000, ID: wounded-range-24647
+					668 container wounded-pay-24647
+						669 button Description: 黄金 MAX, Help: 按黄金余额最多治疗 7 名，仅设置数量
+							670 text [
+							671 text 黄金 MAX
+							672 text ]
+						673 button (disabled) [ 黄金治疗 · 1650000 ]
+							674 text [
+							675 text 黄金治疗 · 1650000
+							676 text ]
+						677 button Description: 钻石 MAX, Help: 按钻石余额最多治疗 1515 名，仅设置数量
+							678 text [
+							679 text 钻石 MAX
+							680 text ]
+						681 button (disabled) [ 钻石治疗 · 1650 ]
+							682 text [
+							683 text 钻石治疗 · 1650
+							684 text ]
+					685 text 驱逐舰-弗莱彻级（Fletcher）
+					686 text 10274
+					687 container
+						688 text 本次回收 50% ·  剩余 6天22小时47分钟45秒
+					689 container
+						690 text 治疗数量
+						691 stepper (settable, integer) 治疗数量 / 10274, Value: 10274, ID: wounded-qty-24648
+						692 text / 10274
+					693 slider (settable, integer) Description: 驱逐舰-弗莱彻级（Fletcher）治疗数量, Value: 10274, ID: wounded-range-24648
+					694 container wounded-pay-24648
+						695 button Description: 黄金 MAX, Help: 按黄金余额最多治疗 6 名，仅设置数量
+							696 text [
+							697 text 黄金 MAX
+							698 text ]
+						699 button (disabled) [ 黄金治疗 · 780824 ]
+							700 text [
+							701 text 黄金治疗 · 780824
+							702 text ]
+						703 button Description: 钻石 MAX, Help: 按钻石余额最多治疗 1315 名，仅设置数量
+							704 text [
+							705 text 钻石 MAX
+							706 text ]
+						707 button (disabled) [ 钻石治疗 · 781 ]
+							708 text [
+							709 text 钻石治疗 · 781
+							710 text ]
+					711 text 战列舰-衣阿华级（Iowa）
+					712 text 10521
+					713 container
+						714 text 本次回收 50% ·  剩余 6天22小时47分钟45秒
+					715 container
+						716 text 治疗数量
+						717 stepper (settable, integer) 治疗数量 / 10521, Value: 10521, ID: wounded-qty-24649
+						718 text / 10521
+					719 slider (settable, integer) Description: 战列舰-衣阿华级（Iowa）治疗数量, Value: 10521, ID: wounded-range-24649
+					720 container wounded-pay-24649
+						721 button Description: 黄金 MAX, Help: 按黄金余额最多治疗 0 名，仅设置数量
+							722 text [
+							723 text 黄金 MAX
+							724 text ]
+						725 button (disabled) [ 黄金治疗 · 25671240 ]
+							726 text [
+							727 text 黄金治疗 · 25671240
+							728 text ]
+						729 button Description: 钻石 MAX, Help: 按钻石余额最多治疗 40 名，仅设置数量
+							730 text [
+							731 text 钻石 MAX
+							732 text ]
+						733 button (disabled) [ 钻石治疗 · 25672 ]
+							734 text [
+							735 text 钻石治疗 · 25672
+							736 text ]
+					737 text 航母-埃塞克斯级（Essex）
+					738 text 2358
+					739 container
+						740 text 本次回收 50% ·  剩余 6天22小时47分钟45秒
+					741 container
+						742 text 治疗数量
+						743 stepper (settable, integer) 治疗数量 / 2358, Value: 2358, ID: wounded-qty-24650
+						744 text / 2358
+					745 slider (settable, integer) Description: 航母-埃塞克斯级（Essex）治疗数量, Value: 2358, ID: wounded-range-24650
+					746 container wounded-pay-24650
+						747 button Description: 黄金 MAX, Help: 按黄金余额最多治疗 0 名，仅设置数量
+							748 text [
+							749 text 黄金 MAX
+							750 text ]
+						751 button (disabled) [ 黄金治疗 · 11507040 ]
+							752 text [
+							753 text 黄金治疗 · 11507040
+							754 text ]
+						755 button Description: 钻石 MAX, Help: 按钻石余额最多治疗 20 名，仅设置数量
+							756 text [
+							757 text 钻石 MAX
+							758 text ]
+						759 button (disabled) [ 钻石治疗 · 11508 ]
+							760 text [
+							761 text 钻石治疗 · 11508
+							762 text ]
+					763 text 驱逐舰-弗莱彻级（Fletcher）
+					764 text 10740
+					765 container
+						766 text 本次回收 50% ·  剩余 6天23小时7分钟43秒
+					767 container
+						768 text 治疗数量
+						769 stepper (settable, integer) 治疗数量 / 10740, Value: 10740, ID: wounded-qty-24668
+						770 text / 10740
+					771 slider (settable, integer) Description: 驱逐舰-弗莱彻级（Fletcher）治疗数量, Value: 10740, ID: wounded-range-24668
+					772 container wounded-pay-24668
+						773 button Description: 黄金 MAX, Help: 按黄金余额最多治疗 6 名，仅设置数量
+							774 text [
+							775 text 黄金 MAX
+							776 text ]
+						777 button (disabled) [ 黄金治疗 · 816240 ]
+							778 text [
+							779 text 黄金治疗 · 816240
+							780 text ]
+						781 button Description: 钻石 MAX, Help: 按钻石余额最多治疗 1315 名，仅设置数量
+							782 text [
+							783 text 钻石 MAX
+							784 text ]
+						785 button (disabled) [ 钻石治疗 · 817 ]
+							786 text [
+							787 text 钻石治疗 · 817
+							788 text ]
+					789 text 战列舰-衣阿华级（Iowa）
+					790 text 9696
+					791 container
+						792 text 本次回收 50% ·  剩余 6天23小时7分钟43秒
+					793 container
+						794 text 治疗数量
+						795 stepper (settable, integer) 治疗数量 / 9696, Value: 9696, ID: wounded-qty-24669
+						796 text / 9696
+					797 slider (settable, integer) Description: 战列舰-衣阿华级（Iowa）治疗数量, Value: 9696, ID: wounded-range-24669
+					798 container wounded-pay-24669
+						799 button Description: 黄金 MAX, Help: 按黄金余额最多治疗 0 名，仅设置数量
+							800 text [
+							801 text 黄金 MAX
+							802 text ]
+						803 button (disabled) [ 黄金治疗 · 23658240 ]
+							804 text [
+							805 text 黄金治疗 · 23658240
+							806 text ]
+						807 button Description: 钻石 MAX, Help: 按钻石余额最多治疗 40 名，仅设置数量
+							808 text [
+							809 text 钻石 MAX
+							810 text ]
+						811 button (disabled) [ 钻石治疗 · 23659 ]
+							812 text [
+							813 text 钻石治疗 · 23659
+							814 text ]
+					815 text 航母-埃塞克斯级（Essex）
+					816 text 1815
+					817 container
+						818 text 本次回收 50% ·  剩余 6天23小时7分钟43秒
+					819 container
+						820 text 治疗数量
+						821 stepper (settable, integer) 治疗数量 / 1815, Value: 1815, ID: wounded-qty-24670
+						822 text / 1815
+					823 slider (settable, integer) Description: 航母-埃塞克斯级（Essex）治疗数量, Value: 1815, ID: wounded-range-24670
+					824 container wounded-pay-24670
+						825 button Description: 黄金 MAX, Help: 按黄金余额最多治疗 0 名，仅设置数量
+							826 text [
+							827 text 黄金 MAX
+							828 text ]
+						829 button (disabled) [ 黄金治疗 · 8857200 ]
+							830 text [
+							831 text 黄金治疗 · 8857200
+							832 text ]
+						833 button Description: 钻石 MAX, Help: 按钻石余额最多治疗 20 名，仅设置数量
+							834 text [
+							835 text 钻石 MAX
+							836 text ]
+						837 button (disabled) [ 钻石治疗 · 8858 ]
+							838 text [
+							839 text 钻石治疗 · 8858
+							840 text ]
+				841 text 返回军队
+			842 container Description: 游戏导航与备案信息, ID: footbar
+				843 container 底部快捷导航
+					844 button 首页
+					845 button 地图
+					846 button 任务
+					847 button 邮件
+					848 button 设置
+					849 button 返回顶部
+				850 text 北京时间：2026年10月23日 23:29:16
+		851 text 治疗完成，战列舰-衣阿华级（Iowa） ×198 已归队
+
+The focused UI element is 1 AXWebArea 山河远征录 - 文字战争策略游戏, URL: localhost:8081/

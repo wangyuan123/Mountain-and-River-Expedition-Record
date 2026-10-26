@@ -9,7 +9,7 @@ function setup(prestige = 10000) {
   const defaults = { infantry: { action: 'ADVANCE' }, truck: { action: 'HOLD' } };
   const snapshot = { army: { infantry: 100 }, defaults, power: 1000, chief: { name: '' }, tech: {}, commanderName: '将领', playerName: '玩家' };
   let status = { status: 'IDLE', version: 1, region: 'jiangsu-1', serverTime: Date.now() };
-  let battle = { ...status, status: 'BATTLING', sessionId: 's', side: 'B', round: 1, mine: snapshot, enemy: snapshot, myArmy: { infantry: 100 }, enemyArmy: { infantry: 100 }, myPositions: { infantry: 0 }, enemyPositions: { infantry: 1000 }, initialDistance: 1000, loaded: true, draft: {}, revision: 0, deadlineAt: Date.now() + 15000 };
+  let battle = { ...status, status: 'BATTLING', sessionId: 's', side: 'B', round: 1, mine: snapshot, enemy: snapshot, myArmy: { infantry: 100 }, enemyArmy: { infantry: 100 }, myPositions: { infantry: 0 }, enemyPositions: { infantry: 1000 }, initialDistance: 1000, loaded: true, draft: {}, revision: 0, deadlineAt: Date.now() + 12000 };
   let handler;
   const Game = {
     Core: { route: 'pvp', state: { prestige }, views: {}, firepowerMul: tech => 1 + ((tech || {}).fire_density || 0) / 10 },
@@ -142,3 +142,25 @@ test('pending request holds immutable original payload when the player changes l
   await s.Game.Pvp.savePreset(); s.Game.Pvp.setCount('infantry','20');
   assert.equal(sent.army.infantry,100);
 });
+
+test('compact pvp page includes optimized column classes, cap bar tools, and fillMax/clearArmy helpers', async () => {
+  const s = setup(); await s.Game.Pvp.start(); s.Game.Pvp.render(s.view); await settle();
+  assert.match(s.view.innerHTML, /class="pvp-cap-bar"/);
+  assert.match(s.view.innerHTML, /class="col-unit"/);
+  assert.match(s.view.innerHTML, /class="col-avail"/);
+  assert.match(s.view.innerHTML, /class="col-count"/);
+  assert.match(s.view.innerHTML, /class="col-action"/);
+  assert.match(s.view.innerHTML, /pvp-tag-win/);
+  assert.match(s.view.innerHTML, /填满上限/);
+  assert.match(s.view.innerHTML, /清空/);
+
+  s.Game.Pvp.clearArmy();
+  s.Game.Pvp.render(s.view);
+  assert.match(s.view.innerHTML, /id="pvp-count-infantry"[^>]*value="0"/);
+
+  s.Game.Pvp.fillMax();
+  s.Game.Pvp.render(s.view);
+  assert.match(s.view.innerHTML, /id="pvp-count-infantry"[^>]*value="100"/);
+  assert.match(s.view.innerHTML, /id="pvp-count-truck"[^>]*value="30"/);
+});
+

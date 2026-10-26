@@ -347,9 +347,9 @@ class BattleServiceTest {
                 Map.of("rocket", new BattleService.UnitOrder(BattleService.CommandAction.HOLD))
         );
 
-        assertTrue(sameInRange.log().matches("(?s).*我方反坦克火箭车[^\\n]*?敌反坦克火箭车.*"), sameInRange.log());
-        assertTrue(sameOutOfRange.log().matches("(?s).*我方反坦克火箭车[^\\n]*?敌装甲车.*"), sameOutOfRange.log());
-        assertTrue(sameAbsent.log().matches("(?s).*我方反坦克火箭车[^\\n]*?敌装甲车.*"), sameAbsent.log());
+        assertTrue(sameInRange.log().matches("(?s).*我方反坦克火箭[^\\n]*?敌反坦克火箭.*"), sameInRange.log());
+        assertTrue(sameOutOfRange.log().matches("(?s).*我方反坦克火箭[^\\n]*?敌装甲车.*"), sameOutOfRange.log());
+        assertTrue(sameAbsent.log().matches("(?s).*我方反坦克火箭[^\\n]*?敌装甲车.*"), sameAbsent.log());
     }
 
     @Test
@@ -368,9 +368,9 @@ class BattleServiceTest {
                 Map.of("rocket", new BattleService.UnitOrder(BattleService.CommandAction.HOLD, "howitzer"))
         );
 
-        assertTrue(focused.log().matches("(?s).*我方反坦克火箭车[^\\n]*?敌榴弹炮.*"), focused.log());
+        assertTrue(focused.log().matches("(?s).*我方反坦克火箭[^\\n]*?敌榴弹炮.*"), focused.log());
         assertTrue(focused.log().contains("指定集火"), focused.log());
-        assertTrue(outOfRange.log().matches("(?s).*我方反坦克火箭车[^\\n]*?敌反坦克火箭车.*"), outOfRange.log());
+        assertTrue(outOfRange.log().matches("(?s).*我方反坦克火箭[^\\n]*?敌反坦克火箭.*"), outOfRange.log());
     }
 
     @Test

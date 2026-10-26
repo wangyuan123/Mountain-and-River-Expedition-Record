@@ -13,7 +13,7 @@ window.Game = window.Game || {};
     if (id === 'wall') return { name: '城墙', range: 0, spd: 0, cat: 'fort' };
     var unit = isJapanese && D.japaneseUnits && D.japaneseUnits[id] || D.units[id] || D.forts && D.forts[id];
     if (!unit) return null;
-    return original.indexOf('~') < 0 ? unit : Object.assign({}, unit, { name: unit.name + '（援军配装组 ' + original.split('~')[1] + '）' });
+    return original.indexOf('~s') >= 0 || original.indexOf('~') < 0 ? unit : Object.assign({}, unit, { name: unit.name + '（援军配装组 ' + original.split('~')[1] + '）' });
   }
 
   /** 从战报快照提取技能加成，仅旧版“每级”描述按快照等级换算，避免用当前配置改写历史数值。 */
@@ -128,7 +128,9 @@ window.Game = window.Game || {};
       }
       for (var i = 0; i < reports.length; i++) {
         var r = reports[i];
-        if (r.type === 'scout') {
+        if (r.type === 'resource_loss') {
+          h += this.renderResourceLossReportCard(r);
+        } else if (r.type === 'scout') {
           h += this.renderScoutReportCard(r);
         } else {
           h += this.renderReportCard(r);
@@ -249,10 +251,16 @@ window.Game = window.Game || {};
     /** 实时推送只进入摘要窗口，完整日志归入同一个有界详情缓存。 */
     summarizeLiveReport: function (report) {
       this.cacheReportDetail(report);
-      var keys = ['id', 'type', 'time', 'readAt', 'starred', 'detailExpiresAt', 'summaryExpiresAt', 'subject', 'action', 'originalAction', 'perspective', 'attackerName', 'defenderName', 'fromName', 'toName', 'fromCoord', 'toCoord', 'interceptCoord', 'win', 'attackerWon', 'result', 'targetType', 'cityConquered', 'wildConquered', 'wildOccupation', 'occupationFailure', 'intercepted', 'attackerContinued', 'attackerRetreated', 'defenderRetreated', 'interceptionOpening', 'targetName', 'x', 'y', 'showCityInfo', 'detailLevel', 'scoutMode', 'isCity'];
+      var keys = ['id', 'type', 'time', 'readAt', 'starred', 'detailExpiresAt', 'summaryExpiresAt', 'subject', 'action', 'originalAction', 'perspective', 'attackerName', 'defenderName', 'fromName', 'toName', 'fromCoord', 'toCoord', 'interceptCoord', 'win', 'attackerWon', 'result', 'targetType', 'cityConquered', 'wildConquered', 'wildOccupation', 'occupationFailure', 'intercepted', 'attackerContinued', 'attackerRetreated', 'defenderRetreated', 'interceptionOpening', 'targetName', 'x', 'y', 'showCityInfo', 'detailLevel', 'scoutMode', 'isCity', 'cause', 'cityName', 'citySlot', 'losses', 'period'];
       // 与服务端卡片投影一致，保留真实胜负、接管结论和部队去向，不能从当前状态推断。
-      keys = keys.concat(['attackerWin', 'troopDisposition', 'wildOccupationReason', 'conquered', 'cityTakeoverReason', 'targetSea', 'sea', 'scoutType']);
-      function pick(source) { var out = {}; keys.forEach(function (key) { if (source[key] != null) out[key] = source[key]; }); return out; }
+      keys = keys.concat(['attackerWin', 'troopDisposition', 'wildOccupationReason', 'conquered', 'cityTakeoverReason', 'targetSea', 'sea', 'scoutType', 'scoutUnit', 'reconMode', 'sampledAt', 'intelligencePhase']);
+      function pick(source) {
+        var out = {};
+        keys.forEach(function (key) { if (source[key] != null) out[key] = source[key]; });
+        // 与服务端保持一致，出征时只展示成功侦察实际获得的守军快照。
+        if (source.showCityInfo && source.army && typeof source.army === 'object') out.army = source.army;
+        return out;
+      }
       var summary = pick(report);
       if (report.data && typeof report.data === 'object') summary.data = pick(report.data);
       summary.summaryOnly = true; summary.detailsAvailable = true;
@@ -367,12 +375,36 @@ window.Game = window.Game || {};
     },
 
     /**
-     * 保留服务端战斗日志的时间顺序；双方阵营通过行样式区分。
+     * 修复旧征服战报中纯墙体伤害行被排到击毁日志前的问题；双方阵营通过行样式区分。
      * @param {string[]} logs - 当前视角的战斗日志
-     * @returns {string[]} 与服务端一致的战斗日志顺序
+     * @returns {string[]} 保持回合边界且按墙体剩余生命恢复先后顺序的战斗日志
      */
     groupRoundSideLogs: function (logs) {
-      return Array.isArray(logs) ? logs.slice() : [];
+      if (!Array.isArray(logs)) return [];
+      var ordered = logs.slice();
+      var roundStart = 0;
+      while (roundStart < ordered.length) {
+        var roundEnd = roundStart + 1;
+        while (roundEnd < ordered.length && String(ordered[roundEnd] || '').indexOf('-- 第') !== 0) roundEnd++;
+        var wallIndexes = [];
+        var wallLines = [];
+        for (var index = roundStart; index < roundEnd; index++) {
+          if (/墙体剩余生命\s*[\d,]+/.test(String(ordered[index] || ''))) {
+            wallIndexes.push(index);
+            wallLines.push(ordered[index]);
+          }
+        }
+        wallLines.sort(function (first, second) {
+          var firstHp = Number(String(first).match(/墙体剩余生命\s*([\d,]+)/)[1].replace(/,/g, ''));
+          var secondHp = Number(String(second).match(/墙体剩余生命\s*([\d,]+)/)[1].replace(/,/g, ''));
+          return secondHp - firstHp;
+        });
+        for (var wallIndex = 0; wallIndex < wallIndexes.length; wallIndex++) {
+          ordered[wallIndexes[wallIndex]] = wallLines[wallIndex];
+        }
+        roundStart = roundEnd;
+      }
+      return ordered;
     },
 
     /**
@@ -599,7 +631,7 @@ window.Game = window.Game || {};
       var recoveredCount = Math.max(0, Number(report.recoveredCount) || 0);
       var losses = Math.max(0, Number(report.losses) || 0);
       var h = '<div class="rb-settlement"><div class="rb-settlement-title">【战果结算】</div><div class="rb-settlement-grid">';
-      if (resourceText) h += '<div class="rb-settlement-item"><span>资源' + (defense ? '损失' : '战果') + '</span><b>' + resourceText + '</b></div>';
+      if (resourceText) h += '<div class="rb-settlement-item rb-settlement-full"><span>资源' + (defense ? '损失' : '战果') + '</span><b>' + resourceText + '</b></div>';
       if (!defense && report.exp > 0) h += '<div class="rb-settlement-item"><span>将领经验</span><b>+' + fmt(report.exp) + '</b></div>';
       if (report.prestigeAfter != null || report.prestigeChange != null) h += '<div class="rb-settlement-item"><span>声望变化</span><b>' + signed(report.prestigeChange) + ' <small>当前 ' + fmt(Math.max(0, Number(report.prestigeAfter) || 0)) + '</small></b></div>';
       if (report.moraleAfter != null || report.moraleChange != null) h += '<div class="rb-settlement-item"><span>民心变化</span><b>' + signed(report.moraleChange) + ' <small>当前 ' + fmt(Math.max(0, Number(report.moraleAfter) || 0)) + '</small></b></div>';
@@ -628,7 +660,7 @@ window.Game = window.Game || {};
         hasPrisoners = checkRows(report.attackerBreakdown) || checkRows(report.defenderBreakdown);
       }
       if (hasPrisoners) {
-        h += '<div class="rb-settlement-item"><span>俘虏结算</span><b>候选 ' + fmt(snapshot.candidateTotal || 0) + ' · 收容 ' + fmt(totalAccepted) + '</b></div>';
+        h += '<div class="rb-settlement-item rb-settlement-full"><span>俘虏结算</span><b>候选 ' + fmt(snapshot.candidateTotal || 0) + ' · 收容 ' + fmt(totalAccepted) + '</b></div>';
         h += '</div>';
         h += '<details class="rb-prisoner-details"><summary>战俘与战损分账明细（收容 ' + fmt(totalAccepted) + '）</summary>';
         if (snapshot.cityName) {
@@ -695,6 +727,47 @@ window.Game = window.Game || {};
       return h;
     },
 
+    renderResourceLossReportCard: function (r) {
+      if (r.summaryPending) return this.renderPendingReportCard(r);
+      var data = r.data || {};
+      var date = new Date(r.time);
+      var ts = (date.getMonth() + 1) + '-' + String(date.getDate()).padStart(2, '0') + ' ' + String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0');
+      var losses = Array.isArray(data.losses) ? data.losses : [];
+      var unread = !r.readAt;
+      var lossText = losses.map(function (item) {
+        return G.escapeHtml(item.resourceName || item.resourceType || '资源') + ' -' + G.fmt(item.lossAmount || 0);
+      }).join('、');
+      var coord = data.x == null || data.y == null ? '' : ' (' + G.escapeHtml(String(data.x)) + ',' + G.escapeHtml(String(data.y)) + ')';
+      var html = '<div class="report-card lose' + (unread ? ' unread' : '') + '">';
+      html += '<div class="rc-head" onclick="Game.Battle.toggleReport(\'' + r.id + '\')" style="cursor:pointer">';
+      html += '<span class="rc-subject">' + (unread ? '<span class="unread-dot"></span>' : '') + '资源损耗报告</span>';
+      html += '<span class="rc-time">' + ts + '</span><span class="rc-result l">-' + losses.length + '类</span></div>';
+      html += '<div class="rc-body" onclick="Game.Battle.toggleReport(\'' + r.id + '\')" style="cursor:pointer">';
+      html += '<div class="rc-line">' + G.escapeHtml(data.cityName || data.targetName || '城市') + coord + ' 因 ' + G.escapeHtml(data.cause || '仓库溢出') + '</div>';
+      html += '<div class="rc-line">' + lossText + '</div></div>';
+      html += '<div id="rdetail_' + r.id + '" class="rc-expand" style="display:none"></div>';
+      html += '<div class="btn-row" style="margin-top:4px"><button id="rcta_' + r.id + '" class="btn sm" onclick="Game.Battle.viewReportDetail(\'' + r.id + '\')">查看损耗详情</button><button class="btn sm" onclick="Game.Battle.toggleStar(\'' + r.id + '\')">' + (r.starred ? '取消收藏' : '收藏战报') + '</button></div></div>';
+      return html;
+    },
+
+    renderResourceLossReportBoard: function (report) {
+      var data = report.data || {};
+      var esc = G.escapeHtml;
+      var date = new Date(report.time);
+      var timestamp = (date.getMonth() + 1) + '-' + String(date.getDate()).padStart(2, '0') + ' ' + String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0') + ':' + String(date.getSeconds()).padStart(2, '0');
+      var coord = data.x == null || data.y == null ? '坐标未记录' : '(' + data.x + ',' + data.y + ')';
+      var html = '<div class="report-board lose"><div class="rb-subject">【资源损耗报告】' + esc(data.subject || '超仓资源处理') + '</div><div class="rb-meta-box">';
+      html += '<div class="rb-line"><b>处理城市:</b> ' + esc(data.cityName || data.targetName || '城市') + ' ' + esc(coord) + '</div>';
+      html += '<div class="rb-line"><b>处理原因:</b> ' + esc(data.cause || '仓库溢出') + '</div>';
+      html += '<div class="rb-line rb-line-full"><b>处理时间:</b> ' + esc(timestamp) + '</div></div><div class="rb-settlement">';
+      (Array.isArray(data.losses) ? data.losses : []).forEach(function (item) {
+        html += '<div class="rb-settlement-item rb-settlement-full"><span>' + esc(item.resourceName || item.resourceType || '资源') + '</span><b>损失 -' + G.fmt(item.lossAmount || 0) + '</b></div>';
+        html += '<div class="rb-settlement-note">处理前 ' + G.fmt(item.beforeAmount || 0) + ' · 处理后 ' + G.fmt(item.afterAmount || 0) + (item.stage === 'final' ? ' · 第二次检查清除全部剩余超额' : ' · 首次检查损失超额的一半') + '</div>';
+      });
+      html += '</div></div>';
+      return html;
+    },
+
     /**
      * 按接收战报玩家的视角渲染结果、叙述、兵力与随军将领。
      * @param {Object} r - 战报数据
@@ -716,13 +789,13 @@ window.Game = window.Game || {};
       h += '<div class="rb-line"><b>目的地:</b> ' + esc(r.toName || '目标') + this.reportCoord(r.toCoord) + '</div>';
       if (interception) {
         var openingText = this.interceptionOpeningText(r);
-        if (openingText) h += '<div class="rb-line"><b>交火战术:</b> ' + esc(openingText) + '</div>';
+        if (openingText) h += '<div class="rb-line rb-line-full"><b>交火战术:</b> ' + esc(openingText) + '</div>';
         h += '<div class="rb-line"><b>拦截地点:</b>' + this.reportCoord(r.interceptCoord) + '</div>';
         h += '<div class="rb-line"><b>来袭部队:</b> ' + esc(r.attackerName || '未知敌军') + '</div>';
         h += '<div class="rb-line"><b>拦截部队:</b> ' + esc(r.defenderName || '未知敌军') + '</div>';
-        h += '<div class="rb-line"><b>交战身份:</b> ' + (defense ? '我方出城拦截 · 敌方来袭突围' : '我方来袭突围 · 敌方出城拦截') + '</div>';
-        if (r.originalAction === 'scout') h += '<div class="rb-line"><b>原行军任务:</b> 侦查 · 抵达原目标后执行</div>';
-        h += '<div class="rb-line"><b>部队去向:</b> ' + interception.movement + '</div>';
+        h += '<div class="rb-line rb-line-full"><b>交战身份:</b> ' + (defense ? '我方出城拦截 · 敌方来袭突围' : '我方来袭突围 · 敌方出城拦截') + '</div>';
+        if (r.originalAction === 'scout') h += '<div class="rb-line rb-line-full"><b>原行军任务:</b> 侦查 · 抵达原目标后执行</div>';
+        h += '<div class="rb-line rb-line-full"><b>部队去向:</b> ' + interception.movement + '</div>';
       }
       // 新版战报保存了攻守视角与双方统帅快照；旧版仍沿用原详情布局，避免将敌军区名称提前到摘要中。
       if (r.perspective === 'attacker' || r.perspective === 'defender') {
@@ -734,7 +807,7 @@ window.Game = window.Game || {};
         h += '<div class="rb-line"><b>行动配置:</b> ' + (dispatchAction === 'conquer' ? '尝试占领' : '仅夺取资源') + '</div>';
       }
       if (['feint', 'harass', 'guerrilla'].includes(dispatchAction)) {
-        h += '<div class="rb-line"><b>行动配置:</b> ' + G.Constants.dispatchActionNames[dispatchAction] + ' · 不获取资源 · 最多 ' + G.Constants.battleRoundLimits[dispatchAction] + ' 回合</div>';
+        h += '<div class="rb-line rb-line-full"><b>行动配置:</b> ' + G.Constants.dispatchActionNames[dispatchAction] + ' · 不获取资源 · 最多 ' + G.Constants.battleRoundLimits[dispatchAction] + ' 回合</div>';
       }
       var occupation = defense ? null : this.wildOccupation(r);
 
@@ -748,15 +821,15 @@ window.Game = window.Game || {};
       h += '<div class="rb-line"><b>' + (occupation ? '战斗结果' : '结　果') + ':</b> <span class="rb-res-badge ' + (won ? 'w' : 'l') + '">' + resText + '</span></div>';
       if (occupation) {
         h += '<div class="rb-line"><b>占领结果:</b> <span class="rb-res-badge ' + occupation.tone + '">' + occupation.text + '</span></div>';
-        h += '<div class="rb-line">' + occupation.detail + '</div>';
+        h += '<div class="rb-line rb-line-full">' + occupation.detail + '</div>';
         // 仅展示新战报持久化的实际部队去向；历史记录不能从当前驻军反推。
         var troopText = { stationed: '原地驻守', returning: '部队返城', destroyed: '无幸存部队' }[r.troopDisposition];
-        if (troopText) h += '<div class="rb-line"><b>部队去向:</b> ' + troopText + '</div>';
+        if (troopText) h += '<div class="rb-line rb-line-full"><b>部队去向:</b> ' + troopText + '</div>';
       }
       if (r.targetType === 'player' && (dispatchAction === 'conquer' || dispatchAction === 'plunder')) {
         var takeoverText = takenOver ? '已接管' : dispatchAction === 'plunder' ? '未接管（仅夺取资源）'
           : typeof r.cityTakeoverReason === 'string' || (defense ? won : !won) ? '未接管' : '接管结果未记录';
-        h += '<div class="rb-line"><b>接管结果:</b> ' + takeoverText + '</div>';
+        h += '<div class="rb-line rb-line-full"><b>接管结果:</b> ' + takeoverText + '</div>';
       }
       h += '</div>';
       h += '<div class="rb-divider"></div>';
@@ -855,7 +928,7 @@ window.Game = window.Game || {};
      */
     renderArmyUnits: function (side, initMap, survMap, roundLogs, logSide, isJapanese) {
       var esc = G.escapeHtml;
-      var h = '';
+      var h = '<div class="rb-units-wrap">';
       var has = false;
       var sourceSide = logSide || side;
 
@@ -863,8 +936,8 @@ window.Game = window.Game || {};
         if (!name) return null;
         name = name.trim();
         // 已保存的纯文本战报不会随改名更新；反查时将旧通称映射到当前通称，避免遗漏兵力与战损。
-        if (D.units.rocket && /^火箭(?:-|$)/.test(name)) {
-          name = name.replace(/^火箭/, D.units.rocket.name.split('-')[0]);
+        if (D.units.rocket && /^(?:火箭|反坦克火箭车)(?:-|$)/.test(name)) {
+          name = name.replace(/^(?:火箭|反坦克火箭车)/, D.units.rocket.name.split('-')[0]);
         }
         for (var k in D.units) {
           var unit = D.units[String(k).split('~')[0]];
@@ -994,6 +1067,7 @@ window.Game = window.Game || {};
       if (!has) {
         h += '<div class="rb-unit rc-dim">无兵力记录</div>';
       }
+      h += '</div>';
       return h;
     },
 
@@ -1147,6 +1221,9 @@ window.Game = window.Game || {};
       }
       if (data.showCityInfo) {
         h += '<div class="rb-side w">【目标情报】</div>';
+        var sampleTime = Number(data.sampledAt || data.time);
+        h += '<div class="rb-line">采样时间：' + esc(sampleTime > 0 ? new Date(sampleTime).toLocaleString('zh-CN', { hour12: false }) : '未记录') +
+          ' · ' + (data.intelligencePhase === 'before_encounter' ? '守军为本次侦查交火前快照' : '历史采样口径未记录') + '；不代表当前驻军，后续战斗或征兵后请重新侦查。</div>';
         if (data.commander) h += '<div class="rb-line"><b>统帅:</b> ' + esc(data.commander) + (tenLevelIntel && data.commanderStar ? ' ' + data.commanderStar + '星' : '') + (tenLevelIntel && data.commanderLevel ? ' Lv.' + data.commanderLevel : '') + '</div>';
         if (data.prestige != null) h += '<div class="rb-line"><b>声望:</b> ' + G.fmt(data.prestige) + '</div>';
         if (data.cityDesc) h += '<div class="rb-line"><b>简介:</b> ' + esc(data.cityDesc) + '</div>';
@@ -1338,7 +1415,7 @@ window.Game = window.Game || {};
           box.innerHTML = this.renderReportPreview(r);
         }
         box.style.display = 'block';
-        if (actionButton) actionButton.innerHTML = r.detailsAvailable === false ? '查看战果摘要' : (r.type === 'scout' ? '查看侦查详情' : '查看战斗详情');
+        if (actionButton) actionButton.innerHTML = r.detailsAvailable === false ? '查看战果摘要' : (r.type === 'resource_loss' ? '查看损耗详情' : (r.type === 'scout' ? '查看侦查详情' : '查看战斗详情'));
         // 展开预览即视为已读
         this.markOneRead(reportId);
       } else {
@@ -1349,7 +1426,7 @@ window.Game = window.Game || {};
 
     renderReportPreview: function (report) {
       if (report.summaryUnavailable) return '<div class="rb-line">详细日志已过期，旧战果摘要尚未通过完整性校验，原始记录暂时保留等待核查。</div>';
-      var html = report.type === 'scout' ? this.renderScoutReportBoard(report) : this.renderReportBoard(report, false);
+      var html = report.type === 'resource_loss' ? this.renderResourceLossReportBoard(report) : (report.type === 'scout' ? this.renderScoutReportBoard(report) : this.renderReportBoard(report, false));
       if (report.detailsAvailable === false) html += '<div class="rb-line rc-dim">详细日志已过期，以上为保留的战果摘要。</div>';
       return html;
     },
@@ -1569,6 +1646,7 @@ window.Game = window.Game || {};
       this._tacticalAutoExecuteFailed = false;
       this._tacticalAutoExecuteError = '';
       this._tacticalSubmitting = false;
+      this._tacticalUnavailable = false;
     },
 
     /** 切换当前视图，只改变展示和焦点，不恢复或提交共享草稿。 */
@@ -1769,9 +1847,9 @@ window.Game = window.Game || {};
     updateTacticalCountdown: function () {
       var battle = this._activeTactical;
       var remaining = Math.max(0, (this._tacticalRetryAt || this._tacticalDeadline) - G.gameNow());
-      var label = battle && battle.finished ? '已结束' : this._tacticalSubmitting ? '结算中…'
+      var label = battle && battle.finished ? '已结束' : this._tacticalUnavailable ? '会话已关闭' : this._tacticalSubmitting ? '结算中…'
         : this._tacticalAutoExecuteFailed && !this._tacticalRetryAt ? '等待手动重试'
-          : remaining > 0 ? Math.ceil(remaining / 1000) + ' 秒'
+          : remaining > 0 ? G.formatDuration(remaining / 1000)
             : this._tacticalAutoExecuteFailed ? '正在重试…' : '结算中…';
       ['tacticalCountdown', 'tacticalUnitCommandCountdown'].forEach(function (id) {
         var countdown = document.getElementById(id);
@@ -1783,7 +1861,7 @@ window.Game = window.Game || {};
     /** 每场每回合仅保留一个计时器；Tab、弹窗与日志重绘不延长截止时间。 */
     startTacticalTimer: function () {
       var battle = this._activeTactical;
-      if (!battle || battle.finished || this._tacticalSubmitting) {
+      if (!battle || battle.finished || this._tacticalUnavailable || this._tacticalSubmitting) {
         this.stopTacticalTimer();
         this.updateTacticalCountdown();
         return;
@@ -1793,7 +1871,7 @@ window.Game = window.Game || {};
       if (this._tacticalDeadlineKey !== key) {
         this._tacticalDeadlineKey = key;
         // 兼容旧会话时也只在首次进入该回合生成截止时间，不能随重绘续期。
-        this._tacticalDeadline = Number.isFinite(serverDeadline) && serverDeadline > 0 ? serverDeadline : G.gameNow() + 15000;
+        this._tacticalDeadline = Number.isFinite(serverDeadline) && serverDeadline > 0 ? serverDeadline : G.gameNow() + 12000;
       }
       var self = this;
       function update() {
@@ -1827,7 +1905,7 @@ window.Game = window.Game || {};
     executeTacticalRound: function (automatic) {
       var self = this;
       var battle = this._activeTactical;
-      if (!battle || battle.finished || this._tacticalSubmitting) return;
+      if (!battle || battle.finished || this._tacticalUnavailable || this._tacticalSubmitting) return;
       if (this._tacticalPanelMarchId !== battle.marchId) {
         this.resetTacticalPanel(battle.marchId);
         if (this._tacticalOrdersMarchId !== battle.marchId) this.resetTacticalOrders();
@@ -1852,9 +1930,33 @@ window.Game = window.Game || {};
         self._activeTactical = next;
         // 两种视图共用最终战果和日志，普通战斗也保留结束画面。
         self.resetTacticalOrders();
+        if (next && next.finished && next.result && next.result.win) {
+          var victoryKey = String(next.marchId || next.battleId || ('b_' + next.round));
+          if (!self._playedVictoryBattleIds) self._playedVictoryBattleIds = {};
+          if (!self._playedVictoryBattleIds[victoryKey]) {
+            self._playedVictoryBattleIds[victoryKey] = true;
+            if (G.Sound && typeof G.Sound.play === 'function') G.Sound.play('victory');
+          }
+        }
         Core.render();
       }).catch(function (err) {
         if (!isCurrent()) return;
+        // 会话被后台结算清理时只读终局，禁止继续向已经结束的回合重放命令。
+        if (/行军任务不存在|没有可指挥的战斗|战斗会话不存在或已结束/.test(err.message || '')) {
+          return G.API.getTacticalBattle(battle.marchId).then(function (latest) {
+            if (!isCurrent()) return;
+            self._tacticalSubmitting = false;
+            self._tacticalAutoExecuteFailed = false;
+            self._tacticalUnavailable = !!latest.cancelled;
+            if (!latest.cancelled) { self._activeTactical = latest; self.resetTacticalOrders(); }
+            Core.render();
+          }).catch(function () {
+            if (!isCurrent()) return;
+            self._tacticalSubmitting = false;
+            self._tacticalUnavailable = true;
+            Core.render();
+          });
+        }
         self._tacticalSubmitting = false;
         // 自动结算遇到临时服务端/网络错误时必须重试；否则会永久卡在旧回合。
         self._tacticalAutoExecuteFailed = true;
@@ -1878,7 +1980,7 @@ window.Game = window.Game || {};
         if (this._tacticalOrdersMarchId !== battle.marchId) this.resetTacticalOrders();
       }
       var commandView = this._tacticalCommandView || 'battlefield';
-      var disabled = this._tacticalSubmitting ? ' disabled' : '';
+      var disabled = this._tacticalSubmitting || this._tacticalUnavailable ? ' disabled' : '';
       var esc = G.escapeHtml;
       var distance = Math.max(1, battle.initialDistance || 1);
       var attacker = battle.attackerArmy || {};
@@ -1966,11 +2068,14 @@ window.Game = window.Game || {};
       h += '<div class="tactical-head"><div><div class="title">' + (battle.side === 'defender' ? '防守战术指挥：' : '战术指挥：') + esc(battle.targetName || '敌军') + '</div>';
       h += '<div class="desc">所有兵种接敌后不可越线，空军也必须消灭敌方前排后才能继续向后推进。</div>';
       h += '<div class="desc">未指定目标时优先攻击射程内的敌方同类型兵种，否则攻击射程内最近的敌军；也可手动指定射程内的任意敌军。</div>';
-      h += '<div class="desc">已提交的指令在本场后续所有回合持续生效，直到再次修改。地图战场点击我军图标下令，文本战场使用兵种卡片。</div></div></div>';
+      if (!battle.finished && !this._tacticalUnavailable) h += '<div class="desc">已提交的指令在本场后续所有回合持续生效，直到再次修改。地图战场点击我军图标下令，文本战场使用兵种卡片。</div>';
+      h += '</div></div>';
       h += '<div class="btn-row"><button class="btn sm" onclick="Game.go(\'alerts\')">返回军情</button></div>';
       h += this.renderWallPanel(battle.wall, battle.terminalReason);
       h += '<div class="tactical-turn-status"><div><span class="tactical-turn-label">当前回合</span><b>第 ' + roundNo + ' 回合</b><small>/ 共 ' + maxRound + ' 回合</small></div>';
-      h += '<div><span class="tactical-turn-label">' + (this._tacticalRetryAt ? '重试倒计时' : '本回合倒计时') + '</span><b id="tacticalCountdown" class="tactical-countdown"></b><small>已选命令在倒计时结束后提交，也可点击下方执行按钮</small></div></div>';
+      var turnHint = battle.finished ? '最终战果已保存，可返回军情或查看战报。'
+        : this._tacticalUnavailable ? '请查看战报确认最终战果。' : '已选命令在倒计时结束后提交，也可点击下方执行按钮';
+      h += '<div><span class="tactical-turn-label">' + (battle.finished || this._tacticalUnavailable ? '战斗状态' : this._tacticalRetryAt ? '重试倒计时' : '本回合倒计时') + '</span><b id="tacticalCountdown" class="tactical-countdown"></b><small>' + turnHint + '</small></div></div>';
       h += this.renderCommandBonusPanel({ attacker: battle.attackerCommandBonus, defender: battle.defenderCommandBonus }, 'attacker');
       h += '<div class="army-tabs" role="tablist" aria-label="战场显示方式">';
       [['battlefield', '地图战场'], ['text', '文本战场']].forEach(function (tab) {
@@ -1986,6 +2091,9 @@ window.Game = window.Game || {};
         h += this.renderTacticalRangeBeams(mapAttacker, mapAttackerPositions, defender, defenderPositions, distance, markerRowIndexes, attackerTech, defenderTech, foeIsJapanese, effectiveWallSnapshot);
         h += this.renderTacticalMarkers(mapAttacker, mapAttackerPositions, distance, 'mine', markerRowIndexes, defender, defenderPositions, attackerTech, false, effectiveWallSnapshot);
         h += this.renderTacticalMarkers(defender, defenderPositions, distance, 'foe', markerRowIndexes, mapAttacker, mapAttackerPositions, defenderTech, foeIsJapanese, effectiveWallSnapshot);
+        if (battle.finished) {
+          h += this.renderTacticalCenterOutcome(battle);
+        }
         h += '<div class="tactical-distance">战场宽度 ' + distance + ' · 🎯 绿色光带为有效射程已接敌</div></div>';
       }
       var quickCommandHtml = '';
@@ -2075,21 +2183,52 @@ window.Game = window.Game || {};
               + esc(target.name || targetId) + statusBadge + '</option>';
           });
           cardHtml += '</select></label></div>';
+          var sourceIds = Object.keys(attacker).filter(function (id) { return String(id).split('~')[0] === baseId; });
+          if (battle.unitContexts && sourceIds.length) {
+            cardHtml += '<details><summary>参战来源与独立加成（' + sourceIds.length + '）</summary><p>战斗科技和城市司令官使用被防守城市快照；随队将领仅加成自己的编队。</p>';
+            sourceIds.forEach(function (id) {
+              var context = battle.unitContexts[id];
+              if (!context) return;
+              cardHtml += '<p>' + esc(context.title) + ' ×' + Number(attacker[id] || 0)
+                + ' · 将领军事 ' + Number(context.military || 0) + '／防御 ' + Number(context.defense || 0)
+                + ' · 移速 ' + self.getEffectiveSpeed(id, attackerTech, context.skills)
+                + ' · 首次接战回合 ' + (Number(context.firstCombatRound) || '尚未接战') + '</p>';
+            });
+            cardHtml += '</details>';
+          }
           if (commandView === 'text') h += cardHtml;
           // 快捷弹窗复用同一份卡片，兵力、选中命令和集火候选保持一致。
           if (commandView === 'battlefield' && !self._tacticalSubmitting && self._tacticalCommandUnitId === baseId) quickCommandHtml = cardHtml;
         });
         if (commandView === 'text') h += '</div>';
       }
+      if (commandView === 'text' && battle.finished) {
+        h += '<div class="tactical-text-finish-wrap">' + this.renderTacticalCenterOutcome(battle, true) + '</div>';
+      }
       h += '</div>';
       var inactiveView = commandView === 'text' ? 'battlefield' : 'text';
       h += '<div role="tabpanel" id="tacticalPanel-' + inactiveView + '" aria-labelledby="tacticalTab-' + inactiveView + '" hidden></div>';
       if (battle.finished) {
-        var result = battle.result || {};
-        var finishedText = battle.terminalReason === 'WALL_BREACHED' ? '城墙已攻破，征服战胜利'
-          : battle.terminalReason === 'WALL_NOT_BREACHED' ? '守军已清除，但未能破墙' : (result.win ? '战斗胜利' : '战斗结束');
-        h += '<div class="tactical-finish ' + (result.win ? 'win' : 'lose') + '"><b>' + finishedText + '</b><span>战果已写入战报，幸存部队将按原路线返程。</span>'
-          + '<button class="btn sm" onclick="Game.go(\'alerts\')" aria-label="返回军情">返回军情</button></div>';
+        var outcome = this.getTacticalOutcome(battle);
+        if (outcome.isWin) {
+          var victoryKey = String(battle.marchId || battle.battleId || ('b_' + battle.round));
+          if (!self._playedVictoryBattleIds) self._playedVictoryBattleIds = {};
+          if (!self._playedVictoryBattleIds[victoryKey]) {
+            self._playedVictoryBattleIds[victoryKey] = true;
+            if (G.Sound && typeof G.Sound.play === 'function') G.Sound.play('victory');
+          }
+        }
+        var finishedText = battle.terminalReason === 'WALL_BREACHED'
+          ? (battle.side === 'defender' ? '城墙已失守，防守失败' : '城墙已攻破，征服战胜利')
+          : battle.terminalReason === 'WALL_NOT_BREACHED'
+            ? (battle.side === 'defender' ? '城墙未破，防守成功' : '守军已清除，但未能破墙')
+            : (outcome.isWin ? '战斗胜利' : '战斗失败');
+        h += '<div class="tactical-finish ' + outcome.outcomeClass + '"><b>' + finishedText + '</b><span>战果已写入战报，幸存部队将按原路线返程。</span>'
+          + '<button class="btn sm" onclick="Game.go(\'alerts\')" aria-label="返回军情">返回军情</button>'
+          + '<button class="btn sm" onclick="Game.go(\'reports\')">查看战报</button></div>';
+      } else if (this._tacticalUnavailable) {
+        h += '<div role="status">战斗已结束或当前会话不可用，请查看战报确认最终战果。</div>'
+          + '<button type="button" class="btn" onclick="Game.go(\'reports\')">查看战报</button>';
       } else {
         h += allCommandsHtml;
         h += '<div class="btn-row tactical-execute"><button class="btn ok"' + disabled + ' onclick="Game.Battle.executeTacticalRound()">'
@@ -2097,7 +2236,7 @@ window.Game = window.Game || {};
         if (this._tacticalSubmitting) h += '<p role="status">本回合命令正在提交，请稍候。</p>';
         if (this._tacticalAutoExecuteFailed) {
           h += '<div class="tactical-turn-status failed" role="status">本回合执行失败：' + esc(this._tacticalAutoExecuteError || '请求未完成')
-            + (this._tacticalRetryAt ? '；5 秒后自动重试，也可点击执行按钮重试。' : '；请手动重试。') + '</div>';
+            + (this._tacticalRetryAt ? '；' + G.formatDuration((this._tacticalRetryAt - G.gameNow()) / 1000) + '后自动重试，也可点击执行按钮重试。' : '；请手动重试。') + '</div>';
         }
       }
       if (quickCommandHtml) {
@@ -2110,6 +2249,9 @@ window.Game = window.Game || {};
       } else {
         this._tacticalCommandUnitId = null;
       }
+      h += this.renderFormationContributions(battle.formationContributions);
+      h += this.renderFormationRecovery(battle.formationRecovery);
+      h += this.renderFormationEvents(battle.formationEvents);
       var logs = String(battle.log || '').trim().split('\n').filter(Boolean);
       h += '<div class="btn-row"><button type="button" class="btn sm" id="tacticalLogToggle" aria-expanded="' + !!this._tacticalLogExpanded
         + '" aria-controls="tacticalLog" onclick="Game.Battle.toggleTacticalLog()">战场记录（' + logs.length + '）' + (this._tacticalLogExpanded ? ' 收起' : ' 展开') + '</button></div>';
@@ -2130,7 +2272,195 @@ window.Game = window.Game || {};
       this.startTacticalTimer();
     },
 
-    /** 展示本场墙体快照及终局原因；取整只影响文字，伤害与剩余耐久由服务端计算。 */
+    /**
+     * 根据进攻方或防守方视角，计算战术战斗的胜负结果及对应提示文案。
+     * @param {Object} battle - 战斗快照对象
+     * @returns {{ isWin: boolean, title: string, subtitle: string, perspective: string, outcomeClass: string }}
+     */
+    getTacticalOutcome: function (battle) {
+      if (!battle) return { isWin: false, title: '战斗结束', subtitle: '', perspective: '', outcomeClass: 'lose' };
+      var isDefender = battle.side === 'defender';
+      var result = battle.result || {};
+      var isWin;
+
+      if (typeof result.win === 'boolean') {
+        isWin = result.win;
+      } else if (battle.terminalReason === 'WALL_BREACHED') {
+        isWin = !isDefender;
+      } else if (battle.terminalReason === 'WALL_NOT_BREACHED') {
+        isWin = isDefender;
+      } else if (battle.terminalReason === 'DEFENDERS_ELIMINATED') {
+        isWin = !isDefender;
+      } else if (battle.terminalReason === 'ATTACKERS_ELIMINATED') {
+        isWin = isDefender;
+      } else {
+        var myCount = Object.keys(battle.attackerArmy || {}).reduce(function (sum, id) { return sum + (Number(battle.attackerArmy[id]) || 0); }, 0);
+        var foeCount = Object.keys(battle.defenderArmy || {}).reduce(function (sum, id) { return sum + (Number(battle.defenderArmy[id]) || 0); }, 0);
+        isWin = myCount > 0 && foeCount === 0;
+      }
+
+      var title = isWin ? '战斗胜利' : '战斗失败';
+      var perspective = isDefender ? '防守方视角' : '进攻方视角';
+      var subtitle = '';
+
+      if (isDefender) {
+        if (isWin) {
+          if (battle.terminalReason === 'WALL_NOT_BREACHED') subtitle = '城墙坚固 · 守城大捷';
+          else if (battle.terminalReason === 'ATTACKERS_ELIMINATED') subtitle = '全歼敌军 · 守城大捷';
+          else if (battle.terminalReason === 'ROUND_LIMIT') subtitle = '坚守至回合上限 · 守城成功';
+          else subtitle = '成功守住阵地';
+        } else {
+          if (battle.terminalReason === 'WALL_BREACHED') subtitle = '城墙失守 · 阵地沦陷';
+          else if (battle.terminalReason === 'DEFENDERS_ELIMINATED') subtitle = '守军覆没 · 防守失利';
+          else subtitle = '阵地被敌军攻破';
+        }
+      } else {
+        if (isWin) {
+          if (battle.terminalReason === 'WALL_BREACHED') subtitle = '攻破城墙 · 征服大捷';
+          else if (battle.terminalReason === 'DEFENDERS_ELIMINATED') subtitle = '全歼守军 · 凯旋大捷';
+          else subtitle = '我军大获全胜';
+        } else {
+          if (battle.terminalReason === 'WALL_NOT_BREACHED') subtitle = '守军虽清但未能破墙';
+          else if (battle.terminalReason === 'ATTACKERS_ELIMINATED') subtitle = '我军覆没 · 进攻受挫';
+          else if (battle.terminalReason === 'ROUND_LIMIT') subtitle = '达到回合上限 · 未能攻克';
+          else subtitle = '我军进攻受挫';
+        }
+      }
+
+      return {
+        isWin: isWin,
+        title: title,
+        subtitle: subtitle,
+        perspective: perspective,
+        outcomeClass: isWin ? 'win' : 'lose'
+      };
+    },
+
+    /**
+     * 渲染面板中心的胜负提醒徽章（支持进攻方/防守方视角）。
+     * @param {Object} battle - 战斗快照对象
+     * @param {boolean} [isTextMode=false] - 是否在文本战场视图渲染
+     * @returns {string} HTML 字符串
+     */
+    renderTacticalCenterOutcome: function (battle, isTextMode) {
+      var outcome = this.getTacticalOutcome(battle);
+      var esc = (typeof G !== 'undefined' && G.escapeHtml) ? G.escapeHtml : function (s) { return String(s); };
+      var icon = outcome.isWin ? '★' : '✕';
+      var textModeClass = isTextMode ? ' in-text-panel' : '';
+      var h = '<div class="tactical-center-result ' + outcome.outcomeClass + textModeClass + '" role="alert" aria-live="assertive">';
+      h += '<div class="tactical-result-ribbon">' + (outcome.isWin ? 'VICTORY' : 'DEFEAT') + '</div>';
+      h += '<div class="tactical-result-body">';
+      h += '<div class="tactical-result-icon">' + icon + '</div>';
+      h += '<div class="tactical-result-content">';
+      h += '<div class="tactical-result-title">' + esc(outcome.title) + '</div>';
+      h += '<div class="tactical-result-sub"><span class="tactical-perspective-badge">' + esc(outcome.perspective) + '</span> ' + esc(outcome.subtitle) + '</div>';
+      h += '</div></div></div>';
+      return h;
+    },
+
+    /** 以分为最小显示精度，按攻守及伤害类型统一分配尾差，纯展示拆组不放大贡献。 */
+    formationDamageDisplay: function (rows) {
+      var result = rows.map(function (row) {
+        var wall = Math.max(0, Number(row.wallDamage) || 0), fort = Math.max(0, Number(row.fortDamage) || 0);
+        return Object.assign({}, row, { unitDamage: row.unitDamage == null ? Math.max(0, (Number(row.damage) || 0) - wall - fort) : Math.max(0, Number(row.unitDamage) || 0), wallDamage: wall, fortDamage: fort });
+      });
+      ['attack', 'defense'].forEach(function (side) {
+        var group = result.filter(function (row) { return (row.kind === 'attack' ? 'attack' : 'defense') === side; });
+        ['unitDamage', 'fortDamage', 'wallDamage'].forEach(function (key) {
+          var total = 0, assigned = 0;
+          var parts = group.map(function (row) {
+            var exact = row[key] * 100, whole = Math.floor(exact);
+            total += exact; assigned += whole;
+            return { row: row, whole: whole, fraction: exact - whole };
+          });
+          var remainder = Math.round(total) - assigned;
+          parts.sort(function (a, b) {
+            return b.fraction - a.fraction || String(a.row.formationId + ':' + a.row.unit).localeCompare(String(b.row.formationId + ':' + b.row.unit));
+          });
+          parts.forEach(function (part, index) { part.row[key] = (part.whole + (index < remainder ? 1 : 0)) / 100; });
+        });
+      });
+      result.forEach(function (row) { row.damage = Math.round((row.unitDamage + row.fortDamage + row.wallDamage) * 100) / 100; });
+      return result;
+    },
+
+    /** 按实际来源展示贡献，攻守分开汇总；有效伤害分项与总览使用同一显示余数。 */
+    renderFormationContributions: function (rows) {
+      if (!Array.isArray(rows) || !rows.length) return '';
+      rows = this.formationDamageDisplay(rows);
+      var esc = G.escapeHtml;
+      var html = '<div class="zone-head">编队战斗贡献</div><table><thead><tr><th>来源／兵种</th><th>参战</th><th>有效伤害</th><th>战损</th><th>伤兵</th><th>幸存</th></tr></thead><tbody>';
+      var totals = {};
+      rows.forEach(function (row) {
+        var unit = U(row.unit) || {};
+        var side = row.kind === 'attack' ? '攻方' : '守方';
+        if (!totals[side]) totals[side] = { initial: 0, damage: 0, losses: 0, wounded: 0, survivors: 0 };
+        Object.keys(totals[side]).forEach(function (key) { totals[side][key] += key === 'damage' ? Math.round(Number(row[key]) * 100) : Math.round(Number(row[key]) || 0); });
+        html += '<tr><td>' + esc(row.formation) + ' ' + esc(row.formationId || '') + ' ' + esc(unit.name || row.unit) + '</td><td>' + Number(row.initial || 0)
+          + '</td><td>' + row.damage + '（部队 ' + row.unitDamage + '／工事 ' + row.fortDamage + '／城墙 ' + row.wallDamage + '）</td><td>' + Number(row.losses || 0) + '</td><td>' + Number(row.wounded || 0)
+          + '</td><td>' + Number(row.survivors || 0) + '</td></tr>';
+      });
+      Object.keys(totals).forEach(function (side) {
+        html += '<tr><th>' + side + '合计</th>';
+        Object.keys(totals[side]).forEach(function (key) { html += '<td>' + (key === 'damage' ? totals[side][key] / 100 : totals[side][key]) + '</td>'; });
+        html += '</tr>';
+      });
+      return html + '</tbody></table><p>有效伤害按实际目标剩余生命封顶，分列部队、工事与城墙；伤兵包含在战损中。伤害以0.01为显示精度统一分配尾差，分项与合计一致。</p>';
+    },
+
+    /** 只读取服务端授权返回的本玩家终局医疗采样，不使用当前科技或军官重新计算旧战损。 */
+    renderFormationRecovery: function (rows) {
+      if (!Array.isArray(rows) || !rows.length) return '';
+      var esc = G.escapeHtml;
+      return '<details><summary>本方编队伤兵回收采样</summary>' + rows.map(function (row) {
+        return '<p>' + esc(row.formation) + ' ' + esc(row.formationId) + ' · 终局医疗科技 ' + Number(row.medicalLevel || 0)
+          + '级 · 急救 ' + Number(row.medicLevel || 0) + '级 · 回收率 ' + Number(row.recoveryPercent || 0) + '% · 采样游戏时刻 '
+          + esc(Number(row.sampledAt) > 0 ? new Date(Number(row.sampledAt)).toLocaleString('zh-CN', { hour12: false }) : '未记录') + '</p>';
+      }).join('') + '</details>';
+    },
+
+    /** 来源和兵种过滤只作用于历史事件展示，不改变战斗指令；默认分页避免大军战报撑满页面。 */
+    renderFormationEvents: function (events) {
+      if (!Array.isArray(events) || !events.length) return '';
+      this._formationLogEvents = events;
+      var esc = G.escapeHtml, sources = {}, units = {};
+      events.forEach(function (event) {
+        if (event.formationId) sources[event.formationId] = event.formation;
+        if (event.unit) units[event.unit] = (U(event.unit) || {}).name || event.unit;
+      });
+      var source = this._formationLogSource || '', unit = this._formationLogUnit || '';
+      var filtered = events.filter(function (event) { return (!source || event.formationId === source) && (!unit || event.unit === unit); });
+      var limit = this._formationLogLimit || 50;
+      var html = '<section id="formationEventLog"><div class="zone-head">编队行动记录 · 同批次结算</div><label>来源 <select onchange="Game.Battle.filterFormationEvents(\'source\',this.value)"><option value="">全部来源</option>';
+      Object.keys(sources).forEach(function (id) { html += '<option value="' + esc(id) + '"' + (source === id ? ' selected' : '') + '>' + esc(sources[id]) + ' ' + esc(id) + '</option>'; });
+      html += '</select></label><label>兵种 <select onchange="Game.Battle.filterFormationEvents(\'unit\',this.value)"><option value="">全部兵种</option>';
+      Object.keys(units).forEach(function (id) { html += '<option value="' + esc(id) + '"' + (unit === id ? ' selected' : '') + '>' + esc(units[id]) + '</option>'; });
+      html += '</select></label><p>' + filtered.length + ' 条记录；先显示最近 ' + Math.min(limit, filtered.length) + ' 条。首次接战技能不追溯本回合机动和先手。</p>';
+      filtered.slice(-limit).forEach(function (event) {
+        var title = esc(event.formation || '') + (event.unit ? ' ' + esc((U(event.unit) || {}).name || event.unit) : '')
+          + (event.countBefore != null ? ' ×' + Number(event.countBefore) : '');
+        var text;
+        if (event.type === 'MOVEMENT') text = (event.to === event.from ? '待命' : '移动' + Math.abs(event.to - event.from)) + '，坐标 ' + event.to;
+        else if (event.type === 'ENGAGE') text = '首次接战，独立技能周期起点为第 ' + event.firstCombatRound + ' 回合';
+        else if (event.type === 'LOSSES') text = '同批受击：战损 ' + event.losses + '，幸存 ' + event.survivors;
+        else if (event.type === 'NO_FIRE') text = '没有射程内合法目标，未开火';
+        else text = (event.type === 'COUNTER' ? '反击' : event.type === 'WALL' ? '攻击城墙' : '攻击 ' + (event.target || '') + ' ' + ((U(event.targetUnit) || {}).name || event.targetUnit || ''))
+          + '，造成 ' + Math.round(Number(event.damage) || 0) + ' 有效伤害' + (event.skillWindow ? '；本来源技能窗口生效' : '');
+        html += '<p><b>第 ' + Number(event.round) + ' 回合' + (event.batch ? ' · 批次 ' + event.batch : '') + ' ' + title + '</b><br>' + esc(text) + '。</p>';
+      });
+      if (filtered.length > limit) html += '<button type="button" class="btn sm" onclick="Game.Battle.filterFormationEvents(\'more\')">显示更多</button>';
+      return html + '</section>';
+    },
+
+    /** 保持当前战斗视图与命令不动，仅重绘编队日志。 */
+    filterFormationEvents: function (kind, value) {
+      if (kind === 'source') this._formationLogSource = value;
+      if (kind === 'unit') this._formationLogUnit = value;
+      this._formationLogLimit = kind === 'more' ? (this._formationLogLimit || 50) + 50 : 50;
+      var element = document.getElementById('formationEventLog');
+      if (element) element.outerHTML = this.renderFormationEvents(this._formationLogEvents);
+    },
+
     renderWallPanel: function (wall, terminalReason) {
       if (!wall) return '';
       var hp = Math.max(0, Number(wall.hpRemaining) || 0);
@@ -2180,7 +2510,9 @@ window.Game = window.Game || {};
       var catKey = G.Constants.unitSpeedTechKeys[String(unitId).split('~')[0]] || G.Constants.unitTechKeys[cat];
       var engLv = catKey ? Number(tech[catKey] || 0) : 0;
       var battle = this._activeTactical || {};
-      var firstCombatRound = Math.max(0, Number(battle.firstCombatRound) || 0);
+      var unitContext = (battle.unitContexts || {})[unitId];
+      if (unitContext) skills = unitContext.skills || {};
+      var firstCombatRound = Math.max(0, Number(unitContext ? unitContext.firstCombatRound : battle.firstCombatRound) || 0);
       var nextRound = Math.max(0, Number(battle.round) || 0) + 1;
       var skillRoundActive = firstCombatRound > 0 && nextRound >= firstCombatRound
         && (nextRound - firstCombatRound) % 3 === 0;
@@ -2443,6 +2775,8 @@ window.Game = window.Game || {};
           : ' ×' + marker.count)
           + '，战场位置 ' + marker.position
           + '，射程 ' + range + bonusHint + statusDesc;
+        var formationLabel = ((self._activeTactical || {}).formationLabels || {})[side + ':' + marker.unitId];
+        if (formationLabel) title = esc(formationLabel) + ' ' + title;
 
         var rangePillClass = 'tactical-marker-range' + (inRange ? ' in-range' : (range === 0 ? ' no-range' : ''));
         var rangeLabel = range > 0 ? (inRange ? '🎯' + range : '射程 ' + range) : '无射程';
@@ -2518,7 +2852,10 @@ window.Game = window.Game || {};
         v.innerHTML = h;
         return;
       }
-      if (r.type === 'scout') {
+      if (r.type === 'resource_loss') {
+        h += this.renderResourceLossReportBoard(r);
+        h += '<div class="btn-row report-detail-actions" style="margin-top:10px"><button class="btn" onclick="Game.go(\'reports\')">↩ 返回战报</button><button class="btn warn" onclick="Game.go(\'home\')">🏠 返回首页</button></div>';
+      } else if (r.type === 'scout') {
         h += this.renderScoutReportBoard(r);
         h += '<div class="btn-row report-detail-actions" style="margin-top:10px">';
         h += '<button class="btn" onclick="Game.go(\'reports\')">↩ 返回战报</button>';
@@ -2541,17 +2878,20 @@ window.Game = window.Game || {};
         var countText = roundCount > 0 ? ('共 ' + roundCount + ' 回合') : (logs.length > 0 ? (logs.length + ' 条记录') : '');
         var badgeHtml = countText ? '<span class="rb-details-count" style="font-size:11px;font-weight:normal;opacity:0.85;margin-left:4px;">(' + countText + ')</span>' : '';
 
-        h += '<div class="report-details-toggle-wrap" style="margin:14px 0 6px;">';
-        h += '<button type="button" class="btn report-details-toggle-btn active" id="btnBattleDetails" onclick="Game.Battle.toggleBattleDetails()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:4px;padding:8px 12px;font-size:13px;font-weight:600;">';
+        h += '<div class="report-details-toggle-wrap" style="margin:8px 0 4px;">';
+        h += '<button type="button" class="btn report-details-toggle-btn active" id="btnBattleDetails" onclick="Game.Battle.toggleBattleDetails()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:4px;padding:6px 12px;font-size:12.5px;font-weight:600;">';
         h += '📜 收起战斗详情 ' + badgeHtml + ' <span class="rb-toggle-arrow">▴</span>';
         h += '</button>';
         h += '</div>';
 
-        h += '<div id="battleDetailsBox" style="display:block;margin-top:8px;">';
+        h += '<div id="battleDetailsBox" style="display:block;margin-top:6px;">';
         h += '<div class="zone-head">【回合战斗细节】</div>';
         h += this.renderCommandBonusPanel(r.commandBonuses, this.isDefenderReport(r) ? 'defender' : 'attacker');
         h += this.renderWallPanel(r.wall, r.terminalReason);
         if (G.UnitEquipment) h += G.UnitEquipment.reportHtml(r.unitEquipment);
+        h += this.renderFormationContributions(r.formationContributions);
+        h += this.renderFormationRecovery(r.formationRecovery);
+        h += this.renderFormationEvents(r.formationEvents);
         h += this.renderCommanderPanel(r.commanders, this.isDefenderReport(r) ? 'defender' : 'attacker');
         if (initialDistance) h += '<div class="rb-initial-distance">' + G.escapeHtml(initialDistance) + '</div>';
         h += '<div class="blog" style="max-height:480px;overflow-y:auto;">';

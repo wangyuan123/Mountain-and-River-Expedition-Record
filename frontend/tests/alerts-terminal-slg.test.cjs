@@ -113,15 +113,28 @@ function setup(initialState = {}) {
   return { game, routes, toasts, nodes, context };
 }
 
-test('军情监控头渲染全域监控状态、120KM雷达范围与防务状态', () => {
+test('军情监控头渲染全域监控状态、服务端联防雷达半径与防务状态', () => {
   const { game } = setup();
+  game.Radar = { city: () => ({ level: 10, radius: 10, enabled: true }), contacts: () => [], cards: () => '' };
   const view = { innerHTML: '', querySelectorAll: () => [] };
   game.World.renderAlerts(view);
 
   assert.match(view.innerHTML, /\[全域预警监控\]/);
   assert.match(view.innerHTML, /正常运行/);
-  assert.match(view.innerHTML, /雷达范围: 120KM/);
+  assert.match(view.innerHTML, /联防雷达范围: Lv\.10 · 半径10格 · 已开启/);
+  assert.doesNotMatch(view.innerHTML, /120KM/);
   assert.match(view.innerHTML, /防务: 无护盾保护/);
+});
+
+test('仅有城防雷达时军情监控头明确提示未建设联防雷达', () => {
+  const { game } = setup();
+  for (const sensor of [undefined, { level: 0, radius: 0, enabled: false }]) {
+    game.Radar = { city: () => sensor, contacts: () => [], cards: () => '' };
+    const view = { innerHTML: '', querySelectorAll: () => [] };
+    game.World.renderAlerts(view);
+    assert.match(view.innerHTML, /联防雷达范围: 本城未建设联防雷达/);
+    assert.doesNotMatch(view.innerHTML, /半径10格|半径0格/);
+  }
 });
 
 test('纯文本微型进度条按比例精确输出字符级方块', () => {

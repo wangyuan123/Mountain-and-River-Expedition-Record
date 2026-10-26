@@ -1,0 +1,33 @@
+[
+  {
+    "id": 1,
+    "type": "battle",
+    "time": 1792826927695,
+    "readAt": 0,
+    "detailsAvailable": true,
+    "detailsExpired": false,
+    "starred": false,
+    "subject": "掠夺失败 新城市",
+    "action": "plunder",
+    "perspective": "attacker",
+    "attackerName": "远征统帅_043466",
+    "fromName": "新城市",
+    "toName": "新城市",
+    "fromCoord": "10,10",
+    "toCoord": "20,10",
+    "win": false,
+    "targetType": "player",
+    "cityConquered": false,
+    "wildConquered": false,
+    "citySlot": 0,
+    "losses": 600000,
+    "attackerWin": false,
+    "wildOccupationReason": null,
+    "conquered": false,
+    "cityTakeoverReason": null,
+    "summaryOnly": true,
+    "summaryPending": false,
+    "detailExpiresAt": 1795419130901,
+    "summaryExpiresAt": 1798011130901
+  }
+]

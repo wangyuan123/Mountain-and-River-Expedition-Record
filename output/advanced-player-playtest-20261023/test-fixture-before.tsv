@@ -1,0 +1,40 @@
+id	display_name	city_pos_x	city_pos_y	military_rank
+177	远征统帅_163822	32	96	1
+id	type	level	city_slot	slot	version
+489	academy	1	0	0	0
+480	command	3	0	0	2
+486	depot	2	0	0	1
+484	factory	3	0	0	2
+482	farm	2	0	0	1
+492	heavyfactory	1	0	0	0
+481	house	2	0	0	1
+487	lab	3	0	0	2
+491	lightfactory	1	0	0	0
+485	oilfield	1	0	0	0
+488	radar	2	0	0	1
+490	raremine	1	0	0	0
+483	refinery	2	0	0	1
+493	staff	1	0	0	0
+id	type	level	version
+96	recon_level	1	0
+97	unit_refit	1	0
+98	military_theory	1	0
+99	weapon_range	1	0
+100	arm_engine	1	0
+id	type	count	city_slot	version
+296	infantry	248	0	5
+298	recon_car	4	0	7
+297	truck	12	0	6
+id	food	steel	oil	rare	gold	diamond	city_slot
+179	36945	21878	8539	1921	1113	100	0
+item_key	count
+expBook	5
+expBookAdv	2
+goldBox	0
+loyaltyBox	2
+renameCard	1
+resBox	2
+shield	1
+skillBook	5
+speedUp1h	3
+ue_infantry_helmet	0

@@ -36,7 +36,8 @@ test('海岸下方提供收藏入口，城市和空地详情均可收藏', () =>
   assert.ok(source.includes('self.favoriteButtonHtml(self.selected)'));
   assert.ok(source.includes('this.favoriteButtonHtml(t)'));
   const { view } = fixture();
-  assert.ok(view.favoriteButtonHtml(view.selected).includes('aria-pressed="false">收藏坐标'));
+  assert.ok(view.favoriteButtonHtml(view.selected).includes('aria-pressed="false"'));
+  assert.ok(view.favoriteButtonHtml(view.selected).includes('map-fav-btn'));
 });
 
 test('收藏和移除持久化后同步详情状态，收藏坐标不随当前城市切换', async () => {
@@ -44,13 +45,17 @@ test('收藏和移除持久化后同步详情状态，收藏坐标不随当前�
   await f.view.toggleFavorite();
   assert.deepEqual(f.calls.map(call => call[0]), ['get', 'post']);
   assert.deepEqual(JSON.parse(JSON.stringify(f.calls[1][2])), { x: 65, y: 147, kind: 'player', targetId: 9 });
-  assert.equal(f.button.textContent, '移除收藏'); assert.equal(f.button['aria-pressed'], 'true');
+  assert.equal(f.button['aria-pressed'], 'true');
+  assert.ok(f.button.innerHTML.includes('filled'));
+  assert.equal(f.button['aria-label'], '已收藏坐标（点击取消）');
   f.game.Core.state.player.activeCityId = 22;
   assert.equal(f.view.isFavorite({ x: 65, y: 147 }), true);
   await f.view.toggleFavorite();
   assert.equal(f.calls.at(-1)[1], '/game/world/map/favorites?x=65&y=147');
-  assert.equal(f.button.textContent, '收藏坐标');
-  assert.deepEqual(f.toasts, ['坐标已收藏', '已移除收藏']);
+  assert.equal(f.button['aria-pressed'], 'false');
+  assert.ok(!f.button.innerHTML.includes('filled'));
+  assert.equal(f.button['aria-label'], '收藏坐标');
+  assert.deepEqual(f.toasts, ['已收藏坐标', '已取消收藏坐标']);
 });
 
 test('弱网失败保留已有收藏，解除按钮禁用并允许重试', async () => {

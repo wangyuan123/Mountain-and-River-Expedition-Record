@@ -108,7 +108,7 @@ class SortieBattleTest extends BaseServiceTest {
     @ParameterizedTest
     @ValueSource(strings = {"infantry", "bunker"})
     void cityWallLevelDoesNotChangeActualTroopOrFortDamage(String target) {
-        Long baselineDamage = null;
+        Double baselineDamage = null;
         for (int wallLevel : new int[] {0, 1, 10, 20}) {
             Player defender = createTestPlayer("wall-defender-" + target + wallLevel, 30);
             if (wallLevel > 0) createBuilding(defender.getId(), "wall", wallLevel);
@@ -139,12 +139,13 @@ class SortieBattleTest extends BaseServiceTest {
             Map<String, Object> response = marchService.executeTacticalRound(attacker.getId(), march.getId(),
                     new GameDtos.BattleCommandRequest(Map.of("rocket", new GameDtos.BattleUnitOrderRequest("hold", target)), 0));
             String log = (String) response.get("log");
-            var damage = java.util.regex.Pattern.compile("我方[^\\n]*伤害(\\d+)").matcher(log);
-            assertTrue(damage.find(), log);
-            long actualDamage = Long.parseLong(damage.group(1));
+            // 从结构化历史事件读取攻方实际伤害，不依赖新旧日志中的“我方”措辞。
+            double actualDamage = JsonUtil.parseList(JsonUtil.toJson(response.get("formationEvents"))).stream()
+                    .filter(e -> "FIRE".equals(e.get("type")) && "formation-0".equals(e.get("formationId")) && target.equals(e.get("targetUnit")))
+                    .mapToDouble(e -> ((Number) e.get("damage")).doubleValue()).sum();
             assertTrue(actualDamage > 0, log);
             if (baselineDamage == null) baselineDamage = actualDamage;
-            else assertEquals(baselineDamage.longValue(), actualDamage, "城防等级" + wallLevel + "不应改变" + target + "承伤");
+            else assertEquals(baselineDamage, actualDamage, 1e-8, "城防等级" + wallLevel + "不应改变" + target + "承伤");
         }
     }
 

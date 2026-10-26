@@ -1,0 +1,10 @@
+{
+  "attackerDef": 90,
+  "attackerMil": 341,
+  "defenderDef": 277,
+  "defenderMil": 122,
+  "attackerSkills": "{}",
+  "defenderSkills": "{\"bulwark\":3}",
+  "initialAttacker": "{\"infantry\":20000}",
+  "initialDefender": "{\"infantry\":20000}"
+}

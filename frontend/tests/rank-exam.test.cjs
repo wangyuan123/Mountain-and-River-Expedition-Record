@@ -110,7 +110,7 @@ test('考试倒计时按服务器时钟，超时允许结束未答完的试卷',
     submitRankExam: async () => { calls++; return { correct: 0, total: 5, message: '考试超时', rankInfo: rank() }; } });
   await G.MainQuest.startRankExam();
   await render();
-  assert.match(elements['rank-exam-clock'].textContent, /^(1:00|0:59)$/);
+  assert.match(elements['rank-exam-clock'].textContent, /^(1分钟0秒|59秒)$/);
   G.MainQuest.state.paper.expiresAt = fixed.serverTime - 1000;
   await render();
   assert.equal(elements['rank-exam-submit'].disabled, false);

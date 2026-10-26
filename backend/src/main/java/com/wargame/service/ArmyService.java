@@ -1,5 +1,7 @@
 package com.wargame.service;
 
+import com.wargame.util.DurationText;
+
 import com.wargame.util.GameClock;
 import com.wargame.model.constants.GameData;
 import com.wargame.model.constants.MilitaryRankDef;
@@ -28,6 +30,9 @@ import java.util.*;
  */
 @Service
 public class ArmyService {
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private GarrisonFoodService garrisonFood;
+    @org.springframework.beans.factory.annotation.Autowired private OfficerEquipmentProgressService equipmentProgress;
+
 
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
@@ -227,7 +232,10 @@ public class ArmyService {
         armyProductionQueueRepository.save(queue);
 
         result.put("success", true);
-        result.put("message", "已加入生产队列 " + u.name() + " x" + n + "，预计 " + duration + " 秒");
+        long waitingMs = Math.max(0, queue.getStartedAt() - now);
+        result.put("message", "已加入生产队列 " + u.name() + " x" + n + "，自身工期 " + DurationText.seconds(duration)
+                + (waitingMs > 0 ? "，排队等待 " + DurationText.millis(waitingMs) : "，立即开工")
+                + "，预计交付 " + DurationText.millis(Math.max(0, queue.getFinishesAt() - now)));
         result.put("unitType", unitType);
         result.put("count", n);
         result.put("durationSeconds", duration);
@@ -244,6 +252,7 @@ public class ArmyService {
 
     @Transactional
     public Map<String, Object> dismiss(Long playerId, String unitType, int count) {
+        if (garrisonFood != null) garrisonFood.beforeChange(playerId);
         Map<String, Object> result = new LinkedHashMap<>();
 
         UnitDef u = GameData.UNITS.get(unitType);
@@ -288,7 +297,7 @@ public class ArmyService {
         if (refund > 0) {
             Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
             if (res != null) {
-                res.setSteel((res.getSteel() != null ? res.getSteel() : 0) + refund);
+                res.addResource("steel", refund);
                 resourcesRepository.save(res);
             }
         }
@@ -338,12 +347,14 @@ public class ArmyService {
 
     @Transactional
     public void completeProduction(Long playerId, long now) {
+        if (garrisonFood != null) garrisonFood.beforeChange(playerId);
         for (ArmyProductionQueue q : armyProductionQueueRepository.findByPlayerIdAndCitySlotAndFinishesAtLessThanEqualOrderByFinishesAtAscIdAsc(playerId, cityScope.slot(playerId), now)) {
             List<ArmyUnit> existing = armyUnitRepository.findByPlayerIdAndCitySlotAndType(playerId, cityScope.slot(playerId), q.getUnitType());
             ArmyUnit unit = existing.isEmpty() ? new ArmyUnit(null, playerId, q.getUnitType(), 0) : existing.get(0);
             unit.setCitySlot(q.getCitySlot());
             unit.setCount((unit.getCount() == null ? 0 : unit.getCount()) + q.getUnitCount());
             armyUnitRepository.save(unit);
+            equipmentProgress.event(playerId, "train", "production-" + q.getId(), q.getUnitCount());
             armyProductionQueueRepository.delete(q);
             try { questService.onEvent(playerId, "ARMY_RECRUIT", q.getUnitType(), q.getUnitCount()); questService.onEvent(playerId, "ARMY_TOTAL"); } catch (Exception ignored) {}
         }
@@ -371,8 +382,7 @@ public class ArmyService {
             result.put("message", "剩余生产时间不超过5分钟时才可免费加速");
             return result;
         }
-        target.setFinishesAt(now);
-        armyProductionQueueRepository.save(target);
+        shortenProductionOrder(playerId, target, now, now);
         completeProduction(playerId, now);
         result.put("success", true);
         result.put("completed", true);
@@ -393,6 +403,7 @@ public class ArmyService {
     @Transactional
     public Map<String, Object> useSpeedUp(Long playerId, String itemId, Long queueId, int count) {
         Map<String, Object> result = new LinkedHashMap<>();
+        playerRepository.lockById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
         long now = GameClock.now();
         if (count <= 0) count = 1;
 
@@ -430,14 +441,8 @@ public class ArmyService {
         long remainingMs = newFinishAt - now;
 
         boolean completed = remainingMs <= 0;
-        if (completed) {
-            target.setFinishesAt(now);
-            armyProductionQueueRepository.save(target);
-            completeProduction(playerId, now);
-        } else {
-            target.setFinishesAt(newFinishAt);
-            armyProductionQueueRepository.save(target);
-        }
+        shortenProductionOrder(playerId, target, Math.max(now, newFinishAt), now);
+        if (completed) completeProduction(playerId, now);
 
         // 4. 清理 0 数量道具记录
         speedUpSupport.cleanupZeroCount(playerId, itemId);
@@ -454,10 +459,46 @@ public class ArmyService {
             result.put("message", "⚡ " + item.name() + " ×" + count + " 使用成功，造兵完成!");
         } else {
             long remainSec = Math.max(0, remainingMs / 1000);
-            result.put("message", "⚡ " + item.name() + " ×" + count + " 使用成功，剩余 " + remainSec + " 秒");
+            result.put("message", "⚡ " + item.name() + " ×" + count + " 使用成功，剩余 " + DurationText.millis(remainingMs));
             result.put("remainingSeconds", remainSec);
         }
         return result;
+    }
+
+    /** 缩短订单后按原并行通道前移等待订单；已开工订单和其他制造设施不受影响。 */
+    private void shortenProductionOrder(Long playerId, ArmyProductionQueue target, long finishAt, long now) {
+        String building = productionBuilding(target);
+        int parallel = buildingRepository.findByPlayerIdAndCitySlotAndType(playerId, cityScope.slot(playerId), building)
+                .stream().mapToInt(b -> 1 + Objects.requireNonNullElse(b.getLevel(), 0) / 5).sum();
+        parallel = Math.max(1, parallel);
+        long[] oldAvailable = new long[parallel];
+        long[] newAvailable = new long[parallel];
+        for (ArmyProductionQueue q : armyProductionQueueRepository.findByPlayerIdAndCitySlotOrderByStartedAtAscIdAsc(playerId, cityScope.slot(playerId))) {
+            if (!Objects.equals(building, productionBuilding(q))) continue;
+            int lane = 0;
+            for (int i = 1; i < parallel; i++) if (oldAvailable[i] < oldAvailable[lane]) lane = i;
+            long oldStart = q.getStartedAt(), oldFinish = q.getFinishesAt();
+            if (q.getId().equals(target.getId())) {
+                q.setFinishesAt(finishAt);
+                q.setStartedAt(Math.min(oldStart, finishAt));
+                armyProductionQueueRepository.save(q);
+            } else if (oldStart > now && newAvailable[lane] < oldAvailable[lane]) {
+                // 只移动等待段，保留订单自身已锁定的工期；超额加速不能转成后单的工作量。
+                long start = Math.min(oldStart, Math.max(now, newAvailable[lane]));
+                q.setStartedAt(start);
+                q.setFinishesAt(start + oldFinish - oldStart);
+                armyProductionQueueRepository.save(q);
+            }
+            oldAvailable[lane] = Math.max(oldAvailable[lane], oldFinish);
+            newAvailable[lane] = Math.max(newAvailable[lane], q.getFinishesAt());
+        }
+    }
+
+    /** 历史军港造舰订单与新造船厂订单属于同一种生产设施。 */
+    private String productionBuilding(ArmyProductionQueue q) {
+        UnitDef unit = GameData.UNITS.get(q.getUnitType());
+        String building = q.getBuildingType() != null ? q.getBuildingType() : unit != null ? unit.build() : null;
+        return "port".equals(building) && unit != null && "sea".equals(unit.branch()) ? unit.build() : building;
     }
 
     private long productionStartsAt(Long playerId, String buildingType, int parallel, long now) {
@@ -481,8 +522,8 @@ public class ArmyService {
 
     private void refund(Long playerId, int food, int steel, int oil, int rare) {
         Resources r = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null); if (r == null) return;
-        r.setFood((r.getFood() == null ? 0 : r.getFood()) + food); r.setSteel((r.getSteel() == null ? 0 : r.getSteel()) + steel);
-        r.setOil((r.getOil() == null ? 0 : r.getOil()) + oil); r.setRare((r.getRare() == null ? 0 : r.getRare()) + rare); resourcesRepository.save(r);
+        r.addResource("food", food); r.addResource("steel", steel);
+        r.addResource("oil", oil); r.addResource("rare", rare); resourcesRepository.save(r);
     }
 
     public Map<String, Integer> getArmy(Long playerId) {
@@ -630,7 +671,7 @@ public class ArmyService {
         int limit = Integer.MAX_VALUE;
         for (Map.Entry<String, Integer> entry : unitCost.entrySet()) {
             int perUnit = entry.getValue() != null ? entry.getValue() : 0;
-            if (perUnit > 0) limit = Math.min(limit, getResource(resources, entry.getKey()) / perUnit);
+            if (perUnit > 0) limit = (int) Math.min(limit, getResource(resources, entry.getKey()) / perUnit);
         }
         return limit == Integer.MAX_VALUE ? 0 : limit;
     }
@@ -640,7 +681,7 @@ public class ArmyService {
         if (r == null) return false;
         for (Map.Entry<String, Integer> entry : costs.entrySet()) {
             if ("pop".equals(entry.getKey())) continue;
-            int have = getResource(r, entry.getKey());
+            long have = getResource(r, entry.getKey());
             if (have < entry.getValue()) return false;
         }
         return true;
@@ -650,13 +691,13 @@ public class ArmyService {
         Resources r = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (r == null) return;
         for (Map.Entry<String, Integer> entry : costs.entrySet()) {
-            int current = getResource(r, entry.getKey());
+            long current = getResource(r, entry.getKey());
             setResource(r, entry.getKey(), current - entry.getValue());
         }
         resourcesRepository.save(r);
     }
 
-    private int getResource(Resources r, String key) {
+    private long getResource(Resources r, String key) {
         return switch (key) {
             case "food"  -> r.getFood()  != null ? r.getFood()  : 0;
             case "steel" -> r.getSteel() != null ? r.getSteel() : 0;
@@ -667,7 +708,7 @@ public class ArmyService {
         };
     }
 
-    private void setResource(Resources r, String key, int value) {
+    private void setResource(Resources r, String key, long value) {
         switch (key) {
             case "food"  -> r.setFood(value);
             case "steel" -> r.setSteel(value);

@@ -198,9 +198,9 @@ public class QuestService {
             }
             case "DISPLAY_NAME_CHANGE" -> {
                 Player p = playerRepository.findById(playerId).orElse(null);
-                yield (p != null && p.getDisplayName() != null && !p.getDisplayName().isBlank()
+                yield (p != null && (p.getCommanderRenameCount() > 0 || (p.getDisplayName() != null && !p.getDisplayName().isBlank()
                         && !p.getDisplayName().equals(p.getUsername())
-                        && !p.getDisplayName().matches("^远征统帅_\\d{6}$")) ? 1 : 0;
+                        && !p.getDisplayName().matches("^远征统帅_\\d{6}$")))) ? 1 : 0;
             }
             case "CITY_NAME_CHANGE" -> {
                 Player p = playerRepository.findById(playerId).orElse(null);
@@ -406,11 +406,11 @@ public class QuestService {
         if (r == null) return;
         Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (res != null) {
-            res.setFood((res.getFood() != null ? res.getFood() : 0) + r.food());
-            res.setSteel((res.getSteel() != null ? res.getSteel() : 0) + r.steel());
-            res.setOil((res.getOil() != null ? res.getOil() : 0) + r.oil());
-            res.setRare((res.getRare() != null ? res.getRare() : 0) + r.rare());
-            res.setGold((res.getGold() != null ? res.getGold() : 0) + r.gold());
+            res.addResource("food", r.food());
+            res.addResource("steel", r.steel());
+            res.addResource("oil", r.oil());
+            res.addResource("rare", r.rare());
+            res.addResource("gold", r.gold());
             resourcesRepository.save(res);
         }
         if (r.skillBook() != null && !r.skillBook().isBlank()) {

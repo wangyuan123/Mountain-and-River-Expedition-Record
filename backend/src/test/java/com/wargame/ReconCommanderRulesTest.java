@@ -138,20 +138,20 @@ class ReconCommanderRulesTest {
         assertEquals(10000 - 1 - (int) Math.floor(270000 / (33 + 360 * 1.2)), survivors(result, 1)[1]);
     }
 
-    @Test void disadvantageKeepsLegacyShortcutWithFirstCombatBonuses() {
+    @Test void disadvantageUsesActualAttacksWithFirstCombatBonuses() {
         var weak = UnitEquipmentRecon.resolve("recon_car", 1000, Map.of("recon_car", 10000), battle,
                 ctx(100, 100, Map.of("frenzy", 5)), ctx(0, 0, Map.of()), 0, 0, 0);
         assertEquals(480000, weak.ownPower());
-        assertEquals(0, weak.ownAlive());
-        assertEquals(8779, weak.enemyAlive().get("recon_car"));
-        assertTrue(weak.log().isEmpty(), "有将领也沿用战力不足30%的直接结算，伤害使用原战力值且无免费击杀");
+        assertArrayEquals(new int[]{583, 9862}, survivors(weak, 1));
+        assertFalse(weak.log().isEmpty(), "战力不足30%也必须按实际攻击逐回合交火");
 
         var plain = UnitEquipmentRecon.resolve("recon_car", 1000, Map.of("recon_car", 3400), battle,
                 ctx(0, 0, Map.of()), ctx(0, 0, Map.of()), 0, 0, 0);
         var boosted = UnitEquipmentRecon.resolve("recon_car", 1000, Map.of("recon_car", 3400), battle,
                 ctx(100, 100, Map.of()), ctx(0, 0, Map.of()), 0, 0, 0);
-        assertTrue(plain.log().isEmpty());
-        assertFalse(boosted.log().isEmpty(), "首交火属性参与战力判定，能改变是否进入悬殊捷径");
+        assertArrayEquals(new int[]{846, 3354}, survivors(plain, 1));
+        assertArrayEquals(new int[]{860, 3308}, survivors(boosted, 1));
+        assertTrue(boosted.enemyAlive().get("recon_car") < plain.enemyAlive().get("recon_car"));
     }
 
     @Test void unrelatedTechAndEconomicSkillsDoNotAffectReconCombat() {

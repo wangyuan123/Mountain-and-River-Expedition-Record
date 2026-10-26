@@ -1,0 +1,4 @@
+Browser tab: 2, Title: "山河远征录 - 文字战争策略游戏", URL: "http://localhost:8081/".
+The following is a diff from the previous accessibility tree with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~			1092 text 北京时间：2026年10月23日 23:05:45
+The focused UI element is 1 AXWebArea 山河远征录 - 文字战争策略游戏, URL: localhost:8081/

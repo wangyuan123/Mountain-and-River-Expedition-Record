@@ -61,7 +61,7 @@ class CityTeleportTest extends BaseServiceTest {
     void advancedTeleportOpensAllBattlefieldsAndPreservesAssets(String field) {
         int x=(field.endsWith("east")?400:0)+50,y=(field.startsWith("south")?400:0)+60;
         createBuilding(player.getId(),"house",3);createArmyUnit(player.getId(),"infantry",23);
-        int food=resourcesRepository.findByPlayerIdAndCitySlot(player.getId(),0).orElseThrow().getFood();
+        long food=resourcesRepository.findByPlayerIdAndCitySlot(player.getId(),0).orElseThrow().getFood();
         assertEquals(true,teleport.preview(player.getId(),field,x,y).get("valid"));
         assertEquals(10,count(CityTeleportService.ADVANCED));
         advanced(field,x,y);

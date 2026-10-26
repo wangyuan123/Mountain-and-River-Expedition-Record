@@ -58,6 +58,7 @@ public class ReportShareService {
         }
         try {
             Map<String, Object> result = mapper.readValue(report.getData(), new TypeReference<LinkedHashMap<String, Object>>() {});
+            if (result.containsKey("formationContributions")) result = JointBattleProjection.publicReport(result);
             result.put("id", report.getId());
             result.put("type", "battle");
             result.put("time", report.getCreatedAt());

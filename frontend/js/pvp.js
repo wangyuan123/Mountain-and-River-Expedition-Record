@@ -18,7 +18,7 @@ window.Game = window.Game || {};
   function id() { return window.crypto && window.crypto.randomUUID ? window.crypto.randomUUID() : 'pvp_' + Date.now() + '_' + Math.random().toString(36).slice(2); }
   function key() { var c = G.API.client; return c.serverId + ':' + c.getToken(); }
   function now() { return G.gameNow(); }
-  function clock(ms) { var n = Math.max(0, Math.floor(ms / 1000)); return String(Math.floor(n / 60)).padStart(2, '0') + ':' + String(n % 60).padStart(2, '0'); }
+  function clock(ms) { return G.formatDuration(ms / 1000); }
   function active() { return state && ['QUEUED', 'ACCEPTING', 'LOADING', 'COUNTDOWN', 'BATTLING', 'RECOVERING'].indexOf(state.status) >= 0; }
   /** 声望达到门槛后开放对战页操作，账号状态尚未加载时保持锁定。 */
   function prestigeLocked() { return !(Core.state && Number(Core.state.prestige) >= C.minPrestige); }
@@ -128,7 +128,7 @@ window.Game = window.Game || {};
   }
   function updateTimes() {
     var el = document.getElementById('pvp-clock');
-    if (el && state) el.textContent = state.status === 'QUEUED' ? clock(now() - state.queuedAt) : Math.max(0, Math.ceil(((battle && battle.deadlineAt || state.deadlineAt) - now()) / 1000)) + '秒';
+    if (el && state) el.textContent = state.status === 'QUEUED' ? clock(now() - state.queuedAt) : clock((battle && battle.deadlineAt || state.deadlineAt) - now());
     var hint = document.getElementById('pvp-search-hint');
     if (hint && state && state.status === 'QUEUED') {
       var wait = now() - state.queuedAt;
@@ -212,8 +212,21 @@ window.Game = window.Game || {};
   }
   function summary(s) {
     if (!s) return '';
-    return '<div class="pvp-summary"><strong>' + esc(s.commanderName) + '</strong><span>演习实力 ' + esc(s.power) + '</span><p>'
-      + Object.keys(s.army).map(function (k) { return esc(name(k)) + ' × ' + s.army[k]; }).join('　') + '</p><small>司令官：' + esc(s.chief.name || '未任命') + ' · 行动火力×' + G.Core.firepowerMul(s.tech || {}).toFixed(1) + '（实力估值的有效输出已包含此倍率）</small></div>';
+    var armyKeys = Object.keys(s.army || {}).filter(function (k) { return (Number(s.army[k]) || 0) > 0; });
+    var h = '<div class="pvp-summary">';
+    h += '<div class="pvp-summary-header">';
+    h += '<div class="pvp-summary-commander"><span class="pvp-summary-badge">带兵将领</span><strong>' + esc(s.commanderName) + '</strong></div>';
+    h += '<div class="pvp-summary-power"><span>演习实力</span><b>' + esc(s.power) + '</b></div>';
+    h += '</div>';
+    h += '<div class="pvp-summary-units">';
+    armyKeys.forEach(function (k) {
+      h += '<span class="pvp-unit-chip"><span class="unit-name">' + esc(name(k)) + '</span><b class="unit-qty">' + s.army[k] + '</b></span>';
+    });
+    if (!armyKeys.length) h += '<span class="pvp-muted">未指派兵力</span>';
+    h += '</div>';
+    h += '<div class="pvp-summary-footer">司令官：<b>' + esc(s.chief && s.chief.name || '未任命') + '</b> · 行动火力 <b>×' + G.Core.firepowerMul(s.tech || {}).toFixed(1) + '</b> <span class="pvp-muted">（实力估值已包含此倍率）</span></div>';
+    h += '</div>';
+    return h;
   }
   function disabled() { return busy || pending ? ' disabled' : ''; }
 
@@ -287,20 +300,65 @@ window.Game = window.Game || {};
     if (focusId && !locked) { var next = document.getElementById(focusId); if (next) next.focus(); }
     updateTimes();
   }
+  function clearArmy() {
+    if (!config || !lobby) return;
+    Object.keys(G.DATA.units).forEach(function (k) {
+      config.army[k] = 0;
+      var el = document.getElementById('pvp-count-' + k);
+      if (el) el.value = 0;
+    });
+    var n = document.getElementById('pvp-selected');
+    if (n) n.textContent = 0;
+    estimate = null;
+  }
+  function fillMax() {
+    if (!config || !lobby) return;
+    var avail = lobby.available.army || {}, cap = Number(lobby.available.cap) || 0;
+    var keys = Object.keys(G.DATA.units).filter(function (k) {
+      var u = unit(k);
+      return u.branch === 'air' || u.branch === (config.battlefield === 'SEA_AIR' ? 'sea' : 'land');
+    });
+    var totalAvail = keys.reduce(function (sum, k) { return sum + (avail[k] || 0); }, 0);
+    if (totalAvail <= 0 || cap <= 0) return;
+    var target = Math.min(cap, totalAvail);
+    var allocated = 0;
+    keys.forEach(function (k, idx) {
+      var a = avail[k] || 0;
+      var amt = (idx === keys.length - 1) ? Math.min(a, target - allocated) : Math.min(a, Math.floor(target * a / totalAvail));
+      config.army[k] = amt;
+      allocated += amt;
+      var el = document.getElementById('pvp-count-' + k);
+      if (el) el.value = amt;
+    });
+    var total = Object.values(config.army).reduce(function (a, b) { return a + (Number(b) || 0); }, 0);
+    var n = document.getElementById('pvp-selected');
+    if (n) n.textContent = total;
+    estimate = null;
+  }
   function lobbyHtml() {
     var available = lobby.available, locked = active(), total = Object.keys(config.army).reduce(function (sum, k) { return sum + (Number(config.army[k]) || 0); }, 0);
-    var h = '<p class="pvp-description">与实力相近的在线统帅对战，练习机动、集火与将领技能。未下令时自动执行已保存的默认战术。</p>';
-    h += '<div class="pvp-record">胜 ' + lobby.record.wins + '　负 ' + lobby.record.losses + '　平 ' + lobby.record.draws + ' <small>普通匹配，无公开段位与奖励</small></div>';
+    var h = '<div class="pvp-record"><div class="pvp-record-badges"><span class="pvp-tag-win">胜 ' + lobby.record.wins + '</span><span class="pvp-tag-loss">负 ' + lobby.record.losses + '</span><span class="pvp-tag-draw">平 ' + lobby.record.draws + '</span></div><small class="pvp-record-note">普通匹配，无公开段位与奖励</small></div>';
     if (locked) return h + '<button class="btn ok" onclick="Game.Pvp.resume()">返回演习战场</button>';
-    h += '<div class="pvp-form"><label>战场类别<select onchange="Game.Pvp.setField(this.value)"><option value="LAND_AIR"' + (config.battlefield === 'LAND_AIR' ? ' selected' : '') + '>陆空战</option><option value="SEA_AIR"' + (config.battlefield === 'SEA_AIR' ? ' selected' : '') + '>海空战</option></select></label><label>来源城市<select onchange="Game.Pvp.setCity(this.value)">';
+    h += '<div class="pvp-form">' +
+      '<label class="pvp-form-item"><span class="pvp-form-label">战场类别</span><select onchange="Game.Pvp.setField(this.value)"><option value="LAND_AIR"' + (config.battlefield === 'LAND_AIR' ? ' selected' : '') + '>陆空战</option><option value="SEA_AIR"' + (config.battlefield === 'SEA_AIR' ? ' selected' : '') + '>海空战</option></select></label>' +
+      '<label class="pvp-form-item"><span class="pvp-form-label">来源城市</span><select onchange="Game.Pvp.setCity(this.value)">';
     available.cities.forEach(function (c) { h += '<option value="' + c.slot + '"' + (config.citySlot === c.slot ? ' selected' : '') + '>' + esc(c.name) + '</option>'; });
-    h += '</select></label><label>带兵将领<select onchange="Game.Pvp.setCommander(this.value)"><option value="">不带将领</option>';
+    h += '</select></label>' +
+      '<label class="pvp-form-item pvp-form-officer"><span class="pvp-form-label">带兵将领</span><select onchange="Game.Pvp.setCommander(this.value)"><option value="">不带将领</option>';
     available.officers.forEach(function (o) { h += '<option value="' + o.id + '"' + (config.commanderId === o.id ? ' selected' : '') + '>' + esc(o.name) + ' · 军事 ' + o.attributes.military + ' / 防御 ' + o.attributes.defense + '</option>'; });
-    h += '</select></label></div><p>本城带兵上限 ' + available.cap + ' · 已选 <span id="pvp-selected">' + total + '</span> · 司令官 ' + esc(available.chief) + '</p>';
-    h += '<div class="pvp-table-wrap"><table class="pvp-table"><thead><tr><th>演习编队</th><th>本城可用</th><th>参战数量</th><th>默认战术</th></tr></thead><tbody>';
+    h += '</select></label></div>';
+    h += '<div class="pvp-cap-bar">' +
+      '<div class="pvp-cap-stats"><span class="pvp-cap-title">本城带兵上限</span> <span class="pvp-cap-nums">' + available.cap + ' · 已选 <b id="pvp-selected">' + total + '</b></span></div>' +
+      '<div class="pvp-cap-chief">司令官 <b>' + esc(available.chief || '未任命') + '</b></div>' +
+      '<div class="pvp-cap-tools">' +
+        '<button type="button" class="pvp-btn-tool" onclick="Game.Pvp.fillMax()" title="按本城各兵种可用比例填满上限">填满上限</button>' +
+        '<button type="button" class="pvp-btn-tool" onclick="Game.Pvp.clearArmy()" title="参战数量全部归零">清空</button>' +
+      '</div>' +
+    '</div>';
+    h += '<div class="pvp-table-wrap"><table class="pvp-table"><thead><tr><th class="col-unit">演习编队</th><th class="col-avail">本城可用</th><th class="col-count">参战数量</th><th class="col-action">默认战术</th></tr></thead><tbody>';
     Object.keys(G.DATA.units).forEach(function (k) {
       var u = unit(k); if (u.branch !== 'air' && u.branch !== (config.battlefield === 'SEA_AIR' ? 'sea' : 'land')) return;
-      h += '<tr><td>' + esc(name(k)) + '</td><td>' + (available.army[k] || 0) + '</td><td><input id="pvp-count-' + esc(k) + '" type="number" min="0" max="' + (available.army[k] || 0) + '" value="' + (config.army[k] || 0) + '" oninput="Game.Pvp.setCount(\'' + k + '\',this.value)"></td><td>' + actionSelect('preset-' + k, config.defaults[k] && config.defaults[k].action || 'ADVANCE', 'Game.Pvp.setDefault(\'' + k + '\',this.value)', false) + '</td></tr>';
+      h += '<tr><td class="col-unit" title="' + esc(name(k)) + '">' + esc(name(k)) + '</td><td class="col-avail">' + (available.army[k] || 0) + '</td><td class="col-count"><input id="pvp-count-' + esc(k) + '" type="number" min="0" max="' + (available.army[k] || 0) + '" value="' + (config.army[k] || 0) + '" oninput="Game.Pvp.setCount(\'' + k + '\',this.value)"></td><td class="col-action">' + actionSelect('preset-' + k, config.defaults[k] && config.defaults[k].action || 'ADVANCE', 'Game.Pvp.setDefault(\'' + k + '\',this.value)', false) + '</td></tr>';
     });
     h += '</tbody></table></div><div class="pvp-actions"><button class="btn ok" onclick="Game.Pvp.queue()"' + disabled() + '>开始匹配</button><button class="btn" onclick="Game.Pvp.savePreset()"' + disabled() + '>保存编队 / 查看实力</button></div>';
     if (estimate) h += summary(estimate);
@@ -314,9 +372,54 @@ window.Game = window.Game || {};
   function queueHtml() {
     var accepting = state.status === 'ACCEPTING';
     var e = state.waitEstimate, wait = e && e.available ? '近期等待中位数 ' + clock(e.medianMs) + '，中间50%区间 ' + clock(e.lowerMs) + '～' + clock(e.upperMs) : '等待时间暂无法估计';
-    return '<div class="pvp-match"><div class="pvp-orbit" aria-hidden="true"><span>1 v 1</span></div><h3>' + (accepting ? '匹配成功' : '正在寻找旗鼓相当的对手') + '</h3><div id="pvp-clock" class="pvp-clock">00:00</div><p id="pvp-search-hint">' + (accepting ? '实力相近的对手 · ' + (state.snapshot.battlefield === 'SEA_AIR' ? '海空战' : '陆空战') : '正在寻找旗鼓相当的对手') + '</p>'
-      + (accepting ? '<button class="btn ok" onclick="Game.Pvp.accept()"' + (busy || pending || state.accepted ? ' disabled' : '') + '>' + (state.accepted ? '已接受，等待对手' : '接受对局') + '</button>' : '<small>仅匹配同大区主动排队的真人，搜索最多5分钟。' + esc(wait) + '</small>')
-      + '<button class="btn" onclick="Game.Pvp.cancel()"' + disabled() + '>' + (accepting ? '退出确认' : '取消匹配') + '</button>' + summary(state.snapshot) + '</div>';
+    var isSea = state.snapshot && state.snapshot.battlefield === 'SEA_AIR';
+    var fieldTag = isSea ? '海空演习' : '陆空演习';
+    var h = '<div class="pvp-match' + (accepting ? ' pvp-match-locked' : ' pvp-match-searching') + '">';
+
+    // 战术雷达视界
+    h += '<div class="pvp-radar-viewport" aria-hidden="true">';
+    h += '<div class="pvp-radar-disc">';
+    h += '<div class="pvp-radar-grid">';
+    h += '<div class="pvp-radar-ring ring-1"></div><div class="pvp-radar-ring ring-2"></div><div class="pvp-radar-ring ring-3"></div>';
+    h += '<div class="pvp-radar-crosshair-h"></div><div class="pvp-radar-crosshair-v"></div>';
+    h += '</div>';
+    h += '<div class="pvp-radar-sweep"></div>';
+    h += '<div class="pvp-radar-wave wave-1"></div><div class="pvp-radar-wave wave-2"></div>';
+    h += '<div class="pvp-radar-blip blip-1"></div><div class="pvp-radar-blip blip-2"></div><div class="pvp-radar-blip blip-3"></div>';
+    h += '<div class="pvp-radar-hub">';
+    h += '<div class="pvp-radar-core"><span class="pvp-radar-tag">1 v 1</span><span class="pvp-radar-mode">' + fieldTag + '</span></div>';
+    h += '</div>';
+    h += '</div>';
+    h += '</div>';
+
+    // 搜索状态标题与信号波动指示条
+    h += '<div class="pvp-match-status-wrap">';
+    h += '<div class="pvp-signal-bars" aria-hidden="true"><span class="bar bar-1"></span><span class="bar bar-2"></span><span class="bar bar-3"></span><span class="bar bar-4"></span></div>';
+    h += '<h3 class="pvp-match-title">' + (accepting ? '目标已锁定 · 匹配成功' : '正在寻找旗鼓相当的对手') + '</h3>';
+    h += '</div>';
+
+    // 战术计时器 HUD
+    h += '<div class="pvp-timer-hud">';
+    h += '<span class="pvp-timer-label">' + (accepting ? '确认倒计时' : '匹配用时') + '</span>';
+    h += '<div id="pvp-clock" class="pvp-clock">' + (accepting ? clock(state.deadlineAt - now()) : clock(now() - state.queuedAt)) + '</div>';
+    h += '</div>';
+
+    // 动态搜索阶段提示与说明
+    h += '<p id="pvp-search-hint" class="pvp-search-hint">' + (accepting ? '实力相近的对手 · ' + (isSea ? '海空战' : '陆空战') : '正在寻找旗鼓相当的对手') + '</p>';
+    h += '<div class="pvp-search-footnote">仅匹配同大区主动排队的真人统帅 · ' + esc(wait) + '</div>';
+
+    // 操作按钮
+    h += '<div class="pvp-match-actions">';
+    if (accepting) {
+      h += '<button class="btn ok pvp-btn-accept" onclick="Game.Pvp.accept()"' + (busy || pending || state.accepted ? ' disabled' : '') + '>' + (state.accepted ? '已接受 · 等待对手入场' : '立即接受对局') + '</button>';
+    }
+    h += '<button class="btn pvp-btn-cancel" onclick="Game.Pvp.cancel()"' + disabled() + '>' + (accepting ? '退出确认' : '取消匹配') + '</button>';
+    h += '</div>';
+
+    // 出战战备快照档案
+    if (state.snapshot) h += summary(state.snapshot);
+    h += '</div>';
+    return h;
   }
   function actionSelect(k, value, callback, locked) {
     return '<select id="pvp-action-' + esc(k) + '" onchange="' + callback + '"' + (locked ? ' disabled' : '') + '>' + Object.keys(actions).map(function (a) { return '<option value="' + a + '"' + (value === a ? ' selected' : '') + '>' + actions[a] + '</option>'; }).join('') + '</select>';
@@ -325,21 +428,21 @@ window.Game = window.Game || {};
     var b = battle, enabled = b.status === 'BATTLING' && !b.locked && !b.auto && !pending && now() < b.deadlineAt;
     var phase = b.status === 'LOADING' ? '等待双方进入战场' : b.status === 'COUNTDOWN' ? '入场倒计时' : b.status === 'RECOVERING' ? '正在恢复已到期回合' : '第 ' + b.round + ' / 24 回合';
     var h = '<div class="pvp-battle-head"><strong>' + esc(b.mine.playerName) + '　VS　' + esc(b.enemy.playerName) + '</strong><span>' + phase + ' · <b id="pvp-clock"></b></span></div>';
-    h += '<p>我方带兵：' + esc(b.mine.commanderName) + '　|　敌方带兵：' + esc(b.enemy.commanderName) + '</p>';
+    h += '<div class="pvp-battle-sub"><span>我方带兵：' + esc(b.mine.commanderName) + '</span><span>敌方带兵：' + esc(b.enemy.commanderName) + '</span></div>';
     h += G.Battle.renderCommandBonusPanel({ attacker: b.mine.chief, defender: b.enemy.chief }, 'attacker');
     h += '<p class="pvp-rule">回合耗尽时按敌方初始兵力价值损失比例判定；差距≤5个百分点为平局。实际兵力损失：0。</p>';
     var rows = G.Battle.tacticalMarkerRows(b.myArmy, b.enemyArmy), indexes = {};
     rows.forEach(function (k, i) { indexes[k] = i; });
-    h += '<div class="tactical-map pvp-map" style="height:' + (200 + Math.max(0, rows.length - 1) * 80) + 'px"><div class="pvp-baseline mine">我方底线</div><div class="pvp-baseline foe">敌方底线</div>';
+    h += '<div class="tactical-map pvp-map" style="height:' + (180 + Math.max(0, rows.length - 1) * 70) + 'px"><div class="pvp-baseline mine">我方底线</div><div class="pvp-baseline foe">敌方底线</div>';
     h += G.Battle.renderTacticalRangeBeams(b.myArmy, b.myPositions, b.enemyArmy, b.enemyPositions, b.initialDistance, indexes, b.mine.tech, b.enemy.tech, false);
     h += G.Battle.renderTacticalMarkers(b.myArmy, b.myPositions, b.initialDistance, 'mine', indexes, b.enemyArmy, b.enemyPositions, b.mine.tech, false);
     h += G.Battle.renderTacticalMarkers(b.enemyArmy, b.enemyPositions, b.initialDistance, 'foe', indexes, b.myArmy, b.myPositions, b.enemy.tech, false) + '</div>';
     h += '<div class="pvp-readiness"><span>' + (b.locked ? '我方已锁定' : b.auto ? '默认托管' : '我方指挥中') + '</span><span>' + (b.enemyReady ? '对手已准备' : '对手指挥中') + '</span></div>';
     if (b.status === 'LOADING') h += '<p>' + (b.loaded ? '指挥面板已就绪，等待对手进入' : '正在报告面板就绪') + '</p>';
-    h += '<div class="pvp-table-wrap"><table class="pvp-table"><thead><tr><th>我方兵种</th><th>虚拟剩余</th><th>机动指令</th><th>指定集火</th></tr></thead><tbody>';
+    h += '<div class="pvp-table-wrap"><table class="pvp-table"><thead><tr><th class="col-battle-unit">我方兵种</th><th class="col-battle-remain">虚拟剩余</th><th class="col-battle-action">机动指令</th><th class="col-battle-focus">指定集火</th></tr></thead><tbody>';
     Object.keys(b.myArmy).forEach(function (k) {
       var o = drafts[k] || b.mine.defaults[k] || { action: 'ADVANCE' };
-      h += '<tr><td>' + esc(name(k)) + '</td><td>' + b.myArmy[k] + '</td><td>' + actionSelect(k, o.action, 'Game.Pvp.setOrder(\'' + k + '\',\'action\',this.value)', !enabled) + '</td><td><select id="pvp-focus-' + k + '" onchange="Game.Pvp.setOrder(\'' + k + '\',\'focus\',this.value)"' + (!enabled ? ' disabled' : '') + '><option value="">自动索敌</option>';
+      h += '<tr><td class="col-battle-unit" title="' + esc(name(k)) + '">' + esc(name(k)) + '</td><td class="col-battle-remain">' + b.myArmy[k] + '</td><td class="col-battle-action">' + actionSelect(k, o.action, 'Game.Pvp.setOrder(\'' + k + '\',\'action\',this.value)', !enabled) + '</td><td class="col-battle-focus"><select id="pvp-focus-' + k + '" onchange="Game.Pvp.setOrder(\'' + k + '\',\'focus\',this.value)"' + (!enabled ? ' disabled' : '') + '><option value="">自动索敌</option>';
       Object.keys(b.enemyArmy).forEach(function (target) { h += '<option value="' + target + '"' + (o.focusTarget === target ? ' selected' : '') + '>' + esc(name(target)) + '</option>'; });
       h += '</select></td></tr>';
     });
@@ -380,6 +483,7 @@ window.Game = window.Game || {};
   }
   G.Pvp = { start: start, render: render, resume: function () { recover().then(view); }, retry: retry, queue: queue, accept: accept, cancel: cancel,
     setField: setField, setCity: setCity, setCount: function (k, v) { setCount(k, v); var n = document.getElementById('pvp-selected'); if (n) n.textContent = Object.values(config.army).reduce(function (a, b) { return a + (Number(b) || 0); }, 0); },
+    clearArmy: clearArmy, fillMax: fillMax,
     setDefault: setDefault, setCommander: function (v) { config.commanderId = v ? Number(v) : null; estimate = null; }, savePreset: savePreset,
     setOrder: setOrder, lock: function () { saveOrders(true); }, auto: auto, report: function (s) { loadReport(s, true); }, history: history, backLobby: backLobby,
     again: function () { backLobby().then(queue); }, confirmSurrender: function () {

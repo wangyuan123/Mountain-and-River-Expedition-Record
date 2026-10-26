@@ -49,8 +49,7 @@
   }
   function render(el,route,labels,terrain) {
     labels=labels||{};
-    var l=layout(route.points), seconds=Math.max(0,Math.round(Number(route.seconds)||0));
-    var duration=seconds<60?seconds+' 秒':Math.floor(seconds/60)+' 分 '+seconds%60+' 秒';
+    var l=layout(route.points), duration=G.formatDuration(route.seconds);
     var h='<section class="dispatch-map-card"><header class="dispatch-map-header"><strong>行军路线预览</strong><span>'+esc(modes[route.mode]||'行军路线')+'</span></header>';
     h+='<div class="dispatch-map-stats"><span>行军距离 <b>'+esc(Number(Number(route.distance).toFixed(2)))+' <small>格</small></b></span><span>预计抵达 <b>'+duration+'</b></span></div>';
     if(l) {

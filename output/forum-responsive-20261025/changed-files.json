@@ -1,0 +1,8 @@
+[
+  "src/App.vue",
+  "src/components/Navbar.vue",
+  "src/components/BattleReportCard.vue",
+  "src/views/NewTopicView.vue",
+  "src/main.js",
+  "src/assets/styles/responsive.css"
+]

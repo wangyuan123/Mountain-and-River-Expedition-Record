@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
+@EntityListeners(com.wargame.service.RadarChangeListener.class)
 @Table(name = "buildings")
 public class Building extends CityOwnedEntity {
 

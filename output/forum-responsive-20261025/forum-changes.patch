@@ -1,0 +1,290 @@
+--- forum/src/App.vue
++++ forum/src/App.vue
+@@ -1,5 +1,5 @@
+ <template>
+-  <div class="wap-container">
++  <div class="wap-container" :class="{ 'is-embedded': isEmbedded }">
+     <Navbar />
+     <main class="wap-main">
+       <router-view />
+@@ -9,7 +9,7 @@
+       <div class="wap-footer-links">
+         <span class="wap-link" @click="$router.push('/')">论坛首页</span> ·
+         <span class="wap-link" @click="reloadPage">刷新</span> ·
+-        <a href="http://localhost:8081" class="wap-link">返回游戏</a> ·
++        <template v-if="!isEmbedded"><a href="http://localhost:8081" class="wap-link">返回游戏</a> ·</template>
+         <span class="wap-link" @click="scrollToTop">回到顶部</span>
+       </div>
+       <div class="wap-footer-shortcuts">
+@@ -28,6 +28,8 @@
+ import { useAuthStore } from './stores/auth'
+ 
+ const authStore = useAuthStore()
++// 使用真实窗口关系识别嵌入场景；横竖屏由CSS适配，避免旋转时重建页面清空草稿。
++const isEmbedded = window.self !== window.top
+ 
+ function reloadPage() {
+   window.location.reload()
+--- forum/src/components/Navbar.vue
++++ forum/src/components/Navbar.vue
+@@ -1,7 +1,7 @@
+ <template>
+   <header class="wap-header">
+     <!-- 顶部状态栏: 10002 📬家信(0) 🏡家园 ⭐️空间 🧭超Q >> -->
+-    <div class="wap-top-status-bar">
++    <div v-if="!isEmbedded" class="wap-top-status-bar">
+       <span class="status-id">🏷️{{ authStore.user?.id || '10002' }}</span>
+       <span class="status-item">📬信件(0)</span>
+       <a href="http://localhost:8081" class="status-item">🏡主城</a>
+@@ -16,15 +16,19 @@
+         <router-link to="/board/strategy" class="banner-link">参谋</router-link>
+         <router-link to="/board/tavern" class="banner-link">茶馆</router-link>
+         <router-link to="/board/legion" class="banner-link">军团</router-link>
++        <template v-if="isEmbedded">
++          <router-link to="/board/battle_hall" class="banner-link">战功榜</router-link>
++          <router-link to="/new-topic" class="banner-link">✍️起草文书</router-link>
++        </template>
+         <a v-if="!isEmbedded" href="http://localhost:8081" class="banner-link highlight-game">游戏</a>
+       </div>
+-      <div class="banner-right-title">
++      <div v-if="!isEmbedded" class="banner-right-title">
+         山河远征录- 【1区】军政论坛
+       </div>
+     </div>
+ 
+     <!-- 快捷功能文本链接栏: 聊天 邮箱 军情 任务 好友 首页 -->
+-    <div class="wap-sub-links-bar">
++    <div v-if="!isEmbedded" class="wap-sub-links-bar">
+       <router-link to="/" class="wap-link">首页</router-link>
+       <router-link to="/board/strategy" class="wap-link">参谋本部</router-link>
+       <router-link to="/board/tavern" class="wap-link">战地茶馆</router-link>
+@@ -39,6 +43,7 @@
+         <span>长官: <strong>{{ authStore.displayName }}</strong></span>
+         <span>🎖️{{ authStore.militaryRankName || '列兵' }}</span>
+         <span v-if="authStore.guildName">[{{ authStore.guildName }}]</span>
++        <span>声望: <strong>{{ authStore.prestige }}</strong></span>
+         <span><img src="/img/gold.webp" class="gold-icon-img" alt="黄金" />黄金: <strong class="text-gold">{{ authStore.gold }}</strong></span>
+         <span class="wap-link text-muted" @click="handleLogout">[退出]</span>
+       </template>
+--- forum/src/components/BattleReportCard.vue
++++ forum/src/components/BattleReportCard.vue
+@@ -14,7 +14,7 @@
+       <div v-if="report.prestigeChange || report.exp">
+         🎖️ 战果结算:
+         <span v-if="report.prestigeChange" :class="report.prestigeChange >= 0 ? 'text-green' : 'text-red'">
+-          军望{{ report.prestigeChange >= 0 ? '+' : '' }}{{ report.prestigeChange }}
++          声望{{ report.prestigeChange >= 0 ? '+' : '' }}{{ report.prestigeChange }}
+         </span>
+         <span v-if="report.exp" class="text-gold"> 将领经验+{{ report.exp }}</span>
+       </div>
+--- forum/src/views/NewTopicView.vue
++++ forum/src/views/NewTopicView.vue
+@@ -27,7 +27,7 @@
+       </div>
+ 
+       <!-- 文书性质 -->
+-      <div class="form-row">
++      <div class="form-row form-row-wide">
+         <span class="form-label">文书性质:</span>
+         <label class="radio-label">
+           <input type="radio" v-model="form.topicType" value="NORMAL" /> 研讨
+@@ -41,7 +41,7 @@
+       </div>
+ 
+       <!-- 悬赏黄金设置 -->
+-      <div v-if="form.topicType === 'BOUNTY'" class="form-row bounty-subrow">
++      <div v-if="form.topicType === 'BOUNTY'" class="form-row form-row-wide bounty-subrow">
+         <span class="form-label">悬赏金额:</span>
+         <input
+           v-model.number="form.bountyGold"
+@@ -56,7 +56,7 @@
+       </div>
+ 
+       <!-- 关联战报 -->
+-      <div v-if="form.topicType === 'BATTLE'" class="form-row battle-subrow">
++      <div v-if="form.topicType === 'BATTLE'" class="form-row form-row-wide battle-subrow">
+         <span class="form-label">关联战报:</span>
+         <select v-model="form.battleReportId" class="wap-select">
+           <option :value="null">-- 从我的战报库中选择 --</option>
+@@ -70,9 +70,10 @@
+       </div>
+ 
+       <!-- 标题 -->
+-      <div class="form-row">
+-        <span class="form-label">文书标题:</span>
++      <div class="form-row form-row-wide">
++        <label for="topic-title" class="form-label">文书标题:</label>
+         <input
++          id="topic-title"
+           v-model="form.title"
+           type="text"
+           class="wap-text-input"
+@@ -82,7 +83,7 @@
+       </div>
+ 
+       <!-- 坐标辅助 -->
+-      <div class="form-row" style="margin-bottom: 2px;">
++      <div class="form-row form-row-wide" style="margin-bottom: 2px;">
+         <span class="wap-link text-gold" @click="promptInsertCoord">
+           📍[插入战地坐标]
+         </span>
+@@ -92,8 +93,9 @@
+       </div>
+ 
+       <!-- 内容正文 -->
+-      <div class="form-row">
++      <div class="form-row form-row-wide">
+         <textarea
++          aria-label="文书正文"
+           v-model="form.content"
+           rows="10"
+           class="wap-textarea"
+@@ -103,7 +105,7 @@
+       </div>
+ 
+       <!-- 操作按钮 -->
+-      <div class="form-actions-row">
++      <div class="form-actions-row form-row-wide">
+         <button class="wap-btn primary-btn" :disabled="submitting" @click="handleSubmit">
+           {{ submitting ? '呈送中...' : '确认呈送文书' }}
+         </button>
+--- forum/src/main.js
++++ forum/src/main.js
+@@ -7,6 +7,7 @@
+ import App from './App.vue'
+ import router from './router'
+ import './assets/styles/theme.css'
++import './assets/styles/responsive.css'
+ 
+ const app = createApp(App)
+ 
+--- forum/src/assets/styles/responsive.css
++++ forum/src/assets/styles/responsive.css
+@@ -0,0 +1,127 @@
++/* 论坛容器按自身视口适配；iframe 的宽高由游戏聊天页负责。 */
++.wap-container {
++  width: 100%;
++  min-width: 0;
++  overflow-wrap: anywhere;
++}
++
++.wap-container .wap-main,
++.wap-container .wap-main > *,
++.wap-container .wap-user-status-strip > span {
++  min-width: 0;
++}
++
++.wap-container .banner-left-links,
++.wap-container .wap-sub-links-bar {
++  flex-wrap: wrap;
++  white-space: normal;
++}
++
++.wap-container .banner-link,
++.wap-container .wap-sub-links-bar > a {
++  white-space: nowrap;
++}
++
++.wap-container .topic-sub-meta,
++.wap-container .filter-chips,
++.wap-container .wap-pagination-bar,
++.wap-container .mod-links,
++.wap-container .reply-action-links,
++.wap-container .editor-title-row {
++  flex-wrap: wrap;
++}
++
++.wap-container .wap-inline-search {
++  min-width: 0;
++  max-width: 100%;
++}
++
++.wap-container .wap-search-input {
++  min-width: 0;
++}
++
++.wap-container .form-row {
++  display: flex;
++  flex-wrap: wrap;
++  align-items: center;
++  gap: 6px;
++  min-width: 0;
++}
++
++.wap-container .form-label {
++  margin-right: 0;
++}
++
++.wap-container .wap-text-input,
++.wap-container .wap-select {
++  min-width: 0;
++  max-width: 100%;
++  flex: 1 1 160px;
++}
++
++.wap-container .wap-textarea,
++.wap-container .wap-reply-textarea {
++  min-width: 0;
++  max-width: 100%;
++}
++
++.wap-container .bounty-subrow > .text-muted,
++.wap-container .battle-subrow > .text-muted {
++  flex-basis: 100%;
++}
++
++/* 横屏展开600像素的旧容器；仅使用布局规则，不重设组件库主题。 */
++@media (orientation: landscape) {
++  .wap-container {
++    max-width: 1200px;
++  }
++
++  .wap-container .wap-announcements {
++    display: flex;
++    flex-wrap: wrap;
++    gap: 4px 20px;
++  }
++}
++
++/* 嵌入游戏时占满内容区；导航在Vue中合并为一层，避免重复的游戏入口。 */
++.wap-container.is-embedded {
++  max-width: none;
++  min-height: 100vh;
++  min-height: 100dvh;
++}
++
++@media (orientation: landscape) and (min-width: 720px) {
++  .wap-container .wap-city-status,
++  .wap-container .wap-form-container {
++    display: grid;
++    grid-template-columns: repeat(2, minmax(0, 1fr));
++    gap: 8px 16px;
++    align-items: start;
++  }
++
++  .wap-container .wap-form-container > .form-row {
++    margin-bottom: 0;
++  }
++
++  .wap-container .form-row-wide {
++    grid-column: 1 / -1;
++  }
++
++  .wap-container .wap-topic-line {
++    display: grid;
++    grid-template-columns: minmax(0, 1fr) minmax(0, auto);
++    gap: 4px 16px;
++    align-items: start;
++  }
++
++  .wap-container .topic-sub-meta {
++    max-width: 320px;
++  }
++}
++
++/* 矮横屏缩短编辑框的初始高度；正文仍可滚动、手动拉伸，提交按钮可随页面滚动到达。 */
++@media (orientation: landscape) and (max-height: 600px) {
++  .wap-container .wap-textarea {
++    height: clamp(96px, 30vh, 160px);
++  }
++}

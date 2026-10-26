@@ -14,8 +14,6 @@ public final class TechnologyRules {
     private static final int[] NAV_ENGINE_SECONDS = {300, 900, 2700, 10800, 43200, 96660, 216180, 483480, 1081500, 2419200};
     private static final int[] AIR_ENGINE_SECONDS = {300, 900, 2700, 10800, 43200, 96660, 216180, 483480, 1081500, 2419200};
     public static final String LOAD_SNAPSHOT = "@log:load";
-    public static final int RESEARCH_LAB_MAX_LEVEL = 10;
-    public static final double RESEARCH_LAB_SPEED_PER_LEVEL = 0.01;
     public static final double RESEARCH_KNOWLEDGE_SPEED_PER_POINT = 0.001;
     public static final List<String> PRODUCTION = List.of("prod_food", "prod_steel", "prod_oil", "prod_rare");
     public static final Set<String> COMBAT = Set.of("attack_tech", "defense_tech", "cmd_hp", "fire_density", "weapon_range", "arm_engine", "air_engine", "nav_engine");

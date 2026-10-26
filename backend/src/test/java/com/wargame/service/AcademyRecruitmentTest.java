@@ -79,7 +79,7 @@ class AcademyRecruitmentTest extends BaseServiceTest {
         Long playerId = createTestPlayer().getId();
         createBuilding(playerId, "liaison", 10);
         giveResources(playerId, 1000, 1000, 1000, 500, 10000);
-        int gold = getResources(playerId).getGold();
+        long gold = getResources(playerId).getGold();
         assertEquals(false, officers.refreshAcademy(playerId).get("success"));
         assertEquals(gold, getResources(playerId).getGold());
         createBuilding(playerId, "academy", 1);

@@ -69,6 +69,17 @@ test('core guidance is nonblocking and contains no gather or reading countdown',
   assert.equal(r.timers.size, 1);
 });
 
+test('dispatch hides the floating guide and leaving restores it without pausing progress', async () => {
+  const r = runtime(), pending = r.G.Onboarding.init();
+  r.calls[0].request.resolve(data({ current: { id: 'scout', title: '执行侦察' }, objectives: [{ id: 'scout' }] })); await pending;
+  assert.ok(r.elements.onboardingBar);
+  r.G.Core.route = 'dispatch'; r.G.Onboarding.render();
+  assert.equal(r.elements.onboardingBar, undefined);
+  assert.equal(r.G.Onboarding.state.data.paused, false);
+  r.G.Core.route = 'world'; r.G.Onboarding.render();
+  assert.ok(r.elements.onboardingBar);
+});
+
 test('any construction and infantry queue can be explored while orders finish', async () => {
   const r = runtime();
   r.G.Onboarding.state.data = data({ current: { id: 'base' }, objectives: [] });
@@ -123,7 +134,7 @@ test('task gathering uses regular gathering dispatch with editable mode and star
   r.calls[0].request.resolve({ id: 17, kind: 'wild', type: 'grainfield', occupied: true, x: 12, y: 10 }); await pending;
   const target = r.G.Core.state.world._dispatchTarget;
   assert.equal(target.kind, 'wild_gather'); assert.equal(target.action, 'gather');
-  assert.equal(target.onboardingGather, undefined); assert.equal(target.gatherMode, 'auto');
+  assert.equal(target.onboardingGather, undefined); assert.equal(target.gatherMode, 'manual');
   assert.equal(target.defaultArmy.truck, 1); assert.equal(target.defaultArmy.infantry, undefined); assert.equal(r.G.Core.route, 'dispatch');
   assert.equal(r.G.Onboarding.finishGather, undefined);
 });
@@ -137,7 +148,7 @@ test('gathering can prefill infantry when no transport units are available', asy
     const target = r.G.Core.state.world._dispatchTarget;
     assert.equal(target.defaultArmy.infantry, Math.min(count, 50));
     assert.equal(target.defaultArmy.truck, undefined);
-    assert.equal(target.kind, 'wild_gather'); assert.equal(target.gatherMode, 'auto');
+    assert.equal(target.kind, 'wild_gather'); assert.equal(target.gatherMode, 'manual');
     assert.equal(r.G.Core.route, 'dispatch'); assert.equal(r.toasts.length, 0);
   }
 });

@@ -1,0 +1,11 @@
+{
+  "returnedSupport": 997399,
+  "supportLosses": 2601,
+  "initialSupport": 1000000,
+  "homeInventory": 200000,
+  "officerRoles": [
+    "idle",
+    "idle"
+  ],
+  "settlement": "normal-scheduler-port-8083"
+}

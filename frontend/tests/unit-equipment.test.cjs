@@ -105,7 +105,7 @@ test('inventory distinguishes stock equipped and manufacture; report uses histor
 test('complete preview exposes all attack domains action costs capacity and conditions', () => {
   const { G, html } = setup(); G.Core.atkMul = () => 99; G.Core.commandBonusMul = () => 1.1; G.Core.state.tech.attack_tech = 1;
   G.UnitEquipment.open('infantry');
-  ['完整属性', '对地攻击', '对空攻击', '对海攻击', '对工事攻击', '行军速度', '战场速度', '载重', '行军油耗', '行军粮耗', '反坦克火箭车伤害减免', '驱逐舰伤害减免'].forEach(label => assert.ok(html().includes(label), label));
+  ['完整属性', '对地攻击', '对空攻击', '对海攻击', '对工事攻击', '行军速度', '战场速度', '载重', '行军油耗', '行军粮耗', '反坦克火箭伤害减免', '驱逐舰伤害减免'].forEach(label => assert.ok(html().includes(label), label));
   assert.match(html(), /<dt>对地攻击<\/dt><dd>11\.55<\/dd>/);
   assert.match(html(), /周期属性与技能/);
   assert.doesNotMatch(html(), /本城城墙/);

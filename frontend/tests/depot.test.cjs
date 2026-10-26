@@ -138,3 +138,14 @@ test('城市改名卡从仓库打开城市改名窗口', () => {
   G.Depot.useItem('cityRenameCard');
   assert.equal(opened, 1);
 });
+
+test('统帅改名卡从仓库打开统一改名弹窗且不直接扣卡', () => {
+  const G = setup();
+  let calls = 0;
+  G.DATA.items.commanderRenameCard = { cat: 'util', icon: '🏷️', name: '统帅改名卡' };
+  G.state.items.commanderRenameCard = 1;
+  G.Main = { promptRenameCommander() { calls++; } };
+  G.Depot.useItem('commanderRenameCard');
+  assert.equal(calls, 1);
+  assert.equal(G.state.items.commanderRenameCard, 1);
+});

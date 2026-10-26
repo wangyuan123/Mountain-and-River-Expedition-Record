@@ -1,0 +1,58 @@
+[
+  {
+    "containerWidth": 1040,
+    "hasBodyDraft": true,
+    "hasTitleDraft": true,
+    "headerHeight": 70.65625,
+    "navLinks": 6,
+    "overflow": [],
+    "scrollWidth": 1040,
+    "submitExists": true,
+    "viewport": [
+      1040,
+      470
+    ]
+  },
+  {
+    "containerWidth": 684,
+    "hasBodyDraft": true,
+    "hasTitleDraft": true,
+    "headerHeight": 70.65625,
+    "navLinks": 6,
+    "overflow": [],
+    "scrollWidth": 684,
+    "submitExists": true,
+    "viewport": [
+      684,
+      270
+    ]
+  },
+  {
+    "containerWidth": 400,
+    "hasBodyDraft": true,
+    "hasTitleDraft": true,
+    "headerHeight": 70.65625,
+    "navLinks": 6,
+    "overflow": [],
+    "scrollWidth": 400,
+    "submitExists": true,
+    "viewport": [
+      400,
+      714
+    ]
+  },
+  {
+    "containerWidth": 1280,
+    "hasBodyDraft": true,
+    "hasTitleDraft": true,
+    "headerHeight": 70.65625,
+    "navLinks": 6,
+    "overflow": [],
+    "scrollWidth": 1280,
+    "submitExists": true,
+    "viewport": [
+      1280,
+      770
+    ]
+  }
+]

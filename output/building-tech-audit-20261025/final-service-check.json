@@ -1,0 +1,15 @@
+{
+  "8080": {
+    "httpStatus": 200,
+    "boardCount": 5
+  },
+  "8082": {
+    "httpStatus": 200,
+    "boardCount": 5
+  },
+  "frontend": {
+    "httpStatus": 200,
+    "updatedHospitalDescription": true,
+    "updatedLabDescription": true
+  }
+}

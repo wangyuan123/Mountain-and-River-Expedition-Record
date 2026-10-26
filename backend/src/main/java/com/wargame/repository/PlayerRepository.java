@@ -28,9 +28,13 @@ public interface PlayerRepository extends JpaRepository<Player, Long>, JpaSpecif
 
     Optional<Player> findByUsername(String username);
 
+    Optional<Player> findByDisplayNameKey(String displayNameKey);
+
     boolean existsByUsername(String username);
 
     boolean existsByDisplayName(String displayName);
+
+    boolean existsByDisplayNameKeyAndIdNot(String displayNameKey, Long id);
 
     @org.springframework.data.jpa.repository.Query("select count(p) from Player p where "
             + "(p.displayName is not null and lower(trim(p.displayName)) = lower(trim(:name))) "

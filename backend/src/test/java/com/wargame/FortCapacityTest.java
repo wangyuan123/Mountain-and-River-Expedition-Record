@@ -52,7 +52,7 @@ class FortCapacityTest extends BaseServiceTest {
                 forts.getForts(playerId));
         Resources resources = getResources(playerId);
         assertEquals(5000000 - GameData.FORTS.get("flak").cost().get("steel") * 5000, resources.getSteel());
-        int steel = resources.getSteel(), oil = resources.getOil(), rare = resources.getRare();
+        long steel = resources.getSteel(), oil = resources.getOil(), rare = resources.getRare();
 
         for (String type : GameData.FORTS.keySet()) {
             assertEquals(false, forts.build(playerId, type, 1).get("success"));

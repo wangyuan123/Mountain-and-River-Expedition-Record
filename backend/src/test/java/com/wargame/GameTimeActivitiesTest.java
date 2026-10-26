@@ -40,7 +40,7 @@ class GameTimeActivitiesTest extends BaseServiceTest {
             UnitEquipmentOrder order = new UnitEquipmentOrder();
             order.setPlayerId(id); order.setCitySlot(0); order.setItemKey("ue_infantry_helmet"); order.setCost("{}");
             order.setStartAt(time.get()); order.setEndAt(time.get() + 60_000); equipmentOrders.save(order);
-            int food = getResources(id).getFood();
+            long food = getResources(id).getFood();
             tickService.tick(id);
             tickService.tick(id);
             assertEquals(food, getResources(id).getFood());
@@ -76,10 +76,10 @@ class GameTimeActivitiesTest extends BaseServiceTest {
             time.set(arrival); tickService.tick(id);
             BattleSession session = battles.findByMarchId(march.getId()).orElseThrow();
             assertEquals(0, session.getRoundNo());
-            assertEquals(arrival + 15_000, session.getRoundDeadlineAt());
+            assertEquals(arrival + 12_000, session.getRoundDeadlineAt());
             tickService.tick(id);
             assertEquals(0, session.getRoundNo());
-            time.addAndGet(15_000);
+            time.addAndGet(12_000);
             marchService.processTimedOutTacticalBattle(session.getId(), GameClock.now());
             // 野地回合锁会移除旧会话缓存，必须验证重新加载后的持久化结果。
             assertEquals(1, battles.findById(session.getId()).orElseThrow().getRoundNo());
@@ -96,12 +96,15 @@ class GameTimeActivitiesTest extends BaseServiceTest {
                     Map.of("truck", 1), "station", time.get() - 60_000, time.get() - 30_000, false, false);
             station.setRouteMode("land"); station.setRouteData("[[10,10],[15,15]]");
             marchService.processMarches(id, GameClock.now());
-            marchService.startWildGather(id, tile.getId(), "auto");
+            marchService.startWildGather(id, tile.getId(), "manual");
             long finish = tile.getGatherEndAt();
             tickService.tick(id);
             assertEquals(0, tile.getMined()); assertTrue(tile.getGathering());
             assertTrue(marchRepository.findByPlayerId(id).isEmpty());
             time.set(finish); tickService.tick(id);
+            assertTrue(marchRepository.findByPlayerId(id).isEmpty(), "采满后驻军仍等待手动收获和回城");
+            marchService.harvestWild(id, tile.getId());
+            marchService.recallWild(id, tile.getId());
             March returning = marchRepository.findByPlayerId(id).get(0);
             assertTrue(returning.getReturning());
             assertTrue(returning.getArriveAt() > GameClock.now());

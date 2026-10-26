@@ -1,0 +1,43 @@
+{
+  "cities": [
+    {
+      "id": 2,
+      "slot": 0,
+      "name": "新城市",
+      "supportFoodPerHour": 0.0,
+      "ownFoodPerHour": 1600000.0,
+      "acceptGarrison": true,
+      "garrisonFoodUnmet": 0.0,
+      "main": true,
+      "current": true,
+      "x": 20,
+      "y": 10,
+      "readyAt": 0,
+      "surrenderOfferId": null,
+      "surrenderRecipientId": null,
+      "surrenderFrozenAt": null,
+      "surrenderTransferDeadlineAt": null,
+      "frozen": false,
+      "ready": true,
+      "incoming": false,
+      "shieldUntil": 0,
+      "coastal": false,
+      "legacyNaval": false,
+      "level": 1
+    }
+  ],
+  "count": 1,
+  "cap": 8,
+  "rankName": "上将",
+  "nextRankName": null,
+  "nextCap": 8,
+  "buildCost": {
+    "steel": 10000,
+    "gold": 10000,
+    "food": 5000,
+    "oil": 5000,
+    "rare": 2000
+  },
+  "buildDurationMs": 1800000,
+  "sites": []
+}

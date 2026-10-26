@@ -5,6 +5,7 @@ import com.wargame.model.dto.FriendDtos;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
 import com.wargame.security.RateLimiter;
+import com.wargame.util.JsonUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
@@ -14,15 +15,18 @@ public class FriendService {
     private final FriendContactRepository contacts;
     private final FriendGroupRepository groups;
     private final PlayerRepository players;
+    private final ScoutReportRepository scoutReports;
     private final GameWebSocketHandler presence;
     private final FriendRequestRepository requests;
     private final RateLimiter limiter;
     private final WebSocketPushService pushService;
 
     public FriendService(FriendContactRepository contacts, FriendGroupRepository groups,
-                         PlayerRepository players, GameWebSocketHandler presence, FriendRequestRepository requests, RateLimiter limiter,
+                         PlayerRepository players, ScoutReportRepository scoutReports, GameWebSocketHandler presence,
+                         FriendRequestRepository requests, RateLimiter limiter,
                          WebSocketPushService pushService) {
-        this.contacts = contacts; this.groups = groups; this.players = players; this.presence = presence; this.requests = requests;
+        this.contacts = contacts; this.groups = groups; this.players = players; this.scoutReports = scoutReports;
+        this.presence = presence; this.requests = requests;
         this.limiter = limiter; this.pushService = pushService;
     }
 
@@ -55,14 +59,17 @@ public class FriendService {
         return profile(me, target.getId());
     }
 
+    /** 仅向拥有当前有效成功侦察快照的查看者返回玩家主城坐标。 */
     @Transactional(readOnly = true)
     public FriendDtos.Profile profile(Long me, Long peerId) {
         Player target = target(me, peerId);
         FriendDtos.Profile p = dto(target, contacts.findByOwnerIdAndPeerId(me, peerId).orElse(null));
         String state = requests.findBySenderIdAndRecipientId(me, peerId).isPresent() ? "OUTGOING"
                 : requests.findBySenderIdAndRecipientId(peerId, me).isPresent() ? "INCOMING" : "NONE";
+        boolean locationAuthorized = hasCurrentScoutLocation(me, target);
         return new FriendDtos.Profile(p.id(), p.username(), p.displayName(), p.avatar(), p.level(), p.militaryRank(),
-                p.prestige(), p.cityName(), p.faction(), p.online(), p.available(), p.friend(), p.blocked(), p.groupId(), state);
+                p.prestige(), p.cityName(), p.faction(), p.online(), p.available(), p.friend(), p.blocked(), p.groupId(), state,
+                locationAuthorized ? target.getCityPosX() : null, locationAuthorized ? target.getCityPosY() : null);
     }
 
     /** 遵循收件人的申请权限；需审批时只保存申请，同意后才建立双方好友关系。 */
@@ -224,6 +231,39 @@ public class FriendService {
     private FriendDtos.Profile dto(Player p, FriendContact c) {
         return new FriendDtos.Profile(p.getId(), p.getUsername(), p.getDisplayName(), p.getAvatar(), p.getLevel(),
                 p.getMilitaryRank(), p.getPrestige(), p.getCityName(), p.getFaction(), presence.isPlayerOnline(p.getId()),
-                p.accountActive(), c != null && c.isFriend(), c != null && c.isBlocked(), c == null || c.getGroupId() == null ? 0L : c.getGroupId(), "NONE");
+                p.accountActive(), c != null && c.isFriend(), c != null && c.isBlocked(), c == null || c.getGroupId() == null ? 0L : c.getGroupId(), "NONE",
+                null, null);
+    }
+
+    /**
+     * 校验查看者是否拥有仍有效、成功且仍指向该玩家当前主城的侦察报告。
+     * @param viewerId 查看者玩家 ID
+     * @param target 被查看玩家
+     * @return 报告可授权当前坐标时返回 true
+     */
+    private boolean hasCurrentScoutLocation(Long viewerId, Player target) {
+        Integer x = target.getCityPosX();
+        Integer y = target.getCityPosY();
+        if (!target.accountActive() || x == null || y == null) return false;
+        long now = System.currentTimeMillis();
+        return scoutReports.findByPlayerIdAndTypeAndTargetXAndTargetYAndDetailExpiresAtGreaterThanOrderByCreatedAtDesc(
+                viewerId, "scout", x, y, now)
+                .stream().anyMatch(report -> report.getData() != null
+                        && report.getDetailExpiresAt() != null && report.getDetailExpiresAt() > now
+                        && matchesCurrentPlayerScout(report, target, x, y));
+    }
+
+    /** 旧版报告缺少目标玩家身份快照，不能用于授权当前坐标。 */
+    private static boolean matchesCurrentPlayerScout(ScoutReport report, Player target, Integer x, Integer y) {
+        Map<String, Object> data = JsonUtil.parseObjMap(report.getData());
+        return "player".equals(data.get("targetKind"))
+                && Boolean.TRUE.equals(data.get("showCityInfo"))
+                && Objects.equals(target.getId(), asLong(data.get("targetPlayerId")))
+                && Objects.equals(x.longValue(), asLong(data.get("x")))
+                && Objects.equals(y.longValue(), asLong(data.get("y")));
+    }
+
+    private static Long asLong(Object value) {
+        return value instanceof Number number ? number.longValue() : null;
     }
 }

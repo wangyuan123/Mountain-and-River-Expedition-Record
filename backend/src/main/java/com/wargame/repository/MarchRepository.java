@@ -11,6 +11,21 @@ public interface MarchRepository extends JpaRepository<March, Long> {
 
     List<March> findByPlayerId(Long playerId);
 
+    List<March> findByPlayerIdInAndStationedTrueAndTargetKind(java.util.Collection<Long> players, String targetKind);
+
+    @org.springframework.data.jpa.repository.Query("""
+            select m from March m where
+              ((m.targetKind = 'player' and m.targetId in :cities)
+                or (m.targetKind = 'wild' and m.targetId in :wilds))
+              and (m.returning = false or m.returning is null)
+              and (m.stationed = false or m.stationed is null)
+              and (m.gathering = false or m.gathering is null)
+              and (m.action in ('conquer','plunder','feint','harass','guerrilla','scout') or m.action is null)
+            order by m.id
+            """)
+    List<March> findRegionalThreats(@org.springframework.data.repository.query.Param("cities") java.util.Collection<String> cities,
+                                    @org.springframework.data.repository.query.Param("wilds") java.util.Collection<String> wilds);
+
     /** 查询拦截关系的账号连通分量，双方 Tick 和操作在写入前按账号 ID 统一加锁。 */
     @org.springframework.data.jpa.repository.Query("""
             select i from March i, March e
@@ -34,13 +49,39 @@ public interface MarchRepository extends JpaRepository<March, Long> {
 
     List<March> findByTargetKindAndTargetIdAndStationedTrueOrderByIdAsc(String targetKind, String targetId);
 
+    /** 接收方离线结算也处理到期支援，不依赖派兵人先上线或先被调度。 */
+    @org.springframework.data.jpa.repository.Query("""
+            select m from March m where m.targetKind = 'player' and m.targetId = :cityId
+              and m.action in ('transport', 'rebase', 'reinforce')
+              and (m.returning = false or m.returning is null)
+              and (m.stationed = false or m.stationed is null)
+              and m.displaced = false and m.arriveAt <= :now
+            order by m.arriveAt, m.id
+            """)
+    List<March> findDueSupportArrivals(@org.springframework.data.repository.query.Param("cityId") String cityId,
+                                      @org.springframework.data.repository.query.Param("now") long now);
+
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
-    @org.springframework.data.jpa.repository.Query("select m from March m where m.id = :id")
-    java.util.Optional<March> findSupportForUpdate(@org.springframework.data.repository.query.Param("id") Long id);
+    /** 只锁行 ID，避免关联发现阶段缓存的旧版本在升级实体锁时先触发乐观冲突。 */
+    @org.springframework.data.jpa.repository.Query("select m.id from March m where m.id = :id")
+    java.util.Optional<Long> lockSupportId(@org.springframework.data.repository.query.Param("id") Long id);
 
     List<March> findByPlayerIdAndReturning(Long playerId, Boolean returning);
 
     List<March> findByPlayerIdAndGathering(Long playerId, Boolean gathering);
+
+    List<March> findByTargetKindAndTargetId(String targetKind, String targetId);
+
+    /** 当前读检查各城市尚未召回的采集队及未结算返程，避免手动废弃导致兵力或资源丢失。 */
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_READ)
+    @org.springframework.data.jpa.repository.Query("""
+            select m.id from March m
+            where m.targetKind = 'wild_gather' and m.targetId = :targetId
+              and (m.returning = false or m.returning is null
+                   or m.gatherResourceSettled = false or m.gatherResourceSettled is null)
+            order by m.id
+            """)
+    List<Long> findWildGatherReleaseBlockerIds(@org.springframework.data.repository.query.Param("targetId") String targetId);
 
     /** 仅进攻出征与战斗占用战术；侦察、采集和返程不占用。 */
     @org.springframework.data.jpa.repository.Query("""

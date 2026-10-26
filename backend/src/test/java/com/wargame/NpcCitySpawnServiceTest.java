@@ -92,7 +92,7 @@ class NpcCitySpawnServiceTest extends BaseServiceTest {
         var player = createTestPlayer();
         var city = legacyCity(world.getId(), 20, 20);
         createArmyUnit(player.getId(), "infantry", 100);
-        int oil = getResources(player.getId()).getOil();
+        long oil = getResources(player.getId()).getOil();
         assertEquals(List.of(), view.getWorld(player.getId(), 20, 20, 5).get("npcCities"));
         assertEquals(List.of(), worldService.getNearbyCities(player.getId()).get("npcCities"));
         assertTrue(worldService.findAtCoordinate(player.getId(), 20, 20).isEmpty());

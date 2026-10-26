@@ -8,8 +8,8 @@ function fixture(){
  for(const file of ['map-camera.js','map-layout.js','world-map.js']){
   let source=fs.readFileSync(path.join(__dirname,'../js',file),'utf8');
   source=source.replace('  function marchHeading(', '  G.TestMarchHeading=marchHeading;\n  function marchHeading(');
-  source=source.replace('  var cache = new G.MapChunks','  G.TestGatherCountdown=gatherCountdown; var cache = new G.MapChunks');
-  source=source.replace('  G.WorldMap={','  G.TestMapView=MapView; G.TestMapIcon=icon; G.TestMarkerHeight=markerHeight; G.TestOwnershipCaption=ownershipCaption; G.TestDrawOwnership=drawOwnership; G.TestMarchUnitIcon=marchUnitIcon; G.TestMarchFormation=marchFormation; G.TestPrimaryMarchUnit=primaryMarchUnit; G.TestMarchMarkerIconSize=marchMarkerIconSize;\n  G.WorldMap={');vm.runInContext(source,c);
+  source=source.replace('  var cache = new G.MapChunks','  G.TestGatherCountdown=gatherCountdown; G.TestGatherProgress=gatherProgress; var cache = new G.MapChunks');
+  source=source.replace('  G.WorldMap={','  G.TestSetMapOwner=function(){owner=identity();}; G.TestMapView=MapView; G.TestMapIcon=icon; G.TestMarkerHeight=markerHeight; G.TestOwnershipCaption=ownershipCaption; G.TestDrawOwnership=drawOwnership; G.TestMarchUnitIcon=marchUnitIcon; G.TestMarchFormation=marchFormation; G.TestPrimaryMarchUnit=primaryMarchUnit; G.TestMarchMarkerIconSize=marchMarkerIconSize;\n  G.WorldMap={');vm.runInContext(source,c);
  }
  const v=Object.create(c.Game.TestMapView.prototype);v.camera=new c.Game.MapCamera(200,100.5,100.5,48);v.camera.width=390;v.camera.height=550;
  v.markerLayer={children:[]};v.visible=[];v.loadDetail=t=>{v.result={target:t};};v.loadSite=(x,y)=>{v.result={site:[x,y]};};
@@ -35,27 +35,51 @@ test('我的领地地图筛选随当前城市切换，其他城市占领标记�
 test('gathering countdown, progress and map caption advance without a server response',()=>{
  const {c,v}=fixture();let now=100000,wakes=0;
  c.Date={now:()=>now};c.Game.fmt=String;c.Game.DATA={wildTypes:{ironworks:{name:'炼铁厂',res:'steel'}}};
- const target={kind:'wild',id:1,type:'ironworks',occupied:true,level:1,gathering:true,gatherStartAt:100000,gatherEndAt:180000,gatherLoad:800};
- const time={},progress={style:{}},amount={};
- const nodes={'[data-gather-time]':time,'[data-gather-progress]':progress,'[data-gather-amount]':amount};
+ const target={kind:'wild',id:1,type:'ironworks',occupied:true,level:1,totalRes:1000,mined:0,gathering:true,gatherStartAt:100000,gatherEndAt:180000,gatherLoad:800};
+ const time={},progress={style:{}},amount={},remaining={},elapsed={},track={setAttribute(key,value){this[key]=value;}};
+ const nodes={'[data-gather-time]':time,'[data-gather-progress]':progress,'[data-gather-amount]':amount,'[data-gather-remaining]':remaining,'[role="progressbar"]':track,'[data-gather-elapsed]':elapsed};
  const panel={querySelector:key=>nodes[key]};
  v.selected=target;v.visible=[target];v.detail={hidden:false,querySelector:()=>panel};v.wake=()=>wakes++;
- v.updateGathering();assert.equal(time.textContent,'采集中，剩余 80 秒');assert.equal(progress.style.width,'0%');
+ v.updateGathering();assert.equal(time.textContent,'采集中，剩余 1分钟20秒');assert.equal(progress.style.width,'0%');
+ assert.equal(remaining.textContent,'1000');
  assert.equal(c.Game.TestOwnershipCaption(target),'我的 · 1级 · 采集中');
- now+=20000;v.updateGathering();assert.equal(time.textContent,'采集中，剩余 60 秒');
- assert.equal(progress.style.width,'25%');assert.equal(amount.textContent,'已开采：200 / 800');
- now+=90000;v.updateGathering();assert.equal(time.textContent,'已采满，请收获');
- assert.equal(progress.style.width,'100%');assert.equal(amount.textContent,'已开采：800 / 800');
+ now+=20000;v.updateGathering();assert.equal(time.textContent,'采集中，剩余 1分钟0秒');
+ assert.equal(progress.style.width,'20%');assert.equal(amount.textContent,'已采集：200 / 1000');
+ assert.equal(remaining.textContent,'800');
+ assert.equal(track['aria-valuenow'],'200');
+ assert.equal(elapsed.textContent,'累计采集：20秒');
+ now+=90000;v.updateGathering();assert.equal(time.textContent,'已达到负重上限，请收获');
+ assert.equal(progress.style.width,'80%');assert.equal(amount.textContent,'已采集：800 / 1000');
+ assert.equal(remaining.textContent,'200');
+ assert.equal(track['aria-valuenow'],'800');
+ now+=60000;v.updateGathering();assert.equal(progress.style.width,'80%');assert.equal(amount.textContent,'已采集：800 / 1000');
+ assert.equal(elapsed.textContent,'累计采集：1分钟20秒');
  assert.equal(c.Game.TestOwnershipCaption(target),'我的 · 1级 · 待收获');
- v.selected=null;v.detail.hidden=true;v.updateGathering();assert.equal(wakes,4);
- target.gathering=false;v.updateGathering();assert.equal(wakes,4);
+ v.selected=null;v.detail.hidden=true;v.updateGathering();assert.equal(wakes,5);
+ target.gathering=false;v.updateGathering();assert.equal(wakes,5);
  assert.equal(c.Game.TestOwnershipCaption(target),'我的 · 1级');
  target.gathering=true;target.occupied=false;target.claimed=true;
  assert.doesNotMatch(c.Game.TestOwnershipCaption(target),/采集中|待收获/);
- target.occupied=true;c.document.hidden=true;v.updateGathering();assert.equal(wakes,4);
- c.document.hidden=false;v.destroyed=true;v.updateGathering();assert.equal(wakes,4);
+ target.occupied=true;c.document.hidden=true;v.updateGathering();assert.equal(wakes,5);
+ c.document.hidden=false;v.destroyed=true;v.updateGathering();assert.equal(wakes,5);
 });
-test('a dispatched gathering army shows a live model-top countdown only after arrival',()=>{
+
+test('resource progress uses the wild total and freezes when the gathering army reaches its load limit',()=>{
+ const {c}=fixture();let now=100000;
+ c.Game.gameNow=()=>now;c.Game.fmt=String;c.Game.DATA={wildTypes:{ironworks:{name:'炼铁厂',res:'steel'}}};
+ c.Game.Core={state:{world:{marches:[{
+  targetKind:'wild_gather',targetId:1,gathering:true,gatherMode:'auto',
+  gatherStartAt:100000,gatherEndAt:200000,gatherAmount:300
+ }]}}};
+ const target={kind:'wild',id:1,type:'ironworks',occupied:true,totalRes:1000,mined:200};
+ let state=c.Game.TestGatherProgress(target,150000);
+ assert.equal(state.mined,150);assert.equal(state.total,800);assert.equal(state.percent,19);assert.equal(state.atCapacity,false);
+ state=c.Game.TestGatherProgress(target,200000);
+ assert.equal(state.mined,300);assert.equal(state.total,800);assert.equal(state.percent,38);assert.equal(state.atCapacity,true);
+ now=300000;state=c.Game.TestGatherProgress(target,now);
+ assert.equal(state.mined,300);assert.equal(state.total,800);assert.equal(state.percent,38);
+});
+test('a dispatched gathering army shows a live day-hour-minute-second model-top countdown only after arrival',()=>{
  const {c,v}=fixture();let now=100000,wakes=0;
  c.Date={now:()=>now};
  const tile={kind:'wild',id:7,type:'grainfield',occupied:true};
@@ -65,13 +89,13 @@ test('a dispatched gathering army shows a live model-top countdown only after ar
  assert.equal(c.Game.TestGatherCountdown(tile,now),'');
  v.updateGathering();assert.equal(wakes,0);
  march.gathering=true;
- assert.equal(c.Game.TestGatherCountdown(tile,now),'采集剩余 01:20');
+ assert.equal(c.Game.TestGatherCountdown(tile,now),'采集剩余 1分钟20秒');
  v.updateGathering();assert.equal(wakes,1);
  now+=1000;
- assert.equal(c.Game.TestGatherCountdown(tile,now),'采集剩余 01:19');
+ assert.equal(c.Game.TestGatherCountdown(tile,now),'采集剩余 1分钟19秒');
  v.updateGathering();assert.equal(wakes,2,'未打开详情也应逐秒重绘地图倒计时');
  now=180000;
- assert.equal(c.Game.TestGatherCountdown(tile,now),'采集完成 · 待自动返城');
+ assert.equal(c.Game.TestGatherCountdown(tile,now),'采集完成 · 待收获');
  march.gatherMode='manual';
  assert.equal(c.Game.TestGatherCountdown(tile,now),'采集完成 · 待收获');
  march.returning=true;
@@ -89,15 +113,34 @@ test('model-top countdown combines the correct gathering teams and excludes unre
   {...base,targetId:8,gatherEndAt:999999},{...base,targetKind:'player',gatherEndAt:999999},
   {...base,returning:true},{...base,gatherStopped:true},{...base,gathering:false},
   {...base,gatherEndAt:null}]}}};
- assert.equal(c.Game.TestGatherCountdown(tile,now),'2队采集 · 最晚剩余 02:00');
+ assert.equal(c.Game.TestGatherCountdown(tile,now),'2队采集 · 最晚剩余 2分钟0秒');
  assert.equal(c.Game.TestGatherCountdown({...tile,occupied:false,claimed:true},now),'');
  assert.equal(c.Game.TestGatherCountdown({...tile,kind:'player'},now),'');
  c.Game.Core.state.world.marches=[];
  const stationed={...tile,gathering:true,gatherMode:'auto',gatherEndAt:180000};
- assert.equal(c.Game.TestGatherCountdown(stationed,now),'采集剩余 01:20');
- assert.equal(c.Game.TestGatherCountdown(stationed,180000),'采集完成 · 待自动返城');
+ assert.equal(c.Game.TestGatherCountdown(stationed,now),'采集剩余 1分钟20秒');
+ assert.equal(c.Game.TestGatherCountdown(stationed,180000),'采集完成 · 待收获');
  assert.equal(c.Game.TestGatherCountdown({...stationed,gatherMode:undefined},180000),'采集完成 · 待收获');
  assert.equal(c.Game.TestGatherCountdown({...stationed,gathering:false},now),'');
+});
+
+test('gather countdown splits long durations and rolls over day, hour, minute and second boundaries',()=>{
+ const {c}=fixture(),now=100000;
+ const tile={kind:'wild',id:7,occupied:true,gathering:true,gatherMode:'auto'};
+ for(const [remaining,text] of [
+  [180501000,'2天2小时8分钟21秒'],
+  [86400000,'1天0小时0分钟0秒'],
+  [86399000,'23小时59分钟59秒'],
+  [3600000,'1小时0分钟0秒'],
+  [3599000,'59分钟59秒'],
+  [60000,'1分钟0秒'],
+  [59000,'59秒'],
+  [1,'1秒']
+ ]){
+  assert.equal(c.Game.TestGatherCountdown({...tile,gatherEndAt:now+remaining},now),'采集剩余 '+text);
+ }
+ assert.equal(c.Game.TestGatherCountdown({...tile,gatherEndAt:now},now),'采集完成 · 待收获');
+ assert.equal(c.Game.TestGatherCountdown({...tile,gatherEndAt:now-1000,gatherMode:'manual'},now),'采集完成 · 待收获');
 });
 
 test('own city detail enters the selected city instead of routing directly home',()=>{
@@ -149,7 +192,7 @@ test('guildmate city offers support and opens the selected member city',()=>{
  assert.ok(!buttons.some(b=>b.textContent==='运输'||b.textContent==='驻防'));
 });
 
-test('stationed gathering details expose only the controls appropriate to the mode',()=>{
+test('stationed gathering details show remaining stock and controls for each manual stage',()=>{
  const {c,v}=fixture();const buttons=[],panels=[];
  c.Game.fmt=String;c.Game.escapeHtml=String;c.Game.Core={state:{world:{pos:{x:10,y:10},marches:[]}}};
  c.Game.World={renderGatherMarches:()=>''};
@@ -159,21 +202,119 @@ test('stationed gathering details expose only the controls appropriate to the mo
  const tile={kind:'wild',id:1,type:'ironworks',occupied:true,x:15,y:15,level:1,totalRes:1000,mined:0,garrison:{truck:2}};
  function render(extra){buttons.length=0;panels.length=0;v.renderDetail({...tile,...extra});return buttons.map(button=>button.textContent);}
  assert.ok(render({}).includes('采集'));
+ assert.equal(buttons.find(button=>button.textContent==='采集').disabled,false);
+ assert.match(panels.join(''),/剩余资源：<b data-gather-remaining>1000<\/b>/);
+ assert.equal((panels.join('').match(/class="wild-gather-panel"/g)||[]).length,1,'驻军说明不可重复插入资源面板');
+ // 驻军仍在时，储量为零也应显示明确原因及不可用的采集入口。
+ const exhausted=render({totalRes:0});
+ assert.ok(exhausted.includes('采集'));
+ assert.equal(buttons.find(button=>button.textContent==='采集').disabled,true);
+ assert.match(panels.join(''),/剩余资源：<b data-gather-remaining>0<\/b>/);
+ assert.match(panels.join(''),/资源已耗尽/);
+ assert.ok(!exhausted.includes('派兵采集'));
+ assert.ok(exhausted.includes('撤回'));assert.ok(exhausted.includes('放弃领地'));
+ render({totalRes:0,garrison:{}});
+ assert.match(panels.join(''),/剩余资源：<b data-gather-remaining>0<\/b>/);
+ assert.ok(!buttons.some(button=>button.textContent==='采集'));
+ const emptiedDuringGather=render({totalRes:0,gathering:true,gatherStartAt:Date.now()-60000,gatherEndAt:Date.now()-1,gatherLoad:100});
+ assert.ok(emptiedDuringGather.includes('收获'));
+ assert.ok(!emptiedDuringGather.includes('撤回'));
  for(const mode of ['manual',undefined]){
   const labels=render({gathering:true,gatherMode:mode,gatherStartAt:Date.now()-60000,gatherEndAt:Date.now()-1,gatherLoad:100});
   assert.ok(labels.includes('收获'));assert.ok(!labels.includes('部队回城'));
-  assert.match(panels.join(''),/采集全手动/);
+  assert.match(panels.join(''),/手动采集/);
  }
  const automatic=render({gathering:true,gatherMode:'auto',gatherStartAt:Date.now()-60000,gatherEndAt:Date.now()-1,gatherLoad:100});
- assert.ok(!automatic.includes('收获'));assert.ok(!automatic.includes('撤回'));
- assert.match(panels.join(''),/采集全自动/);assert.match(panels.join(''),/等待自动收获返城/);
+ assert.ok(automatic.includes('收获'));assert.ok(!automatic.includes('撤回'));
+ assert.match(panels.join(''),/手动采集/);assert.match(panels.join(''),/已达到负重上限，请收获/);
+ assert.match(panels.join(''),/role="progressbar"/);assert.match(panels.join(''),/aria-valuemax="1000"/);assert.match(panels.join(''),/已采集：100 \/ 1000/);
+ assert.equal((panels.join('').match(/data-gather-elapsed/g)||[]).length,1);
+ assert.match(panels.join(''),/累计采集：(59秒|1分钟0秒)/);
  for(const amount of [0,80]){
-  const stopped=render({gathering:false,gatherHarvested:amount,gatherRes:'steel'});
+  const stopped=render({totalRes:0,gathering:false,gatherHarvested:amount,gatherRes:'steel'});
   assert.ok(stopped.includes('部队回城'));assert.ok(!stopped.includes('采集'));assert.ok(!stopped.includes('收获'));
   assert.match(panels.join(''),/等待回城命令/);
  }
- assert.match(c.Game.TestOwnershipCaption({...tile,gathering:true,gatherMode:'auto',gatherEndAt:Date.now()-1}),/待自动返城/);
+ assert.match(c.Game.TestOwnershipCaption({...tile,gathering:true,gatherMode:'auto',gatherEndAt:Date.now()-1}),/待收获/);
  assert.match(c.Game.TestOwnershipCaption({...tile,gatherHarvested:0}),/待回城/);
+});
+test('quiet detail refresh updates harvested amounts and actions even when the wild itself has not changed',async()=>{
+ const {c,v}=fixture(),buttons=[],panels=[];
+ c.Game.fmt=String;c.Game.escapeHtml=String;
+ const tile={kind:'wild',id:7,type:'grainfield',occupied:true,x:15,y:15,totalRes:1000,mined:0,garrison:{}};
+ const march={id:229,targetKind:'wild_gather',targetId:'7',army:{truck:2},gathering:true,
+  gatherStartAt:100000,gatherEndAt:200000,gatherAmount:300,gatherRes:'food'};
+ c.Game.Core={state:{world:{pos:{x:10,y:10},marches:[march]}},views:{}};
+ c.Game.API={getToken:()=> 'test',getMapTarget:()=>Promise.resolve({...tile})};
+ c.Game.TestSetMapOwner();
+ for(const file of ['data.js','world.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../js',file),'utf8'),c);
+ c.document.createElement=()=>({});
+ v.detail={hidden:false,innerHTML:'',querySelector:key=>key==='.world-map-actions'?{appendChild:button=>buttons.push(button)}:{insertAdjacentHTML:(position,html)=>panels.push(html)}};
+ v.wake=()=>{};v.detailSeq=0;delete v.loadDetail;
+ v.renderDetail(tile);panels.length=0;
+ Object.assign(march,{gathering:false,gatherStopped:true,gatherAmount:123});
+ v.loadDetail(tile,true);await new Promise(setImmediate);
+ let html=panels.join('');
+ assert.match(html,/已收获：123/);
+ assert.match(html,/已收获 123 粮食，等待回城命令/);
+ assert.match(html,/剩余资源：<b data-gather-remaining>1000<\/b>/,'旧归属任务不得在前端重复扣减当前野地资源');
+ assert.match(html,/returnGatherMarch\(229\)/);assert.doesNotMatch(html,/stopGatherMarch\(229\)/);
+ assert.doesNotMatch(html,/尚未开始采集/);
+ panels.length=0;v.loadDetail(tile,true);await new Promise(setImmediate);
+ assert.equal(panels.length,0,'相同野地和相同任务状态不重建弹窗');
+ tile.totalRes=877;
+ v.loadDetail(tile,true);await new Promise(setImmediate);
+ html=panels.join('');
+ assert.match(html,/剩余资源：<b data-gather-remaining>877<\/b>/);
+ assert.match(html,/已收获：123/);
+ panels.length=0;march.returning=true;
+ v.loadDetail(tile,true);await new Promise(setImmediate);
+ html=panels.join('');assert.doesNotMatch(html,/部队 #229|returnGatherMarch\(229\)/);
+});
+
+test('gathering army details distinguish task states from independent garrisons and refresh the countdown',()=>{
+ const {c,v}=fixture();let now=100000;const buttons=[],panels=[];
+ c.Game.gameNow=()=>now;c.Game.fmt=String;c.Game.escapeHtml=String;
+ c.Game.Core={state:{world:{pos:{x:10,y:10},marches:[]}},views:{}};
+ vm.runInContext(fs.readFileSync(path.join(__dirname,'../js/data.js'),'utf8'),c);
+ vm.runInContext(fs.readFileSync(path.join(__dirname,'../js/world.js'),'utf8'),c);
+ c.document.createElement=()=>({});
+ const status={textContent:'',getAttribute:()=> '223'};
+ v.detail={hidden:false,innerHTML:'',querySelector:key=>key==='.world-map-actions'?{appendChild:button=>buttons.push(button)}:{insertAdjacentHTML:(position,html)=>panels.push(html)},querySelectorAll:()=>[status]};
+ const tile={kind:'wild',id:7,type:'grainfield',occupied:true,x:15,y:15,level:1,totalRes:1000,mined:0,garrison:{}};
+ const march={id:223,targetKind:'wild_gather',targetId:'7',gatherMode:'manual',army:{truck:5000},gathering:true,gatherEndAt:now+178154000};
+ c.Game.Core.state.world.marches=[march];v.selected=tile;
+ function render(){buttons.length=0;panels.length=0;v.renderDetail(tile);return panels.join('');}
+ let html=render();
+ assert.equal((html.match(/class="wild-gather-panel"/g)||[]).length,1,'独立采集队伍只展示一个汇总进度面板');
+ assert.equal((html.match(/data-gather-amount/g)||[]).length,1);
+ assert.match(html,/距采满 2天1小时29分钟14秒/);
+ assert.match(html,/部队 #223/);assert.match(html,/采集部队独立执行任务/);assert.doesNotMatch(html,/暂无驻扎部队/);
+ assert.match(html,/stopGatherMarch\(223\)/);
+ assert.deepEqual(buttons.map(button=>button.textContent),['派兵采集','派遣']);
+ v.updateGathering();assert.match(status.textContent,/距采满 2天1小时29分钟14秒/);
+ now+=1000;v.updateGathering();assert.match(status.textContent,/距采满 2天1小时29分钟13秒/);
+ now=march.gatherEndAt;v.updateGathering();assert.match(status.textContent,/已采满，请收获/);
+ render();assert.ok(!buttons.some(button=>button.textContent==='放弃领地'),'采满待收获时也不能放弃');
+ march.gathering=false;march.gatherStopped=true;
+ html=render();assert.match(html,/returnGatherMarch\(223\)/);assert.doesNotMatch(html,/暂无驻扎部队/);
+ assert.ok(!buttons.some(button=>button.textContent==='放弃领地'),'已收获待回城时隐藏放弃');
+ tile.garrison={truck:1};render();
+ assert.ok(!buttons.some(button=>button.textContent==='放弃领地'),'额外驻军不能让独立采集任务绕过废弃限制');
+ tile.garrison={};render();
+ assert.equal((html.match(/class="wild-gather-panel"/g)||[]).length,1,'手动终止后仍不可重复展示进度');
+ march.gatherStopped=false;march.arriveAt=now+60000;
+ html=render();assert.match(html,/前往野地/);assert.doesNotMatch(html,/采集中|暂无驻扎部队/);
+ assert.ok(!buttons.some(button=>button.textContent==='放弃领地'),'采集去程同样隐藏放弃');
+ assert.equal((html.match(/class="wild-gather-panel"/g)||[]).length,1,'前往野地时资源面板只显示一次');
+ for(const excluded of [{...march,targetId:8},{...march,targetKind:'player'},{...march,returning:true}]){
+  c.Game.Core.state.world.marches=[excluded];html=render();
+  assert.match(html,/暂无驻扎部队/);assert.doesNotMatch(html,/部队 #223/);
+  assert.ok(buttons.some(button=>button.textContent==='放弃领地'),'其他野地、其他任务及已返程队伍不阻止废弃');
+ }
+ c.Game.Core.state.world.marches=[];
+ assert.match(render(),/暂无驻扎部队/);
+ assert.equal(buttons.find(b=>b.textContent==='放弃领地').className.includes('warn'),true);
 });
 test('player art follows actual coast status for own and other cities, including legacy inland naval cities',()=>{
  const {c}=fixture(),icon=c.Game.TestMapIcon;
@@ -256,8 +397,8 @@ test('scouting, transport and attacks use one action icon regardless of army com
 });
 test('march marker renders a compact transparent unit model without a circular backdrop',()=>{
  const {c}=fixture();
- assert.equal(c.Game.TestMarchMarkerIconSize(48),32);
- assert.equal(c.Game.TestMarchMarkerIconSize(80),48);
+ assert.equal(c.Game.TestMarchMarkerIconSize(48),36);
+ assert.equal(c.Game.TestMarchMarkerIconSize(80),58);
  const source=fs.readFileSync(path.join(__dirname,'../js/world-map.js'),'utf8');
  assert.doesNotMatch(source,/marker\.backdrop/);
 });
@@ -266,7 +407,7 @@ test('march routes render above cities, clouds and captions while shadows stay o
  const layers=source.match(/this\.app\.stage\.addChild\(([^;]+)\);/);
  assert.ok(layers);
  assert.deepEqual(layers[1].split(',').map(layer=>layer.trim()),[
-  'this.mapShadow','this.ground','this.groundQ2','this.groundQ3','this.groundQ4','this.groundDetails','this.waterLayer','this.terrain','this.mapBorder','this.cloudShadowLayer',
+  'this.mapShadow','this.ground','this.groundQ2','this.groundQ3','this.groundQ4','this.groundDetails','this.waterLayer','this.terrain','this.radarLayer','this.radarWaves','this.mapBorder','this.cloudShadowLayer',
   'this.markerLayer','this.marchLayer','this.cloudLayer','this.selectionOutline','this.captionLayer','this.routes'
  ]);
  assert.match(source,/this\.routes\.addChild\(this\.routeFlow\);/,'路线流动效果应随路线保持在最上层');
@@ -478,4 +619,15 @@ test('reused badges update on capture and release, and clicking a badge opens it
  }
  target.type='forest';c.Game.TestDrawOwnership(m,target,-90);
  assert.equal(g.visible,false);assert.equal(m.ownershipHit,null);
+});
+
+test('resource detail buttons match unified text-actions styling specifications', () => {
+ const css = fs.readFileSync(path.join(__dirname, '../css/text-actions.css'), 'utf8');
+ assert.match(css, /\.world-map-actions button/);
+ assert.match(css, /\.wild-gather-march button/);
+ assert.match(css, /\.world-map-actions button::before[\s\S]*?content:\s*'\['/);
+ assert.match(css, /\.world-map-actions button::after[\s\S]*?content:\s*'\]'/);
+ assert.match(css, /\.wild-gather-march button::before[\s\S]*?content:\s*'\['/);
+ assert.match(css, /\.wild-gather-march button::after[\s\S]*?content:\s*'\]'/);
+ assert.match(css, /\.world-map-actions button\.warn[\s\S]*?color:\s*var\(--danger/);
 });

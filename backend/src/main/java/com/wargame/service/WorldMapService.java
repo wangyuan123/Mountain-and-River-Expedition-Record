@@ -174,8 +174,10 @@ public class WorldMapService {
             t.put("hasGarrison", JsonUtil.parseIntMap(w.getGarrison()).values().stream().anyMatch(count -> count != null && count > 0));
             t.put("gathering", Boolean.TRUE.equals(w.getGathering()));
             t.put("gatherEndAt", w.getGatherEndAt() == null ? 0L : w.getGatherEndAt());
-            t.put("gatherMode", w.getGatherMode());
+            t.put("gatherMode", "manual");
             t.put("gatherHarvested", w.getGatherHarvested());
+            t.put("totalRes", w.getTotalRes() == null ? 0 : w.getTotalRes());
+            t.put("mined", w.getMined() == null ? 0 : w.getMined());
         }
         if (Boolean.TRUE.equals(w.getOccupied()) && w.getOccupiedBy() != null) {
             t.put("ownerId", w.getOccupiedBy());

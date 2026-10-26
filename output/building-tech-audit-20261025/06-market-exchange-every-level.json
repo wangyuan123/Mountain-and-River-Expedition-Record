@@ -1,0 +1,42 @@
+[
+  {
+    "level": 1,
+    "gainPer100": 54
+  },
+  {
+    "level": 2,
+    "gainPer100": 58
+  },
+  {
+    "level": 3,
+    "gainPer100": 62
+  },
+  {
+    "level": 4,
+    "gainPer100": 66
+  },
+  {
+    "level": 5,
+    "gainPer100": 70
+  },
+  {
+    "level": 6,
+    "gainPer100": 74
+  },
+  {
+    "level": 7,
+    "gainPer100": 78
+  },
+  {
+    "level": 8,
+    "gainPer100": 82
+  },
+  {
+    "level": 9,
+    "gainPer100": 86
+  },
+  {
+    "level": 10,
+    "gainPer100": 90
+  }
+]

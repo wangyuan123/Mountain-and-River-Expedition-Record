@@ -21,6 +21,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 public class GameStateService {
+    @org.springframework.beans.factory.annotation.Autowired private CommanderRenameService commanderRename;
     @org.springframework.beans.factory.annotation.Autowired private MailGiftActivityService giftActivities;
 
     @org.springframework.beans.factory.annotation.Autowired private UnitEquipmentService unitEquipment;
@@ -45,6 +46,7 @@ public class GameStateService {
     private com.wargame.service.quest.QuestService questService;
 
     @org.springframework.beans.factory.annotation.Autowired private CityService cityService;
+    @org.springframework.beans.factory.annotation.Autowired private GarrisonFoodService garrisonFood;
     @org.springframework.beans.factory.annotation.Autowired private AccountService accounts;
     @org.springframework.beans.factory.annotation.Autowired private RankService ranks;
     @org.springframework.beans.factory.annotation.Autowired private ArmyProductionQueueRepository armyQueues;
@@ -77,6 +79,7 @@ public class GameStateService {
     private final ScoutReportRepository scoutReportRepository;
     private final PlayerItemRepository playerItemRepository;
     private final OfficerEquipmentRepository equipmentRepository;
+    @org.springframework.beans.factory.annotation.Autowired private OfficerEquipmentProgressService equipmentProgress;
     private final EquipmentService equipmentService;
     private final GuildMemberRepository guildMemberRepository;
 
@@ -158,7 +161,7 @@ public class GameStateService {
             Resources resources = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId))
                     .orElseThrow(() -> new IllegalArgumentException("玩家资源数据不存在"));
             entityManager.refresh(resources, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
-            int gold = Objects.requireNonNullElse(resources.getGold(), 0);
+            long gold = Objects.requireNonNullElse(resources.getGold(), 0L);
             if (gold < CITY_RENAME_GOLD_COST)
                 throw new IllegalArgumentException("城市改名卡或黄金不足（需 1 张城市改名卡或 60 黄金）");
             resources.setGold(gold - CITY_RENAME_GOLD_COST);
@@ -181,15 +184,7 @@ public class GameStateService {
     /** 保存独立于登录用户名的统帅展示名。 */
     @Transactional
     public String setDisplayName(Long playerId, String rawName) {
-        String name = com.wargame.model.constants.DisplayNamePolicy.validate(rawName, 8, "统帅名");
-        Player player = playerRepository.findById(playerId)
-                .orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
-        player.setDisplayName(name);
-        playerRepository.save(player);
-        try {
-            if (questService != null) questService.onEvent(playerId, "DISPLAY_NAME_CHANGE", null, 1);
-        } catch (Exception ignored) {}
-        return name;
+        return commanderRename.rename(playerId, rawName);
     }
 
     @Transactional
@@ -254,6 +249,8 @@ public class GameStateService {
         Map<String, Object> playerInfo = new LinkedHashMap<>();
         playerInfo.put("id", player.getId());
         playerInfo.put("username", player.getUsername());
+        playerInfo.put("commanderRenameCount", player.getCommanderRenameCount());
+        playerInfo.put("commanderNameRenameAvailableAt", com.wargame.model.constants.CommanderRenamePolicy.nextAllowedAt(player.getCommanderRenamedAt()));
         playerInfo.put("name", player.getDisplayName() == null || player.getDisplayName().isBlank()
                 ? player.getUsername() : player.getDisplayName());
         playerInfo.put("faction", player.getFaction());
@@ -287,6 +284,7 @@ public class GameStateService {
         });
         playerInfo.put("citySlot", cityScope.slot(playerId));
         state.put("cityOverview", cityService.overview(playerId));
+        state.put("foodSupply", garrisonFood.supplyView(playerId));
         state.put("player", playerInfo);
         playerInfo.put("npcVictories", player.getNpcVictories());
         state.put("rankInfo", ranks.getRankInfo(playerId));
@@ -412,14 +410,13 @@ public class GameStateService {
             offMap.put("role", o.getRole() != null ? o.getRole() : "idle");
             offMap.put("recruitAt", o.getRecruitAt() != null ? o.getRecruitAt() : 0);
             offMap.put("rewardAt", o.getRewardAt() != null ? o.getRewardAt() : 0);
-            offMap.put("equipment", equipmentRepository.findByPlayerIdAndOfficerId(playerId, o.getId()).stream().map(e -> {
-                Map<String, Object> em = new LinkedHashMap<>();
-                em.put("id", e.getId()); em.put("itemId", e.getItemKey()); em.put("setType", e.getSetType()); em.put("tier", e.getTier()); em.put("slot", e.getSlot());
-                em.put("military", e.getMilitaryBonus()); em.put("logistics", e.getLogisticsBonus()); em.put("knowledge", e.getKnowledgeBonus()); return em;
-            }).toList());
+            var prep = equipmentProgress.preparation(playerId, o.getId());
+            offMap.put("preparation", prep);
+            offMap.put("equipment", attrs.equipment().stream().map(e -> equipmentService.equipmentView(e, prep)).toList());
             officerList.add(offMap);
         }
         state.put("officers", officerList);
+        state.put("officerEquipment", equipmentProgress.state(playerId));
 
         // --- constructions ---
         List<Construction> constructions = constructionRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
@@ -574,7 +571,7 @@ public class GameStateService {
         if ("gold".equalsIgnoreCase(type)) {
             int civilians = Math.max(0, cityScope.economy(playerId).getCivilianPopulation() != null ? cityScope.economy(playerId).getCivilianPopulation() : 0);
             int goldCost = Math.max(1000, Math.min(10000, civilians * 2));
-            int currentGold = resources.getGold() != null ? resources.getGold() : 0;
+            long currentGold = resources.getGold() != null ? resources.getGold() : 0L;
             if (currentGold < goldCost) {
                 throw new IllegalArgumentException("黄金不足，开仓赈灾需要 " + goldCost + " 黄金（当前: " + currentGold + "）");
             }

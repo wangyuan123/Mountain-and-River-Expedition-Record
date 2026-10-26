@@ -31,7 +31,7 @@ test('build.js 中 BUILD_ICON 包含 prisoner_camp 并指向写实透明 WebP', 
 
   // Minimal Core stub for build.js
   context.Game.Core = { state: { buildings: {} }, buildMul: () => 1.0, views: {} };
-  context.Game.Constants = { buildMaxConcurrent: 6 };
+  context.Game.Constants = { buildMaxConcurrent: 3 };
 
   const buildJs = fs.readFileSync(path.join(__dirname, '../js/build.js'), 'utf8');
   vm.runInContext(buildJs, context);

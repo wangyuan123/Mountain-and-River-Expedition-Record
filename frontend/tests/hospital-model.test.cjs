@@ -36,7 +36,7 @@ test('build.js 中战地医院正确映射至独立专属模型', () => {
         views: {}
       },
       Constants: {
-        buildMaxConcurrent: 6
+        buildMaxConcurrent: 3
       }
     }
   };

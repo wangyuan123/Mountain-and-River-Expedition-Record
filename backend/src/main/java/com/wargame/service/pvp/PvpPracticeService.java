@@ -26,7 +26,8 @@ import java.util.function.Supplier;
 @Service
 @RequiredArgsConstructor
 public class PvpPracticeService {
-    public static final long ACCEPT_MS = 15000, LOAD_MS = 20000, COUNTDOWN_MS = 3000, ROUND_MS = 15000, LEASE_MS = 30000, SEARCH_MS = 300000;
+    // 独立 PvP 演习的战斗回合与世界战斗保持一致，按游戏时间开放 12 秒指挥窗口。
+    public static final long ACCEPT_MS = 15000, LOAD_MS = 20000, COUNTDOWN_MS = 3000, ROUND_MS = 12000, LEASE_MS = 30000, SEARCH_MS = 300000;
     private static final TypeReference<Map<String, BattleService.UnitOrder>> ORDER_TYPE = new TypeReference<>() {};
     private final PvpPlayerStateRepository states;
     private final PvpMatchTicketRepository tickets;

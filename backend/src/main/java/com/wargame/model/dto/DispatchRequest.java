@@ -4,6 +4,7 @@ import java.util.Map;
 
 /**
  * 出征请求 DTO - 对应 JS world.js launchDispatch 中的派遣参数。
+ * 采集仅支持 manual（省略也按 manual）；gatherAfterAction 仅兼容 retain，自动指令明确拒绝。
  */
 public record DispatchRequest(
         String targetKind,
@@ -18,23 +19,32 @@ public record DispatchRequest(
         String unitEquipmentVersion,
         Boolean abandonNewbieProtection,
         Integer targetX,
-        Integer targetY
+        Integer targetY,
+        String gatherAfterAction
 ) {
     public DispatchRequest(String targetKind, Long targetId, String action, Map<String, Integer> army,
                            Long commanderId, Map<String, Integer> carryRes, String gatherMode, String battleMode,
+                           String conquerMode, String unitEquipmentVersion, Boolean abandonNewbieProtection,
+                           Integer targetX, Integer targetY) {
+        this(targetKind, targetId, action, army, commanderId, carryRes, gatherMode, battleMode, conquerMode,
+                unitEquipmentVersion, abandonNewbieProtection, targetX, targetY, null);
+    }
+
+    public DispatchRequest(String targetKind, Long targetId, String action, Map<String, Integer> army,
+                           Long commanderId, Map<String, Integer> carryRes, String gatherMode, String battleMode,
                            String conquerMode, String unitEquipmentVersion, Boolean abandonNewbieProtection) {
-        this(targetKind, targetId, action, army, commanderId, carryRes, gatherMode, battleMode, conquerMode, unitEquipmentVersion, abandonNewbieProtection, null, null);
+        this(targetKind, targetId, action, army, commanderId, carryRes, gatherMode, battleMode, conquerMode, unitEquipmentVersion, abandonNewbieProtection, null, null, null);
     }
 
     public DispatchRequest(String targetKind, Long targetId, String action, Map<String, Integer> army,
                            Long commanderId, Map<String, Integer> carryRes, String gatherMode, String battleMode,
                            String conquerMode, String unitEquipmentVersion) {
-        this(targetKind, targetId, action, army, commanderId, carryRes, gatherMode, battleMode, conquerMode, unitEquipmentVersion, null, null, null);
+        this(targetKind, targetId, action, army, commanderId, carryRes, gatherMode, battleMode, conquerMode, unitEquipmentVersion, null, null, null, null);
     }
 
     public DispatchRequest(String targetKind, Long targetId, String action, Map<String, Integer> army,
                            Long commanderId, Map<String, Integer> carryRes, String gatherMode, String battleMode, String conquerMode) {
-        this(targetKind, targetId, action, army, commanderId, carryRes, gatherMode, battleMode, conquerMode, null, null, null, null);
+        this(targetKind, targetId, action, army, commanderId, carryRes, gatherMode, battleMode, conquerMode, null, null, null, null, null);
     }
 
     public DispatchRequest(String targetKind, Long targetId, String action, Map<String, Integer> army,
@@ -50,6 +60,6 @@ public record DispatchRequest(
     public DispatchRequest(String targetKind, Long targetId, String action, Map<String, Integer> army,
                            Long commanderId, Map<String, Integer> carryRes, String gatherMode,
                            String battleMode) {
-        this(targetKind, targetId, action, army, commanderId, carryRes, gatherMode, battleMode, null);
+        this(targetKind, targetId, action, army, commanderId, carryRes, gatherMode, battleMode, null, null, null, null, null, null);
     }
 }

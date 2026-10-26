@@ -1,0 +1,288 @@
+{
+  "marchId": 3,
+  "targetName": "新城市",
+  "targetKind": "player",
+  "action": "plunder",
+  "side": "attacker",
+  "round": 2,
+  "firstCombatRound": 0,
+  "roundDeadlineAt": 1792826938684,
+  "maxRound": 25,
+  "initialDistance": 2170,
+  "rulesVersion": "joint-defense-v1-20261024",
+  "wall": null,
+  "battlePhase": null,
+  "attackerArmy": {
+    "infantry": 600000
+  },
+  "defenderArmy": {
+    "htank": 1,
+    "htank~s1": 500000,
+    "htank~s2": 500000
+  },
+  "orders": {},
+  "attackerPositions": {
+    "infantry": 200
+  },
+  "defenderPositions": {
+    "htank": 1770,
+    "htank~s1": 1770,
+    "htank~s2": 1770
+  },
+  "attackerTech": {},
+  "defenderTech": {},
+  "attackerCommandBonus": {
+    "officerId": null,
+    "name": "",
+    "military": 0,
+    "defense": 0,
+    "logistics": 0,
+    "knowledge": 0,
+    "rate": 0.001
+  },
+  "defenderCommandBonus": {},
+  "attackerSkills": {},
+  "defenderSkills": {},
+  "defaultActions": {
+    "assault": "ADVANCE",
+    "sub": "ADVANCE",
+    "battleship": "ADVANCE",
+    "bomber": "ADVANCE",
+    "truck": "HOLD",
+    "armored": "ADVANCE",
+    "rocket": "ADVANCE",
+    "transport": "HOLD",
+    "infantry": "ADVANCE",
+    "destroyer": "ADVANCE",
+    "special": "ADVANCE",
+    "carrier": "ADVANCE",
+    "recon_car": "ADVANCE",
+    "fighter": "ADVANCE",
+    "htank": "ADVANCE",
+    "scout": "HOLD",
+    "ltank": "ADVANCE"
+  },
+  "formationEvents": [
+    {
+      "formation": "【攻方·将领测试攻将】",
+      "unit": "infantry",
+      "type": "MOVEMENT",
+      "from": 0,
+      "formationId": "formation-0",
+      "to": 100,
+      "round": 1,
+      "countBefore": 600000
+    },
+    {
+      "formation": "【本城·守将测试守将】",
+      "unit": "htank",
+      "type": "MOVEMENT",
+      "from": 2170,
+      "formationId": "formation-1",
+      "to": 1970,
+      "round": 1,
+      "countBefore": 1
+    },
+    {
+      "formation": "【援军·远征统帅_030390·将领援军甲】",
+      "unit": "htank",
+      "type": "MOVEMENT",
+      "from": 2170,
+      "formationId": "formation-2",
+      "to": 1970,
+      "round": 1,
+      "countBefore": 500000
+    },
+    {
+      "formation": "【援军·远征统帅_030390·将领援军乙】",
+      "unit": "htank",
+      "type": "MOVEMENT",
+      "from": 2170,
+      "formationId": "formation-3",
+      "to": 1970,
+      "round": 1,
+      "countBefore": 500000
+    },
+    {
+      "formation": "【本城·守将测试守将】",
+      "unit": "htank",
+      "type": "NO_FIRE",
+      "round": 1,
+      "reason": "NO_VALID_RANGE_TARGET",
+      "formationId": "formation-1"
+    },
+    {
+      "formation": "【援军·远征统帅_030390·将领援军甲】",
+      "unit": "htank",
+      "type": "NO_FIRE",
+      "round": 1,
+      "reason": "NO_VALID_RANGE_TARGET",
+      "formationId": "formation-2"
+    },
+    {
+      "formation": "【援军·远征统帅_030390·将领援军乙】",
+      "unit": "htank",
+      "type": "NO_FIRE",
+      "round": 1,
+      "reason": "NO_VALID_RANGE_TARGET",
+      "formationId": "formation-3"
+    },
+    {
+      "formation": "【攻方·将领测试攻将】",
+      "unit": "infantry",
+      "type": "NO_FIRE",
+      "round": 1,
+      "reason": "NO_VALID_RANGE_TARGET",
+      "formationId": "formation-0"
+    },
+    {
+      "formation": "【攻方·将领测试攻将】",
+      "unit": "infantry",
+      "type": "MOVEMENT",
+      "from": 100,
+      "formationId": "formation-0",
+      "to": 200,
+      "round": 2,
+      "countBefore": 600000
+    },
+    {
+      "formation": "【本城·守将测试守将】",
+      "unit": "htank",
+      "type": "MOVEMENT",
+      "from": 1970,
+      "formationId": "formation-1",
+      "to": 1770,
+      "round": 2,
+      "countBefore": 1
+    },
+    {
+      "formation": "【援军·远征统帅_030390·将领援军甲】",
+      "unit": "htank",
+      "type": "MOVEMENT",
+      "from": 1970,
+      "formationId": "formation-2",
+      "to": 1770,
+      "round": 2,
+      "countBefore": 500000
+    },
+    {
+      "formation": "【援军·远征统帅_030390·将领援军乙】",
+      "unit": "htank",
+      "type": "MOVEMENT",
+      "from": 1970,
+      "formationId": "formation-3",
+      "to": 1770,
+      "round": 2,
+      "countBefore": 500000
+    },
+    {
+      "formation": "【本城·守将测试守将】",
+      "unit": "htank",
+      "type": "NO_FIRE",
+      "round": 2,
+      "reason": "NO_VALID_RANGE_TARGET",
+      "formationId": "formation-1"
+    },
+    {
+      "formation": "【援军·远征统帅_030390·将领援军甲】",
+      "unit": "htank",
+      "type": "NO_FIRE",
+      "round": 2,
+      "reason": "NO_VALID_RANGE_TARGET",
+      "formationId": "formation-2"
+    },
+    {
+      "formation": "【援军·远征统帅_030390·将领援军乙】",
+      "unit": "htank",
+      "type": "NO_FIRE",
+      "round": 2,
+      "reason": "NO_VALID_RANGE_TARGET",
+      "formationId": "formation-3"
+    },
+    {
+      "formation": "【攻方·将领测试攻将】",
+      "unit": "infantry",
+      "type": "NO_FIRE",
+      "round": 2,
+      "reason": "NO_VALID_RANGE_TARGET",
+      "formationId": "formation-0"
+    }
+  ],
+  "formationLabels": {
+    "mine:infantry": "【攻方·将领测试攻将】",
+    "foe:htank": "【本城·守将测试守将】",
+    "foe:htank~s1": "【援军·远征统帅_030390·将领援军甲】",
+    "foe:htank~s2": "【援军·远征统帅_030390·将领援军乙】"
+  },
+  "unitContexts": {
+    "infantry": {
+      "military": 100,
+      "skills": {},
+      "formationId": "formation-0",
+      "title": "【攻方·将领测试攻将】",
+      "defense": 100,
+      "equipment": {},
+      "firstCombatRound": 0
+    }
+  },
+  "formationContributions": [
+    {
+      "formationId": "formation-0",
+      "formation": "【攻方·将领测试攻将】",
+      "kind": "attack",
+      "unit": "infantry",
+      "initial": 600000,
+      "survivors": 600000,
+      "losses": 0,
+      "damage": 0.0,
+      "wounded": 0,
+      "wallDamage": 0.0,
+      "fortDamage": 0.0,
+      "unitDamage": 0.0
+    },
+    {
+      "formationId": "formation-1",
+      "formation": "【本城·守将测试守将】",
+      "kind": "home",
+      "unit": "htank",
+      "initial": 1,
+      "survivors": 1,
+      "losses": 0,
+      "damage": 0.0,
+      "wounded": 0,
+      "wallDamage": 0.0,
+      "fortDamage": 0.0,
+      "unitDamage": 0.0
+    },
+    {
+      "formationId": "formation-2",
+      "formation": "【援军·远征统帅_030390·将领援军甲】",
+      "kind": "support",
+      "unit": "htank",
+      "initial": 500000,
+      "survivors": 500000,
+      "losses": 0,
+      "damage": 0.0,
+      "wounded": 0,
+      "wallDamage": 0.0,
+      "fortDamage": 0.0,
+      "unitDamage": 0.0
+    },
+    {
+      "formationId": "formation-3",
+      "formation": "【援军·远征统帅_030390·将领援军乙】",
+      "kind": "support",
+      "unit": "htank",
+      "initial": 500000,
+      "survivors": 500000,
+      "losses": 0,
+      "damage": 0.0,
+      "wounded": 0,
+      "wallDamage": 0.0,
+      "fortDamage": 0.0,
+      "unitDamage": 0.0
+    }
+  ],
+  "log": "规则版本：joint-defense-v1-20261024\n战场初始距离: 2170\n-- 第1回合 --\n【攻方·将领测试攻将】步兵-加兰德步枪兵（M1） ×600000\n前进100，坐标100。\n【本城·守将测试守将】重型坦克-斯大林（IS-2） ×1\n前进200，坐标1970。\n【援军·远征统帅_030390·将领援军甲】重型坦克-斯大林（IS-2） ×500000\n前进200，坐标1970。\n【援军·远征统帅_030390·将领援军乙】重型坦克-斯大林（IS-2） ×500000\n前进200，坐标1970。\n【本城·守将测试守将】重型坦克-斯大林（IS-2） ×1\n无射程内合法目标，未开火。\n【援军·远征统帅_030390·将领援军甲】重型坦克-斯大林（IS-2） ×500000\n无射程内合法目标，未开火。\n【援军·远征统帅_030390·将领援军乙】重型坦克-斯大林（IS-2） ×500000\n无射程内合法目标，未开火。\n【攻方·将领测试攻将】步兵-加兰德步枪兵（M1） ×600000\n无射程内合法目标，未开火。\n-- 第2回合 --\n【攻方·将领测试攻将】步兵-加兰德步枪兵（M1） ×600000\n前进100，坐标200。\n【本城·守将测试守将】重型坦克-斯大林（IS-2） ×1\n前进200，坐标1770。\n【援军·远征统帅_030390·将领援军甲】重型坦克-斯大林（IS-2） ×500000\n前进200，坐标1770。\n【援军·远征统帅_030390·将领援军乙】重型坦克-斯大林（IS-2） ×500000\n前进200，坐标1770。\n【本城·守将测试守将】重型坦克-斯大林（IS-2） ×1\n无射程内合法目标，未开火。\n【援军·远征统帅_030390·将领援军甲】重型坦克-斯大林（IS-2） ×500000\n无射程内合法目标，未开火。\n【援军·远征统帅_030390·将领援军乙】重型坦克-斯大林（IS-2） ×500000\n无射程内合法目标，未开火。\n【攻方·将领测试攻将】步兵-加兰德步枪兵（M1） ×600000\n无射程内合法目标，未开火。\n",
+  "finished": false
+}

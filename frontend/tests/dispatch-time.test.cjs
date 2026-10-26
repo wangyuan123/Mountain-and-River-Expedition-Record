@@ -168,10 +168,10 @@ test('all units define non-negative march fuel while infantry remains fuel-free'
 test('fmtDuration formats duration nicely', () => {
   const { Game: g } = setup();
 
-  assert.equal(g.World.fmtDuration(45), '45 秒');
-  assert.equal(g.World.fmtDuration(60), '1 分钟');
-  assert.equal(g.World.fmtDuration(75), '1 分 15 秒');
-  assert.equal(g.World.fmtDuration(3665), '1 小时 1 分 5 秒');
+  assert.equal(g.World.fmtDuration(45), '45秒');
+  assert.equal(g.World.fmtDuration(60), '1分钟0秒');
+  assert.equal(g.World.fmtDuration(75), '1分钟15秒');
+  assert.equal(g.World.fmtDuration(3665), '1小时1分钟5秒');
 });
 
 test('renderDispatch defaults all available units to 0 and exposes a one-unit shortcut', () => {

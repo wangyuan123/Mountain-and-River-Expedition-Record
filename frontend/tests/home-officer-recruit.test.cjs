@@ -136,3 +136,35 @@ test('首页军官技能显示各自图标，未知技能使用默认符号', ()
   assert.match(html, /title="闪电突击"><span aria-hidden="true">⚡<\/span> 闪电突击/);
   assert.match(html, /title="legacy"><span aria-hidden="true">✦<\/span> legacy/);
 });
+
+test('首页军官卡片紧凑排版：闲置去噪、属性精简为单字、满级与在职突出高亮', () => {
+  const G = setupTest([
+    { id: 101, name: '巴顿', level: 100, star: 5, role: 'idle', military: 344, logistics: 95, knowledge: 95 },
+    { id: 102, name: '曼施坦因', level: 85, star: 5, role: 'commander', military: 120, logistics: 140, knowledge: 225 }
+  ]);
+
+  const html = G.MainView.renderOfficerSummaryCard();
+
+  // 1. 闲置军官不打标，消除视觉杂音
+  assert.doesNotMatch(html, /role-idle/);
+  assert.doesNotMatch(html, />闲置</);
+
+  // 2. 指挥官/市长在职军官正确打标
+  assert.match(html, /<span class="home-officer-role role-commander">指挥官<\/span>/);
+
+  // 3. 属性精简为单字标签并带有详细 title 提示
+  assert.match(html, /<span class="home-officer-stat" title="军事 344"><span class="stat-lbl mil">军<\/span><b class="stat-val mil">344<\/b><\/span>/);
+  assert.match(html, /<span class="home-officer-stat" title="后勤 95"><span class="stat-lbl log">勤<\/span><b class="stat-val log">95<\/b><\/span>/);
+  assert.match(html, /<span class="home-officer-stat" title="学识 95"><span class="stat-lbl kno">学<\/span><b class="stat-val kno">95<\/b><\/span>/);
+
+  // 4. 满级显示 is-max 样式
+  assert.match(html, /home-officer-level is-max">Lv\.100<small class="max-badge">\(满\)<\/small><\/span>/);
+
+  // 5. CSS 规则校验紧凑内边距与技能更宽的宽度
+  const css = fs.readFileSync(path.join(__dirname, '../css/style.css'), 'utf8');
+  assert.match(css, /\.home-officer-item\s*\{[^}]*padding:\s*4px 7px;/s);
+  assert.match(css, /\.home-officer-skill\s*\{[^}]*max-width:\s*60%;/s);
+
+  const classicCss = fs.readFileSync(path.join(__dirname, '../css/classic-home.css'), 'utf8');
+  assert.match(classicCss, /\[data-theme="blue-white-classic"\]\s+\.home-officer-item\s*\{[^}]*padding:\s*4px 0\s*!important;/s);
+});

@@ -27,13 +27,15 @@ class GuildPresenceTest {
         when(members.findByPlayerId(2L)).thenReturn(Optional.of(viewer));
         when(members.findByGuildIdOrderByJoinedAtAsc(4L)).thenReturn(List.of(leader, viewer));
         for (long id = 1; id <= 2; id++) {
-            Player p = new Player(); p.setId(id); p.setUsername("member" + id);
+            Player p = new Player(); p.setId(id); p.setUsername("member" + id); p.setDisplayName("统帅昵称" + id);
             when(players.findById(id)).thenReturn(Optional.of(p));
         }
         when(presence.isPlayerOnline(1L)).thenReturn(true);
         List<Map<String, Object>> result = (List<Map<String, Object>>) service.getMyGuild(2L).get("members");
         assertEquals(true, result.get(0).get("online"));
         assertEquals(false, result.get(1).get("online"));
+        assertEquals("统帅昵称1", result.get(0).get("name"));
+        assertEquals("统帅昵称1", service.getMyGuild(2L).get("leaderName"));
         assertFalse(service.getMyGuild(2L).containsKey("applications"));
     }
 }

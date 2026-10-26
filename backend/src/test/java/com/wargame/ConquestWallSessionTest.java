@@ -86,7 +86,7 @@ class ConquestWallSessionTest extends BaseServiceTest {
         assertEquals(2120, first.get("initialDistance"));
         assertEquals(ConquestWallState.ATTACK_WALL, first.get("battlePhase"));
         assertEquals(10, ((ConquestWallState) first.get("wall")).level());
-        assertEquals(BattleRules.VERSION, first.get("rulesVersion"));
+        assertEquals(com.wargame.model.dto.JointDefenseState.VERSION, first.get("rulesVersion"));
         assertTrue(((Map<?, ?>) first.get("defenderArmy")).isEmpty());
         assertTrue(scoutReportRepository.findByPlayerId(attackerId).isEmpty());
         for (int r = 0; r < 5; r++) command(marchId, r, "wall");

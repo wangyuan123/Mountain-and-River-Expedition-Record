@@ -2,8 +2,8 @@
 (function (G) {
   'use strict';
   function Camera(size, x, y, scale) {
-    this.size = size; this.x = x; this.y = y; this.scale = scale || 44;
-    // 初始比例是缩小下限，按钮、滚轮和双指手势共用该约束。
+    this.size = size; this.x = x; this.y = y; this.scale = scale || 57.2;
+    // 默认在原始 44 的基础上放大 30%；初始比例仍是按钮、滚轮和双指手势共用的缩小下限。
     this.minScale = this.scale;
     this.width = 1; this.height = 1;
   }

@@ -81,7 +81,7 @@ window.Game = window.Game || {};
   }
 
   var Camp = {
-    data: null, quantities: {}, pending: false, timer: null, request: 0, generation: 0,
+    data: null, quantities: {}, pending: false, timer: null, request: 0, generation: 0, unitFilter: '', sortOrder: 'expiry',
     showWoundedRulesModal: showWoundedRulesModal,
     showRulesModal: showWoundedRulesModal,
     stop: function () {
@@ -98,6 +98,8 @@ window.Game = window.Game || {};
       this.cityId = currentCityId();
       this.data = null;
       this.quantities = {};
+      this.unitFilter = '';
+      this.sortOrder = 'expiry';
       view.innerHTML = '<div class="title">伤兵营</div><div id="wounded-content" aria-live="polite">正在加载伤兵…</div>' +
         '<div class="menu-item back" onclick="Game.go(\'army\')">返回军队</div>';
       this.refresh();
@@ -152,6 +154,12 @@ window.Game = window.Game || {};
       var count = Number(value);
       return Math.max(0, Math.min(batch.count, Number.isFinite(count) ? Math.floor(count) : 0));
     },
+    /** 筛选和排序只改变展示；各战损批次的数量、期限与治疗价格保持独立。 */
+    setListOptions: function (key, value) {
+      if (key === 'unit') this.unitFilter = value;
+      if (key === 'sort' && ['expiry', 'newest'].indexOf(value) >= 0) this.sortOrder = value;
+      this.paint();
+    },
     /** 一页只展示本城批次；迁城前的历史坐标不再生成额外的城市选项。 */
     renderContent: function (data) {
       var self = this, esc = G.escapeHtml;
@@ -179,6 +187,18 @@ window.Game = window.Game || {};
         '<div class="desc wounded-balance-text" id="wounded-balance">' + self.balanceText() + '</div>' +
       '</div>';
       if (!batches.length) return h + '<div class="wounded-empty">本城暂无可治疗的伤兵<p>切换城市后可查看和治疗该城伤兵。</p></div>';
+      var units = {};
+      batches.forEach(function (batch) { units[batch.unit] = (units[batch.unit] || 0) + Number(batch.count); });
+      if (this.unitFilter && !units[this.unitFilter]) this.unitFilter = '';
+      h += '<div><label for="wounded-unit-filter">兵种筛选</label> <select id="wounded-unit-filter" onchange="Game.Wounded.setListOptions(\'unit\',this.value)"><option value="">全部兵种 · ' + G.fmt(total) + '</option>';
+      Object.keys(units).forEach(function (id) {
+        h += '<option value="' + esc(id) + '"' + (self.unitFilter === id ? ' selected' : '') + '>' + esc((G.DATA.units[id] || {}).name || id) + ' · ' + G.fmt(units[id]) + '</option>';
+      });
+      h += '</select> <label for="wounded-sort">批次排序</label> <select id="wounded-sort" onchange="Game.Wounded.setListOptions(\'sort\',this.value)"><option value="expiry"' + (self.sortOrder === 'expiry' ? ' selected' : '') + '>优先到期</option><option value="newest"' + (self.sortOrder === 'newest' ? ' selected' : '') + '>最新战损</option></select></div>';
+      batches = batches.filter(function (batch) { return !self.unitFilter || batch.unit === self.unitFilter; });
+      batches.sort(function (a, b) { return self.sortOrder === 'newest' ? b.id - a.id : a.expiresAt - b.expiresAt || a.id - b.id; });
+      var filteredTotal = batches.reduce(function (sum, batch) { return sum + Number(batch.count); }, 0);
+      h += '<p role="status">当前筛选待救治合计 ' + G.fmt(filteredTotal) + ' · ' + batches.length + ' 个独立批次</p>';
       batches.forEach(function (batch) {
         var unit = G.DATA.units[batch.unit];
         var qty = self.quantityFor(batch);
@@ -186,7 +206,7 @@ window.Game = window.Game || {};
         self.quantities[batch.id] = qty;
         var remaining = Math.max(0, batch.expiresAt - data.serverTime);
         var hours = Math.ceil(remaining / 3600000);
-        var expiry = hours >= 24 ? Math.floor(hours / 24) + '天' + (hours % 24) + '小时' : (hours > 1 ? hours + '小时' : '不足1小时');
+        var expiry = G.formatDuration(remaining / 1000);
         h += '<div class="wounded-card"><div class="wounded-card-head"><b>' + esc(unit ? unit.name : batch.unit) + '</b><strong>' + G.fmt(batch.count) + '</strong></div>' +
           '<div class="wounded-meta">本次回收 ' + batch.recoveryPercent + '% · <span class="' + (hours <= 24 ? 'wounded-urgent' : '') + '">剩余 ' + expiry + '</span></div>' +
           '<div class="wounded-controls"><div class="wounded-quantity"><label>治疗数量 <input class="qty" type="number" id="wounded-qty-' + batch.id + '" min="0" max="' + batch.count + '" step="1" value="' + qty + '" aria-describedby="wounded-warning-' + batch.id + '" oninput="Game.Wounded.changeQuantity(' + batch.id + ',this.value)"' + (self.pending ? ' disabled' : '') + '> / ' + G.fmt(batch.count) + '</label>' +

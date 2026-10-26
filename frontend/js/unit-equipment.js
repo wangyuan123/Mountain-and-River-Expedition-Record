@@ -9,7 +9,7 @@
     combat: '<svg class="ue-icon ue-icon-combat" viewBox="0 0 20 20" aria-hidden="true" fill="none"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.6"/><circle cx="10" cy="10" r="3.2" fill="currentColor" fill-opacity="0.22" stroke="currentColor" stroke-width="1.2"/><circle cx="10" cy="10" r="1.2" fill="currentColor"/><path d="M10 1.5V4.5M10 15.5V18.5M1.5 10H4.5M15.5 10H18.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
     support: '<svg class="ue-icon ue-icon-support" viewBox="0 0 20 20" aria-hidden="true" fill="none"><rect x="3.2" y="7.5" width="13.6" height="10" rx="2" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.6"/><path d="M6 7.5V2.8M9 7.5V5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="13" cy="12.5" r="2.2" stroke="currentColor" stroke-width="1.3"/><path d="M6 11.2H8.5M6 13.8H8.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M12 2.8C14.2 3.6 15.8 5.4 16.5 7.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>'
   };
-  var labels = { ground: '对地攻击', air: '对空攻击', sea: '对海攻击', fort: '对工事攻击', defense: '防御', hp: '生命', speed: '速度', battleSpeed: '战场速度', marchSpeed: '行军速度', load: '载重', oil: '行军油耗', food: '行军粮耗', reduce_rocket: '反坦克火箭车伤害减免', reduce_destroyer: '驱逐舰伤害减免', against_sub: '对潜艇额外攻击' };
+  var labels = { ground: '对地攻击', air: '对空攻击', sea: '对海攻击', fort: '对工事攻击', defense: '防御', hp: '生命', speed: '速度', battleSpeed: '战场速度', marchSpeed: '行军速度', load: '载重', oil: '行军油耗', food: '行军粮耗', reduce_rocket: '反坦克火箭伤害减免', reduce_destroyer: '驱逐舰伤害减免', against_sub: '对潜艇额外攻击' };
   var unit = null, draft = {}, saved = {}, version = 0, panel = null, activeSlot = 'protection';
   var busy = false, error = '', discarding = false, opener = null, scrollStyle = '', timer = null, lastFingerprint = '';
   function state() { return (Core.state || {}).unitEquipment || {}; }
@@ -87,7 +87,7 @@
     var cat = catalog(), h = '<h3>本城装备制造通道</h3>';
     (state().queue || []).forEach(function (q) {
       var d = cat[q.itemKey];
-      h += '<div><strong>' + esc(d ? d.name : q.itemKey) + '</strong><p>' + (q.startAt > G.gameNow() ? '排队中 · 未开始取消返还全部' : '制造中 · 取消返还一半') + ' · ' + Math.max(0, Math.ceil((q.endAt - G.gameNow()) / 1000)) + ' 秒后完成</p><button type="button" class="btn warn" data-ue="cancel-order" data-key="' + q.id + '"' + (busy ? ' disabled' : '') + '>取消制造</button></div>';
+      h += '<div><strong>' + esc(d ? d.name : q.itemKey) + '</strong><p>' + (q.startAt > G.gameNow() ? '排队中 · 未开始取消返还全部' : '制造中 · 取消返还一半') + ' · ' + G.formatDuration((q.endAt - G.gameNow()) / 1000) + '后完成</p><button type="button" class="btn warn" data-ue="cancel-order" data-key="' + q.id + '"' + (busy ? ' disabled' : '') + '>取消制造</button></div>';
     });
     if (!(state().queue || []).length) h += '<p>暂无制备订单，完成后装备进入账号库存。</p>';
     return h;
@@ -148,7 +148,7 @@
       var seconds = Math.ceil(d.seconds / (1 + .05 * Math.max(0, facility - 1)));
       h += '<article><strong>' + esc(d.name) + '</strong><span class="unit-equipment-status">' + (saved[activeSlot] === d.key ? '已配置' : draft[activeSlot] === d.key ? '草稿已选' : inStock ? '库存 ' + inStock : '未持有') + '</span><p>' + esc(description(d.effects)) + '</p>';
       if (inStock) h += '<button type="button" class="btn ok" data-ue="choose" data-key="' + d.key + '"' + (busy ? ' disabled' : '') + '>选择装备</button>';
-      h += '<details><summary>查看制备</summary><p>武器装备 Lv.' + d.level + ' · ' + esc((G.DATA.buildings[G.DATA.units[unit].build] || {}).name || '生产设施') + ' Lv.' + (d.facilityLevel) + '（本城 Lv.' + facility + '）</p><p>' + costHtml(d.cost) + '</p><p>制备 ' + Math.ceil(seconds / 60) + ' 分钟 · 一件覆盖全部该兵种</p><button type="button" class="btn" data-ue="manufacture" data-key="' + d.key + '"' + (busy || locked || !enough ? ' disabled' : '') + '>制备一件</button>' + (locked ? '<p>科技或本城设施未满足条件</p>' : !enough ? '<p>本城资源不足</p>' : '') + '</details></article>';
+      h += '<details><summary>查看制备</summary><p>武器装备 Lv.' + d.level + ' · ' + esc((G.DATA.buildings[G.DATA.units[unit].build] || {}).name || '生产设施') + ' Lv.' + (d.facilityLevel) + '（本城 Lv.' + facility + '）</p><p>' + costHtml(d.cost) + '</p><p>制备 ' + G.formatDuration(seconds) + ' · 一件覆盖全部该兵种</p><button type="button" class="btn" data-ue="manufacture" data-key="' + d.key + '"' + (busy || locked || !enough ? ' disabled' : '') + '>制备一件</button>' + (locked ? '<p>科技或本城设施未满足条件</p>' : !enough ? '<p>本城资源不足</p>' : '') + '</details></article>';
     });
     h += '</section><section class="unit-equipment-orders">' + ordersHtml() + '</section></div><footer>';
     if (error) h += '<p role="alert">' + esc(error) + '</p>';

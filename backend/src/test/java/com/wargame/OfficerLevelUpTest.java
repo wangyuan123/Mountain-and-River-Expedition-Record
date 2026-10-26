@@ -144,7 +144,7 @@ public class OfficerLevelUpTest extends BaseServiceTest {
         assertEquals(54, updated.getMilitary());
 
         // Check gold deducted by 200: 500 - 200 = 300
-        int gold = resourcesRepository.findByPlayerId(player.getId()).orElseThrow().getGold();
+        long gold = resourcesRepository.findByPlayerId(player.getId()).orElseThrow().getGold();
         assertEquals(300, gold);
     }
 

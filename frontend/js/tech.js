@@ -21,46 +21,27 @@ window.Game = window.Game || {};
     return cost;
   }
 
-  /** 按开工城市的中心等级、市长有效学识和格物技能计算工期，三个速度倍率独立相乘。 */
+  /** 仅按开工城市的市长有效学识和格物技能计算工期；研发中心等级只控制准入。 */
   function techDuration(id, currentLv, labLv) {
     var lv = currentLv != null ? currentLv : ((Core.state && Core.state.tech && Core.state.tech[id]) || 0);
-    var lab = labLv != null ? labLv : ((Core.state && Core.state.buildings && Core.state.buildings.lab) || 0);
     var curves = G.Constants.researchDuration;
     var curve = curves[id] || (id.indexOf('prod_') === 0 ? curves.resource : curves.normal);
     var base = curve[Math.max(0, Math.min(9, lv))];
     var rates = G.Constants.researchSpeed;
-    var labSpeed = 1.0 + rates.labPerLevel * Math.max(0, Math.min(rates.labMaxLevel, lab));
     // 状态中的学识已包含装备与套装加成，不能再重复叠加装备属性。
     var mayor = Core.getOfficerByRole ? Core.getOfficerByRole('mayor') : null;
     var knowledgeSpeed = 1.0 + rates.knowledgePerPoint * Math.max(0, mayor ? (mayor.knowledge || 0) : 0);
     var mayorSpeed = 1.0 + Math.max(0, Math.min(0.20, Core.mayorSkillBonus ? Core.mayorSkillBonus('research') : 0));
-    var duration = Math.round(base / (labSpeed * knowledgeSpeed * mayorSpeed));
+    var duration = Math.round(base / (knowledgeSpeed * mayorSpeed));
     return Math.max(5, duration);
   }
 
   function formatTime(seconds) {
-    seconds = Math.max(0, Math.floor(seconds || 0));
-    if (seconds >= 3600) {
-      var h = Math.floor(seconds / 3600);
-      var m = Math.floor((seconds % 3600) / 60);
-      var s = seconds % 60;
-      return (h < 10 ? '0' + h : h) + ':' + (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
-    } else {
-      var m2 = Math.floor(seconds / 60);
-      var s2 = seconds % 60;
-      return (m2 < 10 ? '0' + m2 : m2) + ':' + (s2 < 10 ? '0' + s2 : s2);
-    }
+    return G.formatDuration(seconds);
   }
 
   function timeText(seconds) {
-    seconds = Math.max(0, Math.floor(seconds || 0));
-    if (seconds < 60) return seconds + '秒';
-    var m = Math.floor(seconds / 60);
-    var s = seconds % 60;
-    if (m < 60) return m + '分' + (s > 0 ? (s + '秒') : '');
-    var h = Math.floor(m / 60);
-    var remM = m % 60;
-    return (h >= 24 ? Math.floor(h / 24) + '天' : '') + (h % 24 > 0 ? (h % 24) + '时' : '') + (remM > 0 ? (remM + '分') : '');
+    return G.formatDuration(seconds);
   }
 
   function costHtml(cost) {
@@ -88,11 +69,11 @@ window.Game = window.Game || {};
         '<div class="modal-body">' +
           '<ol>' +
             '<li><strong>基础工期：</strong>资源科技首级2分钟、9→10级12天；普通科技首级3分钟、9→10级15天。机动科技首级5分钟，燃烧引擎末级20天，舰船动力和喷气推进末级均28天。前五级固定，6—10级按几何曲线递进并四舍五入到整分钟。</li>' +
-            '<li><strong>研发中心：</strong>按开始研发所在城市的中心等级计算，每级研发速度 +1%；Lv.1 为 +1%，满级 Lv.10 为 +10%。</li>' +
+            '<li><strong>研发中心：</strong>只解锁科技种类与可研究等级，不提供研发速度加成。Lv.1—5 分别累计开放 6、16、22、23、24 项科技，Lv.6—10 不新增种类。目标科技等级不能超过本城中心等级，仍须满足各项配套建筑条件；解锁不会直接获得科技，也不能跳级研究。</li>' +
             '<li><strong>市长学识：</strong>按开始研发所在城市的市长有效学识计算，每点学识使研发速度 +0.1%，100 点为 +10%；有效学识包含装备与套装加成。未任命市长时没有这项加成。</li>' +
             '<li><strong>市长技能：</strong>本城市长的「格物致知」每级使研发速度 +4%，最高 Lv.5 为 +20%；只有任命为市长才生效。</li>' +
-            '<li><strong>工期计算：</strong>基础工期 ÷ 研发中心速度倍率 ÷ 学识速度倍率 ÷ 格物技能速度倍率，最后四舍五入到整秒；三项速度倍率分别为“1 + 对应加成”，并相乘。工期最短5秒，不设24小时上限。</li>' +
-            '<li><strong>生效时点：</strong>工期在点击开始研发时锁定。之后升级中心、更换市长、调整学识或提升技能，只影响新开始的研发。</li>' +
+            '<li><strong>工期计算：</strong>基础工期 ÷ 学识速度倍率 ÷ 格物技能速度倍率，最后四舍五入到整秒；两项速度倍率分别为“1 + 对应加成”，并相乘。工期最短5秒，不设24小时上限。</li>' +
+            '<li><strong>生效时点：</strong>工期在点击开始研发时锁定。更换市长、调整学识或提升技能只影响新开始的研发；中心升级只提高新研究的准入范围，不改变已有科技效果或在研工期。</li>' +
             '<li><strong>加速与暂停：</strong>加速符按标注时长 × 使用数量扣减剩余时间，可直接完成研发；研发所在城市归降或移交期间暂停，完成时间按冻结时长顺延。</li>' +
             '<li><strong>开工条件：</strong>需要满足建筑和科技前置条件并备齐资源；全帝国同时只能研发一项科技。</li>' +
           '</ol>' +
@@ -213,16 +194,17 @@ window.Game = window.Game || {};
         return;
       }
 
-      // 3. 检查军工科技研发中心等级
-      var missing = G.Prerequisites && G.Prerequisites.firstMissing('technologies', id, lv + 1);
-      if (missing || labLv < t.labReq) {
-        G.toast(missing ? G.Prerequisites.missingText(missing) : '需军工科技研发中心 Lv.' + t.labReq);
-        return;
-      }
-
-      // 4. 检查是否满级
+      // 3. 中心等级同时控制种类开放与目标等级，配套设施仍按本城逐项校验。
       if (lv >= t.max) {
         G.toast('该科技已达最大等级');
+        return;
+      }
+      var requirements = G.Prerequisites && G.Prerequisites.check('technologies', id, lv + 1);
+      var missing = requirements && requirements.missing[0];
+      var requiredLabLevel = Math.max(t.labReq, lv + 1);
+      if (missing || labLv < requiredLabLevel) {
+        if (missing) G.Prerequisites.preview('technologies', id, lv + 1);
+        else G.toast('需军工科技研发中心 Lv.' + requiredLabLevel);
         return;
       }
 
@@ -262,12 +244,11 @@ window.Game = window.Game || {};
       var knowledgeSpeed = knowledge * G.Constants.researchSpeed.knowledgePerPoint * 100;
       var skillSpeed = Core.mayorSkillBonus ? Core.mayorSkillBonus('research') * 100 : 0;
       var speedParts = [];
-      if (labLv > 0) speedParts.push('中心提速 ' + Math.min(G.Constants.researchSpeed.labMaxLevel, labLv) + '%');
       if (knowledge > 0) speedParts.push('学识提速 ' + knowledgeSpeed.toFixed(1) + '%');
       if (skillSpeed > 0) speedParts.push('格物提速 ' + skillSpeed.toFixed(0) + '%');
-      var labSpeedText = speedParts.length ? (' (' + speedParts.join('，') + ')') : '';
+      var speedText = speedParts.length ? (' (' + speedParts.join('，') + ')') : '';
       var durHtml = '<div class="cu-row"><span class="cu-ico">⏱</span><span class="cu-name">研发工期</span>' +
-                    '<span class="cu-val">' + timeText(duration) + '<span class="cu-sub">' + labSpeedText + '</span></span></div>';
+                    '<span class="cu-val">' + timeText(duration) + '<span class="cu-sub">' + speedText + '</span></span></div>';
 
       var mask = document.createElement('div');
       mask.className = 'modal-mask';
@@ -508,12 +489,13 @@ window.Game = window.Game || {};
     renderView: function (v) {
       var s = Core.state || {};
       var labLv = (s.buildings && s.buildings.lab) || 0;
+      var access = G.researchAccess(labLv);
       var activeRes = s.research;
 
       var h = '';
       h += '<div class="title">- 军工科技研发中心 -</div>';
       h += '<div class="desc">军工科技研发中心 Lv.' + labLv + ' · ' + branchOrder.length + ' 类科技，共 ' + Object.keys(D.techs).length + ' 项。' +
-        '研发速度受中心等级、市长学识和格物致知影响。 ' +
+        '已开放 ' + access.unlocked.length + ' 项，科技可研究至 Lv.' + access.level + '，仍需配套建筑。中心升级不提速，研发速度仅受市长学识和格物致知影响。 ' +
         '<span role="button" tabindex="0" class="link-act" onclick="Game.Tech.showResearchInfo()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();Game.Tech.showResearchInfo();}">查看研发说明</span></div>';
 
       // 1. 顶部正在研发卡片
@@ -538,9 +520,11 @@ window.Game = window.Game || {};
           if (branch !== activeBranch) return;
 
           var lv = (s.tech && s.tech[id]) || 0;
-          var missing = G.Prerequisites && G.Prerequisites.firstMissing('technologies', id, lv + 1);
-          var locked = !!missing || labLv < t.labReq;
-          var lockText = missing ? G.Prerequisites.missingText(missing) : '需军工科技研发中心 Lv.' + t.labReq;
+          var requirements = G.Prerequisites && G.Prerequisites.check('technologies', id, lv + 1);
+          var missing = requirements && requirements.missing[0];
+          var requiredLabLevel = Math.max(t.labReq, lv + 1);
+          var locked = !!missing || labLv < requiredLabLevel;
+          var lockText = missing ? requirements.missing.map(G.Prerequisites.missingText).join('；') : '需军工科技研发中心 Lv.' + requiredLabLevel;
           var maxed = lv >= t.max;
           var cost = techCost(id, lv);
           var duration = techDuration(id, lv, labLv);
@@ -602,9 +586,9 @@ window.Game = window.Game || {};
           }
           h += '  </div>';
 
-          // 前置建筑折叠区（默认折叠，保持卡片紧凑）
+          // 尚未满足时展开全部直接条件和建设入口，避免逐个补齐后才发现下一项。
           if (!maxed && G.Prerequisites) {
-            h += '<details class="prereq-details" onclick="event.stopPropagation()">' +
+            h += '<details class="prereq-details"' + (locked ? ' open' : '') + ' onclick="event.stopPropagation()">' +
               '<summary class="prereq-summary"><span>Lv.' + (lv + 1) + ' 建筑要求</span></summary>' +
               G.Prerequisites.html('technologies', id, lv + 1) +
               '<div class="prereq-preview-foot">' +

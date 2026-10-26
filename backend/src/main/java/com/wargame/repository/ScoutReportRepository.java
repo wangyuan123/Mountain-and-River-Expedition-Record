@@ -17,6 +17,11 @@ public interface ScoutReportRepository extends JpaRepository<ScoutReport, Long> 
 
     List<ScoutReport> findByPlayerIdAndCreatedAtGreaterThanEqual(Long playerId, Long createdAt);
 
+    List<ScoutReport> findByPlayerIdAndPersistedRealAtGreaterThanEqual(Long playerId, Long persistedRealAt);
+
+    List<ScoutReport> findByPlayerIdAndTypeAndTargetXAndTargetYAndDetailExpiresAtGreaterThanOrderByCreatedAtDesc(
+            Long playerId, String type, Integer targetX, Integer targetY, Long detailExpiresAt);
+
     List<ScoutReport> findByPlayerIdOrderByCreatedAtDesc(Long playerId);
 
     long countByPlayerIdAndReadAt(Long playerId, Long readAt);

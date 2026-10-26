@@ -10,6 +10,7 @@ import java.util.*;
 
 @Service
 public class CityService {
+    @org.springframework.beans.factory.annotation.Autowired private GarrisonFoodService garrisonFood;
     public static final int SHIELD_PRICE = 200;
     private static final long SHIELD_DURATION_MS = 8L * 3600 * 1000;
     public static final long BUILD_DURATION_MS = 30 * 60 * 1000L;
@@ -44,6 +45,10 @@ public class CityService {
         for (PlayerCity city : owned) {
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("id", city.getId()); item.put("slot", city.getCitySlot()); item.put("name", city.getName());
+            item.put("supportFoodPerHour", garrisonFood.supportUse(city));
+            item.put("ownFoodPerHour", garrisonFood.ownUse(city) * garrisonFood.reduction(city));
+            item.put("acceptGarrison", city.isAcceptGarrison());
+            item.put("garrisonFoodUnmet", city.getGarrisonFoodUnmet());
             item.put("main", city.getCitySlot() == 0); item.put("current", city.getCitySlot() == scope.slot(playerId));
             item.put("x", city.getX()); item.put("y", city.getY()); item.put("readyAt", city.getReadyAt());
             item.put("surrenderOfferId", city.getSurrenderOfferId());
@@ -175,7 +180,7 @@ public class CityService {
         return city;
     }
 
-    private int amount(Resources r, String key) {
-        return Objects.requireNonNullElse(switch (key) { case "food" -> r.getFood(); case "steel" -> r.getSteel(); case "oil" -> r.getOil(); case "rare" -> r.getRare(); default -> r.getGold(); }, 0);
+    private long amount(Resources r, String key) {
+        return Objects.requireNonNullElse(switch (key) { case "food" -> r.getFood(); case "steel" -> r.getSteel(); case "oil" -> r.getOil(); case "rare" -> r.getRare(); default -> r.getGold(); }, 0L);
     }
 }

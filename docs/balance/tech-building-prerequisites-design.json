@@ -1,5 +1,5 @@
 {
-  "version": "research-technology-ten-levels-20261019-v1",
+  "version": "city-guild-radar-split-20261024-v1",
   "status": "design-only-not-runtime-config",
   "levelAggregation": "maxCompletedSingleBuilding",
   "defaultScope": "city",
@@ -2950,8 +2950,224 @@
         }
       ]
     },
+    "guild_radar": {
+      "name": "联防雷达",
+      "maxLevel": 10,
+      "levels": [
+        {
+          "targetLevel": 1,
+          "requires": [
+            {
+              "building": "command",
+              "level": 3,
+              "scope": "city"
+            },
+            {
+              "building": "lab",
+              "level": 1,
+              "scope": "city"
+            },
+            {
+              "building": "liaison",
+              "level": 1,
+              "scope": "city"
+            }
+          ],
+          "coastalOnly": false
+        },
+        {
+          "targetLevel": 2,
+          "requires": [
+            {
+              "building": "command",
+              "level": 3,
+              "scope": "city"
+            },
+            {
+              "building": "lab",
+              "level": 1,
+              "scope": "city"
+            },
+            {
+              "building": "liaison",
+              "level": 1,
+              "scope": "city"
+            }
+          ],
+          "coastalOnly": false
+        },
+        {
+          "targetLevel": 3,
+          "requires": [
+            {
+              "building": "command",
+              "level": 3,
+              "scope": "city"
+            },
+            {
+              "building": "lab",
+              "level": 2,
+              "scope": "city"
+            },
+            {
+              "building": "liaison",
+              "level": 2,
+              "scope": "city"
+            }
+          ],
+          "coastalOnly": false
+        },
+        {
+          "targetLevel": 4,
+          "requires": [
+            {
+              "building": "command",
+              "level": 4,
+              "scope": "city"
+            },
+            {
+              "building": "lab",
+              "level": 2,
+              "scope": "city"
+            },
+            {
+              "building": "liaison",
+              "level": 2,
+              "scope": "city"
+            }
+          ],
+          "coastalOnly": false
+        },
+        {
+          "targetLevel": 5,
+          "requires": [
+            {
+              "building": "command",
+              "level": 5,
+              "scope": "city"
+            },
+            {
+              "building": "lab",
+              "level": 3,
+              "scope": "city"
+            },
+            {
+              "building": "liaison",
+              "level": 3,
+              "scope": "city"
+            }
+          ],
+          "coastalOnly": false
+        },
+        {
+          "targetLevel": 6,
+          "requires": [
+            {
+              "building": "command",
+              "level": 6,
+              "scope": "city"
+            },
+            {
+              "building": "lab",
+              "level": 3,
+              "scope": "city"
+            },
+            {
+              "building": "liaison",
+              "level": 3,
+              "scope": "city"
+            }
+          ],
+          "coastalOnly": false
+        },
+        {
+          "targetLevel": 7,
+          "requires": [
+            {
+              "building": "command",
+              "level": 7,
+              "scope": "city"
+            },
+            {
+              "building": "lab",
+              "level": 4,
+              "scope": "city"
+            },
+            {
+              "building": "liaison",
+              "level": 4,
+              "scope": "city"
+            }
+          ],
+          "coastalOnly": false
+        },
+        {
+          "targetLevel": 8,
+          "requires": [
+            {
+              "building": "command",
+              "level": 8,
+              "scope": "city"
+            },
+            {
+              "building": "lab",
+              "level": 4,
+              "scope": "city"
+            },
+            {
+              "building": "liaison",
+              "level": 4,
+              "scope": "city"
+            }
+          ],
+          "coastalOnly": false
+        },
+        {
+          "targetLevel": 9,
+          "requires": [
+            {
+              "building": "command",
+              "level": 9,
+              "scope": "city"
+            },
+            {
+              "building": "lab",
+              "level": 5,
+              "scope": "city"
+            },
+            {
+              "building": "liaison",
+              "level": 5,
+              "scope": "city"
+            }
+          ],
+          "coastalOnly": false
+        },
+        {
+          "targetLevel": 10,
+          "requires": [
+            {
+              "building": "command",
+              "level": 10,
+              "scope": "city"
+            },
+            {
+              "building": "lab",
+              "level": 5,
+              "scope": "city"
+            },
+            {
+              "building": "liaison",
+              "level": 5,
+              "scope": "city"
+            }
+          ],
+          "coastalOnly": false
+        }
+      ]
+    },
     "radar": {
-      "name": "防空雷达站",
+      "name": "城防雷达",
       "maxLevel": 10,
       "levels": [
         {

@@ -1,5 +1,7 @@
 package com.wargame.service;
 
+import com.wargame.util.DurationText;
+
 import com.wargame.model.dto.ChatDtos;
 import com.wargame.model.entity.GuildChatMessage;
 import com.wargame.model.entity.GuildMember;
@@ -120,7 +122,7 @@ public class GuildChatService {
         String cdKey = "GUILD_CHAT_CD:" + playerId;
         if (!rateLimiter.allow(cdKey, 1, COOLDOWN_MS)) {
             long waitSec = rateLimiter.retryAfterSeconds(cdKey, COOLDOWN_MS);
-            throw new IllegalArgumentException("发言过于频繁，请 " + waitSec + " 秒后再试");
+            throw new IllegalArgumentException("发言过于频繁，请 " + DurationText.seconds(waitSec) + "后再试");
         }
 
         String originalContent = content;

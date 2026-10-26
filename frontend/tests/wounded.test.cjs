@@ -19,6 +19,7 @@ function setup() {
   const ctx = vm.createContext({ Game: G, document: { activeElement: null, getElementById: id => nodes[id] },
     setInterval: () => 1, clearInterval: () => stopped++ });
   ctx.window = ctx;
+  require('./load-constants.cjs')(ctx);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/wounded.js'), 'utf8'), ctx);
   G.Wounded.token = token;
   G.Wounded.cityId = 1;
@@ -38,6 +39,22 @@ function mountControls(nodes, id) {
   nodes['wounded-warning-' + id] = { textContent: '', hidden: true };
 }
 
+test('unit filtering and expiry sorting retain independent batches and city totals', () => {
+  const { G, data } = setup();
+  data.batches.push({ ...data.batches[0], id: 4, unit: 'infantry', count: 7, expiresAt: 20000 });
+  G.Wounded.unitFilter = 'scout';
+  const html = G.Wounded.renderContent(data);
+  assert.match(html, /当前筛选待救治合计 30 · 2 个独立批次/);
+  assert.ok(html.indexOf('wounded-qty-2') < html.indexOf('wounded-qty-1'));
+  assert.doesNotMatch(html, /wounded-qty-4|wounded-qty-3/);
+  assert.equal(data.batches[0].count, 10);
+  assert.equal(data.batches[1].count, 20);
+  G.Wounded.unitFilter = '';
+  G.Wounded.sortOrder = 'newest';
+  const latest = G.Wounded.renderContent(data);
+  assert.ok(latest.indexOf('wounded-qty-4') < latest.indexOf('wounded-qty-2'));
+});
+
 test('camp follows the active city, ignores other city slots, and does not split batches by historical coordinates', () => {
   const { G, data } = setup();
   let html = G.Wounded.renderContent(data);
@@ -55,7 +72,8 @@ test('camp follows the active city, ignores other city slots, and does not split
   G.Wounded.quantities[2] = 3;
   html = G.Wounded.renderContent(data);
   assert.match(html, /wounded-qty-2[^>]+value="3"/);
-  assert.match(html, /剩余 不足1小时/);
+  assert.match(html, /剩余 8秒/);
+  assert.match(html, /剩余 1天0小时0分钟0秒/);
   assert.match(html, /wounded-qty-1/);
 });
 

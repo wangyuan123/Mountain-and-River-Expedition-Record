@@ -1,0 +1,68 @@
+Browser tab: 2, Title: "山河远征录 - 文字战争策略游戏", URL: "http://localhost:8081/".
+1 AXWebArea 山河远征录 - 文字战争策略游戏, URL: localhost:8081/
+	2 container screen
+		3 container header
+			4 container topbar
+				99 button 头像 远征统帅_163822 已连接, Help: 点击展开指挥官档案、主题与设置
+					100 image 头像
+					101 text 远征统帅_163822
+					102 text 已连接
+				103 text 🎖️ 论坛
+				104 text 💎 100
+			11 container navbar
+				105 container Description: 左右滑动查看更多导航, ID: gameNavViewport
+					106 container 第1组导航
+						107 text 首页
+						108 text 后勤
+						109 text 军工
+						110 text 军官
+						111 text 军队
+						112 text 地图
+						113 text 军情
+						114 container
+							115 text 战报 1
+						116 text 聊天
+						117 container
+							118 text 电报 3
+						119 container
+							120 text 任务 !
+						121 text 军团
+						122 text 仓库
+						123 text 科技
+						124 text 军校
+						125 text 对战
+					126 container 第2组导航
+						127 pop up button Description: 切换城市, Help: 当前城市：新城市（主城）
+						128 text 战术
+						129 text 排名
+						130 text 商城
+				131 container 导航分页
+					132 button 切换到第1组导航
+					133 button 切换到第2组导航
+		42 container view
+			157 text [全域预警监控] 正常运行 | 雷达范围: 120KM | 防务: 无护盾保护
+			158 button [全部(0)]
+			159 button [敌袭] 敌军来袭 (0)
+			160 button [侦察(0)]
+			161 button [我军(0)]
+			162 button [驻防(0)]
+			163 text -------------------------------------------------------------------------
+			164 text 暂无敌方来袭军情。
+			165 text 暂无行军中的部队。
+			166 text -------------------------------------------------------------------------
+			167 text [0] 返回指挥大厅
+			168 text [R] 刷新雷达信号
+			169 text [S] 一键呼叫救援
+			170 text 自动轮询: 3s 响应: 12ms
+		98 container Description: 游戏导航与备案信息, ID: footbar
+			149 container 底部快捷导航
+				150 button 首页
+				151 button 地图
+				152 button 任务
+				153 button 邮件
+				154 button 设置
+				155 button 返回顶部
+			156 text 查看军情 [0]返回
+			171 text 北京时间：2026年10月23日 23:06:34
+
+The focused UI element is 1 AXWebArea 山河远征录 - 文字战争策略游戏, URL: localhost:8081/

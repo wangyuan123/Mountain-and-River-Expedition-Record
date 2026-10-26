@@ -54,7 +54,7 @@ class OnboardingTest extends BaseServiceTest {
         assertThrows(IllegalArgumentException.class, () -> onboarding.claim(playerId, "base"));
         build("command");
         assertTrue(complete("base")); assertEquals("infantry", current());
-        int food = getResources(playerId).getFood(); onboarding.claim(playerId, "base");
+        long food = getResources(playerId).getFood(); onboarding.claim(playerId, "base");
         assertEquals(food, getResources(playerId).getFood(), "建设补给自动到账后不重复发放");
         recruit("infantry", 1); assertEquals("recon_build", current());
         build("depot"); build("lab"); build("factory"); build("radar");
@@ -88,7 +88,7 @@ class OnboardingTest extends BaseServiceTest {
         var result = onboarding.status(playerId);
         assertEquals(true, result.get("done")); assertNull(result.get("current"));
         assertEquals(diamond + 100, getResources(playerId).getDiamond());
-        int afterFood = getResources(playerId).getFood();
+        long afterFood = getResources(playerId).getFood();
         onboarding.finish(playerId); onboarding.status(playerId); onboarding.start(playerId);
         assertEquals(afterFood, getResources(playerId).getFood());
         assertEquals(diamond + 100, getResources(playerId).getDiamond());
@@ -111,16 +111,57 @@ class OnboardingTest extends BaseServiceTest {
         assertEquals("in_progress", task("gather").get("status"));
         arrive(gather); assertEquals("in_progress", task("gather").get("status"));
         assertTrue(gather.getGatherAmount() > 0, "基础卡车应具备真实采集负重");
+        gather.setGatherStartAt(System.currentTimeMillis() - 120_000L);
         gather.setGatherEndAt(System.currentTimeMillis() - 1); marchRepository.save(gather);
         marchService.processMarches(playerId, System.currentTimeMillis());
         assertEquals("in_progress", task("gather").get("status"));
+        assertFalse(gather.getReturning());
+        marchService.stopGatherMarch(playerId, gather.getId());
+        assertFalse(gather.getReturning());
+        assertEquals("in_progress", task("gather").get("status"));
+        marchService.cancelMarch(playerId, gather.getId());
         arrive(gather);
         assertEquals("completed", task("gather").get("status"));
-        int before = getResources(playerId).getFood();
+        long before = getResources(playerId).getFood();
         onboarding.claimTask(playerId, "gather"); onboarding.claimTask(playerId, "gather");
         assertEquals(before + 5000, getResources(playerId).getFood());
         assertEquals("claimed", task("gather").get("status"));
         assertNull(onboarding.status(playerId).get("current"));
+    }
+
+    @Test
+    void reportsPersistedAfterEnrollmentCountEvenWhenGameClockLagsAndDetailsAreTrimmed() {
+        long enrolledAt = guides.findByPlayerId(playerId).stream().filter(g -> "ob3_enrolled".equals(g.getStepId()))
+                .findFirst().orElseThrow().getCompletedAt();
+        // 报名之前的战报不能推动行动，即使其游戏发生时间更晚。
+        ScoutReport old = new ScoutReport(); old.setPlayerId(playerId); old.setType("battle");
+        old.setCreatedAt(enrolledAt + 1000); old.setPersistedRealAt(enrolledAt - 1);
+        old.setData(JsonUtil.toJson(Map.of("targetType", "wild", "win", true))); old.setReadAt(enrolledAt);
+        scoutReportRepository.saveAndFlush(old);
+        assertFalse(complete("occupy"));
+
+        onboarding.onEvent(playerId, "BUILD_UPGRADE_DONE", "command", 1);
+        onboarding.onEvent(playerId, "ARMY_RECRUIT", "infantry", 1);
+        onboarding.onEvent(playerId, "ARMY_RECRUIT", "recon_car", 1);
+        for (String type : List.of("scout", "battle")) {
+            ScoutReport r = new ScoutReport(); r.setPlayerId(playerId); r.setType(type);
+            r.setCreatedAt(enrolledAt - 24 * 60 * 60 * 1000L); r.setPersistedRealAt(enrolledAt + 1);
+            r.setData(JsonUtil.toJson("scout".equals(type) ? Map.of("targetKind", "wild", "showCityInfo", true)
+                    : Map.of("targetType", "wild", "win", true)));
+            r.setReadAt(enrolledAt + 2);
+            if ("battle".equals(type)) {
+                String summary = r.getSummaryJson(); r.setData(null); r.setSummaryJson(summary);
+            }
+            scoutReportRepository.saveAndFlush(r);
+        }
+        // 首次评估确认侦察，下一次评估兼容旧进度并补齐侦查建设链，毕业奖励只发一次。
+        onboarding.status(playerId);
+        int diamond = getResources(playerId).getDiamond();
+        assertEquals(true, onboarding.status(playerId).get("done"));
+        assertEquals(8L, onboarding.status(playerId).get("completed"));
+        assertEquals(diamond + 100, getResources(playerId).getDiamond());
+        onboarding.status(playerId);
+        assertEquals(diamond + 100, getResources(playerId).getDiamond());
     }
 
     @Test
@@ -163,7 +204,7 @@ class OnboardingTest extends BaseServiceTest {
     @Test
     void skippingOnlyPaysUnclaimedStageSuppliesAndLeavesExplorationOpen() {
         onboarding.onEvent(playerId, "BUILD_UPGRADE_DONE", "farm", 1);
-        int food = getResources(playerId).getFood(), diamond = getResources(playerId).getDiamond();
+        long food = getResources(playerId).getFood(); int diamond = getResources(playerId).getDiamond();
         onboarding.skip(playerId); onboarding.skip(playerId); onboarding.claim(playerId, "base");
         assertEquals(food + 8000, getResources(playerId).getFood()); assertEquals(diamond, getResources(playerId).getDiamond());
         assertEquals(true, onboarding.status(playerId).get("done")); assertNull(onboarding.status(playerId).get("current"));

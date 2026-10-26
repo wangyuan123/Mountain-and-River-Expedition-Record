@@ -9,6 +9,12 @@ import java.util.Optional;
 @Repository
 public interface ResourcesRepository extends JpaRepository<Resources, Long> {
 
+    @org.springframework.data.jpa.repository.Query(value = "select r.* from resources r where " +
+            "r.food > :limit or r.steel > :limit or r.oil > :limit or r.rare > :limit or r.gold > :limit " +
+            "or exists (select 1 from resource_overflow_state s where s.resource_id = r.id) " +
+            "order by r.player_id, r.city_slot, r.id for update", nativeQuery = true)
+    java.util.List<Resources> findAllForOverflowTreatment(@org.springframework.data.repository.query.Param("limit") long limit);
+
     Optional<Resources> findByPlayerId(Long playerId);
 
     Optional<Resources> findFirstByPlayerIdOrderByCitySlotAsc(Long playerId);

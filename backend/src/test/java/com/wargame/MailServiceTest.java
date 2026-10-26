@@ -38,15 +38,15 @@ public class MailServiceTest extends BaseServiceTest {
     @Autowired private ResourcesRepository resourcesRepository;
 
     @Test
-    void seedForNewPlayer_createsThreeSystemMails() {
+    void seedForNewPlayer_createsThreeSystemMailsAndCommanderGift() {
         Player p = createTestPlayer("seeduser", 30);
         // GameStateService.initializeNewPlayer -> seedForNewPlayer 在 BaseServiceTest 中未调用
         mailService.seedForNewPlayer(p.getId());
 
         List<Map<String, Object>> inbox = mailService.listInbox(p.getId());
-        assertEquals(3, inbox.size(), "应有 3 封种子邮件");
+        assertEquals(4, inbox.size(), "应有 3 封种子邮件和 1 封改名卡赠礼");
         long unread = mailService.unreadCount(p.getId());
-        assertEquals(1, unread, "欢迎邮件未读, 其它两封已读, 未读应为 1");
+        assertEquals(2, unread, "欢迎邮件和改名卡赠礼未读");
     }
 
     @Test
@@ -54,7 +54,7 @@ public class MailServiceTest extends BaseServiceTest {
         Player p = createTestPlayer("seeduser2", 30);
         mailService.seedForNewPlayer(p.getId());
         mailService.seedForNewPlayer(p.getId());
-        assertEquals(3, mailService.listInbox(p.getId()).size());
+        assertEquals(4, mailService.listInbox(p.getId()).size());
     }
 
     @Test
@@ -66,6 +66,51 @@ public class MailServiceTest extends BaseServiceTest {
         assertEquals(true, result.get("success"));
         assertEquals(1, mailService.listInbox(b.getId()).size());
         assertEquals(1, mailService.listOutbox(a.getId()).size());
+    }
+
+    @Test
+    void send_usesCommanderNamesAndAllowsReplyByCommanderName() {
+        Player sender = createTestPlayer("sender_login", 30);
+        Player recipient = createTestPlayer("recipient_login", 30);
+        sender.setDisplayName("烈火统帅");
+        recipient.setDisplayName("山林统帅");
+        playerRepository.saveAll(List.of(sender, recipient));
+
+        Map<String, Object> result = mailService.send(sender.getId(), "山林统帅", "问候", "你好", List.of());
+        assertEquals("已发送给 山林统帅", result.get("message"));
+        Map<?, ?> sent = (Map<?, ?>) result.get("mail");
+        assertEquals("烈火统帅", sent.get("from"));
+        assertEquals("山林统帅", sent.get("to"));
+        Map<String, Object> inbox = mailService.listInbox(recipient.getId()).get(0);
+        assertEquals("烈火统帅", inbox.get("from"));
+        assertEquals("山林统帅", inbox.get("to"));
+        Map<String, Object> detail = mailService.detail(recipient.getId(), ((Number) inbox.get("id")).longValue());
+        assertEquals("烈火统帅", detail.get("from"));
+        assertEquals("山林统帅", detail.get("to"));
+        assertEquals(true, mailService.send(recipient.getId(), (String) detail.get("from"), "回复", "收到", List.of()).get("success"));
+    }
+
+    @Test
+    void systemAndSeedMail_useCommanderNames() {
+        Player player = createTestPlayer("system_recipient_login", 30);
+        player.setDisplayName("山林统帅");
+        playerRepository.save(player);
+        Mail mail = mailService.sendSystem(player.getId(), "系统", "system", "通知", "正文", List.of());
+        assertEquals("山林统帅", mail.getToName());
+        mailService.seedForNewPlayer(player.getId());
+        assertTrue(mailService.listInbox(player.getId()).stream().allMatch(item -> "山林统帅".equals(item.get("to"))));
+    }
+
+    @Test
+    void missingCommanderName_doesNotExposeLoginName() {
+        Player player = createTestPlayer("private_login", 30);
+        Mail mail = mailService.sendSystem(player.getId(), "系统", "system", "通知", "正文", List.of());
+        assertEquals("统帅" + player.getId(), mail.getToName());
+        player.setDisplayName("  ");
+        playerRepository.save(player);
+        assertEquals("统帅" + player.getId(), mailService.sendSystem(player.getId(), "系统", "system", "通知", "正文", List.of()).getToName());
+        Player sender = createTestPlayer("reply_sender", 30);
+        assertEquals(true, mailService.send(sender.getId(), mail.getToName(), "问候", "你好", List.of()).get("success"));
     }
 
     @Test

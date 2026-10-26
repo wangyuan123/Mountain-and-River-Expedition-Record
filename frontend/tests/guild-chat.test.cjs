@@ -75,6 +75,7 @@ function fixture() {
   };
   context.window = context;
   vm.createContext(context);
+  require('./load-constants.cjs')(context);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/chat.js'), 'utf8'), context);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/guild.js'), 'utf8'), context);
   return { chat: context.Game.Chat, guild: context.Game.Guild, fields, calls, context };
@@ -173,6 +174,7 @@ test('guild renderMine contains 💬 军团频道 tab and terminal box', () => {
   assert.match(html, /COMM-LINK \/\/ 军团加密内频/);
   assert.match(html, /id="guildChatBox"/);
   assert.match(html, /id="guildChatInput"/);
+  assert.match(html, /id="guildChatInput"[^>]*placeholder="善言结善缘 恶语伤人心"/);
   assert.match(html, /id="guildChatSendBtn"/);
 });
 

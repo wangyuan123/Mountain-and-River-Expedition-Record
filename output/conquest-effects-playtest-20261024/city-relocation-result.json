@@ -1,0 +1,176 @@
+{
+  "database": "wargame",
+  "beforeCities": [
+    {
+      "x": 4,
+      "y": 389,
+      "id": 160,
+      "name": "远征军要塞570712",
+      "slot": 0,
+      "span": 2,
+      "owner": 158,
+      "world": 1,
+      "readyAt": 0,
+      "surrender": null,
+      "legacyNaval": 0
+    },
+    {
+      "x": 4,
+      "y": 388,
+      "id": 178,
+      "name": "新城市",
+      "slot": 1,
+      "span": 2,
+      "owner": 177,
+      "world": 1,
+      "readyAt": 0,
+      "surrender": null,
+      "legacyNaval": 0
+    },
+    {
+      "x": 5,
+      "y": 388,
+      "id": 180,
+      "name": "重建主城",
+      "slot": 2,
+      "span": 2,
+      "owner": 177,
+      "world": 1,
+      "readyAt": 0,
+      "surrender": null,
+      "legacyNaval": 0
+    }
+  ],
+  "beforePlayers": [
+    {
+      "id": 158,
+      "mainX": 15,
+      "mainY": 389,
+      "viewX": 4,
+      "viewY": 389,
+      "activeCity": null
+    },
+    {
+      "id": 177,
+      "mainX": 3,
+      "mainY": 388,
+      "viewX": 3,
+      "viewY": 388,
+      "activeCity": 179
+    }
+  ],
+  "moves": [
+    {
+      "cityId": 160,
+      "ownerId": 158,
+      "slot": 0,
+      "name": "远征军要塞570712",
+      "from": [
+        4,
+        389
+      ],
+      "to": [
+        12,
+        387
+      ],
+      "coastal": true
+    },
+    {
+      "cityId": 178,
+      "ownerId": 177,
+      "slot": 1,
+      "name": "新城市",
+      "from": [
+        4,
+        388
+      ],
+      "to": [
+        20,
+        387
+      ],
+      "coastal": true
+    },
+    {
+      "cityId": 180,
+      "ownerId": 177,
+      "slot": 2,
+      "name": "重建主城",
+      "from": [
+        5,
+        388
+      ],
+      "to": [
+        25,
+        387
+      ],
+      "coastal": true
+    }
+  ],
+  "applied": true,
+  "afterCities": [
+    {
+      "x": 12,
+      "y": 387,
+      "id": 160,
+      "name": "远征军要塞570712",
+      "slot": 0,
+      "span": 2,
+      "owner": 158,
+      "world": 1,
+      "readyAt": 0,
+      "surrender": null,
+      "legacyNaval": 0
+    },
+    {
+      "x": 20,
+      "y": 387,
+      "id": 178,
+      "name": "新城市",
+      "slot": 1,
+      "span": 2,
+      "owner": 177,
+      "world": 1,
+      "readyAt": 0,
+      "surrender": null,
+      "legacyNaval": 0
+    },
+    {
+      "x": 25,
+      "y": 387,
+      "id": 180,
+      "name": "重建主城",
+      "slot": 2,
+      "span": 2,
+      "owner": 177,
+      "world": 1,
+      "readyAt": 0,
+      "surrender": null,
+      "legacyNaval": 0
+    }
+  ],
+  "afterPlayers": [
+    {
+      "id": 158,
+      "mainX": 12,
+      "mainY": 387,
+      "viewX": 12,
+      "viewY": 387,
+      "activeCity": null
+    },
+    {
+      "id": 177,
+      "mainX": 3,
+      "mainY": 388,
+      "viewX": 3,
+      "viewY": 388,
+      "activeCity": 179
+    }
+  ],
+  "checks": [
+    "三城完整四格陆地",
+    "同战场沿海落点",
+    "与城市及NPC野地不重叠",
+    "主城坐标与当前视角同步",
+    "未扣道具或改动兵力资源"
+  ]
+}

@@ -77,7 +77,7 @@ class ShipyardServiceTest extends BaseServiceTest {
 
     @Test
     void shipyardRequiresCompletedHarborAndIndustrialInfrastructureBeforePayment() {
-        int steel = getResources(playerId).getSteel();
+        long steel = getResources(playerId).getSteel();
         var denied = buildService.upgrade(playerId, "shipyard", 0);
         assertEquals(false, denied.get("success"));
         assertTrue(denied.get("message").toString().contains("军港"));
@@ -106,7 +106,7 @@ class ShipyardServiceTest extends BaseServiceTest {
     @ValueSource(strings = {"destroyer", "sub", "battleship", "carrier"})
     void everyNavalUnitNeedsBothLocalBuildingsAndSchedulesAtShipyard(String unit) {
         createBuilding(playerId, "port", 10);
-        int steel = getResources(playerId).getSteel();
+        long steel = getResources(playerId).getSteel();
         int civilians = playerRepository.findById(playerId).orElseThrow().getCivilianPopulation();
         var denied = army.recruit(playerId, unit, 1);
         assertEquals(false, denied.get("success"));
@@ -253,7 +253,7 @@ class ShipyardServiceTest extends BaseServiceTest {
     void navalPrisonerRecruitmentRequiresBothBuildingsBeforeChargingGold(String presentBuilding) {
         createBuilding(playerId, presentBuilding, 1);
         PrisonerUnit batch = prisoner();
-        int gold = getResources(playerId).getGold();
+        long gold = getResources(playerId).getGold();
         var pool = prisoners.getPool(playerId);
         var units = (List<Map<String, Object>>) pool.get("units");
         assertFalse(units.get(0).get("unavailableReason").toString().isEmpty());

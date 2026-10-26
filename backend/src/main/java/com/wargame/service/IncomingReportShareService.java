@@ -17,6 +17,7 @@ import java.util.*;
 
 @Service @RequiredArgsConstructor
 public class IncomingReportShareService {
+    @org.springframework.beans.factory.annotation.Autowired private RadarService radar;
     @org.springframework.beans.factory.annotation.Autowired private com.wargame.config.RetentionPolicy retentionPolicy = new com.wargame.config.RetentionPolicy();
     private final SharedIncomingReportRepository shares;
     private final GuildMemberRepository members;
@@ -33,7 +34,8 @@ public class IncomingReportShareService {
                 .orElseThrow(() -> new IllegalArgumentException("尚未加入任何军团"));
         var player = players.findById(owner)
                 .orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
-        var incoming = views.getIncoming(player).stream()
+        var incoming = incomingId != null && incomingId.startsWith("radar-")
+                ? radar.shareable(owner, Long.valueOf(incomingId.substring(6))) : views.getIncoming(player).stream()
                 .filter(item -> Objects.equals(String.valueOf(item.get("id")), incomingId))
                 .findFirst().orElseThrow(() -> new IllegalArgumentException("来袭军情已结束或无权分享，请刷新军情"));
         Map<String, Object> snapshot = new LinkedHashMap<>();

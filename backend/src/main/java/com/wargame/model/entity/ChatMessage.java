@@ -21,7 +21,7 @@ public class ChatMessage {
     @Column(name = "username", nullable = false, length = 50)
     private String username;
 
-    @Column(name = "content", nullable = false, length = 80)
+    @Column(name = "content", nullable = false, length = 512)
     private String content;
 
     @Column(name = "created_at", nullable = false)

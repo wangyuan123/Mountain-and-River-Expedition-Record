@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
+@EntityListeners(com.wargame.service.RadarChangeListener.class)
 @Table(name = "wild_tiles")
 public class WildTile extends VersionedEntity {
 
@@ -47,6 +48,25 @@ public class WildTile extends VersionedEntity {
     /** 领地所属城市，与驻军/采集出发城市独立；历史领地归入主城序号0。 */
     @Column(name = "occupied_city_slot", nullable = false)
     private Integer occupiedCitySlot = 0;
+
+    /** 独立于乐观锁：同一玩家放弃后重新占领也是不同归属批次。 */
+    @Column(name = "occupation_version", nullable = false)
+    private long occupationVersion;
+
+    public void setOccupied(Boolean value) {
+        if (!java.util.Objects.equals(occupied, value)) occupationVersion++;
+        occupied = value;
+    }
+
+    public void setOccupiedBy(Long value) {
+        if (!java.util.Objects.equals(occupiedBy, value)) occupationVersion++;
+        occupiedBy = value;
+    }
+
+    public void setOccupiedCitySlot(Integer value) {
+        if (!java.util.Objects.equals(occupiedCitySlot, value)) occupationVersion++;
+        occupiedCitySlot = value;
+    }
 
     @Column(name = "total_res")
     private Integer totalRes;

@@ -47,6 +47,7 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 @Service
 public class DepotService {
+    @org.springframework.beans.factory.annotation.Autowired private CommanderRenameService commanderRename;
 
     @jakarta.persistence.PersistenceContext
     private jakarta.persistence.EntityManager entityManager;
@@ -58,6 +59,10 @@ public class DepotService {
     private com.wargame.service.CityScope cityScope;
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.quest.QuestService questService;
+    @org.springframework.beans.factory.annotation.Autowired
+    private ChatService chatService;
+
+    @org.springframework.beans.factory.annotation.Autowired private OfficerEquipmentProgressService equipmentProgress;
 
     private final ResourcesRepository resourcesRepository;
     private final PlayerItemRepository playerItemRepository;
@@ -93,15 +98,25 @@ public class DepotService {
      */
     @Transactional
     public Map<String, Object> useItem(Long playerId, String itemId, Long officerId, String newName) {
+        return useItem(playerId, itemId, officerId, newName, null);
+    }
+
+    /** 自选技能通过独立参数传递，其他道具忽略 skillId，保持原有使用效果。 */
+    @Transactional
+    public Map<String, Object> useItem(Long playerId, String itemId, Long officerId, String newName, String skillId) {
         if (itemId == null || itemId.isBlank()) {
             return error("道具ID不能为空");
+        }
+        if (com.wargame.model.constants.CommanderRenamePolicy.ITEM_KEY.equals(itemId)) {
+            commanderRename.rename(playerId, newName);
+            return success("统帅名称已修改，消耗1张统帅改名卡", Map.of());
         }
 
         // 资源类（不需要选军官）
         if (isResourceItem(itemId)) {
             return useResourceItem(playerId, itemId);
         }
-        // 装备宝箱类（开启直接获得整套 3 件装备）
+        // 装备宝箱类（开启直接获得整套十二件装备）
         if (isEquipmentBox(itemId)) {
             return useEquipmentBox(playerId, itemId);
         }
@@ -110,7 +125,7 @@ public class DepotService {
             return useStageGift(playerId, itemId);
         }
         // 功能类
-        if ("shield".equals(itemId)) return useShield(playerId);
+        if (ItemDef.SHIELD_HOURS.containsKey(itemId)) return useShield(playerId, itemId);
         if ("marchOrd".equals(itemId)) return useMarchOrd(playerId);
         if ("populationOrder".equals(itemId) || "emergencyPopulationOrder".equals(itemId)) {
             return usePopulationOrder(playerId, itemId);
@@ -123,6 +138,9 @@ public class DepotService {
         }
         if ("skillBook".equals(itemId)) {
             return useSkillBook(playerId, officerId);
+        }
+        if ("universalSkillBook".equals(itemId)) {
+            return officerService.learnUniversalSkill(playerId, officerId, skillId);
         }
         String specificSkillId = specificSkillId(itemId);
         if (specificSkillId != null) {
@@ -168,47 +186,48 @@ public class DepotService {
             return error("玩家资源数据不存在");
         }
 
+        Map<String, Long> before = resourceAmounts(res);
         Map<String, Object> result = new LinkedHashMap<>();
         StringBuilder msg = new StringBuilder();
         switch (itemId) {
             case "goldBox" -> {
                 // JS: var n = rand(1000, 5000)
                 int n = 1000 + ThreadLocalRandom.current().nextInt(4001);
-                res.setGold((res.getGold() != null ? res.getGold() : 0) + n);
+                res.addResource("gold", n);
                 msg.append("开启黄金箱,获得 💰").append(n);
             }
             case "resBox" -> {
-                res.setFood((res.getFood() != null ? res.getFood() : 0) + 500);
-                res.setSteel((res.getSteel() != null ? res.getSteel() : 0) + 500);
-                res.setOil((res.getOil() != null ? res.getOil() : 0) + 500);
-                res.setRare((res.getRare() != null ? res.getRare() : 0) + 500);
+                res.addResource("food", 500);
+                res.addResource("steel", 500);
+                res.addResource("oil", 500);
+                res.addResource("rare", 500);
                 msg.append("开启资源箱,粮钢油稀各 +500");
             }
             case "steelPack" -> {
-                res.setSteel((res.getSteel() != null ? res.getSteel() : 0) + 20000);
+                res.addResource("steel", 20000);
                 msg.append("获得 钢铁 +20000");
             }
             case "supplyPack" -> {
-                res.setFood((res.getFood() != null ? res.getFood() : 0) + 8000);
-                res.setSteel((res.getSteel() != null ? res.getSteel() : 0) + 8000);
-                res.setOil((res.getOil() != null ? res.getOil() : 0) + 8000);
-                res.setRare((res.getRare() != null ? res.getRare() : 0) + 8000);
+                res.addResource("food", 8000);
+                res.addResource("steel", 8000);
+                res.addResource("oil", 8000);
+                res.addResource("rare", 8000);
                 msg.append("战备补给包,粮钢油稀各 +8000");
             }
             case "resourcePack500w" -> {
-                res.setFood((res.getFood() != null ? res.getFood() : 0) + 5_000_000);
-                res.setSteel((res.getSteel() != null ? res.getSteel() : 0) + 5_000_000);
-                res.setOil((res.getOil() != null ? res.getOil() : 0) + 5_000_000);
-                res.setRare((res.getRare() != null ? res.getRare() : 0) + 5_000_000);
+                res.addResource("food", 5_000_000);
+                res.addResource("steel", 5_000_000);
+                res.addResource("oil", 5_000_000);
+                res.addResource("rare", 5_000_000);
                 msg.append("资源大礼包,粮食/钢铁/石油/稀矿各 +500万");
             }
             case "newbiePack" -> {
                 // 固定发放商品明示的五种资源，不按售价或任何倍率计算奖励。
-                res.setFood((res.getFood() != null ? res.getFood() : 0) + 20000);
-                res.setSteel((res.getSteel() != null ? res.getSteel() : 0) + 20000);
-                res.setOil((res.getOil() != null ? res.getOil() : 0) + 10000);
-                res.setRare((res.getRare() != null ? res.getRare() : 0) + 5000);
-                res.setGold((res.getGold() != null ? res.getGold() : 0) + 3000);
+                res.addResource("food", 20000);
+                res.addResource("steel", 20000);
+                res.addResource("oil", 10000);
+                res.addResource("rare", 5000);
+                res.addResource("gold", 3000);
                 msg.append("开启新手礼包，获得：粮食×20000、钢铁×20000、石油×10000、稀矿×5000、黄金×3000");
             }
             default -> {
@@ -217,6 +236,7 @@ public class DepotService {
             }
         }
         resourcesRepository.save(res);
+        chatService.sendItemOpened(playerId, ItemDef.ITEMS.get(itemId).name(), resourceRewards(res, before));
 
         result.put("success", true);
         result.put("message", msg.toString());
@@ -248,18 +268,19 @@ public class DepotService {
         });
     }
 
-    /** 每个护盾增加 8 小时保护，未到期时顺延，已到期时从当前时间起算。 */
-    private Map<String, Object> useShield(Long playerId) {
+    /** 消耗指定档位护盾，仅保护当前城市；各档未到期时顺延，已到期时从当前时间起算。 */
+    private Map<String, Object> useShield(Long playerId, String itemId) {
         // 与敌军出征/抵达使用同一玩家锁，确定开盾与开战的先后并避免并发续盾丢失时长。
         if (playerRepository.lockById(playerId).isEmpty()) return error("玩家不存在");
-        int consumed = playerItemRepository.tryConsume(playerId, "shield", 1, GameClock.now());
+        int consumed = playerItemRepository.tryConsume(playerId, itemId, 1, GameClock.now());
         if (consumed == 0) return error("护盾数量不足");
         CityState cs = getOrCreateCityState(playerId);
         long now = GameClock.now();
         long cur = cs.getShieldUntil() != null ? cs.getShieldUntil() : 0L;
-        cs.setShieldUntil(Math.max(cur, now) + 8L * 3600 * 1000);
+        int hours = ItemDef.SHIELD_HOURS.get(itemId);
+        cs.setShieldUntil(Math.max(cur, now) + hours * 3600L * 1000);
         cityStateRepository.save(cs);
-        return success("🛡️ 护盾时间已增加 8 小时,免受玩家攻击", Map.of("shieldUntil", cs.getShieldUntil()));
+        return success("🛡️ 本城护盾时间已增加 " + hours + " 小时，免受侦查、攻击和宣战", Map.of("shieldUntil", cs.getShieldUntil()));
     }
 
     private Map<String, Object> useMarchOrd(Long playerId) {
@@ -512,58 +533,32 @@ public class DepotService {
     }
 
     // ================================================================
-    //  装备宝箱：开启后直接向玩家发放整套 3 件装备（武器/徽章/外套）
+    //  装备宝箱：开启后直接向玩家发放整套十二个部位各一件
     // ================================================================
 
-    private record EquipmentBoxDef(String boxName, List<String> equipmentKeys, String setBonusDesc) {}
-
-    private static final Map<String, EquipmentBoxDef> EQUIPMENT_BOXES = Map.ofEntries(
-        Map.entry("box_recruit_military", new EquipmentBoxDef("列兵军事装备箱",
-            List.of("recruit_military_weapon", "recruit_military_badge", "recruit_military_coat"), "军事+3")),
-        Map.entry("box_recruit_defense", new EquipmentBoxDef("列兵防御装备箱",
-            List.of("recruit_defense_weapon", "recruit_defense_badge", "recruit_defense_coat"), "防御+3")),
-        Map.entry("box_recruit_logistics", new EquipmentBoxDef("列兵后勤装备箱",
-            List.of("recruit_logistics_weapon", "recruit_logistics_badge", "recruit_logistics_coat"), "后勤+3")),
-        Map.entry("box_recruit_knowledge", new EquipmentBoxDef("列兵学识装备箱",
-            List.of("recruit_knowledge_weapon", "recruit_knowledge_badge", "recruit_knowledge_coat"), "学识+3")),
-        Map.entry("box_officer_military", new EquipmentBoxDef("校官军事装备箱",
-            List.of("officer_military_weapon", "officer_military_badge", "officer_military_coat"), "军事+15")),
-        Map.entry("box_officer_defense", new EquipmentBoxDef("校官防御装备箱",
-            List.of("officer_defense_weapon", "officer_defense_badge", "officer_defense_coat"), "防御+15")),
-        Map.entry("box_officer_logistics", new EquipmentBoxDef("校官后勤装备箱",
-            List.of("officer_logistics_weapon", "officer_logistics_badge", "officer_logistics_coat"), "后勤+15")),
-        Map.entry("box_officer_knowledge", new EquipmentBoxDef("校官学识装备箱",
-            List.of("officer_knowledge_weapon", "officer_knowledge_badge", "officer_knowledge_coat"), "学识+15")),
-        Map.entry("box_marshal_military", new EquipmentBoxDef("元帅军事装备箱",
-            List.of("marshal_military_weapon", "marshal_military_badge", "marshal_military_coat"), "军事+30，全属性+5")),
-        Map.entry("box_marshal_defense", new EquipmentBoxDef("元帅防御装备箱",
-            List.of("marshal_defense_weapon", "marshal_defense_badge", "marshal_defense_coat"), "防御+30，全属性+5")),
-        Map.entry("box_marshal_logistics", new EquipmentBoxDef("元帅后勤装备箱",
-            List.of("marshal_logistics_weapon", "marshal_logistics_badge", "marshal_logistics_coat"), "后勤+30，全属性+5")),
-        Map.entry("box_marshal_knowledge", new EquipmentBoxDef("元帅学识装备箱",
-            List.of("marshal_knowledge_weapon", "marshal_knowledge_badge", "marshal_knowledge_coat"), "学识+30，全属性+5"))
-    );
-
     private static boolean isEquipmentBox(String itemId) {
-        return itemId != null && EQUIPMENT_BOXES.containsKey(itemId);
+        return OfficerEquipmentDef.boxItems(itemId).size() == 12;
     }
 
     private Map<String, Object> useEquipmentBox(Long playerId, String itemId) {
-        EquipmentBoxDef boxDef = EQUIPMENT_BOXES.get(itemId);
-        if (boxDef == null) {
+        var rewards = OfficerEquipmentDef.boxItems(itemId);
+        String boxName = OfficerEquipmentDef.boxName(itemId);
+        if (rewards.size() != 12) {
             return error("未知的装备宝箱");
         }
 
+        equipmentProgress.lockPlayer(playerId);
+        // 扣箱和十二件入库在同一事务中，账号锁避免与并发换装覆盖库存。
         // 1. 原子扣减宝箱道具 1 个
         int consumed = playerItemRepository.tryConsume(playerId, itemId, 1, GameClock.now());
         if (consumed == 0) {
-            return error("【" + boxDef.boxName() + "】数量不足");
+            return error("【" + boxName + "】数量不足");
         }
 
-        // 2. 发放整套 3 件装备到玩家背包
+        // 2. 发放整套十二件装备到玩家背包
         long now = GameClock.now();
         List<String> awardedNames = new ArrayList<>();
-        for (String eqKey : boxDef.equipmentKeys()) {
+        for (String eqKey : rewards.stream().map(OfficerEquipmentDef::key).toList()) {
             OfficerEquipmentDef eqDef = OfficerEquipmentDef.ITEMS.get(eqKey);
             String name = eqDef != null ? eqDef.name() : eqKey;
             awardedNames.add(name);
@@ -584,10 +579,14 @@ public class DepotService {
             }
         }
 
-        String msg = "🎉 开启【" + boxDef.boxName() + "】，获得整套装备："
+        equipmentProgress.recordCollection(playerId, rewards.stream().map(OfficerEquipmentDef::key).toList());
+        equipmentProgress.synchronize(playerId);
+        chatService.sendItemOpened(playerId, boxName,
+                awardedNames.stream().map(name -> name + "×1").toList());
+        String msg = "🎉 开启【" + boxName + "】，获得整套装备："
                 + String.join("、", awardedNames)
-                + "（穿齐激活 " + boxDef.setBonusDesc() + "）！";
-        return success(msg, Map.of("boxId", itemId, "items", boxDef.equipmentKeys()));
+                + "（穿齐激活同套3/6/9/12件共鸣）！";
+        return success(msg, Map.of("boxId", itemId, "items", rewards.stream().map(OfficerEquipmentDef::key).toList()));
     }
 
     // ================================================================
@@ -653,11 +652,12 @@ public class DepotService {
             return error("玩家资源数据不存在");
         }
 
-        res.setFood((res.getFood() != null ? res.getFood() : 0) + gift.food());
-        res.setSteel((res.getSteel() != null ? res.getSteel() : 0) + gift.steel());
-        res.setOil((res.getOil() != null ? res.getOil() : 0) + gift.oil());
-        res.setRare((res.getRare() != null ? res.getRare() : 0) + gift.rare());
-        res.setGold((res.getGold() != null ? res.getGold() : 0) + gift.gold());
+        Map<String, Long> before = resourceAmounts(res);
+        res.addResource("food", gift.food());
+        res.addResource("steel", gift.steel());
+        res.addResource("oil", gift.oil());
+        res.addResource("rare", gift.rare());
+        res.addResource("gold", gift.gold());
         res.setDiamond((res.getDiamond() != null ? res.getDiamond() : 0) + gift.diamond());
         resourcesRepository.save(res);
 
@@ -672,6 +672,10 @@ public class DepotService {
                 bonusNames.add((def != null ? def.name() : itKey) + "×" + cnt);
             }
         }
+
+        List<String> rewards = resourceRewards(res, before);
+        rewards.addAll(bonusNames);
+        chatService.sendItemOpened(playerId, gift.name(), rewards);
 
         StringBuilder msg = new StringBuilder();
         msg.append("🎉 成功开启【").append(gift.name()).append("】！获得：\n");
@@ -688,6 +692,27 @@ public class DepotService {
         result.put("gold", res.getGold());
         result.put("diamond", res.getDiamond());
         return result;
+    }
+
+    /** 记录发奖前后的资源数量，广播实际增量，不重复维护礼包奖励配置。 */
+    private Map<String, Long> resourceAmounts(Resources res) {
+        Map<String, Long> amounts = new LinkedHashMap<>();
+        amounts.put("粮食", res.getFood() == null ? 0L : res.getFood());
+        amounts.put("钢铁", res.getSteel() == null ? 0L : res.getSteel());
+        amounts.put("石油", res.getOil() == null ? 0L : res.getOil());
+        amounts.put("稀矿", res.getRare() == null ? 0L : res.getRare());
+        amounts.put("黄金", res.getGold() == null ? 0L : res.getGold());
+        amounts.put("钻石", res.getDiamond() == null ? 0L : res.getDiamond().longValue());
+        return amounts;
+    }
+
+    private List<String> resourceRewards(Resources res, Map<String, Long> before) {
+        List<String> rewards = new ArrayList<>();
+        resourceAmounts(res).forEach((name, amount) -> {
+            long gained = amount - before.get(name);
+            if (gained > 0) rewards.add(name + "×" + gained);
+        });
+        return rewards;
     }
 
     private void addItemToDepot(Long playerId, String itemKey, int count, long now) {

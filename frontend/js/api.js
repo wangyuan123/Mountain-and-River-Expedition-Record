@@ -33,6 +33,10 @@ window.Game = window.Game || {};
       }
       var cityChanged = oldState && oldState.player && state.player &&
         (oldState.player.id !== state.player.id || oldState.player.activeCityId !== state.player.activeCityId);
+      if (oldState && oldState.player && state.player && oldState.player.id === state.player.id && oldState.world && state.world &&
+          oldState.world.regionalRadar && Number(oldState.world.regionalRadar.revision) > Number((state.world.regionalRadar || {}).revision || 0)) {
+        state.world.regionalRadar = oldState.world.regionalRadar;
+      }
       client.cityId = state.player && state.player.activeCityId || null;
       if (oldState && !cityChanged) {
         // 保留前端挂在 state 顶层上的临时 UI 状态（如 _detailOfficerId, _depotSelectOfficer, _expandedBuildings 等），
@@ -213,6 +217,11 @@ window.Game = window.Game || {};
       return client.get(url);
     },
 
+    /** 按坐标读取自己的有效侦察快照，不依赖战报分页或浏览器缓存。 */
+    getScoutIntelligence: function (x, y) {
+      return client.get('/game/reports/scout-intelligence?x=' + encodeURIComponent(x) + '&y=' + encodeURIComponent(y), { noCache: true, silent: true });
+    },
+
     getReportDetail: function (id) {
       return client.get('/game/reports/' + encodeURIComponent(id), { noCache: true });
     },
@@ -291,6 +300,9 @@ window.Game = window.Game || {};
     getGuildChatHistory: function () { return client.get('/game/guild/chat/history', { noCache: true }); },
     sendGuildChat: function (content) { return client.post('/game/guild/chat/send', { content: content }); },
     shareIncomingReport: function (id) { return client.post('/game/incoming/' + encodeURIComponent(id) + '/share', {}); },
+    getRadar: function (beforeId) { return client.get('/game/world/radar' + (beforeId ? '?beforeId=' + encodeURIComponent(beforeId) : ''), { noCache: true }); },
+    setRadarEnabled: function (cityId, enabled) { return client.post('/game/world/radar/setting', { cityId: cityId, enabled: enabled }); },
+    readRadarContact: function (id) { return client.post('/game/world/radar/' + encodeURIComponent(id) + '/read', {}); },
     sharedIncomingReport: function (token) { return client.get('/game/incoming/shared/' + encodeURIComponent(token), { noCache: true }); },
     // ==================== 建筑 ====================
 
@@ -451,7 +463,10 @@ window.Game = window.Game || {};
 
     dismissOfficer: function (officerId) {
       return client.post('/game/officer/dismiss', { officerId: officerId })
-        .then(extractState).then(applyState);
+        .then(function (data) {
+          if (data && data.state) applyState(data.state);
+          return data;
+        });
     },
 
     rewardOfficer: function (officerId) {
@@ -543,6 +558,14 @@ window.Game = window.Game || {};
           if (data && data.state) applyState(data.state);
           return data;
         });
+    },
+
+    /** 十二件整套操作及整备使用服务端事务，返回状态统一应用。 */
+    officerEquipment: function (action, payload) {
+      return client.post('/game/officer-equipment/' + action, payload).then(function (data) {
+        if (data && data.state) applyState(data.state);
+        return data;
+      });
     },
 
     officerAttributes: function (officerId) {
@@ -786,8 +809,10 @@ window.Game = window.Game || {};
       });
     },
 
-    shopBuy: function (itemId) {
-      return client.post('/game/shop/buy', { itemId: itemId })
+    shopBuy: function (itemId, count) {
+      var body = { itemId: itemId };
+      if (count && count > 1) body.count = count;
+      return client.post('/game/shop/buy', body)
         .then(function (data) {
           if (data && data.state) applyState(data.state);
           return data;
@@ -796,10 +821,11 @@ window.Game = window.Game || {};
 
     // ==================== 仓库 ====================
 
-    depotUse: function (itemId, officerId, newName) {
+    depotUse: function (itemId, officerId, newName, skillId) {
       var body = { itemId: itemId };
       if (officerId != null) body.officerId = officerId;
       if (newName != null) body.newName = newName;
+      if (skillId != null) body.skillId = skillId;
       return client.post('/game/depot/use', body)
         .then(function (data) {
           if (data && data.state) applyState(data.state);

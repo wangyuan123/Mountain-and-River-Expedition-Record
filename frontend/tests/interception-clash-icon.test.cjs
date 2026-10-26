@@ -106,7 +106,7 @@ test('出城拦截行军在交汇点坐标生成专属战斗图标（含双剑�
   assert.equal(clashMarker.combatIcon.text, '⚔', '战斗图标必须呈现双剑交锋符号');
   assert.ok(clashMarker.tagPlate, '必须包含铭牌底板');
   assert.ok(clashMarker.tagText, '必须包含倒计时铭牌文本');
-  assert.match(clashMarker.tagText.text, /截击 14s/, '铭牌需实时显示距离交火剩余秒数');
+  assert.match(clashMarker.tagText.text, /截击 14秒/, '铭牌需实时显示统一格式的交火倒计时');
 
   // 3. 验证位置处于该格中心
   const expectedCenter = f.view.camera.screen(105.5, 103.5);

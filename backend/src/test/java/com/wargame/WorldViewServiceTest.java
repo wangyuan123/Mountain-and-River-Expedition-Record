@@ -32,14 +32,14 @@ class WorldViewServiceTest extends BaseServiceTest {
         assertEquals(3, full.size());
         assertFalse(full.stream().filter(t -> nearby.getId().equals(t.get("id"))).findFirst().orElseThrow().containsKey("garrison"));
         var ownedEntry = full.stream().filter(t -> owned.getId().equals(t.get("id"))).findFirst().orElseThrow();
-        assertEquals("map-reader", ownedEntry.get("occupiedByName"));
+        assertEquals("统帅" + player.getId(), ownedEntry.get("occupiedByName"));
         assertEquals("列兵", ownedEntry.get("occupiedByRankName"));
         assertEquals(player.getPrestige(), ownedEntry.get("occupiedByPrestige"));
         Player visitor = createTestPlayer("map-visitor", 30);
         var visitorTiles = (List<Map<String, Object>>) views.getWorld(visitor.getId(), 150, 150, 3).get("wildTiles");
         var occupiedEntry = visitorTiles.stream().filter(t -> owned.getId().equals(t.get("id"))).findFirst().orElseThrow();
         assertFalse(occupiedEntry.containsKey("garrison"));
-        assertEquals("map-reader", occupiedEntry.get("occupiedByName"));
+        assertEquals("统帅" + player.getId(), occupiedEntry.get("occupiedByName"));
         var jump = (List<Map<String, Object>>) views.getWorld(player.getId(), 100, 100, 3).get("wildTiles");
         assertTrue(jump.stream().anyMatch(t -> far.getId().equals(t.get("id"))));
         assertEquals(far.getId(), worldService.findAtCoordinate(player.getId(), 100, 100).get("id"));
@@ -75,7 +75,7 @@ class WorldViewServiceTest extends BaseServiceTest {
         owner.setDisplayName(" ");
         playerRepository.save(owner);
         entries = (List<Map<String, Object>>) views.getWorld(owner.getId(), 10, 10, 3).get("playerCities");
-        assertEquals("city-owner", entries.get(0).get("commanderName"));
+        assertEquals("统帅" + owner.getId(), entries.get(0).get("commanderName"));
         assertEquals(25000, entries.get(0).get("prestige"));
     }
 

@@ -22,6 +22,7 @@ public class CityConquestService {
     private final PlayerCityRepository cities;
     private final OfficerRepository officers;
     private final OfficerEquipmentRepository equipment;
+    private final OfficerEquipmentProgressService equipmentProgress;
     private final ResourcesRepository resources;
     private final MarketOrderRepository marketOrders;
     private final WildTileRepository wilds;
@@ -54,6 +55,7 @@ public class CityConquestService {
         if (!Integer.valueOf(0).equals(commander.getLoyalty())) return null;
         List<OfficerEquipment> worn = equipment.findByPlayerIdAndOfficerId(defenderId, commander.getId());
         for (OfficerEquipment item : worn) item.setPlayerId(attackerId);
+        equipmentProgress.transferPreparation(defenderId, attackerId, commander.getId());
         commander.setPlayerId(attackerId);
         commander.setCitySlot(destinationSlot);
         // 进入参谋部待命，不能覆盖我方现任指挥官；忠诚仍为0，可通过赏赐培养。
@@ -73,6 +75,7 @@ public class CityConquestService {
         String reason = unavailableReason(attackerId, city);
         if (!reason.isEmpty()) throw new IllegalStateException(reason);
         Long defenderId = city.getOwnerId();
+        marchService.settleSupportFood(city, now);
         int oldSlot = city.getCitySlot();
         Player defender = players.findById(defenderId).orElseThrow();
         int newSlot = cities.findByOwnerIdAndCitySlotIsNotNullOrderByCitySlotAsc(attackerId).stream()
@@ -90,25 +93,33 @@ public class CityConquestService {
             job.setPlayerId(attackerId); job.setCitySlot(newSlot);
         }
         stock.setPlayerId(attackerId); stock.setCitySlot(newSlot);
+        List<March> retainedSupport = rows(March.class, defenderId, oldSlot).stream().filter(m -> "reinforce".equals(m.getAction())).toList();
+        Set<Long> retainedOfficers = new HashSet<>();
+        retainedSupport.forEach(m -> { if (m.getCommanderId() != null) retainedOfficers.add(m.getCommanderId()); m.setReturnReason("origin_lost"); });
         for (Officer officer : rows(Officer.class, defenderId, oldSlot)) {
+            if (retainedOfficers.contains(officer.getId())) continue;
             equipment.deleteAll(equipment.findByPlayerIdAndOfficerId(defenderId, officer.getId()));
         }
         for (March march : rows(March.class, defenderId, oldSlot)) {
+            if (retainedSupport.contains(march)) continue;
             em.createQuery("select s from BattleSession s where s.marchId = :march", BattleSession.class)
                     .setParameter("march", march.getId()).getResultList().forEach(em::remove);
         }
         // 删除队列和在途军队，避免失守后旧城军官、伤兵或招募任务在新城重新出现。
         for (Class<? extends CityOwnedEntity> type : CITY_ROWS) {
             if (type == Building.class || type == Resources.class || type == Construction.class) continue;
-            rows(type, defenderId, oldSlot).forEach(em::remove);
+            rows(type, defenderId, oldSlot).stream().filter(row -> !(row instanceof March m && retainedSupport.contains(m))
+                    && !(row instanceof Officer o && retainedOfficers.contains(o.getId()))).forEach(em::remove);
         }
         updateGarrisons(defenderId, oldSlot, null);
+        retainedSupport.forEach(m -> marchService.displaceSupportAfterCityLoss(m, now));
         // 领地随城市转交；原城其他来源的幸存驻军先撤回，不转为新城主的兵力。
         for (WildTile tile : wilds.findByOccupiedByAndOccupiedCitySlotAndOccupiedTrue(defenderId, oldSlot)) {
             marchService.evacuateWildGarrison(defenderId, tile, now);
             tile.setOccupiedBy(attackerId);
             tile.setOccupiedCitySlot(newSlot);
         }
+        city.setAcceptGarrison(false); city.setGarrisonFoodAt(now);
         city.setOwnerId(attackerId); city.setCitySlot(newSlot);
         city.setArmy("{}"); city.setForts("{}"); city.setResources("{}");
         city.setWarAt(0L); city.setWarEndAt(0L); city.setScoutedBy("[]");
@@ -119,6 +130,10 @@ public class CityConquestService {
         else if (Objects.equals(defender.getActiveCityId(), city.getId())) {
             PlayerCity main = cities.findByOwnerIdAndCitySlot(defenderId, 0).orElseThrow();
             defender.setActiveCityId(main.getId()); defender.setPosX(main.getX()); defender.setPosY(main.getY());
+        }
+        for (March support : retainedSupport) {
+            support.setCitySlot(0);
+            if (support.getCommanderId() != null) officers.findById(support.getCommanderId()).ifPresent(o -> o.setCitySlot(0));
         }
         return newSlot;
     }
@@ -155,6 +170,7 @@ public class CityConquestService {
         for (Officer officer : transferredOfficers) {
             equipment.findByPlayerIdAndOfficerId(formerOwnerId, officer.getId())
                     .forEach(item -> item.setPlayerId(recipientId));
+            equipmentProgress.transferPreparation(formerOwnerId, recipientId, officer.getId());
         }
 
         // 和战斗接管一样随城转交领地；撤军先创建原城市返程，再随城迁移该城编队。
@@ -284,10 +300,7 @@ public class CityConquestService {
             if (!"ACTIVE".equals(order.getStatus())) continue;
             int amount = order.getAmount();
             switch (order.getResourceType()) {
-                case "food" -> stock.setFood(Objects.requireNonNullElse(stock.getFood(), 0) + amount);
-                case "steel" -> stock.setSteel(Objects.requireNonNullElse(stock.getSteel(), 0) + amount);
-                case "oil" -> stock.setOil(Objects.requireNonNullElse(stock.getOil(), 0) + amount);
-                case "rare" -> stock.setRare(Objects.requireNonNullElse(stock.getRare(), 0) + amount);
+                case "food", "steel", "oil", "rare" -> stock.addResource(order.getResourceType(), amount);
                 default -> throw new IllegalStateException("未知市场资源");
             }
             order.setStatus("CANCELLED"); order.setCompletedAt(LocalDateTime.now());

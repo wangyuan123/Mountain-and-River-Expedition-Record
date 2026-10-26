@@ -34,7 +34,7 @@ class FieldHospitalServiceTest extends BaseServiceTest {
         buildingRepository.deleteAll(buildingRepository.findByPlayerIdAndCitySlotAndType(playerId, 0, "house"));
         buildingRepository.deleteAll(buildingRepository.findByPlayerIdAndCitySlotAndType(playerId, 0, "academy"));
         buildingRepository.deleteAll(buildingRepository.findByPlayerIdAndCitySlotAndType(playerId, 0, "farm"));
-        int steel = getResources(playerId).getSteel();
+        long steel = getResources(playerId).getSteel();
         var denied = buildService.upgrade(playerId, "hospital", 0);
         assertEquals(false, denied.get("success"));
         assertEquals(3, prerequisites.unmet(playerId, 0, "buildings", "hospital", 1).size());
@@ -65,10 +65,10 @@ class FieldHospitalServiceTest extends BaseServiceTest {
             house.setLevel(1);
             buildingRepository.save(house);
         }
-        int steel = getResources(playerId).getSteel();
+        long steel = getResources(playerId).getSteel();
         var denied = buildService.upgrade(playerId, "hospital", 0);
         assertEquals(false, denied.get("success"));
-        assertTrue(denied.get("message").toString().contains("军事建筑已达当前上限(36栋"));
+        assertTrue(denied.get("message").toString().contains("军事建筑已达上限(" + com.wargame.model.constants.GameConstants.GROUP_SLOTS_ARMY + "栋"));
         assertEquals(steel, getResources(playerId).getSteel());
     }
 
@@ -78,7 +78,7 @@ class FieldHospitalServiceTest extends BaseServiceTest {
         Building hospital = createBuilding(playerId, "hospital", 10);
         hospital.setCitySlot(1);
         buildingRepository.save(hospital);
-        int steel = getResources(playerId).getSteel();
+        long steel = getResources(playerId).getSteel();
         var denied = tech.startResearch(playerId, "log_medical");
         assertEquals(false, denied.get("success"));
         assertTrue(denied.get("message").toString().contains("本城战地医院"));

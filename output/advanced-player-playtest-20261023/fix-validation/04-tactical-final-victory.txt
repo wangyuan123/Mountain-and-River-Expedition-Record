@@ -1,0 +1,105 @@
+Browser tab: 2, Title: "山河远征录 - 文字战争策略游戏", URL: "http://localhost:8081/".
+1 AXWebArea 山河远征录 - 文字战争策略游戏, URL: localhost:8081/
+	2 container screen
+		3 container header
+			4 container topbar
+				102 button 头像 远征统帅_163822 已连接, Help: 点击展开指挥官档案、主题与设置
+					103 image 头像
+					104 text 远征统帅_163822
+					105 text 已连接
+				106 text 🎖️ 论坛
+				107 text 💎 97
+			12 container navbar
+				108 container Description: 左右滑动查看更多导航, ID: gameNavViewport
+					109 container 第1组导航
+						110 text 首页
+						111 text 后勤
+						112 text 军工
+						113 text 军官
+						114 text 军队
+						115 text 地图
+						116 container
+							117 text 雷达 !
+						118 container
+							119 text 战报 2
+						120 text 聊天
+						121 container
+							122 text 电报 3
+						123 container
+							124 text 任务 !
+						125 text 军团
+						126 text 仓库
+						127 text 科技
+						128 text 军校
+						129 text 对战
+					130 container 第2组导航
+						131 pop up button Description: 切换城市, Help: 当前城市：新城市（主城）
+						132 text 战术
+						133 text 排名
+						134 text 商城
+				135 container 导航分页
+					136 button 切换到第1组导航
+					137 button 切换到第2组导航
+		101 container view
+			138 button 返回上一步
+			139 text 战术指挥：战火_$@焚天灭地城
+			140 text 所有兵种接敌后不可越线，空军也必须消灭敌方前排后才能继续向后推进。
+			141 text 未指定目标时优先攻击射程内的敌方同类型兵种，否则攻击射程内最近的敌军；也可手动指定射程内的任意敌军。
+			142 text 已提交的指令在本场后续所有回合持续生效，直到再次修改。地图战场点击我军图标下令，文本战场使用兵种卡片。
+			143 button [ 返回军情 ]
+				144 text [
+				145 text 返回军情
+				146 text ]
+			147 text 🏰 城墙已攻破 · 城墙 Lv.10
+			148 text 墙体生命 0 / 2,500,000 · 墙体防御 200
+			149 progress indicator Description: 墙体生命, Value: 0
+			150 text 当前回合
+			151 text 第 16 回合
+			152 text / 共 35 回合
+			153 text 本回合倒计时
+			154 text 已结束
+			155 text 已选命令在倒计时结束后提交，也可点击下方执行按钮
+			156 text 我方司令官
+			157 text 未任命，常驻加成为0
+			158 text 敌方司令官
+			159 text 未任命，常驻加成为0
+			160 tab group 战场显示方式
+				161 tab (selected, settable, boolean) 地图战场, Value: 1, ID: tacticalTab-battlefield
+				162 tab (selectable, settable, boolean) 文本战场, Value: 0, ID: tacticalTab-text
+			163 container Description: 地图战场, ID: tacticalPanel-battlefield
+				164 container
+					165 text 我军阵地 敌军阵地
+					166 container 战列舰-衣阿华级（Iowa） ×179614，战场位置 2330，射程 2400（科技加成 +800）
+						167 image 战列舰-衣阿华级（Iowa）
+						168 text ×179614
+						169 text 射程 2400 · 前进
+					170 container 航母-埃塞克斯级（Essex） ×397125，战场位置 2330，射程 2850（科技加成 +950）
+						171 image 航母-埃塞克斯级（Essex）
+						172 text ×397125
+						173 text 射程 2850 · 前进
+					174 text VICTORY
+					175 text ★
+					176 text 战斗胜利
+					177 text 进攻方视角 攻破城墙 · 征服大捷 战场宽度 4700 · 🎯 绿色光带为有效射程已接敌
+			178 text 城墙已攻破，征服战胜利
+			179 text 战果已写入战报，幸存部队将按原路线返程。
+			180 button 返回军情
+				181 text [
+				182 text 返回军情
+				183 text ]
+			184 button (collapsed) [ 战场记录（322） 展开 ], ID: tacticalLogToggle, Secondary Actions: Expand
+				185 text [
+				186 text 战场记录（322） 展开
+				187 text ]
+		64 container Description: 游戏导航与备案信息, ID: footbar
+			188 container 底部快捷导航
+				189 button 首页
+				190 button 地图
+				191 button 任务
+				192 button 邮件
+				193 button 设置
+				194 button 返回顶部
+			195 text [1]立即结算/下一回合 [0]撤退
+			196 text 北京时间：2026年10月24日 01:19:38
+
+The focused UI element is 1 AXWebArea 山河远征录 - 文字战争策略游戏, URL: localhost:8081/

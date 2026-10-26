@@ -459,3 +459,26 @@ test('march bands render flowing directional chevrons indicating travel heading'
  const secondLineX1 = view.routeFlow.lines[0].x;
  assert.notEqual(firstLineX1, secondLineX1, '随时间推进流动虚线与箭头坐标应产生流动位移');
 });
+
+test('marching light band is narrow and unit icon is enlarged for tactical clarity', () => {
+ const f = fixture(), { view, marches } = f;
+ marches.push(f.march);
+ // Camera scale at 48
+ view.camera.scale = 48;
+ view.drawRoutes();
+ const styles48 = view.routes.styles;
+ assert.equal(styles48[1].width, 10, 'scale=48 时彩带主光带宽度收窄至 10px');
+ assert.equal(styles48[0].width, 14, 'scale=48 时彩带外发光宽度收窄至 14px');
+ const marker48 = view.marchMarkers.get('1');
+ assert.ok(marker48);
+ assert.equal(Math.round(marker48.icon.scale.x * 100), 36, 'scale=48 时主力模型尺寸由 32 放大至 36px');
+
+ // Camera scale at 64
+ view.camera.scale = 64;
+ view.drawRoutes();
+ const styles64 = view.routes.styles;
+ assert.equal(styles64[1].width, 13, 'scale=64 时彩带主光带宽度收窄至 13px');
+ assert.equal(styles64[0].width, 17, 'scale=64 时彩带外发光宽度收窄至 17px');
+ const marker64 = view.marchMarkers.get('1');
+ assert.equal(Math.round(marker64.icon.scale.x * 100), 48, 'scale=64 时主力模型尺寸由 38 放大至 48px');
+});

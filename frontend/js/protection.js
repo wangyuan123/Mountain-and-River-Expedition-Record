@@ -98,14 +98,14 @@
       if (!this.canRequest()) { this.denied(this.error()); this.refresh(); return; }
       var seconds = Math.ceil((this.data.allowedUntil - this.now()) / 1000);
       var status = el('playTimeStatus');
-      if (status) status.textContent = this.data.minor ? '未成年人模式 · 剩余 ' + Math.ceil(seconds / 60) + ' 分钟' : '实名与健康游戏';
+      if (status) status.textContent = this.data.minor ? '未成年人模式 · 剩余 ' + G.formatDuration(seconds) : '实名与健康游戏';
       if (this.data.minor) {
         var threshold = seconds <= 60 ? 60 : (seconds <= 300 ? 300 : (seconds <= 900 ? 900 : 0));
         if (threshold && !this.warned[threshold]) {
           this.warned[900] = true;
           if (threshold <= 300) this.warned[300] = true;
           if (threshold <= 60) this.warned[60] = true;
-          G.toast('游戏将在 ' + Math.ceil(seconds / 60) + ' 分钟内结束。离线期间战局继续，城池仍可能受到攻击。');
+          G.toast('游戏将在 ' + G.formatDuration(seconds) + '后结束。离线期间战局继续，城池仍可能受到攻击。');
         }
       }
       if (performance.now() - this.lastHeartbeat >= 20000 && !this.heartbeatBusy) {

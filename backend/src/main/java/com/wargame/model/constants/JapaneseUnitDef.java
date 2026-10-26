@@ -23,7 +23,7 @@ public final class JapaneseUnitDef {
         m.put("ltank", "轻型坦克-九五式轻战（Ha-Go）");
         m.put("htank", "重型坦克-四式中战（Chi-To）");
         m.put("assault", "突击炮-一式自走炮（Ho-Ni I）");
-        m.put("rocket", "反坦克火箭车-四式喷进炮（Type 4）");
+        m.put("rocket", "反坦克火箭-四式喷进炮（Type 4）");
         m.put("scout", "侦察机-百式司令部侦察机（Ki-46）");
         m.put("special", "特种兵-挺进战队（义烈空挺队）");
         m.put("fighter", "战斗机-零式战斗机（A6M5）");

@@ -1,5 +1,8 @@
 package com.wargame.service;
 
+import com.wargame.util.DurationText;
+import com.wargame.util.PlayerNames;
+
 import com.wargame.util.GameClock;
 import com.wargame.model.constants.GameData;
 import com.wargame.model.constants.UnitDef;
@@ -41,6 +44,7 @@ public class WorldService {
     private com.wargame.service.CityScope cityScope;
 
     @org.springframework.beans.factory.annotation.Autowired private CityStateRepository cityStates;
+    @org.springframework.beans.factory.annotation.Autowired private MarchService marchService;
 
     private final PlayerRepository playerRepository;
     private final WorldMapRepository worldMapRepository;
@@ -154,7 +158,7 @@ public class WorldService {
         int radarLv = buildingLevel(playerId, "radar");
         if (radarLv <= 0) {
             result.put("success", false);
-            result.put("message", "需建造雷达站才能扫描");
+            result.put("message", "需建造城防雷达才能扫描");
             return result;
         }
 
@@ -331,7 +335,7 @@ public class WorldService {
                 boolean selfCity = ownerId.equals(playerId);
                 boolean relatedWar = !selfCity && playerId.equals(owner.getWarAgainstId());
                 m.put("ownerId", ownerId);
-                m.put("playerName", owner != null ? owner.getUsername() : "");
+                m.put("playerName", owner != null ? PlayerNames.commanderName(owner) : "");
                 m.put("prestige", owner != null && owner.getPrestige() != null ? owner.getPrestige() : 0);
                 m.put("selfCity", selfCity);
                 m.put("guildmate", guildRelations.areGuildmates(playerId, ownerId));
@@ -532,8 +536,8 @@ public class WorldService {
 
         // 世界频道广播
         try {
-            String attackerName = attacker.getUsername();
-            String defenderName = defender.getUsername();
+            String attackerName = PlayerNames.commanderName(attacker);
+            String defenderName = PlayerNames.commanderName(defender);
             String content = "⚔ " + attackerName + " 对玩家「" + defenderName + "」宣战!";
             chatService.sendSystem(content);
         } catch (Exception ignored) {}
@@ -541,8 +545,8 @@ public class WorldService {
         // 邮件通知双方
         if (mailService != null) {
             try {
-                String attackerName = attacker.getUsername();
-                String defenderName = defender.getUsername();
+                String attackerName = PlayerNames.commanderName(attacker);
+                String defenderName = PlayerNames.commanderName(defender);
                 String targetName = target.getName();
                 String targetCoord = (target.getX() != null && target.getY() != null)
                         ? " (" + target.getX() + ", " + target.getY() + ")" : "";
@@ -559,9 +563,9 @@ public class WorldService {
                 String attackerSubject = "【宣战公告】已对玩家「" + defenderName + "」宣战";
                 String attackerBody = "指挥官，您已正式向玩家「" + defenderName + "」的城市「" + targetName + "」" + targetCoord + "发起宣战！\n\n"
                         + "【战争时间安排】\n"
-                        + "· 备战时间：2 小时（倒计时中）\n"
+                        + "· 备战时间：" + DurationText.millis(WAR_PREPARE_MS) + "（倒计时中）\n"
                         + "· 开战时间：" + startTime + "\n"
-                        + "· 交战时间：48 小时\n"
+                        + "· 交战时间：" + DurationText.millis(WAR_DURATION_MS) + "\n"
                         + "· 终战时间：" + endTime + "\n\n"
                         + "【战术作战指示】\n"
                         + "1. 备战期间双方处于戒备状态，无法发动直接军事进攻，但可派遣侦察部队收集目标城防情报。\n"
@@ -574,9 +578,9 @@ public class WorldService {
                     String defenderSubject = "【战争警报】玩家「" + attackerName + "」向你宣战！";
                     String defenderBody = "警报！玩家「" + attackerName + "」已向你的城市「" + targetName + "」" + targetCoord + "发起宣战！\n\n"
                             + "【战争时间安排】\n"
-                            + "· 备战时间：2 小时\n"
+                            + "· 备战时间：" + DurationText.millis(WAR_PREPARE_MS) + "\n"
                             + "· 开战时间：" + startTime + "\n"
-                            + "· 交战时间：48 小时\n"
+                            + "· 交战时间：" + DurationText.millis(WAR_DURATION_MS) + "\n"
                             + "· 终战时间：" + endTime + "\n\n"
                             + "【防守应对建议】\n"
                             + "1. 备战期间敌军尚无法发起军事进攻，请抓紧时间检视并巩固城防设施。\n"
@@ -587,7 +591,7 @@ public class WorldService {
         }
 
         result.put("success", true);
-        result.put("message", "已宣战! 2小时后可交战,持续48小时");
+        result.put("message", "已宣战! " + DurationText.millis(WAR_PREPARE_MS) + "后可交战,持续" + DurationText.millis(WAR_DURATION_MS));
         result.put("warAt", warAt);
         result.put("warEndAt", warEndTime);
         return result;
@@ -802,7 +806,7 @@ public class WorldService {
         marchRepository.save(march);
 
         result.put("success", true);
-        result.put("message", "侦查部队出征! 距" + String.format(Locale.ROOT, "%.2f", marchDist) + "格 约" + marchSec + "秒后到达");
+        result.put("message", "侦查部队出征! 距" + String.format(Locale.ROOT, "%.2f", marchDist) + "格 约" + DurationText.seconds(marchSec) + "后到达");
         result.put("marchId", march.getId());
         result.put("arriveAt", march.getArriveAt());
         return result;
@@ -835,7 +839,7 @@ public class WorldService {
                         - (wt.getMined() != null ? wt.getMined() : 0);
                 m.put("remaining", remaining);
                 m.put("gathering", Boolean.TRUE.equals(wt.getGathering()));
-                m.put("gatherMode", wt.getGatherMode());
+                m.put("gatherMode", "manual");
                 m.put("gatherHarvested", wt.getGatherHarvested());
                 m.put("gatherRes", wt.getGatherRes());
                 owned.add(m);
@@ -850,6 +854,7 @@ public class WorldService {
     //  放弃野地: occupied=false, scouted=false, mined=0
     // ================================================================
 
+    /** 手动释放本人野地；采集任务需先召回，普通驻军创建返程行军并在抵达后归还兵力。 */
     @Transactional
     public Map<String, Object> abandonWild(Long playerId, Long wildTileId) {
         Map<String, Object> result = new LinkedHashMap<>();
@@ -868,23 +873,26 @@ public class WorldService {
             return result;
         }
 
-        if (Boolean.TRUE.equals(wt.getGathering()) || wt.getGatherHarvested() != null) {
+        String abandonReason = wildAbandonReason(wt);
+        if (abandonReason != null) {
             result.put("success", false);
-            result.put("message", "请先完成采集并下达部队回城命令，再放弃领地");
+            result.put("message", abandonReason);
             return result;
         }
 
-        // 若有驻军，自动撤回主城
-        if (wt.getGarrison() != null && !wt.getGarrison().trim().isEmpty() && !wt.getGarrison().equals("{}")) {
-            Map<String, Integer> army = com.wargame.util.JsonUtil.parseIntMap(wt.getGarrison());
-            returnArmy(playerId, army);
+        boolean hasGarrison = JsonUtil.parseIntMap(wt.getGarrison()).values().stream().anyMatch(count -> count > 0);
+        if (hasGarrison) {
+            // 必须在清除归属和路线前创建返程；无历史路线的驻军按领地所属城市补全，不能直接计入城内兵力。
+            try (var ignored = cityScope.enter(playerId, Objects.requireNonNullElse(wt.getOccupiedCitySlot(), 0))) {
+                marchService.recallWild(playerId, wildTileId);
+            }
         }
 
         wt.setOccupied(false);
         wt.setScouted(false);
         // 兼容没有耗尽时间的旧存档；放弃后立即隐藏，等待异地重生。
-        if (wt.getDepletedAt() == null && wt.getTotalRes() != null && wt.getMined() != null
-                && wt.getTotalRes() > 0 && wt.getMined() >= wt.getTotalRes())
+        if (wt.getDepletedAt() == null && wt.getTotalRes() != null
+                && (wt.getTotalRes() <= 0 || (wt.getMined() != null && wt.getMined() >= wt.getTotalRes())))
             wt.setDepletedAt(GameClock.now());
         if (wt.getDepletedAt() == null) wt.setMined(0);
         wt.setOccupiedBy(null);
@@ -902,30 +910,27 @@ public class WorldService {
         wildTileRepository.save(wt);
 
         result.put("success", true);
-        result.put("message", "已放弃该领地，驻扎部队已自动撤回主城");
+        result.put("message", hasGarrison
+                ? "已放弃该领地，驻军已按原路线返回各自出发城市，抵达后归还兵力"
+                : "已放弃该领地");
         return result;
     }
 
-    private void returnArmy(Long playerId, Map<String, Integer> army) {
-        if (army == null || army.isEmpty()) return;
-        for (Map.Entry<String, Integer> entry : army.entrySet()) {
-            String type = entry.getKey();
-            int count = entry.getValue();
-            if (count <= 0) continue;
-            List<ArmyUnit> existing = armyUnitRepository.findByPlayerIdAndCitySlotAndType(playerId, cityScope.slot(playerId), type);
-            if (existing.isEmpty()) {
-                ArmyUnit unit = new ArmyUnit();
-                unit.setPlayerId(playerId);
-                unit.setCitySlot(cityScope.slot(playerId));
-                unit.setType(type);
-                unit.setCount(count);
-                armyUnitRepository.save(unit);
-            } else {
-                ArmyUnit unit = existing.get(0);
-                unit.setCount((unit.getCount() != null ? unit.getCount() : 0) + count);
-                armyUnitRepository.save(unit);
-            }
+    /** 保留锁定查询的释放边界，按未收获、已收获待回城、去程及历史未结算返程区分提示。 */
+    private String wildAbandonReason(WildTile tile) {
+        List<Long> blockerIds = marchRepository.findWildGatherReleaseBlockerIds(String.valueOf(tile.getId()));
+        List<March> pending = marchRepository.findAllById(blockerIds).stream()
+                .filter(march -> !Boolean.TRUE.equals(march.getReturning())).toList();
+        // 同一野地可能同时有驻军及多支独立队伍；只要还有一队未收获，就仍需完成收获。
+        if (Boolean.TRUE.equals(tile.getGathering()) || pending.stream().anyMatch(march ->
+                Boolean.TRUE.equals(march.getGathering()) && !Boolean.TRUE.equals(march.getGatherStopped()))) {
+            return "有采集任务尚未收获，请先收获并下达部队回城命令后再放弃领地";
         }
+        if (tile.getGatherHarvested() != null || pending.stream().anyMatch(march -> Boolean.TRUE.equals(march.getGatherStopped()))) {
+            return "有部队已收获并留守，请先下达部队回城命令后再放弃领地";
+        }
+        if (!pending.isEmpty()) return "采集部队尚未召回，请先下达部队回城命令后再放弃领地";
+        return blockerIds.isEmpty() ? null : "采集资源尚未结算，请稍后再放弃领地";
     }
 
     // ================================================================

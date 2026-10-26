@@ -82,12 +82,14 @@ window.Game = window.Game || {};
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
-  function attachIcon(type) {
+  function attachIcon(type, itemId) {
+    if (type === 'item') return escapeHtml((G.DATA && G.DATA.items && G.DATA.items[itemId] || {}).icon || '🎁');
     if (G.DATA && G.DATA.resources && G.DATA.resources[type]) return G.resourceIconHtml(type);
     if (G.DATA && G.DATA.units && G.DATA.units[type]) return '🪖';
     return '🎁';
   }
-  function attachLabel(type) {
+  function attachLabel(type, itemId) {
+    if (type === 'item') return escapeHtml((G.DATA && G.DATA.items && G.DATA.items[itemId] || {}).name || '道具');
     var resMap = { gold: '黄金', diamond: '钻石', food: '粮食', steel: '钢铁', oil: '石油', rare: '稀矿' };
     if (resMap[type]) return resMap[type];
     if (G.unitDisplayName) return G.unitDisplayName(type);
@@ -97,8 +99,7 @@ window.Game = window.Game || {};
   function toast(msg) { if (G.toast) G.toast(msg); }
   function surrenderRemaining(deadline) {
     var ms = Math.max(0, Number(deadline || 0) - G.gameNow());
-    var hours = Math.floor(ms / 3600000), mins = Math.floor((ms % 3600000) / 60000);
-    return hours + '小时' + pad2(mins) + '分';
+    return G.formatDuration(ms / 1000);
   }
 
   // ============================================================
@@ -260,7 +261,7 @@ window.Game = window.Game || {};
         if (contextKey() !== key) return;
         G.API.respondSurrender(offerId, decision).then(function (data) {
           if (contextKey() !== key) return;
-          toast(decision === 'accept' ? '已接受劝降，城市将在 24 小时后完成移交' : '已拒绝劝降');
+          toast(decision === 'accept' ? '已接受劝降，城市将在 ' + G.formatDuration(24 * 3600) + '后完成移交' : '已拒绝劝降');
           var current = currentDetail;
           if (current && String(current.id) === String(mailId)) current.surrender = data;
           render();
@@ -287,7 +288,10 @@ window.Game = window.Game || {};
     send: function (to, subject, body, attach) {
       var key = ensureIdentity();
       return G.API.sendMail(to, subject, body, attach).then(function (data) {
-        if (contextKey() === key) toast('已发送给 ' + to);
+        if (contextKey() === key) {
+          if (G.Sound && typeof G.Sound.play === 'function') G.Sound.play('send_mail');
+          toast('已发送给 ' + to);
+        }
         return data;
       });
     },
@@ -298,6 +302,7 @@ window.Game = window.Game || {};
       G.API.claimMailAttach(id).then(function (data) {
         if (contextKey() !== key) return;
         if (data && data.success) {
+          if (G.Sound && typeof G.Sound.play === 'function') G.Sound.play('coins');
           toast('附件已领取');
           // 按钮传入字符串 ID，接口返回数字 ID；统一比较类型才能更新对应邮件。
           for (var i = 0; i < mails.length; i++) {
@@ -540,7 +545,7 @@ window.Game = window.Game || {};
         h += '<div class="mail-attach-box">';
         h += '<div class="mail-attach-title">📎 附件</div>';
         var parts = cur.attach.map(function (a) {
-          return attachIcon(a.type) + ' ' + attachLabel(a.type) + ' ×' + a.qty;
+          return attachIcon(a.type, a.itemId) + ' ' + attachLabel(a.type, a.itemId) + ' ×' + escapeHtml(a.qty);
         }).join('  ');
         h += '<div class="mail-attach-list">' + parts + '</div>';
         if (cur.attachmentExpired) {

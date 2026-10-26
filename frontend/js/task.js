@@ -8,13 +8,7 @@ window.Game = window.Game || {};
   // —— 工具 ——
   function fmtRemain(ms) {
     if (ms <= 0) return '即将';
-    var s = Math.floor(ms / 1000);
-    var h = Math.floor(s / 3600);
-    var m = Math.floor((s % 3600) / 60);
-    var ss = s % 60;
-    if (h > 0) return h + '时' + m + '分';
-    if (m > 0) return m + '分' + ss + '秒';
-    return ss + '秒';
+    return G.formatDuration(ms / 1000);
   }
 
   // —— 1. 战情速递 ——

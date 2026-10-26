@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-function setup() {
+function setup(realCatalog = false) {
   const timers = [];
   const state = {
     world: {},
@@ -14,6 +14,7 @@ function setup() {
       farm: [2, 1], // slot 0: Lv.2, slot 1: Lv.1
       refinery: [1],
       radar: 1,
+      guild_radar: 0,
       lab: 0,
       headquarters: 0
     },
@@ -57,13 +58,14 @@ function setup() {
           command:  { name: '市政厅', desc: '主城', baseCost: { steel: 400, food: 200 }, growth: 1.6, slots: 1 },
           lab:      { name: '军工科技研发中心', desc: '科研', baseCost: { steel: 200, food: 100, rare: 20 }, growth: 1.6, slots: 1 },
           headquarters: { name: '司令部', desc: '指挥', baseCost: { steel: 300, food: 150, gold: 150 }, growth: 1.6, slots: 1 },
-          farm:     { name: '农田', desc: '粮食', baseCost: { steel: 80 }, growth: 1.5, produces: 'food', baseProduce: 40, slots: 36 },
-          refinery: { name: '炼钢厂', desc: '钢铁', baseCost: { steel: 80 }, growth: 1.5, produces: 'steel', slots: 36 },
-          oilfield: { name: '石油基地', desc: '石油', baseCost: { steel: 80 }, growth: 1.5, produces: 'oil', slots: 36 },
-          raremine: { name: '稀矿厂', desc: '稀矿', baseCost: { steel: 120, oil: 40 }, growth: 1.6, produces: 'rare', slots: 36 },
-          radar:    { name: '防空雷达站', desc: '侦察', baseCost: { steel: 180, oil: 60, rare: 20 }, growth: 1.6, produces: '', slots: 1 }
+          farm:     { name: '农田', desc: '粮食', baseCost: { steel: 80 }, growth: 1.5, produces: 'food', baseProduce: 600, slots: 35 },
+          refinery: { name: '炼钢厂', desc: '钢铁', baseCost: { steel: 80 }, growth: 1.5, produces: 'steel', slots: 35 },
+          oilfield: { name: '石油基地', desc: '石油', baseCost: { steel: 80 }, growth: 1.5, produces: 'oil', slots: 35 },
+          raremine: { name: '稀矿厂', desc: '稀矿', baseCost: { steel: 120, oil: 40 }, growth: 1.6, produces: 'rare', slots: 35 },
+          radar:    { name: '城防雷达', desc: '侦察', baseCost: { steel: 180, oil: 60, rare: 20 }, growth: 1.6, produces: '', slots: 1 },
+          guild_radar: { name: '联防雷达', desc: '联防覆盖半径每级1格', baseCost: { steel: 180, oil: 60, rare: 20 }, growth: 1.6, slots: 1 }
         },
-        groupSlots: { res: 16, army: 16 },
+        groupSlots: { res: 35, army: 35 },
         resources: {
           food: { name: '粮食', icon: 'img/resources/models/food.webp' },
           steel: { name: '钢铁', icon: 'img/resources/models/steel.webp' },
@@ -90,8 +92,7 @@ function setup() {
         buildMul() { return 1.0; },
         costEnough() { return true; },
         groupSlotsCap(key) {
-          const cmd = this.buildingLevel('command');
-          return Math.min(36, 16 + Math.max(0, cmd) * 2);
+          return (G.DATA.groupSlots && G.DATA.groupSlots[key]) || 35;
         },
         groupSlotsUsed(key) {
           let used = 0;
@@ -132,6 +133,7 @@ function setup() {
   context.window = context;
   const G = context.Game;
   require('./load-constants.cjs')(context);
+  if (realCatalog) vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/data.js'), 'utf8'), context);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/build.js'), 'utf8'), context);
   return { G, context, state, timers };
 }
@@ -155,7 +157,7 @@ test('普通建筑保留24小时上限，关键建筑按专属曲线展示超过
   state.buildings.headquarters = 9;
 
   G.Build.onSlotClick('farm', 1);
-  assert.match(context.document.body.appended.at(-1).innerHTML, /升级至 Lv\.2[\s\S]*耗时: 1分12秒/);
+  assert.match(context.document.body.appended.at(-1).innerHTML, /升级至 Lv\.2[\s\S]*耗时: 1分钟12秒/);
 
   state.buildings.command = 9;
   G.Build.onSlotClick('command', null);
@@ -268,14 +270,14 @@ test('免费加速接口发送队列ID并立即应用完工后的服务端状态
 
 test('卡槽地块网格正确渲染已建建筑与空闲卡槽(+号)', () => {
   const { G, state } = setup();
-  // command level = 2, so res groupCap = 16 + 2*2 = 20
+  // 卡槽容量固定为35，不随市政厅等级变化
   const groupCap = G.Core.groupSlotsCap('res');
-  assert.equal(groupCap, 20);
+  assert.equal(groupCap, 35);
 
   // farm has [2, 1] (2 slots), refinery has [1] (1 slot) -> 3 occupied slots
   const gridHtml = G.Build.renderSlotGrid('res', [], state);
   assert.match(gridHtml, /class="slot-overview-panel"/);
-  assert.match(gridHtml, /已用 3 \/ 20 卡槽/);
+  assert.match(gridHtml, /已用 3 \/ 35 卡槽/);
   assert.match(gridHtml, /农田/);
   assert.match(gridHtml, /炼钢厂/);
 
@@ -284,9 +286,9 @@ test('卡槽地块网格正确渲染已建建筑与空闲卡槽(+号)', () => {
   assert.match(gridHtml, /class="slot-card-plus">\+<\/div>/);
   assert.match(gridHtml, /选建建筑/);
 
-  // Total empty slot cards should be 20 - 3 = 17
+  // Total empty slot cards should be 35 - 3 = 32
   const emptyMatches = gridHtml.match(/class="slot-card slot-card-empty"/g);
-  assert.equal(emptyMatches.length, 17);
+  assert.equal(emptyMatches.length, 32);
 });
 
 test('建筑卡片渲染拆除按钮', () => {
@@ -314,21 +316,21 @@ test('队列渲染显示拆除中状态', () => {
   assert.match(queueHtml, /炼钢厂 #1 \(拆除中: 移除\)/);
 });
 
-test('六支施工队的空闲提示随工程数量更新', () => {
+test('三支施工队的空闲提示随工程数量更新', () => {
   const { G, state } = setup();
-  assert.match(G.Build.renderQueueHtml([], state), /6 支施工队空闲：可同时进行 6 项建筑工程/);
-  const jobs = Array.from({ length: 6 }, (_, slot) => ({
+  assert.match(G.Build.renderQueueHtml([], state), /3 支施工队空闲：可同时进行 3 项建筑工程/);
+  const jobs = Array.from({ length: 3 }, (_, slot) => ({
     id: 'farm', slot, targetLevel: 1, finishesAt: Date.now() + 60000
   }));
-  assert.match(G.Build.renderQueueHtml(jobs.slice(0, 2), state), /剩余 4 支施工队空闲/);
-  assert.match(G.Build.renderQueueHtml(jobs.slice(0, 5), state), /剩余 1 支施工队空闲/);
+  assert.match(G.Build.renderQueueHtml(jobs.slice(0, 1), state), /剩余 2 支施工队空闲/);
+  assert.match(G.Build.renderQueueHtml(jobs.slice(0, 2), state), /剩余 1 支施工队空闲/);
   const fullHtml = G.Build.renderQueueHtml(jobs, state);
-  assert.match(fullHtml, /施工队 6：/);
+  assert.match(fullHtml, /施工队 3：/);
   assert.doesNotMatch(fullHtml, /空闲/);
 });
 
-test('不足六项工程可确认升级和拆除，六项时显示满员提示', () => {
-  for (const count of [2, 5, 6]) {
+test('不足三项工程可确认升级和拆除，三项及以上显示满员提示', () => {
+  for (const count of [1, 2, 3, 6]) {
     for (const action of ['confirmUpgrade', 'confirmDismantle']) {
       const { G, state, context } = setup();
       state.constructions = Array.from({ length: count }, (_, slot) => ({
@@ -336,20 +338,20 @@ test('不足六项工程可确认升级和拆除，六项时显示满员提示',
       }));
       G.Build[action]('farm', 1);
       const html = context.document.body.appended.at(-1).innerHTML;
-      if (count < 6) {
+      if (count < 3) {
         assert.doesNotMatch(html, /施工队全忙/);
         assert.match(html, action === 'confirmUpgrade' ? /升级确认/ : /拆除建筑确认/);
         assert.ok(html.includes(G.resourceIconHtml('steel')));
       } else {
         assert.match(html, /施工队全忙/);
-        assert.match(html, /6 支施工队均在作业中/);
+        assert.match(html, /3 支施工队均在作业中/);
       }
       G.Build.onSlotClick('farm', 1);
       const detailHtml = context.document.body.appended.at(-1).innerHTML;
-      if (count < 6) {
+      if (count < 3) {
         assert.doesNotMatch(detailHtml, /施工队全忙/);
       } else {
-        assert.match(detailHtml, /施工队全忙 \(6\/6\)/);
+        assert.ok(detailHtml.includes('施工队全忙 (' + count + '/3)'));
       }
     }
   }
@@ -443,7 +445,7 @@ test('资源建筑显示对应设施的花园卫城模型', () => {
   }
 });
 
-test('军事建筑显示花园卫城模型，全部 25 个映射都有实际素材', () => {
+test('军事建筑显示花园卫城模型，全部 26 个映射复用实际素材', () => {
   const { G, state } = setup();
   const armyBuildings = [
     'command', 'house', 'factory', 'lightfactory', 'heavyfactory',
@@ -453,14 +455,121 @@ test('军事建筑显示花园卫城模型，全部 25 个映射都有实际素�
   for (const id of armyBuildings) {
     assert.equal(G.Build.BUILD_ICON[id], `img/buildings/garden/${id}.webp`);
   }
-  assert.equal(Object.keys(G.Build.BUILD_ICON).length, 25);
+  assert.equal(Object.keys(G.Build.BUILD_ICON).length, 26);
+  assert.equal(G.Build.BUILD_ICON.guild_radar, G.Build.BUILD_ICON.radar);
   assert.equal(G.Build.BUILD_ICON.shipyard, 'img/buildings/garden/shipyard.webp');
   for (const asset of Object.values(G.Build.BUILD_ICON)) {
     assert.ok(fs.existsSync(path.join(__dirname, '..', asset)), `缺少建筑素材：${asset}`);
   }
   const armyGridHtml = G.Build.renderSlotGrid('army', [], state);
   assert.match(armyGridHtml, /<img class="b-icon-img" src="img\/buildings\/garden\/command\.webp" alt="市政厅"/);
-  assert.match(armyGridHtml, /<img class="b-icon-img" src="img\/buildings\/garden\/radar\.webp" alt="防空雷达站"/);
+  assert.match(armyGridHtml, /<img class="b-icon-img" src="img\/buildings\/garden\/radar\.webp" alt="城防雷达"/);
+});
+
+test('雷达建筑目录保留旧键并新增相邻的单栋联防雷达，造价与分类相同', () => {
+  const { G } = setup(true);
+  assert.equal(G.DATA.buildings.radar.name, '城防雷达');
+  assert.equal(G.DATA.buildings.guild_radar.name, '联防雷达');
+  for (const id of ['radar', 'guild_radar']) {
+    const building = G.DATA.buildings[id];
+    assert.deepEqual({ ...building.baseCost }, { steel: 180, oil: 60, rare: 20 });
+    assert.equal(building.growth, 1.6);
+    assert.equal(building.cat, 'core');
+    assert.equal(building.slots, 1);
+  }
+  const order = G.Build.GROUPS.army.order;
+  assert.equal(order.indexOf('guild_radar'), order.indexOf('radar') + 1);
+  assert.equal(G.DATA.groupSlots.army, 35);
+});
+
+test('城防与联防雷达卡片及详情各自读取建筑等级，情报明细由科技控制', () => {
+  const { G, context, state } = setup(true);
+  state.buildings.command = 10;
+  for (const [cityLevel, guildLevel] of [[0, 0], [10, 0], [0, 1], [4, 7], [10, 10]]) {
+    state.buildings.radar = cityLevel;
+    state.buildings.guild_radar = guildLevel;
+    for (const techLevel of [0, 10]) {
+      state.tech = { recon_radar: techLevel };
+      const cityCard = G.Build.renderBuilding('radar', G.DATA.buildings.radar, [], 0);
+      const guildCard = G.Build.renderBuilding('guild_radar', G.DATA.buildings.guild_radar, [], 0);
+      assert.ok(cityCard.includes('侦察视野</span><span class="bcard-stat-val">+' + cityLevel + ' 格'));
+      assert.ok(guildCard.includes('联防覆盖半径</span><span class="bcard-stat-val">' + guildLevel + ' 格'));
+      assert.doesNotMatch(cityCard, /bcard-stat-name">联防覆盖半径/);
+      assert.doesNotMatch(guildCard, /bcard-stat-name">侦察视野/);
+      for (const id of ['radar', 'guild_radar']) {
+        const level = state.buildings[id];
+        const card = id === 'radar' ? cityCard : guildCard;
+        assert.match(card, /由雷达预警科技等级决定/);
+        assert.ok(card.includes('data-building="' + id + '"'));
+        if (level < 10) assert.ok(card.includes("Game.Build.confirmUpgrade('" + id + "')"));
+        else assert.match(card, /已达最大等级/);
+        G.Build.onSlotClick(id, null);
+        const detail = context.document.body.appended.at(-1).innerHTML;
+        assert.match(detail, /由雷达预警科技等级决定，与建筑等级无关/);
+        if (id === 'radar') {
+          assert.ok(detail.includes('+' + cityLevel + ' 格'));
+          assert.match(detail, /不增加战斗属性或联防覆盖/);
+          assert.doesNotMatch(detail, /bdetail-stat-lbl">联防覆盖半径/);
+        } else {
+          assert.ok(detail.includes('联防覆盖半径</span><span class="bdetail-stat-val">' + guildLevel + ' 格'));
+          assert.match(detail, /未入团时暂无区域军情/);
+          assert.doesNotMatch(detail, /侦察视野加成/);
+          if (level < 10) assert.ok(detail.includes('(下级 ' + (guildLevel + 1) + ' 格)'));
+          else assert.doesNotMatch(detail, /下级 11 格|升级至 Lv\.11/);
+        }
+      }
+    }
+  }
+});
+
+test('两类雷达的选建项独立，满足服务端建筑前置后无需军团即可建造', () => {
+  const { G, context, state } = setup(true);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/prerequisites.js'), 'utf8'), context);
+  G.Prerequisites.setRules(JSON.parse(fs.readFileSync(path.join(__dirname,
+    '../../backend/src/main/resources/game/tech-building-prerequisites.json'), 'utf8')));
+  state.buildings.command = 10;
+  state.buildings.lab = 5;
+  state.buildings.liaison = 5;
+  for (const [cityLevel, guildLevel] of [[0, 0], [10, 0], [0, 10], [10, 10]]) {
+    state.buildings.radar = cityLevel;
+    state.buildings.guild_radar = guildLevel;
+    G.Build.openBuildPicker('army');
+    const html = context.document.body.appended.at(-1).innerHTML;
+    for (const id of ['radar', 'guild_radar']) {
+      assert.equal(html.includes('id="build-picker-' + id + '"'), state.buildings[id] === 0);
+      if (state.buildings[id] === 0) assert.ok(html.includes("Game.Build._pickAndBuild('" + id + "')"));
+    }
+  }
+});
+
+test('联防雷达选建项展示服务端缺失的本城前置', () => {
+  const { G, context, state } = setup(true);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/prerequisites.js'), 'utf8'), context);
+  G.Prerequisites.setRules(JSON.parse(fs.readFileSync(path.join(__dirname,
+    '../../backend/src/main/resources/game/tech-building-prerequisites.json'), 'utf8')));
+  state.buildings.command = 3;
+  state.buildings.lab = 1;
+  state.buildings.liaison = 0;
+  G.Build.openBuildPicker('army');
+  const html = context.document.body.appended.at(-1).innerHTML;
+  const guildItem = html.slice(html.indexOf('id="build-picker-guild_radar"'), html.indexOf('id="build-picker-wall"'));
+  assert.match(guildItem, /前置未达成：需 .*联络中心/);
+  assert.ok(guildItem.includes("Game.Build._pickBlocked('guild_radar', 'prereq')"));
+});
+
+test('迁移后的36栋军事建筑完整展示，仍以35槽限制新建', () => {
+  const { G, state } = setup(true);
+  state.buildings = { command: 10, house: Array(32).fill(1), radar: 10, guild_radar: 10, lab: 5 };
+  const before = JSON.stringify(state.buildings);
+  const html = G.Build.renderSlotGrid('army', [], state);
+  assert.match(html, /已用 36 \/ 35 卡槽/);
+  assert.equal((html.match(/slot-card-occupied/g) || []).length, 36);
+  assert.match(html, /data-building="radar"/);
+  assert.match(html, /data-building="guild_radar"/);
+  assert.doesNotMatch(html, /slot-card-empty/);
+  G.Build.confirmUpgrade('liaison', null);
+  assert.match(G._lastToast, /军工建筑已达上限35栋/);
+  assert.equal(JSON.stringify(state.buildings), before);
 });
 
 test('renderBuildingIcon 支持 WebP、SVG 图片路径及 emoji 降级', () => {
@@ -493,7 +602,7 @@ test('openBuildPicker 在资源不足时显示缺口提示并支持点击置灰�
     desc: '驻扎战备部队,提供人口与兵员上限,每级+1200',
     baseCost: { steel: 120, food: 60 },
     growth: 1.5,
-    slots: 36
+    slots: 35
   };
   G.Build.GROUPS.army.order.push('house');
 
@@ -605,11 +714,32 @@ test('军校正确展示整批五星概率与招募培养说明', () => {
   assert.match(cardHtml, /\+2\.4%/);
 });
 
+test('研发中心升级预览按真实科技目录展示开放种类、等级上限与下级新增项目', () => {
+  const { G, context, state } = setup();
+  G.escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/data.js'), 'utf8'), context);
+  for (let level = 1; level <= 10; level++) {
+    state.buildings.lab = level;
+    const count = [0, 6, 16, 22, 23, 24, 24, 24, 24, 24, 24][level];
+    G.Build.onSlotClick('lab', null);
+    const modal = context.document.body.appended.at(-1).innerHTML;
+    assert.match(modal, new RegExp('>' + count + ' 项'));
+    assert.match(modal, new RegExp('最高 Lv\\.' + level));
+    assert.doesNotMatch(modal, /研发速度加成/);
+    if (level === 3) assert.match(modal, /下级新增科技[\s\S]*喷气推进/);
+    if (level === 4) assert.match(modal, /下级新增科技[\s\S]*舰船动力/);
+    if (level >= 5) assert.doesNotMatch(modal, /下级新增科技/);
+    const card = G.Build.renderBuilding('lab', G.DATA.buildings.lab, [], 0);
+    assert.match(card, new RegExp(count + ' 项 / 最高 Lv\\.' + level));
+    assert.doesNotMatch(card, /研发速度加成/);
+  }
+});
+
 test('城墙、研发中心、雷达站与军需仓库展示准确属性与加成', () => {
   const { G, context, state } = setup();
   G.DATA.buildings.wall = { name: '城防', desc: '基地外围城防设施;四类城防武器共享容量,每级+3000', baseCost: { steel: 200, food: 80 }, growth: 1.5, fortCapPerLevel: 3000, wallHpPerLevel: 250000, wallDefensePerLevel: 20, slots: 1 };
-  G.DATA.buildings.lab = { name: '军工科技研发中心', desc: '解锁与加速科技进度', baseCost: { steel: 200, food: 100, rare: 20 }, growth: 1.6, slots: 1 };
-  G.DATA.buildings.depot = { name: '军需仓库', desc: '战备物资掠夺保护,被掠夺时保护资源', baseCost: { steel: 100 }, growth: 1.5, protectPer: 1000, slots: 36 };
+  G.DATA.buildings.lab = { name: '军工科技研发中心', desc: '升级解锁更多科技，并提高可研究等级上限；不加速科研', baseCost: { steel: 200, food: 100, rare: 20 }, growth: 1.6, slots: 1 };
+  G.DATA.buildings.depot = { name: '军需仓库', desc: '战备物资掠夺保护,被掠夺时保护资源', baseCost: { steel: 100 }, growth: 1.5, protectPer: 1000, slots: 35 };
   G.DATA.buildings.exchange = { name: '军需物资中转站', desc: '战备物资调配,按比例转换资源', baseCost: { steel: 180, food: 100, gold: 100 }, growth: 1.5, slots: 1 };
 
   // 1. 满级城防
@@ -630,16 +760,18 @@ test('城墙、研发中心、雷达站与军需仓库展示准确属性与加�
   assert.match(wallCard, /30,?000/);
   assert.doesNotMatch(wallCard, /满级带兵|100,000|守城防御|提升守城部队防御/);
 
-  // 2. 研发中心科研加速
+  // 2. 研发中心科技准入
   state.buildings.lab = 6;
   G.Build.onSlotClick('lab', null);
   const labModal = context.document.body.appended.at(-1).innerHTML;
-  assert.match(labModal, /科研耗时加速/);
-  assert.match(labModal, /-50%/);
-  assert.match(labModal, /科技研发层级/);
+  assert.match(labModal, /开放科技种类/);
+  assert.match(labModal, /最高 Lv\.6/);
+  assert.match(labModal, /科技可研究等级/);
+  assert.doesNotMatch(labModal, /研发速度加成|\+6%/);
   const labCard = G.Build.renderBuilding('lab', G.DATA.buildings.lab, [], 0);
-  assert.match(labCard, /科研加速/);
-  assert.match(labCard, /-50%/);
+  assert.match(labCard, /科技准入/);
+  assert.match(labCard, /最高 Lv\.6/);
+  assert.doesNotMatch(labCard, /研发速度加成|\+6%/);
 
   // 3. 雷达站视野
   state.buildings.radar = 4;

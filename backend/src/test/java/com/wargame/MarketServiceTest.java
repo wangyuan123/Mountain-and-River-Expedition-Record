@@ -25,6 +25,16 @@ import static org.junit.jupiter.api.Assertions.*;
 @Transactional
 public class MarketServiceTest {
 
+    @Test
+    void exchangeUsesExactWholePercentagesAtEveryBuildingLevel() {
+        Building exchange = buildingRepository.findByPlayerIdAndCitySlotAndType(seller.getId(), 0, "exchange").get(0);
+        for (int level = 1; level <= 10; level++) {
+            exchange.setLevel(level);
+            var result = marketService.systemExchange(seller.getId(), 0, "steel", "food", 100);
+            assertEquals(50 + level * 4, result.get("gain"), "等级" + level);
+        }
+    }
+
     @Autowired
     private MarketService marketService;
 

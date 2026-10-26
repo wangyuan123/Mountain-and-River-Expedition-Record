@@ -43,6 +43,28 @@ public class Player extends VersionedEntity implements CityEconomy {
     @Column(name = "display_name", length = 100)
     private String displayName;
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @Column(name = "display_name_key", unique = true, length = 200)
+    private String displayNameKey;
+
+    /** 仅记录本机制上线后成功的用卡改名；历史没有可靠时间，不伪造冷却。 */
+    @Column(name = "commander_renamed_at", nullable = false)
+    private long commanderRenamedAt = 0L;
+
+    @Column(name = "commander_rename_count", nullable = false)
+    private int commanderRenameCount = 0;
+
+    /** 与邮件生命周期分离，邮件删除、已读或重复初始化均不能重新赠卡。 */
+    @Column(name = "commander_rename_gift_sent", nullable = false)
+    private boolean commanderRenameGiftSent = false;
+
+    @PrePersist
+    @PreUpdate
+    public void updateDisplayNameKey() {
+        displayNameKey = com.wargame.model.constants.CommanderRenamePolicy.nameKey(
+                displayName == null || displayName.isBlank() ? username : displayName);
+    }
+
     /** 标记是否为系统批量生成的模拟玩家 (Bot) */
     @Column(name = "is_bot", nullable = false)
     private Boolean isBot = false;

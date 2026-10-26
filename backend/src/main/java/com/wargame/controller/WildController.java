@@ -133,6 +133,11 @@ public class WildController {
         }
         Long playerId = authService.getCurrentPlayer().getId();
         Map<String, Object> result = worldService.abandonWild(playerId, request.wildTileId());
+        // 校验失败必须走客户端错误分支，避免 HTTP 200 的失败结果被当作成功并覆盖页面状态。
+        if (!Boolean.TRUE.equals(result.get("success"))) {
+            result.put("error", result.get("message"));
+            return ResponseEntity.badRequest().body(result);
+        }
         result.put("state", gameStateService.getGameState(playerId));
         return ResponseEntity.ok(result);
     }

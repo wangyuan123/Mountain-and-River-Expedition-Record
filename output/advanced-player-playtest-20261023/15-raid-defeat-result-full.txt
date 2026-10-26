@@ -1,0 +1,179 @@
+Browser tab: 2, Title: "山河远征录 - 文字战争策略游戏", URL: "http://localhost:8081/".
+0 AXWebArea 山河远征录 - 文字战争策略游戏, URL: localhost:8081/
+	1 container screen
+		2 container header
+			3 container topbar
+				101 button 头像 远征统帅_163822 已连接, Help: 点击展开指挥官档案、主题与设置
+					102 image 头像
+					103 text 远征统帅_163822
+					104 text 已连接
+				105 text 🎖️ 论坛
+				106 text 💎 100
+			11 container navbar
+				107 container Description: 左右滑动查看更多导航, ID: gameNavViewport
+					108 container 第1组导航
+						109 text 首页
+						110 text 后勤
+						111 text 军工
+						112 text 军官
+						113 text 军队
+						114 text 地图
+						115 text 军情
+						116 container
+							117 text 战报 1
+						118 text 聊天
+						119 container
+							120 text 电报 3
+						121 container
+							122 text 任务 !
+						123 text 军团
+						124 text 仓库
+						125 text 科技
+						126 text 军校
+						127 text 对战
+					128 container 第2组导航
+						129 pop up button Description: 切换城市, Help: 当前城市：新城市（主城）
+						130 text 战术
+						131 text 排名
+						132 text 商城
+				133 container 导航分页
+					134 button 切换到第1组导航
+					135 button 切换到第2组导航
+		100 container view
+			136 button 返回上一步
+			137 text 【讨伐报告】掠夺失败 战火_$@焚天灭地城
+			138 container
+				139 text 出发地:  新城市 (3,388)
+			140 container
+				141 text 目的地:  战火_$@焚天灭地城 (5,387)
+			142 container
+				143 text 敌方统帅:  赵匡胤_守城悍将
+			144 container
+				145 text 时　间:  10-23 00:18:25
+			146 container
+				147 text 行动配置:  仅夺取资源
+			148 container
+				149 text 结　果: 战斗失利
+			150 container
+				151 text 接管结果:  未接管（仅夺取资源）
+			152 text 我方 弗雷德里克·库克将领率军 对 战火_$@焚天灭地城 (5,387) 进行了讨伐，历经19回合。 我方遭受强烈阻击，战役未能获胜。
+			153 text 【战果结算】
+			154 text 将领经验
+			155 text +4275501
+			156 text 声望变化
+			157 container
+				158 text +0  当前 0
+			159 text 民心变化
+			160 container
+				161 text +0  当前 70
+			162 text 敌军城市民心变化
+			163 container
+				164 text +1  战后 71
+			165 text 民怨变化
+			166 container
+				167 text +0  战后 0
+			168 text 敌军城市民怨变化
+			169 container
+				170 text +0  战后 0
+			171 text 本方战损
+			172 text 600000
+			173 text 伤兵回收
+			174 container
+				175 text 50%  入营 300000
+			176 text 伤兵将在 7 天内保留，可前往伤兵营治疗归队。
+			177 text 【我方军队】
+			178 container
+				179 text 🎖️ 随军将领: 弗雷德里克·库克 Lv.1 (军事 70)
+			180 container
+				181 text 将领特技:  绝境反击 Lv.3
+			182 container
+				183 text 步兵-加兰德步枪兵（M1） :  100000 -> 0 (-100000)
+			184 container
+				185 text 卡车-十轮大卡（CCKW-353） :  10000 -> 0 (-10000)
+			186 container
+				187 text 重型坦克-斯大林（IS-2） :  100000 -> 0 (-100000)
+			188 container
+				189 text 突击炮-自行加榴炮（ISU-152） :  90000 -> 0 (-90000)
+			190 container
+				191 text 反坦克火箭车-喀秋莎（BM-13） :  100000 -> 0 (-100000)
+			192 container
+				193 text 战斗机-野马（P-51） :  100000 -> 0 (-100000)
+			194 container
+				195 text 轰炸机-飞行堡垒（B-17G） :  100000 -> 0 (-100000)
+			196 text 【敌方军队】
+			197 container
+				198 text 🎖️ 随军将领: 赵匡胤_守城悍将 Lv.100 (军事 120 (基础100))
+			199 container
+				200 text 将领特技:  三军统帅 Lv.5、精明理财 Lv.2
+			201 container
+				202 text 装甲车-猎鹿犬防空型（T17E2） :  62784 -> 0 (-62784)
+			203 container
+				204 text 突击炮-自行加榴炮（ISU-152） :  62784 -> 31881 (-30903)
+			205 container
+				206 text 战列舰-衣阿华级（Iowa） :  62784 -> 56737 (-6047)
+			207 container
+				208 text 轰炸机-飞行堡垒（B-17G） :  62784 -> 33299 (-29485)
+			209 container
+				210 text 航母-埃塞克斯级（Essex） :  62784 -> 62162 (-622)
+			211 container
+				212 text 驱逐舰-弗莱彻级（Fletcher） :  62784 -> 59978 (-2806)
+			213 container
+				214 text 战斗机-野马（P-51） :  62156 -> 44918 (-17238)
+			215 container
+				216 text 重型坦克-斯大林（IS-2） :  62155 -> 47264 (-14891)
+			217 container
+				218 text 步兵-加兰德步枪兵（M1） :  62093 -> 62093 (-0)
+			219 container
+				220 text 轻型坦克-斯图亚特（M5A1） :  62783 -> 59834 (-2949)
+			221 container
+				222 text 侦查装甲车-灰狗（M8） :  39347 -> 36068 (-3279)
+			223 container
+				224 text 反坦克火箭车-喀秋莎（BM-13） :  51132 -> 0 (-51132)
+			225 container
+				226 text 侦察机-闪电侦察型（F-5） :  52498 -> 52498 (-0)
+			227 container
+				228 text 特种兵-英国突击队（Commando） :  62783 -> 37642 (-25141)
+			229 container
+				230 text 潜艇-小鲨鱼级（Gato） :  62783 -> 61081 (-1702)
+			231 container
+				232 text 运输机-空中列车（C-47） :  62783 -> 62783 (-0)
+			233 container
+				234 text 卡车-十轮大卡（CCKW-353） :  62783 -> 62783 (-0)
+			235 container
+				236 text 反坦克炮 :  5000 -> 5000 (-0)
+			237 container
+				238 text 碉堡 :  5000 -> 5000 (-0)
+			239 container
+				240 text 防空炮 :  5000 -> 5000 (-0)
+			241 container
+				242 text 榴弹炮 :  5000 -> 5000 (-0)
+			243 button [ 📜 查看战斗详情 (共 19 回合) ▾ ], ID: btnBattleDetails
+				298 text [
+				299 text 📜 查看战斗详情
+				300 text (共 19 回合)
+				301 text ▾
+				302 text ]
+			278 button [ ↩ 返回战报 ]
+				279 text [
+				280 text ↩ 返回战报
+				281 text ]
+			282 button [ 伤兵营 ]
+				283 text [
+				284 text 伤兵营
+				285 text ]
+			286 button [ 🏠 返回首页 ]
+				287 text [
+				288 text 🏠 返回首页
+				289 text ]
+		63 container Description: 游戏导航与备案信息, ID: footbar
+			290 container 底部快捷导航
+				291 button 首页
+				292 button 地图
+				293 button 任务
+				294 button 邮件
+				295 button 设置
+				296 button 返回顶部
+			297 text 返回战报列表/主菜单
+			303 text 北京时间：2026年10月23日 21:35:09
+
+The focused UI element is 243 button [ 📜 查看战斗详情 (共 19 回合) ▾ ], ID: btnBattleDetails

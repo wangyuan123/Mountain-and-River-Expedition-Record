@@ -131,43 +131,100 @@ test('recon onboarding focuses the speed-up item in the actual picker and clears
   assert.equal(cleared, 1, '关闭加速弹窗后不能留下已移除选项的聚光灯');
 });
 
-test('techDuration scales with level and is reduced by lab level', () => {
+test('techDuration scales with level and ignores lab level', () => {
   const { G } = setupTestEnvironment();
   const d0 = G.techDuration('attack_tech', 0, 1);
   const d1 = G.techDuration('attack_tech', 1, 1);
   const d0Lab5 = G.techDuration('attack_tech', 0, 5);
 
-  assert.equal(d0, 178);
+  assert.equal(d0, 180);
   assert.ok(d1 > d0, 'Level 1 tech should take longer than Level 0');
-  assert.ok(d0Lab5 < d0, 'Lab level 5 should reduce research duration');
-  assert.equal(d0Lab5, 171);
+  assert.equal(d0Lab5, d0, 'Lab level only controls research access');
+  assert.equal(d0Lab5, 180);
   assert.equal(G.techDuration('attack_tech', 5, 0), 85320);
-  assert.equal(G.techDuration('attack_tech', 5, 1), 84475);
-  assert.equal(G.techDuration('attack_tech', 5, 5), 81257);
-  assert.equal(G.techDuration('attack_tech', 5, 10), 77564);
-  assert.equal(G.techDuration('attack_tech', 5, 20), 77564, 'Lab bonus must stop at 10%');
+  assert.equal(G.techDuration('attack_tech', 5, 1), 85320);
+  assert.equal(G.techDuration('attack_tech', 5, 5), 85320);
+  assert.equal(G.techDuration('attack_tech', 5, 10), 85320);
+  assert.equal(G.techDuration('attack_tech', 5, 20), 85320, 'Lab must not speed up research');
+});
+
+test('研发中心逐级开放科技种类且各项目标等级始终受本城中心限制', () => {
+  const { G, appendedElements } = setupTestEnvironment(true);
+  const rules = JSON.parse(fs.readFileSync(path.join(__dirname, '../../backend/src/main/resources/game/tech-building-prerequisites.json')));
+  G.Prerequisites = { check: () => ({ missing: [] }), preview: () => {}, missingText: () => '' };
+  for (let level = 0; level <= 10; level++) {
+    const expectedCount = [0, 6, 16, 22, 23, 24, 24, 24, 24, 24, 24][level];
+    const access = G.researchAccess(level);
+    assert.equal(access.unlocked.length, expectedCount);
+    assert.equal(access.level, level);
+    for (const [id, tech] of Object.entries(G.DATA.techs)) {
+      assert.equal(tech.labReq, rules.technologies[id].labFloor, id);
+      for (let target = 1; target <= 10; target++) {
+        const requiredLab = rules.technologies[id].levels[target - 1].requires.find(req => req.building === 'lab');
+        assert.equal(requiredLab.level, Math.max(tech.labReq, target), id + ' target ' + target);
+      }
+      G.Core.state.buildings.lab = level;
+      G.Core.state.tech = { [id]: level };
+      G.Core.state.research = null;
+      const before = appendedElements.length;
+      G.Tech.confirmResearch(id);
+      assert.equal(appendedElements.length, before, id + ' must not exceed lab ' + level);
+    }
+  }
+  G.Core.state.buildings.lab = 4;
+  G.Core.state.tech = {};
+  G.Tech.confirmResearch('air_engine');
+  assert.equal(appendedElements.length, 1, '新开放的喷气推进从1级开始研究');
+  assert.match(appendedElements.at(-1).innerHTML, /Lv\.0 → Lv\.1/);
+  assert.doesNotMatch(appendedElements.at(-1).innerHTML, /中心提速/);
+
+});
+
+test('科研工期设计测算与实际公式一致，中心准入表与服务端配置一致', () => {
+  const { G } = setupTestEnvironment(true);
+  const design = JSON.parse(fs.readFileSync(path.join(__dirname, '../../docs/balance/research-queue-duration-design-20261019.json')));
+  const rules = JSON.parse(fs.readFileSync(path.join(__dirname, '../../backend/src/main/resources/game/tech-building-prerequisites.json')));
+  assert.equal(design.labAccess.speedBonus, false);
+  assert.equal(design.timing.labSpeedPerLevel, undefined);
+  for (const row of design.labAccess.unlocksByLevel) {
+    const access = G.researchAccess(row.labLevel);
+    assert.equal(access.unlocked.length, row.cumulativeTechnologyCount);
+    assert.equal(access.level, row.maximumTargetLevel);
+    const expected = Object.entries(rules.technologies).filter(([, tech]) => tech.labFloor === row.labLevel).map(([id]) => id).sort();
+    assert.deepEqual(row.newTechnologyKeys.slice().sort(), expected);
+  }
+  for (const profile of design.analysis.profiles) {
+    G.Core.state.officers = [{ role: 'mayor', knowledge: profile.knowledge, skills: [{ id: 'research', lv: profile.researchSkillLevel }] }];
+    assert.equal(profile.speedMultiplier, Number(((1 + profile.knowledge * 0.001) * (1 + profile.researchSkillLevel * 0.04)).toFixed(8)));
+    for (const [key, values] of Object.entries(profile.durationSecondsByTimingProfile)) {
+      const techId = key === 'normal' ? 'attack_tech' : key === 'resource' ? 'prod_food' : key;
+      values.forEach((seconds, index) => {
+        for (const labLevel of [0, 1, 5, 10]) assert.equal(G.techDuration(techId, index, labLevel), seconds, profile.key + ' ' + techId);
+      });
+    }
+  }
 });
 
 test('research uses the current mayor knowledge continuously and multiplies it with the research skill', () => {
   const { G } = setupTestEnvironment(true);
   const mayor = { id: 1, role: 'mayor', knowledge: 0, skills: [] };
   G.Core.state.officers = [mayor];
-  for (const [knowledge, seconds] of [[0, 77564], [50, 73870], [100, 70512], [200, 64636]]) {
+  for (const [knowledge, seconds] of [[0, 85320], [50, 81257], [100, 77564], [200, 71100]]) {
     mayor.knowledge = knowledge;
     assert.equal(G.techDuration('attack_tech', 5, 10), seconds, 'Mayor knowledge ' + knowledge);
   }
   mayor.knowledge = 100;
   mayor.skills = [{ id: 'research', lv: 5 }];
-  assert.equal(G.techDuration('attack_tech', 5, 10), 58760);
+  assert.equal(G.techDuration('attack_tech', 5, 10), 64636);
   mayor.role = 'commander';
-  assert.equal(G.techDuration('attack_tech', 5, 10), 77564, 'Only the appointed mayor accelerates research');
+  assert.equal(G.techDuration('attack_tech', 5, 10), 85320, 'Only the appointed mayor accelerates research');
   G.Core.state.officers = [];
-  assert.equal(G.techDuration('attack_tech', 5, 10), 77564);
-  assert.equal(G.techDuration('prod_food', 0, 10), 109);
+  assert.equal(G.techDuration('attack_tech', 5, 10), 85320);
+  assert.equal(G.techDuration('prod_food', 0, 10), 120);
   mayor.role = 'mayor';
   G.Core.state.officers = [mayor];
-  assert.equal(G.techDuration('prod_food', 0, 10), 83, 'Stacked bonuses apply to resource technology');
-  assert.equal(G.techDuration('attack_tech', 9, 10), 892562, 'Late research exceeds 24 hours');
+  assert.equal(G.techDuration('prod_food', 0, 10), 91, 'Stacked bonuses apply to resource technology');
+  assert.equal(G.techDuration('attack_tech', 9, 10), 981818, 'Late research exceeds 24 hours');
 });
 
 test('confirmResearch creates a confirmation modal card instead of instantly upgrading', () => {
@@ -212,7 +269,7 @@ test('tech page keeps the overview compact and opens ordered research guidance',
   const container = { innerHTML: '' };
   G.Tech.renderView(container);
 
-  assert.match(container.innerHTML, /研发速度受中心等级、市长学识和格物致知影响/);
+  assert.match(container.innerHTML, /中心升级不提速，研发速度仅受市长学识和格物致知影响/);
   assert.match(container.innerHTML, /class="link-act"[^>]*>查看研发说明/);
   assert.doesNotMatch(container.innerHTML, /基础工期为 7\.5 秒/);
 
@@ -401,15 +458,15 @@ test('all target-level duration profiles and expanded prerequisites match the re
     assert.deepEqual(config.technologies[id].levels, override.levels);
   }
   G.Core.state.officers = [{ role: 'mayor', knowledge: 344, skills: [{ id: 'research', lv: 5 }] }];
-  assert.equal(G.techDuration('attack_tech', 9, 10), 730519);
-  assert.equal(G.techDuration('nav_engine', 9, 10), 1363636);
+  assert.equal(G.techDuration('attack_tech', 9, 10), 803571);
+  assert.equal(G.techDuration('nav_engine', 9, 10), 1500000);
   assert.equal(expected.nav_engine.at(-1), design.timing.endgameBaseSeconds);
 });
 
-test('科技卡片采用紧凑布局，前置建筑默认折叠且各级要求收纳在折叠区', () => {
+test('科技卡片在前置不满足时展开全部要求，已满足时仍可折叠', () => {
   const { G } = setupTestEnvironment(true);
   G.Prerequisites = {
-    firstMissing: () => ({ id: 'lab', required: 2, actual: 1, scope: 'current_city' }),
+    check: () => ({ missing: [{ id: 'lab', required: 2, actual: 1, scope: 'current_city' }] }),
     missingText: () => '需本城军工科技研发中心 Lv.2 (当前 Lv.1)',
     html: () => '<div class="prereq-list">前置要求</div>',
     preview: () => {}
@@ -432,10 +489,13 @@ test('科技卡片采用紧凑布局，前置建筑默认折叠且各级要求�
   assert.match(html, /class="tech-effect-tag"><span class="tech-effect-lbl">当前五星名将整批概率加成: <\/span><b style="color:var\(--ink\);">\+0\.0个百分点<\/b><\/span>/);
   assert.match(html, /class="tech-lock-pill cost">需.*军工科技研发中心 Lv\.2.*<\/span>/);
 
-  // 3. 建筑要求默认折叠（绝不默认 open 占用屏幕空间），且各级要求按钮收纳在折叠区内
-  assert.match(html, /<details class="prereq-details" onclick="event\.stopPropagation\(\)"><summary class="prereq-summary"><span>Lv\.1 建筑要求<\/span><\/summary>/);
-  assert.doesNotMatch(html, /<details class="prereq-details" open/);
+  // 未满足的要求直接展开，玩家可一次看到所有缺项和建设入口。
+  assert.match(html, /<details class="prereq-details" open onclick="event\.stopPropagation\(\)"><summary class="prereq-summary"><span>Lv\.1 建筑要求<\/span><\/summary>/);
   assert.match(html, /class="prereq-preview-foot"><button type="button" class="link-act prereq-preview-btn"[^>]*>查看各级前置要求 &gt;<\/button><\/div><\/details>/);
+  G.Prerequisites.check = () => ({ missing: [] });
+  G.Core.state.buildings.lab = 10;
+  G.Tech.renderView(container);
+  assert.doesNotMatch(container.innerHTML, /<details class="prereq-details" open/);
 
   // 4. 验证 CSS 样式表包含紧凑卡片定义
   const css = fs.readFileSync(path.join(__dirname, '../css/style.css'), 'utf8');
@@ -459,7 +519,7 @@ test('正在研发的科技卡片拥有专用激活高亮和倒计时徽章', ()
   const html = container.innerHTML;
 
   assert.match(html, /class="menu-item tech-card active is-researching" data-tech="military_theory"/);
-  assert.match(html, /class="quest-badge warn tech-timer-badge" id="tech-badge-military_theory">⏳ 研发中 01:00<\/span>/);
+  assert.match(html, /class="quest-badge warn tech-timer-badge" id="tech-badge-military_theory">⏳ 研发中 1分钟0秒<\/span>/);
   assert.match(html, /class="btn sm ok tech-btn-action"[^>]*onclick="event\.stopPropagation\(\);Game\.Tech\.openSpeedUpPicker\(\)">⚡ 加速<\/button>/);
 });
 

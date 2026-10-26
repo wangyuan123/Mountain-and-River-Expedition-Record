@@ -65,7 +65,7 @@ public class OfficerRenameTest extends BaseServiceTest {
 
         // 玩家初始资源有 100000 黄金，无军官改名卡
         Resources resBefore = resourcesRepository.findByPlayerIdAndCitySlot(player.getId(), 0).orElseThrow();
-        int goldBefore = resBefore.getGold();
+        long goldBefore = resBefore.getGold();
 
         Map<String, Object> res = officerService.rename(player.getId(), officer.getId(), "虎豹骑统领");
         assertTrue((Boolean) res.get("success"), "无卡但金币充足时改名应当成功");
@@ -158,7 +158,7 @@ public class OfficerRenameTest extends BaseServiceTest {
         Map<String, Object> firstState = officers.stream().filter(o -> first.getId().equals(o.get("id"))).findFirst().orElseThrow();
         assertTrue(((Number) firstState.get("nameRenameAvailableAt")).longValue() > System.currentTimeMillis());
 
-        int goldBefore = resourcesRepository.findByPlayerIdAndCitySlot(player.getId(), 0).orElseThrow().getGold();
+        long goldBefore = resourcesRepository.findByPlayerIdAndCitySlot(player.getId(), 0).orElseThrow().getGold();
         assertEquals(false, officerService.rename(player.getId(), first.getId(), "再次改名").get("success"));
         assertEquals(false, depotService.useItem(player.getId(), "renameCard", first.getId(), "改名卡重试").get("success"));
         assertEquals(goldBefore, resourcesRepository.findByPlayerIdAndCitySlot(player.getId(), 0).orElseThrow().getGold());

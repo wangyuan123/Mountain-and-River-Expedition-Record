@@ -1,0 +1,38 @@
+{
+  "targetFoodBefore": 999462741,
+  "targetFoodAfter": 996115983,
+  "senderFoodUnchanged": 1000000000,
+  "city": {
+    "id": 2,
+    "slot": 0,
+    "name": "新城市",
+    "supportFoodPerHour": 7979192.0,
+    "ownFoodPerHour": 1600000.0,
+    "acceptGarrison": false,
+    "garrisonFoodUnmet": 0.0,
+    "main": true,
+    "current": true,
+    "x": 20,
+    "y": 10,
+    "readyAt": 0,
+    "surrenderOfferId": null,
+    "surrenderRecipientId": null,
+    "surrenderFrozenAt": null,
+    "surrenderTransferDeadlineAt": null,
+    "frozen": false,
+    "ready": true,
+    "incoming": false,
+    "shieldUntil": 0,
+    "coastal": false,
+    "legacyNaval": false,
+    "level": 1
+  },
+  "survivingSupport": {
+    "1": {
+      "htank": 498341
+    },
+    "2": {
+      "htank": 499058
+    }
+  }
+}

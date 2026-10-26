@@ -272,12 +272,12 @@ public class AdminPlayerService {
                     return r;
                 });
 
-        if (resUpdates.containsKey("gold") && resUpdates.get("gold") != null) res.setGold(Math.max(0, Math.min(1_000_000_000, resUpdates.get("gold"))));
+        if (resUpdates.containsKey("gold") && resUpdates.get("gold") != null) res.setGold(Math.max(0, resUpdates.get("gold")));
         if (resUpdates.containsKey("diamond") && resUpdates.get("diamond") != null) res.setDiamond(Math.max(0, Math.min(1_000_000_000, resUpdates.get("diamond"))));
-        if (resUpdates.containsKey("food") && resUpdates.get("food") != null) res.setFood(Math.max(0, Math.min(1_000_000_000, resUpdates.get("food"))));
-        if (resUpdates.containsKey("steel") && resUpdates.get("steel") != null) res.setSteel(Math.max(0, Math.min(1_000_000_000, resUpdates.get("steel"))));
-        if (resUpdates.containsKey("oil") && resUpdates.get("oil") != null) res.setOil(Math.max(0, Math.min(1_000_000_000, resUpdates.get("oil"))));
-        if (resUpdates.containsKey("rare") && resUpdates.get("rare") != null) res.setRare(Math.max(0, Math.min(1_000_000_000, resUpdates.get("rare"))));
+        if (resUpdates.containsKey("food") && resUpdates.get("food") != null) res.setFood(Math.max(0, resUpdates.get("food")));
+        if (resUpdates.containsKey("steel") && resUpdates.get("steel") != null) res.setSteel(Math.max(0, resUpdates.get("steel")));
+        if (resUpdates.containsKey("oil") && resUpdates.get("oil") != null) res.setOil(Math.max(0, resUpdates.get("oil")));
+        if (resUpdates.containsKey("rare") && resUpdates.get("rare") != null) res.setRare(Math.max(0, resUpdates.get("rare")));
 
         resourcesRepository.save(res);
         auditLogService.record(adminUsername, "UPDATE_PLAYER_RESOURCES", "PLAYER", String.valueOf(playerId),

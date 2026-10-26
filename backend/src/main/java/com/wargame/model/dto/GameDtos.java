@@ -136,11 +136,25 @@ public class GameDtos {
 
     public record ShopRechargeRequest(String pkgId, int rmb, int diamond, String channel) {}
 
-    public record ShopBuyRequest(String itemId) {}
+    public record ShopBuyRequest(String itemId, Integer count) {
+        public ShopBuyRequest(String itemId) {
+            this(itemId, 1);
+        }
+
+        @Override
+        public Integer count() {
+            return (count == null || count < 1) ? 1 : count;
+        }
+    }
 
     // ===== 仓库 =====
 
-    public record DepotUseRequest(String itemId, Long officerId, String newName) {}
+    /** skillId 仅供通用技能书自选学习；三参数构造保持既有调用兼容。 */
+    public record DepotUseRequest(String itemId, Long officerId, String newName, String skillId) {
+        public DepotUseRequest(String itemId, Long officerId, String newName) {
+            this(itemId, officerId, newName, null);
+        }
+    }
 
     // ===== 内政民心 =====
 

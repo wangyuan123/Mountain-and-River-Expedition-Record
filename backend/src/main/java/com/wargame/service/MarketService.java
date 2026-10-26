@@ -119,7 +119,7 @@ public class MarketService {
         Resources res = resourcesRepository.findCityForTreatment(playerId, citySlot)
                 .orElseThrow(() -> new IllegalArgumentException("资源信息不存在"));
 
-        int current = getResourceAmount(res, resourceType);
+        long current = getResourceAmount(res, resourceType);
         if (current < amount) {
             throw new IllegalArgumentException("当前城池资源不足以支持上架");
         }
@@ -168,7 +168,7 @@ public class MarketService {
                 .orElseThrow(() -> new IllegalArgumentException("买方资源不存在"));
 
         long costGold = order.getTotalPrice();
-        int buyerGold = Objects.requireNonNullElse(buyerRes.getGold(), 0);
+        long buyerGold = Objects.requireNonNullElse(buyerRes.getGold(), 0L);
         if (buyerGold < costGold) {
             throw new IllegalArgumentException("黄金不足，无法购买该挂单 (需 " + costGold + " 黄金)");
         }
@@ -177,7 +177,7 @@ public class MarketService {
                 .orElseThrow(() -> new IllegalArgumentException("买方不存在"));
 
         // 1. 买家扣除黄金，增加资源
-        buyerRes.setGold((int) (buyerGold - costGold));
+        buyerRes.setGold(buyerGold - costGold);
         addResource(buyerRes, order.getResourceType(), order.getAmount());
         resourcesRepository.save(buyerRes);
 
@@ -188,7 +188,7 @@ public class MarketService {
         Resources sellerRes = resourcesRepository.findCityForTreatment(order.getSellerId(), order.getSellerCitySlot())
                 .orElse(null);
         if (sellerRes != null) {
-            sellerRes.setGold(Objects.requireNonNullElse(sellerRes.getGold(), 0) + (int) earnGold);
+            sellerRes.addResource("gold", earnGold);
             resourcesRepository.save(sellerRes);
         }
 
@@ -248,13 +248,15 @@ public class MarketService {
         Resources res = resourcesRepository.findCityForTreatment(playerId, citySlot)
                 .orElseThrow(() -> new IllegalArgumentException("资源信息不存在"));
 
-        int current = getResourceAmount(res, fromRes);
+        long current = getResourceAmount(res, fromRes);
         if (current < amount) {
             throw new IllegalArgumentException("源资源不足");
         }
 
         double rate = getExchangeRate(exLv);
-        int gain = (int) Math.floor(amount * rate);
+        // 兑换比例按整数百分比结算，避免100×58%因浮点误差被向下取成57。
+        int percent = 50 + 4 * Math.max(0, Math.min(10, exLv));
+        int gain = (int) ((long) amount * percent / 100);
         if (gain <= 0) {
             throw new IllegalArgumentException("兑换获得数量不足 1");
         }
@@ -272,31 +274,26 @@ public class MarketService {
         return result;
     }
 
-    private int getResourceAmount(Resources res, String type) {
+    private long getResourceAmount(Resources res, String type) {
         return switch (type) {
-            case "food" -> Objects.requireNonNullElse(res.getFood(), 0);
-            case "steel" -> Objects.requireNonNullElse(res.getSteel(), 0);
-            case "oil" -> Objects.requireNonNullElse(res.getOil(), 0);
-            case "rare" -> Objects.requireNonNullElse(res.getRare(), 0);
+            case "food" -> Objects.requireNonNullElse(res.getFood(), 0L);
+            case "steel" -> Objects.requireNonNullElse(res.getSteel(), 0L);
+            case "oil" -> Objects.requireNonNullElse(res.getOil(), 0L);
+            case "rare" -> Objects.requireNonNullElse(res.getRare(), 0L);
             default -> 0;
         };
     }
 
     private void deductResource(Resources res, String type, int amount) {
         switch (type) {
-            case "food" -> res.setFood(Math.max(0, Objects.requireNonNullElse(res.getFood(), 0) - amount));
-            case "steel" -> res.setSteel(Math.max(0, Objects.requireNonNullElse(res.getSteel(), 0) - amount));
-            case "oil" -> res.setOil(Math.max(0, Objects.requireNonNullElse(res.getOil(), 0) - amount));
-            case "rare" -> res.setRare(Math.max(0, Objects.requireNonNullElse(res.getRare(), 0) - amount));
+            case "food" -> res.setFood(Math.max(0L, Objects.requireNonNullElse(res.getFood(), 0L) - amount));
+            case "steel" -> res.setSteel(Math.max(0L, Objects.requireNonNullElse(res.getSteel(), 0L) - amount));
+            case "oil" -> res.setOil(Math.max(0L, Objects.requireNonNullElse(res.getOil(), 0L) - amount));
+            case "rare" -> res.setRare(Math.max(0L, Objects.requireNonNullElse(res.getRare(), 0L) - amount));
         }
     }
 
     private void addResource(Resources res, String type, int amount) {
-        switch (type) {
-            case "food" -> res.setFood(Objects.requireNonNullElse(res.getFood(), 0) + amount);
-            case "steel" -> res.setSteel(Objects.requireNonNullElse(res.getSteel(), 0) + amount);
-            case "oil" -> res.setOil(Objects.requireNonNullElse(res.getOil(), 0) + amount);
-            case "rare" -> res.setRare(Objects.requireNonNullElse(res.getRare(), 0) + amount);
-        }
+        res.addResource(type, amount);
     }
 }

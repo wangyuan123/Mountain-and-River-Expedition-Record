@@ -178,7 +178,7 @@
     }
     var seconds = remainingSeconds();
     var clock = document.getElementById('rank-exam-clock');
-    if (clock) clock.textContent = seconds ? Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0') : '已超时';
+    if (clock) clock.textContent = seconds ? G.formatDuration(seconds) : '已超时';
     var count = document.getElementById('rank-exam-count');
     if (count) count.textContent = answeredCount() + '/' + state.paper.questions.length;
     document.querySelectorAll('.rank-exam-question input').forEach(function (input) {
@@ -194,7 +194,7 @@
   function renderExamPaper(paper) {
     var h = '<section class="rank-exam" aria-label="军事晋升笔试">';
     h += '<div class="rank-exam-heading"><div>' + G.renderMilitaryRankIcon(paper.tier) + '<h2>' + escapeHtml(paper.rankName) + ' · 军事笔试</h2></div>';
-    h += '<div class="rank-exam-time">剩余 <b id="rank-exam-clock">15:00</b></div></div>';
+    h += '<div class="rank-exam-time">剩余 <b id="rank-exam-clock">' + (remainingSeconds() ? G.formatDuration(remainingSeconds()) : '已超时') + '</b></div></div>';
     h += '<div class="rank-exam-meta">单选题 · ' + paper.questions.length + '题 · 合格线 ' + paper.requiredCorrect + '题</div>';
     paper.questions.forEach(function (q, i) {
       h += '<fieldset class="rank-exam-question"><legend>' + (i + 1) + '. ' + escapeHtml(q.prompt) + '</legend>';
@@ -531,6 +531,7 @@
         var self = this;
         self.disabled = true;
         claimQuest(id).then(function (r) {
+          if (G.Sound && typeof G.Sound.play === 'function') G.Sound.play('coins');
           G.toast((r && r.message) || '已领取');
           return loadQuests();
         }).then(function () {
@@ -550,6 +551,7 @@
         var self = this;
         self.disabled = true;
         claimStage(stageId).then(function (r) {
+          if (G.Sound && typeof G.Sound.play === 'function') G.Sound.play('coins');
           var msg = (r && r.message) || '阶段通关大礼包已发放到您的仓库背包！';
           G.toast(msg);
           return loadQuests();

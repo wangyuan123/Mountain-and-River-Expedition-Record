@@ -100,6 +100,8 @@ public class TickService {
 
     @org.springframework.beans.factory.annotation.Autowired private PlayerCityRepository playerCities;
 
+    @org.springframework.beans.factory.annotation.Autowired private GarrisonFoodService garrisonFood;
+
     @Transactional
     public void tick(Long playerId) {
         marchService.lockInterceptionParticipants(playerId);
@@ -134,7 +136,7 @@ public class TickService {
 
         // Get mayor
         Officer mayor = getOfficerByRole(playerId, "mayor");
-        double mayorKnow = mayor != null && mayor.getKnowledge() != null ? mayor.getKnowledge() : 0;
+        double mayorKnow = mayor != null ? equipmentService.attributes(mayor).knowledge() : 0;
 
         // Get capacity
         Map<String, Long> cap = capacity(playerId);
@@ -144,6 +146,12 @@ public class TickService {
         String cityStatus = getCityStatus(playerId);
         if ("war".equals(cityStatus)) stateMul = 0.7;
         if ("shield".equals(cityStatus)) stateMul = 1.1;
+
+        PlayerCity foodCity = cityScope.selected(playerId).orElse(null);
+        // 新援军的抵达也由接收城推进，不能等派兵账号 Tick 后才启用粮账。
+        if (foodCity != null) garrisonFood.settle(foodCity, now);
+        boolean foodManaged = garrisonFood.managed(foodCity);
+        if (foodManaged) garrisonFood.enforce(foodCity, now);
 
         // Get resources
         Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
@@ -158,35 +166,35 @@ public class TickService {
             res.setGold(0);
         }
 
-        int food = res.getFood() != null ? res.getFood() : 0;
-        int steel = res.getSteel() != null ? res.getSteel() : 0;
-        int oil = res.getOil() != null ? res.getOil() : 0;
-        int rare = res.getRare() != null ? res.getRare() : 0;
-        int gold = res.getGold() != null ? res.getGold() : 0;
+        long food = res.getFood() != null ? res.getFood() : 0L;
+        long steel = res.getSteel() != null ? res.getSteel() : 0L;
+        long oil = res.getOil() != null ? res.getOil() : 0L;
+        long rare = res.getRare() != null ? res.getRare() : 0L;
+        long gold = res.getGold() != null ? res.getGold() : 0L;
 
-        // Resource production - cap only limits production, does not truncate existing stock
-        if (buildingLevel(playerId, "farm") > 0) {
+        // 生产容量只限制自然产出，不截断礼包、运输等渠道已经存在的库存。
+        if (!foodManaged && buildingLevel(playerId, "farm") > 0) {
             long foodCap = cap.get("food");
             if (food < foodCap) {
-                food = (int) Math.min(foodCap, food + produceOf(playerId, "farm") * hours * stateMul);
+                food = accrue(res, "food", food, produceOf(playerId, "farm") * hours * stateMul, foodCap, true);
             }
         }
         if (buildingLevel(playerId, "refinery") > 0) {
             long steelCap = cap.get("steel");
             if (steel < steelCap) {
-                steel = (int) Math.min(steelCap, steel + produceOf(playerId, "refinery") * hours * stateMul);
+                steel = accrue(res, "steel", steel, produceOf(playerId, "refinery") * hours * stateMul, steelCap, false);
             }
         }
         if (buildingLevel(playerId, "oilfield") > 0) {
             long oilCap = cap.get("oil");
             if (oil < oilCap) {
-                oil = (int) Math.min(oilCap, oil + produceOf(playerId, "oilfield") * hours * stateMul);
+                oil = accrue(res, "oil", oil, produceOf(playerId, "oilfield") * hours * stateMul, oilCap, false);
             }
         }
         if (buildingLevel(playerId, "raremine") > 0) {
             long rareCap = cap.get("rare");
             if (rare < rareCap) {
-                rare = (int) Math.min(rareCap, rare + produceOf(playerId, "raremine") * hours * stateMul);
+                rare = accrue(res, "rare", rare, produceOf(playerId, "raremine") * hours * stateMul, rareCap, false);
             }
         }
 
@@ -200,7 +208,7 @@ public class TickService {
         }
         if (foodSave < 0.1) foodSave = 0.1;
         double foodUse = foodPerHour(playerId) * foodSave * hours;
-        food = (int) Math.round(Math.max(0, food - foodUse));
+        if (!foodManaged) food = accrue(res, "food", food, -foodUse, null, true);
 
         // Resentment & Morale calculation
         int tax = cityScope.economy(playerId).getTax() != null ? cityScope.economy(playerId).getTax() : 30;
@@ -267,7 +275,7 @@ public class TickService {
         double goldRate = civilians * (tax / 100.0) * (1 + mayorKnow / 100.0) * (1.0 + 0.04 * financeLv) * 2;
         long goldCap = cap.get("gold");
         if (gold < goldCap) {
-            gold = (int) Math.round(Math.min(goldCap, gold + goldRate * hours));
+            gold = accrue(res, "gold", gold, goldRate * hours, goldCap, true);
         }
 
         // Officer salary
@@ -286,9 +294,10 @@ public class TickService {
             }
             off.setLoyalty((int) Math.round(loy));
         }
-        int goldAfterSalary = (int) Math.round(gold - totalSalary * hours);
+        double exactGoldAfterSalary = gold + res.getGoldAccrual() - totalSalary * hours;
+        long goldAfterSalary = accrue(res, "gold", gold, -totalSalary * hours, null, true);
         // Bankruptcy protection: clamp at floor, and if we were already at floor, count down.
-        if (goldAfterSalary < GOLD_FLOOR) {
+        if (exactGoldAfterSalary < GOLD_FLOOR) {
             long consecutive = bankruptTicks
                 .computeIfAbsent(playerId + ":" + cityScope.slot(playerId), k -> new AtomicLong(0))
                 .incrementAndGet();
@@ -443,6 +452,8 @@ public class TickService {
         }
         stateChanges.put("marches", marchList);
         stateChanges.put("reinforcements", worldViewService.getReinforcements(playerId));
+        // 接收／返程及交战伤亡后同步实际粮耗，不能只在整页刷新时更新。
+        stateChanges.put("foodSupply", garrisonFood.supplyView(playerId));
 
         // 建筑进度
         List<Construction> constructions = constructionRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
@@ -504,6 +515,23 @@ public class TickService {
     // ================================================================
     // Helper methods - matching JS Core methods
     // ================================================================
+
+    /** 小数持久化保证频繁结算不吞产量或免粮耗；到达生产容量或零库存后不积累超产或欠款。 */
+    private long accrue(Resources stock, String key, long current, double delta, Long cap, boolean rounded) {
+        double carry = switch (key) {
+            case "food" -> stock.getFoodAccrual(); case "steel" -> stock.getSteelAccrual();
+            case "oil" -> stock.getOilAccrual(); case "rare" -> stock.getRareAccrual(); default -> stock.getGoldAccrual();
+        };
+        double exact = Math.max(0, current + carry + delta);
+        if (cap != null) exact = Math.min(cap, exact);
+        long amount = rounded ? Math.round(exact) : (long) Math.floor(exact + 1e-9);
+        double remainder = Math.abs(exact - amount) < 1e-9 ? 0 : exact - amount;
+        switch (key) {
+            case "food" -> stock.setFoodAccrual(remainder); case "steel" -> stock.setSteelAccrual(remainder);
+            case "oil" -> stock.setOilAccrual(remainder); case "rare" -> stock.setRareAccrual(remainder); default -> stock.setGoldAccrual(remainder);
+        }
+        return amount;
+    }
 
     /**
      * produceOf(buildingType) - matches JS Core.produceOf
@@ -590,10 +618,10 @@ public class TickService {
     }
 
     /**
-     * capacity() - resource cap based on resource building levels
-     * Each building level adds 200000 to the cap (Lv1=200k, Lv2=400k, ..., Lv10=2000k)
+     * capacity() - production capacity based on resource building levels
+     * Each building level adds 200000 to the production capacity (Lv1=200k, Lv2=400k, ..., Lv10=2000k)
      * food -> farm, steel -> refinery, oil -> oilfield, rare -> raremine
-     * gold = 999999
+     * gold = 20000000; tax income pauses at capacity without truncating existing stock
      */
     public Map<String, Long> capacity(Long playerId) {
         Map<String, Long> caps = new LinkedHashMap<>();
@@ -601,7 +629,7 @@ public class TickService {
         caps.put("steel", (long) buildingLevel(playerId, "refinery") * 200000);
         caps.put("oil", (long) buildingLevel(playerId, "oilfield") * 200000);
         caps.put("rare", (long) buildingLevel(playerId, "raremine") * 200000);
-        caps.put("gold", 999999L);
+        caps.put("gold", 20_000_000L);
         return caps;
     }
 

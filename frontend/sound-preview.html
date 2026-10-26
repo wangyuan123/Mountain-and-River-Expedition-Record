@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>游戏音效设计与试听 · 山河远征录</title>
+  <title>真实军事战术音效试听与评审 · 山河远征录</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/themes.css">
   <link rel="stylesheet" href="css/sound.css">
@@ -16,28 +16,39 @@
       padding: 24px 16px 60px;
     }
     .preview-container {
-      max-width: 760px;
+      max-width: 800px;
       margin: 0 auto;
     }
     .preview-header {
-      border-bottom: 2px solid var(--accent, #1a56db);
+      border-bottom: 2px solid #8b0000;
       padding-bottom: 14px;
       margin-bottom: 20px;
     }
     .preview-title {
       font-size: 24px;
       font-weight: 700;
-      color: var(--accent, #1a56db);
+      color: #8b0000;
       margin: 0 0 6px 0;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
     .preview-subtitle {
       font-size: 14px;
-      color: var(--muted, #666);
+      color: var(--muted, #555);
       margin: 0;
       line-height: 1.5;
+    }
+    .style-note {
+      background: #fdfbf7;
+      border: 1px solid #d4af37;
+      border-left: 4px solid #8b0000;
+      border-radius: 4px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #3e2723;
     }
     .settings-banner {
       background: var(--surface, #fff);
@@ -69,24 +80,20 @@
       transition: all 0.15s ease;
     }
     .toggle-btn.active {
-      background: #16a34a;
+      background: #15803d;
       color: #fff;
     }
     .toggle-btn.disabled {
-      background: #9ca3af;
+      background: #6b7280;
       color: #fff;
     }
     .sound-card {
       background: var(--surface, #fff);
       border: 1px solid var(--border, #d8d4c8);
       border-radius: 8px;
-      margin-bottom: 20px;
+      margin-bottom: 22px;
       padding: 18px 20px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-      transition: transform 0.1s ease, border-color 0.15s ease;
-    }
-    .sound-card:hover {
-      border-color: var(--accent, #1a56db);
     }
     .card-head {
       display: flex;
@@ -94,12 +101,12 @@
       justify-content: space-between;
       margin-bottom: 8px;
       padding-bottom: 8px;
-      border-bottom: 1px dashed var(--border, #e5e0d4);
+      border-bottom: 1px solid #e5e0d4;
     }
     .card-title {
       font-size: 17px;
       font-weight: 700;
-      color: var(--ink, #1f2937);
+      color: #1f2937;
       display: flex;
       align-items: center;
       gap: 8px;
@@ -107,63 +114,73 @@
     .card-scene {
       font-size: 12px;
       padding: 3px 8px;
-      background: #eef2ff;
-      color: #3730a3;
+      background: #f3f4f6;
+      color: #4b5563;
       border-radius: 4px;
       font-weight: 500;
     }
     .card-desc {
       font-size: 13px;
-      color: var(--muted, #4b5563);
+      color: #4b5563;
       line-height: 1.6;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
     .option-box {
       background: #faf8f5;
-      border: 1px solid #e9e4d9;
+      border: 1px solid #e2ddd2;
       border-radius: 6px;
-      padding: 12px 14px;
+      padding: 14px 16px;
       margin-bottom: 12px;
     }
     .option-head {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
     .option-name {
       font-size: 14px;
       font-weight: 700;
-      color: #1f2937;
+      color: #111827;
     }
-    .badge-rec {
-      background: #fef3c7;
-      color: #92400e;
+    .badge-style-a {
+      background: #ecfdf5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+    .badge-style-b {
+      background: #eff6ff;
+      color: #1e40af;
+      border: 1px solid #bfdbfe;
       font-size: 11px;
       font-weight: 600;
       padding: 2px 6px;
       border-radius: 3px;
     }
     .option-detail {
-      font-size: 12px;
-      color: #6b7280;
+      font-size: 12.5px;
+      color: #4b5563;
       margin-bottom: 10px;
-      line-height: 1.5;
+      line-height: 1.6;
     }
     .action-row {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       flex-wrap: wrap;
     }
     .play-btn {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: #1a56db;
+      background: #8b0000;
       color: #fff;
       font-weight: 600;
-      padding: 6px 16px;
+      padding: 7px 18px;
       border-radius: 5px;
       border: none;
       cursor: pointer;
@@ -171,17 +188,13 @@
       transition: background 0.15s ease;
     }
     .play-btn:hover:not(:disabled) {
-      background: #1e40af;
-    }
-    .play-btn:disabled {
-      background: #cbd5e1;
-      cursor: not-allowed;
+      background: #6b0000;
     }
     .play-btn.sec {
-      background: #4b5563;
+      background: #374151;
     }
     .play-btn.sec:hover:not(:disabled) {
-      background: #374151;
+      background: #1f2937;
     }
     .status-text {
       font-size: 12px;
@@ -195,77 +208,467 @@
     .visualizer-box {
       margin-top: 10px;
       height: 4px;
-      background: #e2e8f0;
+      background: #e5e7eb;
       border-radius: 2px;
       overflow: hidden;
-      position: relative;
     }
     .visualizer-bar {
       height: 100%;
       width: 0%;
-      background: #2563eb;
+      background: #8b0000;
       transition: width 0.05s linear;
     }
-    .notice-box {
-      background: #fffbeb;
-      border-left: 4px solid #f59e0b;
-      padding: 12px 16px;
-      margin-bottom: 24px;
-      border-radius: 0 6px 6px 0;
-      font-size: 13px;
+
+    /* 快速跳转导航 */
+    .nav-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .nav-tab-item {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13.5px;
+      font-weight: 600;
+      text-decoration: none;
+      color: #374151;
+      background: #e5e0d4;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .nav-tab-item:hover, .nav-tab-item.active {
+      background: #8b0000;
+      color: #fff;
+    }
+    .nav-tab-item.bgm-tab {
+      background: #fef3c7;
       color: #92400e;
-      line-height: 1.5;
+      border: 1px solid #fde68a;
+    }
+    .nav-tab-item.bgm-tab:hover {
+      background: #b45309;
+      color: #fff;
+    }
+
+    /* BGM 专属模块样式 */
+    .bgm-section {
+      background: #fffefb;
+      border: 1px solid #c8b99d;
+      border-left: 5px solid #b45309;
+      border-radius: 8px;
+      padding: 22px 24px;
+      margin-bottom: 28px;
+      box-shadow: 0 4px 12px rgba(180, 83, 9, 0.06);
+    }
+    .bgm-section-header {
+      margin-bottom: 18px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #ece4d5;
+    }
+    .bgm-section-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #92400e;
+      margin: 0 0 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .bgm-section-subtitle {
+      font-size: 13px;
+      color: #4b5563;
+      line-height: 1.6;
+      margin: 0;
+    }
+    .bgm-global-ctrl {
+      background: #fef9ee;
+      border: 1px solid #fde68a;
+      border-radius: 6px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 14px;
+      font-size: 13px;
+    }
+    .bgm-card {
+      background: #fff;
+      border: 1px solid #e7ded0;
+      border-radius: 8px;
+      padding: 18px 20px;
+      margin-bottom: 18px;
+      transition: box-shadow 0.2s, border-color 0.2s;
+    }
+    .bgm-card.is-playing {
+      border-color: #b45309;
+      box-shadow: 0 0 0 2px rgba(180, 83, 9, 0.2);
+    }
+    .bgm-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #f3ede2;
+    }
+    .bgm-suite-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1f2937;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .badge-bgm {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fcd34d;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+    .badge-bpm {
+      background: #eff6ff;
+      color: #1e40af;
+      border: 1px solid #bfdbfe;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+    .badge-loop {
+      background: #ecfdf5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+    .bgm-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 8px 16px;
+      background: #fdfbf7;
+      border: 1px solid #eee7da;
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin-bottom: 14px;
+      font-size: 12.5px;
+      line-height: 1.6;
+      color: #4b5563;
+    }
+    .bgm-meta-grid strong {
+      color: #1f2937;
+    }
+    .bgm-player-panel {
+      background: #f9f7f2;
+      border: 1px solid #e5ded2;
+      border-radius: 6px;
+      padding: 12px 16px;
+    }
+    .bgm-controls-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .btn-bgm-play {
+      background: #b45309;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 20px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s;
+    }
+    .btn-bgm-play:hover {
+      background: #92400e;
+    }
+    .btn-bgm-play.paused {
+      background: #4b5563;
+    }
+    .btn-bgm-loop {
+      background: #fff;
+      color: #065f46;
+      border: 1px solid #10b981;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-bgm-loop.off {
+      color: #6b7280;
+      border-color: #d1d5db;
+      background: #f9fafb;
+    }
+    .btn-bgm-tail {
+      background: #fff;
+      color: #7c2d12;
+      border: 1px solid #fdba74;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-bgm-tail:hover {
+      background: #ffedd5;
+    }
+    .bgm-downloads {
+      margin-left: auto;
+      display: flex;
+      gap: 12px;
+      font-size: 12px;
+    }
+    .bgm-downloads a {
+      color: #92400e;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .bgm-downloads a:hover {
+      text-decoration: underline;
+    }
+    .bgm-timeline-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .bgm-slider {
+      flex: 1;
+      height: 6px;
+      accent-color: #b45309;
+      cursor: pointer;
+    }
+    .bgm-time-text {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      color: #4b5563;
+      min-width: 90px;
+      text-align: right;
     }
   </style>
 </head>
 <body>
   <div class="preview-container">
     <header class="preview-header">
-      <h1 class="preview-title">🎵 游戏情境音效试听与评审</h1>
-      <p class="preview-subtitle">专为《山河远征录》打造的四组核心军事战术情境音效。支持 Web Audio 纯代码合成与无损 WAV 播放，严格受设置开关控制。</p>
+      <h1 class="preview-title">🎖️ 真实军事战术音效与背景音乐评审 · 山河远征录</h1>
+      <p class="preview-subtitle">实录军乐 · 重装火炮 · 工业要塞 · 慢节奏循环轻音乐（BGM）高保真试听中心</p>
     </header>
 
-    <div class="notice-box">
-      <strong>⚠️ 设置生效规则：</strong>所有情境音效均与全局设置联动。当关闭音效或音量置为 0% 时，游戏内点击出征、拦截交火、指挥战胜、建筑升级均保持绝对静音。您可在下方直接测试音效开关的静音效果！
+    <div class="style-note">
+      <strong>⚠️ 军事质感与慢节奏轻音乐设计说明：</strong><br>
+      • <strong>背景音乐（BGM）</strong>：专为长时间推演、内政治理与大地图排兵设计。彻底杜绝轻浮与燥杂，精选三套<strong>古典慢板纯声学名作</strong>，采用 3 秒等功率正弦无缝交叉淡化，可无限平滑循环，极度舒适抗疲劳；<br>
+      • <strong>战斗与军事音效</strong>：彻底摒弃搞笑合成音与轻浮号角，出征采用实录步兵方阵整齐正步与战术装具铿锵、交火采用真实重装机炮空爆、胜利采用传统空军军乐团盛典交响、升级采用军工机械锻造；<br>
+      • <strong>实时混音测试</strong>：您可以在下方<strong>播放任意 BGM</strong> 的同时，向下滚动点击金币、宝箱、邮件或出征音效，测试 BGM 与战斗交互音效的实时混音听感！
     </div>
+
+    <!-- 导航切换 -->
+    <nav class="nav-tabs">
+      <a href="#section-bgm" class="nav-tab-item bgm-tab">🎵 游戏背景音乐（BGM 评选）</a>
+      <a href="#card-dispatch" class="nav-tab-item">🚩 1. 出征音效</a>
+      <a href="#card-firefight" class="nav-tab-item">💥 2. 交火音效</a>
+      <a href="#card-victory" class="nav-tab-item">🏆 3. 胜利音效</a>
+      <a href="#card-upgrade" class="nav-tab-item">🏗️ 4. 建筑升级</a>
+      <a href="#card-coins" class="nav-tab-item">🪙 5. 金币收银</a>
+      <a href="#card-chest" class="nav-tab-item">📦 6. 宝箱开启</a>
+      <a href="#card-send-mail" class="nav-tab-item">📨 7. 邮件发送</a>
+    </nav>
 
     <!-- 全局音效开关与音量模拟 -->
     <section class="settings-banner" aria-label="音效全局控制">
       <div class="settings-row">
         <div class="settings-group">
-          <label style="font-weight:600;font-size:14px;">全局音效状态：</label>
+          <label style="font-weight:600;font-size:14px;">游戏音效设置联动：</label>
           <button id="masterToggle" class="toggle-btn active" onclick="toggleSound()">🔊 音效已开启</button>
         </div>
         <div class="settings-group">
-          <label for="volumeSlider" style="font-size:13px;color:var(--muted);">反馈音量：</label>
-          <input id="volumeSlider" type="range" min="0" max="100" value="60" oninput="changeVolume(this.value)" style="width:120px;">
-          <span id="volumeLabel" style="font-size:13px;font-weight:600;min-width:36px;">60%</span>
+          <label for="volumeSlider" style="font-size:13px;color:var(--muted);">音效反馈音量：</label>
+          <input id="volumeSlider" type="range" min="0" max="100" value="70" oninput="changeVolume(this.value)" style="width:120px;">
+          <span id="volumeLabel" style="font-size:13px;font-weight:600;min-width:36px;">70%</span>
         </div>
       </div>
     </section>
 
+    <!-- ========================================== -->
+    <!-- 🎵 游戏背景音乐（BGM）· 慢节奏轻音乐评选区 -->
+    <!-- ========================================== -->
+    <section class="bgm-section" id="section-bgm">
+      <div class="bgm-section-header">
+        <h2 class="bgm-section-title">🎼 游戏背景音乐（BGM）· 慢节奏循环轻音乐候选套系</h2>
+        <p class="bgm-section-subtitle">
+          专为大地图长局推演、内政经营、阵营排兵布阵量身打造。已做<strong>等功率圆形无缝循环（Seamless Loop）</strong>声学处理，首尾自然过渡回环，支持无限平滑循环播放。
+        </p>
+      </div>
+
+      <!-- BGM 专用控制栏 -->
+      <div class="bgm-global-ctrl">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-weight:700;color:#92400e;">🎧 BGM 独立音量：</span>
+          <input id="bgmVolumeSlider" type="range" min="0" max="100" value="50" oninput="changeBgmVolume(this.value)" style="width:130px;accent-color:#b45309;">
+          <span id="bgmVolumeLabel" style="font-weight:700;color:#92400e;min-width:36px;">50%</span>
+        </div>
+        <div style="color:#78350f;font-size:12px;">
+          💡 <strong>混音提示</strong>：播放 BGM 时可随时点击下方出征、交火、金币等音效，检验背景音乐与游戏音效的声学平衡。
+        </div>
+      </div>
+
+      <!-- 套系 1 · 《山河行思》· 室内管弦与从容低音 -->
+      <div class="bgm-card" id="card-bgm_strings">
+        <div class="bgm-head">
+          <div class="bgm-suite-title">
+            <span>套系 1 · 《山河行思》· 室内管弦与从容低音</span>
+            <span class="badge-bgm">室内管弦弦乐</span>
+            <span class="badge-bpm">58 BPM · 慢板</span>
+            <span class="badge-loop">3.0s 等功率无缝循环</span>
+          </div>
+        </div>
+
+        <div class="bgm-meta-grid">
+          <div><strong>古典名作：</strong>J.S. 巴赫《G 弦上的咏叹调》（BWV 1068）</div>
+          <div><strong>实录乐团：</strong>美国空军室内弦乐团（USAF Strings）现场实录</div>
+          <div><strong>配器特色：</strong>第一小提琴抒情长线条、柔美中提琴内声部、大提琴稳健沉着的步行低音（Walking Bass）</div>
+          <div><strong>游戏意境：</strong>从容威严、深思远虑。宛如统帅在沙盘前审视全局，军纪肃穆，历史长河的凝重与从容并存。</div>
+        </div>
+
+        <div class="bgm-player-panel">
+          <div class="bgm-controls-top">
+            <button class="btn-bgm-play" id="btn-play-bgm_strings" onclick="playBgm('bgm_strings')">▶ 播放</button>
+            <button class="btn-bgm-loop" id="btn-loop-bgm_strings" onclick="toggleBgmLoop('bgm_strings')">🔂 无缝循环中 (开)</button>
+            <button class="btn-bgm-tail" onclick="jumpBgmTail('bgm_strings')" title="跳到音频结尾前6秒，直接测试循环衔接平滑度">⏩ 跳至尾声测循环</button>
+            <div class="bgm-downloads">
+              <a href="audio/bgm_strings.mp3" target="_blank">📥 MP3 下载 (3.3MB)</a>
+              <a href="audio/bgm_strings.wav" target="_blank">📥 无损 WAV (30MB)</a>
+            </div>
+          </div>
+          <div class="bgm-timeline-row">
+            <input type="range" class="bgm-slider" id="slider-bgm_strings" min="0" max="100" value="0" step="0.1" oninput="onBgmSliderChange('bgm_strings', this.value)">
+            <span class="bgm-time-text" id="time-bgm_strings">00:00 / 02:59</span>
+          </div>
+          <audio id="audio-bgm_strings" src="audio/bgm_strings.mp3" preload="auto" ontimeupdate="onBgmTimeUpdate('bgm_strings')" onended="onBgmEnded('bgm_strings')"></audio>
+        </div>
+      </div>
+
+      <!-- 套系 2 · 《平原微光》· 纯净沉思极简钢琴 -->
+      <div class="bgm-card" id="card-bgm_piano">
+        <div class="bgm-head">
+          <div class="bgm-suite-title">
+            <span>套系 2 · 《平原微光》· 纯净沉思极简钢琴</span>
+            <span class="badge-bgm">木质三角大钢琴</span>
+            <span class="badge-bpm">66 BPM · 舒缓慢板</span>
+            <span class="badge-loop">3.5s 等功率无缝循环</span>
+          </div>
+        </div>
+
+        <div class="bgm-meta-grid">
+          <div><strong>古典名作：</strong>埃里克·萨蒂《裸体歌舞第一号》（Gymnopédie No. 1）</div>
+          <div><strong>演奏风格：</strong>极简主义慢速抒情（Lent et douloureux，纯木质三角琴实录）</div>
+          <div><strong>配器特色：</strong>高音单音旋律如水珠般剔透空灵，左手沉稳缓慢的低音根音与中音区柔和和弦平抚</div>
+          <div><strong>游戏意境：</strong>极度纯净、空间感极强。犹如烈焰平原夜色初临，营帐内挑灯夜读战报，极度舒适抗疲劳，思考战术毫不分心。</div>
+        </div>
+
+        <div class="bgm-player-panel">
+          <div class="bgm-controls-top">
+            <button class="btn-bgm-play" id="btn-play-bgm_piano" onclick="playBgm('bgm_piano')">▶ 播放</button>
+            <button class="btn-bgm-loop" id="btn-loop-bgm_piano" onclick="toggleBgmLoop('bgm_piano')">🔂 无缝循环中 (开)</button>
+            <button class="btn-bgm-tail" onclick="jumpBgmTail('bgm_piano')" title="跳到音频结尾前6秒，直接测试循环衔接平滑度">⏩ 跳至尾声测循环</button>
+            <div class="bgm-downloads">
+              <a href="audio/bgm_piano.mp3" target="_blank">📥 MP3 下载 (2.3MB)</a>
+              <a href="audio/bgm_piano.wav" target="_blank">📥 无损 WAV (30MB)</a>
+            </div>
+          </div>
+          <div class="bgm-timeline-row">
+            <input type="range" class="bgm-slider" id="slider-bgm_piano" min="0" max="100" value="0" step="0.1" oninput="onBgmSliderChange('bgm_piano', this.value)">
+            <span class="bgm-time-text" id="time-bgm_piano">00:00 / 03:00</span>
+          </div>
+          <audio id="audio-bgm_piano" src="audio/bgm_piano.mp3" preload="auto" ontimeupdate="onBgmTimeUpdate('bgm_piano')" onended="onBgmEnded('bgm_piano')"></audio>
+        </div>
+      </div>
+
+      <!-- 套系 3 · 《烽烟晚照》· 塞外落日与静谧夜色 -->
+      <div class="bgm-card" id="card-bgm_evening">
+        <div class="bgm-head">
+          <div class="bgm-suite-title">
+            <span>套系 3 · 《烽烟晚照》· 塞外落日与静谧夜色</span>
+            <span class="badge-bgm">肖邦广板弱音钢琴</span>
+            <span class="badge-bpm">54 BPM · 最慢广板</span>
+            <span class="badge-loop">3.0s 等功率无缝循环</span>
+          </div>
+        </div>
+
+        <div class="bgm-meta-grid">
+          <div><strong>古典名作：</strong>弗雷德里克·肖邦《E 小调前奏曲》（Prelude Op. 28 No. 4）</div>
+          <div><strong>演奏风格：</strong>极慢广板抒情（Largo，弱音踏板幽微共振）</div>
+          <div><strong>配器特色：</strong>左手连绵平稳微调的半音阶下行和弦织体，右手深沉如歌如泣的主题，泛音深远</div>
+          <div><strong>游戏意境：</strong>沧桑凝练、历史沉淀感浓厚。宛如塞外边关激战后夕阳照耀的残垣残阳，兼具战争的沉重与守望和平的诗意。</div>
+        </div>
+
+        <div class="bgm-player-panel">
+          <div class="bgm-controls-top">
+            <button class="btn-bgm-play" id="btn-play-bgm_evening" onclick="playBgm('bgm_evening')">▶ 播放</button>
+            <button class="btn-bgm-loop" id="btn-loop-bgm_evening" onclick="toggleBgmLoop('bgm_evening')">🔂 无缝循环中 (开)</button>
+            <button class="btn-bgm-tail" onclick="jumpBgmTail('bgm_evening')" title="跳到音频结尾前6秒，直接测试循环衔接平滑度">⏩ 跳至尾声测循环</button>
+            <div class="bgm-downloads">
+              <a href="audio/bgm_evening.mp3" target="_blank">📥 MP3 下载 (1.3MB)</a>
+              <a href="audio/bgm_evening.wav" target="_blank">📥 无损 WAV (20MB)</a>
+            </div>
+          </div>
+          <div class="bgm-timeline-row">
+            <input type="range" class="bgm-slider" id="slider-bgm_evening" min="0" max="100" value="0" step="0.1" oninput="onBgmSliderChange('bgm_evening', this.value)">
+            <span class="bgm-time-text" id="time-bgm_evening">00:00 / 02:00</span>
+          </div>
+          <audio id="audio-bgm_evening" src="audio/bgm_evening.mp3" preload="auto" ontimeupdate="onBgmTimeUpdate('bgm_evening')" onended="onBgmEnded('bgm_evening')"></audio>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- ⚔️ 游戏战斗与交互音效（SFX）评选区        -->
+    <!-- ========================================== -->
+    <div style="margin: 30px 0 16px; border-bottom: 2px solid #8b0000; padding-bottom: 8px;">
+      <h2 style="font-size: 20px; color: #8b0000; margin: 0;">⚔️ 游戏战斗、交互与系统音效（SFX 评选）</h2>
+      <p style="font-size: 13px; color: #6b7280; margin: 4px 0 0;">共 7 项战术音效，均提供实录军事风格方案 A（已通过评审并接入系统），支持与上方 BGM 混音试听</p>
+    </div>
+
     <!-- 1. 准备出征界面 · 部队出征音效 -->
     <article class="sound-card" id="card-dispatch">
       <div class="card-head">
-        <div class="card-title">🚩 1. 准备出征界面 · 部队出征音效</div>
-        <span class="card-scene">触发场景：出征准备页点击【出发!】/【出征讨伐】/【立即出征】</span>
+        <div class="card-title">🚩 1. 准备出征界面 · 点击【立即出征 / 出发】</div>
+        <span class="card-scene">触发场景：出征编组页面确认下达出征命令</span>
       </div>
       <div class="card-desc">
-        当玩家编组部队完毕并点击提交出征时播放。音效需传达严谨军纪、出征号召力与昂扬战意，避免枯燥的普通点击感。
+        参考<strong>中国三军仪仗队分列式正步（112~116 步/分）</strong>标准重制：100% 采用多轨实录硬牛皮马靴砸击花岗岩石板、铁掌钉铿锵咬合与百人方阵混凝土齐踏采样，进行毫秒级瞬态对齐（彻底废除电子合成正弦波与同源梳状滤波涂抹），在约 <strong>2.0 秒</strong>内踢出 <strong>4 步雷霆万钧、刀切斧砍的正步</strong>（“咔！—— 咔！—— 咔！—— 咔！”）。
       </div>
 
       <!-- 方案 A -->
       <div class="option-box">
         <div class="option-head">
-          <div class="option-name">方案 A：战术军号与军鼓齐鸣 <span class="badge-rec">推荐 · 经典军事战术</span></div>
+          <div class="option-name">方案 A：三军仪仗队 · 长安街石板正步四连踏（116 BPM · 铿锵脆响 · 威震长街） <span class="badge-style-a">三军仪仗正步 · 铿锵四步 · 2.00秒</span></div>
         </div>
         <div class="option-detail">
-          <strong>声学设计：</strong>由低沉有力的两记进军军鼓起步 (120Hz/45Hz) 营造行军步伐，随即接入明快坚定的四音军号动机（G3-C4-E4-G4，196Hz 至 392Hz），尾音伴随深沉的军靴踏步共振（时长约 1.1 秒）。
+          <strong>声学设计（三军仪仗队重制版）：</strong>严格对标三军仪仗队 116 BPM 正步步频，在 2.00 秒内踏出四记整齐划一的正步（0.05s、0.56s、1.07s、1.58s）。每一步融合 4 层纯实录物理采样：① 高踢腿 30cm 后全脚掌硬牛皮底猛砸花岗岩石板的 5ms 脆裂爆音（“啪！”）；② 仪仗马靴金属掌钉撞击地面的清亮铿锵声（“咔！”）；③ 百人仪仗方阵分毫不差的齐踏群像声场；④ 长安街开阔石板广场早期反射与干净利落的悬空踢腿切分（时长 2.00 秒）。
         </div>
         <div class="action-row">
-          <button class="play-btn" onclick="playSound('dispatch', this)">▶ 试听 方案 A</button>
-          <audio id="audio-dispatch" src="audio/dispatch.wav" preload="auto"></audio>
-          <a href="audio/dispatch.wav" target="_blank" style="font-size:12px;color:#2563eb;text-decoration:none;">下载 WAV</a>
+          <button class="play-btn" onclick="playSound('dispatch', this)">▶ 试听 方案 A（三军仪仗队·石板正步四连踏 2.00s）</button>
+          <audio id="audio-dispatch" src="audio/dispatch.wav?v=pla2s" preload="auto"></audio>
+          <a href="audio/dispatch.wav?v=pla2s" target="_blank" style="font-size:12px;color:#8b0000;text-decoration:none;">下载 WAV</a>
           <span class="status-text" id="status-dispatch">就绪</span>
         </div>
         <div class="visualizer-box"><div class="visualizer-bar" id="bar-dispatch"></div></div>
@@ -274,15 +677,15 @@
       <!-- 方案 B -->
       <div class="option-box">
         <div class="option-head">
-          <div class="option-name">方案 B：装甲集群机动推进</div>
+          <div class="option-name">方案 B：阅兵重装步兵方阵 · 广场阔步四连踏（112 BPM · 浑厚磅礴 · 铁流滚滚） <span class="badge-style-b">重装受阅方阵 · 浑厚四步 · 2.04秒</span></div>
         </div>
         <div class="option-detail">
-          <strong>声学设计：</strong>沉重柴油引擎加速轰鸣 (48Hz~82Hz) + 坦克履带与机械传动啮合的清脆金属咬合音，伴随一声短促嘹亮的行军哨笛（时长约 1.1 秒）。
+          <strong>声学设计（三军仪仗队重制版）：</strong>采用经典检阅 112 BPM 步速，在 2.04 秒内踏出四步气吞山河的广场正步（0.05s、0.575s、1.10s、1.625s）。在保留军靴硬底脆响与铁掌钉铿锵的基础上，大幅强化混凝土大道方阵与近景重装队列的实录胸腔震感，并叠加更开阔的天安门广场石板反射声场，展现千人受阅重装方阵踏过广场、铁流滚滚的磅礴气势（时长 2.04 秒）。
         </div>
         <div class="action-row">
-          <button class="play-btn sec" onclick="playSound('dispatch_b', this)">▶ 试听 方案 B</button>
-          <audio id="audio-dispatch_b" src="audio/dispatch_b.wav" preload="auto"></audio>
-          <a href="audio/dispatch_b.wav" target="_blank" style="font-size:12px;color:#2563eb;text-decoration:none;">下载 WAV</a>
+          <button class="play-btn sec" onclick="playSound('dispatch_b', this)">▶ 试听 方案 B（阅兵重装方阵·广场正步四连踏 2.04s）</button>
+          <audio id="audio-dispatch_b" src="audio/dispatch_b.wav?v=pla2s" preload="auto"></audio>
+          <a href="audio/dispatch_b.wav?v=pla2s" target="_blank" style="font-size:12px;color:#374151;text-decoration:none;">下载 WAV</a>
           <span class="status-text" id="status-dispatch_b">就绪</span>
         </div>
         <div class="visualizer-box"><div class="visualizer-bar" id="bar-dispatch_b"></div></div>
@@ -292,25 +695,25 @@
     <!-- 2. 拦截战交火时 · 交火音效 -->
     <article class="sound-card" id="card-firefight">
       <div class="card-head">
-        <div class="card-title">⚔️ 2. 拦截战交火时 · 交火音效</div>
-        <span class="card-scene">触发场景：大地图截击战相遇、抵达拦截空域双方交战</span>
+        <div class="card-title">⚔️ 2. 拦截战交火时 · 敌我交火音效</div>
+        <span class="card-scene">触发场景：大地图拦截部队与敌军交战、空战截击开火</span>
       </div>
       <div class="card-desc">
-        当野外截击部队与敌军来袭部队在拦截点交汇、或空战击落侦察机时播放。音效需具备强烈的战场临场感与火力对抗冲击力。
+        战火交锋瞬间，必须是真实的火药枪炮声与沉闷的爆炸冲击波，杜绝任何轻飘飘的电脑音效。
       </div>
 
       <!-- 方案 A -->
       <div class="option-box">
         <div class="option-head">
-          <div class="option-name">方案 A：截击机炮点射与凌空空爆 <span class="badge-rec">推荐 · 空地立体交锋</span></div>
+          <div class="option-name">方案 A：实录重型高射炮连射与凌空空爆 <span class="badge-style-a">真实火炮 · 震耳欲聋</span></div>
         </div>
         <div class="option-detail">
-          <strong>声学设计：</strong>防空机炮/重机枪三连点射（“哒-哒-哒”，每发含 6500Hz 超音速破空破裂音与重机枪机械后坐撞击），紧随防空弹穿空尖啸与沉闷震撼的凌空爆炸次低频爆震波 (130Hz~32Hz)（时长约 1.0 秒）。
+          <strong>声学设计：</strong>采用实录防空炮与大口径火炮开火音频。高射炮连续三联点射发射轰鸣（Flak Gun），伴随重炮爆鸣与弹片破空啸叫，并在截击点引爆剧烈的次低频防空破片爆震波（Airburst Detonation）（时长 1.35 秒）。
         </div>
         <div class="action-row">
-          <button class="play-btn" onclick="playSound('firefight', this)">▶ 试听 方案 A</button>
+          <button class="play-btn" onclick="playSound('firefight', this)">▶ 试听 方案 A（火炮空爆）</button>
           <audio id="audio-firefight" src="audio/firefight.wav" preload="auto"></audio>
-          <a href="audio/firefight.wav" target="_blank" style="font-size:12px;color:#2563eb;text-decoration:none;">下载 WAV</a>
+          <a href="audio/firefight.wav" target="_blank" style="font-size:12px;color:#8b0000;text-decoration:none;">下载 WAV</a>
           <span class="status-text" id="status-firefight">就绪</span>
         </div>
         <div class="visualizer-box"><div class="visualizer-bar" id="bar-firefight"></div></div>
@@ -319,15 +722,15 @@
       <!-- 方案 B -->
       <div class="option-box">
         <div class="option-head">
-          <div class="option-name">方案 B：防空阵地密集齐射</div>
+          <div class="option-name">方案 B：重机炮速射齐射与近炸破片 <span class="badge-style-b">密集压制 · 凌厉短促</span></div>
         </div>
         <div class="option-detail">
-          <strong>声学设计：</strong>地面防空火力五连发高速齐射连轰 + 凌空近炸引信破片散布声，突出重火力压制（时长约 1.1 秒）。
+          <strong>声学设计：</strong>20mm 机炮密集四连发超音速破裂音点射，机械枪机后坐跳壳声极其清脆逼真，随后在目标处近距离剧烈爆炸，火药硝烟扑面而来（时长 1.2 秒）。
         </div>
         <div class="action-row">
-          <button class="play-btn sec" onclick="playSound('firefight_b', this)">▶ 试听 方案 B</button>
+          <button class="play-btn sec" onclick="playSound('firefight_b', this)">▶ 试听 方案 B（重机炮点射）</button>
           <audio id="audio-firefight_b" src="audio/firefight_b.wav" preload="auto"></audio>
-          <a href="audio/firefight_b.wav" target="_blank" style="font-size:12px;color:#2563eb;text-decoration:none;">下载 WAV</a>
+          <a href="audio/firefight_b.wav" target="_blank" style="font-size:12px;color:#374151;text-decoration:none;">下载 WAV</a>
           <span class="status-text" id="status-firefight_b">就绪</span>
         </div>
         <div class="visualizer-box"><div class="visualizer-bar" id="bar-firefight_b"></div></div>
@@ -341,21 +744,21 @@
         <span class="card-scene">触发场景：在线战术指挥回合战结束且判定获胜时</span>
       </div>
       <div class="card-desc">
-        在战术指挥页面决出胜负、敌军溃败且我方大捷时播放。需给指挥官最强烈的胜利犒赏感、庄严感与凯旋荣誉感。
+        血战告捷，展现历经战火洗礼后属于将领的荣耀与庄严，绝非单薄欢快的通关小调。
       </div>
 
       <!-- 方案 A -->
       <div class="option-box">
         <div class="option-head">
-          <div class="option-name">方案 A：凯旋辉煌军乐号角 <span class="badge-rec">推荐 · 史诗大捷盛乐</span></div>
+          <div class="option-name">方案 A：实录军乐团典礼凯旋乐章盛大终曲 <span class="badge-style-a">史诗大捷 · 军乐队交响</span></div>
         </div>
         <div class="option-detail">
-          <strong>声学设计：</strong>大调上行三和弦明亮号角阶进 (C5/E5 -> E5/G5 -> G5/B5)，最终在宏伟高亢的盛大主和弦 (C4+G4+C5+E5+C6) 达到巅峰！终曲伴有军鼓战胜定音冲击与金光璀璨的钟琴泛音余响 (2093Hz/2637Hz)（时长约 1.4 秒）。
+          <strong>声学设计：</strong>由美国空军传统军乐团（USAF Concert Band）实录《典礼凯旋乐章》（Ceremonial Fanfare）终曲盛大高潮。恢弘定音鼓震天滚奏 + 交响铜管声部（小号、圆号、长号、大号）大调辉煌凯旋和弦齐奏 + 大擦撞击。史诗感与荣誉感扑面而来（时长 4.8 秒）。
         </div>
         <div class="action-row">
-          <button class="play-btn" onclick="playSound('victory', this)">▶ 试听 方案 A</button>
+          <button class="play-btn" onclick="playSound('victory', this)">▶ 试听 方案 A（典礼交响盛乐）</button>
           <audio id="audio-victory" src="audio/victory.wav" preload="auto"></audio>
-          <a href="audio/victory.wav" target="_blank" style="font-size:12px;color:#2563eb;text-decoration:none;">下载 WAV</a>
+          <a href="audio/victory.wav" target="_blank" style="font-size:12px;color:#8b0000;text-decoration:none;">下载 WAV</a>
           <span class="status-text" id="status-victory">就绪</span>
         </div>
         <div class="visualizer-box"><div class="visualizer-bar" id="bar-victory"></div></div>
@@ -364,15 +767,15 @@
       <!-- 方案 B -->
       <div class="option-box">
         <div class="option-head">
-          <div class="option-name">方案 B：战术果决斩获胜歌</div>
+          <div class="option-name">方案 B：精炼雄浑英雄战胜号角 <span class="badge-style-b">利落精炼 · 铁血从容</span></div>
         </div>
         <div class="option-detail">
-          <strong>声学设计：</strong>利落短促的军号断奏动机 (C5-G4-C5-E5-G5)，收结于威武挺拔的高八度全军冲锋和弦，干练而现代（时长约 1.1 秒）。
+          <strong>声学设计：</strong>同样取自空军军乐团实录高潮乐句，节奏更加精炼紧凑（3.5 秒）。定音战鼓沉稳敲响，铜管雄浑号角干脆利落收尾，适合快节奏战斗结算。
         </div>
         <div class="action-row">
-          <button class="play-btn sec" onclick="playSound('victory_b', this)">▶ 试听 方案 B</button>
+          <button class="play-btn sec" onclick="playSound('victory_b', this)">▶ 试听 方案 B（雄浑精炼）</button>
           <audio id="audio-victory_b" src="audio/victory_b.wav" preload="auto"></audio>
-          <a href="audio/victory_b.wav" target="_blank" style="font-size:12px;color:#2563eb;text-decoration:none;">下载 WAV</a>
+          <a href="audio/victory_b.wav" target="_blank" style="font-size:12px;color:#374151;text-decoration:none;">下载 WAV</a>
           <span class="status-text" id="status-victory_b">就绪</span>
         </div>
         <div class="visualizer-box"><div class="visualizer-bar" id="bar-victory_b"></div></div>
@@ -383,24 +786,24 @@
     <article class="sound-card" id="card-upgrade">
       <div class="card-head">
         <div class="card-title">🔨 4. 建筑升级时 · 升级完成音效</div>
-        <span class="card-scene">触发场景：建筑升级倒计时结束或使用加速道具秒建完成</span>
+        <span class="card-scene">触发场景：城建施工倒计时归零，或消耗加速符秒建完成</span>
       </div>
       <div class="card-desc">
-        当城市建筑完成阶段性提升、战力与产能晋阶时播放。既有重工兴建的坚实敲击感，又有成就达成的清澈空灵回响。
+        城市重工业与军事堡垒落成，突出钢筋铁骨与工业机械工程力量，剔除一切卡通魔法铃铛。
       </div>
 
       <!-- 方案 A -->
       <div class="option-box">
         <div class="option-head">
-          <div class="option-name">方案 A：工坊锻造金鸣与落成音阶 <span class="badge-rec">推荐 · 匠心落成</span></div>
+          <div class="option-name">方案 A：重型军工装甲锻造与气压落锁 <span class="badge-style-a">重工铸造 · 机械厚重</span></div>
         </div>
         <div class="option-detail">
-          <strong>声学设计：</strong>两记清脆坚实的工匠铁锤击铁音（1480Hz/1760Hz 丰富非整数倍金属泛音）模拟封顶落成，随后升起一串极为悦耳的大三和弦水晶钟琴音阶（E5 -> G#5 -> B5 -> 高音 E6），空灵悠长（时长约 1.15 秒）。
+          <strong>声学设计：</strong>沉重扎实的工匠重锤撞击厚装甲钢梁（65Hz 低频震波下潜），带出真实实心钢铁自然泛音；紧随高压气压阀泄压（Psssshhh）与重型要塞装甲气密闭锁声。纯正军事工业工程质感（时长 1.3 秒）。
         </div>
         <div class="action-row">
-          <button class="play-btn" onclick="playSound('upgrade', this)">▶ 试听 方案 A</button>
+          <button class="play-btn" onclick="playSound('upgrade', this)">▶ 试听 方案 A（重锤与气压锁）</button>
           <audio id="audio-upgrade" src="audio/upgrade.wav" preload="auto"></audio>
-          <a href="audio/upgrade.wav" target="_blank" style="font-size:12px;color:#2563eb;text-decoration:none;">下载 WAV</a>
+          <a href="audio/upgrade.wav" target="_blank" style="font-size:12px;color:#8b0000;text-decoration:none;">下载 WAV</a>
           <span class="status-text" id="status-upgrade">就绪</span>
         </div>
         <div class="visualizer-box"><div class="visualizer-bar" id="bar-upgrade"></div></div>
@@ -409,26 +812,172 @@
       <!-- 方案 B -->
       <div class="option-box">
         <div class="option-head">
-          <div class="option-name">方案 B：机械咬合落锁与主城落成钟鸣</div>
+          <div class="option-name">方案 B：战术基地副官 "Construction Complete" 报告 <span class="badge-style-b">经典 RTS · 战术电台</span></div>
         </div>
         <div class="option-detail">
-          <strong>声学设计：</strong>连续三级精细机械棘轮咔嗒就位 + 厚实门栓落锁声 (240Hz/60Hz)，随即敲响宏亮的主城大钟 (F#5 740Hz + C#6 1108Hz)（时长约 1.2 秒）。
+          <strong>声学设计：</strong>先是一声清脆厚重的要塞机械卡扣到位，随即响起经典红警/命令与征服风格的基地战术电台指令汇报：“Construction Complete”（建筑落成），带电台降噪与微弱通讯电波质感（时长 1.6 秒）。
         </div>
         <div class="action-row">
-          <button class="play-btn sec" onclick="playSound('upgrade_b', this)">▶ 试听 方案 B</button>
+          <button class="play-btn sec" onclick="playSound('upgrade_b', this)">▶ 试听 方案 B（电台语音报告）</button>
           <audio id="audio-upgrade_b" src="audio/upgrade_b.wav" preload="auto"></audio>
-          <a href="audio/upgrade_b.wav" target="_blank" style="font-size:12px;color:#2563eb;text-decoration:none;">下载 WAV</a>
+          <a href="audio/upgrade_b.wav" target="_blank" style="font-size:12px;color:#374151;text-decoration:none;">下载 WAV</a>
           <span class="status-text" id="status-upgrade_b">就绪</span>
         </div>
         <div class="visualizer-box"><div class="visualizer-bar" id="bar-upgrade_b"></div></div>
       </div>
     </article>
+
+    <!-- 5. 领取道具 / 资源 / 邮件附件 · 收银到账与硬币碰撞 -->
+    <article class="sound-card" id="card-coins">
+      <div class="card-head">
+        <div class="card-title">💰 5. 领取道具 / 资源 / 邮件附件 · 收银到账与硬币碰撞</div>
+        <span class="card-scene">触发场景：点击领取活动道具、资源配给到账、一键提取邮件附件金币物资</span>
+      </div>
+      <div class="card-desc">
+        真实贵金属或收银机械到账反馈，清脆爽快、富有收获成就感，彻底摒弃红白机廉价叮咚声。
+      </div>
+
+      <!-- 方案 A -->
+      <div class="option-box">
+        <div class="option-head">
+          <div class="option-name">方案 A：实体金币连环碰撞与落袋沉底 <span class="badge-style-a">真金银币 · 爽脆饱满</span></div>
+        </div>
+        <div class="option-detail">
+          <strong>声学设计：</strong>首发纯正贵金属高频明亮碰撞泛音（3820Hz 与 5840Hz 晶莹闪耀），紧随多枚金币快速连环相击入袋，尾音带出皮质钱袋充盈的 180Hz 沉底回响。颗粒感极强、极其悦耳解压（时长 0.65 秒）。
+        </div>
+        <div class="action-row">
+          <button class="play-btn" onclick="playSound('coins', this)">▶ 试听 方案 A（真金币碰撞与落袋）</button>
+          <audio id="audio-coins" src="audio/coins.wav" preload="auto"></audio>
+          <a href="audio/coins.wav" target="_blank" style="font-size:12px;color:#8b0000;text-decoration:none;">下载 WAV</a>
+          <span class="status-text" id="status-coins">就绪</span>
+        </div>
+        <div class="visualizer-box"><div class="visualizer-bar" id="bar-coins"></div></div>
+      </div>
+
+      <!-- 方案 B -->
+      <div class="option-box">
+        <div class="option-head">
+          <div class="option-name">方案 B：经典机械收银柜开匣与钱币滑落 <span class="badge-style-b">复古收银 · 经典到账</span></div>
+        </div>
+        <div class="option-detail">
+          <strong>声学设计：</strong>机械收银抽屉卡扣弹开，伴随清脆经典的黄铜收银钟铃（C7 2093Hz + G7 3136Hz 双音和弦钟声）与多枚银元在金属钱盘中滑落回响。仪式感强烈，军费到账感十足（时长 0.75 秒）。
+        </div>
+        <div class="action-row">
+          <button class="play-btn sec" onclick="playSound('coins_b', this)">▶ 试听 方案 B（机械收银柜开匣）</button>
+          <audio id="audio-coins_b" src="audio/coins_b.wav" preload="auto"></audio>
+          <a href="audio/coins_b.wav" target="_blank" style="font-size:12px;color:#374151;text-decoration:none;">下载 WAV</a>
+          <span class="status-text" id="status-coins_b">就绪</span>
+        </div>
+        <div class="visualizer-box"><div class="visualizer-bar" id="bar-coins_b"></div></div>
+      </div>
+    </article>
+
+    <!-- 6. 打开各类宝箱 · 宝箱开启音效 -->
+    <article class="sound-card" id="card-chest">
+      <div class="card-head">
+        <div class="card-title">🎁 6. 打开各类宝箱 · 宝箱开启音效</div>
+        <span class="card-scene">触发场景：背包使用青铜/白银/黄金宝箱、战备军备箱、神秘战役补给箱</span>
+      </div>
+      <div class="card-desc">
+        厚重机关与箱盖翻启，还原真实战备器械与沉稳厚重开箱质感。
+      </div>
+
+      <!-- 方案 A -->
+      <div class="option-box">
+        <div class="option-head">
+          <div class="option-name">方案 A：战术军需重箱双扣弹开与铁盖开启 <span class="badge-style-a">军备铁箱 · 机械双扣</span></div>
+        </div>
+        <div class="option-detail">
+          <strong>声学设计：</strong>军用重型武器箱两侧强力弹簧卡扣依次“咔嗒-喀”强力崩开，紧接镀锌实心金属箱盖被掀起、重型金属铰链转动与气密阻尼脱离声。硬派扎实、现代军事战术风格（时长 0.75 秒）。
+        </div>
+        <div class="action-row">
+          <button class="play-btn" onclick="playSound('chest', this)">▶ 试听 方案 A（军备双扣弹开与铁盖）</button>
+          <audio id="audio-chest" src="audio/chest.wav" preload="auto"></audio>
+          <a href="audio/chest.wav" target="_blank" style="font-size:12px;color:#8b0000;text-decoration:none;">下载 WAV</a>
+          <span class="status-text" id="status-chest">就绪</span>
+        </div>
+        <div class="visualizer-box"><div class="visualizer-bar" id="bar-chest"></div></div>
+      </div>
+
+      <!-- 方案 B -->
+      <div class="option-box">
+        <div class="option-head">
+          <div class="option-name">方案 B：沉重宝库铁锁滑落与厚木箱盖开启 <span class="badge-style-b">古朴宝箱 · 沉重轴承</span></div>
+        </div>
+        <div class="option-detail">
+          <strong>声学设计：</strong>沉重精钢锁芯转动弹开、铁锁链滑落金属下坠声，随后厚重百年老橡木箱盖被缓缓推开时的沉重木质轴承扭转“吱呀——咔”。质感古朴沉稳，解密开宝满足感充盈（时长 0.90 秒）。
+        </div>
+        <div class="action-row">
+          <button class="play-btn sec" onclick="playSound('chest_b', this)">▶ 试听 方案 B（铁锁滑落与厚木轴承）</button>
+          <audio id="audio-chest_b" src="audio/chest_b.wav" preload="auto"></audio>
+          <a href="audio/chest_b.wav" target="_blank" style="font-size:12px;color:#374151;text-decoration:none;">下载 WAV</a>
+          <span class="status-text" id="status-chest_b">就绪</span>
+        </div>
+        <div class="visualizer-box"><div class="visualizer-bar" id="bar-chest_b"></div></div>
+      </div>
+    </article>
+
+    <!-- 7. 发送邮件 · 类似嗖~ 发送 -->
+    <article class="sound-card" id="card-send-mail">
+      <div class="card-head">
+        <div class="card-title">📨 7. 发送邮件 · 类似“嗖~ 发送”</div>
+        <span class="card-scene">触发场景：信箱撰写邮件点击【发送】、军事电报发报传送</span>
+      </div>
+      <div class="card-desc">
+        高速破空气流飞驰，带出电报/信笺离手飞向远方的流线型速度感。
+      </div>
+
+      <!-- 方案 A -->
+      <div class="option-box">
+        <div class="option-head">
+          <div class="option-name">方案 A：极速破空飞掠 <span class="badge-style-a">风阻切切 · 疾驰远去</span></div>
+        </div>
+        <div class="option-detail">
+          <strong>声学设计：</strong>流线型超高速切风气流破空声（900Hz 飙升至 5100Hz 再呈指数扩散消散），伴随起飞瞬间轻微的战术信件纸张振颤与信鸽疾飞破空尾音。推力极强、极具动感且干脆利落（时长 0.45 秒）。
+        </div>
+        <div class="action-row">
+          <button class="play-btn" onclick="playSound('send_mail', this)">▶ 试听 方案 A（极速破空飞掠）</button>
+          <audio id="audio-send_mail" src="audio/send_mail.wav" preload="auto"></audio>
+          <a href="audio/send_mail.wav" target="_blank" style="font-size:12px;color:#8b0000;text-decoration:none;">下载 WAV</a>
+          <span class="status-text" id="status-send_mail">就绪</span>
+        </div>
+        <div class="visualizer-box"><div class="visualizer-bar" id="bar-send_mail"></div></div>
+      </div>
+
+      <!-- 方案 B -->
+      <div class="option-box">
+        <div class="option-head">
+          <div class="option-name">方案 B：战地气压信道投递发送 <span class="badge-style-b">战地气压管 · 真空抽吸</span></div>
+        </div>
+        <div class="option-detail">
+          <strong>声学设计：</strong>战地指挥所机械气压信管声：圆筒信筒被快速压入管道口的橡胶密封闭锁（“嘭”），紧接真空负压管抽吸喷发的强劲高速气流呼啸（“哧——嗖！”快速升降消逝）。军事机械质感浓厚（时长 0.52 秒）。
+        </div>
+        <div class="action-row">
+          <button class="play-btn sec" onclick="playSound('send_mail_b', this)">▶ 试听 方案 B（战地气动管抽吸）</button>
+          <audio id="audio-send_mail_b" src="audio/send_mail_b.wav" preload="auto"></audio>
+          <a href="audio/send_mail_b.wav" target="_blank" style="font-size:12px;color:#374151;text-decoration:none;">下载 WAV</a>
+          <span class="status-text" id="status-send_mail_b">就绪</span>
+        </div>
+        <div class="visualizer-box"><div class="visualizer-bar" id="bar-send_mail_b"></div></div>
+      </div>
+    </article>
   </div>
 
   <script>
+    // === 音效（SFX）状态 ===
     var soundEnabled = true;
-    var soundVolume = 0.6;
-    var activeAudio = null;
+    var soundVolume = 0.7;
+    var activeSfxAudio = null;
+
+    // === 背景音乐（BGM）状态 ===
+    var bgmAudio = null;
+    var currentBgmKey = null;
+    var bgmVolume = 0.5;
+    var bgmLoopState = {
+      bgm_strings: true,
+      bgm_piano: true,
+      bgm_evening: true
+    };
 
     function toggleSound() {
       soundEnabled = !soundEnabled;
@@ -436,12 +985,17 @@
       if (soundEnabled) {
         btn.textContent = '🔊 音效已开启';
         btn.className = 'toggle-btn active';
+        if (bgmAudio) bgmAudio.volume = bgmVolume;
       } else {
         btn.textContent = '🔇 音效已关闭 (全部静音)';
         btn.className = 'toggle-btn disabled';
-        if (activeAudio) {
-          activeAudio.pause();
-          activeAudio.currentTime = 0;
+        if (activeSfxAudio) {
+          activeSfxAudio.pause();
+          activeSfxAudio.currentTime = 0;
+        }
+        if (bgmAudio) {
+          bgmAudio.pause();
+          resetBgmButtons();
         }
       }
       updateButtonsState();
@@ -450,8 +1004,16 @@
     function changeVolume(val) {
       soundVolume = Number(val) / 100;
       document.getElementById('volumeLabel').textContent = val + '%';
-      if (activeAudio) activeAudio.volume = soundVolume;
+      if (activeSfxAudio) activeSfxAudio.volume = soundVolume;
       updateButtonsState();
+    }
+
+    function changeBgmVolume(val) {
+      bgmVolume = Number(val) / 100;
+      document.getElementById('bgmVolumeLabel').textContent = val + '%';
+      if (bgmAudio) {
+        bgmAudio.volume = soundEnabled ? bgmVolume : 0;
+      }
     }
 
     function updateButtonsState() {
@@ -461,9 +1023,10 @@
       });
     }
 
+    // === 音效（SFX）播放：不打断正在循环播放的 BGM ===
     function playSound(key, btn) {
       if (!soundEnabled || soundVolume === 0) {
-        alert('当前音效处于【关闭】状态或音量为 0%，根据设定保持静音。\n请先在上方开启音效！');
+        alert('当前处于【音效关闭】状态或音量为 0%，根据设定保持全静音。\n请先在上方点击开启音效！');
         return;
       }
       var audio = document.getElementById('audio-' + key);
@@ -471,21 +1034,21 @@
       var bar = document.getElementById('bar-' + key);
       if (!audio) return;
 
-      if (activeAudio) {
-        activeAudio.pause();
-        activeAudio.currentTime = 0;
+      if (activeSfxAudio) {
+        activeSfxAudio.pause();
+        activeSfxAudio.currentTime = 0;
       }
 
       audio.volume = soundVolume;
       audio.currentTime = 0;
-      activeAudio = audio;
+      activeSfxAudio = audio;
 
       if (status) {
         status.textContent = '▶ 播放中...';
         status.className = 'status-text playing';
       }
 
-      var duration = audio.duration || 1.2;
+      var duration = audio.duration || 2.0;
       var start = Date.now();
       if (bar) bar.style.width = '0%';
 
@@ -497,7 +1060,7 @@
       }, 30);
 
       audio.play().catch(function(e) {
-        console.warn('播放受阻:', e);
+        console.warn('播放失败:', e);
       });
 
       audio.onended = function() {
@@ -512,6 +1075,141 @@
         }, 500);
       };
     }
+
+    // === 背景音乐（BGM）控制逻辑 ===
+    function resetBgmButtons() {
+      ['bgm_strings', 'bgm_piano', 'bgm_evening'].forEach(function(k) {
+        var b = document.getElementById('btn-play-' + k);
+        var c = document.getElementById('card-' + k);
+        if (b) {
+          b.innerHTML = '▶ 播放';
+          b.className = 'btn-bgm-play';
+        }
+        if (c) c.classList.remove('is-playing');
+      });
+    }
+
+    function playBgm(key) {
+      if (!soundEnabled) {
+        alert('当前全局音效/音乐处于关闭状态。请先在上方点击【音效已开启】！');
+        return;
+      }
+
+      var audio = document.getElementById('audio-' + key);
+      var btn = document.getElementById('btn-play-' + key);
+      var card = document.getElementById('card-' + key);
+      if (!audio) return;
+
+      // 如果点击的是当前正在播放的曲目，切换为暂停
+      if (currentBgmKey === key && !audio.paused) {
+        audio.pause();
+        btn.innerHTML = '▶ 继续播放';
+        btn.className = 'btn-bgm-play paused';
+        if (card) card.classList.remove('is-playing');
+        return;
+      }
+
+      // 如果有其它 BGM 在播放，先暂停并重置其它卡片状态
+      if (bgmAudio && bgmAudio !== audio) {
+        bgmAudio.pause();
+        resetBgmButtons();
+      }
+
+      bgmAudio = audio;
+      currentBgmKey = key;
+      audio.volume = soundEnabled ? bgmVolume : 0;
+      audio.loop = bgmLoopState[key] !== false;
+
+      audio.play().then(function() {
+        btn.innerHTML = '⏸ 暂停';
+        btn.className = 'btn-bgm-play';
+        if (card) card.classList.add('is-playing');
+      }).catch(function(err) {
+        console.warn('BGM 自动播放受阻:', err);
+      });
+    }
+
+    function toggleBgmLoop(key) {
+      var audio = document.getElementById('audio-' + key);
+      var btn = document.getElementById('btn-loop-' + key);
+      if (!audio || !btn) return;
+
+      var isLoop = !(bgmLoopState[key] !== false);
+      bgmLoopState[key] = isLoop;
+      audio.loop = isLoop;
+
+      if (isLoop) {
+        btn.innerHTML = '🔂 无缝循环中 (开)';
+        btn.className = 'btn-bgm-loop';
+      } else {
+        btn.innerHTML = '➡️ 单次播放 (关)';
+        btn.className = 'btn-bgm-loop off';
+      }
+    }
+
+    function jumpBgmTail(key) {
+      var audio = document.getElementById('audio-' + key);
+      if (!audio) return;
+      if (audio.duration && !isNaN(audio.duration)) {
+        audio.currentTime = Math.max(0, audio.duration - 6);
+        if (audio.paused) {
+          playBgm(key);
+        }
+      }
+    }
+
+    function onBgmTimeUpdate(key) {
+      var audio = document.getElementById('audio-' + key);
+      var slider = document.getElementById('slider-' + key);
+      var timeText = document.getElementById('time-' + key);
+      if (!audio || !slider || !timeText) return;
+
+      if (audio.duration && !isNaN(audio.duration)) {
+        var cur = audio.currentTime;
+        var dur = audio.duration;
+        slider.value = (cur / dur) * 100;
+        timeText.textContent = formatTime(cur) + ' / ' + formatTime(dur);
+      }
+    }
+
+    function onBgmSliderChange(key, val) {
+      var audio = document.getElementById('audio-' + key);
+      if (!audio || !audio.duration || isNaN(audio.duration)) return;
+      audio.currentTime = (Number(val) / 100) * audio.duration;
+    }
+
+    function onBgmEnded(key) {
+      var audio = document.getElementById('audio-' + key);
+      var btn = document.getElementById('btn-play-' + key);
+      var card = document.getElementById('card-' + key);
+      if (audio && !audio.loop) {
+        if (btn) {
+          btn.innerHTML = '▶ 重新播放';
+          btn.className = 'btn-bgm-play';
+        }
+        if (card) card.classList.remove('is-playing');
+      }
+    }
+
+    function formatTime(sec) {
+      if (!sec || isNaN(sec)) return '00:00';
+      var m = Math.floor(sec / 60);
+      var s = Math.floor(sec % 60);
+      return (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+    }
+
+    // 预加载时长展示
+    window.addEventListener('DOMContentLoaded', function() {
+      ['bgm_strings', 'bgm_piano', 'bgm_evening'].forEach(function(k) {
+        var a = document.getElementById('audio-' + k);
+        if (a) {
+          a.addEventListener('loadedmetadata', function() {
+            var t = document.getElementById('time-' + k);
+            if (t) t.textContent = '00:00 / ' + formatTime(a.duration);
+          });
+        }
+      });
+    });
   </script>
 </body>
 </html>

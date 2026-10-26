@@ -28,7 +28,7 @@ class OceanPlacementConcurrencyTest extends BaseServiceTest {
             for(int i=0;i<2;i++){final int n=i;attempts.add(pool.submit(()->{start.await();try{cities.foundAt(players.get(n).getId(),null,98,50+n,"海岸"+n);return true;}catch(IllegalArgumentException e){assertTrue(e.getMessage().contains("重叠"));return false;}}));}
             start.countDown();int succeeded=0;for(var f:attempts)if(f.get(15,TimeUnit.SECONDS))succeeded++;
             assertEquals(1,succeeded);assertEquals(3,playerCityRepository.findByWorldId(w.getId()).size());
-            int totalGold=players.stream().mapToInt(p->resourcesRepository.findByPlayerIdAndCitySlot(p.getId(),0).orElseThrow().getGold()).sum();assertEquals(190000,totalGold);
+            long totalGold=players.stream().mapToLong(p->resourcesRepository.findByPlayerIdAndCitySlot(p.getId(),0).orElseThrow().getGold()).sum();assertEquals(190000,totalGold);
         } finally {pool.shutdownNow();}
     }
 }

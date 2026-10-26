@@ -61,6 +61,7 @@ window.Game = window.Game || {};
 
   // tick handler - update resources, construction progress, march progress
   G.WS.on('support_update', refreshState);
+  G.WS.on('regionalRadar', function (data) { if (G.Radar) G.Radar.apply(data, true); });
   G.WS.on('tick', function (data) {
     if (!G.state) return;
     // Ensure Core.state references the same object
@@ -102,6 +103,7 @@ window.Game = window.Game || {};
       if (G.World && G.World.checkMarchArrivals) G.World.checkMarchArrivals();
     }
     if (data.reinforcements && G.state.world) G.state.world.reinforcements = data.reinforcements;
+    if (Object.prototype.hasOwnProperty.call(data, 'foodSupply')) G.state.foodSupply = data.foodSupply;
     if (Array.isArray(data.incoming) && G.state.world) {
       var previousIncoming = G.state.world.incoming || [];
       data.incoming.forEach(function (attack) {
@@ -151,11 +153,14 @@ window.Game = window.Game || {};
       if (G.Onboarding && G.Onboarding.refresh) G.Onboarding.refresh();
     }
     // 本 tick 内刚刚完成的建筑(后端在建筑倒计时归零时通过 tick 推送)
-    if (data.completedBuilds && G.Task && G.Task.Quests && G.Task.Quests.onEvent) {
-      for (var bi = 0; bi < data.completedBuilds.length; bi++) {
-        // 每日任务的"升级建筑"任务要求等建筑真完成才 +1,
-        // 避免"刚点升级就提示可领奖"的体验割裂。
-        G.Task.Quests.onEvent('BUILD_DONE', data.completedBuilds[bi]);
+    if (data.completedBuilds && data.completedBuilds.length) {
+      if (G.Sound && typeof G.Sound.play === 'function') G.Sound.play('upgrade');
+      if (G.Task && G.Task.Quests && G.Task.Quests.onEvent) {
+        for (var bi = 0; bi < data.completedBuilds.length; bi++) {
+          // 每日任务的"升级建筑"任务要求等建筑真完成才 +1,
+          // 避免"刚点升级就提示可领奖"的体验割裂。
+          G.Task.Quests.onEvent('BUILD_DONE', data.completedBuilds[bi]);
+        }
       }
     }
     if (data.completedBuilds && data.completedBuilds.length && G.Onboarding && G.Onboarding.refresh) {
@@ -184,7 +189,6 @@ window.Game = window.Game || {};
     var messages = {
       arrived: '部队已到达目标: ' + (data.targetName || ''),
       scoutComplete: '侦查完成，情报已送达',
-      gatherComplete: '采集完成，部队已自动按原路线返城，资源抵达后入库',
       gatherStopped: '采集已终止，部队原地待命，请下达回城命令',
       shieldBlocked: '目标城市护盾生效，部队正在返程',
       interceptCancelled: '拦截目标已离开，部队正在返城',
@@ -259,7 +263,7 @@ window.Game = window.Game || {};
   // battle handler - battle report
   G.WS.on('battle', function (data) {
     if (!data) return;
-    if (G.World && G.World.triggerBattleAlert) G.World.triggerBattleAlert(data);
+    if (G.World && G.World.triggerBattleAlert) G.World.triggerBattleAlert(data, true);
     if (data.win && G.state && G.state.world && Array.isArray(G.state.world.marches)) {
       var toX = data.toX != null ? data.toX : data.targetX;
       var toY = data.toY != null ? data.toY : data.targetY;
@@ -273,6 +277,7 @@ window.Game = window.Game || {};
       });
     }
     if (data.action === 'intercept_scout') {
+      if (G.Sound && typeof G.Sound.play === 'function') G.Sound.play('firefight');
       var defending = data.perspective === 'defender';
       G.toast(defending ? (data.win ? '拦截成功，拦截战报已送达' : '拦截失败，敌军突破拦截后继续行进')
         : (data.win ? '突围成功，部队沿原路线继续行进' : '突围失败，拦截战报已送达'));

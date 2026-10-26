@@ -37,7 +37,8 @@ test('战备机场定义校验: airSpdBonus 为 3，移除 airCap', () => {
   assert.ok(apron, 'apron 建筑必须存在');
   assert.equal(apron.airSpdBonus, 3, 'airSpdBonus 应为 3%');
   assert.equal(apron.airCap, undefined, 'airCap 必须已被彻底移除');
-  assert.match(apron.desc, /航速/, '描述中应包含航速加成信息');
+  assert.match(apron.desc, /空军世界行军速度\+3%\/级/, '描述应明确空军世界行军的速度加成');
+  assert.match(apron.desc, /不提高战场移动速度/);
 });
 
 test('Core.spdMul 计算: 战备机场为空军提供每级 +3% 航速加成，与其他军种隔离', () => {

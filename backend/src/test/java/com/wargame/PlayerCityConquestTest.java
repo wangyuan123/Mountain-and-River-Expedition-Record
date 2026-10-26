@@ -5,6 +5,8 @@ import com.wargame.repository.*;
 import com.wargame.service.CityScope;
 import com.wargame.service.CityService;
 import com.wargame.service.WoundedService;
+import com.wargame.service.CityConquestService;
+import com.wargame.service.OfficerEquipmentProgressService;
 import com.wargame.util.JsonUtil;
 import com.wargame.util.JwtUtil;
 import jakarta.persistence.EntityManager;
@@ -38,6 +40,8 @@ class PlayerCityConquestTest extends BaseServiceTest {
     @Autowired MarketOrderRepository marketOrders;
     @Autowired MockMvc http;
     @Autowired JwtUtil jwt;
+    @Autowired CityConquestService conquest;
+    @Autowired OfficerEquipmentProgressService equipmentProgress;
     private Player attacker;
     private Player defender;
     private WorldMap world;
@@ -136,6 +140,8 @@ class PlayerCityConquestTest extends BaseServiceTest {
         Construction build = createConstruction(defender.getId(), "farm", 8, 1, System.currentTimeMillis() + 3_600_000, 0); build.setCitySlot(1);
         Long buildId = build.getId();
         Officer o = commander(1, 0); Long captiveId = o.getId();
+        equipmentProgress.setPreparation(defender.getId(), captiveId, "weapon", 5);
+        equipmentProgress.setPreparation(defender.getId(), captiveId, "armor", 3);
         OfficerEquipment worn = equip(o); Long wornId = worn.getId();
         Officer removed = officer(defender.getId(), 1, "mayor", 1, 30, 1, 1); Long removedId = removed.getId();
         Long removedGear = equip(removed).getId();
@@ -168,6 +174,8 @@ class PlayerCityConquestTest extends BaseServiceTest {
         assertEquals(0, captive.getLoyalty()); assertEquals(42, captive.getLevel()); assertEquals(5, captive.getStar());
         assertEquals(123456L, captive.getExp()); assertEquals(9, captive.getAttrPoints()); assertEquals("完整履历", captive.getBio());
         assertEquals("[{\"id\":\"mil_boost\",\"lv\":3}]", captive.getSkills());
+        assertEquals(Map.of("weapon", 5, "armor", 3), equipmentProgress.preparation(attacker.getId(), captiveId));
+        assertTrue(equipmentProgress.preparation(defender.getId(), captiveId).isEmpty());
         assertEquals(15, captive.getMilitary()); assertEquals(12, captive.getDefense()); assertEquals(13, captive.getLogistics()); assertEquals(14, captive.getKnowledge());
         assertEquals(12, captive.getSalary()); assertEquals(987L, captive.getRewardAt()); assertEquals(456L, captive.getRecruitAt()); assertEquals(321L, captive.getNameRenamedAt());
         OfficerEquipment gear = equipment.findById(wornId).orElseThrow();
@@ -181,7 +189,7 @@ class PlayerCityConquestTest extends BaseServiceTest {
         assertEquals(true, report(defender.getId()).get("cityConquered")); assertEquals(false, report(defender.getId()).get("win"));
         assertEquals(2, cities.overview(attacker.getId()).get("count"));
         cities.select(attacker.getId(), targetId);
-        assertEquals(1234, ((Map<?, ?>) gameStateService.getGameState(attacker.getId()).get("resources")).get("food"));
+        assertEquals(1234L, ((Map<?, ?>) gameStateService.getGameState(attacker.getId()).get("resources")).get("food"));
     }
 
     @Test void insufficientRankPreventsTakeoverButStillCapturesZeroLoyaltyCommander() {
@@ -195,6 +203,26 @@ class PlayerCityConquestTest extends BaseServiceTest {
         assertTrue(report(attacker.getId()).get("cityTakeoverReason").toString().contains("军衔上限"));
         assertEquals(0, resourcesRepository.findByPlayerIdAndCitySlot(defender.getId(), 1).orElseThrow().getFood(),
                 "步兵自携负重足够时，未接管城市也可搬走普通资源");
+    }
+
+    @Test void peacefulCityTransferPreservesEveryOfficersPreparationWithoutMovingAccountProgress() {
+        PlayerCity target = city(defender, 1, 30, 30, 70);
+        Officer commander = commander(1, 80);
+        Officer mayor = officer(defender.getId(), 1, "mayor", 1, 2, 3, 4);
+        Officer retained = officer(defender.getId(), 0, "idle", 1, 2, 3, 4);
+        equipmentProgress.setPreparation(defender.getId(), commander.getId(), "weapon", 5);
+        equipmentProgress.setPreparation(defender.getId(), mayor.getId(), "armor", 3);
+        equipmentProgress.setPreparation(defender.getId(), retained.getId(), "weapon", 2);
+
+        conquest.peacefulTransfer(attacker.getId(), target, System.currentTimeMillis());
+        em.flush(); em.clear();
+
+        assertEquals(Map.of("weapon", 5), equipmentProgress.preparation(attacker.getId(), commander.getId()));
+        assertEquals(Map.of("armor", 3), equipmentProgress.preparation(attacker.getId(), mayor.getId()));
+        assertTrue(equipmentProgress.preparation(defender.getId(), commander.getId()).isEmpty());
+        assertTrue(equipmentProgress.preparation(defender.getId(), mayor.getId()).isEmpty());
+        assertEquals(Map.of("weapon", 2), equipmentProgress.preparation(defender.getId(), retained.getId()));
+        assertTrue(equipmentProgress.preparation(attacker.getId(), retained.getId()).isEmpty());
     }
 
     @Test void constructionCitiesCountAgainstRankCapAndPositiveMoralePreventsTakeover() {

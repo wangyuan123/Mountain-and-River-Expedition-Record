@@ -53,11 +53,141 @@ function setup() {
 }
 const flush = () => new Promise(setImmediate);
 
+test('zero-load conquest warns without blocking combat and transport selection preserves draft', () => {
+  const f = setup();
+  f.game.World.attack('player', 0);
+  f.nodes.get('dqty_infantry').value = '0';
+  f.nodes.set('dqty_battleship', { value: '100', max: '100' });
+  const warning = { hidden: true };
+  f.nodes.set('dispatchLoadWarning', warning);
+  f.game.World.updateDispatchStats();
+  assert.equal(warning.hidden, false);
+  let focused = false;
+  f.nodes.set('dqty_transport', { value: '0', max: '100', focus() { focused = true; }, scrollIntoView() {} });
+  f.game.World.focusTransportUnit();
+  assert.equal(focused, true);
+  assert.equal(f.nodes.get('dqty_transport').value, '0');
+  f.nodes.get('dqty_transport').value = '1';
+  f.game.World.updateDispatchStats();
+  assert.equal(warning.hidden, true);
+  f.nodes.get('dqty_transport').value = '0';
+  f.game.World.setCampaignAction('feint');
+  assert.equal(warning.hidden, true);
+});
+
+test('player intelligence loads independently, labels sampling, and preserves troops while waiting', async () => {
+  const f = setup();
+  let resolve;
+  f.game.API.getScoutIntelligence = () => new Promise(done => { resolve = done; });
+  f.game.Core.route = 'dispatch';
+  f.game.World.attack('player', 0);
+  const view = { innerHTML: '' };
+  f.game.World.renderDispatch(view);
+  assert.match(view.innerHTML, /守军情报加载中/);
+  f.nodes.set('dispatchPlayerIntelligence', { innerHTML: '' });
+  f.nodes.get('dqty_infantry').value = '77';
+  resolve({ found: true, report: { time: 1000000, data: { showCityInfo: true, army: { infantry: 10 }, intelligencePhase: 'before_encounter' } } });
+  await flush();
+  const text = f.nodes.get('dispatchPlayerIntelligence').innerHTML;
+  assert.match(text, /守军: .*x10/);
+  assert.match(text, /采样.*交火前快照.*非实时情报/);
+  assert.equal(f.nodes.get('dqty_infantry').value, '77');
+  assert.equal(f.state.reports.length, 0);
+  f.state.world._dispatchTarget.scoutIntelligence.report.data.army = undefined;
+  f.game.World.renderDispatch(view);
+  assert.match(view.innerHTML, /精确守军情报未解锁/);
+  assert.doesNotMatch(view.innerHTML, /守军: 无/);
+});
+
+test('wild dispatch uses the players scout snapshot and never treats a missing garrison as empty', () => {
+  const f = setup();
+  const target = f.state.world.wildTiles[0]; target.scouted = true;
+  f.game.World.mapAction({ kind: 'wild', id: target.id, type: target.type, level: target.level, x: target.x, y: target.y }, 'conquer');
+  const view = { innerHTML: '' };
+  f.game.World.renderDispatch(view);
+  assert.match(view.innerHTML, /守军未知/);
+  assert.doesNotMatch(view.innerHTML, /守军: 无/);
+  assert.match(view.innerHTML, /剩余资源: 1000 \/ 1000/);
+  f.state.reports.push({ id: 10, type: 'scout', data: { x: target.x, y: target.y, showCityInfo: true, army: { infantry: 10 } } });
+  f.game.World.renderDispatch(view);
+  assert.match(view.innerHTML, /守军: .*x10/);
+  assert.match(view.innerHTML, /最近侦察情报/);
+  f.state.reports[0].data.army = {};
+  f.game.World.renderDispatch(view);
+  assert.match(view.innerHTML, /守军: 无/);
+  delete f.state.world.wildTiles[0].totalRes;
+  f.game.World.renderDispatch(view);
+  assert.match(view.innerHTML, /剩余资源: 未知/);
+});
+
 function selectScout(f) {
   f.nodes.get('dqty_infantry').value = '0';
   f.nodes.set('dqty_scout', { value: '1' });
   f.state.army.scout = 1;
 }
+
+test('direct dispatch after refresh loads scout intelligence without replacing the troop draft or report page', async () => {
+  const f = setup();
+  let resolve, calls = 0;
+  f.game.API.getScoutIntelligence = (x, y) => {
+    assert.equal(x, 12); assert.equal(y, 12); calls++;
+    return new Promise(done => { resolve = done; });
+  };
+  f.game.Core.route = 'dispatch';
+  f.game.World.attackWild(0);
+  const view = { innerHTML: '' };
+  f.game.World.renderDispatch(view);
+  assert.match(view.innerHTML, /守军情报加载中/);
+  f.game.World.renderDispatch(view);
+  assert.equal(calls, 1);
+  f.nodes.set('dispatchWildIntelligence', { textContent: '' });
+  f.nodes.get('dqty_infantry').value = '77';
+  const renders = f.renders;
+  resolve({ found: true, report: { type: 'scout', data: { x: 12, y: 12, showCityInfo: true, army: { infantry: 10 } } } });
+  await flush();
+  assert.match(f.nodes.get('dispatchWildIntelligence').textContent, /守军: .*x10.*最近侦察情报/);
+  assert.equal(f.nodes.get('dqty_infantry').value, '77');
+  assert.equal(f.renders, renders);
+  assert.equal(f.state.reports.length, 0);
+  f.game.World.renderDispatch(view);
+  assert.match(view.innerHTML, /守军: .*x10/);
+});
+
+test('scout intelligence distinguishes empty, unknown and failed lookups', async () => {
+  for (const mode of ['empty', 'unknown', 'error']) {
+    const f = setup();
+    f.game.Core.route = 'dispatch';
+    f.game.API.getScoutIntelligence = () => mode === 'error' ? Promise.reject(new Error('offline')) :
+      Promise.resolve(mode === 'unknown' ? { found: false } : { found: true, report: { data: { army: {} } } });
+    f.game.World.attackWild(0);
+    const view = { innerHTML: '' };
+    f.game.World.renderDispatch(view);
+    await flush();
+    f.game.World.renderDispatch(view);
+    if (mode === 'empty') assert.match(view.innerHTML, /守军: 无/);
+    else {
+      assert.doesNotMatch(view.innerHTML, /守军: 无/);
+      assert.match(view.innerHTML, mode === 'error' ? /暂时无法加载/ : /守军未知/);
+    }
+  }
+});
+
+test('late scout intelligence cannot overwrite another account, city or dispatch', async () => {
+  for (const change of [f => f.state.player.id++, f => f.state.player.citySlot++,
+    f => { f.game.API.getToken = () => 'other-server-token'; }, f => f.game.World.attackWild(0)]) {
+    const f = setup();
+    let resolve;
+    f.game.API.getScoutIntelligence = () => new Promise(done => { resolve = done; });
+    f.game.Core.route = 'dispatch';
+    f.game.World.attackWild(0);
+    f.game.World.renderDispatch({ innerHTML: '' });
+    f.nodes.set('dispatchWildIntelligence', { textContent: '另一份草稿' });
+    change(f);
+    resolve({ found: true, report: { data: { army: { infantry: 999 } } } });
+    await flush();
+    assert.equal(f.nodes.get('dispatchWildIntelligence').textContent, '另一份草稿');
+  }
+});
 
 test('protected PvP requires a permanent-exit warning and cancellation preserves the draft', () => {
   const f = setup();
@@ -256,10 +386,44 @@ test('NPC and player preparations explain actual ownership conditions and never 
   f.game.World.attack('player', 0);
   f.game.World.renderDispatch(view);
   assert.match(view.innerHTML, /战后民心为0/);
-  assert.match(view.innerHTML, /未能接管时取得全部普通资源/);
+  assert.match(view.innerHTML, /未能接管时按幸存部队剩余负重掠取普通资源/);
   assert.doesNotMatch(view.innerHTML, /name="dpConquerMode"|name="dpBattleMode"/);
   f.game.World.setOccupyTarget(false);
   assert.match(f.nodes.get('dpCampaignDescription').textContent, /不接管城市，也不俘虏指挥官/);
+});
+
+test('scout and incoming army interceptions show fixed automatic settlement even with stale battle modes', () => {
+  for (const [action, marchId] of [['scout', undefined], ['scout', 77], ['plunder', 77]]) {
+    for (const battleMode of [undefined, 'manual', 'auto']) {
+      const f = setup(), view = { innerHTML: '' };
+      f.state.world._dispatchTarget = {
+        kind: 'incoming_scout', action: 'intercept_scout', marchId, incomingId: 66,
+        target: { id: marchId || 66, name: '敌军', x: 12, y: 12 },
+        interceptTarget: { action, fromX: 0, fromY: 0, startAt: Date.now() - 60000, arriveAt: Date.now() + 60000 },
+        battleMode
+      };
+      f.game.World.renderDispatch(view);
+      assert.match(view.innerHTML, /拦截战斗自动结算/);
+      assert.match(view.innerHTML, /双方到达交火点后.*向双方发送拦截战报.*无需手动进入战场/);
+      assert.doesNotMatch(view.innerHTML, /name="dpBattleMode"|手动指挥|Game\.World\.setBattleMode/);
+    }
+  }
+});
+
+test('ordinary PvE dispatch retains selectable manual and automatic battle modes', () => {
+  for (const kind of ['wild', 'bandit']) {
+    const f = setup(), view = { innerHTML: '' };
+    if (kind === 'wild') f.game.World.attackWild(0);
+    else f.game.World.attack('bandit', 0);
+    for (const battleMode of ['manual', 'auto']) {
+      f.game.World.setBattleMode(battleMode);
+      f.game.World.renderDispatch(view);
+      assert.match(view.innerHTML, /name="dpBattleMode" value="manual"/);
+      assert.match(view.innerHTML, /name="dpBattleMode" value="auto"/);
+      assert.match(view.innerHTML, new RegExp('name="dpBattleMode" value="' + battleMode + '" checked'));
+      assert.doesNotMatch(view.innerHTML, /拦截战斗自动结算/);
+    }
+  }
 });
 
 test('failed dispatch retains the same draft and fields; state replacement on success clears both drafts', async () => {

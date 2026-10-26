@@ -8,13 +8,30 @@
   <link rel="stylesheet" href="css/style.css?v=3.9-tactical-alignment">
   <link rel="stylesheet" href="css/themes.css">
   <link rel="stylesheet" href="css/classic-home.css">
-  <style>body{margin:0}#screen{padding:12px}.preview-note{margin-bottom:10px;color:var(--muted);font-size:12px}</style>
+  <style>
+    body { margin: 0; }
+    #screen { padding: 12px; }
+    .preview-note { margin-bottom: 10px; color: var(--muted); font-size: 12px; }
+    .preview-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  </style>
 </head>
-<body><div id="screen"><div class="preview-note">敌我相同兵种固定在同一水平线上；我军从左向右推进，敌军从右向左推进。</div><div id="view"></div></div>
+<body><div id="screen">
+  <div class="preview-note">战术指挥面板终局胜负状态预览（支持进攻方/防守方视角切换）：</div>
+  <div class="preview-actions">
+    <button type="button" class="btn sm" onclick="setMode('attacker', true)">进攻方 · 战斗胜利</button>
+    <button type="button" class="btn sm" onclick="setMode('attacker', false)">进攻方 · 战斗失败</button>
+    <button type="button" class="btn sm" onclick="setMode('defender', true)">防守方 · 战斗胜利</button>
+    <button type="button" class="btn sm" onclick="setMode('defender', false)">防守方 · 战斗失败</button>
+    <button type="button" class="btn sm" onclick="setMode('attacker', true, 'WALL_BREACHED')">攻城 · 破墙大捷</button>
+    <button type="button" class="btn sm" onclick="setMode('defender', false, 'WALL_BREACHED')">守城 · 城破失守</button>
+    <button type="button" class="btn sm" onclick="setMode('defender', true, 'WALL_NOT_BREACHED')">守城 · 坚守大捷</button>
+  </div>
+  <div id="view"></div>
+</div>
 <script src="js/constants.js"></script>
 <script src="js/data.js"></script><script src="js/icons.js?v=1.0-resource-images"></script>
 <script>
-Game.Core={views:{},render:function(){}};
+Game.Core={views:{},render:function(){ Game.Battle.renderTacticalBattle(document.getElementById('view')); }};
 Game.escapeHtml=function(value){return String(value);};
 Game.fmt=function(value){return String(value);};
 Game.go=function(){};
@@ -22,13 +39,23 @@ Game.API={};
 </script>
 <script src="js/battle.js?v=1.19-tactical-return-alerts"></script>
 <script>
-Game.Battle._activeTactical={
-  targetName:'相向行军预览', side:'attacker', initialDistance:600, round:4, maxRound:30,
-  finished:true, result:{win:false}, log:'双方单位朝战场中央推进',
-  attackerArmy:{truck:12,ltank:8,rocket:5,fighter:3},
-  defenderArmy:{truck:10,ltank:7,rocket:4,fighter:2},
-  attackerPositions:{truck:55,ltank:130,rocket:215,fighter:300},
-  defenderPositions:{truck:545,ltank:470,rocket:385,fighter:300}
-};
-Game.Battle.renderTacticalBattle(document.getElementById('view'));
+function setMode(side, isWin, terminalReason) {
+  Game.Battle._activeTactical = {
+    targetName: side === 'defender' ? '来犯敌军' : '驻防敌军',
+    side: side,
+    initialDistance: 600,
+    round: 4,
+    maxRound: 30,
+    finished: true,
+    terminalReason: terminalReason,
+    result: { win: isWin },
+    log: '战斗结束结算',
+    attackerArmy: { truck: 12, ltank: 8, rocket: 5, fighter: 3 },
+    defenderArmy: { truck: 10, ltank: 7, rocket: 4, fighter: 2 },
+    attackerPositions: { truck: 55, ltank: 130, rocket: 215, fighter: 300 },
+    defenderPositions: { truck: 545, ltank: 470, rocket: 385, fighter: 300 }
+  };
+  Game.Battle.renderTacticalBattle(document.getElementById('view'));
+}
+setMode('attacker', false);
 </script></body></html>

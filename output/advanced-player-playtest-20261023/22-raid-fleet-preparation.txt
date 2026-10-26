@@ -1,0 +1,299 @@
+Browser tab: 2, Title: "山河远征录 - 文字战争策略游戏", URL: "http://localhost:8081/".
+1 AXWebArea 山河远征录 - 文字战争策略游戏, URL: localhost:8081/
+	2 container screen
+		3 container header
+			4 container topbar
+				274 button 头像 远征统帅_163822 已连接, Help: 点击展开指挥官档案、主题与设置
+					275 image 头像
+					276 text 远征统帅_163822
+					277 text 已连接
+				278 text 🎖️ 论坛
+				279 text 💎 100
+			11 container navbar
+				280 container Description: 左右滑动查看更多导航, ID: gameNavViewport
+					281 container 第1组导航
+						282 text 首页
+						283 text 后勤
+						284 text 军工
+						285 text 军官
+						286 text 军队
+						287 text 地图
+						288 text 军情
+						289 container
+							290 text 战报 1
+						291 text 聊天
+						292 container
+							293 text 电报 3
+						294 container
+							295 text 任务 !
+						296 text 军团
+						297 text 仓库
+						298 text 科技
+						299 text 军校
+						300 text 对战
+					301 container 第2组导航
+						302 pop up button Description: 切换城市, Help: 当前城市：新城市（主城）
+						303 text 战术
+						304 text 排名
+						305 text 商城
+				306 container 导航分页
+					307 button 切换到第1组导航
+					308 button 切换到第2组导航
+		309 container view
+			310 button 返回上一步
+			311 heading 出征准备, Value: 2
+				312 text 出征准备
+			313 text 确认目标 · 配置部队
+			314 container
+				315 text 行动:  讨伐  | 目标:  战火_$@焚天灭地城  (5,387)
+			316 text 守军: 装甲车-猎鹿犬防空型（T17E2）x999998 突击炮-自行加榴炮（ISU-152）x999998 战列舰-衣阿华级（Iowa）x1000000 轰炸机-飞行堡垒（B-17G）x999998 航母-埃塞克斯级（Essex）x1000000 驱逐舰-弗莱彻级（Fletcher）x1000000 战斗机-野马（P-51）x989998 重型坦克-斯大林（IS-2）x989998 步兵-加兰德步枪兵（M1）x989011 轻型坦克-斯图亚特（M5A1）x999998 侦查装甲车-灰狗（M8）x780898 反坦克火箭车-喀秋莎（BM-13）x814429 侦察机-闪电侦察型（F-5）x836183 特种兵-英国突击队（Commando）x999998 潜艇-小鲨鱼级（Gato）x1000000 运输机-空中列车（C-47）x999999 卡车-十轮大卡（CCKW-353）x999999
+			317 text ★ 已侦查 (情报来自侦查报告)
+			574 container
+				575 text 行军路线预览
+				576 text 海上航线 行军距离  2.24  格 预计抵达  7秒
+				577 container 从 新城市 (3, 388) 前往 战火_$@焚天灭地城 (5, 387)，东北方向
+				578 text 东北方向 海陆地形 · 北向上 起点 · 出发城市 新城市 (3, 388) 终点 · 行军目标 战火_$@焚天灭地城 (5, 387) 本次油耗  9440680 直线行军 可携资源  12000000
+			319 text 舰队沿海航行；跨海陆军需要运输机，每架提供 80 运力。旧内陆城市保留海军补给通道。
+			320 container 出征方式
+				321 container
+					322 text 出征方式 选择本次行动的目的
+				323 pop up button (collapsed, settable) 出征方式 选择本次行动的目的, Value: 掠夺, ID: dpCampaignAction, Secondary Actions: Expand
+					324 menu
+						325 征服
+						326 (selected) 掠夺
+						327 佯攻
+						328 袭扰
+						329 游击
+				330 container
+					560 text 掠夺说明
+					561 text 最多 25 回合
+					562 text 胜利后取得仓库保护外的非黄金资源，不接管城市，也不俘虏指挥官；胜利结算经验为占领模式的一半。
+			334 text 兵种配置  选择出征数量
+			335 button [ 全部设置1单位 ]
+				336 text [
+				337 text 全部设置1单位
+				338 text ]
+			339 button [ 重置 ]
+				340 text [
+				341 text 重置
+				342 text ]
+			343 container 步兵-加兰德步枪兵（M1）
+				344 text 步兵(M1) (负重10/人)
+				345 container 基础移速 2（战场机动 100），科技加成 +50%
+					346 text 移速 3
+					347 text ⚡+50%
+				348 text 对空 5
+				349 text 油耗 0
+			350 text 城内950000
+			351 stepper (settable, integer) Value: 0, ID: dqty_infantry
+			352 slider (settable, integer) Value: 0, ID: dslider_infantry
+			353 container 卡车-十轮大卡（CCKW-353）
+				354 text 卡车(CCKW-353) (辎重500/辆)
+				355 container 基础移速 4（战场机动 200），科技加成 +50%
+					356 text 移速 6
+					357 text ⚡+50%
+				358 text 对空 1
+				359 text 油耗 2
+			360 text 城内990000
+			361 stepper (settable, integer) Value: 0, ID: dqty_truck
+			362 slider (settable, integer) Value: 0, ID: dslider_truck
+			363 container 装甲车-猎鹿犬防空型（T17E2）
+				364 text 装甲车(T17E2)
+				365 container 基础移速 5（战场机动 250），科技加成 +50%
+					366 text 移速 7.5
+					367 text ⚡+50%
+				368 text 对空 33.5
+				369 text 油耗 3
+			370 text 城内943750
+			371 stepper (settable, integer) Value: 0, ID: dqty_armored
+			372 slider (settable, integer) Value: 0, ID: dslider_armored
+			373 container 侦查装甲车-灰狗（M8）
+				374 text 侦查装甲车(M8)
+				375 container 基础移速 5（战场机动 250），科技加成 +50%
+					376 text 移速 7.5
+					377 text ⚡+50%
+				378 text 对空 5
+				379 text 油耗 3
+			380 text 城内502907
+			381 stepper (settable, integer) Value: 0, ID: dqty_recon_car
+			382 slider (settable, integer) Value: 0, ID: dslider_recon_car
+			383 container 轻型坦克-斯图亚特（M5A1）
+				384 text 轻型坦克(M5A1)
+				385 container 基础移速 4（战场机动 200），科技加成 +50%
+					386 text 移速 6
+					387 text ⚡+50%
+				388 text 对空 10
+				389 text 油耗 4
+			390 text 城内943750
+			391 stepper (settable, integer) Value: 0, ID: dqty_ltank
+			392 slider (settable, integer) Value: 0, ID: dslider_ltank
+			393 container 重型坦克-斯大林（IS-2）
+				394 text 重型坦克(IS-2)
+				395 container 基础移速 4（战场机动 200），科技加成 +50%
+					396 text 移速 6
+					397 text ⚡+50%
+				398 text 对空 15
+				399 text 油耗 7
+			400 text 城内843750
+			401 stepper (settable, integer) Value: 0, ID: dqty_htank
+			402 slider (settable, integer) Value: 0, ID: dslider_htank
+			403 container 突击炮-自行加榴炮（ISU-152）
+				404 text 突击炮(ISU-152)
+				405 container 基础移速 2（战场机动 100），科技加成 +50%
+					406 text 移速 3
+					407 text ⚡+50%
+				408 text 对空 30
+				409 text 油耗 5
+			410 text 城内853750
+			411 stepper (settable, integer) Value: 0, ID: dqty_assault
+			412 slider (settable, integer) Value: 0, ID: dslider_assault
+			413 container 反坦克火箭车-喀秋莎（BM-13）
+				414 text 反坦克火箭车(BM-13)
+				415 container 基础移速 3（战场机动 150），科技加成 +50%
+					416 text 移速 4.5
+					417 text ⚡+50%
+				418 text 对空 11.5
+				419 text 油耗 4
+			420 text 城内843750
+			421 stepper (settable, integer) Value: 0, ID: dqty_rocket
+			422 slider (settable, integer) Value: 0, ID: dslider_rocket
+			423 container 特种兵-英国突击队（Commando）
+				424 text 特种兵(Commando)
+				425 container 基础移速 6（战场机动 300），科技加成 +50%
+					426 text 移速 9
+					427 text ⚡+50%
+				428 text 对空 10
+				429 text 油耗 1
+			430 text 城内943750
+			431 stepper (settable, integer) Value: 0, ID: dqty_special
+			432 slider (settable, integer) Value: 0, ID: dslider_special
+			433 container 战斗机-野马（P-51）
+				434 text 战斗机(P-51)
+				435 container 基础移速 8（战场机动 400），科技加成 +50%
+					436 text 移速 12
+					437 text ⚡+50%
+				438 text 对空 64
+				439 text 油耗 10
+			440 text 城内793750
+			441 stepper (settable, integer) Value: 0, ID: dqty_fighter
+			442 slider (settable, integer) Value: 0, ID: dslider_fighter
+			443 container 轰炸机-飞行堡垒（B-17G）
+				444 text 轰炸机(B-17G)
+				445 container 基础移速 6（战场机动 300），科技加成 +50%
+					446 text 移速 9
+					447 text ⚡+50%
+				448 text 对空 12
+				449 text 油耗 22
+			450 text 城内793750
+			451 stepper (settable, integer) Value: 0, ID: dqty_bomber
+			452 slider (settable, integer) Value: 0, ID: dslider_bomber
+			453 container 运输机-空中列车（C-47）
+				454 text 运输机(C-47) (辎重800/辆)
+				455 container 基础移速 6（战场机动 300），科技加成 +50%
+					456 text 移速 9
+					457 text ⚡+50%
+				458 text 对空 1
+				459 text 油耗 16
+			460 text 城内1000000
+			461 stepper (settable, integer) Value: 10000, ID: dqty_transport
+			462 slider (settable, integer) Value: 10000, ID: dslider_transport
+			463 container 驱逐舰-弗莱彻级（Fletcher）
+				464 text 驱逐舰(Fletcher)
+				465 container 基础移速 5（战场机动 250），科技加成 +50%
+					466 text 移速 7.5
+					467 text ⚡+50%
+				468 text 对空 59
+				469 text 油耗 15
+			470 text 城内938303
+			471 stepper (settable, integer) Value: 90000, ID: dqty_destroyer
+			472 slider (settable, integer) Value: 90000, ID: dslider_destroyer
+			473 container 潜艇-小鲨鱼级（Gato）
+				474 text 潜艇(Gato)
+				475 container 基础移速 3（战场机动 150），科技加成 +50%
+					476 text 移速 4.5
+					477 text ⚡+50%
+				478 text 对空 1
+				479 text 油耗 9
+			480 text 城内999824
+			481 stepper (settable, integer) Value: 0, ID: dqty_sub
+			482 slider (settable, integer) Value: 0, ID: dslider_sub
+			483 container 战列舰-衣阿华级（Iowa）
+				484 text 战列舰(Iowa)
+				485 container 基础移速 4（战场机动 200），科技加成 +50%
+					486 text 移速 6
+					487 text ⚡+50%
+				488 text 对空 100
+				489 text 油耗 35
+			490 text 城内957378
+			491 stepper (settable, integer) Value: 200000, ID: dqty_battleship
+			492 slider (settable, integer) Value: 200000, ID: dslider_battleship
+			493 container 航母-埃塞克斯级（Essex）
+				494 text 航母(Essex)
+				495 container 基础移速 4（战场机动 200），科技加成 +50%
+					496 text 移速 6
+					497 text ⚡+50%
+				498 text 对空 125
+				499 text 油耗 42
+			500 text 城内990608
+			501 stepper (settable, integer) Value: 300000, ID: dqty_carrier
+			502 slider (settable, integer) Value: 300000, ID: dslider_carrier
+			503 container dispatchStatsCard
+				504 text 行军与编队军情 行军距离
+				579 text 2.24 格
+				506 text 全军基准移速
+				580 text 6 格/单位
+				508 button 查看带兵上限计算说明
+					509 text 出征兵力 / 带兵上限
+					581 text 600000 / 600000
+				511 text 出征队伍 / 队列上限
+				582 text 0 / 5
+				513 text 预计单程耗时
+				583 text 7秒
+				515 text 预计往返总耗时
+				584 text 14秒
+				517 text 行军油耗
+				585 text 9440680
+				586 text 预扣往返补给（返程已备）
+				587 text 协同行军：受限于最慢兵种【战列舰-衣阿华级（Iowa）】(基速 4 · 含科技+50%)，全军保持统一速度出发与到达
+				521 text 当前编队预估辎重: 
+				588 text 12000000
+			523 text -- 指挥官选择 --
+			524 container
+				525 radio button (settable, integer) Description: 弗雷德里克·库克 ★★★ Lv.100 将169 军88 智72, Value: 1
+				526 text  弗雷德里克·库克  ★★★  Lv.100 将169 军88 智72
+			527 radio button (settable, integer) Description: 不派遣将领 (无加成), Value: 0
+			528 text -- 携带资源 (部队负重内) --
+			529 text 携带资源随军出征,战胜则返还并计入战利品,战败则丢失。
+			530 image 粮食
+			531 text 粮食 库存 406963793
+			532 stepper (settable, integer) Value: 0, ID: dcarry_food
+			533 image 钢铁
+			534 text 钢铁 库存 1065114
+			535 stepper (settable, integer) Value: 0, ID: dcarry_steel
+			536 image 石油
+			537 text 石油 库存 486641630
+			538 stepper (settable, integer) Value: 0, ID: dcarry_oil
+			539 image 稀矿
+			540 text 稀矿 库存 1054589
+			541 stepper (settable, integer) Value: 0, ID: dcarry_rare
+			573 text 本次出征：掠夺 · 仅夺取资源 · 自动返城
+			543 button [ 出征讨伐 ]
+				544 text [
+				545 text 出征讨伐
+				546 text ]
+			547 button [ 返回 ]
+				548 text [
+				549 text 返回
+				550 text ]
+		273 container Description: 游戏导航与备案信息, ID: footbar
+			551 container 底部快捷导航
+				552 button 首页
+				553 button 地图
+				554 button 任务
+				555 button 邮件
+				556 button 设置
+				557 button 返回顶部
+			558 text 选配兵力/军官/辎重 [0]返回
+			589 text 北京时间：2026年10月23日 22:32:35
+
+The focused UI element is 501 stepper (settable, integer) Value: 300000, ID: dqty_carrier

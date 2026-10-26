@@ -1,5 +1,7 @@
 package com.wargame.service;
 
+import com.wargame.util.DurationText;
+
 import com.wargame.model.dto.PrivateChatDtos;
 import com.wargame.config.GameWebSocketHandler;
 import com.wargame.model.entity.*;
@@ -184,7 +186,7 @@ public class PrivateChatService {
         if (content.length() > 80) throw new IllegalArgumentException("消息不能超过 80 字");
         // 冷却按发送者累计，切换收件人不能绕过防刷屏限制。
         if (!limiter.allow("PRIVATE_CHAT_CD:" + me, 1, 5000L)) {
-            throw new IllegalArgumentException("发言过于频繁，请 5 秒后再试");
+            throw new IllegalArgumentException("发言过于频繁，请 " + DurationText.seconds(5) + "后再试");
         }
         PrivateChatMessage saved = messages.save(new PrivateChatMessage(null, me, recipient,
                 chat.filterContent(content), System.currentTimeMillis(), false));

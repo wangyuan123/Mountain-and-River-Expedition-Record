@@ -40,13 +40,13 @@ public record TechDef(
         m.put("log_load", new TechDef("log_load", "负重科技", "后勤", "所有兵种负重 +5%/级，最高 +50%；与装备负重相乘，运输机运力同样生效。",
                 10, 2, Map.of("steel", 200, "food", 100), 1.6, "load"));
         // 装甲
-        m.put("arm_engine", new TechDef("arm_engine", "燃烧引擎", "机动", "陆军移动 +5%/级",
+        m.put("arm_engine", new TechDef("arm_engine", "燃烧引擎", "机动", "陆军世界行军与战场移动速度 +5%/级，最高 +50%，包含步兵与车辆",
                 10, 3, Map.of("steel", 320, "oil", 120, "rare", 40), 1.8, "spd_arm"));
         // 航空
-        m.put("air_engine", new TechDef("air_engine", "喷气推进", "机动", "空军移动 +5%/级",
+        m.put("air_engine", new TechDef("air_engine", "喷气推进", "机动", "空军世界行军与战场移动速度 +5%/级，最高 +50%；战备机场只额外加成世界行军",
                 10, 4, Map.of("steel", 360, "oil", 160, "rare", 70), 1.9, "spd_air"));
         // 航海
-        m.put("nav_engine", new TechDef("nav_engine", "舰船动力", "机动", "海军移动 +5%/级",
+        m.put("nav_engine", new TechDef("nav_engine", "舰船动力", "机动", "海军世界行军与战场移动速度 +5%/级，最高 +50%",
                 10, 5, Map.of("steel", 400, "oil", 200, "rare", 100), 2.0, "spd_nav"));
         // 后勤
         m.put("prod_food", new TechDef("prod_food", "粮食产量", "后勤", "城内粮食产量 +5%/级，最高 +50%，不影响野地采集。",

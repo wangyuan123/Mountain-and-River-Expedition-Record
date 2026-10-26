@@ -25,11 +25,13 @@ public record ItemDef(
     public static final String CAT_RESOURCE = "resource";
 
     private static final Map<String, ItemDef> BASE_ITEMS = Map.ofEntries(
+            Map.entry("commanderRenameCard", new ItemDef("commanderRenameCard", "统帅改名卡", "🏷️", CAT_UTIL, "修改统帅名称，成功消耗1张；首次使用不限时间，之后每次间隔30天（现实时间）", 0)),
             // —— 军官道具 ——
             Map.entry("expBook",    new ItemDef("expBook",    "经验书",      "📘", CAT_OFFICER, "军官使用,获得10000经验", 0)),
             Map.entry("expBookAdv", new ItemDef("expBookAdv", "高级经验书",  "📕", CAT_OFFICER, "军官使用,获得100000经验", 0)),
             Map.entry("expBookMax", new ItemDef("expBookMax", "满级经验书",  "📙", CAT_OFFICER, "军官使用,直接升至满级(Lv.100)", 0)),
-            Map.entry("skillBook",  new ItemDef("skillBook",  "通用技能书",  "📗", CAT_OFFICER, "军官使用，随机学习一个未掌握技能", 0)),
+            Map.entry("skillBook",  new ItemDef("skillBook",  "普通技能书",  "📗", CAT_OFFICER, "军官使用，随机学习一个未掌握且不互斥的技能，初始等级受军官星级影响", 0)),
+            Map.entry("universalSkillBook", new ItemDef("universalSkillBook", "通用技能书", "📚", CAT_OFFICER, "从技能池自选一个未掌握且不互斥的技能，学习后为 Lv.1；仅用于学习，不用于升级", 0)),
             // —— 指定技能书：直接学习对应技能 Lv.1 ——
             Map.entry("skillBook_frenzy", new ItemDef("skillBook_frenzy", "全军冲锋技能书", "📗", CAT_OFFICER, "军官使用，直接学习全军冲锋 Lv.1", 0)),
             Map.entry("skillBook_bulwark", new ItemDef("skillBook_bulwark", "坚守阵地技能书", "📗", CAT_OFFICER, "军官使用，直接学习坚守阵地 Lv.1", 0)),
@@ -50,62 +52,6 @@ public record ItemDef(
             Map.entry("renameCard", new ItemDef("renameCard", "军官改名卡",  "🏷️", CAT_OFFICER, "为军官更换新名字", 0)),
             Map.entry("recruitOrd", new ItemDef("recruitOrd", "征募令",      "🎖️", CAT_OFFICER, "刷新军校,保底出现一名五星军官", 0)),
             Map.entry("starUp",     new ItemDef("starUp",     "星耀符",      "✨", CAT_OFFICER, "升2/3/4/5星失败率10/20/30/60%，失败也消耗1枚", 0)),
-            // —— 军官装备宝箱（12 套专属整套装备宝箱）——
-            Map.entry("box_recruit_military",  new ItemDef("box_recruit_military",  "列兵军事装备箱", "📦", CAT_OFFICER, "开启获得整套列兵军事装备(军刀/臂章/作训服)", 0)),
-            Map.entry("box_recruit_defense",   new ItemDef("box_recruit_defense",   "列兵防御装备箱", "📦", CAT_OFFICER, "开启获得整套列兵防御装备(护身盾/坚守勋章/防弹背心)", 0)),
-            Map.entry("box_recruit_logistics", new ItemDef("box_recruit_logistics", "列兵后勤装备箱", "📦", CAT_OFFICER, "开启获得整套列兵后勤装备(工具包/通行证/工作服)", 0)),
-            Map.entry("box_recruit_knowledge", new ItemDef("box_recruit_knowledge", "列兵学识装备箱", "📦", CAT_OFFICER, "开启获得整套列兵学识装备(笔记本/学员章/学员服)", 0)),
-            Map.entry("box_officer_military",  new ItemDef("box_officer_military",  "校官军事装备箱", "🎁", CAT_OFFICER, "开启获得整套校官军事装备(军刀/勋章/军服)", 0)),
-            Map.entry("box_officer_defense",   new ItemDef("box_officer_defense",   "校官防御装备箱", "🎁", CAT_OFFICER, "开启获得整套校官防御装备(防暴盾/铁壁勋章/重装防弹甲)", 0)),
-            Map.entry("box_officer_logistics", new ItemDef("box_officer_logistics", "校官后勤装备箱", "🎁", CAT_OFFICER, "开启获得整套校官后勤装备(补给箱/调度章/军需服)", 0)),
-            Map.entry("box_officer_knowledge", new ItemDef("box_officer_knowledge", "校官学识装备箱", "🎁", CAT_OFFICER, "开启获得整套校官学识装备(战术罗盘/参谋章/参谋服)", 0)),
-            Map.entry("box_marshal_military",  new ItemDef("box_marshal_military",  "元帅军事装备箱", "👑", CAT_OFFICER, "开启获得整套元帅军事装备(佩剑/将星/礼服)", 0)),
-            Map.entry("box_marshal_defense",   new ItemDef("box_marshal_defense",   "元帅防御装备箱", "👑", CAT_OFFICER, "开启获得整套元帅防御装备(重装盾/不屈之星/钛金铠)", 0)),
-            Map.entry("box_marshal_logistics", new ItemDef("box_marshal_logistics", "元帅后勤装备箱", "👑", CAT_OFFICER, "开启获得整套元帅后勤装备(辎重车/军需印/长袍)", 0)),
-            Map.entry("box_marshal_knowledge", new ItemDef("box_marshal_knowledge", "元帅学识装备箱", "👑", CAT_OFFICER, "开启获得整套元帅学识装备(望远镜/军师印/军礼服)", 0)),
-            // —— 军官套装（3 阶 × 4 分支 × 3 槽位 = 36 件）——
-            // —— 列兵套装 Lv.1+ ——
-            Map.entry("recruit_military_weapon", new ItemDef("recruit_military_weapon", "列兵军刀",     "🗡️", CAT_OFFICER, "列兵军事套装·武器：军事+5，其余+1，集齐3件军事+3", 0)),
-            Map.entry("recruit_military_badge",  new ItemDef("recruit_military_badge",  "列兵臂章",     "🎗️", CAT_OFFICER, "列兵军事套装·徽章：军事+5，其余+1，集齐3件军事+3", 0)),
-            Map.entry("recruit_military_coat",   new ItemDef("recruit_military_coat",   "列兵作训服",   "🦺", CAT_OFFICER, "列兵军事套装·外套：军事+5，其余+1，集齐3件军事+3", 0)),
-            Map.entry("recruit_defense_weapon",  new ItemDef("recruit_defense_weapon",  "列兵护身盾",   "🛡️", CAT_OFFICER, "列兵防御套装·武器：防御+5，其余+1，集齐3件防御+3", 0)),
-            Map.entry("recruit_defense_badge",   new ItemDef("recruit_defense_badge",   "列兵坚守勋章", "🎖️", CAT_OFFICER, "列兵防御套装·徽章：防御+5，其余+1，集齐3件防御+3", 0)),
-            Map.entry("recruit_defense_coat",    new ItemDef("recruit_defense_coat",    "列兵防弹背心", "🦺", CAT_OFFICER, "列兵防御套装·外套：防御+5，其余+1，集齐3件防御+3", 0)),
-            Map.entry("recruit_logistics_weapon",new ItemDef("recruit_logistics_weapon","列兵工具包",   "🛠️", CAT_OFFICER, "列兵后勤套装·武器：后勤+5，其余+1，集齐3件后勤+3", 0)),
-            Map.entry("recruit_logistics_badge", new ItemDef("recruit_logistics_badge", "列兵通行证",   "🪪", CAT_OFFICER, "列兵后勤套装·徽章：后勤+5，其余+1，集齐3件后勤+3", 0)),
-            Map.entry("recruit_logistics_coat",  new ItemDef("recruit_logistics_coat",  "列兵工作服",   "👕", CAT_OFFICER, "列兵后勤套装·外套：后勤+5，其余+1，集齐3件后勤+3", 0)),
-            Map.entry("recruit_knowledge_weapon",new ItemDef("recruit_knowledge_weapon","列兵笔记本",   "📓", CAT_OFFICER, "列兵学识套装·武器：学识+5，其余+1，集齐3件学识+3", 0)),
-            Map.entry("recruit_knowledge_badge", new ItemDef("recruit_knowledge_badge", "列兵学员章",   "📛", CAT_OFFICER, "列兵学识套装·徽章：学识+5，其余+1，集齐3件学识+3", 0)),
-            Map.entry("recruit_knowledge_coat",  new ItemDef("recruit_knowledge_coat",  "列兵学员服",   "🎓", CAT_OFFICER, "列兵学识套装·外套：学识+5，其余+1，集齐3件学识+3", 0)),
-
-            // —— 校官套装 Lv.40+ ——
-            Map.entry("officer_military_weapon", new ItemDef("officer_military_weapon", "校官军刀",     "⚔️", CAT_OFFICER, "校官军事套装·武器：军事+15，其余+3，集齐3件军事+15", 0)),
-            Map.entry("officer_military_badge",  new ItemDef("officer_military_badge",  "校官勋章",     "🎖️", CAT_OFFICER, "校官军事套装·徽章：军事+15，其余+3，集齐3件军事+15", 0)),
-            Map.entry("officer_military_coat",   new ItemDef("officer_military_coat",   "校官军服",     "🧥", CAT_OFFICER, "校官军事套装·外套：军事+15，其余+3，集齐3件军事+15", 0)),
-            Map.entry("officer_defense_weapon",  new ItemDef("officer_defense_weapon",  "校官防暴盾",   "🛡️", CAT_OFFICER, "校官防御套装·武器：防御+15，其余+3，集齐3件防御+15", 0)),
-            Map.entry("officer_defense_badge",   new ItemDef("officer_defense_badge",   "校官铁壁勋章", "🎖️", CAT_OFFICER, "校官防御套装·徽章：防御+15，其余+3，集齐3件防御+15", 0)),
-            Map.entry("officer_defense_coat",    new ItemDef("officer_defense_coat",    "校官重装防弹甲", "🥋", CAT_OFFICER, "校官防御套装·外套：防御+15，其余+3，集齐3件防御+15", 0)),
-            Map.entry("officer_logistics_weapon",new ItemDef("officer_logistics_weapon","校官补给箱",   "📦", CAT_OFFICER, "校官后勤套装·武器：后勤+15，其余+3，集齐3件后勤+15", 0)),
-            Map.entry("officer_logistics_badge", new ItemDef("officer_logistics_badge", "校官调度章",   "🚚", CAT_OFFICER, "校官后勤套装·徽章：后勤+15，其余+3，集齐3件后勤+15", 0)),
-            Map.entry("officer_logistics_coat",  new ItemDef("officer_logistics_coat",  "校官军需服",   "🦺", CAT_OFFICER, "校官后勤套装·外套：后勤+15，其余+3，集齐3件后勤+15", 0)),
-            Map.entry("officer_knowledge_weapon",new ItemDef("officer_knowledge_weapon","校官战术罗盘", "🧭", CAT_OFFICER, "校官学识套装·武器：学识+15，其余+3，集齐3件学识+15", 0)),
-            Map.entry("officer_knowledge_badge", new ItemDef("officer_knowledge_badge", "校官参谋章",   "📋", CAT_OFFICER, "校官学识套装·徽章：学识+15，其余+3，集齐3件学识+15", 0)),
-            Map.entry("officer_knowledge_coat",  new ItemDef("officer_knowledge_coat",  "校官参谋服",   "🧑‍🎓", CAT_OFFICER, "校官学识套装·外套：学识+15，其余+3，集齐3件学识+15", 0)),
-
-            // —— 元帅套装 Lv.100+ ——
-            Map.entry("marshal_military_weapon", new ItemDef("marshal_military_weapon", "元帅佩剑",     "👑", CAT_OFFICER, "元帅军事套装·武器：军事+30，其余+5，集齐3件军事+30+全属性+5", 0)),
-            Map.entry("marshal_military_badge",  new ItemDef("marshal_military_badge",  "元帅将星",     "⭐", CAT_OFFICER, "元帅军事套装·徽章：军事+30，其余+5，集齐3件军事+30+全属性+5", 0)),
-            Map.entry("marshal_military_coat",   new ItemDef("marshal_military_coat",   "元帅礼服",     "🤴", CAT_OFFICER, "元帅军事套装·外套：军事+30，其余+5，集齐3件军事+30+全属性+5", 0)),
-            Map.entry("marshal_defense_weapon",  new ItemDef("marshal_defense_weapon",  "元帅重装盾",   "🛡️", CAT_OFFICER, "元帅防御套装·武器：防御+30，其余+5，集齐3件防御+30+全属性+5", 0)),
-            Map.entry("marshal_defense_badge",   new ItemDef("marshal_defense_badge",   "元帅不屈之星", "⭐", CAT_OFFICER, "元帅防御套装·徽章：防御+30，其余+5，集齐3件防御+30+全属性+5", 0)),
-            Map.entry("marshal_defense_coat",    new ItemDef("marshal_defense_coat",    "元帅钛金铠",   "🥋", CAT_OFFICER, "元帅防御套装·外套：防御+30，其余+5，集齐3件防御+30+全属性+5", 0)),
-            Map.entry("marshal_logistics_weapon",new ItemDef("marshal_logistics_weapon","元帅辎重车",   "🐴", CAT_OFFICER, "元帅后勤套装·武器：后勤+30，其余+5，集齐3件后勤+30+全属性+5", 0)),
-            Map.entry("marshal_logistics_badge", new ItemDef("marshal_logistics_badge", "元帅军需印",   "📜", CAT_OFFICER, "元帅后勤套装·徽章：后勤+30，其余+5，集齐3件后勤+30+全属性+5", 0)),
-            Map.entry("marshal_logistics_coat",  new ItemDef("marshal_logistics_coat",  "元帅长袍",     "👘", CAT_OFFICER, "元帅后勤套装·外套：后勤+30，其余+5，集齐3件后勤+30+全属性+5", 0)),
-            Map.entry("marshal_knowledge_weapon",new ItemDef("marshal_knowledge_weapon","元帅望远镜",   "🔭", CAT_OFFICER, "元帅学识套装·武器：学识+30，其余+5，集齐3件学识+30+全属性+5", 0)),
-            Map.entry("marshal_knowledge_badge", new ItemDef("marshal_knowledge_badge", "元帅军师印",   "🪧", CAT_OFFICER, "元帅学识套装·徽章：学识+30，其余+5，集齐3件学识+30+全属性+5", 0)),
-            Map.entry("marshal_knowledge_coat",  new ItemDef("marshal_knowledge_coat",  "元帅军礼服",   "👔", CAT_OFFICER, "元帅学识套装·外套：学识+30，其余+5，集齐3件学识+30+全属性+5", 0)),
-
             // —— 资源道具 ——
             Map.entry("goldBox",    new ItemDef("goldBox",    "黄金箱",      "img/resources/models/gold.webp", CAT_RESOURCE, "开启获得1000-5000黄金", 0)),
             Map.entry("resBox",     new ItemDef("resBox",     "资源箱",      "📦", CAT_RESOURCE, "开启获得粮钢油稀各500", 0)),
@@ -116,7 +62,7 @@ public record ItemDef(
 
             // —— 主线任务阶段通关专属大礼包 ——
             Map.entry("stage_gift_1", new ItemDef("stage_gift_1", "新兵奠基礼包", "🎁", CAT_RESOURCE, "主线第1阶段通关大奖：粮钢油各2万、稀矿5000、黄金2000、钻石50、10分加速符×5、列兵军事装备箱×1", 0)),
-            Map.entry("stage_gift_2", new ItemDef("stage_gift_2", "拔寨起步礼包", "🎁", CAT_RESOURCE, "主线第2阶段通关大奖：粮钢油各5万、稀矿1.5万、黄金5000、钻石100、1时加速符×3、通用技能书×2", 0)),
+            Map.entry("stage_gift_2", new ItemDef("stage_gift_2", "拔寨起步礼包", "🎁", CAT_RESOURCE, "主线第2阶段通关大奖：粮钢油各5万、稀矿1.5万、黄金5000、钻石100、1时加速符×3、普通技能书×2", 0)),
             Map.entry("stage_gift_3", new ItemDef("stage_gift_3", "整军备战礼包", "🎁", CAT_RESOURCE, "主线第3阶段通关大奖：粮钢油各15万、稀矿5万、黄金1.2万、钻石200、1时加速符×5、征募令×2、校官军事装备箱×1", 0)),
             Map.entry("stage_gift_4", new ItemDef("stage_gift_4", "初露锋芒礼包", "🎁", CAT_RESOURCE, "主线第4阶段通关大奖：粮钢油各50万、稀矿15万、黄金3万、钻石500、5时加速符×3、护盾×1", 0)),
             Map.entry("stage_gift_5", new ItemDef("stage_gift_5", "百战精锐礼包", "🎁", CAT_RESOURCE, "主线第5阶段通关大奖：粮钢油各150万、稀矿50万、黄金8万、钻石1000、12时加速符×2、征募令×5、高级经验书×3", 0)),
@@ -137,7 +83,11 @@ public record ItemDef(
             // —— 其他功能道具 ——
             Map.entry("teleportNormal", new ItemDef("teleportNormal", "普通传送", "🌀", CAT_UTIL, "消耗1个，将当前城市随机传送至开放地图的四格空闲陆地", 0)),
             Map.entry("teleportAdvanced", new ItemDef("teleportAdvanced", "高级传送", "📍", CAT_UTIL, "消耗1个，将当前城市传送至指定坐标，目的地须有完整2×2空闲陆地", 0)),
-            Map.entry("shield",    new ItemDef("shield",    "护盾",     "🛡️", CAT_UTIL, "本城8小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地", 0)),
+            Map.entry("shield2h", new ItemDef("shield2h", "2小时护盾", "🛡️", CAT_UTIL, "本城2小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地", 0)),
+            Map.entry("shield", new ItemDef("shield", "8小时护盾", "🛡️", CAT_UTIL, "本城8小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地", 0)),
+            Map.entry("shield12h", new ItemDef("shield12h", "12小时护盾", "🛡️", CAT_UTIL, "本城12小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地", 0)),
+            Map.entry("shield24h", new ItemDef("shield24h", "24小时护盾", "🛡️", CAT_UTIL, "本城24小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地", 0)),
+            Map.entry("shield72h", new ItemDef("shield72h", "72小时护盾", "🛡️", CAT_UTIL, "本城72小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地", 0)),
             Map.entry("marchOrd",  new ItemDef("marchOrd",  "行军令",   "🚩", CAT_UTIL, "仓库启用：行军速度+50%，持续1小时；情报使用：本队当前路段剩余时间缩短约1/3，去程与回程各限一次", 0)),
             Map.entry("signalJammingOrder", new ItemDef("signalJammingOrder", "通讯干扰令", "📡", CAT_UTIL, "对一支指向己方城市的敌军行军使用：延长剩余行军时间20%，最多2分钟；每支行军单程限用一次", 0)),
             Map.entry("feintOrder", new ItemDef("feintOrder", "佯动诱敌令", "🎭", CAT_UTIL, "对一支指向己方城市的敌军行军使用：延长剩余行军时间40%，最多4分钟；每支行军单程限用一次", 0)),
@@ -148,9 +98,21 @@ public record ItemDef(
     );
 
     /** 凭证与军衔共用定义，且不加入任何付费宝箱的产物列表。 */
+    /** 护盾时长由服务端白名单决定，旧 shield 库存继续代表 8 小时，各档可混合顺延。 */
+    public static final Map<String, Integer> SHIELD_HOURS = Map.of(
+            "shield2h", 2, "shield", 8, "shield12h", 12, "shield24h", 24, "shield72h", 72);
+
     public static final Map<String, ItemDef> ITEMS;
     static {
         Map<String, ItemDef> items = new java.util.LinkedHashMap<>(BASE_ITEMS);
+        for (var gear : OfficerEquipmentDef.ITEMS.values()) {
+            items.put(gear.key(), new ItemDef(gear.key(), gear.name(), "🎖️", "equipment", gear.description(), 0));
+            String box = "box_" + gear.setKey();
+            items.putIfAbsent(box, new ItemDef(box, OfficerEquipmentDef.boxName(box), "📦", CAT_OFFICER,
+                    "固定获得十二件装备，每部位一件；Lv." + gear.requiredLevel() + "可穿戴；同套3/6/9/12件共鸣", 0));
+        }
+        items.put("officerPreparationParts", new ItemDef("officerPreparationParts", "军备零件", "🧰", CAT_OFFICER,
+                "用于军官部位整备；完成军备日常和周常获得", 0));
         for (var rank : MilitaryRankDef.RANKS) {
             if (rank.tier() == 1) continue;
             items.put(rank.certificateKey(), new ItemDef(rank.certificateKey(), rank.certificateName(), "🎖️",

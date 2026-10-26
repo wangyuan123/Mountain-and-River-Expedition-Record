@@ -199,7 +199,7 @@ class IncomingIntelligenceTest extends BaseServiceTest {
         assertEquals(0L, saved.getReadAt());
         assertEquals(1, scoutReportRepository.countUnreadByPlayerId(defender.getId()));
         assertEquals("defender", data.get("perspective"));
-        assertEquals("invader", data.get("attackerName"));
+        assertEquals("统帅" + attacker.getId(), data.get("attackerName"));
         assertEquals(city.getName(), data.get("targetName"));
         assertEquals(100, data.get("x"));
         assertEquals(100, data.get("y"));
@@ -236,7 +236,7 @@ class IncomingIntelligenceTest extends BaseServiceTest {
         var incoming = (List<Map<String, Object>>) views.getWorld(defender.getId(), 0, 0, 1).get("incoming");
         assertEquals(1, incoming.size());
         assertEquals("march-" + march.getId(), incoming.get(0).get("id"));
-        assertEquals("invader", incoming.get(0).get("fromName"));
+        assertEquals("统帅" + attacker.getId(), incoming.get(0).get("fromName"));
         assertEquals("守方主城", incoming.get(0).get("targetName"));
         assertEquals(100, incoming.get(0).get("targetX"));
         assertEquals(march.getStartAt(), incoming.get(0).get("startAt"));

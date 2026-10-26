@@ -1,0 +1,286 @@
+Browser tab: 2, Title: "山河远征录 - 文字战争策略游戏", URL: "http://localhost:8081/".
+1 AXWebArea 山河远征录 - 文字战争策略游戏, URL: localhost:8081/
+	2 container screen
+		3 container header
+			4 container topbar
+				102 button 头像 远征统帅_163822 已连接, Help: 点击展开指挥官档案、主题与设置
+					103 image 头像
+					104 text 远征统帅_163822
+					105 text 已连接
+				106 text 🎖️ 论坛
+				107 text 💎 100
+			12 container navbar
+				108 container Description: 左右滑动查看更多导航, ID: gameNavViewport
+					109 container 第1组导航
+						110 text 首页
+						111 text 后勤
+						112 text 军工
+						113 text 军官
+						114 text 军队
+						115 text 地图
+						116 container
+							117 text 军情 !
+						118 container
+							119 text 战报 1
+						120 text 聊天
+						121 container
+							122 text 电报 3
+						123 container
+							124 text 任务 !
+						125 text 军团
+						126 text 仓库
+						127 text 科技
+						128 text 军校
+						129 text 对战
+					130 container 第2组导航
+						131 pop up button Description: 切换城市, Help: 当前城市：新城市（主城）
+						132 text 战术
+						133 text 排名
+						134 text 商城
+				135 container 导航分页
+					136 button 切换到第1组导航
+					137 button 切换到第2组导航
+		101 container view
+			138 text 城市
+			139 text 新城市
+			140 text ✎
+			141 text 坐标 (3,388) 和平
+			377 text 📋 战报 12 条 >
+			143 container homeModuleList
+				144 container
+					145 button Description: 调整军官将领顺序, Help: 拖动排序，或用上下方向键移动
+					146 text 军官将领 已招募 2 名
+					147 button 去招募 >, Help: 点击前往军校 · 招募将领
+					148 button 查看弗雷德里克·库克详情
+						149 text 闲置
+						150 text 弗雷德里克·库克
+						151 text Lv.100
+						152 text (满)
+						153 text 军事
+						154 text 169
+						155 text 后勤
+						156 text 88
+						157 text 学识
+						158 text 72
+						159 text  绝境反击Lv3
+					160 button 查看理查德·韦伯详情
+						161 text 市长
+						162 text 理查德·韦伯
+						163 text Lv.1
+						164 text 军事
+						165 text 83
+						166 text 后勤
+						167 text 100
+						168 text 学识
+						169 text 82
+						170 text  三军统帅Lv2
+					171 text 共  2  名将领 · 市长:  理查德·韦伯  · 指挥官:  未任命
+					172 button 参谋部 >, Help: 前往参谋部 · 军官管理
+				173 container
+					174 button Description: 调整军队总览顺序, Help: 拖动排序，或用上下方向键移动
+					175 text 军队总览 带兵上限 600000
+					176 button 全屏展开军队总览
+					177 button 去出征 >
+					178 container 军队总览，三排排列，左右滑动查看全部兵种
+						179 button Description: 查看步兵-加兰德步枪兵（M1）详情, Help: 步兵-加兰德步枪兵（M1） × 950000
+							180 image 步兵-加兰德步枪兵（M1）
+							181 text 步兵(M1)
+							182 text 950000
+						183 button Description: 查看卡车-十轮大卡（CCKW-353）详情, Help: 卡车-十轮大卡（CCKW-353） × 990000
+							184 image 卡车-十轮大卡（CCKW-353）
+							185 text 卡车(CCKW-353)
+							186 text 990000
+						187 button Description: 查看装甲车-猎鹿犬防空型（T17E2）详情, Help: 装甲车-猎鹿犬防空型（T17E2） × 943750
+							188 image 装甲车-猎鹿犬防空型（T17E2）
+							189 text 装甲车(T17E2)
+							190 text 943750
+						191 button Description: 查看侦查装甲车-灰狗（M8）详情, Help: 侦查装甲车-灰狗（M8） × 502907
+							192 image 侦查装甲车-灰狗（M8）
+							193 text 侦查装甲车(M8)
+							194 text 502907
+						195 button Description: 查看轻型坦克-斯图亚特（M5A1）详情, Help: 轻型坦克-斯图亚特（M5A1） × 943750
+							196 image 轻型坦克-斯图亚特（M5A1）
+							197 text 轻型坦克(M5A1)
+							198 text 943750
+						199 button Description: 查看重型坦克-斯大林（IS-2）详情, Help: 重型坦克-斯大林（IS-2） × 843750
+							200 image 重型坦克-斯大林（IS-2）
+							201 text 重型坦克(IS-2)
+							202 text 843750
+						203 button Description: 查看突击炮-自行加榴炮（ISU-152）详情, Help: 突击炮-自行加榴炮（ISU-152） × 853750
+							204 image 突击炮-自行加榴炮（ISU-152）
+							205 text 突击炮(ISU-152)
+							206 text 853750
+						207 button Description: 查看反坦克火箭车-喀秋莎（BM-13）详情, Help: 反坦克火箭车-喀秋莎（BM-13） × 843750
+							208 image 反坦克火箭车-喀秋莎（BM-13）
+							209 text 反坦克火箭车(BM-13)
+							210 text 843750
+						211 button Description: 查看特种兵-英国突击队（Commando）详情, Help: 特种兵-英国突击队（Commando） × 943750
+							212 image 特种兵-英国突击队（Commando）
+							213 text 特种兵(Commando)
+							214 text 943750
+						215 button Description: 查看战斗机-野马（P-51）详情, Help: 战斗机-野马（P-51） × 793750
+							216 image 战斗机-野马（P-51）
+							217 text 战斗机(P-51)
+							218 text 793750
+						219 button Description: 查看轰炸机-飞行堡垒（B-17G）详情, Help: 轰炸机-飞行堡垒（B-17G） × 793750
+							220 image 轰炸机-飞行堡垒（B-17G）
+							221 text 轰炸机(B-17G)
+							222 text 793750
+						223 button Description: 查看运输机-空中列车（C-47）详情, Help: 运输机-空中列车（C-47） × 1000000
+							224 image 运输机-空中列车（C-47）
+							225 text 运输机(C-47)
+							226 text 1000000
+						227 button Description: 查看驱逐舰-弗莱彻级（Fletcher）详情, Help: 驱逐舰-弗莱彻级（Fletcher） × 916821
+							228 image 驱逐舰-弗莱彻级（Fletcher）
+							229 text 驱逐舰(Fletcher)
+							230 text 916821
+						231 button Description: 查看潜艇-小鲨鱼级（Gato）详情, Help: 潜艇-小鲨鱼级（Gato） × 999824
+							232 image 潜艇-小鲨鱼级（Gato）
+							233 text 潜艇(Gato)
+							234 text 999824
+						235 button Description: 查看战列舰-衣阿华级（Iowa）详情, Help: 战列舰-衣阿华级（Iowa） × 917286
+							236 image 战列舰-衣阿华级（Iowa）
+							237 text 战列舰(Iowa)
+							238 text 917286
+						239 button Description: 查看航母-埃塞克斯级（Essex）详情, Help: 航母-埃塞克斯级（Essex） × 984100
+							240 image 航母-埃塞克斯级（Essex）
+							241 text 航母(Essex)
+							242 text 984100
+					243 text 可用兵力  14220938  / 600000 指挥官: 未任命 详情 > 待救治伤兵  1364373 （不计入可用兵力），需在 
+					244 link Description: 伤兵营, Value: localhost:8081/#wounded
+					245 text  消耗黄金或钻石治疗后归队。 城防总览 城防 Lv.0 · 工事 0/0
+					246 button 全屏展开城防总览
+					247 button 去城防 >
+					248 container 城防总览，单排横向排列，左右滑动查看全部工事
+						249 button Description: 查看碉堡详情, Help: 碉堡 × 0 · 坚固掩体,反步兵,近程高血防
+							250 text 碉堡
+							251 text ×0
+							252 text 坚固掩体,反步兵,近程高血防
+						253 button Description: 查看榴弹炮详情, Help: 榴弹炮 × 0 · 远程压制,反步兵与建筑
+							254 text 榴弹炮
+							255 text ×0
+							256 text 远程压制,反步兵与建筑
+						257 button Description: 查看反坦克炮详情, Help: 反坦克炮 × 0 · 穿甲火力,反装甲
+							258 text 反坦克炮
+							259 text ×0
+							260 text 穿甲火力,反装甲
+						261 button Description: 查看防空炮详情, Help: 防空炮 × 0 · 对空火力,反空军
+							262 text 防空炮
+							263 text ×0
+							264 text 对空火力,反空军
+					265 button 墙体 0 生命 · 0 防御 工事容量 0 / 0
+						266 text 墙体 
+						267 text 0
+						268 text  生命 · 
+						269 text 0
+						270 text  防御
+						271 text 工事容量 
+						272 text 0
+						273 text  / 0
+				274 container
+					275 button Description: 调整后勤顺序, Help: 拖动排序，或用上下方向键移动
+					276 text 资源
+					277 button 粮食 粮食: 356621770 -84271679/h, Help: 粮食 当前: 356621770 (已达生产容量，-84271679/h)
+						278 image 粮食
+						279 text 粮食:
+						378 text 356621770
+						281 text -84271679/h
+					282 button 钢铁 钢铁: 5117376 +0/h, Help: 钢铁 当前: 5117376 (已达生产容量，停止产出)
+						283 image 钢铁
+						284 text 钢铁:
+						285 text 5117376
+						286 text +0/h
+					287 button 石油 石油: 470458296 +0/h, Help: 石油 当前: 470458296 (已达生产容量，停止产出)
+						288 image 石油
+						289 text 石油:
+						290 text 470458296
+						291 text +0/h
+					292 button 稀矿 稀矿: 5106389 +0/h, Help: 稀矿 当前: 5106389 (已达生产容量，停止产出)
+						293 image 稀矿
+						294 text 稀矿:
+						295 text 5106389
+						296 text +0/h
+					297 button 黄金 黄金: 865 +1326/h, Help: 黄金 当前: 865 (+1326/h)
+						298 image 黄金
+						299 text 黄金:
+						379 text 865
+						380 text +1326/h
+					302 button 平民 平民: 1293/12000 +365/h 可征召 1293 · 民心 71, Help: 平民 当前: 1293/12000 (+365/h)
+						303 image 平民
+						304 text 平民:
+						381 text 1293
+						306 text /
+						307 text 12000
+						308 text +365/h
+						382 text 可征召 1293 · 民心 71
+				310 container
+					311 button Description: 调整世界聊天顺序, Help: 拖动排序，或用上下方向键移动
+					312 text 📡 世界聊天 实时通联 COMM-LINK // 战术公频 CH-01 · 144.80 MHz ONLINE
+					313 container worldChatBox
+						314 text 9月18日 16:54
+						315 button Description: 深入山林开荒种地的统帅头像, Help: 点击与该玩家私聊
+						316 button 深入山林开荒种地:, Help: 点击与该玩家私聊
+						317 text 测试
+						318 button Description: 深入山林开荒种地的统帅头像, Help: 点击与该玩家私聊
+						319 button 深入山林开荒种地:, Help: 点击与该玩家私聊
+						320 text 你们说的啥？
+						321 text 9月21日 17:26
+						322 text [系统] ⚔ 雨天唐纳德 对 新城市 宣战!
+						323 text 9月23日 11:44
+						324 button Description: 深入山林开荒种地的统帅头像, Help: 点击与该玩家私聊
+						325 button 深入山林开荒种地:, Help: 点击与该玩家私聊
+						326 text <script>123</script>
+						327 button Description: 深入山林开荒种地的统帅头像, Help: 点击与该玩家私聊
+						328 button 深入山林开荒种地:, Help: 点击与该玩家私聊
+						329 text <script>window.alert('123')</script>
+						330 text 9月23日 13:36
+						331 text [系统] ⚔ 深入山林开荒种地 对玩家「雨天唐纳德」宣战!
+						332 text 9月26日 15:19
+						333 button Description: user1的统帅头像, Help: 点击与该玩家私聊
+						334 button user1:, Help: 点击与该玩家私聊
+						335 text 新手报到 希望大家多多帮助
+						336 text 9月26日 16:17
+						337 button Description: user1的统帅头像, Help: 点击与该玩家私聊
+						338 button user1:, Help: 点击与该玩家私聊
+						339 text 台湾
+						340 text 9月27日 21:23
+						341 text [系统] ⚔ 雨天唐纳德 对玩家「深入山林开荒种地」宣战!
+						342 text 9月28日 19:37
+						343 button Description: 雨天唐纳德的统帅头像, Help: 点击与该玩家私聊
+						344 button 雨天唐纳德:, Help: 点击与该玩家私聊
+						345 text 几天没上线 卡被打麻了
+						346 text 9月30日 00:10
+						347 button Description: 深入山林开荒种地的统帅头像, Help: 点击与该玩家私聊
+						348 button 深入山林开荒种地:, Help: 点击与该玩家私聊
+						349 text 打卡的出来说句话
+						350 text 10月5日 22:50
+						351 button Description: 深入山林开荒种地的统帅头像, Help: 点击与该玩家私聊
+						352 button 深入山林开荒种地:, Help: 点击与该玩家私聊
+						353 text 测试123
+						354 text 10月9日 15:53
+						355 text [系统] ⚔ 深入山林开荒种地 对玩家「user9」宣战!
+						356 text 10月11日 19:47
+						357 text [系统] ⚔ 深入山林开荒种地 对玩家「user9」宣战!
+						358 text 10月15日 12:09
+						359 text [系统] ⚔ 深入山林开荒种地 对玩家「玉树临风」宣战!
+						360 text 今天 17:15
+						361 text [系统] 玩家「远征统帅_163822」打开了「黄金箱」，获得：黄金×4136。 [系统] 玩家「远征统帅_163822」打开了「黄金箱」，获得：黄金×2595。
+						362 text 今天 20:38
+						363 text [系统] ⚔ codex_playtest_20261023_1451 对玩家「深入山林开荒种地」宣战!
+					364 text >
+					365 text field (settable) worldChatInput
+					366 button [ 发送 ], ID: worldChatSendBtn
+						367 text [
+						368 text 发送
+						369 text ]
+		64 container Description: 游戏导航与备案信息, ID: footbar
+			370 container 底部快捷导航
+				371 button 首页
+				372 button 地图
+				373 button 任务
+				374 button 邮件
+				375 button 设置
+				376 button 返回顶部
+			383 text 北京时间：2026年10月23日 23:44:13
+
+The focused UI element is 1 AXWebArea 山河远征录 - 文字战争策略游戏, URL: localhost:8081/

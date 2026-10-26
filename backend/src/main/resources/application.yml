@@ -32,6 +32,15 @@ jwt:
   expiration: ${WARGAME_JWT_EXPIRATION:86400000}  # 24 hours in milliseconds
 
 game:
+  bot:
+    enabled: ${WARGAME_BOT_ENABLED:true}
+    poll-interval: ${WARGAME_BOT_POLL_INTERVAL:5000}
+    batch-size: ${WARGAME_BOT_BATCH_SIZE:10}
+  radar:
+    radius-per-level: ${WARGAME_RADAR_RADIUS_PER_LEVEL:1}
+    reminder-window-ms: ${WARGAME_RADAR_REMINDER_WINDOW_MS:60000}
+    recovery-interval-ms: ${WARGAME_RADAR_RECOVERY_INTERVAL_MS:5000}
+    page-size: ${WARGAME_RADAR_PAGE_SIZE:50}
   security:
     allowed-origins: ${WARGAME_ALLOWED_ORIGINS:http://localhost:8081,http://127.0.0.1:8081,http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174}
   server:

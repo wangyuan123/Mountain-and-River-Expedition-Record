@@ -43,6 +43,15 @@ public class WorldController {
         return Map.of("success", true, "state", gameStateService.getGameState(playerId));
     }
 
+    public record SupportRecovery(Long marchId, Long cityId) {}
+    /** 待安置部队只能由原玩家选择合法自有城市，不能通过撤回创建或复制资产。 */
+    @PostMapping("/support/recover")
+    public Map<String, Object> recoverSupport(@RequestBody SupportRecovery request) {
+        Long playerId = authService.getCurrentPlayer().getId();
+        marchService.recoverSupport(playerId, request.marchId(), request.cityId());
+        return Map.of("success", true, "state", gameStateService.getGameState(playerId));
+    }
+
     public WorldController(AuthService authService, WorldService worldService,
                            MarchService marchService, GameStateService gameStateService) {
         this.authService = authService;

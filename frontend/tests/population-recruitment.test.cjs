@@ -145,3 +145,22 @@ test('普通动员仍增加500人，新道具支持商城购买及仓库直接�
   await flush();
   assert.deepEqual(f.calls, [['use', 'populationOrder'], ['buy', item.id], ['use', item.id]]);
 });
+
+test('平民与民情政务弹窗右上角提供 ✕ 按钮且底部提供关闭按钮，点击均能关闭弹窗', () => {
+  const f1 = setup();
+  assert.ok(f1.modal.innerHTML.includes('id="closePopDetailX"'), '弹窗右上角应包含 ✕ 关闭按钮');
+  assert.ok(f1.modal.innerHTML.includes('modal-close-btn'), '关闭按钮应具备 modal-close-btn 类名');
+  const closeX = f1.modal.querySelector('#closePopDetailX');
+  assert.ok(closeX, '应能查询到右上角 ✕ 按钮');
+  closeX.onclick();
+  assert.equal(f1.body.children.length, 0, '点击右上角 ✕ 按钮应关闭弹窗');
+  assert.equal(f1.context.__refreshPopDetailModal, null, '关闭弹窗应清理全局刷新句柄');
+
+  const f2 = setup();
+  assert.ok(f2.modal.innerHTML.includes('id="closePopDetail"'), '弹窗底部应包含关闭按钮');
+  const closeBtn = f2.modal.querySelector('#closePopDetail');
+  assert.ok(closeBtn, '应能查询到底部关闭按钮');
+  closeBtn.onclick();
+  assert.equal(f2.body.children.length, 0, '点击底部关闭按钮应关闭弹窗');
+  assert.equal(f2.context.__refreshPopDetailModal, null, '关闭弹窗应清理全局刷新句柄');
+});

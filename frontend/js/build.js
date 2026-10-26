@@ -8,8 +8,8 @@ window.Game = window.Game || {};
   var D = G.DATA;
   var Core = G.Core;
   var WILD_BASE_CAP = (G.Constants && G.Constants.wildOccupation && G.Constants.wildOccupation.baseCap) || 2;
-  // 每城开局提供 6 支施工队，新建、升级与拆除共用；与后端 BuildService.MAX_CONCURRENT 保持一致。
-  var MAX_CONCURRENT = (G.Constants && G.Constants.buildMaxConcurrent) || 6;
+  // 每城开局提供 3 支施工队，新建、升级与拆除共用；与后端 BuildService.MAX_CONCURRENT 保持一致。
+  var MAX_CONCURRENT = (G.Constants && G.Constants.buildMaxConcurrent) || 3;
   var DEFAULT_BUILD_DURATION = { baseSeconds: 30, growth: 2.4, capSeconds: 24 * 60 * 60 };
   // 核心建筑后期工期单独拉长；需与服务端 BuildService 的曲线保持一致。
   var SPECIAL_BUILD_DURATIONS = {
@@ -21,7 +21,8 @@ window.Game = window.Game || {};
   function buildCost(id, fromLevel) {
     var b = D.buildings[id];
     var lv = (fromLevel == null) ? (Core.state.buildings[id] || 0) : fromLevel;
-    var mul = Math.pow(b.growth, lv) * Core.buildMul();
+    // 营造技能只改变工期，材料预览必须与后端实际扣费一致。
+    var mul = Math.pow(b.growth, lv) * (Core.buildCostMul ? Core.buildCostMul() : Core.buildMul());
     var cost = {};
     for (var k in b.baseCost) cost[k] = Math.floor(b.baseCost[k] * mul);
     return cost;
@@ -97,15 +98,7 @@ window.Game = window.Game || {};
   }
 
   function timeText(seconds) {
-    seconds = Math.max(0, Math.ceil(seconds));
-    var days = Math.floor(seconds / 86400);
-    var hours = Math.floor((seconds % 86400) / 3600);
-    var mins = Math.floor((seconds % 3600) / 60);
-    var secs = seconds % 60;
-    if (days > 0) return days + '天' + hours + '小时' + mins + '分';
-    if (hours > 0) return hours + '小时' + mins + '分' + (secs > 0 ? (String(secs).padStart(2, '0') + '秒') : '');
-    if (mins > 0) return mins + '分' + String(secs).padStart(2, '0') + '秒';
-    return secs + '秒';
+    return G.formatDuration(seconds);
   }
 
   function renderBuildingIcon(icon, alt, extraClass) {
@@ -505,7 +498,7 @@ window.Game = window.Game || {};
       }
       var groupKey = Core.buildingGroup(id);
       if (fromLv === 0 && groupKey && Core.groupSlotsRemaining(groupKey) <= 0) {
-        G.toast(this.GROUPS[groupKey].name + '建筑已达当前上限' + Core.groupSlotsCap(groupKey) + '栋（含新建中），可升级市政厅扩容（最高36栋），或拆除建筑、取消新建');
+        G.toast(this.GROUPS[groupKey].name + '建筑已达上限' + Core.groupSlotsCap(groupKey) + '栋（含新建中），请拆除建筑或取消新建');
         return;
       }
       var toLv = fromLv + 1;
@@ -821,7 +814,7 @@ window.Game = window.Game || {};
 
         var totalLv = isMulti ? Core.buildingLevel(id) : (s.buildings[id] || 0);
         statsRows += '<div class="bdetail-stat-row">' +
-          '<span class="bdetail-stat-lbl">对应资源上限</span>' +
+          '<span class="bdetail-stat-lbl">对应生产容量</span>' +
           '<span class="bdetail-stat-val">' + G.fmt(totalLv * 200000) + '</span>' +
         '</div>';
       }
@@ -857,7 +850,7 @@ window.Game = window.Game || {};
       }
       if (b.resBonus) {
         statsRows += '<div class="bdetail-stat-row">' +
-          '<span class="bdetail-stat-lbl">全城产出加成</span>' +
+          '<span class="bdetail-stat-lbl">本城四种基础资源产量</span>' +
           '<span class="bdetail-stat-val">+' + (curLv * b.resBonus) + '%</span>' +
         '</div>';
       }
@@ -880,16 +873,21 @@ window.Game = window.Game || {};
         '</div>';
       }
       if (id === 'lab') {
-        var spdBonus = curLv > 1 ? (curLv - 1) * 10 : 0;
-        var nextSpd = curLv < max ? curLv * 10 : spdBonus;
+        // 按科技目录统计准入种类；配套设施另行校验，升级中心不缩短工期。
+        var access = G.researchAccess(curLv);
+        var nextAccess = G.researchAccess(curLv + 1);
         statsRows += '<div class="bdetail-stat-row">' +
-          '<span class="bdetail-stat-lbl">科研耗时加速</span>' +
-          '<span class="bdetail-stat-val">-' + spdBonus + '%' + (curLv < max ? (' (下级 -' + nextSpd + '%)') : '') + '</span>' +
+          '<span class="bdetail-stat-lbl">开放科技种类</span>' +
+          '<span class="bdetail-stat-val">' + access.unlocked.length + ' 项' + (curLv < max ? (' (下级 ' + nextAccess.unlocked.length + ' 项)') : '') + '</span>' +
         '</div>';
         statsRows += '<div class="bdetail-stat-row">' +
-          '<span class="bdetail-stat-lbl">科技研发层级</span>' +
-          '<span class="bdetail-stat-val">最高开放至 ' + Math.min(10, curLv) + ' 阶科技</span>' +
+          '<span class="bdetail-stat-lbl">科技可研究等级</span>' +
+          '<span class="bdetail-stat-val">最高 Lv.' + access.level + (curLv < max ? (' (下级 Lv.' + nextAccess.level + ')') : '') + '</span>' +
         '</div>';
+        if (access.newlyUnlocked.length) {
+          statsRows += '<div class="bdetail-stat-row"><span class="bdetail-stat-lbl">下级新增科技</span>' +
+            '<span class="bdetail-stat-val">' + access.newlyUnlocked.map(function (techId) { return G.escapeHtml(G.DATA.techs[techId].name); }).join('、') + '</span></div>';
+        }
       }
       if (id === 'radar') {
         statsRows += '<div class="bdetail-stat-row">' +
@@ -897,18 +895,34 @@ window.Game = window.Game || {};
           '<span class="bdetail-stat-val">+' + curLv + ' 格' + (curLv < max ? (' (下级 +' + (curLv + 1) + ' 格)') : '') + '</span>' +
         '</div>';
         statsRows += '<div class="bdetail-stat-row">' +
-          '<span class="bdetail-stat-lbl">防空雷达预警</span>' +
-          '<span class="bdetail-stat-val">预警进犯敌军，支撑雷达预警科技</span>' +
+          '<span class="bdetail-stat-lbl">城防雷达预警</span>' +
+          '<span class="bdetail-stat-val">支撑扫描与科研；基本来袭提醒无需建筑，不增加战斗属性或联防覆盖</span>' +
+        '</div>';
+      }
+      if (id === 'guild_radar') {
+        statsRows += '<div class="bdetail-stat-row">' +
+          '<span class="bdetail-stat-lbl">联防覆盖半径</span>' +
+          '<span class="bdetail-stat-val">' + curLv + ' 格' + (curLv < max ? (' (下级 ' + (curLv + 1) + ' 格)') : '') + '</span>' +
+        '</div>';
+        statsRows += '<div class="bdetail-stat-row">' +
+          '<span class="bdetail-stat-lbl">区域军情</span>' +
+          '<span class="bdetail-stat-val">开启后，敌对行军路线经过覆盖区且威胁团友即预警，无需等待部队进入；未入团时暂无区域军情</span>' +
+        '</div>';
+      }
+      if (id === 'radar' || id === 'guild_radar') {
+        statsRows += '<div class="bdetail-stat-row">' +
+          '<span class="bdetail-stat-lbl">情报明细</span>' +
+          '<span class="bdetail-stat-val">由雷达预警科技等级决定，与建筑等级无关</span>' +
         '</div>';
       }
       if (id === 'liaison') {
         statsRows += '<div class="bdetail-stat-row">' +
           '<span class="bdetail-stat-lbl">情报联络枢纽</span>' +
-          '<span class="bdetail-stat-val">盟军外交与前线情报联络 (Lv.' + curLv + ')</span>' +
+          '<span class="bdetail-stat-val">联防雷达建设配套 (Lv.' + curLv + ')，不直接增加情报明细</span>' +
         '</div>';
         statsRows += '<div class="bdetail-stat-row">' +
           '<span class="bdetail-stat-lbl">战略科研前置</span>' +
-          '<span class="bdetail-stat-val">支持雷达预警科研与高级战车工业</span>' +
+          '<span class="bdetail-stat-val">支持雷达预警等科研；不直接解锁外交权限</span>' +
         '</div>';
       }
       if (id === 'command') {
@@ -1436,6 +1450,7 @@ window.Game = window.Game || {};
       staff:        'img/buildings/garden/staff.webp',
       lab:          'img/buildings/garden/lab.webp',
       radar:        'img/buildings/garden/radar.webp',
+      guild_radar:  'img/buildings/garden/radar.webp',
       wall:         'img/buildings/garden/wall.webp',
       apron:        'img/buildings/garden/apron.webp',
       liaison:      'img/buildings/garden/liaison.webp',
@@ -1526,8 +1541,8 @@ window.Game = window.Game || {};
       if (b.produces) {
         stats += '<div class="bcard-stat"><span class="bcard-stat-ico">' + G.resourceIconHtml(b.produces) + '</span><span class="bcard-stat-name">产出</span><span class="bcard-stat-val">' + G.DATA.resources[b.produces].name + ' ' + G.fmt(Core.produceOf(id)) + '/h</span></div>';
       }
-      if (b.produces && b.slots && multi) stats += '<div class="bcard-stat"><span class="bcard-stat-ico">📦</span><span class="bcard-stat-name">资源上限</span><span class="bcard-stat-val">' + G.fmt(totalLv * 200000) + '</span></div>';
-      if (b.produces && !multi) stats += '<div class="bcard-stat"><span class="bcard-stat-ico">📦</span><span class="bcard-stat-name">资源上限</span><span class="bcard-stat-val">' + G.fmt((s.buildings[id] || 0) * 200000) + '</span></div>';
+      if (b.produces && b.slots && multi) stats += '<div class="bcard-stat"><span class="bcard-stat-ico">📦</span><span class="bcard-stat-name">生产容量</span><span class="bcard-stat-val">' + G.fmt(totalLv * 200000) + '</span></div>';
+      if (b.produces && !multi) stats += '<div class="bcard-stat"><span class="bcard-stat-ico">📦</span><span class="bcard-stat-name">生产容量</span><span class="bcard-stat-val">' + G.fmt((s.buildings[id] || 0) * 200000) + '</span></div>';
       if (b.popPer) {
         var popBase = (s.buildings[id] || 0) * b.popPer;
         var popTotal = multi ? totalLv * b.popPer : popBase;
@@ -1545,14 +1560,16 @@ window.Game = window.Game || {};
         stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🏰</span><span class="bcard-stat-name">城防武器容量</span><span class="bcard-stat-val">' + G.fmt((s.buildings[id] || 0) * (b.fortCapPerLevel || 3000)) + '</span></div>';
       }
       if (b.airSpdBonus) stats += '<div class="bcard-stat"><span class="bcard-stat-ico">✈</span><span class="bcard-stat-name">空军飞行航速</span><span class="bcard-stat-val">+' + ((s.buildings[id] || 0) * b.airSpdBonus) + '%</span></div>';
-      if (b.resBonus) stats += '<div class="bcard-stat"><span class="bcard-stat-ico">📈</span><span class="bcard-stat-name">全资源产出</span><span class="bcard-stat-val">+' + ((s.buildings[id] || 0) * b.resBonus) + '%</span></div>';
+      if (b.resBonus) stats += '<div class="bcard-stat"><span class="bcard-stat-ico">📈</span><span class="bcard-stat-name">四种基础资源产量</span><span class="bcard-stat-val">+' + ((s.buildings[id] || 0) * b.resBonus) + '%</span></div>';
       if (id === 'command') stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🗺️</span><span class="bcard-stat-name">本城野地上限</span><span class="bcard-stat-val">' + (WILD_BASE_CAP + (s.buildings[id] || 0)) + '</span></div>';
       if (id === 'academy') stats += '<div class="bcard-stat"><span class="bcard-stat-ico">⭐</span><span class="bcard-stat-name">五星概率</span><span class="bcard-stat-val">+' + ((Math.min(10, s.buildings[id] || 0)) * 0.3).toFixed(1) + '%</span></div>';
       if (id === 'lab') {
-        var labBonus = (s.buildings[id] || 0) > 1 ? ((s.buildings[id] || 0) - 1) * 10 : 0;
-        stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🔬</span><span class="bcard-stat-name">科研加速</span><span class="bcard-stat-val">-' + labBonus + '%</span></div>';
+        var labAccess = G.researchAccess(s.buildings[id] || 0);
+        stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🔬</span><span class="bcard-stat-name">科技准入</span><span class="bcard-stat-val">' + labAccess.unlocked.length + ' 项 / 最高 Lv.' + labAccess.level + '</span></div>';
       }
       if (id === 'radar') stats += '<div class="bcard-stat"><span class="bcard-stat-ico">📡</span><span class="bcard-stat-name">侦察视野</span><span class="bcard-stat-val">+' + (s.buildings[id] || 0) + ' 格</span></div>';
+      if (id === 'guild_radar') stats += '<div class="bcard-stat"><span class="bcard-stat-ico">📡</span><span class="bcard-stat-name">联防覆盖半径</span><span class="bcard-stat-val">' + (s.buildings[id] || 0) + ' 格</span></div>';
+      if (id === 'radar' || id === 'guild_radar') stats += '<div class="bcard-stat"><span class="bcard-stat-name">情报明细</span><span class="bcard-stat-val">由雷达预警科技等级决定</span></div>';
       if (id === 'liaison') stats += '<div class="bcard-stat"><span class="bcard-stat-ico">📞</span><span class="bcard-stat-name">情报联络</span><span class="bcard-stat-val">Lv.' + (s.buildings[id] || 0) + '</span></div>';
       if (id === 'headquarters') stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🚩</span><span class="bcard-stat-name">出征队伍</span><span class="bcard-stat-val">' + (5 + (s.buildings[id] || 0)) + ' 支</span></div>';
       if (stats) expand += '<div class="bcard-stats">' + stats + '</div>';
@@ -1647,7 +1664,7 @@ window.Game = window.Game || {};
 
     GROUPS: {
       res: { name: '后勤', order: ['farm', 'refinery', 'oilfield', 'raremine'] },
-      army: { name: '军工', order: ['command', 'house', 'factory', 'lightfactory', 'heavyfactory', 'airport', 'port', 'shipyard', 'academy', 'staff', 'headquarters', 'lab', 'radar', 'wall', 'apron', 'liaison', 'depot', 'transit', 'hospital', 'exchange', 'prisoner_camp'] }
+      army: { name: '军工', order: ['command', 'house', 'factory', 'lightfactory', 'heavyfactory', 'airport', 'port', 'shipyard', 'academy', 'staff', 'headquarters', 'lab', 'radar', 'guild_radar', 'wall', 'apron', 'liaison', 'depot', 'transit', 'hospital', 'exchange', 'prisoner_camp'] }
     },
 
     renderSlotGrid: function (groupKey, jobs, s) {
@@ -1787,9 +1804,9 @@ window.Game = window.Game || {};
       var groupCap = Core.groupSlotsCap(groupKey);
       if (groupKey === 'res') {
         h += '<div class="desc">后勤建筑: ' + groupUsed + '/' + groupCap + ' 栋（含新建中） | 四类建筑共享额度，自由分配</div>';
-        h += '<div class="desc">基础16栋 + 市政厅每级2栋，满级36栋 | 市政厅限制建筑等级上限' + (buildDisc > 0 ? ' | 建筑加速 -' + buildDisc.toFixed(0) + '%' : '') + '</div>';
+        h += '<div class="desc">固定' + groupCap + '个卡槽 | 市政厅限制建筑等级上限' + (buildDisc > 0 ? ' | 建筑加速 -' + buildDisc.toFixed(0) + '%' : '') + '</div>';
       } else {
-        h += '<div class="desc">军工建筑: ' + groupUsed + '/' + groupCap + ' 栋（含新建中） | 基础16栋 + 市政厅每级2栋，满级36栋 | 民居、军需仓库、军工厂自由分配，其余建筑限1栋 | 市政厅限制建筑等级上限' + (buildDisc > 0 ? ' | 建筑加速 -' + buildDisc.toFixed(0) + '%' : '') + '</div>';
+        h += '<div class="desc">军工建筑: ' + groupUsed + '/' + groupCap + ' 栋（含新建中） | 固定' + groupCap + '个卡槽 | 民居、军需仓库、军工厂自由分配，其余建筑限1栋 | 市政厅限制建筑等级上限' + (buildDisc > 0 ? ' | 建筑加速 -' + buildDisc.toFixed(0) + '%' : '') + '</div>';
       }
       h += '<div id="buildQueueBar">' + this.renderQueueHtml(jobs, s) + '</div>';
       h += this.renderSlotGrid(groupKey, jobs, s);
@@ -1921,6 +1938,7 @@ window.Game = window.Game || {};
         }
         var actualCount = (resp && resp.count) || count;
         G.toast(resp.message || ('⚡ ' + info.name + ' ×' + actualCount + ' 使用成功'));
+        if (resp && resp.completed && G.Sound && typeof G.Sound.play === 'function') G.Sound.play('upgrade');
         if (G.MainQuest && G.MainQuest.refresh) G.MainQuest.refresh();
         Core.render();
         if (G.Onboarding && G.Onboarding.refresh) G.Onboarding.refresh();

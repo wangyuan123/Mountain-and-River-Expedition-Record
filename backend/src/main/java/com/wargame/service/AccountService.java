@@ -4,6 +4,7 @@ import com.wargame.model.entity.*;
 import com.wargame.repository.*;
 import com.wargame.security.AccountException;
 import com.wargame.security.RateLimiter;
+import com.wargame.util.DurationText;
 import com.wargame.util.JwtUtil;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
@@ -31,6 +32,7 @@ public class AccountService {
     private final JwtUtil jwt;
     private final RateLimiter limiter;
     private final WebSocketPushService push;
+    @org.springframework.beans.factory.annotation.Autowired private RadarEvents radarEvents;
 
     @Value("${game.account.cooldown-days:7}")
     private int cooldownDays = 7;
@@ -156,7 +158,7 @@ public class AccountService {
     public void limit(String key, int count, long window) {
         if (!limiter.allow(key, count, window)) {
             long retry = limiter.retryAfterSeconds(key, window);
-            throw new AccountException("RATE_LIMITED", "操作过于频繁，请在 " + retry + " 秒后重试", retry);
+            throw new AccountException("RATE_LIMITED", "操作过于频繁，请在 " + DurationText.seconds(retry) + "后重试", retry);
         }
     }
 
@@ -209,7 +211,7 @@ public class AccountService {
                         + "o.cancelReason = '参与账号已注销' where o.status in ('PENDING', 'ACCEPTED') "
                         + "and (o.initiatorId = :id or o.defenderId = :id)")
                 .setParameter("id", id).setParameter("now", now).executeUpdate();
-        for (String entity : List.of("GuildApplication", "GuildMember", "UnitLoadout", "UnitEquipmentOrder", "OfficerEquipment", "ArmyProductionQueue",
+        for (String entity : List.of("GuildApplication", "GuildMember", "UnitLoadout", "UnitEquipmentOrder", "OfficerEquipmentProgress", "OfficerEquipment", "ArmyProductionQueue",
                 "TechResearchQueue", "PrisonerUnit", "PrisonerOperation", "BattleSettlement", "WoundedUnit", "Building", "ArmyUnit", "Fortification", "Technology", "Officer", "Construction",
                 "Resources", "CityState", "Academy", "PlayerItem", "ScoutReport", "PlayerQuest", "PlayerGuide", "March", "ChatMessage")) {
             em.createQuery("delete from " + entity + " e where e.playerId = :id").setParameter("id", id).executeUpdate();
@@ -223,6 +225,9 @@ public class AccountService {
         em.createQuery("update Player p set p.warAgainstId = null, p.warAt = 0, p.warEndAt = 0, p.version = p.version + 1 "
                 + "where p.warAgainstId = :id").setParameter("id", id).executeUpdate();
         em.createQuery("delete from PlayerCity c where c.ownerId = :id").setParameter("id", id).executeUpdate();
+        em.createQuery("delete from RadarContact c where c.observerId = :id").setParameter("id", id).executeUpdate();
+        em.createQuery("delete from RadarMonitor m where m.playerId = :id").setParameter("id", id).executeUpdate();
+        radarEvents.changed();
         player.setActiveCityId(null);
         player.setCityPosX(null); player.setCityPosY(null);
         player.setPosX(null); player.setPosY(null);

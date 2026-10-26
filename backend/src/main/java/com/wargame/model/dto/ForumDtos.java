@@ -41,6 +41,7 @@ public final class ForumDtos {
             String guildName,
             String guildRole,
             Integer gold,
+            String cityName,
             Integer cityPosX,
             Integer cityPosY,
             boolean canPost,

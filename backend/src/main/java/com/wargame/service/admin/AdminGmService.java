@@ -101,12 +101,12 @@ public class AdminGmService {
                     String resType = op.substring(5); // gold, diamond, food, steel, oil, rare
                     Resources res = resourcesRepository.findFirstByPlayerIdOrderByCitySlotAsc(pid)
                             .orElseThrow(() -> new IllegalArgumentException("玩家资源数据不存在"));
-                    if ("gold".equals(resType)) res.setGold((res.getGold() != null ? res.getGold() : 0) + amount);
+                    if ("gold".equals(resType)) res.addResource("gold", amount);
                     else if ("diamond".equals(resType)) res.setDiamond((res.getDiamond() != null ? res.getDiamond() : 0) + amount);
-                    else if ("food".equals(resType)) res.setFood((res.getFood() != null ? res.getFood() : 0) + amount);
-                    else if ("steel".equals(resType)) res.setSteel((res.getSteel() != null ? res.getSteel() : 0) + amount);
-                    else if ("oil".equals(resType)) res.setOil((res.getOil() != null ? res.getOil() : 0) + amount);
-                    else if ("rare".equals(resType)) res.setRare((res.getRare() != null ? res.getRare() : 0) + amount);
+                    else if ("food".equals(resType)) res.addResource("food", amount);
+                    else if ("steel".equals(resType)) res.addResource("steel", amount);
+                    else if ("oil".equals(resType)) res.addResource("oil", amount);
+                    else if ("rare".equals(resType)) res.addResource("rare", amount);
                     resourcesRepository.save(res);
                     result = String.format("成功为玩家 %d 增加 %s: %d", pid, resType, amount);
                     break;

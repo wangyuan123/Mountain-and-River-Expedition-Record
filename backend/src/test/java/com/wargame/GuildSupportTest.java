@@ -23,6 +23,10 @@ class GuildSupportTest extends BaseServiceTest {
     @Autowired BattleSessionRepository battles;
     @Autowired MarchTargetService targets;
     @Autowired WoundedUnitRepository wounded;
+    @Autowired GarrisonFoodService food;
+    @Autowired CityConquestService conquest;
+    @Autowired TechResearchQueueRepository researchQueues;
+    @Autowired ArmyProductionQueueRepository productionQueues;
     private Player sender, receiver, outsider;
     private PlayerCity source, destination, foreignCity;
     private Guild guild;
@@ -49,7 +53,7 @@ class GuildSupportTest extends BaseServiceTest {
     private PlayerCity city(Player owner, int x, int slot) {
         PlayerCity city = new PlayerCity(); city.setOwnerId(owner.getId()); city.setCitySlot(slot); city.setName("城" + x);
         city.setWorldId(world.getId()); city.setX(x); city.setY(10); city.setLevel(1);
-        playerCityRepository.save(city);
+        city.setAcceptGarrison(true); playerCityRepository.save(city);
         if (slot == 0) {
             owner.setCityPosX(x); owner.setCityPosY(10); owner.setActiveCityId(city.getId()); playerRepository.save(owner);
         } else {
@@ -76,6 +80,33 @@ class GuildSupportTest extends BaseServiceTest {
         return armyUnitRepository.findByPlayerIdAndCitySlotAndType(playerId, slot, unit).stream().mapToInt(ArmyUnit::getCount).sum();
     }
 
+    @Test void supplyPanelCountsReceivingCityTroopsGarrisonsAndItsOwnReduction() {
+        March march = dispatch("reinforce", Map.of("infantry", 100), Map.of()); arrive(march);
+        createTechnology(receiver.getId(), "log_food", 10);
+        try (var ignored = scope.enter(destination)) {
+            var view = food.supplyView(receiver.getId());
+            assertEquals(5, view.get("ownPerHour"));
+            assertEquals(50, view.get("supportPerHour"));
+            assertEquals(55, view.get("totalPerHour"));
+            assertEquals(view, gameStateService.getGameState(receiver.getId()).get("foodSupply"));
+        }
+        try (var ignored = scope.enter(source)) {
+            assertEquals(140, food.supplyView(sender.getId()).get("totalPerHour"), "已派驻的100步兵不再在来源城重复收费");
+        }
+    }
+
+    @Test void activatingGarrisonFoodKeepsTheOrdinaryLedgersFractionExactlyOnce() {
+        long now = com.wargame.util.GameClock.now();
+        destination.setGarrisonFoodAt(now);
+        Resources stock = getResources(receiver.getId());
+        stock.setFoodAccrual(-.25);
+        food.settle(destination, now + 3600);
+        assertEquals(999.74, stock.getFood() + destination.getGarrisonFoodRemainder(), 1e-8);
+        assertEquals(0, stock.getFoodAccrual());
+        food.settle(destination, now + 7200);
+        assertEquals(999.73, stock.getFood() + destination.getGarrisonFoodRemainder(), 1e-8);
+    }
+
     @Test void transportDeliversOnceAndReturnsToOriginalOwner() {
         March march = dispatch("transport", Map.of("truck", 2), Map.of("food", 80, "gold", 20));
         assertFalse(marchService.previewRoute(sender.getId(), request(destination, "transport", Map.of("truck", 2), Map.of())).isEmpty());
@@ -86,6 +117,18 @@ class GuildSupportTest extends BaseServiceTest {
         arrive(march);
         assertEquals(20, troop(sender.getId(), 0, "truck")); assertEquals(1080, stock.getFood());
         assertFalse(marchRepository.existsById(march.getId()));
+    }
+
+    @Test void garrisonAndBattleSourcesUsePublicCommanderNameInsteadOfLoginName() {
+        sender.setDisplayName("驻防公开昵称"); playerRepository.saveAndFlush(sender);
+        March march = dispatch("reinforce", Map.of("infantry", 100), Map.of()); arrive(march);
+        assertEquals("驻防公开昵称", support.received(receiver.getId()).get(0).get("senderName"));
+        GuildSupportService.Defense defense;
+        try (var ignored = scope.enter(destination)) {
+            defense = support.defense(destination, targets.getTargetArmy(destination));
+        }
+        Map<?, ?> source = (Map<?, ?>) defense.sources().get(march.getId().toString());
+        assertEquals("驻防公开昵称", source.get("playerName"));
     }
 
     @Test void receiverBranchGetsCargoWithoutChangingMainCity() {
@@ -170,9 +213,9 @@ class GuildSupportTest extends BaseServiceTest {
         try (var ignored = scope.enter(destination)) {
             defense = support.defense(destination, targets.getTargetArmy(destination));
         }
-        assertEquals(110, defense.army().get("infantry"));
+        assertEquals(110, com.wargame.model.constants.UnitEquipmentEffects.aggregate(defense.army()).get("infantry"));
         March late = dispatch("reinforce", Map.of("infantry", 50), Map.of()); arrive(late);
-        GuildSupportService.Losses losses = support.settle(JsonUtil.toJson(defense.support()), defense.army(), Map.of("infantry", 55));
+        GuildSupportService.Losses losses = support.settle(JsonUtil.toJson(defense.support()), defense.army(), Map.of("infantry", 5, "infantry~s1", 50));
         assertEquals(5, losses.initial().get("infantry") - losses.survivors().get("infantry"));
         assertEquals(50, JsonUtil.parseIntMap(first.getArmy()).get("infantry"));
         assertEquals(50, JsonUtil.parseIntMap(late.getArmy()).get("infantry"));
@@ -183,14 +226,15 @@ class GuildSupportTest extends BaseServiceTest {
     @Test void fullBattleUsesGarrisonSnapshotBlocksRecallAndReturnsOnlySurvivors() {
         outsider.setWarAgainstId(receiver.getId()); outsider.setWarAt(1L); outsider.setWarEndAt(System.currentTimeMillis() + 3600000); playerRepository.save(outsider);
         March reinforcement = dispatch("reinforce", Map.of("infantry", 100), Map.of()); arrive(reinforcement);
-        createTechnology(sender.getId(), "log_medical", 10);
         createArmyUnit(outsider.getId(), "htank", 1000);
         giveResources(outsider.getId(), 100000, 100000, 100000, 100000, 100000);
         March attack = marchService.createDispatch(outsider.getId(), request(destination, "plunder", Map.of("htank", 1000), Map.of()));
         marchService.processMarches(outsider.getId(), attack.getArriveAt() + 1);
         BattleSession session = battles.findByMarchId(attack.getId()).orElseThrow();
-        assertEquals(110, JsonUtil.parseIntMap(session.getInitialDefender()).get("infantry"));
-        assertEquals(100, JsonUtil.parseIntMap(JsonUtil.toJson(JsonUtil.parseObjMap(session.getDefenderSupport()).get(reinforcement.getId().toString()))).get("infantry"));
+        // 医疗在开战后升级，终局采用新回收率，战场攻防仍采用开战来源快照。
+        createTechnology(sender.getId(), "log_medical", 10);
+        assertEquals(110, com.wargame.model.constants.UnitEquipmentEffects.aggregate(JsonUtil.parseIntMap(session.getInitialDefender())).get("infantry"));
+        assertEquals(100, JsonUtil.parseIntMap(JsonUtil.toJson(JsonUtil.parseObjMap(session.getDefenderSupport()).get(reinforcement.getId().toString()))).get("infantry~s1"));
         assertThrows(IllegalArgumentException.class, () -> marchService.cancelMarch(sender.getId(), reinforcement.getId()));
         assertThrows(IllegalArgumentException.class, () -> marchService.dismissSupport(receiver.getId(), reinforcement.getId()));
         for (int i = 0; i < 30 && battles.existsById(session.getId()); i++) marchService.executeTacticalRound(outsider.getId(), attack.getId(), null);
@@ -198,8 +242,8 @@ class GuildSupportTest extends BaseServiceTest {
         var battleReport = scoutReportRepository.findByPlayerId(receiver.getId()).stream()
                 .filter(report -> "battle".equals(report.getType())).findFirst().orElseThrow();
         var data = JsonUtil.parseObjMap(battleReport.getData());
-        var initial = JsonUtil.parseIntMap(JsonUtil.toJson(data.get("initialDefender")));
-        var surviving = JsonUtil.parseIntMap(JsonUtil.toJson(data.get("survivorDefender")));
+        var initial = com.wargame.model.constants.UnitEquipmentEffects.aggregate(JsonUtil.parseIntMap(JsonUtil.toJson(data.get("initialDefender"))));
+        var surviving = com.wargame.model.constants.UnitEquipmentEffects.aggregate(JsonUtil.parseIntMap(JsonUtil.toJson(data.get("survivorDefender"))));
         assertEquals(initial.get("infantry") - surviving.getOrDefault("infantry", 0), ((Number) data.get("losses")).intValue());
         int stationed = marchRepository.findById(reinforcement.getId()).map(m -> JsonUtil.parseIntMap(m.getArmy()).getOrDefault("infantry", 0)).orElse(0);
         assertTrue(stationed < 100);
@@ -207,6 +251,15 @@ class GuildSupportTest extends BaseServiceTest {
         var injured = wounded.findByPlayerIdAndCitySlotAndExpiresAtGreaterThanOrderByExpiresAtAscIdAsc(sender.getId(), 0, System.currentTimeMillis());
         assertFalse(injured.isEmpty());
         assertTrue(injured.stream().allMatch(batch -> batch.getCityId().equals(source.getId())));
+        var senderReport = scoutReportRepository.findByPlayerId(sender.getId()).stream().filter(r -> "battle".equals(r.getType())).findFirst().orElseThrow();
+        var medical = JsonUtil.parseList(JsonUtil.toJson(JsonUtil.parseObjMap(senderReport.getData()).get("formationRecovery")));
+        assertEquals(1, medical.size()); assertEquals(10, medical.get(0).get("medicalLevel")); assertEquals(50, medical.get(0).get("recoveryPercent"));
+        assertEquals(source.getId().longValue(), ((Number) medical.get(0).get("cityId")).longValue());
+        assertTrue(((Number) medical.get(0).get("sampledAt")).longValue() > 0);
+        assertFalse(medical.get(0).containsKey("playerId"));
+        var enemyReport = scoutReportRepository.findByPlayerId(outsider.getId()).stream().filter(r -> "battle".equals(r.getType())).findFirst().orElseThrow();
+        var enemyMedical = JsonUtil.parseList(JsonUtil.toJson(JsonUtil.parseObjMap(enemyReport.getData()).get("formationRecovery")));
+        assertTrue(enemyMedical.stream().noneMatch(row -> medical.get(0).get("formationId").equals(row.get("formationId"))));
         if (stationed > 0) { marchService.cancelMarch(sender.getId(), reinforcement.getId()); arrive(reinforcement); }
         assertEquals(100 + stationed, troop(sender.getId(), 0, "infantry"));
     }
@@ -328,4 +381,191 @@ class GuildSupportTest extends BaseServiceTest {
         March returning = marchRepository.findById(reinforcement.getId()).orElseThrow();
         assertFalse(returning.getStationed()); assertTrue(returning.getReturning());
     }
+    @Test void allSupportParticipatesEvenWhenOwnSortieIsEmptyAndAcceptanceClosedAfterArrival() {
+        March first = dispatch("reinforce", Map.of("infantry", 100), Map.of()); arrive(first);
+        March late = dispatch("reinforce", Map.of("infantry", 50), Map.of()); arrive(late);
+        receiver.setSortieArmy("{}"); playerRepository.save(receiver);
+        support.setAcceptance(receiver.getId(), destination.getId(), false);
+        try (var ignored = scope.enter(destination)) {
+            var defense = support.defense(destination, targets.getTargetArmy(destination));
+            assertEquals(150, defense.army().values().stream().mapToInt(Integer::intValue).sum());
+            assertEquals(2, defense.support().size()); assertFalse(defense.army().containsKey("infantry"));
+        }
+        assertThrows(IllegalArgumentException.class, () -> dispatch("reinforce", Map.of("infantry", 10), Map.of()));
+    }
+
+    @Test void closingAcceptanceInTransitReturnsCargoAndLeavesPreviouslyStationedTroops() {
+        March stationed = dispatch("reinforce", Map.of("infantry", 100), Map.of()); arrive(stationed);
+        March enroute = dispatch("reinforce", Map.of("infantry", 10), Map.of("food", 50));
+        support.setAcceptance(receiver.getId(), destination.getId(), false); arrive(enroute);
+        assertTrue(enroute.getReturning()); assertEquals(50, JsonUtil.parseIntMap(enroute.getCarryRes()).get("food"));
+        assertTrue(stationed.getStationed());
+    }
+
+    @Test void targetPaysFractionalFoodAndOnlyActualSurvivingTroopsCount() {
+        March m = dispatch("reinforce", Map.of("infantry", 100), Map.of()); arrive(m);
+        long start = m.getGarrisonFoodAt();
+        var receiverStock = resourcesRepository.findByPlayerId(receiver.getId()).orElseThrow();
+        var senderStock = resourcesRepository.findByPlayerId(sender.getId()).orElseThrow();
+        receiverStock.setFood(10000); destination.setGarrisonFoodRemainder(0); long originalSender = senderStock.getFood();
+        double rate = (food.ownUse(destination) + food.supportUse(destination)) / 3600.0;
+        for (int i = 1; i <= 10; i++) food.settle(destination, start + i * 100);
+        assertEquals(10000 - rate, receiverStock.getFood() + destination.getGarrisonFoodRemainder(), 1e-6);
+        assertEquals(originalSender, senderStock.getFood());
+        food.settle(destination, start + 1000);
+        assertEquals(10000 - rate, receiverStock.getFood() + destination.getGarrisonFoodRemainder(), 1e-6);
+        m.setArmy("{\"infantry\":50}");
+        double nextRate = (food.ownUse(destination) + food.supportUse(destination)) / 3600.0;
+        food.settle(destination, start + 2000);
+        assertEquals(10000 - rate - nextRate, receiverStock.getFood() + destination.getGarrisonFoodRemainder(), 1e-6);
+    }
+
+    @Test void famineReturnsWholeUnlockedArmiesAtActualDepletionTimeAndNoLongerBillsThem() {
+        March m = dispatch("reinforce", Map.of("infantry", 100), Map.of()); arrive(m);
+        var stock = resourcesRepository.findByPlayerId(receiver.getId()).orElseThrow(); stock.setFood(1);
+        destination.setGarrisonFoodRemainder(0);
+        long start = destination.getGarrisonFoodAt();
+        double rate = food.ownUse(destination) + food.supportUse(destination);
+        long depletion = start + (long) Math.ceil(3600000 / rate);
+        food.settle(destination, start + 3600000);
+        assertTrue(m.getReturning()); assertFalse(m.getStationed());
+        assertEquals(depletion, m.getStartAt()); assertEquals(100, JsonUtil.parseIntMap(m.getArmy()).get("infantry"));
+        assertFalse(food.mayArrive(destination)); assertEquals(0, stock.getFood());
+    }
+
+    @Test void originalBranchLossRetainsFightingSupportAndSurvivorsRemainOriginalOwner() {
+        PlayerCity branch = city(sender, 12, 1);
+        var stock = resourcesRepository.findByPlayerIdAndCitySlot(sender.getId(), 1).orElseThrow(); stock.setFood(10000); stock.setOil(10000);
+        ArmyUnit troops = new ArmyUnit(); troops.setPlayerId(sender.getId()); troops.setCitySlot(1); troops.setType("infantry"); troops.setCount(100); armyUnitRepository.save(troops);
+        March m;
+        try (var ignored = scope.enter(branch)) { m = dispatch("reinforce", Map.of("infantry", 100), Map.of()); arrive(m); }
+        outsider.setMilitaryRank(17); outsider.setWarAgainstId(receiver.getId()); outsider.setWarAt(1L); outsider.setWarEndAt(System.currentTimeMillis() + 3600000); playerRepository.save(outsider);
+        createArmyUnit(outsider.getId(), "infantry", 10); giveResources(outsider.getId(), 100000, 100000, 100000, 100000, 100000);
+        March attack = marchService.createDispatch(outsider.getId(), request(destination, "plunder", Map.of("infantry", 10), Map.of()));
+        marchService.processMarches(outsider.getId(), attack.getArriveAt() + 1);
+        BattleSession battle = battles.findByMarchId(attack.getId()).orElseThrow();
+        branch.setMorale(0); playerCityRepository.save(branch); conquest.takeOver(outsider.getId(), branch, attack.getArriveAt() + 2);
+        assertTrue(marchRepository.existsById(m.getId())); assertEquals(sender.getId(), m.getPlayerId()); assertTrue(m.getStationed());
+        for (int i = 0; i < 35 && battles.existsById(battle.getId()); i++) marchService.executeTacticalRound(outsider.getId(), attack.getId(), null);
+        assertFalse(battles.existsById(battle.getId()));
+        var retained = marchRepository.findById(m.getId()).orElseThrow(); assertEquals(sender.getId(), retained.getPlayerId());
+        assertTrue(retained.getReturning() || retained.isDisplaced()); assertEquals(0, retained.getCitySlot());
+        assertTrue(scoutReportRepository.findByPlayerId(sender.getId()).stream().anyMatch(r -> "battle".equals(r.getType())));
+    }
+
+    @Test void zeroStockAndBalancedExistingEconomyStillCannotReceiveUnfundedExtraTroops() {
+        var stock = resourcesRepository.findByPlayerId(receiver.getId()).orElseThrow(); stock.setFood(0);
+        armyUnitRepository.deleteAll(armyUnitRepository.findByPlayerId(receiver.getId()));
+        assertTrue(food.supplied(destination));
+        assertFalse(food.mayArrive(destination, Map.of("infantry", 100), Map.of()));
+        assertTrue(food.mayArrive(destination, Map.of("infantry", 100), Map.of("food", 50)));
+        destination.setGarrisonFoodRemainder(.5);
+        assertTrue(food.mayArrive(destination, Map.of("infantry", 100), Map.of()));
+    }
+
+    @Test void branchPaysFoodWithItsOwnMayorAndReceivingPlayersTechnology() {
+        destination = city(receiver, 22, 1);
+        var stock = resourcesRepository.findByPlayerIdAndCitySlot(receiver.getId(), 1).orElseThrow(); stock.setFood(10000);
+        createTechnology(receiver.getId(), "log_food", 10);
+        var mayor = createOfficer(receiver.getId(), "mayor", 1, 1, 1); mayor.setCitySlot(1);
+        mayor.setSkills("[{\"id\":\"ration\",\"lv\":5}]"); officerRepository.save(mayor);
+        March m = dispatch("reinforce", Map.of("infantry", 100), Map.of()); arrive(m);
+        stock.setFood(10000); destination.setGarrisonFoodRemainder(0);
+        assertEquals(.1, food.reduction(destination), 1e-8);
+        var mainStock = resourcesRepository.findByPlayerIdAndCitySlot(receiver.getId(), 0).orElseThrow();
+        long mainFood = mainStock.getFood(), senderFood = resourcesRepository.findByPlayerId(sender.getId()).orElseThrow().getFood();
+        double rate = food.supportUse(destination);
+        food.settle(destination, m.getGarrisonFoodAt() + 3600000);
+        assertEquals(10000 - rate, stock.getFood() + destination.getGarrisonFoodRemainder(), 1e-6);
+        assertEquals(mainFood, mainStock.getFood()); assertEquals(senderFood, resourcesRepository.findByPlayerId(sender.getId()).orElseThrow().getFood());
+    }
+
+    @Test void lateSupportCanLeaveButFightingSupportStaysAndFamineDoesNotEraseBattleLosses() {
+        March first = dispatch("reinforce", Map.of("infantry", 100), Map.of()); arrive(first);
+        createArmyUnit(outsider.getId(), "infantry", 10);
+        giveResources(outsider.getId(), 100000, 100000, 100000, 100000, 100000);
+        outsider.setWarAgainstId(receiver.getId()); outsider.setWarAt(1L); outsider.setWarEndAt(System.currentTimeMillis() + 3600000); playerRepository.save(outsider);
+        March attack = marchService.createDispatch(outsider.getId(), request(destination, "plunder", Map.of("infantry", 10), Map.of()));
+        marchService.processMarches(outsider.getId(), attack.getArriveAt() + 1);
+        BattleSession battle = battles.findByMarchId(attack.getId()).orElseThrow();
+        March late = dispatch("reinforce", Map.of("infantry", 50), Map.of()); arrive(late);
+        assertFalse(JsonUtil.parseObjMap(battle.getDefenderSupport()).containsKey(late.getId().toString()));
+        marchService.dismissSupport(receiver.getId(), late.getId()); assertTrue(late.getReturning());
+        var stock = resourcesRepository.findByPlayerId(receiver.getId()).orElseThrow(); stock.setFood(0); destination.setGarrisonFoodRemainder(0);
+        food.enforce(destination, battle.getRoundDeadlineAt() - 1);
+        assertTrue(first.getStationed()); assertThrows(IllegalArgumentException.class, () -> marchService.cancelMarch(sender.getId(), first.getId()));
+        for (int i = 0; i < 35 && battles.existsById(battle.getId()); i++) marchService.executeTacticalRound(outsider.getId(), attack.getId(), null);
+        assertFalse(battles.existsById(battle.getId()));
+        assertTrue(marchRepository.findById(first.getId()).map(m -> m.getReturning() && !m.getStationed()).orElse(true));
+    }
+
+    @Test void oldGarrisonStartsFoodAtActivationWithoutChargingItsHistory() {
+        March m = dispatch("reinforce", Map.of("infantry", 100), Map.of()); arrive(m);
+        var stock = resourcesRepository.findByPlayerId(receiver.getId()).orElseThrow(); stock.setFood(10000);
+        destination.setGarrisonFoodAt(null); destination.setGarrisonFoodRemainder(0); m.setGarrisonFoodAt(null);
+        long now = com.wargame.util.GameClock.now() + 7200000;
+        food.settle(destination, now);
+        assertEquals(10000, stock.getFood()); assertEquals(now, destination.getGarrisonFoodAt());
+        food.settle(destination, now + 3600000);
+        assertEquals(10000 - food.ownUse(destination) - food.supportUse(destination), stock.getFood() + destination.getGarrisonFoodRemainder(), 1e-6);
+    }
+
+    @Test void defendingViewExposesOwnFormationContextsAndHidesEnemyConfiguration() {
+        March m = dispatch("reinforce", Map.of("infantry", 100), Map.of()); arrive(m);
+        createArmyUnit(outsider.getId(), "infantry", 100); giveResources(outsider.getId(), 100000, 100000, 100000, 100000, 100000);
+        outsider.setWarAgainstId(receiver.getId()); outsider.setWarAt(1L); outsider.setWarEndAt(System.currentTimeMillis() + 3600000); playerRepository.save(outsider);
+        March attack = marchService.createDispatch(outsider.getId(), request(destination, "plunder", Map.of("infantry", 100), Map.of()));
+        marchService.processMarches(outsider.getId(), attack.getArriveAt() + 1);
+        var defenderView = marchService.getTacticalBattle(receiver.getId(), attack.getId());
+        assertTrue(((Map<?, ?>) defenderView.get("unitContexts")).containsKey("infantry~s1"));
+        assertEquals(Map.of(), defenderView.get("defenderSkills")); assertEquals(Map.of(), defenderView.get("defenderTech"));
+        var attackView = marchService.getTacticalBattle(outsider.getId(), attack.getId());
+        assertFalse(((Map<?, ?>) attackView.get("unitContexts")).containsKey("infantry~s1"));
+        assertFalse(attackView.containsKey("jointDefense"));
+        assertThrows(IllegalArgumentException.class, () -> marchService.getTacticalBattle(sender.getId(), attack.getId()));
+    }
+
+    @Test void offlineFoodSplitsAtResearchCompletionInsteadOfApplyingOneRateToWholeInterval() {
+        March m = dispatch("reinforce", Map.of("infantry", 100), Map.of()); arrive(m);
+        long start = destination.getGarrisonFoodAt();
+        var stock = resourcesRepository.findByPlayerId(receiver.getId()).orElseThrow(); stock.setFood(10000); destination.setGarrisonFoodRemainder(0);
+        double oldUse = food.ownUse(destination) + food.supportUse(destination);
+        TechResearchQueue q = new TechResearchQueue(); q.setPlayerId(receiver.getId()); q.setTechType("log_food"); q.setTargetLevel(10);
+        q.setStartedAt(start); q.setFinishesAt(start + 1800000); q.setDurationSeconds(1800); researchQueues.save(q);
+        food.settle(destination, start + 3600000);
+        assertEquals(10000 - oldUse * .5 - oldUse * .5 * .5, stock.getFood() + destination.getGarrisonFoodRemainder(), 1e-6);
+        assertFalse(researchQueues.existsById(q.getId()));
+    }
+
+    @Test void offlineFoodSplitsAtProductionCompletionAndRepeatingSettlementDoesNotAddTroopsAgain() {
+        March m = dispatch("reinforce", Map.of("infantry", 100), Map.of()); arrive(m);
+        long start = destination.getGarrisonFoodAt();
+        var stock = resourcesRepository.findByPlayerId(receiver.getId()).orElseThrow(); stock.setFood(10000); destination.setGarrisonFoodRemainder(0);
+        double oldUse = food.ownUse(destination) + food.supportUse(destination);
+        ArmyProductionQueue q = new ArmyProductionQueue(); q.setPlayerId(receiver.getId()); q.setUnitType("infantry"); q.setUnitCount(100);
+        q.setStartedAt(start); q.setFinishesAt(start + 1800000); q.setDurationSeconds(1800); q.setSpeedMultiplier(1.0); productionQueues.save(q);
+        food.settle(destination, start + 3600000);
+        assertEquals(10000 - oldUse - 50, stock.getFood() + destination.getGarrisonFoodRemainder(), 1e-6);
+        assertEquals(110, troop(receiver.getId(), 0, "infantry"));
+        food.settle(destination, start + 3600000); assertEquals(110, troop(receiver.getId(), 0, "infantry"));
+    }
+
+    @Test void receiverTimelineReceivesOfflineSendersInArrivalOrderAndBillsOnlyStationedInterval() {
+        March first = dispatch("reinforce", Map.of("infantry", 50), Map.of());
+        March second = dispatch("reinforce", Map.of("infantry", 100), Map.of());
+        long start = Math.max(first.getStartAt(), second.getStartAt());
+        first.setArriveAt(start + 1800000); second.setArriveAt(start + 2700000);
+        marchRepository.saveAll(List.of(first, second));
+        destination.setGarrisonFoodAt(start); destination.setGarrisonFoodRemainder(0);
+        var stock = resourcesRepository.findByPlayerId(receiver.getId()).orElseThrow(); stock.setFood(10000);
+        double ownUse = food.ownUse(destination) * food.reduction(destination);
+        food.settle(destination, start + 3600000);
+        assertTrue(first.getStationed()); assertTrue(second.getStationed());
+        assertEquals(10000 - ownUse - 50 * .5 - 100 * .25, stock.getFood() + destination.getGarrisonFoodRemainder(), 1e-6);
+        food.settle(destination, start + 3600000);
+        marchService.processMarches(sender.getId(), start + 3600000);
+        assertEquals(150, support.stationed(destination).stream().mapToInt(m -> JsonUtil.parseIntMap(m.getArmy()).get("infantry")).sum());
+        assertEquals(10000 - ownUse - 50 * .5 - 100 * .25, stock.getFood() + destination.getGarrisonFoodRemainder(), 1e-6);
+    }
+
 }

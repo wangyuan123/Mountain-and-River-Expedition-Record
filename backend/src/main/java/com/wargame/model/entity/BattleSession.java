@@ -40,6 +40,10 @@ public class BattleSession extends VersionedEntity {
     @Column(name = "defender_equipment_sources", columnDefinition = "longtext")
     private String defenderEquipmentSources;
 
+    /** 新规则完整来源快照，null 的进行中战斗沿用旧引擎。 */
+    @Column(name = "joint_defense", columnDefinition = "longtext")
+    private String jointDefense;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

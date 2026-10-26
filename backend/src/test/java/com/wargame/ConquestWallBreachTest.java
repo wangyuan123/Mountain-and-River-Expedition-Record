@@ -35,6 +35,25 @@ class ConquestWallBreachTest {
     }
 
     @ParameterizedTest
+    @ValueSource(ints = {1, 10})
+    void carrierOverflowPrecedesBattleshipWallAttack(int wallLevel) {
+        var result = engine.resolveWorldRound(
+                Map.of("carrier", 1000, "battleship", 20000), Map.of("infantry", 1),
+                Map.of("carrier", 1000, "battleship", 1000), Map.of("infantry", 1000), 1000,
+                Map.of(), Map.of(), Map.of(), Map.of(), 0, 0, 0, 0, 1, 0,
+                Map.of(), Map.of(), CommandBonus.NONE, CommandBonus.NONE, "conquer", wall(wallLevel, true));
+
+        assertTrue(result.defenderArmy().isEmpty());
+        assertTrue(result.log().contains("余伤攻击敌城墙"), result.log());
+        assertTrue(result.log().contains("攻击敌城墙"), result.log());
+        var attackLines = result.log().lines().filter(line -> line.contains("墙体剩余生命")).toList();
+        assertEquals(2, attackLines.size(), result.log());
+        assertTrue(attackLines.get(0).startsWith("我方航母"), result.log());
+        assertTrue(attackLines.get(1).startsWith("我方战列舰"), result.log());
+        assertEquals(wallLevel == 1, result.finished());
+    }
+
+    @ParameterizedTest
     @CsvSource({"0,0,0", "1,250000,20", "2,500000,40", "3,750000,60", "4,1000000,80",
             "5,1250000,100", "6,1500000,120", "7,1750000,140", "8,2000000,160", "9,2250000,180", "10,2500000,200"})
     void levelsMatchApprovedGrowth(int level, long hp, int defense) {

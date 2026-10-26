@@ -10,11 +10,41 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
+@EntityListeners(com.wargame.service.RadarChangeListener.class)
 @Table(name = "player_cities")
 public class PlayerCity extends VersionedEntity implements CityEconomy {
 
+    @Column(name = "radar_enabled", nullable = false)
+    private boolean radarEnabled;
+
+    @Column(name = "radar_revision", nullable = false)
+    private long radarRevision;
+
+    /** 城市易主后必须由新城主重新启用联防，不能继承原城主授权。 */
+    public void setOwnerId(Long value) {
+        if (!java.util.Objects.equals(ownerId, value)) {
+            radarEnabled = false;
+            radarRevision++;
+        }
+        ownerId = value;
+    }
+
     @Column(name = "legacy_naval", nullable = false)
     private boolean legacyNaval = false;
+
+    @Column(name = "garrison_food_at")
+    private Long garrisonFoodAt;
+
+    /** 新老城市均需城主主动开启；关闭不移除已驻扎编队。 */
+    @Column(name = "accept_garrison", nullable = false)
+    private boolean acceptGarrison = false;
+    @Column(name = "garrison_food_remainder", nullable = false)
+    private double garrisonFoodRemainder;
+    @Column(name = "garrison_food_unmet", nullable = false)
+    private double garrisonFoodUnmet;
+    /** 缺粮告警每次补给中断只发一次；恢复后允许下一次告警。 */
+    @Column(name = "garrison_supply_warned", nullable = false)
+    private boolean garrisonSupplyWarned;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -1,0 +1,43 @@
+{
+  "checks": {
+    "capturedOfficer51": {
+      "defense": 277,
+      "preparation": {
+        "weapon": 5
+      },
+      "resonanceStages": 4,
+      "formerOwnerDenied": true
+    },
+    "capturedOfficer52": {
+      "defense": 277,
+      "preparation": {
+        "weapon": 5
+      },
+      "resonanceStages": 4,
+      "formerOwnerDenied": true
+    },
+    "conqueredCity178": {
+      "newOwnerCanAccess": true,
+      "formerOwnerDenied": true,
+      "cityName": "新城市"
+    },
+    "conqueredCity180": {
+      "newOwnerCanAccess": true,
+      "formerOwnerDenied": true,
+      "cityName": "重建主城"
+    },
+    "formerOwnerRecovery": {
+      "activeCityId": 181,
+      "cityName": "重建主城"
+    },
+    "supportReturn": {
+      "firstBattleSurvivingHeavyTanks": 9774,
+      "secondDeploymentLost": 100,
+      "finalHomeHeavyTanks": 9674,
+      "pendingTestMarches": 0
+    },
+    "migration125": "125\t1",
+    "misownedPreparationRows": 0,
+    "longRunningTransactions": ""
+  }
+}

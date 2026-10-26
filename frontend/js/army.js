@@ -111,19 +111,7 @@ window.Game = window.Game || {};
   }
 
   function formatSeconds(seconds) {
-    seconds = Math.max(0, Math.floor(seconds || 0));
-    var d = Math.floor(seconds / 86400);
-    var h = Math.floor((seconds % 86400) / 3600);
-    var m = Math.floor((seconds % 3600) / 60);
-    var s = seconds % 60;
-    var sStr = String(s).padStart(2, '0') + '秒';
-    if (d > 0) {
-      return d + '天' + h + '小时' + m + '分' + sStr;
-    }
-    if (h > 0) {
-      return h + '小时' + m + '分' + sStr;
-    }
-    return m ? m + '分' + sStr : s + '秒';
+    return G.formatDuration(seconds);
   }
 
   function updateQueue(forceRender) {
@@ -192,7 +180,7 @@ window.Game = window.Game || {};
           iconHtml +
           '<div class="army-queue-text">' +
             '<span class="n" title="' + G.escapeHtml(unit.name) + '">' + getUnitDisplayName(unit.name) + ' <b class="army-queue-qty">x' + item.count + '</b></span>' +
-            '<span class="lv">剩余 ' + formatSeconds(left) + '</span>' +
+            '<span class="lv">' + (item.startedAt > now ? '排队等待 ' + formatSeconds(Math.ceil((item.startedAt - now) / 1000)) + ' · ' : '') + '交付剩余 ' + formatSeconds(left) + '</span>' +
           '</div>' +
         '</div>' +
         '<div class="army-queue-actions">' +

@@ -85,9 +85,11 @@ test('医院未竣工或拆除后等级不足时不能解锁医疗科研，升�
 });
 
 test('医疗科研卡片与确认入口提示战地医院，前往操作打开军事区医院详情', () => {
-  const { G, toasts } = setup({ lab: 3, house: 1, academy: 1, farm: 1, transit: 10 });
+  const { G } = setup({ lab: 3, house: 1, academy: 1, farm: 1, transit: 10 });
+  const previews = [];
+  G.Prerequisites.preview = (...args) => previews.push(args);
   G.Tech.confirmResearch('log_medical');
-  assert.match(toasts[0], /本城战地医院 Lv.1/);
+  assert.deepEqual(previews, [['technologies', 'log_medical', 1]]);
   const view = { innerHTML: '' };
   G.Tech.setTab('后勤');
   G.Tech.renderView(view);

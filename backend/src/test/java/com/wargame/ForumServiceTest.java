@@ -23,6 +23,16 @@ public class ForumServiceTest extends BaseServiceTest {
     private ForumBoardRepository forumBoardRepository;
 
     @Test
+    void profileUsesThePlayersActualMainCity() {
+        Player player = createTestPlayer("forum-city", 30);
+        player.setCityName("新城市"); player.setCityPosX(32); player.setCityPosY(96);
+        playerRepository.save(player);
+        var profile = forumService.getProfile(player.getId());
+        assertEquals("新城市", profile.cityName());
+        assertEquals(32, profile.cityPosX()); assertEquals(96, profile.cityPosY());
+    }
+
+    @Test
     void testBoardsAndCreateTopicAndReply() {
         List<ForumBoard> boards = forumService.getBoards();
         assertFalse(boards.isEmpty(), "论坛初始板块不应为空");

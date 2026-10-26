@@ -8,12 +8,12 @@
   <meta name="theme-color" content="#f4f1ea">
   <meta name="description" content="山河远征录：经营城池、统筹资源、协同军团，在共享世界中制定你的战争策略。">
   <title>山河远征录 - 文字战争策略游戏</title>
-  <link rel="stylesheet" href="css/style.css?v=20261021-compact-settings">
+  <link rel="stylesheet" href="css/style.css?v=20261025-army-fullscreen-scroll">
   <link rel="stylesheet" href="css/guild.css?v=1.2-emblem-presets">
-  <link rel="stylesheet" href="css/world-map.css?v=5.6-home-cover-background">
+  <link rel="stylesheet" href="css/world-map.css?v=5.8-res-detail-height">
   <link rel="stylesheet" href="css/dispatch-route.css?v=1.5-campaign-modes">
-  <link rel="stylesheet" href="css/themes.css?v=3.5-compact-settings">
-  <link rel="stylesheet" href="css/classic-home.css?v=1.4-compact-settings">
+  <link rel="stylesheet" href="css/themes.css?v=20261025-compact-home-officer">
+  <link rel="stylesheet" href="css/classic-home.css?v=20261025-compact-army-summary">
   <link rel="stylesheet" href="css/onboarding.css?v=20261013-short-guide">
   <link rel="stylesheet" href="css/footer.css?v=1.2-portrait-info">
   <link rel="stylesheet" href="css/protection.css?v=1.0">
@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="css/login.css?v=1.20-password-eye-state">
   <link rel="stylesheet" href="css/sound.css?v=1.3-compact-settings">
   <link rel="stylesheet" href="css/prerequisites.css?v=1">
-  <link rel="stylesheet" href="css/officer.css?v=1.7-classic-attr-muted">
+  <link rel="stylesheet" href="css/officer.css?v=20261025-compact-equipment-ui">
   <link rel="stylesheet" href="css/chat-page.css?v=1.5-friends-modern-ui">
   <link rel="stylesheet" href="css/rankings.css?v=1.0">
   <link rel="stylesheet" href="css/unit-equipment.css?v=1.2-no-flash">
@@ -48,61 +48,62 @@
   </div>
   <div id="toast"></div>
 
-  <script src="js/constants.js?v=20261021-march-jitter-buffer"></script>
+  <script src="js/constants.js?v=20261026-shield-tiers"></script>
   <script src="js/sound.js?v=1.5-compact-settings"></script>
   <script src="js/theme.js?v=1.2-classic-home-constants"></script>
-  <script src="js/data.js?v=20261019-grain-waterway-v1"></script>
+  <script src="js/data.js?v=20261026-shield-tiers"></script>
   <script src="js/icons.js?v=1.0-resource-images"></script>
   <script src="js/servers.js?v=1"></script>
   <script src="js/api-client.js?v=20261020-server-clock"></script>
-  <script src="js/api.js?v=3.17-chat-friends-server-clock"></script>
+  <script src="js/api.js?v=20261026-universal-skill-book"></script>
   <script src="js/ws-client.js?v=20261020-server-clock"></script>
-  <script src="js/ws-handlers.js?v=20261020-server-clock"></script>
+  <script src="js/radar.js?v=20261024-radar-building-split"></script>
+  <script src="js/ws-handlers.js?v=20261024-guild-radar"></script>
   <script src="js/save.js?v=1.1-constants"></script>
-  <script src="js/core.js?v=20261020-server-clock"></script>
+  <script src="js/core.js?v=20261022-list-gather-live"></script>
   <script src="js/prerequisites.js?v=20261020-unit-unlock-v4"></script>
-  <script src="js/build.js?v=1.17-server-clock"></script>
+  <script src="js/build.js?v=20261024-radar-route-copy"></script>
   <script src="js/fort.js?v=1.5-positive-attacks"></script>
-  <script src="js/unit-equipment.js?v=20261020-server-clock"></script>
-  <script src="js/army.js?v=20261020-server-clock"></script>
+  <script src="js/unit-equipment.js?v=20261022-unified-duration"></script>
+  <script src="js/army.js?v=20261024-playtest-fixes"></script>
   <script src="js/battle-defaults.js?v=1.6-direct-tactics-save"></script>
-  <script src="js/wounded.js?v=1.2-diamond-rate-1000"></script>
+  <script src="js/wounded.js?v=20261024-playtest-fixes"></script>
   <script src="js/prisoners.js?v=20261020-unit-unlock-v4"></script>
-  <script src="js/officer.js?v=20261020-server-clock"></script>
-  <script src="js/tech.js?v=20261020-server-clock"></script>
+  <script src="js/officer.js?v=20261026-universal-skill-book"></script>
+  <script src="js/tech.js?v=20261024-research-access"></script>
   <script src="js/map.js?v=1.3-campaign-dispatch"></script>
   <script src="js/world-view.js?v=2.2-cities"></script>
-  <script src="js/dispatch-route.js?v=1.3-campaign-modes"></script>
-  <script src="js/world.js?v=20261020-server-clock"></script>
-  <script src="js/map-camera.js?v=1.8-minimum-default-scale"></script>
+  <script src="js/dispatch-route.js?v=20261022-unified-duration"></script>
+  <script src="js/world.js?v=20261024-radar-building-split"></script>
+  <script src="js/map-camera.js?v=20261022-default-zoom-30"></script>
   <script src="js/map-chunks.js?v=1.0"></script>
   <script src="js/map-layout.js?v=4.1-icon-bounds"></script>
   <script src="js/map-ocean.js?v=1.7-open-battlefields"></script>
   <script src="js/map-water.js?v=1.5-shore-glints"></script>
   <script src="js/map-terrain.js?v=4.22-strict-decoration-clearance"></script>
-  <script src="js/world-map.js?v=5.31-march-layer-refresh&t=20261020-clean-blend-v2"></script>
-  <script src="js/city-teleport.js?v=1.0"></script>
-  <script src="js/depot.js?v=20261020-server-clock"></script>
-  <script src="js/shop.js?v=1.4-remove-jewelry"></script>
+  <script src="js/world-map.js?v=20261024-radar-building-split&t=20261020-clean-blend-v2"></script>
+  <script src="js/city-teleport.js?v=20261024-playtest-fixes"></script>
+  <script src="js/depot.js?v=20261026-universal-skill-book"></script>
+  <script src="js/shop.js?v=20261023-officer-twelve-pieces"></script>
   <script src="js/market.js?v=1.2-nav-rename"></script>
-  <script src="js/chat.js?v=1.6-report-share"></script>
-  <script src="js/private-chat.js?v=1.6-friends-privacy"></script>
-  <script src="js/friends.js?v=1.1-friends-modern-ui"></script>
-  <script src="js/mail.js?v=20261020-server-clock"></script>
-  <script src="js/guild.js?v=2.3-shared-emblem"></script>
-  <script src="js/rankings.js?v=1.0"></script>
+  <script src="js/chat.js?v=20261022-unified-duration"></script>
+  <script src="js/private-chat.js?v=20261022-unified-duration"></script>
+  <script src="js/friends.js?v=20261024-playtest-fixes"></script>
+  <script src="js/mail.js?v=20261022-unified-duration"></script>
+  <script src="js/guild.js?v=20261022-unified-duration"></script>
+  <script src="js/rankings.js?v=20261024-playtest-fixes"></script>
   <script src="js/recharge.js?v=3.1-remove-monthly-cards"></script>
-  <script src="js/battle.js?v=20261021-defender-report-logs"></script>
-  <script src="js/pvp.js?v=20261020-server-clock"></script>
+  <script src="js/battle.js?v=20261024-playtest-final-state"></script>
+  <script src="js/pvp.js?v=20261022-unified-duration"></script>
   <script src="js/task-quests.js?v=1.1"></script>
-  <script src="js/task.js?v=20261020-server-clock"></script>
-  <script src="js/onboarding.js?v=20261020-unit-unlock-v4"></script>
-  <script src="js/main-quest.js?v=20261020-server-clock"></script>
-  <script src="js/cities.js?v=20261020-server-clock"></script>
-  <script src="js/main-view.js?v=4.28-compact-settings"></script>
+  <script src="js/task.js?v=20261022-unified-duration"></script>
+  <script src="js/onboarding.js?v=20261024-city-defense-radar"></script>
+  <script src="js/main-quest.js?v=20261022-unified-duration"></script>
+  <script src="js/cities.js?v=20261024-city-capacity-tip"></script>
+  <script src="js/main-view.js?v=20261025-compact-home-officer"></script>
   <script src="js/player-profile.js?v=20261020-server-clock"></script>
-  <script src="js/protection.js?v=1.0"></script>
-  <script src="js/main.js?v=20261020-server-clock"></script>
+  <script src="js/protection.js?v=20261022-unified-duration"></script>
+  <script src="js/main.js?v=20261022-unified-duration"></script>
   <script src="js/account.js?v=3.0-protection"></script>
 </body>
 </html>

@@ -159,18 +159,24 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
     }
 
     public void sendToPlayer(Long playerId, String message) {
-        Set<WebSocketSession> sessions = getSessions(playerId);
-        if (sessions.isEmpty()) return;
-
-        TextMessage textMessage = new TextMessage(message);
-        for (WebSocketSession session : sessions) {
-            send(session, textMessage);
-        }
+        trySendToPlayer(playerId, message);
     }
 
-    private void send(WebSocketSession session, TextMessage message) {
-        if (!session.isOpen()) return;
-        if (!validSession(session)) { closeExpired(session); return; }
+    public boolean trySendToPlayer(Long playerId, String message) {
+        Set<WebSocketSession> sessions = getSessions(playerId);
+        if (sessions.isEmpty()) return false;
+
+        TextMessage textMessage = new TextMessage(message);
+        boolean delivered = false;
+        for (WebSocketSession session : sessions) {
+            delivered = send(session, textMessage) || delivered;
+        }
+        return delivered;
+    }
+
+    private boolean send(WebSocketSession session, TextMessage message) {
+        if (!session.isOpen()) return false;
+        if (!validSession(session)) { closeExpired(session); return false; }
         try {
             // 聊天禁用也覆盖实时广播，不能通过 WebSocket 绕过聊天历史接口限制。
             if (players != null && "chat".equals(objectMapper.readTree(message.getPayload()).path("type").asText())) {
@@ -178,14 +184,16 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 try { protection.requireAccess(player, (String) session.getAttributes().get("playSession"), "/api/game/chat/push"); }
                 catch (com.wargame.security.GameAccessException e) {
                     if (!"CHAT_RESTRICTED".equals(e.getCode())) closeExpired(session);
-                    return;
+                    return false;
                 }
             }
             synchronized (session) {
                 session.sendMessage(message);
             }
+            return true;
         } catch (IOException e) {
             log.warn("推送消息失败: sessionId={}", session.getId(), e);
+            return false;
         }
     }
 

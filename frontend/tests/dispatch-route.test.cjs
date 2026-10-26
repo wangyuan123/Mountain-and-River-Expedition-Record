@@ -34,7 +34,7 @@ test('preview escapes names, shows server metrics and handles missing or coincid
   assert.match(el.innerHTML,/稀矿厂 &amp; 基地/);
   assert.match(el.innerHTML,/\(126, 139\)/);
   assert.match(el.innerHTML,/\(135, 177\)/);
-  assert.match(el.innerHTML,/47/);assert.match(el.innerHTML,/31 秒/);
+  assert.match(el.innerHTML,/47/);assert.match(el.innerHTML,/31秒/);
   assert.match(el.innerHTML,/stroke-opacity=".2" stroke-width="17"/);
   assert.doesNotMatch(el.innerHTML,/stroke-dasharray/);
   assert.match(el.innerHTML,/地形未加载/);

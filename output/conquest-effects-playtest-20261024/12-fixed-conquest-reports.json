@@ -1,0 +1,902 @@
+[
+  {
+    "id": 3805,
+    "data": {
+      "exp": 19000,
+      "win": true,
+      "time": 1792727215719,
+      "type": "battle",
+      "wall": {
+        "level": 0,
+        "maxHp": 0.0,
+        "phase": "BREACHED",
+        "defense": 0,
+        "hpRemaining": 0.0,
+        "rulesVersion": "balance-v20-naval-capital-ships-20261019"
+      },
+      "action": "conquer",
+      "losses": 0,
+      "readAt": 0,
+      "report": "规则版本：balance-v20-naval-capital-ships-20261019\n战场初始距离: 2330\n-- 第1回合 --\n阶段：清除守军\n我方将领加成：本回合无将领属性或技能加成生效\n敌方将领加成：本回合无将领属性或技能加成生效\n我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标300 (距敌1930)\n敌方步兵-加兰德步枪兵（M1）(1000) [前进] 推进100 -> 坐标2230 (距我1930)\n-- 第2回合 --\n阶段：清除守军\n我方将领加成：本回合无将领属性或技能加成生效\n敌方将领加成：本回合无将领属性或技能加成生效\n我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标600 (距敌1530)\n敌方步兵-加兰德步枪兵（M1）(1000) [前进] 推进100 -> 坐标2130 (距我1530)\n-- 第3回合 --\n阶段：清除守军\n我方将领加成：本回合无将领属性或技能加成生效\n敌方将领加成：本回合无将领属性或技能加成生效\n我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标900 (距敌1130)\n敌方步兵-加兰德步枪兵（M1）(1000) [前进] 推进100 -> 坐标2030 (距我1130)\n-- 第4回合 --\n阶段：清除守军\n我方将领加成：本回合无将领属性或技能加成生效\n敌方将领加成：本回合无将领属性或技能加成生效\n我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标1200 (距敌730)\n敌方步兵-加兰德步枪兵（M1）(1000) [前进] 推进100 -> 坐标1930 (距我730)\n-- 第5回合 --\n阶段：清除守军\n我方将领加成：军事属性 +341%攻击；防御属性 +90%防御；全军冲锋 +50%攻击；破甲打击 30%无视敌方防御\n敌方将领加成：军事属性 +122%攻击；防御属性 +277%防御；坚守阵地 +30%防御\n敌方步兵-加兰德步枪兵（M1）(1000) [前进] 推进100 -> 坐标1830 (距我330)\n我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标1500 (距敌330)；炮击敌步兵-加兰德步枪兵（M1）(1000) [火力密度×1.5 破甲30%] 对地攻击496 本次原始火力74418750 伤害120000 击毁1000 剩余攻击额度99% 目标距离330\n★ 全歼敌军,胜利!\n★ 征服胜利! 城内资源随城市接管保留。\n获得经验: 19000\n\n★ 城市民心为0且军衔名额充足，已接管【新城市】。\n\n★ 俘虏敌方指挥官【验收守将_1024】，已转入我方参谋部，装备与培养数据完整保留。\n",
+      "toName": "新城市",
+      "plunder": {},
+      "subject": "征服胜利·已征服 新城市",
+      "toCoord": "4,388",
+      "citySlot": 0,
+      "fromName": "新城市",
+      "conquered": true,
+      "fromCoord": "3,388",
+      "prisoners": {
+        "cityId": 179,
+        "reason": "no_camp",
+        "sources": [
+          {
+            "unit": "infantry",
+            "losses": 1000,
+            "ownerId": 176,
+            "wounded": 0,
+            "captured": 0,
+            "sourceId": "owner:176",
+            "permanent": 1000
+          }
+        ],
+        "accepted": {},
+        "capacity": 0,
+        "cityName": "新城市",
+        "existing": 0,
+        "overflow": 10,
+        "winnerId": 177,
+        "candidates": {
+          "infantry": 10
+        },
+        "attackerWon": true,
+        "ruleVersion": "prisoners-2026-10-08-v1",
+        "ratePermille": 10,
+        "acceptedTotal": 0,
+        "candidateTotal": 10,
+        "admissionCapacity": 0
+      },
+      "roundLogs": [
+        "规则版本：balance-v20-naval-capital-ships-20261019",
+        "战场初始距离: 2330",
+        "-- 第1回合 --",
+        "阶段：清除守军",
+        "我方将领加成：本回合无将领属性或技能加成生效",
+        "敌方将领加成：本回合无将领属性或技能加成生效",
+        "我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标300 (距敌1930)",
+        "敌方步兵-加兰德步枪兵（M1）(1000) [前进] 推进100 -> 坐标2230 (距我1930)",
+        "-- 第2回合 --",
+        "阶段：清除守军",
+        "我方将领加成：本回合无将领属性或技能加成生效",
+        "敌方将领加成：本回合无将领属性或技能加成生效",
+        "我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标600 (距敌1530)",
+        "敌方步兵-加兰德步枪兵（M1）(1000) [前进] 推进100 -> 坐标2130 (距我1530)",
+        "-- 第3回合 --",
+        "阶段：清除守军",
+        "我方将领加成：本回合无将领属性或技能加成生效",
+        "敌方将领加成：本回合无将领属性或技能加成生效",
+        "我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标900 (距敌1130)",
+        "敌方步兵-加兰德步枪兵（M1）(1000) [前进] 推进100 -> 坐标2030 (距我1130)",
+        "-- 第4回合 --",
+        "阶段：清除守军",
+        "我方将领加成：本回合无将领属性或技能加成生效",
+        "敌方将领加成：本回合无将领属性或技能加成生效",
+        "我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标1200 (距敌730)",
+        "敌方步兵-加兰德步枪兵（M1）(1000) [前进] 推进100 -> 坐标1930 (距我730)",
+        "-- 第5回合 --",
+        "阶段：清除守军",
+        "我方将领加成：军事属性 +341%攻击；防御属性 +90%防御；全军冲锋 +50%攻击；破甲打击 30%无视敌方防御",
+        "敌方将领加成：军事属性 +122%攻击；防御属性 +277%防御；坚守阵地 +30%防御",
+        "敌方步兵-加兰德步枪兵（M1）(1000) [前进] 推进100 -> 坐标1830 (距我330)",
+        "我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标1500 (距敌330)；炮击敌步兵-加兰德步枪兵（M1）(1000) [火力密度×1.5 破甲30%] 对地攻击496 本次原始火力74418750 伤害120000 击毁1000 剩余攻击额度99% 目标距离330",
+        "★ 全歼敌军,胜利!",
+        "★ 征服胜利! 城内资源随城市接管保留。",
+        "获得经验: 19000",
+        "★ 城市民心为0且军衔名额充足，已接管【新城市】。",
+        "★ 俘虏敌方指挥官【验收守将_1024】，已转入我方参谋部，装备与培养数据完整保留。"
+      ],
+      "commanders": {
+        "attacker": {
+          "name": "弗雷德里克·库克",
+          "level": 100,
+          "skills": [
+            {
+              "id": "frenzy",
+              "name": "全军冲锋",
+              "level": 5,
+              "description": "首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），全军攻击力额外+50%，仅本回合生效；主动攻击、余伤攻击与反击均适用，不放大师夷长技追加的攻击"
+            },
+            {
+              "id": "pierce",
+              "name": "破甲打击",
+              "level": 5,
+              "description": "首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），无视敌方有效防御30%，仅本回合生效，主动攻击、余伤攻击与反击均适用"
+            }
+          ],
+          "defense": 90,
+          "military": 341,
+          "baseDefense": 68,
+          "baseMilitary": 169
+        },
+        "defender": {
+          "name": "验收守将_1024",
+          "level": 100,
+          "skills": [
+            {
+              "id": "bulwark",
+              "name": "坚守阵地",
+              "level": 3,
+              "description": "首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），全军防御力额外+30%，仅本回合生效；与借甲御敌不能同时学习，历史兼有时仅坚守阵地生效"
+            }
+          ],
+          "defense": 272,
+          "military": 122,
+          "baseDefense": 100,
+          "baseMilitary": 100
+        }
+      },
+      "targetType": "player",
+      "attackerWin": true,
+      "moraleAfter": 71,
+      "perspective": "attacker",
+      "attackerName": "远征统帅_163822",
+      "moraleChange": 1,
+      "cityConquered": true,
+      "prestigeAfter": 274467550,
+      "unitEquipment": {
+        "sources": {
+          "0": {
+            "army": {
+              "infantry": 1000
+            },
+            "playerId": 176,
+            "playerName": "test1"
+          }
+        },
+        "attacker": {},
+        "defender": {}
+      },
+      "wildConquered": false,
+      "commandBonuses": {
+        "attacker": {
+          "name": "",
+          "rate": 0.001,
+          "defense": 0,
+          "military": 0,
+          "knowledge": 0,
+          "logistics": 0,
+          "officerId": null
+        },
+        "defender": {
+          "name": "",
+          "rate": 0.001,
+          "defense": 0,
+          "military": 0,
+          "knowledge": 0,
+          "logistics": 0,
+          "officerId": null
+        }
+      },
+      "prestigeChange": 1000,
+      "recoveredCount": 0,
+      "terminalReason": "DEFENDERS_ELIMINATED",
+      "initialAttacker": {
+        "htank": 100000
+      },
+      "initialDefender": {
+        "infantry": 1000
+      },
+      "recoveryPercent": 50,
+      "resentmentAfter": 0,
+      "enemyMoraleAfter": 0,
+      "resentmentChange": 0,
+      "survivorAttacker": {
+        "htank": 100000
+      },
+      "survivorDefender": {},
+      "attackerBreakdown": {
+        "htank": {
+          "losses": 0,
+          "wounded": 0,
+          "captured": 0,
+          "permanent": 0
+        }
+      },
+      "capturedOfficerId": 51,
+      "defenderBreakdown": {
+        "infantry": {
+          "losses": 1000,
+          "wounded": 0,
+          "captured": 0,
+          "permanent": 1000
+        }
+      },
+      "enemyMoraleChange": 0,
+      "cityTakeoverReason": "",
+      "capturedOfficerName": "验收守将_1024",
+      "enemyResentmentAfter": 1,
+      "wildOccupationReason": null,
+      "enemyResentmentChange": 1
+    },
+    "playerId": 177
+  },
+  {
+    "id": 3806,
+    "data": {
+      "exp": 19000,
+      "win": false,
+      "time": 1792727215719,
+      "type": "battle",
+      "wall": {
+        "level": 0,
+        "maxHp": 0.0,
+        "phase": "BREACHED",
+        "defense": 0,
+        "hpRemaining": 0.0,
+        "rulesVersion": "balance-v20-naval-capital-ships-20261019"
+      },
+      "action": "conquer",
+      "losses": 1000,
+      "readAt": 0,
+      "report": "规则版本：balance-v20-naval-capital-ships-20261019\n战场初始距离: 2330\n-- 第1回合 --\n阶段：清除守军\n我方将领加成：本回合无将领属性或技能加成生效\n敌方将领加成：本回合无将领属性或技能加成生效\n我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标300 (距敌1930)\n敌方步兵-加兰德步枪兵（M1）(1000) [前进] 推进100 -> 坐标2230 (距我1930)\n-- 第2回合 --\n阶段：清除守军\n我方将领加成：本回合无将领属性或技能加成生效\n敌方将领加成：本回合无将领属性或技能加成生效\n我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标600 (距敌1530)\n敌方步兵-加兰德步枪兵（M1）(1000) [前进] 推进100 -> 坐标2130 (距我1530)\n-- 第3回合 --\n阶段：清除守军\n我方将领加成：本回合无将领属性或技能加成生效\n敌方将领加成：本回合无将领属性或技能加成生效\n我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标900 (距敌1130)\n敌方步兵-加兰德步枪兵（M1）(1000) [前进] 推进100 -> 坐标2030 (距我1130)\n-- 第4回合 --\n阶段：清除守军\n我方将领加成：本回合无将领属性或技能加成生效\n敌方将领加成：本回合无将领属性或技能加成生效\n我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标1200 (距敌730)\n敌方步兵-加兰德步枪兵（M1）(1000) [前进] 推进100 -> 坐标1930 (距我730)\n-- 第5回合 --\n阶段：清除守军\n我方将领加成：军事属性 +341%攻击；防御属性 +90%防御；全军冲锋 +50%攻击；破甲打击 30%无视敌方防御\n敌方将领加成：军事属性 +122%攻击；防御属性 +277%防御；坚守阵地 +30%防御\n敌方步兵-加兰德步枪兵（M1）(1000) [前进] 推进100 -> 坐标1830 (距我330)\n我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标1500 (距敌330)；炮击敌步兵-加兰德步枪兵（M1）(1000) [火力密度×1.5 破甲30%] 对地攻击496 本次原始火力74418750 伤害120000 击毁1000 剩余攻击额度99% 目标距离330\n★ 全歼敌军,胜利!\n★ 征服胜利! 城内资源随城市接管保留。\n获得经验: 19000\n\n★ 城市民心为0且军衔名额充足，已接管【新城市】。\n\n★ 俘虏敌方指挥官【验收守将_1024】，已转入我方参谋部，装备与培养数据完整保留。\n",
+      "toName": "新城市",
+      "plunder": {},
+      "subject": "征服防守失败 新城市",
+      "toCoord": "4,388",
+      "citySlot": 0,
+      "fromName": "新城市",
+      "conquered": true,
+      "fromCoord": "3,388",
+      "prisoners": {
+        "cityId": 179,
+        "reason": "no_camp",
+        "sources": [
+          {
+            "unit": "infantry",
+            "losses": 1000,
+            "ownerId": 176,
+            "wounded": 0,
+            "captured": 0,
+            "sourceId": "owner:176",
+            "permanent": 1000
+          }
+        ],
+        "accepted": {},
+        "capacity": 0,
+        "cityName": "新城市",
+        "existing": 0,
+        "overflow": 10,
+        "winnerId": 177,
+        "candidates": {
+          "infantry": 10
+        },
+        "attackerWon": true,
+        "ruleVersion": "prisoners-2026-10-08-v1",
+        "ratePermille": 10,
+        "acceptedTotal": 0,
+        "candidateTotal": 10,
+        "admissionCapacity": 0
+      },
+      "roundLogs": [
+        "规则版本：balance-v20-naval-capital-ships-20261019",
+        "战场初始距离: 2330",
+        "-- 第1回合 --",
+        "阶段：清除守军",
+        "我方将领加成：本回合无将领属性或技能加成生效",
+        "敌方将领加成：本回合无将领属性或技能加成生效",
+        "我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标300 (距敌1930)",
+        "敌方步兵-加兰德步枪兵（M1）(1000) [前进] 推进100 -> 坐标2230 (距我1930)",
+        "-- 第2回合 --",
+        "阶段：清除守军",
+        "我方将领加成：本回合无将领属性或技能加成生效",
+        "敌方将领加成：本回合无将领属性或技能加成生效",
+        "我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标600 (距敌1530)",
+        "敌方步兵-加兰德步枪兵（M1）(1000) [前进] 推进100 -> 坐标2130 (距我1530)",
+        "-- 第3回合 --",
+        "阶段：清除守军",
+        "我方将领加成：本回合无将领属性或技能加成生效",
+        "敌方将领加成：本回合无将领属性或技能加成生效",
+        "我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标900 (距敌1130)",
+        "敌方步兵-加兰德步枪兵（M1）(1000) [前进] 推进100 -> 坐标2030 (距我1130)",
+        "-- 第4回合 --",
+        "阶段：清除守军",
+        "我方将领加成：本回合无将领属性或技能加成生效",
+        "敌方将领加成：本回合无将领属性或技能加成生效",
+        "我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标1200 (距敌730)",
+        "敌方步兵-加兰德步枪兵（M1）(1000) [前进] 推进100 -> 坐标1930 (距我730)",
+        "-- 第5回合 --",
+        "阶段：清除守军",
+        "我方将领加成：军事属性 +341%攻击；防御属性 +90%防御；全军冲锋 +50%攻击；破甲打击 30%无视敌方防御",
+        "敌方将领加成：军事属性 +122%攻击；防御属性 +277%防御；坚守阵地 +30%防御",
+        "敌方步兵-加兰德步枪兵（M1）(1000) [前进] 推进100 -> 坐标1830 (距我330)",
+        "我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标1500 (距敌330)；炮击敌步兵-加兰德步枪兵（M1）(1000) [火力密度×1.5 破甲30%] 对地攻击496 本次原始火力74418750 伤害120000 击毁1000 剩余攻击额度99% 目标距离330",
+        "★ 全歼敌军,胜利!",
+        "★ 征服胜利! 城内资源随城市接管保留。",
+        "获得经验: 19000",
+        "★ 城市民心为0且军衔名额充足，已接管【新城市】。",
+        "★ 俘虏敌方指挥官【验收守将_1024】，已转入我方参谋部，装备与培养数据完整保留。"
+      ],
+      "commanders": {
+        "attacker": {
+          "name": "弗雷德里克·库克",
+          "level": 100,
+          "skills": [
+            {
+              "id": "frenzy",
+              "name": "全军冲锋",
+              "level": 5,
+              "description": "首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），全军攻击力额外+50%，仅本回合生效；主动攻击、余伤攻击与反击均适用，不放大师夷长技追加的攻击"
+            },
+            {
+              "id": "pierce",
+              "name": "破甲打击",
+              "level": 5,
+              "description": "首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），无视敌方有效防御30%，仅本回合生效，主动攻击、余伤攻击与反击均适用"
+            }
+          ],
+          "defense": 90,
+          "military": 341,
+          "baseDefense": 68,
+          "baseMilitary": 169
+        },
+        "defender": {
+          "name": "验收守将_1024",
+          "level": 100,
+          "skills": [
+            {
+              "id": "bulwark",
+              "name": "坚守阵地",
+              "level": 3,
+              "description": "首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），全军防御力额外+30%，仅本回合生效；与借甲御敌不能同时学习，历史兼有时仅坚守阵地生效"
+            }
+          ],
+          "defense": 272,
+          "military": 122,
+          "baseDefense": 100,
+          "baseMilitary": 100
+        }
+      },
+      "targetType": "player",
+      "attackerWin": true,
+      "moraleAfter": 0,
+      "perspective": "defender",
+      "attackerName": "远征统帅_163822",
+      "moraleChange": 0,
+      "cityConquered": true,
+      "prestigeAfter": 8288,
+      "unitEquipment": {
+        "sources": {
+          "0": {
+            "army": {
+              "infantry": 1000
+            },
+            "playerId": 176,
+            "playerName": "test1"
+          }
+        },
+        "attacker": {},
+        "defender": {}
+      },
+      "wildConquered": false,
+      "commandBonuses": {
+        "attacker": {
+          "name": "",
+          "rate": 0.001,
+          "defense": 0,
+          "military": 0,
+          "knowledge": 0,
+          "logistics": 0,
+          "officerId": null
+        },
+        "defender": {
+          "name": "",
+          "rate": 0.001,
+          "defense": 0,
+          "military": 0,
+          "knowledge": 0,
+          "logistics": 0,
+          "officerId": null
+        }
+      },
+      "prestigeChange": -1000,
+      "recoveredCount": 0,
+      "terminalReason": "DEFENDERS_ELIMINATED",
+      "initialAttacker": {
+        "htank": 100000
+      },
+      "initialDefender": {
+        "infantry": 1000
+      },
+      "recoveryPercent": 0,
+      "resentmentAfter": 1,
+      "enemyMoraleAfter": 71,
+      "resentmentChange": 1,
+      "survivorAttacker": {
+        "htank": 100000
+      },
+      "survivorDefender": {},
+      "attackerBreakdown": {
+        "htank": {
+          "losses": 0,
+          "wounded": 0,
+          "captured": 0,
+          "permanent": 0
+        }
+      },
+      "capturedOfficerId": 51,
+      "defenderBreakdown": {
+        "infantry": {
+          "losses": 1000,
+          "wounded": 0,
+          "captured": 0,
+          "permanent": 1000
+        }
+      },
+      "enemyMoraleChange": 1,
+      "cityTakeoverReason": "",
+      "capturedOfficerName": "验收守将_1024",
+      "enemyResentmentAfter": 0,
+      "wildOccupationReason": null,
+      "enemyResentmentChange": 0
+    },
+    "playerId": 176
+  },
+  {
+    "id": 3807,
+    "data": {
+      "exp": 7100,
+      "win": true,
+      "time": 1792727775864,
+      "type": "battle",
+      "wall": {
+        "level": 0,
+        "maxHp": 0.0,
+        "phase": "BREACHED",
+        "defense": 0,
+        "hpRemaining": 0.0,
+        "rulesVersion": "balance-v20-naval-capital-ships-20261019"
+      },
+      "action": "conquer",
+      "losses": 0,
+      "readAt": 0,
+      "report": "规则版本：balance-v20-naval-capital-ships-20261019\n战场初始距离: 2330\n-- 第1回合 --\n阶段：清除守军\n我方将领加成：本回合无将领属性或技能加成生效\n敌方将领加成：本回合无将领属性或技能加成生效\n我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标300 (距敌1830)\n敌方重型坦克-斯大林（IS-2）(100) [前进] 推进200 -> 坐标2130 (距我1830)\n-- 第2回合 --\n阶段：清除守军\n我方将领加成：本回合无将领属性或技能加成生效\n敌方将领加成：本回合无将领属性或技能加成生效\n我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标600 (距敌1330)\n敌方重型坦克-斯大林（IS-2）(100) [前进] 推进200 -> 坐标1930 (距我1330)\n-- 第3回合 --\n阶段：清除守军\n我方将领加成：本回合无将领属性或技能加成生效\n敌方将领加成：本回合无将领属性或技能加成生效\n我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标900 (距敌830)\n敌方重型坦克-斯大林（IS-2）(100) [前进] 推进200 -> 坐标1730 (距我830)\n-- 第4回合 --\n阶段：清除守军\n我方将领加成：军事属性 +341%攻击；防御属性 +90%防御；全军冲锋 +50%攻击；破甲打击 30%无视敌方防御\n敌方将领加成：军事属性 +122%攻击；防御属性 +277%防御；坚守阵地 +30%防御\n敌方重型坦克-斯大林（IS-2）(100) [前进] 推进200 -> 坐标1530 (距我330)\n我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标1200 (距敌330)；炮击敌重型坦克-斯大林（IS-2）(100) [火力密度×1.5 前排承伤 破甲30%] 对地攻击496 本次原始火力74418750 伤害38500 击毁100 剩余攻击额度99% 目标距离330\n★ 全歼敌军,胜利!\n★ 征服胜利! 城内资源随城市接管保留。\n获得经验: 7100\n\n★ 城市民心为0且军衔名额充足，已接管【重建主城】。\n\n★ 俘虏敌方指挥官【复验守将_1024】，已转入我方参谋部，装备与培养数据完整保留。\n",
+      "toName": "重建主城",
+      "plunder": {},
+      "subject": "征服胜利·已征服 重建主城",
+      "toCoord": "5,388",
+      "citySlot": 0,
+      "fromName": "新城市",
+      "conquered": true,
+      "fromCoord": "3,388",
+      "prisoners": {
+        "cityId": 179,
+        "reason": "no_camp",
+        "sources": [
+          {
+            "unit": "htank",
+            "losses": 0,
+            "ownerId": 176,
+            "wounded": 0,
+            "captured": 0,
+            "sourceId": "owner:176",
+            "permanent": 0
+          },
+          {
+            "unit": "htank",
+            "losses": 100,
+            "ownerId": 158,
+            "wounded": 0,
+            "captured": 0,
+            "sourceId": "support:261",
+            "permanent": 100
+          }
+        ],
+        "accepted": {},
+        "capacity": 0,
+        "cityName": "新城市",
+        "existing": 0,
+        "overflow": 1,
+        "winnerId": 177,
+        "candidates": {
+          "htank": 1
+        },
+        "attackerWon": true,
+        "ruleVersion": "prisoners-2026-10-08-v1",
+        "ratePermille": 10,
+        "acceptedTotal": 0,
+        "candidateTotal": 1,
+        "admissionCapacity": 0
+      },
+      "roundLogs": [
+        "规则版本：balance-v20-naval-capital-ships-20261019",
+        "战场初始距离: 2330",
+        "-- 第1回合 --",
+        "阶段：清除守军",
+        "我方将领加成：本回合无将领属性或技能加成生效",
+        "敌方将领加成：本回合无将领属性或技能加成生效",
+        "我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标300 (距敌1830)",
+        "敌方重型坦克-斯大林（IS-2）(100) [前进] 推进200 -> 坐标2130 (距我1830)",
+        "-- 第2回合 --",
+        "阶段：清除守军",
+        "我方将领加成：本回合无将领属性或技能加成生效",
+        "敌方将领加成：本回合无将领属性或技能加成生效",
+        "我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标600 (距敌1330)",
+        "敌方重型坦克-斯大林（IS-2）(100) [前进] 推进200 -> 坐标1930 (距我1330)",
+        "-- 第3回合 --",
+        "阶段：清除守军",
+        "我方将领加成：本回合无将领属性或技能加成生效",
+        "敌方将领加成：本回合无将领属性或技能加成生效",
+        "我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标900 (距敌830)",
+        "敌方重型坦克-斯大林（IS-2）(100) [前进] 推进200 -> 坐标1730 (距我830)",
+        "-- 第4回合 --",
+        "阶段：清除守军",
+        "我方将领加成：军事属性 +341%攻击；防御属性 +90%防御；全军冲锋 +50%攻击；破甲打击 30%无视敌方防御",
+        "敌方将领加成：军事属性 +122%攻击；防御属性 +277%防御；坚守阵地 +30%防御",
+        "敌方重型坦克-斯大林（IS-2）(100) [前进] 推进200 -> 坐标1530 (距我330)",
+        "我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标1200 (距敌330)；炮击敌重型坦克-斯大林（IS-2）(100) [火力密度×1.5 前排承伤 破甲30%] 对地攻击496 本次原始火力74418750 伤害38500 击毁100 剩余攻击额度99% 目标距离330",
+        "★ 全歼敌军,胜利!",
+        "★ 征服胜利! 城内资源随城市接管保留。",
+        "获得经验: 7100",
+        "★ 城市民心为0且军衔名额充足，已接管【重建主城】。",
+        "★ 俘虏敌方指挥官【复验守将_1024】，已转入我方参谋部，装备与培养数据完整保留。"
+      ],
+      "commanders": {
+        "attacker": {
+          "name": "弗雷德里克·库克",
+          "level": 100,
+          "skills": [
+            {
+              "id": "frenzy",
+              "name": "全军冲锋",
+              "level": 5,
+              "description": "首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），全军攻击力额外+50%，仅本回合生效；主动攻击、余伤攻击与反击均适用，不放大师夷长技追加的攻击"
+            },
+            {
+              "id": "pierce",
+              "name": "破甲打击",
+              "level": 5,
+              "description": "首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），无视敌方有效防御30%，仅本回合生效，主动攻击、余伤攻击与反击均适用"
+            }
+          ],
+          "defense": 90,
+          "military": 341,
+          "baseDefense": 68,
+          "baseMilitary": 169
+        },
+        "defender": {
+          "name": "复验守将_1024",
+          "level": 100,
+          "skills": [
+            {
+              "id": "bulwark",
+              "name": "坚守阵地",
+              "level": 3,
+              "description": "首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），全军防御力额外+30%，仅本回合生效；与借甲御敌不能同时学习，历史兼有时仅坚守阵地生效"
+            }
+          ],
+          "defense": 277,
+          "military": 122,
+          "baseDefense": 100,
+          "baseMilitary": 100
+        }
+      },
+      "targetType": "player",
+      "attackerWin": true,
+      "moraleAfter": 71,
+      "perspective": "attacker",
+      "attackerName": "远征统帅_163822",
+      "moraleChange": 1,
+      "cityConquered": true,
+      "prestigeAfter": 274468750,
+      "unitEquipment": {
+        "sources": {
+          "0": {
+            "army": {},
+            "playerId": 176,
+            "playerName": "远征统帅_829395"
+          },
+          "261": {
+            "army": {
+              "htank": 100
+            },
+            "playerId": 158,
+            "playerName": "驻防验收统帅"
+          }
+        },
+        "attacker": {},
+        "defender": {}
+      },
+      "wildConquered": false,
+      "commandBonuses": {
+        "attacker": {
+          "name": "",
+          "rate": 0.001,
+          "defense": 0,
+          "military": 0,
+          "knowledge": 0,
+          "logistics": 0,
+          "officerId": null
+        },
+        "defender": {
+          "name": "",
+          "rate": 0.001,
+          "defense": 0,
+          "military": 0,
+          "knowledge": 0,
+          "logistics": 0,
+          "officerId": null
+        }
+      },
+      "prestigeChange": 1200,
+      "recoveredCount": 0,
+      "terminalReason": "DEFENDERS_ELIMINATED",
+      "initialAttacker": {
+        "htank": 100000
+      },
+      "initialDefender": {
+        "htank": 100
+      },
+      "recoveryPercent": 50,
+      "resentmentAfter": 0,
+      "enemyMoraleAfter": 0,
+      "resentmentChange": 0,
+      "survivorAttacker": {
+        "htank": 100000
+      },
+      "survivorDefender": {},
+      "attackerBreakdown": {
+        "htank": {
+          "losses": 0,
+          "wounded": 0,
+          "captured": 0,
+          "permanent": 0
+        }
+      },
+      "capturedOfficerId": 52,
+      "defenderBreakdown": {
+        "htank": {
+          "losses": 100,
+          "wounded": 0,
+          "captured": 0,
+          "permanent": 100
+        }
+      },
+      "enemyMoraleChange": 0,
+      "cityTakeoverReason": "",
+      "capturedOfficerName": "复验守将_1024",
+      "enemyResentmentAfter": 1,
+      "wildOccupationReason": null,
+      "enemyResentmentChange": 1
+    },
+    "playerId": 177
+  },
+  {
+    "id": 3808,
+    "data": {
+      "exp": 7100,
+      "win": false,
+      "time": 1792727775864,
+      "type": "battle",
+      "wall": {
+        "level": 0,
+        "maxHp": 0.0,
+        "phase": "BREACHED",
+        "defense": 0,
+        "hpRemaining": 0.0,
+        "rulesVersion": "balance-v20-naval-capital-ships-20261019"
+      },
+      "action": "conquer",
+      "losses": 100,
+      "readAt": 0,
+      "report": "规则版本：balance-v20-naval-capital-ships-20261019\n战场初始距离: 2330\n-- 第1回合 --\n阶段：清除守军\n我方将领加成：本回合无将领属性或技能加成生效\n敌方将领加成：本回合无将领属性或技能加成生效\n我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标300 (距敌1830)\n敌方重型坦克-斯大林（IS-2）(100) [前进] 推进200 -> 坐标2130 (距我1830)\n-- 第2回合 --\n阶段：清除守军\n我方将领加成：本回合无将领属性或技能加成生效\n敌方将领加成：本回合无将领属性或技能加成生效\n我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标600 (距敌1330)\n敌方重型坦克-斯大林（IS-2）(100) [前进] 推进200 -> 坐标1930 (距我1330)\n-- 第3回合 --\n阶段：清除守军\n我方将领加成：本回合无将领属性或技能加成生效\n敌方将领加成：本回合无将领属性或技能加成生效\n我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标900 (距敌830)\n敌方重型坦克-斯大林（IS-2）(100) [前进] 推进200 -> 坐标1730 (距我830)\n-- 第4回合 --\n阶段：清除守军\n我方将领加成：军事属性 +341%攻击；防御属性 +90%防御；全军冲锋 +50%攻击；破甲打击 30%无视敌方防御\n敌方将领加成：军事属性 +122%攻击；防御属性 +277%防御；坚守阵地 +30%防御\n敌方重型坦克-斯大林（IS-2）(100) [前进] 推进200 -> 坐标1530 (距我330)\n我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标1200 (距敌330)；炮击敌重型坦克-斯大林（IS-2）(100) [火力密度×1.5 前排承伤 破甲30%] 对地攻击496 本次原始火力74418750 伤害38500 击毁100 剩余攻击额度99% 目标距离330\n★ 全歼敌军,胜利!\n★ 征服胜利! 城内资源随城市接管保留。\n获得经验: 7100\n\n★ 城市民心为0且军衔名额充足，已接管【重建主城】。\n\n★ 俘虏敌方指挥官【复验守将_1024】，已转入我方参谋部，装备与培养数据完整保留。\n",
+      "toName": "重建主城",
+      "plunder": {},
+      "subject": "征服防守失败 重建主城",
+      "toCoord": "5,388",
+      "citySlot": 0,
+      "fromName": "新城市",
+      "conquered": true,
+      "fromCoord": "3,388",
+      "prisoners": {
+        "cityId": 179,
+        "reason": "no_camp",
+        "sources": [
+          {
+            "unit": "htank",
+            "losses": 0,
+            "ownerId": 176,
+            "wounded": 0,
+            "captured": 0,
+            "sourceId": "owner:176",
+            "permanent": 0
+          },
+          {
+            "unit": "htank",
+            "losses": 100,
+            "ownerId": 158,
+            "wounded": 0,
+            "captured": 0,
+            "sourceId": "support:261",
+            "permanent": 100
+          }
+        ],
+        "accepted": {},
+        "capacity": 0,
+        "cityName": "新城市",
+        "existing": 0,
+        "overflow": 1,
+        "winnerId": 177,
+        "candidates": {
+          "htank": 1
+        },
+        "attackerWon": true,
+        "ruleVersion": "prisoners-2026-10-08-v1",
+        "ratePermille": 10,
+        "acceptedTotal": 0,
+        "candidateTotal": 1,
+        "admissionCapacity": 0
+      },
+      "roundLogs": [
+        "规则版本：balance-v20-naval-capital-ships-20261019",
+        "战场初始距离: 2330",
+        "-- 第1回合 --",
+        "阶段：清除守军",
+        "我方将领加成：本回合无将领属性或技能加成生效",
+        "敌方将领加成：本回合无将领属性或技能加成生效",
+        "我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标300 (距敌1830)",
+        "敌方重型坦克-斯大林（IS-2）(100) [前进] 推进200 -> 坐标2130 (距我1830)",
+        "-- 第2回合 --",
+        "阶段：清除守军",
+        "我方将领加成：本回合无将领属性或技能加成生效",
+        "敌方将领加成：本回合无将领属性或技能加成生效",
+        "我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标600 (距敌1330)",
+        "敌方重型坦克-斯大林（IS-2）(100) [前进] 推进200 -> 坐标1930 (距我1330)",
+        "-- 第3回合 --",
+        "阶段：清除守军",
+        "我方将领加成：本回合无将领属性或技能加成生效",
+        "敌方将领加成：本回合无将领属性或技能加成生效",
+        "我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标900 (距敌830)",
+        "敌方重型坦克-斯大林（IS-2）(100) [前进] 推进200 -> 坐标1730 (距我830)",
+        "-- 第4回合 --",
+        "阶段：清除守军",
+        "我方将领加成：军事属性 +341%攻击；防御属性 +90%防御；全军冲锋 +50%攻击；破甲打击 30%无视敌方防御",
+        "敌方将领加成：军事属性 +122%攻击；防御属性 +277%防御；坚守阵地 +30%防御",
+        "敌方重型坦克-斯大林（IS-2）(100) [前进] 推进200 -> 坐标1530 (距我330)",
+        "我方重型坦克-斯大林（IS-2）(100000) [前进] 推进300 -> 坐标1200 (距敌330)；炮击敌重型坦克-斯大林（IS-2）(100) [火力密度×1.5 前排承伤 破甲30%] 对地攻击496 本次原始火力74418750 伤害38500 击毁100 剩余攻击额度99% 目标距离330",
+        "★ 全歼敌军,胜利!",
+        "★ 征服胜利! 城内资源随城市接管保留。",
+        "获得经验: 7100",
+        "★ 城市民心为0且军衔名额充足，已接管【重建主城】。",
+        "★ 俘虏敌方指挥官【复验守将_1024】，已转入我方参谋部，装备与培养数据完整保留。"
+      ],
+      "commanders": {
+        "attacker": {
+          "name": "弗雷德里克·库克",
+          "level": 100,
+          "skills": [
+            {
+              "id": "frenzy",
+              "name": "全军冲锋",
+              "level": 5,
+              "description": "首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），全军攻击力额外+50%，仅本回合生效；主动攻击、余伤攻击与反击均适用，不放大师夷长技追加的攻击"
+            },
+            {
+              "id": "pierce",
+              "name": "破甲打击",
+              "level": 5,
+              "description": "首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），无视敌方有效防御30%，仅本回合生效，主动攻击、余伤攻击与反击均适用"
+            }
+          ],
+          "defense": 90,
+          "military": 341,
+          "baseDefense": 68,
+          "baseMilitary": 169
+        },
+        "defender": {
+          "name": "复验守将_1024",
+          "level": 100,
+          "skills": [
+            {
+              "id": "bulwark",
+              "name": "坚守阵地",
+              "level": 3,
+              "description": "首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），全军防御力额外+30%，仅本回合生效；与借甲御敌不能同时学习，历史兼有时仅坚守阵地生效"
+            }
+          ],
+          "defense": 277,
+          "military": 122,
+          "baseDefense": 100,
+          "baseMilitary": 100
+        }
+      },
+      "targetType": "player",
+      "attackerWin": true,
+      "moraleAfter": 0,
+      "perspective": "defender",
+      "attackerName": "远征统帅_163822",
+      "moraleChange": 0,
+      "cityConquered": true,
+      "prestigeAfter": 7088,
+      "unitEquipment": {
+        "sources": {
+          "0": {
+            "army": {},
+            "playerId": 176,
+            "playerName": "远征统帅_829395"
+          },
+          "261": {
+            "army": {
+              "htank": 100
+            },
+            "playerId": 158,
+            "playerName": "驻防验收统帅"
+          }
+        },
+        "attacker": {},
+        "defender": {}
+      },
+      "wildConquered": false,
+      "commandBonuses": {
+        "attacker": {
+          "name": "",
+          "rate": 0.001,
+          "defense": 0,
+          "military": 0,
+          "knowledge": 0,
+          "logistics": 0,
+          "officerId": null
+        },
+        "defender": {
+          "name": "",
+          "rate": 0.001,
+          "defense": 0,
+          "military": 0,
+          "knowledge": 0,
+          "logistics": 0,
+          "officerId": null
+        }
+      },
+      "prestigeChange": -1200,
+      "recoveredCount": 0,
+      "terminalReason": "DEFENDERS_ELIMINATED",
+      "initialAttacker": {
+        "htank": 100000
+      },
+      "initialDefender": {
+        "htank": 100
+      },
+      "recoveryPercent": 0,
+      "resentmentAfter": 1,
+      "enemyMoraleAfter": 71,
+      "resentmentChange": 1,
+      "survivorAttacker": {
+        "htank": 100000
+      },
+      "survivorDefender": {},
+      "attackerBreakdown": {
+        "htank": {
+          "losses": 0,
+          "wounded": 0,
+          "captured": 0,
+          "permanent": 0
+        }
+      },
+      "capturedOfficerId": 52,
+      "defenderBreakdown": {
+        "htank": {
+          "losses": 100,
+          "wounded": 0,
+          "captured": 0,
+          "permanent": 100
+        }
+      },
+      "enemyMoraleChange": 1,
+      "cityTakeoverReason": "",
+      "capturedOfficerName": "复验守将_1024",
+      "enemyResentmentAfter": 0,
+      "wildOccupationReason": null,
+      "enemyResentmentChange": 0
+    },
+    "playerId": 176
+  }
+]

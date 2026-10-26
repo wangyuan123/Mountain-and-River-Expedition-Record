@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
-function setup() {
+function setup(clock = Date) {
   const nodes = {
     privateChatListPanel: { hidden: false }, privateChatDialogPanel: { hidden: true },
     privateChatInput: { value: '' }, privateChatSend: {}, privateChatTitle: {},
@@ -23,12 +23,14 @@ function setup() {
       privateChatConversations: () => Promise.resolve([])
     }
   };
-  const ctx = { window: { Game: game }, document: { getElementById: id => nodes[id] || null, createElement: () => ({ children: [], classList: { toggle() {} }, appendChild(child) { this.children.push(child); }, get innerHTML() { return this.children.length ? this.children[this.children.length - 1].innerHTML : this.html; }, set innerHTML(value) { this.html = value; }, onclick() { return this.children[this.children.length - 1].onclick(); } }) }, Promise, Date };
-  vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname, '../js/private-chat.js'), 'utf8'), ctx);
+  const ctx = vm.createContext({ window: { Game: game }, document: { getElementById: id => nodes[id] || null, createElement: () => ({ children: [], classList: { toggle() {} }, appendChild(child) { this.children.push(child); }, get innerHTML() { return this.children.length ? this.children[this.children.length - 1].innerHTML : this.html; }, set innerHTML(value) { this.html = value; }, onclick() { return this.children[this.children.length - 1].onclick(); } }) }, Promise, Date: clock });
+  require('./load-constants.cjs')(ctx);
+  vm.runInContext(fs.readFileSync(require('node:path').join(__dirname, '../js/private-chat.js'), 'utf8'), ctx);
   return { game, nodes, reads, histories };
 }
 test('hidden private conversations stay unread, visible ones mark through the displayed message', async () => {
   const { game, reads, histories, nodes } = setup();
+  assert.match(game.PrivateChat.render(), /id="privateChatInput"[^>]*placeholder="善言结善缘 恶语伤人心"/);
   histories[2] = { messages: [{ id: 4, playerId: 2, recipientId: 1, content: 'hello' }] };
   await game.PrivateChat.open({ id: 2, username: 'bob' });
   assert.equal(reads.length, 0);
@@ -38,6 +40,29 @@ test('hidden private conversations stay unread, visible ones mark through the di
   nodes.chatMessagesPanel.hidden = true;
   await game.PrivateChat.refresh();
   assert.equal(reads.length, 1);
+});
+
+test('private chat cooldown displays rounded remaining seconds and allows sending at expiry', async () => {
+  let now = 100000;
+  class TestDate extends Date { static now() { return now; } }
+  const { game, nodes } = setup(TestDate);
+  const toasts = [];
+  let sends = 0;
+  game.toast = message => toasts.push(message);
+  game.API.sendPrivateChat = async () => ({ id: ++sends, playerId: 1, recipientId: 2, content: '消息' });
+  await game.PrivateChat.open({ id: 2, username: 'bob' });
+  nodes.privateChatInput.value = '消息';
+  await game.PrivateChat.send();
+  nodes.privateChatInput.value = '下一条消息';
+  now = 100001;
+  game.PrivateChat.send();
+  now = 103001;
+  game.PrivateChat.send();
+  assert.deepEqual(toasts, ['发言过于频繁，请等待 5秒冷却', '发言过于频繁，请等待 2秒冷却']);
+  assert.equal(sends, 1);
+  now = 105000;
+  await game.PrivateChat.send();
+  assert.equal(sends, 2);
 });
 
 test('history clear boundary removes cached messages across refresh and preserves newer arrivals', async () => {

@@ -1,11 +1,11 @@
 {
-  "version": "research-city-dual-20261020-v7",
+  "version": "research-city-dual-20261024-v8",
   "status": "partially_implemented_four_technologies_and_regular_duration_curves",
-  "date": "2026-10-20",
+  "date": "2026-10-24",
   "sources": {
     "technologyCatalog": "frontend/js/data.js",
     "currentPrerequisites": "backend/src/main/resources/game/tech-building-prerequisites.json",
-    "prerequisiteVersion": "military-theory-2026-10-19-v1"
+    "prerequisiteVersion": "research-technology-ten-levels-20261019-v1"
   },
   "ownership": {
     "technologyLevels": "empire",
@@ -49,12 +49,10 @@
     "maximumConfiguredBaseSeconds": 2419200,
     "removeLegacy86400SecondCap": true,
     "lockAtStart": true,
-    "labSpeedPerLevel": 0.01,
-    "labMaximumLevel": 10,
     "knowledgeSpeedPerPoint": 0.001,
     "researchSkillSpeedPerLevel": 0.04,
     "researchSkillMaximumLevel": 5,
-    "formula": "max(5, round(baseSeconds / ((1 + 0.01 * labLevel) * (1 + 0.001 * max(0, effectiveMayorKnowledge)) * (1 + 0.04 * researchSkillLevel))))",
+    "formula": "max(5, round(baseSeconds / ((1 + 0.001 * max(0, effectiveMayorKnowledge)) * (1 + 0.04 * researchSkillLevel))))",
     "noMayorKnowledgeAndSkill": 0,
     "effectiveKnowledgeCeilingReference": {
       "base": 219,
@@ -239,7 +237,7 @@
       },
       "costGrowth": 1.8,
       "prerequisiteReference": {
-        "version": "military-theory-2026-10-19-v1",
+        "version": "research-technology-ten-levels-20261019-v1",
         "key": "military_theory",
         "scope": "research_city"
       },
@@ -258,7 +256,7 @@
       },
       "costGrowth": 1.8,
       "prerequisiteReference": {
-        "version": "military-theory-2026-10-19-v1",
+        "version": "research-technology-ten-levels-20261019-v1",
         "key": "wall_reinforcement",
         "scope": "research_city"
       },
@@ -297,7 +295,7 @@
       },
       "costGrowth": 1.8,
       "prerequisiteReference": {
-        "version": "military-theory-2026-10-19-v1",
+        "version": "research-technology-ten-levels-20261019-v1",
         "key": "prisoner_education",
         "scope": "research_city"
       },
@@ -315,7 +313,7 @@
       },
       "costGrowth": 1.7,
       "prerequisiteReference": {
-        "version": "military-theory-2026-10-19-v1",
+        "version": "research-technology-ten-levels-20261019-v1",
         "key": "attack_tech",
         "scope": "research_city"
       },
@@ -333,7 +331,7 @@
       },
       "costGrowth": 1.7,
       "prerequisiteReference": {
-        "version": "military-theory-2026-10-19-v1",
+        "version": "research-technology-ten-levels-20261019-v1",
         "key": "defense_tech",
         "scope": "research_city"
       },
@@ -352,7 +350,7 @@
       },
       "costGrowth": 1.8,
       "prerequisiteReference": {
-        "version": "military-theory-2026-10-19-v1",
+        "version": "research-technology-ten-levels-20261019-v1",
         "key": "weapon_range",
         "scope": "research_city"
       },
@@ -371,7 +369,7 @@
       },
       "costGrowth": 1.8,
       "prerequisiteReference": {
-        "version": "military-theory-2026-10-19-v1",
+        "version": "research-technology-ten-levels-20261019-v1",
         "key": "cmd_hp",
         "scope": "research_city"
       },
@@ -390,7 +388,7 @@
       },
       "costGrowth": 1.8,
       "prerequisiteReference": {
-        "version": "military-theory-2026-10-19-v1",
+        "version": "research-technology-ten-levels-20261019-v1",
         "key": "fire_density",
         "scope": "research_city"
       },
@@ -408,7 +406,7 @@
       },
       "costGrowth": 1.6,
       "prerequisiteReference": {
-        "version": "military-theory-2026-10-19-v1",
+        "version": "research-technology-ten-levels-20261019-v1",
         "key": "log_load",
         "scope": "research_city"
       },
@@ -427,7 +425,7 @@
       },
       "costGrowth": 1.8,
       "prerequisiteReference": {
-        "version": "military-theory-2026-10-19-v1",
+        "version": "research-technology-ten-levels-20261019-v1",
         "key": "arm_engine",
         "scope": "research_city"
       },
@@ -446,7 +444,7 @@
       },
       "costGrowth": 1.9,
       "prerequisiteReference": {
-        "version": "military-theory-2026-10-19-v1",
+        "version": "research-technology-ten-levels-20261019-v1",
         "key": "air_engine",
         "scope": "research_city"
       },
@@ -465,7 +463,7 @@
       },
       "costGrowth": 2,
       "prerequisiteReference": {
-        "version": "military-theory-2026-10-19-v1",
+        "version": "research-technology-ten-levels-20261019-v1",
         "key": "nav_engine",
         "scope": "research_city"
       },
@@ -483,7 +481,7 @@
       },
       "costGrowth": 1.8,
       "prerequisiteReference": {
-        "version": "military-theory-2026-10-19-v1",
+        "version": "research-technology-ten-levels-20261019-v1",
         "key": "prod_food",
         "scope": "research_city"
       },
@@ -501,7 +499,7 @@
       },
       "costGrowth": 1.8,
       "prerequisiteReference": {
-        "version": "military-theory-2026-10-19-v1",
+        "version": "research-technology-ten-levels-20261019-v1",
         "key": "prod_steel",
         "scope": "research_city"
       },
@@ -519,7 +517,7 @@
       },
       "costGrowth": 1.8,
       "prerequisiteReference": {
-        "version": "military-theory-2026-10-19-v1",
+        "version": "research-technology-ten-levels-20261019-v1",
         "key": "prod_oil",
         "scope": "research_city"
       },
@@ -537,7 +535,7 @@
       },
       "costGrowth": 1.8,
       "prerequisiteReference": {
-        "version": "military-theory-2026-10-19-v1",
+        "version": "research-technology-ten-levels-20261019-v1",
         "key": "prod_rare",
         "scope": "research_city"
       },
@@ -574,7 +572,7 @@
       },
       "costGrowth": 1.8,
       "prerequisiteReference": {
-        "version": "military-theory-2026-10-19-v1",
+        "version": "research-technology-ten-levels-20261019-v1",
         "key": "log_food",
         "scope": "research_city"
       },
@@ -593,7 +591,7 @@
       },
       "costGrowth": 1.8,
       "prerequisiteReference": {
-        "version": "military-theory-2026-10-19-v1",
+        "version": "research-technology-ten-levels-20261019-v1",
         "key": "log_train",
         "scope": "research_city"
       },
@@ -612,7 +610,7 @@
       },
       "costGrowth": 1.8,
       "prerequisiteReference": {
-        "version": "military-theory-2026-10-19-v1",
+        "version": "research-technology-ten-levels-20261019-v1",
         "key": "log_build",
         "scope": "research_city"
       },
@@ -631,7 +629,7 @@
       },
       "costGrowth": 1.8,
       "prerequisiteReference": {
-        "version": "military-theory-2026-10-19-v1",
+        "version": "research-technology-ten-levels-20261019-v1",
         "key": "log_medical",
         "scope": "research_city"
       },
@@ -875,217 +873,217 @@
     "profiles": [
       {
         "key": "knowledge100_skill5",
-        "label": "中心10级、有效学识100、格物5级",
+        "label": "有效学识100、格物5级",
         "labLevel": 10,
         "knowledge": 100,
         "researchSkillLevel": 5,
-        "speedMultiplier": 1.452,
-        "durationPercentOfBase": 68.87052342,
-        "endgameDurationSeconds": 1666116,
+        "speedMultiplier": 1.32,
+        "durationPercentOfBase": 75.75757576,
+        "endgameDurationSeconds": 1832727,
         "durationSecondsByTimingProfile": {
           "normal": [
-            124,
-            413,
-            1240,
-            7438,
-            29752,
-            58760,
-            115992,
-            228967,
-            452066,
-            892562
+            136,
+            455,
+            1364,
+            8182,
+            32727,
+            64636,
+            127591,
+            251864,
+            497273,
+            981818
           ],
           "resource": [
-            83,
-            331,
-            1033,
-            3719,
-            14876,
-            32273,
-            70000,
-            151777,
-            329215,
-            714050
+            91,
+            364,
+            1136,
+            4091,
+            16364,
+            35500,
+            77000,
+            166955,
+            362136,
+            785455
           ],
           "arm_engine": [
-            207,
-            620,
-            1860,
-            7438,
-            29752,
-            62231,
-            130124,
-            272107,
-            569050,
-            1190083
+            227,
+            682,
+            2045,
+            8182,
+            32727,
+            68455,
+            143136,
+            299318,
+            625955,
+            1309091
           ],
           "nav_engine": [
-            207,
-            620,
-            1860,
-            7438,
-            29752,
-            66570,
-            148884,
-            332975,
-            744835,
-            1666116
+            227,
+            682,
+            2045,
+            8182,
+            32727,
+            73227,
+            163773,
+            366273,
+            819318,
+            1832727
           ],
           "air_engine": [
-            207,
-            620,
-            1860,
-            7438,
-            29752,
-            66570,
-            148884,
-            332975,
-            744835,
-            1666116
+            227,
+            682,
+            2045,
+            8182,
+            32727,
+            73227,
+            163773,
+            366273,
+            819318,
+            1832727
           ]
         }
       },
       {
         "key": "knowledge219_skill5",
-        "label": "中心10级、有效学识219、格物5级",
+        "label": "有效学识219、格物5级",
         "labLevel": 10,
         "knowledge": 219,
         "researchSkillLevel": 5,
-        "speedMultiplier": 1.60908,
-        "durationPercentOfBase": 62.14731399,
-        "endgameDurationSeconds": 1503468,
+        "speedMultiplier": 1.4628,
+        "durationPercentOfBase": 68.36204539,
+        "endgameDurationSeconds": 1653815,
         "durationSecondsByTimingProfile": {
           "normal": [
-            112,
-            373,
-            1119,
-            6712,
-            26848,
-            53024,
-            104669,
-            206615,
-            407935,
-            805429
+            123,
+            410,
+            1231,
+            7383,
+            29532,
+            58326,
+            115135,
+            227276,
+            448728,
+            885972
           ],
           "resource": [
-            75,
-            298,
-            932,
-            3356,
-            13424,
-            29122,
-            63167,
-            136960,
-            297077,
-            644343
+            82,
+            328,
+            1025,
+            3692,
+            14766,
+            32034,
+            69483,
+            150656,
+            326784,
+            708778
           ],
           "arm_engine": [
-            186,
-            559,
-            1678,
-            6712,
-            26848,
-            56156,
-            117421,
-            245544,
-            513498,
-            1073906
+            205,
+            615,
+            1846,
+            7383,
+            29532,
+            61772,
+            129163,
+            270098,
+            564848,
+            1181296
           ],
           "nav_engine": [
-            186,
-            559,
-            1678,
-            6712,
-            26848,
-            60072,
-            134350,
-            300470,
-            672123,
-            1503468
+            205,
+            615,
+            1846,
+            7383,
+            29532,
+            66079,
+            147785,
+            330517,
+            739336,
+            1653815
           ],
           "air_engine": [
-            186,
-            559,
-            1678,
-            6712,
-            26848,
-            60072,
-            134350,
-            300470,
-            672123,
-            1503468
+            205,
+            615,
+            1846,
+            7383,
+            29532,
+            66079,
+            147785,
+            330517,
+            739336,
+            1653815
           ]
         }
       },
       {
         "key": "knowledge344_skill5",
-        "label": "中心10级、基础学识219及元帅学识套装、格物5级",
+        "label": "有效学识344（基础学识219及元帅学识套装）、格物5级",
         "labLevel": 10,
         "knowledge": 344,
         "researchSkillLevel": 5,
-        "speedMultiplier": 1.77408,
-        "durationPercentOfBase": 56.36724387,
-        "endgameDurationSeconds": 1363636,
+        "speedMultiplier": 1.6128,
+        "durationPercentOfBase": 62.00396825,
+        "endgameDurationSeconds": 1500000,
         "durationSecondsByTimingProfile": {
           "normal": [
-            101,
-            338,
-            1015,
-            6088,
-            24351,
-            48093,
-            94934,
-            187399,
-            369995,
-            730519
+            112,
+            372,
+            1116,
+            6696,
+            26786,
+            52902,
+            104427,
+            206138,
+            406994,
+            803571
           ],
           "resource": [
-            68,
-            271,
-            846,
-            3044,
-            12175,
-            26414,
-            57292,
-            124222,
-            269447,
-            584416
+            74,
+            298,
+            930,
+            3348,
+            13393,
+            29055,
+            63021,
+            136644,
+            296391,
+            642857
           ],
           "arm_engine": [
-            169,
-            507,
-            1522,
-            6088,
-            24351,
-            50933,
-            106500,
-            222707,
-            465740,
-            974026
+            186,
+            558,
+            1674,
+            6696,
+            26786,
+            56027,
+            117150,
+            244978,
+            512314,
+            1071429
           ],
           "nav_engine": [
-            169,
-            507,
-            1522,
-            6088,
-            24351,
-            54485,
-            121855,
-            272524,
-            609612,
-            1363636
+            186,
+            558,
+            1674,
+            6696,
+            26786,
+            59933,
+            134040,
+            299777,
+            670573,
+            1500000
           ],
           "air_engine": [
-            169,
-            507,
-            1522,
-            6088,
-            24351,
-            54485,
-            121855,
-            272524,
-            609612,
-            1363636
+            186,
+            558,
+            1674,
+            6696,
+            26786,
+            59933,
+            134040,
+            299777,
+            670573,
+            1500000
           ]
         }
       }
@@ -1094,14 +1092,14 @@
       "normal": {
         "technologyCount": 20,
         "totalBaseWorkSeconds": 56114460,
-        "totalFullBonusWorkSeconds": 31630202,
-        "longestFullBonusTechnologyChainSeconds": 2454749
+        "totalFullBonusWorkSeconds": 34793182,
+        "longestFullBonusTechnologyChainSeconds": 2700223
       },
       "resource": {
         "technologyCount": 4,
         "totalBaseWorkSeconds": 7651200,
-        "totalFullBonusWorkSeconds": 4312780,
-        "longestFullBonusTechnologyChainSeconds": 1078195
+        "totalFullBonusWorkSeconds": 4744044,
+        "longestFullBonusTechnologyChainSeconds": 1186011
       }
     },
     "perCityParallelLowerBounds": [
@@ -1111,14 +1109,14 @@
         "groups": {
           "normal": {
             "usableParallelSlots": 1,
-            "lowerBoundDays": 366.0903
+            "lowerBoundDays": 402.6989
           },
           "resource": {
             "usableParallelSlots": 1,
-            "lowerBoundDays": 49.9164
+            "lowerBoundDays": 54.9079
           }
         },
-        "regularAllTechnologyLowerBoundDays": 366.0903
+        "regularAllTechnologyLowerBoundDays": 402.6989
       },
       {
         "cityCount": 2,
@@ -1126,14 +1124,14 @@
         "groups": {
           "normal": {
             "usableParallelSlots": 2,
-            "lowerBoundDays": 183.0452
+            "lowerBoundDays": 201.3494
           },
           "resource": {
             "usableParallelSlots": 2,
-            "lowerBoundDays": 24.9582
+            "lowerBoundDays": 27.454
           }
         },
-        "regularAllTechnologyLowerBoundDays": 183.0452
+        "regularAllTechnologyLowerBoundDays": 201.3494
       },
       {
         "cityCount": 4,
@@ -1141,14 +1139,14 @@
         "groups": {
           "normal": {
             "usableParallelSlots": 4,
-            "lowerBoundDays": 91.5226
+            "lowerBoundDays": 100.6747
           },
           "resource": {
             "usableParallelSlots": 4,
-            "lowerBoundDays": 12.4791
+            "lowerBoundDays": 13.727
           }
         },
-        "regularAllTechnologyLowerBoundDays": 91.5226
+        "regularAllTechnologyLowerBoundDays": 100.6747
       },
       {
         "cityCount": 8,
@@ -1156,14 +1154,14 @@
         "groups": {
           "normal": {
             "usableParallelSlots": 8,
-            "lowerBoundDays": 45.7613
+            "lowerBoundDays": 50.3374
           },
           "resource": {
             "usableParallelSlots": 4,
-            "lowerBoundDays": 12.4791
+            "lowerBoundDays": 13.727
           }
         },
-        "regularAllTechnologyLowerBoundDays": 45.7613
+        "regularAllTechnologyLowerBoundDays": 50.3374
       }
     ],
     "lowerBoundAssumptions": [
@@ -1181,37 +1179,37 @@
       "normal": {
         "levelCount": 10,
         "baseChainSeconds": 2595180,
-        "fullBonusChainSeconds": 1462833,
+        "fullBonusChainSeconds": 1609114,
         "baseFinalLevelSeconds": 1296000,
-        "fullBonusFinalLevelSeconds": 730519
+        "fullBonusFinalLevelSeconds": 803571
       },
       "resource": {
         "levelCount": 10,
         "baseChainSeconds": 1912800,
-        "fullBonusChainSeconds": 1078195,
+        "fullBonusChainSeconds": 1186011,
         "baseFinalLevelSeconds": 1036800,
-        "fullBonusFinalLevelSeconds": 584416
+        "fullBonusFinalLevelSeconds": 642857
       },
       "arm_engine": {
         "levelCount": 10,
         "baseChainSeconds": 3286560,
-        "fullBonusChainSeconds": 1852543,
+        "fullBonusChainSeconds": 2037798,
         "baseFinalLevelSeconds": 1728000,
-        "fullBonusFinalLevelSeconds": 974026
+        "fullBonusFinalLevelSeconds": 1071429
       },
       "nav_engine": {
         "levelCount": 10,
         "baseChainSeconds": 4354920,
-        "fullBonusChainSeconds": 2454749,
+        "fullBonusChainSeconds": 2700223,
         "baseFinalLevelSeconds": 2419200,
-        "fullBonusFinalLevelSeconds": 1363636
+        "fullBonusFinalLevelSeconds": 1500000
       },
       "air_engine": {
         "levelCount": 10,
         "baseChainSeconds": 4354920,
-        "fullBonusChainSeconds": 2454749,
+        "fullBonusChainSeconds": 2700223,
         "baseFinalLevelSeconds": 2419200,
-        "fullBonusFinalLevelSeconds": 1363636
+        "fullBonusFinalLevelSeconds": 1500000
       }
     },
     "regularTechnologyDurations": [
@@ -1232,19 +1230,19 @@
           1296000
         ],
         "fullBonusSecondsByTargetLevel": [
-          101,
-          338,
-          1015,
-          6088,
-          24351,
-          48093,
-          94934,
-          187399,
-          369995,
-          730519
+          112,
+          372,
+          1116,
+          6696,
+          26786,
+          52902,
+          104427,
+          206138,
+          406994,
+          803571
         ],
         "baseChainSeconds": 2595180,
-        "fullBonusChainSeconds": 1462833
+        "fullBonusChainSeconds": 1609114
       },
       {
         "key": "wall_reinforcement",
@@ -1263,19 +1261,19 @@
           1296000
         ],
         "fullBonusSecondsByTargetLevel": [
-          101,
-          338,
-          1015,
-          6088,
-          24351,
-          48093,
-          94934,
-          187399,
-          369995,
-          730519
+          112,
+          372,
+          1116,
+          6696,
+          26786,
+          52902,
+          104427,
+          206138,
+          406994,
+          803571
         ],
         "baseChainSeconds": 2595180,
-        "fullBonusChainSeconds": 1462833
+        "fullBonusChainSeconds": 1609114
       },
       {
         "key": "unit_refit",
@@ -1294,19 +1292,19 @@
           1296000
         ],
         "fullBonusSecondsByTargetLevel": [
-          101,
-          338,
-          1015,
-          6088,
-          24351,
-          48093,
-          94934,
-          187399,
-          369995,
-          730519
+          112,
+          372,
+          1116,
+          6696,
+          26786,
+          52902,
+          104427,
+          206138,
+          406994,
+          803571
         ],
         "baseChainSeconds": 2595180,
-        "fullBonusChainSeconds": 1462833
+        "fullBonusChainSeconds": 1609114
       },
       {
         "key": "prisoner_education",
@@ -1325,19 +1323,19 @@
           1296000
         ],
         "fullBonusSecondsByTargetLevel": [
-          101,
-          338,
-          1015,
-          6088,
-          24351,
-          48093,
-          94934,
-          187399,
-          369995,
-          730519
+          112,
+          372,
+          1116,
+          6696,
+          26786,
+          52902,
+          104427,
+          206138,
+          406994,
+          803571
         ],
         "baseChainSeconds": 2595180,
-        "fullBonusChainSeconds": 1462833
+        "fullBonusChainSeconds": 1609114
       },
       {
         "key": "attack_tech",
@@ -1356,19 +1354,19 @@
           1296000
         ],
         "fullBonusSecondsByTargetLevel": [
-          101,
-          338,
-          1015,
-          6088,
-          24351,
-          48093,
-          94934,
-          187399,
-          369995,
-          730519
+          112,
+          372,
+          1116,
+          6696,
+          26786,
+          52902,
+          104427,
+          206138,
+          406994,
+          803571
         ],
         "baseChainSeconds": 2595180,
-        "fullBonusChainSeconds": 1462833
+        "fullBonusChainSeconds": 1609114
       },
       {
         "key": "defense_tech",
@@ -1387,19 +1385,19 @@
           1296000
         ],
         "fullBonusSecondsByTargetLevel": [
-          101,
-          338,
-          1015,
-          6088,
-          24351,
-          48093,
-          94934,
-          187399,
-          369995,
-          730519
+          112,
+          372,
+          1116,
+          6696,
+          26786,
+          52902,
+          104427,
+          206138,
+          406994,
+          803571
         ],
         "baseChainSeconds": 2595180,
-        "fullBonusChainSeconds": 1462833
+        "fullBonusChainSeconds": 1609114
       },
       {
         "key": "weapon_range",
@@ -1418,19 +1416,19 @@
           1296000
         ],
         "fullBonusSecondsByTargetLevel": [
-          101,
-          338,
-          1015,
-          6088,
-          24351,
-          48093,
-          94934,
-          187399,
-          369995,
-          730519
+          112,
+          372,
+          1116,
+          6696,
+          26786,
+          52902,
+          104427,
+          206138,
+          406994,
+          803571
         ],
         "baseChainSeconds": 2595180,
-        "fullBonusChainSeconds": 1462833
+        "fullBonusChainSeconds": 1609114
       },
       {
         "key": "cmd_hp",
@@ -1449,19 +1447,19 @@
           1296000
         ],
         "fullBonusSecondsByTargetLevel": [
-          101,
-          338,
-          1015,
-          6088,
-          24351,
-          48093,
-          94934,
-          187399,
-          369995,
-          730519
+          112,
+          372,
+          1116,
+          6696,
+          26786,
+          52902,
+          104427,
+          206138,
+          406994,
+          803571
         ],
         "baseChainSeconds": 2595180,
-        "fullBonusChainSeconds": 1462833
+        "fullBonusChainSeconds": 1609114
       },
       {
         "key": "fire_density",
@@ -1480,19 +1478,19 @@
           1296000
         ],
         "fullBonusSecondsByTargetLevel": [
-          101,
-          338,
-          1015,
-          6088,
-          24351,
-          48093,
-          94934,
-          187399,
-          369995,
-          730519
+          112,
+          372,
+          1116,
+          6696,
+          26786,
+          52902,
+          104427,
+          206138,
+          406994,
+          803571
         ],
         "baseChainSeconds": 2595180,
-        "fullBonusChainSeconds": 1462833
+        "fullBonusChainSeconds": 1609114
       },
       {
         "key": "log_load",
@@ -1511,19 +1509,19 @@
           1296000
         ],
         "fullBonusSecondsByTargetLevel": [
-          101,
-          338,
-          1015,
-          6088,
-          24351,
-          48093,
-          94934,
-          187399,
-          369995,
-          730519
+          112,
+          372,
+          1116,
+          6696,
+          26786,
+          52902,
+          104427,
+          206138,
+          406994,
+          803571
         ],
         "baseChainSeconds": 2595180,
-        "fullBonusChainSeconds": 1462833
+        "fullBonusChainSeconds": 1609114
       },
       {
         "key": "arm_engine",
@@ -1542,19 +1540,19 @@
           1728000
         ],
         "fullBonusSecondsByTargetLevel": [
-          169,
-          507,
-          1522,
-          6088,
-          24351,
-          50933,
-          106500,
-          222707,
-          465740,
-          974026
+          186,
+          558,
+          1674,
+          6696,
+          26786,
+          56027,
+          117150,
+          244978,
+          512314,
+          1071429
         ],
         "baseChainSeconds": 3286560,
-        "fullBonusChainSeconds": 1852543
+        "fullBonusChainSeconds": 2037798
       },
       {
         "key": "air_engine",
@@ -1573,19 +1571,19 @@
           2419200
         ],
         "fullBonusSecondsByTargetLevel": [
-          169,
-          507,
-          1522,
-          6088,
-          24351,
-          54485,
-          121855,
-          272524,
-          609612,
-          1363636
+          186,
+          558,
+          1674,
+          6696,
+          26786,
+          59933,
+          134040,
+          299777,
+          670573,
+          1500000
         ],
         "baseChainSeconds": 4354920,
-        "fullBonusChainSeconds": 2454749
+        "fullBonusChainSeconds": 2700223
       },
       {
         "key": "nav_engine",
@@ -1604,19 +1602,19 @@
           2419200
         ],
         "fullBonusSecondsByTargetLevel": [
-          169,
-          507,
-          1522,
-          6088,
-          24351,
-          54485,
-          121855,
-          272524,
-          609612,
-          1363636
+          186,
+          558,
+          1674,
+          6696,
+          26786,
+          59933,
+          134040,
+          299777,
+          670573,
+          1500000
         ],
         "baseChainSeconds": 4354920,
-        "fullBonusChainSeconds": 2454749
+        "fullBonusChainSeconds": 2700223
       },
       {
         "key": "prod_food",
@@ -1635,19 +1633,19 @@
           1036800
         ],
         "fullBonusSecondsByTargetLevel": [
-          68,
-          271,
-          846,
-          3044,
-          12175,
-          26414,
-          57292,
-          124222,
-          269447,
-          584416
+          74,
+          298,
+          930,
+          3348,
+          13393,
+          29055,
+          63021,
+          136644,
+          296391,
+          642857
         ],
         "baseChainSeconds": 1912800,
-        "fullBonusChainSeconds": 1078195
+        "fullBonusChainSeconds": 1186011
       },
       {
         "key": "prod_steel",
@@ -1666,19 +1664,19 @@
           1036800
         ],
         "fullBonusSecondsByTargetLevel": [
-          68,
-          271,
-          846,
-          3044,
-          12175,
-          26414,
-          57292,
-          124222,
-          269447,
-          584416
+          74,
+          298,
+          930,
+          3348,
+          13393,
+          29055,
+          63021,
+          136644,
+          296391,
+          642857
         ],
         "baseChainSeconds": 1912800,
-        "fullBonusChainSeconds": 1078195
+        "fullBonusChainSeconds": 1186011
       },
       {
         "key": "prod_oil",
@@ -1697,19 +1695,19 @@
           1036800
         ],
         "fullBonusSecondsByTargetLevel": [
-          68,
-          271,
-          846,
-          3044,
-          12175,
-          26414,
-          57292,
-          124222,
-          269447,
-          584416
+          74,
+          298,
+          930,
+          3348,
+          13393,
+          29055,
+          63021,
+          136644,
+          296391,
+          642857
         ],
         "baseChainSeconds": 1912800,
-        "fullBonusChainSeconds": 1078195
+        "fullBonusChainSeconds": 1186011
       },
       {
         "key": "prod_rare",
@@ -1728,19 +1726,19 @@
           1036800
         ],
         "fullBonusSecondsByTargetLevel": [
-          68,
-          271,
-          846,
-          3044,
-          12175,
-          26414,
-          57292,
-          124222,
-          269447,
-          584416
+          74,
+          298,
+          930,
+          3348,
+          13393,
+          29055,
+          63021,
+          136644,
+          296391,
+          642857
         ],
         "baseChainSeconds": 1912800,
-        "fullBonusChainSeconds": 1078195
+        "fullBonusChainSeconds": 1186011
       },
       {
         "key": "log_warehouse",
@@ -1759,19 +1757,19 @@
           1296000
         ],
         "fullBonusSecondsByTargetLevel": [
-          101,
-          338,
-          1015,
-          6088,
-          24351,
-          48093,
-          94934,
-          187399,
-          369995,
-          730519
+          112,
+          372,
+          1116,
+          6696,
+          26786,
+          52902,
+          104427,
+          206138,
+          406994,
+          803571
         ],
         "baseChainSeconds": 2595180,
-        "fullBonusChainSeconds": 1462833
+        "fullBonusChainSeconds": 1609114
       },
       {
         "key": "log_food",
@@ -1790,19 +1788,19 @@
           1296000
         ],
         "fullBonusSecondsByTargetLevel": [
-          101,
-          338,
-          1015,
-          6088,
-          24351,
-          48093,
-          94934,
-          187399,
-          369995,
-          730519
+          112,
+          372,
+          1116,
+          6696,
+          26786,
+          52902,
+          104427,
+          206138,
+          406994,
+          803571
         ],
         "baseChainSeconds": 2595180,
-        "fullBonusChainSeconds": 1462833
+        "fullBonusChainSeconds": 1609114
       },
       {
         "key": "log_train",
@@ -1821,19 +1819,19 @@
           1296000
         ],
         "fullBonusSecondsByTargetLevel": [
-          101,
-          338,
-          1015,
-          6088,
-          24351,
-          48093,
-          94934,
-          187399,
-          369995,
-          730519
+          112,
+          372,
+          1116,
+          6696,
+          26786,
+          52902,
+          104427,
+          206138,
+          406994,
+          803571
         ],
         "baseChainSeconds": 2595180,
-        "fullBonusChainSeconds": 1462833
+        "fullBonusChainSeconds": 1609114
       },
       {
         "key": "log_build",
@@ -1852,19 +1850,19 @@
           1296000
         ],
         "fullBonusSecondsByTargetLevel": [
-          101,
-          338,
-          1015,
-          6088,
-          24351,
-          48093,
-          94934,
-          187399,
-          369995,
-          730519
+          112,
+          372,
+          1116,
+          6696,
+          26786,
+          52902,
+          104427,
+          206138,
+          406994,
+          803571
         ],
         "baseChainSeconds": 2595180,
-        "fullBonusChainSeconds": 1462833
+        "fullBonusChainSeconds": 1609114
       },
       {
         "key": "log_medical",
@@ -1883,19 +1881,19 @@
           1296000
         ],
         "fullBonusSecondsByTargetLevel": [
-          101,
-          338,
-          1015,
-          6088,
-          24351,
-          48093,
-          94934,
-          187399,
-          369995,
-          730519
+          112,
+          372,
+          1116,
+          6696,
+          26786,
+          52902,
+          104427,
+          206138,
+          406994,
+          803571
         ],
         "baseChainSeconds": 2595180,
-        "fullBonusChainSeconds": 1462833
+        "fullBonusChainSeconds": 1609114
       },
       {
         "key": "recon_level",
@@ -1914,19 +1912,19 @@
           1296000
         ],
         "fullBonusSecondsByTargetLevel": [
-          101,
-          338,
-          1015,
-          6088,
-          24351,
-          48093,
-          94934,
-          187399,
-          369995,
-          730519
+          112,
+          372,
+          1116,
+          6696,
+          26786,
+          52902,
+          104427,
+          206138,
+          406994,
+          803571
         ],
         "baseChainSeconds": 2595180,
-        "fullBonusChainSeconds": 1462833
+        "fullBonusChainSeconds": 1609114
       },
       {
         "key": "recon_radar",
@@ -1945,19 +1943,19 @@
           1296000
         ],
         "fullBonusSecondsByTargetLevel": [
-          101,
-          338,
-          1015,
-          6088,
-          24351,
-          48093,
-          94934,
-          187399,
-          369995,
-          730519
+          112,
+          372,
+          1116,
+          6696,
+          26786,
+          52902,
+          104427,
+          206138,
+          406994,
+          803571
         ],
         "baseChainSeconds": 2595180,
-        "fullBonusChainSeconds": 1462833
+        "fullBonusChainSeconds": 1609114
       }
     ]
   },
@@ -3776,7 +3774,7 @@
     "radarMaximumInitiative": 20
   },
   "implementation": {
-    "date": "2026-10-19",
+    "date": "2026-10-24",
     "technologyRulesVersion": "technology-v3-20261019",
     "implemented": [
       "four_technology_ten_level_expansion",
@@ -3786,7 +3784,8 @@
       "warehouse_five_percent_per_level",
       "five_regular_duration_curves_without_24h_cap",
       "versioned_import",
-      "V103_legacy_level_and_queue_target_migration"
+      "V103_legacy_level_and_queue_target_migration",
+      "lab_unlocks_technology_kinds_and_target_level_cap_without_research_speed"
     ],
     "notImplemented": [
       "city_dual_research_queues",
@@ -3795,5 +3794,109 @@
     ],
     "runtimeQueuePolicy": "single_research_task_per_account",
     "productionMigrationExecuted": false
+  },
+  "labAccess": {
+    "scope": "research_city",
+    "completedAvailableLevelsOnly": true,
+    "aggregate": "max_completed_single_building",
+    "requiredLevel": "max(technology.labFloor, targetLevel)",
+    "nextTargetLevel": "currentCompletedTechnologyLevel + 1",
+    "maximumLevel": 10,
+    "speedBonus": false,
+    "specializedBuildingRequirements": "unchanged_and_all_required",
+    "alreadyCompletedTechnologyEffects": "unchanged",
+    "existingQueueCostDurationFinishAndPrerequisiteSnapshot": "preserved",
+    "downgradeOfPrerequisiteForActiveTask": "existing_rejection_preserved",
+    "unlocksByLevel": [
+      {
+        "labLevel": 1,
+        "newTechnologyKeys": [
+          "attack_tech",
+          "recon_level",
+          "prod_food",
+          "prod_steel",
+          "prod_oil",
+          "prod_rare"
+        ],
+        "cumulativeTechnologyCount": 6,
+        "maximumTargetLevel": 1
+      },
+      {
+        "labLevel": 2,
+        "newTechnologyKeys": [
+          "military_theory",
+          "unit_refit",
+          "defense_tech",
+          "weapon_range",
+          "log_warehouse",
+          "log_train",
+          "log_build",
+          "recon_radar",
+          "log_load",
+          "wall_reinforcement"
+        ],
+        "cumulativeTechnologyCount": 16,
+        "maximumTargetLevel": 2
+      },
+      {
+        "labLevel": 3,
+        "newTechnologyKeys": [
+          "cmd_hp",
+          "fire_density",
+          "arm_engine",
+          "log_food",
+          "log_medical",
+          "prisoner_education"
+        ],
+        "cumulativeTechnologyCount": 22,
+        "maximumTargetLevel": 3
+      },
+      {
+        "labLevel": 4,
+        "newTechnologyKeys": [
+          "air_engine"
+        ],
+        "cumulativeTechnologyCount": 23,
+        "maximumTargetLevel": 4
+      },
+      {
+        "labLevel": 5,
+        "newTechnologyKeys": [
+          "nav_engine"
+        ],
+        "cumulativeTechnologyCount": 24,
+        "maximumTargetLevel": 5
+      },
+      {
+        "labLevel": 6,
+        "newTechnologyKeys": [],
+        "cumulativeTechnologyCount": 24,
+        "maximumTargetLevel": 6
+      },
+      {
+        "labLevel": 7,
+        "newTechnologyKeys": [],
+        "cumulativeTechnologyCount": 24,
+        "maximumTargetLevel": 7
+      },
+      {
+        "labLevel": 8,
+        "newTechnologyKeys": [],
+        "cumulativeTechnologyCount": 24,
+        "maximumTargetLevel": 8
+      },
+      {
+        "labLevel": 9,
+        "newTechnologyKeys": [],
+        "cumulativeTechnologyCount": 24,
+        "maximumTargetLevel": 9
+      },
+      {
+        "labLevel": 10,
+        "newTechnologyKeys": [],
+        "cumulativeTechnologyCount": 24,
+        "maximumTargetLevel": 10
+      }
+    ]
   }
 }

@@ -39,7 +39,7 @@ public interface BattleSessionRepository extends JpaRepository<BattleSession, Lo
     List<Long> findDueRoundIds(@Param("now") long now, org.springframework.data.domain.Pageable page);
 
     /** The session has already been locked for this round, so no version check is needed at final settlement. */
-    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Modifying(flushAutomatically = true)
     @Query("delete from BattleSession s where s.id = :id")
     int deleteResolvedById(@Param("id") Long id);
 }

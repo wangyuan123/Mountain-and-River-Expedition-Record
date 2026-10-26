@@ -88,7 +88,7 @@ public record UnitDef(
         m.put("assault", new UnitDef("assault", "突击炮-自行加榴炮（ISU-152）", "arm",
                 34, 30, 65, 167, 28, 200, 2, 750, 4, 5, 2, 2, "factory",
                 Map.of("food", 40, "steel", 200, "oil", 50, "rare", 25), "bunker", "land"));
-        m.put("rocket", new UnitDef("rocket", "反坦克火箭车-喀秋莎（BM-13）", "arm",
+        m.put("rocket", new UnitDef("rocket", "反坦克火箭-喀秋莎（BM-13）", "arm",
                 100, 11.5, 25, 179, 28, 150, 3, 1600, 5, 4, 3, 3, "factory",
                 Map.of("food", 100, "steel", 550, "oil", 450, "rare", 120), "htank", "land"));
         // 侦察机属于空军，生产、速度和装备制造均按空军基地计算。

@@ -297,7 +297,7 @@ test('展示名支持标点和 emoji，拒绝不可见字符，军官名称输�
 test('统帅名改名从玩家档案提交，用户名保持独立', async () => {
   const context = setupTestEnvironment();
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/player-profile.js'), 'utf8'), context);
-  context.Game.Core.state = { player: { id: 1, username: 'login-user', name: 'login-user' } };
+  context.Game.Core.state = { player: { id: 1, username: 'login-user', name: 'login-user' }, items: { commanderRenameCard: 1 } };
   context.Game.Core.render = () => {};
   context.Game.Main = { closePlayerDrawer() {} };
   const calls = [];
@@ -318,4 +318,21 @@ test('统帅名改名从玩家档案提交，用户名保持独立', async () =>
   assert.deepEqual(calls, ['剑客☆']);
   assert.equal(context.Game.Core.state.player.username, 'login-user');
   assert.equal(context.Game.Core.state.player.name, '剑客☆');
+});
+
+test('统帅改名弹窗在缺卡或冷却中禁用提交并展示可再次改名时间', () => {
+  const context = setupTestEnvironment();
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/player-profile.js'), 'utf8'), context);
+  context.Game.Core.state = { player: { username: 'login-user', name: 'login-user', commanderRenameCount: 1,
+    commanderNameRenameAvailableAt: Date.now() + 60_000 }, items: {} };
+  context.Game.API.setDisplayName = () => { throw Error('禁止发送请求'); };
+  context.Game.PlayerProfile.promptRenameCommander();
+  const modal = context.elements.renameCommanderModal;
+  assert.match(modal.innerHTML, /持有统帅改名卡 ×0/);
+  assert.match(modal.innerHTML, /冷却中，可再次改名时间/);
+  assert.equal(modal.querySelector('.account-confirm-submit').disabled, true);
+  const notices = [];
+  context.Game.toast = message => notices.push(message);
+  modal.querySelector('#renameCommanderForm').onsubmit({ preventDefault() {} });
+  assert.match(notices[0], /改名卡不足/);
 });

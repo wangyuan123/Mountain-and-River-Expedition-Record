@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>资源野地采空·满载卡车车队驻扎警备模型预览</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: #0f141c;
+      color: #e6edf3;
+    }
+    header {
+      margin-bottom: 24px;
+      border-bottom: 1px solid #30363d;
+      padding-bottom: 16px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 22px;
+      color: #f0f6fc;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .badge {
+      font-size: 12px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: #238636;
+      color: #fff;
+    }
+    p.desc {
+      margin: 0;
+      font-size: 14px;
+      color: #8b949e;
+      line-height: 1.6;
+    }
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #58a6ff;
+      margin: 24px 0 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 12px 16px;
+      background: #21262d;
+      font-size: 14px;
+      font-weight: 600;
+      border-bottom: 1px solid #30363d;
+      display: flex;
+      justify-content: space-between;
+    }
+    .stage-container {
+      position: relative;
+      width: 100%;
+      height: 384px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-size: cover;
+      background-position: center;
+    }
+    .bg-checker {
+      background: repeating-conic-gradient(#1c2128 0% 25%, #161b22 0% 50%) 50% / 20px 20px;
+    }
+    .bg-grass {
+      background-color: #4b5d38;
+      background-image: radial-gradient(#5a7044 15%, transparent 16%), radial-gradient(#3d4d2d 15%, transparent 16%);
+      background-size: 60px 60px;
+      background-position: 0 0, 30px 30px;
+    }
+    .bg-mud {
+      background: #382e24;
+    }
+    .model-img {
+      width: 384px;
+      height: 384px;
+      object-fit: contain;
+      filter: drop-shadow(0 6px 12px rgba(0,0,0,0.45));
+    }
+    .card-body {
+      padding: 14px 16px;
+      font-size: 13px;
+      color: #8b949e;
+      line-height: 1.5;
+    }
+    .card-body b {
+      color: #c9d1d9;
+    }
+    .ui-mockup-wrapper {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 20px;
+      max-width: 600px;
+      margin-top: 12px;
+    }
+    .wild-card-mockup {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      background: rgba(33, 38, 45, 0.7);
+      border: 1px solid rgba(56, 139, 253, 0.3);
+      border-radius: 8px;
+      padding: 12px 16px;
+    }
+    .wild-card-thumb {
+      width: 72px;
+      height: 72px;
+      background: #111;
+      border-radius: 6px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .wild-card-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .wild-card-info {
+      flex: 1;
+    }
+    .wild-card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #f0f6fc;
+      margin-bottom: 4px;
+    }
+    .wild-card-status {
+      font-size: 12px;
+      color: #e3b341;
+      margin-bottom: 4px;
+    }
+    .wild-card-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .btn {
+      padding: 6px 14px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: #238636;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>
+      <span>资源野地采空·卡车车队驻扎警戒模型图</span>
+      <span class="badge">已实机接入</span>
+    </h1>
+    <p class="desc">
+      当资源野地（粮田、炼铁厂、油田、稀矿厂）采集完毕并点击“收获”后，若野地剩余资源为 0，野地图标将无缝自动切换为该“满载货物原地驻扎、士兵全方位警戒”的沙盘模型图。
+    </p>
+  </header>
+
+  <div class="section-title">一、实机 384×384 沙盘模型在不同地图地貌下的渲染效果</div>
+  <div class="cards-grid">
+    <div class="card">
+      <div class="card-header">
+        <span>草地地表穿透融合效果</span>
+        <span style="color:#58a6ff;">野外实机</span>
+      </div>
+      <div class="stage-container bg-grass">
+        <img class="model-img" src="../img/map/wild-depleted-convoy.webp" alt="草地上的卡车车队">
+      </div>
+      <div class="card-body">
+        <b>环境表现</b>：100% 纯透明底座自然贴合真实地表，接触软阴影柔和自然，杜绝沙盘积木生硬黑框。
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span>透明度与边缘通道检测</span>
+        <span style="color:#7ee787;">棋盘格背景</span>
+      </div>
+      <div class="stage-container bg-checker">
+        <img class="model-img" src="../img/map/wild-depleted-convoy.webp" alt="棋盘格背景上的卡车车队">
+      </div>
+      <div class="card-body">
+        <b>模型构图</b>：两辆 6x6 重型军用货车紧凑停驻，后斗堆满战备物资与军需油桶；5 名钢盔步兵散布在车辆外围手持武器 360 度警戒。四周留有安全呼吸白边，杜绝边缘切断。
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span>荒原/泥土地貌效果</span>
+        <span style="color:#d29922;">前线战场</span>
+      </div>
+      <div class="stage-container bg-mud">
+        <img class="model-img" src="../img/map/wild-depleted-convoy.webp" alt="泥土背景上的卡车车队">
+      </div>
+      <div class="card-body">
+        <b>军事情境</b>：物资装箱结清完毕，满载待命；警戒步兵持枪警备，防备敌袭，等待指挥官下达“部队回城”命令。
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title">二、UI “我的领地”卡片交互呈现模拟</div>
+  <div class="ui-mockup-wrapper">
+    <div class="wild-card-mockup">
+      <div class="wild-card-thumb">
+        <img src="../img/map/wild-depleted-convoy.webp" alt="已采空驻扎野地">
+      </div>
+      <div class="wild-card-info">
+        <div class="wild-card-title">1级 粮田 · 坐标 (15, 15)</div>
+        <div class="wild-card-status">已收获 1,000 粮食 · 资源已采空 · 部队留守原地待命中</div>
+        <div style="font-size:12px; color:#8b949e; margin-bottom:8px;">驻军：基础卡车 × 20，突击步兵 × 10</div>
+        <div class="wild-card-actions">
+          <button class="btn btn-primary">部队回城</button>
+          <button class="btn" style="background:#21262d; color:#c9d1d9; border:1px solid #30363d;">查看地图</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

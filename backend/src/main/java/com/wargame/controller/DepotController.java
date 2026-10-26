@@ -40,7 +40,8 @@ public class DepotController {
                 playerId,
                 request.itemId(),
                 request.officerId(),
-                request.newName()
+                request.newName(),
+                request.skillId()
         );
         // 成功后下发最新 state，让前端无需二次 GET
         if (Boolean.TRUE.equals(result.get("success"))) {

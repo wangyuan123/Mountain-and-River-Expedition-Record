@@ -334,7 +334,7 @@ window.Game = window.Game || {};
             '</span></td>' +
             '<td><div class="ranking-identity">' + portrait(entry, guilds) +
               '<div>' +
-                '<div class="ranking-name">' + esc(entry.name) + (isMine ? '<span class="ranking-you">' + (guilds ? '本团' : '我') + '</span>' : '') + '</div>' +
+                '<div class="ranking-name">' + (!guilds && !isMine ? '<button type="button" class="ranking-text-button" onclick="Game.Friends.view(' + Number(entry.id) + ')">' + esc(entry.name) + '</button>' : esc(entry.name)) + (isMine ? '<span class="ranking-you">' + (guilds ? '本团' : '我') + '</span>' : '') + '</div>' +
                 '<span class="ranking-detail">' + (guilds ? '🛡️ ' : (entry.guildName ? '🛡️ ' : '')) + esc(detail) + '</span>' +
               '</div>' +
             '</div></td>' +

@@ -214,8 +214,11 @@ class HeadquartersServiceTest extends BaseServiceTest {
         assertEquals(commander.getId(), session.getDefenderCommanderId());
         assertEquals(Map.of("bulwark", 2), JsonUtil.parseIntMap(session.getDefenderSkills()));
         Map<String, Object> defendingView = marchService.getTacticalBattle(defender.getId(), march.getId());
-        assertEquals(attackingView.get("attackerCommandBonus"), defendingView.get("defenderCommandBonus"));
-        assertEquals(attackingView.get("defenderCommandBonus"), defendingView.get("attackerCommandBonus"));
+        // 双方使用各自分城的常驻加成，但接口不公开敌方内部军官快照。
+        assertEquals(CommandBonus.fromJson(session.getAttackerCommandBonus()).toMap(), attackingView.get("attackerCommandBonus"));
+        assertEquals(CommandBonus.fromJson(session.getDefenderCommandBonus()).toMap(), defendingView.get("attackerCommandBonus"));
+        assertEquals(Map.of(), attackingView.get("defenderCommandBonus"));
+        assertEquals(Map.of(), defendingView.get("defenderCommandBonus"));
     }
 
     private PlayerCity branchCity(Long owner, int x) {

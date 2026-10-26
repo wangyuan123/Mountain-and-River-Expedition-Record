@@ -6,6 +6,7 @@ const path = require('node:path');
 
 function createEnvironment() {
   let now = 1000;
+  const elements = new Map();
   const state = {
     player: { id: 1, cityName: '我的主城' },
     world: {
@@ -47,8 +48,11 @@ function createEnvironment() {
     document: {
       hidden: false,
       body: {},
-      createElement: () => ({ setAttribute() {}, querySelector: () => null }),
-      getElementById: () => null,
+      createElement: () => ({
+        style: {}, setAttribute() {}, querySelector: () => null,
+        remove() { if (this.parentNode) this.parentNode.removeChild(this); }
+      }),
+      getElementById: id => elements.get(id) || null,
       querySelector: () => null,
       querySelectorAll: () => []
     },
@@ -108,10 +112,49 @@ function createEnvironment() {
   return {
     game: G,
     state,
+    elements,
     mapView,
     getNav: () => renderedNavHtml,
     setNow: v => { now = v; }
   };
+}
+
+function createAlertSurfaces(env) {
+  const { game, state, elements } = env;
+  Object.assign(state, { resources: {}, buildings: {}, army: {}, forts: {}, officers: [], reports: [], tax: 0 });
+  state.player.homeModuleOrder = ['army'];
+  for (const method of ['produceOf', 'foodPerHour', 'civilianPopulation', 'populationGrowthPerHour', 'popFree', 'resentment']) game.Core[method] = () => 0;
+  game.Core.getOfficerByRole = () => null;
+  game.Core.armyCap = () => 100;
+  game.Core.morale = () => 100;
+  game.Core.populationCapacity = () => 100;
+  game.Core.capacity = () => ({});
+  game.Core.route = 'home';
+  const view = { innerHTML: '', querySelector: () => null };
+  const alerts = { innerHTML: '' };
+  const diamond = { textContent: '💎 0' };
+  const forum = {};
+  const top = {
+    html: '', marchBar: null,
+    set innerHTML(value) {
+      this.html = value;
+      const match = value.match(/class="march-bar"[^>]*>([^<]*)</);
+      this.marchBar = match ? { textContent: match[1], remove() { top.marchBar = null; } } : null;
+    },
+    get innerHTML() { return this.html; },
+    querySelector(selector) {
+      if (selector === '.diamond' || selector === '.player-bar-right .diamond') return diamond;
+      if (selector === '.forum-entry-btn') return forum;
+      if (selector === '.march-bar') return this.marchBar;
+      return null;
+    },
+    appendChild(element) { element.parentNode = this; this.marchBar = element; },
+    removeChild(element) { element.parentNode = null; this.marchBar = null; }
+  };
+  elements.set('view', view);
+  elements.set('homeAlertsWrap', alerts);
+  elements.set('topbar', top);
+  return { view, alerts, top };
 }
 
 test('行军途中情报Tab不闪烁，到达敌方目标后情报Tab立即闪烁并附带感叹号红点', () => {
@@ -219,4 +262,141 @@ test('后续新行军到达敌方目标或收到战斗推送时，情报Tab会�
   // 4. WebSocket 收到新战斗事件也会触发闪烁
   game.WS.emit('battle', { win: true, wildConquered: true, time: 7000 });
   assert.match(getNav(), /class="navitem[^"]*alert[^"]*" data-route="alerts"/, '收到战斗推送后情报Tab应闪烁');
+});
+
+test('己方野地采集去程、抵达、采集、停采和返程均不触发导航警报', () => {
+  for (const [label, flags, now] of [
+    ['去程', {}, 2000], ['抵达', {}, 5000],
+    ['采集中', { gathering: true }, 6000], ['停采待命', { gatherStopped: true }, 6000],
+    ['返程在途', { returning: true, arriveAt: 9000 }, 7000],
+    ['返城抵达', { returning: true }, 9000],
+    ['仅目标类型', { action: undefined }, 6000],
+    ['旧版采集状态', { action: undefined, targetKind: 'wild', gathering: true }, 6000]
+  ]) {
+    const { game, state, mapView, setNow, getNav } = createEnvironment();
+    const march = {
+      id: 201, action: 'gather', targetKind: 'wild_gather',
+      fromX: 50, fromY: 50, targetX: 55, targetY: 50,
+      army: { truck: 10 }, startAt: 1000, arriveAt: 5000, ...flags
+    };
+    state.world.marches = [march];
+    setNow(now);
+    assert.equal(game.World.hasBattleAlert(), false, label);
+    mapView.drawRoutes();
+    assert.equal(march._arrivalAlerted, undefined, `${label}不应提前占用战斗到达提醒`);
+    assert.equal(game.World.checkMarchArrivals(), false, label);
+    game.World.triggerBattleAlert(march);
+    game.WS.emit('march', { event: 'arrived', marchId: '201', targetName: '我方野地' });
+    game.Main.renderNavBar();
+    assert.equal(game.World.hasBattleAlert(), false, label);
+    assert.equal(state.world._newBattleAlert, undefined, label);
+    assert.doesNotMatch(getNav(), /class="navitem[^"]*alert[^"]*" data-route="alerts"/, label);
+    assert.doesNotMatch(getNav(), /data-route="alerts"[^>]*>.*?<span class="nav-badge alert-dot">!</, label);
+    assert.equal(state.world.marches[0], march);
+  }
+});
+
+test('只有采集任务时首页和顶栏不显示警讯，军情页仍可查看和操作采集行军', () => {
+  const env = createEnvironment();
+  const { game, state, setNow } = env;
+  const surfaces = createAlertSurfaces(env);
+  const march = {
+    id: 202, action: 'gather', targetKind: 'wild_gather', targetName: '己方农田',
+    fromX: 50, fromY: 50, targetX: 55, targetY: 50,
+    army: { truck: 10 }, startAt: 1000, arriveAt: 5000
+  };
+  state.world.marches = [march];
+  setNow(2000);
+  game.Core.renderTop();
+  game.Core.views.home(surfaces.view);
+  assert.doesNotMatch(surfaces.top.innerHTML, /march-bar|军情 1 起/);
+  assert.doesNotMatch(surfaces.view.innerHTML, /军情警讯/);
+
+  game.Core.refreshTop();
+  game.MainView.silentUpdateHome({});
+  assert.equal(surfaces.top.marchBar, null);
+  assert.doesNotMatch(surfaces.alerts.innerHTML, /军情警讯/);
+
+  const intelligence = { innerHTML: '', querySelectorAll: () => [] };
+  game.World.renderAlerts(intelligence);
+  assert.match(intelligence.innerHTML, /己方农田/);
+  assert.match(intelligence.innerHTML, /Game.World.cancelMarch/);
+  assert.equal(state.world.marches[0], march);
+});
+
+test('采集不抬高军情数量，真实出征和敌袭仍显示，静默更新及时移除过期警讯', () => {
+  const env = createEnvironment();
+  const { game, state, getNav } = env;
+  const surfaces = createAlertSurfaces(env);
+  const gather = { id: 203, action: 'gather', targetKind: 'wild_gather', arriveAt: 5000 };
+  const offensive = { id: 204, action: 'conquer', targetKind: 'wild', arriveAt: 6000 };
+  state.world.marches = [gather, offensive];
+  state.world.incoming = [{ id: 'enemy-1', action: 'plunder' }];
+  game.Core.renderTop();
+  game.Core.views.home(surfaces.view);
+  game.Main.renderNavBar();
+  assert.match(surfaces.top.innerHTML, /军情 2 起 \(行军1\/来袭1\)/);
+  assert.match(surfaces.view.innerHTML, /军情警讯 2 起 \(行军1\/来袭1\)/);
+  assert.match(getNav(), /class="navitem[^"]*alert[^"]*" data-route="alerts"/);
+
+  state.world.marches = [gather];
+  state.world.incoming = [];
+  game.Core.refreshTop();
+  game.MainView.silentUpdateHome({});
+  game.Main.renderNavBar();
+  assert.equal(surfaces.top.marchBar, null);
+  assert.doesNotMatch(surfaces.alerts.innerHTML, /军情警讯/);
+  assert.doesNotMatch(getNav(), /class="navitem[^"]*alert[^"]*" data-route="alerts"/);
+
+  state.world.marches.push(offensive);
+  game.Core.refreshTop();
+  game.MainView.silentUpdateHome({});
+  assert.match(surfaces.top.marchBar.textContent, /军情 1 起 \(行军1\/来袭0\)/);
+  assert.match(surfaces.alerts.innerHTML, /军情警讯 1 起 \(行军1\/来袭0\)/);
+});
+
+test('采集部队发生真实交战或待战时仍警报，先前普通抵达不会吞掉战斗提醒', () => {
+  for (const flags of [{ inBattle: true }, { battleId: 301 }, { waitingForBattle: true }]) {
+    const { game, state, mapView, setNow, getNav } = createEnvironment();
+    const march = {
+      id: 205, action: 'gather', targetKind: 'wild_gather', gathering: true,
+      fromX: 50, fromY: 50, targetX: 55, targetY: 50,
+      startAt: 1000, arriveAt: 5000
+    };
+    state.world.marches = [march];
+    setNow(6000);
+    mapView.drawRoutes();
+    assert.equal(game.World.hasBattleAlert(), false);
+    assert.equal(march._arrivalAlerted, undefined);
+    Object.assign(march, flags);
+    assert.equal(game.World.hasBattleAlert(), true);
+    assert.equal(game.Core.militaryAlertMarches().length, 1);
+    assert.equal(game.World.checkMarchArrivals(), true);
+    assert.match(getNav(), /class="navitem[^"]*alert[^"]*" data-route="alerts"/);
+  }
+});
+
+test('真实战斗推送优先于采集任务分类，确认后下次战斗仍会重新警报', () => {
+  const { game, state, getNav } = createEnvironment();
+  state.world.marches = [{ id: 206, action: 'gather', targetKind: 'wild_gather', gathering: true }];
+  for (let index = 0; index < 2; index++) {
+    game.WS.emit('battle', { marchId: 206, action: 'gather', win: false });
+    assert.equal(game.World.hasBattleAlert(), true);
+    assert.match(getNav(), /class="navitem[^"]*alert[^"]*" data-route="alerts"/);
+    game.World.acknowledgeAlerts();
+    assert.equal(game.World.hasBattleAlert(), false);
+  }
+});
+
+test('缺少本地快照的旧版抵达消息不单独报警，同步后的作战行军仍会正常触发', () => {
+  const { game, state, setNow, getNav } = createEnvironment();
+  game.WS.emit('march', { event: 'arrived', marchId: 207, targetName: '未知任务目标' });
+  assert.equal(game.World.hasBattleAlert(), false);
+  state.world.marches = [{ id: 207, action: 'gather', targetKind: 'wild_gather', arriveAt: 5000 }];
+  setNow(6000);
+  assert.equal(game.World.checkMarchArrivals(), false);
+  assert.equal(game.World.hasBattleAlert(), false);
+  state.world.marches = [{ id: 208, action: 'conquer', targetKind: 'wild', arriveAt: 5000 }];
+  assert.equal(game.World.checkMarchArrivals(), true);
+  assert.match(getNav(), /class="navitem[^"]*alert[^"]*" data-route="alerts"/);
 });

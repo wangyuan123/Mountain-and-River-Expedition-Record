@@ -29,6 +29,7 @@ class FriendServiceIntegrationTest {
     @Autowired FriendRequestRepository requests;
     @Autowired FriendGroupRepository groups;
     @Autowired PrivateChatMessageRepository messages;
+    @Autowired ScoutReportRepository scoutReports;
     @Autowired EntityManager em;
     @MockBean GameWebSocketHandler presence;
     @MockBean WebSocketPushService push;
@@ -46,6 +47,61 @@ class FriendServiceIntegrationTest {
     void directFriends() {
         friends.updateSettings(bob.getId(), new FriendDtos.Settings("ANYONE", false));
         assertFalse(friends.add(alice.getId(), bob.getId(), 0L).pending());
+    }
+
+    @Test void playerCoordinatesRequireCurrentUnexpiredSuccessfulReconForThatPlayer() {
+        directFriends();
+        bob.setCityPosX(5); bob.setCityPosY(387); players.saveAndFlush(bob);
+        assertNull(friends.profile(alice.getId(), bob.getId()).cityX());
+        assertNull(friends.list(alice.getId()).contacts().stream()
+                .filter(contact -> bob.getId().equals(contact.id())).findFirst().orElseThrow().cityX());
+
+        saveScout(alice, bob, 5, 387, true, System.currentTimeMillis() - 1000);
+        var authorized = friends.profile(alice.getId(), bob.getId());
+        assertEquals(5, authorized.cityX()); assertEquals(387, authorized.cityY());
+
+        bob.setCityPosX(6); players.saveAndFlush(bob);
+        var afterMove = friends.profile(alice.getId(), bob.getId());
+        assertNull(afterMove.cityX()); assertNull(afterMove.cityY());
+    }
+
+    @Test void failedExpiredLegacyOrOtherPlayersReconCannotRevealCoordinates() {
+        bob.setCityPosX(5); bob.setCityPosY(387); players.saveAndFlush(bob);
+        saveScout(alice, bob, 5, 387, false, System.currentTimeMillis() - 1000);
+        assertNull(friends.profile(alice.getId(), bob.getId()).cityX());
+
+        scoutReports.deleteAll();
+        ScoutReport legacy = new ScoutReport();
+        legacy.setPlayerId(alice.getId()); legacy.setType("scout"); legacy.setTargetX(5); legacy.setTargetY(387);
+        legacy.setCreatedAt(System.currentTimeMillis() - 1000); legacy.setDetailExpiresAt(System.currentTimeMillis() + 60_000);
+        legacy.setData(com.wargame.util.JsonUtil.toJson(java.util.Map.of("targetKind", "player", "x", 5, "y", 387, "showCityInfo", true)));
+        scoutReports.saveAndFlush(legacy);
+        assertNull(friends.profile(alice.getId(), bob.getId()).cityX());
+
+        scoutReports.deleteAll();
+        saveScout(alice, charlie, 5, 387, true, System.currentTimeMillis() - 1000);
+        assertNull(friends.profile(alice.getId(), bob.getId()).cityX());
+
+        scoutReports.deleteAll();
+        saveScout(charlie, bob, 5, 387, true, System.currentTimeMillis() - 1000);
+        assertNull(friends.profile(alice.getId(), bob.getId()).cityX());
+
+        scoutReports.deleteAll();
+        saveScout(alice, bob, 5, 387, true, System.currentTimeMillis() - 60_000, System.currentTimeMillis() - 1);
+        assertNull(friends.profile(alice.getId(), bob.getId()).cityX());
+    }
+
+    private void saveScout(Player viewer, Player target, int x, int y, boolean successful, long createdAt) {
+        saveScout(viewer, target, x, y, successful, createdAt, createdAt + 60_000);
+    }
+
+    private void saveScout(Player viewer, Player target, int x, int y, boolean successful, long createdAt, long detailExpiresAt) {
+        ScoutReport report = new ScoutReport();
+        report.setPlayerId(viewer.getId()); report.setType("scout"); report.setTargetX(x); report.setTargetY(y);
+        report.setCreatedAt(createdAt); report.setDetailExpiresAt(detailExpiresAt);
+        report.setData(com.wargame.util.JsonUtil.toJson(java.util.Map.of("targetKind", "player", "targetPlayerId", target.getId(),
+                "x", x, "y", y, "showCityInfo", successful)));
+        scoutReports.saveAndFlush(report);
     }
 
     @Test void defaultApprovalRequiresRecipientConsentAndIsIdempotent() {

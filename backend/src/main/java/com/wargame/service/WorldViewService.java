@@ -1,5 +1,7 @@
 package com.wargame.service;
 
+import com.wargame.util.PlayerNames;
+
 import com.wargame.util.GameClock;
 import com.wargame.model.constants.JapaneseOfficers;
 import com.wargame.model.constants.WorldConfig;
@@ -18,6 +20,7 @@ public class WorldViewService {
 
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
+    @org.springframework.beans.factory.annotation.Autowired private RadarService radar;
     @org.springframework.beans.factory.annotation.Autowired
     private CityStateRepository cityStates;
     @org.springframework.beans.factory.annotation.Autowired private GuildSupportService guildSupport;
@@ -140,10 +143,10 @@ public class WorldViewService {
                 boolean selfCity = cityOwner.equals(player.getId());
                 pcMap.put("ownerId", cityOwner);
                 pcMap.put("guildmate", guildRelations.areGuildmates(player.getId(), cityOwner));
-                pcMap.put("playerName", owner != null ? owner.getUsername() : "");
+                pcMap.put("playerName", owner != null ? PlayerNames.commanderName(owner) : "");
                 // 地图列表展开时展示游戏内统帅名与当前军衔；登录名仅作为旧数据兜底。
                 pcMap.put("commanderName", owner.getDisplayName() == null || owner.getDisplayName().isBlank()
-                        ? owner.getUsername() : owner.getDisplayName());
+                        ? PlayerNames.commanderName(owner) : owner.getDisplayName());
                 pcMap.put("militaryRank", owner.getMilitaryRank());
                 pcMap.put("militaryRankName", MilitaryRankDef.getRankName(owner.getMilitaryRank()));
                 pcMap.put("prestige", owner.getPrestige() != null ? owner.getPrestige() : 0);
@@ -231,7 +234,7 @@ public class WorldViewService {
                 if (Boolean.TRUE.equals(wt.getOccupied()) && wt.getOccupiedBy() != null) {
                     Player owner = occupiers.get(wt.getOccupiedBy());
                     if (owner != null) {
-                        wtMap.put("occupiedByName", owner.getDisplayName() == null || owner.getDisplayName().isBlank() ? owner.getUsername() : owner.getDisplayName());
+                        wtMap.put("occupiedByName", owner.getDisplayName() == null || owner.getDisplayName().isBlank() ? PlayerNames.commanderName(owner) : owner.getDisplayName());
                         wtMap.put("occupiedByRank", owner.getMilitaryRank());
                         wtMap.put("occupiedByRankName", MilitaryRankDef.getRankName(owner.getMilitaryRank()));
                         wtMap.put("occupiedByPrestige", owner.getPrestige());
@@ -245,7 +248,7 @@ public class WorldViewService {
                     wtMap.put("gatherEndAt", wt.getGatherEndAt() != null ? wt.getGatherEndAt() : 0L);
                     wtMap.put("gatherLoad", wt.getGatherLoad() != null ? wt.getGatherLoad() : 0);
                     wtMap.put("gatherRes", wt.getGatherRes());
-                    wtMap.put("gatherMode", wt.getGatherMode());
+                    wtMap.put("gatherMode", "manual");
                     wtMap.put("gatherHarvested", wt.getGatherHarvested());
                 }
                 wildTiles.add(wtMap);
@@ -267,6 +270,7 @@ public class WorldViewService {
         world.put("reinforcements", getReinforcements(playerId));
 
         world.put("incoming", getIncoming(player));
+        world.put("regionalRadar", radar.view(player.getId(), 0));
         world.put("returningEnemyMarches", getReturningEnemyMarches(player));
 
         return world;
@@ -319,7 +323,7 @@ public class WorldViewService {
                 // 与旧版 IncomingMarch 的数字 ID 分开，避免前端误去重。
                 info.put("id", "march-" + march.getId());
                 info.put("marchId", march.getId());
-                info.put("fromName", attacker != null ? attacker.getUsername() : "未知敌军");
+                info.put("fromName", attacker != null ? PlayerNames.commanderName(attacker) : "未知敌军");
                 info.put("attackerName", info.get("fromName"));
                 info.put("fromX", march.getFromX());
                 info.put("fromY", march.getFromY());
@@ -442,10 +446,15 @@ public class WorldViewService {
         }
         mMap.put("returning", Boolean.TRUE.equals(m.getReturning()));
         mMap.put("stationed", Boolean.TRUE.equals(m.getStationed()));
+        mMap.put("displaced", m.isDisplaced());
+        mMap.put("returnReason", m.getReturnReason());
         mMap.put("battleWon", Boolean.TRUE.equals(m.getBattleWon()));
         mMap.put("win", Boolean.TRUE.equals(m.getBattleWon()));
         mMap.put("gathering", Boolean.TRUE.equals(m.getGathering()));
-        mMap.put("gatherMode", Objects.requireNonNullElse(m.getGatherMode(), "auto"));
+        mMap.put("gatherMode", "manual");
+        mMap.put("gatherAfterAction", "retain");
+        mMap.put("gatherAfterActionResult", m.getGatherAfterActionResult());
+        mMap.put("gatherAfterActionReason", m.getGatherAfterActionReason());
         mMap.put("gatherStartAt", m.getGatherStartAt());
         mMap.put("gatherStopped", Boolean.TRUE.equals(m.getGatherStopped()));
         mMap.put("gatherEndAt", m.getGatherEndAt());

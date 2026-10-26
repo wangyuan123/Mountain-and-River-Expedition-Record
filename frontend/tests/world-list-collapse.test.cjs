@@ -30,6 +30,7 @@ test('list map collapses wild, NPC, and owned cards until opened', () => {
   };
   const context = vm.createContext({ Game: game, Date, localStorage: { getItem: () => null, setItem() {} } });
   context.window = context;
+  require('./load-constants.cjs')(context);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/world.js'), 'utf8'), context);
   const view = { innerHTML: '' };
 

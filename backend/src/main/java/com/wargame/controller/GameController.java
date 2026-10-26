@@ -132,6 +132,47 @@ public class GameController {
         return ResponseEntity.ok(page);
     }
 
+    /**
+     * 按目标读取本账号最近仍在保留期内的成功侦察，不依赖前端加载过哪一页战报。
+     * 仅返回已有快照，不读取目标当前守军，也不将查看情报计为阅读战报。
+     */
+    @GetMapping("/reports/scout-intelligence")
+    public ResponseEntity<Map<String, Object>> getScoutIntelligence(@RequestParam int x, @RequestParam int y) {
+        Long playerId = authService.getCurrentPlayer().getId();
+        int size = com.wargame.model.constants.WorldConfig.WORLD_SIZE;
+        if (x < 0 || y < 0 || x >= size || y >= size) throw new IllegalArgumentException("目标坐标无效");
+        long now = System.currentTimeMillis();
+        Long cursorTime = null, cursorId = null;
+        while (true) {
+            String sql = "SELECT id, created_at, target_name, list_summary_json, summary_expires_at, starred_at " +
+                    "FROM scout_reports WHERE player_id = ? AND target_x = ? AND target_y = ? AND type = 'scout' " +
+                    "AND (starred_at IS NOT NULL OR summary_expires_at > ?)" +
+                    (cursorTime == null ? "" : " AND (created_at < ? OR (created_at = ? AND id < ?))") +
+                    " ORDER BY created_at DESC, id DESC LIMIT 20";
+            List<Object> args = new ArrayList<>(List.of(playerId, x, y, now));
+            if (cursorTime != null) { args.add(cursorTime); args.add(cursorTime); args.add(cursorId); }
+            List<Map<String, Object>> rows = jdbc.query(sql, (rs, rowNum) -> {
+                Map<String, Object> row = new LinkedHashMap<>();
+                row.put("id", rs.getLong("id")); row.put("type", "scout"); row.put("time", rs.getLong("created_at"));
+                row.put("data", parseData(rs.getString("list_summary_json"), rs.getString("target_name"), x, y, rs.getLong("created_at")));
+                row.put("starred", rs.getObject("starred_at") != null);
+                row.put("summaryExpiresAt", rs.getLong("summary_expires_at"));
+                return row;
+            }, args.toArray());
+            for (Map<String, Object> row : rows) {
+                Map<?, ?> data = (Map<?, ?>) row.get("data");
+                if (data != null && Boolean.TRUE.equals(data.get("showCityInfo")) && data.get("army") instanceof Map) {
+                    reportPrivacy.anonymize(List.of(row));
+                    return ResponseEntity.ok(Map.of("found", true, "report", row));
+                }
+            }
+            // 后来的失败侦察不能覆盖较早的成功情报；按游标分批查找，避免加载完整日志或所有战报。
+            if (rows.size() < 20) return ResponseEntity.ok(Map.of("found", false));
+            Map<String, Object> last = rows.get(rows.size() - 1);
+            cursorTime = (Long) last.get("time"); cursorId = (Long) last.get("id");
+        }
+    }
+
     /** 战报列表只含快照摘要；点击详情时按 ID 单独加载完整 JSON。 */
     @GetMapping("/reports/{id}")
     public ResponseEntity<Map<String, Object>> getReportDetail(@org.springframework.web.bind.annotation.PathVariable("id") Long id) {

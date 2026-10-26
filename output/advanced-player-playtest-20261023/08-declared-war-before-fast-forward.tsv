@@ -1,0 +1,11 @@
+id	display_name	military_rank	war_at	war_end_at	war_against_id	city_pos_x	city_pos_y
+2	NULL	17	1792690031189	1792862831189	177	5	387
+177	远征统帅_163822	17	1792690031189	1792862831189	2	3	388
+id	war_at	war_end_at
+2	1792690031189	1792862831189
+Tables_in_wargame (%clock%)
+game_clock
+Tables_in_wargame (%state%)
+city_state
+pvp_player_states
+resource_overflow_state

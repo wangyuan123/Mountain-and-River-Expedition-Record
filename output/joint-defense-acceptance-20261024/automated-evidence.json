@@ -1,0 +1,298 @@
+[
+  {
+    "name": "JointDefenseBattleTest",
+    "tests": 12,
+    "errors": 0,
+    "failures": 0,
+    "seconds": 0.563,
+    "cases": [
+      {
+        "name": "outOfRangeWallCandidateDoesNotStartSkillCycle",
+        "seconds": 0.001
+      },
+      {
+        "name": "distantSourceDoesNotConsumeCycleAndSameMarchSharesOneCycle",
+        "seconds": 0.002
+      },
+      {
+        "name": "manyMillionTroopSourcesCompleteWithoutDroppingFormation",
+        "seconds": 0.015
+      },
+      {
+        "name": "sourceOfficersAreIsolatedAndNoOfficerDoesNotBorrowHomeCommander",
+        "seconds": 0.001
+      },
+      {
+        "name": "uniformMovementReadsBaseCommandForAllSourcesAndFirstBlitzDoesNotMoveRetroactively",
+        "seconds": 0.001
+      },
+      {
+        "name": "sourceOrderAndRestartDoNotChangeResultOrRandomKills",
+        "seconds": 0.0
+      },
+      {
+        "name": "contributionsConserveTroopsAndPublicProjectionRejectsInternalFields",
+        "seconds": 0.0
+      },
+      {
+        "name": "collaborativeAttackHasOneLossEventPerTargetAndIndependentDamageContributions",
+        "seconds": 0.001
+      },
+      {
+        "name": "identicalTroopsSplitAcrossSourcesKeepTheSameTotalDamageAndProbabilisticKills",
+        "seconds": 0.0
+      },
+      {
+        "name": "rearSameUnitDoesNotShareDamageAndCounterQuotaIsFinite",
+        "seconds": 0.001
+      },
+      {
+        "name": "sharedReportAlsoRejectsSensitiveFieldsInsideEventsAndContributions",
+        "seconds": 0.0
+      },
+      {
+        "name": "seededProbabilityReplaysAcrossDifferentJvmObjectHashHistories",
+        "seconds": 0.54
+      }
+    ]
+  },
+  {
+    "name": "JointDefenseConcurrencyTest",
+    "tests": 2,
+    "errors": 0,
+    "failures": 0,
+    "seconds": 0.714,
+    "cases": [
+      {
+        "name": "concurrentFoodTicksChargeTheSameIntervalOnlyOnce",
+        "seconds": 0.01
+      },
+      {
+        "name": "manualAndTimeoutRaceCreateOneSettlementAndOneReportForEachParticipant",
+        "seconds": 0.024
+      }
+    ]
+  },
+  {
+    "name": "JointDefenseMigrationTest",
+    "tests": 1,
+    "errors": 0,
+    "failures": 0,
+    "seconds": 0.006,
+    "cases": [
+      {
+        "name": "oldBattleStaysLegacyAndGarrisonFoodBeginsAtPublishedGameTime",
+        "seconds": 0.006
+      }
+    ]
+  },
+  {
+    "name": "GuildSupportTest",
+    "tests": 30,
+    "errors": 0,
+    "failures": 0,
+    "seconds": 1.672,
+    "cases": [
+      {
+        "name": "famineReturnsWholeUnlockedArmiesAtActualDepletionTimeAndNoLongerBillsThem",
+        "seconds": 0.037
+      },
+      {
+        "name": "onlyCurrentReceivingCityOwnerMayDismiss",
+        "seconds": 0.025
+      },
+      {
+        "name": "reconnaissanceIncludesSupportAndScoutLossesBelongToSenders(String)[1]",
+        "seconds": 0.034
+      },
+      {
+        "name": "reconnaissanceIncludesSupportAndScoutLossesBelongToSenders(String)[2]",
+        "seconds": 0.03
+      },
+      {
+        "name": "groundReconSupportWoundedRemainInOriginalBranch",
+        "seconds": 0.03
+      },
+      {
+        "name": "originalBranchLossRetainsFightingSupportAndSurvivorsRemainOriginalOwner",
+        "seconds": 0.093
+      },
+      {
+        "name": "leavingGuildAfterArrivalAutomaticallyReturnsGarrison",
+        "seconds": 0.019
+      },
+      {
+        "name": "reinforcementStaysSeparateCanBeRecalledAndCannotOpenAnAttack",
+        "seconds": 0.028
+      },
+      {
+        "name": "supportRejectsOutsidersCrossGuildFriendsAndRebaseBeforeDeductingAssets",
+        "seconds": 0.011
+      },
+      {
+        "name": "lateSupportCanLeaveButFightingSupportStaysAndFamineDoesNotEraseBattleLosses",
+        "seconds": 0.103
+      },
+      {
+        "name": "zeroStockAndBalancedExistingEconomyStillCannotReceiveUnfundedExtraTroops",
+        "seconds": 0.005
+      },
+      {
+        "name": "garrisonAndBattleSourcesUsePublicCommanderNameInsteadOfLoginName",
+        "seconds": 0.016
+      },
+      {
+        "name": "targetPaysFractionalFoodAndOnlyActualSurvivingTroopsCount",
+        "seconds": 0.033
+      },
+      {
+        "name": "transportDeliversOnceAndReturnsToOriginalOwner",
+        "seconds": 0.017
+      },
+      {
+        "name": "closingAcceptanceInTransitReturnsCargoAndLeavesPreviouslyStationedTroops",
+        "seconds": 0.026
+      },
+      {
+        "name": "cityChangingToAnotherGuildmateStillCancelsShipment",
+        "seconds": 0.01
+      },
+      {
+        "name": "receiverBranchGetsCargoWithoutChangingMainCity",
+        "seconds": 0.013
+      },
+      {
+        "name": "membershipChangeInTransitReturnsUndeliveredCargoInFull",
+        "seconds": 0.014
+      },
+      {
+        "name": "offlineFoodSplitsAtProductionCompletionAndRepeatingSettlementDoesNotAddTroopsAgain",
+        "seconds": 0.025
+      },
+      {
+        "name": "allSupportParticipatesEvenWhenOwnSortieIsEmptyAndAcceptanceClosedAfterArrival",
+        "seconds": 0.036
+      },
+      {
+        "name": "fullBattleUsesGarrisonSnapshotBlocksRecallAndReturnsOnlySurvivors",
+        "seconds": 0.062
+      },
+      {
+        "name": "oldGarrisonStartsFoodAtActivationWithoutChargingItsHistory",
+        "seconds": 0.016
+      },
+      {
+        "name": "branchPaysFoodWithItsOwnMayorAndReceivingPlayersTechnology",
+        "seconds": 0.019
+      },
+      {
+        "name": "offlineFoodSplitsAtResearchCompletionInsteadOfApplyingOneRateToWholeInterval",
+        "seconds": 0.021
+      },
+      {
+        "name": "invalidGarrisonWaitsForBattleBeforeAutomaticallyReturning",
+        "seconds": 0.085
+      },
+      {
+        "name": "receiverTimelineReceivesOfflineSendersInArrivalOrderAndBillsOnlyStationedInterval",
+        "seconds": 0.026
+      },
+      {
+        "name": "reconCarsRebaseAndReturnFromWildToTheOriginalBranch",
+        "seconds": 0.027
+      },
+      {
+        "name": "battleSnapshotSharesLossesAndPreservesLateReinforcements",
+        "seconds": 0.032
+      },
+      {
+        "name": "defendingViewExposesOwnFormationContextsAndHidesEnemyConfiguration",
+        "seconds": 0.029
+      },
+      {
+        "name": "reinforcementFromBranchReturnsToThatBranchAfterSwitching",
+        "seconds": 0.025
+      }
+    ]
+  },
+  {
+    "name": "ConquestWallSessionTest",
+    "tests": 7,
+    "errors": 0,
+    "failures": 0,
+    "seconds": 0.861,
+    "cases": [
+      {
+        "name": "historicalSessionWithoutSnapshotFinishesWithoutAddingWall",
+        "seconds": 0.018
+      },
+      {
+        "name": "plunderDoesNotFreezeWallAndEachNewConquestStartsAtFullHealth",
+        "seconds": 0.032
+      },
+      {
+        "name": "clearingFocusDropsDeadTroopTargetAndAcceptsWallNextRound",
+        "seconds": 0.011
+      },
+      {
+        "name": "snapshotReloadRetryAndTimeoutUseSameWallUntilSingleTerminalSettlement(boolean)[1]",
+        "seconds": 0.039
+      },
+      {
+        "name": "snapshotReloadRetryAndTimeoutUseSameWallUntilSingleTerminalSettlement(boolean)[2]",
+        "seconds": 0.033
+      },
+      {
+        "name": "wallTechnologyFreezesAtOpeningAndNextBattleReadsNewLevel",
+        "seconds": 0.018
+      },
+      {
+        "name": "failedBreachPersistsDefenderLossesWithoutLootOrTakeover",
+        "seconds": 0.012
+      }
+    ]
+  },
+  {
+    "name": "MarchAccelerationConcurrencyTest",
+    "tests": 2,
+    "errors": 0,
+    "failures": 0,
+    "seconds": 0.681,
+    "cases": [
+      {
+        "name": "rollbackRestoresConsumedOrderAndMarchClocks",
+        "seconds": 0.007
+      },
+      {
+        "name": "simultaneousRequestsConsumeOnlyOneOrder",
+        "seconds": 0.005
+      }
+    ]
+  },
+  {
+    "name": "PvpCalibrationTest",
+    "tests": 1,
+    "errors": 0,
+    "failures": 0,
+    "seconds": 0.003,
+    "cases": [
+      {
+        "name": "shippedCalibrationCoversEveryCombatSkillLevelAndHasMeasuredMirroredEvidence",
+        "seconds": 0.003
+      }
+    ]
+  },
+  {
+    "name": "ShipyardPvpCompatibilityTest",
+    "tests": 1,
+    "errors": 0,
+    "failures": 0,
+    "seconds": 0.003,
+    "cases": [
+      {
+        "name": "productionFacilityMetadataKeepsCurrentMobilityCalibrationVersion",
+        "seconds": 0.003
+      }
+    ]
+  }
+]

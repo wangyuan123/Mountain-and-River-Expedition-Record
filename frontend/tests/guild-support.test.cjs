@@ -18,7 +18,7 @@ function fixture() {
     Game: { Core: { state, render() {} }, escapeHtml: String, toast() {},
       DATA: { units: { infantry: { name: '步兵', load: 1 }, truck: { name: '卡车', load: 50 } } },
       API: { applyState() {}, client: {
-        get(url) { calls.push(url); return Promise.resolve([{ id: 22, ownerId: 2, name: '成员分城', x: 20, y: 10, readyAt: 0 }]); },
+        get(url) { calls.push(url); return Promise.resolve([{ id: 22, ownerId: 2, name: '成员分城', x: 20, y: 10, readyAt: 0, acceptGarrison: true }]); },
         post(url, body) { calls.push({ url, body }); return Promise.resolve({ state }); }
       } } }
   };

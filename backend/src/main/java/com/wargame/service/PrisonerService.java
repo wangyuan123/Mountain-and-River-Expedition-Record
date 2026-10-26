@@ -277,9 +277,9 @@ public class PrisonerService {
             Resources balance = resources.findCityForTreatment(playerId, city.getCitySlot()).orElseThrow();
             em.refresh(balance, LockModeType.PESSIMISTIC_WRITE);
             cost = Math.multiplyExact(goldPerUnit(unit), count);
-            int gold = Objects.requireNonNullElse(balance.getGold(), 0);
+            long gold = Objects.requireNonNullElse(balance.getGold(), 0L);
             if (gold < cost) throw new IllegalArgumentException("黄金不足，请减少招募数量");
-            balance.setGold((int) (gold - cost)); resources.save(balance);
+            balance.setGold(gold - cost); resources.save(balance);
             List<ArmyUnit> existing = currentRows(ArmyUnit.class, "and r.citySlot = :slot", playerId, city.getCitySlot()).stream()
                     .filter(a -> unit.equals(a.getType())).toList();
             ArmyUnit recruited = existing.isEmpty() ? new ArmyUnit(null, playerId, unit, 0) : existing.get(0);

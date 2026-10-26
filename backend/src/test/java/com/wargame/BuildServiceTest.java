@@ -97,39 +97,39 @@ class BuildServiceTest extends BaseServiceTest {
     }
 
     @Test
-    @DisplayName("开局可同时新建六项工程，第七项被拒绝且不扣资源，取消后可继续建造")
-    void testSixConstructionTeams() {
+    @DisplayName("开局可同时新建三项工程，第四项被拒绝且不扣资源，取消后可继续建造")
+    void testThreeConstructionTeams() {
         giveResources(playerId, 5000, 5000, 5000, 5000, 5000);
-        for (int slot = 0; slot < 6; slot++) {
+        for (int slot = 0; slot < 3; slot++) {
             assertEquals(true, buildService.upgrade(playerId, "farm", slot).get("success"));
         }
-        int steelBefore = getResources(playerId).getSteel();
-        Map<String, Object> blocked = buildService.upgrade(playerId, "farm", 6);
+        long steelBefore = getResources(playerId).getSteel();
+        Map<String, Object> blocked = buildService.upgrade(playerId, "farm", 3);
         assertEquals(false, blocked.get("success"));
-        assertEquals("6 支施工队都在忙，请等待完成", blocked.get("message"));
+        assertEquals("3 支施工队都在忙，请等待完成", blocked.get("message"));
         assertEquals(steelBefore, getResources(playerId).getSteel());
-        assertEquals(6, constructionRepository.findByPlayerId(playerId).size());
+        assertEquals(3, constructionRepository.findByPlayerId(playerId).size());
 
         assertEquals(true, buildService.cancel(playerId, "farm", 0).get("success"));
-        assertEquals(true, buildService.upgrade(playerId, "farm", 6).get("success"));
-        assertEquals(6, constructionRepository.findByPlayerId(playerId).size());
+        assertEquals(true, buildService.upgrade(playerId, "farm", 3).get("success"));
+        assertEquals(3, constructionRepository.findByPlayerId(playerId).size());
     }
 
     @Test
-    @DisplayName("拆除与新建共用六支施工队")
+    @DisplayName("拆除与新建共用三支施工队")
     void testDismantleSharesConstructionTeams() {
         giveResources(playerId, 5000, 5000, 5000, 5000, 5000);
         createBuilding(playerId, "refinery", 1);
         createBuilding(playerId, "oilfield", 1);
-        for (int slot = 0; slot < 5; slot++) {
+        for (int slot = 0; slot < 2; slot++) {
             assertEquals(true, buildService.upgrade(playerId, "farm", slot).get("success"));
         }
         assertEquals(true, buildService.dismantle(playerId, "refinery", 0).get("success"));
         Map<String, Object> blocked = buildService.dismantle(playerId, "oilfield", 0);
         assertEquals(false, blocked.get("success"));
-        assertEquals("6 支施工队都在忙，请等待完成", blocked.get("message"));
-        assertEquals(false, buildService.upgrade(playerId, "farm", 5).get("success"));
-        assertEquals(6, constructionRepository.findByPlayerId(playerId).size());
+        assertEquals("3 支施工队都在忙，请等待完成", blocked.get("message"));
+        assertEquals(false, buildService.upgrade(playerId, "farm", 2).get("success"));
+        assertEquals(3, constructionRepository.findByPlayerId(playerId).size());
     }
 
     @Test
@@ -249,19 +249,19 @@ class BuildServiceTest extends BaseServiceTest {
     }
     @org.junit.jupiter.params.ParameterizedTest
     @org.junit.jupiter.params.provider.ValueSource(strings = {"farm", "refinery", "oilfield", "raremine"})
-    void resourceAreaAllows36OfAnyType(String type) {
+    void resourceAreaAllows35OfAnyType(String type) {
         createBuilding(playerId, "command", 10);
         giveResources(playerId, 100000, 100000, 100000, 100000, 100000);
-        for (int slot = 0; slot < 36; slot++) {
+        for (int slot = 0; slot < 35; slot++) {
             assertEquals(true, buildService.upgrade(playerId, type, slot).get("success"), "栋数: " + (slot + 1));
             buildService.completeUpgrade(playerId, System.currentTimeMillis() + 60000);
         }
-        assertEquals(36, buildingRepository.findByPlayerIdAndType(playerId, type).size());
+        assertEquals(35, buildingRepository.findByPlayerIdAndType(playerId, type).size());
         assertEquals(false, buildService.upgrade(playerId, "farm".equals(type) ? "refinery" : "farm", 0).get("success"));
     }
 
     @Test
-    void mixedResourceBuildingsShare36SlotsAndCanStillUpgrade() {
+    void mixedResourceBuildingsShare35SlotsAndCanStillUpgrade() {
         createBuilding(playerId, "command", 10);
         giveResources(playerId, 100000, 100000, 100000, 100000, 100000);
         for (String type : List.of("farm", "refinery", "oilfield", "raremine")) {
@@ -274,7 +274,7 @@ class BuildServiceTest extends BaseServiceTest {
                 buildingRepository.save(building);
             }
         }
-        int steelBefore = getResources(playerId).getSteel();
+        long steelBefore = getResources(playerId).getSteel();
         assertEquals(false, buildService.upgrade(playerId, "farm", 9).get("success"));
         assertEquals(steelBefore, getResources(playerId).getSteel());
         assertEquals(true, buildService.upgrade(playerId, "farm", 0).get("success"));
@@ -284,7 +284,7 @@ class BuildServiceTest extends BaseServiceTest {
     void newConstructionReservesLastResourceSlotAndCancellationReleasesIt() {
         createBuilding(playerId, "command", 10);
         giveResources(playerId, 100000, 100000, 100000, 100000, 100000);
-        for (int slot = 0; slot < 35; slot++) {
+        for (int slot = 0; slot < 34; slot++) {
             Building building = new Building();
             building.setPlayerId(playerId);
             building.setType("farm");
@@ -299,8 +299,8 @@ class BuildServiceTest extends BaseServiceTest {
     }
 
     @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.CsvSource({"0,16", "1,18", "5,26", "9,34", "10,36", "11,36"})
-    void resourceCapacityGrowsWithTownHallAndCapsAt36(int commandLevel, int capacity) {
+    @org.junit.jupiter.params.provider.CsvSource({"0,35", "1,35", "5,35", "9,35", "10,35", "11,35"})
+    void resourceCapacityIsFixedAt35(int commandLevel, int capacity) {
         Building command = createBuilding(playerId, "command", commandLevel);
         giveResources(playerId, 100000, 100000, 100000, 100000, 100000);
         for (int slot = 0; slot < capacity - 1; slot++) {
@@ -313,11 +313,11 @@ class BuildServiceTest extends BaseServiceTest {
         }
         assertEquals(true, buildService.upgrade(playerId, "refinery", 0).get("success"));
         assertEquals(false, buildService.upgrade(playerId, "oilfield", 0).get("success"));
-        if (commandLevel < 10) {
-            command.setLevel(commandLevel + 1);
-            buildingRepository.save(command);
-            assertEquals(true, buildService.upgrade(playerId, "oilfield", 0).get("success"));
-        }
+        command.setLevel(commandLevel + 1);
+        buildingRepository.save(command);
+        assertEquals(false, buildService.upgrade(playerId, "oilfield", 0).get("success"));
+        assertEquals(true, buildService.cancel(playerId, "refinery", 0).get("success"));
+        assertEquals(true, buildService.upgrade(playerId, "oilfield", 0).get("success"));
     }
 
     @Test
@@ -332,7 +332,7 @@ class BuildServiceTest extends BaseServiceTest {
         buildingRepository.save(farm);
 
         giveResources(playerId, 1000, 1000, 1000, 1000, 1000);
-        int steelBefore = getResources(playerId).getSteel();
+        long steelBefore = getResources(playerId).getSteel();
 
         // 拆除 2级农田 (slot 0)
         Map<String, Object> result = buildService.dismantle(playerId, "farm", 0);
@@ -353,7 +353,7 @@ class BuildServiceTest extends BaseServiceTest {
         assertEquals(1, afterBld.getLevel(), "2级建筑拆除后应降至1级");
 
         // 验证回收了 30% 资源
-        int steelAfter = getResources(playerId).getSteel();
+        long steelAfter = getResources(playerId).getSteel();
         assertTrue(steelAfter > steelBefore, "拆除完成后应回收部分资源");
     }
 
@@ -405,7 +405,7 @@ class BuildServiceTest extends BaseServiceTest {
         buildingRepository.save(farm);
 
         giveResources(playerId, 1000, 1000, 1000, 1000, 1000);
-        int steelBefore = getResources(playerId).getSteel();
+        long steelBefore = getResources(playerId).getSteel();
 
         // 开始拆除
         buildService.dismantle(playerId, "farm", 0);
@@ -432,27 +432,49 @@ class BuildServiceTest extends BaseServiceTest {
     void militaryAreaAllowsFreeAllocationOfRepeatableBuildings(String type) {
         createBuilding(playerId, "command", 10);
         giveResources(playerId, 100000, 100000, 100000, 100000, 100000);
-        for (int slot = 0; slot < 34; slot++) {
+        for (int slot = 0; slot < 33; slot++) {
             Building building = createBuilding(playerId, type, 1);
             building.setSlot(slot);
             buildingRepository.save(building);
         }
-        // 市政厅1栋 + 同类34栋 + 新建1栋 = 军事区36栋。
-        assertEquals(true, buildService.upgrade(playerId, type, 34).get("success"));
-        int steel = getResources(playerId).getSteel();
+        // 市政厅1栋 + 同类33栋 + 新建1栋 = 军事区35栋。
+        assertEquals(true, buildService.upgrade(playerId, type, 33).get("success"));
+        long steel = getResources(playerId).getSteel();
         assertEquals(false, buildService.upgrade(playerId, "radar", 0).get("success"));
         assertEquals(steel, getResources(playerId).getSteel());
         buildService.completeUpgrade(playerId, System.currentTimeMillis() + 60000);
-        assertEquals(35, buildingRepository.findByPlayerIdAndType(playerId, type).size());
+        assertEquals(34, buildingRepository.findByPlayerIdAndType(playerId, type).size());
         assertEquals(true, buildService.upgrade(playerId, type, 0).get("success"));
         assertEquals(true, buildService.cancel(playerId, type, 0).get("success"));
-        assertEquals(true, buildService.dismantle(playerId, type, 34).get("success"));
+        assertEquals(true, buildService.dismantle(playerId, type, 33).get("success"));
         buildService.completeUpgrade(playerId, System.currentTimeMillis() + 86400000);
         assertEquals(true, buildService.upgrade(playerId, "radar", 0).get("success"));
     }
 
+    @Test
+    void guildRadarReservesMilitaryCapacityAndDoesNotUpgradeDefenseRadar() {
+        createBuilding(playerId, "command", 10);
+        Building defense = createBuilding(playerId, "radar", 4);
+        for (int slot = 0; slot < 32; slot++) {
+            Building house = createBuilding(playerId, "house", 1); house.setSlot(slot); buildingRepository.saveAndFlush(house);
+        }
+        giveResources(playerId, 100000, 100000, 100000, 100000, 100000);
+        assertEquals(true, buildService.upgrade(playerId, "guild_radar", 0).get("success"));
+        long steel = getResources(playerId).getSteel();
+        assertEquals(false, buildService.upgrade(playerId, "depot", 0).get("success"));
+        assertEquals(steel, getResources(playerId).getSteel());
+        buildService.completeUpgrade(playerId, System.currentTimeMillis() + 60000);
+        assertEquals(1, buildService.buildingLevel(playerId, "guild_radar")); assertEquals(4, defense.getLevel());
+        assertEquals(true, buildService.upgrade(playerId, "guild_radar", 0).get("success"));
+        assertEquals(true, buildService.cancel(playerId, "guild_radar", 0).get("success"));
+        assertEquals(true, buildService.dismantle(playerId, "guild_radar", 0).get("success"));
+        buildService.completeUpgrade(playerId, System.currentTimeMillis() + 86400000);
+        assertEquals(0, buildService.buildingLevel(playerId, "guild_radar")); assertEquals(4, defense.getLevel());
+        assertEquals(true, buildService.upgrade(playerId, "depot", 0).get("success"));
+    }
+
     @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.CsvSource({"1,18", "5,26", "10,36"})
+    @org.junit.jupiter.params.provider.CsvSource({"1,35", "5,35", "10,35"})
     void militaryQuotaIncludesSingleBuildingsAndPendingConstruction(int level, int capacity) {
         createBuilding(playerId, "command", level);
         giveResources(playerId, 100000, 100000, 100000, 100000, 100000);
@@ -470,7 +492,7 @@ class BuildServiceTest extends BaseServiceTest {
     }
 
     @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.ValueSource(strings = {"lightfactory", "heavyfactory", "port", "academy", "staff", "lab", "radar", "wall", "apron", "liaison", "transit", "exchange"})
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"lightfactory", "heavyfactory", "port", "academy", "staff", "lab", "radar", "guild_radar", "wall", "apron", "liaison", "transit", "exchange"})
     void functionalBuildingsRemainSingleInstance(String type) {
         createBuilding(playerId, "command", 10);
         createBuilding(playerId, type, 1);

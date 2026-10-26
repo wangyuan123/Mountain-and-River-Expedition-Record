@@ -171,6 +171,10 @@ window.Game = window.Game || {};
         + '</div>'
         + '</div>';
 
+      var militaryAwards = ((s.officerEquipment || {}).achievements || []).filter(function (a) { return a.unlocked; });
+      if (militaryAwards.length) {
+        html = html.replace('<div class="drawer-footer">', '<details><summary>军备展示成就</summary>' + militaryAwards.map(function (a) { return '<p>★ ' + G.escapeHtml(a.name) + '</p>'; }).join('') + '</details><div class="drawer-footer">');
+      }
       div.innerHTML = html;
       div.onclick = function (e) {
         if (e.target === div) Game.Main.closePlayerDrawer();
@@ -354,6 +358,11 @@ window.Game = window.Game || {};
     promptRenameCommander: function () {
       if (document.getElementById('renameCommanderModal')) return;
       var p = (Core.state && Core.state.player) || {};
+      var cardCount = Number(Core.state && Core.state.items && Core.state.items.commanderRenameCard) || 0;
+      var availableAt = Number(p.commanderNameRenameAvailableAt) || 0;
+      var cooldownTip = availableAt > Date.now()
+        ? '冷却中，可再次改名时间：' + new Date(availableAt).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false }) + '（北京时间）。'
+        : Number(p.commanderRenameCount) > 0 ? '已满30天冷却，可使用改名卡。' : '首次使用不限时间，无需等待。';
       var trigger = document.activeElement;
       var mask = document.createElement('div');
       mask.id = 'renameCommanderModal';
@@ -363,7 +372,10 @@ window.Game = window.Game || {};
         + '<form id="renameCommanderForm"><div class="modal-body">'
         + '<label for="renameCommanderInput">游戏内统帅名</label>'
         + '<input id="renameCommanderInput" name="name" type="text" aria-required="true" autocomplete="off" aria-describedby="renameCommanderHint">'
-        + '<p id="renameCommanderHint">最多8个字符，可用标点、符号和 emoji；登录用户名不变。</p></div>'
+        + '<p id="renameCommanderHint">最多8个字符，可用标点、符号和 emoji；登录用户名不变。</p>'
+        + '<p>持有统帅改名卡 ×' + cardCount + '，每次成功消耗1张；暂不在商城出售。</p>'
+        + '<p>' + cooldownTip + ' 此后每次改名须距上次成功改名满30天（现实时间）。</p>'
+        + (cardCount > 0 ? '' : '<p>统帅改名卡不足，请先领取系统赠礼邮件附件或查看仓库。</p>') + '</div>'
         + '<div class="modal-foot"><button type="button" class="account-confirm-cancel">取消</button>'
         + '<button type="submit" class="account-confirm-submit">保存名称</button></div></form></div>';
       var input = mask.querySelector('#renameCommanderInput');
@@ -371,6 +383,7 @@ window.Game = window.Game || {};
       var submit = mask.querySelector('.account-confirm-submit');
       var saving = false;
       input.value = p.name || p.username || '';
+      submit.disabled = cardCount <= 0 || availableAt > Date.now();
 
       function close(restoreFocus) {
         if (saving) return;
@@ -395,6 +408,8 @@ window.Game = window.Game || {};
       mask.querySelector('#renameCommanderForm').onsubmit = function (event) {
         event.preventDefault();
         if (saving) return;
+        if (cardCount <= 0) { G.toast('统帅改名卡不足，请先领取邮件附件或查看仓库'); return; }
+        if (availableAt > Date.now()) { G.toast(cooldownTip); return; }
         var name;
         try {
           name = G.normalizeDisplayName(input.value, 8, '统帅名');
@@ -410,7 +425,8 @@ window.Game = window.Game || {};
           saving = false;
           close(false);
           Game.Main.closePlayerDrawer();
-          G.toast('统帅名已保存');
+          G.toast('统帅名已保存，消耗1张统帅改名卡');
+          if (G.MainQuest && G.MainQuest.refresh) G.MainQuest.refresh();
           Core.render();
         }).catch(function (error) {
           saving = false;

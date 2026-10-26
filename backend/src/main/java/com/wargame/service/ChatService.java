@@ -1,5 +1,8 @@
 package com.wargame.service;
 
+import com.wargame.util.DurationText;
+import com.wargame.util.PlayerNames;
+
 import com.wargame.model.dto.ChatDtos;
 import com.wargame.model.entity.ChatMessage;
 import com.wargame.model.entity.Player;
@@ -25,6 +28,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 public class ChatService {
 
     public static final int MAX_LENGTH = 80;
+    public static final int MAX_SYSTEM_LENGTH = 512;
     public static final int MIN_WORLD_CHAT_PRESTIGE = 10000;
     public static final long COOLDOWN_MS = 5000L; // 5 秒单次发言冷却
     public static final long BURST_WINDOW_MS = 60000L; // 1 分钟滑动窗口
@@ -108,14 +112,14 @@ public class ChatService {
         String burstKey = "CHAT_BURST:" + playerId;
         if (!rateLimiter.allow(burstKey, BURST_MAX_COUNT, BURST_WINDOW_MS)) {
             long waitSec = rateLimiter.retryAfterSeconds(burstKey, BURST_WINDOW_MS);
-            throw new IllegalArgumentException("发言过于频繁，1分钟内最多发送 " + BURST_MAX_COUNT + " 次，请 " + waitSec + " 秒后再试");
+            throw new IllegalArgumentException("发言过于频繁，1分钟内最多发送 " + BURST_MAX_COUNT + " 次，请 " + DurationText.seconds(waitSec) + "后再试");
         }
 
         // 4. 单次发言冷却时间（5 秒 CD）
         String cdKey = "CHAT_CD:" + playerId;
         if (!rateLimiter.allow(cdKey, 1, COOLDOWN_MS)) {
             long waitSec = rateLimiter.retryAfterSeconds(cdKey, COOLDOWN_MS);
-            throw new IllegalArgumentException("发言过于频繁，请 " + waitSec + " 秒后再试");
+            throw new IllegalArgumentException("发言过于频繁，请 " + DurationText.seconds(waitSec) + "后再试");
         }
 
         String originalContent = content;
@@ -150,13 +154,22 @@ public class ChatService {
 
 
 
+    /** 成功开箱后发布实际奖励；与道具扣减同事务保存，推送由现有机制延迟至提交后。 */
+    public ChatDtos.MessageResponse sendItemOpened(Long playerId, String itemName, List<String> rewards) {
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
+        String playerName = PlayerNames.commanderName(player);
+        String rewardText = rewards.isEmpty() ? "无新增奖励（资源已达上限）" : String.join("、", rewards);
+        return sendSystem("玩家「" + playerName + "」打开了「" + itemName + "」，获得：" + rewardText + "。");
+    }
+
     /**
-     * 发送系统消息: 玩家 A 对玩家 B 宣战 / 某玩家被打败 / 公告 等。
+     * 发送世界频道系统消息：宣战、外交及礼包/套装开启奖励等。
      * 系统消息也写入 chat_messages 表，保证重启或断线后仍能在世界频道显示。
      */
     public ChatDtos.MessageResponse sendSystem(String content) {
         if (content == null || content.isEmpty()) return null;
-        if (content.length() > MAX_LENGTH) content = content.substring(0, MAX_LENGTH);
+        if (content.length() > MAX_SYSTEM_LENGTH) content = content.substring(0, MAX_SYSTEM_LENGTH);
         long now = System.currentTimeMillis();
         // 系统消息持久化到聊天历史，重启或断线后仍可显示
         ChatMessage message = new ChatMessage(null, null, "系统", content, now);

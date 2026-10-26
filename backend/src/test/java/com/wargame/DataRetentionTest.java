@@ -169,7 +169,7 @@ class DataRetentionTest extends BaseServiceTest {
         long boundary = System.currentTimeMillis();
         mail.setAttachmentExpiresAt(boundary); mail.setCleanupAfter(boundary + 7 * DAY); mail.setRetentionExpiresAt(boundary + 7 * DAY);
         mailRepository.saveAndFlush(mail);
-        int gold = getResources(player).getGold();
+        long gold = getResources(player).getGold();
         assertEquals(false, mails.claimAttach(player, mail.getId()).get("success"));
         assertEquals(gold, getResources(player).getGold());
         assertFalse(mail.getIsClaimed());

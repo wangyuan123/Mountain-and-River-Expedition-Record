@@ -13,11 +13,11 @@ public final class GameConstants {
     public static final String VERSION = "2.0.0";
     public static final String SAVE_KEY = "ww2_wistone_v1";
 
-    /** 两区各提供基础16个卡槽，市政厅每级增加2个，满级36个；与前端 G.DATA 保持一致。 */
-    public static final int GROUP_SLOTS_RES = 16;
-    public static final int GROUP_SLOTS_RES_MAX = 36;
-    public static final int GROUP_SLOTS_ARMY = 16;
-    public static final int GROUP_SLOTS_ARMY_MAX = 36;
+    /** 资源区与军工区各固定35个共享卡槽，不随市政厅等级扩容；与前端 G.DATA 保持一致。 */
+    public static final int GROUP_SLOTS_RES = 35;
+    public static final int GROUP_SLOTS_RES_MAX = GROUP_SLOTS_RES;
+    public static final int GROUP_SLOTS_ARMY = 35;
+    public static final int GROUP_SLOTS_ARMY_MAX = GROUP_SLOTS_ARMY;
 
     /** 军官名字池 - 对应 G.DATA.officerNames */
     public static final List<String> OFFICER_NAMES = List.of(

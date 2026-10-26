@@ -1,0 +1,78 @@
+{
+  "rulesVersion": "joint-defense-v1-20261024",
+  "defenderInitial": 1000001,
+  "localSortie": 1,
+  "garrisonInitial": 1000000,
+  "rounds": 8,
+  "elapsedSeconds": 0.672,
+  "attackerWin": false,
+  "contributions": [
+    {
+      "formationId": "formation-0",
+      "formation": "【攻方·将领测试攻将】",
+      "kind": "attack",
+      "unit": "infantry",
+      "initial": 600000,
+      "survivors": 0,
+      "losses": 600000,
+      "damage": 1001535.3222805399,
+      "wounded": 0,
+      "wallDamage": 0.0,
+      "fortDamage": 0.0,
+      "unitDamage": 1001535.3222805399
+    },
+    {
+      "formationId": "formation-1",
+      "formation": "【本城·守将测试守将】",
+      "kind": "home",
+      "unit": "htank",
+      "initial": 1,
+      "survivors": 1,
+      "losses": 0,
+      "damage": 52.08345698816924,
+      "wounded": 0,
+      "wallDamage": 0.0,
+      "fortDamage": 0.0,
+      "unitDamage": 52.08345698816924
+    },
+    {
+      "formationId": "formation-2",
+      "formation": "【援军·远征统帅_030390·将领援军甲】",
+      "kind": "support",
+      "unit": "htank",
+      "initial": 500000,
+      "survivors": 498341,
+      "losses": 1659,
+      "damage": 25988502.038941246,
+      "wounded": 0,
+      "wallDamage": 0.0,
+      "fortDamage": 0.0,
+      "unitDamage": 25988502.038941246
+    },
+    {
+      "formationId": "formation-3",
+      "formation": "【援军·远征统帅_030390·将领援军乙】",
+      "kind": "support",
+      "unit": "htank",
+      "initial": 500000,
+      "survivors": 499058,
+      "losses": 942,
+      "damage": 46011505.877601765,
+      "wounded": 0,
+      "wallDamage": 0.0,
+      "fortDamage": 0.0,
+      "unitDamage": 46011505.877601765
+    }
+  ],
+  "checks": [
+    "全部驻军超过本城上限参战",
+    "同兵种保留两名援军军官",
+    "来源科技不泄露",
+    "交战驻军不能撤回",
+    "关闭接收不排除已驻军",
+    "两支援军分别造成伤害",
+    "城内未出战库存保留",
+    "三方生成战报",
+    "兵力与伤兵守恒"
+  ]
+}

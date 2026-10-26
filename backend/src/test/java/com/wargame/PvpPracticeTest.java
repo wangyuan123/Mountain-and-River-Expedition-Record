@@ -80,14 +80,14 @@ class PvpPracticeTest extends BaseServiceTest {
         String session = battle(a, b);
         long realDeadline = sessions.findById(session).orElseThrow().getDeadlineAt();
         var time = new java.util.concurrent.atomic.AtomicLong(System.currentTimeMillis() - 2 * 86_400_000L);
-        update(session, s -> s.setDeadlineAt(time.get() + 15_000));
+        update(session, s -> s.setDeadlineAt(time.get() + 12_000));
         try (var ignored = com.wargame.util.GameClock.use(time::get)) {
             pvp.advance(session); pvp.advance(session);
             assertEquals("BATTLING", pvp.battle(a, session).get("status"));
             assertEquals(1, pvp.battle(a, session).get("round"));
             assertTrue(rounds.findBySessionIdOrderByRoundNoAsc(session).isEmpty());
             assertEquals(time.get(), pvp.status(a).get("serverTime"));
-            time.addAndGet(15_000); pvp.advance(session);
+            time.addAndGet(12_000); pvp.advance(session);
             assertEquals(2, pvp.battle(a, session).get("round"));
             assertEquals(1, rounds.findBySessionIdOrderByRoundNoAsc(session).size());
         } finally {
@@ -179,13 +179,13 @@ class PvpPracticeTest extends BaseServiceTest {
         } finally { pool.shutdownNow(); }
     }
 
-    @Test void oldTimelineRecoveryPreservesDraftAndDoesNotGiveFreshFifteenSeconds() {
+    @Test void oldTimelineRecoveryPreservesDraftAndDoesNotGiveFreshRound() {
         Long a = player(), b = player(); String session = battle(a, b);
         pvp.submit(a, id(), session, 1, 1, Map.of("infantry", new BattleService.UnitOrder(BattleService.CommandAction.HOLD)), false, Map.of("draft", 1));
         long expired = System.currentTimeMillis() - 70000; update(session, s -> s.setDeadlineAt(expired)); pvp.advance(session);
         var s = sessions.findById(session).orElseThrow();
-        if ("RECOVERING".equals(s.getStatus())) { assertEquals(expired + 60000, s.getDeadlineAt()); assertThrows(IllegalArgumentException.class, () -> pvp.submit(a, id(), session, s.getRoundNo(), 1, Map.of(), false, Map.of("late", 1))); pvp.advance(session); }
-        assertFalse(sessions.findById(session).orElseThrow().getDeadlineAt() > System.currentTimeMillis() + 15000);
+        if ("RECOVERING".equals(s.getStatus())) { assertEquals(expired + 4 * PvpPracticeService.ROUND_MS, s.getDeadlineAt()); assertThrows(IllegalArgumentException.class, () -> pvp.submit(a, id(), session, s.getRoundNo(), 1, Map.of(), false, Map.of("late", 1))); pvp.advance(session); }
+        assertFalse(sessions.findById(session).orElseThrow().getDeadlineAt() > System.currentTimeMillis() + 12000);
         pvp.surrender(a, id(), session, Map.of("surrender", 2));
     }
 

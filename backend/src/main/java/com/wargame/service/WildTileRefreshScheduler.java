@@ -29,6 +29,7 @@ public class WildTileRefreshScheduler {
     private final MarchRepository marches;
     private final WorldTerrainService terrain;
     private final LandBanditPopulationService landBandits;
+    @org.springframework.beans.factory.annotation.Autowired private ResourceOverflowService resourceOverflow;
     @org.springframework.beans.factory.annotation.Autowired private org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     /** 周期检查与世界刷新同事务，重启不提前刷新，多实例不重复刷新。 */
@@ -37,6 +38,7 @@ public class WildTileRefreshScheduler {
     public void refreshWorldTargets() {
         // 保留原北京时间 0、3、6…点边界，只将时钟切换为停服会暂停的游戏时间。
         long period = (com.wargame.util.GameClock.now() + 28_800_000L) / 10_800_000L;
+        if (resourceOverflow != null) resourceOverflow.checkPeriod(period);
         var rows = jdbc.queryForList("SELECT last_period FROM game_schedule WHERE task_key = 'world-refresh' FOR UPDATE", Long.class);
         if (rows.isEmpty()) {
             jdbc.update("INSERT INTO game_schedule (task_key, last_period) VALUES ('world-refresh', ?)", period);

@@ -183,7 +183,7 @@ window.Game = window.Game || {};
       var exLv = s.buildings.exchange || 0;
       var rate = 0.50 + exLv * 0.04;
       var amt = parseInt(amtEl.value, 10) || 0;
-      var gain = Math.floor(amt * rate);
+      var gain = Math.floor(amt * Math.round(rate * 100) / 100);
       var toName = G.DATA.resources[toEl.value] ? G.DATA.resources[toEl.value].name : toEl.value;
 
       prevEl.textContent = '预计获得: ' + G.fmt(gain) + ' ' + toName + ' (调配率 ' + (rate * 100).toFixed(0) + '%)';

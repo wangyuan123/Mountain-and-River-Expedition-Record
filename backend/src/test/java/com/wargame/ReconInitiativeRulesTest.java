@@ -129,4 +129,51 @@ class ReconInitiativeRulesTest {
         assertFirst(result, 1, true, 19, 10);
         assertFirst(result, 2, true, 19, 9);
     }
+
+    @Test void reportedScoutBattleEndsOnDefendersOpeningStrikeWithoutDefenderLosses() {
+        var attacker = new BattleService.TechCtx(Map.of(), Map.of("blitz", 5, "pierce", 5, "frenzy", 5), 219, 165);
+        var defender = new BattleService.TechCtx(Map.of(), Map.of("leadership", 5, "finance", 2), 120, 105);
+        var result = UnitEquipmentRecon.resolve("scout", 100, Map.of("scout", 999895), battle,
+                attacker, defender, 10, 10, 10);
+        assertEquals(62, result.attackerInitiative());
+        assertEquals(79, result.defenderInitiative());
+        assertEquals(0, result.ownAlive());
+        assertEquals(999895, result.enemyAlive().get("scout"));
+        assertEquals(1, result.log().size());
+        assertFirst(result, 1, false, 62, 79);
+    }
+
+    @ParameterizedTest @ValueSource(strings = {"scout", "recon_car"})
+    void overwhelmingFirstStrikePreventsEliminatedSideFromAttackingOrCountering(String unit) {
+        var counter = new BattleService.TechCtx(Map.of(), Map.of("counter", 5), 0, 0);
+        int speed = UnitDef.UNITS.get(unit).spd();
+        var defenderFirst = UnitEquipmentRecon.resolve(unit, 100, Map.of(unit, 1000000), battle,
+                counter, plain, 0, 0, 1);
+        assertEquals(0, defenderFirst.ownAlive());
+        assertEquals(1000000, defenderFirst.enemyAlive().get(unit));
+        assertEquals(1, defenderFirst.log().size());
+        assertFirst(defenderFirst, 1, false, speed, speed + 2);
+        assertFalse(defenderFirst.log().get(0).contains("绝境反击："));
+
+        var attackerFirst = UnitEquipmentRecon.resolve(unit, 1000000, Map.of(unit, 100), battle,
+                plain, counter, 1, 0, 0);
+        assertEquals(1000000, attackerFirst.ownAlive());
+        assertEquals(0, attackerFirst.enemyAlive().get(unit));
+        assertEquals(1, attackerFirst.log().size());
+        assertFirst(attackerFirst, 1, true, speed + 5, speed);
+        assertFalse(attackerFirst.log().get(0).contains("绝境反击："));
+    }
+
+    @ParameterizedTest @ValueSource(strings = {"scout", "recon_car"})
+    void weakerSideWithInitiativeDealsActualAttackDamageBeforeBeingEliminated(String unit) {
+        var result = UnitEquipmentRecon.resolve(unit, 100, Map.of(unit, 1000000), battle,
+                plain, plain, 1, 0, 0);
+        var stats = UnitDef.UNITS.get(unit);
+        double attack = "scout".equals(unit) ? stats.atkAir() : stats.atkGround();
+        int losses = (int) Math.floor(100 * attack / (stats.def() + stats.hp())) + 1;
+        assertEquals(0, result.ownAlive());
+        assertEquals(1000000 - losses, result.enemyAlive().get(unit));
+        assertEquals(1, result.log().size());
+        assertFirst(result, 1, true, stats.spd() + 5, stats.spd());
+    }
 }

@@ -48,6 +48,7 @@ body[data-theme|="blue-white"] {
   border-right: 1px solid #d4dce6 !important;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important;
   color: #222222 !important;
+  overflow-x: hidden !important;
 }
 
 /* 顶部栏：晴空蓝白 经典天蓝底色 */
@@ -317,6 +318,9 @@ body[data-theme|="blue-white"] {
   background: #ffffff !important;
   padding: 10px 12px 20px !important;
   color: #222222 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  overflow-x: hidden !important;
 }
 
 /* 军需商城：与 晴空蓝白 蓝白界面统一 */
@@ -893,9 +897,19 @@ body[data-theme|="blue-white"] {
   border: 1px solid #d3e2f2 !important;
 }
 
+[data-theme|="blue-white"] .home-officer-level.is-max {
+  color: #92400e !important;
+  background: #fef9c3 !important;
+  border: 1px solid #fde047 !important;
+}
+
 [data-theme|="blue-white"] .home-officer-stat .stat-lbl {
   color: #64748b !important;
 }
+
+[data-theme|="blue-white"] .home-officer-stat .stat-lbl.mil { color: #b91c1c !important; }
+[data-theme|="blue-white"] .home-officer-stat .stat-lbl.log { color: #15803d !important; }
+[data-theme|="blue-white"] .home-officer-stat .stat-lbl.kno { color: #0284c7 !important; }
 
 [data-theme|="blue-white"] .home-officer-stat .stat-val {
   color: #0f172a !important;
@@ -1156,20 +1170,28 @@ body[data-theme|="blue-white"] {
   margin-bottom: 8px !important;
   display: flex !important;
   align-items: center !important;
-  gap: 6px !important;
+  flex-wrap: wrap !important;
+  gap: 6px 8px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
 }
 
 [data-theme|="blue-white"] .map-status-bar .msb-loc {
   color: #004499 !important;
   font-weight: 700 !important;
+  white-space: nowrap !important;
 }
 
 [data-theme|="blue-white"] .map-status-bar .msb-loc.msb-view {
   color: #c02626 !important;
+  white-space: nowrap !important;
 }
 
 [data-theme|="blue-white"] .map-status-bar .msb-meta {
   color: #64748b !important;
+  white-space: nowrap !important;
 }
 
 [data-theme|="blue-white"] .map-status-bar .msb-sep {
@@ -1184,6 +1206,10 @@ body[data-theme|="blue-white"] {
   padding: 8px 10px !important;
   margin-bottom: 8px !important;
   box-shadow: none !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
 }
 
 [data-theme|="blue-white"] .map-toolbar-row {
@@ -1191,6 +1217,9 @@ body[data-theme|="blue-white"] {
   gap: 6px !important;
   align-items: center !important;
   margin-bottom: 8px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 [data-theme|="blue-white"] .map-toolbar-row input.qty {
@@ -1235,8 +1264,17 @@ body[data-theme|="blue-white"] {
 
 [data-theme|="blue-white"] .map-toolbar-quick {
   display: grid !important;
-  grid-template-columns: repeat(4, 1fr) !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   gap: 6px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 380px) {
+  [data-theme|="blue-white"] .map-toolbar-quick {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
 }
 
 [data-theme|="blue-white"] .qt-btn {
@@ -1250,6 +1288,8 @@ body[data-theme|="blue-white"] {
   text-align: center !important;
   cursor: pointer !important;
   white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
   box-shadow: none !important;
   transition: all 0.12s ease !important;
 }
@@ -1260,7 +1300,7 @@ body[data-theme|="blue-white"] {
   border-color: #36659c !important;
 }
 
-/* 3. 分类 Tabs (彻底解决截断，等宽对齐) */
+/* 3. 分类 Tabs (横向平滑滚动，杜绝撑开页面) */
 [data-theme|="blue-white"] .map-tabs {
   background: #eef3f9 !important;
   border: 1px solid #d8e2ed !important;
@@ -1270,7 +1310,16 @@ body[data-theme|="blue-white"] {
   display: flex !important;
   align-items: center !important;
   gap: 2px !important;
-  overflow: visible !important;
+  overflow-x: auto !important;
+  scrollbar-width: none !important;
+  -webkit-overflow-scrolling: touch !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+[data-theme|="blue-white"] .map-tabs::-webkit-scrollbar {
+  display: none !important;
 }
 
 [data-theme|="blue-white"] .map-tab {
@@ -1328,6 +1377,22 @@ body[data-theme|="blue-white"] {
 }
 
 /* 4. 目标卡片列表 */
+[data-theme|="blue-white"] .tcard-grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 6px !important;
+  margin-bottom: 12px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+@media (min-width: 768px) and (orientation: landscape) {
+  [data-theme|="blue-white"] .tcard-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
 [data-theme|="blue-white"] .tcard {
   background: #ffffff !important;
   border: 1px solid #e2e8f0 !important;
@@ -1337,6 +1402,10 @@ body[data-theme|="blue-white"] {
   margin-bottom: 6px !important;
   box-shadow: none !important;
   color: #222222 !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
 }
 
 [data-theme|="blue-white"] .tcard:hover {
@@ -1430,7 +1499,8 @@ body[data-theme|="blue-white"] {
   color: #ffffff !important;
 }
 
-/* 玩家 mini-row */
+/* 玩家与折叠卡片 mini-row */
+[data-theme|="blue-white"] .tcard-collapsible .tcard-mini-row,
 [data-theme|="blue-white"] .tcard-player-mini .tcard-mini-row {
   display: flex !important;
   align-items: center !important;
@@ -1439,22 +1509,36 @@ body[data-theme|="blue-white"] {
   color: #222222 !important;
   padding: 4px 0 !important;
   cursor: pointer !important;
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
 }
 
 [data-theme|="blue-white"] .tcard-mini-name {
   color: #004499 !important;
   font-weight: 600 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
 }
 
 [data-theme|="blue-white"] .tcard-mini-prestige {
   color: #d97706 !important;
   font-size: 11px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
 }
 
 [data-theme|="blue-white"] .tcard-mini-coord,
 [data-theme|="blue-white"] .tcard-mini-dist {
   color: #64748b !important;
   font-size: 11px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
 }
 
 [data-theme|="blue-white"] .tcard-mini-badge {
@@ -1462,6 +1546,8 @@ body[data-theme|="blue-white"] {
   border-radius: 3px !important;
   font-size: 11px !important;
   font-weight: 500 !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
 }
 
 [data-theme|="blue-white"] .tcard-mini-done {
@@ -1482,6 +1568,8 @@ body[data-theme|="blue-white"] {
 [data-theme|="blue-white"] .tcard-mini-caret {
   color: #94a3b8 !important;
   font-size: 12px !important;
+  margin-left: auto !important;
+  flex-shrink: 0 !important;
 }
 
 /* 5. 底部紧凑战术控制栏 (把全屏视野还给玩家) */
@@ -1499,6 +1587,17 @@ body[data-theme|="blue-white"] {
   backdrop-filter: none !important;
   z-index: 10 !important;
   margin: 10px -12px 0 !important;
+  width: calc(100% + 24px) !important;
+  max-width: calc(100% + 24px) !important;
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 480px) {
+  [data-theme|="blue-white"] .map-control-bar {
+    margin: 10px -11px 0 !important;
+    width: calc(100% + 22px) !important;
+    max-width: calc(100% + 22px) !important;
+  }
 }
 
 [data-theme|="blue-white"] .mcb-side {
@@ -1587,8 +1686,8 @@ body[data-theme|="blue-white"] {
   border: 1px solid #dce4ee !important;
   border-left: 4px solid #4a7bb5 !important;
   border-radius: 4px !important;
-  padding: 12px 14px !important;
-  margin: 8px 0 10px !important;
+  padding: 8px 10px !important;
+  margin: 4px 0 6px !important;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04) !important;
   color: #222222 !important;
 }
@@ -1607,12 +1706,12 @@ body[data-theme|="blue-white"] {
 
 /* 主题标题 */
 [data-theme|="blue-white"] .rb-subject {
-  font-size: 15px !important;
+  font-size: 14px !important;
   font-weight: 700 !important;
   color: #004499 !important;
   border-bottom: 1px solid #e8eff6 !important;
-  padding-bottom: 6px !important;
-  margin-bottom: 8px !important;
+  padding-bottom: 4px !important;
+  margin-bottom: 6px !important;
 }
 
 /* 战报核心元信息盒 (目标、时间、胜负) */
@@ -1620,35 +1719,44 @@ body[data-theme|="blue-white"] {
   background: #f8fafc !important;
   border: 1px solid #e8eff6 !important;
   border-radius: 4px !important;
-  padding: 6px 10px !important;
-  margin-bottom: 8px !important;
+  padding: 4px 8px !important;
+  margin-bottom: 6px !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 2px 8px !important;
+  align-items: center !important;
+}
+
+[data-theme|="blue-white"] .rb-meta-box .rb-line.rb-line-full {
+  grid-column: 1 / -1 !important;
 }
 
 [data-theme|="blue-white"] .rb-line {
-  font-size: 13px !important;
+  font-size: 12px !important;
   color: #334455 !important;
-  margin: 3px 0 !important;
-  line-height: 1.5 !important;
+  margin: 1px 0 !important;
+  line-height: 1.4 !important;
+  word-break: break-word !important;
 }
 
 [data-theme|="blue-white"] .rb-line b {
   color: #475569 !important;
   font-weight: 600 !important;
   display: inline-block !important;
-  min-width: 60px !important;
+  min-width: 52px !important;
 }
 
 [data-theme|="blue-white"] .rb-dim {
   color: #64748b !important;
-  font-size: 12px !important;
+  font-size: 11px !important;
 }
 
 /* 结果徽章 */
 [data-theme|="blue-white"] .rb-res-badge {
   display: inline-block !important;
-  padding: 1px 8px !important;
+  padding: 1px 6px !important;
   border-radius: 3px !important;
-  font-size: 12px !important;
+  font-size: 11.5px !important;
   font-weight: 600 !important;
 }
 
@@ -1674,15 +1782,15 @@ body[data-theme|="blue-white"] {
 [data-theme|="blue-white"] .rb-divider {
   border: none !important;
   border-top: 1px dashed #e2e8f0 !important;
-  margin: 8px 0 !important;
+  margin: 5px 0 !important;
 }
 
 /* 分块阵营标头 (【我方侦察机】/【敌方侦察机】/【城市情报】) */
 [data-theme|="blue-white"] .rb-side {
-  font-size: 13px !important;
+  font-size: 12px !important;
   font-weight: 700 !important;
-  margin: 8px 0 4px !important;
-  padding: 3px 8px !important;
+  margin: 5px 0 3px !important;
+  padding: 2px 6px !important;
   border-radius: 3px !important;
   display: block !important;
   background: #f0f5fb !important;
@@ -1701,12 +1809,19 @@ body[data-theme|="blue-white"] {
   border-left: 3px solid #dc2626 !important;
 }
 
-/* 兵力/部队信息行 */
+/* 兵力/部队信息行与容器 */
+[data-theme|="blue-white"] .rb-units-wrap {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important;
+  gap: 2px 8px !important;
+  margin: 2px 0 4px 4px !important;
+}
+
 [data-theme|="blue-white"] .rb-unit {
-  font-size: 13px !important;
+  font-size: 12px !important;
   color: #222222 !important;
-  padding: 3px 0 3px 10px !important;
-  line-height: 1.5 !important;
+  padding: 2px 6px !important;
+  line-height: 1.35 !important;
 }
 
 [data-theme|="blue-white"] .rb-unit.mine {
@@ -1720,9 +1835,17 @@ body[data-theme|="blue-white"] {
 }
 
 [data-theme|="blue-white"] .rb-loss-tag {
-  font-size: 12px !important;
+  font-size: 11px !important;
   color: #64748b !important;
   font-weight: normal !important;
+}
+
+[data-theme|="blue-white"] .rb-cmd-banner {
+  margin: 3px 0 4px 6px !important;
+  padding: 3px 6px !important;
+  border-radius: 4px !important;
+  font-size: 11.5px !important;
+  line-height: 1.35 !important;
 }
 
 [data-theme|="blue-white"] .rb-cmd-banner.mine {
@@ -1753,12 +1876,68 @@ body[data-theme|="blue-white"] {
 [data-theme|="blue-white"] .rb-narrative {
   background: #f8fafc !important;
   border-left: 3px solid #4a7bb5 !important;
-  padding: 6px 10px !important;
-  font-size: 13px !important;
+  padding: 4px 8px !important;
+  font-size: 12px !important;
   color: #334455 !important;
-  line-height: 1.6 !important;
-  margin: 8px 0 !important;
+  line-height: 1.45 !important;
+  margin: 5px 0 !important;
   border-radius: 2px !important;
+}
+
+/* 战果结算块晴空蓝白适配 */
+[data-theme|="blue-white"] .rb-settlement {
+  border: 1px solid #dce4ee !important;
+  background: #f8fafc !important;
+  margin: 5px 0 6px !important;
+  border-radius: 4px !important;
+  overflow: hidden !important;
+}
+
+[data-theme|="blue-white"] .rb-settlement-title {
+  color: #004499 !important;
+  background: #eef4fb !important;
+  padding: 4px 8px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+}
+
+[data-theme|="blue-white"] .rb-settlement-grid {
+  background: #e2e8f0 !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 1px !important;
+}
+
+[data-theme|="blue-white"] .rb-settlement-item {
+  background: #ffffff !important;
+  padding: 3px 6px !important;
+  min-height: 24px !important;
+}
+
+[data-theme|="blue-white"] .rb-settlement-item.rb-settlement-full {
+  grid-column: 1 / -1 !important;
+}
+
+[data-theme|="blue-white"] .rb-settlement-item span {
+  color: #64748b !important;
+  font-size: 11px !important;
+}
+
+[data-theme|="blue-white"] .rb-settlement-item b {
+  color: #1e293b !important;
+  font-size: 12px !important;
+}
+
+[data-theme|="blue-white"] .rb-settlement-item b small {
+  color: #64748b !important;
+  font-size: 10.5px !important;
+}
+
+[data-theme|="blue-white"] .rb-settlement-note {
+  color: #64748b !important;
+  font-size: 10.5px !important;
+  padding: 3px 6px !important;
+  background: #f8fafc !important;
 }
 
 /* 2. 战报列表卡片 (.report-card) */
@@ -1767,8 +1946,8 @@ body[data-theme|="blue-white"] {
   border: 1px solid #dce4ee !important;
   border-left: 3px solid #4a7bb5 !important;
   border-radius: 4px !important;
-  padding: 8px 10px !important;
-  margin-bottom: 8px !important;
+  padding: 6px 8px !important;
+  margin-bottom: 6px !important;
   box-shadow: none !important;
 }
 
@@ -1950,6 +2129,33 @@ body[data-theme|="blue-white"] {
   background: #e2ecf7 !important;
 }
 
+/* ===== 晴空蓝白 风格：资源详情弹窗适配 ===== */
+[data-theme|="blue-white"] .res-detail-modal {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+}
+[data-theme|="blue-white"] .res-detail-modal .modal-title {
+  color: #004499 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  background: #ffffff !important;
+}
+[data-theme|="blue-white"] .res-detail-modal .modal-body {
+  background: #ffffff !important;
+  color: #1e293b !important;
+}
+[data-theme|="blue-white"] .res-detail-modal .modal-foot {
+  border-top: 1px solid #e2e8f0 !important;
+  background: #f8fafc !important;
+}
+[data-theme|="blue-white"] .res-detail-net {
+  background: #f1f5f9 !important;
+}
+[data-theme|="blue-white"] .res-detail-tip {
+  background: #f8fafc !important;
+  border-left-color: #0284c7 !important;
+  color: #64748b !important;
+}
+
 /* ===== 晴空蓝白 风格：平民与民情政务弹窗深度适配 ===== */
 [data-theme|="blue-white"] .pop-detail-modal {
   background: #ffffff !important;
@@ -1971,6 +2177,15 @@ body[data-theme|="blue-white"] {
 [data-theme|="blue-white"] .pop-detail-modal .modal-foot {
   border-top: 1px solid #e2e8f0 !important;
   background: #f8fafc !important;
+}
+
+[data-theme|="blue-white"] .modal-close-btn {
+  color: #64748b !important;
+}
+
+[data-theme|="blue-white"] .modal-close-btn:hover {
+  color: #0f172a !important;
+  background: rgba(0, 0, 0, 0.06) !important;
 }
 
 /* 统计卡片 */
@@ -2711,6 +2926,16 @@ body[data-theme="paper"] {
   color: #2b5435 !important;
 }
 
+[data-theme="paper"] .home-officer-level.is-max {
+  background: #f5eedc !important;
+  color: #8c5816 !important;
+  border: 1px solid #d8c39e !important;
+}
+
+[data-theme="paper"] .home-officer-stat .stat-lbl.mil { color: #991b1b !important; }
+[data-theme="paper"] .home-officer-stat .stat-lbl.log { color: #166534 !important; }
+[data-theme="paper"] .home-officer-stat .stat-lbl.kno { color: #075985 !important; }
+
 [data-theme="paper"] .alert-cell {
   background: #ffffff !important;
   border: 1px solid #e2ded5 !important;
@@ -2793,6 +3018,33 @@ body[data-theme="paper"] {
   color: #ffffff !important;
 }
 
+/* ===== Paper 公文沙盘风：资源详情弹窗适配 ===== */
+[data-theme="paper"] .res-detail-modal {
+  background: #fdfcf7 !important;
+  border: 1px solid #d4cbb8 !important;
+}
+[data-theme="paper"] .res-detail-modal .modal-title {
+  color: #3b2813 !important;
+  border-bottom: 1px solid #e2dac7 !important;
+  background: #fbf9f2 !important;
+}
+[data-theme="paper"] .res-detail-modal .modal-body {
+  background: #fdfcf7 !important;
+  color: #2c2214 !important;
+}
+[data-theme="paper"] .res-detail-modal .modal-foot {
+  border-top: 1px solid #e2dac7 !important;
+  background: #f5f2e6 !important;
+}
+[data-theme="paper"] .res-detail-net {
+  background: #f5f0e1 !important;
+}
+[data-theme="paper"] .res-detail-tip {
+  background: #faf8f0 !important;
+  border-left-color: #c4a97a !important;
+  color: #7a6e5d !important;
+}
+
 /* ===== Paper 公文沙盘风：平民与民情政务弹窗适配 ===== */
 [data-theme="paper"] .pop-detail-modal {
   background: #fdfcf7 !important;
@@ -2814,6 +3066,15 @@ body[data-theme="paper"] {
 [data-theme="paper"] .pop-detail-modal .modal-foot {
   border-top: 1px solid #e2dac7 !important;
   background: #f5f2e6 !important;
+}
+
+[data-theme="paper"] .modal-close-btn {
+  color: #726b5e !important;
+}
+
+[data-theme="paper"] .modal-close-btn:hover {
+  color: #273136 !important;
+  background: rgba(0, 0, 0, 0.06) !important;
 }
 
 [data-theme="paper"] .pop-stat-box {
@@ -3398,6 +3659,16 @@ body[data-theme="dark"] {
   color: #38bdf8 !important;
 }
 
+[data-theme="dark"] .home-officer-level.is-max {
+  background: #2a1f0a !important;
+  color: #fbbf24 !important;
+  border: 1px solid #78350f !important;
+}
+
+[data-theme="dark"] .home-officer-stat .stat-lbl.mil { color: #f87171 !important; }
+[data-theme="dark"] .home-officer-stat .stat-lbl.log { color: #4ade80 !important; }
+[data-theme="dark"] .home-officer-stat .stat-lbl.kno { color: #38bdf8 !important; }
+
 [data-theme="dark"] .alert-cell {
   background: #111827 !important;
   border: 1px solid #1e293b !important;
@@ -3631,6 +3902,37 @@ body[data-theme="dark"] {
   border: 1px solid #ded9cd !important;
 }
 
+[data-theme="paper"] .rb-settlement {
+  border-color: #ded9cd !important;
+  background: #fbf9f4 !important;
+}
+
+[data-theme="paper"] .rb-settlement-title {
+  color: #2e4739 !important;
+  background: #eef4f0 !important;
+}
+
+[data-theme="paper"] .rb-settlement-grid {
+  background: #ded9cd !important;
+}
+
+[data-theme="paper"] .rb-settlement-item {
+  background: #fdfcf9 !important;
+}
+
+[data-theme="paper"] .rb-settlement-item span {
+  color: #726b5e !important;
+}
+
+[data-theme="paper"] .rb-settlement-item b {
+  color: #273136 !important;
+}
+
+[data-theme="paper"] .rb-settlement-item b small,
+[data-theme="paper"] .rb-settlement-note {
+  color: #8c8273 !important;
+}
+
 [data-theme="paper"] .rb-side.w {
   background: #eef4f0 !important;
   color: #2e4739 !important;
@@ -3704,6 +4006,37 @@ body[data-theme="dark"] {
   background: #131b2e !important;
   color: #cbd5e1 !important;
   border-left: 3px solid #38bdf8 !important;
+}
+
+[data-theme="dark"] .rb-settlement {
+  border-color: #1e293b !important;
+  background: #101726 !important;
+}
+
+[data-theme="dark"] .rb-settlement-title {
+  color: #38bdf8 !important;
+  background: #172554 !important;
+}
+
+[data-theme="dark"] .rb-settlement-grid {
+  background: #1e293b !important;
+}
+
+[data-theme="dark"] .rb-settlement-item {
+  background: #0f172a !important;
+}
+
+[data-theme="dark"] .rb-settlement-item span {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .rb-settlement-item b {
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .rb-settlement-item b small,
+[data-theme="dark"] .rb-settlement-note {
+  color: #64748b !important;
 }
 
 [data-theme="dark"] .report-card {
@@ -3853,6 +4186,40 @@ body[data-theme="dark"] {
   font-weight: 700 !important;
 }
 
+/* ===== Dark 战术夜航终端黑：资源详情弹窗适配 ===== */
+[data-theme="dark"] .res-detail-modal {
+  background: #0d131f !important;
+  border: 1px solid #1e293b !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+}
+[data-theme="dark"] .res-detail-modal .modal-title {
+  color: #38bdf8 !important;
+  border-bottom: 1px solid #1e293b !important;
+  background: #0d131f !important;
+}
+[data-theme="dark"] .res-detail-modal .modal-body {
+  background: #0d131f !important;
+  color: #e2e8f0 !important;
+}
+[data-theme="dark"] .res-detail-modal .modal-foot {
+  border-top: 1px solid #1e293b !important;
+  background: #0b0f17 !important;
+}
+[data-theme="dark"] .res-detail-value {
+  border-color: #1e293b !important;
+}
+[data-theme="dark"] .res-detail-net {
+  background: #172436 !important;
+}
+[data-theme="dark"] .res-detail-tip {
+  background: #131d2e !important;
+  border-left-color: #38bdf8 !important;
+  color: #94a3b8 !important;
+}
+[data-theme="dark"] .res-detail-bar {
+  background: #1e293b !important;
+}
+
 /* ===== Dark 战术夜航终端黑：平民与民情政务弹窗适配 ===== */
 [data-theme="dark"] .pop-detail-modal {
   background: #0d131f !important;
@@ -3874,6 +4241,15 @@ body[data-theme="dark"] {
 [data-theme="dark"] .pop-detail-modal .modal-foot {
   border-top: 1px solid #1e293b !important;
   background: #0b0f17 !important;
+}
+
+[data-theme="dark"] .modal-close-btn {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .modal-close-btn:hover {
+  color: #f1f5f9 !important;
+  background: rgba(255, 255, 255, 0.1) !important;
 }
 
 [data-theme="dark"] .pop-stat-box {

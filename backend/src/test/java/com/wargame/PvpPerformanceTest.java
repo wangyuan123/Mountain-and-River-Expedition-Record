@@ -61,7 +61,7 @@ class PvpPerformanceTest extends BaseServiceTest {
             }
             // 批量将时间轴置于刚到期，两个调度写者并发处理相同会话，测量本批的回合截止延迟。
             long due=System.currentTimeMillis()-1;
-            new TransactionTemplate(transactions).executeWithoutResult(tx->{for(var s:matched){var current=sessions.findById(s.getId()).orElseThrow();current.setStartsAt(due-15000);current.setDeadlineAt(due-15000);sessions.save(current);}});
+            new TransactionTemplate(transactions).executeWithoutResult(tx->{for(var s:matched){var current=sessions.findById(s.getId()).orElseThrow();current.setStartsAt(due-12000);current.setDeadlineAt(due-12000);sessions.save(current);}});
             pending.clear();
             for(var s:matched)for(int worker=0;worker<2;worker++)pending.add(pool.submit(()->practice.advance(s.getId())));
             for(var f:pending)f.get(30,TimeUnit.SECONDS);

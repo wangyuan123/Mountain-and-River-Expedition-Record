@@ -25,6 +25,14 @@ public class BattleResult {
     /** 双方实际参战的装备物品、数值和规则版本快照。 */
     private Map<String, Object> unitEquipment;
 
+    /** 经白名单投影的来源贡献，不包含内部快照。 */
+    private java.util.List<Map<String, Object>> formationContributions;
+    private java.util.List<Map<String, Object>> formationEvents;
+
+    /** 终局医疗采样仅投影给各来源原玩家，不与公开贡献或分享一起透传。 */
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private java.util.List<Map<String, Object>> formationRecovery = new java.util.ArrayList<>();
+
     /** 攻方是否获胜 */
     private boolean win;
 

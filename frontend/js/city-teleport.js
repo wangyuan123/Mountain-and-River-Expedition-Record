@@ -43,6 +43,7 @@
         '<div class="city-dialog-heading"><b id="cityTeleportTitle">城市传送</b><button type="button" class="btn sm" data-close aria-label="关闭传送">✕</button></div>' +
         '<p>传送城市：<b>' + esc(city ? city.name : (state().player || {}).cityName) + '</b>' + (city ? ' · (' + city.x + ', ' + city.y + ')' : '') + '</p>' +
         '<p class="city-hint">目的地以坐标为左上角，连续 2×2（共4格）必须全部为开放地图内的空闲陆地，避开城市、据点和野地。传送不占新城市名额。</p>' +
+        '<p>沿海发展：先在地图点击“海岸”寻找落点，再使用高级传送指定迁城；普通传送随机落点，无法保证沿海。道具可在商城查看所需钻石与当前余额，余额不足时请先积攒。</p>' +
         '<p class="city-hint">建设中、交战中或归降移交中不能传送；请先让本城外派部队返城，并结束来袭、运输、调遣和驻防。城市资产及已有道具效果随城保留；港口使用条件按新位置判断。</p>' +
         '<form id="cityTeleportForm"><label>目的战场<select name="battlefield">' + fieldOptions + '</select></label><label>传送道具<select name="itemId"><option value="teleportNormal">普通传送 · 随机位置（持有 ' + normal + '）</option><option value="teleportAdvanced">高级传送 · 指定坐标（持有 ' + advanced + '）</option></select></label>' +
         '<div data-coordinates class="city-transfer-grid"><label>X 坐标<input name="x" type="number" min="0" max="' + max + '" step="1" aria-label="传送X坐标"></label>' +

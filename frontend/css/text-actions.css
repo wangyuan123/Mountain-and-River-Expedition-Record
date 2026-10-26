@@ -13,7 +13,13 @@
 #screen button.build-picker-action,
 #screen button[class^="mcb-"],
 #screen button[class*=" mcb-"],
-#screen .world-map-filters button {
+#screen .world-map-filters button,
+#screen .world-map-actions button,
+#screen .wild-gather-march button,
+#screen .world-map-detail button[data-map="refresh"],
+.world-map-actions button,
+.wild-gather-march button,
+.world-map-detail button[data-map="refresh"] {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -67,7 +73,19 @@
 #screen button[class*=" mcb-"]::before,
 #screen button[class*=" mcb-"]::after,
 #screen .world-map-filters button::before,
-#screen .world-map-filters button::after {
+#screen .world-map-filters button::after,
+#screen .world-map-actions button::before,
+#screen .world-map-actions button::after,
+#screen .wild-gather-march button::before,
+#screen .wild-gather-march button::after,
+#screen .world-map-detail button[data-map="refresh"]::before,
+#screen .world-map-detail button[data-map="refresh"]::after,
+.world-map-actions button::before,
+.world-map-actions button::after,
+.wild-gather-march button::before,
+.wild-gather-march button::after,
+.world-map-detail button[data-map="refresh"]::before,
+.world-map-detail button[data-map="refresh"]::after {
   display: inline;
 }
 
@@ -85,7 +103,13 @@
 #screen button.build-picker-action::before,
 #screen button[class^="mcb-"]::before,
 #screen button[class*=" mcb-"]::before,
-#screen .world-map-filters button::before {
+#screen .world-map-filters button::before,
+#screen .world-map-actions button::before,
+#screen .wild-gather-march button::before,
+#screen .world-map-detail button[data-map="refresh"]::before,
+.world-map-actions button::before,
+.wild-gather-march button::before,
+.world-map-detail button[data-map="refresh"]::before {
   content: '[';
 }
 
@@ -103,7 +127,13 @@
 #screen button.build-picker-action::after,
 #screen button[class^="mcb-"]::after,
 #screen button[class*=" mcb-"]::after,
-#screen .world-map-filters button::after {
+#screen .world-map-filters button::after,
+#screen .world-map-actions button::after,
+#screen .wild-gather-march button::after,
+#screen .world-map-detail button[data-map="refresh"]::after,
+.world-map-actions button::after,
+.wild-gather-march button::after,
+.world-map-detail button[data-map="refresh"]::after {
   content: ']';
 }
 
@@ -129,7 +159,13 @@
 #screen button.btn.danger,
 #screen button.btn-dismantle,
 #screen button.tcard-btn-warn,
-#screen button.account-danger {
+#screen button.account-danger,
+#screen .world-map-actions button.warn,
+#screen .world-map-actions button[data-action="abandon"],
+#screen .world-map-detail button.warn,
+.world-map-actions button.warn,
+.world-map-actions button[data-action="abandon"],
+.world-map-detail button.warn {
   color: var(--danger, #c63828) !important;
 }
 
@@ -147,7 +183,13 @@
 #screen button.build-picker-action:hover:not(:disabled),
 #screen button[class^="mcb-"]:hover:not(:disabled),
 #screen button[class*=" mcb-"]:hover:not(:disabled),
-#screen .world-map-filters button:hover:not(:disabled) {
+#screen .world-map-filters button:hover:not(:disabled),
+#screen .world-map-actions button:hover:not(:disabled),
+#screen .wild-gather-march button:hover:not(:disabled),
+#screen .world-map-detail button[data-map="refresh"]:hover:not(:disabled),
+.world-map-actions button:hover:not(:disabled),
+.wild-gather-march button:hover:not(:disabled),
+.world-map-detail button[data-map="refresh"]:hover:not(:disabled) {
   background: transparent !important;
   color: var(--accent-dark, #002d66) !important;
   text-decoration: underline !important;
@@ -158,7 +200,13 @@
 #screen button.btn.danger:hover:not(:disabled),
 #screen button.btn-dismantle:hover:not(:disabled),
 #screen button.tcard-btn-warn:hover:not(:disabled),
-#screen button.account-danger:hover:not(:disabled) {
+#screen button.account-danger:hover:not(:disabled),
+#screen .world-map-actions button.warn:hover:not(:disabled),
+#screen .world-map-actions button[data-action="abandon"]:hover:not(:disabled),
+#screen .world-map-detail button.warn:hover:not(:disabled),
+.world-map-actions button.warn:hover:not(:disabled),
+.world-map-actions button[data-action="abandon"]:hover:not(:disabled),
+.world-map-detail button.warn:hover:not(:disabled) {
   color: #9e2316 !important;
 }
 
@@ -177,11 +225,22 @@
 #screen button[class^="mcb-"]:disabled,
 #screen button[class*=" mcb-"]:disabled,
 #screen .world-map-filters button:disabled,
-#screen button.disabled {
+#screen button.disabled,
+#screen .world-map-actions button:disabled,
+#screen .wild-gather-march button:disabled,
+#screen .world-map-detail button[data-map="refresh"]:disabled,
+.world-map-actions button:disabled,
+.wild-gather-march button:disabled,
+.world-map-detail button[data-map="refresh"]:disabled {
   background: transparent !important;
   color: #94a3b8 !important;
   cursor: not-allowed !important;
   text-decoration: none !important;
+}
+
+#screen .wild-gather-march button,
+.wild-gather-march button {
+  margin-top: 6px !important;
 }
 
 /* 弹窗中的关闭、确认等操作保留实体按钮，避免与页面内文字操作混淆。 */

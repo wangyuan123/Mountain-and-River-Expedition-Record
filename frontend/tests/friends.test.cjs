@@ -85,6 +85,20 @@ test('profile opens chat with stable player ID and supports moving friend to cus
   assert.ok(calls.some(c => c[0] === 'chat' && c[1] === 2));
 });
 
+test('profile only locates a city when the API provides an authorized recon coordinate', async () => {
+  const { game, nodes, calls, profile, action } = setup();
+  await game.Friends.view(2);
+  assert.match(nodes.friendModal.innerHTML, /未获得有效侦察坐标/);
+  assert.equal(action('定位城市'), undefined);
+
+  profile.cityX = 5; profile.cityY = 387;
+  game.World = { locateTarget: (x, y) => calls.push(['locate', x, y]) };
+  await game.Friends.view(2);
+  assert.match(nodes.friendModal.innerHTML, /\(5,387\)/);
+  await action('定位城市').onclick();
+  assert.deepEqual(calls, [['locate', 5, 387]]);
+});
+
 test('clearing and blacklisting require confirmation before mutating and call private refresh hooks', async () => {
   const { game, calls, action } = setup();
   await game.Friends.view(2);

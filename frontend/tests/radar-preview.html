@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="classic">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <base href="../">
+  <title>联防雷达可视验收 · 独立模拟数据</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/themes.css">
+  <link rel="stylesheet" href="css/world-map.css">
+  <script src="vendor/pixi-legacy-7.4.3.min.js"></script>
+  <script src="js/constants.js"></script>
+  <script src="js/data.js"></script>
+</head>
+<body>
+  <main>
+    <div class="panel">
+      <h1>联防雷达可视验收</h1>
+      <p>独立模拟数据，不连接游戏账号。联防雷达覆盖半径为建筑等级×1格，1级1格、10级10格。</p>
+      <p>城防雷达保留地图视野、侦察和科技前置，不提供联防覆盖。本例城防雷达固定Lv.10，联防半径仅随联防雷达等级变化；情报明细由雷达预警科技决定，当前科技Lv.0。</p>
+      <button class="btn" type="button" onclick="Game.go('world')">世界地图</button>
+      <button class="btn" type="button" onclick="Game.go('alerts')">军情终端</button>
+      <button class="btn" type="button" onclick="Game.RadarPreview.threat()">模拟团友遭到进攻</button>
+      <label>联防雷达等级 <select aria-label="联防雷达等级" onchange="Game.RadarPreview.level(this.value)"><option>1</option><option>5</option><option>10</option></select></label>
+      <p id="preview-message" role="status">先在地图工具栏开启联防雷达。无需加入军团即可建造和开启，未入团时暂无区域军情。</p>
+    </div>
+    <div id="view"></div>
+  </main>
+  <script>
+    (function (G) {
+      var sensor = { cityId: 11, citySlot: 0, name: '监测城B', x: 100, y: 100, level: 1, radius: 1, enabled: false, revision: 0 };
+      var targets = [{ kind: 'player', id: 11, ownerId: 1, selfCity: true, x: 99, y: 99, name: '监测城B', wallLevel: 1 },
+        { kind: 'player', id: 12, ownerId: 2, x: 105, y: 99, name: '团友城A', wallLevel: 1 }];
+      var state = { player: { id: 1, activeCityId: 11, username: '可视验收', cityName: '监测城B' }, buildings: { radar: 10, guild_radar: 1 }, tech: { recon_radar: 0 }, army: {},
+        cityOverview: { cities: [{ id: 11, x: 99, y: 99, current: true, name: '监测城B' }] },
+        world: { cityPos: { x: 99, y: 99 }, pos: { x: 99, y: 99 }, incoming: [], marches: [], reinforcements: [], playerCities: targets,
+          wildTiles: [], regionalRadar: { revision: 1, cities: [sensor], contacts: [], history: [], unread: 0 } } };
+      G.DATA.world.size = 200; G.DATA.world.quadrantSize = 100;
+      G.state = state;
+      G.escapeHtml = function (value) { return String(value == null ? '' : value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;'); };
+      G.fmt = function (value) { return Number(value).toLocaleString(); };
+      G.formatDuration = function (seconds) { return Math.ceil(seconds / 60) + '分'; };
+      G.toast = function (message) { document.getElementById('preview-message').textContent = message; };
+      G.Core = { state: state, route: 'world', views: {}, refreshTop: function () {}, getCityStatus: function () { return 'peace'; },
+        back: function () { G.go('world'); }, render: function () {
+          if (this.route === 'alerts') { G.WorldMap.unmount(); G.World.renderAlerts(document.getElementById('view')); }
+          else G.WorldMap.render(document.getElementById('view'));
+        } };
+      G.go = function (route) { G.Core.route = route; G.Core.render(); };
+      function copy() { return JSON.parse(JSON.stringify(state.world.regionalRadar)); }
+      G.API = {
+        getToken: function () { return 'radar-preview-fixture'; },
+        client: { get: function () { return Promise.resolve({}); } },
+        getMapChunk: function (cx, cy) { return Promise.resolve({ targets: targets.filter(function (target) { return Math.floor(target.x / 16) === cx && Math.floor(target.y / 16) === cy; }) }); },
+        getMapFavorites: function () { return Promise.resolve([]); },
+        getGameState: function () { return Promise.resolve(state); },
+        getRadar: function () { return Promise.resolve(copy()); },
+        readRadarContact: function (id) { var next = copy(); next.revision++; next.contacts.concat(next.history).forEach(function (item) { if (item.contactId === id) item.read = true; }); return Promise.resolve(next); },
+        setRadarEnabled: function (id, enabled) {
+          var next = copy(); next.revision++; next.cities[0].enabled = enabled; next.cities[0].revision++;
+          if (!enabled) { next.history = next.contacts.map(function (item) { return Object.assign({}, item, { status: 'monitoring_disabled', snapshotSources: item.sources, sources: [], snapshotAt: Date.now() }); }).concat(next.history); next.contacts = []; next.unread = 0; }
+          return Promise.resolve(next);
+        },
+        shareIncomingReport: function () { return Promise.resolve({}); }
+      };
+      G.RadarPreview = {
+        level: function (value) { state.buildings.guild_radar = Number(value); var next = copy(); next.revision++; next.cities[0].level = state.buildings.guild_radar; next.cities[0].radius = state.buildings.guild_radar; G.Radar.apply(next, false); },
+        threat: function () {
+          if (!G.Radar.city().enabled) { G.toast('联防雷达已关闭：不会生成区域军情或警报。'); return; }
+          var next = copy(), id = Date.now(); next.revision++;
+          var contact = { id: 'radar-' + id, contactId: id, marchId: id, reminderGroup: 'preview-group', threatKind: 'attack', intelligenceType: 'regional_radar',
+            radarLevel: state.tech.recon_radar, targetKind: 'player', targetId: '12', targetName: '团友城A', targetX: 105, targetY: 99, action: 'plunder',
+            threatenedPlayers: [{ playerId: 2, name: '团友A' }], sources: [{ cityId: 11, name: '监测城B' }], status: 'active', read: false,
+            firstSeenAt: Date.now(), lastSeenAt: Date.now(), arriveAt: Date.now() + 300000 };
+          next.contacts.push(contact); next.alerts = next.contacts.length === 1 ? [contact] : []; next.unread = next.contacts.length; G.Radar.apply(next, true);
+        }
+      };
+    })(window.Game);
+  </script>
+  <script src="js/radar.js"></script>
+  <script src="js/world.js"></script>
+  <script src="js/map-camera.js"></script>
+  <script src="js/map-layout.js"></script>
+  <script src="js/map-chunks.js"></script>
+  <script src="js/map-terrain.js"></script>
+  <script src="js/world-map.js"></script>
+  <script>Game.Core.render();</script>
+</body>
+</html>

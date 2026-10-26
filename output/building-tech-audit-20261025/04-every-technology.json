@@ -1,0 +1,256 @@
+[
+  {
+    "military_theory": {
+      "durationSeconds": 180,
+      "cost": {
+        "steel": 300,
+        "gold": 200,
+        "food": 240
+      },
+      "targetLevel": 1
+    }
+  },
+  {
+    "unit_refit": {
+      "durationSeconds": 180,
+      "cost": {
+        "oil": 100,
+        "steel": 300,
+        "rare": 50
+      },
+      "targetLevel": 1
+    }
+  },
+  {
+    "attack_tech": {
+      "durationSeconds": 180,
+      "cost": {
+        "food": 120,
+        "steel": 240
+      },
+      "targetLevel": 1
+    }
+  },
+  {
+    "defense_tech": {
+      "durationSeconds": 180,
+      "cost": {
+        "food": 120,
+        "steel": 240
+      },
+      "targetLevel": 1
+    }
+  },
+  {
+    "weapon_range": {
+      "durationSeconds": 180,
+      "cost": {
+        "rare": 20,
+        "steel": 280,
+        "food": 140
+      },
+      "targetLevel": 1
+    }
+  },
+  {
+    "cmd_hp": {
+      "durationSeconds": 180,
+      "cost": {
+        "rare": 30,
+        "steel": 300,
+        "food": 160
+      },
+      "targetLevel": 1
+    }
+  },
+  {
+    "fire_density": {
+      "durationSeconds": 180,
+      "cost": {
+        "rare": 30,
+        "steel": 300,
+        "food": 160
+      },
+      "targetLevel": 1
+    }
+  },
+  {
+    "arm_engine": {
+      "durationSeconds": 300,
+      "cost": {
+        "oil": 120,
+        "steel": 320,
+        "rare": 40
+      },
+      "targetLevel": 1
+    }
+  },
+  {
+    "air_engine": {
+      "durationSeconds": 300,
+      "cost": {
+        "oil": 160,
+        "steel": 360,
+        "rare": 70
+      },
+      "targetLevel": 1
+    }
+  },
+  {
+    "nav_engine": {
+      "durationSeconds": 300,
+      "cost": {
+        "oil": 200,
+        "steel": 400,
+        "rare": 100
+      },
+      "targetLevel": 1
+    }
+  },
+  {
+    "log_warehouse": {
+      "durationSeconds": 180,
+      "cost": {
+        "food": 140,
+        "steel": 280
+      },
+      "targetLevel": 1
+    }
+  },
+  {
+    "log_food": {
+      "durationSeconds": 180,
+      "cost": {
+        "food": 200,
+        "steel": 360
+      },
+      "targetLevel": 1
+    }
+  },
+  {
+    "log_train": {
+      "durationSeconds": 180,
+      "cost": {
+        "steel": 300,
+        "gold": 100,
+        "food": 180
+      },
+      "targetLevel": 1
+    }
+  },
+  {
+    "log_build": {
+      "durationSeconds": 180,
+      "cost": {
+        "steel": 340,
+        "gold": 120,
+        "food": 160
+      },
+      "targetLevel": 1
+    }
+  },
+  {
+    "log_medical": {
+      "durationSeconds": 180,
+      "cost": {
+        "steel": 320,
+        "gold": 150,
+        "food": 220
+      },
+      "targetLevel": 1
+    }
+  },
+  {
+    "recon_level": {
+      "durationSeconds": 180,
+      "cost": {
+        "oil": 60,
+        "steel": 180
+      },
+      "targetLevel": 1
+    }
+  },
+  {
+    "recon_radar": {
+      "durationSeconds": 332460,
+      "cost": {
+        "oil": 4103,
+        "steel": 9848,
+        "rare": 820
+      },
+      "targetLevel": 8
+    }
+  },
+  {
+    "prisoner_education": {
+      "durationSeconds": 180,
+      "cost": {
+        "steel": 320,
+        "gold": 150,
+        "food": 220
+      },
+      "targetLevel": 1
+    }
+  },
+  {
+    "prod_food": {
+      "durationSeconds": 120,
+      "cost": {
+        "food": 40,
+        "steel": 80
+      },
+      "targetLevel": 1
+    }
+  },
+  {
+    "prod_steel": {
+      "durationSeconds": 120,
+      "cost": {
+        "food": 40,
+        "steel": 80
+      },
+      "targetLevel": 1
+    }
+  },
+  {
+    "prod_oil": {
+      "durationSeconds": 120,
+      "cost": {
+        "food": 40,
+        "steel": 80
+      },
+      "targetLevel": 1
+    }
+  },
+  {
+    "prod_rare": {
+      "durationSeconds": 120,
+      "cost": {
+        "food": 40,
+        "steel": 80
+      },
+      "targetLevel": 1
+    }
+  },
+  {
+    "log_load": {
+      "durationSeconds": 180,
+      "cost": {
+        "food": 100,
+        "steel": 200
+      },
+      "targetLevel": 1
+    }
+  },
+  {
+    "wall_reinforcement": {
+      "durationSeconds": 180,
+      "cost": {
+        "rare": 30,
+        "steel": 320,
+        "food": 160
+      },
+      "targetLevel": 1
+    }
+  }
+]

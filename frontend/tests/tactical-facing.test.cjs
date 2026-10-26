@@ -13,7 +13,7 @@ function setup() {
         truck: { name: '卡车', range: 0, spd: 8 },
         armored: { name: '装甲车', range: 300, spd: 7 },
         htank: { name: '重型坦克', range: 320, spd: 6 },
-        rocket: { name: '反坦克火箭车', range: 1600, spd: 5 }
+        rocket: { name: '反坦克火箭', range: 1600, spd: 5 }
       },
       forts: {}
     },
@@ -163,8 +163,8 @@ test('兵种按配置顺序共用行号，单方兵种在另一侧留空', () =>
     rows[`${match[1]}:${match[3]}`] = Number(match[2]);
   }
   assert.deepEqual(rows, {
-    'mine:反坦克火箭车': 2, 'mine:装甲车': 0,
-    'foe:反坦克火箭车': 2, 'foe:重型坦克': 1
+    'mine:反坦克火箭': 2, 'mine:装甲车': 0,
+    'foe:反坦克火箭': 2, 'foe:重型坦克': 1
   });
   assert.match(view.innerHTML, /class="tactical-map" style="--tactical-map-height:324px"/);
 });
@@ -470,7 +470,7 @@ test('战术地图与单位徽标展示兵种射程与接敌状态', () => {
   assert.match(view.innerHTML, /未指定目标时优先攻击射程内的敌方同类型兵种，否则攻击射程内最近的敌军/);
   assert.match(view.innerHTML, /也可手动指定射程内的任意敌军/);
   assert.match(view.innerHTML, /class="tactical-range-beam mine in-range"/);
-  assert.match(view.innerHTML, /title="反坦克火箭车 我军射程: 1600（覆盖至坐标 2100）/);
+  assert.match(view.innerHTML, /title="反坦克火箭 我军射程: 1600（覆盖至坐标 2100）/);
   assert.match(view.innerHTML, /title="重型坦克 我军射程: 320（覆盖至坐标 620）/);
 
   // 2. 徽标上展示射程标签与是否接敌
@@ -526,7 +526,7 @@ test('武器射程科技加成在战术指挥界面中正确提升实战射程�
   Battle.renderTacticalBattle(view);
 
   // 地图和文本卡片均使用现行常量，目标1700处于1760射程内。
-  assert.match(view.innerHTML, /title="反坦克火箭车 我军射程: 1760 \(含科技\+160\)（覆盖至坐标 1760），距最近敌军 1700 \[🎯已在射程内\]/);
+  assert.match(view.innerHTML, /title="反坦克火箭 我军射程: 1760 \(含科技\+160\)（覆盖至坐标 1760），距最近敌军 1700 \[🎯已在射程内\]/);
   assert.match(view.innerHTML, /class="tactical-marker-range in-range">🎯1760(?: · 前进)?<\/span>/);
   Battle._tacticalCommandView = 'text';
   Battle.renderTacticalBattle(view);

@@ -1,5 +1,7 @@
 package com.wargame.service;
 
+import com.wargame.util.DurationText;
+
 import com.wargame.util.GameClock;
 import com.wargame.model.constants.GameData;
 import com.wargame.model.constants.ItemDef;
@@ -20,6 +22,9 @@ import java.util.*;
  */
 @Service
 public class TechService {
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private GarrisonFoodService garrisonFood;
+    @org.springframework.beans.factory.annotation.Autowired private OfficerEquipmentProgressService equipmentProgress;
+
 
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
@@ -153,7 +158,7 @@ public class TechService {
         techResearchQueueRepository.save(queue);
 
         result.put("success", true);
-        result.put("message", "已开始研发【" + t.name() + " Lv." + (lv + 1) + "】，预计 " + duration + " 秒");
+        result.put("message", "已开始研发【" + t.name() + " Lv." + (lv + 1) + "】，预计 " + DurationText.seconds(duration));
         result.put("techType", techType);
         result.put("targetLevel", lv + 1);
         result.put("durationSeconds", duration);
@@ -200,11 +205,11 @@ public class TechService {
 
         Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, q.getCitySlot() != null ? q.getCitySlot() : 0).orElse(null);
         if (res != null) {
-            res.setFood((res.getFood() != null ? res.getFood() : 0) + refundFood);
-            res.setSteel((res.getSteel() != null ? res.getSteel() : 0) + refundSteel);
-            res.setOil((res.getOil() != null ? res.getOil() : 0) + refundOil);
-            res.setRare((res.getRare() != null ? res.getRare() : 0) + refundRare);
-            res.setGold((res.getGold() != null ? res.getGold() : 0) + refundGold);
+            res.addResource("food", refundFood);
+            res.addResource("steel", refundSteel);
+            res.addResource("oil", refundOil);
+            res.addResource("rare", refundRare);
+            res.addResource("gold", refundGold);
             resourcesRepository.save(res);
         }
 
@@ -266,7 +271,7 @@ public class TechService {
         } else {
             long remaining = (newFinish - now) / 1000L;
             result.put("success", true);
-            result.put("message", "⚡ 加速成功，剩余研发时间: " + formatDuration(remaining));
+            result.put("message", "⚡ 加速成功，剩余研发时间: " + DurationText.millis(newFinish - now));
             result.put("completed", false);
             result.put("finishesAt", newFinish);
             result.put("remainingSeconds", remaining);
@@ -304,6 +309,8 @@ public class TechService {
             TechDef t = GameData.TECHS.get(techType);
             String name = t != null ? t.name() : ("log_production".equals(techType) ? "四项资源产量（旧科研）" : techType);
 
+            if (garrisonFood != null) garrisonFood.beforeGlobalChange(playerId, q.getFinishesAt());
+
             // 旧共享产量保持一条队列、一次声望和退款；到期后同时授予四项成果。
             Map<String, Integer> targets = "log_production".equals(techType)
                     ? TechnologyRules.legacyTargets(techType, targetLevel) : Map.of(techType, targetLevel);
@@ -327,6 +334,7 @@ public class TechService {
                 }
             }
 
+            equipmentProgress.event(playerId, "develop", "tech-" + q.getId(), 1);
             techResearchQueueRepository.delete(q);
             // 研究成果在结算时留存，暂停或跳过引导后完成研究也能领取探索奖励。
             if (onboarding != null) onboarding.onEvent(playerId, "TECH_LEVEL", techType, 1);
@@ -395,15 +403,13 @@ public class TechService {
     }
 
     // ================================================================
-    //  calcTechDuration - 计算研发工期（秒，受科研中心、市长有效学识及格物技能加速）
+    //  calcTechDuration - 计算研发工期（秒，受市长有效学识及格物技能加速）
     // ================================================================
 
-    /** 开工时锁定工期：中心每级+1%（最高10%）、市长有效学识每点+0.1%、格物技能各自形成速度倍率。 */
+    /** 开工时锁定工期：市长有效学识与格物技能倍率相乘；labLevel保留调用兼容，只控制准入、不参与提速。 */
     public int calcTechDuration(Long playerId, String techType, int currentLevel, int labLevel) {
         // 按目标等级查表；旧任务沿用已保存的工期与完成时间。
         double base = TechnologyRules.baseDuration(techType, currentLevel + 1);
-        double labSpeed = 1.0 + TechnologyRules.RESEARCH_LAB_SPEED_PER_LEVEL
-                * Math.max(0, Math.min(TechnologyRules.RESEARCH_LAB_MAX_LEVEL, labLevel));
         Officer mayor = getResearchMayor(playerId);
         // 与前端状态采用同一份装备、套装后的有效学识，且只读取开工城市的市长。
         int knowledge = mayor == null ? 0 : equipmentService == null
@@ -411,7 +417,7 @@ public class TechService {
         double knowledgeSpeed = 1.0 + TechnologyRules.RESEARCH_KNOWLEDGE_SPEED_PER_POINT * Math.max(0, knowledge);
         int researchLv = getMayorResearchLevel(mayor);
         double mayorSpeed = 1.0 + 0.04 * researchLv;
-        int duration = (int) Math.round(base / (labSpeed * knowledgeSpeed * mayorSpeed));
+        int duration = (int) Math.round(base / (knowledgeSpeed * mayorSpeed));
         return Math.max(5, duration);
     }
 
@@ -493,7 +499,7 @@ public class TechService {
         Resources r = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (r == null) return false;
         for (Map.Entry<String, Integer> entry : costs.entrySet()) {
-            int have = getResource(r, entry.getKey());
+            long have = getResource(r, entry.getKey());
             if (have < entry.getValue()) return false;
         }
         return true;
@@ -503,13 +509,13 @@ public class TechService {
         Resources r = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (r == null) return;
         for (Map.Entry<String, Integer> entry : costs.entrySet()) {
-            int current = getResource(r, entry.getKey());
+            long current = getResource(r, entry.getKey());
             setResource(r, entry.getKey(), current - entry.getValue());
         }
         resourcesRepository.save(r);
     }
 
-    private int getResource(Resources r, String key) {
+    private long getResource(Resources r, String key) {
         return switch (key) {
             case "food"  -> r.getFood()  != null ? r.getFood()  : 0;
             case "steel" -> r.getSteel() != null ? r.getSteel() : 0;
@@ -520,7 +526,7 @@ public class TechService {
         };
     }
 
-    private void setResource(Resources r, String key, int value) {
+    private void setResource(Resources r, String key, long value) {
         switch (key) {
             case "food"  -> r.setFood(value);
             case "steel" -> r.setSteel(value);
@@ -531,16 +537,4 @@ public class TechService {
         }
     }
 
-    private static String formatDuration(long seconds) {
-        if (seconds >= 3600) {
-            long h = seconds / 3600;
-            long m = (seconds % 3600) / 60;
-            long s = seconds % 60;
-            return String.format("%02d:%02d:%02d", h, m, s);
-        } else {
-            long m = seconds / 60;
-            long s = seconds % 60;
-            return String.format("%02d:%02d", m, s);
-        }
-    }
 }

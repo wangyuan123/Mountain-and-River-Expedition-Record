@@ -1,0 +1,11 @@
+Browser tab: 2, Title: "山河远征录 - 文字战争策略游戏", URL: "http://localhost:8081/".
+The following is a diff from the previous accessibility tree with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 460-495, 516
+~			459 button [ 📜 查看战斗详情 (共 15 回合) ▾ ], ID: btnBattleDetails
++				516 text [
++				517 text 📜 查看战斗详情
++				518 text (共 15 回合)
++				519 text ▾
++				520 text ]
++			521 text 北京时间：2026年10月23日 21:17:12
+The focused UI element is 459 button [ 📜 查看战斗详情 (共 15 回合) ▾ ], ID: btnBattleDetails

@@ -376,9 +376,13 @@
         '<div class="friend-profile-cell"><span class="cell-label">军衔</span><span class="cell-val">🎖️ ' + esc(rankName) + '</span></div>' +
         '<div class="friend-profile-cell"><span class="cell-label">等级</span><span class="cell-val">Lv. ' + Number(p.level || 1) + '</span></div>' +
         '<div class="friend-profile-cell"><span class="cell-label">声望</span><span class="cell-val">⭐ ' + Number(p.prestige || 0) + '</span></div>' +
-        '<div class="friend-profile-cell"><span class="cell-label">主城</span><span class="cell-val">🏰 ' + esc(p.cityName || '暂无') + '</span></div>' +
+        '<div class="friend-profile-cell"><span class="cell-label">主城</span><span class="cell-val">🏰 ' + esc(p.cityName || '暂无') + (p.cityX != null && p.cityY != null ? ' (' + Number(p.cityX) + ',' + Number(p.cityY) + ')' : (p.available ? ' · 未获得有效侦察坐标' : '')) + '</span></div>' +
         '</div>';
       var actions = [];
+      // 只有服务端确认有效侦察报告后才会下发坐标，因此资料页不能绕过侦察定位。
+      if (p.available && Number.isInteger(p.cityX) && Number.isInteger(p.cityY)) {
+        actions.push({ label: '定位城市', run: function () { return function () { G.World.locateTarget(p.cityX, p.cityY); }; } });
+      }
       if (p.friend) {
         var groups = data && dataOwner === owner() ? data.groups : [{ id: 0, name: '我的好友' }];
         body += '<div class="friend-profile-group-wrap">' +

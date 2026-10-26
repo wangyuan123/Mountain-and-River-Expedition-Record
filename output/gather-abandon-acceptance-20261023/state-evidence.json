@@ -1,0 +1,803 @@
+{
+  "dispatch-gathering-before": {
+    "serverTime": 1792737180035,
+    "army": {
+      "infantry": 400,
+      "truck": 8
+    },
+    "resources": {
+      "food": 99906,
+      "steel": 100001,
+      "oil": 99990,
+      "rare": 200,
+      "gold": 100000,
+      "diamond": 0
+    },
+    "wildTiles": [
+      {
+        "id": 1,
+        "type": "grainfield",
+        "x": 11,
+        "y": 10,
+        "level": 1,
+        "scouted": false,
+        "occupied": false,
+        "totalRes": 10000,
+        "mined": 0
+      },
+      {
+        "id": 2,
+        "type": "ironworks",
+        "x": 12,
+        "y": 10,
+        "level": 1,
+        "scouted": false,
+        "garrison": {
+          "infantry": 100
+        },
+        "occupied": true,
+        "occupiedCitySlot": 0,
+        "occupiedByName": "gather_acceptance",
+        "occupiedByRank": 1,
+        "occupiedByRankName": "列兵",
+        "occupiedByPrestige": 0,
+        "totalRes": 8000,
+        "mined": 0,
+        "gathering": false,
+        "gatherStartAt": 1792736970655,
+        "gatherEndAt": 1792737000655,
+        "gatherLoad": 1000,
+        "gatherRes": "steel",
+        "gatherMode": "manual",
+        "gatherHarvested": 1000
+      },
+      {
+        "id": 3,
+        "type": "grainfield",
+        "x": 13,
+        "y": 10,
+        "level": 1,
+        "scouted": false,
+        "garrison": {},
+        "occupied": true,
+        "occupiedCitySlot": 0,
+        "occupiedByName": "gather_acceptance",
+        "occupiedByRank": 1,
+        "occupiedByRankName": "列兵",
+        "occupiedByPrestige": 0,
+        "totalRes": 9000,
+        "mined": 0,
+        "gathering": false,
+        "gatherStartAt": 0,
+        "gatherEndAt": 0,
+        "gatherLoad": 0,
+        "gatherRes": null,
+        "gatherMode": "manual",
+        "gatherHarvested": null
+      }
+    ],
+    "marches": [
+      {
+        "id": 2,
+        "version": 1,
+        "outboundAccelerated": false,
+        "returnAccelerated": false,
+        "stratagemUsed": false,
+        "targetKind": "wild_gather",
+        "targetId": "3",
+        "targetName": "粮田 Lv.1",
+        "targetX": 13,
+        "targetY": 10,
+        "fromX": 10,
+        "fromY": 10,
+        "distance": 3.0,
+        "routeMode": "land",
+        "route": [
+          [
+            10,
+            10
+          ],
+          [
+            13,
+            10
+          ]
+        ],
+        "action": "gather",
+        "battleMode": null,
+        "conquerMode": "withdraw",
+        "army": {
+          "truck": 2
+        },
+        "unitEquipment": {
+          "@log:load": 0
+        },
+        "commanderId": null,
+        "carryRes": {
+          "food": 0,
+          "steel": 0,
+          "oil": 0,
+          "rare": 0,
+          "gold": 0
+        },
+        "startAt": 1792736697646,
+        "arriveAt": 1792736711646,
+        "deployAt": null,
+        "readyAt": null,
+        "returning": false,
+        "stationed": false,
+        "battleWon": false,
+        "win": false,
+        "gathering": true,
+        "gatherMode": "manual",
+        "gatherAfterAction": "retain",
+        "gatherAfterActionResult": null,
+        "gatherAfterActionReason": null,
+        "gatherStartAt": 1792736712297,
+        "gatherStopped": false,
+        "gatherEndAt": 1792736772297,
+        "gatherAmount": 1000,
+        "gatherRes": "food",
+        "battleId": null,
+        "inBattle": false,
+        "originName": null,
+        "originX": null,
+        "originY": null,
+        "progress": 100
+      }
+    ]
+  },
+  "stationed-gathering": {
+    "serverTime": 1792737062111,
+    "army": {
+      "infantry": 400,
+      "truck": 8
+    },
+    "resources": {
+      "food": 99930,
+      "steel": 100001,
+      "oil": 99990,
+      "rare": 200,
+      "gold": 100000,
+      "diamond": 0
+    },
+    "wildTiles": [
+      {
+        "id": 1,
+        "type": "grainfield",
+        "x": 11,
+        "y": 10,
+        "level": 1,
+        "scouted": false,
+        "occupied": false,
+        "totalRes": 10000,
+        "mined": 0
+      },
+      {
+        "id": 2,
+        "type": "ironworks",
+        "x": 12,
+        "y": 10,
+        "level": 1,
+        "scouted": false,
+        "garrison": {
+          "infantry": 100
+        },
+        "occupied": true,
+        "occupiedCitySlot": 0,
+        "occupiedByName": "gather_acceptance",
+        "occupiedByRank": 1,
+        "occupiedByRankName": "列兵",
+        "occupiedByPrestige": 0,
+        "totalRes": 9000,
+        "mined": 0,
+        "gathering": true,
+        "gatherStartAt": 1792736970655,
+        "gatherEndAt": 1792737000655,
+        "gatherLoad": 1000,
+        "gatherRes": "steel",
+        "gatherMode": "manual",
+        "gatherHarvested": null
+      },
+      {
+        "id": 3,
+        "type": "grainfield",
+        "x": 13,
+        "y": 10,
+        "level": 1,
+        "scouted": false,
+        "garrison": {},
+        "occupied": true,
+        "occupiedCitySlot": 0,
+        "occupiedByName": "gather_acceptance",
+        "occupiedByRank": 1,
+        "occupiedByRankName": "列兵",
+        "occupiedByPrestige": 0,
+        "totalRes": 9000,
+        "mined": 0,
+        "gathering": false,
+        "gatherStartAt": 0,
+        "gatherEndAt": 0,
+        "gatherLoad": 0,
+        "gatherRes": null,
+        "gatherMode": "manual",
+        "gatherHarvested": null
+      }
+    ],
+    "marches": [
+      {
+        "id": 2,
+        "version": 1,
+        "outboundAccelerated": false,
+        "returnAccelerated": false,
+        "stratagemUsed": false,
+        "targetKind": "wild_gather",
+        "targetId": "3",
+        "targetName": "粮田 Lv.1",
+        "targetX": 13,
+        "targetY": 10,
+        "fromX": 10,
+        "fromY": 10,
+        "distance": 3.0,
+        "routeMode": "land",
+        "route": [
+          [
+            10,
+            10
+          ],
+          [
+            13,
+            10
+          ]
+        ],
+        "action": "gather",
+        "battleMode": null,
+        "conquerMode": "withdraw",
+        "army": {
+          "truck": 2
+        },
+        "unitEquipment": {
+          "@log:load": 0
+        },
+        "commanderId": null,
+        "carryRes": {
+          "food": 0,
+          "steel": 0,
+          "oil": 0,
+          "rare": 0,
+          "gold": 0
+        },
+        "startAt": 1792736697646,
+        "arriveAt": 1792736711646,
+        "deployAt": null,
+        "readyAt": null,
+        "returning": false,
+        "stationed": false,
+        "battleWon": false,
+        "win": false,
+        "gathering": true,
+        "gatherMode": "manual",
+        "gatherAfterAction": "retain",
+        "gatherAfterActionResult": null,
+        "gatherAfterActionReason": null,
+        "gatherStartAt": 1792736712297,
+        "gatherStopped": false,
+        "gatherEndAt": 1792736772297,
+        "gatherAmount": 1000,
+        "gatherRes": "food",
+        "battleId": null,
+        "inBattle": false,
+        "originName": null,
+        "originX": null,
+        "originY": null,
+        "progress": 100
+      }
+    ]
+  },
+  "dispatch-harvested-after": {
+    "serverTime": 1792737272959,
+    "army": {
+      "infantry": 400,
+      "truck": 8
+    },
+    "resources": {
+      "food": 99888,
+      "steel": 100001,
+      "oil": 99990,
+      "rare": 200,
+      "gold": 100000,
+      "diamond": 0
+    },
+    "wildTiles": [
+      {
+        "id": 1,
+        "type": "grainfield",
+        "x": 11,
+        "y": 10,
+        "level": 1,
+        "scouted": false,
+        "occupied": false,
+        "totalRes": 10000,
+        "mined": 0
+      },
+      {
+        "id": 2,
+        "type": "ironworks",
+        "x": 12,
+        "y": 10,
+        "level": 1,
+        "scouted": false,
+        "garrison": {
+          "infantry": 100
+        },
+        "occupied": true,
+        "occupiedCitySlot": 0,
+        "occupiedByName": "gather_acceptance",
+        "occupiedByRank": 1,
+        "occupiedByRankName": "列兵",
+        "occupiedByPrestige": 0,
+        "totalRes": 8000,
+        "mined": 0,
+        "gathering": false,
+        "gatherStartAt": 1792736970655,
+        "gatherEndAt": 1792737000655,
+        "gatherLoad": 1000,
+        "gatherRes": "steel",
+        "gatherMode": "manual",
+        "gatherHarvested": 1000
+      },
+      {
+        "id": 3,
+        "type": "grainfield",
+        "x": 13,
+        "y": 10,
+        "level": 1,
+        "scouted": false,
+        "garrison": {},
+        "occupied": true,
+        "occupiedCitySlot": 0,
+        "occupiedByName": "gather_acceptance",
+        "occupiedByRank": 1,
+        "occupiedByRankName": "列兵",
+        "occupiedByPrestige": 0,
+        "totalRes": 8000,
+        "mined": 0,
+        "gathering": false,
+        "gatherStartAt": 0,
+        "gatherEndAt": 0,
+        "gatherLoad": 0,
+        "gatherRes": null,
+        "gatherMode": "manual",
+        "gatherHarvested": null
+      }
+    ],
+    "marches": [
+      {
+        "id": 2,
+        "version": 2,
+        "outboundAccelerated": false,
+        "returnAccelerated": false,
+        "stratagemUsed": false,
+        "targetKind": "wild_gather",
+        "targetId": "3",
+        "targetName": "粮田 Lv.1",
+        "targetX": 13,
+        "targetY": 10,
+        "fromX": 10,
+        "fromY": 10,
+        "distance": 3.0,
+        "routeMode": "land",
+        "route": [
+          [
+            10,
+            10
+          ],
+          [
+            13,
+            10
+          ]
+        ],
+        "action": "gather",
+        "battleMode": null,
+        "conquerMode": "withdraw",
+        "army": {
+          "truck": 2
+        },
+        "unitEquipment": {
+          "@log:load": 0
+        },
+        "commanderId": null,
+        "carryRes": {
+          "food": 0,
+          "steel": 0,
+          "oil": 0,
+          "rare": 0,
+          "gold": 0
+        },
+        "startAt": 1792736697646,
+        "arriveAt": 1792736711646,
+        "deployAt": null,
+        "readyAt": null,
+        "returning": false,
+        "stationed": false,
+        "battleWon": false,
+        "win": false,
+        "gathering": false,
+        "gatherMode": "manual",
+        "gatherAfterAction": "retain",
+        "gatherAfterActionResult": "cancelled",
+        "gatherAfterActionReason": null,
+        "gatherStartAt": 1792736712297,
+        "gatherStopped": true,
+        "gatherEndAt": 1792736772297,
+        "gatherAmount": 1000,
+        "gatherRes": "food",
+        "battleId": null,
+        "inBattle": false,
+        "originName": null,
+        "originX": null,
+        "originY": null,
+        "progress": 100
+      }
+    ]
+  },
+  "after-return-abandon": {
+    "serverTime": 1792737452373,
+    "army": {
+      "infantry": 400,
+      "truck": 10
+    },
+    "resources": {
+      "food": 100852,
+      "steel": 100001,
+      "oil": 99990,
+      "rare": 200,
+      "gold": 100000,
+      "diamond": 0
+    },
+    "wildTiles": [
+      {
+        "id": 1,
+        "type": "grainfield",
+        "x": 11,
+        "y": 10,
+        "level": 1,
+        "scouted": false,
+        "occupied": false,
+        "totalRes": 10000,
+        "mined": 0
+      },
+      {
+        "id": 2,
+        "type": "ironworks",
+        "x": 12,
+        "y": 10,
+        "level": 1,
+        "scouted": false,
+        "garrison": {
+          "infantry": 100
+        },
+        "occupied": true,
+        "occupiedCitySlot": 0,
+        "occupiedByName": "gather_acceptance",
+        "occupiedByRank": 1,
+        "occupiedByRankName": "列兵",
+        "occupiedByPrestige": 0,
+        "totalRes": 8000,
+        "mined": 0,
+        "gathering": false,
+        "gatherStartAt": 1792736970655,
+        "gatherEndAt": 1792737000655,
+        "gatherLoad": 1000,
+        "gatherRes": "steel",
+        "gatherMode": "manual",
+        "gatherHarvested": 1000
+      },
+      {
+        "id": 3,
+        "type": "grainfield",
+        "x": 13,
+        "y": 10,
+        "level": 1,
+        "scouted": false,
+        "occupied": false,
+        "totalRes": 8000,
+        "mined": 0
+      }
+    ],
+    "marches": []
+  },
+  "dispatch-harvested-before": {
+    "serverTime": 1792737232231,
+    "army": {
+      "infantry": 400,
+      "truck": 8
+    },
+    "resources": {
+      "food": 99896,
+      "steel": 100001,
+      "oil": 99990,
+      "rare": 200,
+      "gold": 100000,
+      "diamond": 0
+    },
+    "wildTiles": [
+      {
+        "id": 1,
+        "type": "grainfield",
+        "x": 11,
+        "y": 10,
+        "level": 1,
+        "scouted": false,
+        "occupied": false,
+        "totalRes": 10000,
+        "mined": 0
+      },
+      {
+        "id": 2,
+        "type": "ironworks",
+        "x": 12,
+        "y": 10,
+        "level": 1,
+        "scouted": false,
+        "garrison": {
+          "infantry": 100
+        },
+        "occupied": true,
+        "occupiedCitySlot": 0,
+        "occupiedByName": "gather_acceptance",
+        "occupiedByRank": 1,
+        "occupiedByRankName": "列兵",
+        "occupiedByPrestige": 0,
+        "totalRes": 8000,
+        "mined": 0,
+        "gathering": false,
+        "gatherStartAt": 1792736970655,
+        "gatherEndAt": 1792737000655,
+        "gatherLoad": 1000,
+        "gatherRes": "steel",
+        "gatherMode": "manual",
+        "gatherHarvested": 1000
+      },
+      {
+        "id": 3,
+        "type": "grainfield",
+        "x": 13,
+        "y": 10,
+        "level": 1,
+        "scouted": false,
+        "garrison": {},
+        "occupied": true,
+        "occupiedCitySlot": 0,
+        "occupiedByName": "gather_acceptance",
+        "occupiedByRank": 1,
+        "occupiedByRankName": "列兵",
+        "occupiedByPrestige": 0,
+        "totalRes": 8000,
+        "mined": 0,
+        "gathering": false,
+        "gatherStartAt": 0,
+        "gatherEndAt": 0,
+        "gatherLoad": 0,
+        "gatherRes": null,
+        "gatherMode": "manual",
+        "gatherHarvested": null
+      }
+    ],
+    "marches": [
+      {
+        "id": 2,
+        "version": 2,
+        "outboundAccelerated": false,
+        "returnAccelerated": false,
+        "stratagemUsed": false,
+        "targetKind": "wild_gather",
+        "targetId": "3",
+        "targetName": "粮田 Lv.1",
+        "targetX": 13,
+        "targetY": 10,
+        "fromX": 10,
+        "fromY": 10,
+        "distance": 3.0,
+        "routeMode": "land",
+        "route": [
+          [
+            10,
+            10
+          ],
+          [
+            13,
+            10
+          ]
+        ],
+        "action": "gather",
+        "battleMode": null,
+        "conquerMode": "withdraw",
+        "army": {
+          "truck": 2
+        },
+        "unitEquipment": {
+          "@log:load": 0
+        },
+        "commanderId": null,
+        "carryRes": {
+          "food": 0,
+          "steel": 0,
+          "oil": 0,
+          "rare": 0,
+          "gold": 0
+        },
+        "startAt": 1792736697646,
+        "arriveAt": 1792736711646,
+        "deployAt": null,
+        "readyAt": null,
+        "returning": false,
+        "stationed": false,
+        "battleWon": false,
+        "win": false,
+        "gathering": false,
+        "gatherMode": "manual",
+        "gatherAfterAction": "retain",
+        "gatherAfterActionResult": "cancelled",
+        "gatherAfterActionReason": null,
+        "gatherStartAt": 1792736712297,
+        "gatherStopped": true,
+        "gatherEndAt": 1792736772297,
+        "gatherAmount": 1000,
+        "gatherRes": "food",
+        "battleId": null,
+        "inBattle": false,
+        "originName": null,
+        "originX": null,
+        "originY": null,
+        "progress": 100
+      }
+    ]
+  },
+  "initial": {
+    "serverTime": 1792736955938,
+    "army": {
+      "infantry": 400,
+      "truck": 8
+    },
+    "resources": {
+      "food": 99951,
+      "steel": 100001,
+      "oil": 99990,
+      "rare": 200,
+      "gold": 100000,
+      "diamond": 0
+    },
+    "wildTiles": [
+      {
+        "id": 1,
+        "type": "grainfield",
+        "x": 11,
+        "y": 10,
+        "level": 1,
+        "scouted": false,
+        "occupied": false,
+        "totalRes": 10000,
+        "mined": 0
+      },
+      {
+        "id": 2,
+        "type": "ironworks",
+        "x": 12,
+        "y": 10,
+        "level": 1,
+        "scouted": false,
+        "garrison": {
+          "infantry": 100
+        },
+        "occupied": true,
+        "occupiedCitySlot": 0,
+        "occupiedByName": "gather_acceptance",
+        "occupiedByRank": 1,
+        "occupiedByRankName": "列兵",
+        "occupiedByPrestige": 0,
+        "totalRes": 9000,
+        "mined": 0,
+        "gathering": false,
+        "gatherStartAt": 0,
+        "gatherEndAt": 0,
+        "gatherLoad": 0,
+        "gatherRes": null,
+        "gatherMode": "manual",
+        "gatherHarvested": null
+      },
+      {
+        "id": 3,
+        "type": "grainfield",
+        "x": 13,
+        "y": 10,
+        "level": 1,
+        "scouted": false,
+        "garrison": {},
+        "occupied": true,
+        "occupiedCitySlot": 0,
+        "occupiedByName": "gather_acceptance",
+        "occupiedByRank": 1,
+        "occupiedByRankName": "列兵",
+        "occupiedByPrestige": 0,
+        "totalRes": 9000,
+        "mined": 0,
+        "gathering": false,
+        "gatherStartAt": 0,
+        "gatherEndAt": 0,
+        "gatherLoad": 0,
+        "gatherRes": null,
+        "gatherMode": "manual",
+        "gatherHarvested": null
+      }
+    ],
+    "marches": [
+      {
+        "id": 2,
+        "version": 1,
+        "outboundAccelerated": false,
+        "returnAccelerated": false,
+        "stratagemUsed": false,
+        "targetKind": "wild_gather",
+        "targetId": "3",
+        "targetName": "粮田 Lv.1",
+        "targetX": 13,
+        "targetY": 10,
+        "fromX": 10,
+        "fromY": 10,
+        "distance": 3.0,
+        "routeMode": "land",
+        "route": [
+          [
+            10,
+            10
+          ],
+          [
+            13,
+            10
+          ]
+        ],
+        "action": "gather",
+        "battleMode": null,
+        "conquerMode": "withdraw",
+        "army": {
+          "truck": 2
+        },
+        "unitEquipment": {
+          "@log:load": 0
+        },
+        "commanderId": null,
+        "carryRes": {
+          "food": 0,
+          "steel": 0,
+          "oil": 0,
+          "rare": 0,
+          "gold": 0
+        },
+        "startAt": 1792736697646,
+        "arriveAt": 1792736711646,
+        "deployAt": null,
+        "readyAt": null,
+        "returning": false,
+        "stationed": false,
+        "battleWon": false,
+        "win": false,
+        "gathering": true,
+        "gatherMode": "manual",
+        "gatherAfterAction": "retain",
+        "gatherAfterActionResult": null,
+        "gatherAfterActionReason": null,
+        "gatherStartAt": 1792736712297,
+        "gatherStopped": false,
+        "gatherEndAt": 1792736772297,
+        "gatherAmount": 1000,
+        "gatherRes": "food",
+        "battleId": null,
+        "inBattle": false,
+        "originName": null,
+        "originX": null,
+        "originY": null,
+        "progress": 100
+      }
+    ]
+  }
+}

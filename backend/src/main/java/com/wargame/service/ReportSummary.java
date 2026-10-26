@@ -17,12 +17,14 @@ public final class ReportSummary {
             Map<String, Object> full = JsonUtil.getMapper().readValue(json, new TypeReference<LinkedHashMap<String, Object>>() {});
             if (full == null) return null;
             Map<String, Object> card = new LinkedHashMap<>();
-            for (String key : new String[]{"subject", "action", "originalAction", "perspective", "attackerName", "defenderName", "fromName", "toName", "fromCoord", "toCoord", "interceptCoord", "win", "attackerWon", "result", "targetType", "cityConquered", "wildConquered", "wildOccupation", "occupationFailure", "intercepted", "attackerContinued", "attackerRetreated", "defenderRetreated", "interceptionOpening", "targetName", "x", "y", "showCityInfo", "detailLevel", "scoutMode", "isCity"}) {
+            for (String key : new String[]{"subject", "action", "originalAction", "perspective", "attackerName", "defenderName", "fromName", "toName", "fromCoord", "toCoord", "interceptCoord", "win", "attackerWon", "result", "targetType", "cityConquered", "wildConquered", "wildOccupation", "occupationFailure", "intercepted", "attackerContinued", "attackerRetreated", "defenderRetreated", "interceptionOpening", "targetName", "x", "y", "showCityInfo", "detailLevel", "scoutMode", "isCity", "cause", "cityName", "citySlot", "losses", "period"}) {
                 if (full.containsKey(key)) card.put(key, full.get(key));
             }
-            for (String key : new String[]{"attackerWin", "troopDisposition", "wildOccupationReason", "conquered", "cityTakeoverReason", "targetSea", "sea", "scoutType"}) {
+            for (String key : new String[]{"attackerWin", "troopDisposition", "wildOccupationReason", "conquered", "cityTakeoverReason", "targetSea", "sea", "scoutType", "scoutUnit", "reconMode", "sampledAt", "intelligencePhase"}) {
                 if (full.containsKey(key)) card.put(key, full.get(key));
             }
+            // 侦察摘要也是出征页的情报来源，只保留成功侦察实际获得的守军快照，不读取当前敌军。
+            if (Boolean.TRUE.equals(full.get("showCityInfo")) && full.get("army") instanceof Map) card.put("army", full.get("army"));
             return JsonUtil.toJson(card);
         } catch (Exception ignored) { return null; }
     }

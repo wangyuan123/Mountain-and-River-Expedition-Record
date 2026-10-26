@@ -78,9 +78,9 @@ test('only moving snapshots with version and more than ten seconds remaining are
 test('confirmation previews target, inventory and exact screenshot example; cancellation spends nothing', () => {
   const f = setup(), modal = f.open();
   assert.match(modal.innerHTML, /雇佣兵营 Lv.29.*377,248/);
-  assert.equal(modal.nodes['[data-march-before]'].textContent, '29分21秒');
-  assert.equal(modal.nodes['[data-march-after]'].textContent, '19分34秒');
-  assert.equal(modal.nodes['[data-march-saved]'].textContent, '9分47秒');
+  assert.equal(modal.nodes['[data-march-before]'].textContent, '29分钟21秒');
+  assert.equal(modal.nodes['[data-march-after]'].textContent, '19分钟34秒');
+  assert.equal(modal.nodes['[data-march-saved]'].textContent, '9分钟47秒');
   assert.equal(modal.nodes['[data-march-stock]'].textContent, '行军令：消耗 1 枚，库存 3 枚');
   modal.nodes['[data-march-cancel]'].onclick();
   assert.equal(f.calls.length, 0);
@@ -165,6 +165,87 @@ test('alert countdown disables acceleration when the remaining time reaches ten 
   f.game.World.startAlertTimer(view);
   f.tick(1751000);
   assert.equal(button.disabled, true);
+});
+
+test('interception acceleration shortens the displayed deployment countdown while keeping the enemy crossing time', async () => {
+  const f = setup(), now = 1_000_000;
+  Object.assign(f.march, { action: 'intercept_scout', targetKind: 'incoming_march',
+    startAt: now - 60000, deployAt: now + 120000, readyAt: now + 125000,
+    arriveAt: now + 180000, interceptionOpening: 'ambush' });
+  const view = { innerHTML: '', querySelectorAll: () => [] };
+  f.game.Core.render = () => f.game.World.renderAlerts(view);
+  f.game.Core.render();
+  assert.match(view.innerHTML, /data-arrive-at="1120000"[^>]*>2分钟0秒<\/b> 后到位/);
+  assert.match(view.innerHTML, /data-arrive-at="1180000"[^>]*>3分钟0秒<\/b> 后交火/);
+  assert.match(view.innerHTML, /data-progress-deadline="1120000" data-progress-duration="180000"/);
+  const modal = f.open();
+  assert.match(modal.innerHTML, /加速出城部署/);
+  assert.match(modal.innerHTML, /到位后等待敌军/);
+  assert.equal(modal.nodes['[data-march-before]'].textContent, '2分钟0秒');
+  assert.equal(modal.nodes['[data-march-after]'].textContent, '1分钟20秒');
+  modal.nodes['[data-march-confirm]'].onclick();
+  // 模拟 API 应用服务端快照：加速压缩部署时间轴，交火时间仍由敌军位置决定。
+  Object.assign(f.march, { version: 5, startAt: now - 40000, deployAt: now + 80000,
+    readyAt: now + 85000, outboundAccelerated: true });
+  f.calls[0].resolve({ success: true, message: '行军已加速' }); await flush();
+  assert.match(view.innerHTML, /data-arrive-at="1080000"[^>]*>1分钟20秒<\/b> 后到位/);
+  assert.match(view.innerHTML, /data-arrive-at="1180000"[^>]*>3分钟0秒<\/b> 后交火/);
+  assert.match(view.innerHTML, /data-progress-deadline="1080000" data-progress-duration="120000"/);
+  assert.match(view.innerHTML, /disabled>已加速/);
+});
+
+test('deployed interceptors show complete movement progress and retain a separate combat countdown', () => {
+  const f = setup(), now = 1_000_000;
+  Object.assign(f.march, { action: 'intercept_scout', startAt: now - 60000,
+    deployAt: now - 1000, readyAt: now + 4000, arriveAt: now + 30000, interceptionOpening: 'ambush' });
+  const view = { innerHTML: '', querySelectorAll: () => [] };
+  f.game.World.renderAlerts(view);
+  assert.match(view.innerHTML, /设伏准备/);
+  assert.match(view.innerHTML, /4秒<\/b> 后就绪/);
+  assert.match(view.innerHTML, /30秒<\/b> 后交火/);
+  assert.match(view.innerHTML, /data-progress-deadline="999000" data-progress-duration="59000">[^<]*100%/);
+  assert.doesNotMatch(view.innerHTML, /data-accelerate-id/);
+  f.march.interceptionOpening = 'urgent';
+  f.game.World.renderAlerts(view);
+  assert.match(view.innerHTML, /紧急迎击 · 已到位/);
+  assert.doesNotMatch(view.innerHTML, /后就绪/);
+});
+
+test('alert timer advances interception deployment, preparation and waiting without a state push', () => {
+  const f = setup(), now = 1_000_000;
+  Object.assign(f.march, { action: 'intercept_scout', deployAt: now + 2000,
+    readyAt: now + 7000, arriveAt: now + 20000, interceptionOpening: 'ambush' });
+  const attributes = { 'data-interception-march-id': '17', 'data-interception-phase': 'deploying' };
+  const status = { innerHTML: '', getAttribute: name => attributes[name], setAttribute(name, value) { attributes[name] = value; } };
+  const progressAttrs = { 'data-progress-bar': 'true', 'data-progress-deadline': String(f.march.deployAt),
+    'data-progress-duration': String(f.march.deployAt - f.march.startAt) };
+  const progress = { className: 'term-pbar', textContent: '', getAttribute: name => progressAttrs[name] };
+  const view = { isConnected: true, querySelectorAll(selector) {
+    return selector === '[data-interception-march-id]' ? [status] : selector === '[data-progress-bar]' ? [progress] : [];
+  } };
+  f.game.World.startAlertTimer(view);
+  f.tick(2000);
+  assert.equal(attributes['data-interception-phase'], 'preparing');
+  assert.match(status.innerHTML, /设伏准备/);
+  assert.match(status.innerHTML, /5秒<\/b> 后就绪/);
+  assert.match(progress.textContent, /100%/);
+  f.tick(5000);
+  assert.equal(attributes['data-interception-phase'], 'waiting');
+  assert.match(status.innerHTML, /伏击待发 · 已到位/);
+  f.tick(13000);
+  assert.equal(attributes['data-interception-phase'], 'combat');
+  assert.equal(status.innerHTML, '交火中');
+});
+
+test('interceptor return trips use return arrival rather than an old deployment time', () => {
+  const f = setup(), now = 1_000_000;
+  Object.assign(f.march, { action: 'intercept_scout', returning: true, startAt: now - 10000,
+    deployAt: now - 5000, readyAt: now, arriveAt: now + 30000 });
+  const view = { innerHTML: '', querySelectorAll: () => [] };
+  f.game.World.renderAlerts(view);
+  assert.match(view.innerHTML, /data-progress-deadline="1030000" data-progress-duration="40000"/);
+  assert.match(view.innerHTML, /加速回城/);
+  assert.doesNotMatch(view.innerHTML, /data-interception-march-id|后到位|后交火/);
 });
 
 test('API submits stage/version once and applies authoritative response inventory and clocks', async () => {

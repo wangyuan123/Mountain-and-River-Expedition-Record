@@ -50,7 +50,7 @@ public class Mail {
     @Column(name = "from_player_id")
     private Long fromPlayerId;
 
-    /** 发件人显示名（玩家 username 或 "系统"/"战报中心"） */
+    /** 发件人显示名（玩家统帅名或 "系统"/"战报中心"） */
     @Column(name = "from_name", nullable = false, length = 50)
     private String fromName;
 

@@ -1,5 +1,7 @@
 package com.wargame.service;
 
+import com.wargame.util.PlayerNames;
+
 import com.wargame.config.GameWebSocketHandler;
 import com.wargame.model.entity.Guild;
 import com.wargame.model.entity.GuildApplication;
@@ -75,7 +77,7 @@ public class GuildService {
             Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, slot)
                     .or(() -> resourcesRepository.findFirstByPlayerIdOrderByCitySlotAsc(playerId))
                     .orElseThrow(() -> new IllegalArgumentException("未找到资源库，无法创建军团"));
-            int currentGold = res.getGold() != null ? res.getGold() : 0;
+            long currentGold = res.getGold() != null ? res.getGold() : 0L;
             if (currentGold < CREATE_GUILD_GOLD_COST) {
                 throw new IllegalArgumentException("创建军团需要消耗 " + CREATE_GUILD_GOLD_COST + " 黄金，当前黄金不足(拥有 " + currentGold + ")");
             }
@@ -104,7 +106,7 @@ public class GuildService {
         if (guildApplicationRepository.findByGuildIdAndPlayerId(guildId, playerId).isPresent()) throw new IllegalArgumentException("已提交申请，请等待审核");
         guildApplicationRepository.save(new GuildApplication(null, guildId, playerId, System.currentTimeMillis()));
         Player applicant = player(playerId);
-        mailService.sendSystem(guild.getLeaderPlayerId(), "军团系统", "alliance", "新的入团申请", applicant.getUsername() + " 申请加入军团「" + guild.getName() + "」。", List.of());
+        mailService.sendSystem(guild.getLeaderPlayerId(), "军团系统", "alliance", "新的入团申请", PlayerNames.commanderName(applicant) + " 申请加入军团「" + guild.getName() + "」。", List.of());
         return Map.of("success", true, "message", "申请已发送");
     }
 
@@ -241,7 +243,7 @@ public class GuildService {
         for (GuildMember member : guildMemberRepository.findByGuildIdOrderByJoinedAtAsc(guildId)) {
             Player p = player(member.getPlayerId());
             Map<String, Object> item = new LinkedHashMap<>();
-            item.put("playerId", p.getId()); item.put("name", p.getUsername()); item.put("cityName", p.getCityName());
+            item.put("playerId", p.getId()); item.put("name", PlayerNames.commanderName(p)); item.put("cityName", p.getCityName());
             item.put("prestige", p.getPrestige()); item.put("role", member.getRole());
             item.put("online", presence.isPlayerOnline(p.getId()));
             members.add(item);
@@ -253,7 +255,7 @@ public class GuildService {
             List<Map<String, Object>> applications = new ArrayList<>();
             for (GuildApplication app : guildApplicationRepository.findByGuildIdOrderByCreatedAtAsc(guildId)) {
                 Player p = player(app.getPlayerId());
-                applications.add(Map.of("id", app.getId(), "playerId", p.getId(), "name", p.getUsername(), "prestige", p.getPrestige()));
+                applications.add(Map.of("id", app.getId(), "playerId", p.getId(), "name", PlayerNames.commanderName(p), "prestige", p.getPrestige()));
             }
             result.put("applications", applications);
         }
@@ -266,7 +268,7 @@ public class GuildService {
         Player leader = player(guild.getLeaderPlayerId());
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("id", guild.getId()); result.put("name", guild.getName()); result.put("icon", guild.getIcon()); result.put("notice", guild.getNotice());
-        result.put("leaderName", leader.getUsername()); result.put("members", guildMemberRepository.countByGuildId(guild.getId()));
+        result.put("leaderName", PlayerNames.commanderName(leader)); result.put("members", guildMemberRepository.countByGuildId(guild.getId()));
         result.put("maxMembers", MAX_MEMBERS); result.put("prestige", prestige); result.put("createdAt", guild.getCreatedAt());
         return result;
     }

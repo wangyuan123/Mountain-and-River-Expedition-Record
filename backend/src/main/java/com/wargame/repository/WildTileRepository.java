@@ -50,8 +50,6 @@ public interface WildTileRepository extends JpaRepository<WildTile, Long> {
             + "and w.occupiedCitySlot = :city and w.occupied = true order by w.id")
     List<Long> lockOwnedIdsByCity(@org.springframework.data.repository.query.Param("player") Long playerId,
                                 @org.springframework.data.repository.query.Param("city") Integer citySlot);
-    List<WildTile> findByOccupiedByAndGatherCitySlotAndGatheringTrueAndGatherMode(
-            Long occupiedBy, Integer gatherCitySlot, String gatherMode);
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @org.springframework.data.jpa.repository.Query("select w from WildTile w where w.id = :id")
     java.util.Optional<WildTile> lockById(@org.springframework.data.repository.query.Param("id") Long id);

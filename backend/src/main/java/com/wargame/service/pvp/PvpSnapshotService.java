@@ -17,13 +17,26 @@ import java.util.*;
 @RequiredArgsConstructor
 public class PvpSnapshotService {
     public static final String RULES = "pvp-v1-" + PvpJson.hash(PvpJson.write(Map.of("battle", BattleRules.PRACTICE_VERSION, "units", versionedUnits(),
-            "skills", OfficerSkillDef.OFFICER_SKILLS, "equipment", UnitEquipmentDef.ITEMS))).substring(0, 24);
+            "skills", versionedSkills(), "equipment", UnitEquipmentDef.ITEMS))).substring(0, 24);
+
+    /** 城市协防只补充闪电的场景说明，演习仍用原引擎及已校准的技能定义摘要。 */
+    private static Map<String, OfficerSkillDef> versionedSkills() {
+        Map<String, OfficerSkillDef> skills = new TreeMap<>(OfficerSkillDef.OFFICER_SKILLS);
+        var blitz = skills.get("blitz");
+        skills.put("blitz", new OfficerSkillDef(blitz.key(), blitz.name(),
+                "首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），战场移动速度+6%/级，最高30%，仅本回合生效；首次交战仅影响同射程单位的交火先手，后续生效回合同时影响机动与先手。行动顺序按射程优先、同射程速度优先；射程与速度均相同时，奇数回合进攻方先手、偶数回合防守方先手", blitz.max(), blitz.cat()));
+        return skills;
+    }
 
     /** 生产设施调整不改变战斗：摘要保留历史建筑归属，避免作废实测校准及进行中的演习。 */
     private static com.fasterxml.jackson.databind.JsonNode versionedUnits() {
         // 使用 JSON 树保留 record 字段的序列，沿用已发布摘要的序列化顺序。
         var units = PvpJson.read(PvpJson.write(UnitDef.UNITS), com.fasterxml.jackson.databind.JsonNode.class);
         for (var unit : units) {
+            // 兵种改名只影响文案；仍按既有名称校验演习快照，真实战斗属性继续参与摘要。
+            if ("rocket".equals(unit.path("key").asText())) {
+                ((com.fasterxml.jackson.databind.node.ObjectNode) unit).put("name", "反坦克火箭车-喀秋莎（BM-13）");
+            }
             // 仅归一化调整过的生产建筑元数据，其余战斗、成本与人口参数仍参与版本校验。
             if ("sea".equals(unit.path("branch").asText())) {
                 ((com.fasterxml.jackson.databind.node.ObjectNode) unit).put("build", "port");

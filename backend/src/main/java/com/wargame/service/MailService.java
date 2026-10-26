@@ -11,6 +11,8 @@ import com.wargame.repository.MailRepository;
 import com.wargame.repository.PlayerRepository;
 import com.wargame.repository.ResourcesRepository;
 import com.wargame.util.JsonUtil;
+import com.wargame.util.PlayerNames;
+import com.wargame.model.constants.CommanderRenamePolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -40,6 +42,8 @@ import java.util.*;
  */
 @Service
 public class MailService {
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.repository.PlayerItemRepository playerItems;
     private static final long DAY_MS = 24L * 60 * 60 * 1000;
 
     @org.springframework.beans.factory.annotation.Autowired private AccountService accounts;
@@ -216,7 +220,9 @@ public class MailService {
 
         Player from = playerRepository.findById(fromPlayerId)
                 .orElseThrow(() -> new IllegalArgumentException("发件人不存在"));
-        Player to = playerRepository.findByUsername(toName)
+        Player to = playerRepository.findByDisplayNameKey(CommanderRenamePolicy.nameKey(toName))
+                .or(() -> findUnnamedCommander(toName))
+                .or(() -> playerRepository.findByUsername(toName))
                 .orElseThrow(() -> new IllegalArgumentException("收件人不存在: " + toName));
         to = accounts.lockPlayer(to.getId());
         if (to.deletionDue(System.currentTimeMillis())) throw new IllegalArgumentException("收件人不存在");
@@ -229,9 +235,9 @@ public class MailService {
 
         Mail mail = new Mail();
         mail.setFromPlayerId(fromPlayerId);
-        mail.setFromName(from.getUsername());
+        mail.setFromName(PlayerNames.commanderName(from));
         mail.setToPlayerId(to.getId());
-        mail.setToName(to.getUsername());
+        mail.setToName(PlayerNames.commanderName(to));
         mail.setType("player");
         mail.setIsSystem(false);
         mail.setSubject(subject);
@@ -254,7 +260,7 @@ public class MailService {
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("success", true);
-        result.put("message", "已发送给 " + to.getUsername());
+        result.put("message", "已发送给 " + PlayerNames.commanderName(to));
         result.put("mail", toDto(mail));
         return result;
     }
@@ -294,7 +300,7 @@ public class MailService {
         mail.setFromPlayerId(null);
         mail.setFromName(fromName == null ? "系统" : fromName);
         mail.setToPlayerId(to.getId());
-        mail.setToName(to.getUsername());
+        mail.setToName(PlayerNames.commanderName(to));
         mail.setType(type == null ? "system" : type);
         mail.setIsSystem(true);
         mail.setSubject(subject == null ? "(无主题)" : subject);
@@ -352,7 +358,7 @@ public class MailService {
 
     /**
      * 领取附件：把 attach_json 里的资源加到收件人 resources 表，标记 is_claimed=true。
-     * 系统邮件不限制领取次数，玩家邮件只能领一次。
+     * 所有邮件附件都只能领取一次；道具附件仅允许系统邮件和显式白名单。
      */
     @Transactional
     public Map<String, Object> claimAttach(Long playerId, Long mailId) {
@@ -373,13 +379,20 @@ public class MailService {
 
         List<Map<String, Object>> resList = new ArrayList<>();
         Map<String, Integer> armyDeltas = new LinkedHashMap<>();
+        Map<String, Integer> itemDeltas = new LinkedHashMap<>();
 
         for (Map<String, Object> a : attach) {
             String t = String.valueOf(a.get("type"));
             int qty = a.get("qty") instanceof Number n ? n.intValue() : 0;
             if (qty <= 0) continue;
 
-            if (ALLOWED_ATTACH.contains(t)) {
+            if ("item".equals(t)) {
+                String itemId = String.valueOf(a.get("itemId"));
+                if (!Boolean.TRUE.equals(mail.getIsSystem()) ||
+                        !com.wargame.model.constants.CommanderRenamePolicy.ITEM_KEY.equals(itemId))
+                    throw new IllegalArgumentException("不支持的道具附件");
+                itemDeltas.merge(itemId, qty, Math::addExact);
+            } else if (ALLOWED_ATTACH.contains(t)) {
                 resList.add(a);
             } else if (UnitDef.UNITS.containsKey(t)) {
                 armyDeltas.merge(t, qty, Integer::sum);
@@ -412,6 +425,19 @@ public class MailService {
         }
         if (!armyDeltas.isEmpty()) {
             applyArmyUnits(playerId, armyDeltas);
+        }
+        for (Map.Entry<String, Integer> delta : itemDeltas.entrySet()) {
+            com.wargame.model.entity.PlayerItem item = playerItems.findByPlayerIdAndItemKey(playerId, delta.getKey())
+                    .orElseGet(() -> {
+                        var created = new com.wargame.model.entity.PlayerItem();
+                        created.setPlayerId(playerId);
+                        created.setItemKey(delta.getKey());
+                        created.setCount(0);
+                        return created;
+                    });
+            item.setCount(Math.addExact(item.getCount(), delta.getValue()));
+            item.setUpdatedAt(now);
+            playerItems.save(item);
         }
 
         mail.setIsClaimed(true);
@@ -532,9 +558,10 @@ public class MailService {
      */
     @Transactional
     public void seedForNewPlayer(Long playerId) {
+        long existing = mailRepository.countByToPlayerIdAndIsReadFalse(playerId);
+        issueCommanderRenameGift(playerId);
         long now = System.currentTimeMillis();
         // 避免重复种子 (重置账号时也会再次调用)
-        long existing = mailRepository.countByToPlayerIdAndIsReadFalse(playerId);
         if (existing > 0) {
             return;
         }
@@ -545,7 +572,7 @@ public class MailService {
         welcome.setFromPlayerId(null);
         welcome.setFromName("系统");
         welcome.setToPlayerId(playerId);
-        welcome.setToName(p.getUsername());
+        welcome.setToName(PlayerNames.commanderName(p));
         welcome.setType("system");
         welcome.setIsSystem(true);
         welcome.setSubject("欢迎加入战局");
@@ -569,7 +596,7 @@ public class MailService {
         reward.setAttachmentSourceType("NEW_PLAYER");
         reward.setAttachmentSourceId("reward:" + playerId);
         reward.setToPlayerId(playerId);
-        reward.setToName(p.getUsername());
+        reward.setToName(PlayerNames.commanderName(p));
         reward.setType("reward");
         reward.setIsSystem(true);
         reward.setSubject("新手礼包已发放");
@@ -587,7 +614,7 @@ public class MailService {
         announce.setFromPlayerId(null);
         announce.setFromName("远征军司令部");
         announce.setToPlayerId(playerId);
-        announce.setToName(p.getUsername());
+        announce.setToName(PlayerNames.commanderName(p));
         announce.setType("alliance");
         announce.setIsSystem(true);
         announce.setSubject("战区通告：滇缅战备指引");
@@ -603,6 +630,30 @@ public class MailService {
     // ================================================================
     //  内部 helpers
     // ================================================================
+
+    /** 玩家行锁和永久标记保证每个账号一份；未领取附件不设置过期时间。 */
+    @Transactional
+    public void issueCommanderRenameGift(Long playerId) {
+        Player player = accounts.lockPlayer(playerId);
+        if (player.isCommanderRenameGiftSent() || Boolean.TRUE.equals(player.getIsBot()) || "DELETED".equals(player.getAccountStatus())) return;
+        Mail gift = sendSystem(playerId, "系统", "reward", "统帅改名卡赠礼",
+                "赠送您1张统帅改名卡。请领取附件后前往仓库使用。首次用卡无需等待，此后每次成功改名需间隔30天（现实时间）；改名卡暂不在商城出售。",
+                List.of(Map.of("type", "item", "itemId", "commanderRenameCard", "qty", 1)), null,
+                "PROTECTED", "COMMANDER_RENAME_GIFT", "commander-rename:" + playerId, null);
+        if (gift == null) return;
+        player.setCommanderRenameGiftSent(true);
+        playerRepository.save(player);
+    }
+
+    private Optional<Player> findUnnamedCommander(String name) {
+        if (!name.matches("统帅[1-9][0-9]*")) return Optional.empty();
+        try {
+            return playerRepository.findById(Long.parseLong(name.substring(2)))
+                    .filter(player -> player.getDisplayName() == null || player.getDisplayName().isBlank());
+        } catch (NumberFormatException invalidId) {
+            return Optional.empty();
+        }
+    }
 
     private List<Map<String, Object>> normalizeAndDeductAttach(Long fromPlayerId, List<Map<String, Object>> attach) {
         if (attach == null || attach.isEmpty()) return List.of();
@@ -630,7 +681,7 @@ public class MailService {
         Resources res = resourcesRepository.findByPlayerIdAndCitySlot(fromPlayerId, cityScope.slot(fromPlayerId))
                 .orElseThrow(() -> new IllegalArgumentException("发件人资源不存在"));
         for (Map.Entry<String, Integer> e : need.entrySet()) {
-            int have = getRes("diamond".equals(e.getKey()) ? cityScope.wallet(fromPlayerId) : res, e.getKey());
+            long have = getRes("diamond".equals(e.getKey()) ? cityScope.wallet(fromPlayerId) : res, e.getKey());
             if (have < e.getValue()) {
                 throw new IllegalArgumentException("资源不足: " + labelOf(e.getKey())
                         + " (需要 " + e.getValue() + ", 现有 " + have + ")");
@@ -648,8 +699,12 @@ public class MailService {
         for (Map.Entry<String, Integer> e : delta.entrySet()) {
             int v = e.getValue() * sign;
             Resources balance = "diamond".equals(e.getKey()) ? cityScope.wallet(playerId) : res;
-            int cur = getRes(balance, e.getKey());
-            setRes(balance, e.getKey(), cur + v);
+            if ("diamond".equals(e.getKey())) {
+                int cur = (int) getRes(balance, e.getKey());
+                balance.setDiamond(cur + v);
+            } else {
+                balance.addResource(e.getKey(), v);
+            }
             resourcesRepository.save(balance);
         }
         resourcesRepository.save(res);
@@ -689,15 +744,15 @@ public class MailService {
         }
     }
 
-    private static int getRes(Resources r, String key) {
+    private static long getRes(Resources r, String key) {
         return switch (key) {
-            case "food"    -> r.getFood()    != null ? r.getFood()    : 0;
-            case "steel"   -> r.getSteel()   != null ? r.getSteel()   : 0;
-            case "oil"     -> r.getOil()     != null ? r.getOil()     : 0;
-            case "rare"    -> r.getRare()    != null ? r.getRare()    : 0;
-            case "gold"    -> r.getGold()    != null ? r.getGold()    : 0;
-            case "diamond" -> r.getDiamond() != null ? r.getDiamond() : 0;
-            default -> 0;
+            case "food"    -> r.getFood()    != null ? r.getFood()    : 0L;
+            case "steel"   -> r.getSteel()   != null ? r.getSteel()   : 0L;
+            case "oil"     -> r.getOil()     != null ? r.getOil()     : 0L;
+            case "rare"    -> r.getRare()    != null ? r.getRare()    : 0L;
+            case "gold"    -> r.getGold()    != null ? r.getGold()    : 0L;
+            case "diamond" -> r.getDiamond() != null ? r.getDiamond() : 0L;
+            default -> 0L;
         };
     }
 

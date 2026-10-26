@@ -82,7 +82,7 @@ function fixture(extra = {}) {
 test('列表跨过开战和结束边界时自动切换行动，并保留展开状态', () => {
   const f = fixture();
   f.renderList();
-  assert.match(f.view.innerHTML, /开战倒计时 0:01/);
+  assert.match(f.view.innerHTML, /开战倒计时 1秒/);
   assert.doesNotMatch(f.view.innerHTML, /Game.World.attack\('player',0,'campaign'\)/);
   f.setTime(101000);
   f.tick();
@@ -91,7 +91,7 @@ test('列表跨过开战和结束边界时自动切换行动，并保留展开�
   assert.match(f.view.innerHTML, /tcard-expanded" data-player-id="2"/);
   f.setTime(102000);
   f.tick();
-  assert.equal(f.nodes.get('war-timer-0').textContent, '交战剩余 0:01');
+  assert.equal(f.nodes.get('war-timer-0').textContent, '交战剩余 1秒');
   assert.equal(f.renders, 1);
   f.setTime(103000);
   f.tick();

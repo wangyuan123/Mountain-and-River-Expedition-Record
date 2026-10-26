@@ -8,6 +8,22 @@ function context(game = {}) {
 }
 function load(c,file){require('./load-constants.cjs')(c);vm.runInContext(fs.readFileSync(path.join(__dirname,'../js',file),'utf8'),c);}
 const flush=()=>new Promise(setImmediate);
+test('nearest player excludes all own cities and uses the map viewpoint, including protected targets', () => {
+  const messages = [];
+  const state = { player: { id: 7 }, world: { pos: { x: 10, y: 10 }, _mapPos: { x: 100, y: 100 },
+    playerCities: [{ x: 100, y: 100, selfCity: true }, { x: 100, y: 100, ownerId: '7' },
+      { x: 11, y: 11, ownerId: 8 }, { x: 101, y: 101, ownerId: 9, coolAt: Date.now() + 60000 }] } };
+  const c = context({ Core: { state, views: {} }, DATA: {}, toast: msg => messages.push(msg) });
+  load(c, 'world.js');
+  let target;
+  c.Game.World.jumpTo = (x, y) => { target = [x, y]; };
+  c.Game.World.locateClosest('player', true);
+  assert.deepEqual(target, [101, 101]);
+  assert.match(messages.at(-1), /保护期/);
+  state.world.playerCities = state.world.playerCities.slice(0, 2);
+  c.Game.World.locateClosest('player', true);
+  assert.match(messages.at(-1), /没有其他玩家城市/);
+});
 test('camera zoom keeps finger anchor and camera never moves game coordinates',()=>{
   const c=context();load(c,'map-camera.js');const cam=new c.Game.MapCamera(200,100,100,48);cam.width=390;cam.height=550;
   const before=cam.world(120,200);cam.zoom(1.8,120,200);const after=cam.world(120,200);
@@ -29,15 +45,15 @@ test('map starts at its minimum scale and zoom-out input cannot go below it',()=
   const c=context();load(c,'map-camera.js');
   for(const factor of [1/1.3,0.5]){
     const cam=new c.Game.MapCamera(200,100,100);cam.width=1920;cam.height=1080;
-    assert.equal(cam.scale,44);
+    assert.equal(cam.scale,57.2);
     const anchor=cam.world(120,200);
     for(let step=0;step<4;step++)cam.zoom(factor,120,200);
-    assert.equal(cam.scale,44);
+    assert.equal(cam.scale,57.2);
     const zoomedAnchor=cam.world(120,200);
     assert.ok(Math.abs(zoomedAnchor.x-anchor.x)<1e-9);
     assert.ok(Math.abs(zoomedAnchor.y-anchor.y)<1e-9);
     cam.zoom(factor,120,200);
-    assert.equal(cam.scale,44);
+    assert.equal(cam.scale,57.2);
     cam.zoom(2,120,200);
     assert.equal(cam.scale,88);
   }

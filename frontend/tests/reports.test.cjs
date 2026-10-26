@@ -36,6 +36,36 @@ function setup(initialCount = 0) {
 }
 const flush = () => new Promise(resolve => setImmediate(resolve));
 
+test('live scout summaries retain ground mode and only the successfully observed garrison', () => {
+  const { G } = setup();
+  const source = { id: 92, type: 'scout', data: { scoutUnit: 'recon_car', reconMode: 'land', showCityInfo: true,
+    x: 44, y: 103, army: { infantry: 10 }, roundLogs: ['不进入卡片'] } };
+  const card = G.Battle.summarizeLiveReport(source);
+  assert.match(G.Battle.renderScoutReportCard(card), /地面侦查/);
+  assert.equal(card.data.army.infantry, 10);
+  assert.equal(card.data.roundLogs, undefined);
+  source.data.showCityInfo = false;
+  assert.equal(G.Battle.summarizeLiveReport(source).data.army, undefined);
+});
+
+test('resource overflow reports show city, cause, coordinates, and each lost resource', () => {
+  const { G } = setup();
+  G.fmt = value => Number(value).toLocaleString('en-US');
+  const report = {
+    id: 901, type: 'resource_loss', time: Date.now(), readAt: 0,
+    data: {
+      subject: '资源损耗报告', cause: '仓库溢出', cityName: '前线基地', x: 12, y: 34,
+      losses: [{ resourceName: '石油', lossAmount: 51, beforeAmount: 1_000_000_101, afterAmount: 1_000_000_050, stage: 'first' }]
+    }
+  };
+  const card = G.Battle.renderResourceLossReportCard(report);
+  const board = G.Battle.renderResourceLossReportBoard(report);
+  assert.match(card, /前线基地 \(12,34\) 因 仓库溢出/);
+  assert.match(card, /石油 -51/);
+  assert.match(board, /处理后 1,000,000,050/);
+  assert.match(board, /首次检查损失超额的一半/);
+});
+
 for (const attackerWin of [true, false]) {
   for (const perspective of ['attacker', 'defender']) {
     test(`interception report shows the recipient outcome and actual troop movement: ${perspective}, attackerWin=${attackerWin}`, () => {
@@ -183,7 +213,7 @@ test('return arrival still renders the updated army page', async () => {
 for (const legacy of [true, false]) {
   test(`unit renaming preserves log-only troop and casualty recovery: legacy=${legacy}`, () => {
     const { G } = setup();
-    const dataContext = { window: { Game: {} } };
+    const dataContext = { window: { Game: { Constants: G.Constants } } };
     vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../js/data.js'), 'utf8'), dataContext);
     Object.assign(G.DATA, dataContext.window.Game.DATA);
     G.fmt = String;
@@ -208,15 +238,20 @@ for (const legacy of [true, false]) {
 
 test('pre-rename rocket reports recover troops and casualties under the current unit name', () => {
   const { G } = setup();
-  const dataContext = { window: { Game: {} } };
+  const dataContext = { window: { Game: { Constants: G.Constants } } };
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../js/data.js'), 'utf8'), dataContext);
   Object.assign(G.DATA, dataContext.window.Game.DATA);
   G.fmt = String;
+  assert.equal(G.DATA.units.rocket.name, '反坦克火箭-喀秋莎（BM-13）');
+  assert.equal(G.DATA.japaneseUnits.rocket.name, '反坦克火箭-四式喷进炮（Type 4）');
   // 使用真实旧名称，覆盖无初始兵力表的历史战报，而非从改名后的配置生成测试输入。
   for (const [oldName, isJapanese] of [
     ['火箭', false],
     ['火箭-喀秋莎（BM-13）', false],
-    ['火箭-四式喷进炮（Type 4）', true]
+    ['火箭-四式喷进炮（Type 4）', true],
+    ['反坦克火箭车', false],
+    ['反坦克火箭车-喀秋莎（BM-13）', false],
+    ['反坦克火箭车-四式喷进炮（Type 4）', true]
   ]) {
     const currentName = (isJapanese ? G.DATA.japaneseUnits : G.DATA.units).rocket.name;
     const attacked = G.Battle.renderArmyUnits('enemy', null, { rocket: 7 }, [
@@ -401,6 +436,39 @@ test('battle details preserve server timeline within each round', () => {
     '敌方将领加成：本回合生效', '敌方战列舰(1)前进并炮击'
   ]);
   assert.match(detail.innerHTML, /共 2 回合/);
+});
+
+test('legacy conquest wall attacks display decreasing health within each round without changing stored logs', () => {
+  const { G } = setup();
+  const battleship = '我方战列舰(179609) [前进]；攻击敌城墙，伤害103810，墙体剩余生命0';
+  const carrier = '我方航母(397123) [前进]；舰载机打击敌步兵(4960) 伤害892800 击毁4960；余伤攻击敌城墙，伤害2396189，墙体剩余生命103811';
+  const movement = '敌方侦察机(53315) [待命] 坚守阵地 坐标4700';
+  const logs = Object.freeze(['-- 第1回合 --', battleship, movement, carrier, '★ 守军已清除，城墙已攻破，胜利!']);
+  const expected = [logs[0], carrier, movement, battleship, logs[4]];
+  assert.deepEqual(Array.from(G.Battle.groupRoundSideLogs(logs)), expected);
+  assert.deepEqual(Array.from(logs), [logs[0], battleship, movement, carrier, logs[4]]);
+  assert.deepEqual(Array.from(G.Battle.groupRoundSideLogs(expected)), expected);
+  for (const perspective of ['attacker', 'defender']) {
+    G.Battle._viewReport = { type: 'battle', action: 'conquer', perspective, win: perspective === 'attacker', time: Date.now(), roundLogs: logs };
+    const detail = { innerHTML: '' };
+    G.Battle.renderReportDetail(detail);
+    assert.ok(detail.innerHTML.indexOf('航母(397123)') < detail.innerHTML.indexOf('战列舰(179609)'));
+    assert.ok(detail.innerHTML.indexOf('墙体剩余生命103811') < detail.innerHTML.indexOf('墙体剩余生命0'));
+  }
+});
+
+test('wall log compatibility preserves round boundaries, equal health and unrelated lines', () => {
+  const { G } = setup();
+  const logs = Object.freeze([
+    '-- 第1回合 --',
+    '我方战列舰(1) [前进]；攻击敌城墙，伤害100，墙体剩余生命900',
+    '-- 第2回合 --',
+    '我方战列舰(1) [前进]；攻击敌城墙，伤害100，墙体剩余生命800',
+    '我方航母(1) [待命]；攻击敌城墙，伤害0，墙体剩余生命800',
+    '敌方步兵(1) [待命] 坚守阵地 坐标1000'
+  ]);
+  assert.deepEqual(Array.from(G.Battle.groupRoundSideLogs(logs)), Array.from(logs));
+  assert.deepEqual(Array.from(G.Battle.groupRoundSideLogs(null)), []);
 });
 
 test('battle details keep movement and finishing attacks together for both sides', () => {

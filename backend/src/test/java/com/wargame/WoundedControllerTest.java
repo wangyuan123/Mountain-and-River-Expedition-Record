@@ -60,7 +60,7 @@ class WoundedControllerTest extends BaseServiceTest {
         var resources = resourcesRepository.findByPlayerId(playerId).orElseThrow();
         resources.setDiamond(100);
         resourcesRepository.save(resources);
-        int gold = resources.getGold();
+        long gold = resources.getGold();
         int diamond = resources.getDiamond();
         JsonNode after = json.readTree(http.perform(post("/api/game/army/wounded/" + id + "/heal")
                 .header("Authorization", "Bearer " + token).contentType(MediaType.APPLICATION_JSON)

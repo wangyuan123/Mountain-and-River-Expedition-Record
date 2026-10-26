@@ -69,7 +69,7 @@ class OnboardingServiceUnitTest {
         when(techs.save(any(Technology.class))).thenAnswer(i -> { Technology t = i.getArgument(0); if (!technologies.contains(t)) technologies.add(t); return t; });
         when(armies.findByPlayerIdAndCitySlotAndType(eq(1L), eq(0), anyString())).thenAnswer(i -> troops.stream().filter(a -> a.getType().equals(i.getArgument(2))).toList());
         when(armies.save(any(ArmyUnit.class))).thenAnswer(i -> { ArmyUnit a = i.getArgument(0); if (!troops.contains(a)) troops.add(a); return a; });
-        when(reports.findByPlayerIdAndCreatedAtGreaterThanEqual(eq(1L), anyLong())).thenAnswer(i -> intel.stream().filter(r -> r.getCreatedAt() >= (Long) i.getArgument(1)).toList());
+        when(reports.findByPlayerIdAndPersistedRealAtGreaterThanEqual(eq(1L), anyLong())).thenAnswer(i -> intel.stream().filter(r -> r.getPersistedRealAt() >= (Long) i.getArgument(1)).toList());
         when(marches.findByPlayerId(1L)).thenReturn(movements);
         when(marches.findByPlayerIdAndCitySlot(1L, 0)).thenReturn(movements);
         when(wilds.findByOccupiedBy(1L)).thenReturn(tiles);
@@ -201,6 +201,7 @@ class OnboardingServiceUnitTest {
 
     private ScoutReport report(String type, Map<String, Object> data, boolean read) {
         ScoutReport report = new ScoutReport(); report.setType(type); report.setData(JsonUtil.toJson(data));
+        report.setPersistedRealAt(System.currentTimeMillis());
         report.setCreatedAt(System.currentTimeMillis()); report.setReadAt(read ? System.currentTimeMillis() : 0L);
         intel.add(report); return report;
     }

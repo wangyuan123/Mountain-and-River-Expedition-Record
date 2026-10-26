@@ -1,0 +1,3007 @@
+{
+  "serverTime": 1792727781906,
+  "cityOverview": {
+    "cities": [
+      {
+        "id": 179,
+        "slot": 0,
+        "name": "新城市",
+        "main": true,
+        "current": false,
+        "x": 3,
+        "y": 388,
+        "readyAt": 0,
+        "surrenderOfferId": null,
+        "surrenderRecipientId": null,
+        "surrenderFrozenAt": null,
+        "surrenderTransferDeadlineAt": null,
+        "frozen": false,
+        "ready": true,
+        "incoming": false,
+        "shieldUntil": 0,
+        "coastal": true,
+        "legacyNaval": false,
+        "level": 10
+      },
+      {
+        "id": 178,
+        "slot": 1,
+        "name": "新城市",
+        "main": false,
+        "current": false,
+        "x": 4,
+        "y": 388,
+        "readyAt": 0,
+        "surrenderOfferId": null,
+        "surrenderRecipientId": null,
+        "surrenderFrozenAt": null,
+        "surrenderTransferDeadlineAt": null,
+        "frozen": false,
+        "ready": true,
+        "incoming": false,
+        "shieldUntil": 0,
+        "coastal": true,
+        "legacyNaval": false,
+        "level": 4
+      },
+      {
+        "id": 180,
+        "slot": 2,
+        "name": "重建主城",
+        "main": false,
+        "current": true,
+        "x": 5,
+        "y": 388,
+        "readyAt": 0,
+        "surrenderOfferId": null,
+        "surrenderRecipientId": null,
+        "surrenderFrozenAt": null,
+        "surrenderTransferDeadlineAt": null,
+        "frozen": false,
+        "ready": true,
+        "incoming": false,
+        "shieldUntil": 0,
+        "coastal": true,
+        "legacyNaval": false,
+        "level": 1
+      }
+    ],
+    "count": 3,
+    "cap": 8,
+    "rankName": "上将",
+    "nextRankName": null,
+    "nextCap": 8,
+    "buildCost": {
+      "oil": 5000,
+      "food": 5000,
+      "gold": 10000,
+      "steel": 10000,
+      "rare": 2000
+    },
+    "buildDurationMs": 1800000,
+    "sites": []
+  },
+  "player": {
+    "id": 177,
+    "username": "codex_playtest_20261023_1451",
+    "commanderRenameCount": 0,
+    "commanderNameRenameAvailableAt": 0,
+    "name": "远征统帅_163822",
+    "faction": "allies",
+    "cityName": "重建主城",
+    "cityNameRenameAvailableAt": 0,
+    "avatar": "img/avatars/historical/rank-colonel-v1.webp",
+    "homeModuleOrder": null,
+    "militaryRank": 17,
+    "militaryRankName": "上将",
+    "vipLevel": 0,
+    "tutorialDismissed": false,
+    "newbieProtectionStartedAt": 1792672499781,
+    "newbieProtectionUntil": 0,
+    "guild": {
+      "id": 4,
+      "name": "海岸远征试玩团",
+      "icon": "g04",
+      "role": "leader"
+    },
+    "activeCityId": 180,
+    "mainCity": false,
+    "cityFrozen": false,
+    "citySurrenderOfferId": null,
+    "cityTransferDeadlineAt": null,
+    "citySlot": 2,
+    "npcVictories": 0
+  },
+  "rankInfo": {
+    "tier": 17,
+    "name": "上将",
+    "baseCap": 600000,
+    "prestige": 274468750,
+    "npcVictories": 0,
+    "cityCap": 8,
+    "nextCityCap": 8,
+    "nextCityRankName": null,
+    "nextExpansionCap": 8,
+    "isMax": true,
+    "canPromote": false,
+    "canTakeExam": false
+  },
+  "unreadReportCount": 9,
+  "resources": {
+    "food": 1000000000,
+    "steel": 3087,
+    "oil": 1000000000,
+    "rare": 200,
+    "gold": 1001,
+    "diamond": 97
+  },
+  "buildings": {
+    "command": 1,
+    "farm": [
+      1
+    ],
+    "house": [
+      1
+    ],
+    "refinery": [
+      1
+    ]
+  },
+  "wilds": {
+    "citySlot": 2,
+    "baseCap": 5,
+    "commandLevel": 1,
+    "cap": 6,
+    "ownedCount": 0,
+    "owned": []
+  },
+  "unitUnlocks": {
+    "infantry": {
+      "unitId": "infantry",
+      "ruleVersion": "unit-unlock-20261020-v4",
+      "eligible": false,
+      "requirements": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "军工厂",
+          "met": false,
+          "scope": "city",
+          "required": 1,
+          "id": "factory"
+        }
+      ],
+      "missing": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "军工厂",
+          "met": false,
+          "scope": "city",
+          "required": 1,
+          "id": "factory"
+        }
+      ]
+    },
+    "truck": {
+      "unitId": "truck",
+      "ruleVersion": "unit-unlock-20261020-v4",
+      "eligible": false,
+      "requirements": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "军工厂",
+          "met": false,
+          "scope": "city",
+          "required": 1,
+          "id": "factory"
+        }
+      ],
+      "missing": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "军工厂",
+          "met": false,
+          "scope": "city",
+          "required": 1,
+          "id": "factory"
+        }
+      ]
+    },
+    "recon_car": {
+      "unitId": "recon_car",
+      "ruleVersion": "unit-unlock-20261020-v4",
+      "eligible": false,
+      "requirements": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "军工厂",
+          "met": false,
+          "scope": "city",
+          "required": 2,
+          "id": "factory"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "侦察技术",
+          "met": true,
+          "scope": "empire",
+          "required": 1,
+          "id": "recon_level"
+        }
+      ],
+      "missing": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "军工厂",
+          "met": false,
+          "scope": "city",
+          "required": 2,
+          "id": "factory"
+        }
+      ]
+    },
+    "armored": {
+      "unitId": "armored",
+      "ruleVersion": "unit-unlock-20261020-v4",
+      "eligible": false,
+      "requirements": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "军工厂",
+          "met": false,
+          "scope": "city",
+          "required": 3,
+          "id": "factory"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "燃烧引擎",
+          "met": true,
+          "scope": "empire",
+          "required": 1,
+          "id": "arm_engine"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "武器射程",
+          "met": true,
+          "scope": "empire",
+          "required": 1,
+          "id": "weapon_range"
+        }
+      ],
+      "missing": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "军工厂",
+          "met": false,
+          "scope": "city",
+          "required": 3,
+          "id": "factory"
+        }
+      ]
+    },
+    "ltank": {
+      "unitId": "ltank",
+      "ruleVersion": "unit-unlock-20261020-v4",
+      "eligible": false,
+      "requirements": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "轻装战车厂",
+          "met": false,
+          "scope": "city",
+          "required": 4,
+          "id": "lightfactory"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "燃烧引擎",
+          "met": true,
+          "scope": "empire",
+          "required": 2,
+          "id": "arm_engine"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "攻击科技",
+          "met": true,
+          "scope": "empire",
+          "required": 2,
+          "id": "attack_tech"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "防御科技",
+          "met": true,
+          "scope": "empire",
+          "required": 2,
+          "id": "defense_tech"
+        }
+      ],
+      "missing": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "轻装战车厂",
+          "met": false,
+          "scope": "city",
+          "required": 4,
+          "id": "lightfactory"
+        }
+      ]
+    },
+    "scout": {
+      "unitId": "scout",
+      "ruleVersion": "unit-unlock-20261020-v4",
+      "eligible": false,
+      "requirements": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "空军基地",
+          "met": false,
+          "scope": "city",
+          "required": 2,
+          "id": "airport"
+        },
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "战备机场",
+          "met": false,
+          "scope": "city",
+          "required": 2,
+          "id": "apron"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "喷气推进",
+          "met": true,
+          "scope": "empire",
+          "required": 1,
+          "id": "air_engine"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "侦察技术",
+          "met": true,
+          "scope": "empire",
+          "required": 2,
+          "id": "recon_level"
+        }
+      ],
+      "missing": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "空军基地",
+          "met": false,
+          "scope": "city",
+          "required": 2,
+          "id": "airport"
+        },
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "战备机场",
+          "met": false,
+          "scope": "city",
+          "required": 2,
+          "id": "apron"
+        }
+      ]
+    },
+    "assault": {
+      "unitId": "assault",
+      "ruleVersion": "unit-unlock-20261020-v4",
+      "eligible": false,
+      "requirements": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "军工厂",
+          "met": false,
+          "scope": "city",
+          "required": 5,
+          "id": "factory"
+        },
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "重装战车厂",
+          "met": false,
+          "scope": "city",
+          "required": 4,
+          "id": "heavyfactory"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "武器射程",
+          "met": true,
+          "scope": "empire",
+          "required": 3,
+          "id": "weapon_range"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "火力密度",
+          "met": true,
+          "scope": "empire",
+          "required": 3,
+          "id": "fire_density"
+        }
+      ],
+      "missing": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "军工厂",
+          "met": false,
+          "scope": "city",
+          "required": 5,
+          "id": "factory"
+        },
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "重装战车厂",
+          "met": false,
+          "scope": "city",
+          "required": 4,
+          "id": "heavyfactory"
+        }
+      ]
+    },
+    "transport": {
+      "unitId": "transport",
+      "ruleVersion": "unit-unlock-20261020-v4",
+      "eligible": false,
+      "requirements": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "空军基地",
+          "met": false,
+          "scope": "city",
+          "required": 5,
+          "id": "airport"
+        },
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "战备机场",
+          "met": false,
+          "scope": "city",
+          "required": 4,
+          "id": "apron"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "喷气推进",
+          "met": true,
+          "scope": "empire",
+          "required": 3,
+          "id": "air_engine"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "负重科技",
+          "met": true,
+          "scope": "empire",
+          "required": 3,
+          "id": "log_load"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "军需补给",
+          "met": true,
+          "scope": "empire",
+          "required": 3,
+          "id": "log_food"
+        }
+      ],
+      "missing": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "空军基地",
+          "met": false,
+          "scope": "city",
+          "required": 5,
+          "id": "airport"
+        },
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "战备机场",
+          "met": false,
+          "scope": "city",
+          "required": 4,
+          "id": "apron"
+        }
+      ]
+    },
+    "htank": {
+      "unitId": "htank",
+      "ruleVersion": "unit-unlock-20261020-v4",
+      "eligible": false,
+      "requirements": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "重装战车厂",
+          "met": false,
+          "scope": "city",
+          "required": 6,
+          "id": "heavyfactory"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "燃烧引擎",
+          "met": true,
+          "scope": "empire",
+          "required": 4,
+          "id": "arm_engine"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "攻击科技",
+          "met": true,
+          "scope": "empire",
+          "required": 4,
+          "id": "attack_tech"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "防御科技",
+          "met": true,
+          "scope": "empire",
+          "required": 4,
+          "id": "defense_tech"
+        }
+      ],
+      "missing": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "重装战车厂",
+          "met": false,
+          "scope": "city",
+          "required": 6,
+          "id": "heavyfactory"
+        }
+      ]
+    },
+    "fighter": {
+      "unitId": "fighter",
+      "ruleVersion": "unit-unlock-20261020-v4",
+      "eligible": false,
+      "requirements": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "空军基地",
+          "met": false,
+          "scope": "city",
+          "required": 6,
+          "id": "airport"
+        },
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "战备机场",
+          "met": false,
+          "scope": "city",
+          "required": 5,
+          "id": "apron"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "喷气推进",
+          "met": true,
+          "scope": "empire",
+          "required": 4,
+          "id": "air_engine"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "武器射程",
+          "met": true,
+          "scope": "empire",
+          "required": 4,
+          "id": "weapon_range"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "攻击科技",
+          "met": true,
+          "scope": "empire",
+          "required": 3,
+          "id": "attack_tech"
+        }
+      ],
+      "missing": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "空军基地",
+          "met": false,
+          "scope": "city",
+          "required": 6,
+          "id": "airport"
+        },
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "战备机场",
+          "met": false,
+          "scope": "city",
+          "required": 5,
+          "id": "apron"
+        }
+      ]
+    },
+    "destroyer": {
+      "unitId": "destroyer",
+      "ruleVersion": "unit-unlock-20261020-v4",
+      "eligible": false,
+      "requirements": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "造船厂",
+          "met": false,
+          "scope": "city",
+          "required": 6,
+          "id": "shipyard"
+        },
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "军港",
+          "met": false,
+          "scope": "city",
+          "required": 6,
+          "id": "port"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "舰船动力",
+          "met": true,
+          "scope": "empire",
+          "required": 5,
+          "id": "nav_engine"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "武器射程",
+          "met": true,
+          "scope": "empire",
+          "required": 4,
+          "id": "weapon_range"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "军需补给",
+          "met": true,
+          "scope": "empire",
+          "required": 4,
+          "id": "log_food"
+        },
+        {
+          "kind": "geography",
+          "current": 1,
+          "name": "沿海或既有海军城市资格",
+          "met": true,
+          "scope": "city",
+          "required": 1,
+          "id": "coastal_or_legacy_naval"
+        }
+      ],
+      "missing": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "造船厂",
+          "met": false,
+          "scope": "city",
+          "required": 6,
+          "id": "shipyard"
+        },
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "军港",
+          "met": false,
+          "scope": "city",
+          "required": 6,
+          "id": "port"
+        }
+      ]
+    },
+    "rocket": {
+      "unitId": "rocket",
+      "ruleVersion": "unit-unlock-20261020-v4",
+      "eligible": false,
+      "requirements": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "军工厂",
+          "met": false,
+          "scope": "city",
+          "required": 9,
+          "id": "factory"
+        },
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "重装战车厂",
+          "met": false,
+          "scope": "city",
+          "required": 8,
+          "id": "heavyfactory"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "武器射程",
+          "met": true,
+          "scope": "empire",
+          "required": 9,
+          "id": "weapon_range"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "火力密度",
+          "met": true,
+          "scope": "empire",
+          "required": 8,
+          "id": "fire_density"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "燃烧引擎",
+          "met": true,
+          "scope": "empire",
+          "required": 7,
+          "id": "arm_engine"
+        }
+      ],
+      "missing": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "军工厂",
+          "met": false,
+          "scope": "city",
+          "required": 9,
+          "id": "factory"
+        },
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "重装战车厂",
+          "met": false,
+          "scope": "city",
+          "required": 8,
+          "id": "heavyfactory"
+        }
+      ]
+    },
+    "sub": {
+      "unitId": "sub",
+      "ruleVersion": "unit-unlock-20261020-v4",
+      "eligible": false,
+      "requirements": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "造船厂",
+          "met": false,
+          "scope": "city",
+          "required": 7,
+          "id": "shipyard"
+        },
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "军港",
+          "met": false,
+          "scope": "city",
+          "required": 7,
+          "id": "port"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "舰船动力",
+          "met": true,
+          "scope": "empire",
+          "required": 6,
+          "id": "nav_engine"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "武器射程",
+          "met": true,
+          "scope": "empire",
+          "required": 5,
+          "id": "weapon_range"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "军需补给",
+          "met": true,
+          "scope": "empire",
+          "required": 5,
+          "id": "log_food"
+        },
+        {
+          "kind": "geography",
+          "current": 1,
+          "name": "沿海或既有海军城市资格",
+          "met": true,
+          "scope": "city",
+          "required": 1,
+          "id": "coastal_or_legacy_naval"
+        }
+      ],
+      "missing": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "造船厂",
+          "met": false,
+          "scope": "city",
+          "required": 7,
+          "id": "shipyard"
+        },
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "军港",
+          "met": false,
+          "scope": "city",
+          "required": 7,
+          "id": "port"
+        }
+      ]
+    },
+    "special": {
+      "unitId": "special",
+      "ruleVersion": "unit-unlock-20261020-v4",
+      "eligible": false,
+      "requirements": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "军工厂",
+          "met": false,
+          "scope": "city",
+          "required": 10,
+          "id": "factory"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "训练加速",
+          "met": true,
+          "scope": "empire",
+          "required": 10,
+          "id": "log_train"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "攻击科技",
+          "met": true,
+          "scope": "empire",
+          "required": 9,
+          "id": "attack_tech"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "军队生命",
+          "met": true,
+          "scope": "empire",
+          "required": 9,
+          "id": "cmd_hp"
+        }
+      ],
+      "missing": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "军工厂",
+          "met": false,
+          "scope": "city",
+          "required": 10,
+          "id": "factory"
+        }
+      ]
+    },
+    "bomber": {
+      "unitId": "bomber",
+      "ruleVersion": "unit-unlock-20261020-v4",
+      "eligible": false,
+      "requirements": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "空军基地",
+          "met": false,
+          "scope": "city",
+          "required": 8,
+          "id": "airport"
+        },
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "战备机场",
+          "met": false,
+          "scope": "city",
+          "required": 7,
+          "id": "apron"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "喷气推进",
+          "met": true,
+          "scope": "empire",
+          "required": 6,
+          "id": "air_engine"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "武器射程",
+          "met": true,
+          "scope": "empire",
+          "required": 5,
+          "id": "weapon_range"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "火力密度",
+          "met": true,
+          "scope": "empire",
+          "required": 5,
+          "id": "fire_density"
+        }
+      ],
+      "missing": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "空军基地",
+          "met": false,
+          "scope": "city",
+          "required": 8,
+          "id": "airport"
+        },
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "战备机场",
+          "met": false,
+          "scope": "city",
+          "required": 7,
+          "id": "apron"
+        }
+      ]
+    },
+    "battleship": {
+      "unitId": "battleship",
+      "ruleVersion": "unit-unlock-20261020-v4",
+      "eligible": false,
+      "requirements": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "造船厂",
+          "met": false,
+          "scope": "city",
+          "required": 10,
+          "id": "shipyard"
+        },
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "军港",
+          "met": false,
+          "scope": "city",
+          "required": 10,
+          "id": "port"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "舰船动力",
+          "met": true,
+          "scope": "empire",
+          "required": 9,
+          "id": "nav_engine"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "武器射程",
+          "met": true,
+          "scope": "empire",
+          "required": 10,
+          "id": "weapon_range"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "火力密度",
+          "met": true,
+          "scope": "empire",
+          "required": 10,
+          "id": "fire_density"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "军需补给",
+          "met": true,
+          "scope": "empire",
+          "required": 9,
+          "id": "log_food"
+        },
+        {
+          "kind": "geography",
+          "current": 1,
+          "name": "沿海或既有海军城市资格",
+          "met": true,
+          "scope": "city",
+          "required": 1,
+          "id": "coastal_or_legacy_naval"
+        }
+      ],
+      "missing": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "造船厂",
+          "met": false,
+          "scope": "city",
+          "required": 10,
+          "id": "shipyard"
+        },
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "军港",
+          "met": false,
+          "scope": "city",
+          "required": 10,
+          "id": "port"
+        }
+      ]
+    },
+    "carrier": {
+      "unitId": "carrier",
+      "ruleVersion": "unit-unlock-20261020-v4",
+      "eligible": false,
+      "requirements": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "造船厂",
+          "met": false,
+          "scope": "city",
+          "required": 10,
+          "id": "shipyard"
+        },
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "军港",
+          "met": false,
+          "scope": "city",
+          "required": 10,
+          "id": "port"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "舰船动力",
+          "met": true,
+          "scope": "empire",
+          "required": 10,
+          "id": "nav_engine"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "武器射程",
+          "met": true,
+          "scope": "empire",
+          "required": 10,
+          "id": "weapon_range"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "火力密度",
+          "met": true,
+          "scope": "empire",
+          "required": 10,
+          "id": "fire_density"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "军需补给",
+          "met": true,
+          "scope": "empire",
+          "required": 10,
+          "id": "log_food"
+        },
+        {
+          "kind": "technology",
+          "current": 10,
+          "name": "喷气推进",
+          "met": true,
+          "scope": "empire",
+          "required": 10,
+          "id": "air_engine"
+        },
+        {
+          "kind": "geography",
+          "current": 1,
+          "name": "沿海或既有海军城市资格",
+          "met": true,
+          "scope": "city",
+          "required": 1,
+          "id": "coastal_or_legacy_naval"
+        }
+      ],
+      "missing": [
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "造船厂",
+          "met": false,
+          "scope": "city",
+          "required": 10,
+          "id": "shipyard"
+        },
+        {
+          "kind": "building",
+          "current": 0,
+          "name": "军港",
+          "met": false,
+          "scope": "city",
+          "required": 10,
+          "id": "port"
+        }
+      ]
+    }
+  },
+  "coastalPortLevel": 1,
+  "population": {
+    "civilian": 155,
+    "capacity": 1200,
+    "effectiveCapacity": 10,
+    "recruitable": 155,
+    "growthPerHour": 7.2
+  },
+  "army": {},
+  "woundedCount": 0,
+  "prisonerCount": 0,
+  "prisonerCapacity": 0,
+  "forts": {},
+  "items": {
+    "expBook": 5,
+    "expBookAdv": 2,
+    "goldBox": 0,
+    "loyaltyBox": 2,
+    "marshal_military_backpack": 0,
+    "marshal_military_badge": 0,
+    "marshal_military_belt": 0,
+    "marshal_military_boots": 0,
+    "marshal_military_coat": 0,
+    "marshal_military_gloves": 0,
+    "marshal_military_helmet": 0,
+    "marshal_military_map": 0,
+    "marshal_military_radio": 0,
+    "marshal_military_trousers": 0,
+    "marshal_military_watch": 0,
+    "marshal_military_weapon": 0,
+    "renameCard": 1,
+    "resBox": 2,
+    "shield": 1,
+    "skillBook": 5,
+    "speedUp1h": 3,
+    "teleportAdvanced": 0,
+    "ue_infantry_helmet": 0
+  },
+  "technologyRulesVersion": "technology-v3-20261019",
+  "tech": {
+    "recon_level": 10,
+    "unit_refit": 10,
+    "military_theory": 10,
+    "weapon_range": 10,
+    "arm_engine": 10,
+    "attack_tech": 10,
+    "defense_tech": 10,
+    "cmd_hp": 10,
+    "fire_density": 10,
+    "wall_reinforcement": 10,
+    "log_load": 10,
+    "air_engine": 10,
+    "nav_engine": 10,
+    "prod_food": 10,
+    "prod_steel": 10,
+    "prod_oil": 10,
+    "prod_rare": 10,
+    "log_warehouse": 10,
+    "log_food": 10,
+    "log_train": 10,
+    "log_build": 10,
+    "log_medical": 10,
+    "recon_radar": 10,
+    "prisoner_education": 10
+  },
+  "unitEquipment": {
+    "loadouts": {
+      "infantry": {
+        "protection": "ue_infantry_helmet"
+      }
+    },
+    "versions": {
+      "infantry": 1
+    },
+    "snapshot": {
+      "@ue:infantry:version": 1,
+      "@ue:infantry:item:ue_infantry_helmet": 1,
+      "@ue:infantry:defense": 8
+    },
+    "catalog": {
+      "ue_infantry_helmet": {
+        "key": "ue_infantry_helmet",
+        "unit": "infantry",
+        "slot": "protection",
+        "name": "加强钢盔包",
+        "level": 1,
+        "facilityLevel": 2,
+        "recipe": "ordinary",
+        "effects": {
+          "defense": 8
+        },
+        "cost": {
+          "rare": 1,
+          "steel": 300,
+          "oil": 1
+        },
+        "seconds": 300
+      },
+      "ue_infantry_vest": {
+        "key": "ue_infantry_vest",
+        "unit": "infantry",
+        "slot": "protection",
+        "name": "防破片护具套",
+        "level": 7,
+        "facilityLevel": 8,
+        "recipe": "special",
+        "effects": {
+          "speed": -6,
+          "hp": 12,
+          "defense": 8
+        },
+        "cost": {
+          "rare": 20,
+          "steel": 600,
+          "oil": 2
+        },
+        "seconds": 900
+      },
+      "ue_infantry_lmg": {
+        "key": "ue_infantry_lmg",
+        "unit": "infantry",
+        "slot": "combat",
+        "name": "班用轻机枪组",
+        "level": 3,
+        "facilityLevel": 4,
+        "recipe": "combat",
+        "effects": {
+          "ground": 10,
+          "food": 5
+        },
+        "cost": {
+          "rare": 1,
+          "steel": 500,
+          "oil": 50
+        },
+        "seconds": 600
+      },
+      "ue_infantry_radio": {
+        "key": "ue_infantry_radio",
+        "unit": "infantry",
+        "slot": "support",
+        "name": "班排无线电组",
+        "level": 5,
+        "facilityLevel": 6,
+        "recipe": "precision",
+        "effects": {
+          "battleSpeed": 5,
+          "ground": 5
+        },
+        "cost": {
+          "rare": 30,
+          "steel": 600,
+          "oil": 100
+        },
+        "seconds": 600
+      },
+      "ue_truck_armor": {
+        "key": "ue_truck_armor",
+        "unit": "truck",
+        "slot": "protection",
+        "name": "驾驶室防护板",
+        "level": 1,
+        "facilityLevel": 2,
+        "recipe": "ordinary",
+        "effects": {
+          "defense": 15,
+          "speed": -5
+        },
+        "cost": {
+          "rare": 0,
+          "steel": 300,
+          "oil": 8
+        },
+        "seconds": 300
+      },
+      "ue_truck_cargo": {
+        "key": "ue_truck_cargo",
+        "unit": "truck",
+        "slot": "combat",
+        "name": "加强货架",
+        "level": 3,
+        "facilityLevel": 4,
+        "recipe": "combat",
+        "effects": {
+          "oil": 10,
+          "load": 20
+        },
+        "cost": {
+          "rare": 0,
+          "steel": 500,
+          "oil": 50
+        },
+        "seconds": 600
+      },
+      "ue_truck_economy": {
+        "key": "ue_truck_economy",
+        "unit": "truck",
+        "slot": "support",
+        "name": "节油维护包",
+        "level": 6,
+        "facilityLevel": 6,
+        "recipe": "precision",
+        "effects": {
+          "oil": -15
+        },
+        "cost": {
+          "rare": 30,
+          "steel": 600,
+          "oil": 100
+        },
+        "seconds": 600
+      },
+      "ue_truck_dispatch": {
+        "key": "ue_truck_dispatch",
+        "unit": "truck",
+        "slot": "support",
+        "name": "车队调度包",
+        "level": 5,
+        "facilityLevel": 6,
+        "recipe": "precision",
+        "effects": {
+          "marchSpeed": 8
+        },
+        "cost": {
+          "rare": 30,
+          "steel": 600,
+          "oil": 100
+        },
+        "seconds": 600
+      },
+      "ue_armored_armor": {
+        "key": "ue_armored_armor",
+        "unit": "armored",
+        "slot": "protection",
+        "name": "炮位防护板",
+        "level": 1,
+        "facilityLevel": 2,
+        "recipe": "ordinary",
+        "effects": {
+          "defense": 12,
+          "speed": -5
+        },
+        "cost": {
+          "rare": 5,
+          "steel": 1080,
+          "oil": 30
+        },
+        "seconds": 300
+      },
+      "ue_armored_sight": {
+        "key": "ue_armored_sight",
+        "unit": "armored",
+        "slot": "combat",
+        "name": "防空瞄具改良",
+        "level": 3,
+        "facilityLevel": 4,
+        "recipe": "combat",
+        "effects": {
+          "air": 10
+        },
+        "cost": {
+          "rare": 10,
+          "steel": 1350,
+          "oil": 60
+        },
+        "seconds": 600
+      },
+      "ue_armored_radio": {
+        "key": "ue_armored_radio",
+        "unit": "armored",
+        "slot": "support",
+        "name": "射击通讯组",
+        "level": 5,
+        "facilityLevel": 6,
+        "recipe": "precision",
+        "effects": {
+          "battleSpeed": 5,
+          "air": 5
+        },
+        "cost": {
+          "rare": 30,
+          "steel": 810,
+          "oil": 100
+        },
+        "seconds": 600
+      },
+      "ue_armored_economy": {
+        "key": "ue_armored_economy",
+        "unit": "armored",
+        "slot": "support",
+        "name": "节油维护包",
+        "level": 6,
+        "facilityLevel": 6,
+        "recipe": "precision",
+        "effects": {
+          "oil": -15
+        },
+        "cost": {
+          "rare": 30,
+          "steel": 810,
+          "oil": 100
+        },
+        "seconds": 600
+      },
+      "ue_recon_car_armor": {
+        "key": "ue_recon_car_armor",
+        "unit": "recon_car",
+        "slot": "protection",
+        "name": "车体附加防护",
+        "level": 1,
+        "facilityLevel": 2,
+        "recipe": "ordinary",
+        "effects": {
+          "defense": 10,
+          "speed": -4
+        },
+        "cost": {
+          "rare": 5,
+          "steel": 1080,
+          "oil": 30
+        },
+        "seconds": 300
+      },
+      "ue_recon_car_mission": {
+        "key": "ue_recon_car_mission",
+        "unit": "recon_car",
+        "slot": "combat",
+        "name": "侦察任务油料包",
+        "level": 6,
+        "facilityLevel": 6,
+        "recipe": "precision",
+        "effects": {
+          "oil": -15
+        },
+        "cost": {
+          "rare": 30,
+          "steel": 810,
+          "oil": 100
+        },
+        "seconds": 600
+      },
+      "ue_recon_car_radio": {
+        "key": "ue_recon_car_radio",
+        "unit": "recon_car",
+        "slot": "support",
+        "name": "侦察车队电台",
+        "level": 5,
+        "facilityLevel": 6,
+        "recipe": "precision",
+        "effects": {
+          "battleSpeed": 8
+        },
+        "cost": {
+          "rare": 30,
+          "steel": 810,
+          "oil": 100
+        },
+        "seconds": 600
+      },
+      "ue_recon_car_engine": {
+        "key": "ue_recon_car_engine",
+        "unit": "recon_car",
+        "slot": "support",
+        "name": "机动调校",
+        "level": 6,
+        "facilityLevel": 6,
+        "recipe": "precision",
+        "effects": {
+          "speed": 10,
+          "oil": 10
+        },
+        "cost": {
+          "rare": 30,
+          "steel": 810,
+          "oil": 100
+        },
+        "seconds": 600
+      },
+      "ue_ltank_armor": {
+        "key": "ue_ltank_armor",
+        "unit": "ltank",
+        "slot": "protection",
+        "name": "间隔装甲包",
+        "level": 7,
+        "facilityLevel": 8,
+        "recipe": "special",
+        "effects": {
+          "defense": 12,
+          "speed": -6
+        },
+        "cost": {
+          "rare": 20,
+          "steel": 2160,
+          "oil": 80
+        },
+        "seconds": 900
+      },
+      "ue_ltank_gun": {
+        "key": "ue_ltank_gun",
+        "unit": "ltank",
+        "slot": "combat",
+        "name": "主炮弹药与瞄具改良",
+        "level": 3,
+        "facilityLevel": 4,
+        "recipe": "combat",
+        "effects": {
+          "ground": 10
+        },
+        "cost": {
+          "rare": 13,
+          "steel": 1800,
+          "oil": 80
+        },
+        "seconds": 600
+      },
+      "ue_ltank_radio": {
+        "key": "ue_ltank_radio",
+        "unit": "ltank",
+        "slot": "support",
+        "name": "车载电台",
+        "level": 5,
+        "facilityLevel": 6,
+        "recipe": "precision",
+        "effects": {
+          "battleSpeed": 5,
+          "ground": 5
+        },
+        "cost": {
+          "rare": 30,
+          "steel": 1080,
+          "oil": 100
+        },
+        "seconds": 600
+      },
+      "ue_ltank_liner": {
+        "key": "ue_ltank_liner",
+        "unit": "ltank",
+        "slot": "support",
+        "name": "抗爆防破片衬层",
+        "level": 9,
+        "facilityLevel": 10,
+        "recipe": "special",
+        "effects": {
+          "reduce_rocket": 15,
+          "speed": -3
+        },
+        "cost": {
+          "rare": 20,
+          "steel": 2160,
+          "oil": 80
+        },
+        "seconds": 900
+      },
+      "ue_htank_armor": {
+        "key": "ue_htank_armor",
+        "unit": "htank",
+        "slot": "protection",
+        "name": "附加装甲包",
+        "level": 7,
+        "facilityLevel": 8,
+        "recipe": "special",
+        "effects": {
+          "defense": 15,
+          "speed": -8
+        },
+        "cost": {
+          "rare": 25,
+          "steel": 4050,
+          "oil": 120
+        },
+        "seconds": 900
+      },
+      "ue_htank_gun": {
+        "key": "ue_htank_gun",
+        "unit": "htank",
+        "slot": "combat",
+        "name": "主炮弹药与瞄具改良",
+        "level": 3,
+        "facilityLevel": 4,
+        "recipe": "combat",
+        "effects": {
+          "ground": 10
+        },
+        "cost": {
+          "rare": 25,
+          "steel": 3375,
+          "oil": 120
+        },
+        "seconds": 600
+      },
+      "ue_htank_radio": {
+        "key": "ue_htank_radio",
+        "unit": "htank",
+        "slot": "support",
+        "name": "车载电台",
+        "level": 5,
+        "facilityLevel": 6,
+        "recipe": "precision",
+        "effects": {
+          "battleSpeed": 5,
+          "ground": 5
+        },
+        "cost": {
+          "rare": 50,
+          "steel": 2025,
+          "oil": 100
+        },
+        "seconds": 600
+      },
+      "ue_htank_liner": {
+        "key": "ue_htank_liner",
+        "unit": "htank",
+        "slot": "support",
+        "name": "抗爆防破片衬层",
+        "level": 9,
+        "facilityLevel": 10,
+        "recipe": "special",
+        "effects": {
+          "reduce_rocket": 15,
+          "speed": -3
+        },
+        "cost": {
+          "rare": 25,
+          "steel": 4050,
+          "oil": 120
+        },
+        "seconds": 900
+      },
+      "ue_assault_armor": {
+        "key": "ue_assault_armor",
+        "unit": "assault",
+        "slot": "protection",
+        "name": "战斗室防护改良",
+        "level": 1,
+        "facilityLevel": 2,
+        "recipe": "ordinary",
+        "effects": {
+          "hp": 12,
+          "speed": -5
+        },
+        "cost": {
+          "rare": 7,
+          "steel": 800,
+          "oil": 25
+        },
+        "seconds": 300
+      },
+      "ue_assault_charge": {
+        "key": "ue_assault_charge",
+        "unit": "assault",
+        "slot": "combat",
+        "name": "攻坚装药保障",
+        "level": 3,
+        "facilityLevel": 4,
+        "recipe": "combat",
+        "effects": {
+          "fort": 10,
+          "oil": 5
+        },
+        "cost": {
+          "rare": 13,
+          "steel": 1000,
+          "oil": 50
+        },
+        "seconds": 600
+      },
+      "ue_assault_radio": {
+        "key": "ue_assault_radio",
+        "unit": "assault",
+        "slot": "support",
+        "name": "炮兵通讯组",
+        "level": 5,
+        "facilityLevel": 6,
+        "recipe": "precision",
+        "effects": {
+          "battleSpeed": 5,
+          "fort": 5
+        },
+        "cost": {
+          "rare": 30,
+          "steel": 600,
+          "oil": 100
+        },
+        "seconds": 600
+      },
+      "ue_assault_liner": {
+        "key": "ue_assault_liner",
+        "unit": "assault",
+        "slot": "support",
+        "name": "抗爆防破片衬层",
+        "level": 9,
+        "facilityLevel": 10,
+        "recipe": "special",
+        "effects": {
+          "reduce_rocket": 15,
+          "speed": -3
+        },
+        "cost": {
+          "rare": 20,
+          "steel": 1200,
+          "oil": 50
+        },
+        "seconds": 900
+      },
+      "ue_rocket_armor": {
+        "key": "ue_rocket_armor",
+        "unit": "rocket",
+        "slot": "protection",
+        "name": "弹药区防破片隔板",
+        "level": 1,
+        "facilityLevel": 2,
+        "recipe": "ordinary",
+        "effects": {
+          "hp": 12,
+          "speed": -5
+        },
+        "cost": {
+          "rare": 30,
+          "steel": 2200,
+          "oil": 225
+        },
+        "seconds": 300
+      },
+      "ue_rocket_calibration": {
+        "key": "ue_rocket_calibration",
+        "unit": "rocket",
+        "slot": "combat",
+        "name": "发射架校准",
+        "level": 3,
+        "facilityLevel": 4,
+        "recipe": "combat",
+        "effects": {
+          "fort": 8,
+          "ground": 8
+        },
+        "cost": {
+          "rare": 60,
+          "steel": 2750,
+          "oil": 450
+        },
+        "seconds": 600
+      },
+      "ue_rocket_radio": {
+        "key": "ue_rocket_radio",
+        "unit": "rocket",
+        "slot": "support",
+        "name": "射击诸元通讯组",
+        "level": 5,
+        "facilityLevel": 6,
+        "recipe": "precision",
+        "effects": {
+          "fort": 5,
+          "ground": 5
+        },
+        "cost": {
+          "rare": 120,
+          "steel": 1650,
+          "oil": 225
+        },
+        "seconds": 600
+      },
+      "ue_rocket_engine": {
+        "key": "ue_rocket_engine",
+        "unit": "rocket",
+        "slot": "support",
+        "name": "机动维护包",
+        "level": 6,
+        "facilityLevel": 6,
+        "recipe": "precision",
+        "effects": {
+          "speed": 8,
+          "oil": 8
+        },
+        "cost": {
+          "rare": 120,
+          "steel": 1650,
+          "oil": 225
+        },
+        "seconds": 600
+      },
+      "ue_special_armor": {
+        "key": "ue_special_armor",
+        "unit": "special",
+        "slot": "protection",
+        "name": "轻型防护胸甲",
+        "level": 1,
+        "facilityLevel": 2,
+        "recipe": "ordinary",
+        "effects": {
+          "hp": 10,
+          "speed": -5
+        },
+        "cost": {
+          "rare": 5,
+          "steel": 400,
+          "oil": 20
+        },
+        "seconds": 300
+      },
+      "ue_special_tools": {
+        "key": "ue_special_tools",
+        "unit": "special",
+        "slot": "combat",
+        "name": "爆破工具组",
+        "level": 3,
+        "facilityLevel": 4,
+        "recipe": "combat",
+        "effects": {
+          "fort": 10
+        },
+        "cost": {
+          "rare": 10,
+          "steel": 500,
+          "oil": 50
+        },
+        "seconds": 600
+      },
+      "ue_special_radio": {
+        "key": "ue_special_radio",
+        "unit": "special",
+        "slot": "support",
+        "name": "便携无线电",
+        "level": 5,
+        "facilityLevel": 6,
+        "recipe": "precision",
+        "effects": {
+          "fort": 5,
+          "ground": 5
+        },
+        "cost": {
+          "rare": 30,
+          "steel": 600,
+          "oil": 100
+        },
+        "seconds": 600
+      },
+      "ue_special_mobility": {
+        "key": "ue_special_mobility",
+        "unit": "special",
+        "slot": "support",
+        "name": "轻装机动包",
+        "level": 6,
+        "facilityLevel": 6,
+        "recipe": "precision",
+        "effects": {
+          "battleSpeed": 8
+        },
+        "cost": {
+          "rare": 30,
+          "steel": 600,
+          "oil": 100
+        },
+        "seconds": 600
+      },
+      "ue_scout_armor": {
+        "key": "ue_scout_armor",
+        "unit": "scout",
+        "slot": "protection",
+        "name": "乘员及油箱防护改良",
+        "level": 2,
+        "facilityLevel": 2,
+        "recipe": "ordinary",
+        "effects": {
+          "hp": 12,
+          "speed": -5
+        },
+        "cost": {
+          "rare": 4,
+          "steel": 300,
+          "oil": 15
+        },
+        "seconds": 300
+      },
+      "ue_fighter_armor": {
+        "key": "ue_fighter_armor",
+        "unit": "fighter",
+        "slot": "protection",
+        "name": "装甲背板与油箱防护改良",
+        "level": 2,
+        "facilityLevel": 2,
+        "recipe": "ordinary",
+        "effects": {
+          "hp": 12,
+          "speed": -5
+        },
+        "cost": {
+          "rare": 14,
+          "steel": 880,
+          "oil": 45
+        },
+        "seconds": 300
+      },
+      "ue_bomber_armor": {
+        "key": "ue_bomber_armor",
+        "unit": "bomber",
+        "slot": "protection",
+        "name": "防护与灭火改良",
+        "level": 2,
+        "facilityLevel": 2,
+        "recipe": "ordinary",
+        "effects": {
+          "hp": 15,
+          "speed": -6
+        },
+        "cost": {
+          "rare": 23,
+          "steel": 1400,
+          "oil": 75
+        },
+        "seconds": 300
+      },
+      "ue_transport_armor": {
+        "key": "ue_transport_armor",
+        "unit": "transport",
+        "slot": "protection",
+        "name": "油箱与机组防护改良",
+        "level": 2,
+        "facilityLevel": 2,
+        "recipe": "ordinary",
+        "effects": {
+          "hp": 12,
+          "speed": -5
+        },
+        "cost": {
+          "rare": 8,
+          "steel": 720,
+          "oil": 40
+        },
+        "seconds": 300
+      },
+      "ue_scout_mission": {
+        "key": "ue_scout_mission",
+        "unit": "scout",
+        "slot": "combat",
+        "name": "侦察任务保障包",
+        "level": 6,
+        "facilityLevel": 6,
+        "recipe": "precision",
+        "effects": {
+          "oil": -15
+        },
+        "cost": {
+          "rare": 30,
+          "steel": 600,
+          "oil": 100
+        },
+        "seconds": 600
+      },
+      "ue_scout_radio": {
+        "key": "ue_scout_radio",
+        "unit": "scout",
+        "slot": "support",
+        "name": "长程通讯改良",
+        "level": 5,
+        "facilityLevel": 6,
+        "recipe": "precision",
+        "effects": {
+          "battleSpeed": 8
+        },
+        "cost": {
+          "rare": 30,
+          "steel": 600,
+          "oil": 100
+        },
+        "seconds": 600
+      },
+      "ue_scout_engine": {
+        "key": "ue_scout_engine",
+        "unit": "scout",
+        "slot": "support",
+        "name": "动力调校",
+        "level": 6,
+        "facilityLevel": 6,
+        "recipe": "precision",
+        "effects": {
+          "speed": 10,
+          "oil": 10
+        },
+        "cost": {
+          "rare": 30,
+          "steel": 600,
+          "oil": 100
+        },
+        "seconds": 600
+      },
+      "ue_fighter_sight": {
+        "key": "ue_fighter_sight",
+        "unit": "fighter",
+        "slot": "combat",
+        "name": "射击瞄具改良",
+        "level": 4,
+        "facilityLevel": 4,
+        "recipe": "combat",
+        "effects": {
+          "air": 10
+        },
+        "cost": {
+          "rare": 28,
+          "steel": 1100,
+          "oil": 90
+        },
+        "seconds": 600
+      },
+      "ue_fighter_radio": {
+        "key": "ue_fighter_radio",
+        "unit": "fighter",
+        "slot": "support",
+        "name": "航空无线电",
+        "level": 5,
+        "facilityLevel": 6,
+        "recipe": "precision",
+        "effects": {
+          "battleSpeed": 5,
+          "air": 5
+        },
+        "cost": {
+          "rare": 55,
+          "steel": 660,
+          "oil": 100
+        },
+        "seconds": 600
+      },
+      "ue_fighter_engine": {
+        "key": "ue_fighter_engine",
+        "unit": "fighter",
+        "slot": "support",
+        "name": "动力调校",
+        "level": 6,
+        "facilityLevel": 6,
+        "recipe": "precision",
+        "effects": {
+          "speed": 10,
+          "oil": 10
+        },
+        "cost": {
+          "rare": 55,
+          "steel": 660,
+          "oil": 100
+        },
+        "seconds": 600
+      },
+      "ue_bomber_sight": {
+        "key": "ue_bomber_sight",
+        "unit": "bomber",
+        "slot": "combat",
+        "name": "轰炸瞄准保障",
+        "level": 4,
+        "facilityLevel": 4,
+        "recipe": "combat",
+        "effects": {
+          "fort": 10
+        },
+        "cost": {
+          "rare": 45,
+          "steel": 1750,
+          "oil": 150
+        },
+        "seconds": 600
+      },
+      "ue_bomber_radio": {
+        "key": "ue_bomber_radio",
+        "unit": "bomber",
+        "slot": "support",
+        "name": "轰炸编队通讯",
+        "level": 5,
+        "facilityLevel": 6,
+        "recipe": "precision",
+        "effects": {
+          "fort": 5,
+          "ground": 5
+        },
+        "cost": {
+          "rare": 90,
+          "steel": 1050,
+          "oil": 100
+        },
+        "seconds": 600
+      },
+      "ue_bomber_economy": {
+        "key": "ue_bomber_economy",
+        "unit": "bomber",
+        "slot": "support",
+        "name": "节油维护",
+        "level": 6,
+        "facilityLevel": 6,
+        "recipe": "precision",
+        "effects": {
+          "oil": -15
+        },
+        "cost": {
+          "rare": 90,
+          "steel": 1050,
+          "oil": 100
+        },
+        "seconds": 600
+      },
+      "ue_transport_cargo": {
+        "key": "ue_transport_cargo",
+        "unit": "transport",
+        "slot": "combat",
+        "name": "货舱与系固改良",
+        "level": 4,
+        "facilityLevel": 4,
+        "recipe": "combat",
+        "effects": {
+          "oil": 10,
+          "load": 20
+        },
+        "cost": {
+          "rare": 15,
+          "steel": 900,
+          "oil": 80
+        },
+        "seconds": 600
+      },
+      "ue_transport_economy": {
+        "key": "ue_transport_economy",
+        "unit": "transport",
+        "slot": "support",
+        "name": "航路保障包",
+        "level": 6,
+        "facilityLevel": 6,
+        "recipe": "precision",
+        "effects": {
+          "oil": -15
+        },
+        "cost": {
+          "rare": 30,
+          "steel": 600,
+          "oil": 100
+        },
+        "seconds": 600
+      },
+      "ue_transport_engine": {
+        "key": "ue_transport_engine",
+        "unit": "transport",
+        "slot": "support",
+        "name": "动力调校",
+        "level": 6,
+        "facilityLevel": 6,
+        "recipe": "precision",
+        "effects": {
+          "speed": 8,
+          "oil": 10
+        },
+        "cost": {
+          "rare": 30,
+          "steel": 600,
+          "oil": 100
+        },
+        "seconds": 600
+      },
+      "ue_destroyer_armor": {
+        "key": "ue_destroyer_armor",
+        "unit": "destroyer",
+        "slot": "protection",
+        "name": "损管设施改良",
+        "level": 2,
+        "facilityLevel": 2,
+        "recipe": "ordinary",
+        "effects": {
+          "hp": 12
+        },
+        "cost": {
+          "rare": 20,
+          "steel": 1800,
+          "oil": 80
+        },
+        "seconds": 300
+      },
+      "ue_destroyer_economy": {
+        "key": "ue_destroyer_economy",
+        "unit": "destroyer",
+        "slot": "support",
+        "name": "节油航行保障",
+        "level": 6,
+        "facilityLevel": 6,
+        "recipe": "precision",
+        "effects": {
+          "oil": -15
+        },
+        "cost": {
+          "rare": 80,
+          "steel": 1350,
+          "oil": 100
+        },
+        "seconds": 600
+      },
+      "ue_sub_armor": {
+        "key": "ue_sub_armor",
+        "unit": "sub",
+        "slot": "protection",
+        "name": "舱段防护改良",
+        "level": 2,
+        "facilityLevel": 2,
+        "recipe": "ordinary",
+        "effects": {
+          "hp": 10,
+          "speed": -5
+        },
+        "cost": {
+          "rare": 15,
+          "steel": 1200,
+          "oil": 40
+        },
+        "seconds": 300
+      },
+      "ue_sub_economy": {
+        "key": "ue_sub_economy",
+        "unit": "sub",
+        "slot": "support",
+        "name": "节油航行保障",
+        "level": 6,
+        "facilityLevel": 6,
+        "recipe": "precision",
+        "effects": {
+          "oil": -15
+        },
+        "cost": {
+          "rare": 60,
+          "steel": 900,
+          "oil": 100
+        },
+        "seconds": 600
+      },
+      "ue_battleship_armor": {
+        "key": "ue_battleship_armor",
+        "unit": "battleship",
+        "slot": "protection",
+        "name": "损管与舱段防护",
+        "level": 8,
+        "facilityLevel": 8,
+        "recipe": "special",
+        "effects": {
+          "hp": 15,
+          "speed": -5
+        },
+        "cost": {
+          "rare": 1200,
+          "steel": 66000,
+          "oil": 9000
+        },
+        "seconds": 900
+      },
+      "ue_battleship_economy": {
+        "key": "ue_battleship_economy",
+        "unit": "battleship",
+        "slot": "support",
+        "name": "节油航行保障",
+        "level": 6,
+        "facilityLevel": 6,
+        "recipe": "precision",
+        "effects": {
+          "oil": -15
+        },
+        "cost": {
+          "rare": 2400,
+          "steel": 33000,
+          "oil": 4500
+        },
+        "seconds": 600
+      },
+      "ue_carrier_armor": {
+        "key": "ue_carrier_armor",
+        "unit": "carrier",
+        "slot": "protection",
+        "name": "舰内防火与损管",
+        "level": 8,
+        "facilityLevel": 8,
+        "recipe": "special",
+        "effects": {
+          "hp": 15
+        },
+        "cost": {
+          "rare": 2400,
+          "steel": 132000,
+          "oil": 18000
+        },
+        "seconds": 900
+      },
+      "ue_carrier_economy": {
+        "key": "ue_carrier_economy",
+        "unit": "carrier",
+        "slot": "support",
+        "name": "节油航行保障",
+        "level": 6,
+        "facilityLevel": 6,
+        "recipe": "precision",
+        "effects": {
+          "oil": -15
+        },
+        "cost": {
+          "rare": 4800,
+          "steel": 66000,
+          "oil": 9000
+        },
+        "seconds": 600
+      },
+      "ue_destroyer_firecontrol": {
+        "key": "ue_destroyer_firecontrol",
+        "unit": "destroyer",
+        "slot": "combat",
+        "name": "舰炮与鱼雷火控改良",
+        "level": 10,
+        "facilityLevel": 10,
+        "recipe": "precision",
+        "effects": {
+          "sea": 10
+        },
+        "cost": {
+          "rare": 80,
+          "steel": 1350,
+          "oil": 100
+        },
+        "seconds": 600
+      },
+      "ue_destroyer_sonar": {
+        "key": "ue_destroyer_sonar",
+        "unit": "destroyer",
+        "slot": "support",
+        "name": "反潜声呐改良",
+        "level": 9,
+        "facilityLevel": 10,
+        "recipe": "special",
+        "effects": {
+          "against_sub": 5
+        },
+        "cost": {
+          "rare": 40,
+          "steel": 2700,
+          "oil": 160
+        },
+        "seconds": 900
+      },
+      "ue_sub_torpedo": {
+        "key": "ue_sub_torpedo",
+        "unit": "sub",
+        "slot": "combat",
+        "name": "鱼雷射击诸元改良",
+        "level": 10,
+        "facilityLevel": 10,
+        "recipe": "precision",
+        "effects": {
+          "sea": 10
+        },
+        "cost": {
+          "rare": 60,
+          "steel": 900,
+          "oil": 100
+        },
+        "seconds": 600
+      },
+      "ue_sub_quiet": {
+        "key": "ue_sub_quiet",
+        "unit": "sub",
+        "slot": "support",
+        "name": "低噪维护包",
+        "level": 9,
+        "facilityLevel": 10,
+        "recipe": "special",
+        "effects": {
+          "speed": -8,
+          "reduce_destroyer": 12
+        },
+        "cost": {
+          "rare": 30,
+          "steel": 1800,
+          "oil": 80
+        },
+        "seconds": 900
+      },
+      "ue_battleship_firecontrol": {
+        "key": "ue_battleship_firecontrol",
+        "unit": "battleship",
+        "slot": "combat",
+        "name": "主炮火控改良",
+        "level": 10,
+        "facilityLevel": 10,
+        "recipe": "precision",
+        "effects": {
+          "fort": 10,
+          "sea": 10
+        },
+        "cost": {
+          "rare": 2400,
+          "steel": 33000,
+          "oil": 4500
+        },
+        "seconds": 600
+      },
+      "ue_battleship_radio": {
+        "key": "ue_battleship_radio",
+        "unit": "battleship",
+        "slot": "support",
+        "name": "舰队射击通讯",
+        "level": 5,
+        "facilityLevel": 6,
+        "recipe": "precision",
+        "effects": {
+          "fort": 5,
+          "sea": 5
+        },
+        "cost": {
+          "rare": 2400,
+          "steel": 33000,
+          "oil": 4500
+        },
+        "seconds": 600
+      },
+      "ue_carrier_airgroup": {
+        "key": "ue_carrier_airgroup",
+        "unit": "carrier",
+        "slot": "combat",
+        "name": "舰载机出动保障",
+        "level": 10,
+        "facilityLevel": 10,
+        "recipe": "precision",
+        "effects": {
+          "fort": 10,
+          "ground": 10
+        },
+        "cost": {
+          "rare": 4800,
+          "steel": 66000,
+          "oil": 9000
+        },
+        "seconds": 600
+      },
+      "ue_carrier_radio": {
+        "key": "ue_carrier_radio",
+        "unit": "carrier",
+        "slot": "support",
+        "name": "舰载机指挥通讯",
+        "level": 5,
+        "facilityLevel": 6,
+        "recipe": "precision",
+        "effects": {
+          "battleSpeed": 5,
+          "air": 5
+        },
+        "cost": {
+          "rare": 4800,
+          "steel": 66000,
+          "oil": 9000
+        },
+        "seconds": 600
+      }
+    },
+    "facilities": {
+      "infantry": 0,
+      "truck": 0,
+      "armored": 0,
+      "recon_car": 0,
+      "ltank": 0,
+      "htank": 0,
+      "assault": 0,
+      "rocket": 0,
+      "special": 0,
+      "scout": 0,
+      "fighter": 0,
+      "bomber": 0,
+      "transport": 0,
+      "destroyer": 0,
+      "sub": 0,
+      "battleship": 0,
+      "carrier": 0
+    },
+    "queue": []
+  },
+  "research": null,
+  "officers": [],
+  "officerEquipment": {
+    "daily": [
+      {
+        "id": "train",
+        "required": 100,
+        "progress": 0,
+        "name": "完成训练100名兵员",
+        "claimed": false
+      },
+      {
+        "id": "wild",
+        "required": 1,
+        "progress": 0,
+        "name": "野地战斗胜利一次",
+        "claimed": false
+      },
+      {
+        "id": "gather",
+        "required": 1,
+        "progress": 0,
+        "name": "采集资源返城一次",
+        "claimed": false
+      },
+      {
+        "id": "develop",
+        "required": 1,
+        "progress": 0,
+        "name": "完成建筑或科技升级一次",
+        "claimed": false
+      }
+    ],
+    "achievements": [
+      {
+        "name": "初装成军",
+        "id": "first",
+        "unlocked": true
+      },
+      {
+        "name": "四军齐备",
+        "id": "branches",
+        "unlocked": false
+      },
+      {
+        "name": "军械收藏家",
+        "id": "collection",
+        "unlocked": false
+      },
+      {
+        "name": "精装军官",
+        "id": "prepared3",
+        "unlocked": false
+      },
+      {
+        "name": "王牌整备",
+        "id": "prepared5",
+        "unlocked": false
+      },
+      {
+        "name": "元帅仪仗",
+        "id": "marshal",
+        "unlocked": false
+      },
+      {
+        "name": "帝国军备",
+        "id": "empire",
+        "unlocked": false
+      }
+    ],
+    "dailyClaims": 0,
+    "parts": 0,
+    "weeklyProgress": 0,
+    "collection": [
+      "marshal_military_belt",
+      "marshal_military_radio",
+      "marshal_military_map",
+      "marshal_military_watch",
+      "marshal_military_badge",
+      "marshal_military_trousers",
+      "marshal_military_coat",
+      "marshal_military_weapon",
+      "marshal_military_backpack",
+      "marshal_military_helmet",
+      "marshal_military_boots",
+      "marshal_military_gloves",
+      "marshal_defense_weapon",
+      "marshal_defense_badge",
+      "marshal_defense_coat",
+      "marshal_defense_helmet",
+      "marshal_defense_gloves",
+      "marshal_defense_belt",
+      "marshal_defense_trousers",
+      "marshal_defense_boots",
+      "marshal_defense_backpack",
+      "marshal_defense_radio",
+      "marshal_defense_map",
+      "marshal_defense_watch"
+    ],
+    "loadouts": {
+      "1": [],
+      "2": [],
+      "3": []
+    },
+    "weeklyClaimed": false
+  },
+  "constructions": [],
+  "freeBuildSpeedUpSeconds": 300,
+  "academy": {
+    "list": [],
+    "refreshRoundCount": 1,
+    "refreshRoundLimit": 30,
+    "refreshDailyCount": 0,
+    "refreshDailyLimit": 100,
+    "refreshAt": 0,
+    "refreshDailyResetAt": 1792771200000,
+    "candidateCount": 10,
+    "fiveStarBatchChance": 0.0,
+    "militaryTheoryLevel": 10,
+    "baseFiveStarBatchChance": 0.0,
+    "militaryTheoryBonus": 0.03
+  },
+  "world": {
+    "view": {
+      "loadedAt": 1792804555598,
+      "radius": 3,
+      "y": 388,
+      "x": 3
+    },
+    "pos": {
+      "x": 3,
+      "y": 388
+    },
+    "cityPos": {
+      "x": 5,
+      "y": 388
+    },
+    "npcCities": [],
+    "playerCities": [
+      {
+        "id": 2,
+        "readyAt": 0,
+        "mainCity": true,
+        "name": "战火_$@焚天灭地城",
+        "x": 5,
+        "y": 387,
+        "level": 0,
+        "army": {
+          "armored": 698182,
+          "assault": 721934,
+          "battleship": 740452,
+          "bomber": 722989,
+          "carrier": 744494,
+          "destroyer": 742866,
+          "fighter": 724664,
+          "htank": 726411,
+          "infantry": 736772,
+          "ltank": 742759,
+          "recon_car": 464438,
+          "rocket": 568625,
+          "scout": 622923,
+          "special": 726229,
+          "sub": 743690,
+          "transport": 744959,
+          "truck": 744959
+        },
+        "forts": {},
+        "reward": {},
+        "defeated": false,
+        "prestige": 0,
+        "surrenderFrozen": false,
+        "surrenderTransferDeadlineAt": null,
+        "ownerId": 2,
+        "guildmate": false,
+        "playerName": "统帅2",
+        "commanderName": "统帅2",
+        "militaryRank": 17,
+        "militaryRankName": "上将",
+        "selfCity": false,
+        "warAt": 1792682928959,
+        "warEndAt": 1792855728959,
+        "coolAt": 0,
+        "newbieProtectionUntil": 0
+      },
+      {
+        "id": 160,
+        "readyAt": 0,
+        "mainCity": true,
+        "name": "远征军要塞570712",
+        "x": 4,
+        "y": 389,
+        "level": 0,
+        "army": {
+          "artillery": 0,
+          "cavalry": 0,
+          "htank": 9674,
+          "infantry": 20000,
+          "scout": 0,
+          "truck": 0
+        },
+        "forts": {},
+        "reward": {},
+        "defeated": false,
+        "prestige": 7000,
+        "surrenderFrozen": false,
+        "surrenderTransferDeadlineAt": null,
+        "ownerId": 158,
+        "guildmate": false,
+        "playerName": "驻防验收统帅",
+        "commanderName": "驻防验收统帅",
+        "militaryRank": 17,
+        "militaryRankName": "上将",
+        "selfCity": false,
+        "warAt": 0,
+        "warEndAt": 0,
+        "coolAt": 0,
+        "newbieProtectionUntil": 0
+      },
+      {
+        "id": 178,
+        "readyAt": 0,
+        "mainCity": false,
+        "name": "新城市",
+        "x": 4,
+        "y": 388,
+        "level": 0,
+        "army": {},
+        "forts": {},
+        "reward": {},
+        "defeated": false,
+        "prestige": 274468750,
+        "surrenderFrozen": false,
+        "surrenderTransferDeadlineAt": null,
+        "ownerId": 177,
+        "guildmate": false,
+        "playerName": "远征统帅_163822",
+        "commanderName": "远征统帅_163822",
+        "militaryRank": 17,
+        "militaryRankName": "上将",
+        "selfCity": true,
+        "warAt": 0,
+        "warEndAt": 0,
+        "coolAt": 0,
+        "newbieProtectionUntil": 0
+      },
+      {
+        "id": 179,
+        "readyAt": 0,
+        "mainCity": true,
+        "name": "新城市",
+        "x": 3,
+        "y": 388,
+        "level": 0,
+        "army": {
+          "armored": 943750,
+          "assault": 853750,
+          "battleship": 896901,
+          "bomber": 793750,
+          "carrier": 981225,
+          "destroyer": 916821,
+          "fighter": 793750,
+          "htank": 842750,
+          "infantry": 944574,
+          "ltank": 943750,
+          "recon_car": 502907,
+          "rocket": 843750,
+          "scout": 0,
+          "special": 943750,
+          "sub": 999824,
+          "transport": 1000000,
+          "truck": 990000
+        },
+        "forts": {},
+        "reward": {},
+        "defeated": false,
+        "prestige": 274468750,
+        "surrenderFrozen": false,
+        "surrenderTransferDeadlineAt": null,
+        "ownerId": 177,
+        "guildmate": false,
+        "playerName": "远征统帅_163822",
+        "commanderName": "远征统帅_163822",
+        "militaryRank": 17,
+        "militaryRankName": "上将",
+        "selfCity": true,
+        "warAt": 0,
+        "warEndAt": 0,
+        "coolAt": 0,
+        "newbieProtectionUntil": 0
+      },
+      {
+        "id": 180,
+        "readyAt": 0,
+        "mainCity": false,
+        "name": "重建主城",
+        "x": 5,
+        "y": 388,
+        "level": 0,
+        "army": {},
+        "forts": {},
+        "reward": {},
+        "defeated": false,
+        "prestige": 274468750,
+        "surrenderFrozen": false,
+        "surrenderTransferDeadlineAt": null,
+        "ownerId": 177,
+        "guildmate": false,
+        "playerName": "远征统帅_163822",
+        "commanderName": "远征统帅_163822",
+        "militaryRank": 17,
+        "militaryRankName": "上将",
+        "selfCity": true,
+        "warAt": 0,
+        "warEndAt": 0,
+        "coolAt": 0,
+        "newbieProtectionUntil": 0
+      }
+    ],
+    "simulatedNpcCities": [],
+    "bandits": [],
+    "wildTiles": [
+      {
+        "id": 40348,
+        "type": "rarefactory",
+        "x": 0,
+        "y": 389,
+        "level": 27,
+        "scouted": true,
+        "occupied": false,
+        "occupiedByName": "统帅2",
+        "occupiedByRank": 17,
+        "occupiedByRankName": "上将",
+        "occupiedByPrestige": 0,
+        "totalRes": 4320000,
+        "mined": 0
+      },
+      {
+        "id": 43220,
+        "type": "ironworks",
+        "x": 1,
+        "y": 385,
+        "level": 3,
+        "scouted": false,
+        "occupied": false,
+        "totalRes": 480000,
+        "mined": 0
+      },
+      {
+        "id": 42135,
+        "type": "rarefactory",
+        "x": 10,
+        "y": 251,
+        "level": 1,
+        "scouted": true,
+        "garrison": {},
+        "occupied": true,
+        "occupiedCitySlot": 1,
+        "occupiedByName": "远征统帅_163822",
+        "occupiedByRank": 17,
+        "occupiedByRankName": "上将",
+        "occupiedByPrestige": 274468750,
+        "totalRes": 160000,
+        "mined": 0,
+        "gathering": false,
+        "gatherStartAt": 0,
+        "gatherEndAt": 0,
+        "gatherLoad": 0,
+        "gatherRes": null,
+        "gatherMode": "manual",
+        "gatherHarvested": null
+      },
+      {
+        "id": 43046,
+        "type": "grainfield",
+        "x": 22,
+        "y": 99,
+        "level": 2,
+        "scouted": true,
+        "garrison": {},
+        "occupied": true,
+        "occupiedCitySlot": 0,
+        "occupiedByName": "远征统帅_163822",
+        "occupiedByRank": 17,
+        "occupiedByRankName": "上将",
+        "occupiedByPrestige": 274468750,
+        "totalRes": 319166,
+        "mined": 0,
+        "gathering": false,
+        "gatherStartAt": 0,
+        "gatherEndAt": 0,
+        "gatherLoad": 0,
+        "gatherRes": null,
+        "gatherMode": "manual",
+        "gatherHarvested": null
+      }
+    ],
+    "marches": [],
+    "reinforcements": [],
+    "incoming": [],
+    "returningEnemyMarches": []
+  },
+  "cityState": {
+    "status": "peace",
+    "warUntil": 0,
+    "shieldUntil": 0,
+    "peaceUntil": 0,
+    "newbieProtectionUntil": 0
+  },
+  "tax": 100,
+  "morale": 0,
+  "resentment": 1,
+  "lastAppeaseAt": 0,
+  "prestige": 274468750,
+  "lastTick": 1792727780896,
+  "stats": {},
+  "progress": {}
+}

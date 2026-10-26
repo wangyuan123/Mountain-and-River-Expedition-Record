@@ -52,14 +52,16 @@ window.Game = window.Game || {};
     showResourceDetail: function (key) {
       var s = Core.state || {};
       var r = s.resources || {};
-      var cap = Core.capacity();
-      var foodProduction = Core.produceOf('farm');
+      var productionCaps = Core.capacity();
+      var inventoryCaps = Core.inventoryCapacity();
+      var foodProduction = Core.foodProductionPerHour();
       var foodConsumption = Core.foodPerHour();
-      var caps = { food: cap.food, steel: cap.steel, oil: cap.oil, rare: cap.rare, gold: 999999 };
+      var productionCap = productionCaps[key] != null ? productionCaps[key] : (key === 'gold' ? 20000000 : 0);
+      var inventoryCap = inventoryCaps[key] || 1000000000;
       var rate = Core.resourceNetRate ? Core.resourceNetRate(key) : 0;
       var info = D.resources[key];
       if (!info) return;
-      G.MainView.showResourceDetail(key, info.name, info.icon, r[key] || 0, caps[key] || 999999, rate, foodProduction, foodConsumption);
+      G.MainView.showResourceDetail(key, info.name, info.icon, r[key] || 0, productionCap, inventoryCap, rate, foodProduction, foodConsumption);
     },
 
     showPopulationDetail: function () {
@@ -461,26 +463,11 @@ window.Game = window.Game || {};
     },
 
     toggleEditCommander: function () {
-      var box = document.getElementById('editCommanderBox');
-      if (!box) return;
-      box.style.display = box.style.display === 'none' ? 'block' : 'none';
+      G.Main.promptRenameCommander();
     },
 
     saveCommander: function () {
-      var cmdEl = document.getElementById('epCommander');
-      var cmdName;
-      try {
-        cmdName = G.normalizeDisplayName(cmdEl ? cmdEl.value : '', 8, '统帅名');
-      } catch (error) {
-        G.toast(error.message);
-        return;
-      }
-      G.API.setDisplayName(cmdName).then(function () {
-        G.toast('统帅名已保存');
-        var box = document.getElementById('editCommanderBox');
-        if (box) box.style.display = 'none';
-        Core.render();
-      }).catch(function (error) { G.toast(error.message || '统帅名保存失败'); });
+      G.Main.promptRenameCommander();
     },
 
     toggleEditDesc: function () {
@@ -503,6 +490,7 @@ window.Game = window.Game || {};
     /** 注销交互由独立模块维护，避免主流程实时重绘覆盖密码输入。 */
     openDisableAccount: function () { G.Account.open(); },
 
+    /** 服务端冷却提示兼容统一时长和旧版秒数，恢复按钮冷却时不丢失分钟等高位单位。 */
     sendChat: function () {
       if (G.Chat && G.Chat.canSend && !G.Chat.canSend()) {
         G.toast('声望达到 10000 后才能在世界频道发言');
@@ -520,7 +508,7 @@ window.Game = window.Game || {};
         return;
       }
       if (G.Chat && G.Chat.getCooldown && G.Chat.getCooldown() > 0) {
-        G.toast('发言冷却中，请等待 ' + G.Chat.getCooldown() + ' 秒');
+        G.toast('发言冷却中，请等待 ' + G.formatDuration(G.Chat.getCooldown()));
         return;
       }
       if (G.Chat && G.Chat.isSpamDuplicate && G.Chat.isSpamDuplicate(text)) {
@@ -546,10 +534,10 @@ window.Game = window.Game || {};
       }).catch(function (err) {
         var msg = err && err.message ? err.message : '发送失败';
         G.toast(msg);
-        var match = msg.match(/(\d+)\s*秒/);
+        var match = msg.match(/(?:(\d+)\s*天)?\s*(?:(\d+)\s*小时)?\s*(?:(\d+)\s*分钟)?\s*(\d+)\s*秒/);
         if (match && G.Chat && G.Chat.startCooldown) {
-          var s = parseInt(match[1], 10);
-          if (s > 0 && s <= 300) G.Chat.startCooldown(s);
+          var seconds = Number(match[1] || 0) * 86400 + Number(match[2] || 0) * 3600 + Number(match[3] || 0) * 60 + Number(match[4]);
+          if (seconds > 0 && seconds <= 300) G.Chat.startCooldown(seconds);
         } else if (G.Chat && G.Chat.updateSendBtnUI) {
           G.Chat.updateSendBtnUI();
         } else if (btn) {
@@ -573,7 +561,7 @@ window.Game = window.Game || {};
         return;
       }
       if (G.Chat && G.Chat.getGuildCooldown && G.Chat.getGuildCooldown() > 0) {
-        G.toast('发言冷却中，请等待 ' + G.Chat.getGuildCooldown() + ' 秒');
+        G.toast('发言冷却中，请等待 ' + G.formatDuration(G.Chat.getGuildCooldown()));
         return;
       }
       if (!G.Chat || typeof G.Chat.sendGuild !== 'function') {

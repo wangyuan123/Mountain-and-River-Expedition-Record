@@ -1,15 +1,41 @@
 package com.wargame;
 
 import com.wargame.model.entity.*;
+import com.wargame.util.GameClock;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("TickService 单元测试")
 class TickServiceTest extends BaseServiceTest {
+
+    @Test
+    void fiveSecondAccrualPreservesLowLevelProductionFoodAndSalaryAcrossReloads() throws Exception {
+        long start = System.currentTimeMillis();
+        var time = new java.util.concurrent.atomic.AtomicLong(start);
+        Player player = playerRepository.findById(playerId).orElseThrow();
+        player.setLastTick(start); player.setTax(0);
+        for (String key : java.util.List.of("farm", "refinery", "oilfield", "raremine")) createBuilding(playerId, key, 1);
+        createArmyUnit(playerId, "infantry", 100);
+        Officer officer = createOfficer(playerId, "idle", 0, 0, 0); officer.setSalary(100);
+        giveResources(playerId, 1000, 1000, 1000, 1000, 1000);
+        try (var ignored = GameClock.use(time::get)) {
+            for (int i = 0; i < 12; i++) {
+                time.addAndGet(5000); tickService.tick(playerId);
+            }
+        }
+        Resources stock = getResources(playerId);
+        assertEquals(1000 + 500 / 60.0, stock.getFood() + stock.getFoodAccrual(), 1e-6);
+        assertEquals(1010, stock.getSteel());
+        assertEquals(1000 + 500 / 60.0, stock.getOil() + stock.getOilAccrual(), 1e-6);
+        assertEquals(1000 + 500 / 60.0, stock.getRare() + stock.getRareAccrual(), 1e-6);
+        assertEquals(1000 - 100 / 60.0, stock.getGold() + stock.getGoldAccrual(), 1e-6);
+    }
 
     private Long playerId;
 
@@ -44,19 +70,19 @@ class TickServiceTest extends BaseServiceTest {
         Resources res = getResources(playerId);
         assertNotNull(res);
 
-        // farm: baseProduce=40, curve=1*(1+0.12*0)=1, produce=floor(40*1)=40
-        // food = 0 + 40 * 1 hour * 1.0 (peace) = 40
+        // farm: baseProduce=600, curve=1*(1+0.12*0)=1, produce=floor(600*1)=600
+        // food = 0 + 600 * 1 hour * 1.0 (peace) = 600
         // No army, so no food consumption
-        assertEquals(40, res.getFood(), "农田1级1小时应产出40粮食");
+        assertEquals(600, res.getFood(), "农田1级1小时应产出600粮食");
 
-        // refinery: baseProduce=40, same logic => 40
-        assertEquals(40, res.getSteel(), "炼钢厂1级1小时应产出40钢铁");
+        // refinery: baseProduce=600, same logic => 600
+        assertEquals(600, res.getSteel(), "炼钢厂1级1小时应产出600钢铁");
 
-        // oilfield: baseProduce=25 => 25
-        assertEquals(25, res.getOil(), "油田1级1小时应产出25石油");
+        // oilfield: baseProduce=500 => 500
+        assertEquals(500, res.getOil(), "油田1级1小时应产出500石油");
 
-        // raremine: baseProduce=12 => 12
-        assertEquals(12, res.getRare(), "稀矿厂1级1小时应产出12稀矿");
+        // raremine: baseProduce=500 => 500
+        assertEquals(500, res.getRare(), "稀矿厂1级1小时应产出500稀矿");
     }
 
     @Test
@@ -68,7 +94,7 @@ class TickServiceTest extends BaseServiceTest {
         player.setTax(0);
         playerRepository.save(player);
 
-        // Create a farm (produces 40 food/hour)
+        // Create a farm (produces 600 food/hour)
         createBuilding(playerId, "farm", 1);
 
         // Create 100 infantry (each consumes 1 food/hour => 100 food/hour)
@@ -82,10 +108,10 @@ class TickServiceTest extends BaseServiceTest {
         Resources res = getResources(playerId);
         assertNotNull(res);
 
-        // food production: 0 + 40 = 240 (after production)
+        // food production: 200 + 600 = 800 (after production)
         // food consumption: 100 infantry * 1 food * 1.0 (no log_food tech) * 1 hour = 100
-        // food final: 240 - 100 = 140
-        assertEquals(140, res.getFood(), "200初始粮+40产出-100消耗应等于140");
+        // food final: 800 - 100 = 700
+        assertEquals(700, res.getFood(), "200初始粮+600产出-100消耗应等于700");
     }
 
     @Test
@@ -123,6 +149,54 @@ class TickServiceTest extends BaseServiceTest {
         assertEquals(720, getResources(playerId).getGold());
     }
 
+    @ParameterizedTest
+    @CsvSource({"999999,1000719", "1000000,1000720", "19999900,20000000",
+            "20000000,20000000", "20000001,20000001", "1000000010,1000000010"})
+    @DisplayName("黄金生产容量为2000万：未满继续征税，满额停税且不截断超额库存")
+    void testGoldProductionCapacity(long initialGold, long expectedGold) throws Exception {
+        long now = System.currentTimeMillis();
+        try (var ignored = GameClock.use(() -> now)) {
+            Player player = playerRepository.findById(playerId).orElseThrow();
+            player.setLastTick(now - 3600_000L);
+            player.setTax(30);
+            player.setCivilianPopulation(1200);
+            playerRepository.save(player);
+            createBuilding(playerId, "house", 1);
+            Resources balance = getResources(playerId);
+            balance.setGold(initialGold);
+            resourcesRepository.save(balance);
+
+            assertEquals(20_000_000L, tickService.capacity(playerId).get("gold"));
+            tickService.tick(playerId);
+            assertEquals(expectedGold, getResources(playerId).getGold());
+        }
+    }
+
+    @Test
+    @DisplayName("黄金满额暂停税收但继续扣薪，低于2000万后恢复税收")
+    void testGoldTaxResumesBelowProductionCapacity() throws Exception {
+        long now = System.currentTimeMillis();
+        try (var ignored = GameClock.use(() -> now)) {
+            Player player = playerRepository.findById(playerId).orElseThrow();
+            player.setLastTick(now - 3600_000L);
+            player.setTax(30);
+            player.setCivilianPopulation(1200);
+            playerRepository.save(player);
+            createBuilding(playerId, "house", 1);
+            Officer officer = createOfficer(playerId, "idle", 0, 0, 0);
+            officer.setSalary(50);
+            officerRepository.save(officer);
+            giveResources(playerId, 0, 0, 0, 0, 20_000_000);
+
+            tickService.tick(playerId);
+            assertEquals(19_999_950L, getResources(playerId).getGold());
+            player.setLastTick(now - 3600_000L);
+            getResources(playerId).setGold(19_990_000L);
+            tickService.tick(playerId);
+            assertEquals(19_990_670L, getResources(playerId).getGold());
+        }
+    }
+
     @Test
     @DisplayName("士气计算: morale = 100 - tax")
     void testMoraleCalculation() {
@@ -149,7 +223,7 @@ class TickServiceTest extends BaseServiceTest {
         player.setTax(0);
         playerRepository.save(player);
 
-        // Create farm level 1 (produces 40/hour)
+        // Create farm level 1 (produces 600/hour)
         createBuilding(playerId, "farm", 1);
 
         // Start with 0 food, no army
@@ -162,14 +236,14 @@ class TickServiceTest extends BaseServiceTest {
 
         // dt = 10*3600 = 36000 seconds, capped to 8*3600 = 28800
         // hours = 28800 / 3600 = 8
-        // food = 0 + 40 * 8 * 1.0 = 320
-        // If not capped, food would be 40 * 10 = 400
-        assertEquals(320, res.getFood(), "离线10小时应被截断为8小时，产出320粮食而非400");
-        assertTrue(res.getFood() < 400, "截断后产出应小于未截断的400");
+        // food = 0 + 600 * 8 * 1.0 = 4800
+        // If not capped, food would be 600 * 10 = 6000
+        assertEquals(4800, res.getFood(), "离线10小时应被截断为8小时，产出4800粮食而非6000");
+        assertTrue(res.getFood() < 6000, "截断后产出应小于未截断的6000");
     }
 
     @Test
-    @DisplayName("超过资源上限后不再获得产量，库存保持超上限数值")
+    @DisplayName("超过生产容量后不再获得自然产量，库存保持超容量数值")
     void testResourcesAboveCapacityStopProduction() {
         Player player = playerRepository.findById(playerId).orElseThrow();
         player.setLastTick(System.currentTimeMillis() - 3600_000L);
@@ -180,7 +254,7 @@ class TickServiceTest extends BaseServiceTest {
         createBuilding(playerId, "refinery", 1);
         createBuilding(playerId, "oilfield", 1);
         createBuilding(playerId, "raremine", 1);
-        giveResources(playerId, 500_000, 500_000, 500_000, 500_000, 1_000_000);
+        giveResources(playerId, 500_000, 500_000, 500_000, 500_000, 20_000_001);
 
         tickService.tick(playerId);
 
@@ -189,14 +263,14 @@ class TickServiceTest extends BaseServiceTest {
         assertEquals(500_000, res.getSteel(), "超过钢铁上限后不应继续增加");
         assertEquals(500_000, res.getOil(), "超过石油上限后不应继续增加");
         assertEquals(500_000, res.getRare(), "超过稀矿上限后不应继续增加");
-        assertEquals(1_000_000, res.getGold(), "超过黄金上限后不应继续增加");
+        assertEquals(20_000_001, res.getGold(), "超过黄金生产容量后不应继续增加或截断");
     }
 
     @Test
     @DisplayName("城市状态倍率: 战争0.7x, 护盾1.1x, 和平1.0x")
     void testCityStatusMultiplier() {
         long now = System.currentTimeMillis();
-        int foodBase = 40; // farm level 1 produces 40/hour
+        int foodBase = 600; // farm level 1 produces 600/hour
 
         // === Peace (1.0x) ===
         Long peacePlayerId = createTestPlayer("peace_player", 0).getId();
@@ -207,8 +281,8 @@ class TickServiceTest extends BaseServiceTest {
         giveResources(peacePlayerId, 0, 0, 0, 0, 0);
         // No city state => peace
         tickService.tick(peacePlayerId);
-        int peaceFood = getResources(peacePlayerId).getFood();
-        assertEquals(foodBase, peaceFood, "和平状态产出应为1.0x = 40");
+        long peaceFood = getResources(peacePlayerId).getFood();
+        assertEquals(foodBase, peaceFood, "和平状态产出应为1.0x = 600");
 
         // === War (0.7x) ===
         Long warPlayerId = createTestPlayer("war_player", 0).getId();
@@ -219,9 +293,9 @@ class TickServiceTest extends BaseServiceTest {
         giveResources(warPlayerId, 0, 0, 0, 0, 0);
         createCityState(warPlayerId, "war", 0L, now + 3600_000L);
         tickService.tick(warPlayerId);
-        int warFood = getResources(warPlayerId).getFood();
-        // 40 * 0.7 = 28
-        assertEquals(28, warFood, "战争状态产出应为0.7x = 28");
+        long warFood = getResources(warPlayerId).getFood();
+        // 600 * 0.7 = 420
+        assertEquals(420, warFood, "战争状态产出应为0.7x = 420");
 
         // === Shield (1.1x) ===
         Long shieldPlayerId = createTestPlayer("shield_player", 0).getId();
@@ -232,9 +306,9 @@ class TickServiceTest extends BaseServiceTest {
         giveResources(shieldPlayerId, 0, 0, 0, 0, 0);
         createCityState(shieldPlayerId, "peace", now + 3600_000L, 0L);
         tickService.tick(shieldPlayerId);
-        int shieldFood = getResources(shieldPlayerId).getFood();
-        // 40 * 1.1 = 44
-        assertEquals(44, shieldFood, "护盾状态产出应为1.1x = 44");
+        long shieldFood = getResources(shieldPlayerId).getFood();
+        // 600 * 1.1 = 660
+        assertEquals(660, shieldFood, "护盾状态产出应为1.1x = 660");
     }
 
     @Test

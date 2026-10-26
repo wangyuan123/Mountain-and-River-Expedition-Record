@@ -14,6 +14,8 @@ public interface PlayerCityRepository extends JpaRepository<PlayerCity, Long> {
     List<PlayerCity> findByWorldId(Long worldId);
 
     List<PlayerCity> findByOwnerId(Long ownerId);
+    List<PlayerCity> findByOwnerIdInAndCitySlotIsNotNull(java.util.Collection<Long> ownerIds);
+    List<PlayerCity> findByRadarEnabledTrueAndCitySlotIsNotNull();
     java.util.Optional<PlayerCity> findByOwnerIdAndCitySlot(Long ownerId, Integer citySlot);
     List<PlayerCity> findByOwnerIdAndCitySlotIsNotNullOrderByCitySlotAsc(Long ownerId);
     boolean existsByWorldIdAndXAndY(Long worldId, Integer x, Integer y);

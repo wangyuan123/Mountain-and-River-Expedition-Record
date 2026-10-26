@@ -6,6 +6,19 @@ window.Game = window.Game || {};
 
   var config = G.Constants.uiSound;
   var preferences = { enabled: true, volume: config.defaultVolume, sound: config.defaultSound };
+  var bgmConfig = (G.Constants && G.Constants.bgm) || {
+    storageKey: 'wargame_bgm_v1',
+    defaultEnabled: true,
+    defaultVolume: 0.5,
+    defaultTrack: 'bgm_strings'
+  };
+  var bgmPreferences = {
+    enabled: bgmConfig.defaultEnabled !== false,
+    volume: typeof bgmConfig.defaultVolume === 'number' ? bgmConfig.defaultVolume : 0.5,
+    track: bgmConfig.defaultTrack || 'bgm_strings'
+  };
+  var bgmAudio = null;
+  var bgmStarted = false;
   var context = null;
   var master = null;
   var buffers = {};
@@ -27,8 +40,124 @@ window.Game = window.Game || {};
     if (saved && Object.prototype.hasOwnProperty.call(config.cues, saved.sound)) preferences.sound = saved.sound;
   } catch (e) { /* 隐私模式或损坏的偏好不能阻止游戏启动。 */ }
 
+  try {
+    var savedBgm = JSON.parse(window.localStorage.getItem(bgmConfig.storageKey));
+    if (savedBgm && typeof savedBgm.enabled === 'boolean') bgmPreferences.enabled = savedBgm.enabled;
+    if (savedBgm && typeof savedBgm.volume === 'number' && isFinite(savedBgm.volume)) {
+      bgmPreferences.volume = Math.max(0, Math.min(1, savedBgm.volume));
+    }
+    if (savedBgm && savedBgm.track && bgmConfig.tracks && Object.prototype.hasOwnProperty.call(bgmConfig.tracks, savedBgm.track)) {
+      bgmPreferences.track = savedBgm.track;
+    }
+  } catch (e) { /* 隐私模式或损坏的偏好不能阻止游戏启动。 */ }
+
   function audible() {
     return preferences.enabled && preferences.volume > 0 && !document.hidden;
+  }
+
+  function isBgmAudible() {
+    return bgmPreferences.enabled && bgmPreferences.volume > 0 && !document.hidden;
+  }
+
+  function startBgm() {
+    if (!isBgmAudible()) return;
+    var trackObj = bgmConfig.tracks && bgmConfig.tracks[bgmPreferences.track];
+    var filePath = trackObj ? trackObj.file : 'audio/bgm_strings.mp3';
+
+    try {
+      if (typeof window !== 'undefined' && typeof window.Audio === 'function') {
+        if (!bgmAudio) {
+          bgmAudio = new window.Audio(filePath);
+          bgmAudio.loop = true;
+        } else if (bgmAudio.src && !bgmAudio.src.endsWith(filePath)) {
+          bgmAudio.src = filePath;
+        }
+        bgmAudio.volume = bgmPreferences.volume;
+        bgmAudio.loop = true;
+        var p = bgmAudio.play();
+        if (p && typeof p.catch === 'function') {
+          p.catch(function () {});
+        }
+        bgmStarted = true;
+      }
+    } catch (e) {}
+  }
+
+  function pauseBgm() {
+    if (bgmAudio) {
+      try { bgmAudio.pause(); } catch (e) {}
+    }
+  }
+
+  function stopBgm() {
+    if (bgmAudio) {
+      try {
+        bgmAudio.pause();
+        bgmAudio.currentTime = 0;
+      } catch (e) {}
+    }
+  }
+
+  function saveBgm() {
+    try { window.localStorage.setItem(bgmConfig.storageKey, JSON.stringify(bgmPreferences)); } catch (e) {}
+    syncSettings();
+  }
+
+  function setBgmEnabled(enabled) {
+    bgmPreferences.enabled = !!enabled;
+    if (bgmPreferences.enabled && bgmPreferences.volume > 0) {
+      startBgm();
+    } else {
+      pauseBgm();
+    }
+    saveBgm();
+  }
+
+  function toggleBgm() {
+    setBgmEnabled(!bgmPreferences.enabled);
+  }
+
+  function setBgmVolume(volume) {
+    if (typeof volume !== 'number' || !isFinite(volume)) return;
+    bgmPreferences.volume = Math.max(0, Math.min(1, volume));
+    if (bgmAudio) {
+      bgmAudio.volume = bgmPreferences.volume;
+    }
+    if (bgmPreferences.volume > 0 && bgmPreferences.enabled) {
+      if (bgmAudio && bgmAudio.paused) startBgm();
+    } else {
+      pauseBgm();
+    }
+    saveBgm();
+  }
+
+  function setBgmTrack(trackId) {
+    if (!bgmConfig.tracks || !Object.prototype.hasOwnProperty.call(bgmConfig.tracks, trackId)) return;
+    if (bgmPreferences.track === trackId && bgmAudio) return;
+    bgmPreferences.track = trackId;
+    var trackObj = bgmConfig.tracks[trackId];
+    var filePath = trackObj ? trackObj.file : 'audio/bgm_strings.mp3';
+    if (bgmAudio) {
+      bgmAudio.pause();
+      bgmAudio.src = filePath;
+      bgmAudio.currentTime = 0;
+      if (isBgmAudible()) {
+        var p = bgmAudio.play();
+        if (p && typeof p.catch === 'function') p.catch(function () {});
+      }
+    } else if (isBgmAudible()) {
+      startBgm();
+    }
+    saveBgm();
+  }
+
+  function getBgm() {
+    return {
+      enabled: bgmPreferences.enabled,
+      volume: bgmPreferences.volume,
+      track: bgmPreferences.track,
+      tracks: bgmConfig.tracks || {}
+    };
   }
 
   /** 仅由用户交互创建或恢复音频设备，浏览器拒绝时保持交互可用。 */
@@ -138,6 +267,29 @@ window.Game = window.Game || {};
     try { source.disconnect(); } catch (e) { /* 节点可能已经结束。 */ }
   }
 
+  var activeAudios = [];
+
+  function playAudioFile(cue) {
+    if (!audible() || !cue || !cue.file) return false;
+    try {
+      if (typeof window !== 'undefined' && typeof window.Audio === 'function') {
+        var audio = new window.Audio(cue.file);
+        audio.volume = preferences.volume;
+        activeAudios.push(audio);
+        audio.onended = function () {
+          var idx = activeAudios.indexOf(audio);
+          if (idx !== -1) activeAudios.splice(idx, 1);
+        };
+        var p = audio.play();
+        if (p && typeof p.catch === 'function') {
+          p.catch(function () {});
+        }
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+
   function stop() {
     generation++;
     pending = null;
@@ -146,6 +298,10 @@ window.Game = window.Game || {};
       try { source.stop(); } catch (e) { /* 已播放完的节点无需再次停止。 */ }
       release(source);
     });
+    activeAudios.slice().forEach(function (audio) {
+      try { audio.pause(); audio.currentTime = 0; } catch (e) {}
+    });
+    activeAudios = [];
   }
 
   function emit(name, token, requestedAt) {
@@ -175,7 +331,9 @@ window.Game = window.Game || {};
 
   /** 播放一种交互音或情境音；未知音色、静音和后台页面均安静跳过。 */
   function play(name, requestedAt) {
-    if (!findCue(name) || !audible()) return;
+    var cue = findCue(name);
+    if (!cue || !audible()) return;
+    if (cue.file && playAudioFile(cue)) return;
     var audio = prepare();
     if (!audio) return;
     var token = generation;
@@ -203,6 +361,20 @@ window.Game = window.Game || {};
     var soundSelect = document.getElementById('uiSoundChoice');
     if (soundSelect) { soundSelect.value = preferences.sound; soundSelect.disabled = !preferences.enabled; }
     document.querySelectorAll('[data-sound-preview]').forEach(function (button) { button.disabled = !preferences.enabled || percent === 0; });
+
+    // 同步背景音乐（BGM）控件
+    var bgmToggle = document.getElementById('uiBgmEnabled');
+    var bgmSlider = document.getElementById('uiBgmVolume');
+    var bgmOutput = document.getElementById('uiBgmVolumeValue');
+    var bgmSelect = document.getElementById('uiBgmTrackChoice');
+    var bgmPercent = Math.round(bgmPreferences.volume * 100);
+    if (bgmToggle) {
+      bgmToggle.setAttribute('aria-pressed', String(bgmPreferences.enabled));
+      bgmToggle.textContent = bgmPreferences.enabled ? '音乐已开启' : '音乐已关闭';
+    }
+    if (bgmSlider) { bgmSlider.value = bgmPercent; bgmSlider.disabled = !bgmPreferences.enabled; }
+    if (bgmOutput) bgmOutput.textContent = bgmPercent + '%';
+    if (bgmSelect) { bgmSelect.value = bgmPreferences.track; bgmSelect.disabled = !bgmPreferences.enabled; }
   }
 
   function actionable(target) {
@@ -215,6 +387,11 @@ window.Game = window.Game || {};
   }
 
   function begin(event) {
+    // 首次用户交互触发背景音乐（避开浏览器 Autoplay 策略拦截）
+    if (isBgmAudible() && (!bgmStarted || (bgmAudio && bgmAudio.paused))) {
+      startBgm();
+    }
+
     if (event.type === 'click' && event.button > 0) return;
     var target = event.target;
     var control = actionable(target);
@@ -251,15 +428,32 @@ window.Game = window.Game || {};
       document.addEventListener('click', begin, true);
       document.addEventListener('keydown', begin, true);
       document.addEventListener('visibilitychange', function () {
-        if (!document.hidden) return;
+        if (!document.hidden) {
+          if (isBgmAudible()) startBgm();
+          return;
+        }
         stop();
+        pauseBgm();
         if (context && context.state === 'running') {
           try { context.suspend().catch(function () {}); } catch (e) { /* 不支持挂起时也已停止所有音源。 */ }
         }
       });
+      // 环境允许时静默尝试起播
+      try {
+        if (isBgmAudible()) startBgm();
+      } catch (e) {}
     },
     play: play,
     get: function () { return { enabled: preferences.enabled, volume: preferences.volume, sound: preferences.sound }; },
+    getBgm: getBgm,
+    startBgm: startBgm,
+    pauseBgm: pauseBgm,
+    stopBgm: stopBgm,
+    setBgmEnabled: setBgmEnabled,
+    toggleBgm: toggleBgm,
+    setBgmVolume: setBgmVolume,
+    setBgmTrack: setBgmTrack,
+    getBgmAudio: function () { return bgmAudio; },
     /** 更换全局按钮音色并试听，未知值不覆盖当前偏好。 */
     setSound: function (name) {
       if (!Object.prototype.hasOwnProperty.call(config.cues, name) || preferences.sound === name) return;
@@ -277,11 +471,13 @@ window.Game = window.Game || {};
       this.setEnabled(!preferences.enabled);
       if (preferences.enabled) play(preferences.sound);
     },
-    /** 音量按 0～1 保存为设备偏好，滑动时只调音量，松手才试听。 */
     setVolume: function (volume) {
       if (typeof volume !== 'number' || !isFinite(volume)) return;
       preferences.volume = Math.max(0, Math.min(1, volume));
       if (master && context) master.gain.setTargetAtTime(preferences.volume, context.currentTime, 0.015);
+      activeAudios.forEach(function (audio) {
+        try { audio.volume = preferences.volume; } catch (e) {}
+      });
       if (!preferences.volume) stop();
       save();
     },
@@ -292,9 +488,37 @@ window.Game = window.Game || {};
       Object.keys(config.cues).forEach(function (name) {
         soundOptions += '<option value="' + name + '"' + (name === preferences.sound ? ' selected' : '') + '>' + config.cues[name].label + '</option>';
       });
-      var html = '<section class="panel sound-settings settings-card" aria-label="按钮音效设置" data-ui-sound="none">' +
+      var bgmPercent = Math.round(bgmPreferences.volume * 100);
+      var bgmDisabled = !bgmPreferences.enabled;
+      var trackOptions = '';
+      var tracks = bgmConfig.tracks || {};
+      Object.keys(tracks).forEach(function (tid) {
+        trackOptions += '<option value="' + tid + '"' + (tid === bgmPreferences.track ? ' selected' : '') + '>' + tracks[tid].name + '</option>';
+      });
+
+      // 1. 背景音乐（BGM）设置卡片
+      var html = '<section class="panel sound-settings settings-card bgm-settings-card" aria-label="背景音乐设置" data-ui-sound="none">' +
         '<div class="settings-card-head">' +
-          '<span class="settings-card-title" id="uiSoundLabel"><span class="settings-icon">🔊</span> 按钮音效</span>' +
+          '<span class="settings-card-title" id="uiBgmLabel"><span class="settings-icon">🎼</span> 背景音乐（BGM）</span>' +
+          '<button type="button" class="btn sm sound-toggle-btn' + (bgmDisabled ? ' is-disabled' : ' is-active') + '" id="uiBgmEnabled" aria-describedby="uiBgmLabel" aria-pressed="' + bgmPreferences.enabled + '" onclick="Game.Sound.toggleBgm()">' + (bgmDisabled ? '音乐已关闭' : '音乐已开启') + '</button>' +
+        '</div>' +
+        '<div class="sound-setting-row">' +
+          '<label for="uiBgmTrackChoice" class="settings-label">背景曲目</label>' +
+          '<select id="uiBgmTrackChoice" class="settings-select" onchange="Game.Sound.setBgmTrack(this.value)"' + (bgmDisabled ? ' disabled' : '') + '>' + trackOptions + '</select>' +
+        '</div>' +
+        '<div class="sound-setting-row">' +
+          '<label for="uiBgmVolume" class="settings-label">音乐音量</label>' +
+          '<div class="sound-volume-wrap">' +
+            '<input id="uiBgmVolume" type="range" min="0" max="100" step="1" value="' + bgmPercent + '"' + (bgmDisabled ? ' disabled' : '') + ' oninput="Game.Sound.setBgmVolume(Number(this.value)/100)"/>' +
+            '<output id="uiBgmVolumeValue" for="uiBgmVolume">' + bgmPercent + '%</output>' +
+          '</div>' +
+        '</div>' +
+        '</section>';
+
+      // 2. 操作与战斗音效（SFX）设置卡片
+      html += '<section class="panel sound-settings settings-card" aria-label="按钮音效设置" data-ui-sound="none">' +
+        '<div class="settings-card-head">' +
+          '<span class="settings-card-title" id="uiSoundLabel"><span class="settings-icon">🔊</span> 操作与战斗音效</span>' +
           '<button type="button" class="btn sm sound-toggle-btn' + (disabled ? ' is-disabled' : ' is-active') + '" id="uiSoundEnabled" aria-describedby="uiSoundLabel" aria-pressed="' + preferences.enabled + '" onclick="Game.Sound.toggle()">' + (disabled ? '音效已关闭' : '音效已开启') + '</button>' +
         '</div>' +
         '<div class="sound-setting-row">' +

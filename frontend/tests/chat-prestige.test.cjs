@@ -6,6 +6,7 @@ const vm = require('node:vm');
 
 test('world chat stays readable below 10000 prestige and unlocks at the threshold', async () => {
   const calls = [];
+  const input = { value: '尚未发送的草稿' };
   const button = {
     disabled: false,
     textContent: '',
@@ -20,7 +21,7 @@ test('world chat stays readable below 10000 prestige and unlocks at the threshol
         sendWorldChat: content => { calls.push(content); return Promise.resolve(); }
       }
     },
-    document: { getElementById: id => id === 'worldChatSendBtn' ? button : null },
+    document: { getElementById: id => ({ worldChatSendBtn: button, worldChatInput: input })[id] || null },
     setInterval() { return 1; },
     clearInterval() {}
   };
@@ -33,6 +34,8 @@ test('world chat stays readable below 10000 prestige and unlocks at the threshol
   context.Game.Chat.updateSendBtnUI();
   assert.equal(button.disabled, true);
   assert.equal(button.textContent, '只读');
+  assert.equal(input.disabled, true);
+  assert.equal(input.placeholder, '声望达到 10,000 后可发言');
   await assert.rejects(context.Game.Chat.send('测试消息'), /声望达到 10000/);
   assert.equal(calls.length, 0);
 
@@ -40,6 +43,9 @@ test('world chat stays readable below 10000 prestige and unlocks at the threshol
   context.Game.Chat.updateSendBtnUI();
   assert.equal(button.disabled, false);
   assert.equal(button.textContent, '发送');
+  assert.equal(input.disabled, false);
+  assert.equal(input.placeholder, '善言结善缘 恶语伤人心');
+  assert.equal(input.value, '尚未发送的草稿');
   await context.Game.Chat.send('测试消息');
   assert.deepEqual(calls, ['测试消息']);
 });

@@ -130,7 +130,7 @@
         '<div id="privateChatConversations" class="private-conversations"></div></div>' +
         '<div id="privateChatDialogPanel" class="private-chat-panel" hidden><div class="private-dialog-header"><button class="chat-back-button" onclick="Game.PrivateChat.showList()" aria-label="返回私聊列表">‹</button><h2 id="privateChatTitle"></h2><button class="btn sm" onclick="Game.PrivateChat.profile()">玩家资料</button></div>' +
         '<div class="chat-box" id="privateChatBox" style="flex:1;min-height:0;"></div>' +
-        '<div class="chat-input-bar"><input class="chat-input" id="privateChatInput" aria-label="私聊消息" maxlength="80" placeholder="私聊消息，最多 80 字" onkeydown="if(event.key===\'Enter\')Game.PrivateChat.send()" disabled><button class="chat-send" id="privateChatSend" onclick="Game.PrivateChat.send()" disabled>发送</button></div></div>';
+        '<div class="chat-input-bar"><input class="chat-input" id="privateChatInput" aria-label="私聊消息" maxlength="80" placeholder="善言结善缘 恶语伤人心" onkeydown="if(event.key===\'Enter\')Game.PrivateChat.send()" disabled><button class="chat-send" id="privateChatSend" onclick="Game.PrivateChat.send()" disabled>发送</button></div></div>';
     },
     /** 频道入口始终显示多玩家列表，返回列表不清除消息未读。 */
     showList: function () {
@@ -215,7 +215,7 @@
       if (!peer || !dialog || peer.available === false || peer.blocked || !input || sending) return;
       var text = input.value.trim();
       if (!text) { error(new Error('消息不能为空')); return; }
-      if (Date.now() < nextSendAt) { error(new Error('发言过于频繁，请等待 5 秒冷却')); return; }
+      if (Date.now() < nextSendAt) { error(new Error('发言过于频繁，请等待 ' + G.formatDuration((nextSendAt - Date.now()) / 1000) + '冷却')); return; }
       var target = peer;
       sending = true;
       if (node('privateChatSend')) node('privateChatSend').disabled = true;

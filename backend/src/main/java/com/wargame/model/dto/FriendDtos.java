@@ -14,6 +14,6 @@ public final class FriendDtos {
     public record Profile(Long id, String username, String displayName, String avatar, Integer level,
                           Integer militaryRank, Integer prestige, String cityName, String faction,
                           boolean online, boolean available, boolean friend, boolean blocked, Long groupId,
-                          String requestState) {}
+                          String requestState, Integer cityX, Integer cityY) {}
     public record ListResponse(List<Group> groups, List<Profile> contacts, List<Request> requests, Settings settings) {}
 }

@@ -92,6 +92,7 @@ function setupWoundedEnv() {
     clearInterval: () => {}
   });
   ctx.window = ctx;
+  require('./load-constants.cjs')(ctx);
 
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/wounded.js'), 'utf8'), ctx);
 

@@ -156,7 +156,7 @@ public class FortService {
         if (back > 0) {
             Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
             if (res != null) {
-                res.setSteel((res.getSteel() != null ? res.getSteel() : 0) + back);
+                res.addResource("steel", back);
                 resourcesRepository.save(res);
             }
         }
@@ -223,7 +223,7 @@ public class FortService {
         Resources r = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (r == null) return false;
         for (Map.Entry<String, Integer> entry : costs.entrySet()) {
-            int have = getResource(r, entry.getKey());
+            long have = getResource(r, entry.getKey());
             if (have < entry.getValue()) return false;
         }
         return true;
@@ -233,13 +233,13 @@ public class FortService {
         Resources r = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (r == null) return;
         for (Map.Entry<String, Integer> entry : costs.entrySet()) {
-            int current = getResource(r, entry.getKey());
+            long current = getResource(r, entry.getKey());
             setResource(r, entry.getKey(), current - entry.getValue());
         }
         resourcesRepository.save(r);
     }
 
-    private int getResource(Resources r, String key) {
+    private long getResource(Resources r, String key) {
         return switch (key) {
             case "food"  -> r.getFood()  != null ? r.getFood()  : 0;
             case "steel" -> r.getSteel() != null ? r.getSteel() : 0;
@@ -250,7 +250,7 @@ public class FortService {
         };
     }
 
-    private void setResource(Resources r, String key, int value) {
+    private void setResource(Resources r, String key, long value) {
         switch (key) {
             case "food"  -> r.setFood(value);
             case "steel" -> r.setSteel(value);

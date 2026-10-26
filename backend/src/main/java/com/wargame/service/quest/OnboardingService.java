@@ -42,7 +42,7 @@ public class OnboardingService {
     public static final List<Objective> OBJECTIVES = List.of(
             new Objective("base", "建设基地", "完成任意一次建筑建造或升级，认识施工队列。", "buildRes", ""),
             new Objective("infantry", "组建部队", "生产一名步兵，认识征召与生产队列；初始部队已足够参加首战。", "army", "infantry"),
-            new Objective("recon_build", "建设侦查生产线", "依次完成市政厅2级、军工厂2级、防空雷达站1级与科研中心1级；配套建筑按建设页前置推进。", "buildArmy", "factory"),
+            new Objective("recon_build", "建设侦查生产线", "依次完成市政厅2级、军工厂2级、城防雷达1级与科研中心1级；配套建筑按建设页前置推进。", "buildArmy", "factory"),
             new Objective("recon_research", "研究侦察技术", "在科研中心实际完成侦察技术1级研究，开启地面侦查能力。", "tech", "recon_level"),
             new Objective("recon_unit", "生产侦查装甲车", "在军工厂实际生产1辆侦查装甲车，用于地面侦查。", "army", "recon_car"),
             new Objective("scout", "执行侦察", "使用侦查装甲车侦查陆路可达的推荐野地，取得情报后继续。", "world", ""),
@@ -56,7 +56,7 @@ public class OnboardingService {
             new Supply("battle", "首战补给", List.of("occupy"), Map.of("food", 5000, "steel", 4000, "oil", 2000, "rare", 500, "gold", 1000))
     );
     public static final List<Exploration> EXPLORATIONS = List.of(
-            new Exploration("gather", "首次采集", "从己方资源地采集并将资源运回城市。", "world", "", "选择己方资源地，派出步兵或运输部队采集。步兵每人基础负重10，卡车每辆500，优先使用基础卡车；全自动会采满返城，资源返城入库后完成任务。", Map.of("food", 5000, "steel", 3600, "oil", 1000)),
+            new Exploration("gather", "首次采集", "从己方资源地采集并将资源运回城市。", "world", "", "选择己方资源地，派出步兵或运输部队采集。步兵每人基础负重10，卡车每辆500，优先使用基础卡车；采满后需手动收获，再下达部队回城命令；资源返城入库后完成任务。", Map.of("food", 5000, "steel", 3600, "oil", 1000)),
             new Exploration("truck", "生产卡车", "生产一辆卡车，提高资源运输能力。", "army", "truck", "卡车擅长运输，负重较高。选择军队中的卡车，征召一辆并等待生产完成。", Map.of("food", 1000, "steel", 1000)),
             new Exploration("tech", "研究科技", "完成一次科技研究，提升基地能力。", "tech", "", "科研中心建成后，选择一项可研究的科技；研究完成后任务自动更新。", Map.of("steel", 1500, "rare", 200)),
             new Exploration("officer", "招募军官", "招募一名军官，了解将领的作用。", "academy", "academy", "军校建成后刷新候选军官，选择一名招募。将领可以出征，也可以留城任职。", Map.of("gold", 300)),
@@ -229,8 +229,9 @@ public class OnboardingService {
             if (armies.findByPlayerIdAndCitySlotAndType(playerId, 0, "recon_car").stream().anyMatch(a -> a.getCount() > 0)) mark(rows, playerId, "recon_unit");
         }
         long startedAt = Objects.requireNonNullElse(rows.get(ENROLLED).getCompletedAt(), 0L);
-        for (ScoutReport report : reports.findByPlayerIdAndCreatedAtGreaterThanEqual(playerId, startedAt)) {
-            var data = JsonUtil.parseTree(report.getData());
+        // 报名标记与战报入库均使用现实时间；战斗发生时间可因停机落后，不能用于筛选报名后的成果。
+        for (ScoutReport report : reports.findByPlayerIdAndPersistedRealAtGreaterThanEqual(playerId, startedAt)) {
+            var data = JsonUtil.parseTree(report.getData() != null ? report.getData() : report.getSummaryJson());
             // 战报保留出发城市，分城报告不能推动只在主城开展的核心行动。
             if (data.path("citySlot").asInt(0) != 0 || "defender".equals(data.path("perspective").asText())) continue;
             if ("scout".equals(report.getType()) && "wild".equals(data.path("targetKind").asText()) && data.path("showCityInfo").asBoolean()) mark(rows, playerId, "scout");
@@ -365,9 +366,9 @@ public class OnboardingService {
         if (done(rows, "reward_" + id)) return;
         Resources balance = resources.findByPlayerIdAndCitySlot(playerId, 0).orElseThrow();
         Map<String, Integer> r = reward.resources();
-        balance.setFood(balance.getFood() + r.getOrDefault("food", 0)); balance.setSteel(balance.getSteel() + r.getOrDefault("steel", 0));
-        balance.setOil(balance.getOil() + r.getOrDefault("oil", 0)); balance.setRare(balance.getRare() + r.getOrDefault("rare", 0));
-        balance.setGold(balance.getGold() + r.getOrDefault("gold", 0)); balance.setDiamond(Objects.requireNonNullElse(balance.getDiamond(), 0) + reward.diamond());
+        balance.addResource("food", r.getOrDefault("food", 0)); balance.addResource("steel", r.getOrDefault("steel", 0));
+        balance.addResource("oil", r.getOrDefault("oil", 0)); balance.addResource("rare", r.getOrDefault("rare", 0));
+        balance.addResource("gold", r.getOrDefault("gold", 0)); balance.setDiamond(Objects.requireNonNullElse(balance.getDiamond(), 0) + reward.diamond());
         resources.save(balance); mark(rows, playerId, "reward_" + id);
     }
     private PlayerGuide requireEnrolled(Map<String, PlayerGuide> rows) {

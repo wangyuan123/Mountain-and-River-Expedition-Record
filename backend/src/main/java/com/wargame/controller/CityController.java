@@ -1,6 +1,7 @@
 package com.wargame.controller;
 
 import com.wargame.service.*;
+import com.wargame.util.DurationText;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.Map;
@@ -15,6 +16,14 @@ public class CityController {
     private final GameStateService state;
     public CityController(AuthService auth, CityService cities, CityScope scope, GameStateService state) {
         this.auth = auth; this.cities = cities; this.scope = scope; this.state = state;
+    }
+    @org.springframework.beans.factory.annotation.Autowired private GuildSupportService support;
+    public record GarrisonSetting(Long cityId, boolean allowed) {}
+    @PostMapping("/garrison") @Transactional
+    public Map<String, Object> garrison(@RequestBody GarrisonSetting request) {
+        Long id = auth.getCurrentPlayer().getId();
+        support.setAcceptance(id, request.cityId(), request.allowed());
+        return cities.overview(id);
     }
     public record Selection(Long cityId) {}
     public record Founding(Long wildId, String name, Integer x, Integer y) {}
@@ -39,6 +48,6 @@ public class CityController {
     public Map<String, Object> found(@RequestBody Founding request) {
         Long id = auth.getCurrentPlayer().getId();
         var city = cities.foundAt(id, request.wildId(), request.x(), request.y(), request.name());
-        return Map.of("success", true, "cityId", city.getId(), "readyAt", city.getReadyAt(), "message", "新城已开始建设，30分钟后可进入", "state", state.getGameState(id));
+        return Map.of("success", true, "cityId", city.getId(), "readyAt", city.getReadyAt(), "message", "新城已开始建设，" + DurationText.millis(CityService.BUILD_DURATION_MS) + "后可进入", "state", state.getGameState(id));
     }
 }

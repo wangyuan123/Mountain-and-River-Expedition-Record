@@ -248,7 +248,7 @@ public class AdminSystemTest extends BaseServiceTest {
 
         // 3. 玩家领取附件
         // 管理员赠兵也须满足归队城市的兵种条件；失败时整封附件保留待领取。
-        int goldBefore = getResources(player.getId()).getGold();
+        long goldBefore = getResources(player.getId()).getGold();
         assertEquals(false, mailService.claimAttach(player.getId(), mail.getId()).get("success"));
         assertFalse(mailRepository.findById(mail.getId()).orElseThrow().getIsClaimed());
         assertEquals(goldBefore, getResources(player.getId()).getGold());

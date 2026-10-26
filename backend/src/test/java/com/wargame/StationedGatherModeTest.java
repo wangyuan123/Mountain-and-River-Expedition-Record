@@ -38,41 +38,45 @@ class StationedGatherModeTest extends BaseServiceTest {
     }
 
     @Test
-    void automaticGatherTicksWithoutMarchesAndReturnsExactlyOnce() {
+    void legacyAutomaticGatherWaitsWithoutMarchesUntilHarvestAndRecall() {
         station(0, 1, "[[10,10],[15,10],[15,15]]");
-        assertTrue(marchRepository.findByPlayerId(playerId).isEmpty());
-        marchService.startWildGather(playerId, tile.getId(), "auto");
-        long finishedAt = tile.getGatherEndAt();
+        marchService.startWildGather(playerId, tile.getId());
+        tile.setGatherMode("auto");
+        finishTimeInPast();
         entityManager.flush();
         entityManager.clear();
         tile = wildTileRepository.findById(tile.getId()).orElseThrow();
-        assertEquals("auto", tile.getGatherMode());
-        assertNotNull(tile.getGarrisonRoutes());
-        marchService.processMarches(playerId, finishedAt - 1);
+        marchService.processMarches(playerId, tile.getGatherEndAt() + 600_000L);
         assertTrue(tile.getGathering());
-        marchService.processMarches(playerId, finishedAt);
+        assertTrue(marchRepository.findByPlayerId(playerId).isEmpty());
+        assertEquals(1000, tile.getTotalRes());
+        assertEquals(1000, getResources(playerId).getFood());
+        assertEquals("manual", worldMapService.target(playerId, "wild", tile.getId()).get("gatherMode"));
+        marchService.harvestWild(playerId, tile.getId());
+        assertTrue(marchRepository.findByPlayerId(playerId).isEmpty());
+        marchService.recallWild(playerId, tile.getId());
         March returning = onlyMarch();
-        assertTrue(returning.getReturning());
-        assertEquals("wild", returning.getTargetKind());
-        assertEquals("gather", returning.getAction());
         assertEquals("[[15,15],[15,10],[10,10]]", returning.getRouteData());
         assertEquals(30_000L, returning.getArriveAt() - returning.getStartAt());
-        assertEquals(500, tile.getMined());
-        assertEquals(1000, getResources(playerId).getFood());
-        assertTrue(armyUnitRepository.findByPlayerId(playerId).isEmpty());
-        assertEquals("{}", tile.getGarrison());
-        assertNull(tile.getGatherHarvested());
-        assertNull(tile.getGarrisonRoutes());
-        marchService.processMarches(playerId, finishedAt);
-        assertEquals(1, marchRepository.findByPlayerId(playerId).size());
         marchService.processMarches(playerId, returning.getArriveAt());
-        marchService.processMarches(playerId, returning.getArriveAt() + 1000);
+        marchService.processMarches(playerId, returning.getArriveAt() + 1000L);
         assertEquals(1500, getResources(playerId).getFood());
         assertEquals(1, armyUnitRepository.findByPlayerIdAndType(playerId, "truck").get(0).getCount());
-        assertEquals(500, tile.getMined());
+        assertEquals(500, tile.getTotalRes());
         assertTrue(tile.getOccupied());
-        assertEquals(playerId, tile.getOccupiedBy());
         assertTrue(marchRepository.findByPlayerId(playerId).isEmpty());
+    }
+
+    @Test
+    void stationedGatherUses100ResourcesPerSecondWithoutCommanderBonus() {
+        tile.setTotalRes(10_000);
+        wildTileRepository.save(tile);
+        station(0, 20, "[[10,10],[15,10],[15,15]]");
+
+        marchService.startWildGather(playerId, tile.getId(), "manual");
+
+        assertEquals(10_000, tile.getGatherLoad());
+        assertEquals(100_000L, tile.getGatherEndAt() - tile.getGatherStartAt());
     }
 
     @Test
@@ -88,7 +92,8 @@ class StationedGatherModeTest extends BaseServiceTest {
         Map<String, Object> harvested = marchService.harvestWild(playerId, tile.getId());
         assertEquals(500, harvested.get("harvestAmount"));
         assertEquals(500, marchService.harvestWild(playerId, tile.getId()).get("harvestAmount"));
-        assertEquals(500, tile.getMined());
+        assertEquals(500, tile.getTotalRes());
+        assertEquals(0, tile.getMined());
         assertEquals(1000, getResources(playerId).getFood());
         assertEquals(1, JsonUtil.parseIntMap(tile.getGarrison()).get("truck"));
         assertFalse(tile.getGathering());
@@ -106,6 +111,26 @@ class StationedGatherModeTest extends BaseServiceTest {
     }
 
     @Test
+    void stationedGatherCanBeHarvestedAndRecalledManually() {
+        station(0, 1, "[[10,10],[15,10],[15,15]]");
+        marchService.startWildGather(playerId, tile.getId(), "manual");
+        finishTimeInPast();
+
+        Map<String, Object> harvested = marchService.harvestWild(playerId, tile.getId());
+        assertEquals(500, harvested.get("harvestAmount"));
+        assertFalse(tile.getGathering());
+        assertTrue(marchRepository.findByPlayerId(playerId).isEmpty());
+        marchService.processMarches(playerId, System.currentTimeMillis() + 600_000L);
+        assertTrue(marchRepository.findByPlayerId(playerId).isEmpty(), "手动收获应阻止自动返城");
+
+        marchService.recallWild(playerId, tile.getId());
+        March returning = onlyMarch();
+        marchService.processMarches(playerId, returning.getArriveAt());
+        assertEquals(1500, getResources(playerId).getFood());
+        assertTrue(tile.getOccupied());
+    }
+
+    @Test
     void partialHarvestIsClampedAndDoesNotResume() {
         station(0, 1, "[[10,10],[15,15]]");
         marchService.startWildGather(playerId, tile.getId(), "manual");
@@ -115,7 +140,8 @@ class StationedGatherModeTest extends BaseServiceTest {
         wildTileRepository.save(tile);
         int amount = (int) marchService.harvestWild(playerId, tile.getId()).get("harvestAmount");
         assertTrue(amount >= 250 && amount <= 260);
-        assertEquals(amount, tile.getMined());
+        assertEquals(1000 - amount, tile.getTotalRes());
+        assertEquals(0, tile.getMined());
         marchService.processMarches(playerId, now + 1_000_000L);
         assertEquals(amount, tile.getGatherHarvested());
         assertEquals(amount, marchService.harvestWild(playerId, tile.getId()).get("harvestAmount"));
@@ -147,12 +173,19 @@ class StationedGatherModeTest extends BaseServiceTest {
         station(1, 7, "[[20,20],[15,20],[15,15]]");
         tile.setTotalRes(499);
         try (var ignored = cityScope.enter(playerId, 1)) {
-            marchService.startWildGather(playerId, tile.getId(), "auto");
+            marchService.startWildGather(playerId, tile.getId(), "manual");
         }
         long finishedAt = tile.getGatherEndAt();
         marchService.processMarches(playerId, finishedAt);
         assertTrue(tile.getGathering());
         try (var ignored = cityScope.enter(playerId, 1)) { marchService.processMarches(playerId, finishedAt); }
+        assertTrue(tile.getGathering());
+        assertTrue(marchRepository.findByPlayerId(playerId).isEmpty());
+        finishTimeInPast();
+        try (var ignored = cityScope.enter(playerId, 1)) {
+            marchService.harvestWild(playerId, tile.getId());
+            marchService.recallWild(playerId, tile.getId());
+        }
         List<March> returning = marchRepository.findByPlayerId(playerId);
         assertEquals(2, returning.size());
         assertEquals(499, returning.stream().mapToInt(March::getGatherAmount).sum());
@@ -190,28 +223,33 @@ class StationedGatherModeTest extends BaseServiceTest {
     void staleRouteTroopsCannotResurrectLostGarrison() {
         station(0, 10, "[[10,10],[15,15]]");
         tile.setGarrison(JsonUtil.toJson(Map.of("truck", 2)));
-        marchService.startWildGather(playerId, tile.getId(), "auto");
-        marchService.processMarches(playerId, tile.getGatherEndAt());
+        marchService.startWildGather(playerId, tile.getId(), "manual");
+        finishTimeInPast();
+        marchService.harvestWild(playerId, tile.getId());
+        marchService.recallWild(playerId, tile.getId());
         March returning = onlyMarch();
         assertEquals(2, JsonUtil.parseIntMap(returning.getArmy()).get("truck"));
         assertEquals(1000, returning.getGatherAmount());
     }
 
     @Test
-    void validatesModeOwnershipAndDisallowsManualCommandsForAuto() {
+    void rejectsAutomaticModeAndValidatesOwnership() {
         station(0, 2, "[[10,10],[15,15]]");
         assertThrows(IllegalArgumentException.class, () -> marchService.startWildGather(playerId, tile.getId(), "bad"));
+        assertThrows(IllegalArgumentException.class, () -> marchService.startWildGather(playerId, tile.getId(), "auto"));
+        assertFalse(Boolean.TRUE.equals(tile.getGathering()));
+        assertEquals(2, JsonUtil.parseIntMap(tile.getGarrison()).get("truck"));
         Long otherPlayer = createTestPlayer("other-gatherer", 30).getId();
         assertThrows(IllegalArgumentException.class, () -> marchService.startWildGather(otherPlayer, tile.getId(), "manual"));
-        marchService.startWildGather(playerId, tile.getId(), "auto");
-        assertThrows(IllegalArgumentException.class, () -> marchService.harvestWild(playerId, tile.getId()));
+        marchService.startWildGather(playerId, tile.getId(), "manual");
         assertThrows(IllegalArgumentException.class, () -> marchService.recallWild(playerId, tile.getId()));
         Map<String, Object> own = worldMapService.target(playerId, "wild", tile.getId());
-        assertEquals("auto", own.get("gatherMode"));
+        assertEquals("manual", own.get("gatherMode"));
         assertTrue(own.containsKey("gatherHarvested"));
         Map<String, Object> other = worldMapService.target(otherPlayer, "wild", tile.getId());
         assertFalse(other.containsKey("gatherMode"));
         assertFalse(other.containsKey("gatherHarvested"));
+        assertTrue(marchService.harvestWild(playerId, tile.getId()).containsKey("harvestAmount"));
     }
 
     private void station(int slot, int trucks, String route) {
