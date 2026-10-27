@@ -17,7 +17,6 @@ import java.util.Map;
 
 /** 按登录账号保存固定坐标；名称取收藏时的公开目标信息，不追踪目标迁移。 */
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class MapFavoriteService {
     public static final int MAX_FAVORITES = 100;
@@ -25,6 +24,20 @@ public class MapFavoriteService {
     private final WorldMapRepository worlds;
     private final WorldMapService maps;
     private final jakarta.persistence.EntityManager entityManager;
+    private final VipService vipService;
+
+    public MapFavoriteService(PlayerRepository players, WorldMapRepository worlds, WorldMapService maps, jakarta.persistence.EntityManager entityManager) {
+        this(players, worlds, maps, entityManager, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public MapFavoriteService(PlayerRepository players, WorldMapRepository worlds, WorldMapService maps, jakarta.persistence.EntityManager entityManager, @org.springframework.beans.factory.annotation.Autowired(required = false) VipService vipService) {
+        this.players = players;
+        this.worlds = worlds;
+        this.maps = maps;
+        this.entityManager = entityManager;
+        this.vipService = vipService;
+    }
 
     public record Favorite(int x, int y, String name) {}
     public record SaveRequest(Integer x, Integer y, String kind, Long targetId) {}
@@ -41,7 +54,8 @@ public class MapFavoriteService {
         Player player = locked(viewer);
         List<Favorite> favorites = read(player);
         if (favorites.stream().anyMatch(f -> f.x() == request.x() && f.y() == request.y())) return favorites;
-        if (favorites.size() >= MAX_FAVORITES) throw new IllegalArgumentException("最多收藏100个坐标，请先移除不需要的收藏");
+        int maxLimit = vipService != null ? vipService.getMapFavoriteLimit(player) : MAX_FAVORITES;
+        if (favorites.size() >= maxLimit) throw new IllegalArgumentException("最多收藏" + maxLimit + "个坐标，提升VIP特勤等级可扩充坐标收藏上限");
         String label = "坐标标记";
         if (!"site".equals(request.kind())) {
             if (request.kind() == null || request.targetId() == null) throw new IllegalArgumentException("请选择有效的地图目标");

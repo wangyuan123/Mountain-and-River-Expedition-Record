@@ -1,0 +1,55 @@
+{
+  "passed": true,
+  "newPackLevels": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+  ],
+  "newMilestones": [
+    150000
+  ],
+  "dailyDays": 1,
+  "verifiedItemDeltas": {
+    "recruitOrd": 55,
+    "shield2h": 44,
+    "shield": 118,
+    "starUp": 2270,
+    "skillBook": 171,
+    "speedUp10m": 10,
+    "expBook": 15,
+    "teleportNormal": 56,
+    "speedUp1h": 18,
+    "shield12h": 92,
+    "commanderRenameCard": 2,
+    "speedUp5h": 27,
+    "expBookAdv": 32,
+    "shield24h": 44,
+    "shield72h": 16,
+    "teleportAdvanced": 22,
+    "speedUp12h": 13,
+    "supplyPack": 13,
+    "universalSkillBook": 11,
+    "expBookMax": 18,
+    "speedUp24h": 5,
+    "speedUp36h": 4,
+    "populationOrder": 6,
+    "emergencyPopulationOrder": 3,
+    "marchOrd": 5,
+    "signalJammingOrder": 4,
+    "feintOrder": 4
+  },
+  "expectedResourcesBeforeUpkeep": {
+    "rare": 6000000,
+    "oil": 6000000,
+    "food": 6000000,
+    "steel": 6000000,
+    "gold": 22700000
+  }
+}

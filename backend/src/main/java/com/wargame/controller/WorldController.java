@@ -131,7 +131,7 @@ public class WorldController {
     @PostMapping("/speedup-march")
     public Map<String, Object> speedUpMarch(@RequestBody GameDtos.SpeedUpMarchRequest request) {
         Long playerId = authService.getCurrentPlayer().getId();
-        Map<String, Object> result = marchService.speedUpMarch(playerId, request.marchId(), request.returning(), request.version());
+        Map<String, Object> result = marchService.speedUpMarch(playerId, request.marchId(), request.returning(), request.version(), request.confirmationToken());
         result.put("state", gameStateService.getGameState(playerId));
         return result;
     }
@@ -139,7 +139,25 @@ public class WorldController {
     @PostMapping("/march-stratagem")
     public Map<String, Object> applyMarchStratagem(@RequestBody GameDtos.MarchStratagemRequest request) {
         Long playerId = authService.getCurrentPlayer().getId();
-        Map<String, Object> result = marchService.applyMarchStratagem(playerId, request.marchId(), request.itemKey(), request.expectedArriveAt());
+        Map<String, Object> result = marchService.applyMarchStratagem(playerId, request.marchId(), request.itemKey(), request.expectedArriveAt(), request.confirmationToken());
+        result.put("state", gameStateService.getGameState(playerId));
+        return result;
+    }
+
+    @PostMapping("/order-preview")
+    public Map<String, Object> orderPreview(@RequestBody GameDtos.OrderPreviewRequest request) {
+        return marchService.previewOrder(authService.getCurrentPlayer().getId(), request.marchId(), request.itemKey());
+    }
+
+    @PostMapping("/war-order-preview")
+    public Map<String, Object> warOrderPreview(@RequestBody GameDtos.WarOrderRequest request) {
+        return worldService.previewWarOrder(authService.getCurrentPlayer().getId(), request.targetCityId());
+    }
+
+    @PostMapping("/speedup-war")
+    public Map<String, Object> speedUpWar(@RequestBody GameDtos.WarOrderRequest request) {
+        Long playerId = authService.getCurrentPlayer().getId();
+        Map<String, Object> result = worldService.accelerateWar(playerId, request.targetCityId(), request.confirmationToken());
         result.put("state", gameStateService.getGameState(playerId));
         return result;
     }

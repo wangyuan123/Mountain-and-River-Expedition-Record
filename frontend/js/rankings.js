@@ -24,7 +24,12 @@ window.Game = window.Game || {};
 
   function score(entry, metric) {
     if (metric === 'militaryRank') return esc(entry.militaryRankName);
-    return G.fmt(metric === 'members' ? entry.members : entry.prestige);
+    return G.fmt(entry[metric]);
+  }
+
+  function metricName(metric, guilds) {
+    return { members: '成员人数', militaryRank: '军衔', formationPower: '编队战力', overallPower: '综合实力' }[metric]
+      || (guilds ? '总声望' : '声望');
   }
 
   function rankBadge(entry) {
@@ -174,6 +179,8 @@ window.Game = window.Game || {};
     },
 
     renderView: function (view) {
+      // 全量重绘会创建收起的菜单，同步关闭旧状态，避免下一次点击只关闭已隐藏的菜单。
+      this.closeDropdown();
       var guilds = this.type === 'guilds';
       var data = this.data;
       var mine = data && data.mine;
@@ -225,7 +232,7 @@ window.Game = window.Game || {};
           '<strong class="ranking-mine-rank-val' + myRankClass + '">' + myRankMedal + '第 ' + G.fmt(mine.rank) + ' 名</strong>' +
         '</div>' +
         '<div class="ranking-mine-stat">' +
-          '<span>' + (this.metric === 'members' ? '成员' : (this.metric === 'militaryRank' ? '军衔' : '声望')) + '</span>' +
+          '<span>' + metricName(this.metric, guilds) + '</span>' +
           '<strong class="ranking-mine-score-val">' + score(mine, this.metric) + '</strong>' +
         '</div>';
         if (!guilds && mine.militaryRankName) {
@@ -294,8 +301,11 @@ window.Game = window.Game || {};
       } else if (!data.entries.length) {
         h += '<div class="ranking-status">' + (guilds ? '暂无军团上榜' : '暂无玩家上榜') + '</div>';
       } else {
-        var primaryLabel = this.metric === 'members' ? '成员人数' : (this.metric === 'militaryRank' ? '军衔' : (guilds ? '总声望' : '声望'));
-        var secondaryLabel = guilds ? (this.metric === 'members' ? '总声望' : '成员人数') : (this.metric === 'militaryRank' ? '声望' : '军衔');
+        var primaryLabel = metricName(this.metric, guilds);
+        var powerBoard = this.metric === 'formationPower' || this.metric === 'overallPower';
+        var secondaryMetric = guilds ? (this.metric === 'members' ? 'prestige' : 'members')
+          : (powerBoard ? (this.metric === 'formationPower' ? 'overallPower' : 'formationPower') : (this.metric === 'militaryRank' ? 'prestige' : 'militaryRank'));
+        var secondaryLabel = metricName(secondaryMetric, guilds);
         h += '<table class="ranking-table"><caption class="ranking-sr-only">' + BOARDS[this.type].label + '</caption>' +
           '<thead><tr>' +
             '<th scope="col">名次</th>' +
@@ -307,11 +317,11 @@ window.Game = window.Game || {};
         data.entries.forEach(function (entry) {
           var isMine = mine && entry.id === mine.id;
           var detail = guilds ? '团长 · ' + (entry.leaderName || '暂无') : (entry.guildName || '未加入军团');
-          var secondary = guilds ? score(entry, Rankings.metric === 'members' ? 'prestige' : 'members') : score(entry, Rankings.metric === 'militaryRank' ? 'prestige' : 'militaryRank');
+          var secondary = score(entry, secondaryMetric);
           var rankMedal = entry.rank === 1 ? '🥇' : (entry.rank === 2 ? '🥈' : (entry.rank === 3 ? '🥉' : ''));
 
           var secondaryHtml;
-          if (!guilds && Rankings.metric !== 'militaryRank' && entry.militaryRankName) {
+          if (!guilds && secondaryMetric === 'militaryRank' && entry.militaryRankName) {
             secondaryHtml = rankBadge(entry);
           } else {
             secondaryHtml = secondary;
@@ -361,7 +371,7 @@ window.Game = window.Game || {};
       // 排名规则
       h += '<details class="ranking-rules"><summary>📜 战区排名与授勋规则</summary><p>' +
         (guilds ? '总声望为本团上榜成员的声望之和，人数为上榜成员数。总声望相同时人数多者优先，人数相同时总声望高者优先；仍相同按军团创建顺序排列。' :
-          '声望榜按声望、军衔依次降序排列；军衔榜按军衔、声望依次降序排列。两项均相同，按玩家入驻顺序排列。') +
+          '声望榜按声望、军衔排序；军衔榜按军衔、声望排序。编队战力为最强单支现有编队的静态估值；综合实力统计现有部队、建筑、科技、军官和装备，不计声望。战力仅供参考，实际战斗受克制和战术影响。同分按玩家入驻顺序排列。') +
         ' 仅统计当前大区内已建立角色、账号正常且未被封禁的玩家。点击刷新可重新统计。</p></details>';
 
       view.innerHTML = h + '</section>';

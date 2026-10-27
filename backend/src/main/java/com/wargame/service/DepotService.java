@@ -5,6 +5,7 @@ import com.wargame.model.constants.BuildingDef;
 import com.wargame.model.constants.GameData;
 import com.wargame.model.constants.ItemDef;
 import com.wargame.model.constants.OfficerEquipmentDef;
+import com.wargame.model.constants.OfficerExperienceRules;
 import com.wargame.model.entity.CityState;
 import com.wargame.model.entity.Officer;
 import com.wargame.model.entity.Player;
@@ -165,9 +166,15 @@ public class DepotService {
     private static boolean isResourceItem(String itemId) {
         return "goldBox".equals(itemId)
                 || "resBox".equals(itemId)
+                || "foodPack".equals(itemId)
                 || "steelPack".equals(itemId)
+                || "oilPack".equals(itemId)
+                || "rarePack".equals(itemId)
                 || "supplyPack".equals(itemId)
                 || "newbiePack".equals(itemId)
+                || "resourcePack100w".equals(itemId)
+                || "resourcePack200w".equals(itemId)
+                || "resourcePack350w".equals(itemId)
                 || "resourcePack500w".equals(itemId);
     }
 
@@ -191,35 +198,45 @@ public class DepotService {
         StringBuilder msg = new StringBuilder();
         switch (itemId) {
             case "goldBox" -> {
-                // JS: var n = rand(1000, 5000)
-                int n = 1000 + ThreadLocalRandom.current().nextInt(4001);
-                res.addResource("gold", n);
-                msg.append("开启黄金箱,获得 💰").append(n);
+                res.addResource("gold", 50_000);
+                msg.append("开启黄金箱,获得 💰50000");
             }
             case "resBox" -> {
-                res.addResource("food", 500);
-                res.addResource("steel", 500);
-                res.addResource("oil", 500);
-                res.addResource("rare", 500);
-                msg.append("开启资源箱,粮钢油稀各 +500");
+                res.addResource("food", 50_000);
+                res.addResource("steel", 50_000);
+                res.addResource("oil", 50_000);
+                res.addResource("rare", 50_000);
+                msg.append("开启资源箱,粮钢油稀各 +50000");
             }
-            case "steelPack" -> {
-                res.addResource("steel", 20000);
-                msg.append("获得 钢铁 +20000");
+            case "foodPack", "steelPack", "oilPack", "rarePack" -> {
+                String resource = switch (itemId) {
+                    case "foodPack" -> "food";
+                    case "steelPack" -> "steel";
+                    case "oilPack" -> "oil";
+                    default -> "rare";
+                };
+                res.addResource(resource, 600_000);
+                msg.append("开启").append(ItemDef.ITEMS.get(itemId).name()).append(",获得对应资源 +600000");
             }
             case "supplyPack" -> {
-                res.addResource("food", 8000);
-                res.addResource("steel", 8000);
-                res.addResource("oil", 8000);
-                res.addResource("rare", 8000);
-                msg.append("战备补给包,粮钢油稀各 +8000");
+                res.addResource("food", 400_000);
+                res.addResource("steel", 400_000);
+                res.addResource("oil", 400_000);
+                res.addResource("rare", 400_000);
+                msg.append("战备补给包,粮钢油稀各 +400000");
             }
-            case "resourcePack500w" -> {
-                res.addResource("food", 5_000_000);
-                res.addResource("steel", 5_000_000);
-                res.addResource("oil", 5_000_000);
-                res.addResource("rare", 5_000_000);
-                msg.append("资源大礼包,粮食/钢铁/石油/稀矿各 +500万");
+            case "resourcePack100w", "resourcePack200w", "resourcePack350w", "resourcePack500w" -> {
+                int amount = switch (itemId) {
+                    case "resourcePack100w" -> 1_000_000;
+                    case "resourcePack200w" -> 2_000_000;
+                    case "resourcePack350w" -> 3_500_000;
+                    default -> 5_000_000;
+                };
+                res.addResource("food", amount);
+                res.addResource("steel", amount);
+                res.addResource("oil", amount);
+                res.addResource("rare", amount);
+                msg.append("资源大礼包,粮食/钢铁/石油/稀矿各 +").append(amount);
             }
             case "newbiePack" -> {
                 // 固定发放商品明示的五种资源，不按售价或任何倍率计算奖励。
@@ -407,13 +424,12 @@ public class DepotService {
         long exp = (officer.getExp() != null ? officer.getExp() : 0L) + gain;
         officer.setExp(exp);
 
-        // 升级循环：每级需要 level*200 经验
-        while (level < 100 && exp >= (long) level * 200) {
-            exp -= (long) level * 200;
+        while (level < OfficerExperienceRules.MAX_LEVEL && exp >= OfficerExperienceRules.expNeeded(level)) {
+            exp -= OfficerExperienceRules.expNeeded(level);
             level += 1;
             officer.setAttrPoints((officer.getAttrPoints() != null ? officer.getAttrPoints() : 0) + 1);
         }
-        if (level >= 100) exp = 0L;
+        if (level >= OfficerExperienceRules.MAX_LEVEL) exp = 0L;
         officer.setLevel(level);
         officer.setExp(exp);
         officerRepository.save(officer);
@@ -713,6 +729,10 @@ public class DepotService {
             if (gained > 0) rewards.add(name + "×" + gained);
         });
         return rewards;
+    }
+
+    public void addItem(Long playerId, String itemKey, int count) {
+        addItemToDepot(playerId, itemKey, count, GameClock.now());
     }
 
     private void addItemToDepot(Long playerId, String itemKey, int count, long now) {

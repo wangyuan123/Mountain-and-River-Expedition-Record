@@ -431,7 +431,7 @@ window.Game = window.Game || {};
     var html = '';
 
     html += '<div class="zone-head">' + homeModuleHandle('officers')
-      + '<span class="zone-title"><img class="home-overview-icon" src="img/avatars/historical/rank-major-v1.webp" alt="" aria-hidden="true" draggable="false"/> 军官将领</span>'
+      + '<span class="zone-title">军官将领</span>'
       + '<span class="zone-sub">已招募 ' + totalCount + ' 名</span>'
       + '<span class="home-officer-go zone-head-action" onclick="event.stopPropagation();Game.go(\'academy\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.stopPropagation();Game.go(\'academy\');event.preventDefault();}" role="button" tabindex="0" title="点击前往军校 · 招募将领">去招募 &gt;</span>'
       + '</div>';
@@ -525,15 +525,22 @@ window.Game = window.Game || {};
     h += '<div class="login-hero-top"><span class="login-emblem" aria-hidden="true">✦</span><span>山河远征录 <span class="login-hero-divider">/</span> 战地档案</span><span class="login-hero-serial">NO. 001 — FRONTLINE</span></div>';
     h += '<div class="login-hero-copy"><span class="login-kicker">STRATEGY · COMMAND · CONQUEST</span>';
     h += '<h1 id="loginTitle">山河远征录</h1><p class="login-hero-subtitle">烽烟已起，等待你的指令。</p>';
+    var isMaintenance = G.Main && G.Main.isMaintenanceActive && G.Main.isMaintenanceActive();
+    if (isMaintenance) {
+      h += '<div class="login-hero-maintenance-tag" role="status"><span class="login-maintenance-pulse" aria-hidden="true"></span><span>战区通讯整备中 · MAINTENANCE</span></div>';
+    }
     h += '<div class="login-hero-rule" aria-hidden="true"><span></span><span></span><span></span></div>';
     h += '<p class="login-hero-description">建立防线，调度军团，争夺每一寸山河。<br>从这里开始，书写属于你的战役。</p></div>';
-    h += '<div class="login-hero-bottom"><span>战区指挥部 · 作战终端</span><span>◆ &nbsp; 全线待命</span></div>';
+    h += '<div class="login-hero-bottom"><span>战区指挥部 · 作战终端</span><span>' + (isMaintenance ? '⚠ &nbsp; 链路维护中' : '◆ &nbsp; 全线待命') + '</span></div>';
     h += '</section>';
     h += '<section class="login-access" aria-label="账号登录与注册"><div class="login-access-inner">';
     h += '<div class="login-access-heading"><span class="login-access-index">01 / ACCOUNT ACCESS</span><span class="login-access-mark" aria-hidden="true">✦</span></div>';
     if (G.Account && G.Account.recovery) {
       h += G.Account.recoveryPanel();
     } else {
+      if (isMaintenance && G.Main && G.Main.renderMaintenanceNotice) {
+        h += G.Main.renderMaintenanceNotice();
+      }
       h += '<div class="login-access-title"><span class="login-access-eyebrow" id="loginModeEyebrow">指挥官身份验证</span><h2 id="loginModeTitle">账号登录</h2><p id="loginModeDescription">使用指挥官账号继续你的远征。</p></div>';
       if (G.Account) h += G.Account.loginPanel();
       h += '<form class="login-form" id="loginForm" data-auth-mode="login" onsubmit="Game.Main.submitAuth(); return false;">';
@@ -1145,6 +1152,10 @@ window.Game = window.Game || {};
     }
     h += '</div>';
 
+    if (G.Vip && G.Vip.renderHomeCard && (!G.Vip.isHomeCardVisible || G.Vip.isHomeCardVisible())) {
+      h += G.Vip.renderHomeCard(s);
+    }
+
     var netFood = Core.foodProductionPerHour() - Core.foodPerHour();
     var netSteel = Core.produceOf('refinery');
     var netOil = Core.produceOf('oilfield');
@@ -1535,6 +1546,18 @@ window.Game = window.Game || {};
       h += '<option value="paper">战术公文沙盘风</option>';
       h += '<option value="dark">战术夜航终端黑</option>';
     }
+    h += '</select>';
+    h += '</div>';
+
+    var vipCardVisible = (!G.Vip || typeof G.Vip.isHomeCardVisible !== 'function') ? true : G.Vip.isHomeCardVisible();
+    h += '<div class="settings-row settings-row-between" style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--line-light, rgba(0, 0, 0, 0.08));">';
+    h += '<div class="settings-label-group">';
+    h += '<span class="settings-label"><span class="settings-icon">🎖️</span> 首页特勤部</span>';
+    h += '<span class="settings-subtext" style="display:block;margin-top:2px;">在首页展示特勤统帅部与每日军饷快捷入口</span>';
+    h += '</div>';
+    h += '<select id="homeVipCardSelector" class="settings-select" aria-label="首页特勤部卡片显示开关" onchange="if(Game.Vip&&Game.Vip.setHomeCardVisible)Game.Vip.setHomeCardVisible(this.value===\'1\')">';
+    h += '<option value="1"' + (vipCardVisible ? ' selected' : '') + '>开启 (默认)</option>';
+    h += '<option value="0"' + (!vipCardVisible ? ' selected' : '') + '>关闭</option>';
     h += '</select>';
     h += '</div>';
     h += '</div>';

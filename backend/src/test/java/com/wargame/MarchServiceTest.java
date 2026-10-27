@@ -962,7 +962,7 @@ class MarchServiceTest extends BaseServiceTest {
     @DisplayName("击败玩家城守军后保留城权，攻守双方各收到一份未读战报")
     void conquestReportBelongsToOriginalDefender() {
         Long defenderId = createTestPlayer("report-defender", 30).getId();
-        createArmyUnit(defenderId, "infantry", 1);
+        createArmyUnit(defenderId, "infantry", 100);
         PlayerCity city = createTestCity("防守城", defenderId, 20, 20);
         city.setArmy(JsonUtil.toJson(Map.of("infantry", 1)));
         city.setResources(JsonUtil.toJson(Map.of("food", 100)));
@@ -1054,6 +1054,7 @@ class MarchServiceTest extends BaseServiceTest {
     void failedAttackNotifiesBothPlayers() {
         Long defenderId = createTestPlayer("strong-defender", 30).getId();
         createArmyUnit(defenderId, "infantry", 1000);
+        createArmyUnit(playerId, "infantry", 100);
         PlayerCity city = createTestCity("坚固防守城", defenderId, 20, 20);
         city.setArmy(JsonUtil.toJson(Map.of("infantry", 1000)));
         city.setResources(JsonUtil.toJson(Map.of("food", 100)));
@@ -1488,6 +1489,7 @@ class MarchServiceTest extends BaseServiceTest {
     @DisplayName("同一防守玩家的不同城市可同时进入战斗")
     void differentPlayerCitiesCanBattleAtTheSameTime() {
         Long defenderId = createTestPlayer("two-cities-defender", 30).getId();
+        createArmyUnit(defenderId, "infantry", 10);
         PlayerCity firstCity = playerCityRepository.save(createTestCity("第一城", defenderId, 20, 20));
         PlayerCity secondCity = playerCityRepository.save(createTestCity("第二城", defenderId, 25, 25));
         long arrival = System.currentTimeMillis() - 1_000L;

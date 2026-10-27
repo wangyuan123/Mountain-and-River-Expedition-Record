@@ -2,7 +2,7 @@
 (function (G) {
   'use strict';
   G.gameNow = G.gameNow || function () { return Date.now(); };
-  var instance = null, camera = null, owner = '', mode = 'map', enginePromise = null, pendingFocus = null;
+  var instance = null, camera = null, owner = '', mode = 'map', enginePromise = null, pendingFocus = null, incomingHost = null;
   function loadEngine() {
     if (window.PIXI) return Promise.resolve();
     if (enginePromise) return enginePromise;
@@ -1333,7 +1333,7 @@
           inSouth = true;
         }
       }
-      var terrain=G.MapTerrain.sample(lx+.5,ly+.5,qs,inSouth), depth=G.MapOcean?G.MapOcean.sample(lx+.5,ly+.5):-1000;
+      var terrain=G.MapTerrain.sample(lx+.5,ly+.5,qs,inSouth), depth=G.MapOcean?(G.MapOcean.sampleCoast?G.MapOcean.sampleCoast(lx+.5,ly+.5):G.MapOcean.sample(lx+.5,ly+.5)):-1000;
       var isSnow = (terrain.snow || 0) > 0.12;
       var land=[131+terrain.grass*29,137+terrain.grass*31,103+terrain.grass*24];
       for(var channel=0;channel<3;channel++){var surface=isSnow?[226,234,237][channel]:land[channel];pixels.data[offset+channel]=G.MapOcean?G.MapOcean.paint(channel,surface,depth,0):surface;}
@@ -1599,7 +1599,7 @@
       marker.position.set(position.x, position.y); marker.visible = !!iconPath;
       marker.models.visible = !!iconPath;
       marker.icon.visible = !!iconPath;
-      marker.incomingMarch = incoming && !march.returning && march.marchId != null && march.intelligenceType !== 'field_interception' ? march : null;
+      marker.incomingMarch = incoming && march.marchId != null && march.intelligenceType !== 'field_interception' ? march : null;
       marker.models.rotation = heading.rotation;
       marker.models.scale.x = heading.scaleX * (heading.depthScale || 1);
       sizeMarchSprite(marker.icon, iconSize);
@@ -1912,11 +1912,10 @@
       (!isCurrentCityThreat ? '<p role="status">该行军目标属于其他城市；切换到目标城市后可实施拦截或计谋。</p>' : '') +
       (used ? '<p role="status">本次行军已使用过一次计谋。</p>' : '') +
       '</div><div class="modal-foot"><button type="button" class="btn" data-incoming-close>关闭</button>' +
-      (active ? '<button type="button" class="btn ok" data-incoming-intercept>出城拦截</button>' : '') +
-      (active && !used ? '<span data-stratagem-actions><button type="button" class="btn" data-incoming-stratagem="signalJammingOrder"' +
-        (Number(items.signalJammingOrder) > 0 ? '' : ' disabled') + '>📡 通讯干扰令 ×' + esc(items.signalJammingOrder || 0) + '</button>' +
-        '<button type="button" class="btn" data-incoming-stratagem="feintOrder"' + (Number(items.feintOrder) > 0 ? '' : ' disabled') +
-        '>🎭 佯动诱敌令 ×' + esc(items.feintOrder || 0) + '</button></span>' : '') +
+      (active && !march.returning ? '<button type="button" class="btn ok" data-incoming-intercept>出城拦截</button>' : '') +
+      (active && !used ? '<span data-stratagem-actions><button type="button" class="btn" data-incoming-stratagem="' +
+        (march.returning ? 'feintOrder' : 'signalJammingOrder') + '">' +
+        (march.returning ? '🎭 佯动诱敌令 ×' + esc(items.feintOrder || 0) : '📡 通讯干扰令 ×' + esc(items.signalJammingOrder || 0)) + '</button></span>' : '') +
       '</div></section>';
     var previousFocus = document.activeElement, closed = false, pending = false;
     (document.fullscreenElement || document.body).appendChild(mask);
@@ -1925,11 +1924,13 @@
       closed = true; document.removeEventListener('keydown', onKey, true);
       if (mask.parentNode) mask.parentNode.removeChild(mask);
       if (self.incomingDialog === mask) self.incomingDialog = null;
+      if (incomingHost === self) incomingHost = null;
       if (restoreFocus !== false && previousFocus && previousFocus.isConnected && previousFocus.focus) previousFocus.focus();
     }
     function onKey(event) { if (event.key === 'Escape') { event.preventDefault(); close(); } }
     this.incomingDialog = mask;
     this.closeIncomingMarch = close;
+    incomingHost = this;
     document.addEventListener('keydown', onKey, true);
     mask.addEventListener('click', function (event) {
       event.stopPropagation();
@@ -1944,26 +1945,7 @@
       }
       var itemKey = button.getAttribute('data-incoming-stratagem');
       if (!itemKey || !G.API || !G.API.applyMarchStratagem) return;
-      var itemName = itemKey === 'signalJammingOrder' ? '通讯干扰令' : '佯动诱敌令';
-      if (G.World && G.World.showConfirm) G.World.showConfirm({
-        title: '使用' + itemName,
-        message: '对这支敌军行军使用 1 件' + itemName + '？',
-        subMessage: itemKey === 'signalJammingOrder' ? '延长剩余行军时间 20%，最多 2 分钟；每支行军单程限用一次。' : '延长剩余行军时间 40%，最多 4 分钟；每支行军单程限用一次。',
-        okText: '确认使用',
-        onConfirm: function () {
-          if (closed || pending) return;
-          pending = true;
-          mask.querySelectorAll('[data-incoming-stratagem], [data-incoming-intercept]').forEach(function (control) { control.disabled = true; });
-          G.API.applyMarchStratagem(Number(intelId), itemKey, Number(march.arriveAt)).then(function (result) {
-            close(false); G.toast(result.message || (itemName + '已生效，敌军行军受到拖延'));
-            if (G.WorldMap && G.WorldMap.invalidate) G.WorldMap.invalidate();
-          }).catch(function (error) {
-            pending = false;
-            mask.querySelectorAll('[data-incoming-stratagem], [data-incoming-intercept]').forEach(function (control) { control.disabled = false; });
-            G.toast(error && error.message || '计谋使用失败，请刷新军情后重试');
-          });
-        }
-      });
+      if (G.World && G.World.useTacticalOrder) G.World.useTacticalOrder(Number(intelId), itemKey);
     });
     var closeButton = mask.querySelector('[data-incoming-close]');
     if (closeButton && closeButton.focus) closeButton.focus();
@@ -2169,8 +2151,12 @@
     if(t.defeated)text+=' · 已被击败，等待恢复';
     if(t.readyAt>now)text+=' · 城市建设中';
     if(t.surrenderFrozen)text+=' · 归降移交中 · 城市只读';
+    if(t.powerProtection && !t.selfCity){
+      var power=t.powerProtection;
+      text+=' · '+(power.allowed?'实力匹配在10倍以内':power.reason)+' · 战争评级（近7天峰值）编队 '+power.ownFormationPower+' / '+power.targetFormationPower+'，综合 '+power.ownOverallPower+' / '+power.targetOverallPower+'（我方 / 对方）';
+    }
     if(t.guildRelation==='friendly')text+=' · 友好军团，禁止交战';
-    else if(t.guildRelation==='hostile')text+=' · 敌对军团，可直接交战';
+    else if(t.guildRelation==='hostile')text+=' · 敌对军团'+(t.powerProtection && !t.powerProtection.allowed?'':'，可直接交战');
     else{
       if(t.warAt>now)text+=' · 备战中，'+G.formatDuration((t.warAt-now)/1000)+'后可交战';
       else if(t.warEndAt>now&&t.warAt)text+=' · 交战中';
@@ -2311,8 +2297,13 @@
     var shielded = isShieldedCity(t);
     button('侦察','scout',false,shielded);
     if(t.kind==='player'){
-      if(t.guildRelation==='friendly'){
+      if(t.powerProtection && t.powerProtection.allowed===false){
+        button('实力差距保护','campaign',true,true);
+        actions.insertAdjacentHTML('beforeend','<span class="world-map-action-note">'+esc(t.powerProtection.reason)+'</span>');
+      } else if(t.guildRelation==='friendly'){
         actions.insertAdjacentHTML('beforeend','<span class="world-map-action-note">友好军团成员不可宣战或交战</span>');
+      } else if(t.warAt>now&&t.warEndAt>now&&t.canAccelerateWar){
+        button('加速备战','speedUpWar',true);
       } else if(shielded){
         button('讨伐','campaign',true,true);
         actions.insertAdjacentHTML('beforeend','<span class="world-map-shield-note">'+esc(name(t))+'处于护盾期间，无法发起侦查或攻击</span>');
@@ -2327,6 +2318,10 @@
   };
   MapView.prototype.act = function(action, button) {
     var self=this,t=this.selected,seq=this.detailSeq;if(!t)return;
+    if(t.kind==='player' && t.powerProtection && t.powerProtection.allowed===false && (action==='campaign'||action==='declare')){
+      G.toast(t.powerProtection.reason);return;
+    }
+    if(action==='speedUpWar'){G.World.useTacticalOrder(null,'warSpeedOrder',Number(t.id));return;}
     // selfCity 表示归属自己，不等于当前城市；先按所选城市 ID 切换，再进入该城首页。
     if(action==='enterCity'){if(t.kind==='player'&&t.selfCity&&!(t.readyAt>G.gameNow()))G.Cities.enter(t.id);return;}
     if(action==='transport'||action==='rebase'||action==='reinforce'){
@@ -2363,6 +2358,9 @@
     this.cloudSprites.clear();this.cloudTextures.forEach(function(texture){texture.destroy(true);});
   };
   G.WorldMap={
+    incomingDetails:{},
+    openIncomingMarch:function(march){MapView.prototype.openIncomingMarch.call(instance||this.incomingDetails,march);},
+    closeIncomingMarch:function(restoreFocus){var host=incomingHost;if(host&&host.closeIncomingMarch)host.closeIncomingMarch(restoreFocus);},
     icon:icon,
     isDepletedResourceConvoy:isDepletedResourceConvoy,
     isMap:function(){return mode==='map';},
@@ -2414,7 +2412,7 @@
       }
       try{instance=new MapView(v);}catch(e){console.error(e);v.innerHTML='<div class="panel">暂时无法打开地图画布。<button class="btn" onclick="Game.WorldMap.setMode(\'list\')">使用列表</button></div>';}
     },
-    unmount:function(){if(instance){instance.destroy();instance=null;}if(terrainTexture){terrainTexture.destroy(true);terrainTexture=null;}if(terrainTextureNoSnow){terrainTextureNoSnow.destroy(true);terrainTextureNoSnow=null;}terrainWorldSize=-1;},
+    unmount:function(){this.closeIncomingMarch(false);if(instance){instance.destroy();instance=null;}if(terrainTexture){terrainTexture.destroy(true);terrainTexture=null;}if(terrainTextureNoSnow){terrainTextureNoSnow.destroy(true);terrainTextureNoSnow=null;}terrainWorldSize=-1;},
     setMode:function(next){mode=next;this.unmount();if(next==='map'&&G.Core.state.world){G.Core.state.world._activeTab='all';if(camera){camera.scale=camera.minScale;camera.clamp();}}if(camera&&G.Core.state.world){G.Core.state.world._mapPos={x:Math.floor(camera.x),y:Math.floor(camera.y)};G.Core.state.world._scan={r:8,at:Date.now()};}G.Core.render();},
     invalidate:function(){cache.invalidate();if(instance){instance.requestChunks();if(instance.selected){if(instance.selected.kind==='site')instance.loadSite(instance.selected.x,instance.selected.y);else instance.loadDetail(instance.selected,true);}instance.wake();}},
     /** 普通行军同步只调度动态层，避免每次 tick 重建地形、据点和文字；地图变动仍由 invalidate 刷新。 */

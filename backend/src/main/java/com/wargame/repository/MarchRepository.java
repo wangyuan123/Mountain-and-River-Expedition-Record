@@ -106,13 +106,12 @@ public interface MarchRepository extends JpaRepository<March, Long> {
             @org.springframework.data.repository.query.Param("defenderId") Long defenderId,
             @org.springframework.data.repository.query.Param("cityIds") List<String> cityIds);
 
-    /** 仅公开护盾拦截后的敌军返程；原目标 ID 保留为守方城市，不暴露其他撤军路线。 */
+    /** 仅查询从守方城市撤退的敌军，原目标 ID 不随返程改变。 */
     @org.springframework.data.jpa.repository.Query("""
             select m from March m
             where m.targetKind = 'player' and m.targetId in :cityIds
               and m.playerId <> :defenderId
               and m.returning = true
-              and m.returnReason = 'shield'
               and m.battleId is null
               and (m.action in ('conquer', 'plunder', 'feint', 'harass', 'guerrilla', 'scout') or m.action like 'tactical%')
             order by m.arriveAt, m.id

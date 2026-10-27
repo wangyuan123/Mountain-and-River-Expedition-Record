@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <!-- Multi-faceted Star Gem gradient (Deep Blue to Brilliant Cyan/White) -->
+    <linearGradient id="starUp_gem" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="20%" stop-color="#a5f3fc"/>
+      <stop offset="50%" stop-color="#38bdf8"/>
+      <stop offset="80%" stop-color="#0284c7"/>
+      <stop offset="100%" stop-color="#0369a1"/>
+    </linearGradient>
+    <radialGradient id="starUp_glow" cx="50%" cy="48%" r="48%">
+      <stop offset="0%" stop-color="#fef08a" stop-opacity="0.9"/>
+      <stop offset="25%" stop-color="#38bdf8" stop-opacity="0.6"/>
+      <stop offset="60%" stop-color="#0284c7" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#0369a1" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="starUp_gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fffbeb"/>
+      <stop offset="40%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+    <filter id="starUp_shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#starUp_shadow)">
+    <!-- Radial Astral Glow -->
+    <circle cx="32" cy="31" r="23" fill="url(#starUp_glow)"/>
+
+    <!-- Orbital Ascension Rings -->
+    <ellipse cx="32" cy="31" rx="24" ry="11" fill="none" stroke="#7dd3fc" stroke-width="0.9" stroke-dasharray="4 2"
+             transform="rotate(-25 32 31)" stroke-opacity="0.8"/>
+    <ellipse cx="32" cy="31" rx="24" ry="11" fill="none" stroke="#fde047" stroke-width="0.7" stroke-dasharray="3 3"
+             transform="rotate(35 32 31)" stroke-opacity="0.7"/>
+
+    <!-- Ascension Chevrons (Upward Sparkles) -->
+    <path d="M32 6 L34 11 L32 10 L30 11 Z" fill="#ffffff"/>
+    <path d="M32 10 L35 16 L32 14.5 L29 16 Z" fill="#a5f3fc"/>
+
+    <!-- Outer Golden Crest Points of Star -->
+    <path d="M32 9 L36.5 22 L50 23.5 L40 33 L42.5 46.5 L32 40 L21.5 46.5 L24 33 L14 23.5 L27.5 22 Z"
+          fill="url(#starUp_gold)" stroke="#fffbeb" stroke-width="0.8"/>
+
+    <!-- Faceted Inner Star Crystal -->
+    <!-- Top point -->
+    <polygon points="32,12 35.5,23 32,27.5" fill="#e0f2fe"/>
+    <polygon points="32,12 28.5,23 32,27.5" fill="#bae6fd"/>
+    <!-- Right top point -->
+    <polygon points="46.5,24 37,25 32,27.5" fill="#7dd3fc"/>
+    <polygon points="46.5,24 39,32 32,27.5" fill="#38bdf8"/>
+    <!-- Right bottom point -->
+    <polygon points="40.5,43 38,34 32,27.5" fill="#0284c7"/>
+    <polygon points="40.5,43 32,38 32,27.5" fill="#0369a1"/>
+    <!-- Left bottom point -->
+    <polygon points="23.5,43 32,38 32,27.5" fill="#075985"/>
+    <polygon points="23.5,43 26,34 32,27.5" fill="#0284c7"/>
+    <!-- Left top point -->
+    <polygon points="17.5,24 25,32 32,27.5" fill="#38bdf8"/>
+    <polygon points="17.5,24 27,25 32,27.5" fill="#7dd3fc"/>
+
+    <!-- Brilliant Core Center Highlight -->
+    <polygon points="32,23.5 35,27.5 32,31.5 29,27.5" fill="#ffffff" stroke="#e0f2fe" stroke-width="0.5"/>
+    <circle cx="32" cy="27.5" r="1.5" fill="#ffffff"/>
+
+    <!-- Starlight Glints -->
+    <polygon points="14,14 15,17 18,18 15,19 14,22 13,19 10,18 13,17" fill="#ffffff"/>
+    <polygon points="49,15 50,17 52,18 50,19 49,21 48,19 46,18 48,17" fill="#fef08a"/>
+    <polygon points="48,46 49,48 51,49 49,50 48,52 47,50 45,49 47,48" fill="#a5f3fc"/>
+    <polygon points="15,45 16,47 18,48 16,49 15,51 14,49 12,48 14,47" fill="#fef08a"/>
+
+    <!-- Bottom Rank Ascension Label Banner ("星耀") -->
+    <rect x="20" y="47.5" width="24" height="9" rx="2" ry="2" fill="#0c4a6e" stroke="url(#starUp_gold)" stroke-width="1"/>
+    <text x="32" y="52.2" text-anchor="middle" dominant-baseline="central" fill="#ffffff"
+          font-family="system-ui, sans-serif" font-weight="900" font-size="6.8" letter-spacing="1">星耀</text>
+  </g>
+</svg>

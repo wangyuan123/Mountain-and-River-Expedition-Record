@@ -19,20 +19,33 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class IslandContentService {
-    private static final List<String> RESOURCES = List.of("oil", "ironworks", "grainfield");
-    private static final List<String> WILDS = List.of("forest", "hill", "grassland", "plains", "rock");
+    public static final int ISLAND_CONTENT_VERSION = 4;
+    private static final List<String> RESOURCES = List.of("oil", "ironworks", "grainfield", "rarefactory");
+    private static final String FOREST = "forest";
     private final WorldMapRepository worlds;
     private final WildTileRepository wilds;
     private final PlayerRepository players;
     private final WorldTerrainService terrain;
 
-    /** 岛屿资源按版本一次性补齐四大战场；旧版本只补新增象限，保留既有归属和战斗结果。 */
+    /** 岛屿资源按版本一次性补齐四大战场；旧版本只补新增象限或新增岛屿，保留既有归属和战斗结果。 */
     @Transactional
     public void ensure(Long worldId) {
         var world = worlds.lockById(worldId).orElseThrow();
         int version = world.getIslandContentVersion() == null ? 0 : world.getIslandContentVersion();
-        if (version >= 2) return;
+        if (version >= ISLAND_CONTENT_VERSION) return;
         String mask = terrain.ensure();
+        // 清理海面中已被移除岛屿上的幽灵未占领野地（保护玩家已占领野地）
+        List<WildTile> toDelete = new ArrayList<>();
+        for (WildTile wild : wilds.findByWorldId(worldId)) {
+            if (!Boolean.TRUE.equals(wild.getOccupied()) && wild.getOccupiedBy() == null) {
+                if (WorldTerrainService.sea(mask, wild.getX(), wild.getY())) {
+                    toDelete.add(wild);
+                }
+            }
+        }
+        if (!toDelete.isEmpty()) {
+            wilds.deleteAll(toDelete);
+        }
         Set<String> used = terrain.occupiedCoordinates(worldId);
         players.findAll().forEach(player -> {
             if (player.getCityPosX() == null || player.getCityPosY() == null) return;
@@ -42,10 +55,10 @@ public class IslandContentService {
         });
 
         for (int row = 0; row < 2; row++) for (int column = 0; column < 2; column++) {
-            if (version >= 1 && row == 0 && column == 0) continue;
+            if (version == 1 && row == 0 && column == 0) continue;
             seedBattlefield(worldId, mask, used, column, row);
         }
-        world.setIslandContentVersion(2);
+        world.setIslandContentVersion(ISLAND_CONTENT_VERSION);
         worlds.save(world);
     }
 
@@ -63,12 +76,19 @@ public class IslandContentService {
             }
             // 固定岛屿随机种子，持久化版本保证重启不重复增加资源。
             java.util.Collections.shuffle(available, new Random(7103L + index * 97L));
-            int targetCount = Math.min(available.size(), island.size() >= 35 ? 4 : island.size() >= 12 ? 2 : 1);
+            int targetCount = Math.min(available.size(), island.size() >= 70 ? 4 : island.size() >= 35 ? 3 : island.size() >= 12 ? 2 : 1);
             for (int target = 0; target < targetCount; target++) {
                 int[] cell = available.get(target);
                 int x = cell[0], y = cell[1];
-                String type = target == targetCount - 1 && targetCount >= 4
-                        ? WILDS.get(index % WILDS.size()) : RESOURCES.get((index + target) % RESOURCES.size());
+                // 适配海岛野地生成：支持深林（forest）与各类资源野地
+                String type;
+                if (targetCount >= 2 && target == 0) {
+                    type = FOREST;
+                } else if (targetCount == 1 && (index % 3 == 0)) {
+                    type = FOREST;
+                } else {
+                    type = RESOURCES.get((index + target) % RESOURCES.size());
+                }
                 seedWild(worldId, x, y, type, index + target);
                 used.add(x + "," + y);
             }

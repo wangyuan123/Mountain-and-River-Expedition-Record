@@ -1450,7 +1450,7 @@ window.Game = window.Game || {};
       staff:        'img/buildings/garden/staff.webp',
       lab:          'img/buildings/garden/lab.webp',
       radar:        'img/buildings/garden/radar.webp',
-      guild_radar:  'img/buildings/garden/radar.webp',
+      guild_radar:  'img/buildings/garden/guild_radar.webp',
       wall:         'img/buildings/garden/wall.webp',
       apron:        'img/buildings/garden/apron.webp',
       liaison:      'img/buildings/garden/liaison.webp',

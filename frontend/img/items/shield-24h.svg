@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <!-- Outer rim metallic gradient (Heavy Tungsten & Emerald Chrome) -->
+    <linearGradient id="shield24h_rim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a7f3d0"/>
+      <stop offset="25%" stop-color="#34d399"/>
+      <stop offset="65%" stop-color="#064e3b"/>
+      <stop offset="100%" stop-color="#022c22"/>
+    </linearGradient>
+
+    <!-- Inner field gradient (Deep Quantum Jade to Void) -->
+    <linearGradient id="shield24h_plate" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#064e3b"/>
+      <stop offset="40%" stop-color="#022c22"/>
+      <stop offset="100%" stop-color="#011a14"/>
+    </linearGradient>
+
+    <!-- Quantum Emerald tactical energy glow -->
+    <radialGradient id="shield24h_glow" cx="50%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#34d399" stop-opacity="0.9"/>
+      <stop offset="40%" stop-color="#059669" stop-opacity="0.5"/>
+      <stop offset="80%" stop-color="#047857" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#047857" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Quantum Core pulse -->
+    <linearGradient id="shield24h_core" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="30%" stop-color="#a7f3d0"/>
+      <stop offset="70%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+
+    <filter id="shield24h_shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#shield24h_shadow)">
+    <!-- Base shield rim -->
+    <path d="M32 4.5 L53 8.5 C55.5 22 54.5 36.5 48 47.5 L32 60 L16 47.5 C9.5 36.5 8.5 22 11 8.5 Z"
+          fill="url(#shield24h_rim)" stroke="#34d399" stroke-width="1" stroke-linejoin="round"/>
+
+    <!-- Left & Right reinforced bastion shoulder plates -->
+    <path d="M11 12 L17 9 L15 22 L9 20 Z" fill="#065f46" stroke="#34d399" stroke-width="0.5"/>
+    <path d="M53 12 L47 9 L49 22 L55 20 Z" fill="#065f46" stroke="#34d399" stroke-width="0.5"/>
+
+    <!-- Inner armored bevel border -->
+    <path d="M32 7.2 L50.2 10.8 C52.2 23 51.5 35.5 45.8 45.5 L32 56.5 L18.2 45.5 C12.5 35.5 11.8 23 13.8 10.8 Z"
+          fill="url(#shield24h_plate)" stroke="#10b981" stroke-width="0.8"/>
+
+    <!-- Forcefield Quantum Glow -->
+    <path d="M32 8.5 L48.8 12 C50.5 23.5 50 35 44.8 44.5 L32 55 L19.2 44.5 C14 35 13.5 23.5 15.2 12 Z"
+          fill="url(#shield24h_glow)"/>
+
+    <!-- High-density Quantum Hexagonal grid lines -->
+    <g stroke="#34d399" stroke-width="0.7" stroke-opacity="0.5" fill="none">
+      <polygon points="32,13 37.5,16.5 37.5,23 32,26.5 26.5,23 26.5,16.5"/>
+      <polygon points="22.5,19.5 27,22.5 27,28.5 22.5,31.5 18,28.5 18,22.5"/>
+      <polygon points="41.5,19.5 46,22.5 46,28.5 41.5,31.5 37,28.5 37,22.5"/>
+      <polygon points="32,26.5 37.5,30 37.5,36.5 32,40 26.5,36.5 26.5,30"/>
+    </g>
+
+    <!-- Quantum resonance orbital rings -->
+    <ellipse cx="32" cy="27" rx="14" ry="11" fill="none" stroke="#6ee7b7" stroke-width="0.9" stroke-dasharray="3 2" stroke-opacity="0.8"/>
+    <ellipse cx="32" cy="27" rx="19" ry="15" fill="none" stroke="#10b981" stroke-width="0.6" stroke-opacity="0.4"/>
+
+    <!-- Radiant 4-wing Quantum Bastion Star -->
+    <path d="M32 15 L35 23 L44 23 L37 28.5 L40.5 36.5 L32 32.5 L23.5 36.5 L27 28.5 L20 23 L29 23 Z"
+          fill="url(#shield24h_core)"/>
+    <circle cx="32" cy="27" r="3.6" fill="#ffffff"/>
+    <circle cx="32" cy="27" r="1.6" fill="#065f46"/>
+
+    <!-- Corner emerald studs -->
+    <circle cx="15" cy="11.5" r="1.3" fill="#a7f3d0" stroke="#064e3b" stroke-width="0.5"/>
+    <circle cx="49" cy="11.5" r="1.3" fill="#a7f3d0" stroke="#064e3b" stroke-width="0.5"/>
+    <circle cx="32" cy="6.5" r="1.3" fill="#34d399" stroke="#022c22" stroke-width="0.5"/>
+
+    <!-- Tactical Duration Badge (24H) -->
+    <g transform="translate(0, 0)">
+      <rect x="18" y="44.5" width="28" height="12" rx="3" ry="3"
+            fill="#022c22" stroke="#34d399" stroke-width="1.3"/>
+      <rect x="19" y="45.5" width="26" height="10" rx="2" ry="2"
+            fill="none" stroke="#10b981" stroke-width="0.6" stroke-opacity="0.8"/>
+      <text x="32" y="51.2"
+            text-anchor="middle"
+            dominant-baseline="central"
+            fill="#ecfdf5"
+            font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+            font-weight="900"
+            font-size="9"
+            letter-spacing="0.4">24H</text>
+    </g>
+  </g>
+</svg>

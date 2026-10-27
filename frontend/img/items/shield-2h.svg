@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <!-- Outer rim metallic gradient (Cobalt Slate) -->
+    <linearGradient id="shield2h_rim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#94a3b8"/>
+      <stop offset="35%" stop-color="#475569"/>
+      <stop offset="70%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+
+    <!-- Inner field gradient -->
+    <linearGradient id="shield2h_plate" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="50%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+
+    <!-- Cyan tactical energy glow -->
+    <radialGradient id="shield2h_glow" cx="50%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.8"/>
+      <stop offset="40%" stop-color="#0284c7" stop-opacity="0.4"/>
+      <stop offset="80%" stop-color="#0369a1" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#0369a1" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Core energy pulse -->
+    <linearGradient id="shield2h_core" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="40%" stop-color="#7dd3fc"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+
+    <filter id="shield2h_shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#shield2h_shadow)">
+    <!-- Base shield rim -->
+    <path d="M32 5 L52 9 C54 22 53 36 47 47 L32 59 L17 47 C11 36 10 22 12 9 Z"
+          fill="url(#shield2h_rim)" stroke="#38bdf8" stroke-width="0.8" stroke-linejoin="round"/>
+
+    <!-- Inner armored bevel border -->
+    <path d="M32 7.5 L49.5 11 C51.5 23 50.5 35 45 45 L32 56 L19 45 C13.5 35 12.5 23 14.5 11 Z"
+          fill="url(#shield2h_plate)" stroke="#0284c7" stroke-width="0.75" stroke-opacity="0.6"/>
+
+    <!-- Forcefield Energy Glow -->
+    <path d="M32 8.5 L48.5 12 C50 23.5 49.5 35 44.5 44.5 L32 55 L19.5 44.5 C14.5 35 14 23.5 15.5 12 Z"
+          fill="url(#shield2h_glow)"/>
+
+    <!-- Hexagonal energy grid pattern lines -->
+    <g stroke="#38bdf8" stroke-width="0.6" stroke-opacity="0.35" fill="none">
+      <!-- Center top hex -->
+      <polygon points="32,15 37,18 37,24 32,27 27,24 27,18"/>
+      <!-- Left hex -->
+      <polygon points="23,21 27,24 27,30 23,33 19,30 19,24"/>
+      <!-- Right hex -->
+      <polygon points="41,21 45,24 45,30 41,33 37,30 37,24"/>
+      <!-- Center bottom hex -->
+      <polygon points="32,27 37,30 37,36 32,39 27,36 27,30"/>
+    </g>
+
+    <!-- Concentric energy pulse arcs -->
+    <path d="M21 26 A13 13 0 0 1 43 26" fill="none" stroke="#7dd3fc" stroke-width="0.8" stroke-dasharray="2 2" stroke-opacity="0.6"/>
+    <path d="M18 31 A17 17 0 0 1 46 31" fill="none" stroke="#38bdf8" stroke-width="0.6" stroke-opacity="0.4"/>
+
+    <!-- Radiant central defense emblem -->
+    <path d="M32 19 L35 27 L43 27 L36 32 L39 40 L32 35 L25 40 L28 32 L21 27 L29 27 Z"
+          fill="url(#shield2h_core)" opacity="0.9"/>
+    <circle cx="32" cy="30" r="3.2" fill="#ffffff"/>
+    <circle cx="32" cy="30" r="1.5" fill="#38bdf8"/>
+
+    <!-- Metallic corner reinforcement rivets -->
+    <circle cx="16" cy="12" r="1.2" fill="#94a3b8" stroke="#0f172a" stroke-width="0.5"/>
+    <circle cx="48" cy="12" r="1.2" fill="#94a3b8" stroke="#0f172a" stroke-width="0.5"/>
+    <circle cx="32" cy="7.5" r="1.2" fill="#94a3b8" stroke="#0f172a" stroke-width="0.5"/>
+
+    <!-- Tactical Duration Badge (2H) -->
+    <g transform="translate(0, 0)">
+      <rect x="20" y="44.5" width="24" height="12" rx="3" ry="3"
+            fill="#091428" stroke="#38bdf8" stroke-width="1.2"/>
+      <rect x="21" y="45.5" width="22" height="10" rx="2" ry="2"
+            fill="none" stroke="#0284c7" stroke-width="0.5" stroke-opacity="0.8"/>
+      <text x="32" y="51.2"
+            text-anchor="middle"
+            dominant-baseline="central"
+            fill="#e0f2fe"
+            font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+            font-weight="900"
+            font-size="9"
+            letter-spacing="0.6">2H</text>
+    </g>
+  </g>
+</svg>

@@ -105,8 +105,26 @@ public class CityService {
                 "remainingDiamond", diamond - cost, "cities", selected.stream().map(PlayerCity::getName).toList());
     }
 
+    @Transactional
+    public Map<String, Object> deactivateShield(Long playerId, Long cityId) {
+        PlayerCity city = (cityId == null)
+                ? cities.findByOwnerIdAndCitySlot(playerId, scope.slot(playerId))
+                        .or(() -> cities.findByOwnerIdAndCitySlot(playerId, 1))
+                        .orElseThrow(() -> new IllegalArgumentException("未找到主城"))
+                : cities.findById(cityId).filter(c -> c.getOwnerId().equals(playerId))
+                        .orElseThrow(() -> new IllegalArgumentException("无权操作此城市"));
+        CityState status = states.findByPlayerIdAndCitySlot(playerId, city.getCitySlot()).orElse(null);
+        if (status != null) {
+            status.setShieldUntil(0L);
+            states.save(status);
+        }
+        return Map.of("success", true, "cityId", city.getId(), "cityName", city.getName(), "message", "已主动解除本城免战护盾");
+    }
+
     private boolean suitable(WildTile tile) {
-        return Boolean.TRUE.equals(tile.getOccupied()) && Set.of("hill").contains(tile.getType());
+        if (!Boolean.TRUE.equals(tile.getOccupied())) return false;
+        if (Set.of("hill").contains(tile.getType())) return true;
+        return WorldTerrainService.isIsland(terrain.current(), tile.getX(), tile.getY()) || "forest".equals(tile.getType());
     }
 
     @Transactional
@@ -118,11 +136,11 @@ public class CityService {
     @Transactional
     public Map<String,Object> site(Long playerId,int x,int y) {
         WorldMap world=terrain.lockWorld(); String mask=terrain.ensure();
-        // 地图空地允许内陆建城，预览与提交共用四格占地校验。
+        // 地图空地允许内陆与海岛建城，预览与提交共用四格占地校验。
         String reason=terrain.siteReason(world.getId(),mask,x,y,null);
         var player=players.findById(playerId).orElseThrow();
         if(reason.isEmpty()&&cities.findByOwnerIdAndCitySlotIsNotNullOrderByCitySlotAsc(playerId).size()>=MilitaryRankDef.getCityCap(player.getMilitaryRank()))reason="城市数量已达军衔上限";
-        boolean coastal=WorldTerrainService.coastal(mask,x,y,2);
+        boolean coastal=WorldTerrainService.isIsland(mask,x,y) || WorldTerrainService.coastal(mask,x,y,2);
         return Map.of("x",x,"y",y,"span",2,"coastal",coastal,"cityType",WorldTerrainService.foundingTerrain(mask,x,y),"valid",reason.isEmpty(),"reason",reason,"buildCost",BUILD_COST,"buildDurationMs",BUILD_DURATION_MS);
     }
 
@@ -141,7 +159,7 @@ public class CityService {
         WildTile tile = null;
         if(wildId!=null){
             tile=wilds.lockById(wildId).orElseThrow(()->new IllegalArgumentException("地块不存在"));
-            if(!world.getId().equals(tile.getWorldId())||!playerId.equals(tile.getOccupiedBy())||!suitable(tile))throw new IllegalArgumentException("只能在自己占领的丘陵地块上建山城");
+            if(!world.getId().equals(tile.getWorldId())||!playerId.equals(tile.getOccupiedBy())||!suitable(tile))throw new IllegalArgumentException("只能在自己占领的丘陵、森林或海岛地块上建城");
             x=tile.getX();y=tile.getY();
             if(marches.existsByTargetIdAndTargetKindIn(wildId.toString(),List.of("wild","wild_gather")))throw new IllegalArgumentException("该地块仍有行军，请等待部队返城后建城");
         }

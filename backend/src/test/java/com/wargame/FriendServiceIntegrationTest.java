@@ -20,7 +20,7 @@ import static org.mockito.Mockito.*;
 
 @DataJpaTest(properties = {"spring.flyway.enabled=false", "spring.jpa.show-sql=false"})
 @ActiveProfiles("test")
-@Import({FriendService.class, PrivateChatService.class, RateLimiter.class, GameSchedulingConfig.class})
+@Import({FriendService.class, PrivateChatService.class, PlayerPowerService.class, PlayerPowerHistoryService.class, BattleService.class, RateLimiter.class, GameSchedulingConfig.class})
 class FriendServiceIntegrationTest {
     @Autowired FriendService friends;
     @Autowired PrivateChatService chat;
@@ -31,6 +31,7 @@ class FriendServiceIntegrationTest {
     @Autowired PrivateChatMessageRepository messages;
     @Autowired ScoutReportRepository scoutReports;
     @Autowired EntityManager em;
+    @Autowired PlayerPowerService power;
     @MockBean GameWebSocketHandler presence;
     @MockBean WebSocketPushService push;
     @MockBean ChatService worldChat;
@@ -63,6 +64,14 @@ class FriendServiceIntegrationTest {
         bob.setCityPosX(6); players.saveAndFlush(bob);
         var afterMove = friends.profile(alice.getId(), bob.getId());
         assertNull(afterMove.cityX()); assertNull(afterMove.cityY());
+    }
+
+    @Test void publicProfileUsesTheSamePowerCalculation() {
+        var expected = power.calculate(bob.getId()).get(bob.getId());
+        var profile = friends.profile(alice.getId(), bob.getId());
+        assertEquals(expected.formationPower(), profile.formationPower());
+        assertEquals(expected.overallPower(), profile.overallPower());
+        assertNull(profile.cityX());
     }
 
     @Test void failedExpiredLegacyOrOtherPlayersReconCannotRevealCoordinates() {

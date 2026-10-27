@@ -183,7 +183,7 @@
       var grain = hash(px + 101, py + 301) - .5;
       var shade = (values[1] - .5) * 19 + grain * 6;
       var offset = (py * resolution + px) * 4;
-      var depth = G.MapOcean ? G.MapOcean.sample(px/resolution*size,py/resolution*size) : -1000;
+      var depth = G.MapOcean ? (G.MapOcean.sampleCoast ? G.MapOcean.sampleCoast(px/resolution*size,py/resolution*size) : G.MapOcean.sample(px/resolution*size,py/resolution*size)) : -1000;
       for (var c = 0; c < 3; c++) {
         var land = palette.soil[c] + (palette.grass[c] - palette.soil[c]) * values[0] * .52;
         var isSnow = values[2] > 0.12;
@@ -250,7 +250,7 @@
       var soilShade = (patch - .5) * 22 + grain * 14;
       var land0 = 96 + grass * 23, land1 = 81 + grass * 51, land2 = 61 + grass * 18;
       var offset = (py * side + px) * 4;
-      var depth = G.MapOcean ? G.MapOcean.sample((startX+px)/density,(startY+py)/density) : -1000;
+      var depth = G.MapOcean ? (G.MapOcean.sampleCoast ? G.MapOcean.sampleCoast((startX+px)/density,(startY+py)/density) : G.MapOcean.sample((startX+px)/density,(startY+py)/density)) : -1000;
       var snow=northernSnow((startX+px)/density,(startY+py)/density,size);
       var isSnow = snow > 0.12;
       for (var c = 0; c < 3; c++) {
@@ -276,7 +276,7 @@
         if (cl.snow > 0 || cl.grass <= 0) continue;
         var bladeDensity = cl.grass > .25 ? (cl.grass * .22) : (cl.grass * .12);
         bladeDensity *= 1 - edgeWear(xx, yy);
-        if (r > bladeDensity * clearance(xx/density,yy/density,.1) || (G.MapOcean&&G.MapOcean.sample(xx/density,yy/density)>-.9)) continue;
+        if (r > bladeDensity * clearance(xx/density,yy/density,.1) || (G.MapOcean&&(G.MapOcean.sampleCoast?G.MapOcean.sampleCoast(xx/density,yy/density):G.MapOcean.sample(xx/density,yy/density))>-.9)) continue;
         var dx = xx - startX, dy = yy - startY;
         for (var blade = 0; blade < 3; blade++) {
           var seed = hash(bx + blade * 103, by + 791), angle = seed * Math.PI * 2;

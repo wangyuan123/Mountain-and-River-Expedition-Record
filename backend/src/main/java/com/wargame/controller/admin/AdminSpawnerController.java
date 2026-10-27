@@ -1,5 +1,6 @@
 package com.wargame.controller.admin;
 
+import com.wargame.service.admin.AdminIslandService;
 import com.wargame.service.admin.AdminSpawnerService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.Authentication;
@@ -14,9 +15,12 @@ import java.util.Map;
 public class AdminSpawnerController {
 
     private final AdminSpawnerService adminSpawnerService;
+    private final AdminIslandService adminIslandService;
 
-    public AdminSpawnerController(AdminSpawnerService adminSpawnerService) {
+    public AdminSpawnerController(AdminSpawnerService adminSpawnerService,
+                                  AdminIslandService adminIslandService) {
         this.adminSpawnerService = adminSpawnerService;
+        this.adminIslandService = adminIslandService;
     }
 
     @PostMapping("/spawn-npc")
@@ -100,9 +104,43 @@ public class AdminSpawnerController {
         Integer maxLevel = body.containsKey("maxLevel") && body.get("maxLevel") != null ? ((Number) body.get("maxLevel")).intValue() : 10;
         boolean clearUnoccupied = Boolean.TRUE.equals(body.get("clearUnoccupied"));
         String battlefield = (String) body.getOrDefault("battlefield", "all");
+        String islandCategory = (String) body.getOrDefault("islandCategory", "ALL");
 
-        List<Map<String, Object>> created = adminSpawnerService.spawnWildTiles(type, count, minLevel, maxLevel, clearUnoccupied, battlefield, authentication.getName(), request);
+        List<Map<String, Object>> created = adminSpawnerService.spawnWildTiles(type, count, minLevel, maxLevel, clearUnoccupied, battlefield, islandCategory, authentication.getName(), request);
         return Map.of("success", true, "count", created.size(), "wilds", created);
+    }
+
+    @GetMapping("/island-stats")
+    public Map<String, Object> getIslandStats() {
+        return adminIslandService.getIslandStats();
+    }
+
+    @PostMapping("/spawn-islands")
+    public Map<String, Object> spawnIslands(@RequestBody Map<String, Object> body,
+                                           Authentication authentication,
+                                           HttpServletRequest request) {
+        String category = (String) body.getOrDefault("category", "MICRO");
+        int count = body.containsKey("count") ? ((Number) body.get("count")).intValue() : 1;
+        boolean seedResources = Boolean.TRUE.equals(body.get("seedResources"));
+        List<Map<String, Object>> created = adminIslandService.spawnIslands(category, count, seedResources, authentication.getName(), request);
+        return Map.of("success", true, "count", created.size(), "islands", created);
+    }
+
+    @PostMapping("/delete-islands")
+    public Map<String, Object> deleteIslands(@RequestBody Map<String, Object> body,
+                                            Authentication authentication,
+                                            HttpServletRequest request) {
+        String category = (String) body.get("category");
+        Integer count = body.containsKey("count") && body.get("count") != null ? ((Number) body.get("count")).intValue() : null;
+        Object rawIds = body.get("islandIds");
+        List<Integer> islandIds = null;
+        if (rawIds instanceof List<?> list) {
+            islandIds = new ArrayList<>();
+            for (Object item : list) {
+                if (item instanceof Number n) islandIds.add(n.intValue());
+            }
+        }
+        return adminIslandService.deleteIslands(category, count, islandIds, authentication.getName(), request);
     }
 
     @PostMapping("/clear-unoccupied-wilds")

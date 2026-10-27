@@ -616,7 +616,7 @@ test('导航栏最后显示文字商城，顶部不再显示商城图标', () =>
 
   const labels = [...navHtml.matchAll(/class="navlabel">([^<]+)<\/span>/g)].map(m => m[1]);
   assert.deepEqual(labels, [
-    '首页', '后勤', '军工', '军官', '军队', '地图', '警报', '战报', '聊天', '电报', '任务', '军团', '仓库', '科技', '军校', '对战', '切城', '战术', '排名', '商城'
+    '首页', '后勤', '军工', '军官', '军队', '地图', '警报', '战报', '聊天', '邮件', '任务', '军团', '仓库', '科技', '军校', '对战', '切城', '战术', '排名', '商城'
   ]);
   assert.match(navHtml, /class="navitem" data-route="officer" onclick="Game\.go\('officer'\)"/);
   assert.match(navHtml, /class="navitem" data-route="academy" onclick="Game\.go\('academy'\)"/);

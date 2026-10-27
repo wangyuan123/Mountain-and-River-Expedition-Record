@@ -4,6 +4,7 @@ import com.wargame.model.dto.DispatchRequest;
 import com.wargame.model.dto.GameDtos;
 import com.wargame.model.entity.*;
 import com.wargame.repository.BattleSessionRepository;
+import com.wargame.repository.PlayerPowerSnapshotRepository;
 import com.wargame.util.JsonUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -16,9 +17,28 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class SortieBattleTest extends BaseServiceTest {
     @Autowired private BattleSessionRepository sessions;
+    @Autowired private PlayerPowerSnapshotRepository powerSnapshots;
+
+    private void balancePower(Player attacker, Player defender) {
+        long now = System.currentTimeMillis();
+        PlayerPowerSnapshot s1 = new PlayerPowerSnapshot();
+        s1.setPlayerId(attacker.getId());
+        s1.setObservedAt(now);
+        s1.setFormationPower(5_000_000L);
+        s1.setOverallPower(5_000_000L);
+        powerSnapshots.save(s1);
+
+        PlayerPowerSnapshot s2 = new PlayerPowerSnapshot();
+        s2.setPlayerId(defender.getId());
+        s2.setObservedAt(now);
+        s2.setFormationPower(5_000_000L);
+        s2.setOverallPower(5_000_000L);
+        powerSnapshots.save(s2);
+    }
 
     private March attack(Player defender, int citySlot, Map<String, Integer> attackingArmy) {
         Player attacker = createTestPlayer("sortie-attacker", 30);
+        balancePower(attacker, defender);
         long now = System.currentTimeMillis();
         attacker.setWarAgainstId(defender.getId());
         attacker.setWarAt(now - 60000L);
@@ -115,6 +135,7 @@ class SortieBattleTest extends BaseServiceTest {
             if ("bunker".equals(target)) fort(defender.getId(), 0, 10000);
             else createArmyUnit(defender.getId(), target, 10000);
             Player attacker = createTestPlayer("wall-attacker-" + target + wallLevel, 30);
+            balancePower(attacker, defender);
             long now = System.currentTimeMillis();
             attacker.setWarAgainstId(defender.getId());
             attacker.setWarAt(now - 60000L);

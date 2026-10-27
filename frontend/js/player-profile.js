@@ -89,6 +89,13 @@ window.Game = window.Game || {};
       div.setAttribute('aria-modal', 'true');
       div.setAttribute('aria-labelledby', 'playerDrawerTitle');
 
+      var vipLevel = Number(p.vipLevel) || 0;
+      var vipBadgeVisible = p.vipBadgeVisible !== false;
+      var vipBadgeHtml = (vipLevel > 0 && vipBadgeVisible)
+        ? '<span class="topbar-vip-badge' + (vipLevel >= 4 ? ' vip-badge-gold' : '') + '">VIP ' + vipLevel + '</span>'
+        : '';
+      var avatarFrameClass = p.avatarFrame ? (' frame-' + p.avatarFrame + '-v1') : '';
+
       var html = '<div class="player-drawer" onclick="event.stopPropagation()">'
         + '<div class="drawer-header">'
         + '  <div class="drawer-header-title" id="playerDrawerTitle">指挥官档案</div>'
@@ -96,7 +103,7 @@ window.Game = window.Game || {};
         + '</div>'
         + '<div class="drawer-body">'
         + '  <div class="drawer-profile-card">'
-        + '    <button type="button" class="drawer-avatar-wrap" onclick="Game.Main.openAvatarPicker()" aria-label="更换头像">'
+        + '    <button type="button" class="drawer-avatar-wrap' + avatarFrameClass + '" onclick="Game.Main.openAvatarPicker()" aria-label="更换头像">'
         + '      <img class="drawer-avatar" id="drawerAvatarImg" src="' + currentAvatar + '" alt="头像" onerror="this.onerror=null;this.src=Game.Constants.presetAvatars[0].src"/>'
         + '      <span class="avatar-edit-badge">更换</span>'
         + '    </button>'
@@ -106,6 +113,7 @@ window.Game = window.Game || {};
         + '      <div class="drawer-badge-row">'
         + '        <span class="drawer-faction-tag ' + faction + '">' + factionName + '</span>'
         + '        <span class="drawer-uid-tag">UID: ' + (p.id || '---') + '</span>'
+        + vipBadgeHtml
         + '      </div>'
         + '    </div>'
         + '  </div>'
@@ -127,6 +135,14 @@ window.Game = window.Game || {};
         + '        <div class="stat-k">声望值</div>'
         + '        <div class="stat-v">' + drawerAmount(prestige) + '</div>'
         + '      </div>'
+        + '      <div class="drawer-stat-box" title="最强单支现有编队的静态估值，不代表实际胜率">'
+        + '        <div class="stat-k">编队战力</div>'
+        + '        <div class="stat-v">' + (p.formationPower == null ? '—' : drawerAmount(p.formationPower)) + '</div>'
+        + '      </div>'
+        + '      <div class="drawer-stat-box" title="现有部队及建筑、科技、军官和装备的综合估值，不包含声望">'
+        + '        <div class="stat-k">综合实力</div>'
+        + '        <div class="stat-v">' + (p.overallPower == null ? '—' : drawerAmount(p.overallPower)) + '</div>'
+        + '      </div>'
         + '      <div class="drawer-stat-box">'
         + '        <div class="stat-k">带兵上限</div>'
         + '        <div class="stat-v highlight">' + drawerAmount(Core.armyCap ? Core.armyCap() : 0) + '</div>'
@@ -134,6 +150,10 @@ window.Game = window.Game || {};
         + '      <button type="button" class="drawer-stat-box drawer-stat-action" onclick="Game.Main.closePlayerDrawer();Game.go(\'recharge\')" aria-label="钻石 ' + G.fmt(diamond) + '，前往充值">'
         + '        <span class="stat-k">钻石 <span aria-hidden="true">›</span></span>'
         + '        <span class="stat-v diamond-text">' + drawerAmount(diamond) + '</span>'
+        + '      </button>'
+        + '      <button type="button" class="drawer-stat-box drawer-stat-action" onclick="Game.Main.closePlayerDrawer();if(Game.Vip)Game.Vip.openModal();" aria-label="特勤统帅部 VIP ' + vipLevel + '，点击查看">'
+        + '        <span class="stat-k">特勤统帅部 <span aria-hidden="true">›</span></span>'
+        + '        <span class="stat-v highlight">VIP ' + vipLevel + '</span>'
         + '      </button>'
         + '    </div>'
         + rankProgressHtml
@@ -286,6 +306,10 @@ window.Game = window.Game || {};
       }
 
       html += '  </div>'
+        + '  <div style="margin-top:12px;padding-top:8px;border-top:1px dashed var(--border);display:flex;justify-content:space-between;align-items:center;">'
+        + '    <span style="font-size:12px;color:var(--muted);">支持佩戴统帅专属头像框与自定义形象</span>'
+        + '    <button type="button" class="btn sm" onclick="Game.Main.closeAvatarPicker();if(Game.Vip)Game.Vip.openModal(\'cosmetics\');">🎖️ 前往特勤装扮 &gt;</button>'
+        + '  </div>'
         + '</div>'
         + '<div class="modal-footer" style="display:flex;justify-content:flex-end;gap:10px;">'
         + '  <button class="btn" onclick="Game.Main.closeAvatarPicker()">取消</button>'

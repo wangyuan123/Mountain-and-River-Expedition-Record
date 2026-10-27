@@ -3,9 +3,14 @@ package com.wargame;
 import com.wargame.model.entity.Guild;
 import com.wargame.model.entity.GuildMember;
 import com.wargame.model.entity.Player;
+import com.wargame.model.entity.ArmyUnit;
+import com.wargame.model.entity.March;
+import com.wargame.model.entity.Officer;
+import com.wargame.model.entity.Technology;
 import com.wargame.repository.GuildMemberRepository;
 import com.wargame.repository.GuildRepository;
 import com.wargame.service.LeaderboardService;
+import com.wargame.service.PlayerPowerService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -18,6 +23,7 @@ class LeaderboardServiceTest extends BaseServiceTest {
     @Autowired private LeaderboardService leaderboards;
     @Autowired private GuildRepository guilds;
     @Autowired private GuildMemberRepository members;
+    @Autowired private PlayerPowerService power;
 
     private Player player(String name, Integer prestige, Integer rank) {
         Player p = createTestPlayer(name, 30);
@@ -142,5 +148,99 @@ class LeaderboardServiceTest extends BaseServiceTest {
         assertThrows(IllegalArgumentException.class, () -> leaderboards.get(1L, "players; DROP TABLE players", "prestige", 1));
         assertThrows(IllegalArgumentException.class, () -> leaderboards.get(1L, "players", "members", 1));
         assertThrows(IllegalArgumentException.class, () -> leaderboards.get(1L, "guilds", "militaryRank", 1));
+    }
+
+    @Test
+    void powerBoardsRankAllPlayersAndShareTheProfileCalculation() {
+        Player mine = player("power-mine", 99999, 1);
+        for (int index = 0; index < 21; index++) {
+            Player other = player("power-other-" + index, 0, 1);
+            ArmyUnit unit = new ArmyUnit();
+            unit.setPlayerId(other.getId());
+            unit.setType("infantry");
+            unit.setCount(index + 1);
+            armyUnitRepository.save(unit);
+        }
+        armyUnitRepository.flush();
+        Map<String, Object> board = leaderboards.get(mine.getId(), "players", "formationPower", 1);
+        assertEquals(22L, board.get("total"));
+        assertEquals(22L, mine(board).get("rank"));
+        assertEquals(power.calculate(mine.getId()).get(mine.getId()).formationPower(), mine(board).get("formationPower"));
+        assertEquals(22L, mine(leaderboards.get(mine.getId(), "players", "overallPower", 2)).get("rank"));
+        assertEquals(2, entries(leaderboards.get(mine.getId(), "players", "overallPower", 2)).size());
+    }
+
+    @Test
+    void marchingArmyRemainsAnAssetAndFormationCapDoesNotLimitOverallArmy() {
+        Player player = player("power-army", 0, 1);
+        ArmyUnit unit = new ArmyUnit();
+        unit.setPlayerId(player.getId());
+        unit.setType("infantry");
+        unit.setCount(37500);
+        armyUnitRepository.saveAndFlush(unit);
+        var before = power.calculate(player.getId()).get(player.getId());
+        unit.setCount(50000);
+        armyUnitRepository.saveAndFlush(unit);
+        var larger = power.calculate(player.getId()).get(player.getId());
+        assertEquals(before.formationPower(), larger.formationPower());
+        assertTrue(larger.overallPower() > before.overallPower());
+        unit.setCount(12500);
+        armyUnitRepository.saveAndFlush(unit);
+        March march = new March();
+        march.setPlayerId(player.getId());
+        march.setArmy("{\"infantry\":37500}");
+        marchRepository.saveAndFlush(march);
+        var marching = power.calculate(player.getId()).get(player.getId());
+        assertEquals(larger.overallPower(), marching.overallPower());
+        assertEquals(before.formationPower(), marching.formationPower());
+    }
+
+    @Test
+    void powerReflectsCommanderAndTechnologyAndSeesPendingUpdates() {
+        Player player = player("power-development", 0, 1);
+        ArmyUnit unit = new ArmyUnit();
+        unit.setPlayerId(player.getId());
+        unit.setType("infantry");
+        unit.setCount(100);
+        armyUnitRepository.saveAndFlush(unit);
+        var before = power.calculate(player.getId()).get(player.getId());
+        Officer officer = new Officer();
+        officer.setPlayerId(player.getId());
+        officer.setName("指挥官");
+        officer.setRole("commander");
+        officer.setLevel(10);
+        officer.setStar(2);
+        officer.setMilitary(100);
+        officer.setDefense(50);
+        officer.setSkills("[{\"id\":\"frenzy\",\"lv\":3}]");
+        officerRepository.save(officer);
+        Technology tech = new Technology();
+        tech.setPlayerId(player.getId());
+        tech.setType("attack_tech");
+        tech.setLevel(5);
+        technologyRepository.save(tech);
+        var after = power.calculate(player.getId()).get(player.getId());
+        assertTrue(after.formationPower() > before.formationPower());
+        assertTrue(after.overallPower() > before.overallPower());
+        assertEquals(after, power.calculate(null).get(player.getId()));
+    }
+
+    @Test
+    void formationDoesNotCombineLandAndSeaIntoOneArmy() {
+        Player player = player("power-domains", 0, 1);
+        ArmyUnit land = new ArmyUnit();
+        land.setPlayerId(player.getId()); land.setType("infantry"); land.setCount(100);
+        armyUnitRepository.saveAndFlush(land);
+        var landOnly = power.calculate(player.getId()).get(player.getId());
+        ArmyUnit sea = new ArmyUnit();
+        sea.setPlayerId(player.getId()); sea.setType("destroyer"); sea.setCount(1);
+        armyUnitRepository.saveAndFlush(sea);
+        var combined = power.calculate(player.getId()).get(player.getId());
+        land.setCount(0);
+        armyUnitRepository.saveAndFlush(land);
+        var seaOnly = power.calculate(player.getId()).get(player.getId());
+        assertEquals(Math.max(landOnly.formationPower(), seaOnly.formationPower()), combined.formationPower());
+        assertTrue(combined.overallPower() > landOnly.overallPower());
+        assertTrue(combined.overallPower() > seaOnly.overallPower());
     }
 }

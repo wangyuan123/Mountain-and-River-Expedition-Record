@@ -107,13 +107,11 @@ class WorldViewServiceTest extends BaseServiceTest {
         long now = System.currentTimeMillis();
         var march = createMarch(attacker.getId(), "player", city.getId().toString(), "敌方主城",
                 20, 20, 10, 10, Map.of("infantry", 10), "plunder", now, now + 60_000, true, false);
-        assertTrue(views.getReturningEnemyMarches(defender).isEmpty(), "普通撤军不得通过护盾规则泄露路线");
-        march.setReturnReason("shield");
-        marchRepository.save(march);
         var returns = views.getReturningEnemyMarches(defender);
-        assertEquals(1, returns.size(), "守方无需额外升级雷达即可看到护盾拦截后的返程");
-        assertEquals(java.util.Set.of("id", "marchId", "targetKind", "fromX", "fromY", "targetX",
-                "targetY", "startAt", "arriveAt", "action", "returning"), returns.get(0).keySet());
+        assertEquals(1, returns.size(), "守方无需额外升级雷达即可看到撤退返程以实施诱敌");
+        assertEquals(java.util.Set.of("id", "marchId", "targetKind", "targetCityId", "countermeasuresUsed",
+                "fromName", "targetName", "fromX", "fromY", "targetX", "targetY", "startAt", "arriveAt", "action", "returning"),
+                returns.get(0).keySet());
         assertTrue(views.getReturningEnemyMarches(attacker).isEmpty());
         assertTrue(views.getReturningEnemyMarches(spectator).isEmpty());
         march.setArriveAt(now - 1);

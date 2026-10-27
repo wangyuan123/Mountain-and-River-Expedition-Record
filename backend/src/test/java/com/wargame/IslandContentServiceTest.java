@@ -19,7 +19,7 @@ class IslandContentServiceTest extends BaseServiceTest {
         var world = createTestWorld();
         String mask = terrain.ensure();
         var groups = WorldTerrainService.islandCells(mask);
-        assertEquals(22, groups.size());
+        assertEquals(10, groups.size());
         assertTrue(groups.stream().allMatch(group -> !group.isEmpty()));
         assertTrue(groups.stream().mapToInt(java.util.List::size).min().orElseThrow() < 60);
         assertTrue(groups.stream().mapToInt(java.util.List::size).max().orElseThrow() > 60);
@@ -38,14 +38,14 @@ class IslandContentServiceTest extends BaseServiceTest {
             types.add(wild.getType());
             assertFalse(WorldTerrainService.sea(mask, wild.getX(), wild.getY()));
         });
-        assertTrue(types.containsAll(Set.of("oil", "ironworks", "grainfield")));
+        assertTrue(types.containsAll(Set.of("oil", "ironworks", "grainfield", "forest")));
         npcs.forEach(npc -> assertFalse(WorldTerrainService.sea(mask, npc.getX(), npc.getY())));
         for (int row = 0; row < 2; row++) for (int column = 0; column < 2; column++) {
             int minX = column * WorldTerrainService.SIZE, minY = row * WorldTerrainService.SIZE;
             assertTrue(wilds.stream().filter(w -> w.getX() >= minX && w.getX() < minX + WorldTerrainService.SIZE
                     && w.getY() >= minY && w.getY() < minY + WorldTerrainService.SIZE).count() > 20);
         }
-        assertEquals(2, worldMapRepository.findById(world.getId()).orElseThrow().getIslandContentVersion());
+        assertEquals(IslandContentService.ISLAND_CONTENT_VERSION, worldMapRepository.findById(world.getId()).orElseThrow().getIslandContentVersion());
         islands.ensure(world.getId());
         assertEquals(wilds.size(), wildTileRepository.findByWorldId(world.getId()).size());
         assertEquals(npcs.size(), npcCityRepository.findByWorldId(world.getId()).size());

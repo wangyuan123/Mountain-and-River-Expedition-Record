@@ -56,6 +56,12 @@
       var info = D.items[itemId] || equipmentInfo(itemId);
       if (!info) return;
 
+      if (itemId === 'warSpeedOrder' || itemId === 'signalJammingOrder' || itemId === 'feintOrder') {
+        G.toast(itemId === 'warSpeedOrder' ? '请在本城发起宣战的目标城市中选择“加速备战”' : '请在情报中的对应敌军详情使用');
+        G.go(itemId === 'warSpeedOrder' ? 'world' : 'alerts');
+        return;
+      }
+
       if (itemId === 'teleportNormal' || itemId === 'teleportAdvanced') {
         G.CityTeleport.open(itemId);
         return;

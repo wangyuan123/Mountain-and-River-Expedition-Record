@@ -13,16 +13,25 @@ import java.util.*;
 @RequiredArgsConstructor
 public class WorldTerrainService {
     public static final int SIZE = WorldConfig.SIZE;
-    public static final int TERRAIN_VERSION = 2;
+    public static final int TERRAIN_VERSION = 7;
     private static final int[][] ISLANDS = {
-            {182, 78, 5, 8}, {176, 142, 4, 6},
-            {184, 6, 2, 3}, {181, 20, 3, 2}, {192, 34, 2, 4},
-            {173, 49, 4, 3}, {188, 61, 3, 5}, {164, 75, 2, 4},
-            {179, 88, 5, 3}, {194, 103, 2, 3}, {169, 119, 3, 5},
-            {185, 132, 4, 3}, {197, 148, 2, 4}, {174, 161, 5, 3},
-            {190, 176, 3, 5}, {160, 184, 3, 2}, {183, 47, 2, 2},
-            {198, 81, 1, 2}, {160, 101, 2, 2}, {197, 124, 2, 2},
-            {195, 190, 2, 3}, {193, 160, 2, 2}
+            // 大型岛屿 (2座，原4座减半)
+            {182, 78, 5, 7},   // 中央大洋巨岛
+            {176, 142, 4, 6},  // 东南大岛
+
+            // 中型岛屿 (4座，原7座减半)
+            {193, 16, 3, 4},   // 东北大洋中型岛
+            {154, 110, 3, 4},  // 中央内湾中型岛
+            {188, 61, 3, 4},   // 东部大洋中型岛
+            {174, 161, 4, 4},  // 东南大洋中型岛
+
+            // 小型岛屿 (3座，原6座减半)
+            {192, 34, 2, 4},   // 东北列岛小岛
+            {164, 75, 2, 4},   // 中央海湾西侧小岛
+            {152, 192, 3, 3},  // 南部海湾主岛
+
+            // 微型岛礁 (1座，原3座减半)
+            {172, 194, 2, 2}   // 南部港外礁
     };
     private final WorldMapRepository worlds;
     private final PlayerCityRepository cities;
@@ -64,12 +73,27 @@ public class WorldTerrainService {
         return px > coast || (px > 95 && py > 186 + 6*Math.sin(px*.07));
     }
     private static boolean island(int x, int y) {
+        double px = x * 200.0 / SIZE;
+        double py = y * 200.0 / SIZE;
         for (int[] island : ISLANDS) {
-            double dx = (x * 200.0 / SIZE - island[0]) / (double) island[2];
-            double dy = (y * 200.0 / SIZE - island[1]) / (double) island[3];
-            double angle = Math.atan2(dy, dx);
-            double edge = 1 + .13 * Math.sin(angle * 3 + island[0]) + .08 * Math.sin(angle * 5 + island[1]);
-            if (dx * dx + dy * dy < edge * edge) return true;
+            double cx = island[0], cy = island[1];
+            double rx = island[2], ry = island[3];
+            // 快速包围盒初筛，加速大地图生成与判定
+            if (Math.abs(px - cx) > rx * 2.2 || Math.abs(py - cy) > ry * 2.2) continue;
+            double dx = (px - cx) / rx;
+            double dy = (py - cy) / ry;
+            // 领域扭曲 (Domain Warping): 基于坐标赋予自然起伏与不规则海岬、海湾
+            double w1 = 0.20 * Math.sin(py * 0.75 + cx * 0.6) + 0.10 * Math.cos(px * 1.2 + cy * 0.4);
+            double w2 = 0.20 * Math.cos(px * 0.75 + cy * 0.6) + 0.10 * Math.sin(py * 1.2 + cx * 0.4);
+            double wx = dx + w1;
+            double wy = dy + w2;
+            double angle = Math.atan2(wy, wx);
+            // 多阶谐波扰动: 结合低频不对称与中高频海岸锯齿凹凸，使边缘呈现自然不规则形态
+            double edge = 1.0 + 0.18 * Math.sin(angle * 3.0 + cx * 0.5)
+                    + 0.14 * Math.cos(angle * 5.0 + cy * 0.7)
+                    + 0.08 * Math.sin(angle * 7.0 + (cx + cy) * 0.3)
+                    + 0.05 * Math.sin(angle * 11.0 + (cx - cy) * 0.5);
+            if (wx * wx + wy * wy < edge * edge) return true;
         }
         return false;
     }
@@ -85,8 +109,14 @@ public class WorldTerrainService {
         List<List<Integer>> islands = new ArrayList<>();
         for (int[] island : ISLANDS) {
             List<Integer> cells = new ArrayList<>();
-            for (int y = Math.max(0, (island[1] - island[3] - 2) * (SIZE / 200)); y <= Math.min(SIZE - 1, (island[1] + island[3] + 2) * (SIZE / 200)); y++) {
-                for (int x = Math.max(0, (island[0] - island[2] - 2) * (SIZE / 200)); x <= Math.min(SIZE - 1, (island[0] + island[2] + 2) * (SIZE / 200)); x++) {
+            int rrx = (int) Math.ceil(island[2] * 2.2);
+            int rry = (int) Math.ceil(island[3] * 2.2);
+            int minY = Math.max(0, (island[1] - rry) * (SIZE / 200));
+            int maxY = Math.min(SIZE - 1, (island[1] + rry) * (SIZE / 200));
+            int minX = Math.max(0, (island[0] - rrx) * (SIZE / 200));
+            int maxX = Math.min(SIZE - 1, (island[0] + rrx) * (SIZE / 200));
+            for (int y = minY; y <= maxY; y++) {
+                for (int x = minX; x <= maxX; x++) {
                     if (baseWater(x, y) && island(x, y) && !sea(mask, x, y)) cells.add(y * SIZE + x);
                 }
             }
@@ -124,7 +154,16 @@ public class WorldTerrainService {
                 worlds.saveAndFlush(world);
                 return stored;
             }
-            mask = mergeIslands(stored).toCharArray();
+            mask = new char[SIZE * SIZE];
+            for (int y = 0; y < SIZE; y++) {
+                for (int x = 0; x < SIZE; x++) {
+                    if (baseWater(x, y)) {
+                        mask[y * SIZE + x] = island(x, y) ? '0' : '1';
+                    } else {
+                        mask[y * SIZE + x] = stored.charAt(y * SIZE + x);
+                    }
+                }
+            }
         } else {
             int oldSize = (int) Math.sqrt(stored.length());
             if (oldSize != 200 || oldSize * oldSize != stored.length())
@@ -135,10 +174,12 @@ public class WorldTerrainService {
         }
         Long id=world.getId();
         cities.findByWorldId(id).forEach(c->protect(mask,c.getX(),c.getY(),citySpan(c)));
-        npcs.findByWorldId(id).forEach(c->protect(mask,c.getX(),c.getY(),1));
-        bandits.findByWorldId(id).forEach(c->protect(mask,c.getX(),c.getY(),1));
-        wilds.findByWorldId(id).forEach(c->protect(mask,c.getX(),c.getY(),1));
         players.findAll().forEach(p->{if(p.getCityPosX()!=null&&p.getCityPosY()!=null)protect(mask,p.getCityPosX(),p.getCityPosY(),2);});
+        wilds.findByWorldId(id).forEach(c->{
+            if (Boolean.TRUE.equals(c.getOccupied()) || c.getOccupiedBy() != null) {
+                protect(mask,c.getX(),c.getY(),1);
+            }
+        });
         // Keep only sea connected to the world border; old assets may cut off small pools.
         boolean[] visited=new boolean[mask.length]; ArrayDeque<Integer> q=new ArrayDeque<>();
         for(int i=0;i<mask.length;i++) if(mask[i]=='1'&&(i%SIZE==0||i%SIZE==SIZE-1||i/SIZE==0||i/SIZE==SIZE-1)){visited[i]=true;q.add(i);}
@@ -191,6 +232,26 @@ public class WorldTerrainService {
             expanded[y*WorldConfig.WORLD_SIZE+x]=sea(mask,x,y)?'1':'0';
         return new String(expanded);
     }
+    /** 判定指定坐标是否属于海洋中的岛屿陆地。 */
+    public static boolean isIsland(String mask, int x, int y) {
+        if (mask == null || sea(mask, x, y)) return false;
+        int base = (int) Math.round(Math.sqrt(mask.length()));
+        if (base <= 0) return false;
+        int lx = (x >= base && x < base * 2) ? (base * 2 - 1 - x) : x;
+        int ly = (y >= base && y < base * 2) ? (base * 2 - 1 - y) : y;
+        if (lx < 0 || ly < 0 || lx >= base || ly >= base) return false;
+        return baseWater(lx, ly);
+    }
+
+    public static final List<String> ISLAND_RESOURCE_TYPES = List.of("oil", "ironworks", "grainfield", "rarefactory");
+
+    /** 适配海岛野地类型生成：支持深林（forest）野地与各类资源野地。 */
+    public static String islandWildType(int x, int y) {
+        int seed = Math.floorMod(x * 31 + y * 17, 5);
+        if (seed == 0) return "forest";
+        return ISLAND_RESOURCE_TYPES.get((seed - 1) % ISLAND_RESOURCE_TYPES.size());
+    }
+
     /**
      * Returns the founding terrain family for a 2x2 footprint.  The world
      * currently stores an authoritative land/sea mask; the visual terrain is
@@ -198,12 +259,16 @@ public class WorldTerrainService {
      * classifier keeps founding rules stable between requests.
      */
     public static String foundingTerrain(String mask,int x,int y) {
+        if (isIsland(mask, x, y)) return "海岛";
         if (coastal(mask,x,y,2)) return "海岸";
         int n = Math.floorMod(x * 31 + y * 17, 11);
         return n < 2 ? "丘陵" : "平原";
     }
     public int citySpan(PlayerCity c) { return c.getOwnerId()!=null&&players.existsById(c.getOwnerId())?2:1; }
-    public boolean coastal(PlayerCity c) { return coastal(current(),c.getX(),c.getY(),citySpan(c)); }
+    public boolean coastal(PlayerCity c) {
+        String mask = current();
+        return isIsland(mask, c.getX(), c.getY()) || coastal(mask, c.getX(), c.getY(), citySpan(c));
+    }
     public boolean canUsePort(PlayerCity c) { return c.isLegacyNaval()||coastal(c); }
     // Locking/current reads are essential under MySQL REPEATABLE READ: authentication
     // may have opened a snapshot before this request waited for the world placement lock.

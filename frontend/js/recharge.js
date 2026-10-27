@@ -56,6 +56,23 @@ window.Game = window.Game || {};
       }
       var self = this;
       var h = '<div class="title">- 战时补给站 -</div>';
+
+      var player = (Core.state && Core.state.player) || {};
+      var vipLevel = Number(player.vipLevel) || 0;
+      var totalRechargeCents = Number(player.totalRechargeCents) || 0;
+      var curYuan = (totalRechargeCents / 100).toFixed(0);
+      var levelThresholds = [0, 600, 3000, 9800, 19800, 32800, 64800, 128000, 300000, 600000, 1000000];
+      var nextThreshold = levelThresholds[vipLevel + 1] || levelThresholds[10];
+      var diffYuan = vipLevel < 10 ? Math.max(0, ((nextThreshold - totalRechargeCents) / 100).toFixed(0)) : 0;
+
+      h += '<div class="recharge-vip-banner" onclick="if(Game.Vip)Game.Vip.openModal();" title="点击查看战时特勤统帅部全等级特权与奖励">' +
+        '<div class="recharge-vip-banner-left">' +
+        '  <span class="topbar-vip-badge' + (vipLevel >= 4 ? ' vip-badge-gold' : '') + '">VIP ' + vipLevel + '</span>' +
+        '  <span>累计战费 <b>¥' + curYuan + '</b>' + (vipLevel < 10 ? ' · 距 VIP ' + (vipLevel + 1) + ' 需 ¥' + diffYuan : ' · 已达最高统帅荣耀') + '</span>' +
+        '</div>' +
+        '<div class="recharge-vip-banner-right">查看全等级特权与奖励 &gt;</div>' +
+        '</div>';
+
       h += '<div class="rech-empty">模拟支付环境，点击确认后钻石立即到账。</div>';
       h += '<div class="rech-tabs">';
       for (var i = 0; i < CATEGORIES.length; i++) {

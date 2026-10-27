@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <!-- Outer rim metallic gradient (Polished Deep Steel & Cyan Edge) -->
+    <linearGradient id="shield_rim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#cbd5e1"/>
+      <stop offset="25%" stop-color="#475569"/>
+      <stop offset="65%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+
+    <!-- Inner field gradient (Navy to Obsidian) -->
+    <linearGradient id="shield_plate" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0c4a6e"/>
+      <stop offset="40%" stop-color="#082f49"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+
+    <!-- Electric Cyan tactical energy glow -->
+    <radialGradient id="shield_glow" cx="50%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.9"/>
+      <stop offset="40%" stop-color="#0284c7" stop-opacity="0.5"/>
+      <stop offset="80%" stop-color="#0369a1" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#0369a1" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Core energy pulse -->
+    <linearGradient id="shield_core" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="35%" stop-color="#a5f3fc"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+
+    <filter id="shield_shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#shield_shadow)">
+    <!-- Base shield rim -->
+    <path d="M32 4.5 L53 8.5 C55.5 22 54.5 36.5 48 47.5 L32 60 L16 47.5 C9.5 36.5 8.5 22 11 8.5 Z"
+          fill="url(#shield_rim)" stroke="#38bdf8" stroke-width="1" stroke-linejoin="round"/>
+
+    <!-- Inner armored bevel border -->
+    <path d="M32 7.2 L50.2 10.8 C52.2 23 51.5 35.5 45.8 45.5 L32 56.5 L18.2 45.5 C12.5 35.5 11.8 23 13.8 10.8 Z"
+          fill="url(#shield_plate)" stroke="#06b6d4" stroke-width="0.8"/>
+
+    <!-- Forcefield Energy Glow -->
+    <path d="M32 8.5 L48.8 12 C50.5 23.5 50 35 44.8 44.5 L32 55 L19.2 44.5 C14 35 13.5 23.5 15.2 12 Z"
+          fill="url(#shield_glow)"/>
+
+    <!-- High-density Hexagonal energy grid pattern lines -->
+    <g stroke="#22d3ee" stroke-width="0.7" stroke-opacity="0.45" fill="none">
+      <polygon points="32,13 37.5,16.5 37.5,23 32,26.5 26.5,23 26.5,16.5"/>
+      <polygon points="22.5,19.5 27,22.5 27,28.5 22.5,31.5 18,28.5 18,22.5"/>
+      <polygon points="41.5,19.5 46,22.5 46,28.5 41.5,31.5 37,28.5 37,22.5"/>
+      <polygon points="32,26.5 37.5,30 37.5,36.5 32,40 26.5,36.5 26.5,30"/>
+      <polygon points="22.5,33.5 27,36.5 27,42.5 22.5,45.5 18,42.5 18,36.5"/>
+      <polygon points="41.5,33.5 46,36.5 46,42.5 41.5,45.5 37,42.5 37,36.5"/>
+    </g>
+
+    <!-- Concentric tactical radar arcs -->
+    <ellipse cx="32" cy="30" rx="14" ry="11" fill="none" stroke="#67e8f9" stroke-width="0.9" stroke-dasharray="3 2" stroke-opacity="0.7"/>
+    <ellipse cx="32" cy="30" rx="19" ry="15" fill="none" stroke="#0284c7" stroke-width="0.6" stroke-opacity="0.4"/>
+
+    <!-- Radiant central tactical aegis star -->
+    <path d="M32 19 L36 27 L44.5 28 L38 34 L40.5 42 L32 37.5 L23.5 42 L26 34 L19.5 28 L28 27 Z"
+          fill="url(#shield_core)"/>
+    <circle cx="32" cy="31" r="4.2" fill="#ffffff"/>
+    <circle cx="32" cy="31" r="2" fill="#0284c7"/>
+
+    <!-- Bottom tactical anchor crest -->
+    <path d="M26 47 L32 52 L38 47" fill="none" stroke="#38bdf8" stroke-width="1.2" stroke-linecap="round"/>
+
+    <!-- Armored corner studs with blue laser points -->
+    <circle cx="15" cy="11.5" r="1.3" fill="#cbd5e1" stroke="#0f172a" stroke-width="0.5"/>
+    <circle cx="49" cy="11.5" r="1.3" fill="#cbd5e1" stroke="#0f172a" stroke-width="0.5"/>
+    <circle cx="32" cy="6.5" r="1.3" fill="#22d3ee" stroke="#082f49" stroke-width="0.5"/>
+  </g>
+</svg>

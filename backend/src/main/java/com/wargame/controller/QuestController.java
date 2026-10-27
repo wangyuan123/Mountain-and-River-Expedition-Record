@@ -30,7 +30,22 @@ public class QuestController {
         Long playerId = authService.getCurrentPlayer().getId();
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("chapters", questService.getPlayerQuests(playerId));
+        out.put("dailyCheckin", questService.getDailyCheckinStatus(playerId));
         return ResponseEntity.ok(out);
+    }
+
+    @GetMapping("/daily-checkin")
+    public ResponseEntity<Map<String, Object>> getDailyCheckin() {
+        Long playerId = authService.getCurrentPlayer().getId();
+        return ResponseEntity.ok(questService.getDailyCheckinStatus(playerId));
+    }
+
+    @PostMapping("/daily-checkin")
+    public ResponseEntity<Map<String, Object>> claimDailyCheckin() {
+        Long playerId = authService.getCurrentPlayer().getId();
+        Map<String, Object> result = questService.claimDailyCheckin(playerId);
+        result.put("state", gameStateService.getGameState(playerId));
+        return ResponseEntity.ok(result);
     }
 
     @PostMapping("/claim")

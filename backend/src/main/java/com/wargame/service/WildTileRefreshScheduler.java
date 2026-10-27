@@ -11,6 +11,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -67,17 +68,45 @@ public class WildTileRefreshScheduler {
             var worldWilds = wilds.findByWorldId(world.getId());
             var worldBandits = bandits.findByWorldId(world.getId());
             var wildPositions = BlockSpawnPlanner.wildPositions(worldWilds);
+            // 分别整理海岛与大陆可用候选格，保证岛屿野地有独立均衡的刷新空间与容量保障
+            List<Integer> islandCandidates = new ArrayList<>();
+            List<Integer> mainlandCandidates = new ArrayList<>();
+            for (int y = 0; y < size; y++) for (int x = 0; x < size; x++) {
+                if (WorldTerrainService.sea(mask, x, y)) continue;
+                if (WorldTerrainService.isIsland(mask, x, y)) {
+                    islandCandidates.add(y * size + x);
+                } else {
+                    mainlandCandidates.add(y * size + x);
+                }
+            }
+            var islandWilds = new BlockSpawnPlanner(mask, size, false, used, wildPositions, islandCandidates);
+            var mainlandWilds = new BlockSpawnPlanner(mask, size, false, used, wildPositions, mainlandCandidates);
             var landWilds = new BlockSpawnPlanner(mask, size, false, used, wildPositions);
             var seaWilds = new BlockSpawnPlanner(mask, size, true, used, wildPositions);
             for (WildTile tile : worldWilds) {
                 if (!tile.isDormant()
                         || marches.existsByTargetIdAndTargetKindIn(String.valueOf(tile.getId()), List.of("wild", "wild_gather"))) continue;
                 boolean sea = WorldTerrainService.sea(mask, tile.getX(), tile.getY());
-                int[] destination = (sea ? seaWilds : landWilds).pick(used, tile.getX(), tile.getY());
+                int[] destination;
+                if (sea) {
+                    destination = seaWilds.pick(used, tile.getX(), tile.getY());
+                } else if (WorldTerrainService.isIsland(mask, tile.getX(), tile.getY())) {
+                    destination = islandWilds.pick(used, tile.getX(), tile.getY());
+                    if (destination == null) destination = mainlandWilds.pick(used, tile.getX(), tile.getY());
+                    if (destination == null) destination = landWilds.pick(used, tile.getX(), tile.getY());
+                } else {
+                    destination = mainlandWilds.pick(used, tile.getX(), tile.getY());
+                    if (destination == null) destination = islandWilds.pick(used, tile.getX(), tile.getY());
+                    if (destination == null) destination = landWilds.pick(used, tile.getX(), tile.getY());
+                }
                 if (destination == null) continue;
                 tile.setX(destination[0]);
                 tile.setY(destination[1]);
                 tile.setMined(0);
+                // 岛屿野地刷新时，动态适配资源野地与深林野地生成
+                if (WorldTerrainService.isIsland(mask, destination[0], destination[1])) {
+                    tile.setType(WorldTerrainService.islandWildType(destination[0], destination[1]));
+                }
                 int level = Math.max(1, tile.getLevel() == null ? 1 : tile.getLevel());
                 tile.setTotalRes(level * WorldConfig.RES_PER_WILD_LEVEL);
                 tile.setGarrison(JsonUtil.toJson(WorldConfig.wildGarrison(level, sea)));

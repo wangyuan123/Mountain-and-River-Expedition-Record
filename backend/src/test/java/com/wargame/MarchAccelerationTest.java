@@ -54,8 +54,8 @@ class MarchAccelerationTest extends BaseServiceTest {
         long start = old.getStartAt(), arrival = old.getArriveAt(), version = old.getVersion();
         March updated = accelerate(old);
         long saved = arrival - updated.getArriveAt();
-        long operationTime = arrival - saved * 3;
-        assertTrue(saved > 59_000 && saved <= 60_000);
+        long operationTime = arrival - saved * 2;
+        assertTrue(saved > 89_000 && saved <= 90_000);
         double before = (double) (operationTime - start) / (arrival - start);
         double after = (double) (operationTime - updated.getStartAt()) / (updated.getArriveAt() - updated.getStartAt());
         assertEquals(before, after, 0.00002, "压缩时间轴不能让地图队伍跳跃");
@@ -72,13 +72,13 @@ class MarchAccelerationTest extends BaseServiceTest {
         verify(pushes).pushMarchUpdate(eq(playerId), argThat(event -> "accelerated".equals(event.get("event"))));
     }
 
-    @Test void tenSecondFloorAppliesNearArrival() {
+    @Test void thirtySecondFloorAppliesNearArrival() {
         March march = moving(false);
-        march.setArriveAt(System.currentTimeMillis() + 14_000);
+        march.setArriveAt(System.currentTimeMillis() + 44_000);
         long before = System.currentTimeMillis();
         March updated = accelerate(march);
         long after = System.currentTimeMillis();
-        assertTrue(updated.getArriveAt() >= before + 10_000 && updated.getArriveAt() <= after + 10_000);
+        assertTrue(updated.getArriveAt() >= before + 30_000 && updated.getArriveAt() <= after + 30_000);
         assertEquals(2, stock());
     }
 

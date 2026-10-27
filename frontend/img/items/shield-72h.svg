@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <!-- Outer rim metallic gradient (Imperial Royal Gold) -->
+    <linearGradient id="shield72h_rim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="20%" stop-color="#fbbf24"/>
+      <stop offset="55%" stop-color="#d97706"/>
+      <stop offset="85%" stop-color="#78350f"/>
+      <stop offset="100%" stop-color="#451a03"/>
+    </linearGradient>
+
+    <!-- Inner field gradient (Cosmic Royal Amethyst to Obsidian Void) -->
+    <linearGradient id="shield72h_plate" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#581c87"/>
+      <stop offset="40%" stop-color="#3b0764"/>
+      <stop offset="100%" stop-color="#0f021c"/>
+    </linearGradient>
+
+    <!-- Cosmic Amethyst & Gold tactical energy glow -->
+    <radialGradient id="shield72h_glow" cx="50%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#c084fc" stop-opacity="0.95"/>
+      <stop offset="35%" stop-color="#a855f7" stop-opacity="0.6"/>
+      <stop offset="75%" stop-color="#7e22ce" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#7e22ce" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Core Supreme Energy Star pulse -->
+    <linearGradient id="shield72h_core" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="30%" stop-color="#fef08a"/>
+      <stop offset="70%" stop-color="#c084fc"/>
+      <stop offset="100%" stop-color="#9333ea"/>
+    </linearGradient>
+
+    <filter id="shield72h_shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#shield72h_shadow)">
+    <!-- Base shield rim (Golden Imperial Fortress) -->
+    <path d="M32 3.5 L53.5 7.5 C56.5 22 55.5 37 48.5 48 L32 60.5 L15.5 48 C8.5 37 7.5 22 10.5 7.5 Z"
+          fill="url(#shield72h_rim)" stroke="#fde047" stroke-width="1.2" stroke-linejoin="round"/>
+
+    <!-- Imperial Winged Crest top accents -->
+    <path d="M19 8 L24 4 L32 6 L40 4 L45 8" fill="none" stroke="#fef08a" stroke-width="1.2" stroke-linecap="round"/>
+
+    <!-- Inner armored bevel border -->
+    <path d="M32 6.8 L50.5 10.2 C52.8 23 52 36 46 46 L32 57 L18 46 C12 36 11.2 23 13.5 10.2 Z"
+          fill="url(#shield72h_plate)" stroke="#c084fc" stroke-width="0.9"/>
+
+    <!-- Forcefield Cosmic Glow -->
+    <path d="M32 8.5 L49 11.5 C50.8 23.5 50.2 35 45 44.5 L32 55 L19 44.5 C13.8 35 13.2 23.5 15 11.5 Z"
+          fill="url(#shield72h_glow)"/>
+
+    <!-- Hexagonal energy grid pattern lines (Amethyst & Gold) -->
+    <g stroke="#c084fc" stroke-width="0.75" stroke-opacity="0.55" fill="none">
+      <polygon points="32,13 37.5,16.5 37.5,23 32,26.5 26.5,23 26.5,16.5"/>
+      <polygon points="22.5,19.5 27,22.5 27,28.5 22.5,31.5 18,28.5 18,22.5"/>
+      <polygon points="41.5,19.5 46,22.5 46,28.5 41.5,31.5 37,28.5 37,22.5"/>
+      <polygon points="32,26.5 37.5,30 37.5,36.5 32,40 26.5,36.5 26.5,30"/>
+    </g>
+
+    <!-- Cosmic plasma orbital rings -->
+    <ellipse cx="32" cy="27" rx="14.5" ry="11.5" fill="none" stroke="#fde047" stroke-width="0.9" stroke-dasharray="3 2" stroke-opacity="0.85"/>
+    <ellipse cx="32" cy="27" rx="19.5" ry="15.5" fill="none" stroke="#a855f7" stroke-width="0.7" stroke-opacity="0.5"/>
+
+    <!-- Radiant Imperial Supreme Aegis Star -->
+    <path d="M32 15 L35.5 22.5 L44 23 L37.5 28.5 L41 36.5 L32 32.5 L23 36.5 L26.5 28.5 L20 23 L28.5 22.5 Z"
+          fill="url(#shield72h_core)"/>
+    <circle cx="32" cy="27" r="4" fill="#ffffff"/>
+    <circle cx="32" cy="27" r="1.8" fill="#581c87"/>
+
+    <!-- Top golden crown jewel -->
+    <polygon points="32,4 34,7 32,9 30,7" fill="#fef08a"/>
+
+    <!-- Corner gold studs -->
+    <circle cx="15" cy="11.5" r="1.4" fill="#fde047" stroke="#581c87" stroke-width="0.5"/>
+    <circle cx="49" cy="11.5" r="1.4" fill="#fde047" stroke="#581c87" stroke-width="0.5"/>
+
+    <!-- Tactical Duration Badge (72H) -->
+    <g transform="translate(0, 0)">
+      <rect x="18" y="44.5" width="28" height="12" rx="3" ry="3"
+            fill="#23053d" stroke="#fde047" stroke-width="1.4"/>
+      <rect x="19" y="45.5" width="26" height="10" rx="2" ry="2"
+            fill="none" stroke="#c084fc" stroke-width="0.6" stroke-opacity="0.8"/>
+      <text x="32" y="51.2"
+            text-anchor="middle"
+            dominant-baseline="central"
+            fill="#fef9c3"
+            font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+            font-weight="900"
+            font-size="9"
+            letter-spacing="0.4">72H</text>
+    </g>
+  </g>
+</svg>

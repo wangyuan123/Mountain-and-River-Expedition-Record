@@ -30,11 +30,17 @@
     '  vec2 coast = vWorld;',
     '  if (uWorldSize > uQuadrantSize) coast = uQuadrantSize - abs(vWorld - uQuadrantSize);',
     '  if (coast.x > uTerrainSize || coast.y > uTerrainSize) discard;',
-    '  float depth = (texture2D(uDepth, coast / uTerrainSize).r * 255.0 - 128.0) / 14.0;',
-    '  if (depth <= 0.0) discard;',
-    '  float shore = smoothstep(0.02, 0.65, depth);',
+    // 方案 1：岸线域扭曲 (Domain Warping)，打碎栅格直线与折角
+    '  vec2 warp = vec2(',
+    '    sin(coast.y * 1.15 + 0.4) * 0.32 + sin(coast.y * 2.85 + 1.2) * 0.14 + cos(coast.x * 3.4 + 0.8) * 0.08,',
+    '    cos(coast.x * 1.15 + 0.6) * 0.32 + cos(coast.x * 2.85 + 1.5) * 0.14 + sin(coast.y * 3.4 + 0.2) * 0.08',
+    '  );',
+    '  vec2 warpedCoast = clamp(coast + warp, 0.0, uTerrainSize);',
+    '  float depth = (texture2D(uDepth, warpedCoast / uTerrainSize).r * 255.0 - 128.0) / 14.0;',
+    '  if (depth <= -0.05) discard;',
+    '  float shore = smoothstep(-0.02, 0.60, depth);',
     // 岸距同时控制波纹与反光：近岸保留轻微起伏，向海内六格平滑衰减为静水。
-    '  float activity = 1.0 - smoothstep(0.65, 6.0, depth);',
+    '  float activity = 1.0 - smoothstep(0.60, 6.0, depth);',
     // 两层法线以不同尺度、方向和速度流动，细浪与高光共用同一波面。
     '  vec2 p = vWorld / 5.5;',
     '  vec3 waveA = texture2D(uRipples, p + vec2(uTime * 0.012, -uTime * 0.008)).rgb;',
@@ -55,8 +61,16 @@
     '  water += ((diffuse - 0.72) * vec3(0.15, 0.18, 0.20) + (height - 0.5) * 0.035) * activity;',
     '  water += max(0.0, sheen - 0.3) * vec3(0.035, 0.045, 0.055) * activity;',
     '  water = mix(water, vec3(0.92, 0.97, 0.97), glint * 0.28 * shore * activity);',
-    // 预乘 alpha 保持海岸底色和沙滩可见，避免把岸线变成硬边蓝色遮罩。
-    '  float alpha = shore * 0.94;',
+    // 方案 2：近岸潮涌波浪与动态白沫 (Shoreline Foam & Wave Wash)
+    '  float wavePhase = uTime * 1.8 - depth * 11.0 + (waveA.r - 0.5) * 3.5;',
+    '  float waveCrest = smoothstep(0.35, 0.95, sin(wavePhase));',
+    '  float shallowZone = 1.0 - smoothstep(0.0, 0.45, max(0.0, depth));',
+    '  float edgeLace = smoothstep(0.09, 0.01, abs(depth - 0.035)) * (waveA.b * 0.45 + 0.55);',
+    '  float foam = clamp(waveCrest * shallowZone * 0.85 + edgeLace * 0.45, 0.0, 1.0);',
+    '  vec3 foamColor = vec3(0.93, 0.97, 0.99);',
+    '  water = mix(water, foamColor, foam * 0.68 * activity);',
+    // 预乘 alpha 保持海岸底色和沙滩可见，并随碎浪轻柔过渡
+    '  float alpha = clamp(shore * 0.94 + foam * 0.20, 0.0, 0.96);',
     '  gl_FragColor = vec4(water * alpha, alpha);',
     '}'
   ].join('\n');

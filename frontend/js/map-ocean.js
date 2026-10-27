@@ -34,6 +34,21 @@
     var xx=x-.5,yy=y-.5,ix=Math.floor(xx),iy=Math.floor(yy),fx=xx-ix,fy=yy-iy;
     return (at(ix,iy)*(1-fx)+at(ix+1,iy)*fx)*(1-fy)+(at(ix,iy+1)*(1-fx)+at(ix+1,iy+1)*fx)*fy;
   }
+  /**
+   * 岸线域扭曲偏移：多频连续正弦波打散离散网格的直线边界与折角。
+   * 与水体 WebGL 着色器完全同步，在象限镜像和瓦片接缝处保持无缝连续。
+   */
+  function coastWarp(x, y) {
+    var mx = mirror(x), my = mirror(y);
+    var wx = Math.sin(my * 1.15 + 0.4) * 0.32 + Math.sin(my * 2.85 + 1.2) * 0.14 + Math.cos(mx * 3.4 + 0.8) * 0.08;
+    var wy = Math.cos(mx * 1.15 + 0.6) * 0.32 + Math.cos(mx * 2.85 + 1.5) * 0.14 + Math.sin(my * 3.4 + 0.2) * 0.08;
+    return { x: wx, y: wy };
+  }
+  function sampleCoast(x, y) {
+    if (!depth) return -1000;
+    var w = coastWarp(x, y);
+    return sample(x + w.x, y + w.y);
+  }
   function sea(x,y) { x=mirror(Math.floor(x));y=mirror(Math.floor(y));return x>=0&&y>=0&&x<size&&y<size&&cells[y*size+x]==='1'; }
   function isOcean(x,y) {
     if (!cells || !cells.length) return false;
@@ -49,10 +64,18 @@
     var idx = by * size + bx;
     return cells[idx] === '0' && mainland[idx] === 0;
   }
-  var sandRGB = [179,168,125], shallowRGB = [94,160,160], deepRGB = [34,77,108];
+  var sandRGB = [179,168,125], wetSandRGB = [156,144,106], shallowRGB = [94,160,160], deepRGB = [34,77,108];
   function paint(channel, land, d, grain) {
     if(d<-.9)return land;
-    if(d<0){var blend=Math.min(.86,(d+.9)/.9);return land+(sandRGB[channel]-land)*blend;}
+    if(d<0){
+      var blend=Math.min(.86,(d+.9)/.9);
+      var sand=sandRGB[channel];
+      if(d>-.25){
+        var wet=Math.min(1,(d+.25)/.25);
+        sand=sand+(wetSandRGB[channel]-sand)*wet;
+      }
+      return land+(sand-land)*blend;
+    }
     var t=Math.min(1,d/9), shallow=shallowRGB[channel], deep=deepRGB[channel];
     var water=shallow+(deep-shallow)*t+grain*2;
     if(d<.16)water+=22*(1-d/.16);return water;
@@ -160,5 +183,5 @@
     shape.forEach(function(p){puff(p[0],p[1],p[2],p[3],true);});
     return canvas;
   }
-  G.MapOcean={nearestCoast:nearestCoast,configure:configure,sea:sea,isOcean:isOcean,isIsland:isIsland,sample:sample,paint:paint,createDepthMap:createDepthMap,clouds:clouds,createCloud:createCloud,ready:function(){return !!depth;},clear:function(){cells='';depth=null;mainland=null;}};
+  G.MapOcean={nearestCoast:nearestCoast,configure:configure,sea:sea,isOcean:isOcean,isIsland:isIsland,sample:sample,coastWarp:coastWarp,sampleCoast:sampleCoast,paint:paint,createDepthMap:createDepthMap,clouds:clouds,createCloud:createCloud,ready:function(){return !!depth;},clear:function(){cells='';depth=null;mainland=null;}};
 })(window.Game=window.Game||{});

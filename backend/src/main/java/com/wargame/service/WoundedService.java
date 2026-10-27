@@ -17,6 +17,10 @@ public class WoundedService {
 
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    @org.springframework.context.annotation.Lazy
+    private VipService vipService;
     public static final long RETENTION_MS = 7L * 24 * 60 * 60 * 1000;
     private final WoundedUnitRepository wounded;
     private final ArmyUnitRepository army;
@@ -112,6 +116,18 @@ public class WoundedService {
         return Math.max(1L, (productionCost + 9) / 10) * count;
     }
 
+    /** VIP 特许专属折后黄金费用。 */
+    public long goldCost(Long playerId, String unit, int count) {
+        long original = goldCost(unit, count);
+        if (playerId == null || vipService == null) return original;
+        Player p = players.findById(playerId).orElse(null);
+        double discount = vipService.getWoundedGoldDiscount(p);
+        if (discount > 0) {
+            return Math.max(1L, (long) Math.ceil(original * (1.0 - discount)));
+        }
+        return original;
+    }
+
     /** 钻石按本次治疗的黄金总费用每 1000 黄金折算一颗，不足一颗向上取整。 */
     public long diamondCost(String unit, int count) {
         return (goldCost(unit, count) + 999) / 1000;
@@ -122,6 +138,10 @@ public class WoundedService {
     public Map<String, Object> getCamp(Long playerId) {
         long now = GameClock.now();
         int citySlot = cityScope.slot(playerId);
+        Player player = players.findById(playerId).orElse(null);
+        double vipDiscount = vipService != null ? vipService.getWoundedGoldDiscount(player) : 0.0;
+        int vipDiscountPercent = (int) Math.round(vipDiscount * 100);
+
         List<Map<String, Object>> batches = new ArrayList<>();
         long total = 0;
         for (WoundedUnit batch : wounded.findByPlayerIdAndCitySlotAndExpiresAtGreaterThanOrderByExpiresAtAscIdAsc(playerId, citySlot, now)) {
@@ -137,8 +157,17 @@ public class WoundedService {
             item.put("createdAt", batch.getCreatedAt());
             item.put("expiresAt", batch.getExpiresAt());
             item.put("recoveryPercent", batch.getRecoveryPercent());
-            item.put("goldPerUnit", goldCost(batch.getType(), 1));
-            item.put("goldCost", goldCost(batch.getType(), batch.getCount()));
+
+            long origGoldPerUnit = goldCost(batch.getType(), 1);
+            long origGoldCost = goldCost(batch.getType(), batch.getCount());
+            long finalGoldPerUnit = goldCost(playerId, batch.getType(), 1);
+            long finalGoldCost = goldCost(playerId, batch.getType(), batch.getCount());
+
+            item.put("originalGoldPerUnit", origGoldPerUnit);
+            item.put("originalGoldCost", origGoldCost);
+            item.put("goldPerUnit", finalGoldPerUnit);
+            item.put("goldCost", finalGoldCost);
+            item.put("vipDiscountPercent", vipDiscountPercent);
             item.put("diamondCost", diamondCost(batch.getType(), batch.getCount()));
             batches.add(item);
             total += batch.getCount();
@@ -147,6 +176,7 @@ public class WoundedService {
         camp.put("batches", batches);
         camp.put("total", total);
         camp.put("medicalLevel", medicalLevel(playerId));
+        camp.put("vipDiscountPercent", vipDiscountPercent);
         camp.put("serverTime", now);
         camp.put("citySlot", citySlot);
         CityEconomy economy = cityScope.economy(playerId);
@@ -173,7 +203,7 @@ public class WoundedService {
         if (batch.getCitySlot() != cityScope.slot(playerId)) throw new IllegalArgumentException("请切换到伤兵所属城市后治疗");
         if (batch.getExpiresAt() <= GameClock.now()) throw new IllegalArgumentException("该批伤兵已超过救治期限");
         if (count > batch.getCount()) throw new IllegalArgumentException("治疗数量超过剩余伤兵");
-        long cost = "gold".equals(currency) ? goldCost(batch.getType(), count) : diamondCost(batch.getType(), count);
+        long cost = "gold".equals(currency) ? goldCost(playerId, batch.getType(), count) : diamondCost(batch.getType(), count);
         long available = "gold".equals(currency) ? Objects.requireNonNullElse(balance.getGold(), 0L) : Objects.requireNonNullElse(balance.getDiamond(), 0).longValue();
         if (available < cost) throw new IllegalArgumentException("gold".equals(currency) ? "黄金不足，可减少数量或选择钻石治疗" : "钻石不足，可减少数量或选择黄金治疗");
         if ("gold".equals(currency)) balance.setGold(available - cost);

@@ -1,0 +1,96 @@
+{
+  "firstPage": {
+    "type": "guilds",
+    "metric": "members",
+    "page": 1,
+    "pageSize": 20,
+    "total": 4,
+    "totalPages": 1,
+    "updatedAt": 1793088798082,
+    "entries": [
+      {
+        "id": 1,
+        "rank": 1,
+        "name": "战火·兄弟情谊",
+        "prestige": 114,
+        "icon": "g02",
+        "leaderName": "深入山林开荒种地",
+        "members": 3
+      },
+      {
+        "id": 5,
+        "rank": 2,
+        "name": "驻防验收1024",
+        "prestige": 14088,
+        "icon": "⚑",
+        "leaderName": "远征统帅_829395",
+        "members": 2
+      },
+      {
+        "id": 4,
+        "rank": 3,
+        "name": "海岸远征试玩团",
+        "prestige": 274468750,
+        "icon": "g04",
+        "leaderName": "远征统帅_163822",
+        "members": 1
+      },
+      {
+        "id": 3,
+        "rank": 4,
+        "name": "情义盟*并肩作战",
+        "prestige": 2,
+        "icon": "g06",
+        "leaderName": "雨天唐纳德",
+        "members": 1
+      }
+    ],
+    "mine": {
+      "id": 4,
+      "rank": 3,
+      "name": "海岸远征试玩团",
+      "prestige": 274468750,
+      "icon": "g04",
+      "leaderName": "远征统帅_163822",
+      "members": 1
+    }
+  },
+  "allEntries": [
+    {
+      "id": 1,
+      "rank": 1,
+      "name": "战火·兄弟情谊",
+      "prestige": 114,
+      "icon": "g02",
+      "leaderName": "深入山林开荒种地",
+      "members": 3
+    },
+    {
+      "id": 5,
+      "rank": 2,
+      "name": "驻防验收1024",
+      "prestige": 14088,
+      "icon": "⚑",
+      "leaderName": "远征统帅_829395",
+      "members": 2
+    },
+    {
+      "id": 4,
+      "rank": 3,
+      "name": "海岸远征试玩团",
+      "prestige": 274468750,
+      "icon": "g04",
+      "leaderName": "远征统帅_163822",
+      "members": 1
+    },
+    {
+      "id": 3,
+      "rank": 4,
+      "name": "情义盟*并肩作战",
+      "prestige": 2,
+      "icon": "g06",
+      "leaderName": "雨天唐纳德",
+      "members": 1
+    }
+  ]
+}

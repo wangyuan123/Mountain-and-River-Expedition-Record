@@ -71,6 +71,10 @@ public class TechService {
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.quest.OnboardingService onboarding;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    @org.springframework.context.annotation.Lazy
+    private VipService vipService;
+
     // ================================================================
     //  upgrade / startResearch - 开始研发科技
     // ================================================================
@@ -97,14 +101,26 @@ public class TechService {
         long now = GameClock.now();
         settleCompletedResearchForCity(playerId, cityScope.slot(playerId), now);
 
-        // 检查是否有正在研究的科技（科技为全帝国共享，同时只能研发一项）
+        // 检查是否有正在研究的相同科技（全战区单一科技互斥）
         List<TechResearchQueue> existingQueue = techResearchQueueRepository.findByPlayerIdOrderByStartedAtAscIdAsc(playerId);
-        if (!existingQueue.isEmpty()) {
-            TechResearchQueue current = existingQueue.get(0);
-            TechDef curDef = GameData.TECHS.get(current.getTechType());
-            String curName = curDef != null ? curDef.name() : current.getTechType();
+        boolean alreadyResearchingSameTech = existingQueue.stream()
+                .anyMatch(q -> techType.equals(q.getTechType()));
+        if (alreadyResearchingSameTech) {
             result.put("success", false);
-            result.put("message", "军工科技研发中心正在研发【" + curName + " Lv." + current.getTargetLevel() + "】，请等待完成或使用加速符");
+            result.put("message", "全战区科研互斥：该科技已在研发队列中，不可并发升级同种科技");
+            return result;
+        }
+
+        // 检查当前城市的科研队列上限（VIP 5 支持每城独立双科技并行）
+        int currentCitySlot = cityScope != null ? cityScope.slot(playerId) : 0;
+        long cityJobsCount = existingQueue.stream()
+                .filter(q -> Objects.equals(q.getCitySlot() == null ? 0 : q.getCitySlot(), currentCitySlot))
+                .count();
+        Player player = playerRepository.findById(playerId).orElse(null);
+        int maxCityTechQueue = vipService != null ? vipService.getCityTechQueueLimit(player) : 1;
+        if (cityJobsCount >= maxCityTechQueue) {
+            result.put("success", false);
+            result.put("message", "军工科技研发中心正在研发其他项目，当前城市科研队列已达上限（" + maxCityTechQueue + "队），请等待完成或使用加速符");
             return result;
         }
 
@@ -376,6 +392,29 @@ public class TechService {
         m.put("remainingSeconds", rem);
         m.put("citySlot", q.getCitySlot());
         return m;
+    }
+
+    public List<Map<String, Object>> getActiveResearches(Long playerId) {
+        List<TechResearchQueue> list = techResearchQueueRepository.findByPlayerIdOrderByStartedAtAscIdAsc(playerId);
+        if (list == null || list.isEmpty()) return Collections.emptyList();
+        long now = GameClock.now();
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (TechResearchQueue q : list) {
+            long rem = Math.max(0, (q.getFinishesAt() - now) / 1000L);
+            TechDef t = GameData.TECHS.get(q.getTechType());
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("queueId", q.getId());
+            m.put("techType", q.getTechType());
+            m.put("name", t != null ? t.name() : ("log_production".equals(q.getTechType()) ? "四项资源产量（旧科研）" : q.getTechType()));
+            m.put("targetLevel", q.getTargetLevel());
+            m.put("startedAt", q.getStartedAt());
+            m.put("finishesAt", q.getFinishesAt());
+            m.put("durationSeconds", q.getDurationSeconds());
+            m.put("remainingSeconds", rem);
+            m.put("citySlot", q.getCitySlot());
+            result.add(m);
+        }
+        return result;
     }
 
     // ================================================================

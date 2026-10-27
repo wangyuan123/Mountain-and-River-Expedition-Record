@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="popOrd_bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e3a8a"/>
+      <stop offset="40%" stop-color="#172554"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+    <linearGradient id="popOrd_gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="40%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+    <filter id="popOrd_shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#popOrd_shadow)">
+    <!-- Shield / Tablet Plaque -->
+    <path d="M14 8 L50 8 L54 16 L54 44 L32 58 L10 44 L10 16 Z"
+          fill="url(#popOrd_bg)" stroke="url(#popOrd_gold)" stroke-width="1.2"/>
+    <path d="M16 10 L48 10 L51 17 L51 42 L32 55 L13 42 L13 17 Z"
+          fill="#0f172a" stroke="#1d4ed8" stroke-width="0.8"/>
+
+    <!-- Radiant Mobilization Star at Top -->
+    <polygon points="32,11 34,15 38,15 35,18 36,22 32,19.5 28,22 29,18 26,15 30,15" fill="url(#popOrd_gold)"/>
+
+    <!-- Multi-person Mobilization Silhouettes (Citizens / Workers / Troops) -->
+    <!-- Background Left silhouette -->
+    <circle cx="21" cy="23" r="3" fill="#64748b"/>
+    <path d="M16 34 C16 29, 18 28, 21 28 C24 28, 26 29, 26 34 Z" fill="#64748b"/>
+
+    <!-- Background Right silhouette -->
+    <circle cx="43" cy="23" r="3" fill="#64748b"/>
+    <path d="M38 34 C38 29, 40 28, 43 28 C46 28, 48 29, 48 34 Z" fill="#64748b"/>
+
+    <!-- Foreground Center Hero Silhouette (Leader / Mobilized citizen) -->
+    <circle cx="32" cy="22" r="4" fill="url(#popOrd_gold)"/>
+    <path d="M25 36 C25 29, 28 28, 32 28 C36 28, 39 29, 39 36 Z" fill="url(#popOrd_gold)"/>
+
+    <!-- Laurel of Unity -->
+    <path d="M16 26 C14 34, 18 40, 24 43" fill="none" stroke="#60a5fa" stroke-width="1.2" stroke-linecap="round"/>
+    <path d="M48 26 C50 34, 46 40, 40 43" fill="none" stroke="#60a5fa" stroke-width="1.2" stroke-linecap="round"/>
+
+    <!-- Number '+500' / Banner Badge -->
+    <rect x="20" y="44" width="24" height="9.5" rx="2" ry="2" fill="#1e3a8a" stroke="url(#popOrd_gold)" stroke-width="1"/>
+    <text x="32" y="49" text-anchor="middle" dominant-baseline="central" fill="#ffffff"
+          font-family="system-ui, sans-serif" font-weight="900" font-size="6.8" letter-spacing="0.5">动员令</text>
+  </g>
+</svg>

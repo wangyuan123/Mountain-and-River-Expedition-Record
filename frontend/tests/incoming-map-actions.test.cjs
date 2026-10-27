@@ -29,7 +29,8 @@ function fixture() {
     Core: { state: { player: { activeCityId: 12 }, items: { signalJammingOrder: 2, feintOrder: 1 } } },
     World: {
       renderIncomingIntelligence: () => '<div>雷达情报等级: Lv.5</div><div>兵力区间: 101—500</div>',
-      showConfirm: options => dialogs.push(options)
+      showConfirm: options => dialogs.push(options),
+      useTacticalOrder: (...args) => calls.push(args)
     },
     WorldMap: { invalidate() {} },
     API: { applyMarchStratagem: (...args) => { calls.push(args); return Promise.resolve({ message: '计谋已生效', args }); } },
@@ -50,7 +51,7 @@ function fixture() {
   return { context, game, dialogs, toasts, calls };
 }
 
-test('地图敌军行军弹窗复用粗略军情并提供可用拦截和两种计谋', () => {
+test('来袭详情提供拦截和干扰令，不提供撤退计谋', () => {
   const f = fixture();
   const view = Object.create(f.game.TestMapView.prototype);
   const arrivalAt = Date.now() + 61_000;
@@ -60,11 +61,11 @@ test('地图敌军行军弹窗复用粗略军情并提供可用拦截和两种�
   assert.match(view.incomingDialog.innerHTML, /雷达情报等级: Lv.5/);
   assert.match(view.incomingDialog.innerHTML, /出城拦截/);
   assert.match(view.incomingDialog.innerHTML, /通讯干扰令 ×2/);
-  assert.match(view.incomingDialog.innerHTML, /佯动诱敌令 ×1/);
+  assert.doesNotMatch(view.incomingDialog.innerHTML, /佯动诱敌令/);
   assert.doesNotMatch(view.incomingDialog.innerHTML, /精确兵力/);
 });
 
-test('使用计谋前二次确认，并按当前情报中的抵达时间提交', async () => {
+test('详情将计谋选择交给统一预览流程', () => {
   const f = fixture();
   const view = Object.create(f.game.TestMapView.prototype);
   const arrivalAt = Date.now() + 61_000;
@@ -74,12 +75,18 @@ test('使用计谋前二次确认，并按当前情报中的抵达时间提交',
   const button = { disabled: false, hasAttribute: name => name === 'data-incoming-stratagem',
     getAttribute: name => name === 'data-incoming-stratagem' ? 'signalJammingOrder' : null };
   view.incomingDialog.listeners.click({ stopPropagation() {}, target: { closest: () => button } });
-  assert.match(f.dialogs[0].message, /通讯干扰令/);
-  f.dialogs[0].onConfirm();
-  await new Promise(resolve => setImmediate(resolve));
-  assert.deepEqual(f.calls[0], [77, 'signalJammingOrder', arrivalAt]);
-  assert.equal(f.toasts.at(-1), '计谋已生效');
-  assert.equal(view.incomingDialog, null);
+  assert.deepEqual(f.calls[0], [77, 'signalJammingOrder']);
+});
+
+test('未挂载地图时仍可打开并关闭撤退详情', () => {
+  const f = fixture();
+  f.game.WorldMap.openIncomingMarch({ marchId: 77, targetCityId: 12, targetX: 10, targetY: 20,
+    returning: true, arriveAt: Date.now() + 61_000 });
+  const dialog = f.game.WorldMap.incomingDetails.incomingDialog;
+  assert.match(dialog.innerHTML, /佯动诱敌令 ×1/);
+  assert.doesNotMatch(dialog.innerHTML, /通讯干扰令|出城拦截/);
+  f.game.WorldMap.closeIncomingMarch();
+  assert.equal(f.game.WorldMap.incomingDetails.incomingDialog, null);
 });
 
 test('其他城市目标不开放出城拦截和拖延计谋入口', () => {

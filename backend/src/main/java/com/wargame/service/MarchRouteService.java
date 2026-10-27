@@ -59,7 +59,9 @@ public class MarchRouteService {
             if(city.isPresent()&&!city.get().isLegacyNaval()&&!hasPort(playerId,scope.slot(playerId)))throw new IllegalArgumentException("请先在出发城市建设港口");
             if(transfer&&target instanceof PlayerCity c&&!c.isLegacyNaval()&&!hasPort(c.getOwnerId(),c.getCitySlot()))throw new IllegalArgumentException("目标城市需要先建设港口才能接收舰队");
             if(starts.isEmpty()&&city.map(PlayerCity::isLegacyNaval).orElse(false)){starts=List.of(nearestSea(mask,sx,sy));legacy=true;}
+            if(starts.isEmpty()&&isIsland(mask,sx,sy)){starts=List.of(nearestSea(mask,sx,sy));}
             if(ends.isEmpty()&&transfer&&target instanceof PlayerCity c&&c.isLegacyNaval()){ends=List.of(nearestSea(mask,tx,ty));legacy=true;}
+            if(ends.isEmpty()&&isIsland(mask,tx,ty)){ends=List.of(nearestSea(mask,tx,ty));}
             if(starts.isEmpty())throw new IllegalArgumentException("舰队需要从沿海城市出发，请先调遣至港口城市");
             if(ends.isEmpty())throw new IllegalArgumentException("舰队只能前往临海目标，内陆目标请使用陆军或空军");
             requireLift(population,capacity);

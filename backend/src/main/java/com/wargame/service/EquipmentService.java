@@ -135,6 +135,13 @@ public class EquipmentService {
         if (officer.getPlayerId() == null || officer.getId() == null || officer.getId() < 0) return new Attributes(a[0], a[1], a[2], a[3], List.of(), List.of());
         var equipped = equipmentRepository.findByPlayerIdAndOfficerId(officer.getPlayerId(), officer.getId());
         var prep = progress.preparation(officer.getPlayerId(), officer.getId());
+        return calculateAttributes(officer, equipped, prep);
+    }
+
+    /** 批量估值与战斗共用整备、十二部位去重和套装共鸣规则，不额外查询数据库。 */
+    public static Attributes calculateAttributes(Officer officer, List<OfficerEquipment> equipped, Map<String, Integer> prep) {
+        if (officer == null) return new Attributes(0, 0, 0, 0, List.of(), List.of());
+        int[] a = {value(officer.getMilitary()), value(officer.getDefense()), value(officer.getLogistics()), value(officer.getKnowledge())};
         Set<String> used = new HashSet<>(); Map<String, Set<String>> sets = new LinkedHashMap<>();
         for (var e : equipped) {
             if (!used.add(e.getSlot())) continue;

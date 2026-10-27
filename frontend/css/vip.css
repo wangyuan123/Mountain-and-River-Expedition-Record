@@ -1,0 +1,1313 @@
+/* ==========================================================================
+   战时特勤统帅部 (VIP System) 样式规范
+   1941 滇缅远征军历史军工战备风格 · 军绿/黄铜/战地金质感
+   ========================================================================== */
+
+/* ---------------- 顶部栏与名牌徽章 ---------------- */
+.topbar-vip-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 2px 5px;
+  margin-left: 5px;
+  border-radius: 3px;
+  background: #3e4a3d;
+  color: #d8cba8;
+  border: 1px solid #70684f;
+  letter-spacing: 0.5px;
+  vertical-align: middle;
+}
+
+.topbar-vip-badge.vip-badge-gold {
+  background: linear-gradient(135deg, #785a28 0%, #a8833d 50%, #5d441c 100%);
+  color: #fff9e6;
+  border: 1px solid #e2be68;
+  box-shadow: 0 0 6px rgba(212, 175, 55, 0.4);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.vip-entry-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  padding: 2px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 4px;
+  background: rgba(191, 161, 95, 0.15);
+  color: var(--ink);
+  border: 1px solid rgba(191, 161, 95, 0.35);
+  transition: all 0.2s ease;
+}
+
+.vip-entry-btn:hover {
+  background: rgba(191, 161, 95, 0.3);
+  border-color: #bfa15f;
+}
+
+/* ---------------- 首页战备特勤卡片 ---------------- */
+.home-vip-card {
+  margin: 8px 10px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--surface);
+  border: 1px solid rgba(191, 161, 95, 0.4);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+.home-vip-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.home-vip-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.home-vip-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.home-vip-level-tag {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: #3e4a3d;
+  color: #e5dac1;
+  border: 1px solid #756a52;
+}
+
+.home-vip-level-tag.gold {
+  background: linear-gradient(135deg, #785a28, #a8833d);
+  color: #fff9e6;
+  border-color: #ffd700;
+}
+
+.home-vip-go {
+  font-size: 12px;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.home-vip-progress-row {
+  margin-bottom: 8px;
+}
+
+.home-vip-progress-text {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+
+.home-vip-progress-bar {
+  height: 6px;
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.home-vip-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #bfa15f, #e5c158);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.home-vip-privileges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.home-vip-priv-pill {
+  font-size: 11px;
+  padding: 1px 6px;
+  background: rgba(191, 161, 95, 0.12);
+  color: var(--ink);
+  border-radius: 3px;
+  border: 1px solid rgba(191, 161, 95, 0.25);
+}
+
+.home-vip-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-top: 1px dashed rgba(0, 0, 0, 0.08);
+  padding-top: 8px;
+}
+
+.home-vip-salary-hint {
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.home-vip-salary-btn {
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ---------------- 战时特勤统帅部主弹窗 ---------------- */
+.vip-modal-dialog {
+  max-width: 680px;
+  width: 95%;
+  max-height: 90vh;
+  max-height: min(90vh, calc(100dvh - 24px));
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 2px solid #a8833d;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.vip-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #2b332a 0%, #3a4539 100%);
+  color: #fff9e6;
+  border-bottom: 2px solid #a8833d;
+  flex-shrink: 0;
+}
+
+.vip-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.vip-close-btn {
+  background: none;
+  border: none;
+  color: #d8cba8;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 2px 6px;
+  flex-shrink: 0;
+}
+
+.vip-close-btn:hover {
+  color: #ffffff;
+}
+
+/* 统帅部顶部特权与充值概览 Hero */
+.vip-hero {
+  padding: 14px 16px;
+  background: linear-gradient(180deg, rgba(191, 161, 95, 0.15) 0%, rgba(191, 161, 95, 0.03) 100%);
+  border-bottom: 1px solid rgba(191, 161, 95, 0.3);
+  flex-shrink: 0;
+}
+
+.vip-hero-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.vip-hero-level {
+  font-size: 20px;
+  font-weight: 800;
+  color: #a8833d;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vip-hero-title-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  padding: 2px 6px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+.vip-hero-recharge {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: right;
+}
+
+.vip-hero-recharge b {
+  color: var(--accent);
+  font-size: 14px;
+}
+
+.vip-hero-progress-track {
+  height: 8px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.vip-hero-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #a8833d, #ffd700);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.vip-hero-next-tip {
+  font-size: 11px;
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+}
+
+/* 标签栏 */
+.vip-tabs {
+  display: flex;
+  background: rgba(0, 0, 0, 0.04);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-shrink: 0;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.vip-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.vip-tab-item {
+  flex: 1 0 auto;
+  min-width: 80px;
+  padding: 10px 8px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.vip-tab-item.active {
+  color: #a8833d;
+  border-bottom-color: #a8833d;
+  background: var(--surface);
+  font-weight: 700;
+}
+
+/* 弹窗内容区 */
+.vip-modal-body {
+  padding: 14px 16px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 城市受领目标选择条 */
+.vip-city-selector-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: rgba(191, 161, 95, 0.12);
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(191, 161, 95, 0.3);
+  margin-bottom: 12px;
+  font-size: 12px;
+  position: relative;
+}
+
+.vip-city-selector-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 下拉容器 */
+.vip-city-dropdown-wrap {
+  position: relative;
+  display: inline-block;
+  min-width: 190px;
+  max-width: 270px;
+}
+
+/* 下拉触发框 (选择城市下拉框) */
+.vip-city-dropdown-trigger {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  border: 1px solid rgba(168, 131, 61, 0.5);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  text-align: left;
+}
+
+.vip-city-dropdown-trigger:hover {
+  border-color: #a8833d;
+  background: var(--surface-sub, rgba(191, 161, 95, 0.08));
+}
+
+.vip-city-dropdown-wrap.open .vip-city-dropdown-trigger {
+  border-color: #a8833d;
+  box-shadow: 0 0 0 2px rgba(168, 131, 61, 0.25);
+}
+
+.vip-city-dropdown-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.vip-city-dropdown-arrow {
+  font-size: 11px;
+  color: #a8833d;
+  transition: transform 0.2s ease;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.vip-city-dropdown-wrap.open .vip-city-dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+/* 下拉菜单浮层 (选择城市下拉弹窗) */
+.vip-city-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 100%;
+  width: max-content;
+  max-width: 300px;
+  background: var(--surface);
+  border: 1.5px solid #a8833d;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  padding: 4px;
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-sizing: border-box;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.vip-city-dropdown-menu[hidden] {
+  display: none !important;
+}
+
+.vip-city-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+  user-select: none;
+}
+
+.vip-city-dropdown-item:hover {
+  background: rgba(191, 161, 95, 0.15);
+  color: var(--accent, #a8833d);
+}
+
+.vip-city-dropdown-item.selected {
+  background: rgba(191, 161, 95, 0.25);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.vip-city-item-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.vip-city-item-check {
+  width: 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #a8833d;
+  display: inline-block;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.vip-city-item-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vip-city-item-badge {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.vip-city-dropdown-item.selected .vip-city-item-badge {
+  background: rgba(168, 131, 61, 0.2);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* 屏幕阅读与保底 select 隐形样式 */
+.vip-sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+}
+
+.vip-city-selector-bar select:not(.vip-sr-only) {
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(168, 131, 61, 0.5);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+}
+
+/* 窄屏自适应 */
+@media (max-width: 440px) {
+  .vip-city-selector-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .vip-city-dropdown-wrap {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .vip-city-dropdown-menu {
+    left: 0;
+    right: 0;
+    max-width: 100%;
+    width: 100%;
+  }
+}
+
+/* 每日军饷卡片 */
+.vip-salary-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 14px;
+}
+
+.vip-salary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.vip-salary-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.vip-backlog-badge {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: #2e6030;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.vip-salary-items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.vip-salary-item-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.vip-salary-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* 全城一键安抚卡片 (VIP 6+) */
+.vip-appease-box {
+  background: rgba(46, 96, 48, 0.06);
+  border: 1px solid rgba(46, 96, 48, 0.25);
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 14px;
+}
+
+.vip-appease-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.vip-appease-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2b562d;
+}
+
+.vip-appease-desc {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+/* 微里程碑军备箱水平轨道 */
+.vip-milestones-track {
+  margin: 12px 0 16px 0;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.vip-milestones-title {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--ink);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.vip-milestones-list {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+
+.vip-milestone-card {
+  flex: 0 0 140px;
+  padding: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.vip-milestone-card.claimed {
+  opacity: 0.6;
+  border-color: #8c8c8c;
+}
+
+.vip-milestone-card.ready {
+  border-color: #ffd700;
+  box-shadow: 0 0 6px rgba(255, 215, 0, 0.4);
+}
+
+.vip-milestone-price {
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.vip-milestone-name {
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+
+.vip-milestone-reward-text {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.3;
+  margin-bottom: 6px;
+}
+
+/* 晋升大礼包列表 (Tab 2) */
+.vip-packs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vip-pack-item {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: var(--surface);
+}
+
+.vip-pack-item.claimed {
+  opacity: 0.65;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.vip-pack-item.ready {
+  border-color: #a8833d;
+  background: rgba(191, 161, 95, 0.05);
+}
+
+.vip-pack-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.vip-pack-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.vip-pack-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.vip-pack-pill {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--ink);
+  border: 1px solid var(--border);
+}
+
+.vip-pack-foot {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* 万能通用技能书推演 (Tab 3) */
+.vip-skill-convert-box {
+  background: var(--surface);
+  border: 1px solid #a8833d;
+  border-radius: 6px;
+  padding: 14px;
+}
+
+.vip-skill-convert-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #a8833d;
+  margin-bottom: 8px;
+}
+
+.vip-skill-balance-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  background: rgba(191, 161, 95, 0.1);
+  border-radius: 4px;
+}
+
+.vip-skill-convert-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.vip-form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vip-form-row label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.vip-form-row select,
+.vip-form-row input {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+}
+
+/* 装扮与特勤特权 (Tab 4) */
+.vip-cosmetics-box {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.vip-cosmetic-section {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+  background: var(--surface);
+}
+
+.vip-cosmetic-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+
+.vip-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.vip-frames-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.vip-frame-card {
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.vip-frame-card.selected {
+  border-color: #a8833d;
+  background: rgba(191, 161, 95, 0.15);
+}
+
+.vip-frame-card.locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------------- 头像框 (Avatar Frames) ---------------- */
+.frame-bronze-v1 {
+  outline: 2px solid #a77044 !important;
+  box-shadow: 0 0 5px rgba(167, 112, 68, 0.6) !important;
+}
+
+.frame-silver-v1 {
+  outline: 2px solid #bcc6cc !important;
+  box-shadow: 0 0 7px rgba(188, 198, 204, 0.7) !important;
+}
+
+.frame-gold-v1 {
+  outline: 2px solid #ffd700 !important;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.8) !important;
+}
+
+.frame-supreme-v1 {
+  outline: 2px solid #e5c158 !important;
+  box-shadow: 0 0 12px rgba(255, 140, 0, 0.8), 0 0 6px rgba(255, 215, 0, 0.9) !important;
+  animation: frameSupremeGlow 2.5s infinite alternate ease-in-out;
+}
+
+@keyframes frameSupremeGlow {
+  0% {
+    outline-color: #ffd700;
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.7);
+  }
+  50% {
+    outline-color: #ff8c00;
+    box-shadow: 0 0 14px rgba(255, 140, 0, 0.9);
+  }
+  100% {
+    outline-color: #ffd700;
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.7);
+  }
+}
+
+/* ---------------- 聊天频道样式 ---------------- */
+.chat-vip-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.1;
+  padding: 1px 4px;
+  border-radius: 2px;
+  margin-right: 4px;
+  background: #3e4a3d;
+  color: #e5dac1;
+  border: 1px solid #756a52;
+  vertical-align: middle;
+}
+
+.chat-vip-badge.vip-badge-gold {
+  background: linear-gradient(135deg, #785a28, #a8833d);
+  color: #fff9e6;
+  border-color: #ffd700;
+  box-shadow: 0 0 4px rgba(255, 215, 0, 0.4);
+}
+
+.vip-chat-bubble-commander .chat-content {
+  background: rgba(191, 161, 95, 0.12) !important;
+  border-left: 2px solid #a8833d !important;
+}
+
+/* ---------------- 免战护盾解除警报二次确认弹窗 ---------------- */
+.shield-warning-modal {
+  max-width: 440px;
+  width: 90%;
+  background: var(--surface);
+  border: 2px solid var(--danger);
+  border-radius: 8px;
+  box-shadow: 0 8px 30px rgba(180, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.shield-warning-header {
+  padding: 12px 16px;
+  background: #6a1a1a;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.shield-warning-body {
+  padding: 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.shield-warning-danger-box {
+  background: rgba(180, 0, 0, 0.08);
+  border-left: 3px solid var(--danger);
+  padding: 8px 12px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: #8b0000;
+  font-weight: 600;
+}
+
+.shield-warning-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.03);
+  border-top: 1px solid var(--border);
+}
+
+/* ---------------- 战时特勤统帅部横屏及紧凑屏适配 ---------------- */
+@media (orientation: landscape) {
+  .vip-modal-dialog {
+    max-width: min(720px, calc(100vw - 24px));
+    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 24px);
+  }
+
+  .shield-warning-modal {
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 680px), (max-height: 520px) {
+  .vip-modal-dialog {
+    max-height: calc(100dvh - 16px);
+  }
+
+  .vip-modal-header {
+    padding: 8px 14px;
+  }
+
+  .vip-modal-title {
+    font-size: 15px;
+  }
+
+  .vip-hero {
+    padding: 8px 14px;
+  }
+
+  .vip-hero-top {
+    margin-bottom: 4px;
+  }
+
+  .vip-hero-level {
+    font-size: 16px;
+    gap: 4px;
+  }
+
+  .vip-hero-title-name {
+    font-size: 12px;
+    padding: 1px 5px;
+  }
+
+  .vip-hero-recharge {
+    font-size: 11px;
+  }
+
+  .vip-hero-recharge b {
+    font-size: 13px;
+  }
+
+  .vip-hero-progress-track {
+    height: 6px;
+    margin-bottom: 4px;
+  }
+
+  .vip-hero-next-tip {
+    font-size: 10px;
+  }
+
+  .vip-tab-item {
+    padding: 7px 8px;
+    font-size: 12px;
+    min-width: 75px;
+  }
+
+  .vip-modal-body {
+    padding: 10px 14px;
+  }
+
+  .vip-city-selector-bar {
+    padding: 6px 10px;
+    margin-bottom: 8px;
+    font-size: 11px;
+  }
+
+  .vip-city-selector-bar select {
+    padding: 2px 6px;
+    font-size: 11px;
+  }
+
+  .vip-salary-box,
+  .vip-appease-box,
+  .vip-pack-item,
+  .vip-skill-convert-box,
+  .vip-cosmetic-section {
+    padding: 10px;
+    margin-bottom: 8px;
+  }
+
+  .vip-salary-header,
+  .vip-appease-head,
+  .vip-pack-head {
+    margin-bottom: 4px;
+  }
+
+  .vip-salary-title,
+  .vip-appease-title,
+  .vip-pack-title,
+  .vip-milestones-title {
+    font-size: 13px;
+  }
+
+  .vip-milestones-track {
+    margin: 8px 0 10px 0;
+    padding: 8px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 420px), (max-height: 400px) {
+  .vip-modal-dialog {
+    max-height: calc(100dvh - 10px);
+  }
+
+  .vip-modal-header {
+    padding: 6px 10px;
+  }
+
+  .vip-modal-title {
+    font-size: 14px;
+  }
+
+  .vip-hero {
+    padding: 6px 10px;
+  }
+
+  .vip-hero-top {
+    margin-bottom: 2px;
+  }
+
+  .vip-hero-level {
+    font-size: 14px;
+  }
+
+  .vip-hero-progress-track {
+    height: 5px;
+    margin-bottom: 3px;
+  }
+
+  .vip-tab-item {
+    padding: 5px 6px;
+    font-size: 11px;
+    min-width: 65px;
+  }
+
+  .vip-modal-body {
+    padding: 8px 10px;
+  }
+
+  .vip-city-selector-bar {
+    padding: 4px 8px;
+    margin-bottom: 6px;
+  }
+
+  .vip-salary-box,
+  .vip-appease-box,
+  .vip-pack-item,
+  .vip-skill-convert-box,
+  .vip-cosmetic-section {
+    padding: 8px;
+    margin-bottom: 6px;
+  }
+}
+
+/* ---------------- 全等级特权与奖励总览查看器 ---------------- */
+.vip-level-pills-row {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 4px 2px 8px 2px;
+  margin-bottom: 10px;
+  scrollbar-width: thin;
+}
+
+.vip-level-pill-btn {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.vip-level-pill-btn:hover {
+  border-color: #a8833d;
+  background: rgba(191, 161, 95, 0.1);
+}
+
+.vip-level-pill-btn.active {
+  background: linear-gradient(135deg, #785a28, #a8833d);
+  color: #fff9e6;
+  border-color: #ffd700;
+  box-shadow: 0 0 6px rgba(255, 215, 0, 0.4);
+}
+
+.vip-level-pill-btn.is-current {
+  border-left: 3px solid #ffd700;
+}
+
+.vip-level-inspect-box {
+  background: var(--surface);
+  border: 1px solid rgba(168, 131, 61, 0.4);
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 14px;
+}
+
+.vip-inspect-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+  border-bottom: 1px dashed var(--border);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vip-inspect-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vip-inspect-level-tag {
+  font-size: 14px;
+  font-weight: 800;
+  color: #a8833d;
+}
+
+.vip-inspect-req-tag {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  background: rgba(0, 0, 0, 0.04);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.vip-inspect-status {
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vip-inspect-status.ok {
+  color: #2e6030;
+}
+
+.vip-inspect-status.need {
+  color: var(--accent);
+}
+
+.vip-inspect-section {
+  margin-bottom: 10px;
+}
+
+.vip-inspect-sub-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.vip-reward-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.vip-reward-pill strong {
+  color: var(--accent);
+}
+
+.vip-pack-price-tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: #a8833d;
+  background: rgba(191, 161, 95, 0.12);
+  padding: 1px 6px;
+  border-radius: 3px;
+  margin-left: 6px;
+}
+
+/* 充值界面 VIP 进度条横幅 */
+.recharge-vip-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 6px 0 12px 0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, rgba(168, 131, 61, 0.15), rgba(168, 131, 61, 0.05));
+  border: 1px solid rgba(168, 131, 61, 0.4);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.recharge-vip-banner:hover {
+  background: linear-gradient(90deg, rgba(168, 131, 61, 0.25), rgba(168, 131, 61, 0.1));
+  border-color: #a8833d;
+}
+
+.recharge-vip-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.recharge-vip-banner-right {
+  font-size: 12px;
+  color: var(--accent, #a8833d);
+  font-weight: 600;
+}

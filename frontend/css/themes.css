@@ -404,6 +404,73 @@ body[data-theme|="blue-white"] {
   color: #617487 !important;
 }
 
+[data-theme|="blue-white"] .shop-equip-filter-bar {
+  background: #f0f5fa !important;
+  border-color: #d2e1f0 !important;
+}
+[data-theme|="blue-white"] .shop-equip-filter-tag {
+  background: #dbeaf7 !important;
+  border-color: #bad3ed !important;
+  color: #245283 !important;
+}
+[data-theme|="blue-white"] .shop-equip-filter-label {
+  color: #536980 !important;
+}
+[data-theme|="blue-white"] .shop-equip-filter-select {
+  background-color: #ffffff !important;
+  border-color: #c5d7ea !important;
+  color: #243a50 !important;
+}
+[data-theme|="blue-white"] .shop-equip-filter-select:hover {
+  border-color: #4a80b8 !important;
+}
+[data-theme|="blue-white"] .shop-equip-filter-select.is-active {
+  border-color: #2e66a3 !important;
+  background-color: #eaf3fd !important;
+  color: #1a4f89 !important;
+}
+[data-theme|="blue-white"] .shop-equip-filter-reset {
+  background: #ffffff !important;
+  border-color: #c5d7ea !important;
+  color: #5b7189 !important;
+}
+[data-theme|="blue-white"] .shop-equip-filter-reset:hover {
+  color: #c53030 !important;
+  border-color: #feb2b2 !important;
+  background: #fff5f5 !important;
+}
+
+[data-theme|="blue-white"] .shop-custom-dropdown-trigger {
+  background-color: #ffffff !important;
+  border-color: #c5d7ea !important;
+  color: #243a50 !important;
+}
+[data-theme|="blue-white"] .shop-custom-dropdown-trigger:hover {
+  border-color: #4a80b8 !important;
+}
+[data-theme|="blue-white"] .shop-custom-dropdown.open .shop-custom-dropdown-trigger,
+[data-theme|="blue-white"] .shop-custom-dropdown-trigger.is-active {
+  border-color: #2e66a3 !important;
+  background-color: #eaf3fd !important;
+  color: #1a4f89 !important;
+}
+[data-theme|="blue-white"] .shop-custom-dropdown-menu {
+  background: #ffffff !important;
+  border-color: #c5d7ea !important;
+  box-shadow: 0 8px 24px rgba(40, 70, 110, 0.18) !important;
+}
+[data-theme|="blue-white"] .shop-dropdown-item {
+  color: #243a50 !important;
+}
+[data-theme|="blue-white"] .shop-dropdown-item:hover {
+  background: #eaf3fd !important;
+  color: #1a4f89 !important;
+}
+[data-theme|="blue-white"] .shop-dropdown-item.selected {
+  background: #d6e8fa !important;
+  color: #1a4f89 !important;
+}
+
 /* 任务进度：绿色表示已完成/正在推进，蓝色主题负责承载导航与信息层级 */
 [data-theme|="blue-white"] .main-quest-view .quest-progress-bar,
 [data-theme|="blue-white"] .quest-progress-bar {
@@ -3817,6 +3884,76 @@ body[data-theme="dark"] {
   color: #ffffff !important;
 }
 
+[data-theme="paper"] .shop-equip-filter-bar {
+  background: #f0ebe0 !important;
+  border-color: #dad4c5 !important;
+}
+[data-theme="paper"] .shop-equip-filter-tag {
+  background: #e5ded0 !important;
+  border-color: #cdc3ae !important;
+  color: #3f5e4d !important;
+}
+[data-theme="paper"] .shop-equip-filter-label {
+  color: #697268 !important;
+}
+[data-theme="paper"] .shop-equip-filter-select {
+  background-color: #faf7f0 !important;
+  border-color: #d6cfbf !important;
+  color: #273136 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%233f5e4d' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+}
+[data-theme="paper"] .shop-equip-filter-select:hover {
+  border-color: #3f5e4d !important;
+}
+[data-theme="paper"] .shop-equip-filter-select.is-active {
+  border-color: #3f5e4d !important;
+  background-color: #e5eee7 !important;
+  color: #284435 !important;
+}
+[data-theme="paper"] .shop-equip-filter-reset {
+  background: #faf7f0 !important;
+  border-color: #d6cfbf !important;
+  color: #697268 !important;
+}
+[data-theme="paper"] .shop-equip-filter-reset:hover {
+  color: #b91c1c !important;
+  border-color: #fca5a5 !important;
+  background: #fef2f2 !important;
+}
+
+[data-theme="paper"] .shop-custom-dropdown-trigger {
+  background-color: #faf7f0 !important;
+  border-color: #d6cfbf !important;
+  color: #273136 !important;
+}
+[data-theme="paper"] .shop-custom-dropdown-trigger:hover {
+  border-color: #3f5e4d !important;
+}
+[data-theme="paper"] .shop-custom-dropdown.open .shop-custom-dropdown-trigger,
+[data-theme="paper"] .shop-custom-dropdown-trigger.is-active {
+  border-color: #3f5e4d !important;
+  background-color: #e5eee7 !important;
+  color: #284435 !important;
+}
+[data-theme="paper"] .shop-custom-dropdown-menu {
+  background: #faf7f0 !important;
+  border-color: #d6cfbf !important;
+}
+[data-theme="paper"] .shop-dropdown-item {
+  color: #273136 !important;
+}
+[data-theme="paper"] .shop-dropdown-item:hover {
+  background: #e5eee7 !important;
+  color: #284435 !important;
+}
+[data-theme="paper"] .shop-dropdown-item.selected {
+  background: #d7e4da !important;
+  color: #284435 !important;
+}
+[data-theme="paper"] .shop-dropdown-item-check {
+  color: #3f5e4d !important;
+}
+
 /* 战区地图 Dark 适配 */
 [data-theme="dark"] .map-status-bar {
   background: #111724 !important;
@@ -3852,6 +3989,77 @@ body[data-theme="dark"] {
 [data-theme="dark"] .map-icon-player { color: #a78bfa !important; }
 [data-theme="dark"] .map-icon-territory { color: #fb923c !important; }
 [data-theme="dark"] .map-icon-home { color: #38bdf8 !important; }
+
+[data-theme="dark"] .shop-equip-filter-bar {
+  background: #121927 !important;
+  border-color: #26354a !important;
+}
+[data-theme="dark"] .shop-equip-filter-tag {
+  background: #1c283c !important;
+  border-color: #2d4263 !important;
+  color: #82bdf1 !important;
+}
+[data-theme="dark"] .shop-equip-filter-label {
+  color: #8da1b9 !important;
+}
+[data-theme="dark"] .shop-equip-filter-select {
+  background-color: #172132 !important;
+  border-color: #2b3b52 !important;
+  color: #e2e8f0 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%238da1b9' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+}
+[data-theme="dark"] .shop-equip-filter-select:hover {
+  border-color: #60a5fa !important;
+}
+[data-theme="dark"] .shop-equip-filter-select.is-active {
+  border-color: #3b82f6 !important;
+  background-color: #1e3557 !important;
+  color: #93c5fd !important;
+}
+[data-theme="dark"] .shop-equip-filter-reset {
+  background: #172132 !important;
+  border-color: #2b3b52 !important;
+  color: #94a3b8 !important;
+}
+[data-theme="dark"] .shop-equip-filter-reset:hover {
+  color: #f87171 !important;
+  border-color: #991b1b !important;
+  background: #381b22 !important;
+}
+
+[data-theme="dark"] .shop-custom-dropdown-trigger {
+  background-color: #172132 !important;
+  border-color: #2b3b52 !important;
+  color: #e2e8f0 !important;
+}
+[data-theme="dark"] .shop-custom-dropdown-trigger:hover {
+  border-color: #60a5fa !important;
+}
+[data-theme="dark"] .shop-custom-dropdown.open .shop-custom-dropdown-trigger,
+[data-theme="dark"] .shop-custom-dropdown-trigger.is-active {
+  border-color: #3b82f6 !important;
+  background-color: #1e3557 !important;
+  color: #93c5fd !important;
+}
+[data-theme="dark"] .shop-custom-dropdown-menu {
+  background: #131c2d !important;
+  border-color: #2b3b52 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45) !important;
+}
+[data-theme="dark"] .shop-dropdown-item {
+  color: #cbd5e1 !important;
+}
+[data-theme="dark"] .shop-dropdown-item:hover {
+  background: #1e3557 !important;
+  color: #93c5fd !important;
+}
+[data-theme="dark"] .shop-dropdown-item.selected {
+  background: #254774 !important;
+  color: #bfdbfe !important;
+}
+[data-theme="dark"] .shop-dropdown-item-check {
+  color: #60a5fa !important;
+}
 
 [data-theme="dark"] .map-tabs {
   background: #0f1420 !important;

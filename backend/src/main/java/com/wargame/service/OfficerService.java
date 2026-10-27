@@ -7,6 +7,7 @@ import com.wargame.model.constants.GameConstants;
 import com.wargame.model.constants.GameData;
 import com.wargame.model.constants.AcademyRecruitmentRules;
 import com.wargame.model.constants.OfficerEquipmentDef;
+import com.wargame.model.constants.OfficerExperienceRules;
 import com.wargame.model.constants.OfficerSkillDef;
 import com.wargame.model.constants.HistoricalOfficers;
 import com.wargame.model.constants.OfficerNameGenerator;
@@ -61,7 +62,7 @@ public class OfficerService {
     /** 军官属性上限 - 对应 JS G.ATTR_MAX */
     private static final int ATTR_MAX = 219;
     /** 军官等级上限 - 对应 JS G.OFFICER_MAX_LEVEL */
-    private static final int OFFICER_MAX_LEVEL = 100;
+    private static final int OFFICER_MAX_LEVEL = OfficerExperienceRules.MAX_LEVEL;
     /** 军校刷新费用 - 对应 JS refreshAcademy 中 var cost = 200（约 6.7 小时黄金产出） */
     private static final int ACADEMY_REFRESH_COST = 200;
     /** 每次军校刷新生成的候选人数量；五星概率仍按整批只判定一次。 */
@@ -802,7 +803,7 @@ public class OfficerService {
         }
 
         int level = officer.getLevel() != null ? officer.getLevel() : 1;
-        if (level >= 100) {
+        if (level >= OFFICER_MAX_LEVEL) {
             result.put("success", false);
             result.put("message", "军官已达最高等级 (Lv.100)");
             return result;
@@ -812,15 +813,15 @@ public class OfficerService {
         int upgraded = 0;
 
         if (all) {
-            while (level < 100) {
-                long need = (long) level * 200;
+            while (level < OFFICER_MAX_LEVEL) {
+                long need = OfficerExperienceRules.expNeeded(level);
                 if (curExp < need) break;
                 curExp -= need;
                 level++;
                 upgraded++;
             }
         } else {
-            long need = (long) level * 200;
+            long need = OfficerExperienceRules.expNeeded(level);
             if (curExp >= need) {
                 curExp -= need;
                 level++;
@@ -829,13 +830,13 @@ public class OfficerService {
         }
 
         if (upgraded == 0) {
-            long need = (long) level * 200;
+            long need = OfficerExperienceRules.expNeeded(level);
             result.put("success", false);
             result.put("message", "经验不足，升级需要 " + need + " 经验");
             return result;
         }
 
-        if (level >= 100) {
+        if (level >= OFFICER_MAX_LEVEL) {
             curExp = 0L;
         }
         int pointsGained = upgraded;

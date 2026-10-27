@@ -1,6 +1,7 @@
 package com.wargame;
 
 import com.wargame.model.entity.March;
+import com.wargame.model.entity.Officer;
 import com.wargame.model.entity.PlayerCity;
 import com.wargame.model.entity.PlayerItem;
 import com.wargame.repository.PlayerItemRepository;
@@ -64,7 +65,7 @@ class MarchStratagemTest extends BaseServiceTest {
 
         March changed = marchRepository.findById(march.getId()).orElseThrow();
         long delay = ((Number) result.get("delayMs")).longValue();
-        assertTrue(delay >= 47_000L && delay <= 48_000L);
+        assertTrue(delay >= 119_000L && delay <= 120_000L);
         assertEquals(beforeArrival + delay, changed.getArriveAt());
         assertTrue(changed.getStratagemUsed());
         double afterProgress = (double) (now - changed.getStartAt()) / (changed.getArriveAt() - changed.getStartAt());
@@ -81,17 +82,23 @@ class MarchStratagemTest extends BaseServiceTest {
     }
 
     @Test
-    void feintOrderUsesItsLargerDelayAndOneWayCountermeasureCannotBeRepeated() {
+    void feintOrderOnlyDelaysRetreatAndCannotBeRepeatedInThatPhase() {
         March march = incoming();
+        assertThrows(IllegalArgumentException.class, () -> marchService.applyMarchStratagem(
+                defenderId, march.getId(), "feintOrder", march.getArriveAt()));
+        march.setReturning(true);
+        march.setStratagemUsed(true);
+        marchRepository.saveAndFlush(march);
         long arrival = march.getArriveAt();
 
         var result = marchService.applyMarchStratagem(defenderId, march.getId(), "feintOrder", arrival);
 
         long delay = ((Number) result.get("delayMs")).longValue();
-        assertTrue(delay >= 95_000L && delay <= 96_000L);
+        assertTrue(delay >= 119_000L && delay <= 120_000L);
         assertEquals(arrival + delay, marchRepository.findById(march.getId()).orElseThrow().getArriveAt());
         assertThrows(IllegalArgumentException.class, () -> marchService.applyMarchStratagem(
-                defenderId, march.getId(), "signalJammingOrder", arrival + delay));
+                defenderId, march.getId(), "feintOrder", arrival + delay));
+        assertTrue(marchRepository.findById(march.getId()).orElseThrow().getReturnStratagemUsed());
         assertEquals(2, items.findByPlayerIdAndItemKey(defenderId, "signalJammingOrder").orElseThrow().getCount());
         assertEquals(0, items.findByPlayerIdAndItemKey(defenderId, "feintOrder").orElseThrow().getCount());
     }
@@ -108,5 +115,36 @@ class MarchStratagemTest extends BaseServiceTest {
                 defenderId, march.getId(), "signalJammingOrder", arrival));
         assertEquals(2, items.findByPlayerIdAndItemKey(defenderId, "signalJammingOrder").orElseThrow().getCount());
         assertFalse(marchRepository.findById(march.getId()).orElseThrow().getStratagemUsed());
+    }
+
+    @Test
+    void knowledgeCapsLongDistanceDelayWithoutFixedMinuteLimit() {
+        Officer commander = createOfficer(defenderId, "commander", 0, 0, 300);
+        officerRepository.flush();
+        March march = incoming();
+        long arrival = GameClock.now() + 3_600_000L;
+        march.setArriveAt(arrival);
+        marchRepository.saveAndFlush(march);
+        var preview = marchService.previewOrder(defenderId, march.getId(), "signalJammingOrder");
+        assertEquals(300, preview.get("knowledge"));
+        assertEquals(0.7, (double) preview.get("ratio"), 0.000001);
+        var result = marchService.applyMarchStratagem(defenderId, march.getId(), "signalJammingOrder", arrival,
+                (String) preview.get("confirmationToken"));
+        assertTrue(((Number) result.get("delayMs")).longValue() > 2_500_000L);
+        assertEquals(commander.getId(), ((Map<?, ?>) result.get("effect")).get("commanderId"));
+    }
+
+    @Test
+    void changedCommanderKnowledgeInvalidatesPreviewWithoutConsuming() {
+        Officer commander = createOfficer(defenderId, "commander", 0, 0, 100);
+        officerRepository.flush();
+        March march = incoming();
+        var preview = marchService.previewOrder(defenderId, march.getId(), "signalJammingOrder");
+        commander.setKnowledge(200);
+        officerRepository.saveAndFlush(commander);
+        assertThrows(IllegalArgumentException.class, () -> marchService.applyMarchStratagem(
+                defenderId, march.getId(), "signalJammingOrder", march.getArriveAt(),
+                (String) preview.get("confirmationToken")));
+        assertEquals(2, items.findByPlayerIdAndItemKey(defenderId, "signalJammingOrder").orElseThrow().getCount());
     }
 }

@@ -54,7 +54,9 @@ class CityTeleportTest extends BaseServiceTest {
         assertEquals(10,count(CityTeleportService.ADVANCED));
         assertEquals(x,playerRepository.findById(player.getId()).orElseThrow().getCityPosX());
         assertEquals(y,playerCityRepository.findById(main.getId()).orElseThrow().getY());
-        assertEquals("该范围与现有城市占地重叠",terrain.siteReason(world.getId(),terrain.current(),x+1,y+1,null));
+        int testX = x >= WorldConfig.WORLD_SIZE - 2 ? x - 1 : x + 1;
+        int testY = y >= WorldConfig.WORLD_SIZE - 2 ? y - 1 : y + 1;
+        assertEquals("该范围与现有城市占地重叠",terrain.siteReason(world.getId(),terrain.current(),testX,testY,null));
     }
 
     @ParameterizedTest @ValueSource(strings={"northwest","northeast","southwest","southeast"})

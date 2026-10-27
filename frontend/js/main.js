@@ -26,6 +26,128 @@ window.Game = window.Game || {};
     guestMode: false,
     _selectedAvatar: null,
     _landscapeNavCollapsed: readLandscapeNavigationState(),
+    _serverMaintenance: null,
+
+    isMaintenanceActive: function () {
+      return !!(this._serverMaintenance && this._serverMaintenance.active);
+    },
+
+    setServerMaintenance: function (info) {
+      info = info || {};
+      this._serverMaintenance = {
+        active: true,
+        status: info.status != null ? info.status : 500,
+        message: info.message || '服务器维护中...',
+        raw: info.raw || '',
+        time: info.time || Date.now()
+      };
+    },
+
+    clearServerMaintenance: function () {
+      this._serverMaintenance = null;
+    },
+
+    isServerError: function (err) {
+      if (!err) return false;
+      if (err.isServerDown) return true;
+      if (typeof err.status === 'number' && err.status >= 500) return true;
+      if (err.code === 'SERVER_ERROR' || err.code === 'SERVER_MAINTENANCE') return true;
+      if (G.Constants && G.Constants.protectionAccessErrorCodes && G.Constants.protectionAccessErrorCodes.indexOf(err.code) !== -1) {
+        return false;
+      }
+      if (err.code === 'INVALID_CREDENTIALS' || err.code === 'USER_NOT_FOUND' || err.code === 'RECOVERY_REQUIRED') {
+        return false;
+      }
+      if (typeof err === 'object' && (err.name === 'TypeError' || err instanceof TypeError)) return true;
+      var msg = String(err.message || '');
+      if (msg.indexOf('网络错误') !== -1 ||
+          msg.indexOf('Failed to fetch') !== -1 ||
+          msg.indexOf('NetworkError') !== -1 ||
+          msg.indexOf('连接失败') !== -1 ||
+          msg.indexOf('连接中断') !== -1 ||
+          msg.indexOf('请求失败 (5') !== -1 ||
+          msg.indexOf('服务器维护') !== -1 ||
+          msg.indexOf('维护中') !== -1 ||
+          msg.indexOf('Handler dispatch failed') !== -1 ||
+          msg.indexOf('NoClassDefFoundError') !== -1) {
+        return true;
+      }
+      return false;
+    },
+
+    renderMaintenanceNotice: function () {
+      var m = this._serverMaintenance || {};
+      var serverName = (G.Servers && G.Servers.current) ? G.Servers.current().name : '默认战区';
+      var loggedIn = G.API && G.API.isLoggedIn && G.API.isLoggedIn();
+      var username = loggedIn ? (G.API.getUsername ? G.API.getUsername() : '') : '';
+      var timeStr = m.time ? new Date(m.time).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '刚刚';
+
+      var h = '<div class="login-maintenance-card" role="alert" aria-live="polite">';
+      h += '<div class="login-maintenance-header">';
+      h += '<span class="login-maintenance-badge"><span class="login-maintenance-pulse" aria-hidden="true"></span> 服务器维护中</span>';
+      h += '<span class="login-maintenance-code">' + (m.status ? 'HTTP ' + m.status : 'OFFLINE') + '</span>';
+      h += '</div>';
+
+      h += '<h3 class="login-maintenance-title">战区指挥部通讯维护中</h3>';
+      h += '<p class="login-maintenance-desc">当前战区服务器正在进行维护检修或通讯链路升级，前线指挥终端暂缓接入。<br><strong>指挥官请放心，您的城池数据、资源与战局进度已由系统安全留存。</strong>维护完成后将第一时间恢复连接。</p>';
+
+      h += '<div class="login-maintenance-meta">';
+      h += '<span>目标大区：<strong>' + G.escapeHtml(serverName) + '</strong></span>';
+      h += '<span class="login-maintenance-time">最近检测：' + G.escapeHtml(timeStr) + '</span>';
+      h += '</div>';
+
+      if (loggedIn && username) {
+        h += '<div class="login-maintenance-user-bar">';
+        h += '<span>已就绪指挥官：<strong>' + G.escapeHtml(username) + '</strong></span>';
+        h += '<button type="button" class="login-maintenance-link-btn" onclick="Game.Main.logout(\'switch\')">切换账号</button>';
+        h += '</div>';
+      }
+
+      h += '<div class="login-maintenance-actions">';
+      h += '<button type="button" id="maintenanceRetryBtn" class="btn ok login-maintenance-retry" onclick="Game.Main.retryConnection()"><span class="retry-icon" aria-hidden="true">⟳</span> 检查服务器状态</button>';
+      h += '<button type="button" class="btn login-maintenance-dismiss" onclick="Game.Main.clearServerMaintenance(); Game.Core.render();">关闭公告</button>';
+      h += '</div>';
+
+      h += '</div>';
+      return h;
+    },
+
+    retryConnection: function () {
+      var btn = document.getElementById('maintenanceRetryBtn');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-inline" aria-hidden="true"></span> 正在检测战区通讯...';
+      }
+      var self = this;
+      var client = (G.API && G.API.client) ? G.API.client : null;
+      var checkPromise = client
+        ? client.get('/anti-addiction/status', { retry: 0, timeout: 6000, silent: true })
+        : Promise.reject(new Error('网络不可用'));
+
+      return checkPromise.then(function () {
+        self.clearServerMaintenance();
+        if (G.toast) G.toast('战区通讯已恢复连接！欢迎归队，指挥官。');
+        if (G.API && G.API.isLoggedIn && G.API.isLoggedIn()) {
+          return self.startGame();
+        } else {
+          Core.route = 'login';
+          Core.render();
+        }
+      }).catch(function (err) {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<span class="retry-icon" aria-hidden="true">⟳</span> 检查服务器状态';
+        }
+        if (self._serverMaintenance) {
+          self._serverMaintenance.time = Date.now();
+        }
+        var timeEl = document.querySelector('.login-maintenance-time');
+        if (timeEl) {
+          timeEl.textContent = '最近检测：' + new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + '（仍不可用）';
+        }
+        if (G.toast) G.toast('战区服务器仍在维护中，请稍候再试。');
+      });
+    },
 
     syncLandscapeNavState: function () {
       var screen = document.getElementById('screen');
@@ -128,7 +250,11 @@ window.Game = window.Game || {};
     },
 
     selectServer: function (id) {
-      try { G.Servers.select(id); this.showLoginMsg('', false); }
+      try {
+        G.Servers.select(id);
+        this.clearServerMaintenance();
+        this.showLoginMsg('', false);
+      }
       catch (error) { this.showLoginMsg(error.message, true); }
     },
 
@@ -218,13 +344,26 @@ window.Game = window.Game || {};
           return;
         }
         if (G.Account) G.Account.clearNotice();
+        self.clearServerMaintenance();
         self.showLoginMsg('登录成功,加载游戏...', false);
         self.guestMode = false;
         // 普通登录不展示新账号欢迎简报，也清除未完成注册流程遗留的标记。
         self._showWelcomeAfterStart = false;
         return self.startGame();
       }).catch(function (err) {
-        self.showLoginMsg(err && err.message ? err.message : '登录失败', true);
+        if (self.isServerError(err)) {
+          self.setServerMaintenance({
+            active: true,
+            status: err.status || 500,
+            code: err.code || 'SERVER_ERROR',
+            message: '服务器维护中...',
+            raw: err.message
+          });
+          Core.render();
+          if (G.toast) G.toast('战区服务器维护中，暂无法连接');
+        } else {
+          self.showLoginMsg(err && err.message ? err.message : '登录失败', true);
+        }
       }).finally(function () { self._loginBusy = false; });
     },
 
@@ -307,11 +446,24 @@ window.Game = window.Game || {};
       var self = this;
       this.showLoginMsg('创建游客账号...', false);
       G.API.createGuest().then(function () {
+        self.clearServerMaintenance();
         self.guestMode = true;
         self._showWelcomeAfterStart = true;
         return self.startGame();
       }).catch(function (err) {
-        self.showLoginMsg(err && err.message ? err.message : '服务器不可用', true);
+        if (self.isServerError(err)) {
+          self.setServerMaintenance({
+            active: true,
+            status: err.status || 500,
+            code: err.code || 'SERVER_ERROR',
+            message: '服务器维护中...',
+            raw: err.message
+          });
+          Core.render();
+          if (G.toast) G.toast('战区服务器维护中，暂无法连接');
+        } else {
+          self.showLoginMsg(err && err.message ? err.message : '服务器不可用', true);
+        }
       });
     },
 
@@ -327,6 +479,7 @@ window.Game = window.Game || {};
         return Promise.all([G.load(), rulesRequest]).then(function (values) { return values[0]; });
       }).then(function (state) {
         if (!state || (G.Protection && !G.Protection.canRequest())) return;
+        self.clearServerMaintenance();
         G.state = state;
         Core.state = G.state;
         Core.init();
@@ -349,8 +502,21 @@ window.Game = window.Game || {};
           G.WS.connect();
         }
       }).catch(function (err) {
-        if (G.Protection && G.API.isLoggedIn()) G.Protection.denied(err);
-        if (G.toast && !(G.Protection && G.Protection.blocked)) G.toast('加载游戏状态失败');
+        if (self.isServerError(err)) {
+          self.setServerMaintenance({
+            active: true,
+            status: err.status || 500,
+            code: err.code || 'SERVER_ERROR',
+            message: '服务器维护中...',
+            raw: err.message
+          });
+          Core.route = 'login';
+          Core.render();
+          if (G.toast) G.toast('战区服务器维护中，请稍后重试');
+        } else {
+          if (G.Protection && G.API.isLoggedIn()) G.Protection.denied(err);
+          if (G.toast && !(G.Protection && G.Protection.blocked)) G.toast('加载游戏状态失败');
+        }
         console.warn('[Main] startGame load failed:', err);
       });
     },

@@ -28,11 +28,22 @@ public class CityController {
     public record Selection(Long cityId) {}
     public record Founding(Long wildId, String name, Integer x, Integer y) {}
     public record ShieldSelection(List<Long> cityIds) {}
+    public record ShieldCancelRequest(Long cityId) {}
     /** 按服务端价格为所选自有城市开盾，扣钻和续期在同一事务提交。 */
     @PostMapping("/shield") @Transactional
     public Map<String, Object> shield(@RequestBody ShieldSelection request) {
         Long id = auth.getCurrentPlayer().getId();
         Map<String, Object> result = new java.util.LinkedHashMap<>(cities.activateShields(id, request.cityIds()));
+        result.put("state", state.getGameState(id));
+        return result;
+    }
+
+    /** 主动解除免战护盾（需玩家二次红色警报确认后调用） */
+    @PostMapping("/shield/cancel") @Transactional
+    public Map<String, Object> cancelShield(@RequestBody(required = false) ShieldCancelRequest request) {
+        Long id = auth.getCurrentPlayer().getId();
+        Long cityId = (request != null) ? request.cityId() : null;
+        Map<String, Object> result = new java.util.LinkedHashMap<>(cities.deactivateShield(id, cityId));
         result.put("state", state.getGameState(id));
         return result;
     }

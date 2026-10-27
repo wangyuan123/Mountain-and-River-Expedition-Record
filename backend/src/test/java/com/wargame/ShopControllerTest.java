@@ -74,6 +74,39 @@ public class ShopControllerTest extends BaseServiceTest {
     }
 
     @ParameterizedTest
+    @CsvSource({"goldBox,80,0,0,0,0,50000", "resBox,80,50000,50000,50000,50000,0",
+            "foodPack,200,600000,0,0,0,0", "steelPack,200,0,600000,0,0,0",
+            "oilPack,200,0,0,600000,0,0", "rarePack,200,0,0,0,600000,0",
+            "supplyPack,500,400000,400000,400000,400000,0",
+            "resourcePack100w,1150,1000000,1000000,1000000,1000000,0",
+            "resourcePack200w,2200,2000000,2000000,2000000,2000000,0",
+            "resourcePack350w,3700,3500000,3500000,3500000,3500000,0",
+            "resourcePack500w,5000,5000000,5000000,5000000,5000000,0"})
+    void resourcePacksChargeAndAwardAdvertisedAmounts(String itemId, int price, long food, long steel,
+                                                      long oil, long rare, long gold) {
+        Resources resources = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
+        resources.setDiamond(10_000);
+        resourcesRepository.saveAndFlush(resources);
+        long beforeFood = resources.getFood(), beforeSteel = resources.getSteel(), beforeOil = resources.getOil();
+        long beforeRare = resources.getRare(), beforeGold = resources.getGold();
+        Map<String, Object> purchased = shopController.buy(new GameDtos.ShopBuyRequest(itemId)).getBody();
+        assertNotNull(purchased);
+        assertEquals(true, purchased.get("success"));
+        assertEquals(price, purchased.get("price"));
+        Resources purchasedResources = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
+        assertEquals(10_000 - price, purchasedResources.getDiamond());
+        assertEquals(beforeFood, purchasedResources.getFood());
+        assertEquals(true, depotService.useItem(player.getId(), itemId, null, null).get("success"));
+        Resources awarded = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
+        assertEquals(beforeFood + food, awarded.getFood());
+        assertEquals(beforeSteel + steel, awarded.getSteel());
+        assertEquals(beforeOil + oil, awarded.getOil());
+        assertEquals(beforeRare + rare, awarded.getRare());
+        assertEquals(beforeGold + gold, awarded.getGold());
+        assertEquals(0, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), itemId).orElseThrow().getCount());
+    }
+
+    @ParameterizedTest
     @CsvSource({"shield2h,2,60", "shield,8,200", "shield12h,12,280", "shield24h,24,500", "shield72h,72,1350"})
     void buyAndUseShieldTier(String itemId, int hours, int price) {
         Resources resources = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();

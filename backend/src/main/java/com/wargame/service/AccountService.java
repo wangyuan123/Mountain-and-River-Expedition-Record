@@ -213,7 +213,7 @@ public class AccountService {
                 .setParameter("id", id).setParameter("now", now).executeUpdate();
         for (String entity : List.of("GuildApplication", "GuildMember", "UnitLoadout", "UnitEquipmentOrder", "OfficerEquipmentProgress", "OfficerEquipment", "ArmyProductionQueue",
                 "TechResearchQueue", "PrisonerUnit", "PrisonerOperation", "BattleSettlement", "WoundedUnit", "Building", "ArmyUnit", "Fortification", "Technology", "Officer", "Construction",
-                "Resources", "CityState", "Academy", "PlayerItem", "ScoutReport", "PlayerQuest", "PlayerGuide", "March", "ChatMessage")) {
+                "Resources", "CityState", "Academy", "PlayerItem", "PlayerPowerSnapshot", "ScoutReport", "PlayerQuest", "PlayerGuide", "March", "ChatMessage")) {
             em.createQuery("delete from " + entity + " e where e.playerId = :id").setParameter("id", id).executeUpdate();
         }
         em.createQuery("delete from IncomingMarch m where m.targetPlayerId = :id").setParameter("id", id).executeUpdate();

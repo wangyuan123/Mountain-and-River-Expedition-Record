@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import jakarta.persistence.OptimisticLockException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -39,11 +40,21 @@ public class GlobalExceptionHandler {
                 .body(Map.of("error", e.getMessage() != null ? e.getMessage() : "请求参数无效"));
     }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, String>> handleException(Exception e) {
+    /** 参数转换失败属于客户端输入错误，不能被兜底处理成战区维护。 */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, String>> handleArgumentTypeMismatch(MethodArgumentTypeMismatchException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", "请求参数 " + e.getName() + " 格式无效"));
+    }
+
+    @ExceptionHandler(Throwable.class)
+    public ResponseEntity<Map<String, Object>> handleException(Throwable e) {
         log.error("Unhandled exception processing request", e);
-        String msg = e.getMessage() != null && !e.getMessage().isBlank() ? e.getMessage() : e.getClass().getSimpleName();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", msg));
+                .body(Map.of(
+                    "error", "战区服务器维护中，请稍后重试",
+                    "code", "SERVER_MAINTENANCE",
+                    "status", 500
+                ));
     }
 }

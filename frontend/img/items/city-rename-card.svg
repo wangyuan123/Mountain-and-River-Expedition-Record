@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="ctRen_parch" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fffbeb"/>
+      <stop offset="50%" stop-color="#fef3c7"/>
+      <stop offset="100%" stop-color="#fde68a"/>
+    </linearGradient>
+    <linearGradient id="ctRen_gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="40%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+    <filter id="ctRen_shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#ctRen_shadow)">
+    <!-- Parchment Scroll Body -->
+    <path d="M12 11 C12 8, 16 8, 19 10 L48 8 C51 8, 54 10, 54 13 L51 51 C51 54, 47 54, 44 52 L15 54 C12 54, 9 52, 9 49 Z"
+          fill="url(#ctRen_parch)" stroke="#b45309" stroke-width="0.8"/>
+
+    <!-- Scroll Roll End at Left -->
+    <path d="M9 13 C9 9, 13 9, 15 13 L15 50 C15 54, 11 54, 9 50 Z" fill="#fde68a" stroke="#b45309" stroke-width="0.6"/>
+
+    <!-- Decorative Document Border -->
+    <rect x="17" y="14" width="32" height="34" fill="none" stroke="#d97706" stroke-width="0.6" stroke-dasharray="2 1.5"/>
+
+    <!-- City Fortress Gate Emblem at top of document -->
+    <path d="M25 18 L39 18 L40 26 L36 26 L36 23 L34 23 L34 26 L30 26 L30 23 L28 23 L28 26 L24 26 Z"
+          fill="#b45309"/>
+    <!-- City gate archway -->
+    <path d="M30 26 C30 23, 34 23, 34 26 Z" fill="#fde68a"/>
+
+    <!-- Document Calligraphy Lines -->
+    <line x1="20" y1="29" x2="44" y2="29" stroke="#78350f" stroke-width="1.2" stroke-linecap="round"/>
+    <line x1="20" y1="33" x2="41" y2="33" stroke="#92400e" stroke-width="1" stroke-linecap="round"/>
+    <line x1="20" y1="37" x2="45" y2="37" stroke="#92400e" stroke-width="1" stroke-linecap="round"/>
+    <line x1="20" y1="41" x2="35" y2="41" stroke="#92400e" stroke-width="1" stroke-linecap="round"/>
+
+    <!-- Red Wax Seal Stamp with Gold Ribbon (Municipal Seal) -->
+    <!-- Ribbon tails -->
+    <path d="M38 43 L34 57 L39 54 L44 57 L41 43 Z" fill="#dc2626" stroke="#991b1b" stroke-width="0.5"/>
+
+    <!-- Red Wax Seal -->
+    <circle cx="39" cy="43" r="8.5" fill="#dc2626" stroke="#991b1b" stroke-width="0.8"/>
+    <circle cx="39" cy="43" r="6.8" fill="none" stroke="#fca5a5" stroke-width="0.6" stroke-dasharray="2 1"/>
+    <!-- Seal Text "城" -->
+    <text x="39" y="44" text-anchor="middle" dominant-baseline="central" fill="#ffffff"
+          font-family="system-ui, 'PingFang SC', sans-serif" font-weight="900" font-size="7">城</text>
+  </g>
+</svg>

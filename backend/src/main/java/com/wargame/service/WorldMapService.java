@@ -16,6 +16,7 @@ import java.util.*;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class WorldMapService {
+    @org.springframework.beans.factory.annotation.Autowired private WarPowerProtectionService warPowerProtection;
     public static final int CHUNK_SIZE = 16;
     private final WorldMapRepository worlds;
     private final PlayerCityRepository cities;
@@ -25,6 +26,7 @@ public class WorldMapService {
     private final CityStateRepository cityStates;
     private final WorldTerrainService terrain;
     @org.springframework.beans.factory.annotation.Autowired private GuildRelationService guildRelations;
+    @org.springframework.beans.factory.annotation.Autowired private CityScope cityScope;
     @org.springframework.beans.factory.annotation.Autowired(required = false) private BuildingRepository buildings;
 
     public Map<String, Object> chunk(Long viewer, int cx, int cy) {
@@ -63,6 +65,7 @@ public class WorldMapService {
             wildList.stream().filter(w -> !w.isDormant())
                     .forEach(w -> targets.add(wild(viewer, w, owners.get(w.getOccupiedBy()))));
         }
+        attachPowerProtection(viewer, targets);
         return Map.of("cx", cx, "cy", cy, "size", CHUNK_SIZE, "worldSize", worldSize,
                 "targets", targets, "updatedAt", System.currentTimeMillis());
     }
@@ -77,6 +80,7 @@ public class WorldMapService {
                 if (owner != null && owner.deletionDue(System.currentTimeMillis())) throw missing();
                 Map<String, Object> t = city(viewer, c, owner);
                 if (!kind.equals(t.get("kind"))) throw new IllegalArgumentException("目标归属已变化，请刷新地图");
+                attachPowerProtection(viewer, List.of(t));
                 return t;
             }
             case "npc" -> throw missing();
@@ -115,6 +119,17 @@ public class WorldMapService {
         }
     }
 
+    private void attachPowerProtection(Long viewer, List<Map<String, Object>> targets) {
+        Set<Long> owners = new HashSet<>();
+        targets.stream().filter(target -> "player".equals(target.get("kind")) && !Boolean.TRUE.equals(target.get("selfCity")))
+                .forEach(target -> owners.add(((Number) target.get("ownerId")).longValue()));
+        var eligibility = warPowerProtection.evaluateMany(viewer, owners);
+        targets.forEach(target -> {
+            if (target.get("ownerId") instanceof Number owner && eligibility.containsKey(owner.longValue()))
+                target.put("powerProtection", eligibility.get(owner.longValue()).toMap());
+        });
+    }
+
     private static boolean isSea(String mask, Bandit bandit) {
         return mask != null && WorldTerrainService.sea(mask, bandit.getX(), bandit.getY());
     }
@@ -149,6 +164,10 @@ public class WorldMapService {
             long warAt = related && owner.getWarAt() != null ? owner.getWarAt() : 0L;
             long warEnd = related && owner.getWarEndAt() != null ? owner.getWarEndAt() : 0L;
             t.put("warAt", warAt); t.put("warEndAt", warEnd);
+            t.put("canAccelerateWar", warAt > GameClock.now() && viewer.equals(owner.getWarInitiatorId())
+                    && Objects.equals(c.getId(), owner.getWarTargetCityId())
+                    && cityScope != null && Objects.equals(cityScope.slot(viewer), owner.getWarCitySlot())
+                    && !owner.isWarAccelerated());
             t.put("coolAt", warAt == 0 ? warEnd : 0L);
             // 地图合并两类保护的有效截止时间，真实道具护盾仍独立保存在城市状态中。
             long newbieUntil = com.wargame.model.constants.NewbieProtection.until(owner, GameClock.now());

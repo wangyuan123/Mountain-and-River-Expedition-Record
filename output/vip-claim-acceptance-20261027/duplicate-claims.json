@@ -1,0 +1,30 @@
+[
+  {
+    "action": "daily-salary/claim",
+    "status": 400,
+    "body": {
+      "error": "今日特勤军饷已领取，明日 00:00 刷新"
+    }
+  },
+  {
+    "action": "level-pack/claim",
+    "status": 400,
+    "body": {
+      "error": "VIP 10 晋升大礼包已领取，每人限领一次"
+    }
+  },
+  {
+    "action": "level-pack/claim-all",
+    "status": 400,
+    "body": {
+      "error": "暂无可领取的晋升大礼包"
+    }
+  },
+  {
+    "action": "milestone/claim",
+    "status": 400,
+    "body": {
+      "error": "该阶段军备箱已领取"
+    }
+  }
+]

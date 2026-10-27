@@ -18,7 +18,7 @@ window.Game = window.Game || {};
       id: 'skillBook_' + skillId,
       cat: 'officer',
       name: skill.name + '技能书',
-      icon: '📗',
+      icon: 'img/items/skill-book.svg',
       desc: '选择军官使用，直接学习「' + skill.name + '」Lv.1',
       price: 160,
       stock: null,
@@ -27,6 +27,15 @@ window.Game = window.Game || {};
   });
 
   var SHOP_ITEMS = G.Constants.shopItems.concat(SPECIFIC_SKILL_BOOKS);
+
+  function esc(s) {
+    if (typeof G.escapeHtml === 'function') return G.escapeHtml(s);
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
 
   /** 新手礼包开启后仍保留零库存键，账号刷新或换城市不会重新获得限购资格。 */
   function alreadyPurchased(item) {
@@ -71,8 +80,60 @@ window.Game = window.Game || {};
     keyword: '',
     equipmentTier: '',
     equipmentBranch: '',
+    openDropdown: null,
 
     filterEquipment: function (key, value) { this[key] = value; Core.render(); },
+
+    selectEquipmentFilter: function (key, value) {
+      this.openDropdown = null;
+      this.filterEquipment(key, value);
+    },
+
+    clearEquipmentFilters: function () {
+      this.openDropdown = null;
+      this.equipmentTier = '';
+      this.equipmentBranch = '';
+      Core.render();
+    },
+
+    toggleDropdown: function (type, event) {
+      if (event) {
+        if (event.stopPropagation) event.stopPropagation();
+        if (event.preventDefault) event.preventDefault();
+      }
+      this.openDropdown = this.openDropdown === type ? null : type;
+      this.updateDropdowns();
+    },
+
+    closeDropdowns: function () {
+      if (!this.openDropdown) return;
+      this.openDropdown = null;
+      this.updateDropdowns();
+    },
+
+    updateDropdowns: function () {
+      var self = this;
+      if (typeof document === 'undefined') return;
+      ['tier', 'branch'].forEach(function (type) {
+        var wrap = document.getElementById('shopEquipDropdownWrap_' + type);
+        var menu = document.getElementById('shopEquipDropdownMenu_' + type);
+        var trigger = document.getElementById('shopEquipDropdownTrigger_' + type);
+        var isOpen = (self.openDropdown === type);
+        if (wrap && wrap.classList) wrap.classList.toggle('open', isOpen);
+        if (menu) {
+          if (isOpen) {
+            menu.hidden = false;
+            if (typeof menu.removeAttribute === 'function') menu.removeAttribute('hidden');
+          } else {
+            menu.hidden = true;
+            if (typeof menu.setAttribute === 'function') menu.setAttribute('hidden', '');
+          }
+        }
+        if (trigger && typeof trigger.setAttribute === 'function') {
+          trigger.setAttribute('aria-expanded', String(isOpen));
+        }
+      });
+    },
 
     setCat: function (cat) {
       this.curCat = cat;
@@ -404,11 +465,97 @@ window.Game = window.Game || {};
 
       // 套装档次与分支下拉（在 all 分类，或 officer 分类且子分类为 all/gear 时展示）
       if (this.curCat === 'all' || (this.curCat === 'officer' && (this.subCat === 'all' || this.subCat === 'gear'))) {
-        h += '<label>套装档次 <select onchange="Game.Shop.filterEquipment(\'equipmentTier\',this.value)"><option value="">全部档次</option>';
-        Object.keys(G.Constants.equipmentTiers).forEach(function (key) { h += '<option value="' + key + '"' + (self.equipmentTier === key ? ' selected' : '') + '>' + G.Constants.equipmentTiers[key].name + '</option>'; });
-        h += '</select></label><label>套装分支 <select onchange="Game.Shop.filterEquipment(\'equipmentBranch\',this.value)"><option value="">全部分支</option>';
-        Object.keys(G.Constants.equipmentBranches).forEach(function (key) { h += '<option value="' + key + '"' + (self.equipmentBranch === key ? ' selected' : '') + '>' + G.Constants.equipmentBranches[key] + '</option>'; });
-        h += '</select></label>';
+        var hasActiveEquipFilter = Boolean(self.equipmentTier || self.equipmentBranch);
+
+        var tierOptions = [{ key: '', name: '全部档次' }];
+        Object.keys(G.Constants.equipmentTiers).forEach(function (key) {
+          tierOptions.push({ key: key, name: G.Constants.equipmentTiers[key].name });
+        });
+
+        var branchOptions = [{ key: '', name: '全部分支' }];
+        Object.keys(G.Constants.equipmentBranches).forEach(function (key) {
+          branchOptions.push({ key: key, name: G.Constants.equipmentBranches[key] });
+        });
+
+        var curTierName = '全部档次';
+        for (var ti0 = 0; ti0 < tierOptions.length; ti0++) {
+          if (tierOptions[ti0].key === self.equipmentTier) {
+            curTierName = tierOptions[ti0].name;
+            break;
+          }
+        }
+
+        var curBranchName = '全部分支';
+        for (var bi0 = 0; bi0 < branchOptions.length; bi0++) {
+          if (branchOptions[bi0].key === self.equipmentBranch) {
+            curBranchName = branchOptions[bi0].name;
+            break;
+          }
+        }
+
+        h += '<div class="shop-equip-filter-bar">';
+        h += '<div class="shop-equip-filter-tag"><svg class="shop-equip-filter-tag-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg><span>套装细分</span></div>';
+        h += '<div class="shop-equip-filter-controls">';
+
+        // 1. 套装档次自定义下拉组件
+        h += '<div class="shop-equip-filter-item">';
+        h += '<span class="shop-equip-filter-label">套装档次</span>';
+        h += '<div class="shop-custom-dropdown' + (self.openDropdown === 'tier' ? ' open' : '') + '" id="shopEquipDropdownWrap_tier">';
+        h += '<button type="button" class="shop-custom-dropdown-trigger' + (self.equipmentTier ? ' is-active' : '') + '" id="shopEquipDropdownTrigger_tier" aria-haspopup="listbox" aria-expanded="' + (self.openDropdown === 'tier') + '" onclick="Game.Shop.toggleDropdown(\'tier\', event)">';
+        h += '<span class="shop-dropdown-text">' + esc(curTierName) + '</span>';
+        h += '<span class="shop-dropdown-arrow" aria-hidden="true">▾</span>';
+        h += '</button>';
+        h += '<div class="shop-custom-dropdown-menu" id="shopEquipDropdownMenu_tier" role="listbox"' + (self.openDropdown === 'tier' ? '' : ' hidden') + '>';
+        for (var ti = 0; ti < tierOptions.length; ti++) {
+          var tItem = tierOptions[ti];
+          var isTierSel = (self.equipmentTier === tItem.key);
+          h += '<div class="shop-dropdown-item' + (isTierSel ? ' selected' : '') + '" role="option" aria-selected="' + isTierSel + '" onclick="Game.Shop.selectEquipmentFilter(\'equipmentTier\',\'' + tItem.key + '\')">';
+          h += '<span>' + esc(tItem.name) + '</span>';
+          if (isTierSel) h += '<span class="shop-dropdown-item-check">✓</span>';
+          h += '</div>';
+        }
+        h += '</div>';
+        // 隐藏的原生 select 供辅助交互与兼容支持
+        h += '<select class="shop-equip-filter-select' + (self.equipmentTier ? ' is-active' : '') + '" style="display:none;" tabindex="-1" aria-hidden="true" onchange="Game.Shop.filterEquipment(\'equipmentTier\',this.value)">';
+        for (var ts = 0; ts < tierOptions.length; ts++) {
+          h += '<option value="' + tierOptions[ts].key + '"' + (self.equipmentTier === tierOptions[ts].key ? ' selected' : '') + '>' + tierOptions[ts].name + '</option>';
+        }
+        h += '</select>';
+        h += '</div>';
+        h += '</div>';
+
+        // 2. 套装分支自定义下拉组件
+        h += '<div class="shop-equip-filter-item">';
+        h += '<span class="shop-equip-filter-label">套装分支</span>';
+        h += '<div class="shop-custom-dropdown' + (self.openDropdown === 'branch' ? ' open' : '') + '" id="shopEquipDropdownWrap_branch">';
+        h += '<button type="button" class="shop-custom-dropdown-trigger' + (self.equipmentBranch ? ' is-active' : '') + '" id="shopEquipDropdownTrigger_branch" aria-haspopup="listbox" aria-expanded="' + (self.openDropdown === 'branch') + '" onclick="Game.Shop.toggleDropdown(\'branch\', event)">';
+        h += '<span class="shop-dropdown-text">' + esc(curBranchName) + '</span>';
+        h += '<span class="shop-dropdown-arrow" aria-hidden="true">▾</span>';
+        h += '</button>';
+        h += '<div class="shop-custom-dropdown-menu" id="shopEquipDropdownMenu_branch" role="listbox"' + (self.openDropdown === 'branch' ? '' : ' hidden') + '>';
+        for (var bi = 0; bi < branchOptions.length; bi++) {
+          var bItem = branchOptions[bi];
+          var isBranchSel = (self.equipmentBranch === bItem.key);
+          h += '<div class="shop-dropdown-item' + (isBranchSel ? ' selected' : '') + '" role="option" aria-selected="' + isBranchSel + '" onclick="Game.Shop.selectEquipmentFilter(\'equipmentBranch\',\'' + bItem.key + '\')">';
+          h += '<span>' + esc(bItem.name) + '</span>';
+          if (isBranchSel) h += '<span class="shop-dropdown-item-check">✓</span>';
+          h += '</div>';
+        }
+        h += '</div>';
+        // 隐藏的原生 select 供辅助交互与兼容支持
+        h += '<select class="shop-equip-filter-select' + (self.equipmentBranch ? ' is-active' : '') + '" style="display:none;" tabindex="-1" aria-hidden="true" onchange="Game.Shop.filterEquipment(\'equipmentBranch\',this.value)">';
+        for (var bs = 0; bs < branchOptions.length; bs++) {
+          h += '<option value="' + branchOptions[bs].key + '"' + (self.equipmentBranch === branchOptions[bs].key ? ' selected' : '') + '>' + branchOptions[bs].name + '</option>';
+        }
+        h += '</select>';
+        h += '</div>';
+        h += '</div>';
+
+        if (hasActiveEquipFilter) {
+          h += '<button type="button" class="shop-equip-filter-reset" onclick="Game.Shop.clearEquipmentFilters()" title="重置套装筛选">✕ 重置</button>';
+        }
+        h += '</div>';
+        h += '</div>';
       }
 
       // 商品网格
@@ -460,5 +607,15 @@ window.Game = window.Game || {};
   };
 
   G.Shop = Shop;
+  if (typeof document !== 'undefined' && typeof document.addEventListener === 'function' && !Shop._docClickBound) {
+    Shop._docClickBound = true;
+    document.addEventListener('click', function (e) {
+      if (Shop.openDropdown) {
+        if (!e.target || !e.target.closest || !e.target.closest('.shop-custom-dropdown')) {
+          Shop.closeDropdowns();
+        }
+      }
+    });
+  }
   Core.views.shop = function (v) { Shop.renderView(v); };
 })(window.Game);

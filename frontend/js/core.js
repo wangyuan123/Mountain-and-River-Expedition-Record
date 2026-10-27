@@ -765,6 +765,7 @@ window.Game = window.Game || {};
     /** 以服务端持久化头像为准；旧缓存仅可回退到当前账号有效的新预设。 */
     getCurrentAvatar: function () {
       var p = (this.state || {}).player || {};
+      if (p.customAvatar && p.customAvatar.trim().length > 0) return p.customAvatar.trim();
       var presets = G.Constants.presetAvatars;
       if (presets.some(function (preset) { return preset.src === p.avatar; })) return p.avatar;
       var localAvatar = '';
@@ -786,20 +787,28 @@ window.Game = window.Game || {};
       var avatarUrl = this.getCurrentAvatar();
       var nameStr = escapeHtml(p.name || p.username || '指挥官');
 
+      var vipLevel = Number(p.vipLevel) || 0;
+      var vipBadgeVisible = p.vipBadgeVisible !== false;
+      var vipBadgeHtml = (vipLevel > 0 && vipBadgeVisible)
+        ? '<span class="topbar-vip-badge' + (vipLevel >= 4 ? ' vip-badge-gold' : '') + '">VIP ' + vipLevel + '</span>'
+        : '';
+      var avatarFrameClass = p.avatarFrame ? (' frame-' + p.avatarFrame + '-v1') : '';
+
       var html = '';
       html += '<div class="top-row">' +
         '<div class="topbar-player-entry" role="button" tabindex="0" onclick="if(Game.Main&&Game.Main.openPlayerDrawer)Game.Main.openPlayerDrawer();" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){if(Game.Main&&Game.Main.openPlayerDrawer)Game.Main.openPlayerDrawer();event.preventDefault();}" title="点击展开指挥官档案、主题与设置">' +
-        '<div class="topbar-avatar-wrap">' +
+        '<div class="topbar-avatar-wrap' + avatarFrameClass + '">' +
         '<img class="topbar-avatar" src="' + avatarUrl + '" alt="头像" onerror="this.onerror=null;this.src=Game.Constants.presetAvatars[0].src"/>' +
         '</div>' +
         '<div class="topbar-player-meta">' +
-        '<div class="topbar-player-name">' + nameStr + '</div>' +
+        '<div class="topbar-player-name">' + nameStr + vipBadgeHtml + '</div>' +
         '<div class="topbar-online-status">' +
         ((G.WS && typeof G.WS.statusHtml === 'function') ? G.WS.statusHtml() : '') +
         '</div>' +
         '</div>' +
         '</div>' +
         '<div class="player-bar-right">' +
+        '<span class="vip-entry-btn" title="战时特勤统帅部" onclick="if(Game.Vip)Game.Vip.openModal();">🎖️ 特勤部</span>' +
         '<span class="forum-entry-btn" title="进入战术参谋论坛" onclick="Game.Core.openForum()">🎖️ 论坛</span>' +
         '<span class="diamond" title="充值" onclick="Game.go(\'recharge\')">💎 ' + fmt(diamond) + '</span>' +
         '</div>' +
@@ -889,6 +898,14 @@ window.Game = window.Game || {};
       var diamondEl = top.querySelector('.player-bar-right .diamond') || top.querySelector('.diamond');
       var forumBtn = top.querySelector('.forum-entry-btn');
       if (!diamondEl || !forumBtn) {
+        this.renderTop();
+        return;
+      }
+      var player = this.state.player || {};
+      var vipLevel = Number(player.vipLevel) || 0;
+      var vipBadge = top.querySelector('.topbar-vip-badge');
+      var vipText = vipLevel > 0 && player.vipBadgeVisible !== false ? 'VIP ' + vipLevel : '';
+      if ((vipBadge ? vipBadge.textContent : '') !== vipText) {
         this.renderTop();
         return;
       }

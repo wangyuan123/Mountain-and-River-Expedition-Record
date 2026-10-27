@@ -61,6 +61,10 @@ window.Game = window.Game || {};
 
   // tick handler - update resources, construction progress, march progress
   G.WS.on('support_update', refreshState);
+  G.WS.on('war_updated', function (data) {
+    if (data && data.message) G.toast(data.message);
+    refreshState();
+  });
   G.WS.on('regionalRadar', function (data) { if (G.Radar) G.Radar.apply(data, true); });
   G.WS.on('tick', function (data) {
     if (!G.state) return;

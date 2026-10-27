@@ -21,6 +21,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 public class GameStateService {
+    @org.springframework.beans.factory.annotation.Autowired private PlayerPowerService playerPower;
     @org.springframework.beans.factory.annotation.Autowired private CommanderRenameService commanderRename;
     @org.springframework.beans.factory.annotation.Autowired private MailGiftActivityService giftActivities;
 
@@ -55,6 +56,7 @@ public class GameStateService {
     @org.springframework.beans.factory.annotation.Autowired private UnitUnlockService unitUnlocks;
     @org.springframework.beans.factory.annotation.Autowired private WildOccupationService wildOccupation;
     @org.springframework.beans.factory.annotation.Autowired private TechResearchQueueRepository techResearchQueueRepository;
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private VipService vipService;
 
     private final WorldViewService worldViewService;
     private final PlayerRepository playerRepository;
@@ -264,6 +266,11 @@ public class GameStateService {
         playerInfo.put("militaryRank", rankTier);
         playerInfo.put("militaryRankName", MilitaryRankDef.getRankName(rankTier));
         playerInfo.put("vipLevel", player.getVipLevel() != null ? player.getVipLevel() : 0);
+        playerInfo.put("vipDailySalaryClaimed", VipService.isDailySalaryClaimed(player));
+        playerInfo.put("totalRechargeCents", player.getTotalRechargeCents() != null ? player.getTotalRechargeCents() : 0L);
+        playerInfo.put("customAvatar", player.getCustomAvatar());
+        playerInfo.put("avatarFrame", player.getAvatarFrame() != null ? player.getAvatarFrame() : "default");
+        playerInfo.put("vipBadgeVisible", player.isVipBadgeVisible());
         playerInfo.put("tutorialDismissed", Boolean.TRUE.equals(player.getTutorialDismissed()));
         playerInfo.put("newbieProtectionStartedAt", player.getNewbieProtectionStartedAt());
         playerInfo.put("newbieProtectionUntil", NewbieProtection.until(player, stateNow));
@@ -378,6 +385,8 @@ public class GameStateService {
         state.put("tech", techMap);
         state.put("unitEquipment", unitEquipment.state(playerId));
         state.put("research", techService != null ? techService.getActiveResearch(playerId) : null);
+        state.put("researches", techService != null ? techService.getActiveResearches(playerId) : Collections.emptyList());
+        state.put("vip", vipService != null ? vipService.getVipStatus(playerId) : Collections.emptyMap());
 
         // --- officers ---
         List<Officer> officers = officerRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
@@ -510,6 +519,11 @@ public class GameStateService {
         state.put("resentment", cityScope.economy(playerId).getResentment() != null ? cityScope.economy(playerId).getResentment() : 0);
         state.put("lastAppeaseAt", cityScope.economy(playerId).getLastAppeaseAt() != null ? cityScope.economy(playerId).getLastAppeaseAt() : 0L);
         state.put("prestige", player.getPrestige() != null ? player.getPrestige() : 0);
+        PlayerPowerService.Scores power = playerPower.calculate(playerId).get(playerId);
+        if (power != null) {
+            playerInfo.put("formationPower", power.formationPower());
+            playerInfo.put("overallPower", power.overallPower());
+        }
         state.put("lastTick", cityScope.economy(playerId).getLastTick() != null ? cityScope.economy(playerId).getLastTick() : 0);
         state.put("stats", new LinkedHashMap<>());
         state.put("progress", new LinkedHashMap<>());

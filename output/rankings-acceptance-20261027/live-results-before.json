@@ -1,0 +1,184 @@
+[
+  {
+    "type": "players",
+    "metric": "prestige",
+    "status": 200,
+    "total": 57,
+    "pages": 3,
+    "mine": {
+      "id": 177,
+      "rank": 1,
+      "name": "远征统帅_163822",
+      "prestige": 274468750,
+      "avatar": "img/avatars/historical/rank-colonel-v1.webp",
+      "guildName": "海岸远征试玩团",
+      "militaryRank": 17,
+      "militaryRankName": "上将"
+    },
+    "pageMs": [
+      146.3,
+      10.2,
+      7.2
+    ]
+  },
+  {
+    "type": "players",
+    "metric": "militaryRank",
+    "status": 200,
+    "total": 57,
+    "pages": 3,
+    "mine": {
+      "id": 177,
+      "rank": 1,
+      "name": "远征统帅_163822",
+      "prestige": 274468750,
+      "avatar": "img/avatars/historical/rank-colonel-v1.webp",
+      "guildName": "海岸远征试玩团",
+      "militaryRank": 17,
+      "militaryRankName": "上将"
+    },
+    "pageMs": [
+      7.2,
+      7.5,
+      8.2
+    ]
+  },
+  {
+    "type": "players",
+    "metric": "formationPower",
+    "status": 200,
+    "total": 57,
+    "pages": 3,
+    "mine": {
+      "id": 177,
+      "name": "远征统帅_163822",
+      "avatar": "img/avatars/historical/rank-colonel-v1.webp",
+      "guildName": "海岸远征试玩团",
+      "prestige": 274468750,
+      "militaryRank": 17,
+      "militaryRankName": "上将",
+      "formationPower": 1866225469,
+      "overallPower": 7541362095,
+      "rank": 2
+    },
+    "pageMs": [
+      22.7,
+      19.5,
+      19.0
+    ],
+    "profileMatches": true,
+    "coordinatesHidden": true
+  },
+  {
+    "type": "players",
+    "metric": "overallPower",
+    "status": 200,
+    "total": 57,
+    "pages": 3,
+    "mine": {
+      "id": 177,
+      "name": "远征统帅_163822",
+      "avatar": "img/avatars/historical/rank-colonel-v1.webp",
+      "guildName": "海岸远征试玩团",
+      "prestige": 274468750,
+      "militaryRank": 17,
+      "militaryRankName": "上将",
+      "formationPower": 1866225469,
+      "overallPower": 7541362095,
+      "rank": 1
+    },
+    "pageMs": [
+      22.1,
+      19.0,
+      20.4
+    ],
+    "profileMatches": true,
+    "coordinatesHidden": true
+  },
+  {
+    "type": "guilds",
+    "metric": "prestige",
+    "status": 200,
+    "total": 4,
+    "pages": 1,
+    "mine": {
+      "id": 4,
+      "rank": 1,
+      "name": "海岸远征试玩团",
+      "prestige": 274468750,
+      "icon": "g04",
+      "leaderName": "远征统帅_163822",
+      "members": 1
+    },
+    "pageMs": [
+      10.0
+    ]
+  },
+  {
+    "type": "guilds",
+    "metric": "members",
+    "status": 200,
+    "total": 4,
+    "pages": 1,
+    "mine": {
+      "id": 4,
+      "rank": 3,
+      "name": "海岸远征试玩团",
+      "prestige": 274468750,
+      "icon": "g04",
+      "leaderName": "远征统帅_163822",
+      "members": 1
+    },
+    "pageMs": [
+      6.1
+    ]
+  },
+  {
+    "query": "type=bogus",
+    "status": 400,
+    "body": {
+      "error": "未知排行榜类型"
+    },
+    "ms": 9.4
+  },
+  {
+    "query": "type=players&metric=members",
+    "status": 400,
+    "body": {
+      "error": "未知排行榜指标"
+    },
+    "ms": 4.4
+  },
+  {
+    "query": "type=guilds&metric=militaryRank",
+    "status": 400,
+    "body": {
+      "error": "未知排行榜指标"
+    },
+    "ms": 4.7
+  },
+  {
+    "query": "page=abc",
+    "status": 500,
+    "body": {
+      "code": "SERVER_MAINTENANCE",
+      "error": "战区服务器维护中，请稍后重试",
+      "status": 500
+    },
+    "ms": 14.2
+  },
+  {
+    "query": "page=2147483648",
+    "status": 500,
+    "body": {
+      "code": "SERVER_MAINTENANCE",
+      "error": "战区服务器维护中，请稍后重试",
+      "status": 500
+    },
+    "ms": 6.5
+  },
+  {
+    "noAuthentication": true,
+    "status": 401
+  }
+]

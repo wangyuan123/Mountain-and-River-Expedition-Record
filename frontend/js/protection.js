@@ -59,7 +59,23 @@
           return true;
         });
       }).catch(function (err) {
-        if (token === G.API.getToken() && generation === self.generation && G.API.isLoggedIn()) { self.message = err.message; self.show(); }
+        if (token === G.API.getToken() && generation === self.generation && G.API.isLoggedIn()) {
+          if (G.Main && G.Main.isServerError && G.Main.isServerError(err)) {
+            G.Main.setServerMaintenance({
+              active: true,
+              status: err.status || 500,
+              code: err.code || 'SERVER_ERROR',
+              message: '服务器维护中...',
+              raw: err.message
+            });
+            self.stop();
+            G.Core.route = 'login';
+            G.Core.render();
+          } else {
+            self.message = err.message;
+            self.show();
+          }
+        }
         return false;
       }).finally(function () { if (generation === self.generation) self.entering = null; });
       return this.entering;
@@ -79,10 +95,40 @@
       return G.API.client.get('/anti-addiction/status', { retry: 0 }).then(function (data) {
         if (token !== G.API.getToken()) return;
         self.adopt(data); if (self.blocked) G.Core.render();
-      }).catch(function (err) { self.message = err.message; if (self.blocked && G.API.isLoggedIn()) G.Core.render(); });
+      }).catch(function (err) {
+        if (G.Main && G.Main.isServerError && G.Main.isServerError(err)) {
+          G.Main.setServerMaintenance({
+            active: true,
+            status: err.status || 500,
+            code: err.code || 'SERVER_ERROR',
+            message: '服务器维护中...',
+            raw: err.message
+          });
+          self.stop();
+          G.Core.route = 'login';
+          G.Core.render();
+          return;
+        }
+        self.message = err.message;
+        if (self.blocked && G.API.isLoggedIn()) G.Core.render();
+      });
     },
     denied: function (err) {
+      if (!err) return;
       if (err.code === 'CHAT_RESTRICTED' || err.code === 'PAYMENT_DISABLED') return;
+      if (G.Main && G.Main.isServerError && G.Main.isServerError(err)) {
+        G.Main.setServerMaintenance({
+          active: true,
+          status: err.status || 500,
+          code: err.code || 'SERVER_ERROR',
+          message: '服务器维护中...',
+          raw: err.message
+        });
+        this.stop();
+        G.Core.route = 'login';
+        G.Core.render();
+        return;
+      }
       this.message = err.message || '游戏会话已结束，请重新确认游戏时间。';
       this.show();
     },
@@ -172,7 +218,13 @@
       var h = '<section class="protection-page"><h2>实名与健康游戏</h2>';
       h += '<p>未成年人仅可在周五、周六、周日及法定节假日的北京时间 20:00—21:00 游戏，具体以已公布的开放日历为准。家长设置可进一步收紧。</p>';
       h += '<p>离线期间战局继续，城池仍可能受到攻击。战斗、行军或军团事务不会延长游戏时间。</p>';
-      if (this.message) h += '<p class="protection-message" role="status">' + esc(this.message) + '</p>';
+      if (this.message) {
+        var cleanMsg = esc(this.message);
+        if (/Handler dispatch failed|NoClassDefFoundError|Exception|Error:/.test(this.message)) {
+          cleanMsg = '实名与授权服务暂时不可用，请稍后刷新状态。';
+        }
+        h += '<p class="protection-message" role="status">' + cleanMsg + '</p>';
+      }
       if (logged) {
         h += '<div class="panel"><b>' + esc(G.API.getUsername()) + '</b><p>' + esc(d.message || '正在确认游戏许可，请刷新状态。') + '</p>';
         h += '<p>实名状态：' + esc((G.Constants.identityStatusNames || {})[d.identityStatus] || '待确认') + '</p>';

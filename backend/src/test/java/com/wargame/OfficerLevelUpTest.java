@@ -5,7 +5,10 @@ import com.wargame.model.entity.Player;
 import com.wargame.model.entity.PlayerItem;
 import com.wargame.repository.PlayerItemRepository;
 import com.wargame.service.OfficerService;
+import com.wargame.service.DepotService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Map;
@@ -19,6 +22,163 @@ public class OfficerLevelUpTest extends BaseServiceTest {
 
     @Autowired
     private PlayerItemRepository playerItemRepository;
+
+    @Autowired
+    private DepotService depotService;
+
+    @ParameterizedTest
+    @CsvSource({"false,1", "true,1", "false,50", "true,50", "false,99", "true,99", "false,100", "true,100"})
+    void maxExperienceBookDirectlyReachesCapAndConsumesOnlyOne(boolean fromDepot, int startingLevel) {
+        Player player = createTestPlayer();
+        Officer officer = createOfficer(player.getId(), "idle", 90, 80, 70);
+        officer.setLevel(startingLevel);
+        officer.setExp(0L);
+        officer.setAttrPoints(7);
+        officerRepository.save(officer);
+        PlayerItem item = new PlayerItem();
+        item.setPlayerId(player.getId());
+        item.setItemKey("expBookMax");
+        item.setCount(2);
+        item.setUpdatedAt(System.currentTimeMillis());
+        playerItemRepository.save(item);
+
+        Map<String, Object> result = fromDepot
+                ? depotService.useItem(player.getId(), "expBookMax", officer.getId(), null)
+                : officerService.useExpBook(player.getId(), officer.getId(), "expBookMax", 99);
+
+        assertEquals(startingLevel < 100, result.get("success"));
+        Officer updated = officerRepository.findById(officer.getId()).orElseThrow();
+        assertEquals(100, updated.getLevel());
+        assertEquals(0L, updated.getExp());
+        assertEquals(7 + 100 - startingLevel, updated.getAttrPoints());
+        assertEquals(90, updated.getMilitary());
+        assertEquals(80, updated.getLogistics());
+        assertEquals(70, updated.getKnowledge());
+        assertEquals(startingLevel < 100 ? 1 : 2,
+                playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "expBookMax").orElseThrow().getCount());
+    }
+
+    @ParameterizedTest
+    @CsvSource({"1,100000", "3,300000"})
+    void advancedExperienceBooksGrantOneHundredThousandPerBook(int count, long gain) {
+        Player player = createTestPlayer();
+        Officer officer = createOfficer(player.getId(), "idle", 30, 30, 30);
+        officer.setLevel(1);
+        officer.setExp(333L);
+        officerRepository.save(officer);
+        PlayerItem item = new PlayerItem();
+        item.setPlayerId(player.getId());
+        item.setItemKey("expBookAdv");
+        item.setCount(5);
+        item.setUpdatedAt(System.currentTimeMillis());
+        playerItemRepository.save(item);
+
+        Map<String, Object> result = officerService.useExpBook(player.getId(), officer.getId(), "expBookAdv", count);
+
+        assertEquals(true, result.get("success"));
+        assertEquals((int) gain, result.get("gain"));
+        assertEquals(333L + gain, result.get("exp"));
+        assertEquals(count, result.get("count"));
+        assertEquals(333L + gain, officerRepository.findById(officer.getId()).orElseThrow().getExp());
+        assertEquals(5 - count,
+                playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "expBookAdv").orElseThrow().getCount());
+    }
+
+    @ParameterizedTest
+    @CsvSource({"20,4000", "21,4275", "49,72875", "50,77500", "51,82425", "79,403025", "80,421000", "81,439725", "99,956325"})
+    void singleUpgradeUsesNewCostAndPreservesExistingGrowth(int level, long needed) {
+        Player player = createTestPlayer();
+        Officer officer = createOfficer(player.getId(), "idle", 90, 80, 70);
+        officer.setLevel(level);
+        officer.setExp(needed);
+        officer.setAttrPoints(7);
+        officerRepository.save(officer);
+
+        Map<String, Object> result = officerService.levelUp(player.getId(), officer.getId(), false);
+
+        assertEquals(true, result.get("success"));
+        assertEquals(level + 1, result.get("level"));
+        assertEquals(0L, result.get("exp"));
+        Officer updated = officerRepository.findById(officer.getId()).orElseThrow();
+        assertEquals(level + 1, updated.getLevel());
+        assertEquals(8, updated.getAttrPoints());
+        assertEquals(90, updated.getMilitary());
+        assertEquals(80, updated.getLogistics());
+        assertEquals(70, updated.getKnowledge());
+    }
+
+    @ParameterizedTest
+    @CsvSource({"21,4275", "50,77500", "81,439725", "99,956325"})
+    void insufficientExperienceDoesNotAlterExistingOfficer(int level, long needed) {
+        Player player = createTestPlayer();
+        Officer officer = createOfficer(player.getId(), "idle", 90, 80, 70);
+        officer.setLevel(level);
+        officer.setExp(needed - 1);
+        officer.setAttrPoints(7);
+        officerRepository.save(officer);
+
+        for (boolean all : new boolean[] {false, true}) {
+            Map<String, Object> result = officerService.levelUp(player.getId(), officer.getId(), all);
+            assertEquals(false, result.get("success"));
+            assertEquals("经验不足，升级需要 " + needed + " 经验", result.get("message"));
+        }
+        Officer updated = officerRepository.findById(officer.getId()).orElseThrow();
+        assertEquals(level, updated.getLevel());
+        assertEquals(needed - 1, updated.getExp());
+        assertEquals(7, updated.getAttrPoints());
+    }
+
+    @ParameterizedTest
+    @CsvSource({"19,12074,21,4274", "19,12075,22,0", "49,232800,52,0", "79,1263750,82,0", "99,1000000,100,0", "1,20355749,99,956324", "1,20355750,100,0", "1,2281050,62,40375", "1,20000000,99,600575"})
+    void bulkUpgradeCrossesStagesAndHandlesMaxLevel(int start, long exp, int expectedLevel, long remaining) {
+        Player player = createTestPlayer();
+        Officer officer = createOfficer(player.getId(), "idle", 30, 30, 30);
+        officer.setLevel(start);
+        officer.setExp(exp);
+        officer.setAttrPoints(7);
+        officerRepository.save(officer);
+
+        Map<String, Object> result = officerService.levelUp(player.getId(), officer.getId(), true);
+
+        assertEquals(true, result.get("success"));
+        assertEquals(expectedLevel, result.get("level"));
+        assertEquals(remaining, result.get("exp"));
+        Officer updated = officerRepository.findById(officer.getId()).orElseThrow();
+        assertEquals(expectedLevel, updated.getLevel());
+        assertEquals(remaining, updated.getExp());
+        assertEquals(7 + expectedLevel - start, updated.getAttrPoints());
+        if (expectedLevel == 100) {
+            assertEquals(false, officerService.levelUp(player.getId(), officer.getId(), true).get("success"));
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource({"50,expBook,333,50,10333", "50,expBookAdv,333,51,22833", "80,expBook,333,80,10333", "80,expBookAdv,333,80,100333", "99,expBookAdv,333,99,100333", "99,expBookAdv,856325,100,0"})
+    void depotExperienceBooksUseSameCurve(int start, String itemId, long initialExp, int expectedLevel, long remaining) {
+        Player player = createTestPlayer();
+        Officer officer = createOfficer(player.getId(), "idle", 30, 30, 30);
+        officer.setLevel(start);
+        officer.setExp(initialExp);
+        officer.setAttrPoints(7);
+        officerRepository.save(officer);
+        PlayerItem item = new PlayerItem();
+        item.setPlayerId(player.getId());
+        item.setItemKey(itemId);
+        item.setCount(2);
+        item.setUpdatedAt(System.currentTimeMillis());
+        playerItemRepository.save(item);
+
+        Map<String, Object> result = depotService.useItem(player.getId(), itemId, officer.getId(), null);
+
+        assertEquals(true, result.get("success"));
+        assertEquals(expectedLevel, result.get("level"));
+        assertEquals(remaining, result.get("exp"));
+        Officer updated = officerRepository.findById(officer.getId()).orElseThrow();
+        assertEquals(expectedLevel, updated.getLevel());
+        assertEquals(remaining, updated.getExp());
+        assertEquals(7 + expectedLevel - start, updated.getAttrPoints());
+        assertEquals(1, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), itemId).orElseThrow().getCount());
+    }
 
     @Test
     public void testLevelUpSingleLevel() {

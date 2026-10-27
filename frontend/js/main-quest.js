@@ -6,13 +6,14 @@
   var Core = G.Core;
   var D = G.DATA;
 
-  var state = { chapters: [] };
+  var state = { chapters: [], dailyCheckin: null };
 
   function loadQuests() {
     var playerId = (Core.state && Core.state.player || {}).id;
     return G.API.getQuestList().then(function (data) {
       if (!isCurrentPlayer(playerId)) return [];
       state.chapters = data && data.chapters ? data.chapters : [];
+      state.dailyCheckin = data && data.dailyCheckin ? data.dailyCheckin : null;
       return state.chapters;
     });
   }
@@ -269,12 +270,62 @@
     return h;
   }
 
+  function renderDailyCheckinCard() {
+    var checkin = state.dailyCheckin || { claimed: false };
+    var claimed = !!checkin.claimed;
+    var h = '<section class="panel daily-checkin-panel" aria-label="每日军务签到">';
+    h += '<div class="zone-head" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
+    h += '  <span class="zone-title">📅 每日军务点卯签到</span>';
+    h += '  <span class="zone-sub" style="font-size:12px;color:var(--muted);">每日 00:00 刷新 · 自主领受</span>';
+    h += '</div>';
+    h += '<div class="daily-checkin-desc" style="font-size:12px;color:var(--ink);line-height:1.6;margin-bottom:8px;">';
+    h += '战备点卯每日配发军政改制令与口粮。包含<b>军官改名卡</b>与<b>城市改名卡</b>，指挥官可根据实际需求<b>自主选择是否领受</b>入库，未领受不强占背包。';
+    h += '</div>';
+    h += '<div class="daily-checkin-pills" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">';
+    h += '  <span class="vip-reward-pill">🏷️ 军官改名卡 <strong>×1</strong></span>';
+    h += '  <span class="vip-reward-pill">🏷️ 城市改名卡 <strong>×1</strong></span>';
+    h += '  <span class="vip-reward-pill">🪙 黄金 <strong>×2,000</strong></span>';
+    h += '  <span class="vip-reward-pill">🌾 粮食 <strong>×5,000</strong></span>';
+    h += '  <span class="vip-reward-pill">⚡ 10分加速 <strong>×1</strong></span>';
+    h += '</div>';
+    h += '<div class="daily-checkin-actions" style="display:flex;justify-content:flex-end;align-items:center;">';
+    if (claimed) {
+      h += '  <button type="button" class="btn sm" disabled style="opacity:0.65;">✓ 今日已签到领受</button>';
+    } else {
+      h += '  <button type="button" class="btn sm ok" onclick="Game.MainQuest.claimDailyCheckin()">📝 签到并领受战备</button>';
+    }
+    h += '</div>';
+    h += '</section>';
+    return h;
+  }
+
+  function claimDailyCheckin() {
+    if (!G.API || !G.API.claimDailyCheckin) return;
+    return G.API.claimDailyCheckin().then(function (res) {
+      if (res && res.dailyCheckin) {
+        state.dailyCheckin = res.dailyCheckin;
+      } else {
+        state.dailyCheckin = { claimed: true };
+      }
+      G.toast(res.message || '每日军务签到成功');
+      if (Core.route === 'mainQuest') {
+        var v = document.getElementById('view');
+        if (v) drawQuestView(v);
+      }
+    }).catch(function (err) {
+      G.toast(err.message || '签到失败');
+    });
+  }
+
   function drawQuestView(v) {
     if (!v) return;
     var h = '<div class="main-quest-view">';
     h += '<div class="title">战略主线与晋升</div>';
     h += '<div class="desc main-quest-summary">完成多阶段主线目标，获取海量战备资源、黄金与钻石通关大礼包；晋升统帅军衔拓展城池与出兵容量！</div>';
     h += '<div class="ob-actions" style="margin-bottom:12px;"><button class="btn" onclick="Game.go(\'depot\')">📦 打开我的物资仓库</button></div>';
+
+    // 每日军政签到任务卡片
+    h += renderDailyCheckinCard();
 
     h += renderExplorationTasks();
 
@@ -618,6 +669,7 @@
     init: init,
     refresh: refresh,
     loadQuests: loadQuests,
+    claimDailyCheckin: claimDailyCheckin,
     renderQuestView: renderQuestView,
     drawQuestView: drawQuestView,
     hasUnclaimed: hasUnclaimed,

@@ -1133,7 +1133,7 @@ window.Game = window.Game || {};
           curQty = 1;
           if (sliderRow) sliderRow.style.display = 'none';
           var upgraded = G.OFFICER_MAX_LEVEL - (o.level || 1);
-          var points = upgraded * 4;
+          var points = upgraded;
           var levelChangeHtml = '<span style="color:#2e7d32;font-weight:bold">Lv.' + o.level + ' → Lv.' + G.OFFICER_MAX_LEVEL + ' (直升满级 +' + upgraded + ' 级)</span>'
             + '<br><span style="color:var(--accent);font-size:12px">立即获得 +' + points + ' 点可分配属性，经验归 0</span>';
 

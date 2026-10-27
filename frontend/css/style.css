@@ -732,6 +732,39 @@ select.qty { width: 80px; cursor: pointer; }
   font-weight: 700;
 }
 
+/* 方案A：城防雷达离线提示横幅与详情警告卡片 */
+.term-radar-offline-banner {
+  margin: 6px 2px 2px;
+  padding: 8px 10px;
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px dashed rgba(239, 68, 68, 0.35);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.term-radar-offline-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #ef4444;
+  letter-spacing: 0.02em;
+}
+.term-radar-offline-desc {
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--muted, #64748b);
+}
+.term-radar-offline-action {
+  margin-top: 4px;
+}
+.term-radar-offline-alert {
+  padding: 6px 8px;
+  margin: 4px 0 8px;
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px dashed rgba(239, 68, 68, 0.3);
+  border-radius: 3px;
+}
+
 .term-divider {
   font-family: ui-monospace, SFMono-Regular, monospace;
   color: var(--line, #e2e8f0);
@@ -4261,6 +4294,253 @@ body.theme-classic .unit-card-details,
   border-color: #2a4c73;
   font-weight: 600;
 }
+/* 商城套装装备细分筛选工具条 */
+.shop-equip-filter-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  padding: 6px 10px;
+  margin-bottom: 12px;
+  background: #f4f7fb;
+  border: 1px solid #dbe5f0;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.shop-equip-filter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #2b5c8f;
+  background: #e5effa;
+  border: 1px solid #c8dcf2;
+  border-radius: 4px;
+  letter-spacing: 0.2px;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.shop-equip-filter-tag-icon {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.shop-equip-filter-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.shop-equip-filter-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink, #1e293b);
+  cursor: pointer;
+  margin: 0;
+  user-select: none;
+}
+
+.shop-equip-filter-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #556980;
+  white-space: nowrap;
+}
+
+/* 自定义 DOM 下拉菜单（解决 macOS 原生 NSMenu 弹窗与元素脱节漂移问题） */
+.shop-custom-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.shop-custom-dropdown-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 28px;
+  min-width: 96px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 500;
+  color: var(--ink, #1e293b);
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  cursor: pointer;
+  box-sizing: border-box;
+  text-align: left;
+  outline: none;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.shop-custom-dropdown-trigger:hover {
+  border-color: #3b82f6;
+  background-color: #f8fafc;
+}
+
+.shop-custom-dropdown.open .shop-custom-dropdown-trigger {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.shop-custom-dropdown-trigger.is-active {
+  border-color: #2563eb;
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.shop-dropdown-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.shop-dropdown-arrow {
+  font-size: 10px;
+  color: #64748b;
+  transition: transform 0.2s ease;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.shop-custom-dropdown.open .shop-dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+.shop-custom-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 100%;
+  width: max-content;
+  max-width: 220px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.05);
+  padding: 4px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-sizing: border-box;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.shop-custom-dropdown-menu[hidden] {
+  display: none !important;
+}
+
+.shop-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  color: var(--ink, #1e293b);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.shop-dropdown-item:hover {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.shop-dropdown-item.selected {
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+.shop-dropdown-item-check {
+  font-size: 11px;
+  font-weight: bold;
+  color: #2563eb;
+}
+
+.shop-equip-filter-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  height: 28px;
+  padding: 3px 26px 3px 9px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--ink, #1e293b);
+  background-color: #ffffff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%234b6480' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  outline: none;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.shop-equip-filter-select:hover {
+  border-color: #3b82f6;
+  background-color: #f8fafc;
+}
+
+.shop-equip-filter-select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.shop-equip-filter-select.is-active {
+  border-color: #2563eb;
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 600;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+.shop-equip-filter-reset {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-family: inherit;
+  font-weight: 500;
+  color: #64748b;
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.shop-equip-filter-reset:hover {
+  color: #dc2626;
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
 .shop-empty-tip {
   grid-column: 1 / -1;
   text-align: center;
@@ -4294,6 +4574,10 @@ body.theme-classic .unit-card-details,
   font-size: 36px;
   line-height: 1;
   flex-shrink: 0;
+}
+.shop-buy-item-icon .game-icon-img {
+  width: 44px;
+  height: 44px;
 }
 .shop-buy-item-info {
   flex: 1;
@@ -8643,7 +8927,7 @@ span.tcard-mini-icon .map-icon {
 .cu-row.cu-head { font-weight: bold; font-size: 14px; padding: 2px 0 6px; border-bottom: 1px solid rgba(0, 0, 0, 0.12); margin-bottom: 4px; }
 .cu-ico { width: 22px; text-align: center; font-size: 16px; }
 .game-icon-img { display: inline-block; width: 1.35em; height: 1.35em; object-fit: contain; vertical-align: middle; flex-shrink: 0; }
-.shop-icon .game-icon-img { width: 1em; height: 1em; }
+.shop-icon .game-icon-img { width: 44px; height: 44px; }
 .cu-ico img { display: block; width: 22px; height: 22px; object-fit: contain; }
 .cu-name { flex: 0 0 auto; min-width: 56px; color: #555; }
 .cu-val { margin-left: auto; font-variant-numeric: tabular-nums; }
@@ -10462,6 +10746,13 @@ body.theme-classic .rb-prisoner-details summary:hover,
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
+}
+
+.settings-label-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .settings-select {

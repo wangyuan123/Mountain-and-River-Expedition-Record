@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="gearBx_body" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#334155"/>
+      <stop offset="40%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="gearBx_gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="35%" stop-color="#fbbf24"/>
+      <stop offset="75%" stop-color="#d97706"/>
+      <stop offset="100%" stop-color="#78350f"/>
+    </linearGradient>
+    <filter id="gearBx_shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#gearBx_shadow)">
+    <ellipse cx="32" cy="55" rx="23" ry="4" fill="#000000" opacity="0.4"/>
+
+    <!-- Main Armored Ordnance Crate Body -->
+    <rect x="10" y="24" width="44" height="28" rx="2" fill="url(#gearBx_body)" stroke="#475569" stroke-width="1"/>
+
+    <!-- Heavy Lid with Chamfer -->
+    <path d="M8 24 L14 15 L50 15 L56 24 Z" fill="url(#gearBx_gold)" stroke="#78350f" stroke-width="0.8"/>
+    <!-- Lid Top Handle -->
+    <rect x="25" y="11" width="14" height="4" rx="1.5" fill="#fef08a" stroke="#78350f" stroke-width="0.8"/>
+
+    <!-- Gold Armored Corner Brackets & Straps -->
+    <rect x="18" y="24" width="4" height="28" fill="url(#gearBx_gold)"/>
+    <rect x="42" y="24" width="4" height="28" fill="url(#gearBx_gold)"/>
+    <rect x="10" y="47" width="44" height="2.5" fill="url(#gearBx_gold)"/>
+
+    <!-- Center Military Officer Equipment Gear Insignia -->
+    <circle cx="32" cy="37" r="8" fill="#0f172a" stroke="url(#gearBx_gold)" stroke-width="1.2"/>
+    <!-- Crossed Swords / Gear Emblem -->
+    <path d="M28 41 L36 33 M36 33 L36 31 L34 31 M28 41 L29 42 L30 41" stroke="#fbbf24" stroke-width="1.2" stroke-linecap="round"/>
+    <path d="M36 41 L28 33 M28 33 L28 31 L30 31 M36 41 L35 42 L34 41" stroke="#fbbf24" stroke-width="1.2" stroke-linecap="round"/>
+    <circle cx="32" cy="37" r="2.2" fill="#ffffff" stroke="#d97706" stroke-width="0.5"/>
+
+    <!-- Corner Rivets -->
+    <circle cx="12" cy="27" r="1" fill="#fbbf24"/>
+    <circle cx="52" cy="27" r="1" fill="#fbbf24"/>
+    <circle cx="12" cy="49" r="1" fill="#fbbf24"/>
+    <circle cx="52" cy="49" r="1" fill="#fbbf24"/>
+  </g>
+</svg>

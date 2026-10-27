@@ -449,14 +449,14 @@ test('军事建筑显示花园卫城模型，全部 26 个映射复用实际素�
   const { G, state } = setup();
   const armyBuildings = [
     'command', 'house', 'factory', 'lightfactory', 'heavyfactory',
-    'airport', 'port', 'shipyard', 'academy', 'staff', 'headquarters', 'lab', 'radar', 'wall',
+    'airport', 'port', 'shipyard', 'academy', 'staff', 'headquarters', 'lab', 'radar', 'guild_radar', 'wall',
     'apron', 'liaison', 'depot', 'transit', 'hospital', 'exchange', 'prisoner_camp'
   ];
   for (const id of armyBuildings) {
     assert.equal(G.Build.BUILD_ICON[id], `img/buildings/garden/${id}.webp`);
   }
   assert.equal(Object.keys(G.Build.BUILD_ICON).length, 26);
-  assert.equal(G.Build.BUILD_ICON.guild_radar, G.Build.BUILD_ICON.radar);
+  assert.equal(G.Build.BUILD_ICON.guild_radar, 'img/buildings/garden/guild_radar.webp');
   assert.equal(G.Build.BUILD_ICON.shipyard, 'img/buildings/garden/shipyard.webp');
   for (const asset of Object.values(G.Build.BUILD_ICON)) {
     assert.ok(fs.existsSync(path.join(__dirname, '..', asset)), `缺少建筑素材：${asset}`);

@@ -17,6 +17,7 @@ import java.util.*;
 @Service
 @Transactional(readOnly = true)
 public class WorldViewService {
+    @org.springframework.beans.factory.annotation.Autowired private WarPowerProtectionService warPowerProtection;
 
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
@@ -159,6 +160,11 @@ public class WorldViewService {
                 pcMap.put("selfCity", selfCity);
                 pcMap.put("warAt", pcWarAt);
                 pcMap.put("warEndAt", pcWarEnd);
+                pcMap.put("canAccelerateWar", pcWarAt > GameClock.now()
+                        && player.getId().equals(owner.getWarInitiatorId())
+                        && Objects.equals(pc.getId(), owner.getWarTargetCityId())
+                        && Objects.equals(cityScope.slot(player.getId()), owner.getWarCitySlot())
+                        && !owner.isWarAccelerated());
                 // coolAt 表示战后保护期 (仅当未处于战争状态时), 战争窗口用 warAt/warEndAt 表达
                 pcMap.put("coolAt", pcWarAt == 0 ? pcWarEnd : 0L);
                 // 列表与坐标地图共用新手保护规则，避免敌对关系绕过受保护城市的行动限制。
@@ -170,6 +176,14 @@ public class WorldViewService {
                 playerCities.add(pcMap);
             }
         }
+        Set<Long> powerOwners = new HashSet<>();
+        playerCities.stream().filter(city -> !Boolean.TRUE.equals(city.get("selfCity")))
+                .forEach(city -> powerOwners.add(((Number) city.get("ownerId")).longValue()));
+        var powerEligibility = warPowerProtection.evaluateMany(player.getId(), powerOwners);
+        playerCities.forEach(city -> {
+            if (city.get("ownerId") instanceof Number owner && powerEligibility.containsKey(owner.longValue()))
+                city.put("powerProtection", powerEligibility.get(owner.longValue()).toMap());
+        });
         world.put("playerCities", playerCities);
         world.put("simulatedNpcCities", simulatedNpcCities);
 
@@ -372,7 +386,7 @@ public class WorldViewService {
     }
 
     /**
-     * 为守方地图展示护盾拦截后的敌军返程；只公开路线所需数据，不将其混入来袭列表或战斗提醒。
+     * 为守方展示从其城市撤退的敌军，只公开路线所需数据。
      * @param player 当前查看地图的玩家
      * @return 可用于地图渲染的敌军返程情报
      */
@@ -389,7 +403,10 @@ public class WorldViewService {
             info.put("id", "return-march-" + march.getId());
             info.put("marchId", march.getId());
             info.put("targetKind", "player");
-            // 护盾拦截已通过双方邮件确认；仅该地图叠层公开反向路线，不包含敌方兵力或其他情报。
+            info.put("targetCityId", march.getTargetId());
+            info.put("countermeasuresUsed", Boolean.TRUE.equals(march.getReturnStratagemUsed()));
+            info.put("fromName", playerRepository.findById(march.getPlayerId()).map(com.wargame.util.PlayerNames::commanderName).orElse("未知敌军"));
+            info.put("targetName", march.getTargetName());
             info.put("fromX", march.getFromX());
             info.put("fromY", march.getFromY());
             info.put("targetX", march.getTargetX());
@@ -414,6 +431,7 @@ public class WorldViewService {
         mMap.put("outboundAccelerated", Boolean.TRUE.equals(m.getOutboundAccelerated()));
         mMap.put("returnAccelerated", Boolean.TRUE.equals(m.getReturnAccelerated()));
         mMap.put("stratagemUsed", Boolean.TRUE.equals(m.getStratagemUsed()));
+        mMap.put("returnStratagemUsed", Boolean.TRUE.equals(m.getReturnStratagemUsed()));
         mMap.put("targetKind", m.getTargetKind());
         mMap.put("targetId", m.getTargetId());
         mMap.put("targetName", m.getTargetName());

@@ -17,6 +17,7 @@ import com.wargame.model.constants.ReconRules;
 import com.wargame.model.constants.WildTypeDef;
 import com.wargame.model.constants.WorldConfig;
 import com.wargame.model.constants.NewbieProtection;
+import com.wargame.model.constants.StratagemRules;
 import com.wargame.model.dto.BattleRoundState;
 import com.wargame.model.dto.JointDefenseState;
 import com.wargame.model.dto.BattleResult;
@@ -42,6 +43,8 @@ import java.util.*;
  */
 @Service
 public class MarchService {
+    @org.springframework.beans.factory.annotation.Autowired private WarPowerProtectionService warPowerProtection;
+    @org.springframework.beans.factory.annotation.Autowired private TacticalOrderService tacticalOrders;
     @org.springframework.beans.factory.annotation.Autowired private TacticalBattleOutcomeService battleOutcomes;
     @org.springframework.beans.factory.annotation.Autowired private OfficerEquipmentProgressService equipmentProgress;
 
@@ -690,7 +693,10 @@ public class MarchService {
             if (returnIfShielded(march, target, now)) return;
             // 手动打开战场也会建会话，必须重验城权与战争资格，防止排队部队攻击刚接管的己方城市。
             if (isOffensiveAction(march.getAction())
-                    && !canAttackPlayerCity(playerId, city, now)) return;
+                    && !canAttackPlayerCity(playerId, city, now)) {
+                cancelMarchBeforeBattle(march, playerId);
+                return;
+            }
             if (!battleSessionRepository.findActivePlayerCityBattles(march.getTargetId()).isEmpty()) return;
             List<Long> waiting = marchRepository.findWaitingPlayerCityAttackIds(march.getTargetId(), now,
                     org.springframework.data.domain.PageRequest.of(0, 1));
@@ -836,6 +842,10 @@ public class MarchService {
                 || (target instanceof WildTile wt && Boolean.TRUE.equals(wt.getOccupied()))) throw new IllegalArgumentException("战斗目标已失效");
             // 兼容旧行军：军情卡在到达后首次点击时创建会话，无需等待下一次 Tick。
             startTacticalBattle(march.getPlayerId(), march, target, now);
+            if (!marchRepository.existsById(marchId)) {
+                return Map.of("marchId", marchId, "cancelled", true, "reason", "war_eligibility",
+                        "message", "当前已不符合城市进攻条件，部队与随军物资已归还");
+            }
             // 返回正常响应才能提交返程和邮件；抛异常会回滚这次护盾拦截。
             if (Boolean.TRUE.equals(march.getReturning())) {
                 return Map.of("marchId", march.getId(), "cancelled", true, "reason", "shield",
@@ -1367,6 +1377,12 @@ public class MarchService {
      */
     @Transactional
     public Map<String, Object> speedUpMarch(Long playerId, Long marchId, Boolean returning, Long version) {
+        return speedUpMarch(playerId, marchId, returning, version,
+                (String) previewOrder(playerId, marchId, "marchOrd").get("confirmationToken"));
+    }
+
+    @Transactional
+    public Map<String, Object> speedUpMarch(Long playerId, Long marchId, Boolean returning, Long version, String confirmationToken) {
         if (marchId == null || returning == null || version == null) {
             throw new IllegalArgumentException("请刷新情报后重新选择行军加速");
         }
@@ -1391,16 +1407,20 @@ public class MarchService {
             throw new IllegalArgumentException("本段行军已经加速");
         }
         long now = GameClock.now();
-        Long start = march.getStartAt(), arrive = !isReturning && march.getInterceptDeployAt() != null
+        boolean deployingInterception = !isReturning && march.getInterceptDeployAt() != null;
+        Long start = march.getStartAt(), arrive = deployingInterception
                 ? march.getInterceptDeployAt() : march.getArriveAt();
         if (start == null || arrive == null || start > now || arrive <= start
-                || arrive - now <= WorldConfig.MARCH_ACCELERATION_MIN_MS) {
+                || (!deployingInterception && arrive - now <= WorldConfig.MARCH_ACCELERATION_MIN_MS)) {
             throw new IllegalArgumentException("剩余行军时间不足或已到达，无法加速");
         }
+        Map<String, Object> effect = previewOrder(playerId, marchId, "marchOrd");
+        tacticalOrders.requireToken((String) effect.get("confirmationToken"), confirmationToken);
         long duration = arrive - start;
         long remaining = arrive - now;
-        long acceleratedRemaining = Math.max(WorldConfig.MARCH_ACCELERATION_MIN_MS,
-                (long) Math.ceil(remaining / WorldConfig.MARCH_ACCELERATION_MUL));
+        long minRemaining = deployingInterception ? 10_000L : StratagemRules.MIN_MARCH_REMAINING_MS;
+        long acceleratedRemaining = StratagemRules.acceleratedRemaining(remaining,
+                ((Number) effect.get("knowledge")).intValue(), minRemaining);
         long baseDuration = baseMarchDuration(march);
         // 按同一比例压缩完整时间轴，使 (now-start)/(arrive-start) 在加速前后保持不变。
         long acceleratedDuration = Math.round(duration * ((double) acceleratedRemaining / remaining));
@@ -1418,6 +1438,7 @@ public class MarchService {
         }
         if (isReturning) march.setReturnAccelerated(true);
         else march.setOutboundAccelerated(true);
+        recordOrderEffect(march, effect, now, remaining, acceleratedRemaining);
         // 扣令会清空持久化上下文；合并原版本后立即 flush，冲突时整个事务回滚。
         march = marchRepository.saveAndFlush(march);
         processInterceptionQueue(List.of(march), now);
@@ -1426,12 +1447,86 @@ public class MarchService {
         timing.put("deployAt", march.getInterceptDeployAt()); timing.put("readyAt", march.getInterceptReadyAt());
         timing.put("version", march.getVersion()); timing.put("returning", isReturning);
         pushService.pushMarchUpdate(playerId, marchEvent("accelerated", march, timing));
-        if (!isReturning) notifyIncomingChange(march, "accelerated");
+        notifyIncomingChange(march, "accelerated");
         Map<String, Object> result = new LinkedHashMap<>(timing);
         result.put("success", true);
         result.put("message", isReturning ? "回城已加速" : "行军已加速");
         result.put("savedMs", remaining - acceleratedRemaining);
+        result.put("effect", effect);
         return result;
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> previewOrder(Long playerId, Long marchId, String itemKey) {
+        March march = marchRepository.findById(marchId)
+                .orElseThrow(() -> new IllegalArgumentException("行军任务不存在"));
+        em.refresh(march);
+        long now = GameClock.now();
+        boolean returning = Boolean.TRUE.equals(march.getReturning());
+        boolean accelerating = "marchOrd".equals(itemKey);
+        if (accelerating) {
+            if (!playerId.equals(march.getPlayerId()) || march.getCitySlot() != cityScope.slot(playerId))
+                throw new IllegalArgumentException("只能加速本城己方行军");
+            if (Boolean.TRUE.equals(returning ? march.getReturnAccelerated() : march.getOutboundAccelerated()))
+                throw new IllegalArgumentException("本段行军已经加速");
+        } else if (!canUseEnemyOrder(playerId, march, itemKey)) {
+            throw new IllegalArgumentException("干扰令仅用于本城来袭，诱敌令仅用于从本城撤退的敌军");
+        } else if (Boolean.TRUE.equals(returning ? march.getReturnStratagemUsed() : march.getStratagemUsed())) {
+            throw new IllegalArgumentException("该行军本阶段已经受过计谋影响");
+        }
+        boolean deployingInterception = accelerating && !returning && march.getInterceptDeployAt() != null;
+        Long arrive = deployingInterception ? march.getInterceptDeployAt() : march.getArriveAt();
+        if (march.getBattleId() != null || Boolean.TRUE.equals(march.getStationed())
+                || (!returning && (Boolean.TRUE.equals(march.getGathering()) || Boolean.TRUE.equals(march.getGatherStopped())))
+                || march.getStartAt() == null || arrive == null || march.getStartAt() > now || arrive <= now
+                || arrive <= march.getStartAt() || (accelerating && !deployingInterception && arrive - now <= WorldConfig.MARCH_ACCELERATION_MIN_MS))
+            throw new IllegalArgumentException("部队当前不可使用道具或剩余时间不足");
+        Map<String, Object> effect = tacticalOrders.effect(playerId, itemKey);
+        String token = tacticalOrders.token(effect, playerId, cityScope.slot(playerId), marchId,
+                march.getVersion(), returning, march.getStartAt(), arrive);
+        long remaining = arrive - now;
+        int knowledge = ((Number) effect.get("knowledge")).intValue();
+        long minRemaining = deployingInterception ? 10_000L : StratagemRules.MIN_MARCH_REMAINING_MS;
+        long after = accelerating ? StratagemRules.acceleratedRemaining(remaining, knowledge, minRemaining)
+                : StratagemRules.delayedRemaining(remaining, knowledge);
+        effect.put("confirmationToken", token);
+        effect.put("marchId", marchId);
+        effect.put("version", march.getVersion());
+        effect.put("returning", returning);
+        effect.put("arriveAt", march.getArriveAt());
+        effect.put("remainingMs", remaining);
+        effect.put("afterMs", after);
+        effect.put("stock", playerItemRepository.findByPlayerIdAndItemKey(playerId, itemKey)
+                .map(PlayerItem::getCount).orElse(0));
+        return effect;
+    }
+
+    private boolean canUseEnemyOrder(Long playerId, March march, String itemKey) {
+        if ("signalJammingOrder".equals(itemKey)) return canIntercept(playerId, cityScope.slot(playerId), march);
+        if (!"feintOrder".equals(itemKey) || !Boolean.TRUE.equals(march.getReturning())
+                || playerId.equals(march.getPlayerId()) || march.getPlayerId() == null
+                || !"player".equals(march.getTargetKind())
+                || !("scout".equals(march.getAction()) || BattleService.isOffensiveAction(march.getAction())
+                || Objects.requireNonNullElse(march.getAction(), "").startsWith("tactical"))) return false;
+        try {
+            return playerCityRepository.findById(Long.valueOf(march.getTargetId()))
+                    .filter(city -> playerId.equals(city.getOwnerId())
+                            && Objects.requireNonNullElse(city.getCitySlot(), 0) == cityScope.slot(playerId)).isPresent();
+        } catch (NumberFormatException | NullPointerException ignored) {
+            return false;
+        }
+    }
+
+    private void recordOrderEffect(March march, Map<String, Object> effect, long now, long before, long after) {
+        List<Map<String, Object>> history = new ArrayList<>(JsonUtil.parseList(march.getOrderEffects()));
+        Map<String, Object> snapshot = new LinkedHashMap<>(effect);
+        snapshot.remove("confirmationToken");
+        snapshot.put("usedAt", now);
+        snapshot.put("remainingMs", before);
+        snapshot.put("afterMs", after);
+        snapshot.put("actualChangeMs", Math.abs(after - before));
+        history.add(snapshot);
+        march.setOrderEffects(JsonUtil.toJson(history));
     }
 
     /**
@@ -1440,14 +1535,18 @@ public class MarchService {
      */
     @Transactional
     public Map<String, Object> applyMarchStratagem(Long playerId, Long marchId, String itemKey, Long expectedArriveAt) {
+        return applyMarchStratagem(playerId, marchId, itemKey, expectedArriveAt,
+                (String) previewOrder(playerId, marchId, itemKey).get("confirmationToken"));
+    }
+
+    @Transactional
+    public Map<String, Object> applyMarchStratagem(Long playerId, Long marchId, String itemKey, Long expectedArriveAt, String confirmationToken) {
         if (marchId == null || expectedArriveAt == null) throw new IllegalArgumentException("请刷新军情后重新选择计谋");
-        long maxDelay;
-        double ratio;
         String itemName;
         if ("signalJammingOrder".equals(itemKey)) {
-            maxDelay = 120_000L; ratio = 0.20; itemName = "通讯干扰令";
+            itemName = "通讯干扰令";
         } else if ("feintOrder".equals(itemKey)) {
-            maxDelay = 240_000L; ratio = 0.40; itemName = "佯动诱敌令";
+            itemName = "佯动诱敌令";
         } else throw new IllegalArgumentException("未知计谋道具");
 
         March snapshot = marchRepository.findById(marchId)
@@ -1460,21 +1559,24 @@ public class MarchService {
                 .orElseThrow(() -> new IllegalArgumentException("敌军行军已不存在"));
         em.refresh(march);
         long now = GameClock.now();
-        if (!canIntercept(playerId, cityScope.slot(playerId), march) || march.getBattleId() != null
-                || Boolean.TRUE.equals(march.getReturning()) || Boolean.TRUE.equals(march.getStationed())
-                || Boolean.TRUE.equals(march.getGathering()) || Boolean.TRUE.equals(march.getGatherStopped())) {
+        boolean returning = Boolean.TRUE.equals(march.getReturning());
+        if (!canUseEnemyOrder(playerId, march, itemKey) || march.getBattleId() != null
+                || Boolean.TRUE.equals(march.getStationed())
+                || !returning && (Boolean.TRUE.equals(march.getGathering()) || Boolean.TRUE.equals(march.getGatherStopped()))) {
             throw new IllegalArgumentException("该敌军当前不能使用计谋");
         }
-        if (settleInterceptionBeforeOrder(march, now))
+        if (!returning && settleInterceptionBeforeOrder(march, now))
             return new LinkedHashMap<>(Map.of("success", false, "message", "敌军已在城外交火，请刷新军情后重新操作"));
-        if (Boolean.TRUE.equals(march.getStratagemUsed())) throw new IllegalArgumentException("该行军本次单程已经受过计谋影响");
+        if (Boolean.TRUE.equals(returning ? march.getReturnStratagemUsed() : march.getStratagemUsed())) throw new IllegalArgumentException("该行军本阶段已经受过计谋影响");
         Long start = march.getStartAt(), arrive = march.getArriveAt();
         if (start == null || arrive == null || start > now || arrive <= now || arrive <= start
                 || !expectedArriveAt.equals(arrive)) {
             throw new IllegalArgumentException("行军状态已变化或已抵达，请刷新军情后重试");
         }
         long remaining = arrive - now;
-        long delay = Math.min(maxDelay, (long) Math.ceil(remaining * ratio));
+        Map<String, Object> effect = previewOrder(playerId, marchId, itemKey);
+        tacticalOrders.requireToken((String) effect.get("confirmationToken"), confirmationToken);
+        long delay = StratagemRules.delayedRemaining(remaining, ((Number) effect.get("knowledge")).intValue()) - remaining;
         if (delay <= 0) throw new IllegalArgumentException("剩余行军时间过短，无法拖延");
 
         double progress = Math.max(0.0, Math.min(1.0, (double) (now - start) / (arrive - start)));
@@ -1487,7 +1589,9 @@ public class MarchService {
         }
         march.setStartAt(adjustedStart);
         march.setArriveAt(extendedArrival);
-        march.setStratagemUsed(true);
+        if (returning) march.setReturnStratagemUsed(true);
+        else march.setStratagemUsed(true);
+        recordOrderEffect(march, effect, now, remaining, remaining + delay);
         march = marchRepository.saveAndFlush(march);
 
         Map<String, Object> timing = Map.of("startAt", march.getStartAt(), "arriveAt", march.getArriveAt(),
@@ -1497,6 +1601,7 @@ public class MarchService {
         pushService.pushMarchUpdate(march.getPlayerId(), marchEvent("stratagemDelayed", march, timing));
         Map<String, Object> result = new LinkedHashMap<>(timing);
         result.put("success", true);
+        result.put("effect", effect);
         result.put("message", itemName + "生效，敌军行军已拖延 " + DurationText.seconds(Math.max(1, (delay + 999) / 1000)));
         return result;
     }
@@ -2479,6 +2584,8 @@ public class MarchService {
                 throw new IllegalArgumentException("目标城市护盾生效，无法侦查或攻击");
             }
             if (isOffensiveAction(action) && !canAttackPlayerCity(playerId, pc, GameClock.now())) {
+                var eligibility = warPowerProtection.evaluate(playerId, pc.getOwnerId());
+                if (!eligibility.allowed()) throw new IllegalArgumentException(eligibility.reason());
                 if (guildRelations.areFriendly(playerId, pc.getOwnerId())) {
                     throw new IllegalArgumentException("友好军团成员之间不能征服或掠夺");
                 }
@@ -3978,12 +4085,13 @@ public class MarchService {
 
     /**
      * 判断征服或掠夺玩家城的即时权限。
-     * 敌对军团永久直通；友好军团禁止作战；中立玩家仍必须处于有效的个人战争期。
+     * 实力保护优先于敌对军团；友好军团禁止作战；中立玩家必须处于有效的个人战争期。
      */
     private boolean canAttackPlayerCity(Long attackerId, PlayerCity defenderCity, long now) {
         Long defenderId = defenderCity.getOwnerId();
         if (attackerId.equals(defenderId)) return false;
         if (defenderId == null || !targets.hasRealOwner(defenderCity)) return true;
+        if (!warPowerProtection.evaluate(attackerId, defenderId).allowed()) return false;
         if (guildRelations.areHostile(attackerId, defenderId)) return true;
         if (guildRelations.areFriendly(attackerId, defenderId)) return false;
         Player attacker = playerRepository.findById(attackerId).orElse(null);
@@ -3996,9 +4104,12 @@ public class MarchService {
     /** 行军抵达前失去攻击资格时，完整归还部队与随军物资。 */
     private void cancelMarchBeforeBattle(March march, Long playerId) {
         marchRepository.delete(march);
-        returnArmy(playerId, JsonUtil.parseIntMap(march.getArmy()));
-        Map<String, Integer> carryRes = JsonUtil.parseIntMap(march.getCarryRes());
-        if (!carryRes.isEmpty()) addResources(playerId, carryRes);
+        int originSlot = march.getCitySlot() != null ? march.getCitySlot() : 0;
+        try (var ignored = cityScope.enter(playerId, originSlot)) {
+            returnArmy(playerId, JsonUtil.parseIntMap(march.getArmy()));
+            Map<String, Integer> carryRes = JsonUtil.parseIntMap(march.getCarryRes());
+            if (!carryRes.isEmpty()) addResources(playerId, carryRes);
+        }
     }
 
     private boolean isOffensiveAction(String action) {

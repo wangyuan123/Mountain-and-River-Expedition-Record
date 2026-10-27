@@ -36,6 +36,23 @@ function response(request, overrides = {}) {
 
 async function settle() { await new Promise(resolve => setImmediate(resolve)); }
 
+test('战力榜展示对应指标而不是声望', async () => {
+  const { G, view, requests } = setup();
+  G.Core.views.rankings(view);
+  G.Rankings.setMetric('formationPower');
+  const entry = { id: 7, rank: 1, name: '我', prestige: 7, formationPower: 12345,
+    overallPower: 54321, militaryRankName: '列兵' };
+  requests[1].resolve(response(requests[1], { entries: [entry], mine: entry, total: 1 }));
+  await settle();
+  assert.match(view.innerHTML, /编队战力/);
+  assert.match(view.innerHTML, /12,345/);
+  G.Rankings.setMetric('overallPower');
+  requests[2].resolve(response(requests[2], { entries: [entry], mine: entry, total: 1 }));
+  await settle();
+  assert.match(view.innerHTML, /综合实力/);
+  assert.match(view.innerHTML, /54,321/);
+});
+
 test('排名和商城在第二组保持相邻，排名路由高亮且不受城市切换模块影响', () => {
   const { G } = setup();
   G.Core.state.world = { incoming: [] };
@@ -128,6 +145,23 @@ test('错误可重试，空榜不会伪造名次，切换账号不复用上个�
   requests[3].resolve(response(requests[3]));
   await settle();
   assert.doesNotMatch(view.innerHTML, /旧账号/);
+});
+
+test('刷新或异步回包重绘后，下拉框状态与收起的菜单保持一致', async () => {
+  const { G, view, requests } = setup();
+  G.Core.views.rankings(view);
+  requests[0].resolve(response(requests[0]));
+  await settle();
+  G.Rankings.toggleDropdown();
+  G.Rankings.load();
+  assert.equal(G.Rankings.dropdownOpen, false);
+  G.Rankings.toggleDropdown();
+  requests[1].resolve(response(requests[1]));
+  await settle();
+  assert.match(view.innerHTML, /id="rankingDropdownMenu"[^>]* hidden/);
+  assert.equal(G.Rankings.dropdownOpen, false);
+  G.Rankings.toggleDropdown();
+  assert.equal(G.Rankings.dropdownOpen, true);
 });
 
 test('自定义榜单下拉组件支持展开切换，弹层与触发器结构紧密且保持无障碍和原生联动', async () => {

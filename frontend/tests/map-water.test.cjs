@@ -35,7 +35,7 @@ function fixture() {
         getBuffer() { return this.buffer; }
       },
       Shader: { from(vertex, fragment, uniforms) {
-        return { uniforms, destroy() { this.destroyed = true; } };
+        return { vertex, fragment, uniforms, destroy() { this.destroyed = true; } };
       } },
       Mesh: class {
         constructor(geometry, shader) { this.geometry = geometry; this.shader = shader; }
@@ -147,4 +147,53 @@ test('water frames avoid full map redraws, freeze for reduced motion and stop in
   view.frame(48);
   assert.equal(renders, rendered);
   assert.equal(scheduled, 1);
+});
+
+test('coastline domain warping breaks discrete grid straight lines with organic continuous curvature', () => {
+  const { c } = fixture();
+  const ocean = c.Game.MapOcean;
+
+  // 1. 验证域扭曲函数输出有界且连续
+  for (let y = 0; y < 100; y += 0.5) {
+    const warp = ocean.coastWarp(160, y);
+    assert.ok(Math.abs(warp.x) <= 0.55, 'warp.x must be bounded within half a tile');
+    assert.ok(Math.abs(warp.y) <= 0.55, 'warp.y must be bounded within half a tile');
+  }
+
+  // 2. 模拟栅格沿直线边界：x=160 保持不变，y 从 10 到 25
+  // 在无扰动情况下 x 恒为 160（笔直直线）；经过 coastWarp 扰动后，x 坐标呈现多峰起伏曲线
+  const warpedX = [];
+  for (let y = 10; y <= 25; y += 0.5) {
+    const warp = ocean.coastWarp(160, y);
+    warpedX.push(160 + warp.x);
+  }
+  const minX = Math.min(...warpedX);
+  const maxX = Math.max(...warpedX);
+  assert.ok(maxX - minX > 0.4, 'warping must create substantial organic wave variation across straight grid lines');
+  // 曲线在不同 y 处不恒等
+  assert.notEqual(warpedX[0], warpedX[5]);
+  assert.notEqual(warpedX[5], warpedX[10]);
+
+  // 3. sampleCoast 在深海与陆地深处保持稳定
+  assert.ok(ocean.sampleCoast(0, 0) < 0, 'deep mainland remains land');
+  assert.ok(ocean.sampleCoast(3.5, 3.5) > 0, 'deep sea remains sea');
+});
+
+test('water shader incorporates domain warping and dynamic shore foam wash', () => {
+  const { c } = fixture();
+  const surface = c.Game.MapWater.createSurface({ type: 1 });
+  const frag = surface.mesh.shader.fragment;
+
+  // 验证方案 1：着色器包含坐标域扭曲 (Domain Warping)
+  assert.match(frag, /vec2 warp = vec2\(/);
+  assert.match(frag, /warpedCoast/);
+  assert.match(frag, /texture2D\(uDepth, warpedCoast \/ uTerrainSize\)/);
+
+  // 验证方案 2：着色器包含时间驱动的动态潮汐浪花与近岸白沫 (Dynamic Foam & Wave Wash)
+  assert.match(frag, /wavePhase = uTime \* 1\.8 - depth/);
+  assert.match(frag, /shallowZone = 1\.0 - smoothstep/);
+  assert.match(frag, /edgeLace/);
+  assert.match(frag, /foam = clamp/);
+  assert.match(frag, /vec3 foamColor/);
+  assert.match(frag, /water = mix\(water, foamColor/);
 });

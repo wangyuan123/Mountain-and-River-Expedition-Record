@@ -52,12 +52,17 @@ function setupTest(officers = []) {
   return context.Game;
 }
 
-test('首页军官将领栏目标题包含【去招募>】按钮，点击跳转至军校招募', () => {
+test('首页军官将领栏目标题包含【去招募>】按钮，点击跳转至军校招募，且标题名称旁边无多余图标', () => {
   const officers = [
     { name: '古德里安', level: 10, star: 5, military: 90, logistics: 80, knowledge: 70, role: 'idle' }
   ];
   const G = setupTest(officers);
   const html = G.MainView.renderOfficerSummaryCard();
+
+  // 验证军官将领名称旁边取消了图标，保持清爽纯文本标题
+  assert.match(html, /<span class="zone-title">军官将领<\/span>/);
+  assert.doesNotMatch(html, /<span class="zone-title"><img/);
+  assert.doesNotMatch(html, /rank-major-v1\.webp/);
 
   // 验证包含 去招募 按钮及样式类
   assert.match(html, /<span class="home-officer-go zone-head-action"[^>]*>去招募 &gt;<\/span>/);

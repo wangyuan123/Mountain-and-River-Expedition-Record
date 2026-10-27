@@ -11,12 +11,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import com.wargame.util.GameClock;
 
 /**
  * 主线任务 + 阶段引导 服务。
  */
 @Service
 public class QuestService {
+
+    /** 每日签到与 VIP 军饷共用游戏时钟的北京时间自然日，停服或服务器时区变化不改变刷新口径。 */
+    private static final ZoneId GAME_ZONE = ZoneId.of("Asia/Shanghai");
 
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
@@ -566,4 +573,65 @@ public class QuestService {
     public Map<String, Object> getGuide(Long playerId) { return onboarding.status(playerId); }
     public Map<String, Object> advanceGuide(Long playerId) { return onboarding.status(playerId); }
     public Map<String, Object> skipGuide(Long playerId) { return onboarding.pause(playerId, true); }
+
+    // ====================================================================
+    //  Daily Check-in (每日军政点卯签到)
+    // ====================================================================
+
+    public Map<String, Object> getDailyCheckinStatus(Long playerId) {
+        Player player = playerRepository.findById(playerId).orElse(null);
+        LocalDate today = gameDate();
+        boolean claimed = player != null && player.getLastDailyCheckinDate() != null
+                && player.getLastDailyCheckinDate().equals(today);
+
+        Map<String, Object> checkin = new LinkedHashMap<>();
+        checkin.put("date", today.toString());
+        checkin.put("claimed", claimed);
+        Map<String, Integer> rewards = new LinkedHashMap<>();
+        rewards.put("renameCard", 1);
+        rewards.put("cityRenameCard", 1);
+        rewards.put("gold", 2000);
+        rewards.put("food", 5000);
+        rewards.put("speedUp10m", 1);
+        checkin.put("rewards", rewards);
+        return checkin;
+    }
+
+    @Transactional
+    public Map<String, Object> claimDailyCheckin(Long playerId) {
+        Player player = playerRepository.lockById(playerId)
+                .orElseThrow(() -> new IllegalArgumentException("玩家不存在: " + playerId));
+
+        LocalDate today = gameDate();
+        if (player.getLastDailyCheckinDate() != null && player.getLastDailyCheckinDate().equals(today)) {
+            throw new IllegalArgumentException("今日军政签到奖励已领受，每日 00:00 刷新");
+        }
+
+        player.setLastDailyCheckinDate(today);
+        playerRepository.save(player);
+
+        // 发放改名卡与战备道具
+        addItem(playerId, "renameCard", 1);
+        addItem(playerId, "cityRenameCard", 1);
+        addItem(playerId, "speedUp10m", 1);
+
+        // 发放常备资源至活动城池
+        Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
+        if (res != null) {
+            res.addResource("gold", 2000);
+            res.addResource("food", 5000);
+            resourcesRepository.save(res);
+        }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("success", true);
+        result.put("message", "每日军务签到成功，已领受军官改名卡、城市改名卡及战备口粮！");
+        result.put("dailyCheckin", getDailyCheckinStatus(playerId));
+        return result;
+    }
+
+    /** 当前游戏时间对应的北京时间自然日。 */
+    private LocalDate gameDate() {
+        return Instant.ofEpochMilli(GameClock.now()).atZone(GAME_ZONE).toLocalDate();
+    }
 }

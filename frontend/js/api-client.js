@@ -237,11 +237,19 @@ window.Game = window.Game || {};
             throw unauthorized;
           }
           if (!res.ok) {
-            var failure = new Error((data && data.error) || ('请求失败 (' + res.status + ')'));
+            var rawError = (data && (data.error || data.message)) || ('请求失败 (' + res.status + ')');
+            var safeMessage = rawError;
+            if (/Handler dispatch failed|NoClassDefFoundError|Exception|Error:/.test(String(rawError))) {
+              safeMessage = (data && data.code === 'SERVER_MAINTENANCE' && data.error)
+                ? data.error
+                : '战区服务器维护中，请稍后重试';
+            }
+            var failure = new Error(safeMessage);
             failure.code = data && data.code;
             failure.status = res.status;
             failure.retryAfter = data && data.retryAfter;
             failure.uncertain = res.status >= 500 && method !== 'GET';
+            failure.isServerDown = res.status >= 500;
             if (G.Protection && G.Protection.isGamePath(path) && G.Protection.isAccessError(failure.code)) G.Protection.denied(failure);
             throw failure;
           }
@@ -269,6 +277,8 @@ window.Game = window.Game || {};
           if (G.toast) G.toast(message);
           var networkError = new Error(message);
           networkError.uncertain = method !== 'GET' && method !== 'HEAD';
+          networkError.isServerDown = true;
+          networkError.status = 0;
           throw networkError;
         }
         throw err;

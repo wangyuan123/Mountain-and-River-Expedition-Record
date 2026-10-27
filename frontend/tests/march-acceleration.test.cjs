@@ -28,7 +28,14 @@ function setup() {
     Game: { fmt: String, escapeHtml: value => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;'),
       toast: message => toasts.push(message), go(route) { routes.push(route); this.Core.route = route; },
       Core: { route: 'alerts', state, views: {}, render() {} },
-      API: { getToken: () => token, speedUpMarch(...args) {
+      API: { getToken: () => token, previewMarchOrder() {
+        return { then(callback) {
+          callback({ version: march.version, returning: march.returning, ratio: 0.5,
+            commanderName: '未任命', knowledge: 0, baseRatio: 0.5, knowledgeBonus: 0, cap: 0.8,
+            confirmationToken: 'preview-token' });
+          return { catch() {} };
+        } };
+      }, speedUpMarch(...args) {
         return new Promise((resolve, reject) => calls.push({ args, resolve, reject }));
       } }
     }
@@ -45,6 +52,21 @@ function setup() {
 }
 
 const flush = () => new Promise(setImmediate);
+
+test('asynchronous preview must complete before confirmation and is ignored after closing', async () => {
+  const f = setup();
+  let resolvePreview;
+  f.game.API.previewMarchOrder = () => new Promise(resolve => { resolvePreview = resolve; });
+  const modal = f.open();
+  assert.equal(modal.nodes['[data-march-confirm]'].disabled, true);
+  modal.nodes['[data-march-confirm]'].onclick();
+  assert.equal(f.calls.length, 0);
+  modal.nodes['[data-march-cancel]'].onclick();
+  resolvePreview({ version: 4, returning: false, ratio: 0.8, confirmationToken: 'late' });
+  await flush();
+  assert.equal(f.modals.length, 0);
+  assert.equal(f.calls.length, 0);
+});
 
 test('alerts expose stage-specific acceleration and disable an already accelerated leg', () => {
   const { game, march, state } = setup();
@@ -63,7 +85,7 @@ test('alerts expose stage-specific acceleration and disable an already accelerat
   assert.doesNotMatch(view.innerHTML, /data-accelerate-id/);
 });
 
-test('only moving snapshots with version and more than ten seconds remaining are eligible', () => {
+test('only moving snapshots with version and more than thirty seconds remaining are eligible', () => {
   const { game, march } = setup();
   const now = 1_000_000;
   assert.equal(game.World.canAccelerateMarch(march, now), true);
@@ -79,8 +101,8 @@ test('confirmation previews target, inventory and exact screenshot example; canc
   const f = setup(), modal = f.open();
   assert.match(modal.innerHTML, /雇佣兵营 Lv.29.*377,248/);
   assert.equal(modal.nodes['[data-march-before]'].textContent, '29分钟21秒');
-  assert.equal(modal.nodes['[data-march-after]'].textContent, '19分钟34秒');
-  assert.equal(modal.nodes['[data-march-saved]'].textContent, '9分钟47秒');
+  assert.equal(modal.nodes['[data-march-after]'].textContent, '14分钟41秒');
+  assert.equal(modal.nodes['[data-march-saved]'].textContent, '14分钟41秒');
   assert.equal(modal.nodes['[data-march-stock]'].textContent, '行军令：消耗 1 枚，库存 3 枚');
   modal.nodes['[data-march-cancel]'].onclick();
   assert.equal(f.calls.length, 0);
@@ -102,7 +124,7 @@ test('double confirmation and another open during submission send one request', 
   ok.onclick(); ok.onclick(); f.game.World.speedUpMarch(17);
   assert.equal(f.modals.length, 1);
   assert.equal(f.calls.length, 1);
-  assert.deepEqual(f.calls[0].args, [17, false, 4]);
+  assert.deepEqual(f.calls[0].args, [17, false, 4, 'preview-token']);
   assert.equal(ok.disabled, true);
   assert.equal(modal.nodes['[data-march-cancel]'].disabled, true);
   f.calls[0].resolve({ message: '行军已加速' }); await flush();
@@ -155,7 +177,7 @@ for (const change of ['city', 'account', 'route']) {
   });
 }
 
-test('alert countdown disables acceleration when the remaining time reaches ten seconds', () => {
+test('alert countdown disables acceleration when the remaining time reaches thirty seconds', () => {
   const f = setup();
   const button = { disabled: false, getAttribute() { return '17'; } };
   const countdown = { textContent: '', getAttribute() { return String(f.march.arriveAt); } };
@@ -163,7 +185,7 @@ test('alert countdown disables acceleration when the remaining time reaches ten 
     return selector === '[data-arrive-at]' ? [countdown] : selector === '[data-accelerate-id]' ? [button] : [];
   } };
   f.game.World.startAlertTimer(view);
-  f.tick(1751000);
+  f.tick(1731000);
   assert.equal(button.disabled, true);
 });
 
@@ -182,15 +204,15 @@ test('interception acceleration shortens the displayed deployment countdown whil
   assert.match(modal.innerHTML, /加速出城部署/);
   assert.match(modal.innerHTML, /到位后等待敌军/);
   assert.equal(modal.nodes['[data-march-before]'].textContent, '2分钟0秒');
-  assert.equal(modal.nodes['[data-march-after]'].textContent, '1分钟20秒');
+  assert.equal(modal.nodes['[data-march-after]'].textContent, '1分钟0秒');
   modal.nodes['[data-march-confirm]'].onclick();
   // 模拟 API 应用服务端快照：加速压缩部署时间轴，交火时间仍由敌军位置决定。
-  Object.assign(f.march, { version: 5, startAt: now - 40000, deployAt: now + 80000,
-    readyAt: now + 85000, outboundAccelerated: true });
+  Object.assign(f.march, { version: 5, startAt: now - 30000, deployAt: now + 60000,
+    readyAt: now + 65000, outboundAccelerated: true });
   f.calls[0].resolve({ success: true, message: '行军已加速' }); await flush();
-  assert.match(view.innerHTML, /data-arrive-at="1080000"[^>]*>1分钟20秒<\/b> 后到位/);
+  assert.match(view.innerHTML, /data-arrive-at="1060000"[^>]*>1分钟0秒<\/b> 后到位/);
   assert.match(view.innerHTML, /data-arrive-at="1180000"[^>]*>3分钟0秒<\/b> 后交火/);
-  assert.match(view.innerHTML, /data-progress-deadline="1080000" data-progress-duration="120000"/);
+  assert.match(view.innerHTML, /data-progress-deadline="1060000" data-progress-duration="90000"/);
   assert.match(view.innerHTML, /disabled>已加速/);
 });
 
@@ -240,10 +262,10 @@ test('alert timer advances interception deployment, preparation and waiting with
 test('interceptor return trips use return arrival rather than an old deployment time', () => {
   const f = setup(), now = 1_000_000;
   Object.assign(f.march, { action: 'intercept_scout', returning: true, startAt: now - 10000,
-    deployAt: now - 5000, readyAt: now, arriveAt: now + 30000 });
+    deployAt: now - 5000, readyAt: now, arriveAt: now + 31000 });
   const view = { innerHTML: '', querySelectorAll: () => [] };
   f.game.World.renderAlerts(view);
-  assert.match(view.innerHTML, /data-progress-deadline="1030000" data-progress-duration="40000"/);
+  assert.match(view.innerHTML, /data-progress-deadline="1031000" data-progress-duration="41000"/);
   assert.match(view.innerHTML, /加速回城/);
   assert.doesNotMatch(view.innerHTML, /data-interception-march-id|后到位|后交火/);
 });
@@ -257,10 +279,10 @@ test('API submits stage/version once and applies authoritative response inventor
   } } });
   context.window = context;
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/api.js'), 'utf8'), context);
-  await context.Game.API.speedUpMarch(17, true, 4);
+  await context.Game.API.speedUpMarch(17, true, 4, 'preview-token');
   assert.equal(requests.length, 1);
   assert.equal(requests[0].url, '/game/world/speedup-march');
-  assert.deepEqual({ ...requests[0].body }, { marchId: 17, returning: true, version: 4 });
+  assert.deepEqual({ ...requests[0].body }, { marchId: 17, returning: true, version: 4, confirmationToken: 'preview-token' });
   assert.equal(context.Game.Core.state.items.marchOrd, 2);
   assert.equal(context.Game.Core.state.world.marches[0].arriveAt, 3000);
 });

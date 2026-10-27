@@ -84,10 +84,14 @@ public class GameDtos {
     public record CancelMarchRequest(Long marchId) {}
 
     /** 阶段与版本取自确认弹窗打开时的行军快照，防止旧请求消耗新阶段的道具。 */
-    public record SpeedUpMarchRequest(Long marchId, Boolean returning, Long version) {}
+    public record SpeedUpMarchRequest(Long marchId, Boolean returning, Long version, String confirmationToken) {}
 
     /** 只对确认时仍在途的敌军行军使用一次计谋。 */
-    public record MarchStratagemRequest(Long marchId, String itemKey, Long expectedArriveAt) {}
+    public record MarchStratagemRequest(Long marchId, String itemKey, Long expectedArriveAt, String confirmationToken) {}
+
+    public record OrderPreviewRequest(Long marchId, String itemKey) {}
+
+    public record WarOrderRequest(Long targetCityId, String confirmationToken) {}
 
     /** 战术战斗中每个己方兵种本回合的机动与可选集火目标。 */
     public record BattleUnitOrderRequest(String action, String focusTarget) {}

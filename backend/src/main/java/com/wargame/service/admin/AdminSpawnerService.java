@@ -52,6 +52,7 @@ public class AdminSpawnerService {
     private final EntityManager em;
     private final WildTileRepository wildTileRepository;
     private final WorldTerrainService worldTerrainService;
+    private final AdminIslandService adminIslandService;
 
     public AdminSpawnerService(NpcCityRepository npcCityRepository,
                                BanditRepository banditRepository,
@@ -67,7 +68,8 @@ public class AdminSpawnerService {
                                AdminPlayerService adminPlayerService,
                                EntityManager em,
                                WildTileRepository wildTileRepository,
-                               WorldTerrainService worldTerrainService) {
+                               WorldTerrainService worldTerrainService,
+                               AdminIslandService adminIslandService) {
         this.npcCityRepository = npcCityRepository;
         this.banditRepository = banditRepository;
         this.worldMapRepository = worldMapRepository;
@@ -83,6 +85,7 @@ public class AdminSpawnerService {
         this.em = em;
         this.wildTileRepository = wildTileRepository;
         this.worldTerrainService = worldTerrainService;
+        this.adminIslandService = adminIslandService;
     }
 
     public record BattlefieldBounds(String battlefield, String name, int minX, int maxX, int minY, int maxY) {}
@@ -864,11 +867,16 @@ public class AdminSpawnerService {
 
     @Transactional
     public List<Map<String, Object>> spawnWildTiles(String type, int count, Integer minLevel, Integer maxLevel, boolean clearUnoccupied, String adminUsername, HttpServletRequest req) {
-        return spawnWildTiles(type, count, minLevel, maxLevel, clearUnoccupied, "all", adminUsername, req);
+        return spawnWildTiles(type, count, minLevel, maxLevel, clearUnoccupied, "all", "ALL", adminUsername, req);
     }
 
     @Transactional
     public List<Map<String, Object>> spawnWildTiles(String type, int count, Integer minLevel, Integer maxLevel, boolean clearUnoccupied, String battlefield, String adminUsername, HttpServletRequest req) {
+        return spawnWildTiles(type, count, minLevel, maxLevel, clearUnoccupied, battlefield, "ALL", adminUsername, req);
+    }
+
+    @Transactional
+    public List<Map<String, Object>> spawnWildTiles(String type, int count, Integer minLevel, Integer maxLevel, boolean clearUnoccupied, String battlefield, String islandCategory, String adminUsername, HttpServletRequest req) {
         if (count <= 0 || count > 200) {
             throw new IllegalArgumentException("单次生成野地数量需在 1 ~ 200 之间");
         }
@@ -916,20 +924,52 @@ public class AdminSpawnerService {
 
         Set<String> used = new HashSet<>(worldTerrainService.occupiedCoordinates(worldId));
 
-        int W = bounds.maxX() - bounds.minX() + 1;
-        int H = bounds.maxY() - bounds.minY() + 1;
-        int totalCells = W * H;
-        int startOffset = ThreadLocalRandom.current().nextInt(totalCells);
         List<int[]> candidates = new ArrayList<>();
+        List<int[]> qualifiedCoords = adminIslandService.getQualifiedCoordinates(mask, islandCategory, battlefield);
 
-        for (int i = 0; i < totalCells && candidates.size() < count; i++) {
-            int idx = (startOffset + i) % totalCells;
-            int x = bounds.minX() + (idx % W);
-            int y = bounds.minY() + (idx / W);
-            String coordKey = x + "," + y;
-            if (!used.contains(coordKey) && !WorldTerrainService.sea(mask, x, y)) {
-                candidates.add(new int[]{x, y});
-                used.add(coordKey);
+        if (qualifiedCoords != null) {
+            // 指定了特定海岛类型或大陆本土，从限定合格坐标中过滤并随机抽取
+            List<int[]> freeCoords = new ArrayList<>();
+            for (int[] coord : qualifiedCoords) {
+                String coordKey = coord[0] + "," + coord[1];
+                if (!used.contains(coordKey) && !WorldTerrainService.sea(mask, coord[0], coord[1])) {
+                    freeCoords.add(coord);
+                }
+            }
+            if (freeCoords.isEmpty()) {
+                String catDesc = switch ((islandCategory != null ? islandCategory : "").toUpperCase()) {
+                    case "MICRO" -> "小微岛礁";
+                    case "MEDIUM" -> "中型海岛";
+                    case "LARGE" -> "大型群岛";
+                    case "ALL_ISLANDS" -> "海岛区域";
+                    case "MAINLAND" -> "大陆本土";
+                    default -> islandCategory != null ? islandCategory : "指定区域";
+                };
+                throw new IllegalStateException("所选区域（" + bounds.name() + "）的【" + catDesc + "】上已无可用空闲坐标进行撒点");
+            }
+            Collections.shuffle(freeCoords);
+            int take = Math.min(count, freeCoords.size());
+            for (int i = 0; i < take; i++) {
+                int[] c = freeCoords.get(i);
+                candidates.add(c);
+                used.add(c[0] + "," + c[1]);
+            }
+        } else {
+            // 未限定海岛类型（ALL），沿用全区域陆地扫描
+            int W = bounds.maxX() - bounds.minX() + 1;
+            int H = bounds.maxY() - bounds.minY() + 1;
+            int totalCells = W * H;
+            int startOffset = ThreadLocalRandom.current().nextInt(totalCells);
+
+            for (int i = 0; i < totalCells && candidates.size() < count; i++) {
+                int idx = (startOffset + i) % totalCells;
+                int x = bounds.minX() + (idx % W);
+                int y = bounds.minY() + (idx / W);
+                String coordKey = x + "," + y;
+                if (!used.contains(coordKey) && !WorldTerrainService.sea(mask, x, y)) {
+                    candidates.add(new int[]{x, y});
+                    used.add(coordKey);
+                }
             }
         }
 
@@ -976,11 +1016,12 @@ public class AdminSpawnerService {
             info.put("level", saved.getLevel());
             info.put("totalRes", saved.getTotalRes());
             info.put("battlefield", getBattlefieldName(saved.getX(), saved.getY()));
+            info.put("islandType", adminIslandService.classifyCoordinate(mask, saved.getX(), saved.getY()));
             results.add(info);
         }
 
-        String desc = String.format("在【%s】批量撒点生成 %d 个野地 (类型:%s, 等级:%d~%d, 先清理无主:%b, 清理数:%d)",
-                bounds.name(), results.size(), type, minL, maxL, clearUnoccupied, deletedUnoccupied);
+        String desc = String.format("在【%s】(岛屿类型:%s) 批量撒点生成 %d 个野地 (类型:%s, 等级:%d~%d, 先清理无主:%b, 清理数:%d)",
+                bounds.name(), islandCategory != null ? islandCategory : "ALL", results.size(), type, minL, maxL, clearUnoccupied, deletedUnoccupied);
         auditLogService.record(adminUsername, "SPAWN_WILD_TILES", "WILD_TILE", "BATCH", desc, req);
 
         return results;

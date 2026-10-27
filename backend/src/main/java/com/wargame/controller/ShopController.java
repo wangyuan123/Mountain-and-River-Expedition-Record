@@ -35,6 +35,9 @@ public class ShopController {
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.repository.PlayerRepository playerRepository;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.service.VipService vipService;
+
     private final AuthService authService;
     private final ResourcesRepository resourcesRepository;
     private final PlayerItemRepository playerItemRepository;
@@ -79,11 +82,17 @@ public class ShopController {
         res.setDiamond(current + diamonds);
         resourcesRepository.saveAndFlush(res);
 
+        Long rmbCents = ShopItemPrices.getRechargeCents(request.pkgId());
+        if (rmbCents != null && rmbCents > 0) {
+            vipService.onRechargeSuccess(playerId, rmbCents);
+        }
+
         result.put("success", true);
         result.put("message", "模拟充值成功，钻石已到账");
         result.put("pkgId", request.pkgId());
         result.put("diamonds", diamonds);
         result.put("diamond", res.getDiamond());
+        result.put("vip", vipService.getVipStatus(playerId));
         result.put("state", gameStateService.getGameState(playerId));
         return ResponseEntity.ok(result);
     }
@@ -211,7 +220,23 @@ public class ShopController {
             Map.entry("p198", 2230),
             Map.entry("p328", 3780),
             Map.entry("p648", 7680),
-            Map.entry("p1280", 15800)
+            Map.entry("p1280", 15800),
+            Map.entry("p3000", 38000),
+            Map.entry("p6000", 78000),
+            Map.entry("p10000", 135000)
+        );
+
+        private static final Map<String, Long> RECHARGE_CENTS = Map.ofEntries(
+            Map.entry("p6", 600L),
+            Map.entry("p30", 3000L),
+            Map.entry("p98", 9800L),
+            Map.entry("p198", 19800L),
+            Map.entry("p328", 32800L),
+            Map.entry("p648", 64800L),
+            Map.entry("p1280", 128000L),
+            Map.entry("p3000", 300000L),
+            Map.entry("p6000", 600000L),
+            Map.entry("p10000", 1000000L)
         );
 
         private static final Map<String, Integer> PRICES = Map.ofEntries(
@@ -228,9 +253,15 @@ public class ShopController {
             Map.entry("starUp", 300),
             // 资源道具
             Map.entry("goldBox", 80),
-            Map.entry("resBox", 120),
+            Map.entry("resBox", 80),
+            Map.entry("foodPack", 200),
             Map.entry("steelPack", 200),
-            Map.entry("supplyPack", 350),
+            Map.entry("oilPack", 200),
+            Map.entry("rarePack", 200),
+            Map.entry("supplyPack", 500),
+            Map.entry("resourcePack100w", 1150),
+            Map.entry("resourcePack200w", 2200),
+            Map.entry("resourcePack350w", 3700),
             Map.entry("resourcePack500w", 5000),
             // 功能道具 - 加速符（8 种）
             Map.entry("speedUp10m", 30),
@@ -251,6 +282,7 @@ public class ShopController {
             Map.entry("marchOrd", 100),
             Map.entry("signalJammingOrder", 150),
             Map.entry("feintOrder", 250),
+            Map.entry("warSpeedOrder", 250),
             Map.entry("populationOrder", 100),
             Map.entry("emergencyPopulationOrder", 100),
             // 礼包
@@ -270,8 +302,14 @@ public class ShopController {
             Map.entry("starUp", "星耀符"),
             Map.entry("goldBox", "黄金箱"),
             Map.entry("resBox", "资源箱"),
+            Map.entry("foodPack", "粮食大礼包"),
             Map.entry("steelPack", "钢铁大礼包"),
+            Map.entry("oilPack", "石油大礼包"),
+            Map.entry("rarePack", "稀矿大礼包"),
             Map.entry("supplyPack", "战备补给包"),
+            Map.entry("resourcePack100w", "资源大礼包（100万）"),
+            Map.entry("resourcePack200w", "资源大礼包（200万）"),
+            Map.entry("resourcePack350w", "资源大礼包（350万）"),
             Map.entry("resourcePack500w", "资源大礼包"),
             Map.entry("speedUp10m", "10分加速符"),
             Map.entry("speedUp1h", "1时加速符"),
@@ -291,12 +329,14 @@ public class ShopController {
             Map.entry("marchOrd", "行军令"),
             Map.entry("signalJammingOrder", "通讯干扰令"),
             Map.entry("feintOrder", "佯动诱敌令"),
+            Map.entry("warSpeedOrder", "宣战加速令"),
             Map.entry("populationOrder", "人口动员令"),
             Map.entry("emergencyPopulationOrder", "紧急人口动员令"),
             Map.entry("newbiePack", "新手礼包")
         );
 
         static Integer getRechargeDiamond(String pkgId) { return RECHARGE_DIAMONDS.get(pkgId); }
+        static Long getRechargeCents(String pkgId) { return RECHARGE_CENTS.get(pkgId); }
         static Integer getPrice(String itemId) {
             // 下架或未知商品返回空值供购买接口拒绝，避免三元表达式将空价格拆箱。
             if (specificSkillBookName(itemId) != null) return 160;

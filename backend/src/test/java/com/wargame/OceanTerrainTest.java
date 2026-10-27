@@ -15,11 +15,14 @@ class OceanTerrainTest extends BaseServiceTest {
     @Autowired CityService cities;
     @Autowired MarchRouteService routes;
     @Autowired CityScope scope;
+    @Autowired CityTeleportService teleportService;
     private WorldMap coastWorld(){
         WorldMap w=createTestWorld();char[] mask=new char[SIZE*SIZE];Arrays.fill(mask,'0');
         for(int y=0;y<SIZE;y++)for(int x=100;x<SIZE;x++)mask[y*SIZE+x]='1';
         for(int y=35;y<61;y++)for(int x=150;x<160;x++)mask[y*SIZE+x]='0';
-        w.setTerrainData(new String(mask));return worldMapRepository.save(w);
+        w.setTerrainData(new String(mask));
+        w.setTerrainVersion(WorldTerrainService.TERRAIN_VERSION);
+        return worldMapRepository.save(w);
     }
     private Player player(String name){Player p=createTestPlayer(name,30);p.setMilitaryRank(7);p.setCityPosX(98);p.setCityPosY(40);playerRepository.save(p);giveResources(p.getId(),100000,100000,100000,100000,100000);return p;}
     private PlayerCity city(Player p,WorldMap w,int x,int y){
@@ -30,7 +33,7 @@ class OceanTerrainTest extends BaseServiceTest {
     }
     @Test void expandedQuadrantSupportsFoundingAndRoutesPastOldBoundary() {
         WorldMap w=createTestWorld();
-        w.setTerrainData("0".repeat(SIZE*SIZE));w.setTerrainVersion(2);worldMapRepository.save(w);
+        w.setTerrainData("0".repeat(SIZE*SIZE));w.setTerrainVersion(WorldTerrainService.TERRAIN_VERSION);worldMapRepository.save(w);
         Player p=player("expanded-founder");city(p,w,320,118);
         assertEquals(true,cities.site(p.getId(),322,118).get("valid"));
         PlayerCity founded=cities.foundAt(p.getId(),null,322,118,"扩容城");
@@ -80,7 +83,7 @@ class OceanTerrainTest extends BaseServiceTest {
         String upgraded=terrain.ensure();
         assertEquals('0',upgraded.charAt(islandCell));
         assertEquals('1',upgraded.charAt(84*SIZE+398));
-        assertEquals(2,worldMapRepository.findById(world.getId()).orElseThrow().getTerrainVersion());
+        assertEquals(WorldTerrainService.TERRAIN_VERSION,worldMapRepository.findById(world.getId()).orElseThrow().getTerrainVersion());
         assertEquals(upgraded,terrain.ensure());
     }
     @Test void coastalAndInlandFoundingReserveFourCellsAndKeepResourceRules(){
@@ -196,5 +199,45 @@ class OceanTerrainTest extends BaseServiceTest {
         assertEquals(distance,march.getDistance(),1e-9);
         assertEquals("[[90,43],[98,40]]",march.getRouteData());
         assertEquals(seconds*1000L,march.getArriveAt()-march.getStartAt());
+    }
+
+    @Test void islandSupportsFoundingAndTeleportingAndNavalDispatch() {
+        WorldMap w = createTestWorld();
+        String mask = terrain.ensure();
+        Player p = player("island-founder");
+        city(p, w, 98, 40);
+        // 选取海岛上的 2×2 地块 (如大岛 [182, 78] 对应 400 战区约为 x=364, y=156)
+        int islandX = 364, islandY = 156;
+        assertTrue(isIsland(mask, islandX, islandY));
+        assertEquals("", terrain.siteReason(w.getId(), mask, islandX, islandY, null));
+
+        // 验证建城选址：标记为海岛、沿海且合法
+        var siteInfo = cities.site(p.getId(), islandX, islandY);
+        assertEquals(true, siteInfo.get("valid"));
+        assertEquals("海岛", siteInfo.get("cityType"));
+        assertEquals(true, siteInfo.get("coastal"));
+
+        // 在海岛上建城
+        PlayerCity islandCity = cities.foundAt(p.getId(), null, islandX, islandY, "海岛明珠");
+        assertEquals(islandX, islandCity.getX());
+        assertEquals(islandY, islandCity.getY());
+        assertTrue(terrain.coastal(islandCity));
+        assertTrue(terrain.canUsePort(islandCity));
+
+        // 验证迁城预览：海岛合法地块支持高级传送
+        var preview = teleportService.preview(p.getId(), "northwest", islandX + 2, islandY);
+        assertEquals(true, preview.get("valid"));
+        assertEquals("", preview.get("reason"));
+
+        // 验证海岛城市出航
+        Building port = createBuilding(p.getId(), "port", 1);
+        port.setCitySlot(islandCity.getCitySlot());
+        buildingRepository.save(port);
+        Bandit fleet = createBandit(w.getId(), "日寇巡逻舰队", 390, 156, 3, Map.of("destroyer", 2));
+        try (var s = scope.enter(islandCity)) {
+            var route = routes.plan(p.getId(), fleet, Map.of("destroyer", 1), false);
+            assertEquals("sea", route.mode());
+            assertTrue(route.distance() > 0);
+        }
     }
 }

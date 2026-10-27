@@ -46,7 +46,8 @@ class DepotItemBroadcastTest extends BaseServiceTest {
     }
 
     static Stream<String> resourceBoxes() {
-        return Stream.of("goldBox", "resBox", "steelPack", "supplyPack", "newbiePack", "resourcePack500w");
+        return Stream.of("goldBox", "resBox", "foodPack", "steelPack", "oilPack", "rarePack", "supplyPack",
+                "newbiePack", "resourcePack100w", "resourcePack200w", "resourcePack350w", "resourcePack500w");
     }
 
     @ParameterizedTest
@@ -123,7 +124,7 @@ class DepotItemBroadcastTest extends BaseServiceTest {
             if (gained > 0) assertTrue(message.getContent().contains(name + "×" + gained));
             else assertFalse(message.getContent().contains(name + "×"));
         });
-        if ("goldBox".equals(itemId)) assertTrue(after.getGold() - gold >= 1000 && after.getGold() - gold <= 5000);
+        if ("goldBox".equals(itemId)) assertEquals(50_000, after.getGold() - gold);
     }
 
     @Test
@@ -208,7 +209,7 @@ class DepotItemBroadcastTest extends BaseServiceTest {
         assertEquals("chat", payload.path("type").asText());
         assertEquals("system", payload.path("data").path("type").asText());
         assertEquals(message.getContent(), payload.path("data").path("content").asText());
-        assertEquals(21000L, resourcesRepository.findByPlayerId(playerId).orElseThrow().getSteel());
+        assertEquals(601000L, resourcesRepository.findByPlayerId(playerId).orElseThrow().getSteel());
         assertEquals(false, depot.useItem(playerId, "steelPack", null, null).get("success"));
         assertEquals(previous + 1, messages.count());
         verify(sockets, times(1)).broadcast(anyString());

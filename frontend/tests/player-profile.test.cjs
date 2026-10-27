@@ -70,6 +70,26 @@ test('profile rank card is an accessible action', () => {
   assert.match(drawer.innerHTML, /rank-insignia-enlisted/);
 });
 
+test('profile displays both server-calculated power metrics', () => {
+  const context = vm.createContext({ console, setInterval() {}, clearInterval() {}, requestAnimationFrame() {} });
+  context.window = context;
+  context.Game = {
+    Core: { state: { player: { militaryRank: 1, formationPower: 12345, overallPower: 54321 }, resources: {}, world: {} }, armyCap: () => 25000 },
+    MainView: { getCurrentAvatar: () => 'avatar.svg' }, WS: { statusHtml: () => '' },
+    fmt: String, escapeHtml: value => value
+  };
+  let drawer;
+  context.document = { createElement: () => ({ setAttribute() {}, querySelector() { return null; } }),
+    getElementById: () => null, body: { appendChild(element) { drawer = element; } } };
+  load(context, 'data.js');
+  load(context, 'player-profile.js');
+  context.Game.PlayerProfile.openPlayerDrawer();
+  assert.match(drawer.innerHTML, /编队战力/);
+  assert.match(drawer.innerHTML, /12345/);
+  assert.match(drawer.innerHTML, /综合实力/);
+  assert.match(drawer.innerHTML, /54321/);
+});
+
 test('each of the 17 ranks has a distinct insignia', () => {
   const context = vm.createContext({ console });
   context.window = context;

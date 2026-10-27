@@ -27,6 +27,49 @@ function setup() {
   return { game: context.Game, calls, toasts };
 }
 
+test('资源商品价格、商城和仓库说明一致，批量收益随档位递增', () => {
+  const { game } = setup();
+  const packs = [
+    ['goldBox', 80, '开启获得5万黄金'],
+    ['resBox', 80, '开启获得粮钢油稀各5万'],
+    ['foodPack', 200, '开启获得60万粮食'],
+    ['steelPack', 200, '开启获得60万钢铁'],
+    ['oilPack', 200, '开启获得60万石油'],
+    ['rarePack', 200, '开启获得60万稀矿'],
+    ['supplyPack', 500, '开启获得粮钢油稀各40万'],
+    ['resourcePack100w', 1150, '粮食/钢铁/石油/稀矿各100万'],
+    ['resourcePack200w', 2200, '粮食/钢铁/石油/稀矿各200万'],
+    ['resourcePack350w', 3700, '粮食/钢铁/石油/稀矿各350万'],
+    ['resourcePack500w', 5000, '粮食/钢铁/石油/稀矿各500万']
+  ];
+  for (const [id, price, description] of packs) {
+    const item = game.Shop.items().find(product => product.id === id);
+    assert.equal(item.price, price);
+    assert.equal(item.desc, description);
+    assert.equal(game.DATA.items[id].desc, description);
+  }
+  assert.ok(200000 / 80 < 1600000 / 500);
+  const efficiency = [[1600000, 500], [4000000, 1150], [8000000, 2200],
+    [14000000, 3700], [20000000, 5000]].map(([amount, price]) => amount / price);
+  assert.ok(efficiency.every((value, index) => index === 0 || value > efficiency[index - 1]));
+});
+
+test('新增资源礼包可从商城购买并在仓库开启', async () => {
+  const { game, calls } = setup();
+  const ids = ['foodPack', 'oilPack', 'rarePack', 'resourcePack100w', 'resourcePack200w', 'resourcePack350w'];
+  for (const id of ids) {
+    game.Shop.buy(id);
+    game.Core.state.items[id] = 1;
+    game.Depot.setTab('resource');
+    const view = {};
+    game.Depot.renderView(view);
+    assert.ok(view.innerHTML.includes("Game.Depot.useItem('" + id + "')"));
+    game.Depot.useItem(id);
+    await Promise.resolve();
+  }
+  assert.deepEqual(calls, ids.flatMap(id => [['buy', id], ['use', id, null, null]]));
+});
+
 test('五档护盾商城和仓库定义一致，购买与使用传递对应道具', async () => {
   const { game, calls } = setup();
   game.Shop.curCat = 'util';

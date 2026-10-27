@@ -146,6 +146,30 @@ public class Player extends VersionedEntity implements CityEconomy {
     @Column(name = "vip_level")
     private Integer vipLevel = 0;
 
+    @Column(name = "total_recharge_cents", nullable = false)
+    private Long totalRechargeCents = 0L;
+
+    @Column(name = "custom_avatar", length = 512)
+    private String customAvatar;
+
+    @Column(name = "avatar_frame", nullable = false, length = 64)
+    private String avatarFrame = "default";
+
+    @Column(name = "last_vip_daily_reward_date")
+    private LocalDate lastVipDailyRewardDate;
+
+    @Column(name = "vip_badge_visible", nullable = false)
+    private boolean vipBadgeVisible = true;
+
+    @Column(name = "stored_daily_salaries_count", nullable = false)
+    private int storedDailySalariesCount = 0;
+
+    @Column(name = "last_free_amnesty_date")
+    private LocalDate lastFreeAmnestyDate;
+
+    @Column(name = "last_daily_checkin_date")
+    private LocalDate lastDailyCheckinDate;
+
     @Column(name = "last_tick")
     private Long lastTick = 0L;
 
@@ -180,6 +204,24 @@ public class Player extends VersionedEntity implements CityEconomy {
     /** 当前与之宣战的真实玩家 player.id，NULL 表示无 */
     @Column(name = "war_against_id")
     private Long warAgainstId = null;
+
+    @Column(name = "war_declared_at")
+    private Long warDeclaredAt;
+
+    @Column(name = "war_initiator_id")
+    private Long warInitiatorId;
+
+    @Column(name = "war_city_slot")
+    private Integer warCitySlot;
+
+    @Column(name = "war_target_city_id")
+    private Long warTargetCityId;
+
+    @Column(name = "war_accelerated", nullable = false)
+    private boolean warAccelerated = false;
+
+    @Column(name = "war_order_effect", columnDefinition = "text")
+    private String warOrderEffect;
 
     /** 账号是否已注销（软删除标记），0=正常，1=已注销 */
     @Column(name = "disabled")
@@ -274,5 +316,13 @@ public class Player extends VersionedEntity implements CityEconomy {
 
     public void setMilitaryRank(Integer militaryRank) {
         this.militaryRank = militaryRank;
+    }
+
+    public boolean isVipBadgeVisible() {
+        return vipBadgeVisible;
+    }
+
+    public boolean getVipBadgeVisible() {
+        return vipBadgeVisible;
     }
 }

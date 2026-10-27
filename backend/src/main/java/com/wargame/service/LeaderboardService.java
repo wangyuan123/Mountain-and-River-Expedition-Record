@@ -10,11 +10,13 @@ import java.util.LinkedHashMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class LeaderboardService {
     private static final int PAGE_SIZE = 20;
     private final JdbcTemplate jdbc;
+    private final PlayerPowerService power;
 
     // 未初始化、注销及仍被封禁的账号不入榜，也不计入军团声望和人数。
     private static final String ELIGIBLE = """
@@ -52,8 +54,9 @@ public class LeaderboardService {
             HAVING COUNT(p.id) > 0
             """;
 
-    public LeaderboardService(JdbcTemplate jdbc) {
+    public LeaderboardService(JdbcTemplate jdbc, PlayerPowerService power) {
         this.jdbc = jdbc;
+        this.power = power;
     }
 
     /**
@@ -68,6 +71,9 @@ public class LeaderboardService {
     public Map<String, Object> get(Long playerId, String type, String metric, int page) {
         boolean guilds = "guilds".equals(type);
         if (!guilds && !"players".equals(type)) throw new IllegalArgumentException("未知排行榜类型");
+        if (!guilds && ("formationPower".equals(metric) || "overallPower".equals(metric))) {
+            return powerRanking(playerId, metric, page);
+        }
         String order;
         if ("prestige".equals(metric)) {
             order = guilds ? "prestige DESC, members DESC, id ASC" : "prestige DESC, military_rank DESC, id ASC";
@@ -131,6 +137,46 @@ public class LeaderboardService {
         result.put("updatedAt", now);
         result.put("entries", entries);
         result.put("mine", mine.isEmpty() ? null : mine.get(0));
+        return result;
+    }
+
+    private Map<String, Object> powerRanking(Long playerId, String metric, int page) {
+        long now = System.currentTimeMillis();
+        Map<Long, PlayerPowerService.Scores> scores = power.calculate(null);
+        List<Map<String, Object>> entries = jdbc.query(PLAYERS, (rs, row) -> {
+            Map<String, Object> item = new LinkedHashMap<>();
+            long id = rs.getLong("id");
+            int rank = rs.getInt("military_rank");
+            PlayerPowerService.Scores value = scores.getOrDefault(id, new PlayerPowerService.Scores(0, 0));
+            item.put("id", id);
+            item.put("name", rs.getString("name"));
+            item.put("avatar", rs.getString("avatar"));
+            item.put("guildName", rs.getString("guild_name"));
+            item.put("prestige", rs.getLong("prestige"));
+            item.put("militaryRank", rank);
+            item.put("militaryRankName", MilitaryRankDef.getRankName(rank));
+            item.put("formationPower", value.formationPower());
+            item.put("overallPower", value.overallPower());
+            return item;
+        }, now);
+        entries.sort((left, right) -> {
+            int comparison = Long.compare((Long) right.get(metric), (Long) left.get(metric));
+            return comparison != 0 ? comparison : Long.compare((Long) left.get("id"), (Long) right.get("id"));
+        });
+        for (int index = 0; index < entries.size(); index++) entries.get(index).put("rank", (long) index + 1);
+        int pages = Math.max(1, (entries.size() + PAGE_SIZE - 1) / PAGE_SIZE);
+        int current = Math.max(1, Math.min(page, pages));
+        int start = (current - 1) * PAGE_SIZE;
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("type", "players");
+        result.put("metric", metric);
+        result.put("page", current);
+        result.put("pageSize", PAGE_SIZE);
+        result.put("total", (long) entries.size());
+        result.put("totalPages", pages);
+        result.put("updatedAt", now);
+        result.put("entries", entries.subList(start, Math.min(start + PAGE_SIZE, entries.size())));
+        result.put("mine", entries.stream().filter(entry -> Objects.equals(entry.get("id"), playerId)).findFirst().orElse(null));
         return result;
     }
 }

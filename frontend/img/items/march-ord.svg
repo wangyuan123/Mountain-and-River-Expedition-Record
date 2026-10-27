@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="mchOrd_flag" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ef4444"/>
+      <stop offset="40%" stop-color="#dc2626"/>
+      <stop offset="100%" stop-color="#991b1b"/>
+    </linearGradient>
+    <linearGradient id="mchOrd_gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fffbeb"/>
+      <stop offset="40%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+    <linearGradient id="mchOrd_spear" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="50%" stop-color="#94a3b8"/>
+      <stop offset="100%" stop-color="#334155"/>
+    </linearGradient>
+    <filter id="mchOrd_shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#mchOrd_shadow)">
+    <!-- Flagpole (Military Lance / Spear) -->
+    <line x1="16" y1="5" x2="16" y2="60" stroke="url(#mchOrd_spear)" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- Spearhead Tip -->
+    <polygon points="16,3 12,10 16,9 20,10" fill="url(#mchOrd_gold)" stroke="#78350f" stroke-width="0.5"/>
+    <!-- Spear tassel -->
+    <path d="M16 10 C14 13, 13 16, 12 18 M16 10 C17 13, 18 16, 19 18" stroke="#dc2626" stroke-width="1.2"/>
+
+    <!-- Fluttering Tactical Battle Flag / Pennant (Crimson & Gold) -->
+    <path d="M17 10 L52 10 C50 20, 56 26, 44 34 L17 34 Z"
+          fill="url(#mchOrd_flag)" stroke="#fbbf24" stroke-width="1"/>
+
+    <!-- Golden decorative trim on flag edge -->
+    <path d="M17 11 L51 11 M17 33 L43 33" stroke="url(#mchOrd_gold)" stroke-width="1"/>
+
+    <!-- Winged Boot / Speed March Arrow Emblem on Flag -->
+    <!-- Speed Chevrons (Triple Swift Arrows) -->
+    <path d="M22 17 L28 22 L22 27" fill="none" stroke="#fef08a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M28 17 L34 22 L28 27" fill="none" stroke="#fef08a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M34 17 L40 22 L34 27" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Speed Gust Wind Lines -->
+    <path d="M19 37 C26 35, 34 37, 42 35 M24 40 C32 38, 42 40, 50 38 M18 43 C24 42, 32 44, 38 42"
+          stroke="#38bdf8" stroke-width="1.2" stroke-linecap="round" stroke-opacity="0.8"/>
+
+    <!-- Bottom Golden Command Token Badge ("行军") -->
+    <rect x="22" y="46" width="30" height="11" rx="3" ry="3" fill="#450a0a" stroke="url(#mchOrd_gold)" stroke-width="1.2"/>
+    <rect x="23" y="47" width="28" height="9" rx="2" ry="2" fill="#1f0901" stroke="#b45309" stroke-width="0.5"/>
+    <text x="37" y="52" text-anchor="middle" dominant-baseline="central" fill="#fef08a"
+          font-family="system-ui, 'PingFang SC', sans-serif" font-weight="900" font-size="7.5" letter-spacing="1">行军令</text>
+  </g>
+</svg>

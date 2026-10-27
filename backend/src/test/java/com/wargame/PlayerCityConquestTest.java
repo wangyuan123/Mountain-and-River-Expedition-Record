@@ -42,6 +42,7 @@ class PlayerCityConquestTest extends BaseServiceTest {
     @Autowired JwtUtil jwt;
     @Autowired CityConquestService conquest;
     @Autowired OfficerEquipmentProgressService equipmentProgress;
+    @Autowired PlayerPowerSnapshotRepository powerSnapshots;
     private Player attacker;
     private Player defender;
     private WorldMap world;
@@ -54,6 +55,21 @@ class PlayerCityConquestTest extends BaseServiceTest {
         city(defender, 0, 20, 20, 70);
         long now = System.currentTimeMillis();
         attacker.setWarAgainstId(defender.getId()); attacker.setWarAt(now - 1); attacker.setWarEndAt(now + 3_600_000);
+
+        PlayerPowerSnapshot snap1 = new PlayerPowerSnapshot();
+        snap1.setPlayerId(attacker.getId());
+        snap1.setObservedAt(now);
+        snap1.setFormationPower(500_000L);
+        snap1.setOverallPower(500_000L);
+        powerSnapshots.save(snap1);
+
+        PlayerPowerSnapshot snap2 = new PlayerPowerSnapshot();
+        snap2.setPlayerId(defender.getId());
+        snap2.setObservedAt(now);
+        snap2.setFormationPower(500_000L);
+        snap2.setOverallPower(500_000L);
+        powerSnapshots.save(snap2);
+
         em.flush();
     }
 
@@ -541,9 +557,9 @@ class PlayerCityConquestTest extends BaseServiceTest {
         marchService.processMarches(attacker.getId(), now);
         assertNull(marchRepository.findById(waitingId).orElseThrow().getBattleId());
         finish(firstId);
-        assertThrows(IllegalArgumentException.class, () -> marchService.getTacticalBattle(attacker.getId(), waitingId));
-        assertNull(marchRepository.findById(waitingId).orElseThrow().getBattleId());
-        marchService.processMarches(attacker.getId(), now);
+        Map<String, Object> cancelled = marchService.getTacticalBattle(attacker.getId(), waitingId);
+        assertEquals(true, cancelled.get("cancelled"));
+        assertEquals("war_eligibility", cancelled.get("reason"));
         assertFalse(marchRepository.existsById(waitingId));
         assertEquals(100, armyUnitRepository.findByPlayerIdAndCitySlotAndType(attacker.getId(), 0, "infantry").get(0).getCount());
         assertEquals(1, scoutReportRepository.findByPlayerId(attacker.getId()).size());

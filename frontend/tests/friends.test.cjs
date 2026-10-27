@@ -30,6 +30,7 @@ function setup() {
   const response = { groups: [{ id: 0, name: '我的好友' }, { id: 1, name: '<先锋>' }], contacts: [profile], requests: [], settings: { friendRequestPolicy: 'APPROVAL', blockStrangerMessages: true } };
   const game = {
     Core: { state: { player: { id: 1 } } }, Chat: { avatarSrc: () => 'avatar.webp' },
+    fmt: value => Number(value).toLocaleString('en-US'),
     toast: text => calls.push(['toast', text]),
     PrivateChat: { start: (name, id) => { calls.push(['chat', id]); return Promise.resolve(); }, refresh: () => Promise.resolve(), cleared: id => { calls.push(['cleared', id]); return Promise.resolve(); } },
     API: {
@@ -83,6 +84,17 @@ test('profile opens chat with stable player ID and supports moving friend to cus
   await game.Friends.view(2);
   await action('发起聊天').onclick();
   assert.ok(calls.some(c => c[0] === 'chat' && c[1] === 2));
+});
+
+test('profile displays public formation and overall power', async () => {
+  const { game, nodes, profile } = setup();
+  profile.formationPower = 12345;
+  profile.overallPower = 54321;
+  await game.Friends.view(2);
+  assert.match(nodes.friendModal.innerHTML, /编队战力/);
+  assert.match(nodes.friendModal.innerHTML, /12,345/);
+  assert.match(nodes.friendModal.innerHTML, /综合实力/);
+  assert.match(nodes.friendModal.innerHTML, /54,321/);
 });
 
 test('profile only locates a city when the API provides an authorized recon coordinate', async () => {

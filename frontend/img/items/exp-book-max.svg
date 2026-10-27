@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="expMax_cover" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="30%" stop-color="#d97706"/>
+      <stop offset="70%" stop-color="#78350f"/>
+      <stop offset="100%" stop-color="#451a03"/>
+    </linearGradient>
+    <linearGradient id="expMax_gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="25%" stop-color="#fef08a"/>
+      <stop offset="65%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+    <radialGradient id="expMax_aura" cx="50%" cy="45%" r="50%">
+      <stop offset="0%" stop-color="#fef08a" stop-opacity="0.9"/>
+      <stop offset="45%" stop-color="#f59e0b" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#b45309" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="expMax_shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#expMax_shadow)">
+    <!-- Aura behind book -->
+    <ellipse cx="34" cy="30" rx="22" ry="19" fill="url(#expMax_aura)"/>
+
+    <!-- Gilded pages edge -->
+    <path d="M49 14 L55 17 L55 52 L49 49 Z" fill="url(#expMax_gold)" stroke="#78350f" stroke-width="0.5"/>
+    <line x1="50" y1="23" x2="54" y2="25" stroke="#78350f" stroke-width="0.5"/>
+    <line x1="50" y1="31" x2="54" y2="33" stroke="#78350f" stroke-width="0.5"/>
+    <line x1="50" y1="39" x2="54" y2="41" stroke="#78350f" stroke-width="0.5"/>
+    <line x1="50" y1="46" x2="54" y2="48" stroke="#78350f" stroke-width="0.5"/>
+
+    <path d="M19 53 L51 51 L55 52 L22 55 Z" fill="#b45309"/>
+    <path d="M18 10 L51 8 L52 50 L18 53 Z" fill="#260e02"/>
+
+    <!-- Purple/Royal bookmark ribbon -->
+    <path d="M36 8 L40 8 L40 57 L38 54 L36 57 Z" fill="#7e22ce" stroke="#fef08a" stroke-width="0.5"/>
+
+    <!-- Main Front Cover (Imperial Gold & Obsidian) -->
+    <path d="M15 11 L48 8 C49.5 8, 51 9, 51 10.5 L51 49 C51 50.5, 49.5 51.5, 48 51.5 L15 54 Z"
+          fill="url(#expMax_cover)" stroke="#fde047" stroke-width="1"/>
+
+    <!-- Spine -->
+    <path d="M12 11.5 C12 10, 13.5 9.5, 16 9.5 L18 9.5 L18 54 L16 54 C13.5 54, 12 53.5, 12 52 Z"
+          fill="#451a03" stroke="#f59e0b" stroke-width="0.8"/>
+    <line x1="12" y1="18" x2="18" y2="18" stroke="#fde047" stroke-width="1"/>
+    <line x1="12" y1="31" x2="18" y2="31" stroke="#fde047" stroke-width="1"/>
+    <line x1="12" y1="44" x2="18" y2="44" stroke="#fde047" stroke-width="1"/>
+
+    <!-- Intricate Imperial Corners -->
+    <path d="M40 8.5 L50.5 8 L50.5 18.5 C47 16, 43 12, 40 8.5 Z" fill="url(#expMax_gold)"/>
+    <path d="M40 51.5 L50.5 49.5 L50.5 39 C47 42, 43 48, 40 51.5 Z" fill="url(#expMax_gold)"/>
+
+    <path d="M21 14 L46 12 L46 47 L21 49 Z" fill="none" stroke="#fef08a" stroke-width="0.8"/>
+
+    <!-- Central Imperial Crown & Star Crest -->
+    <circle cx="34" cy="27" r="10.5" fill="#2a0f02" stroke="url(#expMax_gold)" stroke-width="1.4"/>
+    <!-- Supreme 5-star crown emblem -->
+    <path d="M27 28 L29 23 L34 25 L39 23 L41 28 Z" fill="url(#expMax_gold)"/>
+    <polygon points="34,17 36,21 40,21 37,24 38,28 34,26 30,28 31,24 28,21 32,21" fill="#ffffff" stroke="#d97706" stroke-width="0.5"/>
+    <circle cx="34" cy="27.5" r="2" fill="#ef4444"/>
+
+    <!-- Cover Title Plate: MAX -->
+    <rect x="23" y="38.5" width="22" height="8.5" rx="2.5" ry="2.5" fill="#1c0701" stroke="url(#expMax_gold)" stroke-width="1.2"/>
+    <text x="34" y="43" text-anchor="middle" dominant-baseline="central" fill="#ffffff"
+          font-family="system-ui, sans-serif" font-weight="900" font-size="6.5" letter-spacing="1">MAX</text>
+  </g>
+</svg>

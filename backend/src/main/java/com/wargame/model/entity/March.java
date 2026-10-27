@@ -109,6 +109,12 @@ public class March extends CityOwnedEntity {
     @Column(name = "stratagem_used", nullable = false)
     private Boolean stratagemUsed = false;
 
+    @Column(name = "return_stratagem_used", nullable = false)
+    private Boolean returnStratagemUsed = false;
+
+    @Column(name = "order_effects", columnDefinition = "text")
+    private String orderEffects;
+
     /** 伏击的移动到达与交火时间分开；arriveAt 始终表示预计交火时间。 */
     private Long interceptDeployAt;
     private Long interceptReadyAt;

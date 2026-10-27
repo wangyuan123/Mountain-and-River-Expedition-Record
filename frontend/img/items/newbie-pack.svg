@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="nbPack_body" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e3a8a"/>
+      <stop offset="40%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="nbPack_gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="40%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+    <linearGradient id="nbPack_ribbon" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f87171"/>
+      <stop offset="35%" stop-color="#ef4444"/>
+      <stop offset="100%" stop-color="#b91c1c"/>
+    </linearGradient>
+    <filter id="nbPack_shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#nbPack_shadow)">
+    <ellipse cx="32" cy="55" rx="22" ry="4" fill="#000000" opacity="0.4"/>
+
+    <!-- Main Air-Drop Crate Body -->
+    <rect x="12" y="24" width="40" height="28" rx="3" fill="url(#nbPack_body)" stroke="#3b82f6" stroke-width="1"/>
+
+    <!-- Lid -->
+    <rect x="10" y="17" width="44" height="8" rx="2" fill="#1e3a8a" stroke="url(#nbPack_gold)" stroke-width="0.8"/>
+
+    <!-- Gold Corner Reinforcements -->
+    <polygon points="12,24 18,24 12,30" fill="url(#nbPack_gold)"/>
+    <polygon points="52,24 46,24 52,30" fill="url(#nbPack_gold)"/>
+    <polygon points="12,52 18,52 12,46" fill="url(#nbPack_gold)"/>
+    <polygon points="52,52 46,52 52,46" fill="url(#nbPack_gold)"/>
+
+    <!-- Festive Military Silk Ribbon (Vertical) -->
+    <rect x="28" y="17" width="8" height="35" fill="url(#nbPack_ribbon)" stroke="#991b1b" stroke-width="0.5"/>
+    <!-- Horizontal Ribbon -->
+    <rect x="12" y="32" width="40" height="7" fill="url(#nbPack_ribbon)" stroke="#991b1b" stroke-width="0.5"/>
+
+    <!-- Large Ribbon Bow on top of the crate -->
+    <path d="M32 17 C26 7, 18 10, 22 17 C25 19, 30 18, 32 17 Z" fill="url(#nbPack_ribbon)" stroke="#991b1b" stroke-width="0.5"/>
+    <path d="M32 17 C38 7, 46 10, 42 17 C39 19, 34 18, 32 17 Z" fill="url(#nbPack_ribbon)" stroke="#991b1b" stroke-width="0.5"/>
+    <circle cx="32" cy="17" r="3.2" fill="#fde047" stroke="#b45309" stroke-width="0.6"/>
+
+    <!-- Center Honor Star Medallion over ribbon intersection -->
+    <circle cx="32" cy="35.5" r="7.5" fill="url(#nbPack_gold)" stroke="#ffffff" stroke-width="0.8"/>
+    <polygon points="32,30 33.5,33.5 37,34 34.5,36.5 35,40 32,38 29,40 29.5,36.5 27,34 30.5,33.5" fill="#ffffff" stroke="#b45309" stroke-width="0.4"/>
+
+    <!-- Bottom Badge ("新手") -->
+    <rect x="20" y="44.5" width="24" height="9.5" rx="2" ry="2" fill="#166534" stroke="#4ade80" stroke-width="1"/>
+    <text x="32" y="49.5" text-anchor="middle" dominant-baseline="central" fill="#ffffff"
+          font-family="system-ui, 'PingFang SC', sans-serif" font-weight="900" font-size="6.8" letter-spacing="1">新手</text>
+
+    <!-- Glints -->
+    <polygon points="14,14 15,16 17,17 15,18 14,20 13,18 11,17 13,16" fill="#ffffff"/>
+    <polygon points="49,13 50,15 52,16 50,17 49,19 48,17 46,16 48,15" fill="#fef08a"/>
+  </g>
+</svg>

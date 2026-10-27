@@ -225,8 +225,13 @@ window.Game = window.Game || {};
         var disabled = !valid || Camp.pending || (resources[currency] || 0) < price;
         var label = currency === 'gold' ? '黄金' : '钻石';
         var maximum = Camp.maxAffordable(batch, currency);
+        var priceHtml = (valid ? G.fmt(price) : '—');
+        if (currency === 'gold' && valid && batch.vipDiscountPercent && batch.vipDiscountPercent > 0 && batch.originalGoldPerUnit) {
+          var origGold = batch.originalGoldPerUnit * count;
+          priceHtml = '<del style="color:var(--muted);margin-right:3px;">' + G.fmt(origGold) + '</del><b>' + G.fmt(price) + '</b> <span style="font-size:11px;color:#b8860b;font-weight:700;">(-' + batch.vipDiscountPercent + '%)</span>';
+        }
         return '<div class="wounded-payment-row"><button type="button" class="btn sm"' + (Camp.pending ? ' disabled' : '') + ' aria-label="' + label + ' MAX" title="按' + label + '余额最多治疗 ' + G.fmt(maximum) + ' 名，仅设置数量" onclick="Game.Wounded.selectMax(' + batch.id + ',\'' + currency + '\')">' + label + ' MAX</button>' +
-          '<button type="button" class="btn sm"' + (disabled ? ' disabled' : '') + ' onclick="Game.Wounded.heal(' + batch.id + ',\'' + currency + '\')">' + label + '治疗 · ' + (valid ? G.fmt(price) : '—') + '</button></div>';
+          '<button type="button" class="btn sm"' + (disabled ? ' disabled' : '') + ' onclick="Game.Wounded.heal(' + batch.id + ',\'' + currency + '\')">' + label + '治疗 · ' + priceHtml + '</button></div>';
       }).join('');
     },
     /** 两种支付方式独立提示；两者都不足时避免建议切换到同样不足的货币。 */

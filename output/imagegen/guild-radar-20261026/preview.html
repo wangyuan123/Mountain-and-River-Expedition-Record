@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>联防雷达（Guild Radar）微缩模型方案设计与比选</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --subtext: #94a3b8;
+      --border: #334155;
+      --accent: #38bdf8;
+      --accent-bg: rgba(56, 189, 248, 0.1);
+    }
+    body.light {
+      --bg: #f5ecd7;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --subtext: #64748b;
+      --border: #e2d9c4;
+      --accent: #0284c7;
+      --accent-bg: rgba(2, 132, 199, 0.08);
+    }
+    body {
+      margin: 0;
+      padding: 24px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", Roboto, sans-serif;
+      transition: background 0.2s, color 0.2s;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 16px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 22px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .theme-btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      position: relative;
+    }
+    .card.recommended {
+      border: 2px solid var(--accent);
+      background: linear-gradient(to bottom, var(--accent-bg), var(--card-bg));
+    }
+    .badge {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    .card-desc {
+      font-size: 13px;
+      color: var(--subtext);
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    .preview-box {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+      background: rgba(0,0,0,0.06);
+      border-radius: 8px;
+      margin-bottom: 16px;
+      min-height: 180px;
+    }
+    body.light .preview-box {
+      background: rgba(0,0,0,0.03);
+    }
+    .preview-box img {
+      max-width: 170px;
+      max-height: 170px;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+    }
+    .scale-row {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-around;
+      padding-top: 12px;
+      border-top: 1px dashed var(--border);
+    }
+    .scale-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .scale-label {
+      font-size: 11px;
+      color: var(--subtext);
+    }
+    .card-mock-row {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(0,0,0,0.1);
+      border-radius: 12px;
+      margin-bottom: 32px;
+    }
+    .in-game-card {
+      width: 130px;
+      background: #ffffff;
+      border: 1px solid #c6d4e2;
+      border-radius: 8px;
+      padding: 14px 10px;
+      text-align: center;
+      color: #1e40af;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .in-game-card.new {
+      border: 2px solid #3b82f6;
+      position: relative;
+    }
+    .in-game-card.new::after {
+      content: '新设计';
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      background: #ef4444;
+      color: #ffffff;
+      font-size: 10px;
+      padding: 2px 5px;
+      border-radius: 3px;
+      font-weight: bold;
+    }
+    .in-game-card img {
+      width: 84px;
+      height: 84px;
+      object-fit: contain;
+      margin-bottom: 8px;
+    }
+    .in-game-card .name {
+      font-size: 15px;
+      font-weight: bold;
+      color: #1e3a8a;
+      margin-bottom: 4px;
+    }
+    .in-game-card .lv {
+      font-size: 14px;
+      color: #2563eb;
+    }
+    .wave-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(56, 189, 248, 0.2);
+      color: var(--accent);
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 12px;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📡 联防雷达微缩模型设计方案比选</h1>
+    <button class="theme-btn" onclick="document.body.classList.toggle('light')">🌓 切换沙盘/战备主题</button>
+  </header>
+
+  <h2 style="font-size: 16px; margin-bottom: 12px;">🎮 游戏内双雷达卡槽实机对比模拟 (84px 卡槽渲染)</h2>
+  <div class="card-mock-row">
+    <div class="in-game-card">
+      <img src="../../frontend/img/buildings/garden/radar.webp" alt="城防雷达">
+      <div class="name">城防雷达</div>
+      <div class="lv">Lv.10</div>
+    </div>
+    <div style="font-size: 24px; color: var(--subtext);">VS</div>
+    <div class="in-game-card new">
+      <img id="active-mock-img" src="../../frontend/img/buildings/garden/guild_radar.webp" alt="联防雷达">
+      <div class="name">联防雷达</div>
+      <div class="lv">Lv.10</div>
+    </div>
+  </div>
+
+  <h2 style="font-size: 16px; margin-bottom: 12px;">🎨 3 套候选方案详情与多尺度响应</h2>
+  <div class="grid">
+    <!-- 方案 C -->
+    <div class="card recommended">
+      <span class="badge">用户选定 · 游戏已实装</span>
+      <div class="card-title">方案 C · 矩阵相控阵要塞</div>
+      <div class="card-desc">
+        重型钢架承载二战早期远程相控阵大型矩阵天线网（仿早期弗雷亚/沃茨堡联防雷达），天线周围环绕高明度多重脉冲电磁波弧环；搭配战术情报地堡与外置发电机。
+        <br><span class="wave-badge">✨ 核心特征：巨幅矩阵网面 + 高明度脉冲波纹</span>
+      </div>
+      <div class="preview-box">
+        <img src="options/option-3-phased-array-bunker.webp" alt="方案C">
+      </div>
+      <div class="scale-row">
+        <div class="scale-item">
+          <img src="options/option-3-phased-array-bunker.webp" style="width: 88px; height: 88px;">
+          <span class="scale-label">88px (详情)</span>
+        </div>
+        <div class="scale-item">
+          <img src="options/option-3-phased-array-bunker.webp" style="width: 84px; height: 84px;">
+          <span class="scale-label">84px (卡槽)</span>
+        </div>
+        <div class="scale-item">
+          <img src="options/option-3-phased-array-bunker.webp" style="width: 64px; height: 64px;">
+          <span class="scale-label">64px (选建)</span>
+        </div>
+        <div class="scale-item">
+          <img src="options/option-3-phased-array-bunker.webp" style="width: 44px; height: 44px;">
+          <span class="scale-label">44px (移动)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 方案 B -->
+    <div class="card">
+      <div class="card-title">方案 B · 广域中继预警台</div>
+      <div class="card-desc">
+        暗橄榄绿钢架高塔承载大口径曲面微波监控天线，天线四周散发着向外扩散的同心圆雷达波纹；基座配备加固水泥机房、柴油发电机组与厚重通讯屏蔽电缆。
+        <br><span class="wave-badge">✨ 核心特征：清晰同心水平雷达波纹 + 独立中继房</span>
+      </div>
+      <div class="preview-box">
+        <img src="options/option-2-surveillance-relay.webp" alt="方案B">
+      </div>
+      <div class="scale-row">
+        <div class="scale-item">
+          <img src="options/option-2-surveillance-relay.webp" style="width: 88px; height: 88px;">
+          <span class="scale-label">88px (详情)</span>
+        </div>
+        <div class="scale-item">
+          <img src="options/option-2-surveillance-relay.webp" style="width: 84px; height: 84px;">
+          <span class="scale-label">84px (卡槽)</span>
+        </div>
+        <div class="scale-item">
+          <img src="options/option-2-surveillance-relay.webp" style="width: 64px; height: 64px;">
+          <span class="scale-label">64px (选建)</span>
+        </div>
+        <div class="scale-item">
+          <img src="options/option-2-surveillance-relay.webp" style="width: 44px; height: 44px;">
+          <span class="scale-label">44px (移动)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 方案 A -->
+    <div class="card">
+      <div class="card-title">方案 A · 弧形网面扫描阵</div>
+      <div class="card-desc">
+        旋转式金属网面反射雷达天线，外围环绕向四周扩散的淡蓝白色电磁脉冲光弧；基座设战壕沙袋掩体、通讯小屋与天线拉索。
+        <br><span class="wave-badge">✨ 核心特征：旋转抛物网架 + 柔和同心光环</span>
+      </div>
+      <div class="preview-box">
+        <img src="options/option-1-parabolic-dish.webp" alt="方案A">
+      </div>
+      <div class="scale-row">
+        <div class="scale-item">
+          <img src="options/option-1-parabolic-dish.webp" style="width: 88px; height: 88px;">
+          <span class="scale-label">88px (详情)</span>
+        </div>
+        <div class="scale-item">
+          <img src="options/option-1-parabolic-dish.webp" style="width: 84px; height: 84px;">
+          <span class="scale-label">84px (卡槽)</span>
+        </div>
+        <div class="scale-item">
+          <img src="options/option-1-parabolic-dish.webp" style="width: 64px; height: 64px;">
+          <span class="scale-label">64px (选建)</span>
+        </div>
+        <div class="scale-item">
+          <img src="options/option-1-parabolic-dish.webp" style="width: 44px; height: 44px;">
+          <span class="scale-label">44px (移动)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 原版城防雷达对比卡 -->
+    <div class="card">
+      <div class="card-title">原版对照 · 城防雷达 (radar)</div>
+      <div class="card-desc">
+        现行城防雷达模型：单一高耸格构钢架与矩形平面网格栅格天线，单座水泥值班操作间与沙袋掩体，无天线辐射波纹。
+      </div>
+      <div class="preview-box">
+        <img src="../../frontend/img/buildings/garden/radar.webp" alt="原版城防雷达">
+      </div>
+      <div class="scale-row">
+        <div class="scale-item">
+          <img src="../../frontend/img/buildings/garden/radar.webp" style="width: 88px; height: 88px;">
+          <span class="scale-label">88px (详情)</span>
+        </div>
+        <div class="scale-item">
+          <img src="../../frontend/img/buildings/garden/radar.webp" style="width: 84px; height: 84px;">
+          <span class="scale-label">84px (卡槽)</span>
+        </div>
+        <div class="scale-item">
+          <img src="../../frontend/img/buildings/garden/radar.webp" style="width: 64px; height: 64px;">
+          <span class="scale-label">64px (选建)</span>
+        </div>
+        <div class="scale-item">
+          <img src="../../frontend/img/buildings/garden/radar.webp" style="width: 44px; height: 44px;">
+          <span class="scale-label">44px (移动)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align: center; color: var(--subtext); font-size: 12px; margin-top: 24px;">
+    《山河远征录》· 花园卫城 1930s-1940s 建筑规范 · 35° 等轴测 384×384 RGBA WebP 透明格式
+  </div>
+</body>
+</html>

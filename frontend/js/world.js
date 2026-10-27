@@ -339,6 +339,10 @@ window.Game = window.Game || {};
         return;
       }
       if (kind === 'player' && action !== 'scout') {
+        if (target.powerProtection && target.powerProtection.allowed === false) {
+          G.toast(target.powerProtection.reason);
+          return;
+        }
         if (target.guildRelation === 'friendly') {
           G.toast('友好军团成员之间不能讨伐');
           return;
@@ -535,7 +539,7 @@ window.Game = window.Game || {};
       var previousFocus = document.activeElement;
       var title = esc(opts.title || '操作确认');
       var msg = esc(opts.message || '');
-      var sub = opts.subMessage ? '<p class="confirm-dialog-submessage">' + esc(opts.subMessage) + '</p>' : '';
+      var sub = opts.subMessage ? '<p class="confirm-dialog-submessage">' + esc(opts.subMessage).replace(/\n/g, '<br>') + '</p>' : '';
       var okText = esc(opts.okText || '确定');
       var cancelText = esc(opts.cancelText || '取消');
       var okClass = opts.danger ? 'btn btn-danger' : 'btn btn-primary';
@@ -806,6 +810,10 @@ window.Game = window.Game || {};
       var target;
       if (kind === 'player') target = s.world.playerCities[idx];
       if (!target) return;
+      if (target.powerProtection && target.powerProtection.allowed === false) {
+        G.toast(target.powerProtection.reason);
+        return;
+      }
       var targetShielded = (target.shieldUntil != null ? target.shieldUntil > G.gameNow() : target.cityState === 'shield') || (target.coolAt > G.gameNow());
       if (targetShielded) {
         G.toast((target.name || '目标城市') + '处于护盾期间，无法发起侦查或攻击');
@@ -1840,6 +1848,59 @@ window.Game = window.Game || {};
       return G.formatDuration(milliseconds / 1000);
     },
 
+    orderEffectText: function (effect) {
+      var percent = function (value) { return (Number(value) * 100).toFixed(1).replace(/\.0$/, '') + '%'; };
+      return '本城指挥官：' + effect.commanderName + ' · 学识' + effect.knowledge +
+        '；道具基础' + percent(effect.baseRatio) + '，学识加成' + percent(effect.knowledgeBonus) +
+        '，最终效果' + percent(effect.ratio) + '（上限' + percent(effect.cap) + '）';
+    },
+
+    openReturningEnemy: function (marchId) {
+      var march = (Core.state.world.returningEnemyMarches || []).find(function (item) { return String(item.marchId) === String(marchId); });
+      if (march && G.WorldMap && G.WorldMap.openIncomingMarch) G.WorldMap.openIncomingMarch(march);
+    },
+
+    useTacticalOrder: function (marchId, itemKey, targetCityId) {
+      var self = this, player = Core.state.player || {}, route = Core.route;
+      var identity = String(player.id) + ':' + String(player.activeCityId), token = G.API.getToken();
+      var war = itemKey === 'warSpeedOrder', pending = false, finished = false;
+      function sameContext() {
+        var current = Core.state.player || {};
+        return identity === String(current.id) + ':' + String(current.activeCityId) && token === G.API.getToken() && route === Core.route;
+      }
+      var request = war ? G.API.previewWarOrder(targetCityId) : G.API.previewMarchOrder(marchId, itemKey);
+      request.then(function (effect) {
+        if (!sameContext()) return;
+        var item = G.DATA.items[itemKey];
+        var summary = self.orderEffectText(effect) + '\n剩余时间：' + self.marchTimeText(effect.remainingMs) +
+          ' → ' + self.marchTimeText(effect.afterMs) + '\n实际' + (war ? '缩短' : '延长') + '：' +
+          self.marchTimeText(Math.abs(effect.afterMs - effect.remainingMs)) +
+          (war ? '\n从宣战起至少保留30分钟总备战，交战期仍为48小时。' : '\n本阶段最多受一次计谋影响。') +
+          '\n消耗1枚，库存' + effect.stock + '枚';
+        self.showConfirm({ title: '使用' + item.name, message: '确认消耗1枚' + item.name + '？',
+          subMessage: summary, okText: effect.stock ? '确认使用' : '前往商城', onConfirm: function () {
+            if (pending || finished || !sameContext()) return;
+            if (!effect.stock) { G.go('shop'); return; }
+            pending = true;
+            var consume = war ? G.API.speedUpWar(targetCityId, effect.confirmationToken)
+              : G.API.applyMarchStratagem(marchId, itemKey, effect.arriveAt, effect.confirmationToken);
+            consume.then(function (result) {
+              finished = true;
+              if (!sameContext()) return;
+              G.toast(result.message || '道具已生效');
+              if (G.WorldMap && G.WorldMap.closeIncomingMarch) G.WorldMap.closeIncomingMarch(false);
+              if (G.WorldMap && G.WorldMap.invalidate) G.WorldMap.invalidate();
+              Core.render();
+            }).catch(function (error) {
+              finished = true;
+              if (!sameContext()) return;
+              G.toast((error.message || '使用失败') + '；请刷新预览后重新确认');
+              G.API.getGameState(true).then(function (state) { if (sameContext()) { G.API.applyState(state); Core.render(); } }).catch(function () {});
+            });
+          } });
+      }).catch(function (error) { if (sameContext()) G.toast(error.message || '无法获取道具预览'); });
+    },
+
     /** 确认本队加速的消耗和收益，阶段变化后必须关闭弹窗重新确认。 */
     speedUpMarch: function (marchId) {
       var self = this;
@@ -1852,7 +1913,7 @@ window.Game = window.Game || {};
       var identity = String(player.id) + ':' + String(player.activeCityId);
       var token = G.API.getToken ? G.API.getToken() : null;
       var route = Core.route;
-      var pending = false, failed = false, closed = false, timer = null;
+      var pending = false, failed = false, closed = false, timer = null, preview = null;
       var deployingInterception = !returning && march.action === 'intercept_scout' && march.deployAt != null;
       var title = returning ? '加速回城' : deployingInterception ? '加速出城部署' : '加速行军';
       var mask = document.createElement('div');
@@ -1864,7 +1925,7 @@ window.Game = window.Game || {};
         '<div class="modal-title" id="marchSpeedUpTitle">' + title + '</div><div class="modal-body">' +
         '<p class="march-speedup-target">目的地：' + esc(march.targetName || '目标') + ' (' + esc(march.targetX) + ',' + esc(march.targetY) + ')</p>' +
         '<p>' + (deployingInterception ? '到位剩余时间' : '剩余时间') + '：<b data-march-before></b> &rarr; <b data-march-after></b></p>' +
-        '<p>预计节省：<b data-march-saved></b></p><p data-march-stock></p>' +
+        '<p>预计节省：<b data-march-saved></b></p><p data-march-effect></p><p data-march-stock></p><p>加速后至少保留30秒。</p>' +
         '<p class="desc">' + (deployingInterception ? '加速仅缩短本队到位时间，到位后等待敌军；预计交火时间由敌军行进决定。' : '仅加速本队当前路段，去程与回程各限一次。') + '</p>' +
         '<p class="march-speedup-status" data-march-status role="status" aria-live="polite"></p></div>' +
         '<div class="modal-foot"><button type="button" class="btn" data-march-cancel>取消</button>' +
@@ -1898,18 +1959,19 @@ window.Game = window.Game || {};
         if (pending) return;
         var current = Core.state || {};
         var live = ((current.world || {}).marches || []).find(function (m) { return String(m.id) === String(marchId); });
-        var valid = live && !!live.returning === returning && live.version === version && self.canAccelerateMarch(live, G.gameNow());
+        var valid = preview && live && !!live.returning === returning && live.version === version && self.canAccelerateMarch(live, G.gameNow());
         var stock = Math.max(0, Number((current.items || {}).marchOrd) || 0);
         var remaining = Math.max(0, Number(!march.returning && march.deployAt != null ? march.deployAt : march.arriveAt) - G.gameNow());
         var after = Math.min(remaining, Math.max(G.Constants.marchAcceleration.minRemainingMs,
-          Math.ceil(remaining / G.Constants.marchAcceleration.speedMultiplier)));
+          Math.ceil(remaining * (1 - (preview ? preview.ratio : 0.5)))));
         mask.querySelector('[data-march-before]').textContent = self.marchTimeText(remaining);
         mask.querySelector('[data-march-after]').textContent = self.marchTimeText(after);
         mask.querySelector('[data-march-saved]').textContent = self.marchTimeText(remaining - after);
         mask.querySelector('[data-march-stock]').textContent = '行军令：消耗 1 枚，库存 ' + stock + ' 枚';
+        mask.querySelector('[data-march-effect]').textContent = preview ? self.orderEffectText(preview) : '正在获取指挥官与效果预览…';
         ok.disabled = !valid;
         ok.textContent = stock ? '确认加速' : '前往商城';
-        status.textContent = !valid ? '行军状态已变化，请关闭后重新选择。' : stock ? '' : '行军令库存不足';
+        status.textContent = !preview ? '正在获取效果预览…' : !valid ? '行军状态已变化，请关闭后重新选择。' : stock ? '' : '行军令库存不足';
         return { valid: valid, stock: stock };
       }
       cancel.onclick = close;
@@ -1930,7 +1992,7 @@ window.Game = window.Game || {};
         ok.disabled = cancel.disabled = true;
         ok.textContent = '加速中…';
         status.textContent = '';
-        G.API.speedUpMarch(Number(marchId), returning, version).then(function (result) {
+        G.API.speedUpMarch(Number(marchId), returning, version, preview.confirmationToken).then(function (result) {
           pending = false;
           dispose();
           if (!sameContext()) return;
@@ -1955,6 +2017,17 @@ window.Game = window.Game || {};
       };
       update();
       timer = setInterval(update, 1000);
+      G.API.previewMarchOrder(Number(marchId), 'marchOrd').then(function (effect) {
+        if (closed || !sameContext()) return;
+        if (effect.version !== version || !!effect.returning !== returning) { failed = true; status.textContent = '行军状态已变化，请重新打开确认'; return; }
+        preview = effect;
+        update();
+      }).catch(function (error) {
+        if (closed || !sameContext()) return;
+        failed = true;
+        status.textContent = error.message || '获取预览失败，请重新打开确认';
+        ok.disabled = true;
+      });
       (ok.disabled ? cancel : ok).focus();
     },
 
@@ -2940,7 +3013,9 @@ window.Game = window.Game || {};
             '<div class="tcard-meta">军衔：<b>' + esc(p.militaryRankName || (G.getMilitaryRankTierInfo ? G.getMilitaryRankTierInfo(p.militaryRank || 1).name : '列兵')) + '</b></div>' +
             '<div class="tcard-meta">状态 <b>' + (stateMap[p.cityState] || '和平') + '</b></div>' +
             '<div class="tcard-meta">声望：' + G.fmt(displayPrestige) + '</div>' +
-            (warActive ? (p.guildRelation === 'hostile' ? '<div class="tcard-meta">敌对军团，可直接交战</div>' : '<div class="tcard-meta" id="war-timer-' + it.i + '">交战剩余 ' + remStr + '</div>') : '') +
+            (p.powerProtection ? '<div class="tcard-meta">' + esc(p.powerProtection.allowed ? '战争匹配：两项实力均在10倍以内（近7天峰值）' : p.powerProtection.reason) + '</div>' : '') +
+            (p.powerProtection ? '<div class="tcard-meta">战争评级（我方 / 对方）：编队 ' + G.fmt(p.powerProtection.ownFormationPower) + ' / ' + G.fmt(p.powerProtection.targetFormationPower) + '，综合 ' + G.fmt(p.powerProtection.ownOverallPower) + ' / ' + G.fmt(p.powerProtection.targetOverallPower) + '</div>' : '') +
+            (warActive && !(p.powerProtection && !p.powerProtection.allowed) ? (p.guildRelation === 'hostile' ? '<div class="tcard-meta">敌对军团，可直接交战</div>' : '<div class="tcard-meta" id="war-timer-' + it.i + '">交战剩余 ' + remStr + '</div>') : '') +
             (preWar ? '<div class="tcard-meta" id="war-timer-' + it.i + '">宣战倒计时 ' + remStr + '</div>' : '') +
             '<div class="tcard-actions">' + renderPlayerActions(it, p, cooling, warActive, preWar) + '</div>' +
           '</div>';
@@ -2987,6 +3062,10 @@ window.Game = window.Game || {};
             '<button class="tcard-btn tcard-btn-ok" onclick="event.stopPropagation();Game.Cities.openSupport(' + Number(p.ownerId) + ',\'reinforce\',' + p.id + ')">驻防</button>' +
             '<button class="tcard-btn" onclick="event.stopPropagation();Game.World.offerSurrender(' + it.i + ')">劝降</button>';
         }
+        if (p.powerProtection && p.powerProtection.allowed === false) {
+          return '<button class="tcard-btn" disabled>实力差距保护</button>' +
+                 '<button class="tcard-btn" onclick="event.stopPropagation();Game.World.attack(\'player\',' + it.i + ',\'scout\')">侦察</button>';
+        }
         if (cooling) {
           return '<button class="tcard-btn" onclick="event.stopPropagation();Game.World.offerSurrender(' + it.i + ')">劝降</button>' +
                  '<button class="tcard-btn" onclick="event.stopPropagation();Game.World.attack(\'player\',' + it.i + ',\'scout\')">侦察</button>';
@@ -2999,7 +3078,8 @@ window.Game = window.Game || {};
                  '<button class="tcard-btn" onclick="event.stopPropagation();Game.World.offerSurrender(' + it.i + ')">劝降</button>' +
                  '<button class="tcard-btn" onclick="event.stopPropagation();Game.World.attack(\'player\',' + it.i + ',\'scout\')">侦察</button>';
         } else if (preWar) {
-          return '<button class="tcard-btn" id="war-start-timer-' + it.i + '" disabled>开战倒计时 ' + G.formatDuration((p.warAt - G.gameNow()) / 1000) + '</button><button class="tcard-btn" onclick="event.stopPropagation();Game.World.offerSurrender(' + it.i + ')">劝降</button>' +
+          return '<button class="tcard-btn" id="war-start-timer-' + it.i + '" disabled>开战倒计时 ' + G.formatDuration((p.warAt - G.gameNow()) / 1000) + '</button>' +
+                 (p.canAccelerateWar ? '<button class="tcard-btn" onclick="event.stopPropagation();Game.World.useTacticalOrder(null,\'warSpeedOrder\',' + Number(p.id) + ')">加速备战</button>' : '') + '<button class="tcard-btn" onclick="event.stopPropagation();Game.World.offerSurrender(' + it.i + ')">劝降</button>' +
                  '<button class="tcard-btn" onclick="event.stopPropagation();Game.World.attack(\'player\',' + it.i + ',\'scout\')">侦察</button>';
         } else {
           return '<button class="tcard-btn" onclick="event.stopPropagation();Game.World.offerSurrender(' + it.i + ')">劝降</button>' +
@@ -3565,6 +3645,28 @@ window.Game = window.Game || {};
       return this._cityShieldPending;
     },
 
+    cancelCityShieldWithConfirm: function (cityId, cityName, remStr) {
+      var self = this;
+      var msg = '⚠️ 军防紧急警报：解除后城市【' + (cityName || '本城') + '】将立即失去免战保护并暴露于敌方视野，且已消耗的护盾剩余时长（约 ' + (remStr || '若干') + '）将彻底作废不予退还！确认立即解除战备戒严吗？';
+      var confirmFn = (G.Vip && G.Vip.confirmShieldDeactivation)
+        ? function (cb) { G.Vip.confirmShieldDeactivation(cb, msg); }
+        : function (cb) { if (confirm(msg)) cb(); };
+
+      confirmFn(function () {
+        if (!G.API || !G.API.cancelCityShield) return;
+        G.API.cancelCityShield(cityId).then(function (res) {
+          G.toast('🛡️ 城市【' + (cityName || '本城') + '】免战护盾已主动解除！');
+          var old = document.getElementById('termCityShieldMask');
+          if (old && old.parentNode) old.parentNode.removeChild(old);
+          if (G.WorldView && G.WorldView.invalidate) G.WorldView.invalidate();
+          if (G.WorldMap && G.WorldMap.invalidate) G.WorldMap.invalidate();
+          if (Core.render) Core.render();
+        }).catch(function (err) {
+          G.toast(err.message || '解除护盾失败');
+        });
+      });
+    },
+
     /**
      * 打开选择单个城市或所有城市开启护盾的弹窗 (Modern Clean Text-SLG)
      */
@@ -3641,7 +3743,7 @@ window.Game = window.Game || {};
           h += '        <div class="term-shield-city-info">';
           h += '          <div class="term-shield-city-name">' + esc(c.name) + ' [' + c.x + ',' + c.y + '] ' + (c.main ? '<span style="color:#38bdf8;font-size:11px;">[主城]</span>' : '<span style="color:#f59e0b;font-size:11px;">[分城]</span>') + (c.current ? ' <span style="color:#10b981;font-size:11px;">[当前]</span>' : '') + '</div>';
           h += '          <div class="term-shield-city-state ' + (isShielded ? 'active' : 'none') + '">';
-          h += isShielded ? ('🛡️ 护盾生效中 (剩余 ' + remStr + '，开启将叠加8小时)') : '⚠️ 无护盾保护 (极易遭外部侦查与打击)';
+          h += isShielded ? ('🛡️ 护盾生效中 (剩余 ' + remStr + '，开启将叠加8小时) <button type="button" class="btn sm danger" style="padding:1px 6px;font-size:11px;margin-left:6px;" onclick="event.stopPropagation();Game.World.cancelCityShieldWithConfirm(' + c.id + ',\'' + esc(c.name) + '\',\'' + remStr + '\')">解除护盾</button>') : '⚠️ 无护盾保护 (极易遭外部侦查与打击)';
           h += '          </div>';
           h += '        </div>';
           h += '      </div>';
@@ -3775,7 +3877,18 @@ window.Game = window.Game || {};
         h += '<div>无法确认精确编成、科技、装备及将领属性；突围获胜后沿原路线继续行进。</div>';
         return h;
       }
+      var cityRadarLv = (s.buildings && s.buildings.radar) || 0;
+      var hasRadarIntel = cityRadarLv > 0 || (im.radarLevel != null && Number(im.radarLevel) > 0);
       var radar = Math.max(0, Math.min(10, Number(im.radarLevel) || 0));
+      if (!hasRadarIntel || radar <= 0) {
+        h += '<div class="term-radar-offline-alert">';
+        h += '  <div style="color:var(--danger,#ef4444);font-weight:bold;font-size:12px;">⚠️ 本城未建造城防雷达 · 敌情未探明</div>';
+        h += '  <div style="color:var(--muted,#64748b);font-size:11px;margin:3px 0 6px;">雷达火控终端离线，地面肉眼哨所无法解析敌军来源、精确兵力与编成科技。</div>';
+        h += '  <button type="button" class="btn ok sm" onclick="event.stopPropagation();Game.go(\'buildArmy\')">前往【军工】建造城防雷达</button>';
+        h += '</div>';
+        h += '    <div>目的地: ' + coordinateHtml(targetX, targetY, '目的地') + ' ' + targetName + '</div>';
+        return h;
+      }
       h += '    <div>雷达情报等级: Lv.' + radar + '</div>';
       if (radar >= 1) {
         h += '    <div>来袭玩家: <b>' + attackerName + '</b></div>';
@@ -4046,6 +4159,7 @@ window.Game = window.Game || {};
       var s = Core.state;
       var marches = s.world.marches || [];
       var incoming = s.world.incoming || [];
+      var returningEnemies = s.world.returningEnemyMarches || [];
       var reinforcements = s.world.reinforcements || [];
       var now = G.gameNow();
       var filter = this._alertsFilter || 'all';
@@ -4055,14 +4169,16 @@ window.Game = window.Game || {};
       var scoutIncoming = incoming.filter(function (im) { return im.action === 'scout'; });
       var scoutMarches = marches.filter(function (m) { return m.action === 'scout'; });
       var totalScoutCount = scoutIncoming.length + scoutMarches.length;
-      var totalEnemyCount = enemyIncoming.length;
+      var totalEnemyCount = enemyIncoming.length + returningEnemies.length;
       var totalMarchCount = marches.length;
       var totalGarrisonCount = reinforcements.length + marches.filter(function (m) { return m.stationed; }).length;
-      var totalAllCount = incoming.length + marches.length + reinforcements.length;
+      var totalAllCount = incoming.length + returningEnemies.length + marches.length + reinforcements.length;
       var regionalCount = G.Radar ? G.Radar.contacts().length : 0;
       totalAllCount += regionalCount;
 
       // 雷达覆盖与防务状态
+      var cityRadarLv = (s.buildings && s.buildings.radar) || 0;
+      var hasCityRadar = cityRadarLv > 0;
       var sensor = G.Radar && G.Radar.city();
       var radarKm = sensor && sensor.level > 0 ? 'Lv.' + sensor.level + ' · 半径' + sensor.radius + '格 · ' + (sensor.enabled ? '已开启' : '已关闭') : '本城未建设联防雷达';
       var allCities = this.getPlayerCities();
@@ -4083,8 +4199,13 @@ window.Game = window.Game || {};
       // 顶部全域监控头
       h += '<div class="term-header">';
       h += '  <div class="term-status-line">';
-      h += '    <span class="term-badge-tag">[全域预警监控]</span>';
-      h += '    <span class="term-status-ok">正常运行</span>';
+      if (hasCityRadar) {
+        h += '    <span class="term-badge-tag">[全域预警监控]</span>';
+        h += '    <span class="term-status-ok">正常运行 (城防雷达 Lv.' + cityRadarLv + ')</span>';
+      } else {
+        h += '    <span class="term-badge-tag danger">[防空雷达站]</span>';
+        h += '    <span class="term-status danger">雷达离线 (未建城防雷达)</span>';
+      }
       h += '    <span class="term-sep">|</span>';
       h += '    <span class="term-radar-range">联防雷达范围: ' + radarKm + '</span>';
       h += '    <span class="term-sep">|</span>';
@@ -4101,6 +4222,15 @@ window.Game = window.Game || {};
       h += '    <button type="button" class="term-tab ' + (filter === 'regional' ? 'active' : '') + '" onclick="Game.World.setAlertsFilter(\'regional\')">[团友预警(' + regionalCount + ')]</button>';
       h += '    <button type="button" class="term-tab ' + (filter === 'regionalHistory' ? 'active' : '') + '" onclick="Game.World.setAlertsFilter(\'regionalHistory\')">[联防历史]</button>';
       h += '  </div>';
+
+      // 方案A：未建城防雷达时，常驻醒目的终端离线告警并提供一键跳转军工区建造
+      if (!hasCityRadar) {
+        h += '  <div class="term-radar-offline-banner">';
+        h += '    <div class="term-radar-offline-title">⚠️ 本城防空雷达站未建立 · 雷达终端离线</div>';
+        h += '    <div class="term-radar-offline-desc">全域早期预警关闭。敌情仅能依靠地面哨所目视警戒，无法测定敌军航迹、兵力与精确编成。</div>';
+        h += '    <div class="term-radar-offline-action"><button type="button" class="btn ok sm" onclick="Game.go(\'buildArmy\')">前往【军工】建造城防雷达</button></div>';
+        h += '  </div>';
+      }
       h += '</div>';
 
       h += '<div class="term-divider">-------------------------------------------------------------------------</div>';
@@ -4114,7 +4244,7 @@ window.Game = window.Game || {};
       var showIncoming = (filter === 'all' || filter === 'enemy' || filter === 'scout');
       if (showIncoming) {
         if ((filter === 'enemy' && !totalEnemyCount) || (filter === 'all' && !incoming.length)) {
-          h += '<div class="term-empty">暂无敌方来袭军情。</div>';
+          h += '<div class="term-empty">暂无敌方来袭军情。' + (!hasCityRadar ? '<span style="color:var(--muted, #94a3b8)">（雷达离线，仅保持地面哨所警戒）</span>' : '') + '</div>';
         } else {
           for (var ii = 0; ii < incoming.length; ii++) {
             var im = incoming[ii];
@@ -4133,11 +4263,14 @@ window.Game = window.Game || {};
             var targetY = im.targetY != null ? im.targetY : (s.world.cityPos ? s.world.cityPos.y : '?');
             var targetName = G.escapeHtml(im.targetName || (s.player && (s.player.cityName || s.player.username)) || '我方主城');
 
+            var hasRadarIntel = hasCityRadar || (im.radarLevel != null && Number(im.radarLevel) > 0);
             var badgeText = isScout ? '[侦察]' : '[敌袭!]';
             var badgeCls = isScout ? 'warn' : 'danger';
-            var nameHtml = attackerName === '未知敌军'
-              ? '未知敌军 来袭'
-              : (attackerName + (im.guildName ? ' (' + G.escapeHtml(im.guildName) + ')' : '') + (attackerName.indexOf('来袭') >= 0 ? '' : ' 来袭'));
+            var nameHtml = !hasRadarIntel
+              ? '未知敌军 来袭 (需城防雷达探明)'
+              : (attackerName === '未知敌军'
+                ? '未知敌军 来袭'
+                : (attackerName + (im.guildName ? ' (' + G.escapeHtml(im.guildName) + ')' : '') + (attackerName.indexOf('来袭') >= 0 ? '' : ' 来袭')));
 
             var verb = isArrived ? (im.waitingForBattle ? '候战中' : '待迎战') : (isScout ? '抵近' : '抵达');
             var tStr = this.alertCountdown(im.arriveAt);
@@ -4154,10 +4287,15 @@ window.Game = window.Game || {};
             var dx = targetX !== '?' ? (Number(targetX) - fromX) : 0;
             var dy = targetY !== '?' ? (Number(targetY) - fromY) : 0;
             var distKm = (Math.max(1, Math.round(Math.sqrt(dx * dx + dy * dy))) * 1.5).toFixed(1) + 'km';
+            if (!hasRadarIntel) {
+              distKm = '未锁定 (雷达离线)';
+            }
 
             // 兵力显示
             var troopsText = '未知';
-            if (im.totalTroops != null && !isNaN(Number(im.totalTroops))) {
+            if (!hasRadarIntel) {
+              troopsText = '未知规模 (需城防雷达)';
+            } else if (im.totalTroops != null && !isNaN(Number(im.totalTroops))) {
               var nTroops = Number(im.totalTroops);
               troopsText = nTroops >= 10000 ? '~' + (nTroops / 10000).toFixed(1).replace(/\.0$/, '') + 'w' : nTroops.toLocaleString();
             } else if (im.strengthBand) {
@@ -4256,6 +4394,16 @@ window.Game = window.Game || {};
             h += '</div>';
           }
         }
+      }
+
+      if ((filter === 'all' || filter === 'enemy') && returningEnemies.length) {
+        h += '<div class="term-group"><div class="term-group-title">敌军撤退</div>';
+        returningEnemies.forEach(function (enemy) {
+          h += '<div class="term-card"><span>' + esc(enemy.fromName || '敌军') + ' · 撤退剩余 ' +
+            G.formatDuration(Math.max(0, Number(enemy.arriveAt) - now) / 1000) + '</span> ' +
+            '<button type="button" class="btn sm" onclick="Game.World.openReturningEnemy(' + Number(enemy.marchId) + ')">查看详情</button></div>';
+        });
+        h += '</div>';
       }
 
       // 2. 我军行军 (marches)

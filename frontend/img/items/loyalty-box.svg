@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <!-- Mahogany wood body gradient -->
+    <linearGradient id="lyBox_wood" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#78350f"/>
+      <stop offset="35%" stop-color="#451a03"/>
+      <stop offset="100%" stop-color="#1f0901"/>
+    </linearGradient>
+    <!-- Lustrous Brass / Gold straps -->
+    <linearGradient id="lyBox_gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="40%" stop-color="#fbbf24"/>
+      <stop offset="80%" stop-color="#d97706"/>
+      <stop offset="100%" stop-color="#78350f"/>
+    </linearGradient>
+    <filter id="lyBox_shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#lyBox_shadow)">
+    <!-- Base Shadow -->
+    <ellipse cx="32" cy="55" rx="22" ry="4.5" fill="#000000" opacity="0.4"/>
+
+    <!-- Main Chest Body -->
+    <rect x="11" y="27" width="42" height="25" rx="3" fill="url(#lyBox_wood)" stroke="#78350f" stroke-width="0.8"/>
+
+    <!-- Horizontal reinforcement straps -->
+    <rect x="11" y="47" width="42" height="3" fill="url(#lyBox_gold)"/>
+    <rect x="11" y="27" width="42" height="2" fill="url(#lyBox_gold)"/>
+
+    <!-- Vertical armored straps on left & right -->
+    <rect x="19" y="27" width="4" height="25" fill="url(#lyBox_gold)"/>
+    <rect x="41" y="27" width="4" height="25" fill="url(#lyBox_gold)"/>
+
+    <!-- Rivets on straps -->
+    <circle cx="21" cy="32" r="0.9" fill="#451a03"/>
+    <circle cx="21" cy="42" r="0.9" fill="#451a03"/>
+    <circle cx="21" cy="48.5" r="0.9" fill="#451a03"/>
+    <circle cx="43" cy="32" r="0.9" fill="#451a03"/>
+    <circle cx="43" cy="42" r="0.9" fill="#451a03"/>
+    <circle cx="43" cy="48.5" r="0.9" fill="#451a03"/>
+
+    <!-- Chest Lid (Arched Top) -->
+    <path d="M9 27 C9 17, 20 12, 32 12 C44 12, 55 17, 55 27 Z"
+          fill="url(#lyBox_wood)" stroke="#78350f" stroke-width="0.8"/>
+    <!-- Lid gold rim -->
+    <path d="M9 27 C15 25, 49 25, 55 27 L55 28.5 L9 28.5 Z" fill="url(#lyBox_gold)"/>
+    <!-- Lid vertical straps -->
+    <path d="M19 26 C19 18, 20 15, 23 13.5 L27 13.5 C24 15, 23 18, 23 26 Z" fill="url(#lyBox_gold)"/>
+    <path d="M41 26 C41 18, 40 15, 37 13.5 L41 13.5 C44 15, 45 18, 45 26 Z" fill="url(#lyBox_gold)"/>
+
+    <!-- Top golden handle -->
+    <path d="M26 13 C26 9.5, 38 9.5, 38 13" fill="none" stroke="url(#lyBox_gold)" stroke-width="2.5" stroke-linecap="round"/>
+
+    <!-- Military Loyalty Medal of Honor draped over chest front -->
+    <!-- Ribbon V-shape -->
+    <polygon points="27,24 37,24 34,36 30,36" fill="#dc2626" stroke="#991b1b" stroke-width="0.5"/>
+    <line x1="32" y1="24" x2="32" y2="36" stroke="#fbbf24" stroke-width="1.2"/>
+
+    <!-- Golden Heart / Star Loyalty Medallion -->
+    <circle cx="32" cy="38" r="6.5" fill="url(#lyBox_gold)" stroke="#fffbeb" stroke-width="0.8"/>
+    <!-- Center Radiant Heart/Star -->
+    <path d="M32 34.5 L33.5 37 L36 37.5 L34 39.5 L34.5 42 L32 40.5 L29.5 42 L30 39.5 L28 37.5 L30.5 37 Z"
+          fill="#ffffff" stroke="#d97706" stroke-width="0.4"/>
+
+    <!-- Center keyhole / lock plate beneath medal -->
+    <rect x="29" y="44" width="6" height="5" rx="1.5" fill="url(#lyBox_gold)" stroke="#78350f" stroke-width="0.5"/>
+    <circle cx="32" cy="46" r="0.9" fill="#1f0901"/>
+    <polygon points="31.4,46 32.6,46 32.3,48 31.7,48" fill="#1f0901"/>
+  </g>
+</svg>

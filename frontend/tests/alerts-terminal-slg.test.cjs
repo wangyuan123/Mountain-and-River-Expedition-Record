@@ -1202,3 +1202,104 @@ test('拦截等待准备不会显示可进入城市战场或继续消耗行军�
   assert.doesNotMatch(view.innerHTML, /openTactical|data-accelerate-id="400"/);
   assert.equal(game.World.canAccelerateMarch(march, now), false);
 });
+
+test('方案A：未建城防雷达时，警报终端展示离线警告横幅与跳转军工建造入口，且敌袭情报降级', () => {
+  const now = Date.now();
+  const { game } = setup({
+    buildings: { radar: 0 },
+    world: {
+      cityPos: { x: 342, y: 681 },
+      incoming: [{
+        id: 'inc-no-radar',
+        attackerName: '狂怒战神',
+        guildName: '黑鹰帝国',
+        action: 'conquer',
+        fromX: 300,
+        fromY: 650,
+        targetX: 342,
+        targetY: 681,
+        targetName: '主基地',
+        startAt: now - 60000,
+        arriveAt: now + 120000,
+        totalTroops: 10000,
+        expanded: true
+      }],
+      marches: [{
+        id: 99,
+        action: 'campaign',
+        targetName: '叛军营地',
+        targetX: 350,
+        targetY: 690,
+        startAt: now - 10000,
+        arriveAt: now + 50000,
+        army: { infantry: 100 }
+      }],
+      reinforcements: []
+    }
+  });
+
+  const view = { innerHTML: '', querySelectorAll: () => [] };
+  game.World.renderAlerts(view);
+
+  // 1. 顶部状态栏呈现防空雷达站离线状态
+  assert.match(view.innerHTML, /\[防空雷达站\]/);
+  assert.match(view.innerHTML, /雷达离线 \(未建城防雷达\)/);
+
+  // 2. 常驻雷达离线引导横幅与跳转军工按钮
+  assert.match(view.innerHTML, /class="term-radar-offline-banner"/);
+  assert.match(view.innerHTML, /本城防空雷达站未建立 · 雷达终端离线/);
+  assert.match(view.innerHTML, /Game\.go\('buildArmy'\)/);
+
+  // 3. 敌袭卡片展示降级的目视预警（隐藏攻击者真实身份、隐藏兵力、测距未锁定）
+  assert.match(view.innerHTML, /未知敌军 来袭 \(需城防雷达探明\)/);
+  assert.match(view.innerHTML, /距: 未锁定 \(雷达离线\)/);
+  assert.match(view.innerHTML, /兵力: 未知规模 \(需城防雷达\)/);
+
+  // 4. 展开的军情情报卡提示离线与建造雷达
+  assert.match(view.innerHTML, /本城未建造城防雷达 · 敌情未探明/);
+
+  // 5. 自身部队行军不受影响，仍然正常展示
+  assert.match(view.innerHTML, /讨伐->叛军营地/);
+});
+
+test('方案A：已建城防雷达时，警报终端展示全域预警监控正常运行且能查看敌情', () => {
+  const now = Date.now();
+  const { game } = setup({
+    buildings: { radar: 3 },
+    world: {
+      cityPos: { x: 342, y: 681 },
+      incoming: [{
+        id: 'inc-radar-active',
+        attackerName: '狂怒战神',
+        guildName: '黑鹰帝国',
+        action: 'conquer',
+        fromX: 300,
+        fromY: 650,
+        targetX: 342,
+        targetY: 681,
+        targetName: '主基地',
+        startAt: now - 60000,
+        arriveAt: now + 120000,
+        totalTroops: 10000,
+        radarLevel: 3,
+        expanded: false
+      }],
+      marches: [],
+      reinforcements: []
+    }
+  });
+
+  const view = { innerHTML: '', querySelectorAll: () => [] };
+  game.World.renderAlerts(view);
+
+  // 顶部状态栏呈现正常运行
+  assert.match(view.innerHTML, /\[全域预警监控\]/);
+  assert.match(view.innerHTML, /正常运行 \(城防雷达 Lv\.3\)/);
+
+  // 不展示未建雷达的离线横幅
+  assert.doesNotMatch(view.innerHTML, /class="term-radar-offline-banner"/);
+
+  // 敌袭卡片展示真实名称与测距
+  assert.match(view.innerHTML, /狂怒战神 \(黑鹰帝国\) 来袭/);
+  assert.doesNotMatch(view.innerHTML, /未锁定 \(雷达离线\)/);
+});

@@ -20,6 +20,28 @@ class OfficerEquipmentExpansionTest extends BaseServiceTest {
     @Autowired OfficerEquipmentRepository worn;
     @Autowired OfficerEquipmentProgressRepository progressRows;
     @Autowired DepotService depot;
+    @Autowired PlayerPowerService power;
+
+    @Test void powerUsesEquippedSetResonanceAndPreparation() {
+        Long player = createTestPlayer().getId();
+        Officer commander = officer(player, 100);
+        commander.setRole("commander");
+        officerRepository.saveAndFlush(commander);
+        ArmyUnit unit = new ArmyUnit();
+        unit.setPlayerId(player);
+        unit.setType("infantry");
+        unit.setCount(100);
+        armyUnitRepository.saveAndFlush(unit);
+        var before = power.calculate(player).get(player);
+        giveSet(player, "marshal_military");
+        assertEquals(true, gear.equipSet(player, commander.getId(), "marshal_military").get("success"));
+        var equipped = power.calculate(player).get(player);
+        assertTrue(equipped.formationPower() > before.formationPower());
+        String slot = OfficerEquipmentDef.setItems("marshal_military").get(0).slot();
+        progress.setPreparation(player, commander.getId(), slot, 5);
+        var prepared = power.calculate(player).get(player);
+        assertTrue(prepared.formationPower() > equipped.formationPower());
+    }
 
     @Test void mayorKnowledgeFromEquipmentAndSetResonanceAppliesToActualTax() throws Exception {
         Long player = createTestPlayer().getId(); var mayor = officer(player, 100);

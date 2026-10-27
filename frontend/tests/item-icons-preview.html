@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>商城全量道具重构图标预览</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    body {
+      background: #111827;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 24px;
+    }
+    .preview-section {
+      margin-bottom: 36px;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .preview-section h2 {
+      margin-top: 0;
+      font-size: 18px;
+      color: #f3f4f6;
+      border-bottom: 1px solid #374151;
+      padding-bottom: 10px;
+    }
+    .icon-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .icon-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #111827;
+      border: 1px solid #4b5563;
+      border-radius: 8px;
+      padding: 12px;
+      min-width: 105px;
+    }
+    .icon-box img {
+      width: 56px;
+      height: 56px;
+      object-fit: contain;
+    }
+    .icon-box .name {
+      font-size: 13px;
+      font-weight: bold;
+      margin-top: 8px;
+      text-align: center;
+    }
+    .icon-box .dim {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 2px;
+      text-align: center;
+    }
+    .shop-simulation {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎨 商城全量道具图标重构视觉全览</h1>
+
+  <div class="preview-section">
+    <h2>1. 战备护盾系列 (Shields)</h2>
+    <div class="icon-row">
+      <div class="icon-box">
+        <img src="../img/items/shield-2h.svg" alt="2小时护盾">
+        <div class="name">2小时护盾</div>
+        <div class="dim">短休 · 钴钢 2H</div>
+      </div>
+      <div class="icon-box">
+        <img src="../img/items/shield-8h.svg" alt="8小时护盾">
+        <div class="name">8小时护盾</div>
+        <div class="dim">过夜 · 电光青 8H</div>
+      </div>
+      <div class="icon-box">
+        <img src="../img/items/shield-12h.svg" alt="12小时护盾">
+        <div class="name">12小时护盾</div>
+        <div class="dim">半日 · 烈阳金 12H</div>
+      </div>
+      <div class="icon-box">
+        <img src="../img/items/shield-24h.svg" alt="24小时护盾">
+        <div class="name">24小时护盾</div>
+        <div class="dim">全天 · 量子翡翠 24H</div>
+      </div>
+      <div class="icon-box">
+        <img src="../img/items/shield-72h.svg" alt="72小时护盾">
+        <div class="name">72小时护盾</div>
+        <div class="dim">长假 · 皇家紫金 72H</div>
+      </div>
+      <div class="icon-box">
+        <img src="../img/items/shield.svg" alt="通用护盾">
+        <div class="name">通用战备护盾</div>
+        <div class="dim">标准城防屏障</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="preview-section">
+    <h2>2. 空间跃迁令系列 (Teleport Orders)</h2>
+    <div class="icon-row">
+      <div class="icon-box">
+        <img src="../img/items/teleport-advanced.svg" alt="高级传送">
+        <div class="name" style="color:#fbbf24">高级传送令</div>
+        <div class="dim">指定坐标 · 金牌</div>
+      </div>
+      <div class="icon-box">
+        <img src="../img/items/teleport-normal.svg" alt="普通传送">
+        <div class="name" style="color:#94a3b8">普通传送令</div>
+        <div class="dim">随机落点 · 银牌</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="preview-section">
+    <h2>3. 军官升级典籍与战术心得系列 (Officer Manuals & Tomes)</h2>
+    <div class="icon-row">
+      <div class="icon-box">
+        <img src="../img/items/exp-book.svg" alt="经验书">
+        <div class="name">经验书</div>
+        <div class="dim">战术手册 · 1万经验</div>
+      </div>
+      <div class="icon-box">
+        <img src="../img/items/exp-book-adv.svg" alt="高级经验书">
+        <div class="name" style="color:#f87171">高级经验书</div>
+        <div class="dim">烫金操典 · 10万经验</div>
+      </div>
+      <div class="icon-box">
+        <img src="../img/items/exp-book-max.svg" alt="满级经验书">
+        <div class="name" style="color:#fbbf24">满级经验书</div>
+        <div class="dim">统帅兵书 · 直达Lv100</div>
+      </div>
+      <div class="icon-box">
+        <img src="../img/items/skill-book.svg" alt="普通技能书">
+        <div class="name" style="color:#34d399">普通技能书</div>
+        <div class="dim">双刃密卷 · 随机技能</div>
+      </div>
+      <div class="icon-box">
+        <img src="../img/items/universal-skill-book.svg" alt="通用技能书">
+        <div class="name" style="color:#c084fc">通用技能书</div>
+        <div class="dim">四系通典 · 自选技能</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="preview-section">
+    <h2>4. 军官特勤与人事道具 (Officer Commission & Personnel)</h2>
+    <div class="icon-row">
+      <div class="icon-box">
+        <img src="../img/items/recruit-ord.svg" alt="征募令">
+        <div class="name" style="color:#fbbf24">征募令</div>
+        <div class="dim">五星保底特勤令</div>
+      </div>
+      <div class="icon-box">
+        <img src="../img/items/star-up.svg" alt="星耀符">
+        <div class="name" style="color:#38bdf8">星耀符</div>
+        <div class="dim">升星晶核 · 阶位跃升</div>
+      </div>
+      <div class="icon-box">
+        <img src="../img/items/loyalty-box.svg" alt="忠诚宝箱">
+        <div class="name">忠诚宝箱</div>
+        <div class="dim">荣誉勋奖红绶箱</div>
+      </div>
+      <div class="icon-box">
+        <img src="../img/items/rename-card.svg" alt="军官改名卡">
+        <div class="name">军官改名卡</div>
+        <div class="dim">调令公文与身份牌</div>
+      </div>
+      <div class="icon-box">
+        <img src="../img/items/commander-rename-card.svg" alt="统帅改名卡">
+        <div class="name" style="color:#fbbf24">统帅改名卡</div>
+        <div class="dim">最高统帅身份金章</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="preview-section">
+    <h2>5. 战术政令与战略操作道具 (Tactical Orders & Administration)</h2>
+    <div class="icon-row">
+      <div class="icon-box">
+        <img src="../img/items/city-rename-card.svg" alt="城市改名卡">
+        <div class="name">城市改名卡</div>
+        <div class="dim">市政命名金印文书</div>
+      </div>
+      <div class="icon-box">
+        <img src="../img/items/march-ord.svg" alt="行军令">
+        <div class="name" style="color:#f87171">行军令</div>
+        <div class="dim">急行军冲锋战旗</div>
+      </div>
+      <div class="icon-box">
+        <img src="../img/items/signal-jamming-order.svg" alt="通讯干扰令">
+        <div class="name" style="color:#fb7185">通讯干扰令</div>
+        <div class="dim">电子雷达扰断电磁令</div>
+      </div>
+      <div class="icon-box">
+        <img src="../img/items/feint-order.svg" alt="佯动诱敌令">
+        <div class="name" style="color:#c084fc">佯动诱敌令</div>
+        <div class="dim">全息迷雾虚影令</div>
+      </div>
+      <div class="icon-box">
+        <img src="../img/items/population-order.svg" alt="人口动员令">
+        <div class="name">人口动员令</div>
+        <div class="dim">军民征召群像徽章</div>
+      </div>
+      <div class="icon-box">
+        <img src="../img/items/emergency-population-order.svg" alt="紧急人口动员令">
+        <div class="name" style="color:#f87171">紧急人口动员令</div>
+        <div class="dim">高急号角警报动员令</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="preview-section">
+    <h2>6. 极速加速符全系列 (Speedups: 10M / 1H / 5H / 12H / 24H / 36H / 48H / 72H)</h2>
+    <div class="icon-row">
+      <div class="icon-box">
+        <img src="../img/items/speedup-10m.svg" alt="10分加速符">
+        <div class="name">10分加速符</div>
+        <div class="dim">钛灰天蓝 · 10M</div>
+      </div>
+      <div class="icon-box">
+        <img src="../img/items/speedup-1h.svg" alt="1时加速符">
+        <div class="name">1时加速符</div>
+        <div class="dim">明焰琥珀 · 1H</div>
+      </div>
+      <div class="icon-box">
+        <img src="../img/items/speedup-5h.svg" alt="5时加速符">
+        <div class="name">5时加速符</div>
+        <div class="dim">烈阳炽金 · 5H</div>
+      </div>
+      <div class="icon-box">
+        <img src="../img/items/speedup-12h.svg" alt="12时加速符">
+        <div class="name">12时加速符</div>
+        <div class="dim">量子翡翠 · 12H</div>
+      </div>
+      <div class="icon-box">
+        <img src="../img/items/speedup-24h.svg" alt="24时加速符">
+        <div class="name">24时加速符</div>
+        <div class="dim">电光苍穹 · 24H</div>
+      </div>
+      <div class="icon-box">
+        <img src="../img/items/speedup-36h.svg" alt="36时加速符">
+        <div class="name">36时加速符</div>
+        <div class="dim">深海群青 · 36H</div>
+      </div>
+      <div class="icon-box">
+        <img src="../img/items/speedup-48h.svg" alt="48时加速符">
+        <div class="name">48时加速符</div>
+        <div class="dim">皇家紫晶 · 48H</div>
+      </div>
+      <div class="icon-box">
+        <img src="../img/items/speedup-72h.svg" alt="72时加速符">
+        <div class="name">72时加速符</div>
+        <div class="dim">极光黄金 · 72H</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="preview-section">
+    <h2>7. 战略资源与特权礼包 (Strategic Resources & Gift Packs)</h2>
+    <div class="icon-row">
+      <div class="icon-box">
+        <img src="../img/items/res-box.svg" alt="资源箱">
+        <div class="name">资源箱</div>
+        <div class="dim">四色物资条带军需箱</div>
+      </div>
+      <div class="icon-box">
+        <img src="../img/items/resource-pack-500w.svg" alt="资源大礼包">
+        <div class="name" style="color:#fbbf24">资源大礼包</div>
+        <div class="dim">500万巨资金条储备库</div>
+      </div>
+      <div class="icon-box">
+        <img src="../img/items/newbie-pack.svg" alt="新手礼包">
+        <div class="name" style="color:#4ade80">新手礼包</div>
+        <div class="dim">指挥官空投礼盒</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="preview-section">
+    <h2>8. 商城套装细分筛选样式重构 (Shop Equipment Filter Custom Dropdown)</h2>
+    <p style="color:#94a3b8; font-size:13px; margin-bottom:14px;">解决原红框区域中操作系统原生 select 弹出窗脱离网页元素在左上方漂移的问题，升级为贴合触发框的绝对定位自定义 DOM 浮层，带矢量对勾与高亮状态，绝不脱节。</p>
+    
+    <div style="background:#ffffff; color:#1e293b; padding:16px; border-radius:10px; margin-bottom:16px;">
+      <div style="font-size:12px; font-weight:bold; color:#64748b; margin-bottom:8px;">【优化后·默认闭合状态】紧凑美观的自定义下拉触发框：</div>
+      <div class="shop-equip-filter-bar">
+        <div class="shop-equip-filter-tag"><svg class="shop-equip-filter-tag-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg><span>套装细分</span></div>
+        <div class="shop-equip-filter-controls">
+          <div class="shop-equip-filter-item">
+            <span class="shop-equip-filter-label">套装档次</span>
+            <div class="shop-custom-dropdown">
+              <button type="button" class="shop-custom-dropdown-trigger">
+                <span class="shop-dropdown-text">全部档次</span>
+                <span class="shop-dropdown-arrow">▾</span>
+              </button>
+            </div>
+          </div>
+          <div class="shop-equip-filter-item">
+            <span class="shop-equip-filter-label">套装分支</span>
+            <div class="shop-custom-dropdown">
+              <button type="button" class="shop-custom-dropdown-trigger">
+                <span class="shop-dropdown-text">全部分支</span>
+                <span class="shop-dropdown-arrow">▾</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="font-size:12px; font-weight:bold; color:#64748b; margin-top:20px; margin-bottom:8px;">【优化后·展开菜单演示】浮层紧贴下拉框正下方，解决脱节分离问题：</div>
+      <div class="shop-equip-filter-bar" style="overflow:visible; min-height:190px;">
+        <div class="shop-equip-filter-tag"><svg class="shop-equip-filter-tag-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg><span>套装细分</span></div>
+        <div class="shop-equip-filter-controls">
+          <div class="shop-equip-filter-item">
+            <span class="shop-equip-filter-label">套装档次</span>
+            <div class="shop-custom-dropdown open">
+              <button type="button" class="shop-custom-dropdown-trigger is-active">
+                <span class="shop-dropdown-text">上将</span>
+                <span class="shop-dropdown-arrow">▾</span>
+              </button>
+              <div class="shop-custom-dropdown-menu" style="display:flex !important;">
+                <div class="shop-dropdown-item"><span>全部档次</span></div>
+                <div class="shop-dropdown-item"><span>列兵 (Lv.1)</span></div>
+                <div class="shop-dropdown-item"><span>士官 (Lv.20)</span></div>
+                <div class="shop-dropdown-item"><span>校官 (Lv.40)</span></div>
+                <div class="shop-dropdown-item"><span>准将 (Lv.60)</span></div>
+                <div class="shop-dropdown-item selected"><span>上将 (Lv.80)</span><span class="shop-dropdown-item-check">✓</span></div>
+                <div class="shop-dropdown-item"><span>元帅 (Lv.100)</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="shop-equip-filter-item">
+            <span class="shop-equip-filter-label">套装分支</span>
+            <div class="shop-custom-dropdown">
+              <button type="button" class="shop-custom-dropdown-trigger is-active">
+                <span class="shop-dropdown-text">军事</span>
+                <span class="shop-dropdown-arrow">▾</span>
+              </button>
+            </div>
+          </div>
+          <button type="button" class="shop-equip-filter-reset">✕ 重置</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

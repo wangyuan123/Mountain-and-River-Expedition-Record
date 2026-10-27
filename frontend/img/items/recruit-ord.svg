@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="rcOrd_gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fffbeb"/>
+      <stop offset="25%" stop-color="#fde047"/>
+      <stop offset="60%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+    <linearGradient id="rcOrd_plate" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#451a03"/>
+      <stop offset="40%" stop-color="#260e02"/>
+      <stop offset="100%" stop-color="#0c0401"/>
+    </linearGradient>
+    <filter id="rcOrd_shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#rcOrd_shadow)">
+    <!-- Medallion Tablet Base (Officer Commission Order) -->
+    <path d="M20 5 L44 5 L54 13 L55 52 L48 59 L16 59 L9 52 L10 13 Z"
+          fill="url(#rcOrd_gold)" stroke="#fef08a" stroke-width="0.8" stroke-linejoin="round"/>
+
+    <!-- Inner field -->
+    <path d="M21 7.5 L43 7.5 L51.5 14.5 L52.5 50.5 L46.5 56.5 L17.5 56.5 L11.5 50.5 L12.5 14.5 Z"
+          fill="url(#rcOrd_plate)" stroke="#b45309" stroke-width="0.8"/>
+
+    <!-- Top suspension loop -->
+    <circle cx="32" cy="7.5" r="2.2" fill="#78350f" stroke="#fbbf24" stroke-width="0.8"/>
+    <circle cx="32" cy="7.5" r="1.1" fill="#fef08a"/>
+
+    <!-- Red ribbon hanger at top -->
+    <path d="M26 2 L38 2 L35 7 L29 7 Z" fill="#dc2626" stroke="#991b1b" stroke-width="0.5"/>
+
+    <!-- Laurel Wreath surrounding the 5-Star Emblem -->
+    <path d="M19 32 C17 25, 20 18, 25 15 M18 36 C18 42, 23 48, 28 50" fill="none" stroke="#fbbf24" stroke-width="1.2" stroke-linecap="round"/>
+    <path d="M45 32 C47 25, 44 18, 39 15 M46 36 C46 42, 41 48, 36 50" fill="none" stroke="#fbbf24" stroke-width="1.2" stroke-linecap="round"/>
+
+    <!-- Central Military Star (Five-Star Guarantee) -->
+    <circle cx="32" cy="30" r="13" fill="#3b0764" stroke="url(#rcOrd_gold)" stroke-width="1.2"/>
+
+    <!-- Center Giant 5-Star -->
+    <path d="M32 20 L35 27 L42.5 28 L37 33 L38.5 40.5 L32 36.5 L25.5 40.5 L27 33 L21.5 28 L29 27 Z"
+          fill="url(#rcOrd_gold)" stroke="#ffffff" stroke-width="0.5"/>
+    <circle cx="32" cy="31" r="3.2" fill="#ffffff"/>
+    <circle cx="32" cy="31" r="1.5" fill="#dc2626"/>
+
+    <!-- Five Mini Stars row above / below representing 5-Star general -->
+    <g transform="translate(0, -1)">
+      <polygon points="20,13 21,15 23,15 21.5,16.5 22,18.5 20,17 18,18.5 18.5,16.5 17,15 19,15" fill="#fef08a"/>
+      <polygon points="26,11 27,13 29,13 27.5,14.5 28,16.5 26,15 24,16.5 24.5,14.5 23,13 25,13" fill="#fef08a"/>
+      <polygon points="32,10 33,12 35,12 33.5,13.5 34,15.5 32,14 30,15.5 30.5,13.5 29,12 31,12" fill="#fef08a"/>
+      <polygon points="38,11 39,13 41,13 39.5,14.5 40,16.5 38,15 36,16.5 36.5,14.5 35,13 37,13" fill="#fef08a"/>
+      <polygon points="44,13 45,15 47,15 45.5,16.5 46,18.5 44,17 42,18.5 42.5,16.5 41,15 43,15" fill="#fef08a"/>
+    </g>
+
+    <!-- Bottom Command Warrant Plaque ("征募") -->
+    <rect x="21" y="46" width="22" height="9" rx="2" ry="2" fill="#450a0a" stroke="url(#rcOrd_gold)" stroke-width="1"/>
+    <text x="32" y="50.8" text-anchor="middle" dominant-baseline="central" fill="#fef08a"
+          font-family="system-ui, sans-serif" font-weight="900" font-size="6.8" letter-spacing="1">征募</text>
+  </g>
+</svg>

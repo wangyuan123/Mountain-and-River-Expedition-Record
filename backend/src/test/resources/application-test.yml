@@ -23,6 +23,8 @@ game:
     enabled: false
   compliance:
     enabled: false
+  war-power:
+    enabled: false
   scheduling:
     enabled: false
   tick-interval: 5000

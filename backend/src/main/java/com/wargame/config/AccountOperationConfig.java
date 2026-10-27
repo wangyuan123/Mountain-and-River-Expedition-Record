@@ -22,6 +22,7 @@ public class AccountOperationConfig {
     @Bean
     @org.springframework.context.annotation.Role(org.springframework.beans.factory.config.BeanDefinition.ROLE_INFRASTRUCTURE)
     public static DefaultPointcutAdvisor accountOperationAdvisor(ObjectProvider<AccountService> accounts,
+                                                          ObjectProvider<com.wargame.service.PlayerPowerService> power,
                                                           ObjectProvider<com.wargame.service.compliance.AntiAddictionService> protection,
                                                           ObjectProvider<PlatformTransactionManager> transactions) {
         var pointcut = new StaticMethodMatcherPointcut() {
@@ -65,9 +66,13 @@ public class AccountOperationConfig {
                     protection.getObject().requireOperationAccess(player, secret, path);
                 }
                 try {
+                    boolean recordPower = gameOperation && request != null
+                            && !Set.of("GET", "HEAD", "OPTIONS").contains(request.getMethod());
+                    if (recordPower) power.getObject().calculate(user.getPlayerId());
                     Object result = invocation.proceed();
                     // 长事务跨过截止时间时不提交游戏指令，也不向请求方返回游戏载荷。
                     if (gameOperation) protection.getObject().requireAccess(player, secret, path);
+                    if (recordPower) power.getObject().calculate(user.getPlayerId());
                     return result;
                 }
                 catch (RuntimeException | Error e) { throw e; }

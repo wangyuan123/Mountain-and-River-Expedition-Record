@@ -17,9 +17,8 @@ public final class WorldConfig {
     public static final int WORLD_SIZE = SIZE * 2;
     public static final int VIEW_RADIUS = 3;
     public static final int MARCH_SEC_PER_GRID = 18;
-    /** 单队行军令只加速当前路段，最多一次且保留至少十秒的抵达窗口。 */
-    public static final double MARCH_ACCELERATION_MUL = 1.5;
-    public static final long MARCH_ACCELERATION_MIN_MS = 10_000L;
+    /** 单队行军令只加速当前路段，最多一次且保留至少三十秒的抵达窗口。 */
+    public static final long MARCH_ACCELERATION_MIN_MS = StratagemRules.MIN_MARCH_REMAINING_MS;
     public static final int MAX_NPC_LEVEL = 30;
     public static final int MAX_WILD_LEVEL = 30;
     public static final int RES_PER_WILD_LEVEL = 160_000;

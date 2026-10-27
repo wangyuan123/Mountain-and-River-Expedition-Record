@@ -618,9 +618,26 @@ window.Game = window.Game || {};
     },
 
     /** 携带确认时的阶段和版本，消耗请求不自动重试。 */
-    speedUpMarch: function (marchId, returning, version) {
+    previewMarchOrder: function (marchId, itemKey) {
+      return client.post('/game/world/order-preview', { marchId: marchId, itemKey: itemKey });
+    },
+
+    previewWarOrder: function (targetCityId) {
+      return client.post('/game/world/war-order-preview', { targetCityId: targetCityId });
+    },
+
+    speedUpWar: function (targetCityId, confirmationToken) {
       var token = client.getToken(), city = client.cityId;
-      return client.post('/game/world/speedup-march', { marchId: marchId, returning: returning, version: version }, { timeout: 15000 })
+      return client.post('/game/world/speedup-war', { targetCityId: targetCityId, confirmationToken: confirmationToken }, { timeout: 15000 })
+        .then(function (data) {
+          if (client.getToken() === token && client.cityId === city && data && data.state) applyState(data.state);
+          return data;
+        });
+    },
+
+    speedUpMarch: function (marchId, returning, version, confirmationToken) {
+      var token = client.getToken(), city = client.cityId;
+      return client.post('/game/world/speedup-march', { marchId: marchId, returning: returning, version: version, confirmationToken: confirmationToken }, { timeout: 15000 })
         .then(function (data) {
           if (client.getToken() === token && client.cityId === city && data && data.state) applyState(data.state);
           return data;
@@ -628,10 +645,10 @@ window.Game = window.Game || {};
     },
 
     /** 对指定来袭行军使用一次计谋；确认时携带抵达时间，防止旧情报消耗道具。 */
-    applyMarchStratagem: function (marchId, itemKey, expectedArriveAt) {
+    applyMarchStratagem: function (marchId, itemKey, expectedArriveAt, confirmationToken) {
       var token = client.getToken(), city = client.cityId;
       return client.post('/game/world/march-stratagem', {
-        marchId: Number(marchId), itemKey: itemKey, expectedArriveAt: Number(expectedArriveAt)
+        marchId: Number(marchId), itemKey: itemKey, expectedArriveAt: Number(expectedArriveAt), confirmationToken: confirmationToken
       }, { timeout: 15000 }).then(function (data) {
         if (client.getToken() === token && client.cityId === city && data && data.state) applyState(data.state);
         return data;
@@ -739,6 +756,14 @@ window.Game = window.Game || {};
       return client.get('/game/quest/list');
     },
 
+    claimDailyCheckin: function () {
+      return client.post('/game/quest/daily-checkin', {})
+        .then(function (data) {
+          if (data && data.state) applyState(data.state);
+          return data;
+        });
+    },
+
     claimQuest: function (questId) {
       return client.post('/game/quest/claim', { questId: questId })
         .then(function (data) {
@@ -805,6 +830,7 @@ window.Game = window.Game || {};
         channel: channel
       }).then(function (data) {
         if (data && data.state) applyState(data.state);
+        if (data && data.success !== false && data.vip && G.Vip) G.Vip.applyStatus(data.vip);
         return data;
       });
     },
@@ -813,6 +839,100 @@ window.Game = window.Game || {};
       var body = { itemId: itemId };
       if (count && count > 1) body.count = count;
       return client.post('/game/shop/buy', body)
+        .then(function (data) {
+          if (data && data.state) applyState(data.state);
+          return data;
+        });
+    },
+
+    // ==================== VIP 特勤统帅部 ====================
+
+    vipStatus: function () {
+      return client.get('/game/vip/status');
+    },
+
+    vipClaimDaily: function (targetCitySlot) {
+      return client.post('/game/vip/daily-salary/claim', { targetCitySlot: targetCitySlot })
+        .then(function (data) {
+          if (data && data.state) applyState(data.state);
+          return data;
+        });
+    },
+
+    vipClaimPack: function (targetLevel, targetCitySlot) {
+      return client.post('/game/vip/level-pack/claim', { targetLevel: targetLevel, targetCitySlot: targetCitySlot })
+        .then(function (data) {
+          if (data && data.state) applyState(data.state);
+          return data;
+        });
+    },
+
+    vipClaimAllPacks: function (targetCitySlot) {
+      return client.post('/game/vip/level-pack/claim-all', { targetCitySlot: targetCitySlot })
+        .then(function (data) {
+          if (data && data.state) applyState(data.state);
+          return data;
+        });
+    },
+
+    vipClaimMilestone: function (milestoneCents, targetCitySlot) {
+      return client.post('/game/vip/milestone/claim', { milestoneCents: milestoneCents, targetCitySlot: targetCitySlot })
+        .then(function (data) {
+          if (data && data.state) applyState(data.state);
+          return data;
+        });
+    },
+
+    vipAppeaseAll: function (appeaseType) {
+      return client.post('/game/vip/appease-all', { appeaseType: appeaseType })
+        .then(function (data) {
+          if (data && data.state) applyState(data.state);
+          return data;
+        });
+    },
+
+    vipConvertSkillBook: function (targetSkillId, count) {
+      return client.post('/game/vip/skill-convert', { targetSkillId: targetSkillId, count: count })
+        .then(function (data) {
+          if (data && data.state) applyState(data.state);
+          return data;
+        });
+    },
+
+    vipToggleBadge: function (visible) {
+      return client.post('/game/vip/badge-toggle', { visible: visible })
+        .then(function (data) {
+          if (data && data.state) applyState(data.state);
+          return data;
+        });
+    },
+
+    vipSetAvatarFrame: function (frameId) {
+      return client.post('/game/vip/avatar-frame', { frameId: frameId })
+        .then(function (data) {
+          if (data && data.state) applyState(data.state);
+          return data;
+        });
+    },
+
+    vipSetCustomAvatarUrl: function (avatarUrl) {
+      return client.post('/game/vip/custom-avatar-url', { avatarUrl: avatarUrl })
+        .then(function (data) {
+          if (data && data.state) applyState(data.state);
+          return data;
+        });
+    },
+
+    vipUploadCustomAvatarDataUrl: function (dataUrl) {
+      return client.post('/game/vip/custom-avatar-dataurl', { dataUrl: dataUrl })
+        .then(function (data) {
+          if (data && data.state) applyState(data.state);
+          return data;
+        });
+    },
+
+    cancelCityShield: function (cityId) {
+      return client.post('/game/cities/shield/cancel', { cityId: cityId })
         .then(function (data) {
           if (data && data.state) applyState(data.state);
           return data;

@@ -47,6 +47,7 @@ public class BuildService {
     private PrerequisiteService prerequisiteService;
 
     @org.springframework.beans.factory.annotation.Autowired private PrisonerService prisonerService;
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private VipService vipService;
 
     private final BuildingRepository buildingRepository;
     private final ConstructionRepository constructionRepository;
@@ -138,9 +139,10 @@ public class BuildService {
 
         // 2. 检查当前城市的施工队数量上限
         List<Construction> allJobs = constructionRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
-        if (allJobs.size() >= MAX_CONCURRENT) {
+        int maxConcurrent = vipService != null ? vipService.getBuildQueueLimit(playerRepository.findById(playerId).orElse(null)) : MAX_CONCURRENT;
+        if (allJobs.size() >= maxConcurrent) {
             result.put("success", false);
-            result.put("message", MAX_CONCURRENT + " 支施工队都在忙，请等待完成");
+            result.put("message", maxConcurrent + " 支施工队都在忙，请等待完成");
             return result;
         }
 
@@ -323,9 +325,10 @@ public class BuildService {
 
         // 3. 检查施工队数量上限
         List<Construction> allJobs = constructionRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
-        if (allJobs.size() >= MAX_CONCURRENT) {
+        int maxConcurrent = vipService != null ? vipService.getBuildQueueLimit(playerRepository.findById(playerId).orElse(null)) : MAX_CONCURRENT;
+        if (allJobs.size() >= maxConcurrent) {
             result.put("success", false);
-            result.put("message", MAX_CONCURRENT + " 支施工队都在忙，请等待完成");
+            result.put("message", maxConcurrent + " 支施工队都在忙，请等待完成");
             return result;
         }
 
@@ -910,12 +913,19 @@ public class BuildService {
         return 1 - 0.05 * logBuild;
     }
 
-    /** 建造工期系数：叠加科技系数与市长营造技能加速（每级缩短4%工期，最高20%） */
+    /** 建造工期系数：叠加科技系数与市长营造技能加速（每级缩短4%工期，最高20%）及 VIP 建造特许加速 */
     private double buildDurationMul(Long playerId) {
         double mul = buildMul(playerId);
         int constructLv = getMayorConstructLevel(playerId);
         if (constructLv > 0) {
             mul *= (1.0 - 0.04 * constructLv);
+        }
+        if (vipService != null && playerRepository != null) {
+            Player p = playerRepository.findById(playerId).orElse(null);
+            double vipBonus = vipService.getBuildSpeedBonus(p);
+            if (vipBonus > 0) {
+                mul *= (1.0 - vipBonus);
+            }
         }
         return mul;
     }

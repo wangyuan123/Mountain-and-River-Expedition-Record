@@ -8,7 +8,13 @@ window.Game = window.Game || {};
   var OFFICER_MAX_LEVEL = G.Constants.officerMaxLevel;
 
   function expNeeded(level) {
-    return level * 200;
+    if (level >= OFFICER_MAX_LEVEL) return 0;
+    var currentLevel = Math.max(1, level);
+    var after20 = Math.max(0, currentLevel - 20);
+    var after50 = Math.max(0, currentLevel - 50);
+    var after80 = Math.max(0, currentLevel - 80);
+    return 200 * currentLevel + 75 * after20 * after20
+      + 150 * after50 * after50 + 300 * after80 * after80;
   }
 
   function growAttr(attr) {

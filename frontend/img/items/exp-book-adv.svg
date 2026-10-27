@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="expAdv_cover" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f87171"/>
+      <stop offset="25%" stop-color="#dc2626"/>
+      <stop offset="70%" stop-color="#991b1b"/>
+      <stop offset="100%" stop-color="#7f1d1d"/>
+    </linearGradient>
+    <linearGradient id="expAdv_spine" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#991b1b"/>
+      <stop offset="50%" stop-color="#7f1d1d"/>
+      <stop offset="100%" stop-color="#450a0a"/>
+    </linearGradient>
+    <linearGradient id="expAdv_gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="50%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+    <linearGradient id="expAdv_pages" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fef9c3"/>
+      <stop offset="50%" stop-color="#fef08a"/>
+      <stop offset="100%" stop-color="#eab308"/>
+    </linearGradient>
+    <filter id="expAdv_shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#expAdv_shadow)">
+    <!-- Book pages edge (Gilded gold pages) -->
+    <path d="M49 14 L55 17 L55 52 L49 49 Z" fill="url(#expAdv_pages)" stroke="#ca8a04" stroke-width="0.5"/>
+    <line x1="50" y1="23" x2="54" y2="25" stroke="#a16207" stroke-width="0.5"/>
+    <line x1="50" y1="31" x2="54" y2="33" stroke="#a16207" stroke-width="0.5"/>
+    <line x1="50" y1="39" x2="54" y2="41" stroke="#a16207" stroke-width="0.5"/>
+    <line x1="50" y1="46" x2="54" y2="48" stroke="#a16207" stroke-width="0.5"/>
+
+    <path d="M19 53 L51 51 L55 52 L22 55 Z" fill="#eab308"/>
+
+    <!-- Back Cover Rim -->
+    <path d="M18 10 L51 8 L52 50 L18 53 Z" fill="#450a0a"/>
+
+    <!-- Golden Bookmark ribbon -->
+    <path d="M36 8 L40 8 L40 57 L38 54 L36 57 Z" fill="url(#expAdv_gold)" stroke="#92400e" stroke-width="0.5"/>
+
+    <!-- Main Front Cover (Crimson) -->
+    <path d="M15 11 L48 8 C49.5 8, 51 9, 51 10.5 L51 49 C51 50.5, 49.5 51.5, 48 51.5 L15 54 Z"
+          fill="url(#expAdv_cover)" stroke="#fca5a5" stroke-width="0.8"/>
+
+    <!-- Tactical spine band -->
+    <path d="M12 11.5 C12 10, 13.5 9.5, 16 9.5 L18 9.5 L18 54 L16 54 C13.5 54, 12 53.5, 12 52 Z"
+          fill="url(#expAdv_spine)" stroke="#b91c1c" stroke-width="0.75"/>
+    <line x1="12" y1="18" x2="18" y2="18" stroke="#fbbf24" stroke-width="0.8"/>
+    <line x1="12" y1="31" x2="18" y2="31" stroke="#fbbf24" stroke-width="0.8"/>
+    <line x1="12" y1="44" x2="18" y2="44" stroke="#fbbf24" stroke-width="0.8"/>
+
+    <!-- Golden Corner Protectors -->
+    <polygon points="42,8.5 50.5,8 50.5,16.5" fill="url(#expAdv_gold)" stroke="#78350f" stroke-width="0.5"/>
+    <polygon points="42,51.5 50.5,49.5 50.5,41.5" fill="url(#expAdv_gold)" stroke="#78350f" stroke-width="0.5"/>
+
+    <!-- Gilded Cover Border -->
+    <path d="M21 14 L46 12 L46 47 L21 49 Z" fill="none" stroke="#fbbf24" stroke-width="0.75"/>
+
+    <!-- Central Double Star Crest -->
+    <circle cx="34" cy="27" r="10" fill="#450a0a" stroke="url(#expAdv_gold)" stroke-width="1.2"/>
+    <!-- Outer Star -->
+    <path d="M34 18.5 L36.5 24 L42.5 24.5 L38 29 L39.5 35 L34 32 L28.5 35 L30 29 L25.5 24.5 L31.5 24 Z"
+          fill="url(#expAdv_gold)"/>
+    <circle cx="34" cy="27.5" r="3.2" fill="#ffffff"/>
+    <circle cx="34" cy="27.5" r="1.5" fill="#dc2626"/>
+
+    <!-- Cover Title Plate: ADV / EXP+ -->
+    <rect x="23" y="39" width="22" height="8" rx="2" ry="2" fill="#450a0a" stroke="url(#expAdv_gold)" stroke-width="1"/>
+    <text x="34" y="43.3" text-anchor="middle" dominant-baseline="central" fill="#fef08a"
+          font-family="system-ui, sans-serif" font-weight="900" font-size="6" letter-spacing="0.5">EXP++</text>
+  </g>
+</svg>

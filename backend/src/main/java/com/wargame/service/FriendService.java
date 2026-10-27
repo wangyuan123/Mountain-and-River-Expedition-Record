@@ -20,6 +20,7 @@ public class FriendService {
     private final FriendRequestRepository requests;
     private final RateLimiter limiter;
     private final WebSocketPushService pushService;
+    @org.springframework.beans.factory.annotation.Autowired private PlayerPowerService power;
 
     public FriendService(FriendContactRepository contacts, FriendGroupRepository groups,
                          PlayerRepository players, ScoutReportRepository scoutReports, GameWebSocketHandler presence,
@@ -67,9 +68,11 @@ public class FriendService {
         String state = requests.findBySenderIdAndRecipientId(me, peerId).isPresent() ? "OUTGOING"
                 : requests.findBySenderIdAndRecipientId(peerId, me).isPresent() ? "INCOMING" : "NONE";
         boolean locationAuthorized = hasCurrentScoutLocation(me, target);
+        PlayerPowerService.Scores scores = power.calculate(peerId).get(peerId);
         return new FriendDtos.Profile(p.id(), p.username(), p.displayName(), p.avatar(), p.level(), p.militaryRank(),
                 p.prestige(), p.cityName(), p.faction(), p.online(), p.available(), p.friend(), p.blocked(), p.groupId(), state,
-                locationAuthorized ? target.getCityPosX() : null, locationAuthorized ? target.getCityPosY() : null);
+                locationAuthorized ? target.getCityPosX() : null, locationAuthorized ? target.getCityPosY() : null,
+                scores == null ? null : scores.formationPower(), scores == null ? null : scores.overallPower());
     }
 
     /** 遵循收件人的申请权限；需审批时只保存申请，同意后才建立双方好友关系。 */
@@ -232,7 +235,7 @@ public class FriendService {
         return new FriendDtos.Profile(p.getId(), p.getUsername(), p.getDisplayName(), p.getAvatar(), p.getLevel(),
                 p.getMilitaryRank(), p.getPrestige(), p.getCityName(), p.getFaction(), presence.isPlayerOnline(p.getId()),
                 p.accountActive(), c != null && c.isFriend(), c != null && c.isBlocked(), c == null || c.getGroupId() == null ? 0L : c.getGroupId(), "NONE",
-                null, null);
+                null, null, null, null);
     }
 
     /**

@@ -172,6 +172,20 @@ window.Game = window.Game || {};
       appendAvatar(div, msg, self);
       var body = document.createElement('div');
       body.className = 'chat-msg-body';
+
+      var vipLevel = Number(msg.vipLevel != null ? msg.vipLevel : (self && G.Core && G.Core.state && G.Core.state.player && G.Core.state.player.vipLevel)) || 0;
+      var vipVisible = msg.vipBadgeVisible != null ? msg.vipBadgeVisible : (self ? (G.Core && G.Core.state && G.Core.state.player && G.Core.state.player.vipBadgeVisible !== false) : true);
+      if (vipLevel >= 6) {
+        div.classList.add('vip-chat-bubble-commander');
+      }
+
+      if (vipLevel > 0 && vipVisible) {
+        var vipBadge = document.createElement('span');
+        vipBadge.className = 'chat-vip-badge' + (vipLevel >= 4 ? ' vip-badge-gold' : '');
+        vipBadge.textContent = 'VIP ' + vipLevel;
+        body.appendChild(vipBadge);
+      }
+
       var sender = document.createElement('span');
       sender.className = 'chat-sender';
       sender.textContent = (msg.username || '玩家') + ':';
@@ -202,9 +216,17 @@ window.Game = window.Game || {};
     var tagText = isSys ? '[系统]' : (isBattle ? '[战报]' : '[世界]');
     var safeContent = sharedContentHtml(m.content);
 
+    var vipLevel = Number(m.vipLevel != null ? m.vipLevel : (self && G.Core && G.Core.state && G.Core.state.player && G.Core.state.player.vipLevel)) || 0;
+    var vipVisible = m.vipBadgeVisible != null ? m.vipBadgeVisible : (self ? (G.Core && G.Core.state && G.Core.state.player && G.Core.state.player.vipBadgeVisible !== false) : true);
+    var commanderClass = (!isSys && !isBattle && vipLevel >= 6) ? ' vip-chat-bubble-commander' : '';
+    var vipBadgeHtml = (!isSys && !isBattle && vipLevel > 0 && vipVisible)
+      ? '<span class="chat-vip-badge' + (vipLevel >= 4 ? ' vip-badge-gold' : '') + '">VIP ' + vipLevel + '</span>'
+      : '';
+
     var h = '<div class="chat-msg' +
       (isSys ? ' chat-msg-system' : (isBattle ? ' chat-msg-battle' : '')) +
       (self ? ' chat-msg-self' : '') +
+      commanderClass +
       '" data-type="' + (m.type || 'player') + '"' +
       (self ? ' data-self="1"' : '') + '>';
     if (shouldShowTime(m, previous)) {
@@ -226,6 +248,7 @@ window.Game = window.Game || {};
         });
       h += '<img class="chat-avatar" src="' + selfAvatar + '" alt="' + safeName + '的统帅头像"' + (!self && m.playerId != null ? ' data-private-player-id="' + Number(m.playerId) + '" role="button" tabindex="0" title="点击与该玩家私聊" data-private-username="' + safeName + '"' : '') + ' onerror="this.onerror=null;this.src=\'' + avatarSrc('', false) + '\'">';
       h += '<div class="chat-msg-body">';
+      h += vipBadgeHtml;
       h += '<span class="chat-sender"' + (!self && m.playerId != null ? ' data-private-player-id="' + Number(m.playerId) + '" role="button" tabindex="0" title="点击与该玩家私聊" data-private-username="' + safeName + '"' : '') + '>' + safeName + ':</span>';
       h += '<span class="chat-content' + (self ? ' chat-content-self' : '') + '">' + safeContent + '</span>';
       h += '</div>';
