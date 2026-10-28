@@ -278,6 +278,24 @@ public class AntiAddictionService {
         return result;
     }
 
+    /** 账号凭据变更时结算该账号的现有许可，累计时长和实名主体保持不变。 */
+    @Transactional
+    public void endAccountSessions(Player player) {
+        if (!enabled()) return;
+        Subject subject = subject(player.getId());
+        if (subject == null) return;
+        subject = lockSubject(subject.getId());
+        Session session = active(subject);
+        if (session == null || !session.getPlayerId().equals(player.getId())) return;
+        long now = clock.millis();
+        settle(subject, now);
+        if (session.getEndedAt() == 0) {
+            session.setEndedAt(now);
+            session.setLeaseUntil(Math.min(now, session.getLeaseUntil()));
+            event(player.getId(), "PLAY_SESSION_ENDED");
+        }
+    }
+
     /** 已验证监护人只能在法定上限内调整规则；关系来自核验提供者，不能通过本接口自建。 */
     @Transactional
     public void restrict(Long guardianPlayerId, Long childPlayerId, int seconds, int endMinute, boolean paused, boolean chatAllowed) {

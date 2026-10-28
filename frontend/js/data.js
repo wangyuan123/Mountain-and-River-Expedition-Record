@@ -267,22 +267,22 @@ window.Game = window.Game || {};
       playerCityNames: ['钢铁洪流', '虎式之巢', '苍穹之眼', '深海利剑', '雷霆要塞', '孤狼营地', '铁血堡垒', '风暴前线', '暗夜哨站', '烈焰军团']
     },
     officerSkills: {
-      frenzy:   { name: '全军冲锋', icon: '⚔️', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），全军攻击力额外+10%/级，最高50%，仅本回合生效；主动攻击、余伤攻击与反击均适用，不放大师夷长技追加的攻击', max: 5, cat: 'atk' },
-      bulwark:  { name: '坚守阵地', icon: '🛡️', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），全军防御力额外+10%/级，最高50%，仅本回合生效；与借甲御敌不能同时学习，历史兼有时仅坚守阵地生效', max: 5, cat: 'def' },
-      blitz:    { name: '闪电突击', icon: '⚡', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），战场移动速度+6%/级，最高30%，仅本回合生效；新版玩家城市战按各将领所属编队独立起算，首次接战不追溯机动或重排先手，后续生效回合影响机动与先手。野地、侦察、演习及历史战斗沿用首次接战影响同射程先手的原规则。行动顺序按射程优先、同射程速度优先；射程与速度均相同时，奇数回合进攻方先手、偶数回合防守方先手', max: 5, cat: 'spd' },
-      suppress: { name: '火力压制', icon: '🎯', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），降低敌方自身攻击力6%/级，最高30%，仅本回合生效，主动攻击、余伤攻击与反击均适用，不削减师夷长技追加的攻击', max: 5, cat: 'debuff' },
-      pierce:   { name: '破甲打击', icon: '🗡️', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），无视敌方有效防御6%/级，最高30%，仅本回合生效，主动攻击、余伤攻击与反击均适用', max: 5, cat: 'pierce' },
-      leadership:{ name: '三军统帅',icon: '🎖️',desc: '指挥官任命时，带兵上限额外+4%/级，最高20%', max: 5, cat: 'mil' },
-      supply:   { name: '三军统帅', icon: '🎖️', desc: '指挥官任命时，带兵上限额外+4%/级，最高20%', max: 5, cat: 'mil' },
-      medic:    { name: '战地急救', icon: '🩹', desc: '战后伤兵额外回收+3%/级，最高15%', max: 5, cat: 'medic' },
-      harvest:  { name: '屯田增产', icon: '🌾', desc: '市长任命时，基础资源产出额外+10%/级', max: 5, cat: 'logi' },
-      construct:{ name: '工程营造', icon: '🛠️', desc: '市长任命时，建筑工期缩短4%/级，最高20%', max: 5, cat: 'logi' },
-      finance:  { name: '精明理财', icon: '🪙', desc: '市长任命时，黄金税收产出额外+4%/级', max: 5, cat: 'know' },
-      research: { name: '格物致知', icon: '🔬', desc: '市长任命时，科研速度提升4%/级',     max: 5, cat: 'know' },
-      ration:   { name: '军屯自给', icon: '🍚', desc: '市长任命时，全城养兵耗粮降低16%/级，最高80%', max: 5, cat: 'logi' },
-      counter:  { name: '绝境反击', icon: '↩️', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效）；受击存活且射程允许时，以当前剩余兵力总伤害的20%/级反击，最高100%；按反击兵种自身对应领域攻击与专项倍率结算，不继承来袭方倍率', max: 5, cat: 'def' },
-      learn:    { name: '师夷长技', icon: '📚', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效）；主动攻击时借用交火阶段开始时存活同名敌军对应攻击的6%/级，单次最高为敌军对应攻击的30%；参考值含攻击科技与军官综合军事属性，不复制专项倍率或临时技能，反击不生效', max: 5, cat: 'atk' },
-      borrow_armor: { name: '借甲御敌', icon: '🪖', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效）；受击时借用交火阶段开始时存活同名敌军防御的6%/级，单次最高为敌军同名兵种防御的30%，仅本回合生效；参考值只含基础防御与防御科技，不包含军官属性或技能；与坚守阵地不能同时学习，历史兼有时仅坚守阵地生效', max: 5, cat: 'def' }
+      frenzy:   { name: '全军冲锋', icon: 'img/skills/frenzy.svg', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），全军攻击力额外+10%/级，最高50%，仅本回合生效；主动攻击、余伤攻击与反击均适用，不放大师夷长技追加的攻击', max: 5, cat: 'atk' },
+      bulwark:  { name: '坚守阵地', icon: 'img/skills/bulwark.svg', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），全军防御力额外+10%/级，最高50%，仅本回合生效；与借甲御敌不能同时学习，历史兼有时仅坚守阵地生效', max: 5, cat: 'def' },
+      blitz:    { name: '闪电突击', icon: 'img/skills/blitz.svg', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），战场移动速度+6%/级，最高30%，仅本回合生效；新版玩家城市战按各将领所属编队独立起算，首次接战不追溯机动或重排先手，后续生效回合影响机动与先手。野地、侦察、演习及历史战斗沿用首次接战影响同射程先手的原规则。行动顺序按射程优先、同射程速度优先；射程与速度均相同时，奇数回合进攻方先手、偶数回合防守方先手', max: 5, cat: 'spd' },
+      suppress: { name: '火力压制', icon: 'img/skills/suppress.svg', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），降低敌方自身攻击力6%/级，最高30%，仅本回合生效，主动攻击、余伤攻击与反击均适用，不削减师夷长技追加的攻击', max: 5, cat: 'debuff' },
+      pierce:   { name: '破甲打击', icon: 'img/skills/pierce.svg', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），无视敌方有效防御6%/级，最高30%，仅本回合生效，主动攻击、余伤攻击与反击均适用', max: 5, cat: 'pierce' },
+      leadership:{ name: '三军统帅',icon: 'img/skills/leadership.svg',desc: '指挥官任命时，带兵上限额外+4%/级，最高20%', max: 5, cat: 'mil' },
+      supply:   { name: '三军统帅', icon: 'img/skills/supply.svg', desc: '指挥官任命时，带兵上限额外+4%/级，最高20%', max: 5, cat: 'mil' },
+      medic:    { name: '战地急救', icon: 'img/skills/medic.svg', desc: '战后伤兵额外回收+3%/级，最高15%', max: 5, cat: 'medic' },
+      harvest:  { name: '屯田增产', icon: 'img/skills/harvest.svg', desc: '市长任命时，基础资源产出额外+10%/级', max: 5, cat: 'logi' },
+      construct:{ name: '工程营造', icon: 'img/skills/construct.svg', desc: '市长任命时，建筑工期缩短4%/级，最高20%', max: 5, cat: 'logi' },
+      finance:  { name: '精明理财', icon: 'img/skills/finance.svg', desc: '市长任命时，黄金税收产出额外+4%/级', max: 5, cat: 'know' },
+      research: { name: '格物致知', icon: 'img/skills/research.svg', desc: '市长任命时，科研速度提升4%/级',     max: 5, cat: 'know' },
+      ration:   { name: '军屯自给', icon: 'img/skills/ration.svg', desc: '市长任命时，全城养兵耗粮降低16%/级，最高80%', max: 5, cat: 'logi' },
+      counter:  { name: '绝境反击', icon: 'img/skills/counter.svg', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效）；受击存活且射程允许时，以当前剩余兵力总伤害的20%/级反击，最高100%；按反击兵种自身对应领域攻击与专项倍率结算，不继承来袭方倍率', max: 5, cat: 'def' },
+      learn:    { name: '师夷长技', icon: 'img/skills/learn.svg', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效）；主动攻击时借用交火阶段开始时存活同名敌军对应攻击的6%/级，单次最高为敌军对应攻击的30%；参考值含攻击科技与军官综合军事属性，不复制专项倍率或临时技能，反击不生效', max: 5, cat: 'atk' },
+      borrow_armor: { name: '借甲御敌', icon: 'img/skills/borrow-armor.svg', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效）；受击时借用交火阶段开始时存活同名敌军防御的6%/级，单次最高为敌军同名兵种防御的30%，仅本回合生效；参考值只含基础防御与防御科技，不包含军官属性或技能；与坚守阵地不能同时学习，历史兼有时仅坚守阵地生效', max: 5, cat: 'def' }
     },
     items: {
       expBook:   { name: '经验书',   icon: 'img/items/exp-book.svg', desc: '军官使用,获得10000经验',          cat: 'officer' },
@@ -337,6 +337,9 @@ window.Game = window.Game || {};
       warSpeedOrder: { name: '宣战加速令', icon: 'img/items/march-ord.svg', desc: '缩短本城宣战备战，基础50%，学识提高效果，最高80%，总备战至少30分钟', cat: 'util' },
       populationOrder: { name: '人口动员令', icon: 'img/items/population-order.svg', desc: '使用后立即增加500空闲人口,不超过人口上限', cat: 'util' },
       emergencyPopulationOrder: { name: '紧急人口动员令', icon: 'img/items/emergency-population-order.svg', desc: '使用后立即增加当前城市人口容量上限30%的空闲人口,不超过人口上限', cat: 'util' },
+      mobilizationOrder: { name: '战争动员令', icon: 'img/items/march-ord.svg', desc: '进攻出征时使用，本次出征带兵上限提高10%；编队超过基础上限时消耗1个', cat: 'util' },
+      advancedMobilizationOrder: { name: '高级战争动员令', icon: 'img/items/march-ord.svg', desc: '进攻出征时使用，本次出征带兵上限提高25%；编队超过基础上限时消耗1个', cat: 'util' },
+      rapidMobilizationOrder: { name: '极速战争动员令', icon: 'img/items/march-ord.svg', desc: '进攻出征时使用，本次出征带兵上限提高50%；编队超过基础上限时消耗1个', cat: 'util' },
 
     },
     historicalOfficers: [

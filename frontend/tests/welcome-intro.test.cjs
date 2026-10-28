@@ -18,7 +18,7 @@ function setup() {
     } }
   } });
   context.window = context;
-  context.Game = { Core: {}, DATA: {}, Constants: {}, API: {
+  context.Game = { AccountEmail: { registrationProof: () => ({ email: 'fixture@qq.com', challengeId: 'isolated', emailCode: '123456' }) }, Core: {}, DATA: {}, Constants: {}, API: {
     login: async () => ({}), register: async () => ({}), createGuest: async () => ({})
   } };
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/main.js'), 'utf8'), context);
@@ -46,7 +46,7 @@ test('existing account login clears pending welcome and never displays the new a
 
 test('successful registration displays the introduction once, subsequent login does not', async () => {
   const { main, elements, welcomes } = setup();
-  main.openRegistrationAgreement('commander', 'password');
+  main.openRegistrationAgreement('commander', 'password', { email: 'fixture@qq.com', challengeId: 'isolated', emailCode: '123456' });
   elements.registrationAgreementSubmit.onclick();
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(welcomes.length, 1);

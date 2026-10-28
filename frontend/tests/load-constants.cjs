@@ -19,6 +19,9 @@ const abandonSource = '(function (G) { G.wildAbandonReason = ' +
 
 function ensureConstants(context) {
   if (!context.window.Game || !context.window.Game.Constants) vm.runInContext(source, context, { filename: 'constants.js' });
+  if (context.window.Game && !context.window.Game.avatarFrameClass && durationContext.window.Game.avatarFrameClass) {
+    context.window.Game.avatarFrameClass = durationContext.window.Game.avatarFrameClass;
+  }
   if (!context.window.Game.formatDuration) vm.runInContext(durationSource, context, { filename: 'duration-formatter.js' });
   if (!context.window.Game.wildGatherProgress) vm.runInContext(gatherSource, context, { filename: 'gather-progress.js' });
   if (!context.window.Game.wildAbandonReason) vm.runInContext(abandonSource, context, { filename: 'wild-abandon.js' });

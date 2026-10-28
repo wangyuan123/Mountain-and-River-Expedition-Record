@@ -67,25 +67,6 @@
     justify-content: space-between;
     gap: 8px;
   }
-  .diorama-switch-btns {
-    display: flex;
-    gap: 6px;
-  }
-  .diorama-switch-btns button {
-    background: #212e28;
-    border: 1px solid #3d5246;
-    color: #e3dbc5;
-    font-size: 12px;
-    padding: 4px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  .diorama-switch-btns button.active {
-    background: #4a5c3e;
-    border-color: #8da374;
-    color: #fff;
-    font-weight: 600;
-  }
   .full-diorama-box {
     margin: 0 28px 28px;
     background: #090e0c;
@@ -151,11 +132,6 @@
 
 <div class="section-title">
   <span>🖼️ 全景微缩模型图展示 (高精材质与移轴景深实拍质感)</span>
-  <div class="diorama-switch-btns">
-    <button id="btnWebp" class="active" onclick="switchDiorama('webp')">写真沙盘主稿 (WebP)</button>
-    <button id="btnV2" onclick="switchDiorama('v2')">伏击迫击炮版 (V2)</button>
-    <button id="btnSvg" onclick="switchDiorama('svg')">矢量沙盘版 (SVG)</button>
-  </div>
 </div>
 
 <div class="full-diorama-box">
@@ -248,30 +224,6 @@
     </div>
   </div>
 </div>
-
-<script>
-function switchDiorama(type) {
-  var img = document.getElementById('mainDioramaImg');
-  var hero = document.getElementById('previewHero');
-  document.getElementById('btnWebp').classList.remove('active');
-  document.getElementById('btnV2').classList.remove('active');
-  document.getElementById('btnSvg').classList.remove('active');
-
-  if (type === 'webp') {
-    img.src = '../img/login-battlefield-diorama.webp';
-    hero.style.background = "linear-gradient(90deg, rgba(14, 22, 20, .78) 0%, rgba(14, 22, 20, .46) 45%, rgba(14, 22, 20, .12) 100%), url('../img/login-battlefield-diorama.webp') center center / cover no-repeat";
-    document.getElementById('btnWebp').classList.add('active');
-  } else if (type === 'v2') {
-    img.src = '../img/login-battlefield-diorama-v2.webp';
-    hero.style.background = "linear-gradient(90deg, rgba(14, 22, 20, .78) 0%, rgba(14, 22, 20, .46) 45%, rgba(14, 22, 20, .12) 100%), url('../img/login-battlefield-diorama-v2.webp') center center / cover no-repeat";
-    document.getElementById('btnV2').classList.add('active');
-  } else {
-    img.src = '../img/login-frontline.svg';
-    hero.style.background = "linear-gradient(90deg, rgba(14, 22, 20, .68) 0%, rgba(14, 22, 20, .42) 42%, rgba(14, 22, 20, .1) 100%), url('../img/login-frontline.svg') center center / cover no-repeat";
-    document.getElementById('btnSvg').classList.add('active');
-  }
-}
-</script>
 
 </body>
 </html>

@@ -269,3 +269,90 @@ test('chat-msg-self places avatar on the right and wraps sender tag in header', 
   assert.match(html, /class="chat-msg-header"/);
 });
 
+test('chat messages display avatar frame and vip badge for both world and guild channels', () => {
+  const { chat } = fixture();
+  // 军团聊天：其他指挥官佩戴黄金头像框且为 VIP 4
+  const guildHtml = chat.renderGuildMessageHtml({
+    id: 101,
+    playerId: 20,
+    username: '雨天唐纳德',
+    role: 'leader',
+    content: '测试军团发言',
+    avatar: 'avatar1.png',
+    avatarFrame: 'frame-gold-v1',
+    vipLevel: 4,
+    vipBadgeVisible: true
+  });
+  assert.match(guildHtml, /class="[^"]*chat-avatar[^"]*frame-gold-v1[^"]*"/);
+  assert.match(guildHtml, /class="chat-vip-badge vip-badge-gold">VIP 4<\/span>/);
+  assert.match(guildHtml, /\[团长\]/);
+
+  // 世界聊天：其他统帅佩戴白银头像框且为 VIP 3
+  const worldHtml = chat.renderMessageHtml({
+    id: 102,
+    playerId: 21,
+    username: '东方快车',
+    content: '世界频道统帅致意',
+    avatar: 'avatar1.png',
+    avatarFrame: 'frame-silver-v1',
+    vipLevel: 3,
+    vipBadgeVisible: true
+  });
+  assert.match(worldHtml, /class="[^"]*chat-avatar[^"]*frame-silver-v1[^"]*"/);
+  assert.match(worldHtml, /class="chat-vip-badge">VIP 3<\/span>/);
+
+  // VIP >= 6 气泡带有 vip-chat-bubble-commander
+  const supremeHtml = chat.renderGuildMessageHtml({
+    id: 103,
+    playerId: 22,
+    username: '至尊元帅',
+    role: 'member',
+    content: '全军出击！',
+    avatar: 'avatar1.png',
+    avatarFrame: 'frame-supreme-v1',
+    vipLevel: 8,
+    vipBadgeVisible: true
+  });
+  assert.match(supremeHtml, /vip-chat-bubble-commander/);
+  assert.match(supremeHtml, /frame-supreme-v1/);
+  assert.match(supremeHtml, /VIP 8/);
+
+  // vipBadgeVisible 为 false 时不显示 vipBadge
+  const hiddenHtml = chat.renderGuildMessageHtml({
+    id: 104,
+    playerId: 23,
+    username: '隐秘潜伏者',
+    role: 'member',
+    content: '低调行事',
+    avatar: 'avatar1.png',
+    avatarFrame: 'frame-bronze-v1',
+    vipLevel: 5,
+    vipBadgeVisible: false
+  });
+  assert.doesNotMatch(hiddenHtml, /chat-vip-badge/);
+  assert.match(hiddenHtml, /frame-bronze-v1/);
+});
+
+test('vip commander chat bubble renders capsule styling without isolated border-left line', () => {
+  const vipCss = fs.readFileSync(path.join(__dirname, '../css/vip.css'), 'utf8');
+  assert.doesNotMatch(vipCss, /\.vip-chat-bubble-commander\s+\.chat-content\s*\{[^}]*border-left:/);
+  assert.match(vipCss, /\.vip-chat-bubble-commander\s+\.chat-content\s*\{[^}]*border-radius:/);
+  assert.match(vipCss, /\.vip-chat-bubble-commander\s+\.chat-content\s*\{[^}]*padding:/);
+});
+
+test('avatar frames cancel breathing light animations while retaining frost vapor and blazing flame', () => {
+  const vipCss = fs.readFileSync(path.join(__dirname, '../css/vip.css'), 'utf8');
+  // 已取消呼吸灯动效（无呼吸频闪与脉冲动画）
+  assert.doesNotMatch(vipCss, /@keyframes frameSilverBreathe/);
+  assert.doesNotMatch(vipCss, /@keyframes frameGoldPulse/);
+  assert.match(vipCss, /\.frame-silver-v1\s*\{[^}]*outline:/);
+  assert.match(vipCss, /\.frame-gold-v1\s*\{[^}]*outline:/);
+  // 翡翠寒魄：持续冒冷气
+  assert.match(vipCss, /@keyframes frameJadeFrostChill/);
+  assert.match(vipCss, /\.frame-jade-v1/);
+  // 星钻炽焰：熊熊冒烈火
+  assert.match(vipCss, /@keyframes frameSupremeFireBlaze/);
+  assert.match(vipCss, /\.frame-supreme-v1/);
+});
+
+

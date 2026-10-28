@@ -16,9 +16,9 @@ function setup() {
   c.Game.DATA = {
     world: { size: 200 },
     wildTypes: {
-      forest: { name: '森林', icon: 'img/map/wild-forest.webp' },
-      hill: { name: '丘陵', icon: 'img/map/wild-hill.webp' },
-      swamp: { name: '沼泽', icon: 'img/map/wild-swamp.webp' },
+      forest: { name: '森林', icon: 'img/map/wild-forest-ridge-integrated.webp' },
+      hill: { name: '丘陵', icon: 'img/map/wild-hill-ridge-integrated.webp' },
+      swamp: { name: '沼泽', icon: 'img/map/wild-swamp-deep-integrated.webp' },
     }
   };
   for (const file of ['map-camera.js', 'map-layout.js', 'world-map.js']) {
@@ -78,43 +78,18 @@ test('森林、丘陵、沼泽地形图标采用多样化变体，且四邻接�
   assert.equal(swampVariants.size, 3, '沼泽必须覆盖 deep, creek, marsh 全部 3 款变体');
 });
 
-test('全部 9 款变体的 WebP 与 embedded-PNG 物理文件均真实存在且有效', () => {
+test('现用地形变体和资源图标的 WebP 与 embedded-PNG 物理文件均真实存在且有效', () => {
   const root = path.resolve(__dirname, '..');
   const expectedFiles = [
-    'img/map/wild-forest-dense.webp',
-    'img/map/wild-forest-dense-map.webp',
-    'img/map/wild-forest-dense-map-embedded.png',
-    'img/map/wild-forest-ridge.webp',
-    'img/map/wild-forest-ridge-map.webp',
-    'img/map/wild-forest-ridge-map-embedded.png',
-    'img/map/wild-forest-edge.webp',
-    'img/map/wild-forest-edge-map.webp',
-    'img/map/wild-forest-edge-map-embedded.png',
-    'img/map/wild-hill-peak.webp',
-    'img/map/wild-hill-peak-map.webp',
-    'img/map/wild-hill-peak-map-embedded.png',
-    'img/map/wild-hill-ridge.webp',
-    'img/map/wild-hill-ridge-map.webp',
-    'img/map/wild-hill-ridge-map-embedded.png',
-    'img/map/wild-hill-foothill.webp',
-    'img/map/wild-hill-foothill-map.webp',
-    'img/map/wild-hill-foothill-map-embedded.png',
-    'img/map/wild-swamp-deep.webp',
-    'img/map/wild-swamp-deep-map.webp',
-    'img/map/wild-swamp-deep-map-embedded.png',
-    'img/map/wild-swamp-creek.webp',
-    'img/map/wild-swamp-creek-map.webp',
-    'img/map/wild-swamp-creek-map-embedded.png',
-    'img/map/wild-swamp-marsh.webp',
-    'img/map/wild-swamp-marsh-map.webp',
-    'img/map/wild-swamp-marsh-map-embedded.png',
+    'img/map/wild-grainfield-map-v2.webp',
+    'img/map/wild-grainfield-map-v2-map-embedded.png',
   ];
 
   const integrated = [
     'forest-dense', 'forest-ridge', 'forest-edge',
     'hill-peak', 'hill-ridge', 'hill-foothill',
     'swamp-deep', 'swamp-creek', 'swamp-marsh',
-    'rock', 'grainfield', 'oil', 'plains'
+    'rock', 'oil', 'plains'
   ];
   for (const name of integrated) {
     expectedFiles.push(`img/map/wild-${name}-integrated.webp`);

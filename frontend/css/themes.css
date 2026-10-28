@@ -471,6 +471,79 @@ body[data-theme|="blue-white"] {
   color: #1a4f89 !important;
 }
 
+[data-theme|="blue-white"] .depot-equip-filter-bar {
+  background: #f0f5fa !important;
+  border-color: #d2e1f0 !important;
+}
+[data-theme|="blue-white"] .depot-equip-filter-tag {
+  background: #dbeaf7 !important;
+  border-color: #bad3ed !important;
+  color: #245283 !important;
+}
+[data-theme|="blue-white"] .depot-equip-filter-label {
+  color: #536980 !important;
+}
+[data-theme|="blue-white"] .depot-equip-filter-select {
+  background-color: #ffffff !important;
+  border-color: #c5d7ea !important;
+  color: #243a50 !important;
+}
+[data-theme|="blue-white"] .depot-equip-filter-select:hover {
+  border-color: #4a80b8 !important;
+}
+[data-theme|="blue-white"] .depot-equip-filter-select.is-active {
+  border-color: #2e66a3 !important;
+  background-color: #eaf3fd !important;
+  color: #1a4f89 !important;
+}
+[data-theme|="blue-white"] .depot-equip-filter-reset {
+  background: #ffffff !important;
+  border-color: #c5d7ea !important;
+  color: #5b7189 !important;
+}
+[data-theme|="blue-white"] .depot-equip-filter-reset:hover {
+  color: #c53030 !important;
+  border-color: #feb2b2 !important;
+  background: #fff5f5 !important;
+}
+[data-theme|="blue-white"] .depot-set-group {
+  background: #ffffff !important;
+  border-color: #d2e1f0 !important;
+}
+[data-theme|="blue-white"] .depot-set-group[open] {
+  border-color: #bad3ed !important;
+}
+[data-theme|="blue-white"] .depot-set-summary {
+  background: #f7fafd !important;
+}
+[data-theme|="blue-white"] .depot-set-summary:hover {
+  background: #eef4fb !important;
+}
+[data-theme|="blue-white"] .depot-set-group[open] > .depot-set-summary {
+  background: #e5eff9 !important;
+  border-bottom-color: #d2e1f0 !important;
+}
+[data-theme|="blue-white"] .depot-set-title {
+  color: #1e3a5f !important;
+}
+[data-theme|="blue-white"] .depot-set-badge {
+  background: #eef4fa !important;
+  color: #536980 !important;
+  border-color: #d2e1f0 !important;
+}
+[data-theme|="blue-white"] .depot-set-badge.is-complete {
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+  border-color: #a7f3d0 !important;
+}
+[data-theme|="blue-white"] .depot-set-body {
+  background: #f7fafd !important;
+}
+[data-theme|="blue-white"] .depot-set-body .menu-item {
+  background: #ffffff !important;
+  border-color: #dbe7f3 !important;
+}
+
 /* 任务进度：绿色表示已完成/正在推进，蓝色主题负责承载导航与信息层级 */
 [data-theme|="blue-white"] .main-quest-view .quest-progress-bar,
 [data-theme|="blue-white"] .quest-progress-bar {
@@ -3854,6 +3927,16 @@ body[data-theme="dark"] {
 [data-theme="paper"] .map-icon-territory { color: #9a3412 !important; }
 [data-theme="paper"] .map-icon-home { color: #1e3a8a !important; }
 
+/* 纸色主题主城图标适配 */
+[data-theme="paper"] .main-city-icon .city-icon-ground { fill: #1e293b; }
+[data-theme="paper"] .main-city-icon .city-icon-bastion { fill: #334155; }
+[data-theme="paper"] .main-city-icon .city-icon-wall { fill: #1e293b; }
+[data-theme="paper"] .main-city-icon .city-icon-keep { fill: #475569; }
+[data-theme="paper"] .main-city-icon .city-icon-roof { fill: #64748b; }
+[data-theme="paper"] .main-city-icon .city-icon-antenna { stroke: #475569; }
+[data-theme="paper"] .main-city-icon .city-icon-star { fill: #d97706; stroke: #b45309; }
+[data-theme="paper"] .main-city-icon .city-icon-beacon { fill: #dc2626; }
+
 [data-theme="paper"] .map-tabs {
   background: #ebe7df !important;
   border: 1px solid #ded9cd !important;
@@ -3954,6 +4037,80 @@ body[data-theme="dark"] {
   color: #3f5e4d !important;
 }
 
+[data-theme="paper"] .depot-equip-filter-bar {
+  background: #f0ebe0 !important;
+  border-color: #dad4c5 !important;
+}
+[data-theme="paper"] .depot-equip-filter-tag {
+  background: #e5ded0 !important;
+  border-color: #cdc3ae !important;
+  color: #3f5e4d !important;
+}
+[data-theme="paper"] .depot-equip-filter-label {
+  color: #697268 !important;
+}
+[data-theme="paper"] .depot-equip-filter-select {
+  background-color: #faf7f0 !important;
+  border-color: #d6cfbf !important;
+  color: #273136 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%233f5e4d' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3e%3c/svg%3e") !important;
+}
+[data-theme="paper"] .depot-equip-filter-select:hover {
+  border-color: #3f5e4d !important;
+}
+[data-theme="paper"] .depot-equip-filter-select.is-active {
+  border-color: #3f5e4d !important;
+  background-color: #e5eee7 !important;
+  color: #284435 !important;
+}
+[data-theme="paper"] .depot-equip-filter-reset {
+  background: #faf7f0 !important;
+  border-color: #d6cfbf !important;
+  color: #697268 !important;
+}
+[data-theme="paper"] .depot-equip-filter-reset:hover {
+  color: #b91c1c !important;
+  border-color: #fca5a5 !important;
+  background: #fef2f2 !important;
+}
+[data-theme="paper"] .depot-set-group {
+  background: #faf7f0 !important;
+  border-color: #dad4c5 !important;
+}
+[data-theme="paper"] .depot-set-group[open] {
+  border-color: #c9c0ae !important;
+}
+[data-theme="paper"] .depot-set-summary {
+  background: #f4efe4 !important;
+}
+[data-theme="paper"] .depot-set-summary:hover {
+  background: #eee8dc !important;
+}
+[data-theme="paper"] .depot-set-group[open] > .depot-set-summary {
+  background: #e7dfd0 !important;
+  border-bottom-color: #dad4c5 !important;
+}
+[data-theme="paper"] .depot-set-title {
+  color: #2b3831 !important;
+}
+[data-theme="paper"] .depot-set-badge {
+  background: #eee7da !important;
+  color: #697268 !important;
+  border-color: #dcd5c7 !important;
+}
+[data-theme="paper"] .depot-set-badge.is-complete {
+  background: #e3ede5 !important;
+  color: #284435 !important;
+  border-color: #bed5c3 !important;
+}
+[data-theme="paper"] .depot-set-body {
+  background: #f4efe4 !important;
+}
+[data-theme="paper"] .depot-set-body .menu-item {
+  background: #faf7f0 !important;
+  border-color: #dad4c5 !important;
+}
+
 /* 战区地图 Dark 适配 */
 [data-theme="dark"] .map-status-bar {
   background: #111724 !important;
@@ -3989,6 +4146,17 @@ body[data-theme="dark"] {
 [data-theme="dark"] .map-icon-player { color: #a78bfa !important; }
 [data-theme="dark"] .map-icon-territory { color: #fb923c !important; }
 [data-theme="dark"] .map-icon-home { color: #38bdf8 !important; }
+
+/* 暗黑夜航主题主城图标适配 */
+[data-theme="dark"] .main-city-icon .city-icon-ground { fill: #0f172a; }
+[data-theme="dark"] .main-city-icon .city-icon-bastion { fill: #0284c7; }
+[data-theme="dark"] .main-city-icon .city-icon-wall { fill: #0369a1; }
+[data-theme="dark"] .main-city-icon .city-icon-keep { fill: #0ea5e9; }
+[data-theme="dark"] .main-city-icon .city-icon-roof { fill: #38bdf8; }
+[data-theme="dark"] .main-city-icon .city-icon-antenna { stroke: #38bdf8; }
+[data-theme="dark"] .main-city-icon .city-icon-star { fill: #facc15; stroke: #fef08a; }
+[data-theme="dark"] .main-city-icon .city-icon-beacon { fill: #f43f5e; }
+[data-theme="dark"] .main-city-icon .city-icon-gate { fill: #020617; }
 
 [data-theme="dark"] .shop-equip-filter-bar {
   background: #121927 !important;
@@ -4059,6 +4227,80 @@ body[data-theme="dark"] {
 }
 [data-theme="dark"] .shop-dropdown-item-check {
   color: #60a5fa !important;
+}
+
+[data-theme="dark"] .depot-equip-filter-bar {
+  background: #121927 !important;
+  border-color: #26354a !important;
+}
+[data-theme="dark"] .depot-equip-filter-tag {
+  background: #1c283c !important;
+  border-color: #2d4263 !important;
+  color: #82bdf1 !important;
+}
+[data-theme="dark"] .depot-equip-filter-label {
+  color: #8da1b9 !important;
+}
+[data-theme="dark"] .depot-equip-filter-select {
+  background-color: #172132 !important;
+  border-color: #2b3b52 !important;
+  color: #e2e8f0 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%238da1b9' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+}
+[data-theme="dark"] .depot-equip-filter-select:hover {
+  border-color: #60a5fa !important;
+}
+[data-theme="dark"] .depot-equip-filter-select.is-active {
+  border-color: #3b82f6 !important;
+  background-color: #1e3557 !important;
+  color: #93c5fd !important;
+}
+[data-theme="dark"] .depot-equip-filter-reset {
+  background: #172132 !important;
+  border-color: #2b3b52 !important;
+  color: #94a3b8 !important;
+}
+[data-theme="dark"] .depot-equip-filter-reset:hover {
+  color: #f87171 !important;
+  border-color: #991b1b !important;
+  background: #381b22 !important;
+}
+[data-theme="dark"] .depot-set-group {
+  background: #151e2e !important;
+  border-color: #26354a !important;
+}
+[data-theme="dark"] .depot-set-group[open] {
+  border-color: #3b4e6b !important;
+}
+[data-theme="dark"] .depot-set-summary {
+  background: #182337 !important;
+}
+[data-theme="dark"] .depot-set-summary:hover {
+  background: #1f2d46 !important;
+}
+[data-theme="dark"] .depot-set-group[open] > .depot-set-summary {
+  background: #1e2c44 !important;
+  border-bottom-color: #2b3b52 !important;
+}
+[data-theme="dark"] .depot-set-title {
+  color: #e2e8f0 !important;
+}
+[data-theme="dark"] .depot-set-badge {
+  background: #1a2538 !important;
+  color: #8da1b9 !important;
+  border-color: #2b3b52 !important;
+}
+[data-theme="dark"] .depot-set-badge.is-complete {
+  background: rgba(16, 185, 129, 0.2) !important;
+  color: #6ee7b7 !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+}
+[data-theme="dark"] .depot-set-body {
+  background: #0f1623 !important;
+}
+[data-theme="dark"] .depot-set-body .menu-item {
+  background: #172132 !important;
+  border-color: #26354a !important;
 }
 
 [data-theme="dark"] .map-tabs {

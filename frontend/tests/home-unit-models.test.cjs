@@ -176,7 +176,7 @@ test('军队全屏弹窗固定标题，仅内容区纵向滚动且不继承首�
   assert.match(list, /overflow:\s*visible;/);
   assert.match(list, /overscroll-behavior:\s*auto;/);
   assert.match(list, /scroll-snap-type:\s*none;/);
-  assert.match(index, /css\/style\.css\?v=20261025-army-fullscreen-scroll/);
+  assert.match(index, /css\/style\.css\?v=[^"]+/);
 });
 
 test('点击首页兵种图标可打开兵种详细属性与战斗定位弹窗，且支持Esc与关闭按钮', () => {

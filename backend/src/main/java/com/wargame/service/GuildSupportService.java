@@ -226,7 +226,10 @@ public class GuildSupportService {
         var f = new JointDefenseState.Formation(); f.setId(id); f.setKind(kind); f.setPlayerId(owner); f.setCitySlot(slot); f.setMarchId(marchId);
         f.setPlayerName(owner == null ? "来袭敌军" : players.findById(owner).map(PlayerNames::commanderName).orElse("已离开的玩家"));
         f.setOfficerName(officer == null ? "无随队将领" : officer.getName()); f.setOfficerId(officer == null ? null : officer.getId());
-        if (officer != null) { var attrs = officerEquipment.attributes(officer); f.setMilitary(attrs.military()); f.setDefense(attrs.defense()); }
+        if (officer != null) {
+            var attrs = officerEquipment.attributes(officer); f.setMilitary(attrs.military()); f.setDefense(attrs.defense());
+            f.setCommanderSnapshot(CommanderReportSnapshot.from(officer, attrs));
+        }
         f.setSkills(new LinkedHashMap<>(targets.getCommanderSkills(officer))); f.setInitial(new LinkedHashMap<>(army));
         f.setEquipment(new LinkedHashMap<>(UnitEquipmentEffects.forArmy(equipment, army)));
         return f;

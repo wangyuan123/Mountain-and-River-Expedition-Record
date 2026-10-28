@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="skl_bulwark_shield" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="35%" stop-color="#1d4ed8"/>
+      <stop offset="70%" stop-color="#1e3a8a"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="skl_bulwark_rim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="40%" stop-color="#cbd5e1"/>
+      <stop offset="80%" stop-color="#64748b"/>
+      <stop offset="100%" stop-color="#334155"/>
+    </linearGradient>
+    <linearGradient id="skl_bulwark_gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="50%" stop-color="#eab308"/>
+      <stop offset="100%" stop-color="#854d0e"/>
+    </linearGradient>
+    <radialGradient id="skl_bulwark_glow" cx="50%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#60a5fa" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#1e3a8a" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="skl_bulwark_shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#skl_bulwark_shadow)">
+    <!-- Outer Rim Base -->
+    <path d="M12 12 L52 12 C52 12, 54 36, 32 58 C10 36, 12 12, 12 12 Z"
+          fill="url(#skl_bulwark_rim)" stroke="#94a3b8" stroke-width="1"/>
+
+    <!-- Inner Shield Plate -->
+    <path d="M15 15 L49 15 C49 15, 50.5 35, 32 54 C13.5 35, 15 15, 15 15 Z"
+          fill="url(#skl_bulwark_shield)"/>
+
+    <!-- Soft Shield Glow -->
+    <path d="M15 15 L49 15 C49 15, 50.5 35, 32 54 C13.5 35, 15 15, 15 15 Z"
+          fill="url(#skl_bulwark_glow)"/>
+
+    <!-- Beveled Light Facet (Left side) -->
+    <path d="M16 16 L32 16 L32 52 C18 36, 16 18, 16 16 Z"
+          fill="#ffffff" opacity="0.12"/>
+
+    <!-- Fortress Battlements Motif on Top -->
+    <path d="M20 18 H44 V22 H41 V20 H35 V22 H29 V20 H23 V22 H20 Z"
+          fill="url(#skl_bulwark_gold)"/>
+
+    <!-- Center Defensive Chevron Boss -->
+    <polygon points="32,23 42,31 42,35 32,27 22,35 22,31" fill="url(#skl_bulwark_gold)"/>
+    <polygon points="32,32 40,39 40,43 32,36 24,43 24,39" fill="url(#skl_bulwark_gold)"/>
+
+    <!-- Center Bulwark Core Emblem -->
+    <polygon points="32,41 36,44 36,48 32,51 28,48 28,44" fill="#38bdf8"/>
+    <polygon points="32,43 35,45 32,49 29,45" fill="#ffffff" opacity="0.8"/>
+
+    <!-- Steel Rivets -->
+    <circle cx="15" cy="15" r="1.5" fill="#f8fafc"/>
+    <circle cx="49" cy="15" r="1.5" fill="#f8fafc"/>
+    <circle cx="32" cy="14" r="1.5" fill="#f8fafc"/>
+    <circle cx="47" cy="28" r="1.5" fill="#f8fafc"/>
+    <circle cx="17" cy="28" r="1.5" fill="#f8fafc"/>
+    <circle cx="40" cy="42" r="1.5" fill="#f8fafc"/>
+    <circle cx="24" cy="42" r="1.5" fill="#f8fafc"/>
+  </g>
+</svg>

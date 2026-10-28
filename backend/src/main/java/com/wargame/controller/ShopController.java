@@ -285,6 +285,9 @@ public class ShopController {
             Map.entry("warSpeedOrder", 250),
             Map.entry("populationOrder", 100),
             Map.entry("emergencyPopulationOrder", 100),
+            Map.entry("mobilizationOrder", 80),
+            Map.entry("advancedMobilizationOrder", 220),
+            Map.entry("rapidMobilizationOrder", 500),
             // 礼包
             Map.entry("newbiePack", 99)
         );
@@ -332,6 +335,9 @@ public class ShopController {
             Map.entry("warSpeedOrder", "宣战加速令"),
             Map.entry("populationOrder", "人口动员令"),
             Map.entry("emergencyPopulationOrder", "紧急人口动员令"),
+            Map.entry("mobilizationOrder", "战争动员令"),
+            Map.entry("advancedMobilizationOrder", "高级战争动员令"),
+            Map.entry("rapidMobilizationOrder", "极速战争动员令"),
             Map.entry("newbiePack", "新手礼包")
         );
 

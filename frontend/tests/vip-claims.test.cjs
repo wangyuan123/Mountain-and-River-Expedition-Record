@@ -63,6 +63,14 @@ for (const [action, args, endpoint, payload] of claims) {
   });
 }
 
+test('头像框选择使用后端注册的路由和标准标识', async () => {
+  const { game, requests } = setup();
+  await game.API.vipSetAvatarFrame('frame-bronze-v1');
+  assert.deepEqual(requests[0], {
+    path: '/api/game/vip/avatar/frame', method: 'POST', body: { frameId: 'frame-bronze-v1' }
+  });
+});
+
 test('VIP 领取失败保留原资产及可领状态，解除提交锁后可重试', async () => {
   const { game, context, toasts } = setup();
   game.Vip.openModal('packs');

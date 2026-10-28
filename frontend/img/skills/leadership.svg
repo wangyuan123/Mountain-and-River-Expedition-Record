@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="skl_lead_gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fffbeb"/>
+      <stop offset="25%" stop-color="#fef08a"/>
+      <stop offset="60%" stop-color="#eab308"/>
+      <stop offset="100%" stop-color="#854d0e"/>
+    </linearGradient>
+    <linearGradient id="skl_lead_ribbon" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ef4444"/>
+      <stop offset="60%" stop-color="#b91c1c"/>
+      <stop offset="100%" stop-color="#7f1d1d"/>
+    </linearGradient>
+    <radialGradient id="skl_lead_glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fef08a" stop-opacity="0.8"/>
+      <stop offset="60%" stop-color="#eab308" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#854d0e" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="skl_lead_shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#skl_lead_shadow)">
+    <!-- Supreme Gold Aura -->
+    <circle cx="32" cy="32" r="28" fill="url(#skl_lead_glow)"/>
+
+    <!-- Crossed Field Marshal Batons -->
+    <!-- Baton 1 -->
+    <g transform="rotate(45 32 32)">
+      <rect x="30" y="8" width="4" height="48" rx="2" fill="url(#skl_lead_gold)"/>
+      <circle cx="32" cy="10" r="3.5" fill="#fef08a"/>
+      <circle cx="32" cy="54" r="3.5" fill="#fef08a"/>
+      <circle cx="32" cy="20" r="2.5" fill="#ca8a04"/>
+      <circle cx="32" cy="44" r="2.5" fill="#ca8a04"/>
+    </g>
+    <!-- Baton 2 -->
+    <g transform="rotate(-45 32 32)">
+      <rect x="30" y="8" width="4" height="48" rx="2" fill="url(#skl_lead_gold)"/>
+      <circle cx="32" cy="10" r="3.5" fill="#fef08a"/>
+      <circle cx="32" cy="54" r="3.5" fill="#fef08a"/>
+      <circle cx="32" cy="20" r="2.5" fill="#ca8a04"/>
+      <circle cx="32" cy="44" r="2.5" fill="#ca8a04"/>
+    </g>
+
+    <!-- Victorious Commander Laurel Wreath -->
+    <!-- Left Leaves -->
+    <path d="M12 36 C10 24, 18 14, 30 10 C24 16, 20 26, 22 36 Z" fill="url(#skl_lead_gold)" opacity="0.9"/>
+    <path d="M16 42 C12 32, 16 22, 26 18 C22 24, 20 34, 24 42 Z" fill="url(#skl_lead_gold)"/>
+    <!-- Right Leaves -->
+    <path d="M52 36 C54 24, 46 14, 34 10 C40 16, 44 26, 42 36 Z" fill="url(#skl_lead_gold)" opacity="0.9"/>
+    <path d="M48 42 C52 32, 48 22, 38 18 C42 24, 44 34, 40 42 Z" fill="url(#skl_lead_gold)"/>
+
+    <!-- Bottom Command Ribbon Bow -->
+    <path d="M32 46 L24 54 L32 51 L40 54 Z" fill="url(#skl_lead_ribbon)"/>
+    <circle cx="32" cy="47" r="3" fill="url(#skl_lead_gold)"/>
+
+    <!-- Center Supreme Marshal 5-Pointed Star -->
+    <path d="M32 14 L36.5 25.5 L49 26.5 L39.5 35 L42.5 47 L32 40.5 L21.5 47 L24.5 35 L15 26.5 L27.5 25.5 Z"
+          fill="url(#skl_lead_gold)" stroke="#fff" stroke-width="0.8"/>
+
+    <!-- Inner Faceted Star Highlights -->
+    <polygon points="32,17 35,26 32,30" fill="#ffffff" opacity="0.9"/>
+    <polygon points="45,27 37,28 32,30" fill="#fef08a" opacity="0.9"/>
+    <polygon points="40,43 35,36 32,30" fill="#eab308" opacity="0.9"/>
+    <polygon points="24,43 29,36 32,30" fill="#ca8a04" opacity="0.9"/>
+    <polygon points="19,27 27,28 32,30" fill="#fde047" opacity="0.9"/>
+  </g>
+</svg>

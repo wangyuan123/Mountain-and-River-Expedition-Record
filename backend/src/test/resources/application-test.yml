@@ -19,6 +19,13 @@ jwt:
   expiration: 86400000
 
 game:
+  email:
+    host: mail.invalid
+    username: isolated-test-sender
+    password: isolated-test-only
+    from: sender@example.invalid
+    data-key: MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE=
+    hmac-key: YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXowMTIzNDU=
   clock:
     enabled: false
   compliance:

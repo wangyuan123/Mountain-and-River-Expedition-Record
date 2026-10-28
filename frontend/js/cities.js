@@ -36,15 +36,31 @@ window.Game = window.Game || {};
     info.cities.forEach(function (city) {
       var pending = city.readyAt > G.gameNow();
       html += '<div class="city-list-row' + (city.current ? ' selected' : '') + '">';
-      html += '<button class="city-choice" data-ready-at="' + city.readyAt + '" data-city-id="' + city.id + '" onclick="Game.Cities.select(' + city.id + ')"' + (pending || city.current ? ' disabled' : '') + '>';
+      html += '<div class="city-row-main">';
+      html += '<button type="button" class="city-choice" data-ready-at="' + city.readyAt + '" data-city-id="' + city.id + '" onclick="Game.Cities.select(' + city.id + ')"' + (pending || city.current ? ' disabled' : '') + '>';
       html += '<span class="city-choice-heading"><b>' + esc(city.name) + '</b><span class="city-tag">' + (city.coastal ? '沿海' : city.legacyNaval ? '海军补给' : city.main ? '主城' : '分城') + '</span><span>Lv.' + city.level + '</span></span>';
       html += '<span class="city-choice-meta">坐标 ' + city.x + ',' + city.y + '<span class="city-ready-label">' + (pending ? '建设中 · ' + remaining(city.readyAt) : city.frozen ? '归降移交中 · 只读' : city.current ? '当前城市' : '点击切换') + '</span></span>';
       if (city.incoming) html += '<span class="city-danger">敌军来袭！</span>';
       html += '</button>';
-      if (!city.current && !pending && !city.frozen) html += '<button class="btn sm" onclick="Game.Cities.transferForm(' + city.id + ',\'transport\')">运输</button><button class="btn sm" onclick="Game.Cities.transferForm(' + city.id + ',\'rebase\')">派遣</button>';
-      if (!pending && !city.frozen) html += '<label><input type="checkbox"' + (city.acceptGarrison ? ' checked' : '') + ' onchange="Game.Cities.setGarrison(' + city.id + ',this.checked)">允许接收军团驻军（本城承担粮耗）</label>';
-      html += '<span>本城部队粮耗 ' + Math.ceil(Number(city.ownFoodPerHour) || 0) + '/小时 · 外来驻军粮耗 ' + Math.ceil(Number(city.supportFoodPerHour) || 0) + '/小时</span>';
-      if (Number(city.garrisonFoodUnmet) > 0) html += '<p>曾发生补给短缺，未满足粮耗 ' + Math.ceil(city.garrisonFoodUnmet) + '；此数为历史记录，不是欠款。</p>';
+      if (!city.current && !pending && !city.frozen) {
+        html += '<div class="city-row-actions"><button type="button" class="city-text-btn" onclick="Game.Cities.transferForm(' + city.id + ',\'transport\')">[运输]</button><button type="button" class="city-text-btn" onclick="Game.Cities.transferForm(' + city.id + ',\'rebase\')">[派遣]</button></div>';
+      }
+      html += '</div>';
+      if (!pending && !city.frozen) {
+        var ownFood = Math.ceil(Number(city.ownFoodPerHour) || 0);
+        var supFood = Math.ceil(Number(city.supportFoodPerHour) || 0);
+        var ownFoodStr = G.fmt ? G.fmt(ownFood) : ownFood;
+        var supFoodStr = G.fmt ? G.fmt(supFood) : supFood;
+        html += '<div class="city-row-extra">';
+        html += '<label class="city-garrison-check"><input type="checkbox"' + (city.acceptGarrison ? ' checked' : '') + ' onchange="Game.Cities.setGarrison(' + city.id + ',this.checked)"><span>允许接收军团驻军（本城承担粮耗）</span></label>';
+        html += '<div class="city-food-stat">本城部队粮耗 ' + ownFoodStr + '/小时 · 外来驻军粮耗 ' + supFoodStr + '/小时</div>';
+        if (Number(city.garrisonFoodUnmet) > 0) {
+          var unmet = Math.ceil(city.garrisonFoodUnmet);
+          var unmetStr = G.fmt ? G.fmt(unmet) : unmet;
+          html += '<div class="city-shortage-warn">曾发生补给短缺，未满足粮耗 ' + unmetStr + '；此数为历史记录，不是欠款。</div>';
+        }
+        html += '</div>';
+      }
       html += '</div>';
     });
     html += '</div><p class="city-hint">' + esc(rankTip(info)) + '</p>';
@@ -123,7 +139,7 @@ window.Game = window.Game || {};
         if (G.WorldMap) G.WorldMap.invalidate();
         // Discard city-specific operation drafts. Public pages (mail, guild, reports) stay open.
         if (G.World) { G.World._dispatchTarget = null; }
-        var drawer = document.getElementById('playerDrawerMask'); if (drawer) drawer.remove();
+        if (G.Main && G.Main.closePlayerDrawer) { G.Main.closePlayerDrawer(); } else { var drawer = document.getElementById('playerDrawerMask'); if (drawer) drawer.remove(); if (document.body && document.body.classList) document.body.classList.remove('drawer-open'); }
         G.Cities.switching = false; G.Cities.close();
         if (goHome) G.Core.route = 'home';
         if (['mail', 'guild', 'reports', 'mainQuest', 'shop', 'recharge'].indexOf(G.Core.route) >= 0) {
@@ -187,7 +203,7 @@ window.Game = window.Game || {};
         var html = '<div class="city-list">';
         cities.forEach(function (city) {
           if (action !== 'transport' && !city.acceptGarrison) return;
-          html += '<div class="city-list-row"><button class="city-choice" onclick="Game.Cities.transferForm(' + Number(city.id) + ',\'' + (action === 'transport' ? 'transport' : 'reinforce') + '\')"><span class="city-choice-heading"><b>' + esc(city.name) + '</b></span><span class="city-choice-meta">坐标 ' + city.x + ',' + city.y + '</span></button></div>';
+          html += '<div class="city-list-row"><div class="city-row-main"><button type="button" class="city-choice" onclick="Game.Cities.transferForm(' + Number(city.id) + ',\'' + (action === 'transport' ? 'transport' : 'reinforce') + '\')"><span class="city-choice-heading"><b>' + esc(city.name) + '</b></span><span class="city-choice-meta">坐标 ' + city.x + ',' + city.y + '</span></button></div></div>';
         });
         var eligible = cities.filter(function (city) { return action === 'transport' || city.acceptGarrison; });
         contents(html + '</div>' + (!eligible.length ? '<p class="city-hint">暂无开放接收的城市，请团友先在城市管理中开启驻军接收。</p>' : ''));

@@ -462,7 +462,6 @@ window.Game = window.Game || {};
     // 在 innerHTML 重写前抓取当前输入, 之后还原, 防止 WS tick / 顶层 render 把表单刷掉
     var formState = captureFormState();
     var h = '';
-    h += '<div class="title">- 战时电报 -</div>';
 
     if (view === 'list') {
       h += '<div class="mail-tabs">';

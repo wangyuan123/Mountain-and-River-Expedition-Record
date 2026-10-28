@@ -17,7 +17,7 @@ public final class JointBattleProjection {
                 Set.of("formationId", "formation", "kind", "unit", "initial", "survivors", "losses", "damage", "wounded", "unitDamage", "wallDamage", "fortDamage")));
         if (result.containsKey("formationEvents")) result.put("formationEvents", rows(result.get("formationEvents"),
                 Set.of("type", "round", "batch", "formationId", "formation", "unit", "countBefore", "from", "to", "firstCombatRound",
-                        "reason", "target", "targetFormationId", "targetUnit", "targetCountBefore", "rawDamage", "damage", "skillWindow", "distance", "losses", "survivors")));
+                        "reason", "target", "targetFormationId", "targetUnit", "targetCountBefore", "rawDamage", "damage", "skillWindow", "distance", "losses", "survivors", "text")));
         return result;
     }
 

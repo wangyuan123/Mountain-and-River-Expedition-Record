@@ -100,6 +100,9 @@ public record ItemDef(
             Map.entry("warSpeedOrder", new ItemDef("warSpeedOrder", "宣战加速令", "img/items/march-ord.svg", CAT_UTIL, "缩短本城发起的宣战备战时间：基础50%，学识提高效果，最高80%，总备战至少30分钟", 0)),
             Map.entry("populationOrder", new ItemDef("populationOrder", "人口动员令", "img/items/population-order.svg", CAT_UTIL, "使用后立即增加500空闲人口,不超过人口上限", 0)),
             Map.entry("emergencyPopulationOrder", new ItemDef("emergencyPopulationOrder", "紧急人口动员令", "img/items/emergency-population-order.svg", CAT_UTIL, "使用后立即增加当前城市人口容量上限30%的空闲人口,不超过人口上限", 0)),
+            Map.entry("mobilizationOrder", new ItemDef("mobilizationOrder", "战争动员令", "img/items/march-ord.svg", CAT_UTIL, "进攻出征时使用，本次出征带兵上限提高10%；编队超过基础上限时消耗1个", 0)),
+            Map.entry("advancedMobilizationOrder", new ItemDef("advancedMobilizationOrder", "高级战争动员令", "img/items/march-ord.svg", CAT_UTIL, "进攻出征时使用，本次出征带兵上限提高25%；编队超过基础上限时消耗1个", 0)),
+            Map.entry("rapidMobilizationOrder", new ItemDef("rapidMobilizationOrder", "极速战争动员令", "img/items/march-ord.svg", CAT_UTIL, "进攻出征时使用，本次出征带兵上限提高50%；编队超过基础上限时消耗1个", 0)),
             Map.entry("cityRenameCard", new ItemDef("cityRenameCard", "城市改名卡", "img/items/city-rename-card.svg", CAT_UTIL, "为一座城市更换新名字", 0))
 
     );
@@ -108,6 +111,10 @@ public record ItemDef(
     /** 护盾时长由服务端白名单决定，旧 shield 库存继续代表 8 小时，各档可混合顺延。 */
     public static final Map<String, Integer> SHIELD_HOURS = Map.of(
             "shield2h", 2, "shield", 8, "shield12h", 12, "shield24h", 24, "shield72h", 72);
+
+    /** 三档动员令只提高单次进攻的带兵上限，不叠加、不改变永久上限。 */
+    public static final Map<String, Integer> MOBILIZATION_BONUS_PERCENT = Map.of(
+            "mobilizationOrder", 10, "advancedMobilizationOrder", 25, "rapidMobilizationOrder", 50);
 
     public static final Map<String, ItemDef> ITEMS;
     static {

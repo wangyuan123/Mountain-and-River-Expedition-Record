@@ -77,6 +77,7 @@
 
     closeModal: function () {
       this.closeCityDropdown();
+      this.closeSkillDropdown();
       var mask = document.getElementById('vipModalMask');
       if (mask && mask.parentNode) {
         mask.parentNode.removeChild(mask);
@@ -85,6 +86,7 @@
 
     switchTab: function (tab) {
       this.closeCityDropdown();
+      this.closeSkillDropdown();
       this.activeTab = tab;
       var items = (document.querySelectorAll) ? document.querySelectorAll('.vip-tab-item') : [];
       var tabs = ['overview', 'packs', 'skills', 'cosmetics'];
@@ -434,6 +436,97 @@
       // 切换受领城市时不刷新全量弹窗，仅保持状态
     },
 
+    toggleSkillDropdown: function (e) {
+      if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+      this.skillDropdownOpen = !this.skillDropdownOpen;
+      var menu = document.getElementById('vipSkillDropdownMenu');
+      var trigger = document.getElementById('vipSkillDropdownTrigger');
+      var wrap = document.getElementById('vipSkillDropdownWrap');
+      if (menu) {
+        if (this.skillDropdownOpen) {
+          if (typeof menu.removeAttribute === 'function') menu.removeAttribute('hidden');
+          menu.hidden = false;
+        } else {
+          if (typeof menu.setAttribute === 'function') menu.setAttribute('hidden', '');
+          menu.hidden = true;
+        }
+      }
+      if (trigger && typeof trigger.setAttribute === 'function') {
+        trigger.setAttribute('aria-expanded', String(this.skillDropdownOpen));
+      }
+      if (wrap && wrap.classList) {
+        if (this.skillDropdownOpen) wrap.classList.add('open');
+        else wrap.classList.remove('open');
+      }
+    },
+
+    closeSkillDropdown: function () {
+      if (!this.skillDropdownOpen) return;
+      this.skillDropdownOpen = false;
+      var menu = document.getElementById('vipSkillDropdownMenu');
+      var trigger = document.getElementById('vipSkillDropdownTrigger');
+      var wrap = document.getElementById('vipSkillDropdownWrap');
+      if (menu) {
+        if (typeof menu.setAttribute === 'function') menu.setAttribute('hidden', '');
+        menu.hidden = true;
+      }
+      if (trigger && typeof trigger.setAttribute === 'function') {
+        trigger.setAttribute('aria-expanded', 'false');
+      }
+      if (wrap && wrap.classList) wrap.classList.remove('open');
+    },
+
+    selectTargetSkill: function (skillId, e) {
+      if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+      this.selectedTargetSkill = skillId;
+      this.closeSkillDropdown();
+
+      var skillDefs = (G.DATA && G.DATA.officerSkills) || {};
+      var s = skillDefs[skillId];
+      if (!s) return;
+
+      var cats = {
+        atk: '战斗', def: '防御', spd: '机动', debuff: '压制', pierce: '破甲',
+        mil: '军事', medic: '医疗', logi: '后勤', know: '学识'
+      };
+      var catLabel = cats[s.cat] || '战术';
+
+      var textEl = document.getElementById('vipSkillDropdownText');
+      if (textEl) {
+        textEl.innerHTML = '<span class="vip-skill-option-icon">' + G.iconHtml(s.icon, s.name) + '</span>' +
+          '<span class="vip-skill-option-name">' + G.escapeHtml(s.name) + '</span>' +
+          '<span class="vip-skill-option-tag">' + catLabel + '</span>';
+      }
+
+      var items = document.querySelectorAll ? document.querySelectorAll('.vip-skill-dropdown-item') : [];
+      for (var i = 0; i < items.length; i++) {
+        var it = items[i];
+        var itSkill = it.getAttribute ? it.getAttribute('data-skill') : null;
+        var isCur = (itSkill === skillId);
+        if (it.classList) it.classList.toggle('selected', isCur);
+        if (typeof it.setAttribute === 'function') {
+          it.setAttribute('aria-selected', String(isCur));
+        }
+        var checkEl = it.querySelector ? it.querySelector('.vip-skill-item-check') : null;
+        if (checkEl) {
+          checkEl.innerHTML = isCur ? '✓' : '&nbsp;';
+        }
+      }
+
+      var sel = document.getElementById('vipSkillTargetSelect');
+      if (sel) {
+        sel.value = skillId;
+      }
+    },
+
+    showSkillDetailFromDropdown: function (skillId, e) {
+      if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+      // 用户要求：点击 查看详情 打开弹窗展示技能介绍，但是下拉弹层不关闭
+      if (G.Officer && typeof G.Officer.showSkillDetail === 'function') {
+        G.Officer.showSkillDetail(skillId, 1);
+      }
+    },
+
     selectInspectedLevel: function (lv) {
       this.inspectedLevel = parseInt(lv, 10);
       this.renderBody();
@@ -728,7 +821,47 @@
       var count = items.universalSkillBook || 0;
 
       var skillDefs = (G.DATA && G.DATA.officerSkills) || {};
-      var skillKeys = Object.keys(skillDefs);
+      var skillKeys = Object.keys(skillDefs).filter(function (k) { return k !== 'supply'; });
+
+      var selectedKey = this.selectedTargetSkill || (skillKeys.length ? skillKeys[0] : '');
+      if (selectedKey && !skillDefs[selectedKey]) {
+        selectedKey = skillKeys[0] || '';
+      }
+      this.selectedTargetSkill = selectedKey;
+
+      var curSkill = skillDefs[selectedKey] || { name: '选择技能', icon: '' };
+      var cats = {
+        atk: '战斗', def: '防御', spd: '机动', debuff: '压制', pierce: '破甲',
+        mil: '军事', medic: '医疗', logi: '后勤', know: '学识'
+      };
+      var curCat = cats[curSkill.cat] || '战术';
+
+      var menuItemsHtml = '';
+      var selectOptionsHtml = '';
+
+      for (var i = 0; i < skillKeys.length; i++) {
+        var k = skillKeys[i];
+        var s = skillDefs[k];
+        var isSel = (k === selectedKey);
+        var catName = cats[s.cat] || '战术';
+        var escapedName = G.escapeHtml(s.name);
+
+        menuItemsHtml += '<div class="vip-skill-dropdown-item' + (isSel ? ' selected' : '') + '" ' +
+          'role="option" aria-selected="' + (isSel ? 'true' : 'false') + '" data-skill="' + k + '" ' +
+          'onclick="Game.Vip.selectTargetSkill(\'' + k + '\', event)">' +
+          '<div class="vip-skill-item-info">' +
+          '  <span class="vip-skill-item-check">' + (isSel ? '✓' : '&nbsp;') + '</span>' +
+          '  <span class="vip-skill-item-icon">' + G.iconHtml(s.icon, s.name) + '</span>' +
+          '  <span class="vip-skill-item-name">' + escapedName + '</span>' +
+          '  <span class="vip-skill-item-tag">' + catName + '</span>' +
+          '</div>' +
+          '<button type="button" class="vip-skill-detail-link" ' +
+          'title="查看【' + escapedName + '】技能详情" ' +
+          'onclick="Game.Vip.showSkillDetailFromDropdown(\'' + k + '\', event)">[查看详情]</button>' +
+          '</div>';
+
+        selectOptionsHtml += '<option value="' + k + '"' + (isSel ? ' selected' : '') + '>' + escapedName + '</option>';
+      }
 
       var h = '<div class="vip-skill-convert-box">' +
         '<div class="vip-skill-convert-title">📚 万能通用技能书定向推演 (1:1 绝对无损)</div>' +
@@ -739,14 +872,24 @@
         '</div>' +
         '<div class="vip-skill-convert-form">' +
         '  <div class="vip-form-row">' +
-        '    <label for="vipSkillTargetSelect">目标指定秘籍:</label>' +
-        '    <select id="vipSkillTargetSelect">';
-      for (var i = 0; i < skillKeys.length; i++) {
-        var k = skillKeys[i];
-        var s = skillDefs[k];
-        h += '<option value="' + k + '">' + (s.icon || '📖') + ' ' + G.escapeHtml(s.name) + ' (' + G.escapeHtml(s.desc) + ')</option>';
-      }
-      h += '    </select>' +
+        '    <label for="vipSkillDropdownTrigger">目标指定秘籍:</label>' +
+        '    <div class="vip-skill-dropdown-wrap" id="vipSkillDropdownWrap">' +
+        '      <button type="button" class="vip-skill-dropdown-trigger" id="vipSkillDropdownTrigger" ' +
+        '        aria-haspopup="listbox" aria-expanded="false" onclick="Game.Vip.toggleSkillDropdown(event)">' +
+        '        <span class="vip-skill-dropdown-text" id="vipSkillDropdownText">' +
+        '          <span class="vip-skill-option-icon">' + G.iconHtml(curSkill.icon, curSkill.name) + '</span>' +
+        '          <span class="vip-skill-option-name">' + G.escapeHtml(curSkill.name) + '</span>' +
+        '          <span class="vip-skill-option-tag">' + curCat + '</span>' +
+        '        </span>' +
+        '        <span class="vip-skill-dropdown-arrow" aria-hidden="true">▾</span>' +
+        '      </button>' +
+        '      <div class="vip-skill-dropdown-menu" id="vipSkillDropdownMenu" role="listbox" aria-label="目标指定秘籍选择" hidden>' +
+        menuItemsHtml +
+        '      </div>' +
+        '      <select id="vipSkillTargetSelect" class="vip-sr-only" tabindex="-1" aria-hidden="true">' +
+        selectOptionsHtml +
+        '      </select>' +
+        '    </div>' +
         '  </div>' +
         '  <div class="vip-form-row">' +
         '    <label for="vipSkillConvertCount">推演转化数量:</label>' +
@@ -766,7 +909,7 @@
       var level = st.level || 0;
       var p = (G.Core && G.Core.state && G.Core.state.player) || {};
       var badgeVisible = st.badgeVisible !== false;
-      var curFrame = st.avatarFrame || '';
+      var curFrame = st.avatarFrame || 'default';
       var curCustomAvatar = p.customAvatar || '';
 
       var h = '<div class="vip-cosmetics-box">';
@@ -788,19 +931,22 @@
       }
       h += '  </div></div></div>';
 
-      // 2. 统帅战役头像框 (VIP 3+)
+      // 2. 统帅战役头像框 (VIP 1+)
       h += '<div class="vip-cosmetic-section">' +
         '<div class="vip-cosmetic-title">🖼️ 统帅专属荣耀头像框</div>' +
-        '<div style="font-size:12px;color:var(--muted);margin-bottom:8px;">佩戴后在顶栏、档案与战术通联中展现战功边框。</div>' +
+        '<div style="font-size:12px;color:var(--muted);margin-bottom:8px;">佩戴后在顶栏、档案与战术通联聊天中展现动态战功边框。</div>' +
         '<div class="vip-frames-grid">';
 
       var frames = [
-        { id: '', name: '无边框', minLevel: 0, css: '' },
-        { id: 'bronze', name: '青铜战役', minLevel: 3, css: 'frame-bronze-v1' },
-        { id: 'silver', name: '白银将星', minLevel: 5, css: 'frame-silver-v1' },
-        { id: 'gold', name: '黄金统帅', minLevel: 7, css: 'frame-gold-v1' },
-        { id: 'supreme', name: '五星至尊', minLevel: 9, css: 'frame-supreme-v1' }
+        { id: 'default', name: '无边框', minLevel: 0, css: '', effect: '默认原貌' },
+        { id: 'frame-bronze-v1', name: '青铜坚壁', minLevel: 1, css: 'frame-bronze-v1', effect: '沉稳古铜' },
+        { id: 'frame-silver-v1', name: '白银将星', minLevel: 3, css: 'frame-silver-v1', effect: '秘银双环' },
+        { id: 'frame-gold-v1', name: '黄金战纪', minLevel: 5, css: 'frame-gold-v1', effect: '鎏金辉耀' },
+        { id: 'frame-jade-v1', name: '翡翠寒魄', minLevel: 7, css: 'frame-jade-v1', effect: '极寒冷气升腾' },
+        { id: 'frame-supreme-v1', name: '星钻炽焰', minLevel: 9, css: 'frame-supreme-v1', effect: '烈火喷涌燃烧' }
       ];
+
+      var previewAvatar = (G.Core && G.Core.getCurrentAvatar ? G.Core.getCurrentAvatar() : '') || 'img/avatars/historical/rank-general-v1.webp';
 
       for (var f = 0; f < frames.length; f++) {
         var fr = frames[f];
@@ -808,9 +954,12 @@
         var isSelected = (curFrame === fr.id);
         var cls = 'vip-frame-card' + (isSelected ? ' selected' : '') + (isUnlocked ? '' : ' locked');
         h += '<div class="' + cls + '" onclick="' + (isUnlocked ? 'Game.Vip.selectFrame(\'' + fr.id + '\')' : 'Game.toast(\'需达成 VIP ' + fr.minLevel + ' 解锁\')') + '">' +
-          '<div style="width:40px;height:40px;margin:0 auto 4px auto;border-radius:4px;background:#333;' + (fr.css ? '' : 'border:1px dashed #666;') + '" class="' + fr.css + '"></div>' +
-          '<div style="font-size:11px;font-weight:600;">' + G.escapeHtml(fr.name) + '</div>' +
-          '<div style="font-size:10px;color:var(--muted);">' + (fr.minLevel > 0 ? 'VIP ' + fr.minLevel : '默认') + '</div>' +
+          '<div style="width:42px;height:42px;margin:4px auto 6px auto;border-radius:6px;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;background:#1e293b;' + (fr.css ? '' : 'border:1px dashed #64748b;') + '" class="' + fr.css + '">' +
+          '<img src="' + previewAvatar + '" style="width:100%;height:100%;object-fit:cover;display:block;" alt="肖像预览" onerror="this.onerror=null;this.src=\'img/avatars/historical/rank-general-v1.webp\';">' +
+          '</div>' +
+          '<div style="font-size:11px;font-weight:700;color:var(--text);">' + G.escapeHtml(fr.name) + '</div>' +
+          '<div style="font-size:10px;color:var(--accent);margin-top:1px;">' + (fr.effect || '') + '</div>' +
+          '<div style="font-size:10px;color:var(--muted);margin-top:1px;">' + (fr.minLevel > 0 ? 'VIP ' + fr.minLevel : '默认') + '</div>' +
           '</div>';
       }
       h += '</div></div>';
@@ -1137,8 +1286,8 @@
         return;
       }
       var file = fileInput.files[0];
-      if (file.size > 2 * 1024 * 1024) {
-        G.toast('图片大小不能超过 2MB');
+      if (file.size > 1024 * 1024) {
+        G.toast('图片大小不能超过 1MB');
         return;
       }
       var reader = new FileReader();
@@ -1187,10 +1336,19 @@
       if (wrap && e.target && !wrap.contains(e.target)) {
         Vip.closeCityDropdown();
       }
+      var skillWrap = document.getElementById('vipSkillDropdownWrap');
+      var detailMask = document.querySelector ? document.querySelector('.officer-skill-detail-mask') : null;
+      if (skillWrap && e.target && !skillWrap.contains(e.target)) {
+        // 如果点击的是技能详情弹层或其子元素，不关闭秘籍下拉选项菜单
+        if (!detailMask || !detailMask.contains(e.target)) {
+          Vip.closeSkillDropdown();
+        }
+      }
     });
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') {
         Vip.closeCityDropdown();
+        Vip.closeSkillDropdown();
       }
     });
   }

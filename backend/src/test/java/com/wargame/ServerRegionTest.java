@@ -37,7 +37,7 @@ class ServerRegionTest extends BaseServiceTest {
     @Test
     void selectedRegionRegistersAndLogsInOnItsOwnInstance() throws Exception {
         createTestWorld();
-        String body = "{\"username\":\"region-player\",\"password\":\"password123\",\"agreementVersion\":\"2026-09-28-v1\",\"serverId\":\"jiangsu-1\"}";
+        String body = registrationBody("region-player", "password123");
         http.perform(post("/api/auth/register").header("X-Game-Server", "jiangsu-1")
                 .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.token").isString());

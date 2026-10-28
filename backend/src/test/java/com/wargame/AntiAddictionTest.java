@@ -82,7 +82,7 @@ class AntiAddictionTest extends BaseServiceTest {
 
     @Test void disabledProtectionInitializesPreviouslyBlockedAccountsAndAllowsGameplay() throws Exception {
         createTestWorld();
-        var result = auth.register("paused-protection", "password123", new MockHttpServletRequest());
+        var result = verifiedRegistration("paused-protection", "password123");
         Player player = playerRepository.findById(result.playerId()).orElseThrow();
         assertFalse(player.isGameInitialized());
         config.setEnabled(false);
@@ -101,7 +101,7 @@ class AntiAddictionTest extends BaseServiceTest {
     }
 
     @Test void registrationDoesNotCreateWorldAssetsOrGetRepairedOnRestart() {
-        var result = auth.register("waiting-registration", "password123", new MockHttpServletRequest());
+        var result = verifiedRegistration("waiting-registration", "password123");
         Player player = playerRepository.findById(result.playerId()).orElseThrow();
         assertFalse(player.isGameInitialized()); assertNull(player.getCityPosX());
         tickService.tick(player.getId()); gameStateService.repairExistingPlayerCoordinates();

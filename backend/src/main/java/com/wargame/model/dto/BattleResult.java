@@ -22,6 +22,10 @@ public class BattleResult {
     /** 司令官开战快照，与实际带兵将领独立记录。 */
     private Map<String, Object> commandBonuses;
 
+    /** 协防主将使用开战快照，供战报显式投影，不能重新读取结算时的实时军官。 */
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private Map<String, Object> commanders;
+
     /** 双方实际参战的装备物品、数值和规则版本快照。 */
     private Map<String, Object> unitEquipment;
 

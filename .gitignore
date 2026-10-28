@@ -4,6 +4,8 @@ target/
 node_modules/
 dist/
 coverage/
+# 玩家上传文件属于运行时数据，通过持久化目录备份，不纳入源码。
+frontend/img/avatars/custom/
 *.class
 javac.*.args
 __pycache__/

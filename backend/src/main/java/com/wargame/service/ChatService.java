@@ -61,9 +61,11 @@ public class ChatService {
         this.keywordFilter = keywordFilter;
     }
 
+    private record PlayerChatProfile(String avatar, Integer vipLevel, Boolean vipBadgeVisible, String avatarFrame) {}
+
     public List<ChatDtos.MessageResponse> history() {
         List<ChatMessage> messages = chatMessageRepository.findRecentVisible(System.currentTimeMillis(), PageRequest.of(0, 50));
-        Map<Long, String> avatars = new LinkedHashMap<>();
+        Map<Long, PlayerChatProfile> profiles = new LinkedHashMap<>();
         List<Long> playerIds = messages.stream()
                 .map(ChatMessage::getPlayerId)
                 .filter(java.util.Objects::nonNull)
@@ -71,12 +73,14 @@ public class ChatService {
                 .toList();
         List<Player> players = playerRepository.findAllById(playerIds);
         if (players != null) {
-            for (Player player : players) avatars.put(player.getId(), player.getAvatar());
+            for (Player player : players) {
+                profiles.put(player.getId(), new PlayerChatProfile(player.getAvatar(), player.getVipLevel(), player.getVipBadgeVisible(), player.getAvatarFrame()));
+            }
         }
         List<ChatDtos.MessageResponse> result = new ArrayList<>();
         for (int i = messages.size() - 1; i >= 0; i--) {
             ChatMessage message = messages.get(i);
-            result.add(toDto(message, avatars.get(message.getPlayerId())));
+            result.add(toDto(message, profiles.get(message.getPlayerId())));
         }
         return result;
     }
@@ -125,7 +129,8 @@ public class ChatService {
         String originalContent = content;
         content = filterContent(content);
         ChatMessage message = new ChatMessage(null, playerId, player.getUsername(), content, now);
-        ChatDtos.MessageResponse response = toDto(chatMessageRepository.save(message), player.getAvatar());
+        PlayerChatProfile profile = new PlayerChatProfile(player.getAvatar(), player.getVipLevel(), player.getVipBadgeVisible(), player.getAvatarFrame());
+        ChatDtos.MessageResponse response = toDto(chatMessageRepository.save(message), profile);
 
         // 重复发言按原文判断，避免敏感词被打码后绕过相同内容拦截。
         lastMessages.put(playerId, new LastMessage(originalContent, now));
@@ -138,6 +143,9 @@ public class ChatService {
         data.put("avatar", response.avatar());
         data.put("content", response.content());
         data.put("ts", response.ts());
+        data.put("vipLevel", response.vipLevel());
+        data.put("vipBadgeVisible", response.vipBadgeVisible());
+        data.put("avatarFrame", response.avatarFrame());
         pushService.broadcast("chat", data);
         return response;
     }
@@ -182,12 +190,29 @@ public class ChatService {
         data.put("type", "system");
         data.put("content", content);
         data.put("ts", saved.ts());
+        data.put("vipLevel", 0);
+        data.put("vipBadgeVisible", false);
+        data.put("avatarFrame", "default");
         pushService.broadcast("chat", data);
         return saved;
     }
 
-    private ChatDtos.MessageResponse toDto(ChatMessage message, String avatar) {
-        return new ChatDtos.MessageResponse(message.getId(), message.getPlayerId(), message.getUsername(), message.getPlayerId() == null ? message.getContent() : filterContent(message.getContent()), message.getCreatedAt(), avatar);
+    private ChatDtos.MessageResponse toDto(ChatMessage message, PlayerChatProfile profile) {
+        String avatar = profile != null ? profile.avatar() : null;
+        Integer vipLevel = profile != null && profile.vipLevel() != null ? profile.vipLevel() : 0;
+        Boolean vipBadgeVisible = profile != null && profile.vipBadgeVisible() != null ? profile.vipBadgeVisible() : false;
+        String avatarFrame = profile != null && profile.avatarFrame() != null ? profile.avatarFrame() : "default";
+        return new ChatDtos.MessageResponse(
+                message.getId(),
+                message.getPlayerId(),
+                message.getUsername(),
+                message.getPlayerId() == null ? message.getContent() : filterContent(message.getContent()),
+                message.getCreatedAt(),
+                avatar,
+                vipLevel,
+                vipBadgeVisible,
+                avatarFrame
+        );
     }
 
     @Scheduled(fixedDelay = 60_000, scheduler = "retentionTaskScheduler")

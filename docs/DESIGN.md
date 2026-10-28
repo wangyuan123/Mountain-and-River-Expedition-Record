@@ -468,9 +468,9 @@ NPC 城市／要塞已取消常规生成和补生，地图读取不再提供此�
    - 彻底消除了模型周边的白色/浅灰底色残留（包括麦田左下白斑及油田右侧灰斑），消除油田底部的矩形直切黑影；
    - 粮田模型主体在画布四周预留 26px～30px 安全呼吸空间，四周边缘采用 8~12px 微羽化与疏松植株/碎石自然过渡，使底层草坪与黑土地貌自然穿透渗入，消除“贴纸悬浮感”与“沙盘方积木感”。
 5. **规范资产路径**：
-   - 粮田（定版款式一）：`frontend/img/map/wild-grainfield-map-v2.webp`、`frontend/img/map/wild-grainfield-v1-waterway.webp`、`frontend/img/map/wild-grainfield-v1-waterway.png`、`frontend/img/map/wild-grainfield-integrated.webp`、`frontend/img/map/wild-grainfield.webp`
-   - 粮田备选款式二（丰收木车）：`frontend/img/map/wild-grainfield-v2-cart.webp`、`frontend/img/map/wild-grainfield-v2-cart.png`
-   - 油田（定版款型 C）：`frontend/img/map/wild-oil-integrated.webp`、`frontend/img/map/wild-oil-transparent-c.png`、`frontend/img/map/wild-oil-frames/frame_00.png`～`frame_11.png`
+   - 粮田（定版款式一）：`frontend/img/map/wild-grainfield-map-v2.webp`、`frontend/img/map/wild-grainfield-map-v2-map-embedded.png`
+   - 粮田候选原稿：`output/imagegen/redesign-oil-grain-20261019/rice_model_v1_waterway.png`、`rice_model_v2_cart.png`；候选图和旧别名已从游戏资源目录清理。
+   - 油田（定版款型 C）：`frontend/img/map/wild-oil-integrated.webp`、`frontend/img/map/wild-oil-frames/frame_00.png`～`frame_11.png`；`wild-oil-transparent-c.png` 仅供本地对比图制作脚本读取。
    - 评选报告与对比总图：`output/imagegen/redesign-oil-grain-20261019/perfect_blend_verification.png`、`organic_blend_optimization_report.md`、本地交互网页 `frontend/tests/grainfield-variants-preview.html`。
 
 ## 前端模块

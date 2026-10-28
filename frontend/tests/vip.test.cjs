@@ -93,6 +93,21 @@ test('VIP modal uses server vipLevel, title and recharge thresholds rather than 
   assert.doesNotMatch(elements.vipModalBody.innerHTML, /前往充值激活 VIP 1/);
 });
 
+test('头像框选项使用服务端标准标识和对应 VIP 解锁等级', () => {
+  const { vip } = setup({});
+  const html = vip.renderCosmeticsTab({ level: 10, avatarFrame: 'frame-supreme-v1' });
+  assert.match(html, /Game\.Vip\.selectFrame\('default'\)/);
+  assert.match(html, /Game\.Vip\.selectFrame\('frame-bronze-v1'\)/);
+  assert.match(html, /Game\.Vip\.selectFrame\('frame-silver-v1'\)/);
+  assert.match(html, /Game\.Vip\.selectFrame\('frame-gold-v1'\)/);
+  assert.match(html, /Game\.Vip\.selectFrame\('frame-jade-v1'\)/);
+  assert.match(html, /Game\.Vip\.selectFrame\('frame-supreme-v1'\)/);
+  assert.match(html, /class="vip-frame-card selected" onclick="Game\.Vip\.selectFrame\('frame-supreme-v1'\)"/);
+  assert.match(html, /黄金战纪[\s\S]*?VIP 5/);
+  assert.match(html, /翡翠寒魄[\s\S]*?VIP 7/);
+  assert.match(html, /星钻炽焰[\s\S]*?VIP 9/);
+});
+
 test('VIP 弹层与标签栏在 flex 约束与横屏模式下防止挤压变形，具备滚动保护与自适应紧凑样式', () => {
   const vipCss = fs.readFileSync(path.join(__dirname, '../css/vip.css'), 'utf8');
   const landscapeCss = fs.readFileSync(path.join(__dirname, '../css/landscape.css'), 'utf8');

@@ -34,6 +34,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
+        if (request.getRequestURI().startsWith("/api/auth/")) response.setHeader("Cache-Control", "no-store");
         if (request.getRequestURI().startsWith("/api/") && !"OPTIONS".equals(request.getMethod())) {
             try { server.requireSelected(request.getHeader("X-Game-Server")); }
             catch (IllegalArgumentException error) {

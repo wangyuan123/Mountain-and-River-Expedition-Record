@@ -120,7 +120,7 @@ test('wild map dispatch renders safely with zero troop defaults and excludes app
       {id:6,name:'marching_active',military:1200}
     ]
   };
-  const c=context({DATA:{wildTypes:{grainfield:{name:'粮田',res:'food',icon:'img/map/wild-grainfield.webp'}},resources:{food:{name:'粮食'}},units:{scout:{name:'侦察机'},infantry:{name:'步兵'}},starColor:{}},Core:{state,views:{},armyCap:()=>999999},go(){},toast(){},fmt:String});load(c,'world.js');
+  const c=context({DATA:{wildTypes:{grainfield:{name:'粮田',res:'food',icon:'img/map/wild-grainfield-map-v2.webp'}},resources:{food:{name:'粮食'}},units:{scout:{name:'侦察机'},infantry:{name:'步兵'}},starColor:{}},Core:{state,views:{},armyCap:()=>999999},go(){},toast(){},fmt:String});load(c,'world.js');
   c.Game.World.mapAction({kind:'wild',id:5,type:'grainfield',level:2,x:103,y:105},'conquer');
   const v={innerHTML:''};c.Game.World.renderDispatch(v);
   assert.match(v.innerHTML,/<button type="button" class="dispatch-stat-item dispatch-cap-action" onclick="Game.World.showArmyCapInfo\(\)"/);
@@ -142,7 +142,8 @@ test('dispatch cap card opens a dismissible breakdown for the selected city',()=
   assert.match(body.mask.innerHTML,/下士/);
   assert.doesNotMatch(body.mask.innerHTML,/城防 Lv|100000|100,000/);
   assert.match(body.mask.innerHTML,/三军统帅[^<]*当前 Lv\.5，加成 \+20%/);
-  assert.match(body.mask.innerHTML,/75000 × \(1 \+ 20%\) = 90000/);
+  assert.match(body.mask.innerHTML,/当前带兵上限：90000/);
+  assert.doesNotMatch(body.mask.innerHTML,/75000 ×|少校为 300,000/);
   assert.match(body.mask.innerHTML,/市政厅、作战参谋部和指挥官等级不直接增加上限/);
   assert.equal(closeButton.focused,true);
   closeButton.onclick();
@@ -172,7 +173,7 @@ test('all dispatch actions start empty; players can configure troops explicitly'
 test('wild scouting opens preparation and submits a scout march only after launch',async()=>{
   const state={world:{pos:{x:100,y:100},wildTiles:[]},tech:{},resources:{},reports:[],army:{scout:8,infantry:20},officers:[]};
   const routes=[],messages=[],requests=[];
-  const c=context({DATA:{wildTypes:{oil:{name:'油田',res:'oil',icon:'img/map/wild-oil.webp'}},resources:{oil:{name:'石油'}},units:{scout:{name:'侦察机'},infantry:{name:'步兵'}},starColor:{}},Core:{state,views:{},armyCap:()=>999999},go:r=>routes.push(r),toast:m=>messages.push(m),fmt:String,API:{wildScout(){assert.fail('must not reveal intelligence instantly');},worldDispatch:r=>{requests.push(r);return Promise.resolve();}}});load(c,'world.js');
+  const c=context({DATA:{wildTypes:{oil:{name:'油田',res:'oil',icon:'img/map/wild-oil-integrated.webp'}},resources:{oil:{name:'石油'}},units:{scout:{name:'侦察机'},infantry:{name:'步兵'}},starColor:{}},Core:{state,views:{},armyCap:()=>999999},go:r=>routes.push(r),toast:m=>messages.push(m),fmt:String,API:{wildScout(){assert.fail('must not reveal intelligence instantly');},worldDispatch:r=>{requests.push(r);return Promise.resolve();}}});load(c,'world.js');
   const target={kind:'wild',id:42,type:'oil',level:3,x:110,y:154};
   c.Game.World.mapAction(target,'scout');
   assert.equal(routes.at(-1),'dispatch');

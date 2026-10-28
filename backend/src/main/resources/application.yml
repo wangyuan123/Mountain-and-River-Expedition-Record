@@ -32,6 +32,21 @@ jwt:
   expiration: ${WARGAME_JWT_EXPIRATION:86400000}  # 24 hours in milliseconds
 
 game:
+  email:
+    enabled: ${WARGAME_EMAIL_ENABLED:true}
+    host: ${WARGAME_MAIL_HOST:smtp.qq.com}
+    port: ${WARGAME_MAIL_PORT:465}
+    ssl: ${WARGAME_MAIL_SSL:true}
+    username: ${WARGAME_MAIL_USERNAME:}
+    password: ${WARGAME_MAIL_PASSWORD:}
+    from: ${WARGAME_MAIL_FROM:}
+    data-key: ${WARGAME_EMAIL_DATA_KEY:}
+    hmac-key: ${WARGAME_EMAIL_HMAC_KEY:}
+    hourly-limit: ${WARGAME_MAIL_HOURLY_LIMIT:200}
+    daily-limit: ${WARGAME_MAIL_DAILY_LIMIT:1000}
+    queue-limit: ${WARGAME_MAIL_QUEUE_LIMIT:1000}
+    support-url: ${WARGAME_SUPPORT_URL:}
+    trusted-proxies: ${WARGAME_MAIL_TRUSTED_PROXIES:}
   bot:
     enabled: ${WARGAME_BOT_ENABLED:true}
     poll-interval: ${WARGAME_BOT_POLL_INTERVAL:5000}

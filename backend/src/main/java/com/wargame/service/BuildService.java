@@ -658,6 +658,8 @@ public class BuildService {
                     if (slot < buildings.size()) {
                         Building building = buildings.get(slot);
                         buildingRepository.delete(building);
+                        // Hibernate 默认先 UPDATE 后 DELETE；先落库删除，才能将下一栋移至有唯一约束的零号位。
+                        buildingRepository.flush();
                         buildings.remove(slot.intValue());
                         // 重排剩余同类型建筑的 slot 序号 (保持 0..N-1 连续)
                         for (int i = 0; i < buildings.size(); i++) {
@@ -665,6 +667,14 @@ public class BuildService {
                             if (rem.getSlot() == null || rem.getSlot() != i) {
                                 rem.setSlot(i);
                                 buildingRepository.save(rem);
+                            }
+                        }
+                        // 队列使用同类型建筑的列表位次；重排后同步后续升级、拆除及新建，避免完工落到别的建筑。
+                        for (Construction pending : constructionRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId))) {
+                            if (buildingType.equals(pending.getBuildingType())
+                                    && pending.getSlot() != null && pending.getSlot() > slot) {
+                                pending.setSlot(pending.getSlot() - 1);
+                                constructionRepository.save(pending);
                             }
                         }
                     }

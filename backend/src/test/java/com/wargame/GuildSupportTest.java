@@ -224,6 +224,12 @@ class GuildSupportTest extends BaseServiceTest {
     }
 
     @Test void fullBattleUsesGarrisonSnapshotBlocksRecallAndReturnsOnlySurvivors() {
+        Officer attackOfficer = createOfficer(outsider.getId(), "commander", 219, 190, 50, 50);
+        attackOfficer.setName("攻方快照军官"); attackOfficer.setLevel(50);
+        attackOfficer.setSkills(JsonUtil.toJson(List.of(Map.of("id", "frenzy", "lv", 5))));
+        officerRepository.save(attackOfficer);
+        Officer homeOfficer = createOfficer(receiver.getId(), "commander", 81, 79, 50, 50);
+        homeOfficer.setName("守方快照军官"); officerRepository.save(homeOfficer);
         outsider.setWarAgainstId(receiver.getId()); outsider.setWarAt(1L); outsider.setWarEndAt(System.currentTimeMillis() + 3600000); playerRepository.save(outsider);
         March reinforcement = dispatch("reinforce", Map.of("infantry", 100), Map.of()); arrive(reinforcement);
         createArmyUnit(outsider.getId(), "htank", 1000);
@@ -231,6 +237,9 @@ class GuildSupportTest extends BaseServiceTest {
         March attack = marchService.createDispatch(outsider.getId(), request(destination, "plunder", Map.of("htank", 1000), Map.of()));
         marchService.processMarches(outsider.getId(), attack.getArriveAt() + 1);
         BattleSession session = battles.findByMarchId(attack.getId()).orElseThrow();
+        // 开战后的升级或换装不应改写真实参战快照。
+        attackOfficer.setMilitary(1); attackOfficer.setLevel(99); attackOfficer.setSkills("[]");
+        homeOfficer.setDefense(1); officerRepository.save(attackOfficer); officerRepository.save(homeOfficer);
         // 医疗在开战后升级，终局采用新回收率，战场攻防仍采用开战来源快照。
         createTechnology(sender.getId(), "log_medical", 10);
         assertEquals(110, com.wargame.model.constants.UnitEquipmentEffects.aggregate(JsonUtil.parseIntMap(session.getInitialDefender())).get("infantry"));
@@ -242,6 +251,13 @@ class GuildSupportTest extends BaseServiceTest {
         var battleReport = scoutReportRepository.findByPlayerId(receiver.getId()).stream()
                 .filter(report -> "battle".equals(report.getType())).findFirst().orElseThrow();
         var data = JsonUtil.parseObjMap(battleReport.getData());
+        var commanders = JsonUtil.parseObjMap(JsonUtil.toJson(data.get("commanders")));
+        var attackSnapshot = JsonUtil.parseObjMap(JsonUtil.toJson(commanders.get("attacker")));
+        var homeSnapshot = JsonUtil.parseObjMap(JsonUtil.toJson(commanders.get("defender")));
+        assertEquals(219, attackSnapshot.get("military")); assertEquals(190, attackSnapshot.get("defense"));
+        assertEquals(50, attackSnapshot.get("level")); assertEquals(79, homeSnapshot.get("defense"));
+        assertEquals("frenzy", JsonUtil.parseList(JsonUtil.toJson(attackSnapshot.get("skills"))).get(0).get("id"));
+        assertTrue(data.get("report").toString().contains("军事属性 +219%攻击"));
         var initial = com.wargame.model.constants.UnitEquipmentEffects.aggregate(JsonUtil.parseIntMap(JsonUtil.toJson(data.get("initialDefender"))));
         var surviving = com.wargame.model.constants.UnitEquipmentEffects.aggregate(JsonUtil.parseIntMap(JsonUtil.toJson(data.get("survivorDefender"))));
         assertEquals(initial.get("infantry") - surviving.getOrDefault("infantry", 0), ((Number) data.get("losses")).intValue());
@@ -259,6 +275,7 @@ class GuildSupportTest extends BaseServiceTest {
         assertFalse(medical.get(0).containsKey("playerId"));
         var enemyReport = scoutReportRepository.findByPlayerId(outsider.getId()).stream().filter(r -> "battle".equals(r.getType())).findFirst().orElseThrow();
         var enemyMedical = JsonUtil.parseList(JsonUtil.toJson(JsonUtil.parseObjMap(enemyReport.getData()).get("formationRecovery")));
+        assertEquals(commanders, JsonUtil.parseObjMap(JsonUtil.toJson(JsonUtil.parseObjMap(enemyReport.getData()).get("commanders"))));
         assertTrue(enemyMedical.stream().noneMatch(row -> medical.get(0).get("formationId").equals(row.get("formationId"))));
         if (stationed > 0) { marchService.cancelMarch(sender.getId(), reinforcement.getId()); arrive(reinforcement); }
         assertEquals(100 + stationed, troop(sender.getId(), 0, "infantry"));

@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="skl_medic_shield" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="35%" stop-color="#10b981"/>
+      <stop offset="70%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#064e3b"/>
+    </linearGradient>
+    <linearGradient id="skl_medic_cross" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="60%" stop-color="#f0fdf4"/>
+      <stop offset="100%" stop-color="#bbf7d0"/>
+    </linearGradient>
+    <linearGradient id="skl_medic_wing" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6ee7b7"/>
+      <stop offset="50%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+    <radialGradient id="skl_medic_glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#34d399" stop-opacity="0.7"/>
+      <stop offset="50%" stop-color="#059669" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#064e3b" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="skl_medic_shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#skl_medic_shadow)">
+    <!-- Emerald Glow -->
+    <circle cx="32" cy="32" r="28" fill="url(#skl_medic_glow)"/>
+
+    <!-- Rescue Angel Wings Background -->
+    <path d="M18 20 C10 18, 4 28, 8 36 C14 36, 18 30, 24 28 Z" fill="url(#skl_medic_wing)" opacity="0.85"/>
+    <path d="M14 26 C8 26, 4 34, 10 40 C14 40, 18 34, 22 32 Z" fill="url(#skl_medic_wing)" opacity="0.7"/>
+    <path d="M46 20 C54 18, 60 28, 56 36 C50 36, 46 30, 40 28 Z" fill="url(#skl_medic_wing)" opacity="0.85"/>
+    <path d="M50 26 C56 26, 60 34, 54 40 C50 40, 46 34, 42 32 Z" fill="url(#skl_medic_wing)" opacity="0.7"/>
+
+    <!-- Medical Fortress Hexagon / Shield -->
+    <path d="M32 9 L49 19 L49 43 L32 55 L15 43 L15 19 Z"
+          fill="url(#skl_medic_shield)" stroke="#6ee7b7" stroke-width="1"/>
+
+    <!-- First Aid Cross -->
+    <path d="M27 18 H37 V27 H46 V37 H37 V46 H27 V37 H18 V27 H27 Z"
+          fill="url(#skl_medic_cross)" stroke="#047857" stroke-width="0.8"/>
+
+    <!-- Center Heartbeat / Vital ECG Pulse Line -->
+    <polyline points="20,32 26,32 28,26 31,38 34,29 36,34 38,32 44,32"
+              fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Rescue Sparkle -->
+    <polygon points="32,12 34,15 37,16 34,17 32,20 30,17 27,16 30,15" fill="#ffffff"/>
+  </g>
+</svg>

@@ -23,6 +23,7 @@ public class AuthController {
     private final JwtUtil jwtUtil;
     private final AccountService accountService;
     private final com.wargame.config.GameServerIdentity server;
+    @org.springframework.beans.factory.annotation.Autowired private com.wargame.service.AccountEmailService emails;
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.compliance.AntiAddictionService protection;
 
@@ -35,14 +36,18 @@ public class AuthController {
     }
 
     @GetMapping("/server")
-    public Map<String, String> server() { return Map.of("id", server.id(), "name", server.name()); }
+    public Map<String, Object> server() { return Map.of("id", server.id(), "name", server.name(), "accountSecurity", emails.capabilities()); }
 
     @PostMapping("/register")
     public ResponseEntity<AuthDtos.AuthResponse> register(@RequestBody AuthDtos.RegisterRequest request,
                                                            HttpServletRequest httpRequest) {
         server.requireSelected(request.serverId());
-        AuthService.AuthResult result = authService.register(request.username(), request.password(), request.agreementVersion(), httpRequest);
-        return ResponseEntity.ok(new AuthDtos.AuthResponse(result.token(), result.username(), result.playerId()));
+        if (request.email() == null || request.challengeId() == null || request.emailCode() == null)
+            throw new com.wargame.security.AccountException("CLIENT_UPDATE_REQUIRED", "页面版本已更新，请刷新后注册并验证 QQ 邮箱");
+        AuthService.AuthResult result = authService.register(request.username(), request.password(), request.agreementVersion(),
+                request.email(), request.challengeId(), request.emailCode(), httpRequest);
+        return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(new AuthDtos.AuthResponse(result.token(), result.username(), result.playerId()));
     }
 
     @PostMapping("/login")

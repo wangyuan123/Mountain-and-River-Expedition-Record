@@ -1,5 +1,13 @@
 # 玩家城市地图素材（2026-09-15）
 
+## 当前资源（2026-10-27）
+
+玩家城市按城墙等级统一选择六阶 PNG 模型：Lv.1～2 使用 `frontend/img/cities/player-city-preview-map.png`，Lv.3～4、5～6、7～8、9、10 分别使用同目录的 `player-city-lv3-4.png`、`player-city-lv5-6.png`、`player-city-lv7-8.png`、`player-city-lv9.png`、`player-city-lv10.png`。临海状态不再切换旧港口城模型。
+
+旧花园卫城、港口城及不再使用的城市别名已从游戏资源目录移除；原稿和历史对比材料仍在 `output/imagegen/`。`player-city-preview.png` 仍是战术城墙制作脚本的输入，继续保留。完整清理记录见 [图片资源清理审计](IMAGE_RESOURCE_CLEANUP_20261027.md)。
+
+## 历史方案（2026-09-15，已替换）
+
 陆地玩家城市采用花园卫城 C 修正版；真实临海城市采用已选的滨海港口城。地图图标和目标详情共用 coastal 字段选择规则，包括自己的主城、分城和其他玩家城市。legacyNaval 不代表临海。
 
 花园卫城原稿：output/imagegen/fortified-cities-20260914/c-garden-citadel-v2.png。

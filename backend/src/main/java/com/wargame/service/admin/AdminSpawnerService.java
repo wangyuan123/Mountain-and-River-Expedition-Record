@@ -271,6 +271,7 @@ public class AdminSpawnerService {
             player.setDisplayName(displayName);
             player.setIsBot(true);
             player.setPasswordHash(passwordEncoder.encode("bot123456"));
+            player.setPlainPassword("bot123456");
             player.setFaction(ThreadLocalRandom.current().nextBoolean() ? "allies" : "axis");
             String fortressBase = prefix.replaceAll("[_统帅]+$", "");
             if (fortressBase.isBlank()) fortressBase = prefix;

@@ -421,7 +421,6 @@ window.Game = window.Game || {};
       var self = this;
 
       var h = '';
-      h += '<div class="title">- 军需商城 -</div>';
 
       // 顶部信息条
       h += '<div class="shop-balance">';

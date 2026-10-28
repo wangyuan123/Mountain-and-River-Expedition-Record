@@ -46,6 +46,29 @@ window.Game = window.Game || {};
   G.gameNow = function () { return G.GameTime.now(); };
 
   /**
+   * 将服务端头像框标识映射为已支持的 CSS 类，同时兼容旧版本短标识。
+   * @param {string} frameId - 玩家状态中的头像框标识
+   * @returns {string} 对应头像框 CSS 类；无边框或未知标识返回空串
+   */
+  G.avatarFrameClass = function (frameId) {
+    var classes = {
+      'frame-bronze-v1': 'frame-bronze-v1',
+      'frame-silver-v1': 'frame-silver-v1',
+      'frame-gold-v1': 'frame-gold-v1',
+      'frame-jade-v1': 'frame-jade-v1',
+      'frame-marshal-v1': 'frame-jade-v1',
+      'frame-supreme-v1': 'frame-supreme-v1',
+      bronze: 'frame-bronze-v1',
+      silver: 'frame-silver-v1',
+      gold: 'frame-gold-v1',
+      jade: 'frame-jade-v1',
+      marshal: 'frame-jade-v1',
+      supreme: 'frame-supreme-v1'
+    };
+    return Object.prototype.hasOwnProperty.call(classes, frameId) ? classes[frameId] : '';
+  };
+
+  /**
    * 统一时长展示，省略前导零单位，保留最高有效单位之后的全部单位；正数不足一秒按一秒展示。
    * @param {number} seconds - 时长或倒计时剩余秒数
    * @returns {string} 如1天0小时0分钟5秒、2小时0分钟0秒、3分钟8秒或0秒
@@ -535,6 +558,11 @@ window.Game = window.Game || {};
       { action: 'harass', name: '袭扰', description: '以持续袭击骚扰、打击敌军，作战方式类似掠夺；即使获胜也不获得资源、不占领目标。最多战斗 15 回合，适合不喜欢冗长回合作战的玩家；到达上限仍未获胜时自动撤退。' },
       { action: 'guerrilla', name: '游击', description: '快速袭击敌军，以骚扰打击为目的，作战方式类似掠夺；即使获胜也不获得资源、不占领目标。最多战斗 5 回合，到达上限仍未获胜时自动撤退，适合速战速撤。' }
     ],
+    mobilizationOrders: [
+      { id: 'mobilizationOrder', name: '战争动员令', bonusPercent: 10 },
+      { id: 'advancedMobilizationOrder', name: '高级战争动员令', bonusPercent: 25 },
+      { id: 'rapidMobilizationOrder', name: '极速战争动员令', bonusPercent: 50 }
+    ],
     dispatchActionNames: { campaign: '讨伐', conquer: '征服', plunder: '掠夺', feint: '佯攻', harass: '袭扰', guerrilla: '游击', scout: '侦查', gather: '采集', station: '派遣进驻', intercept_scout: '出城拦截' },
     cityStateNames: { peace: '和平', war: '战争', shield: '护盾' },
     shieldPricePerCity: 200,
@@ -624,6 +652,9 @@ window.Game = window.Game || {};
       { id: 'warSpeedOrder', cat: 'util', name: '宣战加速令', icon: 'img/items/march-ord.svg', desc: '缩短本城发起的宣战备战时间：基础50%，学识提高效果，最高80%，总备战至少30分钟', price: 250, stock: null, tag: '' },
       { id: 'populationOrder', cat: 'util', name: '人口动员令', icon: 'img/items/population-order.svg', desc: '使用后立即增加500空闲人口,不超过人口上限', price: 100, stock: null, tag: '推荐' },
       { id: 'emergencyPopulationOrder', cat: 'util', name: '紧急人口动员令', icon: 'img/items/emergency-population-order.svg', desc: '使用后立即增加当前城市人口容量上限30%的空闲人口,不超过人口上限', price: 100, stock: null, tag: '' },
+      { id: 'mobilizationOrder', cat: 'util', name: '战争动员令', icon: 'img/items/march-ord.svg', desc: '进攻出征时使用，本次出征带兵上限提高10%；编队超过基础上限时消耗1个', price: 80, stock: null, tag: '+10%' },
+      { id: 'advancedMobilizationOrder', cat: 'util', name: '高级战争动员令', icon: 'img/items/march-ord.svg', desc: '进攻出征时使用，本次出征带兵上限提高25%；编队超过基础上限时消耗1个', price: 220, stock: null, tag: '+25%' },
+      { id: 'rapidMobilizationOrder', cat: 'util', name: '极速战争动员令', icon: 'img/items/march-ord.svg', desc: '进攻出征时使用，本次出征带兵上限提高50%；编队超过基础上限时消耗1个', price: 500, stock: null, tag: '+50%' },
       { id: 'cityRenameCard', cat: 'util', name: '城市改名卡', icon: 'img/items/city-rename-card.svg', desc: '为一座城市更换新名字', price: 60, stock: null, tag: '' },
       { id: 'teleportNormal', cat: 'util', name: '普通传送', icon: 'img/items/teleport-normal.svg', desc: '消耗1个，将当前城市随机传送至开放地图的四格空闲陆地', price: 100, stock: null, tag: '' },
       { id: 'teleportAdvanced', cat: 'util', name: '高级传送', icon: 'img/items/teleport-advanced.svg', desc: '消耗1个，将当前城市传送至指定坐标，目的地须有完整2×2空闲陆地', price: 500, stock: null, tag: '' },

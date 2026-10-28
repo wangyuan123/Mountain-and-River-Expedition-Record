@@ -115,8 +115,8 @@ window.Game = window.Game || {};
 
     // ==================== 鉴权 ====================
 
-    register: function (username, password, agreementVersion) {
-      return client.post('/auth/register', { username: username, password: password, agreementVersion: agreementVersion, serverId: client.serverId })
+    register: function (username, password, agreementVersion, emailProof) {
+      return client.post('/auth/register', Object.assign({ username: username, password: password, agreementVersion: agreementVersion, serverId: client.serverId }, emailProof || {}), { retry: 0 })
         .then(function (data) {
           if (data.token) client.setToken(data.token, data.username);
           client.invalidateStateCache();
@@ -152,6 +152,12 @@ window.Game = window.Game || {};
     getUserInfo: function () {
       // { playerId, username, faction, cityName }
       return client.get('/auth/me');
+    },
+
+    /** 邮箱验证和最终写请求不自动重放。 */
+    accountEmail: function (path, body) {
+      if (body == null) return client.get('/auth' + path, { silent: true, retry: 0 });
+      return client.post('/auth' + path, Object.assign({ serverId: client.serverId }, body), { silent: true, retry: 0 });
     },
 
     /** 将“跳过新手引导”持久化到当前账号。 */
@@ -908,7 +914,7 @@ window.Game = window.Game || {};
     },
 
     vipSetAvatarFrame: function (frameId) {
-      return client.post('/game/vip/avatar-frame', { frameId: frameId })
+      return client.post('/game/vip/avatar/frame', { frameId: frameId })
         .then(function (data) {
           if (data && data.state) applyState(data.state);
           return data;
@@ -916,7 +922,7 @@ window.Game = window.Game || {};
     },
 
     vipSetCustomAvatarUrl: function (avatarUrl) {
-      return client.post('/game/vip/custom-avatar-url', { avatarUrl: avatarUrl })
+      return client.post('/game/vip/avatar/url', { url: avatarUrl })
         .then(function (data) {
           if (data && data.state) applyState(data.state);
           return data;
@@ -924,7 +930,7 @@ window.Game = window.Game || {};
     },
 
     vipUploadCustomAvatarDataUrl: function (dataUrl) {
-      return client.post('/game/vip/custom-avatar-dataurl', { dataUrl: dataUrl })
+      return client.post('/game/vip/avatar/upload', { dataUrl: dataUrl })
         .then(function (data) {
           if (data && data.state) applyState(data.state);
           return data;

@@ -131,12 +131,14 @@ class AccountDeletionTest extends BaseServiceTest {
         March enemy = createMarch(other.getId(), "player", city.getId().toString(), "待清理城", 10, 10, 70, 71,
                 Map.of("infantry", 7), "plunder", 1, 1000, false, false);
         disable(player);
+        player.setCustomAvatar("img/avatars/custom/" + player.getId() + "_1700000000000.png");
         player.setRecoverUntil(System.currentTimeMillis() - 1);
         playerRepository.saveAndFlush(player);
         Long id = player.getId(), mailId = received.getId(), marchId = enemy.getId(), wildId = wild.getId();
         accounts.purgeExpiredAccount(id);
         em.clear();
         assertEquals("DELETED", playerRepository.findById(id).orElseThrow().getAccountStatus());
+        assertNull(playerRepository.findById(id).orElseThrow().getCustomAvatar());
         assertTrue(playerRepository.existsByUsername("cleanup-account"));
         assertTrue(playerCityRepository.findByOwnerId(id).isEmpty());
         assertTrue(buildingRepository.findByPlayerId(id).isEmpty());

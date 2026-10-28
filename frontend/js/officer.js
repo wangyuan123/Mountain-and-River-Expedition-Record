@@ -1538,7 +1538,6 @@ window.Game = window.Game || {};
       var academyLv = s.buildings.academy || 0;
       var h = '';
 
-      h += '<div class="title">- 军校招募 -</div>';
       h += '<div class="desc">军校 Lv.' + academyLv;
       if (academyLv > 0) {
         h += ' · 每批' + (s.academy.candidateCount || 10) + '人';
@@ -2209,11 +2208,12 @@ window.Game = window.Game || {};
       closeSkillDetailModal();
       var esc = G.escapeHtml || function (value) { return String(value); };
       var currentLevel = Math.max(1, Math.min(skill.max || 1, parseInt(level, 10) || 1));
+      var iconHtml = (skill.icon && G.iconHtml) ? G.iconHtml(skill.icon, skill.name) + ' ' : '';
       var mask = document.createElement('div');
       mask.className = 'modal-mask officer-skill-detail-mask';
       mask.innerHTML = '<section class="modal-card officer-skill-detail-modal" role="dialog" aria-modal="true" aria-labelledby="officerSkillDetailTitle">' +
         '<div class="officer-skill-detail-head">' +
-          '<div><div class="officer-skill-detail-kicker">军官技能</div><h2 id="officerSkillDetailTitle">' + esc(skill.name) + '</h2></div>' +
+          '<div><div class="officer-skill-detail-kicker">军官技能</div><h2 id="officerSkillDetailTitle">' + iconHtml + esc(skill.name) + '</h2></div>' +
           '<button type="button" class="officer-skill-detail-close" aria-label="关闭技能详情">×</button>' +
         '</div>' +
         '<div class="officer-skill-detail-body">' +

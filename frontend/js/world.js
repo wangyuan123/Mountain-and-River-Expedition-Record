@@ -506,6 +506,18 @@ window.Game = window.Game || {};
       if (this._refreshDispatchRoute) this._refreshDispatchRoute();
     },
 
+    /** 只允许将有库存的战争动员令挂到当前进攻出征草稿。 */
+    setMobilizationOrder: function (itemId) {
+      var dt = Core.state.world._dispatchTarget;
+      if (!dt) return;
+      var action = this.resolveDispatchAction(dt);
+      var isAttack = (G.Constants.campaignModes || []).some(function (mode) { return mode.action === action; });
+      var item = (G.Constants.mobilizationOrders || []).find(function (order) { return order.id === itemId; });
+      if (itemId && (!isAttack || !item || !(Number((Core.state.items || {})[itemId]) > 0))) return;
+      dt.mobilizationOrderItem = itemId || null;
+      this.updateDispatchStats();
+    },
+
     /** 仅定位有库存的运输兵种，不自动增兵或更改出征草稿。 */
     focusTransportUnit: function () {
       var input = ['truck', 'transport'].map(function (id) { return document.getElementById('dqty_' + id); })
@@ -626,10 +638,9 @@ window.Game = window.Game || {};
         '<div class="modal-card dispatch-cap-modal">' +
           '<div class="modal-title" id="dispatchArmyCapTitle">带兵上限说明</div>' +
           '<div class="modal-body">' +
-            '<p>列兵基础上限为 25,000，上尉及以下每阶增加 25,000；少校为 300,000，此后每阶增加 50,000，上将为 600,000。</p>' +
             '<p>当前军衔：' + esc(rank.name) + '，基础上限 ' + G.fmt(rankBase) + '。</p>' +
             '<p>三军统帅：任命指挥官后每级额外 +4%，最高 +20%；当前 Lv.' + skillLevel + '，加成 +' + skillPercent + '%。</p>' +
-            '<p><strong>当前上限 = ' + G.fmt(rankBase) + ' × (1 + ' + skillPercent + '%) = ' + G.fmt(total) + '</strong></p>' +
+            '<p><strong>当前带兵上限：' + G.fmt(total) + '</strong></p>' +
             '<p>市政厅、作战参谋部和指挥官等级不直接增加上限；单次出征还需有足够的当前城市可用驻军。</p>' +
           '</div>' +
           '<div class="modal-foot"><button type="button" class="btn btn-primary" id="dispatchCapClose">知道了</button></div>' +
@@ -850,7 +861,7 @@ window.Game = window.Game || {};
             // 敌城信息
             '<div class="dw-target">' +
               '<div class="dw-target-row">' +
-                '<span class="dw-emoji">🏰</span>' +
+                '<span class="dw-emoji">' + (G.mainCityIconHtml ? G.mainCityIconHtml('dw-city-icon') : '🏰') + '</span>' +
                 '<span class="dw-name">' + esc(target.name) + '</span>' +
                 (targetPlayer && targetPlayer !== target.name ? '<span class="dw-owner" style="font-size:12px;color:var(--muted);margin-left:6px">(玩家: ' + esc(targetPlayer) + ')</span>' : '') +
               '</div>' +
@@ -1228,11 +1239,22 @@ window.Game = window.Game || {};
       }
 
       var armyCap = typeof Core.armyCap === 'function' ? Math.max(0, Number(Core.armyCap()) || 0) : 0;
+      var mobilizationSelect = document.getElementById('dpMobilizationOrder');
+      var orderId = mobilizationSelect ? mobilizationSelect.value : (dt && dt.mobilizationOrderItem);
+      var order = (G.Constants.mobilizationOrders || []).find(function (item) { return item.id === orderId; });
+      var action = dt ? this.resolveDispatchAction(dt) : null;
+      var isAttack = (G.Constants.campaignModes || []).some(function (mode) { return mode.action === action; });
+      var activeOrder = isAttack && Number((s.items || {})[orderId]) > 0 ? order : null;
+      var effectiveArmyCap = activeOrder ? Math.floor(armyCap * (100 + activeOrder.bonusPercent) / 100) : armyCap;
       var troopCountEl = document.getElementById('estDispatchTroops');
       if (troopCountEl) {
-        troopCountEl.textContent = G.fmt(selectedTroops) + ' / ' + G.fmt(armyCap);
-        troopCountEl.style.color = selectedTroops > armyCap ? 'var(--danger, #c53030)' : '';
+        troopCountEl.textContent = G.fmt(selectedTroops) + ' / ' + G.fmt(effectiveArmyCap);
+        troopCountEl.style.color = selectedTroops > effectiveArmyCap ? 'var(--danger, #c53030)' : '';
       }
+      var mobilizationSummary = document.getElementById('dpMobilizationSummary');
+      if (mobilizationSummary) mobilizationSummary.textContent = activeOrder
+        ? '本次上限 ' + G.fmt(effectiveArmyCap) + '（基础 ' + G.fmt(armyCap) + '，+' + activeOrder.bonusPercent + '%）'
+        : '当前基础带兵上限 ' + G.fmt(armyCap);
 
       var maxMarches = typeof Core.maxMarches === 'function' ? Core.maxMarches() : (4 + ((s.buildings && s.buildings.headquarters) || 0));
       var activeMarches = (s.world && s.world.marches) || (Core.state && Core.state.world && Core.state.world.marches) || [];
@@ -1569,9 +1591,21 @@ window.Game = window.Game || {};
       var hasArmyCap = typeof Core.armyCap === 'function';
       var armyCap = hasArmyCap ? Math.max(0, Number(Core.armyCap()) || 0) : 0;
       var format = typeof G.fmt === 'function' ? G.fmt : String;
+      var mobilizationSelect = document.getElementById('dpMobilizationOrder');
+      var mobilizationOrderItem = mobilizationSelect ? mobilizationSelect.value : dt.mobilizationOrderItem;
+      var mobilizationOrder = (G.Constants.mobilizationOrders || []).find(function (order) { return order.id === mobilizationOrderItem; });
+      var canUseMobilization = (G.Constants.campaignModes || []).some(function (mode) { return mode.action === dispatchAction; });
+      if (hasArmyCap && selectedTroops > armyCap && canUseMobilization && mobilizationOrder
+          && !(Number((s.items || {})[mobilizationOrderItem]) > 0)) {
+        G.toast(mobilizationOrder.name + '数量不足');
+        return;
+      }
+      var dispatchArmyCap = canUseMobilization && mobilizationOrder
+        ? Math.floor(armyCap * (100 + mobilizationOrder.bonusPercent) / 100)
+        : armyCap;
       // 前端提前反馈，后端仍会在扣除资源与兵力前复核，防止绕过界面请求。
-      if (hasArmyCap && selectedTroops > armyCap) {
-        G.toast('出征兵力超过带兵上限 ' + format(armyCap) + '（当前选择 ' + format(selectedTroops) + '）');
+      if (hasArmyCap && selectedTroops > dispatchArmyCap) {
+        G.toast('出征兵力超过带兵上限 ' + format(dispatchArmyCap) + '（当前选择 ' + format(selectedTroops) + '）');
         return;
       }
 
@@ -1616,6 +1650,7 @@ window.Game = window.Game || {};
         commanderId: commanderId,
         carryRes: carryRes
       };
+      if (canUseMobilization && mobilizationOrderItem) dispatchRequest.mobilizationOrderItem = mobilizationOrderItem;
       if (dt.kind === 'wild_gather') {
         // 固定提交手动流程，旧草稿中的自动模式和放弃配置均不能继续生效。
         dispatchRequest.gatherMode = 'manual';
@@ -2277,6 +2312,26 @@ window.Game = window.Game || {};
         h += '</section>';
       }
 
+      var dispatchAction = this.resolveDispatchAction(dt);
+      var canMobilize = (G.Constants.campaignModes || []).some(function (mode) { return mode.action === dispatchAction; });
+      if (canMobilize) {
+        var mobilizationOrders = G.Constants.mobilizationOrders || [];
+        var selectedMobilizationOrder = dt.mobilizationOrderItem || '';
+        if (!(Number((s.items || {})[selectedMobilizationOrder]) > 0)) selectedMobilizationOrder = '';
+        dt.mobilizationOrderItem = selectedMobilizationOrder || null;
+        h += '<section class="dispatch-campaign-settings" aria-label="战争动员令">';
+        h += '<div class="dispatch-campaign-choice"><label for="dpMobilizationOrder">战争动员令<small>编队超过基础带兵上限时消耗1个</small></label>';
+        h += '<select id="dpMobilizationOrder" onchange="Game.World.setMobilizationOrder(this.value)">';
+        h += '<option value="">不使用</option>';
+        mobilizationOrders.forEach(function (order) {
+          var count = Number((s.items || {})[order.id]) || 0;
+          h += '<option value="' + order.id + '"' + (selectedMobilizationOrder === order.id ? ' selected' : '') + (count <= 0 ? ' disabled' : '') + '>' + order.name + ' +' + order.bonusPercent + '%（库存 ' + count + '）</option>';
+        });
+        h += '</select></div>';
+        h += '<p id="dpMobilizationSummary" role="status">当前基础带兵上限 ' + G.fmt(typeof Core.armyCap === 'function' ? Core.armyCap() : 0) + '</p>';
+        h += '</section>';
+      }
+
       if (isScout) {
         var ground = dt.groundRecon || {};
         h += '<div class="panel" id="dpReconMode"><b>侦查方式</b><div class="btn-row" style="flex-wrap:wrap">';
@@ -2359,7 +2414,7 @@ window.Game = window.Game || {};
       h += '      <span class="dispatch-stat-label">全军基准移速</span>';
       h += '      <strong class="dispatch-stat-val" id="estMarchSpeed">--</strong>';
       h += '    </div>';
-      h += '    <button type="button" class="dispatch-stat-item dispatch-cap-action" onclick="Game.World.showArmyCapInfo()" aria-label="查看带兵上限计算说明">';
+      h += '    <button type="button" class="dispatch-stat-item dispatch-cap-action" onclick="Game.World.showArmyCapInfo()" aria-label="查看带兵上限说明">';
       h += '      <span class="dispatch-stat-label">出征兵力 / 带兵上限</span>';
       h += '      <strong class="dispatch-stat-val" id="estDispatchTroops">' + G.fmt(Object.values(defaultArmy).reduce(function (total, count) { return total + count; }, 0)) + ' / ' + G.fmt(typeof Core.armyCap === 'function' ? Core.armyCap() : 0) + '</strong>';
       h += '    </button>';
@@ -3074,17 +3129,17 @@ window.Game = window.Game || {};
                  '<button class="tcard-btn" onclick="event.stopPropagation();Game.World.offerSurrender(' + it.i + ')">劝降</button>' +
                  '<button class="tcard-btn" onclick="event.stopPropagation();Game.World.attack(\'player\',' + it.i + ',\'scout\')">侦察</button>';
         } else if (warActive) {
-          return '<button class="tcard-btn tcard-btn-warn" onclick="event.stopPropagation();Game.World.attack(\'player\',' + it.i + ',\'campaign\')">讨伐</button>' +
-                 '<button class="tcard-btn" onclick="event.stopPropagation();Game.World.offerSurrender(' + it.i + ')">劝降</button>' +
-                 '<button class="tcard-btn" onclick="event.stopPropagation();Game.World.attack(\'player\',' + it.i + ',\'scout\')">侦察</button>';
+          return '<button class="tcard-btn" onclick="event.stopPropagation();Game.World.offerSurrender(' + it.i + ')">劝降</button>' +
+                 '<button class="tcard-btn" onclick="event.stopPropagation();Game.World.attack(\'player\',' + it.i + ',\'scout\')">侦察</button>' +
+                 '<button class="tcard-btn tcard-btn-warn" onclick="event.stopPropagation();Game.World.attack(\'player\',' + it.i + ',\'campaign\')">讨伐</button>';
         } else if (preWar) {
           return '<button class="tcard-btn" id="war-start-timer-' + it.i + '" disabled>开战倒计时 ' + G.formatDuration((p.warAt - G.gameNow()) / 1000) + '</button>' +
                  (p.canAccelerateWar ? '<button class="tcard-btn" onclick="event.stopPropagation();Game.World.useTacticalOrder(null,\'warSpeedOrder\',' + Number(p.id) + ')">加速备战</button>' : '') + '<button class="tcard-btn" onclick="event.stopPropagation();Game.World.offerSurrender(' + it.i + ')">劝降</button>' +
                  '<button class="tcard-btn" onclick="event.stopPropagation();Game.World.attack(\'player\',' + it.i + ',\'scout\')">侦察</button>';
         } else {
           return '<button class="tcard-btn" onclick="event.stopPropagation();Game.World.offerSurrender(' + it.i + ')">劝降</button>' +
-                 '<button class="tcard-btn tcard-btn-warn" onclick="event.stopPropagation();Game.World.declareWar(\'player\',' + it.i + ')">宣战</button>' +
-                 '<button class="tcard-btn" onclick="event.stopPropagation();Game.World.attack(\'player\',' + it.i + ',\'scout\')">侦察</button>';
+                 '<button class="tcard-btn" onclick="event.stopPropagation();Game.World.attack(\'player\',' + it.i + ',\'scout\')">侦察</button>' +
+                 '<button class="tcard-btn tcard-btn-warn" onclick="event.stopPropagation();Game.World.declareWar(\'player\',' + it.i + ')">宣战</button>';
         }
       }
 

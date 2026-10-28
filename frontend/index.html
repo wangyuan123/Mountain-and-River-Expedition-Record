@@ -4,16 +4,16 @@
   <meta charset="UTF-8">
   <!-- 静态开发服务器也启用基础 CSP；内联事件和 Pixi 动态着色器暂保留，输入仍须逐处转义。 -->
   <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'self'">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#f4f1ea">
   <meta name="description" content="山河远征录：经营城池、统筹资源、协同军团，在共享世界中制定你的战争策略。">
   <title>山河远征录 - 文字战争策略游戏</title>
-  <link rel="stylesheet" href="css/style.css?v=20261025-army-fullscreen-scroll">
+  <link rel="stylesheet" href="css/style.css?v=20261028-sticky-nav-page-scroll">
   <link rel="stylesheet" href="css/guild.css?v=1.2-emblem-presets">
   <link rel="stylesheet" href="css/world-map.css?v=5.8-res-detail-height">
   <link rel="stylesheet" href="css/dispatch-route.css?v=1.5-campaign-modes">
   <link rel="stylesheet" href="css/themes.css?v=20261025-compact-home-officer">
-  <link rel="stylesheet" href="css/classic-home.css?v=20261025-compact-army-summary">
+  <link rel="stylesheet" href="css/classic-home.css?v=20261027-round-avatar">
   <link rel="stylesheet" href="css/onboarding.css?v=20261013-short-guide">
   <link rel="stylesheet" href="css/footer.css?v=1.2-portrait-info">
   <link rel="stylesheet" href="css/protection.css?v=1.0">
@@ -49,19 +49,19 @@
   </div>
   <div id="toast"></div>
 
-  <script src="js/constants.js?v=20261027-player-power"></script>
+  <script src="js/constants.js?v=20261027-avatar-frame-contract"></script>
   <script src="js/sound.js?v=1.5-compact-settings"></script>
   <script src="js/theme.js?v=1.2-classic-home-constants"></script>
   <script src="js/data.js?v=20261027-experience-books"></script>
   <script src="js/icons.js?v=1.0-resource-images"></script>
   <script src="js/servers.js?v=1"></script>
-  <script src="js/api-client.js?v=20261020-server-clock"></script>
-  <script src="js/api.js?v=20261026-vip-recharge-sync"></script>
-  <script src="js/ws-client.js?v=20261020-server-clock"></script>
+  <script src="js/api-client.js?v=20261028-qq-email"></script>
+  <script src="js/api.js?v=20261028-qq-email"></script>
+  <script src="js/ws-client.js?v=20261028-qq-email"></script>
   <script src="js/radar.js?v=20261024-radar-building-split"></script>
   <script src="js/ws-handlers.js?v=20261024-guild-radar"></script>
   <script src="js/save.js?v=20261027-officer-exp-20m"></script>
-  <script src="js/core.js?v=20261026-vip-recharge-sync"></script>
+  <script src="js/core.js?v=20261027-avatar-frame-contract"></script>
   <script src="js/prerequisites.js?v=20261020-unit-unlock-v4"></script>
   <script src="js/build.js?v=20261024-radar-route-copy"></script>
   <script src="js/fort.js?v=1.5-positive-attacks"></script>
@@ -89,23 +89,24 @@
   <script src="js/market.js?v=1.2-nav-rename"></script>
   <script src="js/chat.js?v=20261022-unified-duration"></script>
   <script src="js/private-chat.js?v=20261022-unified-duration"></script>
-  <script src="js/friends.js?v=20261027-player-power"></script>
+  <script src="js/friends.js?v=20261028-profile-privacy"></script>
   <script src="js/mail.js?v=20261022-unified-duration"></script>
   <script src="js/guild.js?v=20261022-unified-duration"></script>
   <script src="js/rankings.js?v=20261027-player-power"></script>
   <script src="js/recharge.js?v=3.1-remove-monthly-cards"></script>
-  <script src="js/battle.js?v=20261024-playtest-final-state"></script>
+  <script src="js/battle.js?v=20261028-clear-bonus-log"></script>
   <script src="js/pvp.js?v=20261022-unified-duration"></script>
   <script src="js/task-quests.js?v=1.1"></script>
   <script src="js/task.js?v=20261022-unified-duration"></script>
   <script src="js/onboarding.js?v=20261024-city-defense-radar"></script>
   <script src="js/main-quest.js?v=20261022-unified-duration"></script>
-  <script src="js/cities.js?v=20261024-city-capacity-tip"></script>
-  <script src="js/vip.js?v=20261026-vip-city-dropdown"></script>
-  <script src="js/main-view.js?v=20261025-compact-home-officer"></script>
-  <script src="js/player-profile.js?v=20261027-player-power"></script>
-  <script src="js/protection.js?v=20261022-unified-duration"></script>
-  <script src="js/main.js?v=20261022-unified-duration"></script>
-  <script src="js/account.js?v=3.0-protection"></script>
+  <script src="js/cities.js?v=20261028-drawer-dock-fixed"></script>
+  <script src="js/vip.js?v=20261027-avatar-upload-fix"></script>
+  <script src="js/main-view.js?v=20261028-qq-email"></script>
+  <script src="js/player-profile.js?v=20261028-portrait-dock-v3"></script>
+  <script src="js/protection.js?v=20261028-qq-email"></script>
+  <script src="js/main.js?v=20261028-qq-email"></script>
+  <script src="js/account.js?v=20261028-qq-email"></script>
+  <script src="js/account-email.js?v=20261028-qq-email"></script>
 </body>
 </html>

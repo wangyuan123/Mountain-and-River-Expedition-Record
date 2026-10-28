@@ -37,6 +37,12 @@
   var Depot = {
     equipmentTier: '', equipmentBranch: '', equipmentSlot: '',
     filterEquipment: function (key, value) { this[key] = value; Core.render(); },
+    clearEquipmentFilters: function () {
+      this.equipmentTier = '';
+      this.equipmentBranch = '';
+      this.equipmentSlot = '';
+      Core.render();
+    },
 
     /** 切换仓库物品分类（保存在当前状态，刷新后仍保持本次选择） */
     setTab: function (cat) {
@@ -55,6 +61,12 @@
       if ((s.items[itemId] || 0) <= 0) { G.toast('道具数量不足'); return; }
       var info = D.items[itemId] || equipmentInfo(itemId);
       if (!info) return;
+
+      if (itemId === 'mobilizationOrder' || itemId === 'advancedMobilizationOrder' || itemId === 'rapidMobilizationOrder') {
+        G.toast('战争动员令仅可在进攻出征时选择，请从地图选择进攻目标');
+        G.go('world');
+        return;
+      }
 
       if (itemId === 'warSpeedOrder' || itemId === 'signalJammingOrder' || itemId === 'feintOrder') {
         G.toast(itemId === 'warSpeedOrder' ? '请在本城发起宣战的目标城市中选择“加速备战”' : '请在情报中的对应敌军详情使用');
@@ -327,11 +339,35 @@
           h += G.UnitEquipment.inventoryHtml(); hasInCat = true;
         } else if (cat === 'equipment') {
           var self = this;
+          var hasActiveFilter = Boolean(self.equipmentTier || self.equipmentBranch || self.equipmentSlot);
+
+          h += '<div class="depot-equip-filter-bar">';
+          h += '<div class="depot-equip-filter-tag"><svg class="depot-equip-filter-tag-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg><span>装备细分</span></div>';
+          h += '<div class="depot-equip-filter-controls">';
           [['equipmentTier', '档次', G.Constants.equipmentTiers], ['equipmentBranch', '分支', G.Constants.equipmentBranches], ['equipmentSlot', '部位', G.Constants.equipmentSlots]].forEach(function (filter) {
-            h += '<label>' + filter[1] + ' <select onchange="Game.Depot.filterEquipment(\'' + filter[0] + '\',this.value)"><option value="">全部</option>';
-            Object.keys(filter[2]).forEach(function (key) { var value = filter[2][key]; h += '<option value="' + key + '"' + (self[filter[0]] === key ? ' selected' : '') + '>' + (value.name || value) + '</option>'; });
-            h += '</select></label>';
+            var filterKey = filter[0];
+            var filterLabel = filter[1];
+            var filterOpts = filter[2];
+            var isCurActive = Boolean(self[filterKey]);
+            h += '<label class="depot-equip-filter-item">';
+            h += '<span class="depot-equip-filter-label">' + filterLabel + '</span>';
+            h += '<select class="depot-equip-filter-select' + (isCurActive ? ' is-active' : '') + '" onchange="Game.Depot.filterEquipment(\'' + filterKey + '\',this.value)">';
+            h += '<option value="">全部</option>';
+            Object.keys(filterOpts).forEach(function (key) {
+              var val = filterOpts[key];
+              var optName = val.name || val;
+              h += '<option value="' + key + '"' + (self[filterKey] === key ? ' selected' : '') + '>' + optName + '</option>';
+            });
+            h += '</select>';
+            h += '</label>';
           });
+
+          if (hasActiveFilter) {
+            h += '<button type="button" class="depot-equip-filter-reset" onclick="Game.Depot.clearEquipmentFilters()" title="重置全部装备筛选">✕ 重置</button>';
+          }
+          h += '</div>';
+          h += '</div>';
+
           var eqKeys = Object.keys(s.items || {}).filter(function (k) {
             var info = equipmentInfo(k);
             return info && (s.items[k] || 0) > 0 && (!self.equipmentTier || info.tier === self.equipmentTier) && (!self.equipmentBranch || info.branch === self.equipmentBranch) && (!self.equipmentSlot || info.slot === self.equipmentSlot);
@@ -355,10 +391,20 @@
             var eqInfo = equipmentInfo(eqId);
             var eqCnt = s.items[eqId];
             if (eqInfo.setKey !== previousSet) {
-              if (previousSet) h += '</details>';
+              if (previousSet) h += '</div></details>';
               var set = G.Constants.equipmentSets[eqInfo.setKey];
               var completeCount = Math.min.apply(null, set.keys.map(function (key) { return s.items[key] || 0; }));
-              h += '<details><summary>' + set.name + ' · 仓库完整套数 ' + completeCount + '</summary>';
+              h += '<details class="depot-set-group"' + (hasActiveFilter ? ' open' : '') + '>';
+              h += '<summary class="depot-set-summary">';
+              h += '<div class="depot-set-summary-left">';
+              h += '<span class="depot-set-arrow" aria-hidden="true">▶</span>';
+              h += '<span class="depot-set-title">' + set.name + ' · 仓库完整套数 ' + completeCount + '</span>';
+              h += '</div>';
+              h += '<span class="depot-set-badge' + (completeCount > 0 ? ' is-complete' : '') + '">';
+              h += completeCount > 0 ? ('成套 ' + completeCount + ' 套') : '未成套';
+              h += '</span>';
+              h += '</summary>';
+              h += '<div class="depot-set-body">';
               previousSet = eqInfo.setKey;
             }
             hasInCat = true;
@@ -370,7 +416,7 @@
             h += '<div class="d">' + eqInfo.desc + '</div>';
             h += '</div>';
           }
-          if (previousSet) h += '</details>';
+          if (previousSet) h += '</div></details>';
         } else {
           for (var iid in D.items) {
             var info = D.items[iid];
@@ -386,6 +432,8 @@
                 btnHtml = '<button type="button" class="btn depot-btn" onclick="Game.go(\'mainQuest\')">[前往晋升军衔]</button>';
               } else if (iid === 'officerPreparationParts') {
                 btnHtml = '<button type="button" class="btn depot-btn" onclick="Game.go(\'officer\')">[前往军官整备]</button>';
+              } else if (iid === 'mobilizationOrder' || iid === 'advancedMobilizationOrder' || iid === 'rapidMobilizationOrder') {
+                btnHtml = '<button type="button" class="btn depot-btn" onclick="Game.Depot.useItem(\'' + iid + '\')">[出征时选择]</button>';
               } else {
                 var btnLabel = iid === 'newbiePack' ? '开启礼包' : iid === 'cityRenameCard' ? '修改城市名' : (info.isBox || iid.indexOf('box_') === 0) ? '开启宝箱' : (iid === 'expBook' || iid === 'expBookAdv' || iid === 'expBookMax' || iid === 'loyaltyBox' || iid === 'renameCard' || iid === 'skillBook' || iid === 'universalSkillBook' || iid.indexOf('skillBook_') === 0 || iid === 'starUp') ? '选择军官使用' : '使用';
                 btnHtml = '<button type="button" class="btn depot-btn" onclick="Game.Depot.useItem(\'' + iid + '\')">[' + btnLabel + ']</button>';

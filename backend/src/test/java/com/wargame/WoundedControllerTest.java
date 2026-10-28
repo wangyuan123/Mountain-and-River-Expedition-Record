@@ -29,8 +29,7 @@ class WoundedControllerTest extends BaseServiceTest {
 
     private JsonNode register(String name) throws Exception {
         return json.readTree(http.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON)
-                .content(json.writeValueAsString(Map.of("username", name, "password", "test-password-123",
-                        "agreementVersion", AuthService.CURRENT_REGISTRATION_AGREEMENT_VERSION))))
+                .content(registrationBody(name, "test-password-123")))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
     }
 

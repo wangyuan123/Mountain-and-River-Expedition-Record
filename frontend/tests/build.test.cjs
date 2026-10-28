@@ -576,8 +576,8 @@ test('renderBuildingIcon 支持 WebP、SVG 图片路径及 emoji 降级', () => 
   const { G } = setup();
   const modelImg = G.Build.renderBuildingIcon(G.Build.BUILD_ICON.farm, '农田');
   assert.match(modelImg, /src="img\/buildings\/garden\/farm\.webp" alt="农田"/);
-  const svgImg = G.Build.renderBuildingIcon('img/shop.svg', '商城', 'custom-cls');
-  assert.equal(svgImg, '<img class="b-icon-img custom-cls" src="img/shop.svg" alt="商城" draggable="false"/>');
+  const svgImg = G.Build.renderBuildingIcon('img/items/shield-8h.svg', '8小时护盾', 'custom-cls');
+  assert.equal(svgImg, '<img class="b-icon-img custom-cls" src="img/items/shield-8h.svg" alt="8小时护盾" draggable="false"/>');
 
   const emojiText = G.Build.renderBuildingIcon('⚔️', '战斗');
   assert.equal(emojiText, '⚔️');

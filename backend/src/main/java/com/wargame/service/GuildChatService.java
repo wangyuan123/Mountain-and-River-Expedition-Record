@@ -53,6 +53,8 @@ public class GuildChatService {
         this.keywordFilter = keywordFilter;
     }
 
+    private record PlayerChatProfile(String avatar, Integer vipLevel, Boolean vipBadgeVisible, String avatarFrame) {}
+
     public List<ChatDtos.GuildMessageResponse> history(Long playerId) {
         GuildMember member = guildMemberRepository.findByPlayerId(playerId)
                 .orElseThrow(() -> new IllegalArgumentException("尚未加入任何军团"));
@@ -70,11 +72,11 @@ public class GuildChatService {
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
-        Map<Long, String> avatars = new HashMap<>();
+        Map<Long, PlayerChatProfile> profiles = new HashMap<>();
         if (!playerIds.isEmpty()) {
             List<Player> players = playerRepository.findAllById(playerIds);
             for (Player p : players) {
-                avatars.put(p.getId(), p.getAvatar());
+                profiles.put(p.getId(), new PlayerChatProfile(p.getAvatar(), p.getVipLevel(), p.getVipBadgeVisible(), p.getAvatarFrame()));
             }
         }
 
@@ -82,7 +84,11 @@ public class GuildChatService {
         for (int i = messages.size() - 1; i >= 0; i--) {
             GuildChatMessage msg = messages.get(i);
             String role = msg.getPlayerId() != null ? roles.getOrDefault(msg.getPlayerId(), "member") : "system";
-            String avatar = msg.getPlayerId() != null ? avatars.get(msg.getPlayerId()) : null;
+            PlayerChatProfile profile = msg.getPlayerId() != null ? profiles.get(msg.getPlayerId()) : null;
+            String avatar = profile != null ? profile.avatar() : null;
+            Integer vipLevel = profile != null && profile.vipLevel() != null ? profile.vipLevel() : 0;
+            Boolean vipBadgeVisible = profile != null && profile.vipBadgeVisible() != null ? profile.vipBadgeVisible() : false;
+            String avatarFrame = profile != null && profile.avatarFrame() != null ? profile.avatarFrame() : "default";
             String type = msg.getPlayerId() == null ? "system" : "player";
             result.add(new ChatDtos.GuildMessageResponse(
                     msg.getId(),
@@ -93,7 +99,10 @@ public class GuildChatService {
                     msg.getPlayerId() == null ? msg.getContent() : keywordFilter.filter(msg.getContent()),
                     msg.getCreatedAt(),
                     avatar,
-                    type
+                    type,
+                    vipLevel,
+                    vipBadgeVisible,
+                    avatarFrame
             ));
         }
         return result;
@@ -145,7 +154,10 @@ public class GuildChatService {
                 message.getContent(),
                 message.getCreatedAt(),
                 player.getAvatar(),
-                "player"
+                "player",
+                player.getVipLevel() != null ? player.getVipLevel() : 0,
+                player.getVipBadgeVisible(),
+                player.getAvatarFrame() != null ? player.getAvatarFrame() : "default"
         );
 
         pushToGuild(member.getGuildId(), response);
@@ -170,7 +182,10 @@ public class GuildChatService {
                 message.getContent(),
                 message.getCreatedAt(),
                 null,
-                "system"
+                "system",
+                0,
+                false,
+                "default"
         );
 
         pushToGuild(guildId, response);
@@ -191,6 +206,9 @@ public class GuildChatService {
         data.put("ts", msg.ts());
         data.put("avatar", msg.avatar());
         data.put("type", msg.type());
+        data.put("vipLevel", msg.vipLevel());
+        data.put("vipBadgeVisible", msg.vipBadgeVisible());
+        data.put("avatarFrame", msg.avatarFrame());
 
         for (GuildMember m : members) {
             pushService.pushToPlayer(m.getPlayerId(), "guild_chat", data);

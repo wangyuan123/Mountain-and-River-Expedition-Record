@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="skl_rat_bowl" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#9a3412"/>
+      <stop offset="40%" stop-color="#ea580c"/>
+      <stop offset="80%" stop-color="#c2410c"/>
+      <stop offset="100%" stop-color="#7c2d12"/>
+    </linearGradient>
+    <linearGradient id="skl_rat_rice" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="50%" stop-color="#fef3c7"/>
+      <stop offset="100%" stop-color="#fde68a"/>
+    </linearGradient>
+    <linearGradient id="skl_rat_gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="50%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+    <radialGradient id="skl_rat_glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fde68a" stop-opacity="0.8"/>
+      <stop offset="50%" stop-color="#f59e0b" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#78350f" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="skl_rat_shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#skl_rat_shadow)">
+    <!-- Garrison Warm Grain Glow -->
+    <circle cx="32" cy="32" r="28" fill="url(#skl_rat_glow)"/>
+
+    <!-- Flanking Logistics Wheat Sheaves -->
+    <!-- Left Wheat -->
+    <path d="M16 46 C12 36, 14 24, 22 16 C18 24, 18 36, 22 44 Z" fill="url(#skl_rat_gold)"/>
+    <ellipse cx="16" cy="22" rx="3" ry="1.8" fill="#fef08a" transform="rotate(-30 16 22)"/>
+    <ellipse cx="14" cy="28" rx="3.5" ry="2" fill="#fef08a" transform="rotate(-30 14 28)"/>
+    <!-- Right Wheat -->
+    <path d="M48 46 C52 36, 50 24, 42 16 C46 24, 46 36, 42 44 Z" fill="url(#skl_rat_gold)"/>
+    <ellipse cx="48" cy="22" rx="3" ry="1.8" fill="#fef08a" transform="rotate(30 48 22)"/>
+    <ellipse cx="50" cy="28" rx="3.5" ry="2" fill="#fef08a" transform="rotate(30 50 28)"/>
+
+    <!-- Garrison Supply Bowl Foot / Stand -->
+    <path d="M25 50 H39 V54 H25 Z" fill="#7c2d12"/>
+
+    <!-- Mound of Pure Harvest White Rice / Rations -->
+    <path d="M14 34 C14 22, 50 22, 50 34 Z" fill="url(#skl_rat_rice)"/>
+    <ellipse cx="32" cy="27" rx="14" ry="7" fill="#ffffff"/>
+
+    <!-- Steam Waves of Warm Rations -->
+    <path d="M26 18 C25 14, 27 12, 26 8" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.8"/>
+    <path d="M32 16 C31 12, 33 10, 32 6" stroke="#ffffff" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.9"/>
+    <path d="M38 18 C37 14, 39 12, 38 8" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.8"/>
+
+    <!-- Terracotta Garrison Ration Bowl Body -->
+    <path d="M12 32 C12 48, 22 51, 32 51 C42 51, 52 48, 52 32 Z"
+          fill="url(#skl_rat_bowl)" stroke="#ea580c" stroke-width="1"/>
+    <!-- Golden Military Band on Bowl -->
+    <path d="M13 36 C22 41, 42 41, 51 36 L50 39 C42 44, 22 44, 14 39 Z"
+          fill="url(#skl_rat_gold)"/>
+    <!-- Garrison Supply Seal Star -->
+    <circle cx="32" cy="43" r="3" fill="#fef08a"/>
+    <polygon points="32,41 33,43 35,43 33.5,44 34,46 32,44.5 30,46 30.5,44 29,43 31,43" fill="#9a3412"/>
+  </g>
+</svg>

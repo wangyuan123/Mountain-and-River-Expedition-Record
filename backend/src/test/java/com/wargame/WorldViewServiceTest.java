@@ -1,9 +1,19 @@
 package com.wargame;
 
 import com.wargame.model.entity.Player;
+import com.wargame.model.entity.Guild;
+import com.wargame.model.entity.GuildMember;
+import com.wargame.model.entity.GuildRelation;
+import com.wargame.model.entity.PlayerCity;
 import com.wargame.model.entity.WildTile;
+import com.wargame.repository.GuildRepository;
+import com.wargame.repository.GuildMemberRepository;
+import com.wargame.repository.GuildRelationRepository;
+import com.wargame.service.WorldMapService;
 import com.wargame.service.WorldViewService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import java.util.List;
@@ -13,6 +23,68 @@ import static org.junit.jupiter.api.Assertions.*;
 class WorldViewServiceTest extends BaseServiceTest {
     @Autowired WorldViewService views;
     @Autowired com.wargame.service.WorldService worldService;
+    @Autowired WorldMapService maps;
+    @Autowired GuildRepository guilds;
+    @Autowired GuildMemberRepository guildMembers;
+    @Autowired GuildRelationRepository guildRelations;
+
+    @ParameterizedTest
+    @ValueSource(strings = {"neutral", "friendly", "hostile"})
+    @SuppressWarnings("unchecked")
+    void playerGuildRelationsMatchAcrossListMapNearbyScanAndCoordinateSearch(String relation) {
+        Player viewer = createTestPlayer("relation-viewer", 30);
+        Player owner = createTestPlayer("relation-owner", 30);
+        owner.setCityPosX(11);
+        playerRepository.save(owner);
+        long worldId = createTestWorld().getId();
+        for (Player player : List.of(viewer, owner)) {
+            Guild guild = new Guild();
+            guild.setName(player.getUsername());
+            guild.setLeaderPlayerId(player.getId());
+            guild.setCreatedAt(1L);
+            guilds.save(guild);
+            guildMembers.save(new GuildMember(null, guild.getId(), player.getId(), "leader", 1L));
+        }
+        if (!"neutral".equals(relation)) {
+            long first = guildMembers.findByPlayerId(viewer.getId()).orElseThrow().getGuildId();
+            long second = guildMembers.findByPlayerId(owner.getId()).orElseThrow().getGuildId();
+            GuildRelation diplomacy = new GuildRelation();
+            diplomacy.setGuildLowId(Math.min(first, second));
+            diplomacy.setGuildHighId(Math.max(first, second));
+            diplomacy.setStatus(relation);
+            diplomacy.setUpdatedByPlayerId(viewer.getId());
+            diplomacy.setUpdatedAt(1L);
+            guildRelations.save(diplomacy);
+        }
+        for (int slot : List.of(0, 1)) {
+            PlayerCity city = new PlayerCity();
+            city.setWorldId(worldId);
+            city.setOwnerId(owner.getId());
+            city.setCitySlot(slot);
+            city.setName("relation-city-" + slot);
+            city.setX(11 + slot);
+            city.setY(10);
+            playerCityRepository.save(city);
+        }
+
+        var listed = (List<Map<String, Object>>) views.getWorld(viewer.getId(), 10, 10, 3).get("playerCities");
+        var nearby = (List<Map<String, Object>>) worldService.getNearbyCities(viewer.getId()).get("playerCities");
+        var chunk = (List<Map<String, Object>>) maps.chunk(viewer.getId(), 0, 0).get("targets");
+        assertEquals(2, listed.size());
+        assertEquals(2, nearby.size());
+        for (var city : listed) {
+            long id = ((Number) city.get("id")).longValue();
+            var scanned = nearby.stream().filter(target -> city.get("id").equals(target.get("id"))).findFirst().orElseThrow();
+            var marker = chunk.stream().filter(target -> city.get("id").equals(target.get("id"))).findFirst().orElseThrow();
+            var searched = worldService.findAtCoordinate(viewer.getId(), ((Number) city.get("x")).intValue(), 10);
+            for (var target : List.of(city, scanned, marker, searched, maps.target(viewer.getId(), "player", id))) {
+                assertEquals(relation, target.get("guildRelation"), "主城、分城及所有地图入口应返回相同外交关系");
+                assertEquals(false, target.get("guildmate"));
+                assertEquals(0L, target.get("warAt"), "军团敌对不能伪造个人宣战倒计时");
+                assertEquals(0L, target.get("warEndAt"));
+            }
+        }
+    }
 
     @Test
     @SuppressWarnings("unchecked")

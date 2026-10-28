@@ -490,7 +490,10 @@ window.Game = window.Game || {};
         html += '<span class="home-officer-stat" title="学识 ' + (o.knowledge || 0) + '"><span class="stat-lbl kno">学</span><b class="stat-val kno">' + (o.knowledge || 0) + '</b></span>';
         html += '</div>';
         if (skillSummary) {
-          html += '<div class="home-officer-skill" title="' + G.escapeHtml(skillSummary) + '"><span aria-hidden="true">' + G.escapeHtml(skillIcon) + '</span> ' + G.escapeHtml(skillSummary) + '</div>';
+          var skillIconHtml = (G.iconHtml && /^img\//i.test(skillIcon))
+            ? G.iconHtml(skillIcon, skillDef ? skillDef.name : '')
+            : G.escapeHtml(skillIcon);
+          html += '<div class="home-officer-skill" title="' + G.escapeHtml(skillSummary) + '"><span aria-hidden="true">' + skillIconHtml + '</span> ' + G.escapeHtml(skillSummary) + '</div>';
         }
         html += '</div>';
 
@@ -553,9 +556,11 @@ window.Game = window.Game || {};
       h += '<div id="loginServerOptions" class="login-server-options" role="listbox" aria-labelledby="loginServerLabel" hidden>';
       servers.forEach(function (server) { h += '<button type="button" role="option" tabindex="-1" aria-selected="' + (server.id === selectedServer ? 'true' : 'false') + '" data-server-id="' + G.escapeHtml(server.id) + '" onclick="Game.Main.chooseServer(this)">' + G.escapeHtml(server.name) + '</button>'; });
       h += '</div></div></div>';
-      h += '<div class="edit-row"><label for="loginUser">用户名 <span>CALLSIGN</span></label><input id="loginUser" class="qty" name="username" autocomplete="username" maxlength="32" placeholder="输入指挥官代号 · 3-32 位"></div>';
+      h += '<div class="edit-row"><label for="loginUser">用户名 <span>CALLSIGN</span></label><input id="loginUser" class="qty" name="username" oninput="if(Game.AccountEmail)Game.AccountEmail.clearRegistration()" autocomplete="username" maxlength="32" placeholder="输入指挥官代号 · 3-32 位"></div>';
       h += '<div class="edit-row"><label for="loginPass">密码 <span>ACCESS CODE</span></label><div class="login-password-wrap"><input id="loginPass" class="qty" name="password" autocomplete="current-password" type="password" maxlength="64" placeholder="输入通行密码 · 6-64 位"><button type="button" class="login-password-toggle" aria-label="显示密码" aria-pressed="false" onclick="Game.Main.togglePasswordVisibility(\'loginPass\', this)">👁</button></div></div>';
       h += '<div class="edit-row login-register-only" id="loginConfirmRow" hidden><label for="loginPassConfirm">确认密码 <span>CONFIRM CODE</span></label><div class="login-password-wrap"><input id="loginPassConfirm" class="qty" name="passwordConfirm" autocomplete="new-password" type="password" maxlength="64" placeholder="再次输入通行密码"><button type="button" class="login-password-toggle" aria-label="显示密码" aria-pressed="false" onclick="Game.Main.togglePasswordVisibility(\'loginPassConfirm\', this)">👁</button></div></div>';
+      h += '<div id="registerEmailFields" hidden><div class="edit-row"><label for="registerEmail">QQ 邮箱</label><input id="registerEmail" class="qty" type="email" disabled autocomplete="email" maxlength="71" placeholder="完整的 @qq.com 邮箱" oninput="Game.AccountEmail.clearRegistration()"></div>';
+      h += '<div class="edit-row"><label for="registerEmailCode">邮箱验证码</label><input id="registerEmailCode" class="qty" disabled inputmode="numeric" autocomplete="one-time-code" maxlength="6"><button type="button" class="btn" id="registerEmailSend" onclick="Game.AccountEmail.sendRegistration()">获取验证码</button></div><p>绑定本人长期使用的 QQ 邮箱，忘记密码时用于找回账号。</p></div>';
       h += '<div class="login-actions"><button class="btn ok login-submit" id="loginPrimaryAction" type="submit">登 录 <span aria-hidden="true">→</span></button></div>';
       h += '<div id="loginMsg" class="login-feedback" role="status" aria-live="polite"></div>';
       h += '<nav class="login-account-links" aria-label="账号操作"><button type="button" id="authModeSwitch" onclick="Game.Main.toggleAuthMode()">注册账号</button><span aria-hidden="true"></span><button type="button" onclick="Game.Main.showForgotPassword()">忘记密码</button></nav>';
@@ -1580,6 +1585,7 @@ window.Game = window.Game || {};
         h += '<button class="btn sm settings-protection-btn" onclick="Game.Protection.open()">🛡️ 实名、防沉迷与家长监护</button>';
         h += '</div>';
       }
+      if (G.AccountEmail) h += G.AccountEmail.settings();
       h += '</div>';
     } else if (G.Main && G.Main.guestMode) {
       h += '<span class="settings-status-pill warning">游客模式</span>';

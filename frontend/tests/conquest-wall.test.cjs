@@ -105,11 +105,13 @@ test('清军阶段不允许提前集火城墙，但仍在敌军后侧显示墙�
   assert.equal(game.Battle.renderWallPanel(null), '');
 });
 
-test('未破墙失败和已破墙战报保留终局状态，显示取整不改变快照', () => {
+test('未破墙失败和已破墙战报保留终局状态，显示取整不改变快照，且使用军工城墙微缩模型图', () => {
   const game = setup();
   const wall = { level: 10, maxHp: 2500000, hpRemaining: 107272.727273, defense: 200, phase: 'ATTACK_WALL' };
   const html = game.Battle.renderWallPanel(wall, 'WALL_NOT_BREACHED');
   assert.match(html, /守军已清除，但未在期限内破墙/);
+  assert.match(html, /<img class="conquest-wall-icon" src="img\/buildings\/garden\/wall\.webp" alt="城墙"/);
+  assert.doesNotMatch(html, /🏰/);
   assert.equal(wall.hpRemaining, 107272.727273);
   assert.match(game.Battle.renderWallPanel({ ...wall, hpRemaining: 0, phase: 'BREACHED' }, 'WALL_BREACHED'), /城墙已攻破/);
   assert.equal(game.DATA.buildings.wall.wallHpPerLevel, 250000);

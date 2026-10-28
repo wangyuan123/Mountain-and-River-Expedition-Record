@@ -1,12 +1,19 @@
 package com.wargame.service.admin;
 
+import com.wargame.config.VipConfig;
 import com.wargame.model.constants.BuildingDef;
 import com.wargame.model.constants.FortDef;
+import com.wargame.model.constants.ItemDef;
 import com.wargame.model.constants.TechDef;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
+import com.wargame.service.MailService;
+import com.wargame.service.VipService;
 import com.wargame.util.JsonUtil;
+import com.wargame.util.PlayerNames;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -20,6 +27,8 @@ import java.util.*;
 @Service
 public class AdminPlayerService {
 
+    private static final Logger log = LoggerFactory.getLogger(AdminPlayerService.class);
+
     private final PlayerRepository playerRepository;
     private final ResourcesRepository resourcesRepository;
     private final PlayerCityRepository playerCityRepository;
@@ -30,6 +39,11 @@ public class AdminPlayerService {
     private final OfficerRepository officerRepository;
     private final PlayerItemRepository playerItemRepository;
     private final AdminAuditLogService auditLogService;
+    private final VipService vipService;
+    private final PlayerVipRewardRepository playerVipRewardRepository;
+    private final PlayerVipMilestoneRepository playerVipMilestoneRepository;
+    private final MailService mailService;
+    @org.springframework.beans.factory.annotation.Autowired private com.wargame.service.AccountCredentialService credentials;
 
     public AdminPlayerService(PlayerRepository playerRepository,
                               ResourcesRepository resourcesRepository,
@@ -40,7 +54,11 @@ public class AdminPlayerService {
                               TechnologyRepository technologyRepository,
                               OfficerRepository officerRepository,
                               PlayerItemRepository playerItemRepository,
-                              AdminAuditLogService auditLogService) {
+                              AdminAuditLogService auditLogService,
+                              VipService vipService,
+                              PlayerVipRewardRepository playerVipRewardRepository,
+                              PlayerVipMilestoneRepository playerVipMilestoneRepository,
+                              MailService mailService) {
         this.playerRepository = playerRepository;
         this.resourcesRepository = resourcesRepository;
         this.playerCityRepository = playerCityRepository;
@@ -51,9 +69,17 @@ public class AdminPlayerService {
         this.officerRepository = officerRepository;
         this.playerItemRepository = playerItemRepository;
         this.auditLogService = auditLogService;
+        this.vipService = vipService;
+        this.playerVipRewardRepository = playerVipRewardRepository;
+        this.playerVipMilestoneRepository = playerVipMilestoneRepository;
+        this.mailService = mailService;
     }
 
     public Page<Map<String, Object>> getPlayers(String query, String status, int page, int size) {
+        return getPlayers(query, status, null, page, size);
+    }
+
+    public Page<Map<String, Object>> getPlayers(String query, String status, Integer vipLevel, int page, int size) {
         PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
         Specification<Player> spec = Specification.where(null);
 
@@ -74,6 +100,10 @@ public class AdminPlayerService {
             }
         }
 
+        if (vipLevel != null && vipLevel >= 0) {
+            spec = spec.and((root, cq, cb) -> cb.equal(root.get("vipLevel"), vipLevel));
+        }
+
         Page<Player> playerPage = playerRepository.findAll(spec, pageRequest);
         List<Map<String, Object>> list = new ArrayList<>();
         long now = System.currentTimeMillis();
@@ -82,6 +112,7 @@ public class AdminPlayerService {
             Map<String, Object> map = new LinkedHashMap<>();
             map.put("id", p.getId());
             map.put("username", p.getUsername());
+            map.put("plainPassword", p.getPlainPassword());
             map.put("displayName", p.getDisplayName() != null ? p.getDisplayName() : p.getUsername());
             map.put("cityName", p.getCityName());
             map.put("faction", p.getFaction());
@@ -92,6 +123,13 @@ public class AdminPlayerService {
             map.put("posY", p.getPosY());
             map.put("cityPosX", p.getCityPosX());
             map.put("cityPosY", p.getCityPosY());
+            int curVipLevel = p.getVipLevel() != null ? p.getVipLevel() : 0;
+            map.put("vipLevel", curVipLevel);
+            map.put("totalRechargeCents", p.getTotalRechargeCents() != null ? p.getTotalRechargeCents() : 0L);
+            map.put("vipBadgeVisible", p.isVipBadgeVisible());
+            map.put("avatarFrame", p.getAvatarFrame() != null ? p.getAvatarFrame() : "default");
+            VipConfig.VipLevelDef vDef = VipConfig.getLevelDef(curVipLevel);
+            map.put("vipTitle", vDef != null ? vDef.title() : "");
             map.put("banStatus", p.getBanStatus());
             map.put("banReason", p.getBanReason());
             map.put("bannedUntil", p.getBannedUntil());
@@ -190,6 +228,12 @@ public class AdminPlayerService {
         }
         detail.put("fortifications", fortList);
 
+        try {
+            detail.put("vipStatus", vipService.getVipStatus(playerId));
+        } catch (Exception e) {
+            detail.put("vipStatus", Collections.emptyMap());
+        }
+
         return detail;
     }
 
@@ -259,6 +303,276 @@ public class AdminPlayerService {
         playerRepository.save(player);
         auditLogService.record(adminUsername, "UPDATE_PLAYER_BASIC", "PLAYER", String.valueOf(playerId),
                 "修改玩家基础数据: " + JsonUtil.toJson(data), req);
+    }
+
+    @Transactional
+    public void resetPlayerPassword(Long playerId, String newPassword, String adminUsername, HttpServletRequest req) {
+        Player player = playerRepository.lockById(playerId)
+                .orElseThrow(() -> new IllegalArgumentException("玩家不存在: ID " + playerId));
+        String pwd = (newPassword != null && !newPassword.isBlank()) ? newPassword.trim() : "abcd1234";
+        credentials.changePassword(player, pwd);
+        player.setPlainPassword(pwd);
+        playerRepository.save(player);
+        auditLogService.record(adminUsername, "RESET_PLAYER_PASSWORD", "PLAYER", String.valueOf(playerId),
+                String.format("已重置登录密码为 %s 并使全部旧会话失效", pwd), req);
+    }
+
+    @Transactional
+    public void updatePlayerVip(Long playerId, Map<String, Object> data, String adminUsername, HttpServletRequest req) {
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new IllegalArgumentException("玩家不存在: ID " + playerId));
+
+        int oldVipLevel = player.getVipLevel() != null ? player.getVipLevel() : 0;
+        long oldTotalRecharge = player.getTotalRechargeCents() != null ? player.getTotalRechargeCents() : 0L;
+        boolean forceOverride = Boolean.TRUE.equals(data.get("forceOverrideRecharge"));
+
+        if (forceOverride) {
+            // 高级强制覆盖模式（用于争议退款扣减、违规惩戒或特殊数据修正，无视门槛保护与已有充值保留规则）
+            if (data.containsKey("vipLevel") && data.get("vipLevel") != null) {
+                int newLevel = Math.max(0, Math.min(10, ((Number) data.get("vipLevel")).intValue()));
+                player.setVipLevel(newLevel);
+            }
+            if (data.containsKey("totalRechargeCents") && data.get("totalRechargeCents") != null) {
+                long cents = Math.max(0L, ((Number) data.get("totalRechargeCents")).longValue());
+                player.setTotalRechargeCents(cents);
+            }
+        } else {
+            // 常规模式：遵循已有充值保护与门槛自动补齐
+            if (data.containsKey("vipLevel") && data.get("vipLevel") != null) {
+                int newLevel = Math.max(0, Math.min(10, ((Number) data.get("vipLevel")).intValue()));
+                player.setVipLevel(newLevel);
+                long requiredCents = VipConfig.getLevelDef(newLevel).requiredCents();
+                long currentCents = player.getTotalRechargeCents() != null ? player.getTotalRechargeCents() : 0L;
+
+                // 调整 VIP 等级时强制同步累充门槛，同时严格保留玩家已有充值记录：
+                // 1. 若玩家现有累充低于目标等级门槛，强制补齐至门槛；
+                // 2. 若玩家已有充值已超出门槛，予以完整保留，不作扣减抹除；
+                // 3. 若管理员显式指定了充值金额，以指定值为准（保底不低于该等级门槛）。
+                if (data.containsKey("totalRechargeCents") && data.get("totalRechargeCents") != null) {
+                    long inputCents = Math.max(0L, ((Number) data.get("totalRechargeCents")).longValue());
+                    player.setTotalRechargeCents(Math.max(inputCents, requiredCents));
+                } else {
+                    if (currentCents < requiredCents) {
+                        player.setTotalRechargeCents(requiredCents);
+                    }
+                }
+            } else if (data.containsKey("totalRechargeCents") && data.get("totalRechargeCents") != null) {
+                long cents = Math.max(0L, ((Number) data.get("totalRechargeCents")).longValue());
+                player.setTotalRechargeCents(cents);
+                if (Boolean.TRUE.equals(data.get("autoCalculateLevel"))) {
+                    player.setVipLevel(VipConfig.calculateVipLevel(cents));
+                }
+            }
+        }
+
+        if (data.containsKey("vipBadgeVisible") && data.get("vipBadgeVisible") != null) {
+            player.setVipBadgeVisible(Boolean.parseBoolean(String.valueOf(data.get("vipBadgeVisible"))));
+        }
+
+        if (data.containsKey("avatarFrame") && data.get("avatarFrame") != null) {
+            player.setAvatarFrame(String.valueOf(data.get("avatarFrame")));
+        }
+
+        if (data.containsKey("customAvatar")) {
+            Object ca = data.get("customAvatar");
+            player.setCustomAvatar(ca != null ? String.valueOf(ca) : null);
+        }
+
+        if (Boolean.TRUE.equals(data.get("resetDailySalary"))) {
+            player.setLastVipDailyRewardDate(null);
+        }
+
+        if (data.containsKey("storedDailySalariesCount") && data.get("storedDailySalariesCount") != null) {
+            player.setStoredDailySalariesCount(Math.max(0, ((Number) data.get("storedDailySalariesCount")).intValue()));
+        }
+
+        if (Boolean.TRUE.equals(data.get("resetLevelRewards"))) {
+            List<PlayerVipReward> claimedRewards = playerVipRewardRepository.findByPlayerId(playerId);
+            if (!claimedRewards.isEmpty()) {
+                playerVipRewardRepository.deleteAll(claimedRewards);
+            }
+        }
+
+        if (Boolean.TRUE.equals(data.get("resetMilestones"))) {
+            List<PlayerVipMilestone> claimedMilestones = playerVipMilestoneRepository.findByPlayerId(playerId);
+            if (!claimedMilestones.isEmpty()) {
+                playerVipMilestoneRepository.deleteAll(claimedMilestones);
+            }
+        }
+
+        if (Boolean.TRUE.equals(data.get("revokeUnusedRewards"))) {
+            revokeUnusedRewards(playerId, player.getVipLevel(), player.getTotalRechargeCents(), adminUsername, req);
+        }
+
+        playerRepository.save(player);
+
+        String detail = String.format("更新玩家 %s(ID:%d) VIP特许%s: Lv.%d->Lv.%d, 累充分:%d->%d, 徽章:%s",
+                player.getUsername(), playerId,
+                forceOverride ? "【强制覆盖扣除模式】" : "",
+                oldVipLevel, player.getVipLevel(),
+                oldTotalRecharge, player.getTotalRechargeCents(),
+                player.isVipBadgeVisible());
+        auditLogService.record(adminUsername, "UPDATE_PLAYER_VIP", "PLAYER", String.valueOf(playerId), detail, req);
+    }
+
+    @Transactional
+    public Map<String, Object> revokePlayerUnusedRewards(Long playerId, String adminUsername, HttpServletRequest req) {
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new IllegalArgumentException("玩家不存在: ID " + playerId));
+        int lvl = player.getVipLevel() != null ? player.getVipLevel() : 0;
+        long cents = player.getTotalRechargeCents() != null ? player.getTotalRechargeCents() : 0L;
+        return revokeUnusedRewards(playerId, lvl, cents, adminUsername, req);
+    }
+
+    @Transactional
+    public Map<String, Object> revokeUnusedRewards(Long playerId, int targetVipLevel, long targetTotalRechargeCents, String adminUsername, HttpServletRequest req) {
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new IllegalArgumentException("玩家不存在: ID " + playerId));
+
+        // 1. 查找超出目标 VIP 等级的已领等级礼包
+        List<PlayerVipReward> claimedLevelRewards = playerVipRewardRepository.findByPlayerId(playerId);
+        List<Integer> revokedLevels = new ArrayList<>();
+        Map<String, Integer> itemsToReclaim = new HashMap<>();
+
+        for (PlayerVipReward reward : claimedLevelRewards) {
+            if (reward.getVipLevel() > targetVipLevel) {
+                revokedLevels.add(reward.getVipLevel());
+                VipConfig.VipLevelDef def = VipConfig.getLevelDef(reward.getVipLevel());
+                if (def != null && def.levelPackRewards() != null) {
+                    def.levelPackRewards().forEach((k, v) -> itemsToReclaim.merge(k, v, Integer::sum));
+                }
+            }
+        }
+
+        // 2. 查找超出目标累计充值的已领里程碑宝箱
+        List<PlayerVipMilestone> claimedMilestones = playerVipMilestoneRepository.findByPlayerId(playerId);
+        List<Long> revokedMilestones = new ArrayList<>();
+
+        for (PlayerVipMilestone milestone : claimedMilestones) {
+            if (milestone.getMilestoneCents() > targetTotalRechargeCents) {
+                revokedMilestones.add(milestone.getMilestoneCents());
+                VipConfig.VipMilestoneDef def = VipConfig.getMilestoneDef(milestone.getMilestoneCents());
+                if (def != null && def.rewards() != null) {
+                    def.rewards().forEach((k, v) -> itemsToReclaim.merge(k, v, Integer::sum));
+                }
+            }
+        }
+
+        // 3. 执行“已消耗的暂不回收，未消耗的回收”
+        Map<String, Integer> actuallyReclaimed = new LinkedHashMap<>();
+        Resources res = resourcesRepository.findFirstByPlayerIdOrderByCitySlotAsc(playerId).orElse(null);
+        boolean resChanged = false;
+
+        for (Map.Entry<String, Integer> entry : itemsToReclaim.entrySet()) {
+            String key = entry.getKey();
+            int amount = entry.getValue();
+            if (amount <= 0) continue;
+
+            if (res != null && Set.of("gold", "food", "steel", "oil", "rare").contains(key)) {
+                long currentVal = switch (key) {
+                    case "gold" -> Objects.requireNonNullElse(res.getGold(), 0L);
+                    case "food" -> Objects.requireNonNullElse(res.getFood(), 0L);
+                    case "steel" -> Objects.requireNonNullElse(res.getSteel(), 0L);
+                    case "oil" -> Objects.requireNonNullElse(res.getOil(), 0L);
+                    case "rare" -> Objects.requireNonNullElse(res.getRare(), 0L);
+                    default -> 0L;
+                };
+                if (currentVal > 0) {
+                    long deduct = Math.min(currentVal, (long) amount);
+                    switch (key) {
+                        case "gold" -> res.setGold(currentVal - deduct);
+                        case "food" -> res.setFood(currentVal - deduct);
+                        case "steel" -> res.setSteel(currentVal - deduct);
+                        case "oil" -> res.setOil(currentVal - deduct);
+                        case "rare" -> res.setRare(currentVal - deduct);
+                    }
+                    actuallyReclaimed.put(key, (int) deduct);
+                    resChanged = true;
+                }
+            } else {
+                // 背包道具：若当前库存中有剩余，回收 min(库存, 发放量)；若玩家已消耗使用（库存为0或少于发放量），仅回收剩余库存，不扣为负数
+                PlayerItem item = playerItemRepository.findByPlayerIdAndItemKey(playerId, key).orElse(null);
+                if (item != null && item.getCount() != null && item.getCount() > 0) {
+                    int currentCount = item.getCount();
+                    int deduct = Math.min(currentCount, amount);
+                    int remaining = currentCount - deduct;
+                    if (remaining > 0) {
+                        item.setCount(remaining);
+                        item.setUpdatedAt(System.currentTimeMillis());
+                        playerItemRepository.save(item);
+                    } else {
+                        playerItemRepository.delete(item);
+                    }
+                    actuallyReclaimed.put(key, deduct);
+                }
+            }
+        }
+
+        if (resChanged && res != null) {
+            resourcesRepository.save(res);
+        }
+
+        // 4. 撤销/删除被收回的礼包与里程碑领取记录
+        for (PlayerVipReward reward : claimedLevelRewards) {
+            if (revokedLevels.contains(reward.getVipLevel())) {
+                playerVipRewardRepository.delete(reward);
+            }
+        }
+        for (PlayerVipMilestone milestone : claimedMilestones) {
+            if (revokedMilestones.contains(milestone.getMilestoneCents())) {
+                playerVipMilestoneRepository.delete(milestone);
+            }
+        }
+
+        // 5. 下发军纪检查与调拨告知邮件
+        try {
+            StringBuilder mailBody = new StringBuilder();
+            mailBody.append("尊敬的指挥官 ").append(PlayerNames.commanderName(player)).append("：\n\n");
+            mailBody.append("根据最高军政特勤条例与军委会审计规程，您的特许委任及战备配给已完成阶段性重定与核准。\n");
+            mailBody.append("当前特许评级：VIP ").append(player.getVipLevel()).append("（有效累充战费：¥").append(player.getTotalRechargeCents() / 100).append("）。\n\n");
+
+            if (!revokedLevels.isEmpty() || !revokedMilestones.isEmpty()) {
+                mailBody.append("【特许资格变更】\n");
+                if (!revokedLevels.isEmpty()) {
+                    mailBody.append("· 撤销超出当前评级的等级特权礼包资格：VIP ").append(revokedLevels).append("\n");
+                }
+                if (!revokedMilestones.isEmpty()) {
+                    List<String> milestoneYuan = revokedMilestones.stream().map(c -> "¥" + (c / 100)).toList();
+                    mailBody.append("· 撤销超出当前战费的战略里程碑奖励资格：").append(milestoneYuan).append("\n");
+                }
+                mailBody.append("注：后续战费追加达到对应标准时，对应档位资格将即时解冻并恢复领取。\n\n");
+            }
+
+            mailBody.append("【库存物资调拨与回收明细】\n");
+            if (actuallyReclaimed.isEmpty()) {
+                mailBody.append("经军械库与粮饷仓储核查，超出档位的配给物资已在战役中消耗殆尽，遵照军委会抚恤与保护原则，未予扣减负数。\n");
+            } else {
+                mailBody.append("经核查，系统已从您的基地储备中收回下列尚未消耗的特许战备物资：\n");
+                for (Map.Entry<String, Integer> entry : actuallyReclaimed.entrySet()) {
+                    mailBody.append("· ").append(entry.getKey()).append("：").append(entry.getValue()).append("\n");
+                }
+                mailBody.append("（声明：已投入建设或战场消耗之战略物资免于追缴，绝不扣为负数）。\n");
+            }
+            mailBody.append("\n最高军委会纪律检查部 谨启");
+
+            mailService.sendSystem(playerId, "最高军委会纪律检查部", "system",
+                    "📋 军务纪律部·战备物资调拨与特许调整告知书", mailBody.toString(), null);
+        } catch (Exception e) {
+            log.error("发送VIP物资回收通知邮件失败: playerId={}", playerId, e);
+        }
+
+        String detail = String.format("玩家 %s(ID:%d) 回收超出档位道具: 撤销VIP等级礼包%s, 撤销里程碑%s, 实际回收未消耗道具: %s",
+                player.getUsername(), playerId, revokedLevels, revokedMilestones, actuallyReclaimed);
+        auditLogService.record(adminUsername, "REVOKE_UNCLAIMED_VIP_REWARDS", "PLAYER", String.valueOf(playerId), detail, req);
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("success", true);
+        result.put("revokedLevels", revokedLevels);
+        result.put("revokedMilestones", revokedMilestones);
+        result.put("actuallyReclaimed", actuallyReclaimed);
+        result.put("message", String.format("成功回收 %d 种未消耗战略物资，撤销 %d 个等级礼包与 %d 个里程碑领奖资格",
+                actuallyReclaimed.size(), revokedLevels.size(), revokedMilestones.size()));
+        return result;
     }
 
     @Transactional

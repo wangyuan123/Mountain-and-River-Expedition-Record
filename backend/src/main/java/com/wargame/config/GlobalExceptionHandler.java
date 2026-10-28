@@ -30,7 +30,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(com.wargame.security.AccountException.class)
     public ResponseEntity<Map<String, Object>> handleAccount(com.wargame.security.AccountException e) {
-        HttpStatus status = "RATE_LIMITED".equals(e.getCode()) ? HttpStatus.TOO_MANY_REQUESTS : HttpStatus.BAD_REQUEST;
+        HttpStatus status = "RATE_LIMITED".equals(e.getCode()) ? HttpStatus.TOO_MANY_REQUESTS
+                : "MAIL_UNAVAILABLE".equals(e.getCode()) ? HttpStatus.SERVICE_UNAVAILABLE : HttpStatus.BAD_REQUEST;
         return ResponseEntity.status(status).body(Map.of("error", e.getMessage(), "code", e.getCode(), "retryAfter", e.getRetryAfter()));
     }
 

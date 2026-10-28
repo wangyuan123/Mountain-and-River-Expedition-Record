@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="skl_lrn_cover" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="35%" stop-color="#1d4ed8"/>
+      <stop offset="70%" stop-color="#1e3a8a"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="skl_lrn_pages" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="50%" stop-color="#fef3c7"/>
+      <stop offset="100%" stop-color="#fde68a"/>
+    </linearGradient>
+    <linearGradient id="skl_lrn_gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="50%" stop-color="#eab308"/>
+      <stop offset="100%" stop-color="#854d0e"/>
+    </linearGradient>
+    <radialGradient id="skl_lrn_glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#60a5fa" stop-opacity="0.8"/>
+      <stop offset="50%" stop-color="#2563eb" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#1e3a8a" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="skl_lrn_shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#skl_lrn_shadow)">
+    <!-- Naval Blue Strategic Glow -->
+    <circle cx="32" cy="32" r="28" fill="url(#skl_lrn_glow)"/>
+
+    <!-- Open Strategic Codex / War Manual -->
+    <!-- Left Cover & Pages -->
+    <path d="M32 46 C24 43, 16 44, 10 46 L10 18 C16 16, 24 15, 32 18 Z"
+          fill="url(#skl_lrn_pages)" stroke="#1e3a8a" stroke-width="0.8"/>
+    <path d="M10 46 L8 47 L8 19 L10 18 Z" fill="url(#skl_lrn_cover)"/>
+    <!-- Page text lines on left -->
+    <line x1="14" y1="22" x2="28" y2="22" stroke="#60a5fa" stroke-width="1.2" stroke-linecap="round"/>
+    <line x1="14" y1="27" x2="26" y2="27" stroke="#93c5fd" stroke-width="1.2" stroke-linecap="round"/>
+    <line x1="14" y1="32" x2="28" y2="32" stroke="#60a5fa" stroke-width="1.2" stroke-linecap="round"/>
+    <line x1="14" y1="37" x2="24" y2="37" stroke="#93c5fd" stroke-width="1.2" stroke-linecap="round"/>
+
+    <!-- Right Cover & Pages -->
+    <path d="M32 46 C40 43, 48 44, 54 46 L54 18 C48 16, 40 15, 32 18 Z"
+          fill="url(#skl_lrn_pages)" stroke="#1e3a8a" stroke-width="0.8"/>
+    <path d="M54 46 L56 47 L56 19 L54 18 Z" fill="url(#skl_lrn_cover)"/>
+    <!-- Page text lines on right -->
+    <line x1="36" y1="22" x2="50" y2="22" stroke="#60a5fa" stroke-width="1.2" stroke-linecap="round"/>
+    <line x1="36" y1="27" x2="48" y2="27" stroke="#93c5fd" stroke-width="1.2" stroke-linecap="round"/>
+    <line x1="36" y1="32" x2="50" y2="32" stroke="#60a5fa" stroke-width="1.2" stroke-linecap="round"/>
+    <line x1="36" y1="37" x2="46" y2="37" stroke="#93c5fd" stroke-width="1.2" stroke-linecap="round"/>
+
+    <!-- Book Spine Rib -->
+    <path d="M31 18 H33 V48 H31 Z" fill="url(#skl_lrn_gold)"/>
+    <!-- Red Marker Ribbon -->
+    <path d="M32 16 L35 16 L35 52 L33.5 50 L32 52 Z" fill="#ef4444"/>
+
+    <!-- Tactical Analytical Monocle / Ocular Magnifying Lens -->
+    <g transform="translate(36, 26)">
+      <circle cx="0" cy="0" r="13" fill="#38bdf8" fill-opacity="0.25" stroke="url(#skl_lrn_gold)" stroke-width="2.5"/>
+      <circle cx="0" cy="0" r="10" fill="none" stroke="#ffffff" stroke-width="1" stroke-dasharray="3 2" opacity="0.8"/>
+      <!-- Crosshair reticle inside lens -->
+      <line x1="-7" y1="0" x2="7" y2="0" stroke="#fef08a" stroke-width="1.2"/>
+      <line x1="0" y1="-7" x2="0" y2="7" stroke="#fef08a" stroke-width="1.2"/>
+      <!-- Lens glare -->
+      <path d="M-6 -6 A9 9 0 0 1 6 -6" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
+      <!-- Lens Handle -->
+      <line x1="9" y1="9" x2="19" y2="19" stroke="url(#skl_lrn_gold)" stroke-width="3" stroke-linecap="round"/>
+    </g>
+  </g>
+</svg>

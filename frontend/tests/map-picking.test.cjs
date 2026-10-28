@@ -335,13 +335,11 @@ test('player art follows actual coast status for own and other cities, including
  assert.equal(icon({kind:'player',wallLevel:8}),'img/cities/player-city-lv7-8.png');
  assert.equal(icon({kind:'player',wallLevel:9}),'img/cities/player-city-lv9.png');
  assert.equal(icon({kind:'player',wallLevel:10}),'img/cities/player-city-lv10.png');
- assert.ok(fs.existsSync(path.join(__dirname,'..','img/cities/player-city-lv1-2.png')));
+ assert.ok(fs.existsSync(path.join(__dirname,'..','img/cities/player-city-preview-map.png')));
  assert.ok(fs.existsSync(path.join(__dirname,'..','img/cities/player-city-lv3-4.png')));
  assert.ok(fs.existsSync(path.join(__dirname,'..','img/cities/player-city-lv5-6.png')));
  assert.ok(fs.existsSync(path.join(__dirname,'..','img/cities/player-city-lv7-8.png')));
  assert.ok(fs.existsSync(path.join(__dirname,'..','img/cities/player-city-lv9.png')));
- assert.ok(fs.existsSync(path.join(__dirname,'..','img/cities/player-city-lv9-10.png')));
- assert.ok(fs.existsSync(path.join(__dirname,'..','img/cities/player-city-lv5-9.png')));
  assert.ok(fs.existsSync(path.join(__dirname,'..','img/cities/player-city-lv10.png')));
  for(const [name,vessel] of [
   ['日寇第1舰队','battleship'],['日寇第4航母编队','carrier'],

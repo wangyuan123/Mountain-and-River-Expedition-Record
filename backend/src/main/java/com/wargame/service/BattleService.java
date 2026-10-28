@@ -966,6 +966,7 @@ public class BattleService {
         }
         BattleRoundState run() {
             log.append("-- 第").append(round).append("回合 --\n");
+            int bonusStart = log.length();
             normalizeBattleFronts(a, d, ap, dp, distance);
             Map<String, Integer> oldA = new LinkedHashMap<>(ap), oldD = new LinkedHashMap<>(dp);
             boolean wallOnly = allDead(d) && wall != null && wall.standing();
@@ -1000,6 +1001,7 @@ public class BattleService {
             Map<String, List<ActionEntry>> batches = new LinkedHashMap<>();
             initiative.forEach(e -> batches.computeIfAbsent(priority(e), k -> new ArrayList<>()).add(e));
             for (var batch : batches.values()) fireBatch(batch);
+            recordCommanderBonuses(bonusStart);
             if (wall != null) wall = wall.afterRound(!allDead(d));
             boolean win = allDead(d) && !allDead(a) && (wall == null || !wall.standing());
             boolean end = win || allDead(a) || round >= maxRoundForAction(action);
@@ -1008,6 +1010,29 @@ public class BattleService {
             if (end) log.append(win ? "★ 胜利！\n" : "✗ 战斗结束，守方获胜。\n");
             int first = state.getFormations().values().stream().mapToInt(f -> f.getFirstCombatRound()).filter(n -> n > 0).min().orElse(0);
             return new BattleRoundState(round, end, win, filterPositive(a), filterPositive(d), ap, dp, log.toString(), first, wall, reason);
+        }
+
+        /** 首次接战在交火时才确定；结算后记录实际周期，不更改机动先手或伤害。 */
+        void recordCommanderBonuses(int start) {
+            StringBuilder bonuses = new StringBuilder();
+            state.getFormations().values().forEach(f -> {
+                Side formationSide = "attack".equals(f.getKind()) ? Side.MINE : Side.ENEMY;
+                if (f.getInitial().keySet().stream().noneMatch(id -> movements.containsKey(formationSide + ":" + id))) return;
+                String side = "attack".equals(f.getKind()) ? "我方" : "敌方";
+                TechCtx common = "attack".equals(f.getKind()) ? ac : dc;
+                Map<String, Integer> skills = new LinkedHashMap<>(f.getSkills());
+                // 首次接战时先手已排定，不能在日志中声称闪电改变了本回合机动或先手。
+                if (f.getFirstCombatRound() == round) skills.remove("blitz");
+                TechCtx ctx = new TechCtx(common.tech, skills, f.getMilitary(), f.getDefense(), common.commandBonus);
+                String line = buildCommanderBonusLog(side, ctx, round, isSkillRoundActive(round, f.getFirstCombatRound()));
+                line = line.replace(side + "将领加成：", side + "将领加成：" + f.title());
+                if (f.getFirstCombatRound() == 0) line = line.replace("本回合无将领属性或技能加成生效", "尚未接战，属性与战斗技能尚未触发");
+                bonuses.append(line).append("\n");
+                // 结构化记录与正文使用同一事实，客户端合并编队日志时无需猜测周期。
+                for (String text : line.split("\n")) state.getEvents().add(Map.of(
+                        "type", "COMMANDER_BONUS", "round", round, "formationId", state.publicId(f), "formation", f.title(), "text", text));
+            });
+            log.insert(start, bonuses);
         }
         record Hit(String attacker, String target, double actions, double damage) {}
         /** 合法同距离同基础兵种目标共同承伤；后排、不同领域与射程外不参与分摊。 */

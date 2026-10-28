@@ -20,7 +20,8 @@
   function notify(text) { if (G.toast) G.toast(text); }
   function fail(err) { notify(err.message || '操作失败，请重试'); }
   function status(p) { return p.available === false ? '账号不可用' : p.blocked ? '已拉黑' : p.online ? '在线' : '离线'; }
-  function name(p) { return p.displayName || p.username; }
+  // 社交界面只展示游戏昵称；昵称缺失时也不回退暴露登录账号。
+  function name(p) { return p.displayName || '指挥官'; }
   function peerButton(p) {
     var avatar = G.Chat.avatarSrc ? G.Chat.avatarSrc(p.avatar, false) : '';
     var statusClass = p.available === false ? 'offline' : p.blocked ? 'blocked' : p.online ? 'online' : 'offline';
@@ -34,7 +35,6 @@
       '<span class="friend-name-text">' + esc(name(p)) + '</span>' +
       '<span class="friend-status-pill ' + statusClass + '">' + status(p) + '</span>' +
       '</span>' +
-      '<span class="private-conversation-preview">玩家名：' + esc(p.username) + ' · ID：' + Number(p.id) + '</span>' +
       '</span>' +
       '<span class="friend-peer-arrow" aria-hidden="true">›</span>' +
       '</button>';
@@ -370,7 +370,6 @@
         '<h3 class="friend-profile-name">' + esc(name(p)) + '</h3>' +
         '<span class="friend-status-pill ' + statusClass + '">' + status(p) + '</span>' +
         '</div>' +
-        '<div class="friend-profile-sub">玩家名：' + esc(p.username) + ' · ID：' + Number(p.id) + '</div>' +
         '</div></div>' +
         '<div class="friend-profile-grid">' +
         '<div class="friend-profile-cell"><span class="cell-label">军衔</span><span class="cell-val">🎖️ ' + esc(rankName) + '</span></div>' +
@@ -378,7 +377,7 @@
         '<div class="friend-profile-cell"><span class="cell-label">声望</span><span class="cell-val">⭐ ' + Number(p.prestige || 0) + '</span></div>' +
         '<div class="friend-profile-cell" title="最强单支现有编队的静态估值"><span class="cell-label">编队战力</span><span class="cell-val">' + (p.formationPower == null ? '—' : G.fmt(p.formationPower)) + '</span></div>' +
         '<div class="friend-profile-cell" title="部队及培养资产的综合估值"><span class="cell-label">综合实力</span><span class="cell-val">' + (p.overallPower == null ? '—' : G.fmt(p.overallPower)) + '</span></div>' +
-        '<div class="friend-profile-cell"><span class="cell-label">主城</span><span class="cell-val">🏰 ' + esc(p.cityName || '暂无') + (p.cityX != null && p.cityY != null ? ' (' + Number(p.cityX) + ',' + Number(p.cityY) + ')' : (p.available ? ' · 未获得有效侦察坐标' : '')) + '</span></div>' +
+        '<div class="friend-profile-cell"><span class="cell-label">主城</span><span class="cell-val">' + (G.mainCityIconHtml ? G.mainCityIconHtml() : (G.renderMainCityIcon ? G.renderMainCityIcon() : '')) + esc(p.cityName || '暂无') + (p.cityX != null && p.cityY != null ? ' (' + Number(p.cityX) + ',' + Number(p.cityY) + ')' : (p.available ? ' · 未获得有效侦察坐标' : '')) + '</span></div>' +
         '</div>';
       var actions = [];
       // 只有服务端确认有效侦察报告后才会下发坐标，因此资料页不能绕过侦察定位。

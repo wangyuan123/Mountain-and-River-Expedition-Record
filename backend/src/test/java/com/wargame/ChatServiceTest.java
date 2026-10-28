@@ -53,6 +53,22 @@ public class ChatServiceTest {
         assertEquals("指挥部全员就绪！", res.content());
         assertEquals("TestCommander", res.username());
         assertEquals(player.getAvatar(), res.avatar());
+        assertEquals(0, res.vipLevel());
+        assertTrue(res.vipBadgeVisible());
+        assertEquals("default", res.avatarFrame());
+    }
+
+    @Test
+    public void testSendAndHistoryIncludesAvatarFrameAndVip() {
+        player.setVipLevel(4);
+        player.setVipBadgeVisible(true);
+        player.setAvatarFrame("frame-gold-v1");
+
+        ChatDtos.MessageResponse res = chatService.send(player.getId(), "统帅出征！");
+        assertNotNull(res);
+        assertEquals(4, res.vipLevel());
+        assertTrue(res.vipBadgeVisible());
+        assertEquals("frame-gold-v1", res.avatarFrame());
     }
 
     @Test

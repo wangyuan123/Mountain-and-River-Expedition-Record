@@ -110,7 +110,7 @@ class DisplayNameTest extends BaseServiceTest {
         existing.setPasswordHash("pass");
         playerRepository.save(existing);
 
-        var regResult = authService.register("new_reg_user", "password123", new org.springframework.mock.web.MockHttpServletRequest());
+        var regResult = verifiedRegistration("new_reg_user", "password123");
         Player registered = playerRepository.findById(regResult.playerId()).orElseThrow();
 
         assertNotNull(registered.getDisplayName());

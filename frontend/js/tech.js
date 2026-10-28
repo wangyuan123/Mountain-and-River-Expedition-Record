@@ -493,7 +493,6 @@ window.Game = window.Game || {};
       var activeRes = s.research;
 
       var h = '';
-      h += '<div class="title">- 军工科技研发中心 -</div>';
       h += '<div class="desc">军工科技研发中心 Lv.' + labLv + ' · ' + branchOrder.length + ' 类科技，共 ' + Object.keys(D.techs).length + ' 项。' +
         '已开放 ' + access.unlocked.length + ' 项，科技可研究至 Lv.' + access.level + '，仍需配套建筑。中心升级不提速，研发速度仅受市长学识和格物致知影响。 ' +
         '<span role="button" tabindex="0" class="link-act" onclick="Game.Tech.showResearchInfo()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();Game.Tech.showResearchInfo();}">查看研发说明</span></div>';

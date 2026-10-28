@@ -32,6 +32,13 @@ public interface PlayerRepository extends JpaRepository<Player, Long>, JpaSpecif
 
     boolean existsByUsername(String username);
 
+    boolean existsByRecoveryEmailKey(String recoveryEmailKey);
+
+    /** 已完成注销的墓碑账号不再持有头像，兼容旧数据中尚未清空的路径。 */
+    @org.springframework.data.jpa.repository.Query("select (count(p) > 0) from Player p where p.customAvatar = :customAvatar "
+            + "and (p.accountStatus is null or p.accountStatus <> 'DELETED')")
+    boolean existsByCustomAvatar(@org.springframework.data.repository.query.Param("customAvatar") String customAvatar);
+
     boolean existsByDisplayName(String displayName);
 
     boolean existsByDisplayNameKeyAndIdNot(String displayNameKey, Long id);

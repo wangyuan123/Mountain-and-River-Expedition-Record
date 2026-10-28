@@ -39,7 +39,40 @@ window.Game = window.Game || {};
     return '<span title="' + G.fmt(amount) + '">' + display + '</span>';
   }
 
+  function updateDrawerHeight() {
+    if (typeof window === 'undefined') return;
+    var vh = window.innerHeight || 800;
+    if (window.visualViewport && window.visualViewport.height) {
+      vh = Math.round(window.visualViewport.height);
+    }
+    if (typeof document !== 'undefined' && document.documentElement && document.documentElement.style) {
+      document.documentElement.style.setProperty('--drawer-height', vh + 'px');
+    }
+    if (typeof document !== 'undefined') {
+      var dr = document.querySelector ? document.querySelector('.player-drawer') : null;
+      if (dr && dr.style) {
+        dr.style.height = vh + 'px';
+        dr.style.maxHeight = vh + 'px';
+      }
+      var mask = document.getElementById ? document.getElementById('playerDrawerMask') : null;
+      if (mask && mask.style) {
+        mask.style.height = vh + 'px';
+        mask.style.maxHeight = vh + 'px';
+      }
+    }
+  }
+
+  if (typeof window !== 'undefined' && window.addEventListener) {
+    updateDrawerHeight();
+    window.addEventListener('resize', updateDrawerHeight, { passive: true });
+    window.addEventListener('orientationchange', updateDrawerHeight, { passive: true });
+    if (window.visualViewport && window.visualViewport.addEventListener) {
+      window.visualViewport.addEventListener('resize', updateDrawerHeight, { passive: true });
+    }
+  }
+
   G.PlayerProfile = {
+    updateDrawerHeight: updateDrawerHeight,
     openPlayerDrawer: function () {
       stopProtectionTimer();
       var mask = document.getElementById('playerDrawerMask');
@@ -94,7 +127,8 @@ window.Game = window.Game || {};
       var vipBadgeHtml = (vipLevel > 0 && vipBadgeVisible)
         ? '<span class="topbar-vip-badge' + (vipLevel >= 4 ? ' vip-badge-gold' : '') + '">VIP ' + vipLevel + '</span>'
         : '';
-      var avatarFrameClass = p.avatarFrame ? (' frame-' + p.avatarFrame + '-v1') : '';
+      var avatarFrameClassName = G.avatarFrameClass ? G.avatarFrameClass(p.avatarFrame) : '';
+      var avatarFrameClass = avatarFrameClassName ? ' ' + avatarFrameClassName : '';
 
       var html = '<div class="player-drawer" onclick="event.stopPropagation()">'
         + '<div class="drawer-header">'
@@ -143,10 +177,10 @@ window.Game = window.Game || {};
         + '        <div class="stat-k">综合实力</div>'
         + '        <div class="stat-v">' + (p.overallPower == null ? '—' : drawerAmount(p.overallPower)) + '</div>'
         + '      </div>'
-        + '      <div class="drawer-stat-box">'
+        + '      <button type="button" class="drawer-stat-box drawer-stat-action" onclick="Game.Main.showRankCapInfo()" aria-label="查看军衔与带兵上限说明">'
         + '        <div class="stat-k">带兵上限</div>'
         + '        <div class="stat-v highlight">' + drawerAmount(Core.armyCap ? Core.armyCap() : 0) + '</div>'
-        + '      </div>'
+        + '      </button>'
         + '      <button type="button" class="drawer-stat-box drawer-stat-action" onclick="Game.Main.closePlayerDrawer();Game.go(\'recharge\')" aria-label="钻石 ' + G.fmt(diamond) + '，前往充值">'
         + '        <span class="stat-k">钻石 <span aria-hidden="true">›</span></span>'
         + '        <span class="stat-v diamond-text">' + drawerAmount(diamond) + '</span>'
@@ -193,17 +227,29 @@ window.Game = window.Game || {};
 
       var militaryAwards = ((s.officerEquipment || {}).achievements || []).filter(function (a) { return a.unlocked; });
       if (militaryAwards.length) {
-        html = html.replace('<div class="drawer-footer">', '<details><summary>军备展示成就</summary>' + militaryAwards.map(function (a) { return '<p>★ ' + G.escapeHtml(a.name) + '</p>'; }).join('') + '</details><div class="drawer-footer">');
+        var awardsHtml = '<div class="drawer-section"><details class="drawer-awards-details"><summary>军备展示成就 (' + militaryAwards.length + ')</summary>' + militaryAwards.map(function (a) { return '<p>★ ' + G.escapeHtml(a.name) + '</p>'; }).join('') + '</details></div>';
+        html = html.replace('</div><div class="drawer-footer">', awardsHtml + '</div><div class="drawer-footer">');
       }
       div.innerHTML = html;
       div.onclick = function (e) {
         if (e.target === div) Game.Main.closePlayerDrawer();
       };
+      div.onkeydown = function (e) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          Game.Main.closePlayerDrawer();
+        }
+      };
+      if (document.body && document.body.classList) {
+        document.body.classList.add('drawer-open');
+      }
       document.body.appendChild(div);
+      updateDrawerHeight();
       startProtectionTimer(div);
 
       requestAnimationFrame(function () {
         div.classList.add('active');
+        updateDrawerHeight();
         var dr = div.querySelector('.player-drawer');
         if (dr) dr.classList.add('open');
       });
@@ -211,6 +257,9 @@ window.Game = window.Game || {};
 
     closePlayerDrawer: function () {
       stopProtectionTimer();
+      if (document.body && document.body.classList) {
+        document.body.classList.remove('drawer-open');
+      }
       var mask = document.getElementById('playerDrawerMask');
       if (!mask) return;
       mask.classList.remove('active');
@@ -231,7 +280,7 @@ window.Game = window.Game || {};
       var skillLevel = Math.max(skills.leadership || 0, skills.supply || 0);
       var skillBonus = Core.skillBonus ? Math.max(Core.skillBonus('leadership'), Core.skillBonus('supply')) : 0;
       var skillPercent = Math.round(skillBonus * 100);
-      var total = Core.armyCap();
+      var total = Core.armyCap ? Core.armyCap() : (rankInfo.baseCap || 25000);
       var previousFocus = document.activeElement;
       var rows = ranks.map(function (rank) {
         var current = rank.tier === rankInfo.tier;
@@ -251,8 +300,8 @@ window.Game = window.Game || {};
         + '<div class="modal-body rank-cap-body">'
         + '<div class="rank-cap-summary">当前军衔 <strong class="rank-cap-label">' + G.renderMilitaryRankIcon(rankInfo.tier) + G.escapeHtml(rankInfo.name) + '</strong> · 军衔基础上限 <strong>' + G.fmt(rankInfo.baseCap) + '</strong></div>'
         + '<p>三军统帅 Lv.' + skillLevel + '（+' + skillPercent + '%）。</p>'
-        + '<p><strong>当前实际带兵上限：' + G.fmt(rankInfo.baseCap) + ' × (1 + ' + skillPercent + '%) = ' + G.fmt(total) + '</strong></p>'
-        + '<p>各军衔的基础上限如下；上尉及以下每阶增加 25,000；少校为 300,000，此后每阶增加 50,000，上将为 600,000。实际出征仍需当前城市有足够驻军。</p>'
+        + '<p><strong>当前实际带兵上限：' + G.fmt(total) + '</strong></p>'
+        + '<p>各军衔的基础上限如下，实际出征仍需当前城市有足够驻军：</p>'
         + '<table class="rank-cap-table"><thead><tr><th scope="col">等级</th><th scope="col">军衔</th><th scope="col">基础上限</th></tr></thead><tbody>' + rows + '</tbody></table>'
         + '</div><div class="modal-foot"><button type="button" class="btn btn-primary rank-cap-done">知道了</button></div>'
         + '</div>';
@@ -273,15 +322,43 @@ window.Game = window.Game || {};
       var existing = document.getElementById('avatarPickerMask');
       if (existing) existing.remove();
 
-      var curAvatar = G.MainView.getCurrentAvatar();
-      // 旧版 SVG 和网络头像不再可选，选择器与首页共用 historical 头像库。
-      if (!G.MainView.presetAvatars.some(function (avatar) { return avatar.src === curAvatar; })) {
-        curAvatar = G.MainView.presetAvatars[0].src;
+      var core = (G && G.Core) || (typeof Core !== 'undefined' ? Core : null);
+      var p = (core && core.state && core.state.player) ? core.state.player : {};
+      var vipLevel = Number(p.vipLevel) || 0;
+      var curCustomAvatar = (p.customAvatar || '').trim();
+      var curAvatar = G.MainView ? G.MainView.getCurrentAvatar() : '';
+      if (!curCustomAvatar && G.MainView && G.MainView.presetAvatars) {
+        if (!G.MainView.presetAvatars.some(function (avatar) { return avatar.src === curAvatar; })) {
+          curAvatar = G.MainView.presetAvatars[0].src;
+        }
       }
       var modal = document.createElement('div');
       modal.id = 'avatarPickerMask';
       modal.className = 'modal-mask avatar-picker-mask';
       modal.style.zIndex = '10500';
+
+      var previewHint = curCustomAvatar ? '当前使用的自定义统帅肖像' : '当前选择的头像';
+
+      var customSectionHtml = '';
+      if (vipLevel >= 5) {
+        customSectionHtml = '<div class="avatar-vip-custom-box" style="margin:10px 0 14px 0;padding:10px 12px;background:rgba(212,175,55,0.08);border:1px solid rgba(212,175,55,0.3);border-radius:6px;">'
+          + '<div style="font-size:12px;font-weight:700;color:#fcd34d;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">'
+          + '  <span>🎖️ 自定义统帅形象 (VIP 5+ 专属特权)</span>'
+          + (curCustomAvatar ? '<span style="font-size:11px;color:#38bdf8;font-weight:normal;">当前生效中</span>' : '')
+          + '</div>'
+          + '<div style="display:flex;gap:6px;margin-bottom:8px;">'
+          + '  <input type="text" id="avatarPickerVipUrl" placeholder="输入外链图片地址 (http/https)" value="' + (G.escapeHtml ? G.escapeHtml(curCustomAvatar) : curCustomAvatar) + '" style="flex:1;padding:5px 8px;font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);">'
+          + '  <button type="button" class="btn sm" onclick="Game.Main.applyCustomAvatarUrl()">应用链接</button>'
+          + '</div>'
+          + '<div style="display:flex;gap:6px;align-items:center;justify-content:space-between;flex-wrap:wrap;">'
+          + '  <div style="display:flex;gap:6px;align-items:center;">'
+          + '    <input type="file" id="avatarPickerVipFile" accept="image/png,image/jpeg,image/webp" style="font-size:11px;max-width:180px;">'
+          + '    <button type="button" id="avatarPickerVipUploadBtn" class="btn sm ok" onclick="Game.Main.uploadCustomAvatarFile()">本地上传</button>'
+          + '  </div>'
+          + (curCustomAvatar ? '  <button type="button" class="btn sm" onclick="Game.Main.clearCustomAvatar()">恢复预设头像</button>' : '')
+          + '</div>'
+          + '</div>';
+      }
 
       var html = '<div class="modal-dialog avatar-picker-dialog" onclick="event.stopPropagation()">'
         + '<div class="modal-header">'
@@ -291,14 +368,15 @@ window.Game = window.Game || {};
         + '<div class="modal-body">'
         + '  <div class="avatar-preview-box">'
         + '    <img id="avatarPreviewImg" class="avatar-preview-img" src="' + curAvatar + '" alt="头像预览" onerror="this.onerror=null;this.src=Game.Constants.presetAvatars[0].src"/>'
-        + '    <div class="avatar-preview-hint">当前选择的头像</div>'
+        + '    <div class="avatar-preview-hint" id="avatarPreviewHint">' + previewHint + '</div>'
         + '  </div>'
+        + customSectionHtml
         + '  <div class="avatar-picker-subtitle">历史军人预设头像</div>'
         + '  <div class="avatar-presets-grid" id="avatarPresetsGrid">';
 
       for (var i = 0; i < G.MainView.presetAvatars.length; i++) {
         var av = G.MainView.presetAvatars[i];
-        var isSel = (av.src === curAvatar) ? ' selected' : '';
+        var isSel = (!curCustomAvatar && av.src === curAvatar) ? ' selected' : '';
         html += '<div class="avatar-preset-item' + isSel + '" data-src="' + av.src + '" onclick="Game.Main.selectPresetAvatar(\'' + av.src + '\')">'
           + '<img class="avatar-preset-img" src="' + av.src + '" alt="' + av.name + '"/>'
           + '<div class="avatar-preset-name">' + av.name + '</div>'
@@ -330,6 +408,8 @@ window.Game = window.Game || {};
       Game.Main._selectedAvatar = src;
       var pImg = document.getElementById('avatarPreviewImg');
       if (pImg) pImg.src = src;
+      var pHint = document.getElementById('avatarPreviewHint');
+      if (pHint) pHint.textContent = '已选择预设头像（点击应用生效）';
       var grid = document.getElementById('avatarPresetsGrid');
       if (grid) {
         var items = grid.querySelectorAll('.avatar-preset-item');
@@ -343,13 +423,133 @@ window.Game = window.Game || {};
       }
     },
 
+    applyCustomAvatarUrl: function () {
+      var input = document.getElementById('avatarPickerVipUrl');
+      if (!input || !input.value.trim()) {
+        G.toast('请输入外链图片地址');
+        return Promise.reject(new Error('请输入外链图片地址'));
+      }
+      var url = input.value.trim();
+      if (!/^https?:\/\//i.test(url)) {
+        G.toast('图片链接需以 http:// 或 https:// 开头');
+        return Promise.reject(new Error('图片链接需以 http:// 或 https:// 开头'));
+      }
+      if (!G.API || !G.API.vipSetCustomAvatarUrl) {
+        G.toast('自定义头像服务不可用');
+        return Promise.reject(new Error('自定义头像服务不可用'));
+      }
+      return G.API.vipSetCustomAvatarUrl(url).then(function (res) {
+        G.toast(res.message || '自定义头像链接已生效！');
+        var core = (G && G.Core) || (typeof Core !== 'undefined' ? Core : null);
+        if (core && core.state && core.state.player) {
+          core.state.player.customAvatar = url;
+        }
+        var pImg = document.getElementById('avatarPreviewImg');
+        if (pImg) pImg.src = url;
+        var topImg = document.querySelector('.topbar-avatar');
+        if (topImg) topImg.src = url;
+        var drawerImg = document.getElementById('drawerAvatarImg');
+        if (drawerImg) drawerImg.src = url;
+        if (G.Main && G.Main.openAvatarPicker) G.Main.openAvatarPicker();
+        if (core && core.renderTop) core.renderTop();
+        return res;
+      }).catch(function (err) {
+        G.toast(err.message || '头像链接设置失败');
+        throw err;
+      });
+    },
+
+    /** 读取并上传本地头像，上传期间防止重复提交，成功后同步各处预览。 */
+    uploadCustomAvatarFile: function () {
+      var fileInput = document.getElementById('avatarPickerVipFile');
+      if (fileInput && fileInput.disabled) return;
+      if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+        G.toast('请先选择要上传的本地图片');
+        return;
+      }
+      var file = fileInput.files[0];
+      // 与后端的原始图片大小限制保持一致，避免读完文件后才被服务器拒绝。
+      if (file.size > 1024 * 1024) {
+        G.toast('图片大小不能超过 1MB');
+        return;
+      }
+      if (!G.API || !G.API.vipUploadCustomAvatarDataUrl) {
+        G.toast('自定义头像上传服务不可用');
+        return;
+      }
+      var uploadButton = document.getElementById('avatarPickerVipUploadBtn');
+      fileInput.disabled = true;
+      if (uploadButton) {
+        uploadButton.disabled = true;
+        uploadButton.textContent = '上传中…';
+      }
+      return new Promise(function (resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function (e) { resolve(e.target.result); };
+        reader.onerror = function () { reject(new Error('图片读取失败，请重新选择图片')); };
+        reader.onabort = function () { reject(new Error('图片读取已取消，请重试')); };
+        reader.readAsDataURL(file);
+      }).then(function (dataUrl) {
+        return G.API.vipUploadCustomAvatarDataUrl(dataUrl);
+      }).then(function (res) {
+        var newUrl = (res && res.customAvatar) || (res && res.data && res.data.customAvatar);
+        if (!newUrl) throw new Error('头像上传结果无效，请重试');
+        G.toast(res.message || '自定义头像已上传并生效！');
+        var core = (G && G.Core) || (typeof Core !== 'undefined' ? Core : null);
+        if (core && core.state && core.state.player) {
+          core.state.player.customAvatar = newUrl;
+        }
+        var pImg = document.getElementById('avatarPreviewImg');
+        if (pImg) pImg.src = newUrl;
+        var topImg = document.querySelector('.topbar-avatar');
+        if (topImg) topImg.src = newUrl;
+        var drawerImg = document.getElementById('drawerAvatarImg');
+        if (drawerImg) drawerImg.src = newUrl;
+        if (G.Main && G.Main.openAvatarPicker) G.Main.openAvatarPicker();
+        if (core && core.renderTop) core.renderTop();
+        return res;
+      }).catch(function (err) {
+        G.toast(err.message || '头像上传失败');
+      }).finally(function () {
+        fileInput.disabled = false;
+        if (uploadButton) {
+          uploadButton.disabled = false;
+          uploadButton.textContent = '本地上传';
+        }
+      });
+    },
+
+    clearCustomAvatar: function () {
+      if (!G.API || !G.API.vipSetCustomAvatarUrl) return Promise.resolve();
+      return G.API.vipSetCustomAvatarUrl('').then(function () {
+        G.toast('已恢复为预设头像');
+        var core = (G && G.Core) || (typeof Core !== 'undefined' ? Core : null);
+        if (core && core.state && core.state.player) {
+          core.state.player.customAvatar = '';
+        }
+        if (G.Main && G.Main.openAvatarPicker) G.Main.openAvatarPicker();
+        if (core && core.renderTop) core.renderTop();
+      }).catch(function (err) {
+        G.toast(err.message || '恢复预设头像失败');
+        throw err;
+      });
+    },
+
     saveSelectedAvatar: function () {
       var target = Game.Main._selectedAvatar;
       if (!G.MainView.presetAvatars.some(function (avatar) { return avatar.src === target; })) return;
 
-      var s = Core.state || {};
+      var core = (G && G.Core) || (typeof Core !== 'undefined' ? Core : null);
+      var s = (core && core.state) || {};
       var p = s.player || {};
       var uname = p.username || '';
+
+      if (p.customAvatar) {
+        p.customAvatar = '';
+        if (G.API && G.API.vipSetCustomAvatarUrl) {
+          G.API.vipSetCustomAvatarUrl('').catch(function () {});
+        }
+      }
 
       try {
         if (uname) localStorage.setItem('wargame_avatar_' + uname, target);

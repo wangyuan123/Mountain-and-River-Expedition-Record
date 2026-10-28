@@ -33,6 +33,80 @@ public class ForumServiceTest extends BaseServiceTest {
     }
 
     @Test
+    void vipIdentityUsesCurrentAccountSettingsAcrossForumResponses() {
+        Player author = createTestPlayer("forum_vip_author", 30);
+        author.setPrestige(200);
+        author.setVipLevel(3);
+        playerRepository.save(author);
+        var profile = forumService.getProfile(author.getId());
+        assertEquals(3, profile.vipLevel());
+        assertTrue(profile.vipBadgeVisible());
+
+        ForumBoard board = forumBoardRepository.findByBoardKey("strategy").orElseThrow();
+        var topic = forumService.createTopic(author.getId(), new CreateTopicRequest(
+                board.getId(), "VIP 身份对接", "验证论坛使用游戏 VIP 身份", "NORMAL", 0, null));
+        assertEquals(3, topic.authorVipLevel());
+        assertTrue(topic.authorVipBadgeVisible());
+
+        Player replier = createTestPlayer("forum_vip_replier", 30);
+        replier.setPrestige(100);
+        replier.setVipLevel(5);
+        playerRepository.save(replier);
+        var reply = forumService.createReply(replier.getId(), topic.id(), new CreateReplyRequest("VIP 回复", null));
+        assertEquals(5, reply.authorVipLevel());
+        assertTrue(reply.authorVipBadgeVisible());
+
+        // 升级与隐藏发生在发帖后，历史列表和详情必须读取当前账号设置。
+        author.setVipLevel(6);
+        author.setVipBadgeVisible(false);
+        playerRepository.save(author);
+        replier.setVipLevel(7);
+        replier.setVipBadgeVisible(false);
+        playerRepository.save(replier);
+
+        var updatedProfile = forumService.getProfile(author.getId());
+        assertEquals(6, updatedProfile.vipLevel());
+        assertFalse(updatedProfile.vipBadgeVisible());
+        var detail = forumService.getTopicDetail(topic.id()).topic();
+        assertEquals(6, detail.authorVipLevel());
+        assertFalse(detail.authorVipBadgeVisible());
+        var summaries = new java.util.ArrayList<TopicSummaryDto>();
+        summaries.addAll(forumService.getTopics(board.getId(), null, null, "VIP 身份对接", 0, 10).getContent());
+        summaries.addAll(forumService.getMyTopics(author.getId(), 0, 10).getContent());
+        summaries.addAll(forumService.getHotTopics().stream().filter(t -> t.id().equals(topic.id())).toList());
+        assertEquals(3, summaries.size());
+        for (var summary : summaries) {
+            assertEquals(topic.id(), summary.id());
+            assertEquals(6, summary.authorVipLevel());
+            assertFalse(summary.authorVipBadgeVisible());
+        }
+        var currentReply = forumService.getReplies(topic.id(), 0, 10).getContent().get(0);
+        assertEquals(7, currentReply.authorVipLevel());
+        assertFalse(currentReply.authorVipBadgeVisible());
+
+        author.setVipBadgeVisible(true);
+        playerRepository.save(author);
+        assertTrue(forumService.getTopicDetail(topic.id()).topic().authorVipBadgeVisible());
+    }
+
+    @Test
+    void unsetVipLevelDefaultsToZeroForLegacyAccounts() {
+        Player player = createTestPlayer("forum_vip_legacy", 30);
+        player.setPrestige(100);
+        player.setVipLevel(null);
+        playerRepository.save(player);
+        assertEquals(0, forumService.getProfile(player.getId()).vipLevel());
+
+        ForumBoard board = forumBoardRepository.findByBoardKey("tavern").orElseThrow();
+        var topic = forumService.createTopic(player.getId(), new CreateTopicRequest(
+                board.getId(), "普通账号", "无 VIP 等级的历史账号", "NORMAL", 0, null));
+        assertEquals(0, topic.authorVipLevel());
+        var reply = forumService.createReply(player.getId(), topic.id(), new CreateReplyRequest("普通回复", null));
+        assertEquals(0, reply.authorVipLevel());
+        assertEquals(0, forumService.getReplies(topic.id(), 0, 10).getContent().get(0).authorVipLevel());
+    }
+
+    @Test
     void testBoardsAndCreateTopicAndReply() {
         List<ForumBoard> boards = forumService.getBoards();
         assertFalse(boards.isEmpty(), "论坛初始板块不应为空");

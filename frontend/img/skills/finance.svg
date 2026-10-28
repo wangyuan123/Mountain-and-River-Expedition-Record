@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="skl_fin_gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fffbeb"/>
+      <stop offset="25%" stop-color="#fef08a"/>
+      <stop offset="60%" stop-color="#eab308"/>
+      <stop offset="100%" stop-color="#854d0e"/>
+    </linearGradient>
+    <linearGradient id="skl_fin_bronze" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="50%" stop-color="#b45309"/>
+      <stop offset="100%" stop-color="#78350f"/>
+    </linearGradient>
+    <radialGradient id="skl_fin_glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fef08a" stop-opacity="0.8"/>
+      <stop offset="60%" stop-color="#eab308" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#78350f" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="skl_fin_shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#skl_fin_shadow)">
+    <!-- Bullion Shine Glow -->
+    <circle cx="32" cy="32" r="28" fill="url(#skl_fin_glow)"/>
+
+    <!-- Tactical Merchant Scales (Background) -->
+    <!-- Scale Center Pillar -->
+    <rect x="30.5" y="10" width="3" height="42" fill="url(#skl_fin_bronze)"/>
+    <circle cx="32" cy="11" r="3" fill="url(#skl_fin_gold)"/>
+    <!-- Scale Pedestal Base -->
+    <path d="M22 52 H42 V56 H22 Z" fill="url(#skl_fin_bronze)"/>
+    <!-- Scale Beam -->
+    <rect x="12" y="14" width="40" height="2.5" rx="1" fill="url(#skl_fin_gold)"/>
+    <!-- Scale Left Pan String & Pan -->
+    <line x1="15" y1="16" x2="9" y2="30" stroke="#ca8a04" stroke-width="1"/>
+    <line x1="15" y1="16" x2="21" y2="30" stroke="#ca8a04" stroke-width="1"/>
+    <path d="M8 30 Q15 36 22 30 Z" fill="url(#skl_fin_gold)" stroke="#ca8a04" stroke-width="0.8"/>
+    <!-- Scale Right Pan String & Pan -->
+    <line x1="49" y1="16" x2="43" y2="30" stroke="#ca8a04" stroke-width="1"/>
+    <line x1="49" y1="16" x2="55" y2="30" stroke="#ca8a04" stroke-width="1"/>
+    <path d="M42 30 Q49 36 56 30 Z" fill="url(#skl_fin_gold)" stroke="#ca8a04" stroke-width="0.8"/>
+
+    <!-- Treasury Bullion Coin (Foreground Main) -->
+    <circle cx="32" cy="35" r="17" fill="url(#skl_fin_gold)" stroke="#fef08a" stroke-width="1.2"/>
+    <circle cx="32" cy="35" r="14" fill="none" stroke="#ca8a04" stroke-width="1" stroke-dasharray="2.5 1.5"/>
+    <circle cx="32" cy="35" r="11" fill="url(#skl_fin_bronze)" opacity="0.25"/>
+
+    <!-- Embossed Heraldic Diamond Star / Treasury Sigil -->
+    <polygon points="32,23 35,32 44,35 35,38 32,47 29,38 20,35 29,32" fill="#fffbeb"/>
+    <polygon points="32,26 34,33 41,35 34,37 32,44 30,37 23,35 30,33" fill="url(#skl_fin_gold)"/>
+    <circle cx="32" cy="35" r="2.5" fill="#ffffff"/>
+
+    <!-- Gold Sparkles -->
+    <polygon points="46,12 48,16 52,17 48,18 46,22 44,18 40,17 44,16" fill="#fef08a"/>
+    <polygon points="16,42 17.5,45 20,45.5 17.5,46 16,49 14.5,46 12,45.5 14.5,45" fill="#ffffff" opacity="0.9"/>
+  </g>
+</svg>

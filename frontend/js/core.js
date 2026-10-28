@@ -792,7 +792,8 @@ window.Game = window.Game || {};
       var vipBadgeHtml = (vipLevel > 0 && vipBadgeVisible)
         ? '<span class="topbar-vip-badge' + (vipLevel >= 4 ? ' vip-badge-gold' : '') + '">VIP ' + vipLevel + '</span>'
         : '';
-      var avatarFrameClass = p.avatarFrame ? (' frame-' + p.avatarFrame + '-v1') : '';
+      var avatarFrameClassName = G.avatarFrameClass ? G.avatarFrameClass(p.avatarFrame) : '';
+      var avatarFrameClass = avatarFrameClassName ? ' ' + avatarFrameClassName : '';
 
       var html = '';
       html += '<div class="top-row">' +

@@ -693,5 +693,5 @@ test('导航栏科技后包含军校Tab，点击直达军校招募界面并在�
   // 3. 验证 academy 视图渲染军校招募
   const view = { innerHTML: '' };
   G.Core.views.academy(view);
-  assert.match(view.innerHTML, /军校招募/);
+  assert.match(view.innerHTML, /军校 Lv\.1/);
 });

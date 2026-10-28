@@ -191,6 +191,25 @@ test('点击时取得战争结束的新状态后，详情立即恢复宣战入�
   assert.deepEqual(f.calls, [['toast', '战争已结束,需重新宣战']]);
 });
 
+test('列表和大地图对相同外交及战争状态显示相同顺序的行动', () => {
+  for (const scenario of [
+    { guildRelation: 'neutral', warAt: 0, warEndAt: 0, labels: ['劝降', '侦察', '宣战'] },
+    { guildRelation: 'hostile', warAt: 0, warEndAt: 0, labels: ['劝降', '侦察', '讨伐'] },
+    { guildRelation: 'hostile', warAt: 90000, warEndAt: 99000, labels: ['劝降', '侦察', '讨伐'] },
+    { guildRelation: 'friendly', warAt: 90000, warEndAt: 103000, labels: ['劝降', '侦察'] },
+    { guildRelation: 'neutral', warAt: 90000, warEndAt: 103000, labels: ['劝降', '侦察', '讨伐'] }
+  ]) {
+    const f = fixture(scenario);
+    f.renderList();
+    f.map.renderDetail(f.target);
+    const targetCard = f.view.innerHTML.split('data-player-id="2"')[1];
+    const actions = targetCard.match(/<div class="tcard-actions">([\s\S]*?)<\/div>/)[1];
+    const listLabels = [...actions.matchAll(/<button\b[^>]*>([^<]*)<\/button>/g)].map(match => match[1]);
+    assert.deepEqual(listLabels, scenario.labels);
+    assert.deepEqual(f.labels(), scenario.labels);
+  }
+});
+
 test('敌对军团的按钮与点击校验一致，过期个人宣战不阻止出征', () => {
   for (const war of [{ warAt: 90000, warEndAt: 99000 }, { warAt: 0, warEndAt: 0 }]) {
     const f = fixture({ guildRelation: 'hostile', ...war });

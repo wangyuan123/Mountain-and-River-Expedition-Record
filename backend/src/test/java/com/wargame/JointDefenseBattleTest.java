@@ -36,6 +36,20 @@ class JointDefenseBattleTest {
         assertTrue(result.log().contains("【援军·团友甲·将领李某】"), result.log());
         assertEquals(1, state.getFormations().get("0").getFirstCombatRound());
     }
+    @Test void bonusLogsFollowEachFormationCombatWindowWithoutChangingDamage() {
+        var a = Map.of("infantry", 1000000);
+        var d = Map.of("htank", 10000, "htank~s1", 10000);
+        var state = state(a, Map.of("htank", 10000), Map.of("htank~s1", 10000));
+        state.getFormations().get("0").setMilitary(100);
+        state.getFormations().get("0").setDefense(80);
+        state.getFormations().get("0").getSkills().put("frenzy", 5);
+        var first = round(state, a, d, Map.of("infantry", 0), Map.of("htank", 0, "htank~s1", 4000), 5);
+        assertTrue(first.log().contains("敌方将领加成：【守方·守将李某】军事属性 +100%攻击；防御属性 +80%防御；全军冲锋 +50%攻击"), first.log());
+        assertTrue(first.log().contains("敌方将领加成：【援军·团友甲·将领李某】尚未接战"), first.log());
+        var next = round(state, first.attackerArmy(), first.defenderArmy(), first.attackerPositions(), first.defenderPositions(), 6);
+        assertTrue(next.log().contains("敌方将领加成：【守方·守将李某】本回合无将领属性或技能加成生效"), next.log());
+        assertTrue(state.getEvents().stream().anyMatch(e -> "COMMANDER_BONUS".equals(e.get("type")) && Integer.valueOf(5).equals(e.get("round"))));
+    }
     @Test void distantSourceDoesNotConsumeCycleAndSameMarchSharesOneCycle() {
         Map<String, Integer> a = Map.of("infantry", 1000000), home = Map.of("rocket", 10), support = Map.of("infantry~s1", 20, "htank~s1", 20);
         var state = state(a, home, support);

@@ -74,6 +74,7 @@ window.Game = window.Game || {};
         if (event && event.code === 4001) {
           WS.disconnect();
           // 本标签正在提交注销时，先让 HTTP 结果或状态查询完成。
+          if (G.AccountEmail && G.AccountEmail.handleSessionExpiry()) return;
           if (G.Account && !G.Account.submitting) G.Account.endSession();
           return;
         }

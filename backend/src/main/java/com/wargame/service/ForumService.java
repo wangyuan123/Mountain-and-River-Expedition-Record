@@ -81,13 +81,15 @@ public class ForumService {
         Pageable pageable = PageRequest.of(Math.max(0, page), Math.min(50, Math.max(1, size)));
         String cleanQuery = (query != null && !query.trim().isEmpty()) ? query.trim() : null;
         String cleanType = (topicType != null && !topicType.trim().isEmpty() && !topicType.equalsIgnoreCase("ALL")) ? topicType.trim().toUpperCase() : null;
-        return topicRepository.findTopics(boardId, isEssence, cleanType, cleanQuery, pageable)
-                .map(this::toSummaryDto);
+        Page<ForumTopic> topics = topicRepository.findTopics(boardId, isEssence, cleanType, cleanQuery, pageable);
+        Map<Long, VipIdentity> authors = getAuthorVipIdentities(topics.getContent().stream().map(ForumTopic::getAuthorId).toList());
+        return topics.map(t -> toSummaryDto(t, authors.getOrDefault(t.getAuthorId(), NO_VIP)));
     }
 
     public List<TopicSummaryDto> getHotTopics() {
-        return topicRepository.findTop10ByOrderByIsPinnedDescViewCountDesc()
-                .stream().map(this::toSummaryDto).toList();
+        List<ForumTopic> topics = topicRepository.findTop10ByOrderByIsPinnedDescViewCountDesc();
+        Map<Long, VipIdentity> authors = getAuthorVipIdentities(topics.stream().map(ForumTopic::getAuthorId).toList());
+        return topics.stream().map(t -> toSummaryDto(t, authors.getOrDefault(t.getAuthorId(), NO_VIP))).toList();
     }
 
     @Transactional
@@ -236,8 +238,10 @@ public class ForumService {
         Pageable pageable = PageRequest.of(Math.max(0, page), Math.min(50, Math.max(1, size)));
         Long currentOptPlayerId = getOptionalCurrentPlayerId().orElse(null);
 
-        return replyRepository.findByTopicIdOrderByFloorNumberAsc(topicId, pageable)
-                .map(r -> {
+        Page<ForumReply> replies = replyRepository.findByTopicIdOrderByFloorNumberAsc(topicId, pageable);
+        Map<Long, VipIdentity> authors = getAuthorVipIdentities(replies.getContent().stream().map(ForumReply::getAuthorId).toList());
+        return replies.map(r -> {
+                    VipIdentity vip = authors.getOrDefault(r.getAuthorId(), NO_VIP);
                     boolean isLiked = false;
                     if (currentOptPlayerId != null) {
                         isLiked = likeRepository.existsByTargetTypeAndTargetIdAndPlayerId("REPLY", r.getId(), currentOptPlayerId);
@@ -258,6 +262,8 @@ public class ForumService {
                             r.getAuthorName(),
                             r.getAuthorDisplayName(),
                             r.getAuthorAvatar(),
+                            vip.level(),
+                            vip.visible(),
                             r.getAuthorMilitaryRank(),
                             MilitaryRankDef.getRankName(r.getAuthorMilitaryRank()),
                             r.getAuthorPrestige(),
@@ -332,6 +338,7 @@ public class ForumService {
             }
         }
 
+        VipIdentity vip = toVipIdentity(player);
         return new ReplyDto(
                 reply.getId(),
                 reply.getTopicId(),
@@ -339,6 +346,8 @@ public class ForumService {
                 reply.getAuthorName(),
                 reply.getAuthorDisplayName(),
                 reply.getAuthorAvatar(),
+                vip.level(),
+                vip.visible(),
                 reply.getAuthorMilitaryRank(),
                 MilitaryRankDef.getRankName(reply.getAuthorMilitaryRank()),
                 reply.getAuthorPrestige(),
@@ -521,6 +530,7 @@ public class ForumService {
         return Map.of("success", true, "action", action);
     }
 
+    /** 论坛登录资料直接读取游戏账号的 VIP 等级与徽章开关，SSO 和账号登录共用此契约。 */
     public ForumProfileDto getProfile(Long playerId) {
         Player p = playerRepository.findById(playerId)
                 .orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
@@ -533,11 +543,14 @@ public class ForumService {
 
         boolean isAdmin = checkIsAdmin(p);
 
+        VipIdentity vip = toVipIdentity(p);
         return new ForumProfileDto(
                 p.getId(),
                 p.getUsername(),
                 p.getDisplayName(),
                 p.getAvatar(),
+                vip.level(),
+                vip.visible(),
                 rank,
                 MilitaryRankDef.getRankName(rank),
                 prestige,
@@ -556,8 +569,9 @@ public class ForumService {
 
     public Page<TopicSummaryDto> getMyTopics(Long playerId, int page, int size) {
         Pageable pageable = PageRequest.of(Math.max(0, page), Math.min(50, Math.max(1, size)));
-        return topicRepository.findByAuthorIdOrderByCreatedAtDesc(playerId, pageable)
-                .map(this::toSummaryDto);
+        Page<ForumTopic> topics = topicRepository.findByAuthorIdOrderByCreatedAtDesc(playerId, pageable);
+        Map<Long, VipIdentity> authors = getAuthorVipIdentities(topics.getContent().stream().map(ForumTopic::getAuthorId).toList());
+        return topics.map(t -> toSummaryDto(t, authors.getOrDefault(t.getAuthorId(), NO_VIP)));
     }
 
     public Optional<Long> getOptionalCurrentPlayerId() {
@@ -568,7 +582,34 @@ public class ForumService {
         return Optional.of(userPrincipal.getPlayerId());
     }
 
+    private static final VipIdentity NO_VIP = new VipIdentity(0, false);
+
+    private record VipIdentity(int level, boolean visible) {}
+
+    /** 按当前页去重批量读取账号身份，历史帖子随 VIP 升级或隐藏设置更新，避免逐条查询玩家。 */
+    private Map<Long, VipIdentity> getAuthorVipIdentities(Collection<Long> authorIds) {
+        List<Long> ids = authorIds.stream().filter(Objects::nonNull).distinct().toList();
+        if (ids.isEmpty()) return Map.of();
+        Map<Long, VipIdentity> identities = new HashMap<>();
+        for (Player player : playerRepository.findAllById(ids)) {
+            identities.put(player.getId(), toVipIdentity(player));
+        }
+        return identities;
+    }
+
+    /** 老账号未设置等级或作者已不存在时，不生成 VIP 标识。 */
+    private VipIdentity toVipIdentity(Player player) {
+        return player == null ? NO_VIP : new VipIdentity(
+                Objects.requireNonNullElse(player.getVipLevel(), 0), player.isVipBadgeVisible());
+    }
+
+    /** 单帖详情与发帖响应也读取当前账号身份，不使用发帖时的历史快照。 */
     private TopicSummaryDto toSummaryDto(ForumTopic t) {
+        Player author = t.getAuthorId() != null ? playerRepository.findById(t.getAuthorId()).orElse(null) : null;
+        return toSummaryDto(t, toVipIdentity(author));
+    }
+
+    private TopicSummaryDto toSummaryDto(ForumTopic t, VipIdentity vip) {
         ForumBoard b = boardRepository.findById(t.getBoardId()).orElse(null);
         int rank = t.getAuthorMilitaryRank() != null ? t.getAuthorMilitaryRank() : 1;
         return new TopicSummaryDto(
@@ -580,6 +621,8 @@ public class ForumService {
                 t.getAuthorName(),
                 t.getAuthorDisplayName(),
                 t.getAuthorAvatar(),
+                vip.level(),
+                vip.visible(),
                 rank,
                 MilitaryRankDef.getRankName(rank),
                 t.getAuthorPrestige(),

@@ -5,15 +5,13 @@ import com.wargame.model.entity.Player;
 import com.wargame.service.AuthService;
 import com.wargame.service.VipService;
 import com.wargame.service.GameStateService;
+import com.wargame.service.AvatarStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Base64;
 import java.util.Map;
 
@@ -121,7 +119,7 @@ public class VipController {
         String extension = "png";
 
         if (file != null && !file.isEmpty()) {
-            if (file.getSize() > 1024 * 1024) {
+            if (file.getSize() > AvatarStorageService.MAX_IMAGE_BYTES) {
                 throw new IllegalArgumentException("头像文件大小不能超过 1MB");
             }
             String contentType = file.getContentType();
@@ -141,8 +139,11 @@ public class VipController {
             if (mime.contains("webp")) extension = "webp";
             else if (mime.contains("jpeg")) extension = "jpg";
             String base64 = dataUrl.substring(commaIdx + 1);
+            if (base64.length() > 4 * ((AvatarStorageService.MAX_IMAGE_BYTES + 2) / 3)) {
+                throw new IllegalArgumentException("头像大小不能超过 1MB");
+            }
             imageBytes = Base64.getDecoder().decode(base64);
-            if (imageBytes.length > 1024 * 1024) {
+            if (imageBytes.length > AvatarStorageService.MAX_IMAGE_BYTES) {
                 throw new IllegalArgumentException("头像大小不能超过 1MB");
             }
         } else {
@@ -151,20 +152,7 @@ public class VipController {
 
         validateImageMagic(imageBytes);
 
-        String filename = player.getId() + "_" + System.currentTimeMillis() + "." + extension;
-        Path customDir = Paths.get("frontend", "img", "avatars", "custom");
-        Files.createDirectories(customDir);
-        Path targetPath = customDir.resolve(filename);
-        Files.write(targetPath, imageBytes);
-
-        String relativeUrl = "img/avatars/custom/" + filename;
-        vipService.setCustomAvatarUrl(player.getId(), relativeUrl);
-
-        return ResponseEntity.ok(Map.of(
-                "success", true,
-                "customAvatar", relativeUrl,
-                "message", "战地自定义头像上传设置成功！"
-        ));
+        return ResponseEntity.ok(vipService.uploadCustomAvatar(player.getId(), imageBytes, extension));
     }
 
     private void validateImageMagic(byte[] data) {

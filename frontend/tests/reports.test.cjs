@@ -24,7 +24,7 @@ function setup(initialCount = 0) {
     Game: {
       state, DATA: { units: {}, forts: {} },
       Core: { state, route: 'home', views: {}, render() {}, refreshTop() {}, renderNavBar() {} },
-      toast() {}, escapeHtml: text => text || '',
+      toast() {}, escapeHtml: text => text || '', fmt: n => (n != null ? Number(n).toLocaleString() : ''),
       API: { getToken: () => 'alice', getUnreadReports: async () => ({ unreadCount: initialCount }) }
     }
   });
@@ -1260,4 +1260,199 @@ test('伏击战报使用持久化规则与实际先手，旧战报和未知版�
   for (const opening of [undefined, { ...base.interceptionOpening, version: 'future-version' }]) {
     assert.doesNotMatch(G.Battle.renderReportCard({ ...base, interceptionOpening: opening }), /伏击先手|紧急迎击/);
   }
+});
+
+test('战报我方军队下方根据驻军统帅区分不同统帅战损，战斗详情中无需展示编队贡献', () => {
+  const { G } = setup();
+  G.fmt = String;
+  G.DATA.units = {
+    infantry: { name: '步兵-加兰德步枪兵（M1）' },
+    htank: { name: '重型坦克-斯大林（IS-2）' },
+    rocket: { name: '反坦克火箭-喀秋莎（BM-13）' }
+  };
+
+  const report = {
+    time: Date.now(),
+    type: 'battle',
+    targetType: 'player',
+    action: 'plunder',
+    perspective: 'defender',
+    win: true,
+    attackerName: '敌方玩家',
+    toName: '健康城',
+    initialDefender: { infantry: 900000, htank: 10000 },
+    survivorDefender: { infantry: 0, htank: 9500 },
+    initialAttacker: { rocket: 200000 },
+    survivorAttacker: { rocket: 200000 },
+    commanders: {
+      defender: { name: '郑海', level: 10, military: 100 },
+      attacker: { name: '敌将', level: 1 }
+    },
+    formationContributions: [
+      { formationId: 'f-home', formation: '【本城·守将郑海】', kind: 'home', unit: 'infantry', initial: 900000, survivors: 0, losses: 900000 },
+      { formationId: 'f-ally1', formation: '【援军·团友甲·将领李某】', kind: 'support', unit: 'htank', initial: 10000, survivors: 9500, losses: 500 }
+    ],
+    formationEvents: [
+      { type: 'LOSSES', round: 1, batch: 1, formationId: 'f-home', formation: '【本城·守将郑海】', unit: 'infantry', losses: 900000, survivors: 0 }
+    ]
+  };
+
+  // 1. 验证战报军队看板中按统帅区分展示
+  const boardHtml = G.Battle.renderReportBoard(report, false);
+  assert.match(boardHtml, /【我方军队】/);
+  // 包含本城守将及其兵种战损
+  assert.match(boardHtml, /🎖️ 随军将领:[\s\S]*?【本城·守将郑海】/);
+  assert.match(boardHtml, /步兵-加兰德步枪兵（M1）[\s\S]*?900000[\s\S]*?-&gt;[\s\S]*?0[\s\S]*?\(-900000\)/);
+  // 包含援军统帅及其兵种战损
+  assert.match(boardHtml, /🎖️ 随军将领:[\s\S]*?【援军·团友甲·将领李某】/);
+  assert.match(boardHtml, /重型坦克-斯大林（IS-2）[\s\S]*?10000[\s\S]*?-&gt;[\s\S]*?9500[\s\S]*?\(-500\)/);
+
+  // 2. 验证战报详情中无需展示【编队战斗贡献】，且编队行动记录不单独列出卡片，而是合并进每回合战斗日志
+  G.Battle._viewReport = report;
+  const container = { innerHTML: '' };
+  G.Battle.renderReportDetail(container);
+  assert.doesNotMatch(container.innerHTML, /编队战斗贡献/);
+  // 编队行动记录不再作为独立卡片渲染，而是融入回合日志
+  assert.doesNotMatch(container.innerHTML, /编队行动记录 · 同批次结算/);
+  assert.match(container.innerHTML, /class="blog"/);
+  assert.match(container.innerHTML, /-- 第1回合 --/);
+  assert.match(container.innerHTML, /我方将领加成：/);
+  assert.match(container.innerHTML, /敌方将领加成：/);
+});
+
+test('如果没有军团盟友参战，正常展示原先的战报内容格式', () => {
+  const { G } = setup();
+  G.DATA.units = {
+    htank: { name: '重型坦克-斯大林（IS-2）' },
+    rocket: { name: '反坦克火箭-喀秋莎（BM-13）' },
+    infantry: { name: '步兵-加兰德步枪兵（M1）' }
+  };
+
+  // 1v1 单挑（无 support 军团盟友）
+  const singleReport = {
+    id: 9999,
+    type: 'battle',
+    perspective: 'attacker',
+    attackerWin: true,
+    win: true,
+    attackerName: '攻方玩家',
+    defenderName: '守方玩家',
+    initialAttacker: { htank: 100 },
+    survivorAttacker: { htank: 90 },
+    initialDefender: { infantry: 500 },
+    survivorDefender: { infantry: 0 },
+    commanders: {
+      attacker: { name: '攻方军官', level: 5, military: 50 },
+      defender: { name: '守方将领', level: 3, military: 30 }
+    },
+    formationContributions: [
+      { formationId: 'f-atk', formation: '【攻方·将领攻方军官】', kind: 'attack', unit: 'htank', initial: 100, survivors: 90, losses: 10 },
+      { formationId: 'f-home', formation: '【本城·守将守方将领】', kind: 'home', unit: 'infantry', initial: 500, survivors: 0, losses: 500 }
+    ],
+    formationEvents: [
+      { type: 'MOVEMENT', round: 1, formationId: 'f-atk', formation: '【攻方·将领攻方军官】', unit: 'htank', countBefore: 100, from: 0, to: 300 },
+      { type: 'MOVEMENT', round: 1, formationId: 'f-home', formation: '【本城·守将守方将领】', unit: 'infantry', countBefore: 500, from: 1000, to: 900 },
+      { type: 'LOSSES', round: 1, batch: 1, formationId: 'f-home', formation: '【本城·守将守方将领】', unit: 'infantry', losses: 500, survivors: 0, countBefore: 500 },
+      { type: 'FIRE', round: 1, batch: 1, formationId: 'f-atk', formation: '【攻方·将领攻方军官】', unit: 'htank', countBefore: 100, target: '【本城·守将守方将领】', targetFormationId: 'f-home', targetUnit: 'infantry', targetCountBefore: 500, damage: 10000, targetLosses: 500 }
+    ]
+  };
+
+  // 1. 无军团盟友时，军队看板正常展示原单统帅格式，不进行驻军统帅拆分
+  const boardHtml = G.Battle.renderReportBoard(singleReport, false);
+  assert.match(boardHtml, /【我方军队】/);
+  assert.match(boardHtml, /🎖️ 随军将领:[\s\S]*?攻方军官/);
+  assert.doesNotMatch(boardHtml, /【攻方·将领攻方军官】/); // 单挑时不带编队方括号
+  assert.match(boardHtml, /【敌方军队】/);
+  assert.match(boardHtml, /🎖️ 随军将领:[\s\S]*?守方将领/);
+  assert.doesNotMatch(boardHtml, /【本城·守将守方将领】/);
+
+  // 2. 战报详情中，编队行动记录合并进每回合战斗日志，不单独列出卡片，样式与原战斗日志一致
+  G.Battle._viewReport = singleReport;
+  const container = { innerHTML: '' };
+  G.Battle.renderReportDetail(container);
+  assert.doesNotMatch(container.innerHTML, /编队行动记录 · 同批次结算/);
+  assert.doesNotMatch(container.innerHTML, /编队战斗贡献/);
+
+  // 日志内容在 .blog 内部，回合按 -- 第1回合 -- 区分，具有 mine / enemy 样式与战损标签
+  assert.match(container.innerHTML, /<div class="logline round">-- 第1回合 --<\/div>/);
+  assert.match(container.innerHTML, /<div class="logline enemy commander-bonus">敌方将领加成：/);
+  assert.match(container.innerHTML, /<div class="logline mine commander-bonus">我方将领加成：/);
+  assert.match(container.innerHTML, /<div class="logline mine">我方重型坦克-斯大林（IS-2）\(100\) \[前进\] 推进300 (?:->|-&gt;) 坐标300<\/div>/);
+  assert.match(container.innerHTML, /<div class="logline mine">我方重型坦克-斯大林（IS-2）\(100\) 攻击 敌方步兵-加兰德步枪兵（M1），造成 10000 有效伤害 【敌军 步兵 -500】<\/div>/);
+  assert.match(container.innerHTML, /<div class="logline win">★ 胜利！<\/div>/);
+});
+
+test('编队回合保留后端真实加成并按防守视角转换，历史缺失不伪造无加成', () => {
+  const { G } = setup();
+  const report = { perspective: 'defender', formationEvents: [
+    { type: 'MOVEMENT', round: 5, formationId: 'formation-0', unit: 'infantry', from: 0, to: 100 },
+    { type: 'MOVEMENT', round: 6, formationId: 'formation-0', unit: 'infantry', from: 100, to: 100 }
+  ], roundLogs: [
+    '-- 第5回合 --',
+    '我方将领加成：军事属性 +219%攻击；破甲打击 30%无视敌方防御',
+    '敌方将领加成：防御属性 +80%防御',
+    '-- 第6回合 --'
+  ] };
+  const lines = G.Battle.buildFormationRoundLogs(report);
+  assert.ok(lines.some(line => line.cls === 'logline enemy commander-bonus' && line.text === '敌方将领加成：军事属性 +219%攻击；破甲打击 30%无视敌方防御'));
+  assert.ok(lines.some(line => line.cls === 'logline mine commander-bonus' && line.text === '我方将领加成：防御属性 +80%防御'));
+  assert.ok(lines.some(line => line.text === '我方将领加成：本回合加成快照未记录'));
+  assert.ok(!lines.some(line => line.text.includes('本回合无将领属性或技能加成生效')));
+});
+
+test('旧编队战报缺少属性快照时只显示已知姓名，不补造等级属性技能', () => {
+  const { G } = setup();
+  G.Battle._viewReport = { type: 'battle', perspective: 'defender', time: Date.now(), commanders: {},
+    formationContributions: [
+      { kind: 'attack', formationId: 'formation-0', formation: '【攻方·将领敌将】', unit: 'htank', initial: 1, survivors: 1 },
+      { kind: 'home', formationId: 'formation-1', formation: '【本城·守将郑海】', unit: 'infantry', initial: 1, survivors: 0 }
+    ] };
+  const view = { innerHTML: '' };
+  G.Battle.renderReportDetail(view);
+  assert.match(view.innerHTML, /郑海/);
+  assert.match(view.innerHTML, /敌将/);
+  assert.match(view.innerHTML, /军官属性快照未记录/);
+  assert.doesNotMatch(view.innerHTML, /总军事：0|总防御：0|Lv\.1|无技能信息|守将郑海/);
+});
+
+test('守军编队称呼不依赖查看者视角，旧日志和结构化回放均使用守方', () => {
+  const { G } = setup();
+  const original = '敌方将领加成：【本城·守将郑海】军事属性 +81%攻击；防御属性 +79%防御';
+  for (const perspective of ['attacker', 'defender']) {
+    const report = { perspective, roundLogs: ['-- 第5回合 --', original], formationEvents: [
+      { type: 'MOVEMENT', round: 5, formationId: 'formation-1', formation: '【本城·守将郑海】', unit: 'infantry', from: 300, to: 200 },
+      { type: 'MOVEMENT', round: 5, formationId: 'formation-2', formation: '【援军·盟友·将领本城勇士】', unit: 'infantry', from: 400, to: 300 }
+    ], formationContributions: [{ kind: 'support' }] };
+    const side = perspective === 'attacker' ? '敌方' : '我方';
+    assert.equal(G.Battle.formatReportCombatLogLine(original, report), side + '将领加成：【守方·守将郑海】军事属性 +81%攻击；防御属性 +79%防御');
+    const lines = G.Battle.buildFormationRoundLogs(report);
+    assert.ok(lines.some(line => line.text.startsWith(side + '【守方·守将郑海】')));
+    assert.ok(lines.some(line => line.text.includes('将领本城勇士')));
+    assert.ok(lines.every(line => !line.text.includes('【本城')));
+    assert.equal(report.roundLogs[1], original);
+    report.roundLogs = [];
+    report.formationEvents.push({ type: 'COMMANDER_BONUS', round: 5, formationId: 'formation-1', text: original });
+    assert.ok(G.Battle.buildFormationRoundLogs(report).some(line => line.text.startsWith(side + '将领加成：【守方·守将郑海】')));
+    const live = G.Battle.renderFormationEvents(report.formationEvents);
+    assert.match(live, /【守方·守将郑海】/);
+    assert.doesNotMatch(live, /【本城/);
+  }
+  const report = { formationContributions: [{ kind: 'home', formation: '【守方·守将郑海】' }] };
+  assert.equal(G.Battle.resolveReportCommander(report, 'defender').name, '郑海');
+});
+
+test('历史快照可恢复属性但未记录等级时不伪造等级，结构化加成也能回放', () => {
+  const { G } = setup();
+  const report = { perspective: 'defender', commanders: { defender: { name: '郑海', military: 81, defense: 79, skills: [] } },
+    formationEvents: [{ type: 'COMMANDER_BONUS', round: 5, formationId: 'formation-0',
+      text: '我方将领加成：【攻方·将领敌将】军事属性 +219%攻击' }] };
+  const panel = G.Battle.renderCommanderPanel(report.commanders, 'defender');
+  assert.match(panel, /总军事：81/); assert.match(panel, /总防御：79/);
+  assert.doesNotMatch(panel, /Lv\./);
+  assert.doesNotMatch(G.Battle.renderTroopCommander('mine', report.commanders.defender), /Lv\./);
+  const lines = G.Battle.buildFormationRoundLogs(report);
+  assert.ok(lines.some(line => line.text === '敌方将领加成：【攻方·将领敌将】军事属性 +219%攻击'));
+  const live = G.Battle.renderFormationEvents(report.formationEvents);
+  assert.match(live, /军事属性 \+219%攻击/);
+  assert.doesNotMatch(live, /造成 0 有效伤害/);
 });

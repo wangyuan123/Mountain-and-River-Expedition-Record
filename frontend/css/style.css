@@ -1,8 +1,9 @@
 /* 山河远征录 - 文字战争策略游戏 - 蓝白文字风 */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* 页面根节点随内容增高，避免固定一屏高度与 overflow-x 组合产生内外两层纵向滚动。 */
 html, body {
-  height: 100%;
+  min-height: 100%;
   background: #06264a;
   font-family: 'Courier New', 'Lucida Console', monospace;
   -webkit-font-smoothing: none;
@@ -29,6 +30,19 @@ html, body {
   position: sticky;
   top: 0;
   z-index: 10;
+}
+
+/* 竖屏仅固定功能导航；clip 不建立滚动容器，吸顶随整页滚动而非被头部高度限制。 */
+@media (orientation: portrait), (max-width: 479px) {
+  html, body { overflow-x: clip; }
+  #screen,
+  html[data-theme|="blue-white"] #screen { overflow-x: clip !important; }
+  #header { display: contents; }
+  #screen #navbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
 }
 
 #topbar {
@@ -1927,7 +1941,7 @@ html, body {
 .topbar-avatar-wrap {
   width: 36px;
   height: 36px;
-  border-radius: 9px;
+  border-radius: 50%;
   overflow: hidden;
   border: 1.5px solid var(--line, #cbd5e1);
   background: var(--surface, #ffffff);
@@ -1945,6 +1959,7 @@ html, body {
 .topbar-avatar {
   width: 100%;
   height: 100%;
+  border-radius: 50%;
   object-fit: cover;
   display: block;
 }
@@ -2023,46 +2038,75 @@ html, body {
 #topbar .player-bar-right .forum-entry-btn:active { transform: translateY(0); }
 
 /* ===== 指挥官档案：资料、军衔资产、当前城市 ===== */
+body.drawer-open {
+  overflow: hidden !important;
+}
 .player-drawer-mask {
-  position: fixed;
-  inset: 0;
+  position: fixed !important;
+  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100% !important;
+  height: 100dvh;
+  height: var(--drawer-height, 100dvh) !important;
+  max-height: 100% !important;
+  max-height: 100dvh;
+  max-height: var(--drawer-height, 100dvh) !important;
+  overflow: hidden !important;
   background: rgba(8, 16, 28, .5);
   backdrop-filter: blur(3px);
   -webkit-backdrop-filter: blur(3px);
-  z-index: 9000;
+  z-index: 9000 !important;
   opacity: 0;
   pointer-events: none;
+  touch-action: none;
   transition: opacity .25s ease;
 }
 .player-drawer-mask.active { opacity: 1; pointer-events: auto; }
 .player-drawer {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: min(360px, calc(100% - 24px));
-  height: 100%;
+  position: fixed !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  width: min(360px, calc(100vw - 24px)) !important;
+  max-width: 100vw !important;
+  height: 100% !important;
+  height: 100dvh;
+  height: var(--drawer-height, 100dvh) !important;
+  max-height: 100% !important;
+  max-height: 100dvh;
+  max-height: var(--drawer-height, 100dvh) !important;
   background: var(--surface);
   color: var(--ink);
   border-right: 1px solid var(--line);
   font-size: 12px;
   line-height: 1.5;
   box-shadow: 8px 0 32px rgba(0, 0, 0, .2);
-  display: flex;
-  flex-direction: column;
+  display: flex !important;
+  flex-direction: column !important;
   transform: translateX(-100%);
   transition: transform .25s ease;
-  overflow: hidden;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  z-index: 9001 !important;
+  touch-action: auto;
 }
 .player-drawer.open { transform: translateX(0); }
 .player-drawer button { font-family: inherit; }
 .player-drawer button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .drawer-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
-  border-bottom: 1px solid var(--line);
-  flex-shrink: 0;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 10px !important;
+  border-bottom: 1px solid var(--line) !important;
+  flex: 0 0 auto !important;
+  flex-shrink: 0 !important;
+  box-sizing: border-box !important;
 }
 .drawer-header-title { font-size: 16px; font-weight: 700; color: var(--ink); }
 .drawer-close-btn {
@@ -2078,15 +2122,19 @@ html, body {
 }
 .drawer-close-btn:hover { background: var(--accent-soft); color: var(--accent); }
 .drawer-body {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 14px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  -webkit-overflow-scrolling: touch;
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain !important;
+  touch-action: pan-y !important;
+  padding: 14px 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+  -webkit-overflow-scrolling: touch !important;
+  box-sizing: border-box !important;
 }
 .drawer-body > * { flex-shrink: 0; }
 .drawer-profile-card { display: flex; align-items: center; gap: 12px; padding: 0 0 14px; border-bottom: 1px solid var(--line); }
@@ -2096,7 +2144,7 @@ html, body {
   height: 56px;
   padding: 0;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
   cursor: pointer;
@@ -2146,8 +2194,26 @@ button.drawer-rank-tip:hover { border-color: var(--accent); }
 .drawer-city-name > span { min-width: 0; }
 .drawer-link-btn { flex-shrink: 0; min-height: 32px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; color: var(--accent); background: var(--surface); font-size: 12px; cursor: pointer; }
 .drawer-link-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
-.drawer-footer { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: var(--surface); flex-shrink: 0; }
-.drawer-footer-btn { display: flex; align-items: center; justify-content: center; min-height: 42px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: var(--surface-muted); font-size: 12px; font-weight: 600; cursor: pointer; }
+.drawer-footer {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+  padding: 10px 16px !important;
+  padding-bottom: max(12px, env(safe-area-inset-bottom, 12px)) !important;
+  border-top: 1px solid var(--line) !important;
+  background: var(--surface) !important;
+  flex: 0 0 auto !important;
+  flex-shrink: 0 !important;
+  margin-top: auto !important;
+  box-sizing: border-box !important;
+  z-index: 10 !important;
+  position: sticky !important;
+  bottom: 0 !important;
+}
+.drawer-awards-details { padding: 4px 0; font-size: 12px; }
+.drawer-awards-details summary { cursor: pointer; color: var(--accent); font-weight: 600; padding: 4px 0; }
+.drawer-awards-details p { margin: 4px 0; color: var(--ink); }
+.drawer-footer-btn { display: flex; align-items: center; justify-content: center; min-height: 40px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: var(--surface-muted); font-size: 13px; font-weight: 600; cursor: pointer; }
 .drawer-footer-btn:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 @media (prefers-reduced-motion: reduce) {
   .player-drawer-mask, .player-drawer { transition: none; }
@@ -7023,6 +7089,261 @@ body.theme-classic .unit-card-details,
   .depot-tab { min-width: 68px; padding: 6px 8px; font-size: 12px; }
 }
 
+/* 仓库军官装备细分筛选工具条 */
+.depot-equip-filter-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  padding: 6px 10px;
+  margin: 0 0 10px;
+  background: var(--surface-muted, #f4f7fb);
+  border: 1px solid var(--line, #dbe5f0);
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.depot-equip-filter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #2b5c8f;
+  background: #e5effa;
+  border: 1px solid #c8dcf2;
+  border-radius: 4px;
+  letter-spacing: 0.2px;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.depot-equip-filter-tag-icon {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.depot-equip-filter-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.depot-equip-filter-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink, #1e293b);
+  cursor: pointer;
+  margin: 0;
+  user-select: none;
+}
+
+.depot-equip-filter-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #556980;
+  white-space: nowrap;
+}
+
+.depot-equip-filter-select {
+  height: 28px;
+  padding: 3px 22px 3px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 500;
+  color: var(--ink, #1e293b);
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  cursor: pointer;
+  box-sizing: border-box;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  background-size: 10px;
+  transition: all 0.15s ease;
+}
+
+.depot-equip-filter-select:hover {
+  border-color: #3b82f6;
+  background-color: #f8fafc;
+}
+
+.depot-equip-filter-select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.depot-equip-filter-select.is-active {
+  border-color: #2563eb;
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.depot-equip-filter-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.4;
+  user-select: none;
+}
+
+.depot-equip-filter-reset:hover {
+  color: #ef4444;
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+
+/* 仓库军官装备套装折叠卡片 */
+.depot-set-group {
+  margin: 0 0 8px;
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 8px;
+  background: #ffffff;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.depot-set-group[open] {
+  border-color: #b8cde4;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.07);
+}
+
+.depot-set-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 12px;
+  background: #fbfcfe;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  transition: background-color 0.15s ease;
+}
+
+.depot-set-summary::-webkit-details-marker {
+  display: none !important;
+}
+
+.depot-set-summary:hover {
+  background: #f1f5f9;
+}
+
+.depot-set-group[open] > .depot-set-summary {
+  background: #edf4fb;
+  border-bottom: 1px solid #dce8f5;
+}
+
+.depot-set-summary-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.depot-set-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  font-size: 10px;
+  color: #64748b;
+  transition: transform 0.18s ease, color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.depot-set-group[open] .depot-set-arrow {
+  transform: rotate(90deg);
+  color: #2563eb;
+}
+
+.depot-set-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink, #1e293b);
+  letter-spacing: 0.1px;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.depot-set-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.depot-set-badge.is-complete {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+}
+
+.depot-set-body {
+  padding: 6px;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.depot-set-body .menu-item {
+  margin: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #ffffff;
+  padding: 8px 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.depot-set-body .menu-item:hover {
+  border-color: #93c5fd;
+  background: #fcfdfe;
+}
+
+@media (max-width: 520px) {
+  .depot-equip-filter-bar { padding: 6px 8px; gap: 6px 8px; }
+  .depot-equip-filter-item { font-size: 11px; gap: 4px; }
+  .depot-equip-filter-select { height: 26px; font-size: 11px; padding: 2px 18px 2px 6px; }
+  .depot-set-summary { padding: 8px 10px; font-size: 12px; }
+  .depot-set-title { font-size: 12px; }
+  .depot-set-badge { font-size: 10px; padding: 1px 6px; }
+}
+
 /* 仓库道具项头部（物品名称与操作按钮同行展示） */
 .depot-item-head {
   display: flex;
@@ -8447,6 +8768,33 @@ span.tcard-mini-icon .map-icon {
   margin-left: 0;
 }
 
+/* 战区主城专属军武矢量图标 (替代生硬童话风城堡 Emoji) */
+.main-city-icon {
+  display: inline-block;
+  vertical-align: -2.5px;
+  width: 15px;
+  height: 15px;
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+.main-city-icon .city-icon-ground { fill: #1e3a8a; opacity: 0.9; }
+.main-city-icon .city-icon-bastion { fill: #2563eb; }
+.main-city-icon .city-icon-wall { fill: #1d4ed8; opacity: 0.85; }
+.main-city-icon .city-icon-keep { fill: #3b82f6; }
+.main-city-icon .city-icon-roof { fill: #60a5fa; }
+.main-city-icon .city-icon-slit { fill: #0f172a; opacity: 0.75; }
+.main-city-icon .city-icon-antenna { stroke: #3b82f6; }
+.main-city-icon .city-icon-beacon { fill: #ef4444; }
+.main-city-icon .city-icon-gate { fill: #0f172a; }
+.main-city-icon .city-icon-star { fill: #f59e0b; stroke: #fbbf24; stroke-width: 0.35; }
+
+.dw-target-row .dw-emoji .main-city-icon {
+  width: 22px;
+  height: 22px;
+  vertical-align: middle;
+  margin-right: 0;
+}
+
 /* 3. Tabs */
 .map-tabs {
   display: flex;
@@ -9761,14 +10109,30 @@ span.tcard-mini-icon .map-icon {
 .city-tag{font-size:11px;border:1px solid var(--line);border-radius:4px;padding:1px 5px;white-space:nowrap;color:var(--muted)}
 .city-switch{font-family:inherit;cursor:pointer}.city-alert-dot{position:absolute;right:3px;top:3px;width:7px;height:7px;border-radius:50%;background:var(--danger)}
 .city-dialog-mask{position:fixed;inset:0;z-index:10010;background:rgba(0,0,0,.55);display:flex;justify-content:center;align-items:flex-start;padding:90px 16px 20px}.city-dialog{width:420px;max-width:100%;max-height:calc(100dvh - 110px);overflow:auto;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 40px rgba(0,0,0,.3);padding:16px}
-.city-dialog-heading,.city-overview{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.city-overview{margin-top:14px;font-size:13px}.city-overview>span{color:var(--muted)}.city-list{display:grid;gap:8px}.city-list-row{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:6px;padding:6px}.city-list-row.selected{border-color:var(--accent)}
-.city-choice{flex:1;min-width:0;text-align:left;border:0;background:transparent;color:var(--ink);padding:8px;cursor:pointer;font:inherit}.city-choice:disabled{cursor:default;opacity:.7}.city-list-row.selected .city-choice{opacity:1}.city-choice-heading{display:flex;align-items:center;gap:8px;font-size:13px;flex-wrap:wrap}.city-choice-heading>b{overflow-wrap:anywhere}.city-choice-meta{display:flex;justify-content:space-between;gap:8px;margin-top:6px;font-size:12px;color:var(--muted)}.city-danger{display:block;margin-top:6px;color:var(--danger);font-size:12px}.city-hint{font-size:12px;line-height:1.7;color:var(--muted);margin:12px 0}.city-wide{width:100%;margin-top:8px;min-height:38px}.city-dialog p{font-size:13px;line-height:1.7}.city-dialog label{display:flex;flex-direction:column;gap:6px;font-size:12px;margin:10px 0}.city-dialog input,.city-dialog select{width:100%;min-width:0;min-height:36px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:6px}.city-transfer-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}.city-choice:focus-visible,.city-switch:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.city-dialog-heading,.city-overview{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.city-overview{margin-top:14px;font-size:13px}.city-overview>span{color:var(--muted)}.city-list{display:grid;gap:8px}
+.city-list-row{display:flex;flex-direction:column;align-items:stretch;gap:0;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--surface-muted);box-sizing:border-box;transition:border-color .15s ease,background-color .15s ease}
+.city-list-row.selected{border-color:var(--accent);background:var(--accent-soft)}
+.city-row-main{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%}
+.city-choice{flex:1;min-width:0;text-align:left;border:0;background:transparent;color:var(--ink);padding:4px 6px;cursor:pointer;font:inherit;border-radius:6px;transition:background-color .15s ease}.city-choice:disabled{cursor:default;opacity:.85}.city-list-row.selected .city-choice{opacity:1}.city-choice:not(:disabled):hover{background:var(--accent-soft)}
+.city-choice-heading{display:flex;align-items:center;gap:8px;font-size:13px;flex-wrap:wrap}.city-choice-heading>b{font-size:14px;font-weight:600;color:var(--ink);overflow-wrap:anywhere}
+.city-choice-meta{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:5px;font-size:12px;color:var(--muted)}
+.city-ready-label{font-size:12px;color:var(--muted)}.city-list-row.selected .city-ready-label{color:var(--accent);font-weight:600}
+.city-danger{display:block;margin-top:5px;color:var(--danger);font-size:12px;font-weight:600}
+.city-row-actions{display:flex;align-items:center;gap:2px;flex-shrink:0}
+.city-row-actions .city-text-btn,.city-row-actions button{appearance:none;background:transparent !important;border:0 !important;box-shadow:none !important;padding:2px 2px;margin:0;font:inherit;font-size:13px;font-weight:600;color:var(--accent,#4a7bb5) !important;cursor:pointer;text-decoration:none;line-height:1.4;user-select:none;transition:opacity .15s ease,color .15s ease}
+.city-row-actions .city-text-btn:hover,.city-row-actions button:hover{text-decoration:underline;opacity:.85}
+.city-row-extra{display:flex;flex-direction:column;gap:5px;padding-top:8px;margin-top:6px;border-top:1px dashed var(--line);font-size:12px}
+.city-dialog label.city-garrison-check{display:inline-flex;flex-direction:row;align-items:center;gap:7px;margin:0;padding:0;font-size:12px;color:var(--ink);cursor:pointer;user-select:none}
+.city-dialog label.city-garrison-check input[type="checkbox"],.city-dialog input[type="checkbox"]{width:16px !important;min-width:16px !important;max-width:16px !important;height:16px !important;min-height:16px !important;max-height:16px !important;margin:0 !important;padding:0 !important;border-radius:3px;cursor:pointer;flex-shrink:0;accent-color:var(--accent);box-sizing:border-box}
+.city-dialog label.city-garrison-check span{font-size:12px;line-height:1.4;color:var(--ink)}
+.city-food-stat{font-size:11px;color:var(--muted);line-height:1.45;word-break:break-all}
+.city-shortage-warn{font-size:11px;color:var(--danger,#dc2626);line-height:1.45;margin:0}
+.city-hint{font-size:12px;line-height:1.7;color:var(--muted);margin:12px 0}.city-wide{width:100%;margin-top:8px;min-height:38px}.city-dialog p{font-size:13px;line-height:1.7}
+.city-dialog label{display:flex;flex-direction:column;gap:6px;font-size:12px;margin:10px 0}
+.city-dialog input:not([type="checkbox"]):not([type="range"]),.city-dialog select{width:100%;min-width:0;min-height:36px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:6px}
+.city-transfer-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}.city-choice:focus-visible,.city-switch:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .city-dialog-heading{padding-bottom:12px;border-bottom:1px solid var(--line);color:var(--accent)}
 .city-dialog-heading .btn{min-width:32px;min-height:32px;margin:0;flex-shrink:0}
-.city-list-row{background:var(--surface-muted)}
-.city-list-row.selected{background:var(--accent-soft)}
-.city-list-row.selected .city-ready-label{color:var(--accent);font-weight:600}
-.city-choice:not(:disabled):hover{background:var(--accent-soft);border-radius:4px}
 .city-transfer-resource,.city-transfer-unit{min-width:0;padding-bottom:8px}.city-transfer-resource label,.city-transfer-unit label{margin:6px 0 2px}.city-transfer-stock{display:block;color:var(--muted);font-size:11px;white-space:nowrap}.city-transfer-resource-controls{display:flex;align-items:center;gap:8px;margin-top:5px}.city-dialog .city-transfer-resource-controls .recruit-qty{width:76px;min-width:76px;flex:0 0 76px}.city-dialog .city-transfer-resource-controls .recruit-slider{width:100%;height:24px;min-height:24px;margin:0;padding:0;border:0;background:transparent}
 .city-dialog button:focus-visible,.city-dialog input:focus-visible,.city-dialog select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 @media(max-width:600px){.city-dialog-mask{align-items:flex-end;padding:0}.city-dialog{width:100%;max-height:85dvh;border-radius:14px 14px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}.city-choice{min-height:64px}}
@@ -10680,6 +11044,8 @@ body.theme-classic .rb-prisoner-details summary:hover,
 
 /* 征服战独立墙体耐久与阶段，窄屏按行展示。 */
 .conquest-wall-panel { display:flex; flex-direction:column; gap:6px; padding:12px; margin:10px 0; border:1px solid var(--line); border-radius:8px; }
+.conquest-wall-panel b { display:inline-flex; align-items:center; gap:6px; font-size:14px; font-weight:700; color:var(--ink); }
+.conquest-wall-icon { width:22px; height:22px; object-fit:contain; vertical-align:middle; flex-shrink:0; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.25)); }
 .conquest-wall-panel small { color:var(--muted); }
 .conquest-wall-hp { height:10px; background:rgba(128,128,128,.2); border-radius:5px; overflow:hidden; }
 .conquest-wall-hp > div { height:100%; background:#c39c50; }

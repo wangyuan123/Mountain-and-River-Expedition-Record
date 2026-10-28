@@ -232,6 +232,7 @@ public class AccountService {
         player.setCityPosX(null); player.setCityPosY(null);
         player.setPosX(null); player.setPosY(null);
         player.setCityName(""); player.setAvatar("");
+        player.setCustomAvatar(null);
         player.setPrestige(0); player.setLevel(0); player.setMilitaryRank(0); player.setVipLevel(0);
         player.setCivilianPopulation(0); player.setPopulationGrowthRemainder(0.0);
         player.setWarAgainstId(null); player.setWarAt(0L); player.setWarEndAt(0L);
@@ -239,6 +240,13 @@ public class AccountService {
         // 保留用户名仅用于占用检查，密码替换为无法通过 BCrypt 验证的墓碑值。
         protection.deleteAccount(id);
         player.setPasswordHash("!deleted");
+        player.setRecoveryEmailCipher(null);
+        player.setRecoveryEmailKey(null);
+        player.setRecoveryEmailVerifiedAt(null);
+        player.setRecoveryEmailVersion(player.getRecoveryEmailVersion() + 1);
+        em.createQuery("delete from AccountEmailOutbox o where o.playerId = :id").setParameter("id", id).executeUpdate();
+        em.createQuery("delete from AccountEmailChallenge c where c.playerId = :id").setParameter("id", id).executeUpdate();
+        em.createQuery("delete from AccountEmailChange c where c.playerId = :id").setParameter("id", id).executeUpdate();
         player.setAccountStatus("DELETED"); player.setDisabled(1); player.setDeletedAt(now);
         player.setAuthVersion(player.getAuthVersion() + 1);
         clearRecovery(player);

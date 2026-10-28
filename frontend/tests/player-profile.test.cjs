@@ -37,7 +37,9 @@ test('profile rank opens the full rank-to-cap table with the current city bonus'
   assert.match(mask.innerHTML, /下士 <span>（当前）<\/span>/);
   assert.match(mask.innerHTML, /<td>17<\/td><th scope="row"><span class="rank-cap-label"><svg[^>]*rank-insignia-general/);
   assert.match(mask.innerHTML, /上将<\/span><\/th><td>600,000<\/td>/);
-  assert.match(mask.innerHTML, /75,000 × \(1 \+ 20%\) = 90,000/);
+  assert.match(mask.innerHTML, /三军统帅 Lv\.5（\+20%）。/);
+  assert.match(mask.innerHTML, /当前实际带兵上限：90,000/);
+  assert.doesNotMatch(mask.innerHTML, /75,000 ×|每阶增加/);
   assert.doesNotMatch(mask.innerHTML, /当前城市围墙|满级 Lv\.10 后|\+ 100,000/);
   assert.equal(closeButton.focused, true);
   context.Game.PlayerProfile.showRankCapInfo();
@@ -55,7 +57,7 @@ test('profile rank card is an accessible action', () => {
   const context = vm.createContext({ console, document: {}, requestAnimationFrame() {} });
   context.window = context;
   context.Game = {
-    Core: { state: { player: { militaryRank: 1 }, resources: {}, world: {} }, armyCap: () => 25000 },
+    Core: { state: { player: { militaryRank: 1, avatarFrame: 'frame-bronze-v1' }, resources: {}, world: {} }, armyCap: () => 25000 },
     MainView: { getCurrentAvatar: () => 'avatar.svg' }, WS: { statusHtml: () => '' },
     fmt: String, escapeHtml: value => value
   };
@@ -63,11 +65,14 @@ test('profile rank card is an accessible action', () => {
   context.document.createElement = () => ({ setAttribute() {}, querySelector() { return null; } });
   context.document.getElementById = () => null;
   context.document.body = { appendChild(element) { drawer = element; } };
+  load(context, 'constants.js');
   load(context, 'data.js');
   load(context, 'player-profile.js');
   context.Game.PlayerProfile.openPlayerDrawer();
-  assert.match(drawer.innerHTML, /<button type="button" class="drawer-stat-box drawer-stat-action" onclick="Game.Main.showRankCapInfo\(\)" aria-label="查看军衔与带兵上限说明">/);
+  assert.match(drawer.innerHTML, /<button type="button" class="drawer-stat-box drawer-stat-action" onclick="Game.Main.showRankCapInfo\(\)" aria-label="查看军衔与带兵上限说明">[\s\S]*?统帅军衔/);
+  assert.match(drawer.innerHTML, /<button type="button" class="drawer-stat-box drawer-stat-action" onclick="Game.Main.showRankCapInfo\(\)" aria-label="查看军衔与带兵上限说明">[\s\S]*?带兵上限/);
   assert.match(drawer.innerHTML, /rank-insignia-enlisted/);
+  assert.match(drawer.innerHTML, /class="drawer-avatar-wrap frame-bronze-v1"/);
 });
 
 test('profile displays both server-calculated power metrics', () => {
@@ -147,6 +152,77 @@ test('avatar picker only offers and saves preset images', () => {
   context.Game.Main.saveSelectedAvatar();
   assert.deepEqual(saved, ['img/avatars/historical/rank-general-v1.webp']);
   assert.equal(storage.wargame_avatar_player, 'img/avatars/historical/rank-general-v1.webp');
+});
+
+test('avatar picker renders custom avatar and external url controls for vip 5+ commanders', async () => {
+  const elements = {};
+  const vipSaved = [];
+  const context = vm.createContext({
+    document: {
+      getElementById(id) { return elements[id] || null; },
+      querySelector() { return null; },
+      querySelectorAll() { return []; },
+      createElement(tag) {
+        const el = {
+          tagName: tag.toUpperCase(),
+          style: {},
+          setAttribute() {},
+          appendChild() {},
+          remove() { delete elements[el.id]; }
+        };
+        Object.defineProperty(el, 'id', {
+          set(v) { this._id = v; elements[v] = this; },
+          get() { return this._id; }
+        });
+        return el;
+      },
+      body: { appendChild(el) { elements[el.id] = el; } }
+    },
+    Game: {
+      escapeHtml(str) { return String(str); },
+      Core: {
+        state: {
+          player: {
+            username: 'vip10_player',
+            vipLevel: 10,
+            avatar: 'img/avatars/historical/rank-colonel-v1.webp',
+            customAvatar: 'https://example.com/custom.png'
+          }
+        },
+        getCurrentAvatar() { return 'https://example.com/custom.png'; }
+      },
+      MainView: {
+        getCurrentAvatar() { return 'https://example.com/custom.png'; },
+        presetAvatars: [
+          { src: 'img/avatars/historical/rank-private-v1.webp', name: '列兵' },
+          { src: 'img/avatars/historical/rank-general-v1.webp', name: '将军' }
+        ]
+      },
+      API: {
+        vipSetCustomAvatarUrl(url) {
+          vipSaved.push(url);
+          return Promise.resolve({ message: '自定义头像链接已更新' });
+        }
+      },
+      toast() {}
+    }
+  });
+  context.window = context;
+  load(context, 'player-profile.js');
+  context.Game.Main = context.Game.PlayerProfile;
+
+  context.Game.Main.openAvatarPicker();
+  const modal = elements.avatarPickerMask;
+  assert.match(modal.innerHTML, /自定义统帅形象 \(VIP 5\+ 专属特权\)/);
+  assert.match(modal.innerHTML, /id="avatarPickerVipUrl"/);
+  assert.match(modal.innerHTML, /id="avatarPickerVipFile"/);
+  assert.match(modal.innerHTML, /https:\/\/example\.com\/custom\.png/);
+
+  // 测试应用外链
+  elements.avatarPickerVipUrl = { value: 'https://mysite.com/commander.jpg' };
+  await context.Game.Main.applyCustomAvatarUrl();
+  assert.deepEqual(vipSaved, ['https://mysite.com/commander.jpg']);
+  assert.equal(context.Game.Core.state.player.customAvatar, 'https://mysite.com/commander.jpg');
 });
 
 test('previously saved network avatars fall back to a preset when displayed', () => {
@@ -334,4 +410,114 @@ test('city rename shows daily reset and blocks another request that day', () => 
   assert.match(modal.innerHTML, /城市改名卡或黄金不足/);
   modal.controls['#renameCityForm'].onsubmit({ preventDefault() {} });
   assert.match(messages[0], /请明日 0:00 后再试/);
+});
+
+test('commander drawer locks header and footer to viewport height while drawer-body scrolls', () => {
+  const context = vm.createContext({ console, document: {}, requestAnimationFrame() {} });
+  context.window = context;
+  context.Game = {
+    Core: {
+      state: {
+        player: { militaryRank: 1, cityName: '主城', posX: 10, posY: 20 },
+        resources: {},
+        officerEquipment: { achievements: [{ name: '神兵利器', unlocked: true }] }
+      },
+      armyCap: () => 25000,
+      morale: () => 80
+    },
+    MainView: { getCurrentAvatar: () => 'avatar.svg' },
+    WS: { statusHtml: () => '' },
+    fmt: String,
+    escapeHtml: value => value
+  };
+  let drawerElement = null;
+  const classes = new Set();
+  context.document.createElement = () => ({ setAttribute() {}, querySelector() { return null; } });
+  context.document.getElementById = () => null;
+  context.document.body = {
+    classList: {
+      add(cls) { classes.add(cls); },
+      remove(cls) { classes.delete(cls); },
+      contains(cls) { return classes.has(cls); }
+    },
+    appendChild(el) { drawerElement = el; }
+  };
+  load(context, 'constants.js');
+  load(context, 'data.js');
+  load(context, 'player-profile.js');
+
+  context.Game.PlayerProfile.openPlayerDrawer();
+  const html = drawerElement.innerHTML;
+  assert.equal(context.document.body.classList.contains('drawer-open'), true);
+
+  // Header, body, and footer structure
+  assert.match(html, /<div class="drawer-header">/);
+  assert.match(html, /<div class="drawer-body">/);
+  assert.match(html, /<div class="drawer-footer">/);
+  assert.match(html, /切换主题/);
+  assert.match(html, /系统设置/);
+
+  // Achievement details are placed inside drawer-body before drawer-footer
+  assert.match(html, /<details class="drawer-awards-details">[\s\S]*?<\/div><div class="drawer-footer">/);
+
+  // CSS rules check
+  const css = fs.readFileSync(path.join(__dirname, '../css/style.css'), 'utf8');
+  assert.match(css, /\.player-drawer-mask\s*\{[^}]*position:\s*fixed(?:\s*!important)?;/);
+  assert.match(css, /\.player-drawer-mask\s*\{[^}]*height:\s*100dvh(?:\s*!important)?;/);
+  assert.match(css, /\.player-drawer\s*\{[^}]*position:\s*fixed(?:\s*!important)?;/);
+  assert.match(css, /\.player-drawer\s*\{[^}]*height:\s*100dvh(?:\s*!important)?;/);
+  assert.match(css, /\.player-drawer\s*\{[^}]*max-height:\s*100dvh(?:\s*!important)?;/);
+  assert.match(css, /\.player-drawer\s*\{[^}]*display:\s*flex(?:\s*!important)?;/);
+  assert.match(css, /\.player-drawer\s*\{[^}]*flex-direction:\s*column(?:\s*!important)?;/);
+  assert.match(css, /\.drawer-body\s*\{[^}]*flex:\s*1 1 0%(?:\s*!important)?;/);
+  assert.match(css, /\.drawer-body\s*\{[^}]*min-height:\s*0(?:\s*!important)?;/);
+  assert.match(css, /\.drawer-body\s*\{[^}]*overflow-y:\s*auto(?:\s*!important)?;/);
+  assert.match(css, /\.drawer-footer\s*\{[^}]*flex:\s*0 0 auto(?:\s*!important)?;/);
+  assert.match(css, /\.drawer-footer\s*\{[^}]*margin-top:\s*auto(?:\s*!important)?;/);
+  assert.match(css, /\.drawer-footer\s*\{[^}]*position:\s*sticky(?:\s*!important)?;/);
+  assert.match(css, /\.drawer-footer\s*\{[^}]*bottom:\s*0(?:\s*!important)?;/);
+});
+
+test('updateDrawerHeight synchronizes drawer height with real visible viewport in portrait and landscape', () => {
+  const styles = {};
+  const drawer = { style: {} };
+  const mask = { style: {} };
+  const listeners = {};
+  const win = {
+    innerHeight: 640,
+    addEventListener(evt, fn) { listeners[evt] = fn; },
+    visualViewport: {
+      height: 600,
+      addEventListener(evt, fn) { listeners['vv_' + evt] = fn; }
+    }
+  };
+  const doc = {
+    documentElement: {
+      style: {
+        setProperty(k, v) { styles[k] = v; }
+      }
+    },
+    querySelector(sel) { return sel === '.player-drawer' ? drawer : null; },
+    getElementById(id) { return id === 'playerDrawerMask' ? mask : null; }
+  };
+  const context = vm.createContext({ console, window: win, document: doc, Game: {} });
+  win.window = win;
+  load(context, 'constants.js');
+  load(context, 'data.js');
+  load(context, 'player-profile.js');
+
+  context.window.Game.PlayerProfile.updateDrawerHeight();
+  assert.equal(styles['--drawer-height'], '600px');
+  assert.equal(drawer.style.height, '600px');
+  assert.equal(drawer.style.maxHeight, '600px');
+  assert.equal(mask.style.height, '600px');
+  assert.equal(mask.style.maxHeight, '600px');
+
+  // Rotate to landscape
+  win.innerHeight = 380;
+  win.visualViewport.height = 360;
+  listeners.orientationchange();
+  assert.equal(styles['--drawer-height'], '360px');
+  assert.equal(drawer.style.height, '360px');
+  assert.equal(mask.style.height, '360px');
 });

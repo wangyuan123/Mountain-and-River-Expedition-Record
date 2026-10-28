@@ -33,7 +33,10 @@ window.Game = window.Game || {};
       type: isSystem ? 'system' : (data && data.type ? data.type : 'player'),
       username: isSystem ? '系统' : String((data && data.username) || '玩家'),
       content: String((data && data.content) || ''),
-      avatar: data && data.avatar ? String(data.avatar) : ''
+      avatar: data && data.avatar ? String(data.avatar) : '',
+      avatarFrame: data && data.avatarFrame ? String(data.avatarFrame) : '',
+      vipLevel: data && data.vipLevel != null ? Number(data.vipLevel) : null,
+      vipBadgeVisible: data && data.vipBadgeVisible != null ? !!data.vipBadgeVisible : null
     };
   }
 
@@ -50,6 +53,25 @@ window.Game = window.Game || {};
     }
     if (self && G.Core && G.Core.getCurrentAvatar) return G.Core.getCurrentAvatar();
     return presets.length ? presets[0].src : '';
+  }
+
+  function avatarFrameClass(frameId) {
+    if (G.avatarFrameClass) return G.avatarFrameClass(frameId);
+    var classes = {
+      'frame-bronze-v1': 'frame-bronze-v1',
+      'frame-silver-v1': 'frame-silver-v1',
+      'frame-gold-v1': 'frame-gold-v1',
+      'frame-jade-v1': 'frame-jade-v1',
+      'frame-marshal-v1': 'frame-jade-v1',
+      'frame-supreme-v1': 'frame-supreme-v1',
+      bronze: 'frame-bronze-v1',
+      silver: 'frame-silver-v1',
+      gold: 'frame-gold-v1',
+      jade: 'frame-jade-v1',
+      marshal: 'frame-jade-v1',
+      supreme: 'frame-supreme-v1'
+    };
+    return (frameId && classes[frameId]) ? classes[frameId] : '';
   }
 
   function sameDay(firstTs, secondTs) {
@@ -82,7 +104,10 @@ window.Game = window.Game || {};
   function appendAvatar(container, msg, self) {
     if (msg.type === 'system') return;
     var img = document.createElement('img');
-    img.className = 'chat-avatar';
+    var curPlayer = (G.state && G.state.player) || (G.Core && G.Core.state && G.Core.state.player) || {};
+    var frame = (msg && msg.avatarFrame) ? msg.avatarFrame : (self ? curPlayer.avatarFrame : 'default');
+    var frameCls = avatarFrameClass(frame);
+    img.className = 'chat-avatar' + (frameCls ? ' ' + frameCls : '');
     img.src = avatarSrc(msg.avatar, self);
     img.alt = (msg.username || '玩家') + '的统帅头像';
     img.onerror = function () {
@@ -173,8 +198,9 @@ window.Game = window.Game || {};
       var body = document.createElement('div');
       body.className = 'chat-msg-body';
 
-      var vipLevel = Number(msg.vipLevel != null ? msg.vipLevel : (self && G.Core && G.Core.state && G.Core.state.player && G.Core.state.player.vipLevel)) || 0;
-      var vipVisible = msg.vipBadgeVisible != null ? msg.vipBadgeVisible : (self ? (G.Core && G.Core.state && G.Core.state.player && G.Core.state.player.vipBadgeVisible !== false) : true);
+      var curPlayer = (G.state && G.state.player) || (G.Core && G.Core.state && G.Core.state.player) || {};
+      var vipLevel = Number(msg.vipLevel != null ? msg.vipLevel : (self && curPlayer.vipLevel)) || 0;
+      var vipVisible = msg.vipBadgeVisible != null ? msg.vipBadgeVisible : (self ? (curPlayer.vipBadgeVisible !== false) : true);
       if (vipLevel >= 6) {
         div.classList.add('vip-chat-bubble-commander');
       }
@@ -216,8 +242,9 @@ window.Game = window.Game || {};
     var tagText = isSys ? '[系统]' : (isBattle ? '[战报]' : '[世界]');
     var safeContent = sharedContentHtml(m.content);
 
-    var vipLevel = Number(m.vipLevel != null ? m.vipLevel : (self && G.Core && G.Core.state && G.Core.state.player && G.Core.state.player.vipLevel)) || 0;
-    var vipVisible = m.vipBadgeVisible != null ? m.vipBadgeVisible : (self ? (G.Core && G.Core.state && G.Core.state.player && G.Core.state.player.vipBadgeVisible !== false) : true);
+    var curPlayer = (G.state && G.state.player) || (G.Core && G.Core.state && G.Core.state.player) || {};
+    var vipLevel = Number(m.vipLevel != null ? m.vipLevel : (self && curPlayer.vipLevel)) || 0;
+    var vipVisible = m.vipBadgeVisible != null ? m.vipBadgeVisible : (self ? (curPlayer.vipBadgeVisible !== false) : true);
     var commanderClass = (!isSys && !isBattle && vipLevel >= 6) ? ' vip-chat-bubble-commander' : '';
     var vipBadgeHtml = (!isSys && !isBattle && vipLevel > 0 && vipVisible)
       ? '<span class="chat-vip-badge' + (vipLevel >= 4 ? ' vip-badge-gold' : '') + '">VIP ' + vipLevel + '</span>'
@@ -246,7 +273,10 @@ window.Game = window.Game || {};
         .replace(/[&<>"']/g, function (c) {
           return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
         });
-      h += '<img class="chat-avatar" src="' + selfAvatar + '" alt="' + safeName + '的统帅头像"' + (!self && m.playerId != null ? ' data-private-player-id="' + Number(m.playerId) + '" role="button" tabindex="0" title="点击与该玩家私聊" data-private-username="' + safeName + '"' : '') + ' onerror="this.onerror=null;this.src=\'' + avatarSrc('', false) + '\'">';
+      var frame = (m && m.avatarFrame) ? m.avatarFrame : (self ? curPlayer.avatarFrame : 'default');
+      var frameCls = avatarFrameClass(frame);
+      var avatarClasses = 'chat-avatar' + (frameCls ? ' ' + frameCls : '');
+      h += '<img class="' + avatarClasses + '" src="' + selfAvatar + '" alt="' + safeName + '的统帅头像"' + (!self && m.playerId != null ? ' data-private-player-id="' + Number(m.playerId) + '" role="button" tabindex="0" title="点击与该玩家私聊" data-private-username="' + safeName + '"' : '') + ' onerror="this.onerror=null;this.src=\'' + avatarSrc('', false) + '\'">';
       h += '<div class="chat-msg-body">';
       h += vipBadgeHtml;
       h += '<span class="chat-sender"' + (!self && m.playerId != null ? ' data-private-player-id="' + Number(m.playerId) + '" role="button" tabindex="0" title="点击与该玩家私聊" data-private-username="' + safeName + '"' : '') + '>' + safeName + ':</span>';
@@ -343,7 +373,10 @@ window.Game = window.Game || {};
       role: data && data.role ? data.role : (isSystem ? 'system' : 'member'),
       username: isSystem ? '系统' : String((data && data.username) || '战友'),
       content: String((data && data.content) || ''),
-      avatar: data && data.avatar ? String(data.avatar) : ''
+      avatar: data && data.avatar ? String(data.avatar) : '',
+      avatarFrame: data && data.avatarFrame ? String(data.avatarFrame) : '',
+      vipLevel: data && data.vipLevel != null ? Number(data.vipLevel) : null,
+      vipBadgeVisible: data && data.vipBadgeVisible != null ? !!data.vipBadgeVisible : null
     };
   }
 
@@ -360,9 +393,18 @@ window.Game = window.Game || {};
     var self = isSelfMessage(m);
     var safeContent = sharedContentHtml(m.content);
 
+    var curPlayer = (G.state && G.state.player) || (G.Core && G.Core.state && G.Core.state.player) || {};
+    var vipLevel = Number(m.vipLevel != null ? m.vipLevel : (self && curPlayer.vipLevel)) || 0;
+    var vipVisible = m.vipBadgeVisible != null ? m.vipBadgeVisible : (self ? (curPlayer.vipBadgeVisible !== false) : true);
+    var commanderClass = (!isSys && vipLevel >= 6) ? ' vip-chat-bubble-commander' : '';
+    var vipBadgeHtml = (!isSys && vipLevel > 0 && vipVisible)
+      ? '<span class="chat-vip-badge' + (vipLevel >= 4 ? ' vip-badge-gold' : '') + '">VIP ' + vipLevel + '</span>'
+      : '';
+
     var h = '<div class="chat-msg' +
       (isSys ? ' chat-msg-system' : '') +
       (self ? ' chat-msg-self' : '') +
+      commanderClass +
       '" data-type="' + (m.type || 'player') + '"' +
       (self ? ' data-self="1"' : '') + '>';
     if (shouldShowTime(m, previous)) {
@@ -383,10 +425,15 @@ window.Game = window.Game || {};
         });
       var rName = m.role === 'leader' ? '团长' : (m.role === 'admin' ? '管理' : '成员');
       var rClass = m.role === 'leader' ? 'tag-guild-leader' : (m.role === 'admin' ? 'tag-guild-admin' : 'tag-guild-member');
-      h += '<img class="chat-avatar" src="' + selfAvatar + '" alt="' + safeName + '的统帅头像"' + (!self && m.playerId != null ? ' data-private-player-id="' + Number(m.playerId) + '" role="button" tabindex="0" title="点击与该玩家私聊" data-private-username="' + safeName + '"' : '') + ' onerror="this.onerror=null;this.src=\'' + avatarSrc('', false) + '\'">';
+      var frame = (m && m.avatarFrame) ? m.avatarFrame : (self ? curPlayer.avatarFrame : 'default');
+      var frameCls = avatarFrameClass(frame);
+      var avatarClasses = 'chat-avatar' + (frameCls ? ' ' + frameCls : '');
+
+      h += '<img class="' + avatarClasses + '" src="' + selfAvatar + '" alt="' + safeName + '的统帅头像"' + (!self && m.playerId != null ? ' data-private-player-id="' + Number(m.playerId) + '" role="button" tabindex="0" title="点击与该玩家私聊" data-private-username="' + safeName + '"' : '') + ' onerror="this.onerror=null;this.src=\'' + avatarSrc('', false) + '\'">';
       h += '<div class="chat-msg-body">';
       h += '<div class="chat-msg-header">';
       h += '<span class="chat-tag ' + rClass + '">[' + rName + ']</span>';
+      h += vipBadgeHtml;
       h += '<span class="chat-sender"' + (!self && m.playerId != null ? ' data-private-player-id="' + Number(m.playerId) + '" role="button" tabindex="0" title="点击与该玩家私聊" data-private-username="' + safeName + '"' : '') + '>' + safeName + ':</span>';
       h += '</div>';
       h += '<span class="chat-content' + (self ? ' chat-content-self' : '') + '">' + safeContent + '</span>';

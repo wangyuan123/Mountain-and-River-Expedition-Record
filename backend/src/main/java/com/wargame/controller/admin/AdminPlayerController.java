@@ -21,9 +21,10 @@ public class AdminPlayerController {
     @GetMapping
     public Page<Map<String, Object>> list(@RequestParam(required = false) String query,
                                           @RequestParam(required = false) String status,
+                                          @RequestParam(required = false) Integer vipLevel,
                                           @RequestParam(defaultValue = "0") int page,
                                           @RequestParam(defaultValue = "15") int size) {
-        return adminPlayerService.getPlayers(query, status, page, size);
+        return adminPlayerService.getPlayers(query, status, vipLevel, page, size);
     }
 
     @GetMapping("/{id}")
@@ -60,6 +61,33 @@ public class AdminPlayerController {
                                            HttpServletRequest request) {
         adminPlayerService.updatePlayerBasic(id, body, authentication.getName(), request);
         return Map.of("success", true, "message", "基础属性更新成功");
+    }
+
+    @PutMapping("/{id}/vip")
+    public Map<String, Object> updateVip(@PathVariable Long id,
+                                         @RequestBody Map<String, Object> body,
+                                         Authentication authentication,
+                                         HttpServletRequest request) {
+        adminPlayerService.updatePlayerVip(id, body, authentication.getName(), request);
+        return Map.of("success", true, "message", "VIP 特许数据更新成功");
+    }
+
+    @PutMapping("/{id}/vip/revoke-rewards")
+    public Map<String, Object> revokeUnusedRewards(@PathVariable Long id,
+                                                   Authentication authentication,
+                                                   HttpServletRequest request) {
+        return adminPlayerService.revokePlayerUnusedRewards(id, authentication.getName(), request);
+    }
+
+    @PutMapping("/{id}/reset-password")
+    public Map<String, Object> resetPassword(@PathVariable Long id,
+                                             @RequestBody(required = false) Map<String, String> body,
+                                             Authentication authentication,
+                                             HttpServletRequest request) {
+        String newPassword = body != null ? body.get("newPassword") : null;
+        String pwd = (newPassword != null && !newPassword.isBlank()) ? newPassword.trim() : "abcd1234";
+        adminPlayerService.resetPlayerPassword(id, pwd, authentication.getName(), request);
+        return Map.of("success", true, "message", "玩家登录密码已重置为 " + pwd, "plainPassword", pwd);
     }
 
     @PutMapping("/{id}/resources")

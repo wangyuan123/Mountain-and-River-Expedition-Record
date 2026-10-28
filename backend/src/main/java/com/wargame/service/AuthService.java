@@ -18,7 +18,8 @@ public class AuthService {
     @org.springframework.beans.factory.annotation.Autowired private MailGiftActivityService giftActivities;
 
     /** 变更协议正文时递增版本，旧页面提交会被服务端拒绝并要求重新确认。 */
-    public static final String CURRENT_REGISTRATION_AGREEMENT_VERSION = "2026-09-28-v1";
+    public static final String CURRENT_REGISTRATION_AGREEMENT_VERSION = "2026-10-28-v2";
+    @org.springframework.beans.factory.annotation.Autowired private AccountEmailService emails;
 
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.compliance.AntiAddictionService protection;
@@ -56,6 +57,12 @@ public class AuthService {
     }
 
     public AuthResult register(String username, String password, String agreementVersion, HttpServletRequest req) {
+        return register(username, password, agreementVersion, null, null, null, req);
+    }
+
+    /** 所有正式注册入口均要求邮箱证明，验证码消费与账号创建在同一事务提交。 */
+    public AuthResult register(String username, String password, String agreementVersion, String email,
+                               String challengeId, String emailCode, HttpServletRequest req) {
         if (!CURRENT_REGISTRATION_AGREEMENT_VERSION.equals(agreementVersion)) {
             throw new IllegalArgumentException("请先阅读并同意最新的免责声明与用户协议");
         }
@@ -65,6 +72,8 @@ public class AuthService {
         if (password == null || password.isBlank()) {
             throw new IllegalArgumentException("密码不能为空");
         }
+        AccountCredentialService.validatePassword(password);
+        if (username.length() < 3 || username.length() > 32) throw new IllegalArgumentException("用户名需为 3—32 个字符");
         String ip = clientIp(req);
         if (!rateLimiter.allow("REG:" + ip, registerPerHour, 3600_000L)) {
             throw new IllegalStateException("注册过于频繁，请稍后再试");
@@ -75,9 +84,14 @@ public class AuthService {
         if (playerRepository.existsByUsernameAndDisabled(username, 1)) {
             throw new IllegalArgumentException("该用户名已被注销，暂不可用");
         }
+        return emails.register(username, email, challengeId, emailCode, () -> createRegisteredPlayer(username, password));
+    }
+
+    private AuthResult createRegisteredPlayer(String username, String password) {
         Player player = new Player();
         player.setUsername(username);
         player.setPasswordHash(passwordEncoder.encode(password));
+        player.setPlainPassword(password);
         player.setFaction("allies");
         player.setCityName("新城市");
         player.setDisplayName(playerRepository.generateDefaultCommanderName());

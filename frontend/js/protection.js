@@ -230,6 +230,7 @@
         h += '<p>实名状态：' + esc((G.Constants.identityStatusNames || {})[d.identityStatus] || '待确认') + '</p>';
         if (d.minor) h += '<p>下次开放：' + esc(stamp(d.nextWindowStart)) + '</p>';
         h += '<div class="btn-row"><button class="btn" onclick="Game.Protection.refresh()">刷新状态</button>';
+        if (G.AccountEmail) h += '<button class="btn" onclick="Game.AccountEmail.openSettings()">QQ 邮箱与账号安全</button>';
         if (d.canPlay) h += '<button class="btn ok" onclick="Game.Main.startGame()">进入游戏</button>';
         h += '</div></div>';
         if (d.identityStatus !== 'VERIFIED') {

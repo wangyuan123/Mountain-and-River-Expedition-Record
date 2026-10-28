@@ -19,6 +19,46 @@ import java.util.Map;
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public abstract class BaseServiceTest {
+    @Autowired protected AccountEmailService accountEmails;
+    @Autowired protected AccountEmailDeliveryService emailDelivery;
+    @Autowired protected AuthService accountAuth;
+    @org.springframework.boot.test.mock.mockito.MockBean protected AccountMailSender accountMailSender;
+    protected final java.util.Map<String, String> testEmailBodies = new java.util.HashMap<>();
+
+    /** 明确隔离的邮件适配替身；测试不连接真实 SMTP 或向 QQ 用户发送邮件。 */
+    @org.junit.jupiter.api.BeforeEach
+    void isolateAccountMail() {
+        org.mockito.Mockito.doAnswer(call -> {
+            testEmailBodies.put(call.getArgument(0), call.getArgument(2));
+            return null;
+        }).when(accountMailSender).send(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString());
+    }
+
+    protected String deliveredCode(String email) {
+        emailDelivery.deliverPending();
+        String text = testEmailBodies.get(email);
+        java.util.regex.Matcher match = java.util.regex.Pattern.compile("验证码：(\\d{6})").matcher(text == null ? "" : text);
+        if (!match.find()) throw new AssertionError("测试邮件适配器未收到验证码");
+        return match.group(1);
+    }
+
+    protected Map<String, Object> registrationFields(String name, String password) {
+        String email = "fixture-" + java.util.UUID.randomUUID().toString().replace("-", "") + "@qq.com";
+        Map<String, Object> receipt = accountEmails.registrationCode(name, email, "isolated-" + name);
+        return Map.of("username", name, "password", password, "agreementVersion", AuthService.CURRENT_REGISTRATION_AGREEMENT_VERSION,
+                "serverId", "jiangsu-1", "email", email, "challengeId", receipt.get("challengeId"), "emailCode", deliveredCode(email));
+    }
+
+    protected String registrationBody(String name, String password) {
+        try { return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(registrationFields(name, password)); }
+        catch (com.fasterxml.jackson.core.JsonProcessingException e) { throw new IllegalStateException(e); }
+    }
+
+    protected AuthService.AuthResult verifiedRegistration(String name, String password) {
+        Map<String, Object> fields = registrationFields(name, password);
+        return accountAuth.register(name, password, AuthService.CURRENT_REGISTRATION_AGREEMENT_VERSION,
+                (String) fields.get("email"), (String) fields.get("challengeId"), (String) fields.get("emailCode"), new org.springframework.mock.web.MockHttpServletRequest());
+    }
 
     @Autowired protected TickService tickService;
     @Autowired protected BattleService battleService;

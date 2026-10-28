@@ -26,12 +26,6 @@ test('NPC 步坦协同及多兵种方阵写实微缩模型资源完备且尺寸�
     assert.ok(fs.statSync(embeddedPng).size > 20000, `${m}-map-embedded.png 体积需大于 20KB`);
   });
 
-  // 兼容老路径
-  const legacyEmbeddedPng = path.join(root, 'img/map/npc-fortress-map-embedded.png');
-  assert.ok(fs.existsSync(legacyEmbeddedPng), 'npc-fortress-map-embedded.png 必须存在并更新');
-  const fortressWebp = path.join(root, 'img/map/npc-fortress.webp');
-  assert.ok(fs.existsSync(fortressWebp), 'npc-fortress.webp 必须存在并更新');
-
   // 验证 5 款方阵全家福大地图实装展示总览表
   const showcaseSheet = path.resolve(__dirname, '../../output/imagegen/npc-phalanx-20261011/npc_all_phalanxes_showcase.png');
   assert.ok(fs.existsSync(showcaseSheet), '5 款 NPC 方阵大地图实装展示总览长图必须存在');

@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="skl_cnt_blade" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="35%" stop-color="#fca5a5"/>
+      <stop offset="70%" stop-color="#dc2626"/>
+      <stop offset="100%" stop-color="#7f1d1d"/>
+    </linearGradient>
+    <linearGradient id="skl_cnt_arc" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#67e8f9"/>
+      <stop offset="50%" stop-color="#0284c7"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <radialGradient id="skl_cnt_glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ef4444" stop-opacity="0.8"/>
+      <stop offset="50%" stop-color="#b91c1c" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#7f1d1d" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="skl_cnt_shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#skl_cnt_shadow)">
+    <!-- Crimson Counter Glow -->
+    <circle cx="32" cy="32" r="28" fill="url(#skl_cnt_glow)"/>
+
+    <!-- Kinetic Deflection U-Turn Shield Arc -->
+    <path d="M14 20 C8 32, 12 48, 26 52 C38 56, 52 48, 54 36"
+          fill="none" stroke="url(#skl_cnt_arc)" stroke-width="4.5" stroke-linecap="round"/>
+    <!-- Outer Kinetic Deflection Ring -->
+    <path d="M12 16 C4 32, 8 52, 28 56"
+          fill="none" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.8"/>
+
+    <!-- Incoming Enemy Attack Shell (Deflected) -->
+    <line x1="8" y1="14" x2="16" y2="24" stroke="#fbbf24" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="16" cy="24" r="3" fill="#fef08a"/>
+
+    <!-- Retaliation Counter Blade Thrusting Upward & Right -->
+    <g transform="rotate(-30 36 28)">
+      <!-- Blade -->
+      <polygon points="36,6 40,16 39,40 36,44 33,40 32,16" fill="url(#skl_cnt_blade)" stroke="#fff" stroke-width="0.8"/>
+      <polygon points="36,6 40,16 36,44" fill="#ffffff" opacity="0.6"/>
+      <!-- Crossguard -->
+      <path d="M26 42 H46 V45 H26 Z" fill="#991b1b"/>
+      <!-- Handle -->
+      <rect x="34" y="45" width="4" height="10" rx="1.5" fill="#450a0a"/>
+      <circle cx="36" cy="56" r="3" fill="#dc2626"/>
+    </g>
+
+    <!-- Return Counter Arrow Head (Bold Chevron) -->
+    <polygon points="46,10 56,12 52,22 49,18 40,24 38,20 47,15" fill="#ffffff" stroke="#ef4444" stroke-width="1"/>
+
+    <!-- Impact Reversal Sparkle -->
+    <polygon points="24,42 27,45 32,46 28,48 29,52 26,49 22,50 24,47" fill="#fef08a"/>
+  </g>
+</svg>

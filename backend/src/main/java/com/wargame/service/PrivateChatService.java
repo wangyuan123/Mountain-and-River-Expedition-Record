@@ -202,7 +202,17 @@ public class PrivateChatService {
 
     private PrivateChatDtos.Message dto(PrivateChatMessage m) {
         Player sender = players.findById(m.getSenderId()).orElseThrow();
-        return new PrivateChatDtos.Message(m.getId(), m.getSenderId(), m.getRecipientId(),
-                sender.getUsername(), sender.getAvatar(), chat.filterContent(m.getContent()), m.getCreatedAt());
+        return new PrivateChatDtos.Message(
+                m.getId(),
+                m.getSenderId(),
+                m.getRecipientId(),
+                sender.getUsername(),
+                sender.getAvatar(),
+                chat.filterContent(m.getContent()),
+                m.getCreatedAt(),
+                sender.getVipLevel() != null ? sender.getVipLevel() : 0,
+                sender.getVipBadgeVisible(),
+                sender.getAvatarFrame() != null ? sender.getAvatarFrame() : "default"
+        );
     }
 }

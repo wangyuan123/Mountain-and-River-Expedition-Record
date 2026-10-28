@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="skl_const_gear" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#94a3b8"/>
+      <stop offset="40%" stop-color="#64748b"/>
+      <stop offset="80%" stop-color="#334155"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="skl_const_gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="50%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+    <linearGradient id="skl_const_steel" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="50%" stop-color="#cbd5e1"/>
+      <stop offset="100%" stop-color="#64748b"/>
+    </linearGradient>
+    <radialGradient id="skl_const_glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#94a3b8" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#334155" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="skl_const_shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#skl_const_shadow)">
+    <!-- Industrial Slate Glow -->
+    <circle cx="32" cy="32" r="28" fill="url(#skl_const_glow)"/>
+
+    <!-- Fortress Wall Base (Bottom) -->
+    <path d="M12 46 H52 V56 H12 Z" fill="#475569" stroke="#64748b" stroke-width="1"/>
+    <!-- Brick pattern lines -->
+    <line x1="12" y1="51" x2="52" y2="51" stroke="#334155" stroke-width="1"/>
+    <line x1="25" y1="46" x2="25" y2="51" stroke="#334155" stroke-width="1"/>
+    <line x1="39" y1="46" x2="39" y2="51" stroke="#334155" stroke-width="1"/>
+    <line x1="18" y1="51" x2="18" y2="56" stroke="#334155" stroke-width="1"/>
+    <line x1="32" y1="51" x2="32" y2="56" stroke="#334155" stroke-width="1"/>
+    <line x1="46" y1="51" x2="46" y2="56" stroke="#334155" stroke-width="1"/>
+
+    <!-- Fortress Engineering Cog / Gear -->
+    <g transform="translate(32, 28)">
+      <!-- 8 Teeth -->
+      <path d="M-5 -21 H5 V-17 H-5 Z M-5 17 H5 V21 H-5 Z M-21 -5 H-17 V5 H-21 Z M17 -5 H21 V5 H17 Z
+               M-16 -13 L-9 -20 L-6 -17 L-13 -10 Z M9 6 L16 13 L13 16 L6 9 Z
+               M13 -10 L20 -17 L17 -20 L10 -13 Z M-10 13 L-17 20 L-20 17 L-13 10 Z"
+            fill="url(#skl_const_gear)"/>
+      <circle cx="0" cy="0" r="18" fill="url(#skl_const_gear)" stroke="#94a3b8" stroke-width="1"/>
+      <circle cx="0" cy="0" r="10" fill="#1e293b"/>
+      <circle cx="0" cy="0" r="4" fill="url(#skl_const_gold)"/>
+    </g>
+
+    <!-- Crossed Construction Tools: Hammer & Architect Wrench/Caliper -->
+    <!-- Engineer Hammer (Left to right) -->
+    <g transform="rotate(35 32 30)">
+      <!-- Handle -->
+      <rect x="30" y="8" width="4" height="38" rx="1.5" fill="#78350f"/>
+      <!-- Sledge Hammer Head -->
+      <path d="M22 10 H42 V18 H22 Z" fill="url(#skl_const_steel)" stroke="#e2e8f0" stroke-width="0.8"/>
+      <rect x="20" y="11" width="2" height="6" fill="#f8fafc"/>
+      <rect x="42" y="11" width="2" height="6" fill="#64748b"/>
+    </g>
+
+    <!-- Engineer Compass/Caliper (Right to left) -->
+    <g transform="rotate(-35 32 30)">
+      <line x1="32" y1="8" x2="24" y2="44" stroke="url(#skl_const_gold)" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="32" y1="8" x2="40" y2="44" stroke="url(#skl_const_gold)" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="32" cy="8" r="3.5" fill="url(#skl_const_gold)"/>
+      <circle cx="32" cy="8" r="1.5" fill="#ffffff"/>
+      <path d="M26 26 C30 28, 34 28, 38 26" stroke="#fef08a" stroke-width="1.5" fill="none"/>
+    </g>
+  </g>
+</svg>

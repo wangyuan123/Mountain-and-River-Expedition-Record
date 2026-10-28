@@ -93,6 +93,7 @@ window.Game = window.Game || {};
 
     /** 账号、大区或退出登录时立即丢弃正文、战报详情与分页状态。 */
     resetRetentionCaches() {
+      if (G.AccountEmail) G.AccountEmail.reset();
       if (G.Mail && G.Mail.resetRetentionCache) G.Mail.resetRetentionCache();
       if (G.Battle && G.Battle.resetRetentionCache) G.Battle.resetRetentionCache();
     }

@@ -144,6 +144,8 @@ public class WorldViewService {
                 boolean selfCity = cityOwner.equals(player.getId());
                 pcMap.put("ownerId", cityOwner);
                 pcMap.put("guildmate", guildRelations.areGuildmates(player.getId(), cityOwner));
+                // 列表和大地图使用同一军团关系决定宣战或直接讨伐，不能仅返回同团标记。
+                pcMap.put("guildRelation", guildRelations.relationshipBetweenPlayers(player.getId(), cityOwner));
                 pcMap.put("playerName", owner != null ? PlayerNames.commanderName(owner) : "");
                 // 地图列表展开时展示游戏内统帅名与当前军衔；登录名仅作为旧数据兜底。
                 pcMap.put("commanderName", owner.getDisplayName() == null || owner.getDisplayName().isBlank()

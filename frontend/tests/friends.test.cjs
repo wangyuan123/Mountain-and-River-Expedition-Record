@@ -45,6 +45,7 @@ function setup() {
     }
   };
   document = { getElementById: id => nodes[id] || null, createElement: element, body: element(), addEventListener() {}, removeEventListener() {} };
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../js/icons.js'), 'utf8'), { window: { Game: game }, document, Promise });
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../js/friends.js'), 'utf8'), { window: { Game: game }, document, Promise });
   function action(label) { return nodes.friendModalActions.children.find(button => button.textContent === label); }
   return { game, nodes, calls, profile, response, action };
@@ -58,6 +59,7 @@ test('friends list escapes player names and group names and always includes defa
   assert.match(nodes.friendList.innerHTML, /&lt;先锋&gt;/);
   assert.match(nodes.friendList.innerHTML, /&lt;img/);
   assert.doesNotMatch(nodes.friendList.innerHTML, /<img src=x/);
+  assert.doesNotMatch(nodes.friendList.innerHTML, /玩家名：|ID：|bob/);
 });
 
 test('privacy dialog loads saved preferences and posts both editable settings', async () => {
@@ -78,6 +80,7 @@ test('profile opens chat with stable player ID and supports moving friend to cus
   const { game, nodes, calls, action } = setup();
   await game.Friends.view(2);
   assert.match(nodes.friendModal.innerHTML, /&lt;先锋&gt;/);
+  assert.doesNotMatch(nodes.friendModal.innerHTML, /玩家名：|ID：|bob/);
   nodes.friendGroupSelect.value = '1';
   await action('保存分组').onclick();
   assert.deepEqual(calls[0], ['move', 2, 1]);
@@ -101,6 +104,8 @@ test('profile only locates a city when the API provides an authorized recon coor
   const { game, nodes, calls, profile, action } = setup();
   await game.Friends.view(2);
   assert.match(nodes.friendModal.innerHTML, /未获得有效侦察坐标/);
+  assert.match(nodes.friendModal.innerHTML, /class="main-city-icon"/);
+  assert.doesNotMatch(nodes.friendModal.innerHTML, /🏰/);
   assert.equal(action('定位城市'), undefined);
 
   profile.cityX = 5; profile.cityY = 387;

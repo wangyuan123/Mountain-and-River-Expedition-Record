@@ -27,8 +27,7 @@ class GameFlowTest extends BaseServiceTest {
     void registerBuildRecruitDispatchReadReportAndReceiveLoot() throws Exception {
         long worldId = createTestWorld().getId();
         JsonNode registered = postJson("/api/auth/register", null,
-                Map.of("username", "flow-player", "password", "test-password-123",
-                        "agreementVersion", "2026-09-28-v1", "serverId", "jiangsu-1"));
+                registrationFields("flow-player", "test-password-123"));
         String token = registered.path("token").asText();
         assertFalse(token.isBlank());
         long playerId = registered.path("playerId").asLong();
@@ -90,11 +89,9 @@ class GameFlowTest extends BaseServiceTest {
     void unreadReportsPersistAcrossStateReloadAndStayPrivate() throws Exception {
         createTestWorld();
         JsonNode alice = postJson("/api/auth/register", null,
-                Map.of("username", "report-alice", "password", "test-password-123",
-                        "agreementVersion", "2026-09-28-v1", "serverId", "jiangsu-1"));
+                registrationFields("report-alice", "test-password-123"));
         JsonNode bob = postJson("/api/auth/register", null,
-                Map.of("username", "report-bob", "password", "test-password-123",
-                        "agreementVersion", "2026-09-28-v1", "serverId", "jiangsu-1"));
+                registrationFields("report-bob", "test-password-123"));
         String token = alice.path("token").asText();
         String bobToken = bob.path("token").asText();
         long playerId = alice.path("playerId").asLong();

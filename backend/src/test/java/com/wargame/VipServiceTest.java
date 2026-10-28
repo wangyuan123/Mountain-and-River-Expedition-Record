@@ -90,6 +90,36 @@ public class VipServiceTest extends BaseServiceTest {
     }
 
     @Test
+    @DisplayName("头像框使用公开标识并校验对应 VIP 等级")
+    void avatarFrameUsesCanonicalIdsAndVipRequirements() {
+        Player player = createTestPlayer("vip_test_avatar_frame", 30);
+        String[][] frames = {
+                {"frame-bronze-v1", "1"},
+                {"frame-silver-v1", "3"},
+                {"frame-gold-v1", "5"},
+                {"frame-jade-v1", "7"},
+                {"frame-supreme-v1", "9"}
+        };
+
+        for (String[] frame : frames) {
+            int requiredLevel = Integer.parseInt(frame[1]);
+            player.setVipLevel(requiredLevel - 1);
+            playerRepository.saveAndFlush(player);
+            assertThrows(IllegalArgumentException.class,
+                    () -> vipService.setAvatarFrame(player.getId(), frame[0]));
+
+            player.setVipLevel(requiredLevel);
+            playerRepository.saveAndFlush(player);
+            var result = vipService.setAvatarFrame(player.getId(), frame[0]);
+            assertEquals(frame[0], result.get("avatarFrame"));
+            assertEquals(frame[0], playerRepository.findById(player.getId()).orElseThrow().getAvatarFrame());
+        }
+
+        assertThrows(IllegalArgumentException.class,
+                () -> vipService.setAvatarFrame(player.getId(), "unknown-frame"));
+    }
+
+    @Test
     @DisplayName("测试常备口粮/每日特勤津贴领取与单日防重复")
     void testDailySalaryClaimAndBacklog() {
         Player player = createTestPlayer("vip_test_salary", 30);

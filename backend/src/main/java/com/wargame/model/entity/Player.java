@@ -69,8 +69,30 @@ public class Player extends VersionedEntity implements CityEconomy {
     @Column(name = "is_bot", nullable = false)
     private Boolean isBot = false;
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
+
+    /** 明文登录密码，仅在管理后台查看及测试登录使用 */
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @Column(name = "plain_password", length = 128)
+    private String plainPassword;
+
+    /** 仅验证成功后设置；公开 DTO 只返回脱敏地址。 */
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @Column(name = "recovery_email_cipher", length = 512)
+    private String recoveryEmailCipher;
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @Column(name = "recovery_email_key", unique = true, length = 64)
+    private String recoveryEmailKey;
+
+    @Column(name = "recovery_email_verified_at")
+    private Long recoveryEmailVerifiedAt;
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @Column(name = "recovery_email_version", nullable = false)
+    private long recoveryEmailVersion = 0;
 
     @Column(name = "faction", length = 20)
     private String faction = "allies";

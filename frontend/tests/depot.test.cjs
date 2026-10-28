@@ -149,3 +149,48 @@ test('统帅改名卡从仓库打开统一改名弹窗且不直接扣卡', () =>
   assert.equal(calls, 1);
   assert.equal(G.state.items.commanderRenameCard, 1);
 });
+
+test('仓库军官装备细分工具条与套装折叠卡片样式规范与筛选重置', () => {
+  const G = setup();
+  G.state._depotTab = 'equipment';
+  G.state.items = {
+    recruit_military_weapon: 1,
+    recruit_military_armor: 1,
+    sergeant_defense_shield: 1
+  };
+
+  let html = '';
+  G.Depot.renderView({ set innerHTML(value) { html = value; } });
+
+  // 1. 验证筛选工具条规范
+  assert.match(html, /class="depot-equip-filter-bar"/);
+  assert.match(html, /class="depot-equip-filter-tag"/);
+  assert.match(html, /装备细分/);
+  assert.match(html, /class="depot-equip-filter-select"/);
+  assert.match(html, /<option value="">全部<\/option>/);
+
+  // 2. 验证套装折叠卡片、旋转箭头与成套徽章
+  assert.match(html, /class="depot-set-group"/);
+  assert.match(html, /class="depot-set-summary"/);
+  assert.match(html, /class="depot-set-arrow"/);
+  assert.match(html, /class="depot-set-title"/);
+  assert.match(html, /class="depot-set-badge/);
+  assert.match(html, /class="depot-set-body"/);
+
+  // 3. 激活筛选后样式高亮并展示重置按钮
+  G.Depot.filterEquipment('equipmentTier', 'recruit');
+  G.Depot.renderView({ set innerHTML(value) { html = value; } });
+  assert.match(html, /class="depot-equip-filter-select is-active"/);
+  assert.match(html, /class="depot-equip-filter-reset"/);
+  assert.match(html, /重置/);
+  assert.match(html, /class="depot-set-group" open/); // 筛选后自动展开方便查看
+
+  // 4. 重置筛选
+  let renderCalled = 0;
+  G.Core.render = () => { renderCalled++; };
+  G.Depot.clearEquipmentFilters();
+  assert.equal(G.Depot.equipmentTier, '');
+  assert.equal(G.Depot.equipmentBranch, '');
+  assert.equal(G.Depot.equipmentSlot, '');
+  assert.equal(renderCalled, 1);
+});

@@ -179,3 +179,58 @@ test('entering the current city avoids a switch; a failed switch preserves the o
   assert.equal(ctx.Game.Cities.switching,false);
   assert.deepEqual(routes,['home']);assert.deepEqual(messages,['切换失败']);
 });
+
+test('city list modal draws structured card layout with row-main, actions, garrison checkbox, and food stats', () => {
+  const content = { innerHTML: '' };
+  const overview = {
+    cities: [
+      { id: 1, name: '战火一$@焚天灭地城', current: true, level: 1, x: 20, y: 20, main: true, readyAt: 0, acceptGarrison: true, ownFoodPerHour: 120, supportFoodPerHour: 80, garrisonFoodUnmet: 0 },
+      { id: 2, name: '分城二', current: false, level: 2, x: 25, y: 30, main: false, readyAt: 0, acceptGarrison: false, ownFoodPerHour: 50, supportFoodPerHour: 0, garrisonFoodUnmet: 30 }
+    ],
+    count: 2,
+    cap: 5,
+    rankName: '少将'
+  };
+  const ctx = runtime({
+    document: { getElementById(id) { return id === 'cityDialogContent' ? content : null; } },
+    Game: {
+      Core: { state: { cityOverview: overview } },
+      escapeHtml: String,
+      fmt: n => Number(n).toLocaleString(),
+      gameNow: () => 1000
+    }
+  });
+  load(ctx, 'cities.js');
+  ctx.Game.Cities.back();
+
+  const html = content.innerHTML;
+  // Card container structure
+  assert.match(html, /class="city-list-row selected"/);
+  assert.match(html, /class="city-row-main"/);
+  assert.match(html, /class="city-choice"/);
+  assert.match(html, /战火一\$@焚天灭地城/);
+
+  // Current city has no transport / rebase actions
+  assert.doesNotMatch(html.split('city-list-row')[1], /class="city-row-actions"/);
+
+  // Non-current city has action buttons inside .city-row-actions as text buttons [运输][派遣]
+  const nonCurrentRow = html.split('city-list-row')[2];
+  assert.match(nonCurrentRow, /class="city-row-actions"/);
+  assert.match(nonCurrentRow, /<button type="button" class="city-text-btn" onclick="Game.Cities.transferForm\(2,'transport'\)">\[运输\]<\/button>/);
+  assert.match(nonCurrentRow, /<button type="button" class="city-text-btn" onclick="Game.Cities.transferForm\(2,'rebase'\)">\[派遣\]<\/button>/);
+
+  // Extra section holds garrison checkbox and food stats on a separate row
+  assert.match(html, /class="city-row-extra"/);
+  assert.match(html, /class="city-garrison-check"/);
+  assert.match(html, /允许接收军团驻军（本城承担粮耗）/);
+  assert.match(html, /本城部队粮耗 120\/小时 · 外来驻军粮耗 80\/小时/);
+  assert.match(html, /class="city-shortage-warn">曾发生补给短缺，未满足粮耗 30；此数为历史记录，不是欠款。/);
+
+  // Verify CSS contains the required card styles and checkbox overrides
+  const css = fs.readFileSync(path.join(__dirname, '../css/style.css'), 'utf8');
+  assert.match(css, /\.city-list-row\s*\{[^}]*flex-direction:\s*column/);
+  assert.match(css, /\.city-row-main\s*\{[^}]*justify-content:\s*space-between/);
+  assert.match(css, /\.city-row-extra\s*\{[^}]*border-top:\s*1px dashed/);
+  assert.match(css, /\.city-dialog label\.city-garrison-check\s*\{[^}]*flex-direction:\s*row/);
+  assert.match(css, /\.city-dialog label\.city-garrison-check input\[type="checkbox"\]/);
+});

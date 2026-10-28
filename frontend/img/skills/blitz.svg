@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="skl_blitz_bolt" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="25%" stop-color="#fef08a"/>
+      <stop offset="60%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+    <linearGradient id="skl_blitz_wing" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fde68a"/>
+      <stop offset="50%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#92400e"/>
+    </linearGradient>
+    <radialGradient id="skl_blitz_glow" cx="45%" cy="45%" r="50%">
+      <stop offset="0%" stop-color="#fef08a" stop-opacity="0.8"/>
+      <stop offset="50%" stop-color="#f59e0b" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#b45309" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="skl_blitz_shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#skl_blitz_shadow)">
+    <!-- Electric Aura -->
+    <circle cx="32" cy="32" r="26" fill="url(#skl_blitz_glow)"/>
+
+    <!-- Motion Speed Trails -->
+    <path d="M10 24 L24 24" stroke="#fef08a" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+    <path d="M6 32 L20 32" stroke="#fde047" stroke-width="2.5" stroke-linecap="round" opacity="0.8"/>
+    <path d="M12 40 L22 40" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+
+    <!-- Velocity Wing Left -->
+    <path d="M26 30 C20 22, 14 20, 10 21 C12 26, 16 30, 24 33 Z" fill="url(#skl_blitz_wing)"/>
+    <path d="M24 34 C18 28, 12 28, 8 30 C11 34, 16 36, 22 37 Z" fill="url(#skl_blitz_wing)" opacity="0.85"/>
+
+    <!-- Main Thunderbolt (Zigzag) -->
+    <polygon points="36,6 18,32 30,32 20,58 48,26 34,26 44,6"
+             fill="url(#skl_blitz_bolt)" stroke="#fff" stroke-width="0.8" stroke-linejoin="round"/>
+
+    <!-- Inner Core Sparkle -->
+    <polygon points="36,10 23,30 31,30 25,50 43,28 33,28 41,10"
+             fill="#ffffff" opacity="0.9"/>
+
+    <!-- Speed Sparks -->
+    <polygon points="46,16 49,21 54,22 50,25 51,30 47,27 42,28 45,24" fill="#fef08a"/>
+    <polygon points="48,42 50,45 54,46 51,48 52,52 49,50 46,51 47,47" fill="#ffffff" opacity="0.8"/>
+  </g>
+</svg>

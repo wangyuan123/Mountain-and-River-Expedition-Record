@@ -84,6 +84,12 @@ test('MapIcons 包含完整的战术矢量图标库且 mapIconHtml 正确输出'
 
   const customClassHtml = game.mapIconHtml('city', 'extra-test-class');
   assert.match(customClassHtml, /class="map-icon extra-test-class map-icon-city"/);
+
+  assert.ok(typeof game.mainCityIconHtml === 'function', 'Game.mainCityIconHtml 必须已定义');
+  const mainCitySvg = game.mainCityIconHtml('extra-city-class');
+  assert.match(mainCitySvg, /class="main-city-icon extra-city-class"[^>]*viewBox="0 0 20 20"/);
+  assert.match(mainCitySvg, /class="city-icon-star"/);
+  assert.equal(game.renderMainCityIcon, game.mainCityIconHtml);
 });
 
 test('列表地图状态栏、快捷工具栏与回城按钮全面采用战术矢量图标，无残留简陋 Emoji', () => {

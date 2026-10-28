@@ -658,3 +658,61 @@ test('护盾拦截战场请求时刷新军情并保持关闭指挥界面', async
   assert.equal(Game.Battle._activeTactical, active);
   assert.deepEqual(toasts, ['护盾期间不可发生交火']);
 });
+
+test('战斗详情日志中攻击事件后显示敌军兵种战损标签【敌军 兵种 -xx】', () => {
+  const { Game } = setup();
+  Game.DATA.units.ltank = { name: '轻型坦克-斯图亚特（M5A1）', range: 220, spd: 4 };
+  Game.DATA.units.infantry = { name: '步兵-加兰德步枪兵（M1）', range: 160, spd: 2 };
+
+  // 1. 单攻击者攻击敌军轻型坦克
+  const events1 = [
+    { type: 'LOSSES', round: 5, batch: 1, formationId: 'f-def', formation: '【守军】', unit: 'ltank', countBefore: 20000, losses: 10000, survivors: 10000 },
+    { type: 'FIRE', round: 5, batch: 1, formationId: 'f-atk', formation: '【我军】', unit: 'rocket', countBefore: 200, target: '【守军】', targetFormationId: 'f-def', targetUnit: 'ltank', damage: 89360, skillWindow: false }
+  ];
+  Game.Battle._formationLogSource = '';
+  Game.Battle._formationLogUnit = '';
+  const html1 = Game.Battle.renderFormationEvents(events1);
+  assert.match(html1, /造成 89360 有效伤害 【敌军 轻型坦克 -10000】/);
+
+  // 2. 周期标记为真时仍只展示伤害和战损，避免暗示额外技能触发。
+  const events2 = [
+    { type: 'LOSSES', round: 5, batch: 1, formationId: 'f-city', formation: '【本城·守将郑海】', unit: 'infantry', countBefore: 1000000, losses: 8000, survivors: 992000 },
+    { type: 'FIRE', round: 5, batch: 1, formationId: 'f-atk', formation: '【攻方·将领今朝有酒_219极品军官】', unit: 'rocket', countBefore: 200000, target: '【本城·守将郑海】', targetFormationId: 'f-city', targetUnit: 'infantry', damage: 89360378, skillWindow: true }
+  ];
+  const html2 = Game.Battle.renderFormationEvents(events2);
+  assert.match(html2, /造成 89360378 有效伤害 【敌军 步兵 -8000】/);
+  assert.doesNotMatch(html2, /本来源技能窗口生效/);
+  const roundReport = { perspective: 'attacker', formationEvents: events2, roundLogs: [
+    '-- 第5回合 --', '我方将领加成：全军冲锋 +50%攻击'
+  ] };
+  const roundLogs = Game.Battle.buildFormationRoundLogs(roundReport).map(line => line.text).join('\n');
+  assert.match(roundLogs, /我方将领加成：全军冲锋 \+50%攻击/);
+  assert.match(roundLogs, /造成 89360378 有效伤害 【敌军 步兵 -8000】/);
+  assert.doesNotMatch(roundLogs, /本来源技能窗口生效/);
+  assert.equal(events2[1].skillWindow, true);
+
+  // 3. 来源筛选时，即使 LOSSES 被过滤，攻击事件依然能准确显示敌军兵种战损
+  Game.Battle._formationLogSource = 'f-atk';
+  const htmlFiltered = Game.Battle.renderFormationEvents(events2);
+  assert.match(htmlFiltered, /造成 89360378 有效伤害 【敌军 步兵 -8000】/);
+  assert.doesNotMatch(htmlFiltered, /同批受击/);
+  Game.Battle._formationLogSource = '';
+
+  // 4. 多攻击者协同攻击同一目标，战损按伤害比例守恒分配
+  const eventsMulti = [
+    { type: 'LOSSES', round: 3, batch: 1, formationId: 'f-target', formation: '【守方】', unit: 'ltank', countBefore: 1000, losses: 100, survivors: 900 },
+    { type: 'FIRE', round: 3, batch: 1, formationId: 'f-a', formation: '【攻方甲】', unit: 'htank', countBefore: 100, target: '【守方】', targetFormationId: 'f-target', targetUnit: 'ltank', damage: 300 },
+    { type: 'FIRE', round: 3, batch: 1, formationId: 'f-b', formation: '【攻方乙】', unit: 'htank', countBefore: 100, target: '【守方】', targetFormationId: 'f-target', targetUnit: 'ltank', damage: 700 }
+  ];
+  const htmlMulti = Game.Battle.renderFormationEvents(eventsMulti);
+  assert.match(htmlMulti, /攻方甲[\s\S]*?造成 300 有效伤害 【敌军 轻型坦克 -30】/);
+  assert.match(htmlMulti, /攻方乙[\s\S]*?造成 700 有效伤害 【敌军 轻型坦克 -70】/);
+
+  // 5. 攻打城墙不追加敌军兵种标签
+  const eventsWall = [
+    { type: 'WALL', round: 4, batch: 1, formationId: 'f-a', formation: '【攻方】', unit: 'howitzer', damage: 5000 }
+  ];
+  const htmlWall = Game.Battle.renderFormationEvents(eventsWall);
+  assert.match(htmlWall, /攻击城墙，造成 5000 有效伤害。/);
+  assert.doesNotMatch(htmlWall, /【敌军/);
+});

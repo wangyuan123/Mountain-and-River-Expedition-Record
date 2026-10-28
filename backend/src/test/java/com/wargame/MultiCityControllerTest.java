@@ -22,7 +22,7 @@ class MultiCityControllerTest extends BaseServiceTest {
     @Test void shieldEndpointReturnsPersistedStateAndRejectsInsufficientBalance() throws Exception {
         createTestWorld();
         JsonNode registration = json.readTree(http.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"username\":\"shield-http\",\"password\":\"test-password-123\",\"agreementVersion\":\"2026-09-28-v1\"}"))
+                .content(registrationBody("shield-http", "test-password-123")))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
         Long id = registration.path("playerId").asLong();
         String auth = "Bearer " + registration.path("token").asText();
@@ -52,7 +52,7 @@ class MultiCityControllerTest extends BaseServiceTest {
     @Test void cityHeaderPinsMutationsAndRejectsForeignCitiesEvenAfterAnotherTabSwitches() throws Exception {
         WorldMap world = createTestWorld();
         JsonNode registration = json.readTree(http.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"username\":\"city-http\",\"password\":\"test-password-123\",\"agreementVersion\":\"2026-09-28-v1\"}"))
+                .content(registrationBody("city-http", "test-password-123")))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
         Long id = registration.path("playerId").asLong(); String auth = "Bearer " + registration.path("token").asText();
         Player player = playerRepository.findById(id).orElseThrow(); player.setMilitaryRank(4); playerRepository.save(player);
@@ -94,7 +94,7 @@ class MultiCityControllerTest extends BaseServiceTest {
         world.setTerrainData(new String(mask));worldMapRepository.save(world);
         http.perform(get("/api/game/world/map/terrain")).andExpect(status().isUnauthorized());
         JsonNode registration=json.readTree(http.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"username\":\"ocean-http\",\"password\":\"test-password-123\",\"agreementVersion\":\"2026-09-28-v1\"}"))
+                .content(registrationBody("ocean-http", "test-password-123")))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
         Long id=registration.path("playerId").asLong();String auth="Bearer "+registration.path("token").asText();
         Player player=playerRepository.findById(id).orElseThrow();player.setMilitaryRank(4);playerRepository.save(player);

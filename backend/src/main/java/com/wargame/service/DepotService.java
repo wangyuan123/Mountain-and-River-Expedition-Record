@@ -128,6 +128,7 @@ public class DepotService {
         // 功能类
         if (ItemDef.SHIELD_HOURS.containsKey(itemId)) return useShield(playerId, itemId);
         if ("marchOrd".equals(itemId)) return useMarchOrd(playerId);
+        if (ItemDef.MOBILIZATION_BONUS_PERCENT.containsKey(itemId)) return error("战争动员令仅可在进攻出征时选择");
         if ("populationOrder".equals(itemId) || "emergencyPopulationOrder".equals(itemId)) {
             return usePopulationOrder(playerId, itemId);
         }

@@ -22,6 +22,7 @@ public class JointDefenseState {
         private Long officerId;
         private String playerName;
         private String officerName;
+        private Map<String, Object> commanderSnapshot;
         private int military;
         private int defense;
         private Map<String, Integer> skills = new LinkedHashMap<>();
@@ -33,11 +34,22 @@ public class JointDefenseState {
         private Map<String, Integer> wounded = new LinkedHashMap<>();
         private int firstCombatRound;
         private Set<String> counterUsed = new LinkedHashSet<>();
+        /** 编队名称使用客观攻守角色，避免攻方战报将敌城误称为“本城”。 */
         public String title() {
             boolean noOfficer = officerId == null;
             return "support".equals(kind) ? "【援军·" + playerName + "·" + (noOfficer ? "无随队将领" : "将领" + officerName) + "】"
-                    : "home".equals(kind) ? "【本城·" + (noOfficer ? "无守将" : "守将" + officerName) + "】"
+                    : "home".equals(kind) ? "【守方·" + (noOfficer ? "无守将" : "守将" + officerName) + "】"
                     : "【攻方·" + (noOfficer ? "无随队将领" : "将领" + officerName) + "】";
+        }
+
+        /** 旧会话仍使用已冻结的有效属性；缺失的等级与基础属性不从实时军官补造。 */
+        public Map<String, Object> commanderReport() {
+            if (officerId == null) return null;
+            if (commanderSnapshot != null) return new LinkedHashMap<>(commanderSnapshot);
+            Map<String, Object> result = new LinkedHashMap<>();
+            result.put("name", officerName); result.put("military", military); result.put("defense", defense);
+            result.put("skills", com.wargame.service.CommanderReportSnapshot.skills(skills));
+            return result;
         }
     }
 
@@ -56,6 +68,14 @@ public class JointDefenseState {
     /** 对外身份仅在本场有效，既能区分同名编队，也不暴露行军或原城市数据库 ID。 */
     public String publicId(Formation formation) {
         return "formation-" + new ArrayList<>(formations.keySet()).indexOf(formation.getId());
+    }
+
+    /** 双方主将仅投影本场参战快照，驻军的内部来源信息继续保留在私有会话。 */
+    public Map<String, Object> commanders() {
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("attacker", formations.get("attack").commanderReport());
+        result.put("defender", formations.get("0").commanderReport());
+        return result;
     }
 
     /** 公开贡献只含本场历史事实，不含玩家登录名、来源城市或完整军官属性。 */

@@ -760,6 +760,9 @@
   border: 1px solid #a8833d;
   border-radius: 6px;
   padding: 14px;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: visible;
 }
 
 .vip-skill-convert-title {
@@ -790,6 +793,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  position: relative;
 }
 
 .vip-form-row label {
@@ -806,6 +810,199 @@
   background: var(--surface);
   color: var(--ink);
   font-size: 13px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* 目标指定秘籍自定义下拉选择器 */
+.vip-skill-dropdown-wrap {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.vip-skill-dropdown-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(168, 131, 61, 0.5);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  text-align: left;
+  box-sizing: border-box;
+}
+
+.vip-skill-dropdown-trigger:hover {
+  border-color: #a8833d;
+  background: var(--surface-sub, rgba(191, 161, 95, 0.08));
+}
+
+.vip-skill-dropdown-wrap.open .vip-skill-dropdown-trigger {
+  border-color: #a8833d;
+  box-shadow: 0 0 0 2px rgba(168, 131, 61, 0.25);
+}
+
+.vip-skill-dropdown-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vip-skill-dropdown-arrow {
+  font-size: 11px;
+  color: #a8833d;
+  transition: transform 0.2s ease;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.vip-skill-dropdown-wrap.open .vip-skill-dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+/* 下拉菜单浮层 (限定宽度与高度，禁止水平无限展开) */
+.vip-skill-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  width: 100%;
+  max-height: 240px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--surface);
+  border: 1.5px solid #a8833d;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  padding: 4px;
+  z-index: 1002;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.vip-skill-dropdown-menu[hidden] {
+  display: none !important;
+}
+
+.vip-skill-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.vip-skill-dropdown-item:hover {
+  background: rgba(191, 161, 95, 0.15);
+  color: var(--accent, #a8833d);
+}
+
+.vip-skill-dropdown-item.selected {
+  background: rgba(191, 161, 95, 0.25);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.vip-skill-item-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.vip-skill-item-check {
+  width: 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #a8833d;
+  display: inline-block;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.vip-skill-item-icon,
+.vip-skill-option-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.vip-skill-item-icon .game-icon-img,
+.vip-skill-option-icon .game-icon-img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.vip-skill-item-name,
+.vip-skill-option-name {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.vip-skill-item-tag,
+.vip-skill-option-tag {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(191, 161, 95, 0.18);
+  color: #8a6a3a;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.vip-skill-detail-link {
+  background: transparent;
+  border: none;
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: var(--accent, #a8833d);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  text-decoration: none;
+  transition: all 0.12s ease;
+}
+
+.vip-skill-detail-link:hover {
+  background: rgba(168, 131, 61, 0.18);
+  color: #78350f;
+  text-decoration: underline;
+}
+
+.modal-mask.officer-skill-detail-mask {
+  z-index: 11000;
 }
 
 /* 装扮与特勤特权 (Tab 4) */
@@ -862,41 +1059,126 @@
 }
 
 /* ---------------- 头像框 (Avatar Frames) ---------------- */
+/* 1. 青铜坚壁 (VIP 1+)：厚重古铜暗芒、双层重甲轮廓 */
 .frame-bronze-v1 {
-  outline: 2px solid #a77044 !important;
-  box-shadow: 0 0 5px rgba(167, 112, 68, 0.6) !important;
+  outline: 2px solid #b87a4b !important;
+  outline-offset: 1px !important;
+  box-shadow: 0 0 0 1.5px #7c4a22, 0 0 8px rgba(184, 122, 75, 0.65), inset 0 0 5px rgba(124, 74, 34, 0.65) !important;
+  transition: all 0.25s ease;
 }
 
+/* 2. 白银将星 (VIP 3+)：纯银金属双环 + 秘银冷辉 (静态金属立体质感，取消呼吸频闪) */
 .frame-silver-v1 {
-  outline: 2px solid #bcc6cc !important;
-  box-shadow: 0 0 7px rgba(188, 198, 204, 0.7) !important;
+  outline: 2px solid #e2e8f0 !important;
+  outline-offset: 1px !important;
+  box-shadow: 0 0 0 1.5px #94a3b8, 0 0 10px rgba(148, 163, 184, 0.7), inset 0 0 5px rgba(226, 232, 240, 0.5) !important;
+  transition: all 0.25s ease;
 }
 
+/* 3. 黄金战纪 (VIP 5+)：重金立体双滚边 + 鎏金辉耀 (静态奢华金芒，取消呼吸频闪) */
 .frame-gold-v1 {
   outline: 2px solid #ffd700 !important;
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.8) !important;
+  outline-offset: 1.5px !important;
+  box-shadow: 0 0 0 2px #b45309, 0 0 14px rgba(234, 179, 8, 0.75), 0 0 4px rgba(255, 255, 255, 0.6), inset 0 0 6px rgba(254, 240, 138, 0.7) !important;
+  transition: all 0.25s ease;
 }
 
-.frame-supreme-v1 {
-  outline: 2px solid #e5c158 !important;
-  box-shadow: 0 0 12px rgba(255, 140, 0, 0.8), 0 0 6px rgba(255, 215, 0, 0.9) !important;
-  animation: frameSupremeGlow 2.5s infinite alternate ease-in-out;
+/* 4. 翡翠寒魄 (VIP 7+)：极地玄冰与翡翠晶石 + 边框持续冒冷气特效 */
+.frame-jade-v1 {
+  outline: 2px solid #34d399 !important;
+  outline-offset: 1.5px !important;
+  animation: frameJadeFrostChill 2s infinite ease-in-out !important;
 }
 
-@keyframes frameSupremeGlow {
+@keyframes frameJadeFrostChill {
   0% {
-    outline-color: #ffd700;
-    box-shadow: 0 0 8px rgba(255, 215, 0, 0.7);
+    outline-color: #10b981;
+    box-shadow:
+      0 0 0 2px #047857,
+      0 -4px 10px rgba(103, 232, 249, 0.75),
+      0 -8px 16px rgba(167, 243, 208, 0.55),
+      0 3px 8px rgba(16, 185, 129, 0.5),
+      inset 0 0 6px rgba(167, 243, 208, 0.7);
   }
   50% {
-    outline-color: #ff8c00;
-    box-shadow: 0 0 14px rgba(255, 140, 0, 0.9);
+    outline-color: #e0f2fe;
+    box-shadow:
+      0 0 0 2.5px #10b981,
+      -2px -10px 18px rgba(103, 232, 249, 0.95),
+      2px -18px 28px rgba(224, 242, 254, 0.8),
+      0 4px 12px rgba(52, 211, 153, 0.7),
+      inset 0 0 10px rgba(224, 242, 254, 0.95);
   }
   100% {
-    outline-color: #ffd700;
-    box-shadow: 0 0 8px rgba(255, 215, 0, 0.7);
+    outline-color: #10b981;
+    box-shadow:
+      0 0 0 2px #047857,
+      0 -4px 10px rgba(103, 232, 249, 0.75),
+      0 -8px 16px rgba(167, 243, 208, 0.55),
+      0 3px 8px rgba(16, 185, 129, 0.5),
+      inset 0 0 6px rgba(167, 243, 208, 0.7);
   }
 }
+
+/* 5. 星钻炽焰 (VIP 9+)：钻石七彩光芒 + 边框熊熊烈火喷涌燃烧 */
+.frame-supreme-v1 {
+  outline: 2px solid #ff4500 !important;
+  outline-offset: 2px !important;
+  animation: frameSupremeFireBlaze 1.6s infinite ease-in-out !important;
+}
+
+@keyframes frameSupremeFireBlaze {
+  0% {
+    outline-color: #ff5722;
+    box-shadow:
+      0 0 0 2px #b91c1c,
+      0 -5px 14px rgba(255, 69, 0, 0.95),
+      0 -10px 22px rgba(249, 115, 22, 0.75),
+      0 3px 10px rgba(220, 38, 38, 0.6),
+      inset 0 0 8px rgba(255, 237, 213, 0.8);
+  }
+  35% {
+    outline-color: #fbbf24;
+    box-shadow:
+      0 0 0 2.5px #dc2626,
+      -3px -10px 20px rgba(255, 69, 0, 1),
+      2px -18px 30px rgba(251, 191, 36, 0.9),
+      0 4px 14px rgba(234, 88, 12, 0.8),
+      inset 0 0 12px rgba(255, 255, 255, 0.95);
+  }
+  70% {
+    outline-color: #ff8c00;
+    box-shadow:
+      0 0 0 2px #ef4444,
+      3px -8px 16px rgba(255, 69, 0, 0.95),
+      -2px -14px 26px rgba(255, 140, 0, 0.8),
+      0 3px 10px rgba(220, 38, 38, 0.7),
+      inset 0 0 9px rgba(254, 240, 138, 0.85);
+  }
+  100% {
+    outline-color: #ff5722;
+    box-shadow:
+      0 0 0 2px #b91c1c,
+      0 -5px 14px rgba(255, 69, 0, 0.95),
+      0 -10px 22px rgba(249, 115, 22, 0.75),
+      0 3px 10px rgba(220, 38, 38, 0.6),
+      inset 0 0 8px rgba(255, 237, 213, 0.8);
+  }
+}
+
+/* 圆形头像 (聊天/档案) 适配 */
+.chat-avatar.frame-bronze-v1,
+.chat-avatar.frame-silver-v1,
+.chat-avatar.frame-gold-v1,
+.chat-avatar.frame-jade-v1,
+.chat-avatar.frame-supreme-v1 {
+  border-radius: 50% !important;
+}
+.chat-avatar.frame-bronze-v1  { border-color: #b87a4b !important; }
+.chat-avatar.frame-silver-v1  { border-color: #cbd5e1 !important; }
+.chat-avatar.frame-gold-v1    { border-color: #ffd700 !important; }
+.chat-avatar.frame-jade-v1    { border-color: #34d399 !important; }
+.chat-avatar.frame-supreme-v1 { border-color: #ff4500 !important; }
 
 /* ---------------- 聊天频道样式 ---------------- */
 .chat-vip-badge {
@@ -921,8 +1203,17 @@
 }
 
 .vip-chat-bubble-commander .chat-content {
-  background: rgba(191, 161, 95, 0.12) !important;
-  border-left: 2px solid #a8833d !important;
+  background: rgba(191, 161, 95, 0.14) !important;
+  border: 1px solid rgba(212, 175, 55, 0.4) !important;
+  border-radius: 6px !important;
+  padding: 3px 8px !important;
+  box-shadow: 0 1px 4px rgba(168, 131, 61, 0.2), inset 0 0 6px rgba(255, 215, 0, 0.06) !important;
+  line-height: 1.45 !important;
+  color: #fff9e6 !important;
+}
+
+.chat-msg.chat-msg-self.vip-chat-bubble-commander .chat-content {
+  text-align: right !important;
 }
 
 /* ---------------- 免战护盾解除警报二次确认弹窗 ---------------- */

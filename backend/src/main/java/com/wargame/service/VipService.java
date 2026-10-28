@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
+
 import java.time.LocalDate;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -36,6 +38,7 @@ public class VipService {
     private final DepotService depotService;
     private final MailService mailService;
     private final ChatService chatService;
+    private final AvatarStorageService avatarStorage;
 
     // -------------------------------------------------------------
     // 1. 充值到账后累积 EXP 与更新等级
@@ -480,17 +483,25 @@ public class VipService {
         return res;
     }
 
+    /** 按头像框公开标识校验解锁等级，拒绝未登记的标识，避免写入无效样式类。 */
     private void validateAvatarFramePrivilege(int vipLevel, String frameId) {
-        if ("frame-bronze-v1".equals(frameId) && vipLevel < 3) throw new IllegalArgumentException("青铜战役头像框需 VIP 3 解锁");
-        if ("frame-silver-v1".equals(frameId) && vipLevel < 5) throw new IllegalArgumentException("白银将星头像框需 VIP 5 解锁");
-        if ("frame-gold-v1".equals(frameId) && vipLevel < 6) throw new IllegalArgumentException("黄金统帅头像框需 VIP 6 解锁");
-        if ("frame-marshal-v1".equals(frameId) && vipLevel < 7) throw new IllegalArgumentException("元帅流光头像框需 VIP 7 解锁");
-        if ("frame-supreme-v1".equals(frameId) && vipLevel < 10) throw new IllegalArgumentException("至尊五星统帅头像框需 VIP 10 解锁");
+        int requiredLevel = switch (frameId) {
+            case "frame-bronze-v1" -> 1;
+            case "frame-silver-v1" -> 3;
+            case "frame-gold-v1" -> 5;
+            case "frame-jade-v1", "frame-marshal-v1" -> 7;
+            case "frame-supreme-v1" -> 9;
+            default -> throw new IllegalArgumentException("头像框类型无效");
+        };
+        if (vipLevel < requiredLevel) {
+            throw new IllegalArgumentException("该头像框需 VIP " + requiredLevel + " 解锁");
+        }
     }
 
     // -------------------------------------------------------------
     // 10. 外链自定义头像设置 (VIP 3+, 防 SSRF & 防盗链校验)
     // -------------------------------------------------------------
+    /** 玩家行锁串行化头像切换，数据库成功提交后才释放旧上传文件。 */
     @Transactional
     public Map<String, Object> setCustomAvatarUrl(Long playerId, String url) {
         Player player = playerRepository.lockById(playerId)
@@ -500,12 +511,13 @@ public class VipService {
         if (vipLevel < 3) {
             throw new IllegalArgumentException("自定义头像功能需要达到 VIP 3 (战略支柱长官)");
         }
+        String previousAvatar = player.getCustomAvatar();
         if (url == null || url.isBlank()) {
             player.setCustomAvatar(null);
         } else {
             String trimmed = url.trim();
-            if (trimmed.startsWith("img/avatars/")) {
-                // 本地上传相对路径
+            if (avatarStorage.isOwnedUpload(playerId, trimmed) && trimmed.equals(previousAvatar)) {
+                // 已生效的本地地址允许原样保存；已淘汰文件及其他玩家的文件不能被重新引用。
                 player.setCustomAvatar(trimmed);
             } else if (trimmed.startsWith("https://")) {
                 if (trimmed.contains("127.0.0.1") || trimmed.contains("localhost") || trimmed.contains("192.168.") || trimmed.contains("10.")) {
@@ -517,11 +529,30 @@ public class VipService {
             }
         }
         playerRepository.save(player);
+        if (!Objects.equals(previousAvatar, player.getCustomAvatar())) {
+            avatarStorage.removeAfterCommit(playerId, previousAvatar);
+        }
 
         Map<String, Object> res = new LinkedHashMap<>();
         res.put("success", true);
         res.put("customAvatar", player.getCustomAvatar());
         return res;
+    }
+
+    /** 新头像写入与玩家引用同事务管理，提交后删除旧文件，回滚时删除新文件。 */
+    @Transactional(rollbackFor = IOException.class)
+    public Map<String, Object> uploadCustomAvatar(Long playerId, byte[] image, String extension) throws IOException {
+        Player player = playerRepository.lockById(playerId)
+                .orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
+        if (Objects.requireNonNullElse(player.getVipLevel(), 0) < 3) {
+            throw new IllegalArgumentException("自定义头像功能需要达到 VIP 3 (战略支柱长官)");
+        }
+        String previousAvatar = player.getCustomAvatar();
+        String url = avatarStorage.store(playerId, image, extension);
+        player.setCustomAvatar(url);
+        playerRepository.save(player);
+        avatarStorage.removeAfterCommit(playerId, previousAvatar);
+        return Map.of("success", true, "customAvatar", url, "message", "战地自定义头像上传设置成功！");
     }
 
     // -------------------------------------------------------------

@@ -216,6 +216,7 @@ public class WorldService {
                 boolean relatedWar = !selfCity && playerId.equals(realPlayer.getWarAgainstId());
                 result.put("ownerId", realPlayer.getId());
                 result.put("guildmate", guildRelations.areGuildmates(playerId, realPlayer.getId()));
+                result.put("guildRelation", guildRelations.relationshipBetweenPlayers(playerId, realPlayer.getId()));
                 result.put("selfCity", selfCity);
                 if (!selfCity) result.put("powerProtection", warPowerProtection.evaluate(playerId, realPlayer.getId()).toMap());
                 result.put("warAt", relatedWar && realPlayer.getWarAt() != null ? realPlayer.getWarAt() : 0L);
@@ -243,6 +244,7 @@ public class WorldService {
             result.put("ownerId", simulatedNpc ? null : playerCity.getOwnerId());
             result.put("prestige", owner != null && owner.getPrestige() != null ? owner.getPrestige() : 0);
             result.put("guildmate", !simulatedNpc && guildRelations.areGuildmates(playerId, playerCity.getOwnerId()));
+            if (!simulatedNpc) result.put("guildRelation", guildRelations.relationshipBetweenPlayers(playerId, playerCity.getOwnerId()));
             result.put("simulatedNpc", simulatedNpc);
             result.put("selfCity", !simulatedNpc && playerCity.getOwnerId().equals(playerId));
             result.put("warAt", 0L);
@@ -346,6 +348,8 @@ public class WorldService {
                 m.put("prestige", owner != null && owner.getPrestige() != null ? owner.getPrestige() : 0);
                 m.put("selfCity", selfCity);
                 m.put("guildmate", guildRelations.areGuildmates(playerId, ownerId));
+                // 附近扫描也会替换列表数据，必须保留与大地图一致的外交行动条件。
+                m.put("guildRelation", guildRelations.relationshipBetweenPlayers(playerId, ownerId));
                 int slot = pc.getCitySlot() != null ? pc.getCitySlot() : 0;
                 buildingRepository.findByPlayerIdAndCitySlotAndType(ownerId, slot, "wall").stream()
                         .map(Building::getLevel).filter(Objects::nonNull).findFirst()

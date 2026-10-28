@@ -8,8 +8,8 @@ import com.wargame.util.GameClock;
 import com.wargame.model.constants.FortDef;
 import com.wargame.model.constants.BattlePrestige;
 import com.wargame.model.constants.GameData;
+import com.wargame.model.constants.ItemDef;
 import com.wargame.model.constants.JapaneseOfficers;
-import com.wargame.model.constants.OfficerSkillDef;
 import com.wargame.model.constants.UnitDef;
 import com.wargame.model.constants.UnitEquipmentEffects;
 import com.wargame.model.constants.TechnologyRules;
@@ -1064,6 +1064,7 @@ public class MarchService {
         if (joint != null) {
             result.setFormationContributions(joint.contributions(round.attackerArmy(), round.defenderArmy()));
             result.setFormationEvents(joint.getEvents());
+            result.setCommanders(joint.commanders());
         }
         result.setWall(round.wall());
         result.setTerminalReason(round.terminalReason());
@@ -2481,7 +2482,7 @@ public class MarchService {
         if (result.getFormationContributions() != null) {
             report.put("formationContributions", result.getFormationContributions());
             report.put("formationEvents", result.getFormationEvents());
-            report.put("commanders", Map.of()); report.put("commandBonuses", Map.of()); report.put("unitEquipment", Map.of());
+            report.put("unitEquipment", Map.of());
         }
         report.put("roundLogs", splitReportLines(result.getReport()));
         ScoutReport saved = new ScoutReport();
@@ -2508,6 +2509,14 @@ public class MarchService {
      */
     @Transactional
     public March createDispatch(Long playerId, DispatchRequest req) {
+        if (req.mobilizationOrderItem() != null && !ItemDef.MOBILIZATION_BONUS_PERCENT.containsKey(req.mobilizationOrderItem())) {
+            throw new IllegalArgumentException("战争动员令类型无效");
+        }
+        if (req.mobilizationOrderItem() != null
+                && (!List.of("wild", "bandit", "player", "simulated_npc").contains(req.targetKind())
+                    || !isOffensiveAction(Objects.requireNonNullElse(req.action(), "conquer")))) {
+            throw new IllegalArgumentException("战争动员令仅可用于进攻出征");
+        }
         // 旧接口字段保留用于明确拒绝自动指令，不能让缓存页面或直连接口恢复自动采集/放弃。
         if (req.gatherMode() != null && !"manual".equals(req.gatherMode())) {
             throw new IllegalArgumentException("采集仅支持手动模式，请刷新页面后重试");
@@ -2642,8 +2651,14 @@ public class MarchService {
         // 出征编队受当前城市带兵上限约束，不能仅依赖前端拦截。
         long selectedTroops = customArmy.values().stream().mapToLong(Integer::longValue).sum();
         int armyCap = armyService.armyCap(playerId);
-        if (selectedTroops > armyCap) {
-            throw new IllegalArgumentException("出征兵力超过带兵上限 " + armyCap + "（当前选择 " + selectedTroops + "）");
+        int allowedArmyCap = armyCap;
+        String mobilizationOrderItem = req.mobilizationOrderItem();
+        if (selectedTroops > armyCap && mobilizationOrderItem != null) {
+            int bonusPercent = ItemDef.MOBILIZATION_BONUS_PERCENT.get(mobilizationOrderItem);
+            allowedArmyCap = (int) Math.min(Integer.MAX_VALUE, (long) armyCap * (100 + bonusPercent) / 100);
+        }
+        if (selectedTroops > allowedArmyCap) {
+            throw new IllegalArgumentException("出征兵力超过带兵上限 " + allowedArmyCap + "（当前选择 " + selectedTroops + "）");
         }
 
         // 2.5 校验野地资源类型
@@ -2725,6 +2740,11 @@ public class MarchService {
         if (playerWarfare) {
             NewbieProtection.requireConfirmation(player, req.abandonNewbieProtection(), now);
             if (NewbieProtection.until(player, now) > now) player.setNewbieProtectionEnded(true);
+        }
+        // 只有实际超过基础上限的进攻才消耗动员令；同一事务保证后续出征失败时库存回滚。
+        if (selectedTroops > armyCap && mobilizationOrderItem != null
+                && playerItemRepository.tryConsume(playerId, mobilizationOrderItem, 1, now) == 0) {
+            throw new IllegalArgumentException("战争动员令数量不足");
         }
         for (String rk : List.of("food", "steel", "oil", "rare", "gold")) {
             deductResource(res, rk, totalCost.getOrDefault(rk, 0));
@@ -3896,7 +3916,10 @@ public class MarchService {
             report.put("formationContributions", result.getFormationContributions());
             report.put("formationEvents", result.getFormationEvents());
             report.put("formationRecovery", ownFormationRecovery(result, playerId));
-            report.put("commanders", Map.of()); report.put("commandBonuses", Map.of()); report.put("unitEquipment", Map.of());
+            // 主将快照与实际计算共用开战来源；不公开敌军完整配装或私人科技。
+            report.put("commanders", result.getCommanders());
+            report.put("commandBonuses", Map.of());
+            report.put("unitEquipment", Map.of());
         }
 
         // 持久化到战报表(type=battle)，刷新页面/离线后仍可通过 GET /reports 拉取
@@ -3951,36 +3974,7 @@ public class MarchService {
     /** 保存结算时的有效属性和技能，历史战报不受后续换装或升级影响。 */
     private Map<String, Object> buildCommanderReport(Officer commander) {
         if (commander == null) return null;
-
-        Map<String, Object> data = new LinkedHashMap<>();
-        data.put("name", commander.getName() != null ? commander.getName() : "未命名将领");
-        data.put("level", commander.getLevel() != null ? commander.getLevel() : 0);
-        data.put("baseMilitary", commander.getMilitary() != null ? commander.getMilitary() : 0);
-        EquipmentService.Attributes attrs = equipmentService.attributes(commander);
-        data.put("military", attrs.military());
-        data.put("baseDefense", commander.getDefense() != null ? commander.getDefense() : 0);
-        data.put("defense", attrs.defense());
-
-        List<Map<String, Object>> skills = new ArrayList<>();
-        if (commander.getSkills() != null && !commander.getSkills().isBlank()) {
-            for (Map<String, Object> raw : JsonUtil.parseList(commander.getSkills())) {
-                Object rawId = raw.get("id");
-                Object rawLevel = raw.get("lv");
-                if (rawId == null || !(rawLevel instanceof Number level)) continue;
-
-                String skillId = rawId.toString();
-                OfficerSkillDef definition = OfficerSkillDef.getSkill(skillId);
-                Map<String, Object> skill = new LinkedHashMap<>();
-                skill.put("id", skillId);
-                skill.put("name", definition != null ? definition.name() : skillId);
-                skill.put("level", level.intValue());
-                skill.put("description", definition != null
-                        ? definition.descriptionAtLevel(level.intValue()) : "");
-                skills.add(skill);
-            }
-        }
-        data.put("skills", skills);
-        return data;
+        return CommanderReportSnapshot.from(commander, equipmentService.attributes(commander));
     }
 
     private String buildBattleSubject(boolean win, boolean conquered, String action, String targetKind, String targetName) {

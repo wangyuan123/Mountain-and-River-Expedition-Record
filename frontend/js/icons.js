@@ -59,4 +59,31 @@ window.Game = window.Game || {};
     if (!extraClass) return raw;
     return raw.replace('class="map-icon ', 'class="map-icon ' + escapeAttribute(extraClass) + ' ');
   };
+
+  /**
+   * 渲染战区要塞主城专属军武矢量图标。
+   * 采用防御要塞、中央统帅大楼、通信警讯天线与金色将星徽标设计，替代生硬且非军武风的原生城堡 Emoji。
+   * @param {string} [extraClass] - 额外类名
+   * @returns {string} 主城 SVG 图标 HTML
+   */
+  G.mainCityIconHtml = function (extraClass) {
+    var cls = 'main-city-icon' + (extraClass ? ' ' + escapeAttribute(extraClass) : '');
+    return '<svg class="' + cls + '" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' +
+      '<path d="M1.5 18.5h17a.5.5 0 0 0 .5-.5v-1.2a.5.5 0 0 0-.5-.5h-17a.5.5 0 0 0-.5.5V18a.5.5 0 0 0 .5.5z" class="city-icon-ground"/>' +
+      '<rect x="2.5" y="8" width="4.5" height="8.3" class="city-icon-bastion"/>' +
+      '<path d="M2.5 6.4h1.1v1.6H2.5V6.4zm1.7 0h1.1v1.6H4.2V6.4zm1.7 0H7v1.6H5.9V6.4z" class="city-icon-roof"/>' +
+      '<rect x="4.2" y="10.2" width="1.1" height="2.5" rx="0.3" class="city-icon-slit"/>' +
+      '<rect x="13" y="8" width="4.5" height="8.3" class="city-icon-bastion"/>' +
+      '<path d="M13 6.4h1.1v1.6H13V6.4zm1.7 0h1.1v1.6h-1.1V6.4zm1.7 0h1.1v1.6h-1.1V6.4z" class="city-icon-roof"/>' +
+      '<rect x="14.7" y="10.2" width="1.1" height="2.5" rx="0.3" class="city-icon-slit"/>' +
+      '<rect x="6.5" y="9.8" width="7" height="6.5" class="city-icon-wall"/>' +
+      '<rect x="6.8" y="3.6" width="6.4" height="12.7" class="city-icon-keep"/>' +
+      '<path d="M6.6 2.2h1.6v1.4H6.6V2.2zm2.4 0h2v1.4H9V2.2zm2.8 0h1.6v1.4h-1.6V2.2z" class="city-icon-roof"/>' +
+      '<line x1="10" y1="0.6" x2="10" y2="2.2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" class="city-icon-antenna"/>' +
+      '<circle cx="10" cy="0.6" r="0.75" class="city-icon-beacon"/>' +
+      '<path d="M8.4 16.3v-2.8c0-.9.7-1.6 1.6-1.6s1.6.7 1.6 1.6v2.8H8.4z" class="city-icon-gate"/>' +
+      '<polygon points="10,5.2 10.6,6.8 12.3,6.9 11.0,7.9 11.4,9.5 10,8.6 8.6,9.5 9.0,7.9 7.7,6.9 9.4,6.8" class="city-icon-star"/>' +
+    '</svg>';
+  };
+  G.renderMainCityIcon = G.mainCityIconHtml;
 })(window.Game);
