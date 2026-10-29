@@ -1,0 +1,6 @@
+309081ebfa51b6e649ddfb57cf4053bc06e220b41ce9ae694ae71b33fc80f959  shanhe-yuanzhenglu-v1.0-source.tar.gz
+a9b9c602966f14e50910bb4c75dcdc3a160ddc58275d6422cd36a09dcf74a152  screenshots/04-radar-level10-minimap.png
+42829683a3586cfe7fe3d668527228f5b65ea65dabf817fc873173bc7d5d6e46  screenshots/05-vip-packs-claimed.png
+5d945e64027ee4bc8f8fef693815b52d204b4ad7f24a1d67f0dacca7c07a8efa  screenshots/02-pvp-browser-report.png
+84fff46dc732a3210e49f2ec352ac0e1f413cf132f342e5dce83d6aaf3539627  screenshots/01-onboarding-graduated.png
+74797bc4ae6f536adfec92f656db40f98623a39cb58321d2f87499d75d2171ae  screenshots/03-tech-research-confirm.png

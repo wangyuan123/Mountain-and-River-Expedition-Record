@@ -157,6 +157,17 @@ mvn -f backend/pom.xml -Dtest=MySqlMigrationTest test
 
 ## 代码提交校验 (Git Hooks)
 
+V1.0 软著版本代码固定在 `v1.0-softcopyright` 标签，专用分支为 `release/v1.0-softcopyright`，归档材料位于 `docs/archive/software-copyright-v1.0-20261030/`。后续开发应从 `master` 开展，保留固定标签和归档原样。
+
+归档源码包使用 Git LFS 保存。克隆后需安装 Git LFS（macOS 可执行 `brew install git-lfs`），再在项目根目录执行：
+
+```sh
+git lfs install --local --skip-repo
+git lfs pull
+```
+
+项目的 `pre-push` 钩子会在全量验证后上传 LFS 对象。需要源码包时，应先执行 `git lfs pull`，再按归档内的 `SHA256SUMS.txt` 校验。
+
 工程已集成 Git Hooks 提交校验机制，防止语法错误或测试失败的代码被意外提交：
 
 - **自动生效**：运行 `./start-local.sh` 或 `./scripts/install-hooks.sh` 会自动启用 Git 钩子（`core.hooksPath = .githooks`）。
