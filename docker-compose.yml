@@ -13,8 +13,8 @@ services:
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE:-wargame}
       MYSQL_ROOT_PASSWORD: ${WARGAME_DB_PASSWORD:-root}
-    ports:
-      - "3306:3306"   # 仅 dev 需要; 生产请移除
+    # ports:
+    #   - "3306:3306"   # [安全前置规范] 已由 deploy.sh 自动屏蔽公网暴露
     volumes:
       - mysqldata:/var/lib/mysql
     healthcheck:

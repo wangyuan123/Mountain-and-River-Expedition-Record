@@ -9,7 +9,7 @@
       <span class="status-item">🧭军务 >></span>
     </div>
 
-    <!-- 深蓝主导航栏: 家园 好友 家族 广场 游戏 | 二战复刻- 【1区】金印紫授 -->
+    <!-- 深蓝主导航栏: 家园 好友 家族 广场 游戏 | 山河远征录- 【1区】军政论坛 -->
     <div class="wap-blue-banner">
       <div class="banner-left-links">
         <router-link to="/" class="banner-link">论坛</router-link>

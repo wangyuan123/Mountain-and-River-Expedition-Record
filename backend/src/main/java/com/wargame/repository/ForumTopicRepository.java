@@ -13,6 +13,11 @@ import java.util.List;
 @Repository
 public interface ForumTopicRepository extends JpaRepository<ForumTopic, Long> {
 
+    /** 帖子级串行化回复楼层、计数、阅读量与版务操作，避免互相覆盖。 */
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select t from ForumTopic t where t.id = :id")
+    java.util.Optional<ForumTopic> lockById(@Param("id") Long id);
+
     @Query("SELECT t FROM ForumTopic t WHERE (:boardId IS NULL OR t.boardId = :boardId) " +
            "AND (:isEssence IS NULL OR t.isEssence = :isEssence) " +
            "AND (:topicType IS NULL OR t.topicType = :topicType) " +

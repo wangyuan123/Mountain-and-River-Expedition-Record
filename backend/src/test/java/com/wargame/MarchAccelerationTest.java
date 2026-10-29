@@ -49,6 +49,39 @@ class MarchAccelerationTest extends BaseServiceTest {
 
     private int stock() { return items.findByPlayerIdAndItemKey(playerId, "marchOrd").orElseThrow().getCount(); }
 
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvSource({"basicMarchOrd,0.1", "advancedMarchOrd,0.25", "marchOrd,0.5"})
+    void selectedTierControlsPreviewAndConsumesOnlyItsInventory(String itemKey, double ratio) {
+        if (!"marchOrd".equals(itemKey)) items.saveAndFlush(new PlayerItem(null, playerId, itemKey, 2, com.wargame.util.GameClock.now()));
+        March march = moving(false);
+        marchRepository.flush();
+        var preview = marchService.previewOrder(playerId, march.getId(), itemKey);
+        assertEquals(ratio, (double) preview.get("ratio"), 0.000001);
+        long arrival = march.getArriveAt();
+        var result = marchService.speedUpMarch(playerId, march.getId(), false, march.getVersion(),
+                (String) preview.get("confirmationToken"), itemKey);
+        March changed = marchRepository.findById(march.getId()).orElseThrow();
+        long saved = arrival - changed.getArriveAt();
+        assertTrue(saved >= 180_000 * ratio - 1000 && saved <= 180_000 * ratio + 1000);
+        assertEquals(itemKey, ((Map<?, ?>) result.get("effect")).get("itemKey"));
+        assertEquals("marchOrd".equals(itemKey) ? 2 : 1,
+                items.findByPlayerIdAndItemKey(playerId, itemKey).orElseThrow().getCount());
+        if (!"marchOrd".equals(itemKey)) assertEquals(3, stock());
+    }
+
+    @Test void previewCannotBeReusedForAnotherTierOrUnknownItem() {
+        March march = moving(false);
+        marchRepository.flush();
+        var preview = marchService.previewOrder(playerId, march.getId(), "basicMarchOrd");
+        long version = march.getVersion(), arrival = march.getArriveAt();
+        assertThrows(IllegalArgumentException.class, () -> marchService.speedUpMarch(playerId, march.getId(), false,
+                version, (String) preview.get("confirmationToken"), "marchOrd"));
+        assertThrows(IllegalArgumentException.class, () -> marchService.speedUpMarch(playerId, march.getId(), false,
+                version, (String) preview.get("confirmationToken"), "shield"));
+        assertEquals(3, stock());
+        assertEquals(arrival, marchRepository.findById(march.getId()).orElseThrow().getArriveAt());
+    }
+
     @Test void consumesOneOrderAndPreservesPositionAndUnpaidBaseDuration() {
         March old = moving(false);
         long start = old.getStartAt(), arrival = old.getArriveAt(), version = old.getVersion();

@@ -241,3 +241,38 @@ test('参谋部军官列表采用小卡片自适应多列网格与紧凑信息�
   assert.match(html, /class="card-detail-hint">详情 &gt;<\/span>/);
   assert.match(html, /onkeydown="if\(event\.key==='Enter'\|\|event\.key===' '\)/);
 });
+
+test('军官卡片根据稀有度品质（UR/SSR/SR/基础五星）区分边框与包角样式', () => {
+  const officers = [
+    { id: 'ur1', name: '今朝有酒', star: 5, level: 100, role: 'idle', military: 219, defense: 190, logistics: 160, knowledge: 160 },
+    { id: 'ssr1', name: '尼米兹', star: 5, level: 100, role: 'idle', military: 180, defense: 190, logistics: 170, knowledge: 219 },
+    { id: 'sr1', name: '麦克阿瑟', star: 5, level: 95, role: 'idle', military: 215, defense: 185, logistics: 170, knowledge: 195 },
+    { id: 'base1', name: '古德里安', star: 5, level: 80, role: 'idle', military: 205, defense: 175, logistics: 160, knowledge: 168 }
+  ];
+  const context = setupTestEnvironment(officers);
+  const container = { innerHTML: '' };
+  context.Game.Officer.renderView(container);
+  const html = container.innerHTML;
+
+  // UR 极度稀有
+  assert.match(html, /data-rarity="ur"/);
+  assert.match(html, /corner-tl corner-ur/);
+  // SSR 超稀有
+  assert.match(html, /data-rarity="ssr"/);
+  assert.match(html, /corner-tl corner-ssr/);
+  // SR 稀有
+  assert.match(html, /data-rarity="sr"/);
+  assert.match(html, /corner-tl corner-sr/);
+  // 基础5星
+  assert.match(html, /data-rarity="base5"/);
+  assert.match(html, /corner-tl corner-base5/);
+
+  // CSS 边框规则校验
+  const css = fs.readFileSync(path.join(__dirname, '../css/officer.css'), 'utf8');
+  assert.match(css, /\.officer-card\.tier-diamond\[data-rarity="ur"\]/);
+  assert.match(css, /\.officer-card\.tier-diamond\[data-rarity="ssr"\]/);
+  assert.match(css, /\.officer-card\.tier-diamond\[data-rarity="sr"\]/);
+  assert.match(css, /\.corner-ur/);
+  assert.match(css, /\.corner-ssr/);
+  assert.match(css, /\.corner-sr/);
+});

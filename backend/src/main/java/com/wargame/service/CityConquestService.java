@@ -17,6 +17,7 @@ import java.util.*;
 @RequiredArgsConstructor
 @Transactional
 public class CityConquestService {
+    @org.springframework.beans.factory.annotation.Autowired private ArmyPopulationService populationCosts;
     private final EntityManager em;
     private final PlayerRepository players;
     private final PlayerCityRepository cities;
@@ -179,6 +180,16 @@ public class CityConquestService {
             tile.setOccupiedBy(recipientId);
             tile.setOccupiedCitySlot(newSlot);
         }
+
+        // 已撤出的领地驻军此时已成为原城行军；只转移随城带走的实存兵力，队列完工时另按订单入池。
+        Map<String, Long> transferredArmy = new LinkedHashMap<>();
+        rows(ArmyUnit.class, formerOwnerId, oldSlot).forEach(unit -> transferredArmy.merge(unit.getType(),
+                (long) Math.max(0, Objects.requireNonNullElse(unit.getCount(), 0)), Long::sum));
+        rows(March.class, formerOwnerId, oldSlot).forEach(march -> JsonUtil.parseIntMap(march.getArmy())
+                .forEach((type, count) -> transferredArmy.merge(type, (long) Math.max(0, count), Long::sum)));
+        rows(WoundedUnit.class, formerOwnerId, oldSlot).stream().filter(batch -> batch.getExpiresAt() > now)
+                .forEach(batch -> transferredArmy.merge(batch.getType(), (long) Math.max(0, batch.getCount()), Long::sum));
+        populationCosts.transfer(formerOwnerId, recipientId, transferredArmy);
 
         for (Class<? extends CityOwnedEntity> type : CITY_ROWS) {
             for (CityOwnedEntity row : rows(type, formerOwnerId, oldSlot)) {

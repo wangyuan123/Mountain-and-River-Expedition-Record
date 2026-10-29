@@ -200,7 +200,7 @@ public class MayorSkillServiceTest extends BaseServiceTest {
         }
         int capWithoutOfficer = armyService.armyCap(playerId);
         assertEquals(25000, capWithoutOfficer);
-        assertEquals(37500, armyService.sortieCap(playerId));
+        assertEquals(25000, armyService.sortieCap(playerId));
 
         createBuilding(playerId, "command", 10);
         createBuilding(playerId, "staff", 10);
@@ -215,7 +215,7 @@ public class MayorSkillServiceTest extends BaseServiceTest {
         wall.setLevel(10);
         buildingRepository.save(wall);
         assertEquals(600000, armyService.armyCap(playerId), "满级城防不应增加带兵上限");
-        assertEquals(900000, armyService.sortieCap(playerId));
+        assertEquals(600000, armyService.sortieCap(playerId));
 
         Officer cmd = new Officer();
         cmd.setPlayerId(playerId);
@@ -240,12 +240,13 @@ public class MayorSkillServiceTest extends BaseServiceTest {
         int capWithLeadCmd = armyService.armyCap(playerId);
         assertEquals(720000, capWithLeadCmd, "统帅Lv.5只提升军衔基础的20%");
 
-        assertEquals(1020000, armyService.sortieCap(playerId), "迎战仅将基础放大至1.5倍，不放大加成");
+        assertEquals(720000, armyService.sortieCap(playerId), "迎战与普通出征使用相同的军衔与统帅上限");
 
         // 兼容旧 supply 技能
         cmd.setSkills(JsonUtil.toJson(List.of(Map.of("id", "supply", "lv", 5))));
         officerRepository.save(cmd);
         assertEquals(720000, armyService.armyCap(playerId), "旧supply技能应向后兼容统帅效果");
+        assertEquals(720000, armyService.sortieCap(playerId));
     }
 
     @Test

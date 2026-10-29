@@ -1915,7 +1915,7 @@
       (active && !march.returning ? '<button type="button" class="btn ok" data-incoming-intercept>出城拦截</button>' : '') +
       (active && !used ? '<span data-stratagem-actions><button type="button" class="btn" data-incoming-stratagem="' +
         (march.returning ? 'feintOrder' : 'signalJammingOrder') + '">' +
-        (march.returning ? '🎭 佯动诱敌令 ×' + esc(items.feintOrder || 0) : '📡 通讯干扰令 ×' + esc(items.signalJammingOrder || 0)) + '</button></span>' : '') +
+        (march.returning ? '🎭 撤退拖延令 ×' + esc(items.feintOrder || 0) : '📡 通讯干扰令 ×' + esc(items.signalJammingOrder || 0)) + '</button></span>' : '') +
       '</div></section>';
     var previousFocus = document.activeElement, closed = false, pending = false;
     (document.fullscreenElement || document.body).appendChild(mask);

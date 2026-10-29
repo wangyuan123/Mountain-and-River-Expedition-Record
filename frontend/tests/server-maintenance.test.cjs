@@ -152,7 +152,7 @@ test('server 500 error during startGame routes to login cover with maintenance n
   assert.match(html, /战区指挥部通讯维护中/);
   assert.match(html, /服务器维护中/);
   assert.match(html, /雨天唐纳德/);
-  assert.match(html, /江苏一区/);
+  assert.match(html, /公测一区/);
   assert.match(html, /id="maintenanceRetryBtn"/);
   assert.match(html, /class="login-hero-maintenance-tag"/);
   assert.match(html, /链路维护中/);

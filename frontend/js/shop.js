@@ -26,7 +26,14 @@ window.Game = window.Game || {};
     };
   });
 
-  var SHOP_ITEMS = G.Constants.shopItems.concat(SPECIFIC_SKILL_BOOKS);
+  // 凭证按军衔定义派生，保留原有仓库 key；购买仅入仓，正式授衔仍核验四项条件。
+  var RANK_CERTIFICATES = G.DATA.militaryRanks.filter(function (rank) { return rank.tier > 1; }).map(function (rank) {
+    var id = 'rank_certificate_' + rank.tier;
+    var item = G.DATA.items[id];
+    return { id: id, cat: 'rank', name: item.name, icon: item.icon, desc: item.desc,
+      price: rank.certificatePrice, rankTier: rank.tier, stock: null, tag: '晋升' };
+  });
+  var SHOP_ITEMS = G.Constants.shopItems.concat(SPECIFIC_SKILL_BOOKS, RANK_CERTIFICATES);
 
   function esc(s) {
     if (typeof G.escapeHtml === 'function') return G.escapeHtml(s);
@@ -40,6 +47,14 @@ window.Game = window.Game || {};
   /** 新手礼包开启后仍保留零库存键，账号刷新或换城市不会重新获得限购资格。 */
   function alreadyPurchased(item) {
     return item.id === 'newbiePack' && Object.prototype.hasOwnProperty.call(Core.state.items || {}, item.id);
+  }
+
+  /** 已授衔或已有库存的凭证不可再购；最终校验由服务端账号锁内完成。 */
+  function certificateUnavailableReason(item) {
+    if (!item.rankTier) return '';
+    var tier = (Core.state.player || {}).militaryRank || 1;
+    if (item.rankTier <= tier) return '已获军衔';
+    return Number((Core.state.items || {})[item.id]) > 0 ? '已持有' : '';
   }
 
   /** 计算加速符与护盾的折合小时单价与立省比例，直观呈现性价比。 */
@@ -143,6 +158,18 @@ window.Game = window.Game || {};
       Core.render();
     },
 
+    /** 从晋升条件直达对应凭证，不沿用之前的商城搜索或筛选条件。 */
+    openRankCertificate: function (tier) {
+      var item = RANK_CERTIFICATES.find(function (entry) { return entry.rankTier === tier; });
+      if (!item) return;
+      this.curCat = 'rank';
+      this.subCat = 'all';
+      this.keyword = item.name;
+      this.equipmentTier = '';
+      this.equipmentBranch = '';
+      G.go('shop');
+    },
+
     setSubCat: function (sub) {
       this.subCat = sub;
       Core.render();
@@ -187,31 +214,9 @@ window.Game = window.Game || {};
       });
     },
 
+    /** 钻石不足时保留价格说明，不再引导至充值页面。 */
     promptRecharge: function (itemName, price, diamond) {
-      var mask = document.createElement('div');
-      mask.className = 'modal-mask confirm-dialog-mask';
-      mask.innerHTML = '<div class="modal-card confirm-dialog" role="dialog" aria-modal="true">' +
-        '<div class="modal-title">💎 钻石不足</div>' +
-        '<div class="modal-body confirm-dialog-message">' +
-          '<p>购买【' + itemName + '】需要 <b>💎 ' + price + '</b>，您当前拥有 <b>💎 ' + diamond + '</b>。</p>' +
-          '<p class="confirm-dialog-submessage">是否前往充值获取更多钻石？</p>' +
-        '</div>' +
-        '<div class="modal-foot">' +
-          '<button type="button" class="btn" id="shopRechargeCancel">暂不充值</button>' +
-          '<button type="button" class="btn ok" id="shopRechargeGo">前往充值</button>' +
-        '</div></div>';
-      var close = function () { mask.remove(); };
-      var cancel = mask.querySelector('#shopRechargeCancel');
-      if (cancel) cancel.onclick = close;
-      var go = mask.querySelector('#shopRechargeGo');
-      if (go) {
-        go.onclick = function () {
-          close();
-          Game.go('recharge');
-        };
-      }
-      mask.addEventListener('click', function (e) { if (e.target === mask) close(); });
-      document.body.appendChild(mask);
+      G.toast('钻石不足，购买【' + itemName + '】需要 ' + price + ' 钻石，当前拥有 ' + diamond + '。' + G.Constants.rechargeUnavailableMessage);
     },
 
     openBuyModal: function (id) {
@@ -224,6 +229,10 @@ window.Game = window.Game || {};
         if (SHOP_ITEMS[i].id === id) { it = SHOP_ITEMS[i]; break; }
       }
       if (!it) return;
+      if (certificateUnavailableReason(it)) {
+        G.toast(certificateUnavailableReason(it) + '，无需购买该晋升凭证');
+        return;
+      }
       if (alreadyPurchased(it)) {
         G.toast('新手礼包每个账号限购1份');
         return;
@@ -242,7 +251,7 @@ window.Game = window.Game || {};
       var owned = (s.items && s.items[it.id]) || 0;
       var maxAffordable = Math.min(999, Math.max(1, Math.floor(diamond / it.price)));
       var count = 1;
-      var isOneOff = (it.id === 'newbiePack' || (it.stock && it.stock === 1));
+      var isOneOff = (it.rankTier || it.id === 'newbiePack' || (it.stock && it.stock === 1));
 
       var mask = document.createElement('div');
       mask.id = 'shopBuyModal';
@@ -375,6 +384,14 @@ window.Game = window.Game || {};
         if (SHOP_ITEMS[i].id === id) { it = SHOP_ITEMS[i]; break; }
       }
       if (!it) return;
+      if (certificateUnavailableReason(it)) {
+        G.toast(certificateUnavailableReason(it) + '，无需购买该晋升凭证');
+        return;
+      }
+      if (it.rankTier && count != null && Number(count) !== 1) {
+        G.toast('晋升凭证每次只能购买1张');
+        return;
+      }
       if (alreadyPurchased(it)) {
         G.toast('新手礼包每个账号限购1份');
         return;
@@ -425,7 +442,7 @@ window.Game = window.Game || {};
       // 顶部信息条
       h += '<div class="shop-balance">';
       h += '<div class="bal-item"><span class="bal-label">我的钻石</span><span class="bal-value">💎 ' + diamond + '</span></div>';
-      h += '<div class="bal-item"><span class="bal-label">充值</span><span class="bal-action" onclick="Game.go(\'recharge\')">前往充值</span></div>';
+      h += '<div class="bal-item"><span class="bal-label">充值</span><span class="bal-action" onclick="Game.go(\'recharge\')">暂未开放充值</span></div>';
       h += '</div>';
 
       // 分类标签
@@ -438,6 +455,9 @@ window.Game = window.Game || {};
       h += '</div>';
 
       // 搜索框
+      if (this.curCat === 'rank') {
+        h += '<p>按需购买对应军衔凭证，每档最多保留1张未使用凭证；NPC不再掉落。购买不直接晋升，仍需声望、累计胜场和笔试达标。</p>';
+      }
       h += '<div class="shop-filter-bar">';
       h += '<input type="text" class="shop-search-input" placeholder="🔍 搜索商品名称或效果..." value="' + (this.keyword ? this.keyword.replace(/"/g, '&quot;') : '') + '" oninput="Game.Shop.setKeyword(this.value)">';
       if (this.keyword) {
@@ -565,10 +585,13 @@ window.Game = window.Game || {};
       for (var j = 0; j < list.length; j++) {
         var it = list[j];
         var purchased = alreadyPurchased(it);
-        var canBuy = diamond >= it.price && !purchased;
+        var certificateReason = certificateUnavailableReason(it);
+        var canBuy = diamond >= it.price && !purchased && !certificateReason;
         var tagHtml = it.tag ? '<span class="shop-tag">' + it.tag + '</span>' : '';
         var stockHtml = '';
-        if (it.stock != null) {
+        if (it.rankTier) {
+          stockHtml = '<span class="shop-stock">每档最多持有1张未使用凭证</span>';
+        } else if (it.stock != null) {
           stockHtml = '<span class="shop-stock">每个账号限购 ' + it.stock + ' 份' + (purchased ? ' · 已购买' : '') + '</span>';
         } else if (it.cat === 'gift' || it.cat === 'officer' || it.cat === 'res' || it.cat === 'resource' || it.cat === 'util') {
           stockHtml = '<span class="shop-stock">无限购</span>';
@@ -593,7 +616,7 @@ window.Game = window.Game || {};
         h += '<div class="shop-card-foot">';
         h += '<span class="shop-price">💎 ' + it.price + '</span>';
         var buyAction = it.id === 'newbiePack' ? 'Game.Shop.buy(\'newbiePack\')' : 'Game.Shop.openBuyModal(\'' + it.id + '\')';
-        h += '<button class="shop-buy' + (canBuy ? '' : ' disabled') + '"' + (canBuy ? '' : ' disabled') + ' onclick="' + buyAction + '">' + (purchased ? '已购买' : '购买') + '</button>';
+        h += '<button class="shop-buy' + (canBuy ? '' : ' disabled') + '"' + (canBuy ? '' : ' disabled') + ' onclick="' + buyAction + '">' + (certificateReason || (purchased ? '已购买' : '购买')) + '</button>';
         h += '</div>';
         h += stockHtml ? '<div class="shop-card-stock">' + stockHtml + '</div>' : '';
         h += '</div>';

@@ -3,8 +3,18 @@ package com.wargame.model.constants;
 /** 军官升级经验：保留前20级成本，在20、50、80级后叠加二次项，阶段交界平滑增长。 */
 public final class OfficerExperienceRules {
     public static final int MAX_LEVEL = 100;
+    public static final int RAPID_BOOK_EXPERIENCE = 500_000;
+    public static final int RAPID_BOOK_PRICE = 500;
 
     private OfficerExperienceRules() {}
+
+    /** 满级书按从一级升满所需的整本极速书总价打八折，不按军官当前等级浮动。 */
+    public static int maxBookPrice() {
+        long experience = 0L;
+        for (int level = 1; level < MAX_LEVEL; level++) experience += expNeeded(level);
+        long books = (experience + RAPID_BOOK_EXPERIENCE - 1) / RAPID_BOOK_EXPERIENCE;
+        return Math.toIntExact(books * RAPID_BOOK_PRICE * 8 / 10);
+    }
 
     /** 当前等级升到下一级的需求；满级不再消耗经验。与前端 G.expNeeded 保持一致。 */
     public static long expNeeded(int level) {

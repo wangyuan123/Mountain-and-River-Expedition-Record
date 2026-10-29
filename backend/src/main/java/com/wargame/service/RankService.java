@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +23,7 @@ public class RankService {
     private final AccountService accounts;
     private final QuestService quests;
     private final WebSocketPushService pushService;
+    private final RankGiftService gifts;
 
     public record Exam(String attemptId, int tier, long expiresAt, String status, long retryAt,
                        int correct, List<RankExamDef.Question> questions) {}
@@ -71,6 +71,7 @@ public class RankService {
         info.put("canPromote", false); info.put("canTakeExam", false);
         if (max) return info;
         var next = MilitaryRankDef.getRank(tier + 1);
+        info.put("promotionReward", gifts.preview(next.tier()));
         boolean prestigeEnough = prestige(player) >= next.prestige();
         boolean victoriesEnough = player.getNpcVictories() >= next.npcVictories();
         int owned = owned(playerId, next.certificateKey());
@@ -88,7 +89,7 @@ public class RankService {
         info.put("nextTier", next.tier()); info.put("nextName", next.name()); info.put("nextBaseCap", next.baseCap());
         info.put("reqPrestige", next.prestige()); info.put("reqNpcVictories", next.npcVictories());
         info.put("certificate", Map.of("key", next.certificateKey(), "name", next.certificateName(), "owned", owned,
-                "required", 1, "source", MilitaryRankDef.certificateSource(next)));
+                "required", 1, "price", next.certificatePrice(), "source", MilitaryRankDef.certificateSource(next)));
         info.put("prestigeEnough", prestigeEnough); info.put("victoriesEnough", victoriesEnough);
         info.put("certificateEnough", owned > 0); info.put("prerequisitesMet", prerequisites);
         info.put("exam", examInfo); info.put("examPassed", passed);
@@ -167,21 +168,26 @@ public class RankService {
         var next = requirePrerequisites(player);
         Exam exam = currentExam(player);
         if (exam == null || !"passed".equals(exam.status())) throw new IllegalArgumentException("请先通过本阶军事笔试");
+        // 先按上线快照完成旧账号补发，再发本次新军衔奖励；失败与授衔一同回滚。
+        gifts.enroll(playerId);
         if (playerItemRepository.tryConsume(playerId, next.certificateKey(), 1, GameClock.now()) != 1)
             throw new IllegalArgumentException("晋升凭证不足");
         // 条件更新会清空持久化上下文，必须重新取得受锁保护的玩家实体。
         player = accounts.lockPlayer(playerId);
         player.setMilitaryRank(next.tier()); player.setRankExam(null); playerRepository.save(player);
+        Map<String, Object> reward = gifts.awardPromotion(playerId, next.tier());
         quests.onEvent(playerId, "MILITARY_RANK_TIER");
         pushService.pushToPlayer(playerId, "rank_promoted", Map.of("tier", next.tier(), "rankName", next.name()));
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("success", true); result.put("tier", next.tier()); result.put("rankName", next.name());
         result.put("cityCap", MilitaryRankDef.getCityCap(next.tier()));
-        result.put("message", "晋升为【" + next.name() + "】，最多可拥有 " + MilitaryRankDef.getCityCap(next.tier()) + " 座城市");
+        result.put("promotionReward", reward);
+        result.put("message", "晋升为【" + next.name() + "】，最多可拥有 " + MilitaryRankDef.getCityCap(next.tier())
+                + " 座城市；【" + reward.get("name") + "】已入仓，开启后获得 " + reward.get("diamonds") + " 钻石");
         return result;
     }
 
-    /** 仅真实 NPC 有守军的进攻胜利计一场；在行军结算事务内直接发放凭证至账号仓库。 */
+    /** 仅真实 NPC 有守军的进攻胜利计一场；凭证改为商城购买，战斗不再发放。 */
     @Transactional
     public void awardNpcVictory(Long playerId, Object target, BattleResult result) {
         int level = target instanceof Bandit bandit ? Objects.requireNonNullElse(bandit.getLevel(), 0)
@@ -190,14 +196,7 @@ public class RankService {
                 || result.getInitialDefender().values().stream().noneMatch(n -> n != null && n > 0)) return;
         Player player = accounts.lockPlayer(playerId);
         player.setNpcVictories(player.getNpcVictories() + 1); playerRepository.save(player);
-        String key = MilitaryRankDef.rollPromotionCertificate(level, ThreadLocalRandom.current().nextDouble());
         String report = Objects.requireNonNullElse(result.getReport(), "") + "\n★ 剿寇胜场 +1，累计 " + player.getNpcVictories() + " 场。\n";
-        if (key != null) {
-            PlayerItem item = playerItemRepository.findByPlayerIdAndItemKey(playerId, key)
-                    .orElseGet(() -> new PlayerItem(null, playerId, key, 0, GameClock.now()));
-            item.setCount(item.getCount() + 1); item.setUpdatedAt(GameClock.now()); playerItemRepository.save(item);
-            report += "★ 获得【" + MilitaryRankDef.certificateRankForNpc(level).certificateName() + "】×1，已入仓库。\n";
-        }
         result.setReport(report);
     }
 }

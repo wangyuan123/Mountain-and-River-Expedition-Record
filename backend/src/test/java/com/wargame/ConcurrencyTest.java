@@ -118,7 +118,7 @@ class ConcurrencyTest extends BaseServiceTest {
                     else shop.buy(new GameDtos.ShopBuyRequest("box_recruit_military"));
                     return true;
                 });
-            } catch (OptimisticLockingFailureException e) {
+            } catch (OptimisticLockingFailureException | jakarta.persistence.OptimisticLockException e) {
                 return false;
             } finally {
                 SecurityContextHolder.clearContext();

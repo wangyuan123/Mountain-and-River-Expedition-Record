@@ -41,7 +41,9 @@ public class DepotController {
                 request.itemId(),
                 request.officerId(),
                 request.newName(),
-                request.skillId()
+                request.skillId(),
+                request.count(),
+                request.requestId()
         );
         // 成功后下发最新 state，让前端无需二次 GET
         if (Boolean.TRUE.equals(result.get("success"))) {

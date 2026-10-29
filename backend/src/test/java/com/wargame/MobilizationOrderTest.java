@@ -1,239 +1,221 @@
 package com.wargame;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.wargame.controller.ShopController;
-import com.wargame.model.UserPrincipal;
-import com.wargame.model.constants.ItemDef;
+import com.wargame.model.constants.MobilizationRules;
 import com.wargame.model.dto.DispatchRequest;
-import com.wargame.model.dto.GameDtos;
+import com.wargame.model.entity.Player;
 import com.wargame.model.entity.PlayerItem;
-import com.wargame.model.entity.WildTile;
 import com.wargame.repository.PlayerItemRepository;
 import com.wargame.service.ArmyService;
+import com.wargame.service.BattleActionPreferences;
 import com.wargame.service.DepotService;
+import com.wargame.service.MobilizationService;
+import com.wargame.util.GameClock;
 import com.wargame.util.JsonUtil;
 import jakarta.persistence.EntityManager;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
-
 import java.util.Map;
-
+import java.util.concurrent.atomic.AtomicLong;
 import static org.junit.jupiter.api.Assertions.*;
 
 class MobilizationOrderTest extends BaseServiceTest {
     @Autowired private PlayerItemRepository items;
-    @Autowired private ArmyService armyService;
-    @Autowired private DepotService depotService;
-    @Autowired private ShopController shopController;
-    @Autowired private ObjectMapper objectMapper;
+    @Autowired private ArmyService armies;
+    @Autowired private MobilizationService mobilization;
+    @Autowired private DepotService depot;
+    @Autowired private BattleActionPreferences preferences;
     @Autowired private EntityManager em;
+    @Autowired private com.wargame.service.CityScope cityScope;
+    @Autowired private com.wargame.controller.DepotController depotController;
 
-    private Long playerId;
-    private WildTile tile;
-    private int baseCap;
-
-    @BeforeEach
-    void setUp() {
-        var player = createTestPlayer("mobilization-player", 30);
-        playerId = player.getId();
-        baseCap = armyService.armyCap(playerId);
-        tile = createWildTile(createTestWorld().getId(), "grainfield", 15, 15, 1, Map.of("infantry", 10), 1000);
-        createArmyUnit(playerId, "infantry", 100_000);
-        giveResources(playerId, 100_000, 100_000, 1_000_000, 100_000, 100_000);
-        var resources = resourcesRepository.findByPlayerId(playerId).orElseThrow();
-        resources.setDiamond(5000);
-        resourcesRepository.save(resources);
-        var principal = UserPrincipal.from(player);
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()));
+    private Player fixture(String item, int stock) {
+        Player player = createTestPlayer("mobilization-player", 30);
+        items.saveAndFlush(new PlayerItem(null, player.getId(), item, stock, 0L));
+        return player;
     }
-
-    @AfterEach
-    void clearAuthentication() {
-        SecurityContextHolder.clearContext();
-    }
-
-    @ParameterizedTest
-    @CsvSource({"mobilizationOrder,10,80,战争动员令", "advancedMobilizationOrder,25,220,高级战争动员令",
-            "rapidMobilizationOrder,50,500,极速战争动员令"})
-    void purchaseChargesAdvertisedPriceAndDepotCannotActivate(String item, int percent, int price, String name) {
-        var result = shopController.buy(new GameDtos.ShopBuyRequest(item, 2)).getBody();
-        assertNotNull(result);
-        assertEquals(true, result.get("success"));
-        assertEquals(price, result.get("price"));
-        assertEquals(2 * price, result.get("totalCost"));
-        assertEquals(5000 - 2 * price, resourcesRepository.findByPlayerId(playerId).orElseThrow().getDiamond());
-        assertEquals(2, stock(item));
-        assertEquals(name, ItemDef.ITEMS.get(item).name());
-        assertTrue(ItemDef.ITEMS.get(item).desc().contains("提高" + percent + "%"));
-        assertEquals("util", ItemDef.ITEMS.get(item).cat());
-        var used = depotService.useItem(playerId, item, null, null);
-        assertEquals(false, used.get("success"));
-        assertEquals("战争动员令仅可在进攻出征时选择", used.get("message"));
-        assertEquals(2, stock(item));
-    }
+    private Player reload(Long id) { em.flush(); em.clear(); return playerRepository.findById(id).orElseThrow(); }
+    private int stock(Long id, String item) { return items.findByPlayerIdAndItemKey(id, item).orElseThrow().getCount(); }
 
     @ParameterizedTest
     @CsvSource({"mobilizationOrder,10", "advancedMobilizationOrder,25", "rapidMobilizationOrder,50"})
-    void dispatchAtTemporaryCapConsumesExactlyOneAndKeepsPermanentCap(String item, int percent) {
-        giveOrder(item, 3);
-        int cap = baseCap * (100 + percent) / 100;
-        var march = marchService.createDispatch(playerId, request("wild", "conquer", cap, item, null));
-        em.flush();
-        em.clear();
-        assertEquals(cap, JsonUtil.parseIntMap(marchRepository.findById(march.getId()).orElseThrow().getArmy()).get("infantry"));
-        assertEquals(100_000 - cap, armyUnitRepository.findByPlayerIdAndType(playerId, "infantry").get(0).getCount());
-        assertEquals(2, stock(item));
-        assertEquals(baseCap, armyService.armyCap(playerId));
-    }
-
-    @ParameterizedTest
-    @CsvSource({"mobilizationOrder,10", "advancedMobilizationOrder,25", "rapidMobilizationOrder,50"})
-    void exceedingTemporaryCapDoesNotStackOrdersOrSpendAnything(String item, int percent) {
-        giveOrder(item, 5);
-        long oil = getResources(playerId).getOil();
-        int cap = baseCap * (100 + percent) / 100;
-        var error = assertThrows(IllegalArgumentException.class,
-                () -> marchService.createDispatch(playerId, request("wild", "conquer", cap + 1, item, null)));
-        assertTrue(error.getMessage().startsWith("出征兵力超过带兵上限 " + cap));
-        assertUnchanged(item, 5, oil);
-    }
-
-    @ParameterizedTest
-    @ValueSource(ints = {0, 1})
-    void withinBaseCapNeverRequiresOrConsumesOrder(int stock) {
-        giveOrder("mobilizationOrder", stock);
-        var march = marchService.createDispatch(playerId,
-                request("wild", "conquer", baseCap, "mobilizationOrder", null));
-        assertNotNull(march.getId());
-        assertEquals(stock, stock("mobilizationOrder"));
+    void warehouseUseGrantsAccountCapacityFor24HoursAndSameTierExtends(String item, int percent) throws Exception {
+        AtomicLong clock = new AtomicLong(System.currentTimeMillis());
+        try (var ignored = GameClock.use(clock::get)) {
+            Player player = fixture(item, 4);
+            Long id = player.getId();
+            assertEquals(25000, armies.armyCap(id));
+            assertEquals(true, depot.useItem(id, item, null, null, null, 1, "warehouse-use-1").get("success"));
+            player = reload(id);
+            assertEquals(clock.get() + MobilizationRules.DURATION_MS, MobilizationRules.expiries(player).get(item));
+            assertEquals(25000 * (100 + percent) / 100, armies.armyCap(id));
+            assertEquals(armies.armyCap(id), armies.sortieCap(id));
+            assertEquals(25000, armies.ordinaryArmyCap(id));
+            long end = MobilizationRules.expiries(player).get(item);
+            clock.addAndGet(5 * 3600_000L);
+            mobilization.use(id, item, 2, "warehouse-use-2");
+            player = reload(id);
+            assertEquals(end + 2 * MobilizationRules.DURATION_MS, MobilizationRules.expiries(player).get(item));
+            assertEquals(1, stock(id, item));
+            clock.set(end + 2 * MobilizationRules.DURATION_MS);
+            assertEquals(25000, armies.armyCap(id));
+            assertEquals("default", preferences.get(id).formationKey());
+        }
     }
 
     @Test
-    void noOrderStillRejectsOverBaseCap() {
-        var error = assertThrows(IllegalArgumentException.class,
-                () -> marchService.createDispatch(playerId, request("wild", "conquer", baseCap + 1, null, null)));
-        assertTrue(error.getMessage().startsWith("出征兵力超过带兵上限 " + baseCap));
+    void allCitiesShareBuffButUseTheirOwnCommanderBonus() {
+        Long id = fixture("rapidMobilizationOrder", 1).getId();
+        var commander = createOfficer(id, "commander", 30, 30, 30);
+        commander.setCitySlot(1);
+        commander.setSkills("[{\"id\":\"leadership\",\"lv\":5}]");
+        officerRepository.saveAndFlush(commander);
+        mobilization.use(id, "rapidMobilizationOrder", 1, "all-cities-use");
+        try (var city = cityScope.enter(id, 0)) {
+            assertEquals(37500, armies.armyCap(id));
+        }
+        try (var city = cityScope.enter(id, 1)) {
+            assertEquals(45000, armies.armyCap(id));
+            assertEquals(45000, armies.sortieCap(id));
+        }
     }
 
     @Test
-    void missingInventoryRejectsWithoutSpendingTroopsOrFuel() {
-        long oil = getResources(playerId).getOil();
-        var error = assertThrows(IllegalArgumentException.class, () -> marchService.createDispatch(playerId,
-                request("wild", "conquer", baseCap + 1, "rapidMobilizationOrder", null)));
-        assertEquals("战争动员令数量不足", error.getMessage());
-        assertEquals(100_000, armyUnitRepository.findByPlayerIdAndType(playerId, "infantry").get(0).getCount());
-        assertEquals(oil, getResources(playerId).getOil());
-        assertTrue(marchRepository.findByPlayerId(playerId).isEmpty());
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"scout", "gather", "station", "transport", "rebase", "reinforce", "intercept_scout"})
-    void nonAttacksRejectMobilizationBeforeSpendingInventory(String action) {
-        giveOrder("rapidMobilizationOrder", 1);
-        long oil = getResources(playerId).getOil();
-        var error = assertThrows(IllegalArgumentException.class, () -> marchService.createDispatch(playerId,
-                request("gather".equals(action) ? "wild_gather" : "wild", action, 1, "rapidMobilizationOrder", null)));
-        assertEquals("战争动员令仅可用于进攻出征", error.getMessage());
-        assertUnchanged("rapidMobilizationOrder", 1, oil);
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"conquer", "plunder", "feint", "harass", "guerrilla"})
-    void allOffensiveModesCanUseMobilization(String action) {
-        giveOrder("mobilizationOrder", 1);
-        var march = marchService.createDispatch(playerId,
-                request("wild", action, baseCap + 1, "mobilizationOrder", null));
-        assertEquals(action, march.getAction());
-        assertEquals(0, stock("mobilizationOrder"));
+    void controllerReturnsPersistedAccountTimersAndRejectsFractionalCount() {
+        Player player = fixture("mobilizationOrder", 3);
+        var principal = com.wargame.model.UserPrincipal.from(player);
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()));
+        try {
+            assertThrows(IllegalArgumentException.class, () -> depotController.useItem(
+                    new com.wargame.model.dto.GameDtos.DepotUseRequest("mobilizationOrder", null, null, null, 1.5, "fractional-use")));
+            var result = depotController.useItem(new com.wargame.model.dto.GameDtos.DepotUseRequest(
+                    "mobilizationOrder", null, null, null, 2, "controller-use")).getBody();
+            assertNotNull(result);
+            assertEquals(true, result.get("success"));
+            var state = (Map<?, ?>) result.get("state");
+            var playerState = (Map<?, ?>) state.get("player");
+            assertTrue(((Number) ((Map<?, ?>) playerState.get("mobilizationExpiries")).get("mobilizationOrder")).longValue() > GameClock.now());
+            assertEquals(1, stock(player.getId(), "mobilizationOrder"));
+        } finally {
+            org.springframework.security.core.context.SecurityContextHolder.clearContext();
+        }
     }
 
     @Test
-    void resourceFailureDoesNotConsumeOrder() {
-        giveOrder("rapidMobilizationOrder", 1);
-        giveResources(playerId, 100_000, 100_000, 0, 100_000, 100_000);
-        var error = assertThrows(IllegalArgumentException.class, () -> marchService.createDispatch(playerId,
-                request("wild", "conquer", baseCap + 1, "rapidMobilizationOrder", Map.of("oil", 1))));
-        assertTrue(error.getMessage().startsWith("资源不足: oil"));
-        assertUnchanged("rapidMobilizationOrder", 1, 0);
+    void differentTiersCountIndependentlyAndFallBackWithoutAddingPercentages() throws Exception {
+        AtomicLong clock = new AtomicLong(System.currentTimeMillis());
+        try (var ignored = GameClock.use(clock::get)) {
+            Long id = fixture("mobilizationOrder", 2).getId();
+            items.saveAndFlush(new PlayerItem(null, id, "rapidMobilizationOrder", 1, 0L));
+            mobilization.use(id, "mobilizationOrder", 2, "normal-use-1");
+            String cycle = preferences.get(id).formationKey();
+            mobilization.use(id, "rapidMobilizationOrder", 1, "rapid-use-1");
+            assertEquals(37500, armies.armyCap(id));
+            assertEquals(cycle, preferences.get(id).formationKey());
+            clock.addAndGet(MobilizationRules.DURATION_MS);
+            assertEquals(27500, armies.armyCap(id));
+            assertEquals(cycle, preferences.get(id).formationKey());
+            clock.addAndGet(MobilizationRules.DURATION_MS);
+            assertEquals(25000, armies.armyCap(id));
+        }
     }
 
     @Test
-    void mobilizedDispatchDeductsPlannedFuelAndAssignsCommander() {
-        giveOrder("advancedMobilizationOrder", 1);
-        createArmyUnit(playerId, "truck", 10);
-        var officer = createOfficer(playerId, "idle", 30, 30, 30);
-        var request = new DispatchRequest("wild", tile.getId(), "conquer", Map.of("infantry", baseCap, "truck", 10),
-                officer.getId(), null, null, null, null, null, null, null, null, null, "advancedMobilizationOrder");
-        int fuel = ((Number) marchService.previewRoute(playerId, request).get("oil")).intValue();
-        assertTrue(fuel > 0);
-        long oil = getResources(playerId).getOil();
-        var march = marchService.createDispatch(playerId, request);
-        em.flush();
-        em.clear();
-        assertEquals(0, stock("advancedMobilizationOrder"));
-        assertEquals(oil - fuel, getResources(playerId).getOil());
-        assertEquals("march", officerRepository.findById(officer.getId()).orElseThrow().getRole());
-        assertEquals(officer.getId(), march.getCommanderId());
+    void boostedDefenseDoesNotOverwriteDefaultAndExpiredDraftCannotSave() throws Exception {
+        AtomicLong clock = new AtomicLong(System.currentTimeMillis());
+        try (var ignored = GameClock.use(clock::get)) {
+            Long id = fixture("rapidMobilizationOrder", 2).getId();
+            var ordinary = preferences.get(id);
+            preferences.save(id, new BattleActionPreferences.Preferences(ordinary.outgoing(), ordinary.defending(),
+                    Map.of("infantry", 10000, "rocket", 10000), "default"));
+            mobilization.use(id, "rapidMobilizationOrder", 1, "defense-use-1");
+            var boosted = preferences.get(id);
+            assertEquals(Map.of("infantry", 10000, "rocket", 10000), boosted.sortieArmy());
+            var draft = new BattleActionPreferences.Preferences(boosted.outgoing(), boosted.defending(),
+                    Map.of("infantry", 22500, "rocket", 15000), boosted.formationKey());
+            preferences.save(id, draft);
+            assertEquals(Map.of("infantry", 22500, "rocket", 15000), preferences.selectSortieArmy(id,
+                    Map.of("infantry", 100000, "rocket", 100000)));
+            assertEquals(Map.of("infantry", 10000, "rocket", 10000), JsonUtil.parseIntMap(reload(id).getSortieArmy()));
+            clock.addAndGet(MobilizationRules.DURATION_MS);
+            assertEquals(Map.of("infantry", 10000, "rocket", 10000), preferences.get(id).sortieArmy());
+            assertEquals(Map.of("infantry", 10000, "rocket", 10000), preferences.selectSortieArmy(id,
+                    Map.of("infantry", 100000, "rocket", 100000)));
+            assertThrows(IllegalArgumentException.class, () -> preferences.save(id, draft));
+            mobilization.use(id, "rapidMobilizationOrder", 1, "defense-use-2");
+            assertNotEquals(boosted.formationKey(), preferences.get(id).formationKey());
+            assertEquals(Map.of("infantry", 10000, "rocket", 10000), preferences.get(id).sortieArmy());
+            assertThrows(IllegalArgumentException.class, () -> preferences.save(id, draft));
+        }
     }
 
     @Test
-    void invalidCargoDoesNotConsumeOrder() {
-        giveOrder("rapidMobilizationOrder", 1);
-        long oil = getResources(playerId).getOil();
-        var error = assertThrows(IllegalArgumentException.class, () -> marchService.createDispatch(playerId,
-                request("wild", "conquer", baseCap + 1, "rapidMobilizationOrder", Map.of("food", Integer.MAX_VALUE))));
-        assertTrue(error.getMessage().startsWith("携带资源超出负重上限"));
-        assertUnchanged("rapidMobilizationOrder", 1, oil);
+    void automaticAndZeroDefaultDefenseAreRestoredExactly() throws Exception {
+        AtomicLong clock = new AtomicLong(System.currentTimeMillis());
+        try (var ignored = GameClock.use(clock::get)) {
+            Long id = fixture("mobilizationOrder", 2).getId();
+            for (Map<String, Object> defaultArmy : java.util.Arrays.asList(null, Map.<String, Object>of())) {
+                var current = preferences.get(id);
+                preferences.save(id, new BattleActionPreferences.Preferences(current.outgoing(), current.defending(), defaultArmy, "default"));
+                mobilization.use(id, "mobilizationOrder", 1, "auto-zero-" + clock.get());
+                current = preferences.get(id);
+                preferences.save(id, new BattleActionPreferences.Preferences(current.outgoing(), current.defending(),
+                        Map.of("infantry", 27000), current.formationKey()));
+                clock.addAndGet(MobilizationRules.DURATION_MS);
+                if (defaultArmy == null) assertNull(preferences.get(id).sortieArmy());
+                else assertEquals(Map.of(), preferences.get(id).sortieArmy());
+            }
+        }
     }
 
     @Test
-    void unknownItemCannotGrantCapacity() {
-        var error = assertThrows(IllegalArgumentException.class,
-                () -> marchService.createDispatch(playerId, request("wild", "conquer", baseCap + 1, "marchOrd", null)));
-        assertEquals("战争动员令类型无效", error.getMessage());
+    void retriesNeverDoubleSpendAndDifferentPayloadCannotReuseRequest() {
+        Long id = fixture("mobilizationOrder", 3).getId();
+        mobilization.use(id, "mobilizationOrder", 1, "duplicate-use");
+        long end = MobilizationRules.expiries(reload(id)).get("mobilizationOrder");
+        mobilization.use(id, "mobilizationOrder", 1, "another-use");
+        mobilization.use(id, "mobilizationOrder", 1, "duplicate-use");
+        assertEquals(1, stock(id, "mobilizationOrder"));
+        assertEquals(end + MobilizationRules.DURATION_MS, MobilizationRules.expiries(reload(id)).get("mobilizationOrder"));
+        assertThrows(IllegalArgumentException.class, () -> mobilization.use(id, "mobilizationOrder", 2, "duplicate-use"));
     }
 
     @Test
-    void gatherTargetCannotUseOffensiveActionToEnableMobilization() {
-        var error = assertThrows(IllegalArgumentException.class, () -> marchService.createDispatch(playerId,
-                request("wild_gather", "conquer", baseCap + 1, "mobilizationOrder", null)));
-        assertEquals("战争动员令仅可用于进攻出征", error.getMessage());
+    void invalidQuantityOrInsufficientStockNeverStartsBuff() {
+        Long id = fixture("mobilizationOrder", 1).getId();
+        for (int count : new int[]{0, -1, 10001, 2})
+            assertThrows(IllegalArgumentException.class, () -> mobilization.use(id, "mobilizationOrder", count, "invalid-count"));
+        assertEquals(1, stock(id, "mobilizationOrder"));
+        assertEquals(25000, armies.armyCap(id));
     }
 
     @Test
-    void jsonContractPreservesLegacyRequestsAndSelectedItem() throws Exception {
-        String json = "{\"targetKind\":\"wild\",\"targetId\":" + tile.getId() + ",\"action\":\"conquer\",\"army\":{\"infantry\":1}";
-        assertNull(objectMapper.readValue(json + "}", DispatchRequest.class).mobilizationOrderItem());
-        var selected = objectMapper.readValue(json + ",\"mobilizationOrderItem\":\"advancedMobilizationOrder\"}", DispatchRequest.class);
-        assertEquals("advancedMobilizationOrder", selected.mobilizationOrderItem());
-        assertNotNull(marchService.createDispatch(playerId, selected).getId());
+    void alreadyDispatchedArmySurvivesExpiryAndNewDispatchUsesOrdinaryCap() throws Exception {
+        AtomicLong clock = new AtomicLong(System.currentTimeMillis());
+        try (var ignored = GameClock.use(clock::get)) {
+            Long id = fixture("rapidMobilizationOrder", 1).getId();
+            createArmyUnit(id, "infantry", 100000);
+            giveResources(id, 100000, 100000, 1000000, 100000, 100000);
+            var tile = createWildTile(createTestWorld().getId(), "forest", 15, 15, 1, Map.of(), 1000);
+            mobilization.use(id, "rapidMobilizationOrder", 1, "dispatch-use");
+            var march = marchService.createDispatch(id, new DispatchRequest("wild", tile.getId(), "conquer", Map.of("infantry", 37500), null, null));
+            assertEquals(0, stock(id, "rapidMobilizationOrder"));
+            clock.addAndGet(MobilizationRules.DURATION_MS);
+            assertEquals(Map.of("infantry", 37500), JsonUtil.parseIntMap(marchRepository.findById(march.getId()).orElseThrow().getArmy()));
+            assertThrows(IllegalArgumentException.class, () -> marchService.createDispatch(id,
+                    new DispatchRequest("wild", tile.getId(), "conquer", Map.of("infantry", 25001), null, null)));
+            assertEquals(62500, armyUnitRepository.findByPlayerIdAndType(id, "infantry").get(0).getCount());
+        }
     }
 
-    private DispatchRequest request(String kind, String action, int count, String order, Map<String, Integer> cargo) {
-        return new DispatchRequest(kind, tile.getId(), action, Map.of("infantry", count), null, cargo,
-                null, null, null, null, null, null, null, null, order);
-    }
-
-    private void giveOrder(String item, int count) {
-        items.saveAndFlush(new PlayerItem(null, playerId, item, count, System.currentTimeMillis()));
-    }
-
-    private int stock(String item) {
-        return items.findByPlayerIdAndItemKey(playerId, item).orElseThrow().getCount();
-    }
-
-    private void assertUnchanged(String item, int count, long oil) {
-        assertEquals(count, stock(item));
-        assertEquals(100_000, armyUnitRepository.findByPlayerIdAndType(playerId, "infantry").get(0).getCount());
-        assertEquals(oil, getResources(playerId).getOil());
-        assertTrue(marchRepository.findByPlayerId(playerId).isEmpty());
+    @Test
+    void legacyPerMarchItemIsRejectedBeforeInventoryChanges() {
+        Long id = fixture("mobilizationOrder", 1).getId();
+        var request = new DispatchRequest("wild", 1L, "conquer", Map.of("infantry", 1), null, null,
+                null, null, null, null, null, null, null, null, "mobilizationOrder");
+        assertTrue(assertThrows(IllegalArgumentException.class, () -> marchService.createDispatch(id, request)).getMessage().contains("仓库启用"));
+        assertEquals(1, stock(id, "mobilizationOrder"));
     }
 }

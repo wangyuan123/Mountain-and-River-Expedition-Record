@@ -28,6 +28,14 @@ public class Player extends VersionedEntity implements CityEconomy {
     @Column(name = "game_initialized", nullable = false)
     private boolean gameInitialized = true;
 
+    /** V139 固定的上线军衔快照；0 表示新账号，不能根据当前军衔追溯补发。 */
+    @Column(name = "rank_gift_baseline_tier", nullable = false)
+    private int rankGiftBaselineTier;
+
+    /** 启程或上线补发只处理一次，礼包开启后仍保留。 */
+    @Column(name = "rank_gifts_enrolled", nullable = false)
+    private boolean rankGiftsEnrolled;
+
     /** null 为待首次进入的新账号，0 为不补发保护的历史账号。 */
     @Column(name = "newbie_protection_started_at")
     private Long newbieProtectionStartedAt = 0L;
@@ -317,6 +325,17 @@ public class Player extends VersionedEntity implements CityEconomy {
     /** 账号级迎战编队；null 为按驻军比例自动选兵，空对象为不派野战部队。 */
     @Column(name = "sortie_army", columnDefinition = "text")
     private String sortieArmy;
+
+    /** 账号动员三档独立到期时间；不依赖在线状态或城市。 */
+    @Column(name = "mobilization_expiries", columnDefinition = "text")
+    private String mobilizationExpiries;
+
+    /** 每轮连续动员独立保存迎战编队；所有效果结束后读取原 sortieArmy。 */
+    @Column(name = "mobilization_sortie_army", columnDefinition = "text")
+    private String mobilizationSortieArmy;
+
+    @Column(name = "mobilization_cycle", nullable = false)
+    private long mobilizationCycle;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

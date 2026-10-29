@@ -17,5 +17,7 @@ public interface ForumReplyRepository extends JpaRepository<ForumReply, Long> {
 
     int countByTopicId(Long topicId);
 
+    void deleteByTopicId(Long topicId);
+
     Page<ForumReply> findByAuthorIdOrderByCreatedAtDesc(Long authorId, Pageable pageable);
 }

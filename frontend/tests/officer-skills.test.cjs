@@ -71,12 +71,12 @@ test('Core.armyCap 仅受军衔和统帅技能影响，城防不增加上限且�
   };
 
   assert.equal(Core.armyCap(), 25000);
-  assert.equal(Core.sortieCap(), 37500);
+  assert.equal(Core.sortieCap(), 25000);
   Core.state.buildings.command = 10;
   Core.state.buildings.staff = 10;
   Core.state.officers[0].level = 100;
   assert.equal(Core.armyCap(), 25000);
-  assert.equal(Core.sortieCap(), 37500);
+  assert.equal(Core.sortieCap(), 25000);
 
   Core.state.player.militaryRank = 17;
   assert.equal(Core.armyCap(), 600000);
@@ -87,11 +87,11 @@ test('Core.armyCap 仅受军衔和统帅技能影响，城防不增加上限且�
 
   Core.state.officers[0].skills = [{ id: 'leadership', lv: 5 }];
   assert.equal(Core.armyCap(), 720000);
-  assert.equal(Core.sortieCap(), 1020000);
+  assert.equal(Core.sortieCap(), 720000);
 
   Core.state.officers[0].skills = [{ id: 'supply', lv: 5 }];
   assert.equal(Core.armyCap(), 720000);
-  assert.equal(Core.sortieCap(), 1020000);
+  assert.equal(Core.sortieCap(), 720000);
   Core.state.officers[0].role = 'mayor';
   assert.equal(Core.armyCap(), 600000);
 });
@@ -314,6 +314,7 @@ test('仓库使用接口独立传递目标技能并应用服务端库存，旧�
   const requests = [];
   const state = { player: { id: 1 }, officers: [{ id: 7, skills: [{ id: 'frenzy', lv: 1 }] }], items: { universalSkillBook: 1 } };
   Game.ApiClient = function () {
+    this.getToken = () => 'test-token';
     this.post = (url, body) => { requests.push({ url, body }); return Promise.resolve({ success: true, state }); };
   };
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/api.js'), 'utf8'), context);
@@ -497,4 +498,21 @@ test('军官详情使用星耀符升星，并处理库存不足和满星状态',
   Game.Officer.renderDetail(view);
   assert.match(view.innerHTML, /已达5星上限/);
   assert.doesNotMatch(view.innerHTML, /\[升星至|\[商城购买星耀符\]/);
+});
+
+test('账号动员在统帅后的普通容量上计算，攻守一致且到期即时恢复', () => {
+  const context = setupGame();
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/mobilization.js'), 'utf8'), context);
+  let now = 1000;
+  context.Game.gameNow = () => now;
+  context.Core.state = {
+    player: { militaryRank: 17, mobilizationCycle: 1, mobilizationExpiries: { rapidMobilizationOrder: 2000 } },
+    officers: [{ role: 'commander', skills: [{ id: 'leadership', lv: 5 }] }]
+  };
+  assert.equal(context.Core.ordinaryArmyCap(), 720000);
+  assert.equal(context.Core.armyCap(), 1080000);
+  assert.equal(context.Core.sortieCap(), 1080000);
+  now = 2000;
+  assert.equal(context.Core.armyCap(), 720000);
+  assert.equal(context.Core.sortieCap(), 720000);
 });

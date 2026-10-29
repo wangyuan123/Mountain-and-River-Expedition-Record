@@ -22,14 +22,17 @@ window.Game = window.Game || {};
     return '<img class="ranking-avatar" src="' + esc(src) + '" alt="" loading="lazy">';
   }
 
+  /** 两项战力只在输出时换算显示单位，保留接口原值及服务端名次。 */
   function score(entry, metric) {
     if (metric === 'militaryRank') return esc(entry.militaryRankName);
-    return G.fmt(entry[metric]);
+    var value = entry[metric];
+    if (metric === 'formationPower' || metric === 'overallPower') value /= G.Constants.playerPowerDisplayDivisor;
+    return Math.floor(Number(value) || 0).toLocaleString('en-US');
   }
 
   function metricName(metric, guilds) {
     return { members: '成员人数', militaryRank: '军衔', formationPower: '编队战力', overallPower: '综合实力' }[metric]
-      || (guilds ? '总声望' : '声望');
+      || (guilds ? '总声望' : '统帅声望');
   }
 
   function rankBadge(entry) {
@@ -41,6 +44,126 @@ window.Game = window.Game || {};
       (icon ? '<span class="ranking-rank-ico">' + icon + '</span>' : '') +
       '<span class="ranking-rank-name">' + esc(name) + '</span>' +
     '</span>';
+  }
+
+  function honorTagsHtml(rank, isMine, guilds) {
+    var tags = '';
+    if (guilds) {
+      if (rank === 1) {
+        tags += '<span class="ranking-honor-tag tag-top1">第一军团</span><span class="ranking-stamp-seal">【霸主军团】</span>';
+      } else if (rank === 2) {
+        tags += '<span class="ranking-honor-tag tag-top2">副席军团</span>';
+      } else if (rank === 3) {
+        tags += '<span class="ranking-honor-tag tag-top3">精锐军团</span>';
+      } else if (rank >= 4 && rank <= 10) {
+        tags += '<span class="ranking-honor-tag tag-top10">十强军团</span>';
+      }
+    } else {
+      if (rank === 1) {
+        tags += '<span class="ranking-honor-tag tag-top1">战区榜首</span><span class="ranking-stamp-seal">【至尊统帅】</span>';
+      } else if (rank === 2) {
+        tags += '<span class="ranking-honor-tag tag-top2">战区副帅</span>';
+      } else if (rank === 3) {
+        tags += '<span class="ranking-honor-tag tag-top3">三军先锋</span>';
+      } else if (rank >= 4 && rank <= 10) {
+        tags += '<span class="ranking-honor-tag tag-top10">十强统帅</span>';
+      }
+    }
+    if (isMine) {
+      tags += '<span class="ranking-you">' + (guilds ? '本团' : '我') + '</span>';
+    }
+    return tags;
+  }
+
+  /** 前三名仿王者荣耀匹配载入框精雕外框（第1名钻石、第2名翡翠、第3名黄金） */
+  function topFrameOverlay(rank) {
+    if (rank === 1) {
+      return '<div class="ranking-frame-layer ranking-frame-top1 pointer-events-none" aria-hidden="true">' +
+        '<svg viewBox="0 0 600 60" preserveAspectRatio="none">' +
+          '<defs>' +
+            '<linearGradient id="rkDiamondGrad" x1="0%" y1="0%" x2="100%" y2="100%">' +
+              '<stop offset="0%" stop-color="#38bdf8"/>' +
+              '<stop offset="25%" stop-color="#e0f2fe"/>' +
+              '<stop offset="50%" stop-color="#0284c7"/>' +
+              '<stop offset="75%" stop-color="#ffffff"/>' +
+              '<stop offset="100%" stop-color="#0369a1"/>' +
+            '</linearGradient>' +
+          '</defs>' +
+          '<rect x="3" y="3" width="594" height="54" rx="8" fill="none" stroke="url(#rkDiamondGrad)" stroke-width="2.5" />' +
+          '<rect x="6" y="6" width="588" height="48" rx="6" fill="none" stroke="#bae6fd" stroke-width="0.8" opacity="0.8" />' +
+          '<path d="M 1 18 L 1 7 C 1 3 3 1 7 1 L 18 1 L 14 5 L 5 5 L 5 14 Z" fill="#0284c7" stroke="#e0f2fe" stroke-width="0.8" />' +
+          '<polygon points="5,5 9,2 13,5 9,8" fill="#38bdf8" />' +
+          '<path d="M 599 18 L 599 7 C 599 3 597 1 593 1 L 582 1 L 586 5 L 595 5 L 595 14 Z" fill="#0284c7" stroke="#e0f2fe" stroke-width="0.8" />' +
+          '<polygon points="595,5 591,2 587,5 591,8" fill="#38bdf8" />' +
+          '<path d="M 1 42 L 1 53 C 1 57 3 59 7 59 L 18 59 L 14 55 L 5 55 L 5 46 Z" fill="#0284c7" stroke="#e0f2fe" stroke-width="0.8" />' +
+          '<path d="M 599 42 L 599 53 C 599 57 597 59 593 59 L 582 59 L 586 55 L 595 55 L 595 46 Z" fill="#0284c7" stroke="#e0f2fe" stroke-width="0.8" />' +
+          '<g transform="translate(300, 2)">' +
+            '<path d="M -24 0 Q -12 -5 0 -2 Q 12 -5 24 0 Q 12 -1 0 1 Q -12 -1 -24 0 Z" fill="#0284c7" stroke="#38bdf8" stroke-width="0.5" />' +
+            '<polygon points="0,-4 7,-1 0,5 -7,-1" fill="#e0f2fe" stroke="#0284c7" stroke-width="0.8" />' +
+            '<polygon points="0,-4 3,-1 0,5" fill="#ffffff" />' +
+          '</g>' +
+          '<g transform="translate(300, 57)"><polygon points="0,-3 6,0 0,3 -6,0" fill="#0284c7" stroke="#bae6fd" stroke-width="0.6" /></g>' +
+        '</svg>' +
+      '</div>';
+    }
+    if (rank === 2) {
+      return '<div class="ranking-frame-layer ranking-frame-top2 pointer-events-none" aria-hidden="true">' +
+        '<svg viewBox="0 0 600 60" preserveAspectRatio="none">' +
+          '<defs>' +
+            '<linearGradient id="rkEmeraldGrad" x1="0%" y1="0%" x2="100%" y2="100%">' +
+              '<stop offset="0%" stop-color="#10b981"/>' +
+              '<stop offset="30%" stop-color="#6ee7b7"/>' +
+              '<stop offset="50%" stop-color="#059669"/>' +
+              '<stop offset="85%" stop-color="#047857"/>' +
+              '<stop offset="100%" stop-color="#064e3b"/>' +
+            '</linearGradient>' +
+          '</defs>' +
+          '<rect x="3" y="3" width="594" height="54" rx="8" fill="none" stroke="url(#rkEmeraldGrad)" stroke-width="2.5" />' +
+          '<rect x="6" y="6" width="588" height="48" rx="6" fill="none" stroke="#fde047" stroke-width="0.8" opacity="0.75" />' +
+          '<path d="M 1 16 L 1 7 C 1 3 3 1 7 1 L 16 1 L 12 5 L 5 5 L 5 12 Z" fill="#047857" stroke="#a7f3d0" stroke-width="0.8" />' +
+          '<circle cx="7" cy="7" r="2.5" fill="#34d399" stroke="#f59e0b" stroke-width="0.8" />' +
+          '<path d="M 599 16 L 599 7 C 599 3 597 1 593 1 L 584 1 L 588 5 L 595 5 L 595 12 Z" fill="#047857" stroke="#a7f3d0" stroke-width="0.8" />' +
+          '<circle cx="593" cy="7" r="2.5" fill="#34d399" stroke="#f59e0b" stroke-width="0.8" />' +
+          '<path d="M 1 44 L 1 53 C 1 57 3 59 7 59 L 16 59 L 12 55 L 5 55 L 5 48 Z" fill="#047857" stroke="#a7f3d0" stroke-width="0.8" />' +
+          '<path d="M 599 44 L 599 53 C 599 57 597 59 593 59 L 584 59 L 588 55 L 595 55 L 595 48 Z" fill="#047857" stroke="#a7f3d0" stroke-width="0.8" />' +
+          '<g transform="translate(300, 2)">' +
+            '<path d="M -20 0 Q -10 -4 0 -2 Q 10 -4 20 0 Z" fill="#047857" stroke="#f59e0b" stroke-width="0.6" />' +
+            '<ellipse cx="0" cy="0" rx="6" ry="4" fill="#10b981" stroke="#fde047" stroke-width="1" />' +
+            '<ellipse cx="-1.5" cy="-1" rx="2" ry="1.2" fill="#d1fae5" opacity="0.8" />' +
+          '</g>' +
+          '<g transform="translate(300, 57)"><ellipse cx="0" cy="0" rx="4" ry="2.5" fill="#059669" stroke="#f59e0b" stroke-width="0.6" /></g>' +
+        '</svg>' +
+      '</div>';
+    }
+    if (rank === 3) {
+      return '<div class="ranking-frame-layer ranking-frame-top3 pointer-events-none" aria-hidden="true">' +
+        '<svg viewBox="0 0 600 60" preserveAspectRatio="none">' +
+          '<defs>' +
+            '<linearGradient id="rkGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">' +
+              '<stop offset="0%" stop-color="#f59e0b"/>' +
+              '<stop offset="25%" stop-color="#fef08a"/>' +
+              '<stop offset="50%" stop-color="#d97706"/>' +
+              '<stop offset="75%" stop-color="#fbbf24"/>' +
+              '<stop offset="100%" stop-color="#78350f"/>' +
+            '</linearGradient>' +
+          '</defs>' +
+          '<rect x="3" y="3" width="594" height="54" rx="8" fill="none" stroke="url(#rkGoldGrad)" stroke-width="2.5" />' +
+          '<rect x="6" y="6" width="588" height="48" rx="6" fill="none" stroke="#fef08a" stroke-width="0.8" opacity="0.7" />' +
+          '<path d="M 1 16 L 1 7 C 1 3 3 1 7 1 L 16 1 L 12 5 L 5 5 L 5 12 Z" fill="#b45309" stroke="#fde047" stroke-width="0.8" />' +
+          '<polygon points="5,5 9,2 13,5 9,8" fill="#fef08a" />' +
+          '<path d="M 599 16 L 599 7 C 599 3 597 1 593 1 L 584 1 L 588 5 L 595 5 L 595 12 Z" fill="#b45309" stroke="#fde047" stroke-width="0.8" />' +
+          '<polygon points="595,5 591,2 587,5 591,8" fill="#fef08a" />' +
+          '<path d="M 1 44 L 1 53 C 1 57 3 59 7 59 L 16 59 L 12 55 L 5 55 L 5 48 Z" fill="#b45309" stroke="#fde047" stroke-width="0.8" />' +
+          '<path d="M 599 44 L 599 53 C 599 57 597 59 593 59 L 584 59 L 588 55 L 595 55 L 595 48 Z" fill="#b45309" stroke="#fde047" stroke-width="0.8" />' +
+          '<g transform="translate(300, 2)">' +
+            '<path d="M -18 0 L -12 -5 L -6 -1 L 0 -7 L 6 -1 L 12 -5 L 18 0 Z" fill="#f59e0b" stroke="#fef08a" stroke-width="0.8" />' +
+            '<circle cx="0" cy="-2" r="1.5" fill="#ef4444" />' +
+          '</g>' +
+          '<g transform="translate(300, 57)"><polygon points="0,-3 5,0 0,3 -5,0" fill="#d97706" stroke="#fef08a" stroke-width="0.6" /></g>' +
+        '</svg>' +
+      '</div>';
+    }
+    return '';
   }
 
   var Rankings = {
@@ -224,7 +347,7 @@ window.Game = window.Game || {};
           '<div class="ranking-mine-avatar-wrap">' + portrait(mine, guilds) + '</div>' +
           '<div>' +
             '<span>' + (guilds ? '我的军团' : '我的统帅战位') + '</span>' +
-            '<strong>' + esc(mine.name) + '</strong>' +
+            '<div class="ranking-mine-name-row"><strong>' + esc(mine.name) + '</strong>' + honorTagsHtml(mine.rank, true, guilds) + '</div>' +
           '</div>' +
         '</div>' +
         '<div class="ranking-mine-stat">' +
@@ -316,7 +439,7 @@ window.Game = window.Game || {};
 
         data.entries.forEach(function (entry) {
           var isMine = mine && entry.id === mine.id;
-          var detail = guilds ? '团长 · ' + (entry.leaderName || '暂无') : (entry.guildName || '未加入军团');
+          var detail = guilds ? '团长 · ' + (entry.leaderName || '暂无') : (entry.guildName ? '🛡️ ' + entry.guildName : '未加入军团') + (!guilds && entry.militaryRankName && Rankings.metric !== 'militaryRank' ? ' · 军衔 ' + entry.militaryRankName : '');
           var secondary = score(entry, secondaryMetric);
           var rankMedal = entry.rank === 1 ? '🥇' : (entry.rank === 2 ? '🥈' : (entry.rank === 3 ? '🥉' : ''));
 
@@ -338,14 +461,14 @@ window.Game = window.Game || {};
           var posClass = 'ranking-position' + (entry.rank <= 3 ? ' ranking-top-' + entry.rank : '');
 
           h += '<tr class="ranking-row' + rowTopClass + (isMine ? ' ranking-row-mine' : '') + '"' + (isMine ? ' tabindex="-1" aria-label="我的排名"' : '') + '>' +
-            '<td><span class="' + posClass + '">' +
+            '<td>' + topFrameOverlay(entry.rank) + '<span class="' + posClass + '">' +
               (rankMedal ? '<span class="ranking-medal">' + rankMedal + '</span>' : '') +
               '<span class="ranking-num">' + entry.rank + '</span>' +
             '</span></td>' +
             '<td><div class="ranking-identity">' + portrait(entry, guilds) +
               '<div>' +
-                '<div class="ranking-name">' + (!guilds && !isMine ? '<button type="button" class="ranking-text-button" onclick="Game.Friends.view(' + Number(entry.id) + ')">' + esc(entry.name) + '</button>' : esc(entry.name)) + (isMine ? '<span class="ranking-you">' + (guilds ? '本团' : '我') + '</span>' : '') + '</div>' +
-                '<span class="ranking-detail">' + (guilds ? '🛡️ ' : (entry.guildName ? '🛡️ ' : '')) + esc(detail) + '</span>' +
+                '<div class="ranking-name">' + (!guilds && !isMine ? '<button type="button" class="ranking-text-button" onclick="Game.Friends.view(' + Number(entry.id) + ')">' + esc(entry.name) + '</button>' : esc(entry.name)) + honorTagsHtml(entry.rank, isMine, guilds) + '</div>' +
+                '<span class="ranking-detail">' + (guilds ? '🛡️ ' : '') + esc(detail) + '</span>' +
               '</div>' +
             '</div></td>' +
             '<td class="ranking-score">' + primaryHtml + '<span class="ranking-mobile-secondary">' + secondaryLabel + ' ' + secondary + '</span></td>' +

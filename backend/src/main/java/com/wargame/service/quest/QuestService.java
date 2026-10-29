@@ -25,6 +25,10 @@ public class QuestService {
     /** 每日签到与 VIP 军饷共用游戏时钟的北京时间自然日，停服或服务器时区变化不改变刷新口径。 */
     private static final ZoneId GAME_ZONE = ZoneId.of("Asia/Shanghai");
 
+    /** 军政签到五类资源各1万，预览与实际发放共用配置；道具另行保留。 */
+    private static final Map<String, Integer> DAILY_CHECKIN_RESOURCES = Map.of(
+            "food", 10000, "steel", 10000, "oil", 10000, "rare", 10000, "gold", 10000);
+
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
 
@@ -590,8 +594,7 @@ public class QuestService {
         Map<String, Integer> rewards = new LinkedHashMap<>();
         rewards.put("renameCard", 1);
         rewards.put("cityRenameCard", 1);
-        rewards.put("gold", 2000);
-        rewards.put("food", 5000);
+        rewards.putAll(DAILY_CHECKIN_RESOURCES);
         rewards.put("speedUp10m", 1);
         checkin.put("rewards", rewards);
         return checkin;
@@ -618,14 +621,13 @@ public class QuestService {
         // 发放常备资源至活动城池
         Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (res != null) {
-            res.addResource("gold", 2000);
-            res.addResource("food", 5000);
+            DAILY_CHECKIN_RESOURCES.forEach(res::addResource);
             resourcesRepository.save(res);
         }
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("success", true);
-        result.put("message", "每日军务签到成功，已领受军官改名卡、城市改名卡及战备口粮！");
+        result.put("message", "每日军务签到成功，已领受粮钢油稀金各10000及改名卡、加速道具！");
         result.put("dailyCheckin", getDailyCheckinStatus(playerId));
         return result;
     }

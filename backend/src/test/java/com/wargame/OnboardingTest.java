@@ -24,6 +24,8 @@ class OnboardingTest extends BaseServiceTest {
     @Autowired CityScope scope;
     @Autowired TechService techService;
     @Autowired com.wargame.repository.TechResearchQueueRepository researchQueues;
+    @Autowired com.wargame.repository.MailRepository mails;
+    @Autowired com.wargame.service.MailService mailService;
     Long playerId;
 
     @BeforeEach
@@ -36,6 +38,15 @@ class OnboardingTest extends BaseServiceTest {
     void coreActionsRequireBuildingResearchAndGroundReconnaissanceWithoutGrantingAircraft() {
         assertEquals(List.of("base", "infantry", "recon_build", "recon_research", "recon_unit", "scout", "occupy", "report"), OnboardingService.OBJECTIVES.stream().map(OnboardingService.Objective::id).toList());
         assertEquals("base", current());
+        Resources initial = getResources(playerId);
+        assertAll(() -> assertEquals(60000, initial.getFood()),
+                () -> assertEquals(60000, initial.getSteel()),
+                () -> assertEquals(60000, initial.getOil()),
+                () -> assertEquals(60000, initial.getRare()),
+                () -> assertEquals(60000, initial.getGold()),
+                () -> assertEquals(0, initial.getDiamond()));
+        assertEquals(150, playerRepository.findById(playerId).orElseThrow().getCivilianPopulation());
+        assertEquals(50, armyUnitRepository.findByPlayerIdAndType(playerId, "infantry").get(0).getCount());
         assertEquals(1, buildingRepository.findByPlayerIdAndType(playerId, "factory").get(0).getLevel());
         assertTrue(armyUnitRepository.findByPlayerIdAndType(playerId, "scout").isEmpty());
         assertTrue(armyUnitRepository.findByPlayerIdAndType(playerId, "recon_car").isEmpty());
@@ -50,6 +61,7 @@ class OnboardingTest extends BaseServiceTest {
 
     @Test
     void realStarterEconomyCompletesGroundReconnaissanceProgressionWithoutAircraft() {
+        assertEquals(0, completionMails().size(), "进入游戏不应提前发完成礼包");
         onboarding.pause(playerId, true);
         assertThrows(IllegalArgumentException.class, () -> onboarding.claim(playerId, "base"));
         build("command");
@@ -77,10 +89,12 @@ class OnboardingTest extends BaseServiceTest {
         assertTrue(complete("scout"), "情报生成后即可推进，无需等侦察部队返城");
         assertTrue(armyUnitRepository.findByPlayerIdAndType(playerId, "scout").isEmpty(), "新手侦查流程不需要侦察机");
         assertEquals("occupy", current());
+        assertEquals(0, completionMails().size(), "侦察完成仍未毕业");
         assertEquals(true, onboarding.target(playerId, false).get("scouted"));
         March conquer = dispatch(targetId, "wild", "conquer", Map.of("infantry", 50));
         arrive(conquer);
         assertTrue(complete("occupy")); assertEquals("report", current());
+        assertEquals(0, completionMails().size(), "首战胜利但未查看战果时不发礼包");
         ScoutReport battle = scoutReportRepository.findByPlayerId(playerId).stream().filter(r -> "battle".equals(r.getType())).findFirst().orElseThrow();
         assertTrue(JsonUtil.parseTree(battle.getData()).path("win").asBoolean());
         int diamond = getResources(playerId).getDiamond();
@@ -88,10 +102,25 @@ class OnboardingTest extends BaseServiceTest {
         var result = onboarding.status(playerId);
         assertEquals(true, result.get("done")); assertNull(result.get("current"));
         assertEquals(diamond + 100, getResources(playerId).getDiamond());
+        assertEquals(1, completionMails().size());
+        Mail gift = completionMails().get(0);
+        assertFalse(gift.getIsRead()); assertFalse(gift.getIsClaimed());
+        assertEquals("PROTECTED", gift.getAttachmentPolicy());
+        assertEquals("NEW_PLAYER", gift.getAttachmentSourceType());
+        assertTrue(gift.getCreatedAt() >= battle.getReadAt());
         long afterFood = getResources(playerId).getFood();
         onboarding.finish(playerId); onboarding.status(playerId); onboarding.start(playerId);
         assertEquals(afterFood, getResources(playerId).getFood());
         assertEquals(diamond + 100, getResources(playerId).getDiamond());
+        assertEquals(1, completionMails().size(), "重复完成和刷新不能重复发邮件");
+        long beforeGold = getResources(playerId).getGold();
+        mailService.claimAttach(playerId, gift.getId());
+        assertThrows(IllegalArgumentException.class, () -> mailService.claimAttach(playerId, gift.getId()));
+        assertEquals(beforeGold + 10000, getResources(playerId).getGold());
+        assertEquals(diamond + 150, getResources(playerId).getDiamond());
+        mailService.markRead(playerId, gift.getId()); mailService.delete(playerId, gift.getId());
+        onboarding.status(playerId); onboarding.finish(playerId);
+        assertEquals(0, completionMails().size(), "领完删除后不能刷新重发");
         assertEquals("available", task("gather").get("status"));
         assertFalse(result.containsKey("waitingForGather"));
     }
@@ -198,7 +227,7 @@ class OnboardingTest extends BaseServiceTest {
         assertFalse(complete("occupy")); assertFalse(complete("report"));
         report("battle", Map.of("targetType", "wild", "win", true, "wildConquered", false), true);
         assertTrue(complete("occupy")); assertTrue(complete("report"));
-        assertFalse((Boolean) onboarding.status(playerId).get("done"), "其他三个目标未完成不能毕业");
+        assertFalse((Boolean) onboarding.status(playerId).get("done"), "其他核心目标未完成不能毕业");
     }
 
     @Test
@@ -206,8 +235,9 @@ class OnboardingTest extends BaseServiceTest {
         onboarding.onEvent(playerId, "BUILD_UPGRADE_DONE", "farm", 1);
         long food = getResources(playerId).getFood(); int diamond = getResources(playerId).getDiamond();
         onboarding.skip(playerId); onboarding.skip(playerId); onboarding.claim(playerId, "base");
-        assertEquals(food + 8000, getResources(playerId).getFood()); assertEquals(diamond, getResources(playerId).getDiamond());
+        assertEquals(food + 20000, getResources(playerId).getFood()); assertEquals(diamond, getResources(playerId).getDiamond());
         assertEquals(true, onboarding.status(playerId).get("done")); assertNull(onboarding.status(playerId).get("current"));
+        assertEquals(0, completionMails().size(), "跳过不属于完成引导");
         assertThrows(IllegalArgumentException.class, () -> onboarding.target(playerId, false));
         assertThrows(IllegalArgumentException.class, () -> onboarding.recover(playerId));
         onboarding.onEvent(playerId, "OFFICER_RECRUIT", null, 1);
@@ -240,6 +270,10 @@ class OnboardingTest extends BaseServiceTest {
     private void report(String type, Map<String, Object> data, boolean read) {
         ScoutReport r = new ScoutReport(); r.setPlayerId(playerId); r.setType(type); r.setData(JsonUtil.toJson(data));
         r.setCreatedAt(System.currentTimeMillis()); r.setReadAt(read ? System.currentTimeMillis() : 0L); scoutReportRepository.save(r);
+    }
+    private List<Mail> completionMails() {
+        return mails.findByToPlayerIdOrderByCreatedAtDesc(playerId).stream()
+                .filter(m -> "reward:".concat(playerId.toString()).equals(m.getAttachmentSourceId())).toList();
     }
     private String current() { return (String) ((Map<?, ?>) onboarding.status(playerId).get("current")).get("id"); }
     @SuppressWarnings("unchecked")

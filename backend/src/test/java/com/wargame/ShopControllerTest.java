@@ -4,6 +4,8 @@ import com.wargame.controller.ShopController;
 import com.wargame.controller.DepotController;
 import com.wargame.model.UserPrincipal;
 import com.wargame.model.constants.ItemDef;
+import com.wargame.model.constants.MilitaryRankDef;
+import com.wargame.model.constants.RankExamDef;
 import com.wargame.model.dto.GameDtos;
 import com.wargame.model.entity.Officer;
 import com.wargame.model.entity.OfficerEquipment;
@@ -16,6 +18,8 @@ import com.wargame.repository.PlayerItemRepository;
 import com.wargame.service.DepotService;
 import com.wargame.service.CityScope;
 import com.wargame.service.OfficerService;
+import com.wargame.service.RankService;
+import com.wargame.util.JsonUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -59,6 +63,112 @@ public class ShopControllerTest extends BaseServiceTest {
     private PlayerItemRepository playerItemRepository;
 
     private Player player;
+
+    @Autowired private com.wargame.service.RankService ranks;
+
+    @ParameterizedTest
+    @CsvSource({"2,20", "3,40", "4,60", "5,80", "6,100", "7,150", "8,200", "9,300", "10,400",
+            "11,600", "12,800", "13,1000", "14,1200", "15,1500", "16,2000", "17,2500"})
+    void rankCertificatesChargeServerPricesAndOnlyEnterInventory(int tier, int price) {
+        Resources resources = resourcesRepository.findByPlayerIdAndCitySlot(player.getId(), 0).orElseThrow();
+        resources.setDiamond(price); resourcesRepository.saveAndFlush(resources);
+        String key = "rank_certificate_" + tier;
+        var response = shopController.buy(new GameDtos.ShopBuyRequest(key)).getBody();
+        assertEquals(true, response.get("success"));
+        assertEquals(price, response.get("price"));
+        assertEquals(price, response.get("totalCost"));
+        assertEquals(1, response.get("count"));
+        assertTrue(response.get("message").toString().contains(MilitaryRankDef.getRank(tier).certificateName()));
+        assertEquals(0, resourcesRepository.findByPlayerIdAndCitySlot(player.getId(), 0).orElseThrow().getDiamond());
+        assertEquals(1, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), key).orElseThrow().getCount());
+        assertEquals(1, playerRepository.findById(player.getId()).orElseThrow().getMilitaryRank());
+        // 购买高级凭证不授衔、不免除声望、胜场和笔试，也不能用于跳阶。
+        assertThrows(IllegalArgumentException.class, () -> ranks.promoteRank(player.getId()));
+        assertEquals(1, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), key).orElseThrow().getCount());
+    }
+
+    @Test
+    void certificatePurchaseRejectsDuplicatesBulkPastRanksAndInsufficientDiamonds() {
+        Resources resources = resourcesRepository.findByPlayerIdAndCitySlot(player.getId(), 0).orElseThrow();
+        resources.setDiamond(19); resourcesRepository.saveAndFlush(resources);
+        var response = shopController.buy(new GameDtos.ShopBuyRequest("rank_certificate_2")).getBody();
+        assertEquals(false, response.get("success"));
+        assertEquals("钻石不足", response.get("message"));
+        assertTrue(playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "rank_certificate_2").isEmpty());
+        assertEquals(19, resourcesRepository.findByPlayerIdAndCitySlot(player.getId(), 0).orElseThrow().getDiamond());
+
+        resources.setDiamond(5000); resourcesRepository.saveAndFlush(resources);
+        response = shopController.buy(new GameDtos.ShopBuyRequest("rank_certificate_2", 2)).getBody();
+        assertEquals("晋升凭证每次只能购买1张", response.get("message"));
+        assertEquals(5000, resourcesRepository.findByPlayerIdAndCitySlot(player.getId(), 0).orElseThrow().getDiamond());
+        assertEquals(true, shopController.buy(new GameDtos.ShopBuyRequest("rank_certificate_2")).getBody().get("success"));
+        for (int attempt = 0; attempt < 2; attempt++) {
+            try (var ignored = cityScope.enter(player.getId(), attempt)) {
+                response = shopController.buy(new GameDtos.ShopBuyRequest("rank_certificate_2")).getBody();
+                assertEquals(false, response.get("success"));
+                assertEquals("已持有该晋升凭证，无需重复购买", response.get("message"));
+            }
+        }
+        assertEquals(4980, resourcesRepository.findByPlayerIdAndCitySlot(player.getId(), 0).orElseThrow().getDiamond());
+        assertEquals(1, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "rank_certificate_2").orElseThrow().getCount());
+        player.setMilitaryRank(3); playerRepository.saveAndFlush(player);
+        response = shopController.buy(new GameDtos.ShopBuyRequest("rank_certificate_3")).getBody();
+        assertEquals("已获得该军衔，无需购买对应晋升凭证", response.get("message"));
+        assertTrue(playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "rank_certificate_3").isEmpty());
+        assertEquals(4980, resourcesRepository.findByPlayerIdAndCitySlot(player.getId(), 0).orElseThrow().getDiamond());
+    }
+
+    @Test
+    void legacyCertificateInventoryIsPreservedAndZeroStockCanBeBoughtOnce() {
+        Resources resources = resourcesRepository.findByPlayerIdAndCitySlot(player.getId(), 0).orElseThrow();
+        resources.setDiamond(500); resourcesRepository.saveAndFlush(resources);
+        playerItemRepository.saveAndFlush(new PlayerItem(null, player.getId(), "rank_certificate_2", 8, 0L));
+        playerItemRepository.saveAndFlush(new PlayerItem(null, player.getId(), "rank_certificate_3", 0, 0L));
+        assertEquals(false, shopController.buy(new GameDtos.ShopBuyRequest("rank_certificate_2")).getBody().get("success"));
+        assertEquals(8, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "rank_certificate_2").orElseThrow().getCount());
+        assertEquals(true, shopController.buy(new GameDtos.ShopBuyRequest("rank_certificate_3")).getBody().get("success"));
+        assertEquals(1, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "rank_certificate_3").orElseThrow().getCount());
+        for (String key : new String[]{"rank_certificate_1", "rank_certificate_18", "rank_certificate_02", "rank_certificate_2junk"}) {
+            assertEquals(false, shopController.buy(new GameDtos.ShopBuyRequest(key)).getBody().get("success"));
+            assertTrue(playerItemRepository.findByPlayerIdAndItemKey(player.getId(), key).isEmpty());
+        }
+        assertEquals(460, resourcesRepository.findByPlayerIdAndCitySlot(player.getId(), 0).orElseThrow().getDiamond());
+    }
+
+    @ParameterizedTest
+    @CsvSource({"2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17"})
+    void purchasedCertificateSupportsExamAndPromotionAtEveryTier(int tier) throws Exception {
+        var target = MilitaryRankDef.getRank(tier);
+        Long playerId = player.getId();
+        player.setMilitaryRank(tier - 1);
+        player.setPrestige(target.prestige());
+        player.setNpcVictories(target.npcVictories());
+        playerRepository.saveAndFlush(player);
+        var resources = resourcesRepository.findByPlayerIdAndCitySlot(playerId, 0).orElseThrow();
+        resources.setDiamond(target.certificatePrice());
+        resourcesRepository.saveAndFlush(resources);
+        assertEquals(false, ranks.getRankInfo(playerId).get("canTakeExam"));
+
+        var purchase = shopController.buy(new GameDtos.ShopBuyRequest(target.certificateKey())).getBody();
+        assertEquals(true, purchase.get("success"));
+        assertEquals(true, ranks.getRankInfo(playerId).get("canTakeExam"));
+        ranks.startExam(playerId);
+        var exam = JsonUtil.getMapper().readValue(playerRepository.findById(playerId).orElseThrow().getRankExam(), RankService.Exam.class);
+        var answers = exam.questions().stream().map(RankExamDef.Question::answer).toList();
+        assertEquals(true, ranks.submitExam(playerId, new RankService.ExamSubmission(exam.attemptId(), answers)).get("passed"));
+        assertEquals(1, playerItemRepository.findByPlayerIdAndItemKey(playerId, target.certificateKey()).orElseThrow().getCount());
+        assertEquals(true, ranks.promoteRank(playerId).get("success"));
+
+        Player promoted = playerRepository.findById(playerId).orElseThrow();
+        assertEquals(tier, promoted.getMilitaryRank());
+        assertEquals(target.prestige(), promoted.getPrestige());
+        assertEquals(target.npcVictories(), promoted.getNpcVictories());
+        assertNull(promoted.getRankExam());
+        assertEquals(0, playerItemRepository.findByPlayerIdAndItemKey(playerId, target.certificateKey()).orElseThrow().getCount());
+        assertEquals(0, resourcesRepository.findByPlayerIdAndCitySlot(playerId, 0).orElseThrow().getDiamond());
+        assertEquals("已获得该军衔，无需购买对应晋升凭证",
+                shopController.buy(new GameDtos.ShopBuyRequest(target.certificateKey())).getBody().get("message"));
+    }
 
     @BeforeEach
     void setUp() {
@@ -127,6 +237,45 @@ public class ShopControllerTest extends BaseServiceTest {
         assertTrue(until <= after + hours * 3600_000L);
         assertEquals(0, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), itemId).orElseThrow().getCount());
         assertEquals(until, cityStateRepository.findByPlayerIdAndCitySlot(player.getId(), cityScope.slot(player.getId())).orElseThrow().getShieldUntil());
+    }
+
+    @ParameterizedTest
+    @CsvSource({"basicMarchOrd,10,100", "advancedMarchOrd,25,250", "marchOrd,50,500"})
+    void buyAndUseMarchOrderTier(String itemId, int percent, int price) {
+        Resources resources = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
+        resources.setDiamond(price);
+        resourcesRepository.saveAndFlush(resources);
+        var purchased = shopController.buy(new GameDtos.ShopBuyRequest(itemId)).getBody();
+        assertEquals(true, purchased.get("success"));
+        assertEquals(price, purchased.get("price"));
+        assertEquals(0, resourcesRepository.findByPlayerId(player.getId()).orElseThrow().getDiamond());
+        assertEquals(1, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), itemId).orElseThrow().getCount());
+        long before = com.wargame.util.GameClock.now();
+        var used = depotService.useItem(player.getId(), itemId, null, null);
+        assertEquals(true, used.get("success"));
+        var city = cityStateRepository.findByPlayerIdAndCitySlot(player.getId(), 0).orElseThrow();
+        assertEquals(percent, city.getMarchBoostPercent());
+        assertEquals(1 + percent / 100.0, city.marchSpeedMultiplier(before));
+        assertTrue(city.getMarchBoostUntil() >= before + 3600_000L);
+        assertTrue(city.getMarchBoostUntil() <= com.wargame.util.GameClock.now() + 3600_000L);
+        assertEquals(0, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), itemId).orElseThrow().getCount());
+        Map<?, ?> state = (Map<?, ?>) gameStateService.getGameState(player.getId()).get("cityState");
+        assertEquals(percent, state.get("marchBoostPercent"));
+        assertEquals(city.getMarchBoostUntil(), state.get("marchBoostUntil"));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"expBook,10", "expBookAdv,100", "expBookRapid,500", "expBookMax,16400"})
+    void experienceBooksChargeTheirServerPricesAndOnlyEnterInventory(String itemId, int price) {
+        Resources resources = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
+        resources.setDiamond(price);
+        resourcesRepository.saveAndFlush(resources);
+        var purchased = shopController.buy(new GameDtos.ShopBuyRequest(itemId)).getBody();
+        assertEquals(true, purchased.get("success"));
+        assertEquals(price, purchased.get("price"));
+        assertEquals(0, resourcesRepository.findByPlayerId(player.getId()).orElseThrow().getDiamond());
+        assertEquals(1, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), itemId).orElseThrow().getCount());
+        assertTrue(purchased.get("message").toString().contains(ItemDef.ITEMS.get(itemId).name()));
     }
 
     @Test
@@ -241,19 +390,25 @@ public class ShopControllerTest extends BaseServiceTest {
     }
 
     @Test
-    @DisplayName("已移除的月卡充值档位不能发放钻石")
-    void removedMonthlyRechargePackagesAreUnavailable() {
+    @DisplayName("所有充值档位统一关闭，不发钻石、不增加 VIP 累充")
+    void allRechargePackagesAreUnavailable() {
         Resources res = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
         res.setDiamond(200);
-        resourcesRepository.save(res);
-        for (String packageId : new String[] { "mk30", "wk98" }) {
-            Map<String, Object> response = shopController.recharge(
-                    new GameDtos.ShopRechargeRequest(packageId, 30, 300, "模拟支付")).getBody();
-            assertNotNull(response);
-            assertEquals(false, response.get("success"));
-            assertEquals("无效的充值档位", response.get("message"));
+        resourcesRepository.saveAndFlush(res);
+        var before = playerRepository.findById(player.getId()).orElseThrow();
+        var vipLevel = before.getVipLevel();
+        var totalRecharge = before.getTotalRechargeCents();
+        for (String packageId : new String[] { "p6", "p30", "p98", "p198", "p328", "p648",
+                "p1280", "p3000", "p6000", "p10000", "mk30", "wk98", "invalid" }) {
+            var error = assertThrows(com.wargame.security.GameAccessException.class, () -> shopController.recharge(
+                    new GameDtos.ShopRechargeRequest(packageId, 1, 999999, "模拟支付")));
+            assertEquals("PAYMENT_DISABLED", error.getCode());
+            assertEquals("暂未开放充值，敬请期待", error.getMessage());
         }
         assertEquals(200, resourcesRepository.findByPlayerId(player.getId()).orElseThrow().getDiamond());
+        var after = playerRepository.findById(player.getId()).orElseThrow();
+        assertEquals(vipLevel, after.getVipLevel());
+        assertEquals(totalRecharge, after.getTotalRechargeCents());
     }
 
     @Test

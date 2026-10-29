@@ -1,6 +1,8 @@
 package com.wargame.controller;
 
 import com.wargame.model.dto.GameDtos;
+import com.wargame.model.constants.MilitaryRankDef;
+import com.wargame.model.constants.OfficerExperienceRules;
 import com.wargame.model.entity.PlayerItem;
 import com.wargame.model.entity.Resources;
 import com.wargame.repository.PlayerItemRepository;
@@ -19,15 +21,12 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * 商城控制器 - 处理钻石充值和道具购买。
+ * 商城控制器 - 处理道具购买并拦截尚未开放的充值。
  * 所有操作持久化到数据库，刷新页面不丢失。
  */
 @RestController
 @RequestMapping("/api/game/shop")
 public class ShopController {
-
-    @org.springframework.beans.factory.annotation.Autowired
-    private com.wargame.service.compliance.AntiAddictionService protection;
 
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
@@ -36,7 +35,7 @@ public class ShopController {
     private com.wargame.repository.PlayerRepository playerRepository;
 
     @org.springframework.beans.factory.annotation.Autowired
-    private com.wargame.service.VipService vipService;
+    private com.wargame.service.AccountService accounts;
 
     private final AuthService authService;
     private final ResourcesRepository resourcesRepository;
@@ -53,58 +52,20 @@ public class ShopController {
         this.gameStateService = gameStateService;
     }
 
-    /**
-     * 模拟充值：不接入第三方支付，点击确认后直接给当前玩家增加对应钻石。
-     */
+    /** 所有环境统一关闭充值；保留接口供旧客户端获得明确提示，不触发任何发钻或 VIP 累充。 */
     @PostMapping("/recharge")
-    @Transactional
-    public ResponseEntity<Map<String, Object>> recharge(@RequestBody GameDtos.ShopRechargeRequest request) {
-        // 当前只有模拟发钻接口，生产不提供付费服务，不能伪装成真实支付或绕过额度账本。
-        if (protection.enabled()) throw new com.wargame.security.GameAccessException("PAYMENT_DISABLED", "当前未开放充值服务");
-        Long playerId = authService.getCurrentPlayer().getId();
-        playerRepository.lockById(playerId).orElseThrow();
-        Map<String, Object> result = new LinkedHashMap<>();
-        Integer diamonds = ShopItemPrices.getRechargeDiamond(request.pkgId());
-        if (diamonds == null) {
-            result.put("success", false);
-            result.put("message", "无效的充值档位");
-            return ResponseEntity.ok(result);
-        }
-
-        Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, 0).orElse(null);
-        if (res == null) {
-            result.put("success", false);
-            result.put("message", "玩家资源数据不存在");
-            return ResponseEntity.ok(result);
-        }
-
-        int current = res.getDiamond() != null ? res.getDiamond() : 0;
-        res.setDiamond(current + diamonds);
-        resourcesRepository.saveAndFlush(res);
-
-        Long rmbCents = ShopItemPrices.getRechargeCents(request.pkgId());
-        if (rmbCents != null && rmbCents > 0) {
-            vipService.onRechargeSuccess(playerId, rmbCents);
-        }
-
-        result.put("success", true);
-        result.put("message", "模拟充值成功，钻石已到账");
-        result.put("pkgId", request.pkgId());
-        result.put("diamonds", diamonds);
-        result.put("diamond", res.getDiamond());
-        result.put("vip", vipService.getVipStatus(playerId));
-        result.put("state", gameStateService.getGameState(playerId));
-        return ResponseEntity.ok(result);
+    public ResponseEntity<Map<String, Object>> recharge(@RequestBody(required = false) GameDtos.ShopRechargeRequest request) {
+        throw new com.wargame.security.GameAccessException("PAYMENT_DISABLED", "暂未开放充值，敬请期待");
     }
 
     /**
-     * 商店购买道具：扣除钻石后入仓；新手礼包每个账号限购一次，入仓后自行开启。
+     * 商店购买道具：扣钻入仓；晋升凭证只允许购买尚未授衔且未持有的档位，每次一张。
      */
     @PostMapping("/buy")
     @Transactional
     public ResponseEntity<Map<String, Object>> buy(@RequestBody GameDtos.ShopBuyRequest request) {
         Long playerId = authService.getCurrentPlayer().getId();
-        playerRepository.lockById(playerId).orElseThrow();
+        var player = accounts.lockPlayer(playerId);
         Map<String, Object> result = new LinkedHashMap<>();
 
         String itemId = normalizeItemId(request.itemId());
@@ -129,6 +90,23 @@ public class ShopController {
             return ResponseEntity.ok(result);
         }
 
+        // 账号锁覆盖库存核验与扣钻，避免重复点击或跨城并发购买再次堆积同档凭证。
+        var certificateRank = MilitaryRankDef.certificateRank(itemId);
+        Optional<PlayerItem> certificateStock = Optional.empty();
+        if (certificateRank != null) {
+            // 使用锁定读取，避免 MySQL 可重复读快照漏掉等待期间已提交的购买。
+            certificateStock = playerItemRepository.findForPurchase(playerId, itemId);
+            String reason = count != 1 ? "晋升凭证每次只能购买1张"
+                    : certificateRank.tier() <= player.getMilitaryRank() ? "已获得该军衔，无需购买对应晋升凭证"
+                    : certificateStock.map(PlayerItem::getCount).orElse(0) > 0
+                    ? "已持有该晋升凭证，无需重复购买" : null;
+            if (reason != null) {
+                result.put("success", false);
+                result.put("message", reason);
+                return ResponseEntity.ok(result);
+            }
+        }
+
         // 新手礼包只从商城发放，库存行即购买凭据；开启后数量为零也不恢复购买资格。
         if ("newbiePack".equals(itemId)) {
             if (count > 1) {
@@ -144,7 +122,8 @@ public class ShopController {
             }
         }
 
-        Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, 0).orElse(null);
+        Resources res = (certificateRank != null ? resourcesRepository.findCityForTreatment(playerId, 0)
+                : resourcesRepository.findByPlayerIdAndCitySlot(playerId, 0)).orElse(null);
         if (res == null) {
             result.put("success", false);
             result.put("message", "玩家资源数据不存在");
@@ -173,7 +152,8 @@ public class ShopController {
 
         // 道具入仓
         String itemName = ShopItemPrices.getItemName(itemId);
-        Optional<PlayerItem> existing = playerItemRepository.findByPlayerIdAndItemKey(playerId, itemId);
+        Optional<PlayerItem> existing = certificateRank != null ? certificateStock
+                : playerItemRepository.findByPlayerIdAndItemKey(playerId, itemId);
         if (existing.isPresent()) {
             PlayerItem pi = existing.get();
             pi.setCount(pi.getCount() + count);
@@ -213,39 +193,14 @@ public class ShopController {
      * 集中管理避免前后端价格不一致导致的安全问题。
      */
     private static class ShopItemPrices {
-        private static final Map<String, Integer> RECHARGE_DIAMONDS = Map.ofEntries(
-            Map.entry("p6", 60),
-            Map.entry("p30", 330),
-            Map.entry("p98", 1080),
-            Map.entry("p198", 2230),
-            Map.entry("p328", 3780),
-            Map.entry("p648", 7680),
-            Map.entry("p1280", 15800),
-            Map.entry("p3000", 38000),
-            Map.entry("p6000", 78000),
-            Map.entry("p10000", 135000)
-        );
-
-        private static final Map<String, Long> RECHARGE_CENTS = Map.ofEntries(
-            Map.entry("p6", 600L),
-            Map.entry("p30", 3000L),
-            Map.entry("p98", 9800L),
-            Map.entry("p198", 19800L),
-            Map.entry("p328", 32800L),
-            Map.entry("p648", 64800L),
-            Map.entry("p1280", 128000L),
-            Map.entry("p3000", 300000L),
-            Map.entry("p6000", 600000L),
-            Map.entry("p10000", 1000000L)
-        );
-
         private static final Map<String, Integer> PRICES = Map.ofEntries(
             // 军官道具
-            Map.entry("expBook", 30),
-            Map.entry("expBookAdv", 150),
-            Map.entry("expBookMax", 1000),
+            Map.entry("expBook", 10),
+            Map.entry("expBookAdv", 100),
+            Map.entry("expBookRapid", OfficerExperienceRules.RAPID_BOOK_PRICE),
+            Map.entry("expBookMax", OfficerExperienceRules.maxBookPrice()),
             Map.entry("skillBook", 80),
-            Map.entry("universalSkillBook", 200),
+            Map.entry("universalSkillBook", 800),
             Map.entry("loyaltyBox", 50),
             Map.entry("renameCard", 60),
             Map.entry("cityRenameCard", 60),
@@ -279,7 +234,9 @@ public class ShopController {
             Map.entry("shield72h", 1350),
             Map.entry("teleportNormal", 100),
             Map.entry("teleportAdvanced", 500),
-            Map.entry("marchOrd", 100),
+            Map.entry("basicMarchOrd", 100),
+            Map.entry("advancedMarchOrd", 250),
+            Map.entry("marchOrd", 500),
             Map.entry("signalJammingOrder", 150),
             Map.entry("feintOrder", 250),
             Map.entry("warSpeedOrder", 250),
@@ -295,6 +252,7 @@ public class ShopController {
         private static final Map<String, String> NAMES = Map.ofEntries(
             Map.entry("expBook", "经验书"),
             Map.entry("expBookAdv", "高级经验书"),
+            Map.entry("expBookRapid", "极速经验书"),
             Map.entry("expBookMax", "满级经验书"),
             Map.entry("skillBook", "普通技能书"),
             Map.entry("universalSkillBook", "通用技能书"),
@@ -329,9 +287,11 @@ public class ShopController {
             Map.entry("shield72h", "72小时护盾"),
             Map.entry("teleportNormal", "普通传送"),
             Map.entry("teleportAdvanced", "高级传送"),
-            Map.entry("marchOrd", "行军令"),
+            Map.entry("basicMarchOrd", "初级行军令"),
+            Map.entry("advancedMarchOrd", "高级行军令"),
+            Map.entry("marchOrd", "极速行军令"),
             Map.entry("signalJammingOrder", "通讯干扰令"),
-            Map.entry("feintOrder", "佯动诱敌令"),
+            Map.entry("feintOrder", "撤退拖延令"),
             Map.entry("warSpeedOrder", "宣战加速令"),
             Map.entry("populationOrder", "人口动员令"),
             Map.entry("emergencyPopulationOrder", "紧急人口动员令"),
@@ -341,9 +301,9 @@ public class ShopController {
             Map.entry("newbiePack", "新手礼包")
         );
 
-        static Integer getRechargeDiamond(String pkgId) { return RECHARGE_DIAMONDS.get(pkgId); }
-        static Long getRechargeCents(String pkgId) { return RECHARGE_CENTS.get(pkgId); }
         static Integer getPrice(String itemId) {
+            var rank = MilitaryRankDef.certificateRank(itemId);
+            if (rank != null) return rank.certificatePrice();
             // 下架或未知商品返回空值供购买接口拒绝，避免三元表达式将空价格拆箱。
             if (specificSkillBookName(itemId) != null) return 160;
             Integer boxPrice = com.wargame.model.constants.OfficerEquipmentDef.boxPrice(itemId);
@@ -351,6 +311,8 @@ public class ShopController {
         }
 
         static String getItemName(String itemId) {
+            var rank = MilitaryRankDef.certificateRank(itemId);
+            if (rank != null) return rank.certificateName();
             String boxName = com.wargame.model.constants.OfficerEquipmentDef.boxName(itemId);
             if (boxName != null) return boxName;
             String specificBookName = specificSkillBookName(itemId);

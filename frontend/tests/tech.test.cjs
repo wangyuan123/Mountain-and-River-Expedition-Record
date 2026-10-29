@@ -109,6 +109,58 @@ function setupTestEnvironment(runtime = false) {
   return { G: context.Game, appendedElements, context };
 }
 
+test('all 240 research gold prices match the approved design and preserve other resource costs', () => {
+  const { G } = setupTestEnvironment(true);
+  const design = JSON.parse(fs.readFileSync(path.join(__dirname, '../../docs/balance/tech-research-gold-design-20261028.json'), 'utf8'));
+  const covered = new Set();
+  let total = 0;
+  for (const group of design.groups) {
+    for (const tech of group.technologies) {
+      assert.ok(!covered.has(tech.key));
+      covered.add(tech.key);
+      const definition = G.DATA.techs[tech.key];
+      assert.equal(G.Constants.researchGold.techGroups[tech.key], group.key);
+      assert.equal(definition.baseCost.gold, undefined);
+      let previous = 0;
+      let cumulative = 0;
+      for (const row of group.levels) {
+        const cost = G.techCost(tech.key, row.fromLevel);
+        assert.equal(cost.gold, row.gold, tech.key + ' Lv.' + row.targetLevel);
+        assert.ok(cost.gold > previous);
+        for (const [key, value] of Object.entries(definition.baseCost)) {
+          assert.equal(cost[key], Math.floor(value * Math.pow(definition.growth, row.fromLevel)));
+        }
+        assert.equal(Object.keys(cost).length, Object.keys(definition.baseCost).length + 1);
+        cumulative += cost.gold;
+        assert.equal(cumulative, row.cumulativeGold);
+        total += cost.gold;
+        previous = cost.gold;
+      }
+    }
+  }
+  assert.deepEqual([...covered].sort(), Object.keys(G.DATA.techs).sort());
+  assert.deepEqual(Object.keys(G.Constants.researchGold.techGroups).sort(), [...covered].sort());
+  assert.equal(total, 2019962000);
+});
+
+test('gold shortage disables research confirmation and the card displays the same required gold', () => {
+  const { G, appendedElements } = setupTestEnvironment(true);
+  G.Core.state.tech.attack_tech = 0;
+  G.Core.state.resources = { steel: 1000, food: 1000, gold: 5999 };
+  G.Core.costEnough = cost => Object.entries(cost).every(([key, value]) => (G.Core.state.resources[key] || 0) >= value);
+  G.Tech.confirmResearch('attack_tech');
+  assert.match(appendedElements.at(-1).innerHTML, /需 6000/);
+  assert.match(appendedElements.at(-1).innerHTML, /id="cuOk" disabled/);
+  const container = {};
+  G.Tech.renderView(container);
+  assert.match(container.innerHTML, /6000/);
+  G.Core.state.resources.gold = 6000;
+  G.Tech.confirmResearch('attack_tech');
+  assert.match(appendedElements.at(-1).innerHTML, /id="cuOk">开始研发/);
+  G.Tech.showResearchInfo();
+  assert.match(appendedElements.at(-1).innerHTML, /资源产量科技2000万、普通科技3000万、燃烧引擎5000万、喷气推进6500万、舰船动力8000万/);
+});
+
 test('recon onboarding focuses the speed-up item in the actual picker and clears it on close', () => {
   const { G, context } = setupTestEnvironment();
   const row = {};

@@ -66,7 +66,7 @@ class MilitaryTheoryTest extends BaseServiceTest {
     @ValueSource(ints = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10})
     void everyTargetLevelRequiresAllCompletedLocalFacilitiesBeforePayment(int target) {
         Long id = createTestPlayer().getId();
-        giveResources(id, 1000000, 1000000, 1000000, 1000000, 1000000);
+        giveResources(id, 1000000, 1000000, 1000000, 1000000, 50000000);
         createTechnology(id, "military_theory", target - 1);
         Building lab = createBuilding(id, "lab", Math.max(2, target));
         Building academy = createBuilding(id, "academy", target);

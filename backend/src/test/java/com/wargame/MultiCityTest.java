@@ -7,6 +7,8 @@ import com.wargame.repository.ArmyProductionQueueRepository;
 import com.wargame.repository.PlayerItemRepository;
 import com.wargame.service.*;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -44,14 +46,20 @@ class MultiCityTest extends BaseServiceTest {
     private int troop(int slot) { return armyUnitRepository.findByPlayerIdAndCitySlotAndType(player.getId(), slot, "infantry").stream().mapToInt(ArmyUnit::getCount).sum(); }
 
     @Test void allSeventeenRanksHaveTheAgreedCap() {
-        int[] caps = {1,1,1,2,2,2,3,3,3,4,4,4,5,5,6,7,8};
+        int[] caps = {1,2,3,4,4,5,5,6,6,6,7,7,7,7,8,8,8};
         for (int i = 1; i <= 17; i++) assertEquals(caps[i - 1], MilitaryRankDef.getCityCap(i));
-        assertEquals("中士", MilitaryRankDef.nextCityRank(1).name());
+        assertEquals("上等兵", MilitaryRankDef.nextCityRank(1).name());
+        assertEquals("军士长", MilitaryRankDef.nextCityRank(4).name());
+        assertEquals("少尉", MilitaryRankDef.nextCityRank(6).name());
+        assertEquals("少校", MilitaryRankDef.nextCityRank(8).name());
+        assertEquals("少将", MilitaryRankDef.nextCityRank(11).name());
+        assertNull(MilitaryRankDef.nextCityRank(15));
+        assertNull(MilitaryRankDef.nextCityRank(16));
         assertNull(MilitaryRankDef.nextCityRank(17));
     }
 
     @Test void foundingReservesSlotsChargesOnceAndRequiresAnOwnedSuitableSite() {
-        player.setMilitaryRank(4); playerRepository.save(player);
+        player.setMilitaryRank(2); playerRepository.save(player);
         WildTile tile = site(20);
         PlayerCity city = cities.found(player.getId(), tile.getId(), "北山城");
         assertTrue(city.getReadyAt() > System.currentTimeMillis());
@@ -62,6 +70,28 @@ class MultiCityTest extends BaseServiceTest {
         assertThrows(IllegalArgumentException.class, () -> cities.found(player.getId(), site(30).getId(), "第三城"));
         assertEquals(90000, balance(0).getGold());
         assertEquals(2, cities.overview(player.getId()).get("count"));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"2,2", "3,3", "4,4", "6,5", "8,6", "11,7", "14,7", "15,8", "16,8", "17,8"})
+    void foundingUsesLastRankSlotAndRejectsOverflowWithoutCharging(int tier, int cap) {
+        player.setMilitaryRank(tier); playerRepository.save(player);
+        for (int slot = 1; slot < cap - 1; slot++) {
+            PlayerCity reserved = new PlayerCity();
+            reserved.setOwnerId(player.getId()); reserved.setCitySlot(slot); reserved.setName("建设中" + slot);
+            reserved.setWorldId(world.getId()); reserved.setX(40 + 3 * slot); reserved.setY(40);
+            reserved.setReadyAt(System.currentTimeMillis() + CityService.BUILD_DURATION_MS);
+            playerCityRepository.save(reserved);
+        }
+        cities.found(player.getId(), site(20).getId(), "最后名额");
+        assertEquals(cap, cities.overview(player.getId()).get("cap"));
+        assertEquals(cap, cities.overview(player.getId()).get("count"));
+        assertEquals(90000, balance(0).getGold());
+        WildTile extra = site(30);
+        assertThrows(IllegalArgumentException.class, () -> cities.found(player.getId(), extra.getId(), "超额城市"));
+        assertEquals(90000, balance(0).getGold());
+        assertTrue(wildTileRepository.existsById(extra.getId()));
+        assertEquals(cap, cities.overview(player.getId()).get("count"));
     }
 
     @Test void invalidSiteAndPrestigeAloneNeverUnlockCities() {

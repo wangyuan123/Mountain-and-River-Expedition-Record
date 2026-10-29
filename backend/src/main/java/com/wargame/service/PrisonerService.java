@@ -19,6 +19,7 @@ import java.util.*;
 @RequiredArgsConstructor
 @Transactional
 public class PrisonerService {
+    @org.springframework.beans.factory.annotation.Autowired private ArmyPopulationService populationCosts;
     private final PrisonerUnitRepository prisoners;
     private final BattleSettlementRepository settlements;
     private final PrisonerOperationRepository operations;
@@ -283,6 +284,7 @@ public class PrisonerService {
             List<ArmyUnit> existing = currentRows(ArmyUnit.class, "and r.citySlot = :slot", playerId, city.getCitySlot()).stream()
                     .filter(a -> unit.equals(a.getType())).toList();
             ArmyUnit recruited = existing.isEmpty() ? new ArmyUnit(null, playerId, unit, 0) : existing.get(0);
+            populationCosts.grant(playerId, unit, count);
             recruited.setCitySlot(city.getCitySlot()); recruited.setCount(Math.addExact(recruited.getCount(), count)); army.save(recruited);
         }
         int remaining = count;

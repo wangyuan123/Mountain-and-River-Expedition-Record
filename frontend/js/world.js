@@ -506,18 +506,6 @@ window.Game = window.Game || {};
       if (this._refreshDispatchRoute) this._refreshDispatchRoute();
     },
 
-    /** 只允许将有库存的战争动员令挂到当前进攻出征草稿。 */
-    setMobilizationOrder: function (itemId) {
-      var dt = Core.state.world._dispatchTarget;
-      if (!dt) return;
-      var action = this.resolveDispatchAction(dt);
-      var isAttack = (G.Constants.campaignModes || []).some(function (mode) { return mode.action === action; });
-      var item = (G.Constants.mobilizationOrders || []).find(function (order) { return order.id === itemId; });
-      if (itemId && (!isAttack || !item || !(Number((Core.state.items || {})[itemId]) > 0))) return;
-      dt.mobilizationOrderItem = itemId || null;
-      this.updateDispatchStats();
-    },
-
     /** 仅定位有库存的运输兵种，不自动增兵或更改出征草稿。 */
     focusTransportUnit: function () {
       var input = ['truck', 'transport'].map(function (id) { return document.getElementById('dqty_' + id); })
@@ -640,7 +628,7 @@ window.Game = window.Game || {};
           '<div class="modal-body">' +
             '<p>当前军衔：' + esc(rank.name) + '，基础上限 ' + G.fmt(rankBase) + '。</p>' +
             '<p>三军统帅：任命指挥官后每级额外 +4%，最高 +20%；当前 Lv.' + skillLevel + '，加成 +' + skillPercent + '%。</p>' +
-            '<p><strong>当前带兵上限：' + G.fmt(total) + '</strong></p>' +
+            (G.Mobilization ? G.Mobilization.widget() : '') + '<p><strong>当前带兵上限：' + G.fmt(total) + '</strong></p>' +
             '<p>市政厅、作战参谋部和指挥官等级不直接增加上限；单次出征还需有足够的当前城市可用驻军。</p>' +
           '</div>' +
           '<div class="modal-foot"><button type="button" class="btn btn-primary" id="dispatchCapClose">知道了</button></div>' +
@@ -1083,7 +1071,7 @@ window.Game = window.Game || {};
       var speedRes = this.calcDispatchSpeed(army || {});
       var cs = s.cityState || {};
       var hasBoost = cs.marchBoostUntil && cs.marchBoostUntil > now;
-      var speedMul = hasBoost ? 1.5 : 1.0;
+      var speedMul = hasBoost ? 1 + (cs.marchBoostPercent == null ? 50 : Number(cs.marchBoostPercent)) / 100 : 1.0;
       var secPerGrid = (D.world && D.world.marchSecPerGrid) || 18;
       var slowestSpd = speedRes && speedRes.slowestSpd ? speedRes.slowestSpd : 6.0;
       var vOur = Math.max(0.05, (slowestSpd * speedMul) / secPerGrid); // 我方截击航速（格/秒）
@@ -1239,23 +1227,12 @@ window.Game = window.Game || {};
       }
 
       var armyCap = typeof Core.armyCap === 'function' ? Math.max(0, Number(Core.armyCap()) || 0) : 0;
-      var mobilizationSelect = document.getElementById('dpMobilizationOrder');
-      var orderId = mobilizationSelect ? mobilizationSelect.value : (dt && dt.mobilizationOrderItem);
-      var order = (G.Constants.mobilizationOrders || []).find(function (item) { return item.id === orderId; });
-      var action = dt ? this.resolveDispatchAction(dt) : null;
-      var isAttack = (G.Constants.campaignModes || []).some(function (mode) { return mode.action === action; });
-      var activeOrder = isAttack && Number((s.items || {})[orderId]) > 0 ? order : null;
-      var effectiveArmyCap = activeOrder ? Math.floor(armyCap * (100 + activeOrder.bonusPercent) / 100) : armyCap;
+      var effectiveArmyCap = armyCap;
       var troopCountEl = document.getElementById('estDispatchTroops');
       if (troopCountEl) {
         troopCountEl.textContent = G.fmt(selectedTroops) + ' / ' + G.fmt(effectiveArmyCap);
         troopCountEl.style.color = selectedTroops > effectiveArmyCap ? 'var(--danger, #c53030)' : '';
       }
-      var mobilizationSummary = document.getElementById('dpMobilizationSummary');
-      if (mobilizationSummary) mobilizationSummary.textContent = activeOrder
-        ? '本次上限 ' + G.fmt(effectiveArmyCap) + '（基础 ' + G.fmt(armyCap) + '，+' + activeOrder.bonusPercent + '%）'
-        : '当前基础带兵上限 ' + G.fmt(armyCap);
-
       var maxMarches = typeof Core.maxMarches === 'function' ? Core.maxMarches() : (4 + ((s.buildings && s.buildings.headquarters) || 0));
       var activeMarches = (s.world && s.world.marches) || (Core.state && Core.state.world && Core.state.world.marches) || [];
       var queueCountEl = document.getElementById('estDispatchQueues');
@@ -1318,7 +1295,7 @@ window.Game = window.Game || {};
       var now = G.gameNow();
       var cs = s.cityState || {};
       var hasBoost = cs.marchBoostUntil && cs.marchBoostUntil > now;
-      var speedMul = hasBoost ? 1.5 : 1.0;
+      var speedMul = hasBoost ? 1 + (cs.marchBoostPercent == null ? 50 : Number(cs.marchBoostPercent)) / 100 : 1.0;
 
       var distEl = document.getElementById('estMarchDist');
       var speedEl = document.getElementById('estMarchSpeed');
@@ -1333,6 +1310,7 @@ window.Game = window.Game || {};
 
       if (boostTagEl) {
         boostTagEl.style.display = hasBoost ? 'inline-block' : 'none';
+        boostTagEl.textContent = '⚡ 行军加速生效中 (+' + Math.round((speedMul - 1) * 100) + '%)';
       }
 
       if (!speedRes.slowestSpd) {
@@ -1377,7 +1355,7 @@ window.Game = window.Game || {};
           tip = '单一兵种【' + speedRes.slowestUnitName + '】全速推进 (基速 ' + (slowestUnit ? slowestUnit.baseSpd : '') + (techStr ? ' ·' + techStr : '') + ')';
         }
         if (hasBoost) {
-          tip += ' · ⚡行军加速生效中 (+50%)';
+          tip += ' · ⚡行军加速生效中 (+' + Math.round((speedMul - 1) * 100) + '%)';
         }
         speedTipEl.textContent = tip;
       }
@@ -1591,18 +1569,7 @@ window.Game = window.Game || {};
       var hasArmyCap = typeof Core.armyCap === 'function';
       var armyCap = hasArmyCap ? Math.max(0, Number(Core.armyCap()) || 0) : 0;
       var format = typeof G.fmt === 'function' ? G.fmt : String;
-      var mobilizationSelect = document.getElementById('dpMobilizationOrder');
-      var mobilizationOrderItem = mobilizationSelect ? mobilizationSelect.value : dt.mobilizationOrderItem;
-      var mobilizationOrder = (G.Constants.mobilizationOrders || []).find(function (order) { return order.id === mobilizationOrderItem; });
-      var canUseMobilization = (G.Constants.campaignModes || []).some(function (mode) { return mode.action === dispatchAction; });
-      if (hasArmyCap && selectedTroops > armyCap && canUseMobilization && mobilizationOrder
-          && !(Number((s.items || {})[mobilizationOrderItem]) > 0)) {
-        G.toast(mobilizationOrder.name + '数量不足');
-        return;
-      }
-      var dispatchArmyCap = canUseMobilization && mobilizationOrder
-        ? Math.floor(armyCap * (100 + mobilizationOrder.bonusPercent) / 100)
-        : armyCap;
+      var dispatchArmyCap = armyCap;
       // 前端提前反馈，后端仍会在扣除资源与兵力前复核，防止绕过界面请求。
       if (hasArmyCap && selectedTroops > dispatchArmyCap) {
         G.toast('出征兵力超过带兵上限 ' + format(dispatchArmyCap) + '（当前选择 ' + format(selectedTroops) + '）');
@@ -1650,7 +1617,6 @@ window.Game = window.Game || {};
         commanderId: commanderId,
         carryRes: carryRes
       };
-      if (canUseMobilization && mobilizationOrderItem) dispatchRequest.mobilizationOrderItem = mobilizationOrderItem;
       if (dt.kind === 'wild_gather') {
         // 固定提交手动流程，旧草稿中的自动模式和放弃配置均不能继续生效。
         dispatchRequest.gatherMode = 'manual';
@@ -1949,6 +1915,9 @@ window.Game = window.Game || {};
       var token = G.API.getToken ? G.API.getToken() : null;
       var route = Core.route;
       var pending = false, failed = false, closed = false, timer = null, preview = null;
+      var tiers = G.Constants.marchOrderTiers;
+      var itemKey = tiers.find(function (key) { return Number((state.items || {})[key]) > 0; }) || tiers[0];
+      var previewRequest = 0;
       var deployingInterception = !returning && march.action === 'intercept_scout' && march.deployAt != null;
       var title = returning ? '加速回城' : deployingInterception ? '加速出城部署' : '加速行军';
       var mask = document.createElement('div');
@@ -1959,8 +1928,11 @@ window.Game = window.Game || {};
       mask.innerHTML = '<div class="modal-card march-speedup-dialog">' +
         '<div class="modal-title" id="marchSpeedUpTitle">' + title + '</div><div class="modal-body">' +
         '<p class="march-speedup-target">目的地：' + esc(march.targetName || '目标') + ' (' + esc(march.targetX) + ',' + esc(march.targetY) + ')</p>' +
+        '<p><label>行军令档位：<select data-march-tier>' + tiers.map(function (key) {
+          return '<option value="' + key + '"' + (key === itemKey ? ' selected' : '') + '>' + esc(D.items[key].name) + '</option>';
+        }).join('') + '</select></label></p>' +
         '<p>' + (deployingInterception ? '到位剩余时间' : '剩余时间') + '：<b data-march-before></b> &rarr; <b data-march-after></b></p>' +
-        '<p>预计节省：<b data-march-saved></b></p><p data-march-effect></p><p data-march-stock></p><p>加速后至少保留30秒。</p>' +
+        '<p>预计节省：<b data-march-saved></b></p><p data-march-effect></p><p data-march-stock></p><p>加速后至少保留' + (deployingInterception ? '10' : '30') + '秒。</p>' +
         '<p class="desc">' + (deployingInterception ? '加速仅缩短本队到位时间，到位后等待敌军；预计交火时间由敌军行进决定。' : '仅加速本队当前路段，去程与回程各限一次。') + '</p>' +
         '<p class="march-speedup-status" data-march-status role="status" aria-live="polite"></p></div>' +
         '<div class="modal-foot"><button type="button" class="btn" data-march-cancel>取消</button>' +
@@ -1968,6 +1940,8 @@ window.Game = window.Game || {};
       document.body.appendChild(mask);
       var cancel = mask.querySelector('[data-march-cancel]'), ok = mask.querySelector('[data-march-confirm]');
       var status = mask.querySelector('[data-march-status]');
+      var tierSelect = mask.querySelector('[data-march-tier]');
+      tierSelect.value = itemKey;
       var previousFocus = document.activeElement;
       function dispose() {
         closed = true;
@@ -1995,14 +1969,14 @@ window.Game = window.Game || {};
         var current = Core.state || {};
         var live = ((current.world || {}).marches || []).find(function (m) { return String(m.id) === String(marchId); });
         var valid = preview && live && !!live.returning === returning && live.version === version && self.canAccelerateMarch(live, G.gameNow());
-        var stock = Math.max(0, Number((current.items || {}).marchOrd) || 0);
+        var stock = Math.max(0, Number((current.items || {})[itemKey]) || 0);
         var remaining = Math.max(0, Number(!march.returning && march.deployAt != null ? march.deployAt : march.arriveAt) - G.gameNow());
-        var after = Math.min(remaining, Math.max(G.Constants.marchAcceleration.minRemainingMs,
-          Math.ceil(remaining * (1 - (preview ? preview.ratio : 0.5)))));
+        var after = Math.min(remaining, Math.max(deployingInterception ? 10000 : G.Constants.marchAcceleration.minRemainingMs,
+          Math.ceil(remaining * (1 - (preview ? preview.ratio : 0)))));
         mask.querySelector('[data-march-before]').textContent = self.marchTimeText(remaining);
         mask.querySelector('[data-march-after]').textContent = self.marchTimeText(after);
         mask.querySelector('[data-march-saved]').textContent = self.marchTimeText(remaining - after);
-        mask.querySelector('[data-march-stock]').textContent = '行军令：消耗 1 枚，库存 ' + stock + ' 枚';
+        mask.querySelector('[data-march-stock]').textContent = D.items[itemKey].name + '：消耗 1 枚，库存 ' + stock + ' 枚';
         mask.querySelector('[data-march-effect]').textContent = preview ? self.orderEffectText(preview) : '正在获取指挥官与效果预览…';
         ok.disabled = !valid;
         ok.textContent = stock ? '确认加速' : '前往商城';
@@ -2015,7 +1989,9 @@ window.Game = window.Game || {};
         if (event.key === 'Escape') close();
         if (event.key === 'Tab') {
           event.preventDefault();
-          (document.activeElement === cancel && !ok.disabled ? ok : cancel).focus();
+          var controls = [tierSelect, cancel, ok].filter(function (control) { return !control.disabled; });
+          var index = controls.indexOf(document.activeElement);
+          controls[(index + (event.shiftKey ? controls.length - 1 : 1)) % controls.length].focus();
         }
       };
       ok.onclick = function () {
@@ -2024,10 +2000,11 @@ window.Game = window.Game || {};
         if (!check.valid) return;
         if (!check.stock) { close(); G.go('shop'); return; }
         pending = true;
+        tierSelect.disabled = true;
         ok.disabled = cancel.disabled = true;
         ok.textContent = '加速中…';
         status.textContent = '';
-        G.API.speedUpMarch(Number(marchId), returning, version, preview.confirmationToken).then(function (result) {
+        G.API.speedUpMarch(Number(marchId), returning, version, preview.confirmationToken, itemKey).then(function (result) {
           pending = false;
           dispose();
           if (!sameContext()) return;
@@ -2050,19 +2027,33 @@ window.Game = window.Game || {};
           }).catch(function () {});
         });
       };
-      update();
-      timer = setInterval(update, 1000);
-      G.API.previewMarchOrder(Number(marchId), 'marchOrd').then(function (effect) {
-        if (closed || !sameContext()) return;
-        if (effect.version !== version || !!effect.returning !== returning) { failed = true; status.textContent = '行军状态已变化，请重新打开确认'; return; }
-        preview = effect;
+      /** 档位切换后重新向服务端预览，忽略旧档位的迟到响应，防止错扣库存。 */
+      function loadPreview() {
+        var request = ++previewRequest;
+        preview = null;
+        failed = false;
         update();
-      }).catch(function (error) {
-        if (closed || !sameContext()) return;
-        failed = true;
-        status.textContent = error.message || '获取预览失败，请重新打开确认';
-        ok.disabled = true;
-      });
+        G.API.previewMarchOrder(Number(marchId), itemKey).then(function (effect) {
+          if (closed || !sameContext() || request !== previewRequest) return;
+          if (effect.version !== version || !!effect.returning !== returning) {
+            failed = true; status.textContent = '行军状态已变化，请重新打开确认'; return;
+          }
+          preview = effect;
+          update();
+        }).catch(function (error) {
+          if (closed || !sameContext() || request !== previewRequest) return;
+          failed = true;
+          status.textContent = error.message || '获取预览失败，请重新打开确认';
+          ok.disabled = true;
+        });
+      }
+      tierSelect.onchange = function () {
+        if (pending || closed || failed || tiers.indexOf(tierSelect.value) < 0) return;
+        itemKey = tierSelect.value;
+        loadPreview();
+      };
+      loadPreview();
+      timer = setInterval(update, 1000);
       (ok.disabled ? cancel : ok).focus();
     },
 
@@ -2312,25 +2303,8 @@ window.Game = window.Game || {};
         h += '</section>';
       }
 
-      var dispatchAction = this.resolveDispatchAction(dt);
-      var canMobilize = (G.Constants.campaignModes || []).some(function (mode) { return mode.action === dispatchAction; });
-      if (canMobilize) {
-        var mobilizationOrders = G.Constants.mobilizationOrders || [];
-        var selectedMobilizationOrder = dt.mobilizationOrderItem || '';
-        if (!(Number((s.items || {})[selectedMobilizationOrder]) > 0)) selectedMobilizationOrder = '';
-        dt.mobilizationOrderItem = selectedMobilizationOrder || null;
-        h += '<section class="dispatch-campaign-settings" aria-label="战争动员令">';
-        h += '<div class="dispatch-campaign-choice"><label for="dpMobilizationOrder">战争动员令<small>编队超过基础带兵上限时消耗1个</small></label>';
-        h += '<select id="dpMobilizationOrder" onchange="Game.World.setMobilizationOrder(this.value)">';
-        h += '<option value="">不使用</option>';
-        mobilizationOrders.forEach(function (order) {
-          var count = Number((s.items || {})[order.id]) || 0;
-          h += '<option value="' + order.id + '"' + (selectedMobilizationOrder === order.id ? ' selected' : '') + (count <= 0 ? ' disabled' : '') + '>' + order.name + ' +' + order.bonusPercent + '%（库存 ' + count + '）</option>';
-        });
-        h += '</select></div>';
-        h += '<p id="dpMobilizationSummary" role="status">当前基础带兵上限 ' + G.fmt(typeof Core.armyCap === 'function' ? Core.armyCap() : 0) + '</p>';
-        h += '</section>';
-      }
+      if (G.Mobilization) h += '<section aria-label="账号动员">' + G.Mobilization.widget() +
+        '<p>当前带兵上限 <span data-mobilization-cap>' + G.fmt(Core.armyCap()) + '</span>；动员令在仓库使用。</p></section>';
 
       if (isScout) {
         var ground = dt.groundRecon || {};
@@ -2403,7 +2377,7 @@ window.Game = window.Game || {};
       h += '<div class="dispatch-stats-card" id="dispatchStatsCard">';
       h += '  <div class="dispatch-stats-header">';
       h += '    <span class="dispatch-stats-title">' + (isInterception ? (scoutInterception ? '防空截击战力评估' : '截击编队状态') : '行军与编队军情') + '</span>';
-      h += '    <span class="dispatch-boost-tag" id="estMarchBoostTag" style="display:none">⚡ 行军加速生效中 (+50%)</span>';
+      h += '    <span class="dispatch-boost-tag" id="estMarchBoostTag" style="display:none">⚡ 行军加速生效中</span>';
       h += '  </div>';
       h += '  <div class="dispatch-stats-grid">';
       h += '    <div class="dispatch-stat-item">';
@@ -4561,7 +4535,7 @@ window.Game = window.Game || {};
               h += '<button type="button" class="btn sm" onclick="Game.World.locateTarget(' + m.targetX + ',' + m.targetY + ')">定位</button>';
             }
             if (this.canAccelerateMarch(m, now)) {
-              h += '<button type="button" class="btn ok sm" data-accelerate-id="' + Number(m.id) + '" onclick="Game.World.speedUpMarch(' + Number(m.id) + ')">' + (m.returning ? '加速回城' : '[⚡加速50%] 加速行军') + '</button>';
+              h += '<button type="button" class="btn ok sm" data-accelerate-id="' + Number(m.id) + '" onclick="Game.World.speedUpMarch(' + Number(m.id) + ')">' + (m.returning ? '加速回城' : '[⚡加速] 加速行军') + '</button>';
             } else if (this.marchInTransit(m, now) && (m.returning ? m.returnAccelerated : m.outboundAccelerated)) {
               h += '<button type="button" class="btn sm" disabled>已加速</button>';
             }

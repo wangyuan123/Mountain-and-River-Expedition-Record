@@ -257,7 +257,7 @@ test('出征卡片展示 [出征] 字符Badge、进度条与加速召回按钮',
   assert.match(view.innerHTML, /到达/);
   assert.match(view.innerHTML, /\[■■■■□□□□□□\] 40%/);
   assert.match(view.innerHTML, /85,000兵力/);
-  assert.match(view.innerHTML, /\[⚡加速50%\]/);
+  assert.match(view.innerHTML, /\[⚡加速\]/);
   assert.match(view.innerHTML, />召回</);
 });
 

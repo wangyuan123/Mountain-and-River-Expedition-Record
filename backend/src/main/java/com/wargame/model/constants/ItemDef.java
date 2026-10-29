@@ -29,6 +29,7 @@ public record ItemDef(
             // —— 军官道具 ——
             Map.entry("expBook",    new ItemDef("expBook",    "经验书",      "img/items/exp-book.svg", CAT_OFFICER, "军官使用,获得10000经验", 0)),
             Map.entry("expBookAdv", new ItemDef("expBookAdv", "高级经验书",  "img/items/exp-book-adv.svg", CAT_OFFICER, "每本提供100000经验，可批量使用", 0)),
+            Map.entry("expBookRapid", new ItemDef("expBookRapid", "极速经验书", "img/items/exp-book-adv.svg", CAT_OFFICER, "每本提供500000经验，可批量使用", 0)),
             Map.entry("expBookMax", new ItemDef("expBookMax", "满级经验书",  "img/items/exp-book-max.svg", CAT_OFFICER, "使用1本即可将1～99级军官直接升至满级(Lv.100)，补足升级属性点", 0)),
             Map.entry("skillBook",  new ItemDef("skillBook",  "普通技能书",  "img/items/skill-book.svg", CAT_OFFICER, "军官使用，随机学习一个未掌握且不互斥的技能，初始等级受军官星级影响", 0)),
             Map.entry("universalSkillBook", new ItemDef("universalSkillBook", "通用技能书", "img/items/universal-skill-book.svg", CAT_OFFICER, "从技能池自选一个未掌握且不互斥的技能，学习后为 Lv.1；仅用于学习，不用于升级", 0)),
@@ -94,20 +95,30 @@ public record ItemDef(
             Map.entry("shield12h", new ItemDef("shield12h", "12小时护盾", "img/items/shield-12h.svg", CAT_UTIL, "本城12小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地", 0)),
             Map.entry("shield24h", new ItemDef("shield24h", "24小时护盾", "img/items/shield-24h.svg", CAT_UTIL, "本城24小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地", 0)),
             Map.entry("shield72h", new ItemDef("shield72h", "72小时护盾", "img/items/shield-72h.svg", CAT_UTIL, "本城72小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地", 0)),
-            Map.entry("marchOrd",  new ItemDef("marchOrd", "行军令", "img/items/march-ord.svg", CAT_UTIL, "仓库启用：行军速度+50%，持续1小时；情报使用：基础缩短剩余时间50%，指挥官学识提高效果，最高80%，至少保留30秒", 0)),
+            Map.entry("basicMarchOrd", new ItemDef("basicMarchOrd", "初级行军令", "img/items/march-ord.svg", CAT_UTIL, "仓库启用：行军速度+10%，持续1小时；情报使用：基础缩短剩余时间10%，指挥官学识提高效果，最高40%，至少保留30秒", 0)),
+            Map.entry("advancedMarchOrd", new ItemDef("advancedMarchOrd", "高级行军令", "img/items/march-ord.svg", CAT_UTIL, "仓库启用：行军速度+25%，持续1小时；情报使用：基础缩短剩余时间25%，指挥官学识提高效果，最高55%，至少保留30秒", 0)),
+            Map.entry("marchOrd", new ItemDef("marchOrd", "极速行军令", "img/items/march-ord.svg", CAT_UTIL, "仓库启用：行军速度+50%，持续1小时；情报使用：基础缩短剩余时间50%，指挥官学识提高效果，最高80%，至少保留30秒", 0)),
             Map.entry("signalJammingOrder", new ItemDef("signalJammingOrder", "通讯干扰令", "img/items/signal-jamming-order.svg", CAT_UTIL, "对来袭敌军使用：基础延长剩余时间50%，指挥官学识提高效果，最高70%", 0)),
-            Map.entry("feintOrder", new ItemDef("feintOrder", "佯动诱敌令", "img/items/feint-order.svg", CAT_UTIL, "对从本城撤退的敌军使用：基础延长剩余时间50%，指挥官学识提高效果，最高70%", 0)),
+            Map.entry("feintOrder", new ItemDef("feintOrder", "撤退拖延令", "img/items/feint-order.svg", CAT_UTIL, "对从本城撤退的敌军使用：基础延长剩余撤退时间50%，指挥官学识提高效果，最高70%", 0)),
             Map.entry("warSpeedOrder", new ItemDef("warSpeedOrder", "宣战加速令", "img/items/march-ord.svg", CAT_UTIL, "缩短本城发起的宣战备战时间：基础50%，学识提高效果，最高80%，总备战至少30分钟", 0)),
             Map.entry("populationOrder", new ItemDef("populationOrder", "人口动员令", "img/items/population-order.svg", CAT_UTIL, "使用后立即增加500空闲人口,不超过人口上限", 0)),
             Map.entry("emergencyPopulationOrder", new ItemDef("emergencyPopulationOrder", "紧急人口动员令", "img/items/emergency-population-order.svg", CAT_UTIL, "使用后立即增加当前城市人口容量上限30%的空闲人口,不超过人口上限", 0)),
-            Map.entry("mobilizationOrder", new ItemDef("mobilizationOrder", "战争动员令", "img/items/march-ord.svg", CAT_UTIL, "进攻出征时使用，本次出征带兵上限提高10%；编队超过基础上限时消耗1个", 0)),
-            Map.entry("advancedMobilizationOrder", new ItemDef("advancedMobilizationOrder", "高级战争动员令", "img/items/march-ord.svg", CAT_UTIL, "进攻出征时使用，本次出征带兵上限提高25%；编队超过基础上限时消耗1个", 0)),
-            Map.entry("rapidMobilizationOrder", new ItemDef("rapidMobilizationOrder", "极速战争动员令", "img/items/march-ord.svg", CAT_UTIL, "进攻出征时使用，本次出征带兵上限提高50%；编队超过基础上限时消耗1个", 0)),
+            Map.entry("mobilizationOrder", new ItemDef("mobilizationOrder", "战争动员令", "img/items/march-ord.svg", CAT_UTIL, "仓库使用后，全账号出征与本城防守带兵上限提高10%，每张持续24小时；同档累加时长，异档取最高加成", 0)),
+            Map.entry("advancedMobilizationOrder", new ItemDef("advancedMobilizationOrder", "高级战争动员令", "img/items/march-ord.svg", CAT_UTIL, "仓库使用后，全账号出征与本城防守带兵上限提高25%，每张持续24小时；同档累加时长，异档取最高加成", 0)),
+            Map.entry("rapidMobilizationOrder", new ItemDef("rapidMobilizationOrder", "极速战争动员令", "img/items/march-ord.svg", CAT_UTIL, "仓库使用后，全账号出征与本城防守带兵上限提高50%，每张持续24小时；同档累加时长，异档取最高加成", 0)),
             Map.entry("cityRenameCard", new ItemDef("cityRenameCard", "城市改名卡", "img/items/city-rename-card.svg", CAT_UTIL, "为一座城市更换新名字", 0))
 
     );
 
     /** 凭证与军衔共用定义，且不加入任何付费宝箱的产物列表。 */
+    /** 原 marchOrd 保留为极速档，避免已有库存及奖励变为低档效果。 */
+    public static final Map<String, Integer> MARCH_BONUS_PERCENT = Map.of(
+            "basicMarchOrd", 10, "advancedMarchOrd", 25, "marchOrd", 50);
+
+    /** 定额经验书共用白名单，满级经验书单独执行直升规则。 */
+    public static final Map<String, Integer> EXPERIENCE_BOOK_EXP = Map.of(
+            "expBook", 10_000, "expBookAdv", 100_000, "expBookRapid", OfficerExperienceRules.RAPID_BOOK_EXPERIENCE);
+
     /** 护盾时长由服务端白名单决定，旧 shield 库存继续代表 8 小时，各档可混合顺延。 */
     public static final Map<String, Integer> SHIELD_HOURS = Map.of(
             "shield2h", 2, "shield", 8, "shield12h", 12, "shield24h", 24, "shield72h", 72);
@@ -128,8 +139,10 @@ public record ItemDef(
         items.put("officerPreparationParts", new ItemDef("officerPreparationParts", "军备零件", "🧰", CAT_OFFICER,
                 "用于军官部位整备；完成军备日常和周常获得", 0));
         for (var rank : MilitaryRankDef.RANKS) {
+            items.put(RankGiftDef.key(rank.tier()), new ItemDef(RankGiftDef.key(rank.tier()), RankGiftDef.name(rank.tier()),
+                    RankGiftDef.ICON, CAT_RESOURCE, RankGiftDef.description(rank.tier(), RankGiftDef.diamonds(rank.tier())), 0));
             if (rank.tier() == 1) continue;
-            items.put(rank.certificateKey(), new ItemDef(rank.certificateKey(), rank.certificateName(), "🎖️",
+            items.put(rank.certificateKey(), new ItemDef(rank.certificateKey(), rank.certificateName(), "img/items/officer-gear-box.svg",
                     CAT_UTIL, "仅用于晋升" + rank.name() + "，授衔消耗1张；" + MilitaryRankDef.certificateSource(rank), 0));
         }
         for (var equipment : UnitEquipmentDef.ITEMS.values()) {

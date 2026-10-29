@@ -1939,10 +1939,11 @@ html, body {
   transform: scale(0.98);
 }
 .topbar-avatar-wrap {
+  position: relative;
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  overflow: hidden;
+  overflow: visible;
   border: 1.5px solid var(--line, #cbd5e1);
   background: var(--surface, #ffffff);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
@@ -2145,14 +2146,14 @@ body.drawer-open {
   padding: 0;
   border: 1px solid var(--line);
   border-radius: 50%;
-  overflow: hidden;
+  overflow: visible;
   flex-shrink: 0;
   cursor: pointer;
   background: var(--surface-muted);
 }
 .drawer-avatar-wrap:hover { border-color: var(--accent); }
-.drawer-avatar { width: 100%; height: 100%; object-fit: cover; display: block; }
-.avatar-edit-badge { position: absolute; inset: auto 0 0; background: rgba(15, 23, 42, .8); color: #fff; font-size: 10px; text-align: center; padding: 2px 0; }
+.drawer-avatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+.avatar-edit-badge { position: absolute; inset: auto 0 0; background: rgba(15, 23, 42, .8); color: #fff; font-size: 10px; text-align: center; padding: 2px 0; border-bottom-left-radius: 28px; border-bottom-right-radius: 28px; overflow: hidden; z-index: 5; }
 .drawer-profile-meta { display: flex; flex-direction: column; min-width: 0; gap: 4px; }
 .drawer-profile-name-row { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; }
 .drawer-profile-name { font-size: 16px; font-weight: 700; color: var(--ink); overflow-wrap: anywhere; line-height: 1.4; }
@@ -6612,15 +6613,32 @@ body.theme-classic .unit-card-details,
   order: 0;
 }
 .chat-avatar {
+  position: relative;
   width: 26px;
   height: 26px;
   flex: 0 0 26px;
   align-self: flex-start;
   border: 1px solid rgba(148, 163, 184, 0.45);
   border-radius: 50%;
-  object-fit: cover;
   background: #1e293b;
   order: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  overflow: visible !important;
+}
+.chat-avatar-img,
+.chat-avatar > img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+img.chat-avatar {
+  object-fit: cover;
+  display: block;
 }
 .chat-msg-body {
   display: flex;
@@ -11259,5 +11277,564 @@ body.theme-classic .rb-prisoner-details summary:hover,
 .settings-danger-desc {
   font-size: 11px;
   color: var(--muted, #64748b);
+}
+
+/* ==========================================================================
+   账号与安全（找回密码 / 绑定邮箱 / 更换邮箱）弹窗规范
+   ========================================================================== */
+.modal-mask.account-email-mask,
+#accountEmailModal {
+  position: fixed;
+  inset: 0;
+  z-index: 22100;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+  animation: accountModalMaskIn 0.2s ease-out;
+}
+
+@keyframes accountModalMaskIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.modal-mask.account-email-mask .modal-card.account-email-card,
+#accountEmailModal .modal-card.account-email-card,
+#accountEmailModal .modal-card {
+  width: 100% !important;
+  max-width: 440px !important;
+  max-height: min(92vh, 640px) !important;
+  max-height: min(92dvh, 640px) !important;
+  background: #ffffff !important;
+  color: #1e293b !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 14px !important;
+  box-shadow: 0 20px 50px -10px rgba(15, 23, 42, 0.28), 0 0 1px 1px rgba(15, 23, 42, 0.06) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif !important;
+  animation: accountModalCardIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+@keyframes accountModalCardIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* 头部 */
+.account-email-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fafcff;
+  flex-shrink: 0;
+}
+
+.account-email-title-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.account-email-title,
+#accountEmailModal .modal-title.account-email-title {
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+  line-height: 1.3 !important;
+  padding: 0 !important;
+  border: none !important;
+  margin: 0 !important;
+}
+
+.account-email-subtitle {
+  font-size: 12.5px;
+  color: #64748b;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.account-email-close-btn {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  margin-left: 12px;
+  margin-top: -2px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 16px;
+  line-height: 1;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.account-email-close-btn:hover {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+/* 大区徽章 */
+.account-email-server-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  margin-bottom: 14px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  font-size: 12px;
+  color: #475569;
+  width: fit-content;
+}
+
+.account-email-server-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.account-email-server-name {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+/* 更换邮箱原邮箱提醒条 */
+.account-email-banner-tip {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  border-radius: 8px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  font-size: 12.5px;
+  color: #166534;
+  line-height: 1.4;
+}
+
+.account-email-banner-sub {
+  color: #15803d;
+  font-size: 11.5px;
+}
+
+/* 主体表单区 */
+.modal-body.account-email-body,
+#accountEmailModal .modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px 22px 14px;
+}
+
+.account-email-row {
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.account-email-row label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.account-email-label-hint {
+  font-size: 11.5px;
+  font-weight: 400;
+  color: #94a3b8;
+}
+
+.account-email-input,
+.account-email-card input.qty,
+#accountEmailModal input.qty {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 0 12px !important;
+  box-sizing: border-box !important;
+  font-size: 14px !important;
+  font-family: inherit !important;
+  color: #1e293b !important;
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 7px !important;
+  outline: none !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease !important;
+}
+
+.account-email-input::placeholder,
+.account-email-card input.qty::placeholder,
+#accountEmailModal input.qty::placeholder {
+  color: #94a3b8 !important;
+  font-size: 13px !important;
+}
+
+.account-email-input:focus,
+.account-email-card input.qty:focus,
+#accountEmailModal input.qty:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14) !important;
+  background: #ffffff !important;
+}
+
+.account-email-input:disabled,
+.account-email-card input.qty:disabled,
+#accountEmailModal input.qty:disabled {
+  background: #f8fafc !important;
+  color: #94a3b8 !important;
+  border-color: #e2e8f0 !important;
+  cursor: not-allowed !important;
+}
+
+/* 验证码组合行 */
+.account-email-code-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+
+.account-email-code-group .account-email-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  letter-spacing: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.account-email-send-btn,
+.account-email-card button#securitySend,
+#accountEmailModal button#securitySend {
+  flex: 0 0 auto !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 0 14px !important;
+  white-space: nowrap !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  border-radius: 7px !important;
+  border: 1px solid #bfdbfe !important;
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.account-email-send-btn:hover:not(:disabled),
+.account-email-card button#securitySend:hover:not(:disabled),
+#accountEmailModal button#securitySend:hover:not(:disabled) {
+  background: #dbeafe !important;
+  border-color: #93c5fd !important;
+  color: #1e40af !important;
+}
+
+.account-email-send-btn:disabled,
+.account-email-card button#securitySend:disabled,
+#accountEmailModal button#securitySend:disabled {
+  background: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+  color: #94a3b8 !important;
+  cursor: not-allowed !important;
+  opacity: 0.8 !important;
+}
+
+/* 官方支持求助卡片 */
+.account-email-support-box {
+  margin-top: 14px;
+  padding: 11px 13px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.account-email-support-icon {
+  font-size: 15px;
+  line-height: 1.2;
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.account-email-support-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.account-email-support-tip {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #334155;
+  line-height: 1.4;
+}
+
+.account-email-support-desc {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.account-email-support-action {
+  margin-top: 6px;
+}
+
+.account-email-support-action:empty {
+  display: none;
+}
+
+.account-email-support-action a,
+.account-email-support-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 5px;
+  background: #2563eb;
+  color: #ffffff !important;
+  text-decoration: none !important;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background 0.15s ease;
+}
+
+.account-email-support-action a:hover,
+.account-email-support-btn:hover {
+  background: #1d4ed8;
+}
+
+/* 消息提示框 */
+.account-email-msg,
+#accountEmailModal #securityMsg {
+  display: none;
+  margin: 12px 0 0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+
+.account-email-msg:not(:empty),
+#accountEmailModal #securityMsg:not(:empty) {
+  display: block;
+}
+
+.account-email-msg.account-email-msg-error,
+#accountEmailModal #securityMsg:not(.account-email-msg-success):not(:empty) {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+.account-email-msg.account-email-msg-success,
+#accountEmailModal #securityMsg.account-email-msg-success:not(:empty) {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+}
+
+/* 弹窗底部操作区 */
+.account-email-foot,
+#accountEmailModal .modal-foot {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  padding: 12px 22px 16px !important;
+  border-top: 1px solid #f1f5f9 !important;
+  background: #fafcff !important;
+  margin: 0 !important;
+  flex-shrink: 0;
+}
+
+.account-email-btn-cancel,
+#accountEmailModal button#securityCancel {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 16px !important;
+  border-radius: 7px !important;
+  border: 1px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  color: #475569 !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.account-email-btn-cancel:hover:not(:disabled),
+#accountEmailModal button#securityCancel:hover:not(:disabled) {
+  background: #f1f5f9 !important;
+  color: #1e293b !important;
+  border-color: #94a3b8 !important;
+}
+
+.account-email-btn-submit,
+#accountEmailModal button#securitySubmit {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 20px !important;
+  border-radius: 7px !important;
+  border: 1px solid #1d4ed8 !important;
+  background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%) !important;
+  color: #ffffff !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  box-shadow: 0 2px 4px rgba(29, 78, 216, 0.25) !important;
+  transition: all 0.15s ease !important;
+}
+
+.account-email-btn-submit:hover:not(:disabled),
+#accountEmailModal button#securitySubmit:hover:not(:disabled) {
+  background: linear-gradient(180deg, #2563eb 0%, #1e40af 100%) !important;
+  box-shadow: 0 3px 6px rgba(29, 78, 216, 0.35) !important;
+}
+
+.account-email-btn-submit:disabled,
+#accountEmailModal button#securitySubmit:disabled,
+.account-email-btn-cancel:disabled,
+#accountEmailModal button#securityCancel:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+}
+
+/* 暗色主题适配 */
+[data-theme="dark"] .modal-mask.account-email-mask .modal-card.account-email-card,
+[data-theme="dark"] #accountEmailModal .modal-card.account-email-card,
+[data-theme="dark"] #accountEmailModal .modal-card {
+  background: #111827 !important;
+  color: #f1f5f9 !important;
+  border-color: #374151 !important;
+}
+[data-theme="dark"] .account-email-head {
+  background: #1e293b;
+  border-bottom-color: #374151;
+}
+[data-theme="dark"] .account-email-title,
+[data-theme="dark"] #accountEmailModal .modal-title.account-email-title {
+  color: #f8fafc !important;
+}
+[data-theme="dark"] .account-email-subtitle {
+  color: #94a3b8;
+}
+[data-theme="dark"] .account-email-server-badge {
+  background: #1e293b;
+  border-color: #374151;
+  color: #cbd5e1;
+}
+[data-theme="dark"] .account-email-server-name {
+  color: #60a5fa;
+}
+[data-theme="dark"] .account-email-row label {
+  color: #e2e8f0;
+}
+[data-theme="dark"] .account-email-input,
+[data-theme="dark"] .account-email-card input.qty,
+[data-theme="dark"] #accountEmailModal input.qty {
+  background: #1f2937 !important;
+  border-color: #374151 !important;
+  color: #f3f4f6 !important;
+}
+[data-theme="dark"] .account-email-input:focus,
+[data-theme="dark"] .account-email-card input.qty:focus,
+[data-theme="dark"] #accountEmailModal input.qty:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25) !important;
+}
+[data-theme="dark"] .account-email-input::placeholder,
+[data-theme="dark"] .account-email-card input.qty::placeholder,
+[data-theme="dark"] #accountEmailModal input.qty::placeholder {
+  color: #6b7280 !important;
+}
+[data-theme="dark"] .account-email-send-btn,
+[data-theme="dark"] .account-email-card button#securitySend,
+[data-theme="dark"] #accountEmailModal button#securitySend {
+  background: #1e293b !important;
+  border-color: #3b82f6 !important;
+  color: #60a5fa !important;
+}
+[data-theme="dark"] .account-email-send-btn:hover:not(:disabled),
+[data-theme="dark"] .account-email-card button#securitySend:hover:not(:disabled),
+[data-theme="dark"] #accountEmailModal button#securitySend:hover:not(:disabled) {
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+[data-theme="dark"] .account-email-support-box {
+  background: #1e293b;
+  border-color: #374151;
+}
+[data-theme="dark"] .account-email-support-tip {
+  color: #f1f5f9;
+}
+[data-theme="dark"] .account-email-support-desc {
+  color: #94a3b8;
+}
+[data-theme="dark"] .account-email-foot,
+[data-theme="dark"] #accountEmailModal .modal-foot {
+  background: #1e293b !important;
+  border-top-color: #374151 !important;
+}
+[data-theme="dark"] .account-email-btn-cancel,
+[data-theme="dark"] #accountEmailModal button#securityCancel {
+  background: #374151 !important;
+  border-color: #4b5563 !important;
+  color: #e5e7eb !important;
+}
+
+/* 移动端视口适配 */
+@media (max-width: 480px) {
+  .modal-mask.account-email-mask {
+    padding: 10px;
+  }
+  .modal-mask.account-email-mask .modal-card.account-email-card,
+  #accountEmailModal .modal-card.account-email-card,
+  #accountEmailModal .modal-card {
+    max-width: calc(100vw - 20px) !important;
+    max-height: calc(100vh - 20px) !important;
+    max-height: calc(100dvh - 20px) !important;
+  }
+  .account-email-head {
+    padding: 16px 16px 12px;
+  }
+  .modal-body.account-email-body,
+  #accountEmailModal .modal-body {
+    padding: 14px 16px 12px;
+  }
+  .account-email-foot,
+  #accountEmailModal .modal-foot {
+    padding: 10px 16px 14px !important;
+  }
+  .account-email-send-btn,
+  #accountEmailModal button#securitySend {
+    padding: 0 10px !important;
+    font-size: 12px !important;
+  }
 }
 

@@ -49,8 +49,19 @@
 
 ---
 
-## 部署检查清单
+## 部署检查清单与一键部署
 
+服务器生产与测试环境推荐使用一键安全部署脚本 [`deploy.sh`](deploy.sh)（完整规范见 [服务器部署前置安全规范](docs/DEPLOYMENT_SECURITY_SPEC.md)），该脚本会在拉起服务前强制执行加固：
+- 自动屏蔽 `docker-compose.yml` 中 `db` 服务的 `3306` 宿主机端口暴露；
+- 自动检测并生成高强度 `WARGAME_JWT_SECRET` 和 `WARGAME_DB_PASSWORD`；
+- 校验数据卷与头像持久化目录。
+
+```bash
+# 服务器一键安全部署（推荐）
+./deploy.sh
+```
+
+如手动启动裸机环境：
 ```bash
 # 1) 生成 JWT 强密钥
 export WARGAME_JWT_SECRET=$(openssl rand -base64 48)

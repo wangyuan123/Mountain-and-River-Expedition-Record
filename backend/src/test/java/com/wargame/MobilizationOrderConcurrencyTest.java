@@ -4,6 +4,7 @@ import com.wargame.model.dto.DispatchRequest;
 import com.wargame.model.entity.PlayerItem;
 import com.wargame.repository.PlayerItemRepository;
 import com.wargame.service.ArmyService;
+import com.wargame.service.MobilizationService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -22,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class MobilizationOrderConcurrencyTest extends BaseServiceTest {
     @Autowired private PlayerItemRepository items;
     @Autowired private ArmyService armyService;
+    @Autowired private MobilizationService mobilization;
     @Autowired private PlatformTransactionManager transactions;
 
     private record Fixture(Long playerId, DispatchRequest request) {}
@@ -41,7 +43,7 @@ class MobilizationOrderConcurrencyTest extends BaseServiceTest {
     }
 
     @Test
-    void concurrentDispatchesCannotSpendLastOrderTwice() throws Exception {
+    void concurrentUsesCannotSpendLastOrderTwice() throws Exception {
         Fixture f = fixture("mobilization-race");
         var ready = new CountDownLatch(2);
         var start = new CountDownLatch(1);
@@ -50,10 +52,10 @@ class MobilizationOrderConcurrencyTest extends BaseServiceTest {
             ready.countDown();
             assertTrue(start.await(10, TimeUnit.SECONDS));
             try {
-                marchService.createDispatch(f.playerId(), f.request());
+                mobilization.use(f.playerId(), "mobilizationOrder", 1, "concurrent-" + Thread.currentThread().getId());
                 return true;
             } catch (IllegalArgumentException error) {
-                assertEquals("战争动员令数量不足", error.getMessage());
+                assertEquals("动员令数量不足", error.getMessage());
                 return false;
             }
         };
@@ -65,8 +67,8 @@ class MobilizationOrderConcurrencyTest extends BaseServiceTest {
             int successes = (first.get(30, TimeUnit.SECONDS) ? 1 : 0) + (second.get(30, TimeUnit.SECONDS) ? 1 : 0);
             assertEquals(1, successes);
             assertEquals(0, items.findByPlayerIdAndItemKey(f.playerId(), "mobilizationOrder").orElseThrow().getCount());
-            assertEquals(1, marchRepository.findByPlayerId(f.playerId()).size());
-            assertEquals(100_000 - f.request().army().get("infantry"),
+            assertEquals(27500, armyService.armyCap(f.playerId()));
+            assertEquals(100_000,
                     armyUnitRepository.findByPlayerIdAndType(f.playerId(), "infantry").get(0).getCount());
         } finally {
             start.countDown();
@@ -75,17 +77,20 @@ class MobilizationOrderConcurrencyTest extends BaseServiceTest {
     }
 
     @Test
-    void failureAfterCreatingMarchRollsBackOrderTroopsAndFuel() {
+    void failureAfterActivationRollsBackInventoryDurationAndReceipt() {
         Fixture f = fixture("mobilization-rollback");
         long oil = getResources(f.playerId()).getOil();
         assertThrows(IllegalStateException.class, () -> new TransactionTemplate(transactions).execute(status -> {
-            marchService.createDispatch(f.playerId(), f.request());
-            marchRepository.flush();
+            mobilization.use(f.playerId(), "mobilizationOrder", 1, "rollback-activation");
+            items.flush();
             throw new IllegalStateException("模拟出征创建后事务失败");
         }));
         assertEquals(1, items.findByPlayerIdAndItemKey(f.playerId(), "mobilizationOrder").orElseThrow().getCount());
         assertEquals(100_000, armyUnitRepository.findByPlayerIdAndType(f.playerId(), "infantry").get(0).getCount());
         assertEquals(oil, getResources(f.playerId()).getOil());
         assertTrue(marchRepository.findByPlayerId(f.playerId()).isEmpty());
+        assertEquals(25000, armyService.armyCap(f.playerId()));
+        mobilization.use(f.playerId(), "mobilizationOrder", 1, "rollback-activation");
+        assertEquals(0, items.findByPlayerIdAndItemKey(f.playerId(), "mobilizationOrder").orElseThrow().getCount());
     }
 }

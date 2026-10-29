@@ -36,6 +36,7 @@
       state.paper = null;
       state.answers = [];
       state.lastExamResult = null;
+      state.lastPromotionReward = null;
       stopExamTimer();
     }
     if (state.chapters.length) {
@@ -82,6 +83,7 @@
       if (!isCurrentPlayer(playerId)) return;
       ++rankRequestVersion;
       G.toast(res.message || '晋升成功');
+      if (res.promotionReward) state.lastPromotionReward = { playerId: playerId, data: res.promotionReward };
       state.paper = null;
       state.answers = [];
       state.lastExamResult = null;
@@ -240,13 +242,34 @@
       if (rank.nextCityRankName) h += ' · ' + escapeHtml(rank.nextCityRankName) + '可拥有' + rank.nextExpansionCap + '座';
       h += '</div>';
     }
+    var pendingGifts = (s.rankDiamondGifts || {}).unopenedCount || 0;
+    var awarded = state.lastPromotionReward;
+    // 开启后的回执永久保留；仅未开启且仍在仓库的奖励继续显示入仓提示。
+    var awardedPending = awarded && awarded.playerId === p.id && ((s.rankDiamondGifts || {}).rewards || []).some(function (gift) {
+      return gift.itemKey === awarded.data.itemKey && gift.openedAt == null && gift.count > 0;
+    });
+    if (awardedPending) {
+      h += '<p role="status">【' + escapeHtml(awarded.data.name) + '】已入仓，开启后获得 ' + G.fmt(awarded.data.diamonds) + ' 钻石。</p>';
+    }
+    if (pendingGifts > 0 && G.Depot) {
+      h += '<button type="button" class="btn" onclick="Game.Depot.openRankGifts()">前往仓库开启晋升礼包' + (pendingGifts ? '（' + pendingGifts + '份）' : '') + '</button>';
+    }
     if (rank.isMax) return h + '<div class="rank-met">已达最高军衔</div></section>';
     h += '<div class="rank-target">下一阶：<b>' + escapeHtml(rank.nextName) + '</b> · 基础出兵 ' + G.fmt(rank.nextBaseCap) + '</div>';
+    // 预告来自服务端，奖励对应成功取得的新军衔，并覆盖再下一阶凭证。
+    var reward = rank.promotionReward;
+    if (reward) {
+      h += '<p>晋升奖励：' + escapeHtml(reward.name) + '，内含 ' + G.fmt(reward.diamonds) + ' 钻石；' +
+        (reward.nextCertificateName ? '可购买' + escapeHtml(reward.nextCertificateName) : '最高军衔荣耀奖励') + '，授衔成功后入仓。</p>';
+    }
     h += rankRequirement('声望', rank.prestige, rank.reqPrestige, rank.prestigeEnough);
     h += rankRequirement('累计剿寇胜场', rank.npcVictories, rank.reqNpcVictories, rank.victoriesEnough);
     var cert = rank.certificate;
     h += rankRequirement(cert.name, cert.owned, cert.required, rank.certificateEnough);
     h += '<div class="rank-source">' + escapeHtml(cert.source) + '</div>';
+    if (!rank.certificateEnough && G.Shop) {
+      h += '<button type="button" class="btn" onclick="Game.Shop.openRankCertificate(' + rank.nextTier + ')">前往商城购买' + escapeHtml(cert.name) + '</button>';
+    }
     var exam = rank.exam || {};
     var cooling = exam.retryAt > G.gameNow();
     var statuses = { not_started: '未参加', active: '进行中', failed: '未合格', expired: '已超时', passed: '已合格' };
@@ -273,6 +296,7 @@
   function renderDailyCheckinCard() {
     var checkin = state.dailyCheckin || { claimed: false };
     var claimed = !!checkin.claimed;
+    var rewards = checkin.rewards || {};
     var h = '<section class="panel daily-checkin-panel" aria-label="每日军务签到">';
     h += '<div class="zone-head" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
     h += '  <span class="zone-title">📅 每日军务点卯签到</span>';
@@ -284,8 +308,12 @@
     h += '<div class="daily-checkin-pills" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">';
     h += '  <span class="vip-reward-pill">🏷️ 军官改名卡 <strong>×1</strong></span>';
     h += '  <span class="vip-reward-pill">🏷️ 城市改名卡 <strong>×1</strong></span>';
-    h += '  <span class="vip-reward-pill">🪙 黄金 <strong>×2,000</strong></span>';
-    h += '  <span class="vip-reward-pill">🌾 粮食 <strong>×5,000</strong></span>';
+    // 资源数量使用服务端签到预览，避免调整发放后页面仍展示旧值。
+    [['gold', '🪙 黄金'], ['food', '🌾 粮食'], ['steel', '🔩 钢铁'], ['oil', '🛢️ 石油'], ['rare', '💎 稀矿']].forEach(function (entry) {
+      if (rewards[entry[0]] > 0) {
+        h += '  <span class="vip-reward-pill">' + entry[1] + ' <strong>×' + Number(rewards[entry[0]]).toLocaleString('en-US') + '</strong></span>';
+      }
+    });
     h += '  <span class="vip-reward-pill">⚡ 10分加速 <strong>×1</strong></span>';
     h += '</div>';
     h += '<div class="daily-checkin-actions" style="display:flex;justify-content:flex-end;align-items:center;">';

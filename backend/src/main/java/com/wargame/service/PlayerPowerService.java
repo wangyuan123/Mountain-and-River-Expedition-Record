@@ -23,6 +23,7 @@ public class PlayerPowerService {
     private static final class Assets {
         boolean deleted;
         int rank = 1;
+        int mobilizationBonus;
         final Map<Integer, Map<String, Integer>> cities = new HashMap<>();
         final List<MarchArmy> marches = new ArrayList<>();
         final Map<Long, Officer> officers = new HashMap<>();
@@ -49,9 +50,12 @@ public class PlayerPowerService {
         if (TransactionSynchronizationManager.isActualTransactionActive()
                 && !TransactionSynchronizationManager.isCurrentTransactionReadOnly()) entityManager.flush();
         Map<Long, Assets> all = new HashMap<>();
-        query("SELECT id, military_rank, account_status FROM players", playerId, "id", rs -> {
+        query("SELECT id, military_rank, account_status, mobilization_expiries FROM players", playerId, "id", rs -> {
             Assets assets = new Assets();
             assets.deleted = "DELETED".equals(rs.getString("account_status"));
+            var mobilized = new com.wargame.model.entity.Player();
+            mobilized.setMobilizationExpiries(rs.getString("mobilization_expiries"));
+            assets.mobilizationBonus = com.wargame.model.constants.MobilizationRules.bonus(mobilized, com.wargame.util.GameClock.now());
             assets.rank = Math.max(1, rs.getInt("military_rank"));
             all.put(rs.getLong("id"), assets);
         });
@@ -164,7 +168,9 @@ public class PlayerPowerService {
             int leadership = skillLevel(assets.officers.get(commander), "leadership");
             if (leadership == 0) leadership = skillLevel(assets.officers.get(commander), "supply");
             int rankBase = MilitaryRankDef.getRankBase(assets.rank);
-            long cap = (long) Math.floor(rankBase * (1 + 0.04 * leadership)) + rankBase / 2L;
+            // 编队估值沿用普通出征与迎战的统一容量，不附加守方兵力。
+            long cap = com.wargame.model.constants.MobilizationRules.apply(
+                    (int) Math.floor(rankBase * (1 + 0.04 * leadership)), assets.mobilizationBonus);
             total += armyValue(city.getValue(), combat, commander, chief, assets, Long.MAX_VALUE);
             best = Math.max(best, formationValue(city.getValue(), combat, commander, chief, assets, cap));
         }
@@ -173,7 +179,7 @@ public class PlayerPowerService {
                     ? officerId(assets, march.city(), "commander_in_chief") : null;
             total += armyValue(march.units(), combat, march.commander(), chief, assets, Long.MAX_VALUE);
             int rankBase = MilitaryRankDef.getRankBase(assets.rank);
-            long cap = march.pooled() ? rankBase + rankBase / 2L : Long.MAX_VALUE;
+            long cap = march.pooled() ? com.wargame.model.constants.MobilizationRules.apply(rankBase, assets.mobilizationBonus) : Long.MAX_VALUE;
             best = Math.max(best, formationValue(march.units(), combat, march.commander(), chief, assets, cap));
         }
         long development = assets.development + assets.tech.values().stream().mapToLong(level -> 500L * level).sum();

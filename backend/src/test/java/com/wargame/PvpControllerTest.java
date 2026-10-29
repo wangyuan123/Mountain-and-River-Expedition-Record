@@ -24,6 +24,11 @@ class PvpControllerTest extends BaseServiceTest {
     @Autowired PvpPracticeSessionRepository sessions;
     @org.springframework.boot.test.mock.mockito.SpyBean com.wargame.service.compliance.AntiAddictionService protection;
     private String token(Player p) { return jwt.generateToken(p.getUsername(), p.getId(), p.getAuthVersion()); }
+    private Player enrolledPlayer(String name) {
+        Player player = createTestPlayer(name, 30);
+        player.setPrestige(10000);
+        return playerRepository.saveAndFlush(player);
+    }
     private Map<String, Object> postJson(String path, String token, Object body) throws Exception {
         String response = mvc.perform(post("/api/game/pvp/" + path).header("Authorization", "Bearer " + token)
                 .header("X-Game-Server", "jiangsu-1").contentType("application/json").content(PvpJson.write(body)))
@@ -36,7 +41,7 @@ class PvpControllerTest extends BaseServiceTest {
     }
     @Test @Timeout(45)
     void realControllerGuardsDoNotHoldWorldLockAcrossSnapshotAndPrivateBattleHasNoEnemyDrafts() throws Exception {
-        Player a = createTestPlayer("http-a-" + UUID.randomUUID(), 30), b = createTestPlayer("http-b-" + UUID.randomUUID(), 30);
+        Player a = enrolledPlayer("http-a-" + UUID.randomUUID()), b = enrolledPlayer("http-b-" + UUID.randomUUID());
         createArmyUnit(a.getId(), "infantry", 100); createArmyUnit(b.getId(), "infantry", 100);
         String at = token(a), bt = token(b);
         getJson("lobby", at); getJson("lobby", bt);
@@ -63,7 +68,7 @@ class PvpControllerTest extends BaseServiceTest {
         mvc.perform(get("/api/game/pvp/status").header("Authorization", "Bearer " + at).header("X-Game-Server", "other")).andExpect(status().isBadRequest());
     }
     @Test void permissionCutoffInsidePracticeWriteRollsBackPreset() throws Exception {
-        Player player = createTestPlayer("permission-" + UUID.randomUUID(), 30); createArmyUnit(player.getId(), "infantry", 100);
+        Player player = enrolledPlayer("permission-" + UUID.randomUUID()); createArmyUnit(player.getId(), "infantry", 100);
         String token = token(player); var lobby = getJson("lobby", token);
         var count = new java.util.concurrent.atomic.AtomicInteger();
         org.mockito.Mockito.doAnswer(call -> {
@@ -79,6 +84,31 @@ class PvpControllerTest extends BaseServiceTest {
             assertEquals(100, armyUnitRepository.findByPlayerIdAndCitySlotAndType(player.getId(), 0, "infantry").get(0).getCount());
         } finally { org.mockito.Mockito.reset(protection); }
     }
+    @Test void prestigeGateRejectsDirectWritesButAllowsPreviewAndLeavingExistingQueue() throws Exception {
+        Player player = createTestPlayer("prestige-" + UUID.randomUUID(), 30);
+        player.setPrestige(9999); playerRepository.saveAndFlush(player);
+        createArmyUnit(player.getId(), "infantry", 100);
+        String token = token(player);
+        var lobby = getJson("lobby", token);
+        var queue = Map.of("requestId", UUID.randomUUID().toString(), "citySlot", 0, "battlefield", "LAND_AIR", "army", Map.of("infantry", 100), "presetVersion", 0);
+        var preset = Map.of("requestId", UUID.randomUUID().toString(), "citySlot", 0, "battlefield", "LAND_AIR", "army", Map.of("infantry", 100), "presetVersion", 0,
+                "defaults", ((Map<?, ?>) lobby.get("preset")).get("defaults"));
+        for (var entry : Map.of("queue", queue, "preset", preset).entrySet()) {
+            mvc.perform(post("/api/game/pvp/" + entry.getKey()).header("Authorization", "Bearer " + token)
+                    .header("X-Game-Server", "jiangsu-1").contentType("application/json").content(PvpJson.write(entry.getValue())))
+                    .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("PVP_PRESTIGE_REQUIRED"));
+        }
+        assertEquals("IDLE", getJson("status", token).get("status"));
+        player = playerRepository.findById(player.getId()).orElseThrow();
+        player.setPrestige(10000); playerRepository.saveAndFlush(player);
+        var ticket = postJson("queue", token, queue);
+        assertEquals("QUEUED", ticket.get("status"));
+        player = playerRepository.findById(player.getId()).orElseThrow();
+        player.setPrestige(0); playerRepository.saveAndFlush(player);
+        assertEquals("QUEUED", getJson("status", token).get("status"));
+        assertEquals("IDLE", postJson("queue/cancel", token, Map.of("requestId", UUID.randomUUID().toString(), "ticketId", ticket.get("ticketId"))).get("status"));
+    }
+
     @Autowired com.wargame.service.pvp.PvpPracticeService pvp;
     private com.wargame.service.pvp.PvpPracticeService applicationPvp() { return pvp; }
 }

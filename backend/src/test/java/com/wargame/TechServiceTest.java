@@ -12,6 +12,8 @@ import com.wargame.service.TechService;
 import com.wargame.service.PrerequisiteService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -170,7 +172,7 @@ class TechServiceTest {
             assertEquals(techService.calcTechCost("cmd_hp", level), techService.calcTechCost("fire_density", level));
             assertEquals(techService.calcTechDuration("cmd_hp", level, 10), techService.calcTechDuration("fire_density", level, 10));
         }
-        assertEquals(Map.of("steel", 300, "food", 160, "rare", 30), techService.calcTechCost("fire_density", 0));
+        assertEquals(Map.of("steel", 300, "food", 160, "rare", 30, "gold", 6000), techService.calcTechCost("fire_density", 0));
         assertEquals(0, techService.getTechLevel(playerId, "fire_density"));
         Technology tech = new Technology();
         tech.setLevel(5);
@@ -204,6 +206,7 @@ class TechServiceTest {
         Resources res = new Resources();
         res.setSteel(10000);
         res.setFood(10000);
+        res.setGold(3_000_000);
         when(resourcesRepository.findByPlayerIdAndCitySlot(playerId, 0)).thenReturn(Optional.of(res));
 
         Map<String, Object> result = techService.startResearch(playerId, "attack_tech");
@@ -290,6 +293,68 @@ class TechServiceTest {
         assertEquals(100 + 400, res.getFood());
         verify(techResearchQueueRepository).delete(q);
         verifyNoInteractions(equipmentProgress);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"prod_food", "attack_tech", "arm_engine", "air_engine", "nav_engine"})
+    void finalLevelChargesResearchCityAndRefundsStoredGold(String key) {
+        Long playerId = 100L;
+        when(cityScope.slot(playerId)).thenReturn(2);
+        Technology existing = new Technology();
+        existing.setLevel(9);
+        when(technologyRepository.findByPlayerIdAndType(playerId, key)).thenReturn(List.of(existing));
+        int gold = techService.calcTechCost(key, 9).get("gold");
+        Resources wallet = new Resources();
+        wallet.setFood(100_000_000); wallet.setSteel(100_000_000);
+        wallet.setOil(100_000_000); wallet.setRare(100_000_000); wallet.setGold(gold + 123L);
+        when(resourcesRepository.findByPlayerIdAndCitySlot(playerId, 2)).thenReturn(Optional.of(wallet));
+
+        var result = techService.startResearch(playerId, key);
+        assertEquals(true, result.get("success"));
+        assertEquals(123L, wallet.getGold());
+        assertEquals(gold, ((Map<?, ?>) result.get("cost")).get("gold"));
+        var captured = org.mockito.ArgumentCaptor.forClass(TechResearchQueue.class);
+        verify(techResearchQueueRepository).save(captured.capture());
+        var queue = captured.getValue();
+        assertEquals(gold, queue.getCostGold());
+        assertEquals(2, queue.getCitySlot());
+        assertEquals(10, queue.getTargetLevel());
+        queue.setId(88L);
+        when(techResearchQueueRepository.findById(88L)).thenReturn(Optional.of(queue));
+        when(cityScope.slot(playerId)).thenReturn(0);
+        assertEquals(true, techService.cancelResearch(playerId, 88L).get("success"));
+        assertEquals(123L + gold * 4L / 5, wallet.getGold());
+        verify(resourcesRepository, never()).findByPlayerIdAndCitySlot(playerId, 0);
+    }
+
+    @Test
+    void insufficientGoldDoesNotDeductOtherResourcesOrStartResearch() {
+        Resources wallet = new Resources();
+        wallet.setFood(1000); wallet.setSteel(1000); wallet.setGold(5999);
+        when(resourcesRepository.findByPlayerIdAndCitySlot(100L, 0)).thenReturn(Optional.of(wallet));
+        var result = techService.startResearch(100L, "attack_tech");
+        assertEquals(false, result.get("success"));
+        assertEquals("资源不足", result.get("message"));
+        assertEquals(5999L, wallet.getGold());
+        assertEquals(1000L, wallet.getFood());
+        assertEquals(1000L, wallet.getSteel());
+        verify(resourcesRepository, never()).save(any());
+        verify(techResearchQueueRepository, never()).save(any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 101})
+    void oldResearchRefundsActualGoldRatherThanNewPrice(int storedGold) {
+        TechResearchQueue queue = new TechResearchQueue();
+        queue.setId(89L); queue.setPlayerId(100L); queue.setCitySlot(0);
+        queue.setTechType("military_theory"); queue.setTargetLevel(10); queue.setCostGold(storedGold);
+        when(techResearchQueueRepository.findById(89L)).thenReturn(Optional.of(queue));
+        Resources wallet = new Resources();
+        wallet.setGold(10);
+        when(resourcesRepository.findByPlayerIdAndCitySlot(100L, 0)).thenReturn(Optional.of(wallet));
+        assertEquals(true, techService.cancelResearch(100L, 89L).get("success"));
+        assertEquals(10L + storedGold * 4L / 5, wallet.getGold());
+        verify(techResearchQueueRepository).delete(queue);
     }
 
     @Test

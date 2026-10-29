@@ -20,9 +20,12 @@ public class PvpLocalHarness {
         var game = context.getBean(GameStateService.class); var troops = context.getBean(ArmyUnitRepository.class);
         WorldMap world = new WorldMap(); world.setSize(200); world.setScanRadius(3); world.setPosX(0); world.setPosY(0);
         context.getBean(WorldMapRepository.class).save(world);
-        for (String username : new String[]{"pvp_alpha", "pvp_bravo"}) {
+        for (String username : new String[]{"pvp_alpha", "pvp_bravo", "pvp_charlie", "pvp_delta", "pvp_locked"}) {
             Player p = new Player(); p.setUsername(username); p.setPasswordHash(password.encode("PvpLocalTest123!")); p.setFaction("allies");
-            p.setDisplayName(username.equals("pvp_alpha") ? "演习统帅甲" : "演习统帅乙"); p = players.save(p); game.initializeNewPlayer(p.getId());
+            p.setDisplayName("演习·" + username); p = players.save(p); game.initializeNewPlayer(p.getId());
+            // 与正式页面的准入门槛一致；另留低声望账号验证接口不能绕过限制。
+            p = players.findById(p.getId()).orElseThrow();
+            p.setPrestige(username.equals("pvp_locked") ? 0 : 10000); players.save(p);
             ArmyUnit u = new ArmyUnit(); u.setPlayerId(p.getId()); u.setCitySlot(0); u.setType("infantry"); u.setCount(1000); troops.save(u);
         }
         var practice = context.getBean(PvpPracticeService.class); var matches = context.getBean(PvpMatchService.class);
@@ -37,6 +40,6 @@ public class PvpLocalHarness {
             } catch (Exception e) { e.printStackTrace(); }
         }, 1, 1, TimeUnit.SECONDS);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> timer.shutdownNow()));
-        System.out.println("PVP_TEST_READY: isolated H2; pvp_alpha / pvp_bravo; password=PvpLocalTest123!");
+        System.out.println("PVP_TEST_READY: isolated H2; pvp_alpha / pvp_bravo / pvp_charlie / pvp_delta / pvp_locked; password=PvpLocalTest123!");
     }
 }

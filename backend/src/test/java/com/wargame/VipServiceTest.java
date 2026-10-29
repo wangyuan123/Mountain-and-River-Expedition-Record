@@ -38,6 +38,39 @@ public class VipServiceTest extends BaseServiceTest {
     @Autowired
     private CityScope cityScope;
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvSource({
+            "0,10000,10000", "1,20000,20000", "2,30000,50000", "3,40000,100000",
+            "4,50000,200000", "5,60000,300000", "6,70000,400000", "7,80000,500000",
+            "8,90000,600000", "9,100000,700000", "10,110000,800000"
+    })
+    void dailySalaryCreditsDesignedResourcesOnceWithoutResourcePacks(int level, int gold, int material) {
+        Player player = createTestPlayer("vip-daily-resources-" + level, 30);
+        player.setVipLevel(level);
+        playerRepository.saveAndFlush(player);
+        Long id = player.getId();
+        var preview = com.wargame.config.VipConfig.getLevelDef(level).dailyRewards();
+        assertEquals(gold, preview.get("gold"));
+        for (String key : List.of("food", "steel", "oil", "rare")) assertEquals(material, preview.get(key));
+        assertFalse(preview.containsKey("supplyPack"));
+
+        var response = vipService.claimDailySalary(id);
+        java.util.Map<?, ?> credited = (java.util.Map<?, ?>) response.get("rewards");
+        assertEquals(gold, credited.get("gold"));
+        for (String key : List.of("food", "steel", "oil", "rare")) assertEquals(material, credited.get(key));
+        assertFalse(credited.containsKey("supplyPack"));
+        assertThrows(IllegalArgumentException.class, () -> vipService.claimDailySalary(id));
+        Resources balance = getResources(id);
+        assertAll(() -> assertEquals(500L + gold, balance.getGold()),
+                () -> assertEquals(1000L + material, balance.getFood()),
+                () -> assertEquals(1000L + material, balance.getSteel()),
+                () -> assertEquals(1000L + material, balance.getOil()),
+                () -> assertEquals(500L + material, balance.getRare()));
+        assertTrue(playerItemRepository.findByPlayerIdAndItemKey(id, "supplyPack").isEmpty());
+        assertEquals(preview.get("skillBook"), playerItemRepository.findByPlayerIdAndItemKey(id, "skillBook").orElseThrow().getCount());
+        assertEquals(preview.get("populationOrder"), playerItemRepository.findByPlayerIdAndItemKey(id, "populationOrder").orElseThrow().getCount());
+    }
+
     @Test
     @DisplayName("VIP 每日军饷按游戏北京时间刷新，不受服务器自然日影响")
     void dailyVipDateUsesGameClockInShanghai() throws Exception {
@@ -134,6 +167,7 @@ public class VipServiceTest extends BaseServiceTest {
 
         // 晋升为 VIP 5（¥328 = 32800 cents）
         vipService.onRechargeSuccess(playerId, 32800L);
+        assertThrows(IllegalArgumentException.class, () -> vipService.claimDailySalary(playerId), "同日升级不能重领军饷");
 
         // 模拟离线补发积攒天数
         Player p = playerRepository.findById(playerId).orElseThrow();

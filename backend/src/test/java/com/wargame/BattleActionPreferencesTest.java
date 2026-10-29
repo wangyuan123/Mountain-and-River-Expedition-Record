@@ -31,7 +31,8 @@ class BattleActionPreferencesTest {
 
     private BattleActionPreferences.Preferences configured(Map<String, Object> army) {
         when(players.findById(7L)).thenReturn(Optional.of(player));
-        when(armyService.sortieCap(7L)).thenReturn(37500);
+        when(players.lockById(7L)).thenReturn(Optional.of(player));
+        when(armyService.armyCapAt(org.mockito.ArgumentMatchers.eq(7L), org.mockito.ArgumentMatchers.anyLong())).thenReturn(25000);
         var current = preferences.get(7L);
         return new BattleActionPreferences.Preferences(current.outgoing(), current.defending(), army);
     }
@@ -70,18 +71,18 @@ class BattleActionPreferencesTest {
 
     @Test
     void manualSortiePersistsAndOnlySelectsAvailableConfiguredTroops() {
-        preferences.save(7L, configured(Map.of("infantry", 25000, "rocket", 12500)));
-        assertEquals(Map.of("infantry", 25000, "rocket", 12500), preferences.get(7L).sortieArmy());
-        assertEquals(37500, preferences.get(7L).sortieCap());
-        assertEquals(Map.of("infantry", 20000, "rocket", 12500), preferences.selectSortieArmy(7L,
-                Map.of("infantry", 20000, "rocket", 50000, "htank", 10000)));
+        preferences.save(7L, configured(Map.of("infantry", 15000, "rocket", 10000)));
+        assertEquals(Map.of("infantry", 15000, "rocket", 10000), preferences.get(7L).sortieArmy());
+        assertEquals(25000, preferences.get(7L).sortieCap());
+        assertEquals(Map.of("infantry", 12000, "rocket", 10000), preferences.selectSortieArmy(7L,
+                Map.of("infantry", 12000, "rocket", 50000, "htank", 10000)));
     }
 
     @Test
     void automaticAndManualZeroHaveDifferentMeanings() {
         preferences.save(7L, configured(null));
         assertNull(preferences.get(7L).sortieArmy());
-        assertEquals(Map.of("infantry", 18750, "rocket", 18750), preferences.selectSortieArmy(7L,
+        assertEquals(Map.of("infantry", 12500, "rocket", 12500), preferences.selectSortieArmy(7L,
                 Map.of("infantry", 50000, "rocket", 50000, "bunker", 100000)));
         preferences.save(7L, configured(Map.of()));
         assertTrue(preferences.selectSortieArmy(7L, Map.of("infantry", 50000)).isEmpty());
@@ -91,7 +92,7 @@ class BattleActionPreferencesTest {
     @Test
     void millionGarrisonCannotExceedFourHundredThousandDefenseCap() {
         var request = configured(Map.of("infantry", 300000, "rocket", 100000));
-        when(armyService.sortieCap(7L)).thenReturn(400000);
+        when(armyService.armyCapAt(org.mockito.ArgumentMatchers.eq(7L), org.mockito.ArgumentMatchers.anyLong())).thenReturn(400000);
         var garrison = Map.of("infantry", 600000, "rocket", 400000);
         preferences.save(7L, request);
         assertEquals(Map.of("infantry", 300000, "rocket", 100000), preferences.selectSortieArmy(7L, garrison));
@@ -106,8 +107,8 @@ class BattleActionPreferencesTest {
 
     @Test
     void changedCityCapacityScalesCompositionAndAllocatesRemainderDeterministically() {
-        preferences.save(7L, configured(Map.of("infantry", 10000, "rocket", 10000, "htank", 10000)));
-        when(armyService.sortieCap(7L)).thenReturn(5);
+        preferences.save(7L, configured(Map.of("infantry", 8000, "rocket", 8000, "htank", 8000)));
+        when(armyService.armyCapAt(org.mockito.ArgumentMatchers.eq(7L), org.mockito.ArgumentMatchers.anyLong())).thenReturn(5);
         assertEquals(Map.of("htank", 2, "infantry", 2, "rocket", 1), preferences.selectSortieArmy(7L,
                 Map.of("infantry", 10000, "rocket", 10000, "htank", 10000)));
     }
@@ -125,7 +126,7 @@ class BattleActionPreferencesTest {
         assertThrows(IllegalArgumentException.class, () -> preferences.save(7L, configured(nullCount)));
         assertThrows(IllegalArgumentException.class, () -> preferences.save(7L, configured(Map.of("bunker", 1))));
         assertThrows(IllegalArgumentException.class, () -> preferences.save(7L, configured(Map.of("unknown", 0))));
-        assertThrows(IllegalArgumentException.class, () -> preferences.save(7L, configured(Map.of("infantry", 37501))));
+        assertThrows(IllegalArgumentException.class, () -> preferences.save(7L, configured(Map.of("infantry", 25001))));
         assertThrows(IllegalArgumentException.class, () -> preferences.save(7L,
                 configured(Map.of("infantry", Integer.MAX_VALUE, "rocket", Integer.MAX_VALUE))));
         assertEquals("{}", player.getSortieArmy());
@@ -136,6 +137,7 @@ class BattleActionPreferencesTest {
     @Test
     void separateOutgoingAndDefendingDefaultsPersistForOfflineRounds() {
         when(players.findById(7L)).thenReturn(Optional.of(player));
+        when(players.lockById(7L)).thenReturn(Optional.of(player));
         Map<String, String> outgoing = new LinkedHashMap<>(preferences.get(7L).outgoing());
         Map<String, String> defending = new LinkedHashMap<>(preferences.get(7L).defending());
         outgoing.put("rocket", "ADVANCE");
@@ -155,6 +157,7 @@ class BattleActionPreferencesTest {
     @Test
     void invalidOrIncompleteConfigurationIsNotSaved() {
         when(players.findById(7L)).thenReturn(Optional.of(player));
+        when(players.lockById(7L)).thenReturn(Optional.of(player));
         Map<String, String> outgoing = new LinkedHashMap<>(preferences.get(7L).outgoing());
         Map<String, String> defending = new LinkedHashMap<>(preferences.get(7L).defending());
         outgoing.put("rocket", "ATTACK");

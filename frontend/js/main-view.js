@@ -547,7 +547,7 @@ window.Game = window.Game || {};
       h += '<div class="login-access-title"><span class="login-access-eyebrow" id="loginModeEyebrow">指挥官身份验证</span><h2 id="loginModeTitle">账号登录</h2><p id="loginModeDescription">使用指挥官账号继续你的远征。</p></div>';
       if (G.Account) h += G.Account.loginPanel();
       h += '<form class="login-form" id="loginForm" data-auth-mode="login" onsubmit="Game.Main.submitAuth(); return false;">';
-      var servers = G.Servers ? G.Servers.list : [{ id: 'jiangsu-1', name: '江苏一区' }];
+      var servers = G.Servers ? G.Servers.list : [{ id: 'jiangsu-1', name: '公测一区' }];
       var selectedServer = G.Servers ? G.Servers.current().id : 'jiangsu-1';
       var selectedName = (servers.find(function (server) { return server.id === selectedServer; }) || servers[0]).name;
       h += '<div class="edit-row"><label id="loginServerLabel" for="loginServer">服务器大区</label>';

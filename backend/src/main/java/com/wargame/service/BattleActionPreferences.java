@@ -1,6 +1,8 @@
 package com.wargame.service;
 
 import com.wargame.model.constants.UnitDef;
+import com.wargame.model.constants.MobilizationRules;
+import com.wargame.util.GameClock;
 import com.wargame.model.entity.Player;
 import com.wargame.repository.PlayerRepository;
 import com.wargame.repository.MarchRepository;
@@ -17,6 +19,7 @@ import java.util.List;
 /** 玩家账号级兵种默认战术；离线结算也使用服务端保存的配置。 */
 @Service
 public class BattleActionPreferences {
+    @jakarta.persistence.PersistenceContext private jakarta.persistence.EntityManager entityManager;
     private final PlayerRepository players;
     private final ArmyService armyService;
     private final MarchRepository marches;
@@ -34,10 +37,14 @@ public class BattleActionPreferences {
 
     /** sortieArmy 为 null 时自动选兵；手动配置允许缺省兵种，缺省值为 0。 */
     public record Preferences(Map<String, String> outgoing, Map<String, String> defending,
-                              Map<String, Object> sortieArmy) {}
+                              Map<String, Object> sortieArmy, String formationKey) {
+        public Preferences(Map<String, String> outgoing, Map<String, String> defending, Map<String, Object> sortieArmy) {
+            this(outgoing, defending, sortieArmy, null);
+        }
+    }
 
     public record View(Map<String, String> outgoing, Map<String, String> defending,
-                       Map<String, Integer> sortieArmy, int sortieCap, boolean locked) {}
+                       Map<String, Integer> sortieArmy, int sortieCap, boolean locked, String formationKey) {}
 
     /** 战斗行军从派出到到达均锁定进攻方；守城只在城市进入实际战斗会话后锁定。 */
     @Transactional(readOnly = true)
@@ -52,25 +59,35 @@ public class BattleActionPreferences {
     @Transactional(readOnly = true)
     public View get(Long playerId) {
         Player player = players.findById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
+        long now = GameClock.now();
+        String army = MobilizationRules.sortieArmy(player, now);
         return new View(effective(player.getOutgoingBattleActions()), effective(player.getDefendingBattleActions()),
-                player.getSortieArmy() == null ? null : JsonUtil.parseIntMap(player.getSortieArmy()),
-                armyService.sortieCap(playerId), isLocked(playerId));
+                army == null ? null : JsonUtil.parseIntMap(army),
+                armyService.armyCapAt(playerId, now), isLocked(playerId), MobilizationRules.formationKey(player, now));
     }
 
     /** 保存攻守两套完整配置；拒绝未知兵种或非法命令，防止离线回合使用无效指令。 */
     @Transactional
     public View save(Long playerId, Preferences preferences) {
+        Player player = players.lockById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
+        if (entityManager != null) entityManager.refresh(player);
         if (isLocked(playerId)) throw new IllegalArgumentException("战斗或进攻行军期间无法修改默认战术");
         if (preferences == null) {
             throw new IllegalArgumentException("请同时提交出城和守城的默认战术");
         }
+        long now = GameClock.now();
+        String formationKey = MobilizationRules.formationKey(player, now);
+        // 旧客户端仅能保存无动员的默认配置；过期或跨动员周期的草稿一律拒绝。
+        String expectedKey = preferences.formationKey() == null ? "default" : preferences.formationKey();
+        if (!formationKey.equals(expectedKey)) throw new IllegalArgumentException("动员状态已变化，请重新加载防守编队后保存");
         Map<String, String> outgoing = validate(preferences.outgoing());
         Map<String, String> defending = validate(preferences.defending());
-        Map<String, Integer> sortieArmy = validateSortieArmy(preferences.sortieArmy(), armyService.sortieCap(playerId));
-        Player player = players.findById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
+        Map<String, Integer> sortieArmy = validateSortieArmy(preferences.sortieArmy(), armyService.armyCapAt(playerId, now));
         player.setOutgoingBattleActions(JsonUtil.toJson(outgoing));
         player.setDefendingBattleActions(JsonUtil.toJson(defending));
-        player.setSortieArmy(sortieArmy == null ? null : JsonUtil.toJson(sortieArmy));
+        String army = sortieArmy == null ? null : JsonUtil.toJson(sortieArmy);
+        if (formationKey.startsWith("mobilization:")) player.setMobilizationSortieArmy(army);
+        else player.setSortieArmy(army);
         players.save(player);
         return get(playerId);
     }
@@ -103,8 +120,9 @@ public class BattleActionPreferences {
     @Transactional(readOnly = true)
     public Map<String, Integer> selectSortieArmy(Long playerId, Map<String, Integer> available) {
         Player player = players.findById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
-        Map<String, Integer> configured = player.getSortieArmy() == null
-                ? available : JsonUtil.parseIntMap(player.getSortieArmy());
+        long now = GameClock.now();
+        String army = MobilizationRules.sortieArmy(player, now);
+        Map<String, Integer> configured = army == null ? available : JsonUtil.parseIntMap(army);
         Map<String, Integer> selected = new LinkedHashMap<>();
         UnitDef.UNITS.keySet().stream().sorted().forEach(unit -> {
             int count = Math.min(Math.max(0, configured.getOrDefault(unit, 0)),
@@ -112,7 +130,7 @@ public class BattleActionPreferences {
             if (count > 0) selected.put(unit, count);
         });
         long total = selected.values().stream().mapToLong(Integer::longValue).sum();
-        int cap = armyService.sortieCap(playerId);
+        int cap = armyService.armyCapAt(playerId, now);
         if (total <= cap) return selected;
         Map<String, Integer> limited = new LinkedHashMap<>();
         selected.forEach((unit, count) -> limited.put(unit, (int) ((long) count * cap / total)));

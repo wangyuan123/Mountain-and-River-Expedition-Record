@@ -59,6 +59,7 @@ public record UnitDef(
     // 与前端共用完整历史名称，确保征召提示和新战报一致；存档与战斗规则仍使用稳定的 key。
     // 征召预备粮与单位规模、珍贵程度相关，后续驻城及行军耗粮仍单独结算。
     // 2026-10-19资源分工：步兵少量消耗油矿，特种兵重粮、空军重稀矿、装甲车与坦克重钢、火箭车重油；具体取值见 docs/balance/unit-resource-costs-20261019.md。
+    // 2026-10-29人口定稿与前端同步；历史返还单价独立保存在 UnitPopulationCosts。
     public static final Map<String, UnitDef> UNITS;
     static {
         Map<String, UnitDef> m = new HashMap<>();
@@ -83,13 +84,13 @@ public record UnitDef(
                 33, 10, 55, 45, 53, 270, 4, 220, 5, 4, 2, 2, "lightfactory",
                 Map.of("food", 50, "steel", 360, "oil", 80, "rare", 25), "armored", "land"));
         m.put("htank", new UnitDef("htank", "重型坦克-斯大林（IS-2）", "arm",
-                50, 15, 65, 50, 63.5, 385, 4, 320, 8, 7, 3, 4, "heavyfactory",
+                50, 15, 65, 50, 63.5, 385, 4, 320, 8, 7, 3, 3, "heavyfactory",
                 Map.of("food", 80, "steel", 675, "oil", 120, "rare", 50), "ltank", "land"));
         m.put("assault", new UnitDef("assault", "突击炮-自行加榴炮（ISU-152）", "arm",
-                34, 30, 65, 167, 28, 200, 2, 750, 4, 5, 2, 2, "factory",
+                34, 30, 65, 167, 28, 200, 2, 750, 4, 5, 2, 3, "factory",
                 Map.of("food", 40, "steel", 200, "oil", 50, "rare", 25), "bunker", "land"));
         m.put("rocket", new UnitDef("rocket", "反坦克火箭-喀秋莎（BM-13）", "arm",
-                100, 11.5, 25, 179, 28, 150, 3, 1600, 5, 4, 3, 3, "factory",
+                100, 11.5, 25, 179, 28, 150, 3, 1600, 5, 4, 3, 5, "factory",
                 Map.of("food", 100, "steel", 550, "oil", 450, "rare", 120), "htank", "land"));
         // 侦察机属于空军，生产、速度和装备制造均按空军基地计算。
         m.put("scout", new UnitDef("scout", "侦察机-闪电侦察型（F-5）", "air",
@@ -97,30 +98,30 @@ public record UnitDef(
                 Map.of("food", 30, "steel", 60, "oil", 30, "rare", 15), null, "air",
                 null, null, false));
         m.put("special", new UnitDef("special", "特种兵-英国突击队（Commando）", "inf",
-                30, 10, 125, 188, 5.5, 150, 6, 180, 4, 1, 2, 2, "factory",
+                30, 10, 125, 188, 5.5, 150, 6, 180, 4, 1, 2, 1, "factory",
                 Map.of("food", 80, "steel", 100, "oil", 40, "rare", 20), "howitzer", "land"));
         m.put("fighter", new UnitDef("fighter", "战斗机-野马（P-51）", "air",
                 12, 64, 75, 5, 30, 150, 8, 350, 5, 10, 2, 2, "airport",
                 Map.of("food", 50, "steel", 220, "oil", 90, "rare", 55), "bomber", "air"));
         m.put("bomber", new UnitDef("bomber", "轰炸机-飞行堡垒（B-17G）", "air",
-                56, 12, 95, 429, 22, 195, 6, 300, 7, 22, 4, 3, "airport",
+                56, 12, 95, 429, 22, 195, 6, 300, 7, 22, 4, 5, "airport",
                 Map.of("food", 70, "steel", 350, "oil", 150, "rare", 90), "htank", "air"));
         m.put("transport", new UnitDef("transport", "运输机-空中列车（C-47）", "air",
-                1, 1, 1, 1, 10, 220, 6, 0, 5, 16, 3, 2, "airport",
+                1, 1, 1, 1, 10, 220, 6, 0, 5, 16, 3, 3, "airport",
                 Map.of("food", 50, "steel", 180, "oil", 80, "rare", 30), null, "air",
                 true, 800, false));
         m.put("destroyer", new UnitDef("destroyer", "驱逐舰-弗莱彻级（Fletcher）", "nav",
-                44, 59, 47, 35, 50, 555, 5, 400, 7, 15, 6, 3, "shipyard",
+                44, 59, 47, 35, 50, 555, 5, 400, 7, 15, 6, 10, "shipyard",
                 Map.of("food", 70, "steel", 450, "oil", 160, "rare", 80), "sub", "sea"));
         m.put("sub", new UnitDef("sub", "潜艇-小鲨鱼级（Gato）", "nav",
-                1, 1, 66, 1, 20, 395, 3, 100, 6, 9, 4, 3, "shipyard",
+                1, 1, 66, 1, 20, 395, 3, 100, 6, 9, 4, 8, "shipyard",
                 Map.of("food", 60, "steel", 300, "oil", 80, "rare", 60), "battleship", "sea"));
         // 主力舰战斗属性沿用最终方案；四项征召资源（含粮食）按本轮火箭车单价的20倍定战列舰，航母再乘2。
         m.put("battleship", new UnitDef("battleship", "战列舰-衣阿华级（Iowa）", "nav",
-                91, 100, 185, 108, 100, 1050, 4, 1600, 12, 35, 15, 6, "shipyard",
+                91, 100, 185, 108, 100, 1050, 4, 1600, 12, 35, 15, 20, "shipyard",
                 Map.of("food", 2000, "steel", 11000, "oil", 9000, "rare", 2400), "destroyer", "sea"));
         m.put("carrier", new UnitDef("carrier", "航母-埃塞克斯级（Essex）", "nav",
-                82, 125, 100, 110, 120, 1300, 4, 1900, 15, 42, 22, 8, "shipyard",
+                82, 125, 100, 110, 120, 1300, 4, 1900, 15, 42, 22, 100, "shipyard",
                 Map.of("food", 4000, "steel", 22000, "oil", 18000, "rare", 4800), "bomber", "sea"));
         UNITS = Collections.unmodifiableMap(m);
     }

@@ -42,9 +42,11 @@ import java.util.*;
  */
 @Service
 public class MailService {
+    @org.springframework.beans.factory.annotation.Autowired private ArmyPopulationService populationCosts;
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.repository.PlayerItemRepository playerItems;
     private static final long DAY_MS = 24L * 60 * 60 * 1000;
+    @org.springframework.beans.factory.annotation.Autowired private com.wargame.repository.PlayerGuideRepository guides;
 
     @org.springframework.beans.factory.annotation.Autowired private AccountService accounts;
     @org.springframework.beans.factory.annotation.Autowired private JdbcTemplate jdbc;
@@ -553,7 +555,7 @@ public class MailService {
     // ================================================================
 
     /**
-     * 新玩家首次注册时塞入的系统邮件种子。
+     * 首次进入游戏只发欢迎、通告及改名卡；完成礼包由引导毕业事件发放。
      * 由 {@link GameStateService#initializeNewPlayer} 调用。
      */
     @Transactional
@@ -576,10 +578,11 @@ public class MailService {
         welcome.setType("system");
         welcome.setIsSystem(true);
         welcome.setSubject("欢迎加入战局");
-        welcome.setBody("指挥官您好，您已成功入伍。系统已为您准备了一份新手礼包，请前往【仓库】查收。"
+        welcome.setBody("指挥官您好，您已成功入伍。本邮件附赠黄金×10000，请领取附件；初始道具礼包请前往【仓库】查收。"
                 + "完成主城建造后，将陆续解锁更多军事设施与功能。祝您战运亨通！");
         welcome.setAttachJson(JsonUtil.toJson(List.of(
-                Map.of("type", "gold", "qty", 5000)
+                // 欢迎与真实毕业两封固定资源邮件各1万黄金，合计2万，仍需主动领取。
+                Map.of("type", "gold", "qty", 10000)
         )));
         welcome.setIsRead(false);
         welcome.setIsClaimed(false);
@@ -588,27 +591,6 @@ public class MailService {
         welcome.setAttachmentSourceId("welcome:" + playerId);
         welcome.setCreatedAt(now - 3600_000L);
         mailRepository.save(welcome);
-
-        Mail reward = new Mail();
-        reward.setFromPlayerId(null);
-        reward.setFromName("系统");
-        reward.setAttachmentPolicy("PROTECTED");
-        reward.setAttachmentSourceType("NEW_PLAYER");
-        reward.setAttachmentSourceId("reward:" + playerId);
-        reward.setToPlayerId(playerId);
-        reward.setToName(PlayerNames.commanderName(p));
-        reward.setType("reward");
-        reward.setIsSystem(true);
-        reward.setSubject("新手礼包已发放");
-        reward.setBody("感谢您完成新手指引！礼包内容：黄金×3000 / 钻石×50。请在仓库中查收。");
-        reward.setAttachJson(JsonUtil.toJson(List.of(
-                Map.of("type", "gold", "qty", 3000),
-                Map.of("type", "diamond", "qty", 50)
-        )));
-        reward.setIsRead(true);  // 旧的已读
-        reward.setIsClaimed(false);
-        reward.setCreatedAt(now - 2 * 3600_000L);
-        mailRepository.save(reward);
 
         Mail announce = new Mail();
         announce.setFromPlayerId(null);
@@ -625,6 +607,27 @@ public class MailService {
         announce.setIsClaimed(true);
         announce.setCreatedAt(now - 3 * 3600_000L);
         mailRepository.save(announce);
+    }
+
+    /** 真实毕业后寄送一次完成礼包；永久回执防止领完删信后重发，并兼容已提前寄出的旧邮件。 */
+    @Transactional
+    public void issueOnboardingCompletionGift(Long playerId) {
+        accounts.lockPlayer(playerId);
+        if (guides.findByPlayerIdAndStepId(playerId, "ob3_completed").isEmpty()) {
+            throw new IllegalArgumentException("请先完成新手指引");
+        }
+        String receipt = "ob3_reward_completion_mail";
+        if (guides.findByPlayerIdAndStepId(playerId, receipt).isPresent()) return;
+        String sourceId = "reward:" + playerId;
+        // 沿用旧来源编号，不向已收到或已领取旧邮件的玩家重复发放。
+        if (!mailRepository.existsByToPlayerIdAndAttachmentSourceTypeAndAttachmentSourceId(playerId, "NEW_PLAYER", sourceId)) {
+            Mail gift = sendSystem(playerId, "系统", "reward", "新手礼包已发放",
+                    "感谢您完成新手指引！礼包内容：黄金×10000 / 钻石×50。请领取本邮件附件。",
+                    List.of(Map.of("type", "gold", "qty", 10000), Map.of("type", "diamond", "qty", 50)),
+                    null, "PROTECTED", "NEW_PLAYER", sourceId, null);
+            if (gift == null) return;
+        }
+        guides.save(new com.wargame.model.entity.PlayerGuide(playerId, receipt, "done", System.currentTimeMillis()));
     }
 
     // ================================================================
@@ -728,6 +731,7 @@ public class MailService {
             String unitType = entry.getKey();
             int count = entry.getValue();
             if (count <= 0) continue;
+            populationCosts.grant(playerId, unitType, count);
             List<ArmyUnit> list = armyUnitRepository.findByPlayerIdAndCitySlotAndType(playerId, citySlot, unitType);
             ArmyUnit u;
             if (list.isEmpty()) {

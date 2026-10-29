@@ -76,19 +76,36 @@ window.Game = window.Game || {};
       : null;
   }
 
-  /** 统一生成已招募卡片与军校候选卡片使用的星级边框装饰：仅5星军官展示钻石边框与角饰，4星及以下为普通卡片。 */
+  /** 统一生成已招募卡片与军校候选卡片使用的星级边框装饰：仅5星军官展示钻石边框与角饰，并根据品质差异化呈现，4星及以下为普通卡片。 */
   function officerFrame(o) {
     var star = Math.min(5, Math.max(1, Number(o.star) || 1));
     var tierClass = star === 5 ? 'tier-diamond' : 'tier-normal';
     var rarity = officerRarity(o);
+    var rarityAttr = '';
+    var cornerSuffix = '';
+    if (star === 5) {
+      if (rarity && rarity.className === 'rarity-ur') {
+        rarityAttr = ' data-rarity="ur"';
+        cornerSuffix = ' corner-ur';
+      } else if (rarity && rarity.className === 'rarity-ssr') {
+        rarityAttr = ' data-rarity="ssr"';
+        cornerSuffix = ' corner-ssr';
+      } else if (rarity && rarity.className === 'rarity-sr') {
+        rarityAttr = ' data-rarity="sr"';
+        cornerSuffix = ' corner-sr';
+      } else {
+        rarityAttr = ' data-rarity="base5"';
+        cornerSuffix = ' corner-base5';
+      }
+    }
     var ribbon = rarity
       ? '<span class="tier-ribbon ' + rarity.className + '">' + rarity.label + '</span>'
       : '';
     var corners = star === 5
-      ? '<span class="card-corner corner-tl"></span><span class="card-corner corner-tr"></span>' +
-        '<span class="card-corner corner-bl"></span><span class="card-corner corner-br"></span>'
+      ? '<span class="card-corner corner-tl' + cornerSuffix + '"></span><span class="card-corner corner-tr' + cornerSuffix + '"></span>' +
+        '<span class="card-corner corner-bl' + cornerSuffix + '"></span><span class="card-corner corner-br' + cornerSuffix + '"></span>'
       : '';
-    return { tierClass: tierClass, ribbon: ribbon, corners: corners };
+    return { tierClass: tierClass, ribbon: ribbon, corners: corners, rarityAttr: rarityAttr };
   }
 
   function renderCandidateCardHtml(o, i, s) {
@@ -140,7 +157,7 @@ window.Game = window.Game || {};
       : '<button type="button" class="link-act disabled candidate-recruit-btn is-disabled" disabled onclick="event.stopPropagation();Game.toast(\'黄金不足，无法招募\');" title="' + recruitTitle + '">' +
           '<span class="btn-recruit-text">招募</span><span class="btn-recruit-cost">🪙' + cost + '</span></button>';
 
-    var h = '<div class="' + cls + '" id="academy-candidate-' + i + '" data-officer-index="' + i + '" data-star="' + o.star + '" role="button" tabindex="0" onclick="' + cardClickAction + '" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + cardClickAction + '}" title="' + recruitTitle + '">' + frame.corners;
+    var h = '<div class="' + cls + '" id="academy-candidate-' + i + '" data-officer-index="' + i + '" data-star="' + o.star + '"' + frame.rarityAttr + ' role="button" tabindex="0" onclick="' + cardClickAction + '" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + cardClickAction + '}" title="' + recruitTitle + '">' + frame.corners;
     h += '<div class="candidate-header-row">';
     h += '<div class="candidate-title-group">';
     h += '<span class="candidate-name n" style="color:' + (D.starColor[o.star] || '#fff') + '">' + G.escapeHtml(o.name) + '</span>';
@@ -1021,8 +1038,9 @@ window.Game = window.Game || {};
       var items = s.items || {};
       var bNormal = items.expBook || 0;
       var bAdv = items.expBookAdv || 0;
+      var bRapid = items.expBookRapid || 0;
       var bMax = items.expBookMax || 0;
-      var totalBooks = bNormal + bAdv + bMax;
+      var totalBooks = bNormal + bAdv + bRapid + bMax;
 
       var mask = document.createElement('div');
       mask.className = 'modal-mask';
@@ -1037,7 +1055,7 @@ window.Game = window.Game || {};
           + '<div class="panel" style="text-align:center;padding:20px 10px">'
           + '<div style="font-size:32px;margin-bottom:8px">📚</div>'
           + '<div style="font-size:14px;font-weight:bold;margin-bottom:4px">背包中暂无经验书</div>'
-          + '<div class="d" style="color:var(--muted);font-size:12px">可在商城中购买【经验书】、【高级经验书】或【满级经验书】</div>'
+          + '<div class="d" style="color:var(--muted);font-size:12px">可在商城中购买【经验书】、【高级经验书】、【极速经验书】或【满级经验书】</div>'
           + '</div>'
           + '<div class="btn-row" style="margin-top:14px;justify-content:center;gap:10px">'
           + '<button class="btn sm ok" onclick="Game.Officer.closeExpBookModal();Game.go(\'shop\')">前往商城</button>'
@@ -1053,12 +1071,13 @@ window.Game = window.Game || {};
       var bookList = [
         { id: 'expBook', name: '经验书', icon: '📘', exp: 10000, cnt: bNormal },
         { id: 'expBookAdv', name: '高级经验书', icon: '📕', exp: 100000, cnt: bAdv },
+        { id: 'expBookRapid', name: '极速经验书', icon: '📕', exp: 500000, cnt: bRapid },
         { id: 'expBookMax', name: '满级经验书', icon: '📙', exp: 0, isMax: true, cnt: bMax }
       ];
 
       var selectedId = (defaultItemId && (items[defaultItemId] || 0) > 0)
         ? defaultItemId
-        : (bNormal > 0 ? 'expBook' : (bAdv > 0 ? 'expBookAdv' : (bMax > 0 ? 'expBookMax' : 'expBook')));
+        : (bNormal > 0 ? 'expBook' : (bAdv > 0 ? 'expBookAdv' : (bRapid > 0 ? 'expBookRapid' : (bMax > 0 ? 'expBookMax' : 'expBook'))));
       var selectedBook = bookList.find(function (b) { return b.id === selectedId; }) || bookList[0];
       var maxCount = selectedBook.isMax ? Math.min(1, selectedBook.cnt) : selectedBook.cnt;
       var curQty = Math.max(1, Math.min(1, maxCount));
@@ -1722,7 +1741,7 @@ window.Game = window.Game || {};
             skillTagsHtml = '<span class="card-skill-tag-empty">暂无特长技能</span>';
           }
 
-          h += '<div class="officer-card ' + tierClass + '" onclick="Game.Officer.showDetail(\'' + o.id + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();Game.Officer.showDetail(\'' + o.id + '\');}" role="button" tabindex="0" title="点击查看 ' + esc(o.name) + ' 详情">';
+          h += '<div class="officer-card ' + tierClass + '"' + frame.rarityAttr + ' onclick="Game.Officer.showDetail(\'' + o.id + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();Game.Officer.showDetail(\'' + o.id + '\');}" role="button" tabindex="0" title="点击查看 ' + esc(o.name) + ' 详情">';
           h += cornersHtml;
           h += '<div class="officer-card-inner">';
 
@@ -2108,10 +2127,12 @@ window.Game = window.Game || {};
 
       var bNormal = (s.items && s.items.expBook) || 0;
       var bAdv = (s.items && s.items.expBookAdv) || 0;
+      var bRapid = (s.items && s.items.expBookRapid) || 0;
       var bMax = (s.items && s.items.expBookMax) || 0;
       var bookDescParts = [];
-      if (bNormal > 0 || (bAdv === 0 && bMax === 0)) bookDescParts.push('初级: ' + bNormal + '本');
+      if (bNormal > 0 || (bAdv === 0 && bRapid === 0 && bMax === 0)) bookDescParts.push('初级: ' + bNormal + '本');
       if (bAdv > 0) bookDescParts.push('高级: ' + bAdv + '本');
+      if (bRapid > 0) bookDescParts.push('极速: ' + bRapid + '本');
       if (bMax > 0) bookDescParts.push('满级: ' + bMax + '本');
       h += '<section class="officer-detail-section"><div class="officer-detail-section-head"><h2>等级培养</h2><span>' + bookDescParts.join(' · ') + '</span></div>';
       if (o.level < G.OFFICER_MAX_LEVEL) {
@@ -2136,7 +2157,7 @@ window.Game = window.Game || {};
         } else {
           h += '<button class="btn sm" disabled title="经验不足以升至下一级">⚡ 升级</button>';
         }
-        var totalBooks = bNormal + bAdv + bMax;
+        var totalBooks = bNormal + bAdv + bRapid + bMax;
         h += '<button class="btn sm' + (totalBooks > 0 ? ' ok' : '') + '" onclick="Game.Officer.openExpBookModal(\'' + o.id + '\')">📖 使用经验书' + (totalBooks > 0 ? ' (余' + totalBooks + '本)' : '(无)') + '</button>';
         h += '</div>';
       } else {

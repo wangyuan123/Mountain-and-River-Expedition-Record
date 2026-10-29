@@ -7,7 +7,7 @@ window.Game = window.Game || {};
   var state = null, battle = null, lobby = null, config = null, report = null;
   var context = '', timer = null, lastPoll = 0, lastBeat = 0, reading = null;
   var busy = false, error = '', notice = '', pending = null, dirty = false, saving = false, saveTimer = null;
-  var lobbyLoading = false, readAgain = false;
+  var lobbyLoading = false, readAgain = false, loadedAttemptAt = 0;
   var drafts = {}, loadedAttempt = '', rendered = '', estimate = null, dismissed = '', tab = 'lobby';
   var actions = { ADVANCE: '前进', RETREAT: '后退', HOLD: '待命' };
   var resultNames = { WIN: '演习胜利', LOSS: '演习失利', DRAW: '双方平局', VOID: '本局作废' };
@@ -25,7 +25,7 @@ window.Game = window.Game || {};
   function reset() {
     state = battle = lobby = config = report = estimate = pending = null;
     busy = dirty = saving = false; error = notice = loadedAttempt = rendered = dismissed = ''; drafts = {}; tab = 'lobby';
-    lastPoll = lastBeat = 0; lobbyLoading = false; if (saveTimer) clearTimeout(saveTimer);
+    lastPoll = lastBeat = loadedAttemptAt = 0; lobbyLoading = false; if (saveTimer) clearTimeout(saveTimer);
   }
   function syncClock(data) { if (data) G.GameTime.sync(data.serverTime); }
   function show() { if (Core.route === 'pvp') render(document.getElementById('view')); }
@@ -66,8 +66,9 @@ window.Game = window.Game || {};
       if (s.sessionId && s.status !== 'ACCEPTING') return request('GET', 'battle?sessionId=' + encodeURIComponent(s.sessionId)).then(function (b) {
         if (captured !== context || key() !== captured) return;
         applyBattle(b); show();
-        if (b.status === 'LOADING' && !b.loaded && loadedAttempt !== b.sessionId && !pending) {
-          loadedAttempt = b.sessionId;
+        // 入场上报失败后仍可补报；限制频率，避免恢复查询形成即时重试循环。
+        if (b.status === 'LOADING' && !b.loaded && !pending && (loadedAttempt !== b.sessionId || Date.now() - loadedAttemptAt >= C.battlePollMs)) {
+          loadedAttempt = b.sessionId; loadedAttemptAt = Date.now();
           return mutate('loaded', { sessionId: b.sessionId }, function (r) { applyBattle(r); });
         }
       });
@@ -122,7 +123,7 @@ window.Game = window.Game || {};
       }).catch(function () { recover(); });
     }
     var interval = state && state.ticketId ? C.queuePollMs : C.battlePollMs;
-    if (active() && (!G.WS || !G.WS.connected) && t - lastPoll >= interval) { lastPoll = t; recover(); }
+    if (active() && (!G.WS || !G.WS.connected || state.status === 'LOADING') && t - lastPoll >= interval) { lastPoll = t; recover(); }
     // WebSocket丢失单条截止事件时也查询一次；不会按客户端时间自行推进回合。
     if (active() && state.deadlineAt && now() >= state.deadlineAt && t - lastPoll >= C.battlePollMs) { lastPoll = t; recover(); }
   }
@@ -314,21 +315,11 @@ window.Game = window.Game || {};
   function fillMax() {
     if (!config || !lobby) return;
     var avail = lobby.available.army || {}, cap = Number(lobby.available.cap) || 0;
-    var keys = Object.keys(G.DATA.units).filter(function (k) {
-      var u = unit(k);
-      return u.branch === 'air' || u.branch === (config.battlefield === 'SEA_AIR' ? 'sea' : 'land');
-    });
-    var totalAvail = keys.reduce(function (sum, k) { return sum + (avail[k] || 0); }, 0);
-    if (totalAvail <= 0 || cap <= 0) return;
-    var target = Math.min(cap, totalAvail);
-    var allocated = 0;
-    keys.forEach(function (k, idx) {
-      var a = avail[k] || 0;
-      var amt = (idx === keys.length - 1) ? Math.min(a, target - allocated) : Math.min(a, Math.floor(target * a / totalAvail));
-      config.army[k] = amt;
-      allocated += amt;
+    // 与初次编队共用比例分配及余数补齐，末尾兵种无库存时也能填满上限。
+    config.army = proportion(avail, cap, config.battlefield);
+    Object.keys(G.DATA.units).forEach(function (k) {
       var el = document.getElementById('pvp-count-' + k);
-      if (el) el.value = amt;
+      if (el) el.value = config.army[k] || 0;
     });
     var total = Object.values(config.army).reduce(function (a, b) { return a + (Number(b) || 0); }, 0);
     var n = document.getElementById('pvp-selected');

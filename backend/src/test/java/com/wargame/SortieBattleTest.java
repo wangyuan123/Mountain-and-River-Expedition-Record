@@ -17,6 +17,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class SortieBattleTest extends BaseServiceTest {
     @Autowired private BattleSessionRepository sessions;
+    @Autowired private com.wargame.service.MobilizationService mobilization;
+    @Autowired private com.wargame.service.BattleActionPreferences preferences;
+    @Autowired private com.wargame.repository.PlayerItemRepository items;
     @Autowired private PlayerPowerSnapshotRepository powerSnapshots;
 
     private void balancePower(Player attacker, Player defender) {
@@ -67,9 +70,15 @@ class SortieBattleTest extends BaseServiceTest {
         return fortificationRepository.save(fort);
     }
 
-    @Test
-    void automaticSortieUsesAttackedCityCapacityAndDoesNotCountForts() {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void automaticAndLegacySortieUseAttackedCityCapacityAndDoNotCountForts(boolean legacyPreset) {
         Player defender = createTestPlayer("sortie-defender", 30);
+        if (legacyPreset) {
+            // 旧版保存的 37,500 人预设在开战时缩减，不能绕过新的 25,000 人上限。
+            defender.setSortieArmy(JsonUtil.toJson(Map.of("infantry", 37500)));
+            playerRepository.save(defender);
+        }
         createBuilding(defender.getId(), "wall", 10);
         ArmyUnit infantry = createArmyUnit(defender.getId(), "infantry", 100000);
         infantry.setCitySlot(1);
@@ -79,9 +88,30 @@ class SortieBattleTest extends BaseServiceTest {
 
         March march = attack(defender, 1, Map.of("infantry", 100));
         BattleSession session = sessions.findById(march.getBattleId()).orElseThrow();
-        assertEquals(Map.of("infantry", 37500, "bunker", 1000), JsonUtil.parseIntMap(session.getInitialDefender()));
+        assertEquals(Map.of("infantry", 25000, "bunker", 1000), JsonUtil.parseIntMap(session.getInitialDefender()));
         assertEquals(100000, armyUnitRepository.findByPlayerIdAndCitySlotAndType(defender.getId(), 1, "infantry").get(0).getCount());
         assertEquals(500, armyUnitRepository.findByPlayerIdAndCitySlotAndType(defender.getId(), 0, "infantry").get(0).getCount());
+    }
+
+    @Test
+    void mobilizationExpiryRestoresDefaultDefenseButKeepsRunningBattleSnapshot() throws Exception {
+        var clock = new java.util.concurrent.atomic.AtomicLong(System.currentTimeMillis());
+        try (var ignored = com.wargame.util.GameClock.use(clock::get)) {
+            Player defender = createTestPlayer("buff-sortie-defender", 30);
+            defender.setSortieArmy("{\"infantry\":10000}");
+            playerRepository.save(defender);
+            createArmyUnit(defender.getId(), "infantry", 100000);
+            items.saveAndFlush(new PlayerItem(null, defender.getId(), "rapidMobilizationOrder", 1, 0L));
+            mobilization.use(defender.getId(), "rapidMobilizationOrder", 1, "battle-snapshot-use");
+            var config = preferences.get(defender.getId());
+            preferences.save(defender.getId(), new com.wargame.service.BattleActionPreferences.Preferences(
+                    config.outgoing(), config.defending(), Map.of("infantry", 37500), config.formationKey()));
+            March march = attack(defender, 0, Map.of("infantry", 100));
+            assertEquals(Map.of("infantry", 37500), JsonUtil.parseIntMap(sessions.findById(march.getBattleId()).orElseThrow().getInitialDefender()));
+            clock.addAndGet(com.wargame.model.constants.MobilizationRules.DURATION_MS);
+            assertEquals(Map.of("infantry", 10000), preferences.selectSortieArmy(defender.getId(), Map.of("infantry", 100000)));
+            assertEquals(Map.of("infantry", 37500), JsonUtil.parseIntMap(sessions.findById(march.getBattleId()).orElseThrow().getInitialDefender()));
+        }
     }
 
     @ParameterizedTest

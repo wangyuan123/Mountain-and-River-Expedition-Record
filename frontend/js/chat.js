@@ -103,11 +103,14 @@ window.Game = window.Game || {};
 
   function appendAvatar(container, msg, self) {
     if (msg.type === 'system') return;
-    var img = document.createElement('img');
     var curPlayer = (G.state && G.state.player) || (G.Core && G.Core.state && G.Core.state.player) || {};
     var frame = (msg && msg.avatarFrame) ? msg.avatarFrame : (self ? curPlayer.avatarFrame : 'default');
     var frameCls = avatarFrameClass(frame);
-    img.className = 'chat-avatar' + (frameCls ? ' ' + frameCls : '');
+    var wrap = document.createElement('span');
+    wrap.className = 'chat-avatar' + (frameCls ? ' ' + frameCls : '');
+
+    var img = document.createElement('img');
+    img.className = 'chat-avatar-img';
     img.src = avatarSrc(msg.avatar, self);
     img.alt = (msg.username || '玩家') + '的统帅头像';
     img.onerror = function () {
@@ -115,13 +118,31 @@ window.Game = window.Game || {};
       this.src = avatarSrc('', false);
     };
     if (!self && msg.playerId != null) {
+      wrap.setAttribute('data-private-username', msg.username);
+      wrap.setAttribute('data-private-player-id', msg.playerId);
+      wrap.setAttribute('role', 'button');
+      wrap.setAttribute('tabindex', '0');
+      wrap.title = '点击与该玩家私聊';
+
       img.setAttribute('data-private-username', msg.username);
       img.setAttribute('data-private-player-id', msg.playerId);
       img.setAttribute('role', 'button');
       img.setAttribute('tabindex', '0');
       img.title = '点击与该玩家私聊';
     }
-    container.appendChild(img);
+    wrap.appendChild(img);
+
+    if (G.avatarFrameOverlay) {
+      var overlayHtml = G.avatarFrameOverlay(frame);
+      if (overlayHtml) {
+        var temp = document.createElement('div');
+        temp.innerHTML = overlayHtml;
+        while (temp.firstChild) {
+          wrap.appendChild(temp.firstChild);
+        }
+      }
+    }
+    container.appendChild(wrap);
   }
 
   function isSelfMessage(msg) {
@@ -275,8 +296,13 @@ window.Game = window.Game || {};
         });
       var frame = (m && m.avatarFrame) ? m.avatarFrame : (self ? curPlayer.avatarFrame : 'default');
       var frameCls = avatarFrameClass(frame);
+      var frameOverlay = (G.avatarFrameOverlay ? G.avatarFrameOverlay(frame) : '');
       var avatarClasses = 'chat-avatar' + (frameCls ? ' ' + frameCls : '');
-      h += '<img class="' + avatarClasses + '" src="' + selfAvatar + '" alt="' + safeName + '的统帅头像"' + (!self && m.playerId != null ? ' data-private-player-id="' + Number(m.playerId) + '" role="button" tabindex="0" title="点击与该玩家私聊" data-private-username="' + safeName + '"' : '') + ' onerror="this.onerror=null;this.src=\'' + avatarSrc('', false) + '\'">';
+      var privateAttrs = (!self && m.playerId != null ? ' data-private-player-id="' + Number(m.playerId) + '" role="button" tabindex="0" title="点击与该玩家私聊" data-private-username="' + safeName + '"' : '');
+      h += '<span class="' + avatarClasses + '"' + privateAttrs + '>' +
+        '<img class="chat-avatar-img" src="' + selfAvatar + '" alt="' + safeName + '的统帅头像"' + privateAttrs + ' onerror="this.onerror=null;this.src=\'' + avatarSrc('', false) + '\'">' +
+        frameOverlay +
+        '</span>';
       h += '<div class="chat-msg-body">';
       h += vipBadgeHtml;
       h += '<span class="chat-sender"' + (!self && m.playerId != null ? ' data-private-player-id="' + Number(m.playerId) + '" role="button" tabindex="0" title="点击与该玩家私聊" data-private-username="' + safeName + '"' : '') + '>' + safeName + ':</span>';
@@ -427,9 +453,14 @@ window.Game = window.Game || {};
       var rClass = m.role === 'leader' ? 'tag-guild-leader' : (m.role === 'admin' ? 'tag-guild-admin' : 'tag-guild-member');
       var frame = (m && m.avatarFrame) ? m.avatarFrame : (self ? curPlayer.avatarFrame : 'default');
       var frameCls = avatarFrameClass(frame);
+      var frameOverlay = (G.avatarFrameOverlay ? G.avatarFrameOverlay(frame) : '');
       var avatarClasses = 'chat-avatar' + (frameCls ? ' ' + frameCls : '');
+      var privateAttrs = (!self && m.playerId != null ? ' data-private-player-id="' + Number(m.playerId) + '" role="button" tabindex="0" title="点击与该玩家私聊" data-private-username="' + safeName + '"' : '');
 
-      h += '<img class="' + avatarClasses + '" src="' + selfAvatar + '" alt="' + safeName + '的统帅头像"' + (!self && m.playerId != null ? ' data-private-player-id="' + Number(m.playerId) + '" role="button" tabindex="0" title="点击与该玩家私聊" data-private-username="' + safeName + '"' : '') + ' onerror="this.onerror=null;this.src=\'' + avatarSrc('', false) + '\'">';
+      h += '<span class="' + avatarClasses + '"' + privateAttrs + '>' +
+        '<img class="chat-avatar-img" src="' + selfAvatar + '" alt="' + safeName + '的统帅头像"' + privateAttrs + ' onerror="this.onerror=null;this.src=\'' + avatarSrc('', false) + '\'">' +
+        frameOverlay +
+        '</span>';
       h += '<div class="chat-msg-body">';
       h += '<div class="chat-msg-header">';
       h += '<span class="chat-tag ' + rClass + '">[' + rName + ']</span>';

@@ -55,7 +55,7 @@ class ShipyardServiceTest extends BaseServiceTest {
         city.setY(40);
         city.setLevel(1);
         city = playerCityRepository.save(city);
-        giveResources(playerId, 1000000, 1000000, 1000000, 1000000, 1000000);
+        giveResources(playerId, 1000000, 1000000, 1000000, 1000000, 10000000);
         createBuilding(playerId, "command", 10);
         createBuilding(playerId, "heavyfactory", 10);
         createBuilding(playerId, "refinery", 10);

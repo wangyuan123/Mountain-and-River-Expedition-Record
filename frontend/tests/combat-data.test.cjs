@@ -48,6 +48,17 @@ test('infantry carries small personal cargo while keeping its combat role and tr
   assert.match(data.combatRoles.infantry, /每人基础负重10/);
 });
 
+test('approved recruitment population keeps large ships and long-range firepower at their agreed tiers', () => {
+  const population = Object.fromEntries(Object.entries(data.units).map(([id, unit]) => [id, unit.pop]));
+  assert.deepEqual(population, {
+    infantry: 1, truck: 1, armored: 2, recon_car: 2, ltank: 2, htank: 3, assault: 3, rocket: 5,
+    scout: 1, special: 1, fighter: 2, bomber: 5, transport: 3,
+    destroyer: 10, sub: 8, battleship: 20, carrier: 100
+  });
+  assert.equal(data.units.carrier.pop * 100, 10000);
+  assert.equal(data.units.battleship.pop * 100, 2000);
+});
+
 test('land recruitment costs distinguish steel armor from oil intensive rocket artillery', () => {
   const landUnits = Object.values(data.units).filter((unit) => unit.branch === 'land');
   const rocket = data.units.rocket;

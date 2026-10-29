@@ -5,7 +5,7 @@ window.Game = window.Game || {};
 
   // 新大区必须同时部署独立后端/数据库，并在网关配置对应的 /regions/<id>/ 路由。
   var regions = [
-    { id: 'jiangsu-1', name: '江苏一区', apiBase: null, wsBase: null }
+    { id: 'jiangsu-1', name: '公测一区', apiBase: null, wsBase: null }
   ];
   var storageKey = 'wargame_server';
   var selected = null;

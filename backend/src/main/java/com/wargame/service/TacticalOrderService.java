@@ -1,6 +1,7 @@
 package com.wargame.service;
 
 import com.wargame.model.constants.StratagemRules;
+import com.wargame.model.constants.ItemDef;
 import com.wargame.model.entity.Officer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,15 +24,18 @@ public class TacticalOrderService {
     public Map<String, Object> effect(Long playerId, String itemKey) {
         Officer commander = targets.getCommander(playerId);
         int knowledge = Math.max(0, equipment.attributes(commander).knowledge());
-        boolean accelerating = "marchOrd".equals(itemKey) || "warSpeedOrder".equals(itemKey);
+        boolean marchOrder = ItemDef.MARCH_BONUS_PERCENT.containsKey(itemKey);
+        boolean accelerating = marchOrder || "warSpeedOrder".equals(itemKey);
+        double baseRatio = marchOrder ? ItemDef.MARCH_BONUS_PERCENT.get(itemKey) / 100.0 : 0.5;
         Map<String, Object> effect = new LinkedHashMap<>();
         effect.put("commanderId", commander == null ? 0L : commander.getId());
         effect.put("commanderName", commander == null ? "未任命" : commander.getName());
         effect.put("knowledge", knowledge);
-        effect.put("baseRatio", 0.5);
+        effect.put("baseRatio", baseRatio);
         effect.put("knowledgeBonus", knowledge * 0.001);
-        effect.put("ratio", accelerating ? StratagemRules.acceleration(knowledge) : StratagemRules.delay(knowledge));
-        effect.put("cap", accelerating ? 0.8 : 0.7);
+        effect.put("ratio", marchOrder ? baseRatio + Math.min(300, knowledge) / 1000.0
+                : accelerating ? StratagemRules.acceleration(knowledge) : StratagemRules.delay(knowledge));
+        effect.put("cap", marchOrder ? baseRatio + 0.3 : accelerating ? 0.8 : 0.7);
         effect.put("itemKey", itemKey);
         return effect;
     }

@@ -241,8 +241,15 @@ class PlayerCityConquestTest extends BaseServiceTest {
         assertTrue(equipmentProgress.preparation(attacker.getId(), retained.getId()).isEmpty());
     }
 
-    @Test void constructionCitiesCountAgainstRankCapAndPositiveMoralePreventsTakeover() {
-        PlayerCity reserved = city(attacker, 1, 12, 12, 70); reserved.setReadyAt(System.currentTimeMillis() + 3_600_000);
+    @ParameterizedTest
+    @CsvSource({"2,2", "3,3", "4,4", "5,4", "6,5", "7,5", "8,6", "9,6", "10,6",
+            "11,7", "12,7", "13,7", "14,7", "15,8", "16,8", "17,8"})
+    void constructionCitiesCountAgainstRankCapAndPreventTakeover(int tier, int cap) {
+        attacker.setMilitaryRank(tier);
+        for (int slot = 1; slot < cap; slot++) {
+            PlayerCity reserved = city(attacker, slot, 12 + 3 * slot, 12, 70);
+            reserved.setReadyAt(System.currentTimeMillis() + 3_600_000);
+        }
         PlayerCity target = city(defender, 1, 30, 30, 0); Long targetId = target.getId();
         March march = begin(target, "conquer", 1000, 1); finish(march.getId());
         assertEquals(defender.getId(), playerCityRepository.findById(targetId).orElseThrow().getOwnerId());

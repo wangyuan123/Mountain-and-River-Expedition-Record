@@ -21,6 +21,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 public class GameStateService {
+    @org.springframework.beans.factory.annotation.Autowired private ArmyPopulationService populationCosts;
     @org.springframework.beans.factory.annotation.Autowired private PlayerPowerService playerPower;
     @org.springframework.beans.factory.annotation.Autowired private CommanderRenameService commanderRename;
     @org.springframework.beans.factory.annotation.Autowired private MailGiftActivityService giftActivities;
@@ -50,6 +51,7 @@ public class GameStateService {
     @org.springframework.beans.factory.annotation.Autowired private GarrisonFoodService garrisonFood;
     @org.springframework.beans.factory.annotation.Autowired private AccountService accounts;
     @org.springframework.beans.factory.annotation.Autowired private RankService ranks;
+    @org.springframework.beans.factory.annotation.Autowired private RankGiftService rankGifts;
     @org.springframework.beans.factory.annotation.Autowired private ArmyProductionQueueRepository armyQueues;
     @org.springframework.beans.factory.annotation.Autowired private TechService techService;
     @org.springframework.beans.factory.annotation.Autowired private PrerequisiteService prerequisiteService;
@@ -233,6 +235,8 @@ public class GameStateService {
             NewbieProtection.start(player, GameClock.now());
         }
         giftActivities.issueOnLogin(playerId);
+        // 初始化完成并首次进入游戏后发启程礼包；旧账号只补迁移固定的当前军衔。
+        rankGifts.enroll(playerId);
     }
 
     @Transactional(readOnly = true)
@@ -264,6 +268,8 @@ public class GameStateService {
         playerInfo.put("homeModuleOrder", homeModuleOrder(player));
         int rankTier = player.getMilitaryRank() != null ? player.getMilitaryRank() : 1;
         playerInfo.put("militaryRank", rankTier);
+        playerInfo.put("mobilizationExpiries", com.wargame.model.constants.MobilizationRules.expiries(player));
+        playerInfo.put("mobilizationCycle", player.getMobilizationCycle());
         playerInfo.put("militaryRankName", MilitaryRankDef.getRankName(rankTier));
         playerInfo.put("vipLevel", player.getVipLevel() != null ? player.getVipLevel() : 0);
         playerInfo.put("vipDailySalaryClaimed", VipService.isDailySalaryClaimed(player));
@@ -295,6 +301,7 @@ public class GameStateService {
         state.put("player", playerInfo);
         playerInfo.put("npcVictories", player.getNpcVictories());
         state.put("rankInfo", ranks.getRankInfo(playerId));
+        state.put("rankDiamondGifts", rankGifts.state(playerId));
         state.put("unreadReportCount", scoutReportRepository.countVisibleUnreadByPlayerId(playerId, System.currentTimeMillis()));
 
         // --- resources ---
@@ -511,6 +518,8 @@ public class GameStateService {
             csMap.put("peaceUntil", 0);
         }
         csMap.put("newbieProtectionUntil", NewbieProtection.until(player, stateNow));
+        csMap.put("marchBoostUntil", cityState == null || cityState.getMarchBoostUntil() == null ? 0L : cityState.getMarchBoostUntil());
+        csMap.put("marchBoostPercent", cityState == null ? 0 : (int) Math.round((cityState.marchSpeedMultiplier(stateNow) - 1) * 100));
         state.put("cityState", csMap);
 
         // --- scalar fields ---
@@ -775,16 +784,16 @@ public class GameStateService {
         playerRepository.save(player);
         ensureRealPlayerCity(player);
 
-        // 初始储备覆盖基础建设与小批征兵，后续发展仍需生产和出征补给。
+        // 新角色五类资源各6万，提供建设、科研与首轮扩军的试错资金；钻石另按引导奖励发放。
         resourcesRepository.deleteByPlayerId(playerId);
         Resources resources = new Resources();
         resources.setPlayerId(playerId);
         resources.setCitySlot(cityScope.slot(playerId));
-        resources.setFood(2000);
-        resources.setSteel(3000);
-        resources.setOil(1000);
-        resources.setRare(200);
-        resources.setGold(1000);
+        resources.setFood(60000);
+        resources.setSteel(60000);
+        resources.setOil(60000);
+        resources.setRare(60000);
+        resources.setGold(60000);
         resources.setDiamond(0);
         resourcesRepository.save(resources);
 
@@ -1074,6 +1083,7 @@ public class GameStateService {
     }
 
     private void saveArmyUnit(Long playerId, String type, int count) {
+        populationCosts.grant(playerId, type, count);
         ArmyUnit u = new ArmyUnit();
         u.setPlayerId(playerId);
         u.setCitySlot(cityScope.slot(playerId));

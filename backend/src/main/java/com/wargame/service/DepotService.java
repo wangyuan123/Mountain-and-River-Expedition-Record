@@ -49,6 +49,8 @@ import java.util.concurrent.ThreadLocalRandom;
 @Service
 public class DepotService {
     @org.springframework.beans.factory.annotation.Autowired private CommanderRenameService commanderRename;
+    @org.springframework.beans.factory.annotation.Autowired private MobilizationService mobilization;
+    @org.springframework.beans.factory.annotation.Autowired private RankGiftService rankGifts;
 
     @jakarta.persistence.PersistenceContext
     private jakarta.persistence.EntityManager entityManager;
@@ -108,6 +110,8 @@ public class DepotService {
         if (itemId == null || itemId.isBlank()) {
             return error("道具ID不能为空");
         }
+        // 军衔礼包必须核验永久发放回执，不允许仅凭伪造的库存兑现钻石。
+        if (itemId.startsWith("rank_diamond_pack_")) return rankGifts.open(playerId, itemId);
         if (com.wargame.model.constants.CommanderRenamePolicy.ITEM_KEY.equals(itemId)) {
             commanderRename.rename(playerId, newName);
             return success("统帅名称已修改，消耗1张统帅改名卡", Map.of());
@@ -127,15 +131,15 @@ public class DepotService {
         }
         // 功能类
         if (ItemDef.SHIELD_HOURS.containsKey(itemId)) return useShield(playerId, itemId);
-        if ("marchOrd".equals(itemId)) return useMarchOrd(playerId);
-        if (ItemDef.MOBILIZATION_BONUS_PERCENT.containsKey(itemId)) return error("战争动员令仅可在进攻出征时选择");
+        if (ItemDef.MARCH_BONUS_PERCENT.containsKey(itemId)) return useMarchOrd(playerId, itemId);
+        if (ItemDef.MOBILIZATION_BONUS_PERCENT.containsKey(itemId)) return error("请在仓库确认动员令的效果和持续时间后使用");
         if ("populationOrder".equals(itemId) || "emergencyPopulationOrder".equals(itemId)) {
             return usePopulationOrder(playerId, itemId);
         }
         // 征募令
         if ("recruitOrd".equals(itemId)) return useRecruitOrd(playerId);
         // 军官类
-        if ("expBook".equals(itemId) || "expBookAdv".equals(itemId) || "expBookMax".equals(itemId)) {
+        if (ItemDef.EXPERIENCE_BOOK_EXP.containsKey(itemId) || "expBookMax".equals(itemId)) {
             return useExpBook(playerId, itemId, officerId);
         }
         if ("skillBook".equals(itemId)) {
@@ -158,6 +162,18 @@ public class DepotService {
             return useStarUp(playerId, officerId);
         }
         return error("不支持的道具: " + itemId);
+    }
+
+    /** 只有动员令支持批量时长与幂等请求；其他道具沿用单次使用契约。 */
+    @Transactional
+    public Map<String, Object> useItem(Long playerId, String itemId, Long officerId, String newName,
+                                       String skillId, Number count, String requestId) {
+        if (ItemDef.MOBILIZATION_BONUS_PERCENT.containsKey(itemId == null ? "" : itemId)) {
+            mobilization.use(playerId, itemId, count, requestId);
+            return success("动员已生效，同档时长已累加", Map.of());
+        }
+        if (count != null && count.doubleValue() != 1) return error("此道具不支持批量使用");
+        return useItem(playerId, itemId, officerId, newName, skillId);
     }
 
     // ================================================================
@@ -301,15 +317,25 @@ public class DepotService {
         return success("🛡️ 本城护盾时间已增加 " + hours + " 小时，免受侦查、攻击和宣战", Map.of("shieldUntil", cs.getShieldUntil()));
     }
 
-    private Map<String, Object> useMarchOrd(Long playerId) {
-        int consumed = playerItemRepository.tryConsume(playerId, "marchOrd", 1, GameClock.now());
-        if (consumed == 0) return error("行军令数量不足");
+    /** 同档刷新一小时，高档替换低档；高档生效时拒绝消耗低档，避免降级或低价续高档。 */
+    private Map<String, Object> useMarchOrd(Long playerId, String itemId) {
+        if (playerRepository.lockById(playerId).isEmpty()) return error("玩家不存在");
         CityState cs = getOrCreateCityState(playerId);
-        long until = GameClock.now() + 3600_000L;
+        long now = GameClock.now();
+        int percent = ItemDef.MARCH_BONUS_PERCENT.get(itemId);
+        if (cs.marchSpeedMultiplier(now) > 1.0 + percent / 100.0) {
+            return error("更高档行军加速生效中，请在到期后使用低档行军令");
+        }
+        int consumed = playerItemRepository.tryConsume(playerId, itemId, 1, now);
+        if (consumed == 0) return error("行军令数量不足");
+        long until = now + 3600_000L;
         long cur = cs.getMarchBoostUntil() != null ? cs.getMarchBoostUntil() : 0L;
-        cs.setMarchBoostUntil(Math.max(cur, until));
+        cs.setMarchBoostUntil(cs.getMarchBoostPercent() != null && cs.getMarchBoostPercent() == percent
+                ? Math.max(cur, until) : until);
+        cs.setMarchBoostPercent(percent);
         cityStateRepository.save(cs);
-        return success("🚩 行军令启用,行军速度 +50% 持续 1 小时", Map.of("marchBoostUntil", cs.getMarchBoostUntil()));
+        return success("🚩 " + ItemDef.ITEMS.get(itemId).name() + "启用,行军速度 +" + percent + "% 持续 1 小时",
+                Map.of("marchBoostUntil", cs.getMarchBoostUntil(), "marchBoostPercent", percent));
     }
 
     /** 普通动员固定增加 500 人，紧急动员按使用时当前城市的民居标称容量增加 30%，均不突破容量。 */
@@ -420,8 +446,7 @@ public class DepotService {
         int consumed = playerItemRepository.tryConsume(playerId, itemId, 1, GameClock.now());
         if (consumed == 0) return error("经验书不足");
 
-        // 经验书 +10000 / 高级经验书 +100000
-        int gain = "expBookAdv".equals(itemId) ? 100000 : 10000;
+        int gain = ItemDef.EXPERIENCE_BOOK_EXP.get(itemId);
         long exp = (officer.getExp() != null ? officer.getExp() : 0L) + gain;
         officer.setExp(exp);
 

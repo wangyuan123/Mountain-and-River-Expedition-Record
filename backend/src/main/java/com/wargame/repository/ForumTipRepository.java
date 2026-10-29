@@ -10,4 +10,6 @@ import java.util.List;
 public interface ForumTipRepository extends JpaRepository<ForumTip, Long> {
     List<ForumTip> findByTopicIdOrderByCreatedAtDesc(Long topicId);
     List<ForumTip> findTop20ByTopicIdOrderByCreatedAtDesc(Long topicId);
+
+    void deleteByTopicId(Long topicId);
 }

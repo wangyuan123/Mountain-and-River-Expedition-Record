@@ -95,7 +95,14 @@
       remove.onclick = function () { return P.remove(c.peer.id); };
       button.type = 'button';
       button.className = 'private-conversation';
-      button.innerHTML = '<img class="chat-avatar" src="' + escape(G.Chat.avatarSrc ? G.Chat.avatarSrc(c.peer.avatar, false) : '') + '" alt=""><span class="private-conversation-body"><span class="private-conversation-name">' + escape(c.peer.username) + '<span class="private-peer-status">' + statusText(c.peer) + '</span></span><span class="private-conversation-preview">' + escape(c.lastMessage ? c.lastMessage.content : '还没有消息，点击开始聊天') + '</span></span>' + (c.unread ? '<span class="private-unread-badge">' + Number(c.unread) + '</span>' : '');
+      var peerFrame = (c.peer && c.peer.avatarFrame) ? c.peer.avatarFrame : 'default';
+      var peerFrameCls = G.avatarFrameClass ? G.avatarFrameClass(peerFrame) : '';
+      var peerFrameOverlay = G.avatarFrameOverlay ? G.avatarFrameOverlay(peerFrame) : '';
+      var avatarHtml = '<span class="chat-avatar' + (peerFrameCls ? ' ' + peerFrameCls : '') + '">' +
+        '<img class="chat-avatar-img" src="' + escape(G.Chat.avatarSrc ? G.Chat.avatarSrc(c.peer.avatar, false) : '') + '" alt="">' +
+        peerFrameOverlay +
+        '</span>';
+      button.innerHTML = avatarHtml + '<span class="private-conversation-body"><span class="private-conversation-name">' + escape(c.peer.username) + '<span class="private-peer-status">' + statusText(c.peer) + '</span></span><span class="private-conversation-preview">' + escape(c.lastMessage ? c.lastMessage.content : '还没有消息，点击开始聊天') + '</span></span>' + (c.unread ? '<span class="private-unread-badge">' + Number(c.unread) + '</span>' : '');
       var dragged = false;
       var startX = 0;
       var startY = 0;
@@ -247,10 +254,11 @@
     function activate(event) {
       if (event.type === 'keydown' && event.key !== 'Enter' && event.key !== ' ') return;
       var target = event.target;
-      var username = target && target.getAttribute && target.getAttribute('data-private-username');
+      var el = (target && target.closest) ? target.closest('[data-private-username]') : target;
+      var username = el && el.getAttribute && el.getAttribute('data-private-username');
       if (!username) return;
       event.preventDefault();
-      P.start(username, target.getAttribute('data-private-player-id'));
+      P.start(username, el.getAttribute('data-private-player-id'));
     }
     document.addEventListener('click', activate);
     document.addEventListener('keydown', activate);

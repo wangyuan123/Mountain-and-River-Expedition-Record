@@ -48,7 +48,7 @@
 
   <div class="preview-section">
     <h3>
-      <span>3. 掠夺战复刻场景（Plunder Battle · 守方有防空炮500与榴弹炮500 · 坚守城墙模型 · 无虚假血条）</span>
+      <span>3. 掠夺战模拟场景（Plunder Battle · 守方有防空炮500与榴弹炮500 · 坚守城墙模型 · 无虚假血条）</span>
       <span class="tag">城防要塞武器弧线对齐城墙 · 无重复射程文字 · 消除悬空错误</span>
     </h3>
     <div id="view-plunder"></div>
@@ -99,7 +99,7 @@ Game.Battle._activeTactical = {
 };
 Game.Battle.renderTacticalBattle(document.getElementById('view-defender'));
 
-// 3. 掠夺战复刻场景：无显式 wall 快照，守方拥有防空炮 500 与 榴弹炮 500，且带有常规地面与空中兵种
+// 3. 掠夺战模拟场景：无显式 wall 快照，守方拥有防空炮 500 与 榴弹炮 500，且带有常规地面与空中兵种
 Game.Battle._activeTactical = {
   marchId: 103, side: 'attacker', round: 1, action: 'plunder', targetKind: 'player', targetName: '帝国边防前哨据点',
   initialDistance: 2000, battlePhase: 'COMBAT',

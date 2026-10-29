@@ -1,0 +1,358 @@
+{
+  "before": [
+    {
+      "resources": {
+        "food": 2000,
+        "steel": 3000,
+        "oil": 1000,
+        "rare": 200,
+        "gold": 1000,
+        "diamond": 0
+      },
+      "army": {
+        "infantry": 1000,
+        "truck": 1
+      },
+      "officers": [],
+      "buildings": {
+        "command": 1,
+        "house": [
+          1
+        ],
+        "farm": [
+          1
+        ],
+        "refinery": [
+          1
+        ],
+        "factory": [
+          1
+        ]
+      },
+      "items": {
+        "expBook": 5,
+        "expBookAdv": 2,
+        "goldBox": 2,
+        "loyaltyBox": 2,
+        "renameCard": 1,
+        "resBox": 2,
+        "shield": 1,
+        "skillBook": 5,
+        "speedUp1h": 10
+      },
+      "prestige": 10000,
+      "rankInfo": {
+        "tier": 1,
+        "name": "列兵",
+        "baseCap": 25000,
+        "prestige": 10000,
+        "npcVictories": 0,
+        "cityCap": 1,
+        "nextCityCap": 1,
+        "nextCityRankName": "中士",
+        "nextExpansionCap": 2,
+        "isMax": false,
+        "canPromote": false,
+        "canTakeExam": false,
+        "nextTier": 2,
+        "nextName": "上等兵",
+        "nextBaseCap": 50000,
+        "reqPrestige": 200,
+        "reqNpcVictories": 3,
+        "certificate": {
+          "source": "1 级寇或海域守军，胜利掉率 30%",
+          "owned": 0,
+          "key": "rank_certificate_2",
+          "name": "上等兵晋升凭证",
+          "required": 1
+        },
+        "prestigeEnough": true,
+        "victoriesEnough": false,
+        "certificateEnough": false,
+        "prerequisitesMet": false,
+        "exam": {
+          "status": "not_started",
+          "questionCount": 5,
+          "requiredCorrect": 4,
+          "expiresAt": 0,
+          "retryAt": 0,
+          "correct": 0
+        },
+        "examPassed": false
+      },
+      "population": {
+        "civilian": 150,
+        "capacity": 1200,
+        "effectiveCapacity": 1200,
+        "recruitable": 150,
+        "growthPerHour": 36.0
+      }
+    },
+    {
+      "resources": {
+        "food": 2000,
+        "steel": 3000,
+        "oil": 1000,
+        "rare": 200,
+        "gold": 1000,
+        "diamond": 0
+      },
+      "army": {
+        "infantry": 1000,
+        "truck": 1
+      },
+      "officers": [],
+      "buildings": {
+        "command": 1,
+        "house": [
+          1
+        ],
+        "farm": [
+          1
+        ],
+        "refinery": [
+          1
+        ],
+        "factory": [
+          1
+        ]
+      },
+      "items": {
+        "expBook": 5,
+        "expBookAdv": 2,
+        "goldBox": 2,
+        "loyaltyBox": 2,
+        "renameCard": 1,
+        "resBox": 2,
+        "shield": 1,
+        "skillBook": 5,
+        "speedUp1h": 10
+      },
+      "prestige": 10000,
+      "rankInfo": {
+        "tier": 1,
+        "name": "列兵",
+        "baseCap": 25000,
+        "prestige": 10000,
+        "npcVictories": 0,
+        "cityCap": 1,
+        "nextCityCap": 1,
+        "nextCityRankName": "中士",
+        "nextExpansionCap": 2,
+        "isMax": false,
+        "canPromote": false,
+        "canTakeExam": false,
+        "nextTier": 2,
+        "nextName": "上等兵",
+        "nextBaseCap": 50000,
+        "reqPrestige": 200,
+        "reqNpcVictories": 3,
+        "certificate": {
+          "source": "1 级寇或海域守军，胜利掉率 30%",
+          "owned": 0,
+          "key": "rank_certificate_2",
+          "name": "上等兵晋升凭证",
+          "required": 1
+        },
+        "prestigeEnough": true,
+        "victoriesEnough": false,
+        "certificateEnough": false,
+        "prerequisitesMet": false,
+        "exam": {
+          "status": "not_started",
+          "questionCount": 5,
+          "requiredCorrect": 4,
+          "expiresAt": 0,
+          "retryAt": 0,
+          "correct": 0
+        },
+        "examPassed": false
+      },
+      "population": {
+        "civilian": 150,
+        "capacity": 1200,
+        "effectiveCapacity": 1200,
+        "recruitable": 150,
+        "growthPerHour": 36.0
+      }
+    }
+  ],
+  "after": [
+    {
+      "resources": {
+        "food": 2000,
+        "steel": 3000,
+        "oil": 1000,
+        "rare": 200,
+        "gold": 1000,
+        "diamond": 0
+      },
+      "army": {
+        "infantry": 1000,
+        "truck": 1
+      },
+      "officers": [],
+      "buildings": {
+        "command": 1,
+        "house": [
+          1
+        ],
+        "farm": [
+          1
+        ],
+        "refinery": [
+          1
+        ],
+        "factory": [
+          1
+        ]
+      },
+      "items": {
+        "expBook": 5,
+        "expBookAdv": 2,
+        "goldBox": 2,
+        "loyaltyBox": 2,
+        "renameCard": 1,
+        "resBox": 2,
+        "shield": 1,
+        "skillBook": 5,
+        "speedUp1h": 10
+      },
+      "prestige": 10000,
+      "rankInfo": {
+        "tier": 1,
+        "name": "列兵",
+        "baseCap": 25000,
+        "prestige": 10000,
+        "npcVictories": 0,
+        "cityCap": 1,
+        "nextCityCap": 1,
+        "nextCityRankName": "中士",
+        "nextExpansionCap": 2,
+        "isMax": false,
+        "canPromote": false,
+        "canTakeExam": false,
+        "nextTier": 2,
+        "nextName": "上等兵",
+        "nextBaseCap": 50000,
+        "reqPrestige": 200,
+        "reqNpcVictories": 3,
+        "certificate": {
+          "source": "1 级寇或海域守军，胜利掉率 30%",
+          "owned": 0,
+          "key": "rank_certificate_2",
+          "name": "上等兵晋升凭证",
+          "required": 1
+        },
+        "prestigeEnough": true,
+        "victoriesEnough": false,
+        "certificateEnough": false,
+        "prerequisitesMet": false,
+        "exam": {
+          "status": "not_started",
+          "questionCount": 5,
+          "requiredCorrect": 4,
+          "expiresAt": 0,
+          "retryAt": 0,
+          "correct": 0
+        },
+        "examPassed": false
+      },
+      "population": {
+        "civilian": 150,
+        "capacity": 1200,
+        "effectiveCapacity": 1200,
+        "recruitable": 150,
+        "growthPerHour": 36.0
+      }
+    },
+    {
+      "resources": {
+        "food": 2000,
+        "steel": 3000,
+        "oil": 1000,
+        "rare": 200,
+        "gold": 1000,
+        "diamond": 0
+      },
+      "army": {
+        "infantry": 1000,
+        "truck": 1
+      },
+      "officers": [],
+      "buildings": {
+        "command": 1,
+        "house": [
+          1
+        ],
+        "farm": [
+          1
+        ],
+        "refinery": [
+          1
+        ],
+        "factory": [
+          1
+        ]
+      },
+      "items": {
+        "expBook": 5,
+        "expBookAdv": 2,
+        "goldBox": 2,
+        "loyaltyBox": 2,
+        "renameCard": 1,
+        "resBox": 2,
+        "shield": 1,
+        "skillBook": 5,
+        "speedUp1h": 10
+      },
+      "prestige": 10000,
+      "rankInfo": {
+        "tier": 1,
+        "name": "列兵",
+        "baseCap": 25000,
+        "prestige": 10000,
+        "npcVictories": 0,
+        "cityCap": 1,
+        "nextCityCap": 1,
+        "nextCityRankName": "中士",
+        "nextExpansionCap": 2,
+        "isMax": false,
+        "canPromote": false,
+        "canTakeExam": false,
+        "nextTier": 2,
+        "nextName": "上等兵",
+        "nextBaseCap": 50000,
+        "reqPrestige": 200,
+        "reqNpcVictories": 3,
+        "certificate": {
+          "source": "1 级寇或海域守军，胜利掉率 30%",
+          "owned": 0,
+          "key": "rank_certificate_2",
+          "name": "上等兵晋升凭证",
+          "required": 1
+        },
+        "prestigeEnough": true,
+        "victoriesEnough": false,
+        "certificateEnough": false,
+        "prerequisitesMet": false,
+        "exam": {
+          "status": "not_started",
+          "questionCount": 5,
+          "requiredCorrect": 4,
+          "expiresAt": 0,
+          "retryAt": 0,
+          "correct": 0
+        },
+        "examPassed": false
+      },
+      "population": {
+        "civilian": 150,
+        "capacity": 1200,
+        "effectiveCapacity": 1200,
+        "recruitable": 150,
+        "growthPerHour": 36.0
+      }
+    }
+  ]
+}

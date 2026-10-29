@@ -17,6 +17,7 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class OnboardingService {
+    @org.springframework.beans.factory.annotation.Autowired private com.wargame.service.ArmyPopulationService populationCosts;
     private static final String PREFIX = "ob3_";
     private static final String ENROLLED = PREFIX + "enrolled";
     private final PlayerGuideRepository guides;
@@ -33,6 +34,7 @@ public class OnboardingService {
     private final UnitLoadoutRepository loadouts;
     private final WorldTerrainService terrain;
     private final CityScope scope;
+    private final com.wargame.service.MailService mail;
 
     public record Objective(String id, String title, String body, String route, String building) {}
     public record Supply(String id, String title, List<String> requires, Map<String, Integer> resources) {}
@@ -49,11 +51,12 @@ public class OnboardingService {
             new Objective("occupy", "完成首次讨伐", "讨伐推荐的低难度野地，体验一次胜利；可以顺便占领资源点。", "world", ""),
             new Objective("report", "查看战果", "打开获胜的野地战报查看战果，随后到「任务」探索更多玩法。", "reports", "")
     );
-    private static final Reward COMPLETION_REWARD = new Reward(Map.of("food", 10000, "steel", 8000, "oil", 2500, "rare", 800, "gold", 1000), 100);
+    // 五类资源同档发放：三次行动各1万、真实毕业各5万；沿用领取回执，已领奖不补发差额。
+    private static final Reward COMPLETION_REWARD = new Reward(Map.of("food", 50000, "steel", 50000, "oil", 50000, "rare", 50000, "gold", 50000), 100);
     public static final List<Supply> SUPPLIES = List.of(
-            new Supply("base", "建设补给", List.of("base"), Map.of("food", 4000, "steel", 4000, "oil", 1200, "rare", 200, "gold", 500)),
-            new Supply("scout", "出征补给", List.of("infantry", "scout"), Map.of("food", 3000, "steel", 3000, "oil", 1600, "rare", 300, "gold", 500)),
-            new Supply("battle", "首战补给", List.of("occupy"), Map.of("food", 5000, "steel", 4000, "oil", 2000, "rare", 500, "gold", 1000))
+            new Supply("base", "建设补给", List.of("base"), Map.of("food", 10000, "steel", 10000, "oil", 10000, "rare", 10000, "gold", 10000)),
+            new Supply("scout", "出征补给", List.of("infantry", "scout"), Map.of("food", 10000, "steel", 10000, "oil", 10000, "rare", 10000, "gold", 10000)),
+            new Supply("battle", "首战补给", List.of("occupy"), Map.of("food", 10000, "steel", 10000, "oil", 10000, "rare", 10000, "gold", 10000))
     );
     public static final List<Exploration> EXPLORATIONS = List.of(
             new Exploration("gather", "首次采集", "从己方资源地采集并将资源运回城市。", "world", "", "选择己方资源地，派出步兵或运输部队采集。步兵每人基础负重10，卡车每辆500，优先使用基础卡车；采满后需手动收获，再下达部队回城命令；资源返城入库后完成任务。", Map.of("food", 5000, "steel", 3600, "oil", 1000)),
@@ -246,6 +249,8 @@ public class OnboardingService {
         if (OBJECTIVES.stream().allMatch(o -> done(rows, o.id()))) {
             grantReward(rows, playerId, "completion", COMPLETION_REWARD);
             mark(rows, playerId, "completed");
+            // 与真实毕业同事务发信；跳过不经过这里，邮件附件仍需玩家主动领取。
+            mail.issueOnboardingCompletionGift(playerId);
         }
     }
 
@@ -352,6 +357,7 @@ public class OnboardingService {
     private boolean finished(Map<String, PlayerGuide> rows) { return done(rows, "completed") || done(rows, "skipped"); }
     private Exploration exploration(String id) { return EXPLORATIONS.stream().filter(t -> t.id().equals(id)).findFirst().orElseThrow(() -> new IllegalArgumentException("探索任务不存在")); }
     private void addArmy(Long playerId, String type, int count) {
+        populationCosts.grant(playerId, type, count);
         ArmyUnit unit = armies.findByPlayerIdAndCitySlotAndType(playerId, 0, type).stream().findFirst().orElseGet(() -> {
             ArmyUnit a = new ArmyUnit(); a.setPlayerId(playerId); a.setCitySlot(0); a.setType(type); a.setCount(0); return a;
         });

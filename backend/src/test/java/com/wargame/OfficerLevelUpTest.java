@@ -76,12 +76,86 @@ public class OfficerLevelUpTest extends BaseServiceTest {
         Map<String, Object> result = officerService.useExpBook(player.getId(), officer.getId(), "expBookAdv", count);
 
         assertEquals(true, result.get("success"));
-        assertEquals((int) gain, result.get("gain"));
+        assertEquals(gain, ((Number) result.get("gain")).longValue());
         assertEquals(333L + gain, result.get("exp"));
         assertEquals(count, result.get("count"));
         assertEquals(333L + gain, officerRepository.findById(officer.getId()).orElseThrow().getExp());
         assertEquals(5 - count,
                 playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "expBookAdv").orElseThrow().getCount());
+    }
+
+    @ParameterizedTest
+    @CsvSource({"1,500000", "3,1500000", "5000,2500000000"})
+    void rapidExperienceBooksSupportBatchUseWithoutIntegerOverflow(int count, long gain) {
+        Player player = createTestPlayer();
+        Officer officer = createOfficer(player.getId(), "idle", 30, 30, 30);
+        officer.setLevel(1);
+        officer.setExp(333L);
+        officerRepository.saveAndFlush(officer);
+        playerItemRepository.saveAndFlush(new PlayerItem(null, player.getId(), "expBookRapid", count + 1, 0L));
+        var result = officerService.useExpBook(player.getId(), officer.getId(), "expBookRapid", count);
+        assertEquals(true, result.get("success"));
+        assertEquals(gain, ((Number) result.get("gain")).longValue());
+        assertEquals(333L + gain, result.get("exp"));
+        assertEquals(1, officerRepository.findById(officer.getId()).orElseThrow().getLevel());
+        assertEquals(333L + gain, officerRepository.findById(officer.getId()).orElseThrow().getExp());
+        assertEquals(1, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "expBookRapid").orElseThrow().getCount());
+    }
+
+    @ParameterizedTest
+    @CsvSource({"1,333", "99,600000", "100,0"})
+    void depotRapidBookUsesSharedExperienceCurveAndRespectsLevelCap(int startingLevel, long initialExp) {
+        Player player = createTestPlayer();
+        Officer officer = createOfficer(player.getId(), "idle", 30, 30, 30);
+        officer.setLevel(startingLevel);
+        officer.setExp(initialExp);
+        officer.setAttrPoints(7);
+        officerRepository.saveAndFlush(officer);
+        playerItemRepository.saveAndFlush(new PlayerItem(null, player.getId(), "expBookRapid", 2, 0L));
+        var result = depotService.useItem(player.getId(), "expBookRapid", officer.getId(), null);
+        int level = startingLevel;
+        long exp = initialExp;
+        if (level < 100) {
+            exp += 500_000;
+            while (level < 100 && exp >= com.wargame.model.constants.OfficerExperienceRules.expNeeded(level)) {
+                exp -= com.wargame.model.constants.OfficerExperienceRules.expNeeded(level++);
+            }
+            if (level == 100) exp = 0;
+        }
+        assertEquals(startingLevel < 100, result.get("success"));
+        var updated = officerRepository.findById(officer.getId()).orElseThrow();
+        assertEquals(level, updated.getLevel());
+        assertEquals(exp, updated.getExp());
+        assertEquals(7 + level - startingLevel, updated.getAttrPoints());
+        assertEquals(startingLevel < 100 ? 1 : 2,
+                playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "expBookRapid").orElseThrow().getCount());
+    }
+
+    @Test void automaticBookSelectionUsesRapidBeforeMaxAndRejectsUnrelatedItems() {
+        Player player = createTestPlayer();
+        Officer officer = createOfficer(player.getId(), "idle", 30, 30, 30);
+        officer.setLevel(1);
+        officer.setExp(0L);
+        officerRepository.saveAndFlush(officer);
+        playerItemRepository.saveAndFlush(new PlayerItem(null, player.getId(), "expBookRapid", 2, 0L));
+        playerItemRepository.saveAndFlush(new PlayerItem(null, player.getId(), "expBookMax", 1, 0L));
+        playerItemRepository.saveAndFlush(new PlayerItem(null, player.getId(), "shield", 1, 0L));
+        var invalid = officerService.useExpBook(player.getId(), officer.getId(), "shield", 1);
+        assertEquals(false, invalid.get("success"));
+        assertEquals(1, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "shield").orElseThrow().getCount());
+        var result = officerService.useExpBook(player.getId(), officer.getId());
+        assertEquals(true, result.get("success"));
+        assertEquals("expBookRapid", result.get("itemId"));
+        assertEquals(500_000L, result.get("exp"));
+        assertEquals(1, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "expBookMax").orElseThrow().getCount());
+    }
+
+    @Test void maxBookPriceUsesWholeRapidBooksAtTwentyPercentDiscount() {
+        long total = 0L;
+        for (int level = 1; level < 100; level++) total += com.wargame.model.constants.OfficerExperienceRules.expNeeded(level);
+        assertEquals(20_355_750L, total);
+        assertEquals(41L, (total + 499_999L) / 500_000L);
+        assertEquals(16_400, com.wargame.model.constants.OfficerExperienceRules.maxBookPrice());
     }
 
     @ParameterizedTest
@@ -339,7 +413,7 @@ public class OfficerLevelUpTest extends BaseServiceTest {
         Map<String, Object> res = officerService.useExpBook(player.getId(), officer.getId());
         assertTrue((Boolean) res.get("success"));
         assertEquals(10000L, res.get("exp"));
-        assertEquals(10000, res.get("gain"));
+        assertEquals(10000L, ((Number) res.get("gain")).longValue());
 
         Officer updated = officerRepository.findById(officer.getId()).orElseThrow();
         assertEquals(10000L, updated.getExp());
@@ -364,7 +438,7 @@ public class OfficerLevelUpTest extends BaseServiceTest {
         Map<String, Object> res = officerService.useExpBook(player.getId(), officer.getId(), "expBookAdv", 1);
         assertTrue((Boolean) res.get("success"));
         assertEquals(100000L, res.get("exp"));
-        assertEquals(100000, res.get("gain"));
+        assertEquals(100000L, ((Number) res.get("gain")).longValue());
 
         Officer updated = officerRepository.findById(officer.getId()).orElseThrow();
         assertEquals(100000L, updated.getExp());

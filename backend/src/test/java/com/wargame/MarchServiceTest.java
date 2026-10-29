@@ -79,6 +79,29 @@ class MarchServiceTest extends BaseServiceTest {
         assertEquals(50, marchArmy.get("infantry"), "行军部队应为50步兵");
     }
 
+    @ParameterizedTest
+    @CsvSource({"10", "25", "50"})
+    void routePreviewAndDispatchUseSelectedMarchSpeedBonus(int percent) {
+        createArmyUnit(playerId, "infantry", 100);
+        DispatchRequest request = new DispatchRequest("wild", wildTile.getId(), "conquer",
+                Map.of("infantry", 50), null, null);
+        int baseSeconds = ((Number) marchService.previewRoute(playerId, request).get("seconds")).intValue();
+        CityState city = cityStateRepository.findByPlayerIdAndCitySlot(playerId, 0).orElseGet(() -> {
+            CityState created = new CityState();
+            created.setPlayerId(playerId);
+            created.setCitySlot(0);
+            created.setStatus("peace");
+            return created;
+        });
+        city.setMarchBoostUntil(com.wargame.util.GameClock.now() + 3600_000L);
+        city.setMarchBoostPercent(percent);
+        cityStateRepository.saveAndFlush(city);
+        int seconds = ((Number) marchService.previewRoute(playerId, request).get("seconds")).intValue();
+        assertEquals(baseSeconds / (1 + percent / 100.0), seconds, 1.0);
+        March march = marchService.createDispatch(playerId, request);
+        assertEquals(seconds * 1000L, march.getArriveAt() - march.getStartAt());
+    }
+
     @Test
     void battleModeIsRestrictedToPveAttacks() {
         createArmyUnit(playerId, "infantry", 10);

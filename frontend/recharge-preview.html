@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>《山河远征录》充值界面动效设计方案选型</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    @keyframes border-beam {
+      0% { offset-distance: 0%; }
+      100% { offset-distance: 100%; }
+    }
+    @keyframes shine {
+      0% { transform: translateX(-100%) rotate(25deg); }
+      20%, 100% { transform: translateX(200%) rotate(25deg); }
+    }
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 0.6; transform: scale(1); filter: drop-shadow(0 0 4px rgba(6,182,212,0.4)); }
+      50% { opacity: 1; transform: scale(1.08); filter: drop-shadow(0 0 14px rgba(6,182,212,0.8)); }
+    }
+    @keyframes gold-pulse {
+      0%, 100% { filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.4)); }
+      50% { filter: drop-shadow(0 0 16px rgba(245, 158, 11, 0.9)); }
+    }
+    @keyframes stamp-in {
+      0% { transform: scale(2.4) rotate(-15deg); opacity: 0; }
+      70% { transform: scale(0.92) rotate(-6deg); opacity: 0.9; }
+      100% { transform: scale(1) rotate(-8deg); opacity: 1; }
+    }
+    @keyframes shimmer-liquid {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    @keyframes float-gentle {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-4px); }
+    }
+
+    /* 样式A：全息战备终端风 */
+    .theme-cyber {
+      --bg-base: #090d16;
+      --bg-card: rgba(15, 23, 42, 0.85);
+      --bg-card-hover: rgba(30, 41, 59, 0.9);
+      --border-color: rgba(56, 189, 248, 0.25);
+      --border-active: #38bdf8;
+      --accent-neon: #06b6d4;
+      --accent-gold: #f59e0b;
+      --text-main: #f1f5f9;
+      --text-sub: #94a3b8;
+    }
+
+    /* 样式B：至尊黑金统帅风 */
+    .theme-gold {
+      --bg-base: #121214;
+      --bg-card: linear-gradient(145deg, #1f1f23 0%, #151518 100%);
+      --bg-card-hover: linear-gradient(145deg, #2a2a30 0%, #1b1b20 100%);
+      --border-color: rgba(217, 119, 6, 0.3);
+      --border-active: #f59e0b;
+      --accent-neon: #fbbf24;
+      --accent-gold: #f59e0b;
+      --text-main: #fafaf9;
+      --text-sub: #a8a29e;
+    }
+
+    /* 样式C：沙盘公文密函风 */
+    .theme-tactical {
+      --bg-base: #ece7dc;
+      --bg-card: #f9f7f1;
+      --bg-card-hover: #ffffff;
+      --border-color: #cbd5e1;
+      --border-active: #2563eb;
+      --accent-neon: #1d4ed8;
+      --accent-gold: #b45309;
+      --text-main: #1e293b;
+      --text-sub: #64748b;
+    }
+
+    /* 滚动条美化 */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.05);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(100,116,139,0.3);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(100,116,139,0.5);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen p-4 md:p-8 font-sans antialiased selection:bg-cyan-500 selection:text-white">
+
+  <!-- 顶部控制面板 -->
+  <header class="max-w-6xl mx-auto mb-8 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-2xl backdrop-blur-md">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+      <div>
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/80 border border-cyan-800 text-cyan-400 text-xs font-semibold tracking-wider mb-2">
+          <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+          山河远征录 · UI/UX 动效实验室
+        </div>
+        <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
+          充值界面动效设计方案选型
+        </h1>
+        <p class="text-sm text-slate-400 mt-1">
+          专为战争策略SLG定制，点击下方【切换风格】与【模拟充值】实时体验微动效与视听反馈。
+        </p>
+      </div>
+
+      <!-- 视口宽度模拟切换 -->
+      <div class="flex items-center gap-2 bg-slate-950/80 p-1.5 rounded-xl border border-slate-800 self-start md:self-auto">
+        <span class="text-xs text-slate-400 px-2 font-medium">预览视口:</span>
+        <button onclick="setViewport('mobile')" id="vp-mobile" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-600 text-white transition-all shadow-sm">
+          📱 移动端 (420px)
+        </button>
+        <button onclick="setViewport('tablet')" id="vp-tablet" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition-all">
+          💻 宽屏自适应
+        </button>
+      </div>
+    </div>
+
+    <!-- 三种风格方案切换器 -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-5">
+      <!-- 方案 A -->
+      <div onclick="switchTheme('cyber')" id="tab-cyber" class="cursor-pointer group relative p-4 rounded-xl border-2 border-cyan-500 bg-cyan-950/30 transition-all hover:border-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.15)]">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">方案 A</span>
+          <span class="text-xs text-cyan-400 flex items-center gap-1 font-mono">⚡ 推荐科技感</span>
+        </div>
+        <h3 class="text-base font-bold text-white mt-2 group-hover:text-cyan-300 transition-colors">全息战备终端风</h3>
+        <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+          科幻战术雷达底色、霓虹边框流光、全息微粒子、高能战备进度槽。
+        </p>
+      </div>
+
+      <!-- 方案 B -->
+      <div onclick="switchTheme('gold')" id="tab-gold" class="cursor-pointer group relative p-4 rounded-xl border-2 border-slate-800 bg-slate-900/60 transition-all hover:border-amber-500/50">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">方案 B</span>
+          <span class="text-xs text-amber-400 flex items-center gap-1 font-mono">👑 豪华黑金</span>
+        </div>
+        <h3 class="text-base font-bold text-white mt-2 group-hover:text-amber-300 transition-colors">至尊黑金统帅风</h3>
+        <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+          黑曜石拉丝底板、金属斜切掠光、黄金勋章光环、高转化率商业质感。
+        </p>
+      </div>
+
+      <!-- 方案 C -->
+      <div onclick="switchTheme('tactical')" id="tab-tactical" class="cursor-pointer group relative p-4 rounded-xl border-2 border-slate-800 bg-slate-900/60 transition-all hover:border-blue-500/50">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/40">方案 C</span>
+          <span class="text-xs text-blue-400 flex items-center gap-1 font-mono">📜 军旅沙盘</span>
+        </div>
+        <h3 class="text-base font-bold text-white mt-2 group-hover:text-blue-300 transition-colors">战地军需密函风</h3>
+        <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+          档案密函复古雅致、拟物军备箱封条、批准印章盖落动画、护眼沉稳。
+        </p>
+      </div>
+    </div>
+  </header>
+
+  <!-- 模拟展示主容器 -->
+  <main class="max-w-6xl mx-auto flex justify-center items-start">
+    <div id="device-frame" class="w-full max-w-[440px] transition-all duration-300 ease-out">
+      
+      <!-- 外壳机身装饰 (手机模式下显示) -->
+      <div id="phone-shell" class="bg-slate-900 rounded-[36px] p-3 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] border-4 border-slate-800 relative">
+        <!-- 听筒/摄像头假灵动岛 -->
+        <div class="w-32 h-4 bg-slate-950 rounded-full mx-auto mb-3 flex items-center justify-center gap-2">
+          <div class="w-2.5 h-2.5 rounded-full bg-slate-800"></div>
+          <div class="w-1.5 h-1.5 rounded-full bg-cyan-900"></div>
+        </div>
+
+        <!-- 实际界面渲染区域 (UI Screen) -->
+        <div id="recharge-app" class="theme-cyber rounded-[24px] overflow-hidden min-h-[720px] flex flex-col justify-between text-slate-100 transition-colors duration-500 relative select-none">
+          
+          <!-- 动态背景层 -->
+          <div id="app-bg" class="absolute inset-0 -z-10 bg-[#080d19] transition-all duration-500">
+            <!-- 方案A 特效网格 -->
+            <div id="bg-grid-cyber" class="absolute inset-0 opacity-20 pointer-events-none" style="background-image: radial-gradient(#38bdf8 1px, transparent 1px); background-size: 24px 24px;"></div>
+            <!-- 方案B 特效光晕 -->
+            <div id="bg-glow-gold" class="hidden absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            <!-- 方案C 特效纸纹 -->
+            <div id="bg-pattern-tactical" class="hidden absolute inset-0 bg-[#f4f1ea] opacity-100 pointer-events-none"></div>
+          </div>
+
+          <!-- 顶部状态与导航条 -->
+          <div class="px-5 pt-4 pb-2">
+            <div class="flex items-center justify-between mb-3 text-xs opacity-80">
+              <span class="flex items-center gap-1 font-mono"><span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span> 战区加密信道 102.4G</span>
+              <span class="font-mono" id="clock-display">12:30:45</span>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <button class="w-8 h-8 rounded-full bg-black/30 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                </button>
+                <h2 id="view-title" class="text-lg font-black tracking-wide flex items-center gap-2">
+                  <span>战略补给所</span>
+                  <span class="text-[10px] px-2 py-0.5 rounded font-mono font-normal tracking-normal bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">SEC-DEPOT</span>
+                </h2>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="flex items-center gap-1.5 bg-black/40 border border-white/10 px-3 py-1 rounded-full text-xs font-bold">
+                  <span class="text-cyan-400 animate-pulse">💎</span>
+                  <span id="user-diamonds" class="font-mono text-cyan-300">1,280</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- VIP 尊荣进度战备条 -->
+            <div id="vip-card" class="mt-4 rounded-xl p-3.5 border transition-all duration-300 relative overflow-hidden group cursor-pointer shadow-lg bg-slate-900/80 border-cyan-500/30">
+              <!-- 流动高光背景 -->
+              <div class="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-500/10 to-transparent -translate-x-full animate-[shine_4s_infinite] pointer-events-none"></div>
+              
+              <div class="flex items-center justify-between relative z-10">
+                <div class="flex items-center gap-2.5">
+                  <div id="vip-badge-icon" class="w-9 h-9 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center font-black text-white text-xs shadow-md shadow-cyan-500/30">
+                    VIP 3
+                  </div>
+                  <div>
+                    <div class="text-xs font-bold flex items-center gap-1.5 text-white">
+                      <span>战备统帅特勤组</span>
+                      <span class="text-[10px] font-normal px-1.5 py-0.2 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded">日俸军饷已激活</span>
+                    </div>
+                    <div class="text-[11px] text-slate-400 mt-0.5">
+                      累计战费 <b class="text-amber-400">¥98.00</b> · 距 <span class="text-white font-bold">VIP 4</span> 仅差 <b class="text-cyan-400">¥100.00</b>
+                    </div>
+                  </div>
+                </div>
+                <div class="text-[11px] text-cyan-400 font-medium flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
+                  特权 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </div>
+              </div>
+
+              <!-- 经验进度条 -->
+              <div class="mt-2.5 w-full bg-slate-950/80 h-2 rounded-full overflow-hidden border border-white/5 relative">
+                <div id="vip-bar" class="h-full rounded-full transition-all duration-700 bg-gradient-to-r from-cyan-500 to-blue-500" style="width: 49.5%;"></div>
+              </div>
+            </div>
+
+            <!-- 分类选项卡 -->
+            <div class="flex items-center gap-2 mt-4 border-b border-white/10 pb-2">
+              <button onclick="switchCategory('diamond')" id="cat-diamond" class="relative px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+                <span>💎</span> 钻石补给
+                <span class="absolute -top-1.5 -right-1.5 px-1 py-0.2 bg-rose-500 text-[9px] font-black rounded-full text-white animate-bounce">首充×2</span>
+              </button>
+              <button onclick="switchCategory('marshal')" id="cat-marshal" class="relative px-3.5 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-1.5">
+                <span>🎖️</span> 元帅特权礼包
+              </button>
+            </div>
+          </div>
+
+          <!-- 商品网格列表 -->
+          <div class="px-5 py-2 flex-1 overflow-y-auto max-h-[380px] space-y-2.5" id="package-list">
+            <!-- 由 JS 渲染档位卡片 -->
+          </div>
+
+          <!-- 底部支付条与渠道选择 -->
+          <div class="p-4 bg-slate-950/90 border-t border-white/10 backdrop-blur-md">
+            <!-- 支付方式与首充提示 -->
+            <div class="flex items-center justify-between text-xs mb-3">
+              <div class="flex items-center gap-2">
+                <span class="text-slate-400">渠道:</span>
+                <div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-slate-300 text-[11px] font-mono">
+                  <span class="w-2 h-2 rounded-full bg-emerald-400"></span> 安全沙箱 (模拟支付)
+                </div>
+              </div>
+              <span class="text-[11px] text-amber-400/90 flex items-center gap-1">
+                🛡️ 实时到账 · 安全加密
+              </span>
+            </div>
+
+            <!-- 按钮动作栏 -->
+            <div class="flex items-center gap-3">
+              <div class="flex-1">
+                <div class="text-[11px] text-slate-400">实付应付金额:</div>
+                <div class="text-xl font-black text-amber-400 flex items-baseline gap-1">
+                  <span class="text-sm font-semibold">¥</span>
+                  <span id="selected-price">98</span>
+                  <span id="selected-bonus-tip" class="text-[11px] font-normal text-cyan-400 ml-1.5">(获得 1,080 钻石)</span>
+                </div>
+              </div>
+
+              <!-- 主行动按钮 -->
+              <button onclick="triggerPayment()" id="pay-button" class="relative group overflow-hidden px-6 py-3 rounded-xl font-black text-sm tracking-wide text-white transition-all duration-300 transform active:scale-95 shadow-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 shadow-cyan-500/25">
+                <span class="relative z-10 flex items-center gap-2">
+                  <span id="pay-btn-text">立即战备充值</span>
+                  <svg class="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                </span>
+                <!-- 按钮光效流动 -->
+                <div class="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+              </button>
+            </div>
+          </div>
+
+          <!-- 充值成功动效模态浮层 -->
+          <div id="success-modal" class="hidden absolute inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+            <canvas id="confetti-canvas" class="absolute inset-0 pointer-events-none w-full h-full"></canvas>
+            
+            <div class="relative z-10 max-w-xs">
+              <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-cyan-500 to-emerald-400 flex items-center justify-center mx-auto mb-4 text-3xl shadow-[0_0_35px_rgba(6,182,212,0.8)] animate-bounce">
+                💎
+              </div>
+              <h3 class="text-xl font-black text-white mb-1">战备物资充值成功！</h3>
+              <p class="text-xs text-slate-300 mb-4" id="success-desc">
+                已向统帅部账户注入 +1,080 战略钻石
+              </p>
+
+              <div class="bg-slate-900/90 border border-slate-700 rounded-xl p-3 mb-5 text-left text-xs space-y-1.5">
+                <div class="flex justify-between text-slate-400">
+                  <span>订单流水号:</span>
+                  <span class="font-mono text-slate-200">TX-20261029-8831</span>
+                </div>
+                <div class="flex justify-between text-slate-400">
+                  <span>统帅VIP成长:</span>
+                  <span class="text-amber-400 font-bold">+98 点战功积分</span>
+                </div>
+                <div class="flex justify-between text-slate-400">
+                  <span>到账状态:</span>
+                  <span class="text-emerald-400 font-bold">● 已入库并触发战备加成</span>
+                </div>
+              </div>
+
+              <button onclick="closeSuccessModal()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-bold text-xs shadow-lg hover:brightness-110 active:scale-95 transition-all">
+                确认查收物资
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 动效技术与代码接入方案对比指南 -->
+  <section class="max-w-6xl mx-auto mt-12 bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl backdrop-blur-sm">
+    <div class="flex items-center gap-3 border-b border-slate-800 pb-4 mb-6">
+      <span class="text-xl">⚙️</span>
+      <h2 class="text-lg font-bold text-white">动效技术亮点与现有项目适配建议</h2>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- 方案 A 评测 -->
+      <div class="p-4 rounded-xl bg-slate-950/60 border border-cyan-500/30">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-bold text-cyan-400">方案 A · 全息战备终端</span>
+          <span class="text-[11px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300">GPU硬件加速</span>
+        </div>
+        <ul class="text-xs text-slate-300 space-y-2 list-disc list-inside">
+          <li><b>霓虹流光边框 (Border Beam)</b>: 采用 `conic-gradient` 顺时针旋转，科技感扑面而来。</li>
+          <li><b>卡片 3D 微倾斜交互</b>: 鼠标悬停随光标角度产生细腻视差 (Perspective Tilt)。</li>
+          <li><b>能量进度流光</b>: VIP 经验槽内注入液体能量流动动画，刺激充值升级欲望。</li>
+          <li><b>适配场景</b>: 最适合作为游戏当前的<b>默认现代科幻军事风</b>。</li>
+        </ul>
+      </div>
+
+      <!-- 方案 B 评测 -->
+      <div class="p-4 rounded-xl bg-slate-950/60 border border-amber-500/30">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-bold text-amber-400">方案 B · 至尊黑金统帅</span>
+          <span class="text-[11px] px-2 py-0.5 rounded bg-amber-950 text-amber-300">商业高付费转化</span>
+        </div>
+        <ul class="text-xs text-slate-300 space-y-2 list-disc list-inside">
+          <li><b>金属斜切掠光 (Light Sweep)</b>: 高光每隔 3 秒自动滑过重点推荐位（如 98元 与 648元 档）。</li>
+          <li><b>将官勋章呼吸光环</b>: 徽章四周自带星芒发散动效，营造至高统帅尊荣。</li>
+          <li><b>超值首充爆款角标</b>: 动态小幅度弹跳 (Bounce) 极度吸睛。</li>
+          <li><b>适配场景</b>: 适合作为<b>大型战役活动、庆典首充、或者VIP至尊专属界面</b>。</li>
+        </ul>
+      </div>
+
+      <!-- 方案 C 评测 -->
+      <div class="p-4 rounded-xl bg-slate-950/60 border border-blue-500/30">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-bold text-blue-400">方案 C · 战地军需密函</span>
+          <span class="text-[11px] px-2 py-0.5 rounded bg-blue-950 text-blue-300">契合游戏沙盘公文</span>
+        </div>
+        <ul class="text-xs text-slate-300 space-y-2 list-disc list-inside">
+          <li><b>公文红印章「特批入库」</b>: 选中档位时模拟实体军用红色印章重重盖下 (Stamp In)。</li>
+          <li><b>军需空投箱拟物质感</b>: 军绿色/米白沙盘风格，极度贴合原版《山河远征录》沙盘战术纸。</li>
+          <li><b>雅致护眼无眩光</b>: 无大面积光污染，长久浏览舒适度最高。</li>
+          <li><b>适配场景</b>: 完美契合选择<b>「战术公文沙盘风」与「战术经典蓝白风」</b>的玩家。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 交互控制脚本 -->
+  <script>
+    // 数据集 (与项目中 constants.js 保持一致并扩展动效字段)
+    const PACKAGES = {
+      diamond: [
+        { id: 'p6', name: '试玩补给', icon: '💎', rmb: 6, diamond: 60, desc: '适合首次体验充值', bonus: '', hot: false },
+        { id: 'p30', name: '少将补给', icon: '💎', rmb: 30, diamond: 330, desc: '额外赠送30钻石', bonus: '赠30', hot: false },
+        { id: 'p98', name: '中将补给', icon: '💎', rmb: 98, diamond: 1080, desc: '额外赠送100钻石 + 首充特权', bonus: '热销爆款', hot: true },
+        { id: 'p198', name: '上将补给', icon: '💎', rmb: 198, diamond: 2230, desc: '额外赠送250钻石', bonus: '赠250', hot: false },
+        { id: 'p328', name: '大将补给', icon: '💎', rmb: 328, diamond: 3780, desc: '额外赠送500钻石', bonus: '超值', hot: false },
+        { id: 'p648', name: '统帅补给', icon: '💎', rmb: 648, diamond: 7680, desc: '特勤统帅最高配给 · 赠1200', bonus: '五星首选', hot: true }
+      ],
+      marshal: [
+        { id: 'p1280', name: '元帅礼包', icon: '🎖️', rmb: 1280, diamond: 15800, desc: '钻石、战略军备零件与稀有材料', bonus: '豪华礼包', hot: false },
+        { id: 'p3000', name: '战区副令礼包', icon: '🎖️', rmb: 3000, diamond: 38000, desc: '战区特勤高阶装备与海量战略储备', bonus: '赠8000', hot: true },
+        { id: 'p6000', name: '战区总长礼包', icon: '🎖️', rmb: 6000, diamond: 78000, desc: '特勤统帅最高规制战略资源配给', bonus: '极品配给', hot: false },
+        { id: 'p10000', name: '五星统帅礼包', icon: '🎖️', rmb: 10000, diamond: 135000, desc: '最高军事委员会五星将官终极军需', bonus: '最高荣耀', hot: true }
+      ]
+    };
+
+    let currentTheme = 'cyber';
+    let currentCategory = 'diamond';
+    let selectedPkgId = 'p98';
+    let userDiamonds = 1280;
+
+    // 音效模拟 (Web Audio API 合成音，无需外部网络请求)
+    let audioCtx = null;
+    function playTone(freq, type, duration) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type || 'sine';
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch(e) {}
+    }
+
+    function soundSelect() { playTone(587.33, 'triangle', 0.12); } // D5
+    function soundConfirm() {
+      playTone(523.25, 'sine', 0.15);
+      setTimeout(() => playTone(659.25, 'sine', 0.18), 80);
+      setTimeout(() => playTone(783.99, 'sine', 0.25), 160);
+      setTimeout(() => playTone(1046.50, 'sine', 0.4), 240);
+    }
+
+    // 切换主题风格
+    function switchTheme(theme) {
+      currentTheme = theme;
+      soundSelect();
+
+      // 更新顶部 Tab 按钮样式
+      ['cyber', 'gold', 'tactical'].forEach(t => {
+        const tab = document.getElementById('tab-' + t);
+        if (t === theme) {
+          tab.classList.remove('border-slate-800', 'bg-slate-900/60');
+          if (t === 'cyber') tab.classList.add('border-cyan-500', 'bg-cyan-950/30', 'shadow-[0_0_20px_rgba(6,182,212,0.15)]');
+          if (t === 'gold') tab.classList.add('border-amber-500', 'bg-amber-950/30', 'shadow-[0_0_20px_rgba(245,158,11,0.15)]');
+          if (t === 'tactical') tab.classList.add('border-blue-500', 'bg-blue-950/30', 'shadow-[0_0_20px_rgba(37,99,235,0.15)]');
+        } else {
+          tab.className = 'cursor-pointer group relative p-4 rounded-xl border-2 border-slate-800 bg-slate-900/60 transition-all hover:border-slate-700';
+        }
+      });
+
+      // 更新机身与屏幕容器
+      const app = document.getElementById('recharge-app');
+      const bgGridCyber = document.getElementById('bg-grid-cyber');
+      const bgGlowGold = document.getElementById('bg-glow-gold');
+      const bgTactical = document.getElementById('bg-pattern-tactical');
+      const vipCard = document.getElementById('vip-card');
+      const vipBadge = document.getElementById('vip-badge-icon');
+      const payBtn = document.getElementById('pay-button');
+
+      app.classList.remove('theme-cyber', 'theme-gold', 'theme-tactical');
+      app.classList.add('theme-' + theme);
+
+      if (theme === 'cyber') {
+        bgGridCyber.classList.remove('hidden');
+        bgGlowGold.classList.add('hidden');
+        bgTactical.classList.add('hidden');
+        app.classList.remove('text-slate-900');
+        app.classList.add('text-slate-100');
+        vipCard.className = 'mt-4 rounded-xl p-3.5 border transition-all duration-300 relative overflow-hidden group cursor-pointer shadow-lg bg-slate-900/80 border-cyan-500/30';
+        vipBadge.className = 'w-9 h-9 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center font-black text-white text-xs shadow-md shadow-cyan-500/30';
+        payBtn.className = 'relative group overflow-hidden px-6 py-3 rounded-xl font-black text-sm tracking-wide text-white transition-all duration-300 transform active:scale-95 shadow-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 shadow-cyan-500/25';
+      } else if (theme === 'gold') {
+        bgGridCyber.classList.add('hidden');
+        bgGlowGold.classList.remove('hidden');
+        bgTactical.classList.add('hidden');
+        app.classList.remove('text-slate-900');
+        app.classList.add('text-slate-100');
+        vipCard.className = 'mt-4 rounded-xl p-3.5 border transition-all duration-300 relative overflow-hidden group cursor-pointer shadow-lg bg-gradient-to-r from-amber-950/40 via-stone-900/90 to-amber-950/40 border-amber-500/40';
+        vipBadge.className = 'w-9 h-9 rounded-lg bg-gradient-to-br from-amber-300 via-amber-500 to-yellow-600 flex items-center justify-center font-black text-stone-950 text-xs shadow-md shadow-amber-500/40 animate-[gold-pulse_2.5s_infinite]';
+        payBtn.className = 'relative group overflow-hidden px-6 py-3 rounded-xl font-black text-sm tracking-wide text-stone-950 transition-all duration-300 transform active:scale-95 shadow-lg bg-gradient-to-r from-amber-300 via-amber-400 to-yellow-500 hover:brightness-110 shadow-amber-500/30';
+      } else if (theme === 'tactical') {
+        bgGridCyber.classList.add('hidden');
+        bgGlowGold.classList.add('hidden');
+        bgTactical.classList.remove('hidden');
+        app.classList.remove('text-slate-100');
+        app.classList.add('text-slate-800');
+        vipCard.className = 'mt-4 rounded-xl p-3.5 border transition-all duration-300 relative overflow-hidden group cursor-pointer shadow-md bg-stone-100/95 border-stone-300';
+        vipBadge.className = 'w-9 h-9 rounded-lg bg-gradient-to-br from-blue-700 to-slate-800 flex items-center justify-center font-black text-white text-xs shadow-md';
+        payBtn.className = 'relative group overflow-hidden px-6 py-3 rounded-xl font-black text-sm tracking-wide text-white transition-all duration-300 transform active:scale-95 shadow-md bg-gradient-to-r from-blue-700 to-indigo-800 hover:from-blue-600 hover:to-indigo-700 shadow-blue-900/20';
+      }
+
+      renderPackages();
+    }
+
+    // 切换分类
+    function switchCategory(cat) {
+      currentCategory = cat;
+      soundSelect();
+      const catDia = document.getElementById('cat-diamond');
+      const catMar = document.getElementById('cat-marshal');
+      if (cat === 'diamond') {
+        catDia.className = 'relative px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 bg-cyan-500/20 text-cyan-300 border border-cyan-500/40';
+        catMar.className = 'relative px-3.5 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-1.5';
+      } else {
+        catMar.className = 'relative px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 bg-amber-500/20 text-amber-300 border border-amber-500/40';
+        catDia.className = 'relative px-3.5 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-1.5';
+      }
+      // 默认选中当前分类第一个
+      selectedPkgId = PACKAGES[cat][0].id;
+      renderPackages();
+    }
+
+    // 选择某个档位
+    function selectPackage(id) {
+      selectedPkgId = id;
+      soundSelect();
+      renderPackages();
+    }
+
+    // 渲染档位卡片列表
+    function renderPackages() {
+      const container = document.getElementById('package-list');
+      const list = PACKAGES[currentCategory];
+      const selectedPkg = list.find(p => p.id === selectedPkgId) || list[0];
+
+      // 更新底部结算栏价格与提示
+      document.getElementById('selected-price').innerText = selectedPkg.rmb;
+      document.getElementById('selected-bonus-tip').innerText = `(获得 ${selectedPkg.diamond.toLocaleString()} 钻石)`;
+
+      let html = '';
+      list.forEach(pkg => {
+        const isSelected = pkg.id === selectedPkgId;
+        
+        if (currentTheme === 'cyber') {
+          // 方案 A 卡片样式：全息终端流光
+          html += `
+            <div onclick="selectPackage('${pkg.id}')" 
+                 class="relative cursor-pointer rounded-xl p-3.5 transition-all duration-200 border ${
+                   isSelected 
+                     ? 'bg-slate-900/95 border-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.35)] scale-[1.01]' 
+                     : 'bg-slate-900/50 border-slate-800/80 hover:border-cyan-500/40 hover:bg-slate-900/70'
+                 }">
+              ${isSelected ? `
+                <div class="absolute -top-1 -right-1 w-3 h-3 bg-cyan-400 rounded-full animate-ping"></div>
+                <div class="absolute inset-0 rounded-xl border border-cyan-400/50 pointer-events-none"></div>
+              ` : ''}
+
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-11 h-11 rounded-lg bg-cyan-950/70 border border-cyan-800/60 flex items-center justify-center text-2xl ${isSelected ? 'animate-[pulse-glow_2s_infinite]' : ''}">
+                    ${pkg.icon}
+                  </div>
+                  <div>
+                    <div class="text-sm font-bold text-white flex items-center gap-2">
+                      <span>${pkg.name}</span>
+                      ${pkg.bonus ? `<span class="text-[10px] px-1.5 py-0.2 rounded font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">${pkg.bonus}</span>` : ''}
+                      ${pkg.hot ? `<span class="text-[10px] px-1.5 py-0.2 rounded font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/30">推荐</span>` : ''}
+                    </div>
+                    <div class="text-xs text-slate-400 mt-0.5">${pkg.desc}</div>
+                  </div>
+                </div>
+
+                <div class="text-right">
+                  <div class="text-xs text-cyan-300 font-mono font-bold">💎 +${pkg.diamond.toLocaleString()}</div>
+                  <div class="text-base font-black text-amber-400 mt-0.5">¥${pkg.rmb}</div>
+                </div>
+              </div>
+            </div>
+          `;
+        } else if (currentTheme === 'gold') {
+          // 方案 B 卡片样式：至尊黑金掠光
+          html += `
+            <div onclick="selectPackage('${pkg.id}')" 
+                 class="relative overflow-hidden cursor-pointer rounded-xl p-3.5 transition-all duration-200 border ${
+                   isSelected 
+                     ? 'bg-gradient-to-r from-amber-950/40 via-stone-900/90 to-amber-950/40 border-amber-400 shadow-[0_0_22px_rgba(245,158,11,0.35)] scale-[1.01]' 
+                     : 'bg-stone-900/60 border-stone-800 hover:border-amber-500/40 hover:bg-stone-900/80'
+                 }">
+              
+              <!-- 斜切掠光动效 (重点推荐档位) -->
+              ${pkg.hot ? `<div class="absolute inset-0 bg-gradient-to-r from-transparent via-amber-200/10 to-transparent -translate-x-full animate-[shine_3.5s_infinite] pointer-events-none"></div>` : ''}
+
+              <div class="flex items-center justify-between relative z-10">
+                <div class="flex items-center gap-3">
+                  <div class="w-11 h-11 rounded-lg bg-gradient-to-b from-amber-950/60 to-stone-900 border border-amber-600/40 flex items-center justify-center text-2xl ${isSelected ? 'animate-[gold-pulse_2s_infinite]' : ''}">
+                    ${pkg.icon}
+                  </div>
+                  <div>
+                    <div class="text-sm font-bold text-stone-100 flex items-center gap-2">
+                      <span>${pkg.name}</span>
+                      ${pkg.bonus ? `<span class="text-[10px] px-1.5 py-0.2 rounded font-bold bg-amber-500 text-stone-950 shadow-sm">${pkg.bonus}</span>` : ''}
+                    </div>
+                    <div class="text-xs text-stone-400 mt-0.5">${pkg.desc}</div>
+                  </div>
+                </div>
+
+                <div class="text-right">
+                  <div class="text-xs text-amber-300 font-mono font-bold">💎 +${pkg.diamond.toLocaleString()}</div>
+                  <div class="text-base font-black text-amber-400 mt-0.5">¥${pkg.rmb}</div>
+                </div>
+              </div>
+            </div>
+          `;
+        } else if (currentTheme === 'tactical') {
+          // 方案 C 卡片样式：沙盘军需密函与红印章 (紧凑高空间利用率)
+          html += `
+            <div onclick="selectPackage('${pkg.id}')" 
+                 class="relative cursor-pointer rounded-lg p-2 transition-all duration-150 border ${
+                   isSelected 
+                     ? 'bg-white border-blue-600 shadow-sm ring-1 ring-blue-500/30' 
+                     : 'bg-stone-50 border-stone-300 hover:border-blue-400 hover:bg-white'
+                 }">
+              
+              <!-- 模拟军章特批印动效 (选中时盖下，紧凑轻量) -->
+              ${isSelected ? `
+                <div class="absolute right-2 top-1 text-[9px] font-black text-rose-700 border border-rose-600 rounded px-1 py-0.2 rotate-[-8deg] opacity-90 animate-[stamp-in_0.32s_ease-out] pointer-events-none bg-rose-50/70">
+                  【准予配给】
+                </div>
+              ` : ''}
+
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="w-7 h-7 rounded bg-stone-200/80 border border-stone-300 flex items-center justify-center text-lg">
+                    ${pkg.icon}
+                  </div>
+                  <div>
+                    <div class="text-xs font-bold text-stone-900 flex items-center gap-1.5 leading-tight">
+                      <span>${pkg.name}</span>
+                      ${pkg.bonus ? `<span class="text-[9px] px-1 py-0.2 rounded font-semibold bg-blue-100 text-blue-700 border border-blue-200">${pkg.bonus}</span>` : ''}
+                    </div>
+                    <div class="text-[11px] text-stone-500 truncate max-w-[170px] mt-0.5">${pkg.desc}</div>
+                  </div>
+                </div>
+
+                <div class="text-right">
+                  <div class="text-xs text-blue-700 font-mono font-bold leading-tight">💎 +${pkg.diamond.toLocaleString()}</div>
+                  <div class="text-sm font-black text-rose-700 font-mono">¥${pkg.rmb}</div>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      });
+      container.innerHTML = html;
+    }
+
+    // 模拟充值与烟花粒子
+    function triggerPayment() {
+      const list = PACKAGES[currentCategory];
+      const pkg = list.find(p => p.id === selectedPkgId) || list[0];
+
+      soundConfirm();
+      userDiamonds += pkg.diamond;
+      document.getElementById('user-diamonds').innerText = userDiamonds.toLocaleString();
+      document.getElementById('success-desc').innerText = `已向统帅部账户成功注入 +${pkg.diamond.toLocaleString()} 战略钻石`;
+
+      const modal = document.getElementById('success-modal');
+      modal.classList.remove('hidden');
+      launchConfetti();
+    }
+
+    function closeSuccessModal() {
+      soundSelect();
+      document.getElementById('success-modal').classList.add('hidden');
+    }
+
+    // 简易 Canvas 钻石与纸屑粒子动效
+    function launchConfetti() {
+      const canvas = document.getElementById('confetti-canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = canvas.parentElement.offsetWidth;
+      canvas.height = canvas.parentElement.offsetHeight;
+
+      const particles = [];
+      const colors = currentTheme === 'gold' 
+        ? ['#f59e0b', '#fbbf24', '#d97706', '#ffffff'] 
+        : ['#06b6d4', '#38bdf8', '#3b82f6', '#10b981', '#ffffff'];
+
+      for (let i = 0; i < 45; i++) {
+        particles.push({
+          x: canvas.width / 2,
+          y: canvas.height / 2,
+          vx: (Math.random() - 0.5) * 8,
+          vy: (Math.random() - 0.7) * 9,
+          size: Math.random() * 5 + 3,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rot: Math.random() * 360,
+          rotSpeed: (Math.random() - 0.5) * 10,
+          alpha: 1
+        });
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let active = 0;
+        particles.forEach(p => {
+          if (p.alpha > 0.01) {
+            active++;
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.22; // gravity
+            p.alpha -= 0.016;
+            p.rot += p.rotSpeed;
+
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate((p.rot * Math.PI) / 180);
+            ctx.globalAlpha = Math.max(0, p.alpha);
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+            ctx.restore();
+          }
+        });
+        if (active > 0) requestAnimationFrame(render);
+      }
+      render();
+    }
+
+    // 切换视口宽度 (移动端 vs 宽屏)
+    function setViewport(mode) {
+      soundSelect();
+      const frame = document.getElementById('device-frame');
+      const btnMobile = document.getElementById('vp-mobile');
+      const btnTablet = document.getElementById('vp-tablet');
+      const shell = document.getElementById('phone-shell');
+
+      if (mode === 'mobile') {
+        frame.classList.remove('max-w-4xl');
+        frame.classList.add('max-w-[440px]');
+        btnMobile.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-600 text-white transition-all shadow-sm';
+        btnTablet.className = 'px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition-all';
+        shell.className = 'bg-slate-900 rounded-[36px] p-3 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] border-4 border-slate-800 relative';
+      } else {
+        frame.classList.remove('max-w-[440px]');
+        frame.classList.add('max-w-4xl');
+        btnTablet.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-600 text-white transition-all shadow-sm';
+        btnMobile.className = 'px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition-all';
+        shell.className = 'bg-slate-900 rounded-2xl p-4 shadow-2xl border border-slate-800 relative';
+      }
+    }
+
+    // 时钟实时刷新
+    setInterval(() => {
+      const now = new Date();
+      document.getElementById('clock-display').innerText = now.toTimeString().split(' ')[0];
+    }, 1000);
+
+    // 默认初始化渲染
+    renderPackages();
+  </script>
+</body>
+</html>

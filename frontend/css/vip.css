@@ -1058,7 +1058,64 @@
   cursor: not-allowed;
 }
 
-/* ---------------- 头像框 (Avatar Frames) ---------------- */
+/* ---------------- 头像框精雕矢量图层 (Avatar Frame SVG Layer) ---------------- */
+.avatar-frame-svg-layer {
+  position: absolute;
+  inset: -14%;
+  width: 128%;
+  height: 128%;
+  pointer-events: none;
+  z-index: 10;
+  overflow: visible;
+  display: block;
+}
+.avatar-frame-svg-layer svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  display: block;
+}
+
+/* 动态光效：较缓慢的匀速渐变效果 (5s linear) */
+@keyframes bronzePulse {
+  0%, 100% { filter: drop-shadow(0 0 1px rgba(180, 83, 9, 0.35)) brightness(1); }
+  50% { filter: drop-shadow(0 0 4px rgba(217, 119, 6, 0.65)) brightness(1.08); }
+}
+.glow-bronze { animation: bronzePulse 5s linear infinite; }
+
+@keyframes silverSheen {
+  0%, 100% { filter: drop-shadow(0 0 1px rgba(148, 163, 184, 0.4)) brightness(1); }
+  50% { filter: drop-shadow(0 0 5px rgba(226, 232, 240, 0.8)) brightness(1.1); }
+}
+.glow-silver { animation: silverSheen 5s linear infinite; }
+
+/* 黄金战纪 (VIP 5+)：静态奢华金芒，取消闪烁与呼吸动效 */
+.glow-gold {
+  animation: none !important;
+  filter: drop-shadow(0 0 3px rgba(245, 158, 11, 0.55)) drop-shadow(0 0 1px rgba(217, 119, 6, 0.5));
+}
+
+@keyframes jadeFrostMist {
+  0%, 100% {
+    filter: drop-shadow(0 0 2px rgba(16, 185, 129, 0.45)) drop-shadow(0 -2px 4px rgba(103, 232, 249, 0.35)) brightness(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 5px rgba(52, 211, 153, 0.75)) drop-shadow(0 -5px 9px rgba(165, 243, 252, 0.75)) brightness(1.12);
+  }
+}
+.glow-jade { animation: jadeFrostMist 5s linear infinite; }
+
+@keyframes supremeBluePulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 2px rgba(2, 132, 199, 0.55)) drop-shadow(0 -3px 5px rgba(56, 189, 248, 0.45)) brightness(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 6px rgba(14, 165, 233, 0.8)) drop-shadow(0 -6px 12px rgba(186, 230, 253, 0.8)) brightness(1.15);
+  }
+}
+.glow-supreme { animation: supremeBluePulse 5s linear infinite; }
+
+/* ---------------- 头像框基础轮廓 (Avatar Frames Base) ---------------- */
 /* 1. 青铜坚壁 (VIP 1+)：厚重古铜暗芒、双层重甲轮廓 */
 .frame-bronze-v1 {
   outline: 2px solid #b87a4b !important;
@@ -1067,7 +1124,7 @@
   transition: all 0.25s ease;
 }
 
-/* 2. 白银将星 (VIP 3+)：纯银金属双环 + 秘银冷辉 (静态金属立体质感，取消呼吸频闪) */
+/* 2. 白银将星 (VIP 3+)：纯银金属双环 + 秘银冷辉 */
 .frame-silver-v1 {
   outline: 2px solid #e2e8f0 !important;
   outline-offset: 1px !important;
@@ -1075,7 +1132,7 @@
   transition: all 0.25s ease;
 }
 
-/* 3. 黄金战纪 (VIP 5+)：重金立体双滚边 + 鎏金辉耀 (静态奢华金芒，取消呼吸频闪) */
+/* 3. 黄金战纪 (VIP 5+)：重金立体双滚边 + 鎏金辉耀 */
 .frame-gold-v1 {
   outline: 2px solid #ffd700 !important;
   outline-offset: 1.5px !important;
@@ -1087,11 +1144,11 @@
 .frame-jade-v1 {
   outline: 2px solid #34d399 !important;
   outline-offset: 1.5px !important;
-  animation: frameJadeFrostChill 2s infinite ease-in-out !important;
+  animation: frameJadeFrostChill 5s linear infinite !important;
 }
 
 @keyframes frameJadeFrostChill {
-  0% {
+  0%, 100% {
     outline-color: #10b981;
     box-shadow:
       0 0 0 2px #047857,
@@ -1109,60 +1166,31 @@
       0 4px 12px rgba(52, 211, 153, 0.7),
       inset 0 0 10px rgba(224, 242, 254, 0.95);
   }
-  100% {
-    outline-color: #10b981;
-    box-shadow:
-      0 0 0 2px #047857,
-      0 -4px 10px rgba(103, 232, 249, 0.75),
-      0 -8px 16px rgba(167, 243, 208, 0.55),
-      0 3px 8px rgba(16, 185, 129, 0.5),
-      inset 0 0 6px rgba(167, 243, 208, 0.7);
-  }
 }
 
-/* 5. 星钻炽焰 (VIP 9+)：钻石七彩光芒 + 边框熊熊烈火喷涌燃烧 */
+/* 5. 星钻蓝光 (VIP 9+)：钻石湛蓝神光 + 璀璨星钻蓝光流转 */
 .frame-supreme-v1 {
-  outline: 2px solid #ff4500 !important;
-  outline-offset: 2px !important;
-  animation: frameSupremeFireBlaze 1.6s infinite ease-in-out !important;
+  outline: 2px solid #0284c7 !important;
+  outline-offset: 1.5px !important;
+  animation: frameSupremeFireBlaze 5s linear infinite !important;
 }
 
 @keyframes frameSupremeFireBlaze {
-  0% {
-    outline-color: #ff5722;
+  0%, 100% {
+    outline-color: #0284c7;
     box-shadow:
-      0 0 0 2px #b91c1c,
-      0 -5px 14px rgba(255, 69, 0, 0.95),
-      0 -10px 22px rgba(249, 115, 22, 0.75),
-      0 3px 10px rgba(220, 38, 38, 0.6),
-      inset 0 0 8px rgba(255, 237, 213, 0.8);
+      0 0 0 2px #0369a1,
+      0 0 10px rgba(2, 132, 199, 0.8),
+      0 -4px 14px rgba(56, 189, 248, 0.7),
+      inset 0 0 6px rgba(186, 230, 253, 0.7);
   }
-  35% {
-    outline-color: #fbbf24;
+  50% {
+    outline-color: #38bdf8;
     box-shadow:
-      0 0 0 2.5px #dc2626,
-      -3px -10px 20px rgba(255, 69, 0, 1),
-      2px -18px 30px rgba(251, 191, 36, 0.9),
-      0 4px 14px rgba(234, 88, 12, 0.8),
-      inset 0 0 12px rgba(255, 255, 255, 0.95);
-  }
-  70% {
-    outline-color: #ff8c00;
-    box-shadow:
-      0 0 0 2px #ef4444,
-      3px -8px 16px rgba(255, 69, 0, 0.95),
-      -2px -14px 26px rgba(255, 140, 0, 0.8),
-      0 3px 10px rgba(220, 38, 38, 0.7),
-      inset 0 0 9px rgba(254, 240, 138, 0.85);
-  }
-  100% {
-    outline-color: #ff5722;
-    box-shadow:
-      0 0 0 2px #b91c1c,
-      0 -5px 14px rgba(255, 69, 0, 0.95),
-      0 -10px 22px rgba(249, 115, 22, 0.75),
-      0 3px 10px rgba(220, 38, 38, 0.6),
-      inset 0 0 8px rgba(255, 237, 213, 0.8);
+      0 0 0 2.5px #0284c7,
+      0 0 16px rgba(56, 189, 248, 0.95),
+      0 -6px 20px rgba(224, 242, 254, 0.9),
+      inset 0 0 10px rgba(255, 255, 255, 0.9);
   }
 }
 
@@ -1173,12 +1201,14 @@
 .chat-avatar.frame-jade-v1,
 .chat-avatar.frame-supreme-v1 {
   border-radius: 50% !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
-.chat-avatar.frame-bronze-v1  { border-color: #b87a4b !important; }
-.chat-avatar.frame-silver-v1  { border-color: #cbd5e1 !important; }
-.chat-avatar.frame-gold-v1    { border-color: #ffd700 !important; }
-.chat-avatar.frame-jade-v1    { border-color: #34d399 !important; }
-.chat-avatar.frame-supreme-v1 { border-color: #ff4500 !important; }
+.chat-avatar.frame-bronze-v1  { border-color: rgba(184, 122, 75, 0.6) !important; }
+.chat-avatar.frame-silver-v1  { border-color: rgba(203, 213, 225, 0.6) !important; }
+.chat-avatar.frame-gold-v1    { border-color: rgba(255, 215, 0, 0.6) !important; }
+.chat-avatar.frame-jade-v1    { border-color: rgba(52, 211, 153, 0.6) !important; }
+.chat-avatar.frame-supreme-v1 { border-color: rgba(2, 132, 199, 0.6) !important; }
 
 /* ---------------- 聊天频道样式 ---------------- */
 .chat-vip-badge {

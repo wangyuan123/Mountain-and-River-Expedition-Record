@@ -12,12 +12,17 @@ window.Game = window.Game || {};
   var activeBranch = '军事';
   var timerId = null;
 
+  /** 黄金按目标等级独立查表，其他资源保持原成长；所有费用预览和开工确认共用此入口。 */
   function techCost(id, currentLv) {
     var t = D.techs[id];
     var lv = currentLv != null ? currentLv : ((Core.state && Core.state.tech && Core.state.tech[id]) || 0);
     var mul = Math.pow(t.growth, lv);
     var cost = {};
-    for (var k in t.baseCost) cost[k] = Math.floor(t.baseCost[k] * mul);
+    for (var k in t.baseCost) {
+      if (k !== 'gold') cost[k] = Math.floor(t.baseCost[k] * mul);
+    }
+    var gold = G.Constants.researchGold;
+    cost.gold = gold.curves[gold.techGroups[id]][Math.max(0, Math.min(9, lv))];
     return cost;
   }
 
@@ -76,6 +81,7 @@ window.Game = window.Game || {};
             '<li><strong>生效时点：</strong>工期在点击开始研发时锁定。更换市长、调整学识或提升技能只影响新开始的研发；中心升级只提高新研究的准入范围，不改变已有科技效果或在研工期。</li>' +
             '<li><strong>加速与暂停：</strong>加速符按标注时长 × 使用数量扣减剩余时间，可直接完成研发；研发所在城市归降或移交期间暂停，完成时间按冻结时长顺延。</li>' +
             '<li><strong>开工条件：</strong>需要满足建筑和科技前置条件并备齐资源；全帝国同时只能研发一项科技。</li>' +
+            '<li><strong>黄金费用：</strong>所有科技每级均消耗黄金，按目标等级逐级增加。9→10级资源产量科技2000万、普通科技3000万、燃烧引擎5000万、喷气推进6500万、舰船动力8000万；市长及加速只缩短工期，不降低黄金费用。开工时一次扣除，取消按开工实际消耗返还80%，旧科研不按新价格补扣或重算退款。</li>' +
           '</ol>' +
         '</div>' +
         '<div class="modal-foot"><button type="button" class="btn" id="techResearchInfoClose">知道了</button></div>' +

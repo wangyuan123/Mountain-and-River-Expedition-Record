@@ -29,9 +29,9 @@ function setup(fetchResponse) {
   return { game: context.Game, stored, requests, sockets, listeners };
 }
 
-test('江苏一区沿用旧令牌，注册和登录明确提交大区', async () => {
+test('公测一区沿用旧令牌，注册和登录明确提交大区', async () => {
   const { game, stored, requests } = setup();
-  assert.equal(game.Servers.current().name, '江苏一区');
+  assert.equal(game.Servers.current().name, '公测一区');
   assert.equal(game.API.getToken(), 'legacy-token');
   await game.API.register('alice', 'password', 'agreement');
   assert.equal(requests[0].url, '/api/auth/register');

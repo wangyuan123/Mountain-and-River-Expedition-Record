@@ -36,15 +36,17 @@ public class MailServiceTest extends BaseServiceTest {
     @Autowired private MailRepository mailRepository;
     @Autowired private PlayerRepository playerRepository;
     @Autowired private ResourcesRepository resourcesRepository;
+    @Autowired private com.wargame.repository.PlayerGuideRepository guides;
 
     @Test
-    void seedForNewPlayer_createsThreeSystemMailsAndCommanderGift() {
+    void seedForNewPlayerCreatesWelcomeNoticeAndCommanderGiftWithoutCompletionReward() {
         Player p = createTestPlayer("seeduser", 30);
         // GameStateService.initializeNewPlayer -> seedForNewPlayer 在 BaseServiceTest 中未调用
         mailService.seedForNewPlayer(p.getId());
 
         List<Map<String, Object>> inbox = mailService.listInbox(p.getId());
-        assertEquals(4, inbox.size(), "应有 3 封种子邮件和 1 封改名卡赠礼");
+        assertEquals(3, inbox.size(), "应有欢迎、通告和改名卡赠礼，完成礼包须等引导毕业");
+        assertTrue(inbox.stream().noneMatch(mail -> "新手礼包已发放".equals(mail.get("subject"))));
         long unread = mailService.unreadCount(p.getId());
         assertEquals(2, unread, "欢迎邮件和改名卡赠礼未读");
     }
@@ -54,7 +56,59 @@ public class MailServiceTest extends BaseServiceTest {
         Player p = createTestPlayer("seeduser2", 30);
         mailService.seedForNewPlayer(p.getId());
         mailService.seedForNewPlayer(p.getId());
-        assertEquals(4, mailService.listInbox(p.getId()).size());
+        assertEquals(3, mailService.listInbox(p.getId()).size());
+    }
+
+    @Test
+    void fixedResourceMailsCreditTwentyThousandGoldOnlyWhenClaimedOnce() {
+        Player p = createTestPlayer("fixed-resource-mails", 30);
+        long beforeGold = getResources(p.getId()).getGold();
+        mailService.seedForNewPlayer(p.getId());
+        Mail welcome = mailRepository.findByToPlayerIdOrderByCreatedAtDesc(p.getId()).stream()
+                .filter(m -> "欢迎加入战局".equals(m.getSubject())).findFirst().orElseThrow();
+        assertEquals(beforeGold, getResources(p.getId()).getGold(), "寄信不自动入账");
+        mailService.claimAttach(p.getId(), welcome.getId());
+        assertEquals(beforeGold + 10000, getResources(p.getId()).getGold());
+        assertThrows(IllegalArgumentException.class, () -> mailService.claimAttach(p.getId(), welcome.getId()));
+
+        guides.save(new com.wargame.model.entity.PlayerGuide(p.getId(), "ob3_completed", "done", System.currentTimeMillis()));
+        mailService.issueOnboardingCompletionGift(p.getId());
+        Mail gift = mailRepository.findByToPlayerIdOrderByCreatedAtDesc(p.getId()).stream()
+                .filter(m -> "新手礼包已发放".equals(m.getSubject())).findFirst().orElseThrow();
+        assertTrue(gift.getBody().contains("黄金×10000"));
+        assertEquals(beforeGold + 10000, getResources(p.getId()).getGold());
+        mailService.claimAttach(p.getId(), gift.getId());
+        assertThrows(IllegalArgumentException.class, () -> mailService.claimAttach(p.getId(), gift.getId()));
+        mailService.issueOnboardingCompletionGift(p.getId());
+        assertEquals(beforeGold + 20000, getResources(p.getId()).getGold());
+        assertEquals(50, getResources(p.getId()).getDiamond());
+    }
+
+    @Test
+    void completionGiftRejectsUnfinishedAndSkippedGuides() {
+        Player p = createTestPlayer("unfinished-gift", 30);
+        assertThrows(IllegalArgumentException.class, () -> mailService.issueOnboardingCompletionGift(p.getId()));
+        guides.save(new com.wargame.model.entity.PlayerGuide(p.getId(), "ob3_skipped", "done", System.currentTimeMillis()));
+        assertThrows(IllegalArgumentException.class, () -> mailService.issueOnboardingCompletionGift(p.getId()));
+        assertTrue(mailService.listInbox(p.getId()).isEmpty());
+    }
+
+    @Test
+    void legacyCompletionGiftIsNotRepeatedAfterGraduationOrDeletion() {
+        Player p = createTestPlayer("legacy-completion-gift", 30);
+        Mail legacy = mailService.sendSystem(p.getId(), "系统", "reward", "新手礼包已发放", "旧版提前发送的礼包",
+                List.of(Map.of("type", "gold", "qty", 3000), Map.of("type", "diamond", "qty", 50)),
+                null, "PROTECTED", "NEW_PLAYER", "reward:" + p.getId(), null);
+        mailService.claimAttach(p.getId(), legacy.getId());
+        guides.save(new com.wargame.model.entity.PlayerGuide(p.getId(), "ob3_completed", "done", System.currentTimeMillis()));
+        mailService.issueOnboardingCompletionGift(p.getId()); mailService.issueOnboardingCompletionGift(p.getId());
+        assertEquals(1, mailService.listInbox(p.getId()).size());
+        assertTrue(guides.findByPlayerIdAndStepId(p.getId(), "ob3_reward_completion_mail").isPresent());
+        mailService.markRead(p.getId(), legacy.getId()); mailService.delete(p.getId(), legacy.getId());
+        mailService.issueOnboardingCompletionGift(p.getId());
+        assertTrue(mailService.listInbox(p.getId()).isEmpty());
+        assertEquals(3500, getResources(p.getId()).getGold());
+        assertEquals(50, getResources(p.getId()).getDiamond());
     }
 
     @Test

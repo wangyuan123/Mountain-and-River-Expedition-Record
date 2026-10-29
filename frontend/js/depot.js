@@ -8,6 +8,16 @@
   /** 只接受共享目录中的装备键，所有六档十二部位使用相同元数据。 */
   function equipmentInfo(itemId) { return G.Constants.equipmentItems[itemId] || null; }
 
+  /** 军衔礼包名称和承诺金额只读取本账号服务端回执，避免商城调价改变已发礼包文案。 */
+  function rankGiftInfo(itemId) {
+    var rewards = (Core.state.rankDiamondGifts || {}).rewards || [];
+    return rewards.find(function (reward) { return reward.itemKey === itemId; }) || null;
+  }
+
+  function itemInfo(itemId) { return rankGiftInfo(itemId) || D.items[itemId] || equipmentInfo(itemId); }
+
+  function esc(value) { return G.escapeHtml ? G.escapeHtml(String(value)) : String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+
   function fmt(n) { return G.fmt ? G.fmt(n) : n; }
   function fmtTime(ts) {
     var d = new Date(ts);
@@ -23,13 +33,13 @@
   // 当前生效状态描述
   function statusText() {
     var s = Core.state;
-    var w = s.world || {};
+    var w = s.cityState || {};
     var parts = [];
     if (w.shieldUntil && w.shieldUntil > G.gameNow()) {
       parts.push('🛡️ 护盾 ' + G.formatDuration((w.shieldUntil - G.gameNow()) / 1000));
     }
     if (w.marchBoostUntil && w.marchBoostUntil > G.gameNow()) {
-      parts.push('🚩 行军加速 ' + G.formatDuration((w.marchBoostUntil - G.gameNow()) / 1000));
+      parts.push('🚩 行军加速 +' + (w.marchBoostPercent == null ? 50 : w.marchBoostPercent) + '% ' + G.formatDuration((w.marchBoostUntil - G.gameNow()) / 1000));
     }
     return parts;
   }
@@ -51,6 +61,11 @@
       Core.state._depotTab = cat;
       Core.render();
     },
+    /** 晋升奖励入口固定打开资源道具，避免玩家停留在其他仓库分类找不到礼包。 */
+    openRankGifts: function () {
+      Core.state._depotTab = 'resource';
+      G.go('depot');
+    },
     _depotItem: null,    // 当前正在使用的 itemId（用于选军官/输入等二次确认）
     _pendingOfficer: null,
 
@@ -59,12 +74,11 @@
       var s = Core.state;
       s.items = s.items || {};
       if ((s.items[itemId] || 0) <= 0) { G.toast('道具数量不足'); return; }
-      var info = D.items[itemId] || equipmentInfo(itemId);
+      var info = itemInfo(itemId);
       if (!info) return;
 
       if (itemId === 'mobilizationOrder' || itemId === 'advancedMobilizationOrder' || itemId === 'rapidMobilizationOrder') {
-        G.toast('战争动员令仅可在进攻出征时选择，请从地图选择进攻目标');
-        G.go('world');
+        G.Mobilization.open(itemId);
         return;
       }
 
@@ -145,13 +159,15 @@
 
     // 统一后端调用 - 所有数据持久化由后端处理
     _callBackend: function (itemId, officerId, newName) {
-      G.API.depotUse(itemId, officerId, newName).then(function (resp) {
+      var playerId = (Core.state.player || {}).id;
+      return G.API.depotUse(itemId, officerId, newName).then(function (resp) {
+        if ((Core.state.player || {}).id !== playerId) return;
         if (resp && resp.success === false) {
           G.toast(resp.message || '使用失败');
           if (resp.state) G.API.applyState(resp.state);
           return;
         }
-        var info = D.items[itemId] || equipmentInfo(itemId);
+        var info = itemInfo(itemId);
         var isBox = (info && info.isBox) || itemId.indexOf('box_') === 0 || itemId === 'newbiePack';
         var isResource = (info && info.cat === 'res') || itemId.indexOf('res_') === 0 || itemId.indexOf('gold_') === 0;
         if (G.Sound && typeof G.Sound.play === 'function') {
@@ -159,6 +175,10 @@
           else if (isResource) G.Sound.play('coins');
         }
         G.toast(resp.message || '使用成功');
+        if (itemId.indexOf('rank_diamond_pack_') === 0) {
+          Core.state._rankGiftResult = { playerId: playerId, message: resp.message,
+            nextCertificateTier: resp.nextCertificateTier, nextCertificateName: resp.nextCertificateName };
+        }
         if (G.MainQuest && G.MainQuest.refresh) G.MainQuest.refresh();
         if (Core.currentView === 'depotUse') {
           var s = Core.state;
@@ -171,6 +191,7 @@
         }
         Core.render();
       }).catch(function (err) {
+        if ((Core.state.player || {}).id !== playerId) return;
         G.toast(err.message || '使用失败');
       });
     },
@@ -264,7 +285,7 @@
         return;
       }
 
-      if (itemId === 'expBook' || itemId === 'expBookAdv' || itemId === 'expBookMax') {
+      if (itemId === 'expBook' || itemId === 'expBookAdv' || itemId === 'expBookRapid' || itemId === 'expBookMax') {
         if (Game.Officer && Game.Officer.openExpBookModal) {
           Game.Officer.openExpBookModal(officerId, itemId);
           return;
@@ -307,6 +328,19 @@
       s.items = s.items || {};
       var h = '';
 
+      var giftResult = s._rankGiftResult;
+      if (giftResult && giftResult.playerId === (s.player || {}).id) {
+        h += '<div class="panel" role="status"><p>' + esc(giftResult.message || '礼包钻石已到账') + '</p>';
+        var nextTier = giftResult.nextCertificateTier;
+        // 服务端仅给可购买的档位；页面再次核对当前库存，避免重复展示已购买入口。
+        if (nextTier && Number(nextTier) > Number((s.player || {}).militaryRank || 1) &&
+            !(s.items['rank_certificate_' + nextTier] > 0) && G.Shop) {
+          h += '<button type="button" class="btn" onclick="Game.Shop.openRankCertificate(' + Number(nextTier) + ')">前往商城购买' + esc(giftResult.nextCertificateName || '') + '</button>';
+        }
+        h += '</div>';
+      }
+
+      if (G.Mobilization) h += '<div class="panel"><h3>账号动员</h3>' + G.Mobilization.widget() + '</div>';
       // 状态条：生效中的功能道具
       var status = statusText();
       h += '<div class="panel">';
@@ -418,8 +452,10 @@
           }
           if (previousSet) h += '</div></details>';
         } else {
-          for (var iid in D.items) {
-            var info = D.items[iid];
+          var catalog = Object.assign({}, D.items);
+          ((s.rankDiamondGifts || {}).rewards || []).forEach(function (gift) { catalog[gift.itemKey] = gift; });
+          for (var iid in catalog) {
+            var info = catalog[iid];
             if (info.cat !== cat) continue;
             var cnt = s.items[iid] || 0;
             // 数量为 0 的道具不展示，避免空道具占用列表空间。
@@ -433,18 +469,18 @@
               } else if (iid === 'officerPreparationParts') {
                 btnHtml = '<button type="button" class="btn depot-btn" onclick="Game.go(\'officer\')">[前往军官整备]</button>';
               } else if (iid === 'mobilizationOrder' || iid === 'advancedMobilizationOrder' || iid === 'rapidMobilizationOrder') {
-                btnHtml = '<button type="button" class="btn depot-btn" onclick="Game.Depot.useItem(\'' + iid + '\')">[出征时选择]</button>';
+                btnHtml = '<button type="button" class="btn depot-btn" onclick="Game.Depot.useItem(\'' + iid + '\')">[使用动员令]</button>';
               } else {
-                var btnLabel = iid === 'newbiePack' ? '开启礼包' : iid === 'cityRenameCard' ? '修改城市名' : (info.isBox || iid.indexOf('box_') === 0) ? '开启宝箱' : (iid === 'expBook' || iid === 'expBookAdv' || iid === 'expBookMax' || iid === 'loyaltyBox' || iid === 'renameCard' || iid === 'skillBook' || iid === 'universalSkillBook' || iid.indexOf('skillBook_') === 0 || iid === 'starUp') ? '选择军官使用' : '使用';
+                var btnLabel = iid === 'newbiePack' || iid.indexOf('rank_diamond_pack_') === 0 ? '开启礼包' : iid === 'cityRenameCard' ? '修改城市名' : (info.isBox || iid.indexOf('box_') === 0) ? '开启宝箱' : (iid === 'expBook' || iid === 'expBookAdv' || iid === 'expBookRapid' || iid === 'expBookMax' || iid === 'loyaltyBox' || iid === 'renameCard' || iid === 'skillBook' || iid === 'universalSkillBook' || iid.indexOf('skillBook_') === 0 || iid === 'starUp') ? '选择军官使用' : '使用';
                 btnHtml = '<button type="button" class="btn depot-btn" onclick="Game.Depot.useItem(\'' + iid + '\')">[' + btnLabel + ']</button>';
               }
             }
             h += '<div class="' + cls + '">';
             h += '<div class="depot-item-head">' +
-              '<div class="depot-item-title"><span class="n">' + G.iconHtml(info.icon, info.name) + ' ' + info.name + '</span> <span class="lv">×' + cnt + '</span></div>' +
+              '<div class="depot-item-title"><span class="n">' + G.iconHtml(info.icon, info.name) + ' ' + esc(info.name) + '</span> <span class="lv">×' + cnt + '</span></div>' +
               btnHtml +
             '</div>';
-            h += '<div class="d">' + info.desc + '</div>';
+            h += '<div class="d">' + esc(info.desc) + '</div>';
             h += '</div>';
           }
         }

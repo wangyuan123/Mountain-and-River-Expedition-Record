@@ -164,3 +164,45 @@ test('compact pvp page includes optimized column classes, cap bar tools, and fil
   assert.match(s.view.innerHTML, /id="pvp-count-truck"[^>]*value="30"/);
 });
 
+test('fillMax distributes rounding remainder even when the last eligible unit is unavailable', async () => {
+  const s = setup();
+  s.Game.DATA.units.fighter = { name: '战斗机', branch: 'air' };
+  s.setHandler((method, url) => url.includes('/lobby') ? Promise.resolve({
+    preset: { citySlot: 0, battlefield: 'LAND_AIR', army: {}, defaults: {} }, presetVersion: 0,
+    record: {}, reports: [], status: s.status,
+    available: { cities: [{ slot: 0, name: '主城' }], army: { infantry: 100, truck: 30 }, cap: 101, officers: [], chief: '无' }
+  }) : null);
+  await s.Game.Pvp.start(); s.Game.Pvp.render(s.view); await settle();
+  s.Game.Pvp.fillMax(); await s.Game.Pvp.savePreset();
+  const army = s.calls.find(c => c.url.endsWith('/preset')).body.army;
+  assert.equal(Object.values(army).reduce((sum, n) => sum + n, 0), 101);
+  assert.ok(army.infantry <= 100 && army.truck <= 30);
+});
+
+test('loading acknowledgement retries after a transient failure even while websocket stays connected', async () => {
+  const s = setup();
+  const originalNow = Date.now;
+  let time = originalNow(), attempts = 0;
+  Date.now = () => time;
+  try {
+    s.status = { ...s.status, status: 'LOADING', sessionId: 's', version: 8, deadlineAt: time + 20000 };
+    s.battle = { ...s.battle, status: 'LOADING', loaded: false, version: 8 };
+    s.setHandler((method, url) => {
+      if (url.endsWith('/loaded')) {
+        attempts++;
+        if (attempts === 1) return Promise.reject(new Error('temporary unavailable'));
+        s.battle = { ...s.battle, loaded: true };
+        return Promise.resolve(s.battle);
+      }
+      return null;
+    });
+    await s.Game.Pvp.start(); await settle();
+    const tick = [...s.timers.values()][0];
+    time += 2100; tick(); await settle();
+    // 排除写请求失败时已安排的恢复，再执行常驻轮询。
+    time += 2100; tick(); await settle();
+    assert.equal(attempts, 2);
+    assert.match(s.view.innerHTML, /指挥面板已就绪/);
+  } finally { Date.now = originalNow; }
+});
+

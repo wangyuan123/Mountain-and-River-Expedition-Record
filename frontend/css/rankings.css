@@ -9,7 +9,7 @@
   margin: 0 auto;
   color: var(--ink, #1e293b);
   letter-spacing: 0;
-  padding: 4px 6px 32px;
+  padding: 4px 6px 16px;
   box-sizing: border-box;
 }
 
@@ -60,66 +60,66 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 12px 18px;
+  gap: 12px;
+  padding: 8px 14px;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 .rankings-header-main {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
 }
 .rankings-title-badge {
-  font-size: 26px;
+  font-size: 20px;
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
-  flex: 0 0 44px;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
   background: linear-gradient(135deg, rgba(254, 240, 138, 0.4), rgba(253, 224, 71, 0.15));
   border: 1px solid rgba(234, 179, 8, 0.35);
-  border-radius: 8px;
+  border-radius: 6px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 .rankings-header h1 {
-  font-size: 19px;
+  font-size: 16px;
   line-height: 1.3;
   font-weight: 700;
   color: var(--ink);
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 .rankings-title-badge-text {
   font-size: 11px;
   font-weight: 600;
   color: var(--accent);
   background: var(--accent-soft);
-  padding: 1px 8px;
-  border-radius: 12px;
+  padding: 1px 7px;
+  border-radius: 10px;
   border: 1px solid rgba(2, 132, 199, 0.2);
 }
 .rankings-subtitle {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 4px;
-  font-size: 12px;
+  gap: 6px;
+  margin-top: 2px;
+  font-size: 11px;
   color: var(--muted);
 }
 .rankings-server-tag {
   background: var(--surface-sub);
   border: 1px solid var(--line);
-  padding: 1px 8px;
+  padding: 1px 6px;
   border-radius: 4px;
   font-weight: 500;
 }
@@ -166,26 +166,26 @@
 /* 2. 一级 Tab 与 二级筛选器（Tabs & Metric Pills）                           */
 /* ========================================================================== */
 .rankings-nav-group {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 .ranking-tabs {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   border-bottom: 2px solid var(--line);
   padding-bottom: 0;
 }
 .ranking-tab {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-height: 40px;
-  padding: 8px 18px;
+  gap: 4px;
+  min-height: 32px;
+  padding: 6px 14px;
   border: 0;
   border-bottom: 3px solid transparent;
   background: transparent;
   color: var(--muted);
   font: inherit;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -194,15 +194,15 @@
 .ranking-tab:hover {
   color: var(--ink);
   background: var(--surface-sub);
-  border-top-left-radius: 6px;
-  border-top-right-radius: 6px;
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
 }
 .ranking-tab.active {
   color: var(--accent);
   border-bottom-color: var(--accent);
   background: var(--surface);
-  border-top-left-radius: 6px;
-  border-top-right-radius: 6px;
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
 }
 
 .ranking-toolbar {
@@ -210,17 +210,17 @@
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 12px;
-  padding: 6px 2px 12px;
+  gap: 8px;
+  padding: 4px 2px 6px;
 }
 .ranking-toolbar-filters {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 .ranking-toolbar label {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
 }
 .ranking-dropdown-wrap {
@@ -231,10 +231,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  min-width: 130px;
-  min-height: 36px;
-  padding: 6px 14px;
+  gap: 8px;
+  min-width: 110px;
+  min-height: 30px;
+  padding: 4px 10px;
   border: 1px solid var(--line);
   border-radius: 6px;
   background: var(--surface);
@@ -343,26 +343,31 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 16px 24px;
-  min-height: 82px;
-  padding: 14px 20px;
-  border-radius: 8px;
+  gap: 8px 16px;
+  min-height: 0;
+  padding: 10px 14px;
+  border-radius: 10px;
   background: var(--surface);
-  border: 1px solid var(--line);
-  border-left: 5px solid var(--accent);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-  margin-bottom: 14px;
+  border: 2px solid var(--accent);
+  box-shadow: 0 2px 8px var(--accent-glow);
+  margin-bottom: 8px;
   position: relative;
   overflow: hidden;
 }
 .ranking-mine-identity, .ranking-identity {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
 }
 .ranking-mine-identity {
-  flex: 1 1 220px;
+  flex: 1 1 200px;
+}
+.ranking-mine-name-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 6px;
 }
 .ranking-mine-avatar-wrap {
   position: relative;
@@ -371,15 +376,15 @@
 .ranking-mine-avatar-wrap .ranking-avatar,
 .ranking-mine-avatar-wrap .guild-emblem,
 .ranking-mine-avatar-wrap .guild-emblem-legacy {
-  width: 46px;
-  height: 46px;
+  width: 38px;
+  height: 38px;
   border-radius: 8px;
   border: 2px solid var(--accent);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
 .ranking-mine-identity strong {
-  display: block;
-  font-size: 15px;
+  display: inline-block;
+  font-size: 14px;
   font-weight: 700;
   color: var(--ink);
   overflow-wrap: anywhere;
@@ -387,24 +392,24 @@
 .ranking-mine-identity span {
   display: block;
   color: var(--muted);
-  font-size: 11px;
-  margin-bottom: 3px;
+  font-size: 10px;
+  margin-bottom: 1px;
   font-weight: 500;
 }
 .ranking-mine-stat {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   flex: 0 0 auto;
 }
 .ranking-mine-stat > span {
   display: block;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 500;
 }
 .ranking-mine-stat strong {
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
@@ -423,19 +428,19 @@
 }
 .ranking-mine-placeholder {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
 }
 .ranking-locate-btn, .ranking-text-button {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 6px 14px;
-  border-radius: 6px;
+  padding: 4px 10px;
+  border-radius: 5px;
   background: var(--accent-soft);
   color: var(--accent);
   border: 1px solid var(--accent);
   font: inherit;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
@@ -448,177 +453,261 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
+.ranking-name .ranking-text-button {
+  display: inline;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  color: var(--ink) !important;
+  font: inherit !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  cursor: pointer;
+  line-height: inherit;
+  box-shadow: none !important;
+  text-decoration: none;
+}
+.ranking-name .ranking-text-button:hover:not(:disabled) {
+  color: var(--accent) !important;
+  background: transparent !important;
+  text-decoration: underline;
+  box-shadow: none !important;
+}
+
 /* ========================================================================== */
-/* 4. 排行榜表格与行设计（Podium Top 3, Badges & Mine Row）                    */
+/* 4. 排行榜卡片流设计（圆角卡片、尊荣边框、荣誉标签与斜盖图章）              */
 /* ========================================================================== */
 .ranking-results {
   min-height: 240px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+  box-shadow: none;
+}
+.ranking-table {
+  display: block;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+}
+.ranking-table thead {
+  display: none;
+}
+.ranking-table tbody {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+.ranking-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-}
-.ranking-table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-  font-size: 13px;
-}
-.ranking-table th {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 600;
-  text-align: left;
-  padding: 12px 14px;
-  background: var(--surface-sub);
-  border-bottom: 1px solid var(--line);
-  letter-spacing: 0.5px;
-}
-.ranking-table th:first-child {
-  width: 78px;
-  text-align: center;
-}
-.ranking-table th:nth-child(3) {
-  width: 170px;
-  text-align: right;
-}
-.ranking-table th:last-child {
-  width: 150px;
-  text-align: right;
-}
-.ranking-table td {
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--line);
-  vertical-align: middle;
-  overflow-wrap: anywhere;
-  transition: background 0.12s ease;
-}
-.ranking-table td:first-child {
-  text-align: center;
-}
-.ranking-table td:last-child {
-  text-align: right;
-  color: var(--muted);
+  box-sizing: border-box;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 .ranking-row:hover {
   background: var(--surface-sub);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
-/* 冠亚季军领奖台专属尊荣行视觉 (Top 3 Rows) */
-.ranking-row-top1 {
-  background: linear-gradient(90deg, rgba(254, 243, 199, 0.6) 0%, rgba(255, 255, 255, 0.25) 100%);
+.ranking-table td {
+  padding: 0;
+  border: none;
+  background: transparent;
+  vertical-align: middle;
 }
-.ranking-row-top1:hover {
-  background: linear-gradient(90deg, rgba(254, 243, 199, 0.85) 0%, rgba(255, 255, 255, 0.45) 100%);
+.ranking-table td:first-child {
+  flex: 0 0 32px;
+  width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
+}
+.ranking-table td:nth-child(2) {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+}
+.ranking-table td.ranking-score {
+  flex: 0 0 auto;
+  text-align: right;
+  margin-left: 12px;
+  white-space: nowrap;
+}
+.ranking-table td.ranking-secondary {
+  display: none !important;
+}
+
+/* ========================================================================== */
+/* 4.1 前三名仿王者荣耀匹配精雕外框（第1名钻石、第2名翡翠、第3名黄金） */
+/* 底色严格保持原版 var(--surface)，第4、5名保持常规卡片不作装饰 */
+/* ========================================================================== */
+.ranking-frame-layer {
+  position: absolute;
+  inset: -3px;
+  pointer-events: none;
+  z-index: 5;
+  overflow: visible;
+}
+.ranking-frame-layer svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+/* 微光呼吸动效（轻量柔和） */
+@keyframes mobaFrameGleam {
+  0%, 100% { filter: drop-shadow(0 0 2px var(--gleam-color, rgba(56, 189, 248, 0.4))) brightness(1); }
+  50% { filter: drop-shadow(0 0 5px var(--gleam-color, rgba(56, 189, 248, 0.4))) brightness(1.08); }
+}
+.ranking-frame-top1 {
+  --gleam-color: rgba(56, 189, 248, 0.45);
+  animation: mobaFrameGleam 3s ease-in-out infinite;
+}
+.ranking-frame-top2 {
+  --gleam-color: rgba(52, 211, 153, 0.45);
+  animation: mobaFrameGleam 3s ease-in-out infinite;
+}
+.ranking-frame-top3 {
+  --gleam-color: rgba(251, 191, 36, 0.45);
+  animation: mobaFrameGleam 3s ease-in-out infinite;
+}
+
+/* 前三名卡片：底色严格保持原生不变，透明边框占位防抖动，辅以柔和氛围阴影 */
+.ranking-row-top1 {
+  background: var(--surface) !important;
+  border-color: transparent !important;
+  box-shadow: 0 2px 10px rgba(2, 132, 199, 0.16) !important;
 }
 .ranking-row-top2 {
-  background: linear-gradient(90deg, rgba(241, 245, 249, 0.85) 0%, rgba(255, 255, 255, 0.3) 100%);
-}
-.ranking-row-top2:hover {
-  background: linear-gradient(90deg, rgba(241, 245, 249, 1) 0%, rgba(255, 255, 255, 0.5) 100%);
+  background: var(--surface) !important;
+  border-color: transparent !important;
+  box-shadow: 0 2px 10px rgba(5, 150, 105, 0.14) !important;
 }
 .ranking-row-top3 {
-  background: linear-gradient(90deg, rgba(254, 237, 222, 0.55) 0%, rgba(255, 255, 255, 0.25) 100%);
-}
-.ranking-row-top3:hover {
-  background: linear-gradient(90deg, rgba(254, 237, 222, 0.8) 0%, rgba(255, 255, 255, 0.45) 100%);
-}
-
-/* 暗黑主题下的领奖台色彩适配 */
-[data-theme="dark"] .ranking-row-top1 {
-  background: linear-gradient(90deg, rgba(234, 179, 8, 0.16) 0%, rgba(17, 24, 39, 0.25) 100%);
-}
-[data-theme="dark"] .ranking-row-top1:hover {
-  background: linear-gradient(90deg, rgba(234, 179, 8, 0.24) 0%, rgba(17, 24, 39, 0.4) 100%);
-}
-[data-theme="dark"] .ranking-row-top2 {
-  background: linear-gradient(90deg, rgba(148, 163, 184, 0.16) 0%, rgba(17, 24, 39, 0.25) 100%);
-}
-[data-theme="dark"] .ranking-row-top2:hover {
-  background: linear-gradient(90deg, rgba(148, 163, 184, 0.24) 0%, rgba(17, 24, 39, 0.4) 100%);
-}
-[data-theme="dark"] .ranking-row-top3 {
-  background: linear-gradient(90deg, rgba(249, 115, 22, 0.16) 0%, rgba(17, 24, 39, 0.25) 100%);
-}
-[data-theme="dark"] .ranking-row-top3:hover {
-  background: linear-gradient(90deg, rgba(249, 115, 22, 0.24) 0%, rgba(17, 24, 39, 0.4) 100%);
+  background: var(--surface) !important;
+  border-color: transparent !important;
+  box-shadow: 0 2px 10px rgba(217, 119, 6, 0.16) !important;
 }
 
-/* 当前玩家自身所在行高亮 */
+/* 当前玩家自身所在行卡片：若在前三名则显示对应外雕边框，并靠 [我] 徽章识别 */
 .ranking-row-mine {
-  background: var(--accent-soft) !important;
   position: relative;
-}
-.ranking-row-mine td:first-child {
-  position: relative;
-}
-.ranking-row-mine td:first-child::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 6px;
-  bottom: 6px;
-  width: 4px;
-  background: var(--accent);
-  border-radius: 0 4px 4px 0;
-  box-shadow: 1px 0 4px var(--accent-glow);
 }
 
 /* 名次徽章 (Rank Badges) */
 .ranking-position {
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 1px;
+  width: 32px;
+  height: 32px;
   min-width: 32px;
-  height: 28px;
-  padding: 0 6px;
   border-radius: 6px;
   font-variant-numeric: tabular-nums;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 800;
   color: var(--muted);
-  background: var(--surface-sub);
-  border: 1px solid var(--line);
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
   box-sizing: border-box;
 }
-.ranking-medal {
-  font-size: 14px;
-  line-height: 1;
-}
-.ranking-num {
+.ranking-position:not(.ranking-top-1):not(.ranking-top-2):not(.ranking-top-3) .ranking-num {
+  font-size: 12px;
+  font-weight: 800;
+  color: #64748b;
   line-height: 1;
 }
 
 .ranking-top-1 {
   border-radius: 6px;
-  color: #78350f !important;
-  background: linear-gradient(135deg, #fef08a 0%, #fde047 100%) !important;
-  border: 1px solid #eab308 !important;
-  box-shadow: 0 1px 4px rgba(202, 138, 4, 0.35);
+  color: #0369a1 !important;
+  background: #f0f9ff !important;
+  border: 1px solid #7dd3fc !important;
+  box-shadow: 0 1px 2px rgba(2, 132, 199, 0.2);
+}
+.ranking-top-1 .ranking-medal {
+  font-size: 11px;
+  line-height: 1;
+}
+.ranking-top-1 .ranking-num {
+  font-size: 10px;
+  font-weight: 900;
+  color: #0284c7;
+  margin-top: 1px;
 }
 .ranking-top-2 {
   border-radius: 6px;
-  color: #1e293b !important;
-  background: linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%) !important;
-  border: 1px solid #94a3b8 !important;
-  box-shadow: 0 1px 4px rgba(100, 116, 139, 0.25);
+  color: #065f46 !important;
+  background: #ecfdf5 !important;
+  border: 1px solid #6ee7b7 !important;
+  box-shadow: 0 1px 2px rgba(5, 150, 105, 0.2);
+}
+.ranking-top-2 .ranking-medal {
+  font-size: 11px;
+  line-height: 1;
+}
+.ranking-top-2 .ranking-num {
+  font-size: 10px;
+  font-weight: 900;
+  color: #059669;
+  margin-top: 1px;
 }
 .ranking-top-3 {
   border-radius: 6px;
-  color: #7c2d12 !important;
-  background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%) !important;
-  border: 1px solid #f97316 !important;
-  box-shadow: 0 1px 4px rgba(234, 88, 12, 0.25);
+  color: #92400e !important;
+  background: #fffbeb !important;
+  border: 1px solid #fcd34d !important;
+  box-shadow: 0 1px 2px rgba(217, 119, 6, 0.2);
+}
+.ranking-top-3 .ranking-medal {
+  font-size: 11px;
+  line-height: 1;
+}
+.ranking-top-3 .ranking-num {
+  font-size: 10px;
+  font-weight: 900;
+  color: #d97706;
+  margin-top: 1px;
+}
+
+/* 隐藏卡片列表中的多余头像，避免换行，保持左侧名次框+姓名标签紧贴单行展示 */
+.ranking-table .ranking-avatar,
+.ranking-table .guild-emblem,
+.ranking-table .guild-emblem-legacy {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.ranking-table .ranking-identity {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  min-width: 0;
 }
 
 /* 玩家头像与身份信息 */
 .ranking-avatar, .rankings-page .guild-emblem, .rankings-page .guild-emblem-legacy {
   display: block;
-  width: 40px;
-  height: 40px;
-  flex: 0 0 40px;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
   object-fit: cover;
   border-radius: 6px;
   border: 1px solid var(--line);
@@ -631,16 +720,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: 18px;
   overflow: hidden;
 }
 .ranking-name {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 3px 5px;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--ink);
   overflow-wrap: anywhere;
 }
@@ -648,12 +737,133 @@
   background: var(--accent);
   color: #ffffff !important;
   font-size: 10px;
-  font-weight: 600;
-  padding: 1px 7px;
-  border-radius: 10px;
-  line-height: 1.4;
-  letter-spacing: 0.5px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  line-height: 1.2;
+  letter-spacing: 0.3px;
   box-shadow: 0 1px 2px var(--accent-glow);
+}
+
+/* 软胶囊标签，如同截图中的 [豪华礼包] [赠8000] [极品配给] [最高荣耀] */
+.ranking-honor-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 1px 5px;
+  border-radius: 3px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.tag-top1 {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+.tag-top2 {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+.tag-top3 {
+  background: #ffedd5;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+}
+.tag-top10 {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+/* 红色斜盖图章，如同截图中的 【准予配给】 */
+.ranking-stamp-seal {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  color: #dc2626;
+  border: 1px solid #ef4444;
+  border-radius: 3px;
+  padding: 0.5px 3.5px;
+  line-height: 1.1;
+  transform: rotate(-5deg);
+  letter-spacing: 0.3px;
+  vertical-align: middle;
+  box-shadow: 0 1px 2px rgba(239, 68, 68, 0.12);
+}
+
+/* 暗黑主题下的标签与图章配色 */
+[data-theme="dark"] .tag-top1 {
+  background: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+  border-color: rgba(59, 130, 246, 0.4);
+}
+[data-theme="dark"] .tag-top2 {
+  background: rgba(56, 189, 248, 0.2);
+  color: #7dd3fc;
+  border-color: rgba(56, 189, 248, 0.4);
+}
+[data-theme="dark"] .tag-top3 {
+  background: rgba(249, 115, 22, 0.2);
+  color: #fdba74;
+  border-color: rgba(249, 115, 22, 0.4);
+}
+[data-theme="dark"] .tag-top10 {
+  background: rgba(148, 163, 184, 0.15);
+  color: #cbd5e1;
+  border-color: rgba(148, 163, 184, 0.3);
+}
+[data-theme="dark"] .ranking-stamp-seal {
+  color: #f87171;
+  border-color: #f87171;
+  background: rgba(239, 68, 68, 0.1);
+}
+/* 暗黑主题下的前三名精雕外框与卡片 */
+[data-theme="dark"] .ranking-row-top1 {
+  background: var(--surface) !important;
+  border-color: transparent !important;
+  box-shadow: 0 2px 14px rgba(14, 165, 233, 0.26) !important;
+}
+[data-theme="dark"] .ranking-row-top2 {
+  background: var(--surface) !important;
+  border-color: transparent !important;
+  box-shadow: 0 2px 14px rgba(16, 185, 129, 0.22) !important;
+}
+[data-theme="dark"] .ranking-row-top3 {
+  background: var(--surface) !important;
+  border-color: transparent !important;
+  box-shadow: 0 2px 14px rgba(245, 158, 11, 0.24) !important;
+}
+
+[data-theme="dark"] .ranking-position:not(.ranking-top-1):not(.ranking-top-2):not(.ranking-top-3) {
+  background: #1e293b;
+  border-color: #334155;
+}
+[data-theme="dark"] .ranking-position:not(.ranking-top-1):not(.ranking-top-2):not(.ranking-top-3) .ranking-num {
+  color: #94a3b8;
+}
+[data-theme="dark"] .ranking-top-1 {
+  background: rgba(14, 165, 233, 0.2) !important;
+  border-color: rgba(56, 189, 248, 0.4) !important;
+}
+[data-theme="dark"] .ranking-top-1 .ranking-num {
+  color: #7dd3fc;
+}
+[data-theme="dark"] .ranking-top-2 {
+  background: rgba(16, 185, 129, 0.2) !important;
+  border-color: rgba(52, 211, 153, 0.4) !important;
+}
+[data-theme="dark"] .ranking-top-2 .ranking-num {
+  color: #a7f3d0;
+}
+[data-theme="dark"] .ranking-top-3 {
+  background: rgba(245, 158, 11, 0.2) !important;
+  border-color: rgba(251, 191, 36, 0.4) !important;
+}
+[data-theme="dark"] .ranking-top-3 .ranking-num {
+  color: #fde68a;
 }
 .ranking-detail {
   display: flex;
@@ -661,7 +871,7 @@
   gap: 4px;
   color: var(--muted);
   font-size: 11px;
-  margin-top: 3px;
+  margin-top: 1px;
   overflow-wrap: anywhere;
 }
 
@@ -669,18 +879,29 @@
 .ranking-score {
   text-align: right;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .ranking-score strong {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--ink);
-  letter-spacing: 0.3px;
+  display: block;
+  font-size: 14px;
+  font-weight: 800;
+  color: #2563eb;
+  letter-spacing: 0.2px;
+  line-height: 1.2;
 }
 .ranking-mobile-secondary {
-  display: none;
-  color: var(--muted);
-  font-size: 10px;
-  margin-top: 3px;
+  display: block;
+  color: #b91c1c;
+  font-size: 11px;
+  font-weight: 700;
+  margin-top: 2px;
+  line-height: 1.2;
+}
+[data-theme="dark"] .ranking-score strong {
+  color: #60a5fa;
+}
+[data-theme="dark"] .ranking-mobile-secondary {
+  color: #f87171;
 }
 
 /* 军衔徽章胶囊 (Military Rank Badge) */
@@ -802,52 +1023,69 @@
 /* ========================================================================== */
 @media (max-width: 700px) {
   .ranking-table .ranking-secondary {
-    display: none;
+    display: none !important;
   }
   .ranking-mobile-secondary {
     display: block;
   }
-  .ranking-table th:first-child {
-    width: 48px;
-    padding: 10px 4px;
+  .ranking-row {
+    padding: 7px 10px;
   }
-  .ranking-table th:nth-child(3) {
-    width: 110px;
+  .ranking-table td {
+    padding: 0;
   }
-  .ranking-table th, .ranking-table td {
-    padding: 10px 6px;
+  .ranking-table td:first-child {
+    flex: 0 0 32px;
+    width: 32px;
+    margin-right: 8px;
+  }
+  .ranking-table td.ranking-score {
+    margin-left: 8px;
+  }
+  .ranking-name {
+    font-size: 13px;
+    gap: 2px 4px;
+  }
+  .ranking-honor-tag {
+    font-size: 9px;
+    padding: 1px 4px;
+  }
+  .ranking-stamp-seal {
+    font-size: 9px;
+    padding: 0.5px 3px;
   }
   .ranking-mine {
-    gap: 12px 16px;
-    padding: 12px 14px;
+    gap: 8px 12px;
+    padding: 8px 10px;
   }
   .ranking-mine-identity {
     flex-basis: 100%;
   }
   .ranking-mine-stat strong {
-    font-size: 14px;
+    font-size: 13px;
   }
   .ranking-identity {
-    gap: 8px;
+    gap: 6px;
   }
   .ranking-avatar, .rankings-page .guild-emblem, .rankings-page .guild-emblem-legacy {
-    width: 34px;
-    height: 34px;
-    flex-basis: 34px;
+    width: 32px;
+    height: 32px;
+    flex-basis: 32px;
+    border-radius: 6px;
   }
   .ranking-header {
-    padding: 10px 14px;
+    padding: 6px 10px;
   }
   .rankings-title-badge {
-    width: 36px;
-    height: 36px;
-    font-size: 20px;
-  }
-  .rankings-header h1 {
+    width: 30px;
+    height: 30px;
     font-size: 16px;
   }
+  .rankings-header h1 {
+    font-size: 15px;
+  }
   .ranking-tab {
-    padding: 8px 10px;
-    font-size: 13px;
+    padding: 6px 10px;
+    font-size: 12px;
   }
 }

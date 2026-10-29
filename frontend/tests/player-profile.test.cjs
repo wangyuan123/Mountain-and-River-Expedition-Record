@@ -39,6 +39,12 @@ test('profile rank opens the full rank-to-cap table with the current city bonus'
   assert.match(mask.innerHTML, /上将<\/span><\/th><td>600,000<\/td>/);
   assert.match(mask.innerHTML, /三军统帅 Lv\.5（\+20%）。/);
   assert.match(mask.innerHTML, /当前实际带兵上限：90,000/);
+  assert.match(mask.innerHTML, /当前可拥有城市上限：3 座<\/strong>（含主城）/);
+  assert.match(mask.innerHTML, /<th scope="col">城市上限<\/th>/);
+  const cityCaps = [...mask.innerHTML.matchAll(/<td>\d+<\/td><th scope="row">.*?<\/th><td>[\d,]+<\/td><td>(\d+) 座<\/td>/g)]
+    .map(match => Number(match[1]));
+  assert.deepEqual(cityCaps, [1, 2, 3, 4, 4, 5, 5, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8]);
+  assert.match(mask.innerHTML, /上将<\/span><\/th><td>600,000<\/td><td>8 座<\/td>/);
   assert.doesNotMatch(mask.innerHTML, /75,000 ×|每阶增加/);
   assert.doesNotMatch(mask.innerHTML, /当前城市围墙|满级 Lv\.10 后|\+ 100,000/);
   assert.equal(closeButton.focused, true);
@@ -48,7 +54,10 @@ test('profile rank opens the full rank-to-cap table with the current city bonus'
   assert.equal(elements.rankCapInfoMask, undefined);
   assert.equal(trigger.focused, true);
 
+  context.Game.Core.state.player.militaryRank = 17;
+  context.Game.Core.state.cityOverview = { cap: 8 };
   context.Game.PlayerProfile.showRankCapInfo();
+  assert.match(elements.rankCapInfoMask.innerHTML, /当前可拥有城市上限：8 座/);
   doneButton.onclick();
   assert.equal(elements.rankCapInfoMask, undefined);
 });
@@ -75,24 +84,37 @@ test('profile rank card is an accessible action', () => {
   assert.match(drawer.innerHTML, /class="drawer-avatar-wrap frame-bronze-v1"/);
 });
 
-test('profile displays both server-calculated power metrics', () => {
+test('profile scales both power metrics for display and keeps raw scores and other stats', () => {
   const context = vm.createContext({ console, setInterval() {}, clearInterval() {}, requestAnimationFrame() {} });
   context.window = context;
   context.Game = {
-    Core: { state: { player: { militaryRank: 1, formationPower: 12345, overallPower: 54321 }, resources: {}, world: {} }, armyCap: () => 25000 },
+    Core: { state: { player: { militaryRank: 1, formationPower: 1239000000, overallPower: 4173000000 }, resources: {}, world: {} }, armyCap: () => 25000 },
     MainView: { getCurrentAvatar: () => 'avatar.svg' }, WS: { statusHtml: () => '' },
-    fmt: String, escapeHtml: value => value
+    fmt: value => String(Math.floor(value)), escapeHtml: value => value
   };
   let drawer;
   context.document = { createElement: () => ({ setAttribute() {}, querySelector() { return null; } }),
     getElementById: () => null, body: { appendChild(element) { drawer = element; } } };
+  load(context, 'constants.js');
   load(context, 'data.js');
   load(context, 'player-profile.js');
   context.Game.PlayerProfile.openPlayerDrawer();
   assert.match(drawer.innerHTML, /编队战力/);
-  assert.match(drawer.innerHTML, /12345/);
+  assert.ok(drawer.innerHTML.includes('<span title="1239000">123.9万</span>'));
   assert.match(drawer.innerHTML, /综合实力/);
-  assert.match(drawer.innerHTML, /54321/);
+  assert.ok(drawer.innerHTML.includes('<span title="4173000">417.3万</span>'));
+  assert.ok(drawer.innerHTML.includes('<span title="25000">25000</span>'));
+  assert.equal(context.Game.Core.state.player.formationPower, 1239000000);
+  assert.equal(context.Game.Core.state.player.overallPower, 4173000000);
+  for (const [raw, expected] of [[12345, '12'], [999, '0'], [0, '0'], [null, '—']]) {
+    context.Game.Core.state.player.formationPower = raw;
+    context.Game.Core.state.player.overallPower = raw;
+    context.Game.PlayerProfile.openPlayerDrawer();
+    const value = raw == null ? '—' : '<span title="' + expected + '">' + expected + '</span>';
+    for (const label of ['编队战力', '综合实力']) {
+      assert.ok(drawer.innerHTML.includes('<div class="stat-k">' + label + '</div>        <div class="stat-v highlight">' + value + '</div>'));
+    }
+  }
 });
 
 test('each of the 17 ranks has a distinct insignia', () => {
@@ -154,9 +176,8 @@ test('avatar picker only offers and saves preset images', () => {
   assert.equal(storage.wargame_avatar_player, 'img/avatars/historical/rank-general-v1.webp');
 });
 
-test('avatar picker renders custom avatar and external url controls for vip 5+ commanders', async () => {
+test('avatar picker hides custom avatar controls for VIP commanders while preserving the saved portrait', () => {
   const elements = {};
-  const vipSaved = [];
   const context = vm.createContext({
     document: {
       getElementById(id) { return elements[id] || null; },
@@ -198,12 +219,6 @@ test('avatar picker renders custom avatar and external url controls for vip 5+ c
           { src: 'img/avatars/historical/rank-general-v1.webp', name: '将军' }
         ]
       },
-      API: {
-        vipSetCustomAvatarUrl(url) {
-          vipSaved.push(url);
-          return Promise.resolve({ message: '自定义头像链接已更新' });
-        }
-      },
       toast() {}
     }
   });
@@ -213,16 +228,11 @@ test('avatar picker renders custom avatar and external url controls for vip 5+ c
 
   context.Game.Main.openAvatarPicker();
   const modal = elements.avatarPickerMask;
-  assert.match(modal.innerHTML, /自定义统帅形象 \(VIP 5\+ 专属特权\)/);
-  assert.match(modal.innerHTML, /id="avatarPickerVipUrl"/);
-  assert.match(modal.innerHTML, /id="avatarPickerVipFile"/);
+  assert.doesNotMatch(modal.innerHTML, /avatarPickerVipUrl|avatarPickerVipFile|avatarPickerVipUploadBtn|应用链接|本地上传|自定义|外链/);
   assert.match(modal.innerHTML, /https:\/\/example\.com\/custom\.png/);
-
-  // 测试应用外链
-  elements.avatarPickerVipUrl = { value: 'https://mysite.com/commander.jpg' };
-  await context.Game.Main.applyCustomAvatarUrl();
-  assert.deepEqual(vipSaved, ['https://mysite.com/commander.jpg']);
-  assert.equal(context.Game.Core.state.player.customAvatar, 'https://mysite.com/commander.jpg');
+  assert.match(modal.innerHTML, /历史军人预设头像/);
+  assert.match(modal.innerHTML, /支持佩戴统帅专属头像框/);
+  assert.equal(context.Game.Core.state.player.customAvatar, 'https://example.com/custom.png');
 });
 
 test('previously saved network avatars fall back to a preset when displayed', () => {
@@ -520,4 +530,29 @@ test('updateDrawerHeight synchronizes drawer height with real visible viewport i
   assert.equal(styles['--drawer-height'], '360px');
   assert.equal(drawer.style.height, '360px');
   assert.equal(mask.style.height, '360px');
+});
+
+test('commander profile drawer does not display player UID', () => {
+  const context = vm.createContext({ console, setInterval() {}, clearInterval() {}, requestAnimationFrame() {} });
+  context.window = context;
+  context.Game = {
+    Core: { state: { player: { id: 5, militaryRank: 1, vipLevel: 10, faction: 'allied' }, resources: {}, world: {} }, armyCap: () => 25000 },
+    MainView: { getCurrentAvatar: () => 'avatar.svg' }, WS: { statusHtml: () => '' },
+    fmt: String, escapeHtml: value => value
+  };
+  let drawer;
+  context.document = {
+    createElement: () => ({ setAttribute() {}, querySelector() { return null; } }),
+    getElementById: () => null,
+    body: { classList: { add() {} }, appendChild(element) { drawer = element; } }
+  };
+  load(context, 'constants.js');
+  load(context, 'data.js');
+  load(context, 'player-profile.js');
+
+  context.Game.PlayerProfile.openPlayerDrawer();
+  assert.ok(drawer);
+  assert.doesNotMatch(drawer.innerHTML, /drawer-uid-tag/);
+  assert.doesNotMatch(drawer.innerHTML, /UID:\s*5/);
+  assert.doesNotMatch(drawer.innerHTML, /UID:/i);
 });

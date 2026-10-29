@@ -39,6 +39,9 @@ public class ArmyProductionQueue extends CityOwnedEntity {
     private Integer costOil = 0;
     @Column(name = "cost_rare", nullable = false)
     private Integer costRare = 0;
+    // 创建时实扣总人口；null 仅兼容迁移前的历史订单，不能用当前单价重算退款。
+    @Column(name = "cost_population")
+    private Integer costPopulation;
     // 可空以兼容历史付费订单；完工按原订单兑现，不使用新规则追溯检查。
     @Column(name = "unlock_rule_version", length = 64) private String unlockRuleVersion;
     @Column(name = "unlock_requirements", columnDefinition = "text") private String unlockRequirements;

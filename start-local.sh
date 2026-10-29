@@ -144,7 +144,8 @@ stop_port_process() {
 start_backend() {
   log "启动后端（mvn spring-boot:run）"
   cd "$BACKEND_DIR"
-  mvn spring-boot:run &
+  # 子目录启动不会加载根目录 JVM 配置；显式指定 UTF-8，避免终端 locale 导致中文编译缓存读取失败。
+  MAVEN_OPTS="${MAVEN_OPTS:-} -Dfile.encoding=UTF-8" mvn spring-boot:run &
   BACKEND_PID=$!
   log "后端进程 PID: ${BACKEND_PID}，等待启动..."
 
@@ -214,6 +215,13 @@ get_local_ip() {
 main() {
   [[ -f "$BACKEND_DIR/pom.xml" ]] || fail "未找到 backend/pom.xml。"
   [[ -f "$FRONTEND_DIR/index.html" ]] || fail "未找到 frontend/index.html。"
+
+  # Spring 不自动读取 .env；将本机受信任配置导出给后端，避免只写入文件却未启用邮件服务。
+  if [[ -f "$PROJECT_DIR/.env" ]]; then
+    set -a
+    source "$PROJECT_DIR/.env"
+    set +a
+  fi
 
   LOCAL_IP="$(get_local_ip)"
   if [[ -n "$LOCAL_IP" ]]; then

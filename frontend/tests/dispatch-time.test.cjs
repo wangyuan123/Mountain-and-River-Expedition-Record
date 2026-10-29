@@ -230,3 +230,24 @@ test('resetDispatchUnits clears visible unit inputs and sliders', () => {
     assert.equal(elements['dslider_' + uid].value, 0);
   }
 });
+
+test('dispatch estimates and boost descriptions follow each active march order tier', () => {
+  const c = setup(), g = c.Game;
+  const elements = { dispatchStatsCard: {}, dqty_infantry: { value: '50' },
+    estMarchTimeOneWay: {}, estMarchBoostTag: { style: {} }, estMarchSpeedTip: {} };
+  c.document.getElementById = id => elements[id] || null;
+  g.Core.state.world._dispatchTarget = { action: 'conquer', target: { x: 30, y: 10 } };
+  g.Core.state.cityState.marchBoostUntil = g.gameNow() + 3600000;
+  for (const percent of [10, 25, 50]) {
+    g.Core.state.cityState.marchBoostPercent = percent;
+    g.World.updateDispatchStats();
+    const seconds = Math.ceil(20 * g.DATA.world.marchSecPerGrid / (2 * (1 + percent / 100)));
+    assert.equal(elements.estMarchTimeOneWay.textContent, g.World.fmtDuration(seconds));
+    assert.ok(elements.estMarchBoostTag.textContent.includes('+' + percent + '%'));
+    assert.ok(elements.estMarchSpeedTip.textContent.includes('+' + percent + '%'));
+  }
+  g.Core.state.cityState.marchBoostUntil = g.gameNow() - 1;
+  g.World.updateDispatchStats();
+  assert.equal(elements.estMarchBoostTag.style.display, 'none');
+  assert.equal(elements.estMarchTimeOneWay.textContent, g.World.fmtDuration(180));
+});

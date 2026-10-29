@@ -47,12 +47,13 @@ public final class VipConfig {
     }
 
     static {
+        // 每日四类资源从VIP4起每级增加10万，不叠加资源包；黄金从VIP0的1万起每级增加1万，道具与晋升礼包独立。
         // VIP 0
         LEVELS.add(new VipLevelDef(
                 0, 0L, "预备指挥官",
                 3, 1, 0.0, 10, 2, 0.0,
                 false, false, 0,
-                mapOf("gold", 1000, "food", 5000, "steel", 5000, "speedUp10m", 2, "skillBook", 1, "populationOrder", 1),
+                mapOf("gold", 10000, "food", 10000, "steel", 10000, "oil", 10000, "rare", 10000, "speedUp10m", 2, "skillBook", 1, "populationOrder", 1),
                 mapOf()
         ));
 
@@ -61,7 +62,7 @@ public final class VipConfig {
                 1, 600L, "特遣队指挥官",
                 5, 1, 0.0, 10, 2, 0.0,
                 false, false, 0,
-                mapOf("gold", 3000, "food", 20000, "steel", 20000, "oil", 20000, "rare", 20000, "speedUp10m", 3, "skillBook", 1, "populationOrder", 1, "marchOrd", 1),
+                mapOf("gold", 20000, "food", 20000, "steel", 20000, "oil", 20000, "rare", 20000, "speedUp10m", 3, "skillBook", 1, "populationOrder", 1, "marchOrd", 1),
                 mapOf("recruitOrd", 1, "gold", 400000, "shield2h", 6, "shield", 2, "starUp", 20, "skillBook", 3, "speedUp10m", 10, "expBook", 5)
         ));
 
@@ -70,7 +71,7 @@ public final class VipConfig {
                 2, 3000L, "前线先锋官",
                 5, 1, 0.0, 15, 2, 0.05,
                 false, false, 0,
-                mapOf("gold", 5000, "food", 50000, "steel", 50000, "oil", 50000, "rare", 50000, "speedUp10m", 6, "expBook", 2, "skillBook", 2, "populationOrder", 2, "marchOrd", 1),
+                mapOf("gold", 30000, "food", 50000, "steel", 50000, "oil", 50000, "rare", 50000, "speedUp10m", 6, "expBook", 2, "skillBook", 2, "populationOrder", 2, "marchOrd", 1),
                 mapOf("recruitOrd", 2, "teleportNormal", 2, "gold", 800000, "shield2h", 8, "shield", 4, "starUp", 40, "skillBook", 6, "speedUp1h", 6, "expBook", 10)
         ));
 
@@ -79,7 +80,7 @@ public final class VipConfig {
                 3, 9800L, "战略支柱长官",
                 5, 1, 0.20, 20, 3, 0.05,
                 true, false, 0,
-                mapOf("gold", 10000, "food", 100000, "steel", 100000, "oil", 100000, "rare", 100000, "speedUp1h", 2, "expBook", 3, "skillBook", 2, "populationOrder", 2, "marchOrd", 1, "signalJammingOrder", 1),
+                mapOf("gold", 40000, "food", 100000, "steel", 100000, "oil", 100000, "rare", 100000, "speedUp1h", 2, "expBook", 3, "skillBook", 2, "populationOrder", 2, "marchOrd", 1, "signalJammingOrder", 1),
                 mapOf("recruitOrd", 3, "teleportNormal", 3, "gold", 1200000, "shield2h", 8, "shield", 6, "shield12h", 2, "commanderRenameCard", 1, "starUp", 60, "skillBook", 9, "speedUp1h", 12, "speedUp5h", 2, "expBookAdv", 2)
         ));
 
@@ -88,7 +89,7 @@ public final class VipConfig {
                 4, 19800L, "方面军参谋长",
                 5, 1, 0.20, 30, 3, 0.05,
                 true, false, 0,
-                mapOf("gold", 20000, "food", 200000, "steel", 200000, "oil", 200000, "rare", 200000, "speedUp1h", 3, "speedUp10m", 3, "expBook", 4, "skillBook", 3, "populationOrder", 3, "marchOrd", 2, "signalJammingOrder", 1),
+                mapOf("gold", 50000, "food", 200000, "steel", 200000, "oil", 200000, "rare", 200000, "speedUp1h", 3, "speedUp10m", 3, "expBook", 4, "skillBook", 3, "populationOrder", 3, "marchOrd", 2, "signalJammingOrder", 1),
                 mapOf("recruitOrd", 4, "teleportNormal", 4, "gold", 1600000, "shield2h", 10, "shield", 8, "shield12h", 4, "shield24h", 1, "commanderRenameCard", 1, "starUp", 100, "skillBook", 12, "speedUp5h", 5, "expBookAdv", 4)
         ));
 
@@ -97,7 +98,7 @@ public final class VipConfig {
                 5, 32800L, "兵团副司令官",
                 5, 2, 0.30, 30, 4, 0.08,
                 true, false, 3,
-                mapOf("gold", 35000, "food", 400000, "steel", 400000, "oil", 400000, "rare", 400000, "speedUp5h", 1, "speedUp1h", 2, "expBookAdv", 1, "skillBook", 3, "populationOrder", 3, "emergencyPopulationOrder", 1, "marchOrd", 2, "signalJammingOrder", 1, "feintOrder", 1),
+                mapOf("gold", 60000, "food", 300000, "steel", 300000, "oil", 300000, "rare", 300000, "speedUp5h", 1, "speedUp1h", 2, "expBookAdv", 1, "skillBook", 3, "populationOrder", 3, "emergencyPopulationOrder", 1, "marchOrd", 2, "signalJammingOrder", 1, "feintOrder", 1),
                 mapOf("recruitOrd", 5, "teleportNormal", 5, "gold", 2000000, "shield2h", 12, "shield", 10, "shield12h", 6, "shield24h", 2, "starUp", 150, "skillBook", 15, "speedUp5h", 10, "expBookAdv", 6)
         ));
 
@@ -106,7 +107,7 @@ public final class VipConfig {
                 6, 64800L, "兵团总司令官",
                 5, 2, 0.30, 40, 4, 0.08,
                 true, true, 3,
-                mapOf("gold", 50000, "food", 800000, "steel", 800000, "oil", 800000, "rare", 800000, "speedUp5h", 2, "expBookAdv", 2, "supplyPack", 1, "skillBook", 4, "populationOrder", 4, "emergencyPopulationOrder", 1, "marchOrd", 2, "signalJammingOrder", 2, "feintOrder", 1),
+                mapOf("gold", 70000, "food", 400000, "steel", 400000, "oil", 400000, "rare", 400000, "speedUp5h", 2, "expBookAdv", 2, "skillBook", 4, "populationOrder", 4, "emergencyPopulationOrder", 1, "marchOrd", 2, "signalJammingOrder", 2, "feintOrder", 1),
                 mapOf("recruitOrd", 6, "teleportNormal", 6, "gold", 2400000, "shield", 12, "shield12h", 8, "shield24h", 4, "shield72h", 1, "teleportAdvanced", 2, "starUp", 200, "skillBook", 18, "speedUp5h", 8, "speedUp12h", 2, "expBookAdv", 10, "supplyPack", 3)
         ));
 
@@ -115,7 +116,7 @@ public final class VipConfig {
                 7, 128000L, "战区副长官",
                 5, 2, 0.40, 50, 5, 0.10,
                 true, true, 3,
-                mapOf("gold", 80000, "food", 1500000, "steel", 1500000, "oil", 1500000, "rare", 1500000, "shield", 1, "speedUp12h", 1, "expBookAdv", 3, "supplyPack", 2, "skillBook", 4, "populationOrder", 4, "emergencyPopulationOrder", 2, "marchOrd", 3, "signalJammingOrder", 2, "feintOrder", 2),
+                mapOf("gold", 80000, "food", 500000, "steel", 500000, "oil", 500000, "rare", 500000, "shield", 1, "speedUp12h", 1, "expBookAdv", 3, "skillBook", 4, "populationOrder", 4, "emergencyPopulationOrder", 2, "marchOrd", 3, "signalJammingOrder", 2, "feintOrder", 2),
                 mapOf("recruitOrd", 7, "teleportNormal", 7, "gold", 2800000, "shield", 16, "shield12h", 12, "shield24h", 6, "shield72h", 2, "teleportAdvanced", 3, "starUp", 280, "skillBook", 21, "universalSkillBook", 1, "speedUp12h", 4, "expBookMax", 2)
         ));
 
@@ -124,7 +125,7 @@ public final class VipConfig {
                 8, 300000L, "战区最高司令",
                 5, 2, 0.40, 50, 5, 0.12,
                 true, true, 3,
-                mapOf("gold", 120000, "food", 2500000, "steel", 2500000, "oil", 2500000, "rare", 2500000, "shield12h", 1, "speedUp12h", 1, "speedUp5h", 1, "expBookAdv", 4, "supplyPack", 3, "skillBook", 5, "populationOrder", 5, "emergencyPopulationOrder", 2, "marchOrd", 3, "signalJammingOrder", 3, "feintOrder", 2),
+                mapOf("gold", 90000, "food", 600000, "steel", 600000, "oil", 600000, "rare", 600000, "shield12h", 1, "speedUp12h", 1, "speedUp5h", 1, "expBookAdv", 4, "skillBook", 5, "populationOrder", 5, "emergencyPopulationOrder", 2, "marchOrd", 3, "signalJammingOrder", 3, "feintOrder", 2),
                 mapOf("recruitOrd", 8, "teleportNormal", 8, "gold", 3200000, "shield", 16, "shield12h", 16, "shield24h", 8, "shield72h", 3, "teleportAdvanced", 4, "starUp", 360, "skillBook", 24, "universalSkillBook", 2, "speedUp12h", 6, "expBookMax", 3)
         ));
 
@@ -133,7 +134,7 @@ public final class VipConfig {
                 9, 600000L, "战时常务长官",
                 5, 2, 0.50, 60, 6, 0.15,
                 true, true, 3,
-                mapOf("gold", 150000, "food", 4000000, "steel", 4000000, "oil", 4000000, "rare", 4000000, "shield12h", 1, "shield", 1, "speedUp12h", 2, "expBookAdv", 5, "supplyPack", 4, "skillBook", 5, "populationOrder", 5, "emergencyPopulationOrder", 3, "marchOrd", 4, "signalJammingOrder", 3, "feintOrder", 3),
+                mapOf("gold", 100000, "food", 700000, "steel", 700000, "oil", 700000, "rare", 700000, "shield12h", 1, "shield", 1, "speedUp12h", 2, "expBookAdv", 5, "skillBook", 5, "populationOrder", 5, "emergencyPopulationOrder", 3, "marchOrd", 4, "signalJammingOrder", 3, "feintOrder", 3),
                 mapOf("recruitOrd", 9, "teleportNormal", 9, "gold", 3600000, "shield", 20, "shield12h", 20, "shield24h", 10, "shield72h", 4, "teleportAdvanced", 5, "starUp", 450, "skillBook", 27, "universalSkillBook", 3, "speedUp24h", 4, "expBookMax", 5)
         ));
 
@@ -142,7 +143,7 @@ public final class VipConfig {
                 10, 1000000L, "特级上将·五星统帅",
                 5, 2, 0.50, 80, 6, 0.15,
                 true, true, 3,
-                mapOf("gold", 200000, "food", 6000000, "steel", 6000000, "oil", 6000000, "rare", 6000000, "shield24h", 1, "speedUp24h", 1, "speedUp12h", 1, "expBookAdv", 8, "supplyPack", 5, "skillBook", 6, "populationOrder", 6, "emergencyPopulationOrder", 3, "marchOrd", 5, "signalJammingOrder", 4, "feintOrder", 4),
+                mapOf("gold", 110000, "food", 800000, "steel", 800000, "oil", 800000, "rare", 800000, "shield24h", 1, "speedUp24h", 1, "speedUp12h", 1, "expBookAdv", 8, "skillBook", 6, "populationOrder", 6, "emergencyPopulationOrder", 3, "marchOrd", 5, "signalJammingOrder", 4, "feintOrder", 4),
                 mapOf("recruitOrd", 10, "teleportNormal", 10, "gold", 4000000, "shield", 24, "shield12h", 24, "shield24h", 12, "shield72h", 6, "teleportAdvanced", 8, "starUp", 600, "skillBook", 30, "universalSkillBook", 5, "speedUp36h", 4, "expBookMax", 8, "supplyPack", 5)
         ));
 

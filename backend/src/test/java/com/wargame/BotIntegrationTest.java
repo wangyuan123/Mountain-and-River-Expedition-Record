@@ -9,6 +9,7 @@ import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.context.jdbc.Sql;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
@@ -102,7 +103,9 @@ class BotIntegrationTest extends BaseServiceTest {
         AtomicLong time = new AtomicLong(GameClock.now());
         try (var ignored = GameClock.use(time::get)) {
             bots.configure(player.getId(), settings, true, "test", null);
-            for (int index = 0; index < 120; index++) {
+            // 一级侦察科研现需 6000 黄金，旧四小时窗口不足以靠初始人口税收积攒；不额外注资。
+            long developmentDeadline = time.get() + Duration.ofHours(24).toMillis();
+            while (time.get() < developmentDeadline) {
                 var result = bots.run(player.getId(), false);
                 assertTrue(result.success(), result.reason());
                 time.addAndGet(120_000);
@@ -111,7 +114,7 @@ class BotIntegrationTest extends BaseServiceTest {
             }
         }
         assertTrue(armyUnitRepository.findByPlayerIdAndType(player.getId(), "recon_car").stream().anyMatch(unit -> unit.getCount() >= 3),
-                () -> "Bot 应自主解锁侦查车，最近记录：" + store.logs(player.getId(), 20)
+                () -> "Bot 应在24小时模拟发展内自主解锁并生产3辆侦查车，最近记录：" + store.logs(player.getId(), 20)
                         + "；建筑：" + buildingRepository.findByPlayerId(player.getId())
                         + "；资源：" + resourcesRepository.findByPlayerId(player.getId())
                         + "；科技：" + technologyRepository.findByPlayerId(player.getId()));

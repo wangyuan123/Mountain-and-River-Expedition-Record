@@ -131,7 +131,7 @@ public class WorldController {
     @PostMapping("/speedup-march")
     public Map<String, Object> speedUpMarch(@RequestBody GameDtos.SpeedUpMarchRequest request) {
         Long playerId = authService.getCurrentPlayer().getId();
-        Map<String, Object> result = marchService.speedUpMarch(playerId, request.marchId(), request.returning(), request.version(), request.confirmationToken());
+        Map<String, Object> result = marchService.speedUpMarch(playerId, request.marchId(), request.returning(), request.version(), request.confirmationToken(), request.itemKey());
         result.put("state", gameStateService.getGameState(playerId));
         return result;
     }

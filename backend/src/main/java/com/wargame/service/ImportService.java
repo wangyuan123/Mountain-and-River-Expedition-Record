@@ -15,6 +15,7 @@ import java.util.*;
 
 @Service
 public class ImportService {
+    @org.springframework.beans.factory.annotation.Autowired private ArmyPopulationBalanceRepository populationBalances;
     @org.springframework.beans.factory.annotation.Autowired private UnitEquipmentService unitEquipment;
 
     private final PlayerRepository playerRepository;
@@ -158,6 +159,7 @@ public class ImportService {
     // ================================================================
 
     private void clearPlayerData(Long playerId) {
+        populationBalances.deleteByPlayerId(playerId);
         if (unitEquipment != null) unitEquipment.clearOrders(playerId);
         resourcesRepository.findByPlayerId(playerId).ifPresent(resourcesRepository::delete);
         buildingRepository.deleteByPlayerId(playerId);

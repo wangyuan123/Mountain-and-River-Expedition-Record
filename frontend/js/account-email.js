@@ -12,9 +12,11 @@
     if (!password.trim() || password.length < 6 || password.length > 64 || bytes > 72) return '密码需为 6—64 个字符，且不超过 72 个 UTF-8 字节';
     return password !== confirmation ? '两次输入的密码不一致' : '';
   }
-  function field(id, label, type, autocomplete) {
-    return '<div class="edit-row"><label for="' + id + '">' + label + '</label><input class="qty" id="' + id +
-      '" type="' + (type || 'text') + '" autocomplete="' + (autocomplete || 'off') + '" maxlength="' + (type === 'email' ? 71 : 64) + '"></div>';
+  function field(id, label, type, autocomplete, placeholder, hint) {
+    return '<div class="edit-row account-email-row"><label for="' + id + '">' + label + (hint ? '<span class="account-email-label-hint">' + hint + '</span>' : '') +
+      '</label><input class="qty account-email-input" id="' + id +
+      '" type="' + (type || 'text') + '" autocomplete="' + (autocomplete || 'off') + '" maxlength="' + (type === 'email' ? 71 : 64) +
+      '" placeholder="' + (placeholder || '') + '"></div>';
   }
   var Email = {
     data: null, registration: null, modal: null, timers: {},
@@ -93,23 +95,82 @@
       this.close(true);
       var state = { mode: mode, stage: 'old', scope: context(), busy: false, challenge: null, changeToken: null, previousFocus: document.activeElement };
       this.modal = state;
-      var mask = document.createElement('div'); mask.id = 'accountEmailModal'; mask.className = 'modal-mask';
+      var mask = document.createElement('div'); mask.id = 'accountEmailModal'; mask.className = 'modal-mask account-email-mask';
       var title = mode === 'reset' ? '找回密码' : mode === 'change' ? '更换 QQ 邮箱' : '绑定 QQ 邮箱';
-      var body = '<p>当前大区：' + esc(G.Servers ? G.Servers.current().name : G.API.client.serverId) + '</p>';
-      if (mode === 'reset') body += field('securityUsername', '用户名', 'text', 'username');
-      if (mode !== 'reset') body += field('securityPassword', '当前密码', 'password', 'current-password');
-      if (mode === 'change') body += '<p>原邮箱：' + esc(this.data.maskedEmail) + '。先验证原邮箱，再验证新邮箱。</p>';
-      body += field('securityEmail', mode === 'change' ? '新 QQ 邮箱' : 'QQ 邮箱', 'email', 'email');
-      body += field('securityCode', mode === 'change' ? '原邮箱验证码' : '邮箱验证码', 'text', 'one-time-code');
-      body += '<button type="button" class="btn" id="securitySend">获取验证码</button>';
-      if (mode === 'reset') body += field('securityNewPassword', '新密码', 'password', 'new-password') + field('securityConfirmPassword', '确认新密码', 'password', 'new-password') + '<p>未绑定邮箱或邮箱无法使用时，请通过官方渠道联系支持。</p><div id="securitySupport"></div>';
-      mask.innerHTML = '<div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="securityTitle"><div class="modal-title" id="securityTitle">' + title +
-        '</div><div class="modal-body">' + body + '<p id="securityMsg" role="status" aria-live="polite"></p></div><div class="btn-row"><button type="button" class="btn" id="securityCancel">取消</button><button type="button" class="btn ok" id="securitySubmit">' + (mode === 'change' ? '验证原邮箱' : mode === 'reset' ? '重置密码' : '确认绑定') + '</button></div></div>';
+      var subtitle = mode === 'reset' ? '验证绑定的 QQ 邮箱后重置登录密码' :
+        mode === 'change' ? '先验证原邮箱身份，再绑定新的 QQ 邮箱' : '绑定后可用于接收安全通知及找回账号密码';
+      var serverName = (G.Servers && typeof G.Servers.current === 'function' && G.Servers.current()) ?
+        G.Servers.current().name : (G.API && G.API.client ? G.API.client.serverId : '');
+
+      var body = '<div class="account-email-server-badge">' +
+        '<span class="account-email-server-icon">🌐</span>' +
+        '<span class="account-email-server-label">当前大区：</span>' +
+        '<strong class="account-email-server-name">' + esc(serverName) + '</strong>' +
+      '</div>';
+
+      if (mode === 'reset') {
+        body += field('securityUsername', '用户名', 'text', 'username', '请输入您的游戏用户名');
+      }
+      if (mode !== 'reset') {
+        body += field('securityPassword', '当前密码', 'password', 'current-password', '请输入当前登录密码以验证身份');
+      }
+      if (mode === 'change') {
+        var masked = (this.data && this.data.maskedEmail) ? this.data.maskedEmail : '';
+        body += '<div class="account-email-banner-tip">' +
+          '<span>已绑定原邮箱：<strong>' + esc(masked) + '</strong></span>' +
+          '<span class="account-email-banner-sub">先验证原邮箱，验证通过后再验证新邮箱。</span>' +
+        '</div>';
+      }
+      body += field('securityEmail', mode === 'change' ? '新 QQ 邮箱' : 'QQ 邮箱', 'email', 'email', mode === 'change' ? '请输入新的 QQ 邮箱' : '例如: 123456@qq.com');
+
+      var codeLabel = mode === 'change' ? '原邮箱验证码' : '邮箱验证码';
+      body += '<div class="edit-row account-email-row account-email-code-row">' +
+        '<label for="securityCode">' + codeLabel + '</label>' +
+        '<div class="account-email-code-group">' +
+          '<input class="qty account-email-input" id="securityCode" type="text" autocomplete="one-time-code" maxlength="6" inputmode="numeric" placeholder="6 位数字验证码">' +
+          '<button type="button" class="btn account-email-send-btn" id="securitySend">获取验证码</button>' +
+        '</div>' +
+      '</div>';
+
+      if (mode === 'reset') {
+        body += field('securityNewPassword', '新密码', 'password', 'new-password', '请输入 6—64 位新密码', '6—64位');
+        body += field('securityConfirmPassword', '确认新密码', 'password', 'new-password', '请再次输入新密码');
+        body += '<div class="account-email-support-box">' +
+          '<div class="account-email-support-icon">💡</div>' +
+          '<div class="account-email-support-main">' +
+            '<div class="account-email-support-tip">未绑定邮箱或邮箱无法使用？</div>' +
+            '<div class="account-email-support-desc">未绑定邮箱或邮箱无法使用时，请通过官方渠道联系支持。</div>' +
+            '<div id="securitySupport" class="account-email-support-action"></div>' +
+          '</div>' +
+        '</div>';
+      }
+
+      var submitText = mode === 'change' ? '验证原邮箱' : mode === 'reset' ? '重置密码' : '确认绑定';
+
+      mask.innerHTML = '<div class="modal-card account-email-card" role="dialog" aria-modal="true" aria-labelledby="securityTitle">' +
+        '<div class="account-email-head">' +
+          '<div class="account-email-title-wrap">' +
+            '<div class="modal-title account-email-title" id="securityTitle">' + title + '</div>' +
+            '<div class="account-email-subtitle">' + subtitle + '</div>' +
+          '</div>' +
+          '<button type="button" class="account-email-close-btn" id="securityCloseBtn" aria-label="关闭">✕</button>' +
+        '</div>' +
+        '<div class="modal-body account-email-body">' +
+          body +
+          '<p id="securityMsg" role="status" aria-live="polite" class="account-email-msg"></p>' +
+        '</div>' +
+        '<div class="modal-foot account-email-foot">' +
+          '<button type="button" class="btn account-email-btn-cancel" id="securityCancel">取消</button>' +
+          '<button type="button" class="btn ok account-email-btn-submit" id="securitySubmit">' + submitText + '</button>' +
+        '</div>' +
+      '</div>';
+
       document.body.appendChild(mask);
       el('securityCode').maxLength = 6; el('securityCode').setAttribute('inputmode', 'numeric');
       el('securitySend').onclick = function () { Email.send(state); };
       el('securitySubmit').onclick = function () { Email.submit(state); };
       el('securityCancel').onclick = function () { Email.close(); };
+      if (el('securityCloseBtn')) el('securityCloseBtn').onclick = function () { Email.close(); };
       ['securityUsername', 'securityEmail', 'securityPassword'].forEach(function (id) {
         if (el(id)) el(id).oninput = function () {
           if (id === 'securityEmail' && state.mode === 'change' && state.stage === 'old') return;
@@ -126,11 +187,16 @@
           else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
         }
       });
+      mask.addEventListener('click', function (event) {
+        if (event.target === mask && !state.busy) {
+          Email.close();
+        }
+      });
       (el('securityUsername') || el('securityPassword')).focus();
       if (mode === 'reset') G.API.accountEmail('/server').then(function (data) {
         if (!Email.active(state)) return;
         var url = data.accountSecurity && data.accountSecurity.supportUrl;
-        if (url && /^https?:\/\//.test(url)) el('securitySupport').innerHTML = '<a href="' + esc(url) + '" target="_blank" rel="noopener">联系官方支持</a>';
+        if (url && /^https?:\/\//.test(url)) el('securitySupport').innerHTML = '<a class="account-email-support-btn" href="' + esc(url) + '" target="_blank" rel="noopener">联系官方客服 ↗</a>';
       }).catch(function () {});
     },
     active: function (state) { return this.modal === state && state.scope === context() && !!el('accountEmailModal'); },
@@ -151,7 +217,18 @@
         G.Account.endSession({ title: '登录状态已更新', message: '请重新登录后确认邮箱绑定状态。' });
       }
     },
-    message: function (state, text) { if (this.active(state)) el('securityMsg').textContent = text; },
+    message: function (state, text) {
+      if (!this.active(state)) return;
+      var node = el('securityMsg');
+      if (!node) return;
+      node.textContent = text || '';
+      if (!text) {
+        node.className = 'account-email-msg';
+        return;
+      }
+      var isNotice = /成功|已提交|已发送|有效/.test(text);
+      node.className = 'account-email-msg ' + (isNotice ? 'account-email-msg-success' : 'account-email-msg-error');
+    },
     lock: function (state, busy) {
       state.busy = busy;
       if (!this.active(state)) return;
@@ -160,6 +237,7 @@
       });
       el('securitySubmit').disabled = busy || !!state.uncertain;
       el('securityCancel').disabled = busy;
+      if (el('securityCloseBtn')) el('securityCloseBtn').disabled = busy;
       el('securitySend').disabled = busy || !!state.uncertain || !!(state.resendUntil && state.resendUntil > Date.now());
     },
     send: function (state) {
@@ -199,7 +277,11 @@
         if (state.mode === 'change' && state.stage === 'old') {
           state.stage = 'new'; state.changeToken = data.changeToken; state.challenge = null; state.resendUntil = 0;
           el('securityPassword').value = ''; el('securityPassword').disabled = true; el('securityEmail').disabled = true;
-          el('securityCode').value = ''; el('securityCode').previousElementSibling.textContent = '新邮箱验证码';
+          el('securityCode').value = '';
+          var codeLabel = (document.querySelector && document.querySelector('label[for="securityCode"]')) ||
+            (el('securityCode') && el('securityCode').previousElementSibling);
+          if (codeLabel) codeLabel.textContent = '新邮箱验证码';
+          if (el('securityCode') && el('securityCode').previousElementSibling) el('securityCode').previousElementSibling.textContent = '新邮箱验证码';
           el('securitySubmit').textContent = '确认更换邮箱'; clearInterval(Email.timers.securitySend); el('securitySend').textContent = '获取验证码';
           Email.message(state, '原邮箱验证成功，请获取并填写新邮箱验证码'); return;
         }

@@ -140,13 +140,13 @@ window.Game = window.Game || {};
         + '    <button type="button" class="drawer-avatar-wrap' + avatarFrameClass + '" onclick="Game.Main.openAvatarPicker()" aria-label="更换头像">'
         + '      <img class="drawer-avatar" id="drawerAvatarImg" src="' + currentAvatar + '" alt="头像" onerror="this.onerror=null;this.src=Game.Constants.presetAvatars[0].src"/>'
         + '      <span class="avatar-edit-badge">更换</span>'
+        + (G.avatarFrameOverlay ? G.avatarFrameOverlay(p.avatarFrame) : '')
         + '    </button>'
         + '    <div class="drawer-profile-meta">'
         + '      <div class="drawer-profile-name-row"><div class="drawer-profile-name">' + nameStr + '</div><button type="button" class="drawer-link-btn" onclick="Game.Main.promptRenameCommander()">改名</button></div>'
         + '      <div class="drawer-online-status">' + G.WS.statusHtml() + '</div>'
         + '      <div class="drawer-badge-row">'
         + '        <span class="drawer-faction-tag ' + faction + '">' + factionName + '</span>'
-        + '        <span class="drawer-uid-tag">UID: ' + (p.id || '---') + '</span>'
         + vipBadgeHtml
         + '      </div>'
         + '    </div>'
@@ -169,19 +169,19 @@ window.Game = window.Game || {};
         + '        <div class="stat-k">声望值</div>'
         + '        <div class="stat-v">' + drawerAmount(prestige) + '</div>'
         + '      </div>'
-        + '      <div class="drawer-stat-box" title="最强单支现有编队的静态估值，不代表实际胜率">'
+        + '      <button type="button" class="drawer-stat-box drawer-stat-action" onclick="Game.Main.showPowerInfo(\'formationPower\')" aria-label="查看编队战力用途说明" aria-haspopup="dialog">'
         + '        <div class="stat-k">编队战力</div>'
-        + '        <div class="stat-v">' + (p.formationPower == null ? '—' : drawerAmount(p.formationPower)) + '</div>'
-        + '      </div>'
-        + '      <div class="drawer-stat-box" title="现有部队及建筑、科技、军官和装备的综合估值，不包含声望">'
+        + '        <div class="stat-v highlight">' + (p.formationPower == null ? '—' : drawerAmount(p.formationPower / G.Constants.playerPowerDisplayDivisor)) + '</div>'
+        + '      </button>'
+        + '      <button type="button" class="drawer-stat-box drawer-stat-action" onclick="Game.Main.showPowerInfo(\'overallPower\')" aria-label="查看综合实力用途说明" aria-haspopup="dialog">'
         + '        <div class="stat-k">综合实力</div>'
-        + '        <div class="stat-v">' + (p.overallPower == null ? '—' : drawerAmount(p.overallPower)) + '</div>'
-        + '      </div>'
+        + '        <div class="stat-v highlight">' + (p.overallPower == null ? '—' : drawerAmount(p.overallPower / G.Constants.playerPowerDisplayDivisor)) + '</div>'
+        + '      </button>'
         + '      <button type="button" class="drawer-stat-box drawer-stat-action" onclick="Game.Main.showRankCapInfo()" aria-label="查看军衔与带兵上限说明">'
         + '        <div class="stat-k">带兵上限</div>'
-        + '        <div class="stat-v highlight">' + drawerAmount(Core.armyCap ? Core.armyCap() : 0) + '</div>'
+        + '        <div class="stat-v highlight" data-mobilization-cap>' + drawerAmount(Core.armyCap ? Core.armyCap() : 0) + '</div>'
         + '      </button>'
-        + '      <button type="button" class="drawer-stat-box drawer-stat-action" onclick="Game.Main.closePlayerDrawer();Game.go(\'recharge\')" aria-label="钻石 ' + G.fmt(diamond) + '，前往充值">'
+        + '      <button type="button" class="drawer-stat-box drawer-stat-action" onclick="Game.go(\'recharge\')" aria-label="钻石 ' + G.fmt(diamond) + '，暂未开放充值，敬请期待">'
         + '        <span class="stat-k">钻石 <span aria-hidden="true">›</span></span>'
         + '        <span class="stat-v diamond-text">' + drawerAmount(diamond) + '</span>'
         + '      </button>'
@@ -193,6 +193,7 @@ window.Game = window.Game || {};
         + rankProgressHtml
         + '    </div>'
         + '  </div>'
+        + (G.Mobilization ? '<div class="drawer-section"><div class="drawer-section-title">账号动员</div>' + G.Mobilization.widget() + '</div>' : '')
         + '  <div class="drawer-section">'
         + '    <div class="drawer-section-title">当前城市</div>'
         + '    <div class="drawer-info-list">'
@@ -246,6 +247,7 @@ window.Game = window.Game || {};
       document.body.appendChild(div);
       updateDrawerHeight();
       startProtectionTimer(div);
+      if (G.Mobilization) G.Mobilization.refresh();
 
       requestAnimationFrame(function () {
         div.classList.add('active');
@@ -270,7 +272,53 @@ window.Game = window.Game || {};
       }, 250);
     },
 
-    /** 展示各军衔的基础带兵上限，以及当前城市加成后的实际上限。 */
+    /**
+     * 展示对应战力的用途，不披露计算公式或换算过程。
+     * @param {string} metric - formationPower（编队战力）或 overallPower（综合实力）
+     */
+    showPowerInfo: function (metric) {
+      if (metric !== 'formationPower' && metric !== 'overallPower') return;
+      if (document.getElementById('playerPowerInfoMask')) return;
+      var definition = G.Constants.playerPowerInfo[metric];
+      var previousFocus = document.activeElement;
+      var mask = document.createElement('div');
+      mask.id = 'playerPowerInfoMask';
+      mask.className = 'modal-mask rank-cap-mask';
+      mask.setAttribute('role', 'dialog');
+      mask.setAttribute('aria-modal', 'true');
+      mask.setAttribute('aria-labelledby', 'playerPowerInfoTitle');
+      mask.innerHTML = '<div class="modal-card rank-cap-dialog">'
+        + '<div class="rank-cap-header"><h2 id="playerPowerInfoTitle">' + G.escapeHtml(definition.name) + '用途说明</h2>'
+        + '<button type="button" class="rank-cap-close" aria-label="关闭战力说明">✕</button></div>'
+        + '<div class="modal-body rank-cap-body">'
+        + '<p>' + G.escapeHtml(definition.usage) + '</p>'
+        + '<p>' + G.escapeHtml(G.Constants.playerPowerInfo.protection) + '</p>'
+        + '<p>' + G.escapeHtml(G.Constants.playerPowerInfo.limits) + '</p>'
+        + '</div><div class="modal-foot"><button type="button" class="btn btn-primary rank-cap-done">知道了</button></div></div>';
+      document.body.appendChild(mask);
+      var closeButton = mask.querySelector('.rank-cap-close');
+      var doneButton = mask.querySelector('.rank-cap-done');
+      var close = function () {
+        if (mask.parentNode) mask.parentNode.removeChild(mask);
+        if (previousFocus && previousFocus.isConnected) previousFocus.focus();
+      };
+      closeButton.onclick = close;
+      doneButton.onclick = close;
+      mask.onclick = function (event) { if (event.target === mask) close(); };
+      // 弹窗打开时只在两个关闭按钮间循环焦点，避免键盘操作落到后方档案。
+      mask.onkeydown = function (event) {
+        if (event.key === 'Escape') {
+          event.stopPropagation();
+          close();
+        } else if (event.key === 'Tab') {
+          event.preventDefault();
+          (document.activeElement === closeButton ? doneButton : closeButton).focus();
+        }
+      };
+      closeButton.focus();
+    },
+
+    /** 展示各军衔的带兵与城市数量上限；当前城市名额优先使用服务端返回值，包含主城。 */
     showRankCapInfo: function () {
       var existing = document.getElementById('rankCapInfoMask');
       if (existing) return;
@@ -281,12 +329,13 @@ window.Game = window.Game || {};
       var skillBonus = Core.skillBonus ? Math.max(Core.skillBonus('leadership'), Core.skillBonus('supply')) : 0;
       var skillPercent = Math.round(skillBonus * 100);
       var total = Core.armyCap ? Core.armyCap() : (rankInfo.baseCap || 25000);
+      var cityCap = (Core.state.cityOverview && Core.state.cityOverview.cap) || rankInfo.cityCap;
       var previousFocus = document.activeElement;
       var rows = ranks.map(function (rank) {
         var current = rank.tier === rankInfo.tier;
         return '<tr' + (current ? ' class="rank-cap-current" aria-current="true"' : '') + '>'
           + '<td>' + rank.tier + '</td><th scope="row"><span class="rank-cap-label">' + G.renderMilitaryRankIcon(rank.tier) + G.escapeHtml(rank.name) + (current ? ' <span>（当前）</span>' : '') + '</span></th>'
-          + '<td>' + G.fmt(rank.baseCap) + '</td></tr>';
+          + '<td>' + G.fmt(rank.baseCap) + '</td><td>' + rank.cityCap + ' 座</td></tr>';
       }).join('');
       var mask = document.createElement('div');
       mask.id = 'rankCapInfoMask';
@@ -295,14 +344,16 @@ window.Game = window.Game || {};
       mask.setAttribute('aria-modal', 'true');
       mask.setAttribute('aria-labelledby', 'rankCapInfoTitle');
       mask.innerHTML = '<div class="modal-card rank-cap-dialog">'
-        + '<div class="rank-cap-header"><h2 id="rankCapInfoTitle">军衔与带兵上限</h2>'
+        + '<div class="rank-cap-header"><h2 id="rankCapInfoTitle">军衔与带兵、城市上限</h2>'
         + '<button type="button" class="rank-cap-close" aria-label="关闭军衔说明">✕</button></div>'
         + '<div class="modal-body rank-cap-body">'
         + '<div class="rank-cap-summary">当前军衔 <strong class="rank-cap-label">' + G.renderMilitaryRankIcon(rankInfo.tier) + G.escapeHtml(rankInfo.name) + '</strong> · 军衔基础上限 <strong>' + G.fmt(rankInfo.baseCap) + '</strong></div>'
         + '<p>三军统帅 Lv.' + skillLevel + '（+' + skillPercent + '%）。</p>'
+        + (G.Mobilization ? G.Mobilization.widget() : '')
         + '<p><strong>当前实际带兵上限：' + G.fmt(total) + '</strong></p>'
-        + '<p>各军衔的基础上限如下，实际出征仍需当前城市有足够驻军：</p>'
-        + '<table class="rank-cap-table"><thead><tr><th scope="col">等级</th><th scope="col">军衔</th><th scope="col">基础上限</th></tr></thead><tbody>' + rows + '</tbody></table>'
+        + '<p><strong>当前可拥有城市上限：' + G.fmt(cityCap) + ' 座</strong>（含主城）</p>'
+        + '<p>各军衔的带兵基础上限与城市数量上限如下，实际出征仍需当前城市有足够驻军：</p>'
+        + '<table class="rank-cap-table"><thead><tr><th scope="col">等级</th><th scope="col">军衔</th><th scope="col">带兵基础上限</th><th scope="col">城市上限</th></tr></thead><tbody>' + rows + '</tbody></table>'
         + '</div><div class="modal-foot"><button type="button" class="btn btn-primary rank-cap-done">知道了</button></div>'
         + '</div>';
       document.body.appendChild(mask);
@@ -318,13 +369,13 @@ window.Game = window.Game || {};
       closeButton.focus();
     },
 
+    /** 暂时仅提供预设头像选择，保留已保存头像的预览及后续切换能力。 */
     openAvatarPicker: function () {
       var existing = document.getElementById('avatarPickerMask');
       if (existing) existing.remove();
 
       var core = (G && G.Core) || (typeof Core !== 'undefined' ? Core : null);
       var p = (core && core.state && core.state.player) ? core.state.player : {};
-      var vipLevel = Number(p.vipLevel) || 0;
       var curCustomAvatar = (p.customAvatar || '').trim();
       var curAvatar = G.MainView ? G.MainView.getCurrentAvatar() : '';
       if (!curCustomAvatar && G.MainView && G.MainView.presetAvatars) {
@@ -337,28 +388,7 @@ window.Game = window.Game || {};
       modal.className = 'modal-mask avatar-picker-mask';
       modal.style.zIndex = '10500';
 
-      var previewHint = curCustomAvatar ? '当前使用的自定义统帅肖像' : '当前选择的头像';
-
-      var customSectionHtml = '';
-      if (vipLevel >= 5) {
-        customSectionHtml = '<div class="avatar-vip-custom-box" style="margin:10px 0 14px 0;padding:10px 12px;background:rgba(212,175,55,0.08);border:1px solid rgba(212,175,55,0.3);border-radius:6px;">'
-          + '<div style="font-size:12px;font-weight:700;color:#fcd34d;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">'
-          + '  <span>🎖️ 自定义统帅形象 (VIP 5+ 专属特权)</span>'
-          + (curCustomAvatar ? '<span style="font-size:11px;color:#38bdf8;font-weight:normal;">当前生效中</span>' : '')
-          + '</div>'
-          + '<div style="display:flex;gap:6px;margin-bottom:8px;">'
-          + '  <input type="text" id="avatarPickerVipUrl" placeholder="输入外链图片地址 (http/https)" value="' + (G.escapeHtml ? G.escapeHtml(curCustomAvatar) : curCustomAvatar) + '" style="flex:1;padding:5px 8px;font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);">'
-          + '  <button type="button" class="btn sm" onclick="Game.Main.applyCustomAvatarUrl()">应用链接</button>'
-          + '</div>'
-          + '<div style="display:flex;gap:6px;align-items:center;justify-content:space-between;flex-wrap:wrap;">'
-          + '  <div style="display:flex;gap:6px;align-items:center;">'
-          + '    <input type="file" id="avatarPickerVipFile" accept="image/png,image/jpeg,image/webp" style="font-size:11px;max-width:180px;">'
-          + '    <button type="button" id="avatarPickerVipUploadBtn" class="btn sm ok" onclick="Game.Main.uploadCustomAvatarFile()">本地上传</button>'
-          + '  </div>'
-          + (curCustomAvatar ? '  <button type="button" class="btn sm" onclick="Game.Main.clearCustomAvatar()">恢复预设头像</button>' : '')
-          + '</div>'
-          + '</div>';
-      }
+      var previewHint = '当前选择的头像';
 
       var html = '<div class="modal-dialog avatar-picker-dialog" onclick="event.stopPropagation()">'
         + '<div class="modal-header">'
@@ -370,7 +400,6 @@ window.Game = window.Game || {};
         + '    <img id="avatarPreviewImg" class="avatar-preview-img" src="' + curAvatar + '" alt="头像预览" onerror="this.onerror=null;this.src=Game.Constants.presetAvatars[0].src"/>'
         + '    <div class="avatar-preview-hint" id="avatarPreviewHint">' + previewHint + '</div>'
         + '  </div>'
-        + customSectionHtml
         + '  <div class="avatar-picker-subtitle">历史军人预设头像</div>'
         + '  <div class="avatar-presets-grid" id="avatarPresetsGrid">';
 
@@ -385,7 +414,7 @@ window.Game = window.Game || {};
 
       html += '  </div>'
         + '  <div style="margin-top:12px;padding-top:8px;border-top:1px dashed var(--border);display:flex;justify-content:space-between;align-items:center;">'
-        + '    <span style="font-size:12px;color:var(--muted);">支持佩戴统帅专属头像框与自定义形象</span>'
+        + '    <span style="font-size:12px;color:var(--muted);">支持佩戴统帅专属头像框</span>'
         + '    <button type="button" class="btn sm" onclick="Game.Main.closeAvatarPicker();if(Game.Vip)Game.Vip.openModal(\'cosmetics\');">🎖️ 前往特勤装扮 &gt;</button>'
         + '  </div>'
         + '</div>'

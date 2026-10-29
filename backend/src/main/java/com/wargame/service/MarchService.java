@@ -1384,6 +1384,14 @@ public class MarchService {
 
     @Transactional
     public Map<String, Object> speedUpMarch(Long playerId, Long marchId, Boolean returning, Long version, String confirmationToken) {
+        return speedUpMarch(playerId, marchId, returning, version, confirmationToken, "marchOrd");
+    }
+
+    /** 预览与扣除必须绑定同一档位；旧调用默认使用原来的极速档库存。 */
+    @Transactional
+    public Map<String, Object> speedUpMarch(Long playerId, Long marchId, Boolean returning, Long version, String confirmationToken, String itemKey) {
+        if (itemKey == null) itemKey = "marchOrd";
+        if (!ItemDef.MARCH_BONUS_PERCENT.containsKey(itemKey)) throw new IllegalArgumentException("无效的行军令档位");
         if (marchId == null || returning == null || version == null) {
             throw new IllegalArgumentException("请刷新情报后重新选择行军加速");
         }
@@ -1415,17 +1423,17 @@ public class MarchService {
                 || (!deployingInterception && arrive - now <= WorldConfig.MARCH_ACCELERATION_MIN_MS)) {
             throw new IllegalArgumentException("剩余行军时间不足或已到达，无法加速");
         }
-        Map<String, Object> effect = previewOrder(playerId, marchId, "marchOrd");
+        Map<String, Object> effect = previewOrder(playerId, marchId, itemKey);
         tacticalOrders.requireToken((String) effect.get("confirmationToken"), confirmationToken);
         long duration = arrive - start;
         long remaining = arrive - now;
         long minRemaining = deployingInterception ? 10_000L : StratagemRules.MIN_MARCH_REMAINING_MS;
-        long acceleratedRemaining = StratagemRules.acceleratedRemaining(remaining,
-                ((Number) effect.get("knowledge")).intValue(), minRemaining);
+        long acceleratedRemaining = StratagemRules.acceleratedMarchRemaining(remaining,
+                ((Number) effect.get("knowledge")).intValue(), minRemaining, itemKey);
         long baseDuration = baseMarchDuration(march);
         // 按同一比例压缩完整时间轴，使 (now-start)/(arrive-start) 在加速前后保持不变。
         long acceleratedDuration = Math.round(duration * ((double) acceleratedRemaining / remaining));
-        if (playerItemRepository.tryConsume(playerId, "marchOrd", 1, now) == 0) {
+        if (playerItemRepository.tryConsume(playerId, itemKey, 1, now) == 0) {
             throw new IllegalArgumentException("行军令数量不足");
         }
         march.setBaseDurationMs(baseDuration);
@@ -1464,14 +1472,14 @@ public class MarchService {
         em.refresh(march);
         long now = GameClock.now();
         boolean returning = Boolean.TRUE.equals(march.getReturning());
-        boolean accelerating = "marchOrd".equals(itemKey);
+        boolean accelerating = ItemDef.MARCH_BONUS_PERCENT.containsKey(itemKey);
         if (accelerating) {
             if (!playerId.equals(march.getPlayerId()) || march.getCitySlot() != cityScope.slot(playerId))
                 throw new IllegalArgumentException("只能加速本城己方行军");
             if (Boolean.TRUE.equals(returning ? march.getReturnAccelerated() : march.getOutboundAccelerated()))
                 throw new IllegalArgumentException("本段行军已经加速");
         } else if (!canUseEnemyOrder(playerId, march, itemKey)) {
-            throw new IllegalArgumentException("干扰令仅用于本城来袭，诱敌令仅用于从本城撤退的敌军");
+            throw new IllegalArgumentException("干扰令仅用于本城来袭，撤退拖延令仅用于从本城撤退的敌军");
         } else if (Boolean.TRUE.equals(returning ? march.getReturnStratagemUsed() : march.getStratagemUsed())) {
             throw new IllegalArgumentException("该行军本阶段已经受过计谋影响");
         }
@@ -1488,7 +1496,7 @@ public class MarchService {
         long remaining = arrive - now;
         int knowledge = ((Number) effect.get("knowledge")).intValue();
         long minRemaining = deployingInterception ? 10_000L : StratagemRules.MIN_MARCH_REMAINING_MS;
-        long after = accelerating ? StratagemRules.acceleratedRemaining(remaining, knowledge, minRemaining)
+        long after = accelerating ? StratagemRules.acceleratedMarchRemaining(remaining, knowledge, minRemaining, itemKey)
                 : StratagemRules.delayedRemaining(remaining, knowledge);
         effect.put("confirmationToken", token);
         effect.put("marchId", marchId);
@@ -1547,7 +1555,7 @@ public class MarchService {
         if ("signalJammingOrder".equals(itemKey)) {
             itemName = "通讯干扰令";
         } else if ("feintOrder".equals(itemKey)) {
-            itemName = "佯动诱敌令";
+            itemName = "撤退拖延令";
         } else throw new IllegalArgumentException("未知计谋道具");
 
         March snapshot = marchRepository.findById(marchId)
@@ -1969,7 +1977,7 @@ public class MarchService {
         if(army.isEmpty())throw new IllegalArgumentException("请选择出征部队以计算路线");
         var route=routes.plan(playerId,target,army,transfer,req.action(),actionEquipment);
         var cs=cityStateRepository.findByPlayerIdAndCitySlot(playerId,cityScope.slot(playerId)).orElse(null);
-        double boost=cs!=null&&cs.getMarchBoostUntil()!=null&&cs.getMarchBoostUntil()>GameClock.now()?1.5:1;
+        double boost=cs!=null?cs.marchSpeedMultiplier(GameClock.now()):1;
         int seconds=Math.max(1,(int)Math.ceil((double)route.distance()*WorldConfig.MARCH_SEC_PER_GRID/(Math.max(0.1,slowest)*boost)));
         return Map.of("mode",route.mode(),"points",route.points(),"distance",route.distance(),"seconds",seconds,"reservedLoad",route.reservedLoad(),"cargoLimit",Math.min(calcArmyLoad(army, actionEquipment),route.cargoLimit()),"oil",calcMarchFuel(army,route.distance(),"station".equals(req.action())||"rebase".equals(req.action())?1:2,actionEquipment),"unitEquipment",actionEquipment,"unitEquipmentVersion",UnitEquipmentEffects.actionVersion(actionEquipment));
     }
@@ -2204,7 +2212,7 @@ public class MarchService {
                     * UnitEquipmentEffects.speed(equipment, id, false));
         }
         var state = cityStateRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
-        double boost = state != null && Objects.requireNonNullElse(state.getMarchBoostUntil(), 0L) > now ? 1.5 : 1;
+        double boost = state != null ? state.marchSpeedMultiplier(now) : 1;
         var city = cityScope.economy(playerId);
         return InterceptionPlanner.plan(enemy, city.getCityPosX(), city.getCityPosY(),
                 slowest * boost / WorldConfig.MARCH_SEC_PER_GRID, now, point -> {
@@ -2509,13 +2517,8 @@ public class MarchService {
      */
     @Transactional
     public March createDispatch(Long playerId, DispatchRequest req) {
-        if (req.mobilizationOrderItem() != null && !ItemDef.MOBILIZATION_BONUS_PERCENT.containsKey(req.mobilizationOrderItem())) {
-            throw new IllegalArgumentException("战争动员令类型无效");
-        }
-        if (req.mobilizationOrderItem() != null
-                && (!List.of("wild", "bandit", "player", "simulated_npc").contains(req.targetKind())
-                    || !isOffensiveAction(Objects.requireNonNullElse(req.action(), "conquer")))) {
-            throw new IllegalArgumentException("战争动员令仅可用于进攻出征");
+        if (req.mobilizationOrderItem() != null) {
+            throw new IllegalArgumentException("动员令已改为仓库启用的24小时账号增益，请刷新页面");
         }
         // 旧接口字段保留用于明确拒绝自动指令，不能让缓存页面或直连接口恢复自动采集/放弃。
         if (req.gatherMode() != null && !"manual".equals(req.gatherMode())) {
@@ -2652,11 +2655,6 @@ public class MarchService {
         long selectedTroops = customArmy.values().stream().mapToLong(Integer::longValue).sum();
         int armyCap = armyService.armyCap(playerId);
         int allowedArmyCap = armyCap;
-        String mobilizationOrderItem = req.mobilizationOrderItem();
-        if (selectedTroops > armyCap && mobilizationOrderItem != null) {
-            int bonusPercent = ItemDef.MOBILIZATION_BONUS_PERCENT.get(mobilizationOrderItem);
-            allowedArmyCap = (int) Math.min(Integer.MAX_VALUE, (long) armyCap * (100 + bonusPercent) / 100);
-        }
         if (selectedTroops > allowedArmyCap) {
             throw new IllegalArgumentException("出征兵力超过带兵上限 " + allowedArmyCap + "（当前选择 " + selectedTroops + "）");
         }
@@ -2697,11 +2695,8 @@ public class MarchService {
         int secPerGrid = WorldConfig.MARCH_SEC_PER_GRID;
         double spd = Math.max(0.1, slowestSpd);
         long now = GameClock.now();
-        double speedMul = 1.0;
         CityState cs = cityStateRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
-        if (cs != null && cs.getMarchBoostUntil() != null && cs.getMarchBoostUntil() > now) {
-            speedMul = 1.5;
-        }
+        double speedMul = cs != null ? cs.marchSpeedMultiplier(now) : 1.0;
         int marchSec = Math.max(1, (int) Math.ceil((double) marchDist * secPerGrid / (spd * speedMul)));
         // 出征仅预扣油耗；进驻无返程，其他任务预扣往返油耗以保证返程不受库存变化影响。
         int marchFuel = calcMarchFuel(customArmy, marchDist, isStation || "rebase".equals(action) ? 1 : 2, actionEquipment);
@@ -2740,11 +2735,6 @@ public class MarchService {
         if (playerWarfare) {
             NewbieProtection.requireConfirmation(player, req.abandonNewbieProtection(), now);
             if (NewbieProtection.until(player, now) > now) player.setNewbieProtectionEnded(true);
-        }
-        // 只有实际超过基础上限的进攻才消耗动员令；同一事务保证后续出征失败时库存回滚。
-        if (selectedTroops > armyCap && mobilizationOrderItem != null
-                && playerItemRepository.tryConsume(playerId, mobilizationOrderItem, 1, now) == 0) {
-            throw new IllegalArgumentException("战争动员令数量不足");
         }
         for (String rk : List.of("food", "steel", "oil", "rare", "gold")) {
             deductResource(res, rk, totalCost.getOrDefault(rk, 0));

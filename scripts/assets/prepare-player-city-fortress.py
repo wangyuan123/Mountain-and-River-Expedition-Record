@@ -193,7 +193,7 @@ def render_previews(map_asset, standard_asset):
             sheet.paste(camp_img, (784, 175), camp_img)
             draw.text((960, 200), '同源单体：战俘营', font=font_label, fill=text_col)
             draw.text((960, 226), '相同红陶瓦与木构', font=font_caption, fill=sub_col)
-            draw.text((960, 246), '城内已完整复刻该形制', font=font_caption, fill=accent_col)
+            draw.text((960, 246), '城内已完整延续该形制', font=font_caption, fill=accent_col)
 
         # 同屏对比 2：军需仓库（风格基准）
         depot_path = ROOT / 'frontend/img/buildings/garden/depot.webp'

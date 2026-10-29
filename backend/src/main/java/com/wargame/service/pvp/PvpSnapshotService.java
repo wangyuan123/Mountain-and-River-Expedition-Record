@@ -37,7 +37,11 @@ public class PvpSnapshotService {
             if ("rocket".equals(unit.path("key").asText())) {
                 ((com.fasterxml.jackson.databind.node.ObjectNode) unit).put("name", "反坦克火箭车-喀秋莎（BM-13）");
             }
-            // 仅归一化调整过的生产建筑元数据，其余战斗、成本与人口参数仍参与版本校验。
+            // 生产建筑与征召人口调整不改变战斗属性；演习摘要保留历史值，避免作废实测校准及进行中的演习。
+            int legacyPop = com.wargame.model.constants.UnitPopulationCosts.legacy(unit.path("key").asText());
+            if (legacyPop > 0) {
+                ((com.fasterxml.jackson.databind.node.ObjectNode) unit).put("pop", legacyPop);
+            }
             if ("sea".equals(unit.path("branch").asText())) {
                 ((com.fasterxml.jackson.databind.node.ObjectNode) unit).put("build", "port");
             } else if ("scout".equals(unit.path("key").asText())) {

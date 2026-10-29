@@ -7,9 +7,9 @@ const vm = require('node:vm');
 function rank(overrides = {}) {
   return {
     tier: 1, name: '列兵', baseCap: 25000, nextTier: 2, nextName: '上等兵', nextBaseCap: 50000,
-    prestige: 200, reqPrestige: 200, prestigeEnough: true,
-    npcVictories: 3, reqNpcVictories: 3, victoriesEnough: true,
-    certificate: { name: '上等兵晋升凭证', owned: 1, required: 1, source: '1 级流寇，掉率 30%' },
+    prestige: 10000, reqPrestige: 10000, prestigeEnough: true,
+    npcVictories: 10, reqNpcVictories: 10, victoriesEnough: true,
+    certificate: { name: '上等兵晋升凭证', owned: 1, required: 1, price: 20, source: '商城「晋升凭证」购买，20 钻石/张；NPC 不再掉落' },
     certificateEnough: true, canTakeExam: true, canPromote: false,
     exam: { status: 'not_started', questionCount: 5, requiredCorrect: 4, retryAt: 0 }, ...overrides
   };
@@ -68,6 +68,35 @@ test('晋升面板显示四项门槛，并只使用服务器资格开启考试�
   html = await render();
   assert.match(html, /授衔晋升/);
   assert.doesNotMatch(html, /参加军事笔试/);
+});
+
+test('缺少晋升凭证时展示商城来源和对应军衔的购买入口', async () => {
+  const { G, render } = setup();
+  G.Shop = { openRankCertificate() {} };
+  G.Core.state.rankInfo = rank({ certificateEnough: false, canTakeExam: false });
+  let html = await render();
+  assert.match(html, /商城「晋升凭证」购买，20 钻石\/张/);
+  assert.match(html, /Game.Shop.openRankCertificate\(2\)/);
+  assert.doesNotMatch(html, /掉率/);
+  G.Core.state.rankInfo = rank();
+  html = await render();
+  assert.doesNotMatch(html, /Game.Shop.openRankCertificate/);
+});
+
+test('晋升面板展示新胜场目标，并按服务端资格在临界值启用考试', async () => {
+  const { G, render } = setup();
+  for (const [nextTier, nextName, required] of [[2, '上等兵', 10], [17, '上将', 6100]]) {
+    G.Core.state.rankInfo = rank({ tier: nextTier - 1, nextTier, nextName,
+      npcVictories: required - 1, reqNpcVictories: required, victoriesEnough: false, canTakeExam: false });
+    let html = await render();
+    assert.match(html, new RegExp('累计剿寇胜场</span><b class="rank-unmet">' + (required - 1) + ' / ' + required));
+    assert.match(html, /startRankExam\(\)" disabled/);
+    G.Core.state.rankInfo = rank({ tier: nextTier - 1, nextTier, nextName,
+      npcVictories: required, reqNpcVictories: required, victoriesEnough: true, canTakeExam: true });
+    html = await render();
+    assert.match(html, new RegExp('累计剿寇胜场</span><b class="rank-met">' + required + ' / ' + required));
+    assert.match(html, /startRankExam\(\)">参加军事笔试/);
+  }
 });
 
 test('未答完阻止交卷，返回后恢复同一次考试选项', async () => {

@@ -1,0 +1,777 @@
+/* ========================================================================== */
+/* 山河远征录 - 战地军需密函与沙盘充值动效系统 (方案 C: 紧凑高空间利用率版本) */
+/* ========================================================================== */
+
+/* 核心印章盖下动画 (逼真物理冲击反弹) */
+@keyframes rech-stamp-in {
+  0% {
+    transform: scale(2.2) rotate(-22deg);
+    opacity: 0;
+    filter: drop-shadow(0 0 10px rgba(185, 28, 28, 0.6));
+  }
+  60% {
+    transform: scale(0.92) rotate(-6deg);
+    opacity: 0.96;
+    filter: drop-shadow(0 0 2px rgba(185, 28, 28, 0.35));
+  }
+  80% {
+    transform: scale(1.04) rotate(-9deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(-8deg);
+    opacity: 0.94;
+  }
+}
+
+/* 进度标尺条纹流动 */
+@keyframes rech-stripe-flow {
+  0% { background-position: 0 0; }
+  100% { background-position: 24px 0; }
+}
+
+/* 密函卡片微浮呼吸 */
+@keyframes rech-card-hover-pop {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-2px); }
+}
+
+/* 回执公章下砸 */
+@keyframes rech-receipt-stamp {
+  0% { transform: scale(2.6) rotate(-26deg); opacity: 0; }
+  65% { transform: scale(0.9) rotate(-10deg); opacity: 1; }
+  85% { transform: scale(1.05) rotate(-13deg); }
+  100% { transform: scale(1) rotate(-12deg); opacity: 0.92; }
+}
+
+/* 淡入动画 */
+@keyframes rech-fade-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ================== 页面容器与紧凑密函抬头 ================== */
+.rech-view-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 6px 8px 16px;
+  animation: rech-fade-in 0.2s ease-out;
+  box-sizing: border-box;
+}
+
+.rech-dossier-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+  padding: 5px 8px;
+  background: var(--surface, #fff);
+  border: 1px solid var(--line, #dcd3be);
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.rech-dossier-top {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.rech-confidential-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: 700;
+  color: #b91c1c;
+  background: rgba(185, 28, 28, 0.08);
+  border: 1px solid rgba(185, 28, 28, 0.3);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 10px;
+  letter-spacing: 0.3px;
+}
+
+.rech-order-serial {
+  font-family: monospace;
+  color: var(--muted, #64748b);
+  font-size: 10px;
+  display: none;
+}
+
+@media (min-width: 520px) {
+  .rech-order-serial {
+    display: inline-block;
+  }
+}
+
+.rech-dossier-title-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rech-dossier-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink, #1e293b);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.rech-dossier-title .rech-sub {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--muted, #64748b);
+  display: none;
+}
+
+@media (min-width: 440px) {
+  .rech-dossier-title .rech-sub {
+    display: inline;
+  }
+}
+
+.rech-wallet-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(31, 111, 191, 0.08);
+  border: 1px solid rgba(31, 111, 191, 0.3);
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #1f6fbf;
+}
+
+/* ================== VIP 战备履历卡 (紧凑 1.5 行布局) ================== */
+.recharge-vip-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 6px;
+  padding: 5px 8px;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(31, 111, 191, 0.05) 100%);
+  border: 1px solid rgba(180, 130, 40, 0.35);
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+  transition: all 0.15s ease;
+}
+
+.recharge-vip-banner:hover {
+  border-color: #b48228;
+  box-shadow: 0 2px 8px rgba(180, 130, 40, 0.12);
+  transform: translateY(-1px);
+}
+
+.recharge-vip-banner-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.recharge-vip-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--ink, #1e293b);
+  flex-wrap: wrap;
+}
+
+.rech-vip-rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: #fff;
+  background: linear-gradient(135deg, #475569, #334155);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  letter-spacing: 0.3px;
+  line-height: 1.3;
+}
+
+.rech-vip-rank-badge.gold {
+  background: linear-gradient(135deg, #d97706, #b45309);
+  border-color: #fde68a;
+}
+
+.recharge-vip-banner-right {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1f6fbf;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+/* 紧凑细线标尺 */
+.rech-vip-scale-bar-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.rech-vip-scale-track {
+  position: relative;
+  flex: 1;
+  height: 5px;
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.rech-vip-scale-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #d97706, #2563eb);
+  background-size: 24px 24px;
+  background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.25) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.25) 50%, rgba(255, 255, 255, 0.25) 75%, transparent 75%, transparent);
+  animation: rech-stripe-flow 2s linear infinite;
+  transition: width 0.5s ease-out;
+}
+
+.rech-vip-scale-ticks {
+  font-size: 9px;
+  font-family: monospace;
+  color: var(--muted, #64748b);
+  white-space: nowrap;
+}
+
+/* ================== 分类标签 (紧凑公文折页) ================== */
+.rech-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.rech-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 5px 8px;
+  background: var(--surface, #fff);
+  border: 1px solid var(--line, #dcd3be);
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted, #64748b);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.12s ease;
+}
+
+.rech-tab:hover {
+  color: #1f6fbf;
+  border-color: #1f6fbf;
+}
+
+.rech-tab.active {
+  color: #1f6fbf;
+  border-color: #1f6fbf;
+  background: rgba(31, 111, 191, 0.08);
+  box-shadow: inset 0 -2px 0 #1f6fbf;
+}
+
+.rech-tab-badge {
+  font-size: 9px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #b91c1c;
+  color: #fff;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+/* ================== 军需密函卡片网格 (高空间利用率) ================== */
+.rech-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 580px) {
+  .rech-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+}
+
+@media (min-width: 720px) {
+  .rech-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+}
+
+.rech-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 7px 8px 6px;
+  background: var(--surface, #fff);
+  border: 1px solid var(--line, #dcd3be);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  min-height: 84px;
+}
+
+.rech-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background: #cbd5e1;
+  transition: background 0.15s;
+}
+
+.rech-card:hover {
+  transform: translateY(-2px);
+  border-color: #1f6fbf;
+  box-shadow: 0 4px 10px rgba(31, 111, 191, 0.1);
+}
+
+.rech-card:hover::before {
+  background: #1f6fbf;
+}
+
+.rech-card.selected {
+  border-color: #2563eb;
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.04) 0%, var(--surface, #fff) 100%);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.14), inset 0 0 0 1px #2563eb;
+}
+
+.rech-card.selected::before {
+  background: #2563eb;
+}
+
+/* 顶部图标与标签 */
+.rech-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.rech-crate-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.rech-tag {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(31, 111, 191, 0.1);
+  color: #1f6fbf;
+  border: 1px solid rgba(31, 111, 191, 0.3);
+  line-height: 1.2;
+}
+
+.rech-tag.gold {
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+  border-color: rgba(217, 119, 6, 0.4);
+}
+
+.rech-tag.red {
+  background: rgba(185, 28, 28, 0.1);
+  color: #b91c1c;
+  border-color: rgba(185, 28, 28, 0.35);
+}
+
+/* 档位名称与价格 */
+.rech-card-name {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink, #1e293b);
+  margin-bottom: 2px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rech-card-amount {
+  font-size: 12px;
+  font-weight: 800;
+  color: #1f6fbf;
+  font-family: monospace;
+  margin-bottom: 2px;
+  line-height: 1.2;
+}
+
+.rech-card-desc {
+  font-size: 10px;
+  color: var(--muted, #64748b);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 3px;
+  min-height: unset;
+}
+
+.rech-card-price {
+  font-size: 15px;
+  font-weight: 900;
+  color: #b91c1c;
+  font-family: monospace;
+  text-align: right;
+  line-height: 1.1;
+  margin-top: 2px;
+}
+
+/* ================== 核心特色动效：红色特批印章 (紧凑微章) ================== */
+.rech-stamp-mark {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  pointer-events: none;
+  z-index: 20;
+  animation: rech-stamp-in 0.32s cubic-bezier(0.17, 0.89, 0.32, 1.25) forwards;
+}
+
+.rech-stamp-ring {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1.5px dashed #b91c1c;
+  border-radius: 50%;
+  color: #b91c1c;
+  box-shadow: inset 0 0 0 1px #b91c1c, 0 0 6px rgba(185, 28, 28, 0.25);
+  background: rgba(254, 242, 242, 0.88);
+  backdrop-filter: blur(1px);
+  padding: 1px;
+}
+
+.rech-stamp-top {
+  font-size: 6px;
+  font-weight: 700;
+  transform: scale(0.85);
+  line-height: 1;
+}
+
+.rech-stamp-main {
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  margin: 1px 0;
+  line-height: 1;
+}
+
+.rech-stamp-sub {
+  font-size: 6px;
+  font-weight: 700;
+  transform: scale(0.8);
+  line-height: 1;
+}
+
+/* ================== 底部战时签署栏 (紧凑高集成条) ================== */
+.rech-pay-bar {
+  background: var(--surface, #fff);
+  border: 1px solid var(--line, #dcd3be);
+  border-radius: 6px;
+  padding: 7px 10px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.rech-pay-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+
+.rech-pay-target {
+  font-size: 12px;
+  color: var(--ink, #1e293b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.rech-pay-target b {
+  color: #1f6fbf;
+}
+
+.rech-pay-cost-box {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.rech-pay-cost-label {
+  font-size: 11px;
+  color: var(--muted, #64748b);
+}
+
+.rech-pay-cost-val {
+  font-size: 18px;
+  font-weight: 900;
+  color: #b91c1c;
+  font-family: monospace;
+  line-height: 1;
+}
+
+.rech-pay-action-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rech-pay-btn {
+  flex: 1;
+  width: 100%;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #ffffff !important;
+  background: linear-gradient(180deg, #d32f2f, #9a0007);
+  border: 1px solid #7f0000;
+  border-radius: 5px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(185, 28, 28, 0.3);
+  transition: all 0.12s ease;
+  user-select: none;
+  line-height: 1.2;
+}
+
+.rech-pay-btn:hover:not(:disabled) {
+  background: linear-gradient(180deg, #e53935, #b71c1c);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(185, 28, 28, 0.4);
+}
+
+.rech-pay-btn:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(185, 28, 28, 0.2);
+}
+
+.rech-pay-btn:disabled {
+  background: #94a3b8;
+  border-color: #64748b;
+  cursor: not-allowed;
+  box-shadow: none;
+  opacity: 0.7;
+}
+
+.rech-pay-tip {
+  font-size: 10px;
+  color: var(--muted, #64748b);
+  margin-top: 4px;
+  text-align: center;
+}
+
+/* ================== 成功调拨入库结算单模态浮层 ================== */
+.rech-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  animation: rech-fade-in 0.2s ease-out;
+}
+
+.rech-receipt-paper {
+  position: relative;
+  width: 100%;
+  max-width: 310px;
+  background: #fbf9f4;
+  border: 1.5px solid #b48228;
+  border-radius: 6px;
+  padding: 16px;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.4);
+  color: #1e293b;
+  text-align: center;
+}
+
+.rech-receipt-stamp {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 58px;
+  height: 58px;
+  border: 1.5px solid #b91c1c;
+  border-radius: 50%;
+  color: #b91c1c;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 0 1px #b91c1c;
+  transform: rotate(-15deg);
+  animation: rech-receipt-stamp 0.4s cubic-bezier(0.17, 0.89, 0.32, 1.25) forwards;
+  pointer-events: none;
+}
+
+.rech-receipt-stamp-txt {
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+}
+
+.rech-receipt-stamp-sub {
+  font-size: 7px;
+  font-weight: 700;
+  transform: scale(0.85);
+}
+
+.rech-receipt-title {
+  font-size: 15px;
+  font-weight: 900;
+  color: #1e293b;
+  margin-bottom: 2px;
+}
+
+.rech-receipt-serial {
+  font-size: 10px;
+  font-family: monospace;
+  color: #64748b;
+  margin-bottom: 10px;
+  border-bottom: 1px dashed #cbd5e1;
+  padding-bottom: 6px;
+}
+
+.rech-receipt-reward-box {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 5px;
+  padding: 8px 10px;
+  margin-bottom: 12px;
+  text-align: left;
+  font-size: 11px;
+}
+
+.rech-receipt-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.rech-receipt-row:last-child {
+  margin-bottom: 0;
+}
+
+.rech-receipt-row span:first-child {
+  color: #64748b;
+}
+
+.rech-receipt-row span:last-child {
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.rech-receipt-btn {
+  width: 100%;
+  padding: 8px;
+  border-radius: 5px;
+  background: #1f6fbf;
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(31, 111, 191, 0.25);
+  transition: all 0.12s;
+}
+
+.rech-receipt-btn:hover {
+  background: #185999;
+}
+
+/* ================== 主题适配覆盖 ================== */
+[data-theme="dark"] .rech-dossier-header,
+[data-theme="dark"] .rech-card,
+[data-theme="dark"] .rech-pay-bar,
+[data-theme="dark"] .rech-tab {
+  background: #161b22;
+  border-color: #30363d;
+}
+
+[data-theme="dark"] .rech-card::before {
+  background: #30363d;
+}
+
+[data-theme="dark"] .rech-card.selected {
+  border-color: #38bdf8;
+  background: #1c2430;
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.2);
+}
+
+[data-theme="dark"] .rech-card.selected::before {
+  background: #38bdf8;
+}
+
+[data-theme="dark"] .rech-crate-icon {
+  background: #0d1117;
+  border-color: #30363d;
+}
+
+[data-theme="dark"] .rech-stamp-ring {
+  border-color: #f87171;
+  color: #f87171;
+  box-shadow: inset 0 0 0 1px #f87171, 0 0 8px rgba(248, 113, 113, 0.35);
+  background: rgba(40, 15, 15, 0.9);
+}
+
+[data-theme="dark"] .rech-receipt-paper {
+  background: #161b22;
+  border-color: #4b5563;
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .rech-receipt-reward-box {
+  background: #0d1117;
+  border-color: #30363d;
+}
+
+[data-theme="dark"] .rech-receipt-row span:last-child {
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .rech-receipt-title {
+  color: #f1f5f9;
+}

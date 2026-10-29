@@ -641,9 +641,11 @@ window.Game = window.Game || {};
         });
     },
 
-    speedUpMarch: function (marchId, returning, version, confirmationToken) {
+    speedUpMarch: function (marchId, returning, version, confirmationToken, itemKey) {
       var token = client.getToken(), city = client.cityId;
-      return client.post('/game/world/speedup-march', { marchId: marchId, returning: returning, version: version, confirmationToken: confirmationToken }, { timeout: 15000 })
+      var body = { marchId: marchId, returning: returning, version: version, confirmationToken: confirmationToken };
+      if (itemKey) body.itemKey = itemKey;
+      return client.post('/game/world/speedup-march', body, { timeout: 15000 })
         .then(function (data) {
           if (client.getToken() === token && client.cityId === city && data && data.state) applyState(data.state);
           return data;
@@ -828,17 +830,9 @@ window.Game = window.Game || {};
 
     // ==================== 商城 ====================
 
-    shopRecharge: function (pkgId, rmb, diamond, channel) {
-      return client.post('/game/shop/recharge', {
-        pkgId: pkgId,
-        rmb: rmb,
-        diamond: diamond,
-        channel: channel
-      }).then(function (data) {
-        if (data && data.state) applyState(data.state);
-        if (data && data.success !== false && data.vip && G.Vip) G.Vip.applyStatus(data.vip);
-        return data;
-      });
+    /** 保留旧调用契约，但充值关闭期间不发送请求、不更新资源或 VIP 状态。 */
+    shopRecharge: function () {
+      return Promise.resolve({ success: false, code: 'PAYMENT_DISABLED', message: G.Constants.rechargeUnavailableMessage });
     },
 
     shopBuy: function (itemId, count) {
@@ -947,14 +941,17 @@ window.Game = window.Game || {};
 
     // ==================== 仓库 ====================
 
-    depotUse: function (itemId, officerId, newName, skillId) {
+    depotUse: function (itemId, officerId, newName, skillId, count, requestId) {
+      var token = client.getToken();
       var body = { itemId: itemId };
       if (officerId != null) body.officerId = officerId;
       if (newName != null) body.newName = newName;
       if (skillId != null) body.skillId = skillId;
+      if (count != null) body.count = count;
+      if (requestId != null) body.requestId = requestId;
       return client.post('/game/depot/use', body)
         .then(function (data) {
-          if (data && data.state) applyState(data.state);
+          if (client.getToken() === token && data && data.state) applyState(data.state);
           return data;
         });
     },

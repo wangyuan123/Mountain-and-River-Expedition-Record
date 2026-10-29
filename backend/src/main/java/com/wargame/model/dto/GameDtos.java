@@ -84,7 +84,7 @@ public class GameDtos {
     public record CancelMarchRequest(Long marchId) {}
 
     /** 阶段与版本取自确认弹窗打开时的行军快照，防止旧请求消耗新阶段的道具。 */
-    public record SpeedUpMarchRequest(Long marchId, Boolean returning, Long version, String confirmationToken) {}
+    public record SpeedUpMarchRequest(Long marchId, Boolean returning, Long version, String confirmationToken, String itemKey) {}
 
     /** 只对确认时仍在途的敌军行军使用一次计谋。 */
     public record MarchStratagemRequest(Long marchId, String itemKey, Long expectedArriveAt, String confirmationToken) {}
@@ -153,10 +153,13 @@ public class GameDtos {
 
     // ===== 仓库 =====
 
-    /** skillId 仅供通用技能书自选学习；三参数构造保持既有调用兼容。 */
-    public record DepotUseRequest(String itemId, Long officerId, String newName, String skillId) {
+    /** skillId 用于自选技能；count/requestId 仅用于动员批量续时与幂等确认，旧构造保留。 */
+    public record DepotUseRequest(String itemId, Long officerId, String newName, String skillId, Number count, String requestId) {
         public DepotUseRequest(String itemId, Long officerId, String newName) {
-            this(itemId, officerId, newName, null);
+            this(itemId, officerId, newName, null, null, null);
+        }
+        public DepotUseRequest(String itemId, Long officerId, String newName, String skillId) {
+            this(itemId, officerId, newName, skillId, null, null);
         }
     }
 

@@ -41,8 +41,9 @@ public class AccountService {
 
     /** 锁后刷新，避免同一请求的鉴权读取或 MySQL 快照遮蔽最新注销状态。 */
     public Player lockPlayer(Long id) {
-        Player player = players.lockById(id).orElseThrow(() -> new AccountException("ACCOUNT_UNAVAILABLE", "账号不存在"));
+        Player player = players.findById(id).orElseThrow(() -> new AccountException("ACCOUNT_UNAVAILABLE", "账号不存在"));
         em.flush();
+        // 直接带锁刷新：先用查询升级旧实体的锁会校验旧 version，等待并发提交后反而在刷新前报错。
         em.refresh(player, LockModeType.PESSIMISTIC_WRITE);
         return player;
     }
@@ -211,9 +212,9 @@ public class AccountService {
                         + "o.cancelReason = '参与账号已注销' where o.status in ('PENDING', 'ACCEPTED') "
                         + "and (o.initiatorId = :id or o.defenderId = :id)")
                 .setParameter("id", id).setParameter("now", now).executeUpdate();
-        for (String entity : List.of("GuildApplication", "GuildMember", "UnitLoadout", "UnitEquipmentOrder", "OfficerEquipmentProgress", "OfficerEquipment", "ArmyProductionQueue",
+        for (String entity : List.of("GuildApplication", "GuildMember", "UnitLoadout", "UnitEquipmentOrder", "OfficerEquipmentProgress", "OfficerEquipment", "ArmyProductionQueue", "ArmyPopulationBalance",
                 "TechResearchQueue", "PrisonerUnit", "PrisonerOperation", "BattleSettlement", "WoundedUnit", "Building", "ArmyUnit", "Fortification", "Technology", "Officer", "Construction",
-                "Resources", "CityState", "Academy", "PlayerItem", "PlayerPowerSnapshot", "ScoutReport", "PlayerQuest", "PlayerGuide", "March", "ChatMessage")) {
+                "Resources", "CityState", "Academy", "PlayerItem", "RankGiftReward", "PlayerPowerSnapshot", "ScoutReport", "PlayerQuest", "PlayerGuide", "March", "ChatMessage")) {
             em.createQuery("delete from " + entity + " e where e.playerId = :id").setParameter("id", id).executeUpdate();
         }
         em.createQuery("delete from IncomingMarch m where m.targetPlayerId = :id").setParameter("id", id).executeUpdate();

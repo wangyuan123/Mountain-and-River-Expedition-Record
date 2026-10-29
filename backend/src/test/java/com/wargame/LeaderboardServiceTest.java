@@ -176,7 +176,7 @@ class LeaderboardServiceTest extends BaseServiceTest {
         ArmyUnit unit = new ArmyUnit();
         unit.setPlayerId(player.getId());
         unit.setType("infantry");
-        unit.setCount(37500);
+        unit.setCount(25000);
         armyUnitRepository.saveAndFlush(unit);
         var before = power.calculate(player.getId()).get(player.getId());
         unit.setCount(50000);
@@ -184,15 +184,32 @@ class LeaderboardServiceTest extends BaseServiceTest {
         var larger = power.calculate(player.getId()).get(player.getId());
         assertEquals(before.formationPower(), larger.formationPower());
         assertTrue(larger.overallPower() > before.overallPower());
-        unit.setCount(12500);
+        unit.setCount(25000);
         armyUnitRepository.saveAndFlush(unit);
         March march = new March();
         march.setPlayerId(player.getId());
-        march.setArmy("{\"infantry\":37500}");
+        march.setArmy("{\"infantry\":25000}");
         marchRepository.saveAndFlush(march);
         var marching = power.calculate(player.getId()).get(player.getId());
         assertEquals(larger.overallPower(), marching.overallPower());
         assertEquals(before.formationPower(), marching.formationPower());
+    }
+
+    @Test
+    void pooledWildGarrisonUsesRankBaseWithoutExtraDefenderCapacity() {
+        Player player = player("power-wild-cap", 0, 1);
+        var tile = createWildTile(createTestWorld().getId(), "forest", 11, 10, 1,
+                Map.of("infantry", 25000), 0);
+        tile.setOccupied(true);
+        tile.setOccupiedBy(player.getId());
+        wildTileRepository.saveAndFlush(tile);
+        var before = power.calculate(player.getId()).get(player.getId());
+        tile.setGarrison("{\"infantry\":37500}");
+        wildTileRepository.saveAndFlush(tile);
+        var larger = power.calculate(player.getId()).get(player.getId());
+        assertTrue(before.formationPower() > 0);
+        assertEquals(before.formationPower(), larger.formationPower());
+        assertTrue(larger.overallPower() > before.overallPower());
     }
 
     @Test

@@ -67,6 +67,9 @@ public class QuestDailyCheckinTest extends BaseServiceTest {
         Resources initialRes = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElseThrow();
         long baseGold = initialRes.getGold();
         long baseFood = initialRes.getFood();
+        long baseSteel = initialRes.getSteel();
+        long baseOil = initialRes.getOil();
+        long baseRare = initialRes.getRare();
 
         // 1. 初始状态：未签到，奖励列表包含军官改名卡与城市改名卡
         Map<String, Object> initialStatus = questService.getDailyCheckinStatus(playerId);
@@ -78,8 +81,9 @@ public class QuestDailyCheckinTest extends BaseServiceTest {
         Map<String, Integer> rewards = (Map<String, Integer>) initialStatus.get("rewards");
         assertEquals(1, rewards.get("renameCard"));
         assertEquals(1, rewards.get("cityRenameCard"));
-        assertEquals(2000, rewards.get("gold"));
-        assertEquals(5000, rewards.get("food"));
+        for (String resource : java.util.List.of("food", "steel", "oil", "rare", "gold")) {
+            assertEquals(10000, rewards.get(resource), resource);
+        }
         assertEquals(1, rewards.get("speedUp10m"));
 
         // 2. 玩家自主领受签到奖励
@@ -96,8 +100,11 @@ public class QuestDailyCheckinTest extends BaseServiceTest {
 
         // 验证资源增长
         Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElseThrow();
-        assertEquals(baseGold + 2000, res.getGold());
-        assertEquals(baseFood + 5000, res.getFood());
+        assertEquals(baseGold + 10000, res.getGold());
+        assertEquals(baseFood + 10000, res.getFood());
+        assertEquals(baseSteel + 10000, res.getSteel());
+        assertEquals(baseOil + 10000, res.getOil());
+        assertEquals(baseRare + 10000, res.getRare());
 
         // 3. 再次获取状态：已签到
         Map<String, Object> afterStatus = questService.getDailyCheckinStatus(playerId);
@@ -105,6 +112,9 @@ public class QuestDailyCheckinTest extends BaseServiceTest {
 
         // 4. 当日重复领受：抛出异常拒绝
         assertThrows(IllegalArgumentException.class, () -> questService.claimDailyCheckin(playerId));
+
+        assertEquals(baseGold + 10000, res.getGold());
+        assertEquals(baseRare + 10000, res.getRare());
 
         // 5. 跨日后（模拟昨日已领）：可再次领取
         player = playerRepository.findById(playerId).orElseThrow();
@@ -117,6 +127,11 @@ public class QuestDailyCheckinTest extends BaseServiceTest {
         Map<String, Object> nextClaimRes = questService.claimDailyCheckin(playerId);
         assertTrue((Boolean) nextClaimRes.get("success"));
 
+        assertEquals(baseGold + 20000, res.getGold());
+        assertEquals(baseFood + 20000, res.getFood());
+        assertEquals(baseSteel + 20000, res.getSteel());
+        assertEquals(baseOil + 20000, res.getOil());
+        assertEquals(baseRare + 20000, res.getRare());
         assertEquals(2, playerItemRepository.findByPlayerIdAndItemKey(playerId, "renameCard").orElseThrow().getCount());
         assertEquals(2, playerItemRepository.findByPlayerIdAndItemKey(playerId, "cityRenameCard").orElseThrow().getCount());
     }

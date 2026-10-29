@@ -26,6 +26,7 @@ import java.util.*;
 
 @Service
 public class AdminPlayerService {
+    @org.springframework.beans.factory.annotation.Autowired private com.wargame.service.ArmyPopulationService populationCosts;
 
     private static final Logger log = LoggerFactory.getLogger(AdminPlayerService.class);
 
@@ -605,6 +606,7 @@ public class AdminPlayerService {
 
     @Transactional
     public void updatePlayerArmy(Long playerId, Long unitId, Integer citySlot, String type, Integer count, String adminUsername, HttpServletRequest req) {
+        playerRepository.lockById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
         ArmyUnit unit = null;
         if (unitId != null && unitId > 0) {
             unit = armyUnitRepository.findById(unitId).orElse(null);
@@ -628,6 +630,7 @@ public class AdminPlayerService {
             throw new IllegalArgumentException("未找到待修改的兵种记录");
         }
         int finalCount = Math.max(0, Math.min(1_000_000_000, count != null ? count : 0));
+        populationCosts.grant(playerId, unit.getType(), finalCount - Objects.requireNonNullElse(unit.getCount(), 0));
         unit.setCount(finalCount);
         armyUnitRepository.save(unit);
         auditLogService.record(adminUsername, "UPDATE_PLAYER_ARMY", "PLAYER", String.valueOf(playerId),
@@ -637,6 +640,7 @@ public class AdminPlayerService {
     @Transactional
     public void updatePlayerArmiesBatch(Long playerId, List<Map<String, Object>> armies, String adminUsername, HttpServletRequest req) {
         if (armies == null || armies.isEmpty()) return;
+        playerRepository.lockById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
         StringBuilder auditDetail = new StringBuilder("批量修改兵力: ");
         int updatedCount = 0;
         for (Map<String, Object> item : armies) {
@@ -666,6 +670,7 @@ public class AdminPlayerService {
                 }
             }
             if (unit != null) {
+                populationCosts.grant(playerId, unit.getType(), count - Objects.requireNonNullElse(unit.getCount(), 0));
                 unit.setCount(count);
                 armyUnitRepository.save(unit);
                 if (updatedCount < 5) {

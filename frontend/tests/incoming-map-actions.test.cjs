@@ -61,7 +61,7 @@ test('来袭详情提供拦截和干扰令，不提供撤退计谋', () => {
   assert.match(view.incomingDialog.innerHTML, /雷达情报等级: Lv.5/);
   assert.match(view.incomingDialog.innerHTML, /出城拦截/);
   assert.match(view.incomingDialog.innerHTML, /通讯干扰令 ×2/);
-  assert.doesNotMatch(view.incomingDialog.innerHTML, /佯动诱敌令/);
+  assert.doesNotMatch(view.incomingDialog.innerHTML, /撤退拖延令/);
   assert.doesNotMatch(view.incomingDialog.innerHTML, /精确兵力/);
 });
 
@@ -83,7 +83,7 @@ test('未挂载地图时仍可打开并关闭撤退详情', () => {
   f.game.WorldMap.openIncomingMarch({ marchId: 77, targetCityId: 12, targetX: 10, targetY: 20,
     returning: true, arriveAt: Date.now() + 61_000 });
   const dialog = f.game.WorldMap.incomingDetails.incomingDialog;
-  assert.match(dialog.innerHTML, /佯动诱敌令 ×1/);
+  assert.match(dialog.innerHTML, /撤退拖延令 ×1/);
   assert.doesNotMatch(dialog.innerHTML, /通讯干扰令|出城拦截/);
   f.game.WorldMap.closeIncomingMarch();
   assert.equal(f.game.WorldMap.incomingDetails.incomingDialog, null);

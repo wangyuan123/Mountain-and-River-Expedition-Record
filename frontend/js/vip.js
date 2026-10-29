@@ -2,7 +2,7 @@
  * ==========================================================================
  * 战时特勤统帅部 (VIP System) 前端核心模块
  * 包含特权展示、每日军饷领受、专属大礼包、微里程碑军备箱、
- * 万能技能书定向推演、统帅装扮（头像框/徽章/自定义头像）、全城一键安抚等功能。
+ * 万能技能书定向推演、统帅装扮（头像框/徽章）、全城一键安抚等功能。
  * 严格秉持战术公平，坚决不包含任何行军加成。
  * ==========================================================================
  */
@@ -15,18 +15,19 @@
     return isNaN(n) ? '0' : n.toLocaleString();
   }
 
+  // 服务端等级配置尚未返回时的预览；每日资源与服务端同表，不叠加资源包。
   var DEFAULT_LEVEL_DEFS = [
-    { level: 0, requiredCents: 0, title: '预备指挥官', buildQueuePerCity: 3, techQueuePerCity: 1, dailyRewards: { gold: 1000, food: 5000, steel: 5000, speedUp10m: 2, skillBook: 1, populationOrder: 1 } },
-    { level: 1, requiredCents: 600, title: '特遣队指挥官', buildQueuePerCity: 5, techQueuePerCity: 1, dailyRewards: { gold: 3000, food: 20000, steel: 20000, oil: 20000, rare: 20000, speedUp10m: 3, skillBook: 1, populationOrder: 1, marchOrd: 1 }, levelPackRewards: { recruitOrd: 1, starUp: 20, gold: 400000 } },
-    { level: 2, requiredCents: 3000, title: '前线先锋官', buildQueuePerCity: 5, techQueuePerCity: 1, dailyRewards: { gold: 5000, food: 50000, steel: 50000, oil: 50000, rare: 50000, speedUp10m: 6, expBook: 2, skillBook: 2, populationOrder: 2, marchOrd: 1 }, levelPackRewards: { recruitOrd: 2, starUp: 40, teleportNormal: 2 } },
-    { level: 3, requiredCents: 9800, title: '战略支柱长官', buildQueuePerCity: 5, techQueuePerCity: 1, dailyRewards: { gold: 10000, food: 100000, steel: 100000, oil: 100000, rare: 100000, speedUp1h: 2, expBook: 3, skillBook: 2, populationOrder: 2, marchOrd: 1, signalJammingOrder: 1 }, levelPackRewards: { recruitOrd: 3, starUp: 60, commanderRenameCard: 1 } },
-    { level: 4, requiredCents: 19800, title: '方面军参谋长', buildQueuePerCity: 5, techQueuePerCity: 1, dailyRewards: { gold: 20000, food: 200000, steel: 200000, oil: 200000, rare: 200000, speedUp1h: 3, speedUp10m: 3, expBook: 4, skillBook: 3, populationOrder: 3, marchOrd: 2, signalJammingOrder: 1 }, levelPackRewards: { recruitOrd: 4, starUp: 100, teleportNormal: 4 } },
-    { level: 5, requiredCents: 32800, title: '兵团副司令官', buildQueuePerCity: 5, techQueuePerCity: 2, dailyRewards: { gold: 35000, food: 400000, steel: 400000, oil: 400000, rare: 400000, speedUp5h: 1, speedUp1h: 2, expBookAdv: 1, skillBook: 3, populationOrder: 3, emergencyPopulationOrder: 1, marchOrd: 2, signalJammingOrder: 1, feintOrder: 1 }, levelPackRewards: { recruitOrd: 5, starUp: 150 } },
-    { level: 6, requiredCents: 64800, title: '兵团总司令官', buildQueuePerCity: 5, techQueuePerCity: 2, dailyRewards: { gold: 50000, food: 800000, steel: 800000, oil: 800000, rare: 800000, speedUp5h: 2, expBookAdv: 2, supplyPack: 1, skillBook: 4, populationOrder: 4, emergencyPopulationOrder: 1, marchOrd: 2, signalJammingOrder: 2, feintOrder: 1 }, levelPackRewards: { recruitOrd: 6, starUp: 200 } },
-    { level: 7, requiredCents: 128000, title: '战区副长官', buildQueuePerCity: 5, techQueuePerCity: 2, dailyRewards: { gold: 80000, food: 1500000, steel: 1500000, oil: 1500000, rare: 1500000, shield: 1, speedUp12h: 1, expBookAdv: 3, supplyPack: 2, skillBook: 4, populationOrder: 4, emergencyPopulationOrder: 2, marchOrd: 3, signalJammingOrder: 2, feintOrder: 2 }, levelPackRewards: { recruitOrd: 7, starUp: 280 } },
-    { level: 8, requiredCents: 300000, title: '战区最高司令', buildQueuePerCity: 5, techQueuePerCity: 2, dailyRewards: { gold: 120000, food: 2500000, steel: 2500000, oil: 2500000, rare: 2500000, shield12h: 1, speedUp12h: 1, speedUp5h: 1, expBookAdv: 4, supplyPack: 3, skillBook: 5, populationOrder: 5, emergencyPopulationOrder: 2, marchOrd: 3, signalJammingOrder: 3, feintOrder: 2 }, levelPackRewards: { recruitOrd: 8, starUp: 360 } },
-    { level: 9, requiredCents: 600000, title: '战时常务长官', buildQueuePerCity: 5, techQueuePerCity: 2, dailyRewards: { gold: 150000, food: 4000000, steel: 4000000, oil: 4000000, rare: 4000000, shield12h: 1, shield: 1, speedUp12h: 2, expBookAdv: 5, supplyPack: 4, skillBook: 5, populationOrder: 5, emergencyPopulationOrder: 3, marchOrd: 4, signalJammingOrder: 3, feintOrder: 3 }, levelPackRewards: { recruitOrd: 9, starUp: 450 } },
-    { level: 10, requiredCents: 1000000, title: '特级上将·五星统帅', buildQueuePerCity: 5, techQueuePerCity: 2, dailyRewards: { gold: 200000, food: 6000000, steel: 6000000, oil: 6000000, rare: 6000000, shield24h: 1, speedUp24h: 1, speedUp12h: 1, expBookAdv: 8, supplyPack: 5, skillBook: 6, populationOrder: 6, emergencyPopulationOrder: 3, marchOrd: 5, signalJammingOrder: 4, feintOrder: 4 }, levelPackRewards: { recruitOrd: 10, starUp: 600 } }
+    { level: 0, requiredCents: 0, title: '预备指挥官', buildQueuePerCity: 3, techQueuePerCity: 1, dailyRewards: { gold: 10000, food: 10000, steel: 10000, oil: 10000, rare: 10000, speedUp10m: 2, skillBook: 1, populationOrder: 1 } },
+    { level: 1, requiredCents: 600, title: '特遣队指挥官', buildQueuePerCity: 5, techQueuePerCity: 1, dailyRewards: { gold: 20000, food: 20000, steel: 20000, oil: 20000, rare: 20000, speedUp10m: 3, skillBook: 1, populationOrder: 1, marchOrd: 1 }, levelPackRewards: { recruitOrd: 1, starUp: 20, gold: 400000 } },
+    { level: 2, requiredCents: 3000, title: '前线先锋官', buildQueuePerCity: 5, techQueuePerCity: 1, dailyRewards: { gold: 30000, food: 50000, steel: 50000, oil: 50000, rare: 50000, speedUp10m: 6, expBook: 2, skillBook: 2, populationOrder: 2, marchOrd: 1 }, levelPackRewards: { recruitOrd: 2, starUp: 40, teleportNormal: 2 } },
+    { level: 3, requiredCents: 9800, title: '战略支柱长官', buildQueuePerCity: 5, techQueuePerCity: 1, dailyRewards: { gold: 40000, food: 100000, steel: 100000, oil: 100000, rare: 100000, speedUp1h: 2, expBook: 3, skillBook: 2, populationOrder: 2, marchOrd: 1, signalJammingOrder: 1 }, levelPackRewards: { recruitOrd: 3, starUp: 60, commanderRenameCard: 1 } },
+    { level: 4, requiredCents: 19800, title: '方面军参谋长', buildQueuePerCity: 5, techQueuePerCity: 1, dailyRewards: { gold: 50000, food: 200000, steel: 200000, oil: 200000, rare: 200000, speedUp1h: 3, speedUp10m: 3, expBook: 4, skillBook: 3, populationOrder: 3, marchOrd: 2, signalJammingOrder: 1 }, levelPackRewards: { recruitOrd: 4, starUp: 100, teleportNormal: 4 } },
+    { level: 5, requiredCents: 32800, title: '兵团副司令官', buildQueuePerCity: 5, techQueuePerCity: 2, dailyRewards: { gold: 60000, food: 300000, steel: 300000, oil: 300000, rare: 300000, speedUp5h: 1, speedUp1h: 2, expBookAdv: 1, skillBook: 3, populationOrder: 3, emergencyPopulationOrder: 1, marchOrd: 2, signalJammingOrder: 1, feintOrder: 1 }, levelPackRewards: { recruitOrd: 5, starUp: 150 } },
+    { level: 6, requiredCents: 64800, title: '兵团总司令官', buildQueuePerCity: 5, techQueuePerCity: 2, dailyRewards: { gold: 70000, food: 400000, steel: 400000, oil: 400000, rare: 400000, speedUp5h: 2, expBookAdv: 2, skillBook: 4, populationOrder: 4, emergencyPopulationOrder: 1, marchOrd: 2, signalJammingOrder: 2, feintOrder: 1 }, levelPackRewards: { recruitOrd: 6, starUp: 200 } },
+    { level: 7, requiredCents: 128000, title: '战区副长官', buildQueuePerCity: 5, techQueuePerCity: 2, dailyRewards: { gold: 80000, food: 500000, steel: 500000, oil: 500000, rare: 500000, shield: 1, speedUp12h: 1, expBookAdv: 3, skillBook: 4, populationOrder: 4, emergencyPopulationOrder: 2, marchOrd: 3, signalJammingOrder: 2, feintOrder: 2 }, levelPackRewards: { recruitOrd: 7, starUp: 280 } },
+    { level: 8, requiredCents: 300000, title: '战区最高司令', buildQueuePerCity: 5, techQueuePerCity: 2, dailyRewards: { gold: 90000, food: 600000, steel: 600000, oil: 600000, rare: 600000, shield12h: 1, speedUp12h: 1, speedUp5h: 1, expBookAdv: 4, skillBook: 5, populationOrder: 5, emergencyPopulationOrder: 2, marchOrd: 3, signalJammingOrder: 3, feintOrder: 2 }, levelPackRewards: { recruitOrd: 8, starUp: 360 } },
+    { level: 9, requiredCents: 600000, title: '战时常务长官', buildQueuePerCity: 5, techQueuePerCity: 2, dailyRewards: { gold: 100000, food: 700000, steel: 700000, oil: 700000, rare: 700000, shield12h: 1, shield: 1, speedUp12h: 2, expBookAdv: 5, skillBook: 5, populationOrder: 5, emergencyPopulationOrder: 3, marchOrd: 4, signalJammingOrder: 3, feintOrder: 3 }, levelPackRewards: { recruitOrd: 9, starUp: 450 } },
+    { level: 10, requiredCents: 1000000, title: '特级上将·五星统帅', buildQueuePerCity: 5, techQueuePerCity: 2, dailyRewards: { gold: 110000, food: 800000, steel: 800000, oil: 800000, rare: 800000, shield24h: 1, speedUp24h: 1, speedUp12h: 1, expBookAdv: 8, skillBook: 6, populationOrder: 6, emergencyPopulationOrder: 3, marchOrd: 5, signalJammingOrder: 4, feintOrder: 4 }, levelPackRewards: { recruitOrd: 10, starUp: 600 } }
   ];
 
   var Vip = {
@@ -537,9 +538,9 @@
         gold: '黄金', food: '粮食', steel: '钢铁', oil: '石油', rare: '稀矿', diamond: '钻石',
         recruitOrd: '征募令', starUp: '星耀符', skillBook: '普通技能书', universalSkillBook: '万能通用技能书',
         teleportNormal: '普通传送', teleportAdvanced: '高级传送', commanderRenameCard: '统帅改名卡',
-        expBook: '经验书', expBookAdv: '高级经验书', expBookMax: '满级经验书',
+        expBook: '经验书', expBookAdv: '高级经验书', expBookRapid: '极速经验书', expBookMax: '满级经验书',
         supplyPack: '战备补给包', populationOrder: '人口动员令', emergencyPopulationOrder: '紧急动员令',
-        marchOrd: '行军令', signalJammingOrder: '通讯干扰令', feintOrder: '佯动诱敌令',
+        basicMarchOrd: '初级行军令', advancedMarchOrd: '高级行军令', marchOrd: '极速行军令', signalJammingOrder: '通讯干扰令', feintOrder: '撤退拖延令',
         renameCard: '军官改名卡', cityRenameCard: '城市改名卡',
         speedUp10m: '10分加速', speedUp1h: '1时加速', speedUp5h: '5时加速', speedUp12h: '12时加速',
         speedUp24h: '24时加速', speedUp36h: '36时加速', speedUp48h: '48时加速', speedUp72h: '72时加速',
@@ -626,7 +627,7 @@
         h += '<span>✓ 您已达成该等级</span>';
       } else {
         h += '<span>未达成 (还需 ¥' + needYuan + ')</span>' +
-          '<button type="button" class="btn sm ok" onclick="Game.Vip.closeModal();Game.go(\'recharge\');">前往充值</button>';
+          '<button type="button" class="btn sm ok" onclick="Game.go(\'recharge\');">暂未开放充值</button>';
       }
       h += '    </div></div>';
 
@@ -657,7 +658,7 @@
       if (def.level >= 6) privs.push('• 政务安抚：全疆域一键安抚 & 每日免费大赦 (满民心100/民怨清零)');
       if (def.level >= 7) privs.push('• 专属推演：万能通用技能书 1:1 定向自选转化');
       if (def.level >= 4) privs.push('• 聊天频道尊享 VIP 4 金色名牌标识 (自主显隐)');
-      if (def.customAvatarUnlocked) privs.push('• 统帅装扮：自定义统帅肖像 (本地上传/外链)');
+      // 自定义头像入口暂时隐藏，VIP 权益同步停止展示该项说明。
       h += privs.join('<br>') + '</div></div>';
 
       // 每日战备军饷配给
@@ -676,7 +677,7 @@
       if (isCurrentLevel) {
         h += '    <div style="display:flex;justify-content:flex-end;margin-top:6px;">';
         if (curLv === 0) {
-          h += '    <button type="button" class="btn ok sm" onclick="Game.Vip.closeModal();Game.go(\'recharge\');">前往充值 ¥6 激活 VIP 1 领每日军饷</button>';
+          h += '    <button type="button" class="btn ok sm" onclick="Game.go(\'recharge\');">暂未开放充值</button>';
         } else {
           h += '    <button type="button" class="btn sm ' + (canClaimSalary ? 'ok' : '') + '" ' + (canClaimSalary ? '' : 'disabled') + ' onclick="Game.Vip.claimDailySalary()">' +
             (canClaimSalary ? ('立即受领今日军饷' + (backlogDays > 1 ? ' (' + backlogDays + '天份)' : '')) : '今日军饷已受领') +
@@ -813,7 +814,7 @@
           '<div style="font-size:13px;color:var(--muted);max-width:400px;margin:0 auto 16px auto;line-height:1.5;">' +
           '此特权为 <b>VIP 7 (战区副长官)</b> 专属战术研究技术。可将【通用技能书】以 1:1 无损耗定向转化为全服任意指定的军官专属技能秘籍！' +
           '</div>' +
-          '<button class="btn ok" onclick="Game.Vip.closeModal();Game.go(\'recharge\');">前往充值晋升 VIP 7</button>' +
+          '<button class="btn ok" onclick="Game.go(\'recharge\');">暂未开放充值</button>' +
           '</div>';
       }
 
@@ -904,13 +905,11 @@
       return h;
     },
 
-    /** 标签 4: 特勤个性装扮 */
+    /** 标签 4：展示名牌与头像框；暂时不提供自定义头像入口。 */
     renderCosmeticsTab: function (st) {
       var level = st.level || 0;
-      var p = (G.Core && G.Core.state && G.Core.state.player) || {};
       var badgeVisible = st.badgeVisible !== false;
       var curFrame = st.avatarFrame || 'default';
-      var curCustomAvatar = p.customAvatar || '';
 
       var h = '<div class="vip-cosmetics-box">';
 
@@ -943,7 +942,7 @@
         { id: 'frame-silver-v1', name: '白银将星', minLevel: 3, css: 'frame-silver-v1', effect: '秘银双环' },
         { id: 'frame-gold-v1', name: '黄金战纪', minLevel: 5, css: 'frame-gold-v1', effect: '鎏金辉耀' },
         { id: 'frame-jade-v1', name: '翡翠寒魄', minLevel: 7, css: 'frame-jade-v1', effect: '极寒冷气升腾' },
-        { id: 'frame-supreme-v1', name: '星钻炽焰', minLevel: 9, css: 'frame-supreme-v1', effect: '烈火喷涌燃烧' }
+        { id: 'frame-supreme-v1', name: '星钻蓝光', minLevel: 9, css: 'frame-supreme-v1', effect: '璀璨星钻蓝光' }
       ];
 
       var previewAvatar = (G.Core && G.Core.getCurrentAvatar ? G.Core.getCurrentAvatar() : '') || 'img/avatars/historical/rank-general-v1.webp';
@@ -954,8 +953,9 @@
         var isSelected = (curFrame === fr.id);
         var cls = 'vip-frame-card' + (isSelected ? ' selected' : '') + (isUnlocked ? '' : ' locked');
         h += '<div class="' + cls + '" onclick="' + (isUnlocked ? 'Game.Vip.selectFrame(\'' + fr.id + '\')' : 'Game.toast(\'需达成 VIP ' + fr.minLevel + ' 解锁\')') + '">' +
-          '<div style="width:42px;height:42px;margin:4px auto 6px auto;border-radius:6px;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;background:#1e293b;' + (fr.css ? '' : 'border:1px dashed #64748b;') + '" class="' + fr.css + '">' +
-          '<img src="' + previewAvatar + '" style="width:100%;height:100%;object-fit:cover;display:block;" alt="肖像预览" onerror="this.onerror=null;this.src=\'img/avatars/historical/rank-general-v1.webp\';">' +
+          '<div style="width:42px;height:42px;margin:4px auto 6px auto;border-radius:6px;overflow:visible;position:relative;display:flex;align-items:center;justify-content:center;background:#1e293b;' + (fr.css ? '' : 'border:1px dashed #64748b;') + '" class="' + fr.css + '">' +
+          '<img src="' + previewAvatar + '" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:6px;" alt="肖像预览" onerror="this.onerror=null;this.src=\'img/avatars/historical/rank-general-v1.webp\';">' +
+          (G.avatarFrameOverlay ? G.avatarFrameOverlay(fr.id) : '') +
           '</div>' +
           '<div style="font-size:11px;font-weight:700;color:var(--text);">' + G.escapeHtml(fr.name) + '</div>' +
           '<div style="font-size:10px;color:var(--accent);margin-top:1px;">' + (fr.effect || '') + '</div>' +
@@ -963,28 +963,6 @@
           '</div>';
       }
       h += '</div></div>';
-
-      // 3. 自定义指挥官头像 (VIP 5+)
-      h += '<div class="vip-cosmetic-section">' +
-        '<div class="vip-cosmetic-title">👤 自定义指挥官形象 (VIP 5+)</div>' +
-        '<div style="font-size:12px;color:var(--muted);margin-bottom:10px;">支持上传本地军事统帅肖像图片或填入外链图片。</div>';
-
-      if (level >= 5) {
-        h += '<div style="display:flex;flex-direction:column;gap:8px;">' +
-          '<div style="display:flex;gap:8px;align-items:center;">' +
-          '  <input type="text" id="vipCustomAvatarUrlInput" placeholder="请输入头像外链图片地址 (http/https)" value="' + G.escapeHtml(curCustomAvatar) + '" style="flex:1;padding:6px;border:1px solid var(--border);border-radius:4px;font-size:12px;">' +
-          '  <button class="btn sm" onclick="Game.Vip.saveAvatarUrl()">应用链接</button>' +
-          '</div>' +
-          '<div style="display:flex;gap:8px;align-items:center;">' +
-          '  <input type="file" id="vipCustomAvatarFileInput" accept="image/*" style="font-size:12px;">' +
-          '  <button class="btn sm ok" onclick="Game.Vip.uploadAvatarFile()">本地上传</button>' +
-          '</div>' +
-          (curCustomAvatar ? '<div style="margin-top:6px;"><button class="btn sm" onclick="Game.Vip.clearCustomAvatar()">恢复预设头像</button></div>' : '') +
-          '</div>';
-      } else {
-        h += '<div style="font-size:12px;color:var(--muted);">达成 VIP 5 (兵团副司令官) 即可自由定制战役指挥官专属头像。</div>';
-      }
-      h += '</div>';
 
       h += '</div>';
       return h;

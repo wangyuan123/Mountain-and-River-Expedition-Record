@@ -59,30 +59,20 @@ function setup(response) {
   return { game, topbar, view, requests, toasts, storage, context };
 }
 
-test('recharge followed by back immediately updates topbar, home VIP card and cached modal status', async () => {
-  const status = {
-    vipLevel: 2, title: '前线先锋官', totalRechargeCents: 3000,
-    levels: [{ level: 2, requiredCents: 3000 }, { level: 3, requiredCents: 9800 }]
-  };
-  const state = {
-    player: { id: 1, name: '指挥官', vipLevel: 0, totalRechargeCents: 0 },
-    resources: { diamond: 300 }, world: { marches: [], incoming: [] }
-  };
-  const { game, topbar, view, requests } = setup({ success: true, diamonds: 300, state, vip: status });
-  game.Core.go('recharge');
-  game.Recharge.confirmPay(game.Constants.rechargePackages[0].id);
-  await new Promise(resolve => setImmediate(resolve));
-  assert.equal(game.Core.state.player.vipLevel, 2);
-  assert.equal(game.Core.state.player.totalRechargeCents, 3000);
-  assert.match(topbar.innerHTML, /VIP 2/);
-  assert.equal(game.Vip.cachedStatus.level, 2);
-  game.Core.back();
+test('充值入口保留钻石余额并提示未开放，不切换页面或修改历史', () => {
+  const { game, topbar, view, requests, toasts } = setup();
+  game.Core.state.resources.diamond = 1234;
+  game.Core.render();
+  assert.match(topbar.innerHTML, /💎 1234/);
+  assert.match(topbar.innerHTML, /title="暂未开放充值，敬请期待"/);
+  const oldView = view.innerHTML;
+  const oldHistory = Array.from(game.Core.history);
+  game.go('recharge');
   assert.equal(game.Core.route, 'home');
-  assert.match(topbar.innerHTML, /VIP 2/);
-  assert.match(view.innerHTML, /VIP 2/);
-  assert.match(view.innerHTML, /战费累积 ¥30/);
-  assert.equal(requests.length, 1);
-  assert.equal(requests[0].route, '/game/shop/recharge');
+  assert.equal(view.innerHTML, oldView);
+  assert.deepEqual(Array.from(game.Core.history), oldHistory);
+  assert.deepEqual(requests, []);
+  assert.deepEqual(toasts, ['暂未开放充值，敬请期待']);
 });
 
 test('background topbar refresh updates VIP badge on promotion and respects badge visibility', () => {
@@ -99,14 +89,24 @@ test('background topbar refresh updates VIP badge on promotion and respects badg
   assert.doesNotMatch(topbar.innerHTML, /topbar-vip-badge/);
 });
 
-test('failed recharge does not change VIP status or badge', async () => {
-  const { game, topbar, toasts } = setup({ success: false, message: '充值失败', vip: { vipLevel: 10 } });
-  game.Recharge.confirmPay(game.Constants.rechargePackages[0].id);
-  await new Promise(resolve => setImmediate(resolve));
+test('直接调用旧确认按钮和前端充值 API 都不发请求、不改变钻石或 VIP', async () => {
+  const { game, topbar, requests, toasts } = setup({ success: true, vip: { vipLevel: 10 } });
+  for (const id of [undefined, 'p6', 'p10000', 'invalid']) {
+    const result = await game.Recharge.confirmPay(id);
+    assert.equal(result.success, false);
+    assert.equal(result.code, 'PAYMENT_DISABLED');
+    assert.equal(result.message, '暂未开放充值，敬请期待');
+    const apiResult = await game.API.shopRecharge(id, 1, 999999, '模拟支付');
+    assert.equal(apiResult.success, false);
+    assert.equal(apiResult.message, result.message);
+  }
   assert.equal(game.Core.state.player.vipLevel, 0);
+  assert.equal(game.Core.state.player.totalRechargeCents, 0);
+  assert.equal(game.Core.state.resources.diamond, 0);
   assert.equal(game.Vip.cachedStatus, null);
   assert.doesNotMatch(topbar.innerHTML, /topbar-vip-badge/);
-  assert.deepEqual(toasts, ['充值失败']);
+  assert.deepEqual(requests, []);
+  assert.deepEqual(toasts, Array(4).fill('暂未开放充值，敬请期待'));
 });
 
 test('home VIP card is visible by default, and can be toggled off and on by user setting', () => {

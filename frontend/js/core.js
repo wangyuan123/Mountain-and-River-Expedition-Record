@@ -556,7 +556,13 @@ window.Game = window.Game || {};
       return Math.max(0, Math.min(0.5, v));
     },
 
+    /** 账号动员对新行军与本城迎战统一生效，到期立即恢复普通容量。 */
     armyCap: function () {
+      var percent = G.Mobilization ? G.Mobilization.info().percent : 0;
+      return Math.min(2147483647, Math.floor(this.ordinaryArmyCap() * (100 + percent) / 100));
+    },
+
+    ordinaryArmyCap: function () {
       var s = this.state || {};
       var p = s.player || {};
       var rankTier = p.militaryRank || 1;
@@ -570,11 +576,9 @@ window.Game = window.Game || {};
       return Math.floor(rankBase * (1 + leadBonus));
     },
 
-    /** 迎战仅额外增加半份军衔基础，攻击已有的各类加成不再乘以 1.5。 */
+    /** 迎战与普通出征共用带兵上限，不再额外增加守方兵力。 */
     sortieCap: function () {
-      var tier = (this.state && this.state.player && this.state.player.militaryRank) || 1;
-      var rank = G.getMilitaryRankTierInfo ? G.getMilitaryRankTierInfo(tier) : { baseCap: 25000 };
-      return this.armyCap() + Math.floor(rank.baseCap / 2);
+      return this.armyCap();
     },
 
     /** 当前城池最大同时出征队伍数量：基础5支 + 司令部等级（0级5支，1级6支，满级15支） */
@@ -727,6 +731,11 @@ window.Game = window.Game || {};
     },
 
     go: function (route) {
+      // 统一拦住钻石、商城和 VIP 等入口，不改变当前页面或返回历史。
+      if (route === 'recharge') {
+        G.toast(G.Constants.rechargeUnavailableMessage);
+        return;
+      }
       if (route === 'forum') {
         this.openForum();
         return;
@@ -800,6 +809,7 @@ window.Game = window.Game || {};
         '<div class="topbar-player-entry" role="button" tabindex="0" onclick="if(Game.Main&&Game.Main.openPlayerDrawer)Game.Main.openPlayerDrawer();" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){if(Game.Main&&Game.Main.openPlayerDrawer)Game.Main.openPlayerDrawer();event.preventDefault();}" title="点击展开指挥官档案、主题与设置">' +
         '<div class="topbar-avatar-wrap' + avatarFrameClass + '">' +
         '<img class="topbar-avatar" src="' + avatarUrl + '" alt="头像" onerror="this.onerror=null;this.src=Game.Constants.presetAvatars[0].src"/>' +
+        (G.avatarFrameOverlay ? G.avatarFrameOverlay(p.avatarFrame) : '') +
         '</div>' +
         '<div class="topbar-player-meta">' +
         '<div class="topbar-player-name">' + nameStr + vipBadgeHtml + '</div>' +
@@ -811,7 +821,7 @@ window.Game = window.Game || {};
         '<div class="player-bar-right">' +
         '<span class="vip-entry-btn" title="战时特勤统帅部" onclick="if(Game.Vip)Game.Vip.openModal();">🎖️ 特勤部</span>' +
         '<span class="forum-entry-btn" title="进入战术参谋论坛" onclick="Game.Core.openForum()">🎖️ 论坛</span>' +
-        '<span class="diamond" title="充值" onclick="Game.go(\'recharge\')">💎 ' + fmt(diamond) + '</span>' +
+        '<span class="diamond" title="暂未开放充值，敬请期待" onclick="Game.go(\'recharge\')">💎 ' + fmt(diamond) + '</span>' +
         '</div>' +
         '</div>';
       var marches = this.militaryAlertMarches();

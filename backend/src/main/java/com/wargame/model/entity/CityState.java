@@ -35,4 +35,13 @@ public class CityState extends CityOwnedEntity {
     @Column(name = "march_boost_until")
     private Long marchBoostUntil;
 
+    @Column(name = "march_boost_percent")
+    private Integer marchBoostPercent = 50;
+
+    /** 旧存档未记录档位时沿用原来的 50%；过期效果不参与任何出征速度计算。 */
+    public double marchSpeedMultiplier(long now) {
+        if (marchBoostUntil == null || marchBoostUntil <= now) return 1.0;
+        return 1.0 + (marchBoostPercent == null ? 50 : marchBoostPercent) / 100.0;
+    }
+
 }

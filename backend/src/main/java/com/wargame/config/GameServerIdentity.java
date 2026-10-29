@@ -12,7 +12,7 @@ public class GameServerIdentity {
     private final String name;
 
     public GameServerIdentity(@Value("${game.server.id:jiangsu-1}") String id,
-                              @Value("${game.server.name:江苏一区}") String name) {
+                              @Value("${game.server.name:公测一区}") String name) {
         if (id == null || !id.matches("[a-z0-9-]{1,40}")) throw new IllegalArgumentException("无效的服务器大区 ID");
         this.id = id;
         this.name = name;

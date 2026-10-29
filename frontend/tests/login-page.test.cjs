@@ -34,7 +34,7 @@ test('login page uses one primary action with register and password recovery lin
   assert.match(html, /class="login-hero-infantry login-hero-infantry-right" src="img\/units\/models\/infantry\.webp"/);
   assert.match(html, /for="loginUser"/);
   assert.match(html, /id="loginServer"[^>]*aria-haspopup="listbox"/);
-  assert.match(html, /id="loginServerValue">江苏一区<\/span>/);
+  assert.match(html, /id="loginServerValue">公测一区<\/span>/);
   assert.match(html, /role="option"[^>]*aria-selected="true"[^>]*data-server-id="jiangsu-1"/);
   assert.doesNotMatch(html, /<select[^>]*id="loginServer"/);
   assert.match(html, /id="loginUser"[^>]*autocomplete="username"/);

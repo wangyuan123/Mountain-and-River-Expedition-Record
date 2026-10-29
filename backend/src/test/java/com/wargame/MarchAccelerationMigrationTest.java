@@ -11,6 +11,30 @@ import java.util.HashSet;
 import static org.junit.jupiter.api.Assertions.*;
 
 class MarchAccelerationMigrationTest {
+    @Test void tierMigrationPreservesActiveBoostAndExistingStock() throws Exception {
+        try (var connection = DriverManager.getConnection("jdbc:h2:mem:march_tiers_migration;MODE=MySQL", "sa", "");
+             var statement = connection.createStatement()) {
+            statement.execute("CREATE TABLE city_state(id BIGINT PRIMARY KEY, march_boost_until BIGINT)");
+            statement.execute("INSERT INTO city_state VALUES(1,123456789),(2,0)");
+            statement.execute("CREATE TABLE player_items(item_key VARCHAR(40), count INT)");
+            statement.execute("INSERT INTO player_items VALUES('marchOrd',5)");
+            ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/migration/V141__march_order_tiers.sql"));
+            try (var result = statement.executeQuery("SELECT * FROM city_state ORDER BY id")) {
+                assertTrue(result.next());
+                assertEquals(123456789L, result.getLong("march_boost_until"));
+                assertEquals(50, result.getInt("march_boost_percent"));
+                assertTrue(result.next());
+                assertEquals(0, result.getLong("march_boost_until"));
+                assertEquals(50, result.getInt("march_boost_percent"));
+            }
+            try (var result = statement.executeQuery("SELECT * FROM player_items")) {
+                assertTrue(result.next());
+                assertEquals("marchOrd", result.getString("item_key"));
+                assertEquals(5, result.getInt("count"));
+            }
+        }
+    }
+
     @Test void migrationPreservesExistingClocksAndDefaultsToUnusedAcceleration() throws Exception {
         try (var connection = DriverManager.getConnection("jdbc:h2:mem:march_acceleration_migration;MODE=MySQL", "sa", "");
              var statement = connection.createStatement()) {

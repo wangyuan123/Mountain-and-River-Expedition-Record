@@ -86,3 +86,42 @@ test('advanced book preview and submission use 100000 experience per book', () =
   nodes['#expBookConfirmBtn'].onclick();
   assert.deepEqual(calls, [[1, 'expBookAdv', 3]]);
 });
+
+test('four book prices follow the whole-book max-level discount formula', () => {
+  const { game } = setup();
+  const prices = { expBook: 10, expBookAdv: 100, expBookRapid: 500, expBookMax: 16400 };
+  for (const [id, price] of Object.entries(prices)) {
+    const product = game.Shop.items().find(item => item.id === id);
+    assert.equal(product.price, price);
+    assert.equal(product.name, game.DATA.items[id].name);
+    assert.equal(product.desc, game.DATA.items[id].desc);
+  }
+  assert.match(game.DATA.items.expBookRapid.desc, /每本提供500000经验/);
+  let experience = 0;
+  for (let level = 1; level < game.OFFICER_MAX_LEVEL; level++) experience += game.expNeeded(level);
+  assert.equal(experience, 20355750);
+  assert.equal(Math.ceil(experience / 500000) * prices.expBookRapid * 0.8, prices.expBookMax);
+});
+
+test('rapid book previews and submits 500000 experience per book in batches', () => {
+  const { game, nodes, calls } = setup();
+  game.Core.state.items.expBookRapid = 3;
+  game.Officer.openExpBookModal(1, 'expBookRapid');
+  assert.match(nodes['#expBookCards'].innerHTML, /极速经验书/);
+  assert.match(nodes['#expBookCards'].innerHTML, /\+500000 经验\/本/);
+  assert.match(nodes['#expBookSummary'].innerHTML, /\+500000 经验/);
+  nodes['#expBookQtyInput'].value = '3';
+  nodes['#expBookQtyInput'].oninput();
+  assert.match(nodes['#expBookSummary'].innerHTML, /\+1500000 经验/);
+  nodes['#expBookConfirmBtn'].onclick();
+  assert.deepEqual(calls, [[1, 'expBookRapid', 3]]);
+});
+
+test('rapid-only inventory opens the book dialog and is selected automatically', () => {
+  const { game, nodes, calls } = setup();
+  game.Core.state.items = { expBookRapid: 1 };
+  game.Officer.openExpBookModal(1);
+  assert.match(nodes['#expBookSummary'].innerHTML, /\+500000 经验/);
+  nodes['#expBookConfirmBtn'].onclick();
+  assert.deepEqual(calls, [[1, 'expBookRapid', 1]]);
+});

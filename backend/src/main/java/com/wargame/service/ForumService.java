@@ -94,7 +94,7 @@ public class ForumService {
 
     @Transactional
     public TopicDetailDto getTopicDetail(Long topicId) {
-        ForumTopic topic = topicRepository.findById(topicId)
+        ForumTopic topic = topicRepository.lockById(topicId)
                 .orElseThrow(() -> new IllegalArgumentException("话题不存在或已被删除"));
 
         topic.setViewCount(topic.getViewCount() + 1);
@@ -148,10 +148,6 @@ public class ForumService {
         Player player = playerRepository.findById(playerId)
                 .orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
 
-        if (!rateLimiter.allow("FORUM_POST:" + playerId, 1, 15_000L)) {
-            throw new IllegalStateException("发帖过于频繁，请稍候再试（冷却时间15秒）");
-        }
-
         if (req.title() == null || req.title().trim().isEmpty() || req.title().length() > 120) {
             throw new IllegalArgumentException("标题不能为空且长度不能超过120字");
         }
@@ -159,7 +155,8 @@ public class ForumService {
             throw new IllegalArgumentException("帖子内容不能为空且长度不能超过20000字");
         }
 
-        ForumBoard board = boardRepository.findById(req.boardId())
+        if (req.boardId() == null) throw new IllegalArgumentException("请选择发布板块");
+        ForumBoard board = boardRepository.lockById(req.boardId())
                 .orElseThrow(() -> new IllegalArgumentException("指定板块不存在"));
 
         int playerPrestige = player.getPrestige() != null ? player.getPrestige() : 0;
@@ -169,12 +166,16 @@ public class ForumService {
         }
 
         String type = (req.topicType() != null && !req.topicType().isBlank()) ? req.topicType().toUpperCase() : "NORMAL";
+        if (!Set.of("NORMAL", "BOUNTY", "BATTLE").contains(type)) throw new IllegalArgumentException("文书性质无效");
+        if ("BOUNTY".equals(type) && (req.bountyGold() == null || req.bountyGold() <= 0)) {
+            throw new IllegalArgumentException("悬赏金额必须为正整数");
+        }
         int bountyGold = 0;
         String bountyStatus = "NONE";
 
         if ("BOUNTY".equals(type)) {
-            bountyGold = (req.bountyGold() != null && req.bountyGold() > 0) ? req.bountyGold() : 100;
-            Resources res = resourcesRepository.findFirstByPlayerIdOrderByCitySlotAsc(playerId)
+            bountyGold = req.bountyGold();
+            Resources res = resourcesRepository.findCityForTreatment(playerId, 0)
                     .orElseThrow(() -> new IllegalStateException("未找到玩家主城金库资源"));
             long currentGold = res.getGold() != null ? res.getGold() : 0L;
             if (currentGold < bountyGold) {
@@ -200,6 +201,10 @@ public class ForumService {
             }
         }
 
+        // 无效表单不占用成功发帖的冷却；重复有效提交返回明确的 429。
+        if (!rateLimiter.allow("FORUM_POST:" + playerId, 1, 15_000L)) {
+            throw new com.wargame.security.GameAccessException("FORUM_POST_COOLDOWN", "发帖过于频繁，请稍候再试（冷却时间15秒）", 429);
+        }
         long now = System.currentTimeMillis();
         GuildInfo guildInfo = getPlayerGuildInfo(playerId);
 
@@ -235,6 +240,7 @@ public class ForumService {
     }
 
     public Page<ReplyDto> getReplies(Long topicId, int page, int size) {
+        if (!topicRepository.existsById(topicId)) throw new IllegalArgumentException("话题不存在或已被删除");
         Pageable pageable = PageRequest.of(Math.max(0, page), Math.min(50, Math.max(1, size)));
         Long currentOptPlayerId = getOptionalCurrentPlayerId().orElse(null);
 
@@ -249,7 +255,7 @@ public class ForumService {
                     QuoteReplyDto quote = null;
                     if (r.getQuoteReplyId() != null) {
                         ForumReply quoted = replyRepository.findById(r.getQuoteReplyId()).orElse(null);
-                        if (quoted != null) {
+                        if (quoted != null && topicId.equals(quoted.getTopicId())) {
                             String snippet = quoted.getContent().length() > 60
                                     ? quoted.getContent().substring(0, 60) + "..." : quoted.getContent();
                             quote = new QuoteReplyDto(quoted.getId(), quoted.getAuthorDisplayName() != null ? quoted.getAuthorDisplayName() : quoted.getAuthorName(), quoted.getFloorNumber(), snippet);
@@ -284,22 +290,29 @@ public class ForumService {
         Player player = playerRepository.findById(playerId)
                 .orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
 
-        if (!rateLimiter.allow("FORUM_REPLY:" + playerId, 1, 8_000L)) {
-            throw new IllegalStateException("回帖过于频繁，请稍候再试（冷却时间8秒）");
-        }
-
         if (req.content() == null || req.content().trim().isEmpty() || req.content().length() > 5000) {
             throw new IllegalArgumentException("回帖内容不能为空且长度不能超过5000字");
         }
 
-        ForumTopic topic = topicRepository.findById(topicId)
+        ForumTopic topic = topicRepository.lockById(topicId)
                 .orElseThrow(() -> new IllegalArgumentException("话题不存在"));
 
         if (Boolean.TRUE.equals(topic.getIsLocked())) {
-            throw new IllegalStateException("该话题已被锁定，暂不可继续回帖");
+            throw new IllegalArgumentException("该话题已被锁定，暂不可继续回帖");
         }
 
-        int floor = replyRepository.countByTopicId(topicId) + 1;
+        // 与 profile.canReply 共用 10 声望门槛；引用只允许指向当前仍存在的同帖回复。
+        if (Objects.requireNonNullElse(player.getPrestige(), 0) < 10) throw new IllegalArgumentException("您的声望不足 10，暂无法回复");
+        if (req.quoteReplyId() != null) {
+            ForumReply quoted = replyRepository.findById(req.quoteReplyId())
+                    .orElseThrow(() -> new IllegalArgumentException("引用的回复不存在"));
+            if (!topicId.equals(quoted.getTopicId())) throw new IllegalArgumentException("不能引用其他话题的回复");
+        }
+        if (!rateLimiter.allow("FORUM_REPLY:" + playerId, 1, 8_000L)) {
+            throw new com.wargame.security.GameAccessException("FORUM_REPLY_COOLDOWN", "回帖过于频繁，请稍候再试（冷却时间8秒）", 429);
+        }
+        // 使用加锁后的最新计数，避免 MySQL 可重复读快照导致并发回复重号。
+        int floor = topic.getReplyCount() + 1;
         long now = System.currentTimeMillis();
         GuildInfo guildInfo = getPlayerGuildInfo(playerId);
 
@@ -323,7 +336,7 @@ public class ForumService {
         topic.setUpdatedAt(now);
         topicRepository.save(topic);
 
-        boardRepository.findById(topic.getBoardId()).ifPresent(b -> {
+        boardRepository.lockById(topic.getBoardId()).ifPresent(b -> {
             b.setPostCount(b.getPostCount() + 1);
             boardRepository.save(b);
         });
@@ -331,7 +344,7 @@ public class ForumService {
         QuoteReplyDto quote = null;
         if (reply.getQuoteReplyId() != null) {
             ForumReply quoted = replyRepository.findById(reply.getQuoteReplyId()).orElse(null);
-            if (quoted != null) {
+            if (quoted != null && topicId.equals(quoted.getTopicId())) {
                 String snippet = quoted.getContent().length() > 60
                         ? quoted.getContent().substring(0, 60) + "..." : quoted.getContent();
                 quote = new QuoteReplyDto(quoted.getId(), quoted.getAuthorDisplayName() != null ? quoted.getAuthorDisplayName() : quoted.getAuthorName(), quoted.getFloorNumber(), snippet);
@@ -362,12 +375,17 @@ public class ForumService {
         );
     }
 
+    /** 点赞与回复、删帖共用主题行锁，保证目标存在且并发统计不覆盖正文状态。 */
     @Transactional
     public Map<String, Object> toggleLike(Long playerId, String targetType, Long targetId) {
-        String cleanType = targetType.toUpperCase();
+        String cleanType = targetType == null ? "" : targetType.toUpperCase(Locale.ROOT);
         if (!"TOPIC".equals(cleanType) && !"REPLY".equals(cleanType)) {
             throw new IllegalArgumentException("点赞目标类型无效");
         }
+
+        Long topicId = "TOPIC".equals(cleanType) ? targetId : replyRepository.findById(targetId)
+                .orElseThrow(() -> new IllegalArgumentException("回复不存在或已被删除")).getTopicId();
+        topicRepository.lockById(topicId).orElseThrow(() -> new IllegalArgumentException("话题不存在或已被删除"));
 
         Optional<ForumLike> existing = likeRepository.findByTargetTypeAndTargetIdAndPlayerId(cleanType, targetId, playerId);
         boolean likedNow;
@@ -405,14 +423,14 @@ public class ForumService {
 
     @Transactional
     public Map<String, Object> acceptBounty(Long playerId, Long topicId, Long replyId) {
-        ForumTopic topic = topicRepository.findById(topicId)
+        ForumTopic topic = topicRepository.lockById(topicId)
                 .orElseThrow(() -> new IllegalArgumentException("话题不存在"));
 
         if (!playerId.equals(topic.getAuthorId())) {
             throw new IllegalArgumentException("只有悬赏发起人有权采纳答案");
         }
         if (!"BOUNTY".equals(topic.getTopicType()) || !"OPEN".equals(topic.getBountyStatus())) {
-            throw new IllegalStateException("该话题非有效悬赏或已被采纳解决");
+            throw new IllegalArgumentException("该话题非有效悬赏或已被采纳解决");
         }
 
         ForumReply reply = replyRepository.findById(replyId)
@@ -425,6 +443,9 @@ public class ForumService {
             throw new IllegalArgumentException("不能采纳自己的回复作为最佳答案");
         }
 
+        // 只有主城金库可用才结案；加锁避免不同悬赏同时奖励同一玩家时丢失黄金。
+        Resources solverRes = resourcesRepository.findCityForTreatment(reply.getAuthorId(), 0)
+                .orElseThrow(() -> new IllegalArgumentException("解答者主城金库不可用，暂无法结算"));
         reply.setIsAcceptedBounty(true);
         replyRepository.save(reply);
 
@@ -434,12 +455,8 @@ public class ForumService {
 
         // 奖励结算给答题者
         int bountyGold = topic.getBountyGold();
-        Resources solverRes = resourcesRepository.findFirstByPlayerIdOrderByCitySlotAsc(reply.getAuthorId())
-                .orElse(null);
-        if (solverRes != null) {
-            solverRes.addResource("gold", bountyGold);
-            resourcesRepository.save(solverRes);
-        }
+        solverRes.addResource("gold", bountyGold);
+        resourcesRepository.save(solverRes);
 
         return Map.of("success", true, "bountyGold", bountyGold, "solverId", reply.getAuthorId());
     }
@@ -450,7 +467,7 @@ public class ForumService {
             throw new IllegalArgumentException("打赏金额必须大于0");
         }
 
-        ForumTopic topic = topicRepository.findById(topicId)
+        ForumTopic topic = topicRepository.lockById(topicId)
                 .orElseThrow(() -> new IllegalArgumentException("话题不存在"));
 
         if (playerId.equals(topic.getAuthorId())) {
@@ -494,9 +511,10 @@ public class ForumService {
         return Map.of("success", true, "amountGold", req.amountGold(), "totalTips", topic.getTipCount(), "totalGold", topic.getTipTotalGold());
     }
 
+    /** 删帖清理从属互动并修正统计；仅退回未采纳悬赏，不撤销已完成的奖励与打赏。 */
     @Transactional
     public Map<String, Object> moderateTopic(Long actorPlayerId, Long topicId, AdminTopicActionRequest req, boolean isAdmin) {
-        ForumTopic topic = topicRepository.findById(topicId)
+        ForumTopic topic = topicRepository.lockById(topicId)
                 .orElseThrow(() -> new IllegalArgumentException("话题不存在"));
 
         String action = req.action().toUpperCase();
@@ -504,9 +522,20 @@ public class ForumService {
             if (!isAdmin && !actorPlayerId.equals(topic.getAuthorId())) {
                 throw new IllegalArgumentException("权限不足，仅作者或管理员可删除话题");
             }
+            if ("BOUNTY".equals(topic.getTopicType()) && "OPEN".equals(topic.getBountyStatus())) {
+                Resources authorRes = resourcesRepository.findCityForTreatment(topic.getAuthorId(), 0)
+                        .orElseThrow(() -> new IllegalArgumentException("发帖人主城金库不可用，暂无法退还悬赏"));
+                authorRes.addResource("gold", topic.getBountyGold());
+                resourcesRepository.save(authorRes);
+            }
+            int removedReplies = replyRepository.countByTopicId(topicId);
+            likeRepository.deleteForTopic(topicId);
+            replyRepository.deleteByTopicId(topicId);
+            tipRepository.deleteByTopicId(topicId);
             topicRepository.delete(topic);
-            boardRepository.findById(topic.getBoardId()).ifPresent(b -> {
+            boardRepository.lockById(topic.getBoardId()).ifPresent(b -> {
                 b.setTopicCount(Math.max(0, b.getTopicCount() - 1));
+                b.setPostCount(Math.max(0, b.getPostCount() - removedReplies));
                 boardRepository.save(b);
             });
             return Map.of("success", true, "action", "DELETED");
@@ -536,7 +565,7 @@ public class ForumService {
                 .orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
 
         GuildInfo guildInfo = getPlayerGuildInfo(playerId);
-        Resources res = resourcesRepository.findFirstByPlayerIdOrderByCitySlotAsc(playerId).orElse(null);
+        Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, 0).orElse(null);
         int gold = (int) Math.min(Integer.MAX_VALUE, res != null && res.getGold() != null ? res.getGold() : 0L);
         int rank = p.getMilitaryRank() != null ? p.getMilitaryRank() : 1;
         int prestige = p.getPrestige() != null ? p.getPrestige() : 0;

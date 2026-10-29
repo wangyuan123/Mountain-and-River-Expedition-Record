@@ -17,6 +17,11 @@ public interface PlayerItemRepository extends JpaRepository<PlayerItem, Long> {
 
     Optional<PlayerItem> findByPlayerIdAndItemKey(Long playerId, String itemKey);
 
+    /** 商城持账号锁后读取最新库存，防止可重复读快照放行重复凭证购买。 */
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select p from PlayerItem p where p.playerId = :playerId and p.itemKey = :itemKey")
+    Optional<PlayerItem> findForPurchase(@Param("playerId") Long playerId, @Param("itemKey") String itemKey);
+
     void deleteByPlayerId(Long playerId);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)

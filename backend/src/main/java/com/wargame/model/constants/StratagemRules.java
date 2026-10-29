@@ -22,6 +22,12 @@ public final class StratagemRules {
         return Math.max(minRemaining, ceilPermille(remaining, 1000 - accelerationPermille(knowledge)));
     }
 
+    /** 情报行军令以档位决定基础缩时比例，学识最多额外提高三十个百分点。 */
+    public static long acceleratedMarchRemaining(long remaining, int knowledge, long minRemaining, String itemKey) {
+        int base = ItemDef.MARCH_BONUS_PERCENT.get(itemKey) * 10;
+        return Math.max(minRemaining, ceilPermille(remaining, 1000 - base - Math.min(300, Math.max(0, knowledge))));
+    }
+
     public static long delayedRemaining(long remaining, int knowledge) {
         return Math.addExact(remaining, ceilPermille(remaining, delayPermille(knowledge)));
     }

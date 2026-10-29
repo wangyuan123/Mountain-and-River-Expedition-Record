@@ -5,135 +5,185 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const tiers = [
-  ['mobilizationOrder', '战争动员令', 10, 80, 111],
-  ['advancedMobilizationOrder', '高级战争动员令', 25, 220, 126],
-  ['rapidMobilizationOrder', '极速战争动员令', 50, 500, 151]
+  ['mobilizationOrder', '战争动员令', 10, 80],
+  ['advancedMobilizationOrder', '高级战争动员令', 25, 220],
+  ['rapidMobilizationOrder', '极速战争动员令', 50, 500]
 ];
-
+const day = 86400000;
 function setup(action = 'conquer', kind = 'wild') {
-  const requests = [], purchases = [], uses = [], toasts = [], routes = [];
+  const requests = [], purchases = [], uses = [], toasts = [];
   const nodes = {};
+  let time = Date.UTC(2026, 9, 28, 0, 0);
   const target = { id: 7, type: 'forest', name: '测试目标', level: 1, x: 15, y: 15, totalRes: 1000 };
   const state = {
-    player: {}, tech: {}, resources: { diamond: 5000 }, officers: [], army: { infantry: 200, scout: 200, truck: 200 }, items: {},
+    player: { id: 1, mobilizationCycle: 1 }, tech: {}, resources: { diamond: 5000 }, officers: [], army: { infantry: 200, scout: 200, truck: 200 }, items: {},
     world: { pos: { x: 10, y: 10 }, marches: [], wildTiles: [target], bandits: [target], playerCities: [target],
       _dispatchTarget: { kind, target, idx: 0, action } }
   };
+  const document = {
+    activeElement: null,
+    getElementById: id => nodes[id] || null,
+    querySelector: () => null,
+    createElement() {
+      return { remove() { delete nodes[this.id]; }, querySelector() { return null; } };
+    },
+    body: { appendChild(mask) {
+      nodes[mask.id] = mask;
+      for (const match of mask.innerHTML.matchAll(/id="([^"]+)"/g)) {
+        nodes[match[1]] = { value: '1', disabled: false, focus() {} };
+      }
+    } }
+  };
   const context = vm.createContext({
-    Promise, console, document: { getElementById: id => nodes[id] || null, querySelector: () => null },
+    Promise, console, document,
     Game: {
-      Core: { state, views: {}, armyCap: () => 101, maxMarches: () => 10, render() {} },
-      fmt: String, toast: message => toasts.push(message), go: route => routes.push(route),
+      Core: { state, views: {}, ordinaryArmyCap: () => 101, armyCap: () => Math.floor(101 * (100 + context.Game.Mobilization.info().percent) / 100), maxMarches: () => 10, render() {} },
+      gameNow: () => time, fmt: String, escapeHtml: String, toast: message => toasts.push(message), go() {},
       API: {
         worldDispatch: body => { requests.push(body); return Promise.resolve(); },
         shopBuy: id => { purchases.push(id); return Promise.resolve({ success: true }); },
-        depotUse: id => { uses.push(id); return Promise.resolve({ success: true }); }
+        depotUse: (...args) => { uses.push(args); return Promise.resolve({ success: true, message: '动员已生效' }); }
       }
     }
   });
   context.window = context;
-  for (const file of ['constants.js', 'data.js', 'icons.js', 'shop.js', 'depot.js', 'world.js']) {
+  for (const file of ['constants.js', 'data.js', 'icons.js', 'shop.js', 'mobilization.js', 'depot.js', 'world.js']) {
     vm.runInContext(fs.readFileSync(path.join(__dirname, '../js', file), 'utf8'), context);
   }
-  return { game: context.Game, state, nodes, requests, purchases, uses, toasts, routes };
+  context.Game.gameNow = () => time;
+  return { game: context.Game, state, nodes, requests, purchases, uses, toasts, context,
+    now: () => time, advance: ms => { time += ms; } };
 }
 
-test('三档战争动员令可购买入仓，商城与仓库名称、说明和价格一致', async () => {
+test('三档道具在仓库二次确认后启用，数量与幂等标识传给后端，购买价格保留', async () => {
   const f = setup();
   for (const [id, name, percent, price] of tiers) {
-    const item = f.game.Shop.items().find(product => product.id === id);
-    const depotItem = f.game.DATA.items[id];
-    assert.equal(item.name, name);
-    assert.equal(item.price, price);
-    assert.equal(item.cat, 'util');
-    assert.equal(item.name, depotItem.name);
-    assert.equal(item.desc, depotItem.desc);
-    assert.match(item.desc, new RegExp('提高' + percent + '%'));
+    const product = f.game.Shop.items().find(item => item.id === id);
+    assert.equal(product.name, name);
+    assert.equal(product.price, price);
+    assert.equal(product.desc, f.game.DATA.items[id].desc);
+    assert.match(product.desc, /每张持续24小时/);
+    assert.match(product.desc, new RegExp('提高' + percent + '%'));
     f.game.Shop.buy(id);
-    f.state.items[id] = 1;
-    f.game.Depot.setTab('util');
+    f.state.items[id] = 3;
     const view = {};
+    f.game.Depot.setTab('util');
     f.game.Depot.renderView(view);
-    assert.match(view.innerHTML, /出征时选择/);
+    assert.match(view.innerHTML, /使用动员令/);
+    const before = f.uses.length;
     f.game.Depot.useItem(id);
-    await Promise.resolve();
+    assert.equal(f.uses.length, before, '打开弹窗不消耗');
+    assert.match(f.nodes.mobilizationUseMask.innerHTML, /本账号所有城市的新出征行军/);
+    assert.match(f.nodes.mobilizationUseMask.innerHTML, /本城防守出战/);
+    assert.match(f.nodes.mobilizationUsePreview.innerHTML, /新增：24小时/);
+    f.nodes.mobilizationUseCount.value = '2';
+    f.nodes.mobilizationUseCount.oninput();
+    assert.match(f.nodes.mobilizationUsePreview.innerHTML, /新增：48小时/);
+    f.nodes.mobilizationUseConfirm.onclick();
+    f.nodes.mobilizationUseConfirm.onclick();
+    await new Promise(setImmediate);
+    assert.equal(f.uses.length, before + 1, '重复点击只提交一次');
+    assert.equal(f.uses.at(-1)[0], id);
+    assert.equal(f.uses.at(-1)[4], 2);
+    assert.match(f.uses.at(-1)[5], /^[A-Za-z0-9_-]{8,64}$/);
+    assert.equal(f.state.items[id], 3, '库存由服务端状态更新');
   }
-  assert.deepEqual(f.purchases, tiers.map(t => t[0]));
-  assert.deepEqual(f.uses, []);
-  assert.equal(f.routes.at(-1), 'world');
 });
 
-test('进攻准备展示三档库存并禁用缺货项，切换动员令保留编队', () => {
+test('同档剩余时间累加预览，低档被高档覆盖时明确提示', () => {
   const f = setup();
-  f.state.items.mobilizationOrder = 2;
-  f.nodes.dqty_infantry = { value: '110' };
-  const view = {};
-  f.game.World.renderDispatch(view);
-  assert.ok(view.innerHTML.includes('战争动员令 +10%（库存 2）'));
-  assert.match(view.innerHTML, /value="advancedMobilizationOrder" disabled/);
-  f.game.World.setMobilizationOrder('mobilizationOrder');
-  assert.equal(f.state.world._dispatchTarget.mobilizationOrderItem, 'mobilizationOrder');
-  assert.equal(f.nodes.dqty_infantry.value, '110');
-  f.game.World.setMobilizationOrder('rapidMobilizationOrder');
-  assert.equal(f.state.world._dispatchTarget.mobilizationOrderItem, 'mobilizationOrder');
+  f.state.items.mobilizationOrder = 5;
+  f.state.player.mobilizationExpiries = { mobilizationOrder: f.now() + 5 * 3600000, rapidMobilizationOrder: f.now() + day };
+  f.game.Depot.useItem('mobilizationOrder');
+  assert.match(f.nodes.mobilizationUsePreview.innerHTML, /1天 5小时 0分钟/);
+  assert.match(f.nodes.mobilizationUsePreview.innerHTML, /暂被更高档动员覆盖/);
+  assert.match(f.nodes.mobilizationUsePreview.innerHTML, /151 → 151/);
+  f.nodes.mobilizationUseCancel.onclick();
+  assert.equal(f.nodes.mobilizationUseMask, undefined);
+  assert.equal(f.uses.length, 0);
 });
 
-for (const [id, name, percent, price, cap] of tiers) {
-  test(name + '预览取整后的临时上限，允许上限内编队并提交对应道具', async () => {
+test('网络结果不明时重试同一个请求，确认不重复扣除', async () => {
+  const f = setup();
+  f.state.items.mobilizationOrder = 1;
+  f.game.API.depotUse = (...args) => { f.uses.push(args); return f.uses.length === 1 ? Promise.reject(new Error('网络异常')) : Promise.resolve({ success: true }); };
+  f.game.Depot.useItem('mobilizationOrder');
+  f.nodes.mobilizationUseConfirm.onclick();
+  await new Promise(setImmediate);
+  assert.equal(f.nodes.mobilizationUseCount.disabled, true);
+  assert.match(f.nodes.mobilizationUseMessage.textContent, /不会重复扣除/);
+  f.nodes.mobilizationUseConfirm.onclick();
+  await new Promise(setImmediate);
+  assert.equal(f.uses.length, 2);
+  assert.equal(f.uses[0][5], f.uses[1][5]);
+});
+
+test('倒计时按分钟显示，精确到期降档和恢复默认配置，不延迟一分钟', () => {
+  const f = setup();
+  f.state.player.mobilizationExpiries = { mobilizationOrder: f.now() + day * 2, rapidMobilizationOrder: f.now() + day + 60000 };
+  assert.equal(f.game.Mobilization.info().percent, 50);
+  assert.match(f.game.Mobilization.widget(), /1天 0小时 1分钟/);
+  assert.match(f.game.Mobilization.widget(), /当前被更高档效果覆盖/);
+  f.advance(day + 1);
+  assert.equal(f.game.Mobilization.countdown(f.state.player.mobilizationExpiries.rapidMobilizationOrder), '不足1分钟');
+  assert.equal(f.game.Mobilization.info().percent, 50);
+  f.advance(59999);
+  assert.equal(f.game.Mobilization.info().percent, 10);
+  assert.equal(f.game.Mobilization.info().key, 'mobilization:1');
+  f.advance(day - 60000);
+  assert.equal(f.game.Mobilization.info().percent, 0);
+  assert.equal(f.game.Mobilization.info().key, 'default');
+  assert.match(f.game.Mobilization.widget(), /动员未启用/);
+});
+
+for (const [id, name, percent] of tiers) {
+  test(name + '的账号效果用于行军上限，行军不携带或消耗道具', async () => {
     const f = setup();
-    f.state.items[id] = 1;
+    f.state.player.mobilizationExpiries = { [id]: f.now() + day };
+    const cap = Math.floor(101 * (100 + percent) / 100);
     f.state.world._dispatchTarget.mobilizationOrderItem = id;
     f.nodes.dqty_infantry = { value: String(cap) };
-    f.nodes.dpMobilizationOrder = { value: id };
     f.nodes.estDispatchTroops = { style: {} };
-    f.nodes.dpMobilizationSummary = {};
+    const view = {};
+    f.game.World.renderDispatch(view);
+    assert.doesNotMatch(view.innerHTML, /dpMobilizationOrder/);
+    assert.match(view.innerHTML, /动员令在仓库使用/);
     f.game.World.updateDispatchStats();
     assert.equal(f.nodes.estDispatchTroops.textContent, cap + ' / ' + cap);
-    assert.match(f.nodes.dpMobilizationSummary.textContent, new RegExp('本次上限 ' + cap));
     f.game.World.launchDispatch();
     await new Promise(setImmediate);
     assert.equal(f.requests.length, 1);
-    assert.equal(f.requests[0].mobilizationOrderItem, id);
+    assert.equal(Object.hasOwn(f.requests[0], 'mobilizationOrderItem'), false);
     assert.equal(f.requests[0].army.infantry, cap);
-    assert.equal(f.state.items[id], 1, '前端不能自行扣除库存');
-  });
-
-  test(name + '不能叠加突破本档上限', () => {
-    const f = setup();
-    f.state.items[id] = 5;
-    f.state.world._dispatchTarget.mobilizationOrderItem = id;
-    f.nodes.dqty_infantry = { value: String(cap + 1) };
-    f.game.World.launchDispatch();
-    assert.equal(f.requests.length, 0);
-    assert.match(f.toasts.at(-1), new RegExp('超过带兵上限 ' + cap));
+    assert.equal(f.uses.length, 0);
   });
 }
 
-test('失效库存不提供临时上限，超编时提前提示道具不足', () => {
+test('增益到期后新出征立即按普通上限校验，库存不再授予额外容量', () => {
   const f = setup();
+  f.state.items.rapidMobilizationOrder = 5;
+  f.state.player.mobilizationExpiries = { rapidMobilizationOrder: f.now() + 1 };
   f.state.world._dispatchTarget.mobilizationOrderItem = 'rapidMobilizationOrder';
   f.nodes.dqty_infantry = { value: '120' };
-  f.nodes.estDispatchTroops = { style: {} };
-  f.game.World.updateDispatchStats();
-  assert.equal(f.nodes.estDispatchTroops.textContent, '120 / 101');
+  f.advance(1);
   f.game.World.launchDispatch();
   assert.equal(f.requests.length, 0);
-  assert.match(f.toasts.at(-1), /数量不足/);
+  assert.match(f.toasts.at(-1), /超过带兵上限 101/);
 });
 
-test('侦查、采集、进驻和运输不展示或提交旧草稿中的战争动员令', async () => {
+test('侦查、采集、进驻、运输均读取统一账号上限，不提交旧道具草稿', async () => {
   for (const [action, kind, unit] of [['scout', 'wild', 'scout'], ['gather', 'wild_gather', 'truck'],
     ['station', 'wild', 'infantry'], ['transport', 'player', 'truck']]) {
     const f = setup(action, kind);
-    f.state.items.rapidMobilizationOrder = 1;
+    f.state.player.mobilizationExpiries = { rapidMobilizationOrder: f.now() + day };
     f.state.world._dispatchTarget.mobilizationOrderItem = 'rapidMobilizationOrder';
-    f.nodes['dqty_' + unit] = { value: '1' };
+    f.nodes['dqty_' + unit] = { value: '120' };
     const view = {};
     f.game.World.renderDispatch(view);
     assert.doesNotMatch(view.innerHTML, /dpMobilizationOrder/);
     f.game.World.launchDispatch();
     await new Promise(setImmediate);
     assert.equal(f.requests.length, 1, action);
-    assert.equal(Object.hasOwn(f.requests[0], 'mobilizationOrderItem'), false, action);
+    assert.equal(Object.hasOwn(f.requests[0], 'mobilizationOrderItem'), false);
   }
 });

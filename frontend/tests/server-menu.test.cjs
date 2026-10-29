@@ -34,7 +34,7 @@ test('大区菜单贴着输入框展开，并支持键盘选择与关闭', () =>
     querySelector(selector) { return selector === '.login-server-options' ? menu : selector === '#loginServerValue' ? value : trigger; },
     querySelectorAll: () => options
   };
-  const value = { textContent: '江苏一区' };
+  const value = { textContent: '公测一区' };
   const trigger = {
     closest: () => picker,
     getBoundingClientRect: () => ({ top: 600, bottom: 649 }),
@@ -42,7 +42,7 @@ test('大区菜单贴着输入框展开，并支持键盘选择与关闭', () =>
     setAttribute(name, content) { this[name] = content; },
     focus() { document.activeElement = this; }
   };
-  const options = ['江苏一区', '江苏二区'].map((name, index) => ({
+  const options = ['公测一区', '江苏二区'].map((name, index) => ({
     textContent: name, dataset: { serverId: 'jiangsu-' + (index + 1) },
     selected: index === 0,
     closest: () => picker,

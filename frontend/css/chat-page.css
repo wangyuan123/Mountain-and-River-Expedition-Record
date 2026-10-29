@@ -197,7 +197,7 @@
 .private-conversation { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px; border: 0; border-bottom: 1px solid var(--line); background: var(--surface); color: var(--ink); text-align: left; cursor: pointer; font: inherit; }
 .private-conversation:hover { background: var(--accent-soft); }
 /* 覆盖消息头像的浮动规则，列表头像固定在名称左侧。 */
-.private-conversation > .chat-avatar { float: none; order: 0; position: static; margin: 0; flex: 0 0 36px; width: 36px; height: 36px; }
+.private-conversation > .chat-avatar { float: none; order: 0; position: relative !important; margin: 0; flex: 0 0 36px; width: 36px; height: 36px; overflow: visible !important; }
 .private-conversation-row { position: relative; overflow: hidden; }
 .private-conversation-row .private-conversation { position: relative; transition: transform .18s; touch-action: pan-y; }
 .private-conversation-row.swiped .private-conversation { transform: translateX(-72px); }

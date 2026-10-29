@@ -8,6 +8,7 @@ import com.wargame.model.constants.GameData;
 import com.wargame.model.constants.AcademyRecruitmentRules;
 import com.wargame.model.constants.OfficerEquipmentDef;
 import com.wargame.model.constants.OfficerExperienceRules;
+import com.wargame.model.constants.ItemDef;
 import com.wargame.model.constants.OfficerSkillDef;
 import com.wargame.model.constants.HistoricalOfficers;
 import com.wargame.model.constants.OfficerNameGenerator;
@@ -693,6 +694,7 @@ public class OfficerService {
         return useExpBook(playerId, officerId, null, 1);
     }
 
+    /** 定额经验书支持批量加经验，仍由玩家另行升级；满级书每次只扣一本并直接升满。 */
     @Transactional
     public Map<String, Object> useExpBook(Long playerId, Long officerId, String itemId, int count) {
         Map<String, Object> result = new LinkedHashMap<>();
@@ -713,25 +715,15 @@ public class OfficerService {
 
         if (count <= 0) count = 1;
 
-        // 如果未指定 itemId，智能判断：优先 expBook，若无则尝试 expBookAdv，再尝试 expBookMax
+        // 兼容未指定档位的旧调用，按普通、高级、极速、满级依次选择库存充足的档位。
         if (itemId == null || itemId.isBlank()) {
-            int cntNormal = playerItemRepository.findByPlayerIdAndItemKey(playerId, "expBook")
-                    .map(it -> it.getCount() != null ? it.getCount() : 0).orElse(0);
-            if (cntNormal >= count) {
-                itemId = "expBook";
-            } else {
-                int cntAdv = playerItemRepository.findByPlayerIdAndItemKey(playerId, "expBookAdv")
+            itemId = "expBook";
+            for (String candidate : List.of("expBook", "expBookAdv", "expBookRapid", "expBookMax")) {
+                int stock = playerItemRepository.findByPlayerIdAndItemKey(playerId, candidate)
                         .map(it -> it.getCount() != null ? it.getCount() : 0).orElse(0);
-                if (cntAdv >= count) {
-                    itemId = "expBookAdv";
-                } else {
-                    int cntMax = playerItemRepository.findByPlayerIdAndItemKey(playerId, "expBookMax")
-                            .map(it -> it.getCount() != null ? it.getCount() : 0).orElse(0);
-                    if (cntMax >= 1) {
-                        itemId = "expBookMax";
-                    } else {
-                        itemId = "expBook";
-                    }
+                if (stock >= ("expBookMax".equals(candidate) ? 1 : count)) {
+                    itemId = candidate;
+                    break;
                 }
             }
         }
@@ -761,9 +753,13 @@ public class OfficerService {
             return result;
         }
 
-        boolean isAdv = "expBookAdv".equals(itemId);
-        String bookName = isAdv ? "高级经验书" : "经验书";
-        int singleGain = isAdv ? 100000 : 10000;
+        Integer singleGain = ItemDef.EXPERIENCE_BOOK_EXP.get(itemId);
+        if (singleGain == null) {
+            result.put("success", false);
+            result.put("message", "无效的经验书档位");
+            return result;
+        }
+        String bookName = ItemDef.ITEMS.get(itemId).name();
 
         int consumed = playerItemRepository.tryConsume(playerId, itemId, count, GameClock.now());
         if (consumed == 0) {
@@ -772,7 +768,8 @@ public class OfficerService {
             return result;
         }
 
-        int totalGain = singleGain * count;
+        // 五十万经验档批量使用时可能超过 int 范围，先以 long 计算再写入经验余额。
+        long totalGain = (long) singleGain * count;
         long exp = (officer.getExp() != null ? officer.getExp() : 0L) + totalGain;
         officer.setExp(exp);
         officerRepository.save(officer);

@@ -30,6 +30,10 @@
 
 ```sh
 mysql -u root -e "CREATE DATABASE IF NOT EXISTS wargame DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+# 已配置根目录 .env 时，在可信终端加载配置（不要开启 set -x）。
+set -a
+[ ! -f .env ] || . ./.env
+set +a
 mvn -f backend/pom.xml spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
@@ -43,17 +47,77 @@ python3 -m http.server 8081 --directory frontend
 
 `local` 仅监听回环地址，并提供虚构身份 `DEMO-ADULT`、`DEMO-PARENT`、`DEMO-TEEN`、`DEMO-CHILD`。当前默认关闭防沉迷，无需提交测试凭据。需要验收原有控制时，设置 `WARGAME_COMPLIANCE_ENABLED=true`，注册后在实名页提交测试凭据。仅使用独立开发库；不要向公网代理该配置。未指定 `local` 时不会接受测试身份。配置、接口与正式接入边界见 [防沉迷实施说明](docs/ANTI_ADDICTION_IMPLEMENTATION.md)。
 
-`SPRING_PROFILES_ACTIVE=local ./start-local.sh` 可自动准备本机依赖并启动本机测试服务；该脚本会安装缺失依赖，并结束占用 8080/8081 的旧进程，适合专用开发环境。
+`SPRING_PROFILES_ACTIVE=local ./start-local.sh` 可自动准备本机依赖并启动本机测试服务；该脚本会读取并导出根目录受信任的 `.env` 配置（文件值覆盖同名环境变量），安装缺失依赖，并结束占用 8080/8081 的旧进程，适合专用开发环境。SMTP 授权码及邮箱密钥的配置见 [QQ 邮箱实施说明](docs/QQ_EMAIL_ACCOUNT_RECOVERY_IMPLEMENTATION.md)。
 
-## Docker 启动
+## 服务器与 Docker 一键部署
 
-复制 `.env.example` 为 `.env`，填写数据库密码和随机 JWT 密钥后：
+工程提供了一键安全部署脚本 [`deploy.sh`](deploy.sh)，并遵循 [服务器一键部署前置安全规范](docs/DEPLOYMENT_SECURITY_SPEC.md)。详细的服务器购买、代码上传、一键部署与本地后台管理连接实战教程可参考 [《服务器部署与本地后台管理连接指引》](docs/SERVER_DEPLOYMENT_AND_ADMIN_GUIDE.md)。
+
+### 两个脚本的使用时机
+
+| 脚本 | 负责什么 | 什么时候使用 | 执行位置 |
+| --- | --- | --- | --- |
+| [`setup-server.sh`](setup-server.sh) | 安装 Python、Git、Docker Engine 和 Compose V2，检查服务器环境 | 新服务器通常执行一次；后续需要检查环境时使用 `--check` | SSH 登录服务器后执行，可单独上传，不要求在项目根目录 |
+| [`deploy.sh`](deploy.sh) | 准备游戏凭证、构建启动游戏、升级前备份和部署验收 | 首次部署，以及每次更新游戏 | 完整项目上传后，在服务器项目根目录执行 |
+
+环境初始化支持 Ubuntu 22.04 / Debian 12，已有冲突安装会停止，不自动卸载。小内存服务器可为 `setup-server.sh` 追加 `--swap-gb 2`；默认不创建 Swap。
+
+游戏部署入口 `deploy.sh` 依赖 Python 3.9+、Docker Engine 和 Docker Compose V2，不自动安装系统软件。首次部署会生成私有凭证；已有数据卷时必须保留原 `.env`，缺失或弱凭证会阻止部署，不会自动轮换数据库密码或邮箱密钥。
+
+脚本固定解析根目录的 Compose 配置，在临时部署配置中关闭数据库与后端宿主机端口；不改写原 Compose 文件。升级前备份数据库、`.env` 和头像到不入库的 `backups/deploy/`，再替换后端并重建 Nginx。数据库认证、实际端口绑定、网关 API 与首页验收通过后才报告成功。
+
+### 首次部署顺序
+
+先把 `setup-server.sh` 单独上传到服务器 `/tmp/`。SSH 登录后执行环境初始化：
 
 ```sh
-docker compose up -d --build
+sudo bash /tmp/setup-server.sh
 ```
 
-Compose 已启用 `prod` 配置，访问 <http://localhost>。公网部署应按实际环境配置 HTTPS 和端口开放范围。
+环境准备完成后，上传或克隆完整项目。如果本机 `.env` 已填好邮箱，可在**本机项目根目录**一键导出私有配置包，免去服务器上重复填写：
+
+```sh
+python3 scripts/export-mail-config.py
+scp .private-deploy/mail-config.tar.gz ubuntu@你的服务器公网IP:/tmp/
+```
+
+包中仅包含 SMTP 设置，不包含本机数据库密码、JWT 或邮箱加密密钥；包包含授权码，不能入库或公开分享。然后在**服务器项目根目录**解压并部署（下面路径按实际情况替换）：
+
+```sh
+cd /opt/Strategies-of-the-Flaming-Plains
+chmod +x deploy.sh
+tar -xzf /tmp/mail-config.tar.gz
+sudo ./deploy.sh --init-env
+sudo ./deploy.sh --check
+sudo ./deploy.sh
+```
+
+`--init-env` 会自动把 `.deploy-mail.env` 中的 SMTP 设置写入 `.env`，独立生成服务器凭证；也可以解压后直接运行 `sudo ./deploy.sh`，一次完成导入与部署。已有完整邮箱配置保持原样，配置冲突时停止。如果没有导入包，仍可执行 `sudo nano .env` 手动填写后部署；缺少发信配置时注册与邮箱找回不可用。
+
+确认 `.env` 已导入后，可删除服务器上的待导入文件与传输包：
+
+```sh
+sudo rm -f .deploy-mail.env /tmp/mail-config.tar.gz
+```
+
+即：**安装服务器环境 → 上传完整项目和邮箱配置包 → 自动准备 `.env` → 预检 → 部署游戏**。`setup-server.sh` 本身不会部署游戏。
+
+### 后续更新顺序
+
+保留原 `.env`、数据卷及生产网关配置，更新源码后，在服务器项目根目录执行：
+
+```sh
+sudo ./deploy.sh --check
+sudo ./deploy.sh
+```
+
+通常无需重新安装环境，也无需再次执行 `--init-env`。如需单独检查环境，可在项目根目录执行 `sudo bash ./setup-server.sh --check`。
+
+目录改名或原来使用过自定义 Compose 项目名时，预检和部署都要带上同一个原项目名，例如 `sudo ./deploy.sh --project-name <原项目名> --check` 和 `sudo ./deploy.sh --project-name <原项目名>`，避免连接到新数据卷。命令中的 `<原项目名>` 需替换后再执行。旧 `./scripts/security-preflight.py` 入口等价于只读的 `./deploy.sh --check`。
+
+升级会短暂停服，不自动回滚数据库。生产启动请始终使用部署脚本；直接执行 `docker compose up` 会使用源码中的开发端口映射，绕过部署配置隔离。脚本不会配置 HTTPS、修改云安全组，也不会发送测试邮件。
+
+> **安全红线**：日常维护升级请使用 `./deploy.sh` 或 `docker compose down`，**严禁执行 `docker compose down -v`**（带 `-v` 会删除 `mysqldata` 数据库存储卷造成数据丢失）。
 
 ## 验证
 

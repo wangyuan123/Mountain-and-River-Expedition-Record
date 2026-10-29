@@ -20,6 +20,14 @@ __pycache__/
 .vscode/
 .dbg/
 *.log
+.deploy.lock
+.deploy-write-*
+# 本机导出的 SMTP 私有包与服务器待导入配置。
+.deploy-mail.env
+.private-deploy/
+.mail-export-*
+# 部署备份包含生产数据库和原始密钥，不纳入源码。
+/backups/
 
 # 设计素材打包产物
 /output/**/*.zip

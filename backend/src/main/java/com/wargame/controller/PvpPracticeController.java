@@ -25,6 +25,13 @@ public class PvpPracticeController {
     public record OrdersRequest(String requestId, String sessionId, int round, long revision, Map<String, UnitOrder> orders, boolean lock) {}
     public record AutoRequest(String requestId, String sessionId, int expectedRound, boolean enabled) {}
     private Long me() { return auth.getCurrentPlayer().getId(); }
+    /** 仅编队保存和新入队受声望门槛限制；已参战玩家仍可恢复、指挥和退出。 */
+    private Long entrant() {
+        var player = auth.getCurrentPlayer();
+        if (player.getPrestige() == null || player.getPrestige() < 10000)
+            throw new com.wargame.security.GameAccessException("PVP_PRESTIGE_REQUIRED", "声望达到 10000 后解锁 PvP 对战功能");
+        return player.getId();
+    }
     private Object body(String op, Object request) { return Map.of("op", op, "request", request); }
 
     @GetMapping("/lobby")
@@ -36,7 +43,7 @@ public class PvpPracticeController {
     }
     @PostMapping("/preset")
     public Map<String, Object> preset(@RequestBody PresetRequest req) {
-        Long player = me(); var body = body("preset", req); var previous = practice.prior(player, req.requestId(), body); if (previous != null) return previous;
+        Long player = entrant(); var body = body("preset", req); var previous = practice.prior(player, req.requestId(), body); if (previous != null) return previous;
         PvpPracticeService.validateDefaults(req.defaults());
         var p = new PvpPreset(req.citySlot(), req.battlefield(), PvpSnapshotService.quantities(req.army()), req.commanderId(), req.defaults());
         var snapshot = powers.estimate(snapshots.freeze(player, p));
@@ -44,7 +51,7 @@ public class PvpPracticeController {
     }
     @PostMapping("/queue")
     public Map<String, Object> queue(@RequestBody QueueRequest req) {
-        Long player = me(); var body = body("queue", req); var previous = practice.prior(player, req.requestId(), body); if (previous != null) return previous;
+        Long player = entrant(); var body = body("queue", req); var previous = practice.prior(player, req.requestId(), body); if (previous != null) return previous;
         var settings = practice.preset(player); var defaults = ((PvpPreset) settings.get("preset")).defaults();
         var p = new PvpPreset(req.citySlot(), req.battlefield(), PvpSnapshotService.quantities(req.army()), req.commanderId(), defaults);
         var snapshot = powers.estimate(snapshots.freeze(player, p));

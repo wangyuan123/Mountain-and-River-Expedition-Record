@@ -103,7 +103,7 @@ test('confirmation previews target, inventory and exact screenshot example; canc
   assert.equal(modal.nodes['[data-march-before]'].textContent, '29分钟21秒');
   assert.equal(modal.nodes['[data-march-after]'].textContent, '14分钟41秒');
   assert.equal(modal.nodes['[data-march-saved]'].textContent, '14分钟41秒');
-  assert.equal(modal.nodes['[data-march-stock]'].textContent, '行军令：消耗 1 枚，库存 3 枚');
+  assert.equal(modal.nodes['[data-march-stock]'].textContent, '极速行军令：消耗 1 枚，库存 3 枚');
   modal.nodes['[data-march-cancel]'].onclick();
   assert.equal(f.calls.length, 0);
   assert.equal(f.modals.length, 0);
@@ -124,7 +124,7 @@ test('double confirmation and another open during submission send one request', 
   ok.onclick(); ok.onclick(); f.game.World.speedUpMarch(17);
   assert.equal(f.modals.length, 1);
   assert.equal(f.calls.length, 1);
-  assert.deepEqual(f.calls[0].args, [17, false, 4, 'preview-token']);
+  assert.deepEqual(f.calls[0].args, [17, false, 4, 'preview-token', 'marchOrd']);
   assert.equal(ok.disabled, true);
   assert.equal(modal.nodes['[data-march-cancel]'].disabled, true);
   f.calls[0].resolve({ message: '行军已加速' }); await flush();
@@ -285,4 +285,53 @@ test('API submits stage/version once and applies authoritative response inventor
   assert.deepEqual({ ...requests[0].body }, { marchId: 17, returning: true, version: 4, confirmationToken: 'preview-token' });
   assert.equal(context.Game.Core.state.items.marchOrd, 2);
   assert.equal(context.Game.Core.state.world.marches[0].arriveAt, 3000);
+});
+
+test('tier changes ignore stale previews and submit only the selected inventory key', async () => {
+  const f = setup(), pending = [];
+  Object.assign(f.state.items, { basicMarchOrd: 2, advancedMarchOrd: 4 });
+  f.game.API.previewMarchOrder = (id, key) => new Promise(resolve => pending.push({ key, resolve }));
+  const modal = f.open(), select = modal.nodes['[data-march-tier]'];
+  assert.match(modal.innerHTML, /初级行军令.*高级行军令.*极速行军令/);
+  assert.equal(select.value, 'basicMarchOrd');
+  select.value = 'advancedMarchOrd';
+  select.onchange();
+  assert.equal(modal.nodes['[data-march-confirm]'].disabled, true);
+  pending[1].resolve({ version: 4, returning: false, ratio: 0.25, itemKey: 'advancedMarchOrd',
+    commanderName: '未任命', knowledge: 0, baseRatio: 0.25, knowledgeBonus: 0, cap: 0.55,
+    confirmationToken: 'advanced-token' });
+  await flush();
+  assert.equal(modal.nodes['[data-march-stock]'].textContent, '高级行军令：消耗 1 枚，库存 4 枚');
+  assert.equal(modal.nodes['[data-march-after]'].textContent, f.game.World.marchTimeText(Math.ceil(1761000 * 0.75)));
+  pending[0].resolve({ version: 4, returning: false, ratio: 0.1, confirmationToken: 'stale-basic-token' });
+  await flush();
+  modal.nodes['[data-march-confirm]'].onclick();
+  assert.deepEqual(f.calls[0].args, [17, false, 4, 'advanced-token', 'advancedMarchOrd']);
+  assert.equal(select.disabled, true);
+});
+
+test('keyboard navigation includes the tier selector', () => {
+  const f = setup(), modal = f.open(), select = modal.nodes['[data-march-tier]'];
+  const cancel = modal.nodes['[data-march-cancel]'], ok = modal.nodes['[data-march-confirm]'];
+  ok.focus();
+  modal.onkeydown({ key: 'Tab', preventDefault() {} });
+  assert.equal(f.context.document.activeElement, select);
+  modal.onkeydown({ key: 'Tab', shiftKey: true, preventDefault() {} });
+  assert.equal(f.context.document.activeElement, ok);
+  cancel.focus();
+  modal.onkeydown({ key: 'Tab', shiftKey: true, preventDefault() {} });
+  assert.equal(f.context.document.activeElement, select);
+});
+
+test('API carries the selected march order tier to the server', async () => {
+  const requests = [];
+  const context = vm.createContext({ Game: { Core: {}, ApiClient: class {
+    getToken() { return 'player-one'; }
+    post(url, body) { requests.push({ url, body }); return Promise.resolve({ success: true }); }
+  } } });
+  context.window = context;
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/api.js'), 'utf8'), context);
+  await context.Game.API.speedUpMarch(17, false, 4, 'basic-token', 'basicMarchOrd');
+  assert.deepEqual({ ...requests[0].body }, { marchId: 17, returning: false, version: 4,
+    confirmationToken: 'basic-token', itemKey: 'basicMarchOrd' });
 });

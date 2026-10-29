@@ -1,0 +1,632 @@
+{
+  "version": "tech-research-gold-design-20261028-v6",
+  "status": "approved-and-implemented-in-source",
+  "maxLevelCostMeaning": "last-upgrade-only-user-confirmed",
+  "classification": "five-user-specified-level-10-price-tiers-air-and-naval-separated",
+  "pricing": {
+    "tierBasis": "explicit-user-specified-tech-group-not-duration-only",
+    "durationRole": "reference-only; air-and-naval-both-28-days-with-distinct-user-specified-prices",
+    "levelPricing": "gold=level10Gold*levelWeight/5000; use-integer-tables",
+    "levelWeights": [
+      1,
+      5,
+      20,
+      60,
+      180,
+      500,
+      1200,
+      2300,
+      3600,
+      5000
+    ],
+    "levelWeightDenominator": 5000,
+    "chargeAffectedByResearchSpeed": false,
+    "sameDurationSamePriceAcrossAllLevels": false,
+    "reasonForChange": "user-specified-five-final-prices-with-v5-smooth-relative-growth-retained"
+  },
+  "groups": [
+    {
+      "key": "resource",
+      "name": "资源产量科技",
+      "technologies": [
+        {
+          "key": "prod_food",
+          "name": "粮食产量"
+        },
+        {
+          "key": "prod_steel",
+          "name": "钢铁产量"
+        },
+        {
+          "key": "prod_oil",
+          "name": "石油产量"
+        },
+        {
+          "key": "prod_rare",
+          "name": "稀矿产量"
+        }
+      ],
+      "levels": [
+        {
+          "fromLevel": 0,
+          "targetLevel": 1,
+          "baseDurationSeconds": 120,
+          "gold": 4000,
+          "cumulativeGold": 4000,
+          "previousGold": 8000,
+          "previousCumulativeGold": 8000
+        },
+        {
+          "fromLevel": 1,
+          "targetLevel": 2,
+          "baseDurationSeconds": 480,
+          "gold": 20000,
+          "cumulativeGold": 24000,
+          "previousGold": 40000,
+          "previousCumulativeGold": 48000
+        },
+        {
+          "fromLevel": 2,
+          "targetLevel": 3,
+          "baseDurationSeconds": 1500,
+          "gold": 80000,
+          "cumulativeGold": 104000,
+          "previousGold": 160000,
+          "previousCumulativeGold": 208000
+        },
+        {
+          "fromLevel": 3,
+          "targetLevel": 4,
+          "baseDurationSeconds": 5400,
+          "gold": 240000,
+          "cumulativeGold": 344000,
+          "previousGold": 480000,
+          "previousCumulativeGold": 688000
+        },
+        {
+          "fromLevel": 4,
+          "targetLevel": 5,
+          "baseDurationSeconds": 21600,
+          "gold": 720000,
+          "cumulativeGold": 1064000,
+          "previousGold": 1440000,
+          "previousCumulativeGold": 2128000
+        },
+        {
+          "fromLevel": 5,
+          "targetLevel": 6,
+          "baseDurationSeconds": 46860,
+          "gold": 2000000,
+          "cumulativeGold": 3064000,
+          "previousGold": 4000000,
+          "previousCumulativeGold": 6128000
+        },
+        {
+          "fromLevel": 6,
+          "targetLevel": 7,
+          "baseDurationSeconds": 101640,
+          "gold": 4800000,
+          "cumulativeGold": 7864000,
+          "previousGold": 9600000,
+          "previousCumulativeGold": 15728000
+        },
+        {
+          "fromLevel": 7,
+          "targetLevel": 8,
+          "baseDurationSeconds": 220380,
+          "gold": 9200000,
+          "cumulativeGold": 17064000,
+          "previousGold": 18400000,
+          "previousCumulativeGold": 34128000
+        },
+        {
+          "fromLevel": 8,
+          "targetLevel": 9,
+          "baseDurationSeconds": 478020,
+          "gold": 14400000,
+          "cumulativeGold": 31464000,
+          "previousGold": 28800000,
+          "previousCumulativeGold": 62928000
+        },
+        {
+          "fromLevel": 9,
+          "targetLevel": 10,
+          "baseDurationSeconds": 1036800,
+          "gold": 20000000,
+          "cumulativeGold": 51464000,
+          "previousGold": 40000000,
+          "previousCumulativeGold": 102928000
+        }
+      ],
+      "totalPerTechnology": 51464000,
+      "level10Gold": 20000000
+    },
+    {
+      "key": "normal",
+      "name": "普通科技",
+      "technologies": [
+        {
+          "key": "military_theory",
+          "name": "军事理论"
+        },
+        {
+          "key": "attack_tech",
+          "name": "攻击科技"
+        },
+        {
+          "key": "defense_tech",
+          "name": "防御科技"
+        },
+        {
+          "key": "weapon_range",
+          "name": "武器射程"
+        },
+        {
+          "key": "cmd_hp",
+          "name": "军队生命"
+        },
+        {
+          "key": "fire_density",
+          "name": "火力密度"
+        },
+        {
+          "key": "wall_reinforcement",
+          "name": "城墙加固"
+        },
+        {
+          "key": "log_load",
+          "name": "负重科技"
+        },
+        {
+          "key": "log_warehouse",
+          "name": "仓储技术"
+        },
+        {
+          "key": "log_food",
+          "name": "军需补给"
+        },
+        {
+          "key": "log_train",
+          "name": "训练加速"
+        },
+        {
+          "key": "log_build",
+          "name": "建筑加速"
+        },
+        {
+          "key": "log_medical",
+          "name": "医疗技术"
+        },
+        {
+          "key": "recon_level",
+          "name": "侦察技术"
+        },
+        {
+          "key": "recon_radar",
+          "name": "雷达预警"
+        },
+        {
+          "key": "prisoner_education",
+          "name": "战俘收编"
+        },
+        {
+          "key": "unit_refit",
+          "name": "武器装备"
+        }
+      ],
+      "levels": [
+        {
+          "fromLevel": 0,
+          "targetLevel": 1,
+          "baseDurationSeconds": 180,
+          "gold": 6000,
+          "cumulativeGold": 6000,
+          "previousGold": 10000,
+          "previousCumulativeGold": 10000
+        },
+        {
+          "fromLevel": 1,
+          "targetLevel": 2,
+          "baseDurationSeconds": 600,
+          "gold": 30000,
+          "cumulativeGold": 36000,
+          "previousGold": 50000,
+          "previousCumulativeGold": 60000
+        },
+        {
+          "fromLevel": 2,
+          "targetLevel": 3,
+          "baseDurationSeconds": 1800,
+          "gold": 120000,
+          "cumulativeGold": 156000,
+          "previousGold": 200000,
+          "previousCumulativeGold": 260000
+        },
+        {
+          "fromLevel": 3,
+          "targetLevel": 4,
+          "baseDurationSeconds": 10800,
+          "gold": 360000,
+          "cumulativeGold": 516000,
+          "previousGold": 600000,
+          "previousCumulativeGold": 860000
+        },
+        {
+          "fromLevel": 4,
+          "targetLevel": 5,
+          "baseDurationSeconds": 43200,
+          "gold": 1080000,
+          "cumulativeGold": 1596000,
+          "previousGold": 1800000,
+          "previousCumulativeGold": 2660000
+        },
+        {
+          "fromLevel": 5,
+          "targetLevel": 6,
+          "baseDurationSeconds": 85320,
+          "gold": 3000000,
+          "cumulativeGold": 4596000,
+          "previousGold": 5000000,
+          "previousCumulativeGold": 7660000
+        },
+        {
+          "fromLevel": 6,
+          "targetLevel": 7,
+          "baseDurationSeconds": 168420,
+          "gold": 7200000,
+          "cumulativeGold": 11796000,
+          "previousGold": 12000000,
+          "previousCumulativeGold": 19660000
+        },
+        {
+          "fromLevel": 7,
+          "targetLevel": 8,
+          "baseDurationSeconds": 332460,
+          "gold": 13800000,
+          "cumulativeGold": 25596000,
+          "previousGold": 23000000,
+          "previousCumulativeGold": 42660000
+        },
+        {
+          "fromLevel": 8,
+          "targetLevel": 9,
+          "baseDurationSeconds": 656400,
+          "gold": 21600000,
+          "cumulativeGold": 47196000,
+          "previousGold": 36000000,
+          "previousCumulativeGold": 78660000
+        },
+        {
+          "fromLevel": 9,
+          "targetLevel": 10,
+          "baseDurationSeconds": 1296000,
+          "gold": 30000000,
+          "cumulativeGold": 77196000,
+          "previousGold": 50000000,
+          "previousCumulativeGold": 128660000
+        }
+      ],
+      "totalPerTechnology": 77196000,
+      "level10Gold": 30000000
+    },
+    {
+      "key": "land",
+      "name": "燃烧引擎",
+      "technologies": [
+        {
+          "key": "arm_engine",
+          "name": "燃烧引擎"
+        }
+      ],
+      "levels": [
+        {
+          "fromLevel": 0,
+          "targetLevel": 1,
+          "baseDurationSeconds": 300,
+          "gold": 10000,
+          "cumulativeGold": 10000,
+          "previousGold": 13000,
+          "previousCumulativeGold": 13000
+        },
+        {
+          "fromLevel": 1,
+          "targetLevel": 2,
+          "baseDurationSeconds": 900,
+          "gold": 50000,
+          "cumulativeGold": 60000,
+          "previousGold": 65000,
+          "previousCumulativeGold": 78000
+        },
+        {
+          "fromLevel": 2,
+          "targetLevel": 3,
+          "baseDurationSeconds": 2700,
+          "gold": 200000,
+          "cumulativeGold": 260000,
+          "previousGold": 260000,
+          "previousCumulativeGold": 338000
+        },
+        {
+          "fromLevel": 3,
+          "targetLevel": 4,
+          "baseDurationSeconds": 10800,
+          "gold": 600000,
+          "cumulativeGold": 860000,
+          "previousGold": 780000,
+          "previousCumulativeGold": 1118000
+        },
+        {
+          "fromLevel": 4,
+          "targetLevel": 5,
+          "baseDurationSeconds": 43200,
+          "gold": 1800000,
+          "cumulativeGold": 2660000,
+          "previousGold": 2340000,
+          "previousCumulativeGold": 3458000
+        },
+        {
+          "fromLevel": 5,
+          "targetLevel": 6,
+          "baseDurationSeconds": 90360,
+          "gold": 5000000,
+          "cumulativeGold": 7660000,
+          "previousGold": 6500000,
+          "previousCumulativeGold": 9958000
+        },
+        {
+          "fromLevel": 6,
+          "targetLevel": 7,
+          "baseDurationSeconds": 188940,
+          "gold": 12000000,
+          "cumulativeGold": 19660000,
+          "previousGold": 15600000,
+          "previousCumulativeGold": 25558000
+        },
+        {
+          "fromLevel": 7,
+          "targetLevel": 8,
+          "baseDurationSeconds": 395100,
+          "gold": 23000000,
+          "cumulativeGold": 42660000,
+          "previousGold": 29900000,
+          "previousCumulativeGold": 55458000
+        },
+        {
+          "fromLevel": 8,
+          "targetLevel": 9,
+          "baseDurationSeconds": 826260,
+          "gold": 36000000,
+          "cumulativeGold": 78660000,
+          "previousGold": 46800000,
+          "previousCumulativeGold": 102258000
+        },
+        {
+          "fromLevel": 9,
+          "targetLevel": 10,
+          "baseDurationSeconds": 1728000,
+          "gold": 50000000,
+          "cumulativeGold": 128660000,
+          "previousGold": 65000000,
+          "previousCumulativeGold": 167258000
+        }
+      ],
+      "totalPerTechnology": 128660000,
+      "level10Gold": 50000000
+    },
+    {
+      "key": "air",
+      "name": "喷气推进",
+      "technologies": [
+        {
+          "key": "air_engine",
+          "name": "喷气推进"
+        }
+      ],
+      "levels": [
+        {
+          "fromLevel": 0,
+          "targetLevel": 1,
+          "baseDurationSeconds": 300,
+          "gold": 13000,
+          "cumulativeGold": 13000,
+          "previousGold": 16000,
+          "previousCumulativeGold": 16000
+        },
+        {
+          "fromLevel": 1,
+          "targetLevel": 2,
+          "baseDurationSeconds": 900,
+          "gold": 65000,
+          "cumulativeGold": 78000,
+          "previousGold": 80000,
+          "previousCumulativeGold": 96000
+        },
+        {
+          "fromLevel": 2,
+          "targetLevel": 3,
+          "baseDurationSeconds": 2700,
+          "gold": 260000,
+          "cumulativeGold": 338000,
+          "previousGold": 320000,
+          "previousCumulativeGold": 416000
+        },
+        {
+          "fromLevel": 3,
+          "targetLevel": 4,
+          "baseDurationSeconds": 10800,
+          "gold": 780000,
+          "cumulativeGold": 1118000,
+          "previousGold": 960000,
+          "previousCumulativeGold": 1376000
+        },
+        {
+          "fromLevel": 4,
+          "targetLevel": 5,
+          "baseDurationSeconds": 43200,
+          "gold": 2340000,
+          "cumulativeGold": 3458000,
+          "previousGold": 2880000,
+          "previousCumulativeGold": 4256000
+        },
+        {
+          "fromLevel": 5,
+          "targetLevel": 6,
+          "baseDurationSeconds": 96660,
+          "gold": 6500000,
+          "cumulativeGold": 9958000,
+          "previousGold": 8000000,
+          "previousCumulativeGold": 12256000
+        },
+        {
+          "fromLevel": 6,
+          "targetLevel": 7,
+          "baseDurationSeconds": 216180,
+          "gold": 15600000,
+          "cumulativeGold": 25558000,
+          "previousGold": 19200000,
+          "previousCumulativeGold": 31456000
+        },
+        {
+          "fromLevel": 7,
+          "targetLevel": 8,
+          "baseDurationSeconds": 483480,
+          "gold": 29900000,
+          "cumulativeGold": 55458000,
+          "previousGold": 36800000,
+          "previousCumulativeGold": 68256000
+        },
+        {
+          "fromLevel": 8,
+          "targetLevel": 9,
+          "baseDurationSeconds": 1081500,
+          "gold": 46800000,
+          "cumulativeGold": 102258000,
+          "previousGold": 57600000,
+          "previousCumulativeGold": 125856000
+        },
+        {
+          "fromLevel": 9,
+          "targetLevel": 10,
+          "baseDurationSeconds": 2419200,
+          "gold": 65000000,
+          "cumulativeGold": 167258000,
+          "previousGold": 80000000,
+          "previousCumulativeGold": 205856000
+        }
+      ],
+      "totalPerTechnology": 167258000,
+      "level10Gold": 65000000
+    },
+    {
+      "key": "naval",
+      "name": "舰船动力",
+      "technologies": [
+        {
+          "key": "nav_engine",
+          "name": "舰船动力"
+        }
+      ],
+      "levels": [
+        {
+          "fromLevel": 0,
+          "targetLevel": 1,
+          "baseDurationSeconds": 300,
+          "gold": 16000,
+          "cumulativeGold": 16000,
+          "previousGold": 16000,
+          "previousCumulativeGold": 16000
+        },
+        {
+          "fromLevel": 1,
+          "targetLevel": 2,
+          "baseDurationSeconds": 900,
+          "gold": 80000,
+          "cumulativeGold": 96000,
+          "previousGold": 80000,
+          "previousCumulativeGold": 96000
+        },
+        {
+          "fromLevel": 2,
+          "targetLevel": 3,
+          "baseDurationSeconds": 2700,
+          "gold": 320000,
+          "cumulativeGold": 416000,
+          "previousGold": 320000,
+          "previousCumulativeGold": 416000
+        },
+        {
+          "fromLevel": 3,
+          "targetLevel": 4,
+          "baseDurationSeconds": 10800,
+          "gold": 960000,
+          "cumulativeGold": 1376000,
+          "previousGold": 960000,
+          "previousCumulativeGold": 1376000
+        },
+        {
+          "fromLevel": 4,
+          "targetLevel": 5,
+          "baseDurationSeconds": 43200,
+          "gold": 2880000,
+          "cumulativeGold": 4256000,
+          "previousGold": 2880000,
+          "previousCumulativeGold": 4256000
+        },
+        {
+          "fromLevel": 5,
+          "targetLevel": 6,
+          "baseDurationSeconds": 96660,
+          "gold": 8000000,
+          "cumulativeGold": 12256000,
+          "previousGold": 8000000,
+          "previousCumulativeGold": 12256000
+        },
+        {
+          "fromLevel": 6,
+          "targetLevel": 7,
+          "baseDurationSeconds": 216180,
+          "gold": 19200000,
+          "cumulativeGold": 31456000,
+          "previousGold": 19200000,
+          "previousCumulativeGold": 31456000
+        },
+        {
+          "fromLevel": 7,
+          "targetLevel": 8,
+          "baseDurationSeconds": 483480,
+          "gold": 36800000,
+          "cumulativeGold": 68256000,
+          "previousGold": 36800000,
+          "previousCumulativeGold": 68256000
+        },
+        {
+          "fromLevel": 8,
+          "targetLevel": 9,
+          "baseDurationSeconds": 1081500,
+          "gold": 57600000,
+          "cumulativeGold": 125856000,
+          "previousGold": 57600000,
+          "previousCumulativeGold": 125856000
+        },
+        {
+          "fromLevel": 9,
+          "targetLevel": 10,
+          "baseDurationSeconds": 2419200,
+          "gold": 80000000,
+          "cumulativeGold": 205856000,
+          "previousGold": 80000000,
+          "previousCumulativeGold": 205856000
+        }
+      ],
+      "totalPerTechnology": 205856000,
+      "level10Gold": 80000000
+    }
+  ],
+  "allCurrentTechnologiesTotal": 2019962000,
+  "currentGoldTaxProductionCapPerCity": 20000000,
+  "goldReplacesExistingGoldCost": true,
+  "otherResourceFormulaChanged": false,
+  "oldResearchQueuesRepriced": false,
+  "cancelRefundRate": 0.8,
+  "previousAllCurrentTechnologiesTotal": 3177902000
+}

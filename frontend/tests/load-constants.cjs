@@ -22,6 +22,9 @@ function ensureConstants(context) {
   if (context.window.Game && !context.window.Game.avatarFrameClass && durationContext.window.Game.avatarFrameClass) {
     context.window.Game.avatarFrameClass = durationContext.window.Game.avatarFrameClass;
   }
+  if (context.window.Game && !context.window.Game.avatarFrameOverlay && durationContext.window.Game.avatarFrameOverlay) {
+    context.window.Game.avatarFrameOverlay = durationContext.window.Game.avatarFrameOverlay;
+  }
   if (!context.window.Game.formatDuration) vm.runInContext(durationSource, context, { filename: 'duration-formatter.js' });
   if (!context.window.Game.wildGatherProgress) vm.runInContext(gatherSource, context, { filename: 'gather-progress.js' });
   if (!context.window.Game.wildAbandonReason) vm.runInContext(abandonSource, context, { filename: 'wild-abandon.js' });

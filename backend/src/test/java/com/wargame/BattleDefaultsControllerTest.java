@@ -39,10 +39,11 @@ class BattleDefaultsControllerTest {
         player.setId(7L);
         PlayerRepository players = mock(PlayerRepository.class);
         when(players.findById(7L)).thenReturn(Optional.of(player));
+        when(players.lockById(7L)).thenReturn(Optional.of(player));
         AuthService auth = mock(AuthService.class);
         when(auth.getCurrentPlayer()).thenReturn(player);
         ArmyService army = mock(ArmyService.class);
-        when(army.sortieCap(7L)).thenReturn(37500);
+        when(army.armyCapAt(org.mockito.ArgumentMatchers.eq(7L), org.mockito.ArgumentMatchers.anyLong())).thenReturn(25000);
         BattleActionPreferences preferences = new BattleActionPreferences(players, army,
                 mock(MarchRepository.class), mock(BattleSessionRepository.class), mock(PlayerCityRepository.class));
         mvc = MockMvcBuilders.standaloneSetup(new ArmyController(auth, army,

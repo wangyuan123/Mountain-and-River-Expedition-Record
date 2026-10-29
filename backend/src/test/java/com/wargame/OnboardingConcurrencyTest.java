@@ -15,6 +15,32 @@ import static org.junit.jupiter.api.Assertions.*;
 class OnboardingConcurrencyTest extends BaseServiceTest {
     @Autowired OnboardingService onboarding;
     @Autowired PlatformTransactionManager transactions;
+    @Autowired com.wargame.repository.PlayerGuideRepository guides;
+    @Autowired com.wargame.repository.MailRepository mails;
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void concurrentCompletionIssuesOneGiftMail() throws Exception {
+        var tx = new TransactionTemplate(transactions);
+        Long playerId = tx.execute(s -> {
+            Long id = createTestPlayer("completion-mail-race", 30).getId();
+            onboarding.start(id);
+            for (var objective : OnboardingService.OBJECTIVES) {
+                guides.save(new com.wargame.model.entity.PlayerGuide(id, "ob3_" + objective.id(), "done", System.currentTimeMillis()));
+            }
+            return id;
+        });
+        var start = new CountDownLatch(1);
+        var pool = Executors.newFixedThreadPool(2);
+        Callable<Void> complete = () -> { assertTrue(start.await(10, TimeUnit.SECONDS)); onboarding.finish(playerId); return null; };
+        try {
+            var first = pool.submit(complete); var second = pool.submit(complete);
+            start.countDown(); first.get(20, TimeUnit.SECONDS); second.get(20, TimeUnit.SECONDS);
+            assertEquals(1, mails.findByToPlayerIdOrderByCreatedAtDesc(playerId).stream()
+                    .filter(m -> ("reward:" + playerId).equals(m.getAttachmentSourceId())).count());
+            assertEquals(100, getResources(playerId).getDiamond(), "邮件附件尚未领取，只有毕业自动奖励到账");
+        } finally { start.countDown(); pool.shutdownNow(); }
+    }
 
     @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
@@ -66,8 +92,8 @@ class OnboardingConcurrencyTest extends BaseServiceTest {
             first.get(20, TimeUnit.SECONDS); second.get(20, TimeUnit.SECONDS);
             onboarding.skip(playerId);
             onboarding.claim(playerId, "base");
-            assertEquals(initialSteel + 7000, getResources(playerId).getSteel());
-            assertEquals(initialFood + 8000, getResources(playerId).getFood());
+            assertEquals(initialSteel + 20000, getResources(playerId).getSteel());
+            assertEquals(initialFood + 20000, getResources(playerId).getFood());
         } finally { start.countDown(); executor.shutdownNow(); }
     }
 }

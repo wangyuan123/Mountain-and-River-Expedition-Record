@@ -31,7 +31,7 @@ class ServerRegionTest extends BaseServiceTest {
                 .andExpect(status().isBadRequest());
         assertEquals(before, playerRepository.count());
         http.perform(get("/api/auth/server").header("X-Game-Server", "jiangsu-1"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.name").value("江苏一区"));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.name").value("公测一区"));
     }
 
     @Test

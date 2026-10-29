@@ -14,6 +14,8 @@ import java.util.List;
 @Repository
 public interface MailRepository extends JpaRepository<Mail, Long> {
 
+    boolean existsByToPlayerIdAndAttachmentSourceTypeAndAttachmentSourceId(Long toPlayerId, String sourceType, String sourceId);
+
     /** 收件箱：to_player_id = 当前玩家, 按时间倒序 */
     List<Mail> findByToPlayerIdOrderByCreatedAtDesc(Long toPlayerId);
 

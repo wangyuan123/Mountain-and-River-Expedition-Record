@@ -284,6 +284,8 @@ test('chat messages display avatar frame and vip badge for both world and guild 
     vipBadgeVisible: true
   });
   assert.match(guildHtml, /class="[^"]*chat-avatar[^"]*frame-gold-v1[^"]*"/);
+  assert.match(guildHtml, /avatar-frame-svg-layer/);
+  assert.match(guildHtml, /glow-gold/);
   assert.match(guildHtml, /class="chat-vip-badge vip-badge-gold">VIP 4<\/span>/);
   assert.match(guildHtml, /\[团长\]/);
 
@@ -299,6 +301,8 @@ test('chat messages display avatar frame and vip badge for both world and guild 
     vipBadgeVisible: true
   });
   assert.match(worldHtml, /class="[^"]*chat-avatar[^"]*frame-silver-v1[^"]*"/);
+  assert.match(worldHtml, /avatar-frame-svg-layer/);
+  assert.match(worldHtml, /glow-silver/);
   assert.match(worldHtml, /class="chat-vip-badge">VIP 3<\/span>/);
 
   // VIP >= 6 气泡带有 vip-chat-bubble-commander
@@ -315,6 +319,8 @@ test('chat messages display avatar frame and vip badge for both world and guild 
   });
   assert.match(supremeHtml, /vip-chat-bubble-commander/);
   assert.match(supremeHtml, /frame-supreme-v1/);
+  assert.match(supremeHtml, /avatar-frame-svg-layer/);
+  assert.match(supremeHtml, /glow-supreme/);
   assert.match(supremeHtml, /VIP 8/);
 
   // vipBadgeVisible 为 false 时不显示 vipBadge
@@ -347,6 +353,7 @@ test('avatar frames cancel breathing light animations while retaining frost vapo
   assert.doesNotMatch(vipCss, /@keyframes frameGoldPulse/);
   assert.match(vipCss, /\.frame-silver-v1\s*\{[^}]*outline:/);
   assert.match(vipCss, /\.frame-gold-v1\s*\{[^}]*outline:/);
+  assert.match(vipCss, /\.glow-gold\s*\{[^}]*animation:\s*none/);
   // 翡翠寒魄：持续冒冷气
   assert.match(vipCss, /@keyframes frameJadeFrostChill/);
   assert.match(vipCss, /\.frame-jade-v1/);

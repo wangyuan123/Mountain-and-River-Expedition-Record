@@ -46,7 +46,7 @@ class UniversalSkillBookTest extends BaseServiceTest {
         SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
                 UserPrincipal.from(player), null, UserPrincipal.from(player).getAuthorities()));
         var resources = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
-        resources.setDiamond(1000);
+        resources.setDiamond(2000);
         resourcesRepository.saveAndFlush(resources);
     }
 
@@ -77,8 +77,8 @@ class UniversalSkillBookTest extends BaseServiceTest {
     void buyAndChooseFixedLevelOneAndReplayDoesNotConsumeAgain() {
         var buy = shop.buy(new GameDtos.ShopBuyRequest("universalSkillBook")).getBody();
         assertEquals(true, buy.get("success"));
-        assertEquals(200, buy.get("price"));
-        assertEquals(800, resourcesRepository.findByPlayerId(player.getId()).orElseThrow().getDiamond());
+        assertEquals(800, buy.get("price"));
+        assertEquals(1200, resourcesRepository.findByPlayerId(player.getId()).orElseThrow().getDiamond());
         assertEquals("[]", officerRepository.findById(officer.getId()).orElseThrow().getSkills());
         shop.buy(new GameDtos.ShopBuyRequest("universalSkillBook"));
         var learned = use("frenzy");

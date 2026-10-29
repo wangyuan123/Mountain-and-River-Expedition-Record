@@ -69,6 +69,207 @@ window.Game = window.Game || {};
   };
 
   /**
+   * 返回王者微缩精雕矢量荣耀头像框的 SVG 覆盖图层 HTML。
+   * 包含：青铜坚壁(VIP1)、白银将星(VIP3)、黄金战纪(VIP5)、翡翠寒魄(VIP7)、星钻蓝光(VIP9)。
+   * @param {string} frameId - 玩家头像框标识
+   * @returns {string} 矢量边框图层 HTML 或空串
+   */
+  G.avatarFrameOverlay = function (frameId) {
+    if (!frameId || frameId === 'default') return '';
+    var fid = G.avatarFrameClass ? G.avatarFrameClass(frameId) : frameId;
+
+    if (fid === 'frame-bronze-v1') {
+      return '<div class="avatar-frame-svg-layer glow-bronze pointer-events-none" aria-hidden="true">' +
+        '<svg viewBox="0 0 100 100" preserveAspectRatio="none">' +
+          '<defs>' +
+            '<linearGradient id="vkBronzeGrad" x1="0%" y1="0%" x2="100%" y2="100%">' +
+              '<stop offset="0%" stop-color="#b45309"/>' +
+              '<stop offset="25%" stop-color="#f59e0b"/>' +
+              '<stop offset="50%" stop-color="#78350f"/>' +
+              '<stop offset="75%" stop-color="#d97706"/>' +
+              '<stop offset="100%" stop-color="#451a03"/>' +
+            '</linearGradient>' +
+          '</defs>' +
+          '<rect x="7" y="7" width="86" height="86" rx="14" fill="none" stroke="url(#vkBronzeGrad)" stroke-width="4.5" />' +
+          '<rect x="12" y="12" width="76" height="76" rx="10" fill="none" stroke="#451a03" stroke-width="1.2" />' +
+          '<rect x="14" y="14" width="72" height="72" rx="8" fill="none" stroke="#b45309" stroke-width="1" stroke-dasharray="8 3" opacity="0.8" />' +
+          '<path d="M 5 24 L 5 13 C 5 7 7 5 13 5 L 24 5 L 18 11 L 11 11 L 11 18 Z" fill="#78350f" stroke="#f59e0b" stroke-width="1" />' +
+          '<circle cx="12" cy="12" r="2.8" fill="#d97706" stroke="#451a03" stroke-width="0.8" />' +
+          '<path d="M 95 24 L 95 13 C 95 7 93 5 87 5 L 76 5 L 82 11 L 89 11 L 89 18 Z" fill="#78350f" stroke="#f59e0b" stroke-width="1" />' +
+          '<circle cx="88" cy="12" r="2.8" fill="#d97706" stroke="#451a03" stroke-width="0.8" />' +
+          '<path d="M 5 76 L 5 87 C 5 93 7 95 13 95 L 24 95 L 18 89 L 11 89 L 11 82 Z" fill="#78350f" stroke="#f59e0b" stroke-width="1" />' +
+          '<circle cx="12" cy="88" r="2.8" fill="#d97706" stroke="#451a03" stroke-width="0.8" />' +
+          '<path d="M 95 76 L 95 87 C 95 93 93 95 87 95 L 76 95 L 82 89 L 89 89 L 89 82 Z" fill="#78350f" stroke="#f59e0b" stroke-width="1" />' +
+          '<circle cx="88" cy="88" r="2.8" fill="#d97706" stroke="#451a03" stroke-width="0.8" />' +
+          '<g transform="translate(50, 7)">' +
+            '<path d="M -9 -4 L 9 -4 L 7 3 L 0 7 L -7 3 Z" fill="#b45309" stroke="#fcd34d" stroke-width="1" />' +
+            '<polygon points="0,-2 3,2 0,4 -3,2" fill="#fde68a" />' +
+          '</g>' +
+          '<g transform="translate(50, 93)">' +
+            '<polygon points="0,-4 8,0 0,4 -8,0" fill="#78350f" stroke="#f59e0b" stroke-width="0.8" />' +
+          '</g>' +
+        '</svg>' +
+      '</div>';
+    }
+
+    if (fid === 'frame-silver-v1') {
+      return '<div class="avatar-frame-svg-layer glow-silver pointer-events-none" aria-hidden="true">' +
+        '<svg viewBox="0 0 100 100" preserveAspectRatio="none">' +
+          '<defs>' +
+            '<linearGradient id="vkSilverGrad" x1="0%" y1="0%" x2="100%" y2="100%">' +
+              '<stop offset="0%" stop-color="#e2e8f0"/>' +
+              '<stop offset="20%" stop-color="#ffffff"/>' +
+              '<stop offset="45%" stop-color="#94a3b8"/>' +
+              '<stop offset="70%" stop-color="#f8fafc"/>' +
+              '<stop offset="100%" stop-color="#475569"/>' +
+            '</linearGradient>' +
+          '</defs>' +
+          '<rect x="7" y="7" width="86" height="86" rx="14" fill="none" stroke="url(#vkSilverGrad)" stroke-width="4.5" />' +
+          '<rect x="12" y="12" width="76" height="76" rx="10" fill="none" stroke="#1e293b" stroke-width="1.2" />' +
+          '<rect x="14" y="14" width="72" height="72" rx="8" fill="none" stroke="#bae6fd" stroke-width="1" opacity="0.8" />' +
+          '<path d="M 4 22 L 4 11 C 4 6 6 4 11 4 L 22 4 L 16 9 L 9 9 L 9 16 Z" fill="#64748b" stroke="#ffffff" stroke-width="1" />' +
+          '<polygon points="9,9 14,5 18,9 14,13" fill="#e2e8f0" />' +
+          '<path d="M 96 22 L 96 11 C 96 6 94 4 89 4 L 78 4 L 84 9 L 91 9 L 91 16 Z" fill="#64748b" stroke="#ffffff" stroke-width="1" />' +
+          '<polygon points="91,9 86,5 82,9 86,13" fill="#e2e8f0" />' +
+          '<path d="M 4 78 L 4 89 C 4 94 6 96 11 96 L 22 96 L 16 91 L 9 91 L 9 84 Z" fill="#64748b" stroke="#ffffff" stroke-width="1" />' +
+          '<polygon points="9,91 14,87 18,91 14,95" fill="#e2e8f0" />' +
+          '<path d="M 96 78 L 96 89 C 96 94 94 96 89 96 L 78 96 L 84 91 L 91 91 L 91 84 Z" fill="#64748b" stroke="#ffffff" stroke-width="1" />' +
+          '<polygon points="91,91 86,87 82,91 86,95" fill="#e2e8f0" />' +
+          '<g transform="translate(50, 7)">' +
+            '<polygon points="-12,-1 -10,2 -13,4 -9,4 -8,7 -7,4 -3,4 -6,2 -4,-1 -8,1" fill="#94a3b8" />' +
+            '<polygon points="12,-1 10,2 13,4 9,4 8,7 7,4 3,4 6,2 4,-1 8,1" fill="#94a3b8" />' +
+            '<polygon points="0,-6 2,-1 7,-1 3,2 5,7 0,4 -5,7 -3,2 -7,-1 -2,-1" fill="#ffffff" stroke="#0284c7" stroke-width="0.8" />' +
+            '<circle cx="0" cy="1" r="1.5" fill="#38bdf8" />' +
+          '</g>' +
+          '<g transform="translate(50, 93)">' +
+            '<polygon points="0,-4 7,0 0,4 -7,0" fill="#475569" stroke="#e2e8f0" stroke-width="0.8" />' +
+          '</g>' +
+        '</svg>' +
+      '</div>';
+    }
+
+    if (fid === 'frame-gold-v1') {
+      return '<div class="avatar-frame-svg-layer glow-gold pointer-events-none" aria-hidden="true">' +
+        '<svg viewBox="0 0 100 100" preserveAspectRatio="none">' +
+          '<defs>' +
+            '<linearGradient id="vkGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">' +
+              '<stop offset="0%" stop-color="#f59e0b"/>' +
+              '<stop offset="20%" stop-color="#fef08a"/>' +
+              '<stop offset="45%" stop-color="#d97706"/>' +
+              '<stop offset="70%" stop-color="#fffbeb"/>' +
+              '<stop offset="90%" stop-color="#b45309"/>' +
+              '<stop offset="100%" stop-color="#78350f"/>' +
+            '</linearGradient>' +
+          '</defs>' +
+          '<rect x="7" y="7" width="86" height="86" rx="14" fill="none" stroke="url(#vkGoldGrad)" stroke-width="4.8" />' +
+          '<rect x="12" y="12" width="76" height="76" rx="10" fill="none" stroke="#78350f" stroke-width="1.2" />' +
+          '<rect x="14" y="14" width="72" height="72" rx="8" fill="none" stroke="#fef08a" stroke-width="1.2" opacity="0.9" />' +
+          '<path d="M 3 24 L 3 10 C 3 5 5 3 10 3 L 24 3 L 18 8 L 8 8 L 8 18 Z" fill="#b45309" stroke="#fde047" stroke-width="1.2" />' +
+          '<polygon points="8,8 13,3 19,8 13,13" fill="#fef08a" />' +
+          '<circle cx="10" cy="10" r="1.8" fill="#ef4444" />' +
+          '<path d="M 97 24 L 97 10 C 97 5 95 3 90 3 L 76 3 L 82 8 L 92 8 L 92 18 Z" fill="#b45309" stroke="#fde047" stroke-width="1.2" />' +
+          '<polygon points="92,8 87,3 81,8 87,13" fill="#fef08a" />' +
+          '<circle cx="90" cy="10" r="1.8" fill="#ef4444" />' +
+          '<path d="M 3 76 L 3 90 C 3 95 5 97 10 97 L 24 97 L 18 92 L 8 92 L 8 82 Z" fill="#b45309" stroke="#fde047" stroke-width="1.2" />' +
+          '<polygon points="8,92 13,87 19,92 13,97" fill="#fef08a" />' +
+          '<path d="M 97 76 L 97 90 C 97 95 95 97 90 97 L 76 97 L 82 92 L 92 92 L 92 82 Z" fill="#b45309" stroke="#fde047" stroke-width="1.2" />' +
+          '<polygon points="92,92 87,87 81,92 87,97" fill="#fef08a" />' +
+          '<g transform="translate(50, 7)">' +
+            '<path d="M -16 1 Q -8 -6 0 -8 Q 8 -6 16 1 Q 8 -1 0 -2 Q -8 -1 -16 1 Z" fill="#d97706" />' +
+            '<path d="M -10 1 L -7 -5 L -3 -1 L 0 -8 L 3 -1 L 7 -5 L 10 1 Z" fill="#fbbf24" stroke="#fef08a" stroke-width="0.8" />' +
+            '<circle cx="0" cy="-2.5" r="2.2" fill="#ef4444" stroke="#fef08a" stroke-width="0.7" />' +
+            '<circle cx="-0.6" cy="-3.1" r="0.8" fill="#ffffff" />' +
+          '</g>' +
+          '<g transform="translate(50, 93)">' +
+            '<path d="M -12 0 Q 0 5 12 0 Q 0 2 -12 0 Z" fill="#b45309" stroke="#fde047" stroke-width="0.8" />' +
+            '<polygon points="0,-4 5,0 0,4 -5,0" fill="#f59e0b" stroke="#fef08a" stroke-width="0.6" />' +
+          '</g>' +
+        '</svg>' +
+      '</div>';
+    }
+
+    if (fid === 'frame-jade-v1') {
+      return '<div class="avatar-frame-svg-layer glow-jade pointer-events-none" aria-hidden="true">' +
+        '<svg viewBox="0 0 100 100" preserveAspectRatio="none">' +
+          '<defs>' +
+            '<linearGradient id="vkJadeGrad" x1="0%" y1="0%" x2="100%" y2="100%">' +
+              '<stop offset="0%" stop-color="#10b981"/>' +
+              '<stop offset="25%" stop-color="#6ee7b7"/>' +
+              '<stop offset="50%" stop-color="#047857"/>' +
+              '<stop offset="75%" stop-color="#a7f3d0"/>' +
+              '<stop offset="100%" stop-color="#064e3b"/>' +
+            '</linearGradient>' +
+          '</defs>' +
+          '<rect x="7" y="7" width="86" height="86" rx="14" fill="none" stroke="url(#vkJadeGrad)" stroke-width="4.8" />' +
+          '<rect x="12" y="12" width="76" height="76" rx="10" fill="none" stroke="#064e3b" stroke-width="1.2" />' +
+          '<rect x="14" y="14" width="72" height="72" rx="8" fill="none" stroke="#6ee7b7" stroke-width="1.2" opacity="0.9" />' +
+          '<path d="M 3 24 L 3 10 C 3 5 5 3 10 3 L 24 3 L 18 8 L 8 8 L 8 18 Z" fill="#047857" stroke="#34d399" stroke-width="1.2" />' +
+          '<circle cx="10" cy="10" r="3.2" fill="#10b981" stroke="#fde047" stroke-width="1" />' +
+          '<circle cx="9" cy="9" r="1.2" fill="#d1fae5" />' +
+          '<path d="M 97 24 L 97 10 C 97 5 95 3 90 3 L 76 3 L 82 8 L 92 8 L 92 18 Z" fill="#047857" stroke="#34d399" stroke-width="1.2" />' +
+          '<circle cx="90" cy="10" r="3.2" fill="#10b981" stroke="#fde047" stroke-width="1" />' +
+          '<circle cx="89" cy="9" r="1.2" fill="#d1fae5" />' +
+          '<path d="M 3 76 L 3 90 C 3 95 5 97 10 97 L 24 97 L 18 92 L 8 92 L 8 82 Z" fill="#047857" stroke="#34d399" stroke-width="1.2" />' +
+          '<circle cx="10" cy="90" r="2.5" fill="#10b981" stroke="#6ee7b7" stroke-width="0.8" />' +
+          '<path d="M 97 76 L 97 90 C 97 95 95 97 90 97 L 76 97 L 82 92 L 92 92 L 92 82 Z" fill="#047857" stroke="#34d399" stroke-width="1.2" />' +
+          '<circle cx="90" cy="90" r="2.5" fill="#10b981" stroke="#6ee7b7" stroke-width="0.8" />' +
+          '<g transform="translate(50, 7)">' +
+            '<path d="M -15 0 Q -8 -5 0 -4 Q 8 -5 15 0 Z" fill="#064e3b" stroke="#fde047" stroke-width="0.8" />' +
+            '<ellipse cx="0" cy="-2" rx="7" ry="5" fill="#10b981" stroke="#fde047" stroke-width="1.2" />' +
+            '<ellipse cx="0" cy="-2" rx="3.5" ry="2.5" fill="#047857" />' +
+            '<ellipse cx="-1.5" cy="-3.5" rx="1.8" ry="1" fill="#ecfdf5" opacity="0.9" />' +
+          '</g>' +
+          '<g transform="translate(50, 93)">' +
+            '<ellipse cx="0" cy="0" rx="5" ry="3" fill="#047857" stroke="#34d399" stroke-width="0.8" />' +
+            '<circle cx="0" cy="0" r="1.5" fill="#6ee7b7" />' +
+          '</g>' +
+        '</svg>' +
+      '</div>';
+    }
+
+    if (fid === 'frame-supreme-v1') {
+      return '<div class="avatar-frame-svg-layer glow-supreme pointer-events-none" aria-hidden="true">' +
+        '<svg viewBox="0 0 100 100" preserveAspectRatio="none">' +
+          '<defs>' +
+            '<linearGradient id="vkSupremeBlueGrad" x1="0%" y1="0%" x2="100%" y2="100%">' +
+              '<stop offset="0%" stop-color="#38bdf8"/>' +
+              '<stop offset="25%" stop-color="#ffffff"/>' +
+              '<stop offset="50%" stop-color="#0284c7"/>' +
+              '<stop offset="75%" stop-color="#e0f2fe"/>' +
+              '<stop offset="100%" stop-color="#0369a1"/>' +
+            '</linearGradient>' +
+          '</defs>' +
+          '<rect x="7" y="7" width="86" height="86" rx="14" fill="none" stroke="url(#vkSupremeBlueGrad)" stroke-width="4.8" />' +
+          '<rect x="12" y="12" width="76" height="76" rx="10" fill="none" stroke="#0c4a6e" stroke-width="1.2" />' +
+          '<rect x="14" y="14" width="72" height="72" rx="8" fill="none" stroke="#bae6fd" stroke-width="1.2" opacity="0.9" />' +
+          '<path d="M 2 24 L 2 9 C 2 4 4 2 9 2 L 24 2 L 18 8 L 8 8 L 8 18 Z" fill="#0284c7" stroke="#38bdf8" stroke-width="1.2" />' +
+          '<polygon points="8,8 14,2 20,8 14,14" fill="#38bdf8" />' +
+          '<polygon points="14,2 18,6 14,10 10,6" fill="#ffffff" />' +
+          '<path d="M 98 24 L 98 9 C 98 4 96 2 91 2 L 76 2 L 82 8 L 92 8 L 92 18 Z" fill="#0284c7" stroke="#38bdf8" stroke-width="1.2" />' +
+          '<polygon points="92,8 86,2 80,8 86,14" fill="#38bdf8" />' +
+          '<polygon points="86,2 90,6 86,10 82,6" fill="#ffffff" />' +
+          '<path d="M 2 76 L 2 91 C 2 96 4 98 9 98 L 24 98 L 18 92 L 8 92 L 8 82 Z" fill="#0284c7" stroke="#38bdf8" stroke-width="1.2" />' +
+          '<polygon points="8,92 14,86 20,92 14,98" fill="#38bdf8" />' +
+          '<path d="M 98 76 L 98 91 C 98 96 96 98 91 98 L 76 98 L 82 92 L 92 92 L 92 82 Z" fill="#0284c7" stroke="#38bdf8" stroke-width="1.2" />' +
+          '<polygon points="92,92 86,86 80,92 86,98" fill="#38bdf8" />' +
+          '<g transform="translate(50, 7)">' +
+            '<path d="M -16 1 Q -8 -6 0 -4 Q 8 -6 16 1 Z" fill="#0369a1" stroke="#38bdf8" stroke-width="0.8" />' +
+            '<polygon points="0,-8 2.5,-3 7.5,0 2.5,3 0,8 -2.5,3 -7.5,0 -2.5,-3" fill="#ffffff" stroke="#0284c7" stroke-width="0.8" />' +
+            '<polygon points="0,-5 1.5,-2 5,0 1.5,2 0,5 -1.5,2 -5,0 -1.5,-2" fill="#7dd3fc" />' +
+            '<circle cx="0" cy="0" r="1.5" fill="#ffffff" />' +
+          '</g>' +
+          '<g transform="translate(50, 93)">' +
+            '<polygon points="0,-4 6,0 0,4 -6,0" fill="#0284c7" stroke="#e0f2fe" stroke-width="0.8" />' +
+            '<circle cx="0" cy="0" r="1.5" fill="#38bdf8" />' +
+          '</g>' +
+        '</svg>' +
+      '</div>';
+    }
+
+    return '';
+  };
+
+  /**
    * 统一时长展示，省略前导零单位，保留最高有效单位之后的全部单位；正数不足一秒按一秒展示。
    * @param {number} seconds - 时长或倒计时剩余秒数
    * @returns {string} 如1天0小时0分钟5秒、2小时0分钟0秒、3分钟8秒或0秒
@@ -202,6 +403,7 @@ window.Game = window.Game || {};
   };
 
   G.Constants = {
+    rechargeUnavailableMessage: '暂未开放充值，敬请期待',
     siteInfo: {
       operator: '山河远征网络科技有限公司',
       icpNumber: '京ICP备00000000号-1',
@@ -217,6 +419,8 @@ window.Game = window.Game || {};
     },
     // 单队行军令与服务端 WorldConfig 一致，去程和回程各可使用一次。
     marchAcceleration: { minRemainingMs: 30000 },
+    // 按速度加成从低到高排列；旧 marchOrd 库存继续对应极速档。
+    marchOrderTiers: ['basicMarchOrd', 'advancedMarchOrd', 'marchOrd'],
     // 每座城市独立计算领地名额，服务端 wilds.cap 返回基础5块加本城市政厅等级。
     wildOccupation: { baseCap: 5 },
     // 按钮音效是当前设备的听觉偏好，不随游戏账号或服务端存档变化。
@@ -445,6 +649,21 @@ window.Game = window.Game || {};
       { key: '·', label: '排名', route: 'rankings' },
       { key: '·', label: '商城', route: 'shop' }
     ],
+    // 两项玩家战力仅在展示时缩小 1000 倍；服务端原值仍用于排名及战力保护。
+    playerPowerDisplayDivisor: 1000,
+    // 战力弹窗仅介绍玩法用途，计算口径保留在玩家实力文档中。
+    playerPowerInfo: {
+      formationPower: {
+        name: '编队战力',
+        usage: '编队战力用于了解最强单支现有编队的潜在实力，供出征前参考及部队培养前后对比，同时作为编队战力榜的排名依据。'
+      },
+      overallPower: {
+        name: '综合实力',
+        usage: '综合实力用于了解全账号军力与培养资产的总体发展情况，对比账号成长，同时作为综合实力榜的排名依据。'
+      },
+      protection: '两项战力都参与玩家城市战争保护，用于限制实力差距过大的玩家相互宣战或攻打城市。',
+      limits: '战力是参考估值，不会直接增加攻击、生命或防御，也不代表实际胜率。实际战斗还受兵种克制、战场、距离、指令和动态技能等影响；两项指标均独立于声望。'
+    },
     rankingBoards: {
       players: { label: '玩家排名', metrics: [
         { id: 'prestige', label: '声望榜' },
@@ -547,6 +766,25 @@ window.Game = window.Game || {};
     // 按目标等级查表，舰船动力末级对齐终局项目28天，与服务端和设计文档一致。
     researchDuration: {"normal":[180,600,1800,10800,43200,85320,168420,332460,656400,1296000],"resource":[120,480,1500,5400,21600,46860,101640,220380,478020,1036800],"arm_engine":[300,900,2700,10800,43200,90360,188940,395100,826260,1728000],"nav_engine":[300,900,2700,10800,43200,96660,216180,483480,1081500,2419200],"air_engine":[300,900,2700,10800,43200,96660,216180,483480,1081500,2419200]},
     researchSpeed: { knowledgePerPoint: 0.001 },
+    // 与服务端 TechnologyGoldCosts 及定稿v6逐级表一致；黄金独立于旧资源成长和加速计算。
+    researchGold: {
+      version: 'tech-research-gold-20261028-v6',
+      curves: {
+        resource: [4000, 20000, 80000, 240000, 720000, 2000000, 4800000, 9200000, 14400000, 20000000],
+        normal: [6000, 30000, 120000, 360000, 1080000, 3000000, 7200000, 13800000, 21600000, 30000000],
+        land: [10000, 50000, 200000, 600000, 1800000, 5000000, 12000000, 23000000, 36000000, 50000000],
+        air: [13000, 65000, 260000, 780000, 2340000, 6500000, 15600000, 29900000, 46800000, 65000000],
+        naval: [16000, 80000, 320000, 960000, 2880000, 8000000, 19200000, 36800000, 57600000, 80000000]
+      },
+      techGroups: {
+        prod_food: 'resource', prod_steel: 'resource', prod_oil: 'resource', prod_rare: 'resource',
+        military_theory: 'normal', attack_tech: 'normal', defense_tech: 'normal', weapon_range: 'normal',
+        cmd_hp: 'normal', fire_density: 'normal', wall_reinforcement: 'normal', log_load: 'normal',
+        log_warehouse: 'normal', log_food: 'normal', log_train: 'normal', log_build: 'normal',
+        log_medical: 'normal', recon_level: 'normal', recon_radar: 'normal', prisoner_education: 'normal',
+        unit_refit: 'normal', arm_engine: 'land', air_engine: 'air', nav_engine: 'naval'
+      }
+    },
     // 仅列实际生效的百分比科技；情报、配方、俘获比例及未生效科技由科技页单独说明。
     techEffectPercent: { wall_stats: 5, atk_all: 5, def_all: 5, range_all: 5, hp_all: 5, firepower_all: 5, spd_arm: 5, spd_air: 5, spd_nav: 5, res_food: 5, res_steel: 5, res_oil: 5, res_rare: 5, load: 5, cap: 5, food_save: -5, train: 5, build: -5, medical: 5 },
     worldTargetKeys: { wild: 'wildTiles', player: 'playerCities', simulated_npc: 'simulatedNpcCities', bandit: 'bandits' },
@@ -604,16 +842,19 @@ window.Game = window.Game || {};
       { id: 'officer', name: '军官' },
       { id: 'resource',name: '资源' },
       { id: 'util',    name: '功能' },
+      { id: 'rank',    name: '晋升凭证' },
       { id: 'gift',    name: '礼包' }
     ],
     shopItems: [
 
       // —— 军官道具 ——
-      { id: 'expBook',    cat: 'officer',  name: '经验书',     icon: 'img/items/exp-book.svg', desc: '军官使用,获得10000经验',          price: 30,   stock: null, tag: '热销' },
-      { id: 'expBookAdv', cat: 'officer',  name: '高级经验书', icon: 'img/items/exp-book-adv.svg', desc: '每本提供100000经验，可批量使用', price: 150,  stock: null, tag: '推荐' },
-      { id: 'expBookMax', cat: 'officer',  name: '满级经验书', icon: 'img/items/exp-book-max.svg', desc: '使用1本即可将1～99级军官直接升至满级(Lv.100)，补足升级属性点', price: 1000, stock: null, tag: '极品' },
+      { id: 'expBook',    cat: 'officer',  name: '经验书',     icon: 'img/items/exp-book.svg', desc: '军官使用,获得10000经验',          price: 10,   stock: null, tag: '热销' },
+      { id: 'expBookAdv', cat: 'officer',  name: '高级经验书', icon: 'img/items/exp-book-adv.svg', desc: '每本提供100000经验，可批量使用', price: 100,  stock: null, tag: '推荐' },
+      { id: 'expBookRapid', cat: 'officer', name: '极速经验书', icon: 'img/items/exp-book-adv.svg', desc: '每本提供500000经验，可批量使用', price: 500, stock: null, tag: '50万经验' },
+      // 一级至满级共需20355750经验，按41本极速经验书总价打八折，与服务端经验曲线核对。
+      { id: 'expBookMax', cat: 'officer',  name: '满级经验书', icon: 'img/items/exp-book-max.svg', desc: '使用1本即可将1～99级军官直接升至满级(Lv.100)，补足升级属性点', price: 16400, stock: null, tag: '极品' },
       { id: 'skillBook',  cat: 'officer',  name: '普通技能书', icon: 'img/items/skill-book.svg', desc: '选择军官使用，随机学习一个未掌握且不互斥的技能，初始等级受军官星级影响', price: 80, stock: null, tag: '随机' },
-      { id: 'universalSkillBook', cat: 'officer', name: '通用技能书', icon: 'img/items/universal-skill-book.svg', desc: '从技能池自选一个未掌握且不互斥的技能，学习后为 Lv.1；仅用于学习，不用于升级', price: 200, stock: null, tag: '自选' },
+      { id: 'universalSkillBook', cat: 'officer', name: '通用技能书', icon: 'img/items/universal-skill-book.svg', desc: '从技能池自选一个未掌握且不互斥的技能，学习后为 Lv.1；仅用于学习，不用于升级', price: 800, stock: null, tag: '自选' },
       { id: 'loyaltyBox', cat: 'officer',  name: '忠诚宝箱',   icon: 'img/items/loyalty-box.svg', desc: '军官忠诚度+20,提升留任意愿',     price: 50,   stock: null, tag: '' },
       { id: 'renameCard', cat: 'officer',  name: '军官改名卡', icon: 'img/items/rename-card.svg', desc: '为军官更换新名字',               price: 60,   stock: null, tag: '' },
       { id: 'recruitOrd', cat: 'officer',  name: '征募令',     icon: 'img/items/recruit-ord.svg', desc: '刷新军校,保底出现一名五星军官',   price: 500,  stock: null, tag: '稀有' },
@@ -646,15 +887,17 @@ window.Game = window.Game || {};
       { id: 'shield12h', cat: 'util', name: '12小时护盾', icon: 'img/items/shield-12h.svg', desc: '本城12小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地', price: 280, stock: null, tag: '半日' },
       { id: 'shield24h', cat: 'util', name: '24小时护盾', icon: 'img/items/shield-24h.svg', desc: '本城24小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地', price: 500, stock: null, tag: '全天' },
       { id: 'shield72h', cat: 'util', name: '72小时护盾', icon: 'img/items/shield-72h.svg', desc: '本城72小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地', price: 1350, stock: null, tag: '长假' },
-      { id: 'marchOrd',  cat: 'util', name: '行军令', icon: 'img/items/march-ord.svg', desc: '仓库启用：行军速度+50%，持续1小时；情报使用：基础缩短剩余时间50%，指挥官学识提高效果，最高80%，至少保留30秒', price: 100, stock: null, tag: '' },
+      { id: 'basicMarchOrd', cat: 'util', name: '初级行军令', icon: 'img/items/march-ord.svg', desc: '仓库启用：行军速度+10%，持续1小时；情报使用：基础缩短剩余时间10%，指挥官学识提高效果，最高40%，至少保留30秒', price: 100, stock: null, tag: '+10%' },
+      { id: 'advancedMarchOrd', cat: 'util', name: '高级行军令', icon: 'img/items/march-ord.svg', desc: '仓库启用：行军速度+25%，持续1小时；情报使用：基础缩短剩余时间25%，指挥官学识提高效果，最高55%，至少保留30秒', price: 250, stock: null, tag: '+25%' },
+      { id: 'marchOrd', cat: 'util', name: '极速行军令', icon: 'img/items/march-ord.svg', desc: '仓库启用：行军速度+50%，持续1小时；情报使用：基础缩短剩余时间50%，指挥官学识提高效果，最高80%，至少保留30秒', price: 500, stock: null, tag: '+50%' },
       { id: 'signalJammingOrder', cat: 'util', name: '通讯干扰令', icon: 'img/items/signal-jamming-order.svg', desc: '对来袭敌军使用：基础延长剩余时间50%，指挥官学识提高效果，最高70%', price: 150, stock: null, tag: '' },
-      { id: 'feintOrder', cat: 'util', name: '佯动诱敌令', icon: 'img/items/feint-order.svg', desc: '对从本城撤退的敌军使用：基础延长剩余时间50%，指挥官学识提高效果，最高70%', price: 250, stock: null, tag: '' },
+      { id: 'feintOrder', cat: 'util', name: '撤退拖延令', icon: 'img/items/feint-order.svg', desc: '对从本城撤退的敌军使用：基础延长剩余撤退时间50%，指挥官学识提高效果，最高70%', price: 250, stock: null, tag: '' },
       { id: 'warSpeedOrder', cat: 'util', name: '宣战加速令', icon: 'img/items/march-ord.svg', desc: '缩短本城发起的宣战备战时间：基础50%，学识提高效果，最高80%，总备战至少30分钟', price: 250, stock: null, tag: '' },
       { id: 'populationOrder', cat: 'util', name: '人口动员令', icon: 'img/items/population-order.svg', desc: '使用后立即增加500空闲人口,不超过人口上限', price: 100, stock: null, tag: '推荐' },
       { id: 'emergencyPopulationOrder', cat: 'util', name: '紧急人口动员令', icon: 'img/items/emergency-population-order.svg', desc: '使用后立即增加当前城市人口容量上限30%的空闲人口,不超过人口上限', price: 100, stock: null, tag: '' },
-      { id: 'mobilizationOrder', cat: 'util', name: '战争动员令', icon: 'img/items/march-ord.svg', desc: '进攻出征时使用，本次出征带兵上限提高10%；编队超过基础上限时消耗1个', price: 80, stock: null, tag: '+10%' },
-      { id: 'advancedMobilizationOrder', cat: 'util', name: '高级战争动员令', icon: 'img/items/march-ord.svg', desc: '进攻出征时使用，本次出征带兵上限提高25%；编队超过基础上限时消耗1个', price: 220, stock: null, tag: '+25%' },
-      { id: 'rapidMobilizationOrder', cat: 'util', name: '极速战争动员令', icon: 'img/items/march-ord.svg', desc: '进攻出征时使用，本次出征带兵上限提高50%；编队超过基础上限时消耗1个', price: 500, stock: null, tag: '+50%' },
+      { id: 'mobilizationOrder', cat: 'util', name: '战争动员令', icon: 'img/items/march-ord.svg', desc: '仓库使用后，全账号出征与本城防守带兵上限提高10%，每张持续24小时；同档累加时长，异档取最高加成', price: 80, stock: null, tag: '+10%' },
+      { id: 'advancedMobilizationOrder', cat: 'util', name: '高级战争动员令', icon: 'img/items/march-ord.svg', desc: '仓库使用后，全账号出征与本城防守带兵上限提高25%，每张持续24小时；同档累加时长，异档取最高加成', price: 220, stock: null, tag: '+25%' },
+      { id: 'rapidMobilizationOrder', cat: 'util', name: '极速战争动员令', icon: 'img/items/march-ord.svg', desc: '仓库使用后，全账号出征与本城防守带兵上限提高50%，每张持续24小时；同档累加时长，异档取最高加成', price: 500, stock: null, tag: '+50%' },
       { id: 'cityRenameCard', cat: 'util', name: '城市改名卡', icon: 'img/items/city-rename-card.svg', desc: '为一座城市更换新名字', price: 60, stock: null, tag: '' },
       { id: 'teleportNormal', cat: 'util', name: '普通传送', icon: 'img/items/teleport-normal.svg', desc: '消耗1个，将当前城市随机传送至开放地图的四格空闲陆地', price: 100, stock: null, tag: '' },
       { id: 'teleportAdvanced', cat: 'util', name: '高级传送', icon: 'img/items/teleport-advanced.svg', desc: '消耗1个，将当前城市传送至指定坐标，目的地须有完整2×2空闲陆地', price: 500, stock: null, tag: '' },

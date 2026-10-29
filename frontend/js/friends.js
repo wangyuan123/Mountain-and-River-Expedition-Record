@@ -375,8 +375,8 @@
         '<div class="friend-profile-cell"><span class="cell-label">军衔</span><span class="cell-val">🎖️ ' + esc(rankName) + '</span></div>' +
         '<div class="friend-profile-cell"><span class="cell-label">等级</span><span class="cell-val">Lv. ' + Number(p.level || 1) + '</span></div>' +
         '<div class="friend-profile-cell"><span class="cell-label">声望</span><span class="cell-val">⭐ ' + Number(p.prestige || 0) + '</span></div>' +
-        '<div class="friend-profile-cell" title="最强单支现有编队的静态估值"><span class="cell-label">编队战力</span><span class="cell-val">' + (p.formationPower == null ? '—' : G.fmt(p.formationPower)) + '</span></div>' +
-        '<div class="friend-profile-cell" title="部队及培养资产的综合估值"><span class="cell-label">综合实力</span><span class="cell-val">' + (p.overallPower == null ? '—' : G.fmt(p.overallPower)) + '</span></div>' +
+        '<div class="friend-profile-cell" title="最强单支现有编队的静态估值"><span class="cell-label">编队战力</span><span class="cell-val">' + (p.formationPower == null ? '—' : G.fmt(p.formationPower / G.Constants.playerPowerDisplayDivisor)) + '</span></div>' +
+        '<div class="friend-profile-cell" title="部队及培养资产的综合估值"><span class="cell-label">综合实力</span><span class="cell-val">' + (p.overallPower == null ? '—' : G.fmt(p.overallPower / G.Constants.playerPowerDisplayDivisor)) + '</span></div>' +
         '<div class="friend-profile-cell"><span class="cell-label">主城</span><span class="cell-val">' + (G.mainCityIconHtml ? G.mainCityIconHtml() : (G.renderMainCityIcon ? G.renderMainCityIcon() : '')) + esc(p.cityName || '暂无') + (p.cityX != null && p.cityY != null ? ' (' + Number(p.cityX) + ',' + Number(p.cityY) + ')' : (p.available ? ' · 未获得有效侦察坐标' : '')) + '</span></div>' +
         '</div>';
       var actions = [];

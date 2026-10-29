@@ -1,113 +1,31 @@
-/* global window, document */
+/* global window */
 window.Game = window.Game || {};
 
 (function (G) {
   'use strict';
 
-  var Core = G.Core;
-  var CATEGORIES = G.Constants.rechargeCategories;
-  var PACKAGES = G.Constants.rechargePackages;
+  /** 兼容缓存页面中的旧充值操作，所有操作只提示未开放。 */
+  function unavailable() {
+    G.toast(G.Constants.rechargeUnavailableMessage);
+  }
 
-  var Recharge = {
-    curTab: 'diamond',
-    selChannel: '模拟支付',
-    selected: null,
+  G.Recharge = {
+    setTab: unavailable,
+    selectChannel: unavailable,
+    selectPackage: unavailable,
+    closeReceipt: unavailable,
 
-    setTab: function (tab) {
-      this.curTab = tab;
-      this.selected = null;
-      Core.render();
+    /** 旧页面即使直接确认充值，也不调用接口、不生成到账凭证。 */
+    confirmPay: function () {
+      unavailable();
+      return Promise.resolve({ success: false, code: 'PAYMENT_DISABLED', message: G.Constants.rechargeUnavailableMessage });
     },
 
-    selectChannel: function (id) {
-      this.selChannel = id;
-      Core.render();
-    },
-
-    selectPackage: function (id) {
-      this.selected = id;
-      Core.render();
-    },
-
-    confirmPay: function (pkgId) {
-      var id = pkgId || this.selected;
-      var pkg = null;
-      for (var i = 0; i < PACKAGES.length; i++) {
-        if (PACKAGES[i].id === id) { pkg = PACKAGES[i]; break; }
-      }
-      if (!pkg) { G.toast('请先选择充值档位'); return; }
-      G.API.shopRecharge(pkg.id, pkg.rmb, pkg.diamond, this.selChannel).then(function (resp) {
-        if (!resp || resp.success === false) {
-          G.toast((resp && resp.message) || '充值失败');
-          return;
-        }
-        Recharge.selected = null;
-        G.toast('模拟充值成功，' + pkg.name + '已到账 +' + resp.diamonds + '钻石');
-        Core.render();
-      }).catch(function (err) {
-        G.toast(err.message || '充值失败');
-      });
-    },
-
-    renderView: function (v) {
-      if (G.Protection && (!G.Protection.data || G.Protection.data.enabled !== false)) {
-        v.innerHTML = '<div class="title">充值服务未开放</div><div class="panel">当前未开放真实支付或模拟充值。你可继续使用正常玩法获得的资源。</div>';
-        return;
-      }
-      var self = this;
-      var h = '<div class="title">- 战时补给站 -</div>';
-
-      var player = (Core.state && Core.state.player) || {};
-      var vipLevel = Number(player.vipLevel) || 0;
-      var totalRechargeCents = Number(player.totalRechargeCents) || 0;
-      var curYuan = (totalRechargeCents / 100).toFixed(0);
-      var levelThresholds = [0, 600, 3000, 9800, 19800, 32800, 64800, 128000, 300000, 600000, 1000000];
-      var nextThreshold = levelThresholds[vipLevel + 1] || levelThresholds[10];
-      var diffYuan = vipLevel < 10 ? Math.max(0, ((nextThreshold - totalRechargeCents) / 100).toFixed(0)) : 0;
-
-      h += '<div class="recharge-vip-banner" onclick="if(Game.Vip)Game.Vip.openModal();" title="点击查看战时特勤统帅部全等级特权与奖励">' +
-        '<div class="recharge-vip-banner-left">' +
-        '  <span class="topbar-vip-badge' + (vipLevel >= 4 ? ' vip-badge-gold' : '') + '">VIP ' + vipLevel + '</span>' +
-        '  <span>累计战费 <b>¥' + curYuan + '</b>' + (vipLevel < 10 ? ' · 距 VIP ' + (vipLevel + 1) + ' 需 ¥' + diffYuan : ' · 已达最高统帅荣耀') + '</span>' +
-        '</div>' +
-        '<div class="recharge-vip-banner-right">查看全等级特权与奖励 &gt;</div>' +
-        '</div>';
-
-      h += '<div class="rech-empty">模拟支付环境，点击确认后钻石立即到账。</div>';
-      h += '<div class="rech-tabs">';
-      for (var i = 0; i < CATEGORIES.length; i++) {
-        var cat = CATEGORIES[i];
-        h += '<span class="rech-tab' + (cat.id === self.curTab ? ' active' : '') + '" onclick="Game.Recharge.setTab(\'' + cat.id + '\')">' + cat.name + '</span>';
-      }
-      h += '</div>';
-      h += '<div class="rech-channels">';
-      h += '<span class="rech-channel active">模拟支付</span>';
-      h += '</div>';
-      h += '<div class="rech-grid">';
-      for (var j = 0; j < PACKAGES.length; j++) {
-        var p = PACKAGES[j];
-        if (p.cat !== self.curTab) continue;
-        var selected = p.id === self.selected;
-        h += '<div class="rech-card' + (selected ? ' selected' : '') + '" onclick="Game.Recharge.selectPackage(\'' + p.id + '\')">';
-        h += '<div class="rech-card-head"><span class="rech-card-icon">' + p.icon + '</span>';
-        if (p.bonus) h += '<span class="rech-tag gold">' + p.bonus + '</span>';
-        h += '</div>';
-        h += '<div class="rech-card-name">' + p.name + '</div>';
-        h += '<div class="rech-card-price">¥' + p.rmb + '</div>';
-        h += '<div class="rech-card-amount">💎 ' + p.diamond + '</div>';
-        h += '<div class="rech-card-desc">' + p.desc + '</div>';
-        h += '</div>';
-      }
-      h += '</div>';
-      h += '<div class="rech-pay-bar">';
-      h += '<button class="rech-pay-btn" onclick="Game.Recharge.confirmPay()">' + (self.selected ? '确认充值' : '请选择充值档位') + '</button>';
-      h += '<span class="rech-pay-tip">当前为模拟支付，不会产生真实扣款</span>';
-      h += '</div>';
-      h += '<div class="menu-item back" onclick="Game.go(\'home\')">[0] 返回主菜单</div>';
-      v.innerHTML = h;
+    /** 防止旧路由状态或直接渲染恢复充值表单。 */
+    renderView: function (view) {
+      view.innerHTML = '<div class="title">暂未开放充值</div><div class="panel" role="status">' + G.Constants.rechargeUnavailableMessage + '</div>';
     }
   };
 
-  G.Recharge = Recharge;
-  Core.views.recharge = function (v) { Recharge.renderView(v); };
+  G.Core.views.recharge = function (view) { G.Recharge.renderView(view); };
 })(window.Game);

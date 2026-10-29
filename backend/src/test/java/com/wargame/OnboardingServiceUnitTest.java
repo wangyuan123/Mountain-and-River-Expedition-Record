@@ -30,6 +30,7 @@ class OnboardingServiceUnitTest {
     GuildMemberRepository guilds;
     UnitLoadoutRepository loadouts;
     CityScope scope;
+    com.wargame.service.MailService mail;
     OnboardingService onboarding;
     Map<String, PlayerGuide> progress;
     List<Technology> technologies;
@@ -49,13 +50,15 @@ class OnboardingServiceUnitTest {
         marches = mock(MarchRepository.class); wilds = mock(WildTileRepository.class);
         guilds = mock(GuildMemberRepository.class); loadouts = mock(UnitLoadoutRepository.class);
         scope = mock(CityScope.class);
+        mail = mock(com.wargame.service.MailService.class);
         onboarding = new OnboardingService(guides, players, buildings, techs, armies, officers, resources,
-                reports, marches, wilds, guilds, loadouts, mock(WorldTerrainService.class), scope);
+                reports, marches, wilds, guilds, loadouts, mock(WorldTerrainService.class), scope, mail);
+        org.springframework.test.util.ReflectionTestUtils.setField(onboarding, "populationCosts", mock(com.wargame.service.ArmyPopulationService.class));
         progress = new LinkedHashMap<>(); technologies = new ArrayList<>(); facilities = new ArrayList<>();
         troops = new ArrayList<>(); intel = new ArrayList<>(); movements = new ArrayList<>(); tiles = new ArrayList<>();
         Player player = new Player(); player.setId(1L);
         balance = new Resources(); balance.setPlayerId(1L); balance.setCitySlot(0);
-        balance.setFood(2000); balance.setSteel(3000); balance.setOil(1000); balance.setRare(200); balance.setGold(1000); balance.setDiamond(0);
+        balance.setFood(60000); balance.setSteel(60000); balance.setOil(60000); balance.setRare(60000); balance.setGold(60000); balance.setDiamond(0);
         when(players.lockById(1L)).thenReturn(Optional.of(player));
         when(guides.lockByPlayerId(1L)).thenAnswer(i -> new ArrayList<>(progress.values()));
         when(guides.save(any(PlayerGuide.class))).thenAnswer(i -> {
@@ -88,16 +91,17 @@ class OnboardingServiceUnitTest {
         assertEquals(1, troops.stream().filter(a -> "truck".equals(a.getType())).findFirst().orElseThrow().getCount());
         assertEquals("available", task("truck").get("status"), "赠送卡车不能冒充生产成果");
         assertEquals("locked", task("tech").get("status"));
-        assertEquals(2000, balance.getFood());
+        assertResources(60000);
+        verifyNoInteractions(mail);
     }
 
     @Test
     void coreActionsCompleteOnFactsAndReportsWithoutGatheringOrReturnWait() {
         onboarding.start(1L); onboarding.pause(1L, true);
         onboarding.onEvent(1L, "BUILD_UPGRADE_DONE", "oilfield", 1);
-        assertEquals("infantry", current()); assertEquals(6000, balance.getFood());
+        assertEquals("infantry", current()); assertResources(70000);
         onboarding.onEvent(1L, "BUILD_UPGRADE_DONE", "farm", 1); onboarding.claim(1L, "base");
-        assertEquals(6000, balance.getFood());
+        assertResources(70000);
         onboarding.onEvent(1L, "ARMY_RECRUIT", "infantry", 1); assertEquals("recon_build", current());
         for (Object[] entry : List.of(new Object[]{"command", 2}, new Object[]{"factory", 2}, new Object[]{"radar", 1}, new Object[]{"lab", 1})) {
             Building building = new Building(); building.setPlayerId(1L); building.setCitySlot(0);
@@ -109,28 +113,30 @@ class OnboardingServiceUnitTest {
         onboarding.onEvent(1L, "ARMY_RECRUIT", "recon_car", 1); assertEquals("scout", current());
         March scout = new March(); scout.setAction("scout"); scout.setTargetKind("wild"); scout.setReturning(true); movements.add(scout);
         report("scout", Map.of("targetKind", "wild", "showCityInfo", true), false);
-        assertEquals("occupy", current()); assertEquals(9000, balance.getFood());
+        assertEquals("occupy", current()); assertResources(80000);
         ScoutReport win = report("battle", Map.of("targetType", "wild", "win", true, "wildConquered", false), false);
-        assertEquals("report", current()); assertEquals(14000, balance.getFood());
+        assertEquals("report", current()); assertResources(90000);
         win.setReadAt(System.currentTimeMillis());
         Map<String, Object> done = onboarding.status(1L);
         assertEquals(true, done.get("done")); assertNull(done.get("current"));
-        assertEquals(24000, balance.getFood()); assertEquals(100, balance.getDiamond());
+        assertResources(140000); assertEquals(100, balance.getDiamond());
         onboarding.finish(1L); onboarding.start(1L); onboarding.status(1L);
-        assertEquals(24000, balance.getFood()); assertEquals(100, balance.getDiamond());
+        assertResources(140000); assertEquals(100, balance.getDiamond());
         assertFalse(done.containsKey("waitingForGather")); assertFalse(done.containsKey("waitingForScoutReturn"));
+        verify(mail, times(1)).issueOnboardingCompletionGift(1L);
         assertEquals("locked", task("gather").get("status"));
     }
 
     @Test
     void skippedOrUnenrolledPlayersCanCompleteExplorationWithoutSeeingCorePrompts() {
-        onboarding.skip(1L); onboarding.skip(1L); assertEquals(14000, balance.getFood());
+        onboarding.skip(1L); onboarding.skip(1L); assertResources(90000);
         assertThrows(IllegalArgumentException.class, () -> onboarding.claimTask(1L, "gather"));
         onboarding.onEvent(1L, "GATHER_COMPLETE", "food", 1);
         assertEquals("completed", task("gather").get("status"));
         onboarding.claimTask(1L, "gather"); onboarding.claimTask(1L, "gather");
-        assertEquals(19000, balance.getFood()); assertEquals("claimed", task("gather").get("status"));
+        assertEquals(95000, balance.getFood()); assertEquals(90000, balance.getGold()); assertEquals("claimed", task("gather").get("status"));
         assertNull(onboarding.status(1L).get("current")); assertEquals(0, balance.getDiamond());
+        verifyNoInteractions(mail);
     }
 
     @Test
@@ -197,6 +203,14 @@ class OnboardingServiceUnitTest {
         assertEquals(2, troops.stream().filter(a -> "truck".equals(a.getType())).findFirst().orElseThrow().getCount());
         assertTrue(troops.stream().noneMatch(a -> "scout".equals(a.getType())));
         assertEquals(0L, onboarding.status(1L).get("completed"));
+    }
+
+    private void assertResources(long expected) {
+        assertAll(() -> assertEquals(expected, balance.getFood()),
+                () -> assertEquals(expected, balance.getSteel()),
+                () -> assertEquals(expected, balance.getOil()),
+                () -> assertEquals(expected, balance.getRare()),
+                () -> assertEquals(expected, balance.getGold()));
     }
 
     private ScoutReport report(String type, Map<String, Object> data, boolean read) {

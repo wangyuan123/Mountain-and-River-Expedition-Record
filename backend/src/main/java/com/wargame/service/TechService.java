@@ -7,6 +7,7 @@ import com.wargame.model.constants.GameData;
 import com.wargame.model.constants.ItemDef;
 import com.wargame.model.constants.TechDef;
 import com.wargame.model.constants.TechnologyRules;
+import com.wargame.model.constants.TechnologyGoldCosts;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
 import com.wargame.util.JsonUtil;
@@ -141,7 +142,7 @@ public class TechService {
             return result;
         }
 
-        // 5. 计算费用与工期 (JS: techCost - baseCost * growth^lv)
+        // 5. 四类资源按原成长公式，黄金按目标等级独立查表；工期加成不降低费用。
         Map<String, Integer> cost = calcTechCost(techType, lv);
         int duration = calcTechDuration(playerId, techType, lv, labLv);
 
@@ -212,7 +213,7 @@ public class TechService {
             return result;
         }
 
-        // 返还 80% 资源
+        // 仅按开工实扣快照返还80%，不能用新价格重算旧队列（包括原本未收黄金的科研）。
         int refundFood = (int) Math.floor(q.getCostFood() * 0.8);
         int refundSteel = (int) Math.floor(q.getCostSteel() * 0.8);
         int refundOil = (int) Math.floor(q.getCostOil() * 0.8);
@@ -509,6 +510,7 @@ public class TechService {
     //  calcTechCost - 对应 JS techCost
     // ================================================================
 
+    /** 四类生产资源保持原成长，黄金使用定稿逐级整数表；参数为升级前等级。 */
     public Map<String, Integer> calcTechCost(String techType, int currentLevel) {
         TechDef t = GameData.TECHS.get(techType);
         if (t == null) return Collections.emptyMap();
@@ -516,8 +518,10 @@ public class TechService {
         Map<String, Integer> cost = new LinkedHashMap<>();
         double mul = Math.pow(t.costGrowth(), currentLevel);
         for (Map.Entry<String, Integer> entry : t.cost().entrySet()) {
+            if ("gold".equals(entry.getKey())) continue;
             cost.put(entry.getKey(), (int) Math.floor(entry.getValue() * mul));
         }
+        cost.put("gold", TechnologyGoldCosts.forTarget(techType, currentLevel + 1));
         return cost;
     }
 

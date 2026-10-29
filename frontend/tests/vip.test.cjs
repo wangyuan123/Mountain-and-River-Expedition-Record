@@ -105,7 +105,7 @@ test('头像框选项使用服务端标准标识和对应 VIP 解锁等级', () 
   assert.match(html, /class="vip-frame-card selected" onclick="Game\.Vip\.selectFrame\('frame-supreme-v1'\)"/);
   assert.match(html, /黄金战纪[\s\S]*?VIP 5/);
   assert.match(html, /翡翠寒魄[\s\S]*?VIP 7/);
-  assert.match(html, /星钻炽焰[\s\S]*?VIP 9/);
+  assert.match(html, /星钻蓝光[\s\S]*?VIP 9/);
 });
 
 test('VIP 弹层与标签栏在 flex 约束与横屏模式下防止挤压变形，具备滚动保护与自适应紧凑样式', () => {
@@ -297,24 +297,24 @@ test('VIP 0~10 全等级特权与奖励查看器支持全等级胶囊横向切�
       {
         level: 0, requiredCents: 0, title: '预备指挥官',
         buildQueuePerCity: 3, techQueuePerCity: 1,
-        dailyRewards: { gold: 1000, food: 5000 }
+        dailyRewards: { gold: 10000, food: 10000, steel: 10000, oil: 10000, rare: 10000 }
       },
       {
         level: 1, requiredCents: 600, title: '特遣队指挥官',
         buildQueuePerCity: 5, techQueuePerCity: 1,
-        dailyRewards: { gold: 3000, food: 20000 },
+        dailyRewards: { gold: 20000, food: 20000 },
         levelPackRewards: { recruitOrd: 1, gold: 400000 }
       },
       {
         level: 2, requiredCents: 3000, title: '前线先锋官',
         buildQueuePerCity: 5, techQueuePerCity: 1,
-        dailyRewards: { gold: 5000, food: 50000 },
+        dailyRewards: { gold: 30000, food: 50000 },
         levelPackRewards: { recruitOrd: 2, teleportNormal: 2 }
       },
       {
         level: 6, requiredCents: 64800, title: '兵团总司令官',
         buildQueuePerCity: 5, techQueuePerCity: 2,
-        dailyRewards: { gold: 50000, food: 800000 },
+        dailyRewards: { gold: 70000, food: 400000 },
         levelPackRewards: { recruitOrd: 6, supplyPack: 3 }
       }
     ]
@@ -376,7 +376,7 @@ test('VIP 每日军饷道具丰富度：VIP 0 包含技能书/人口动员/加�
   const vip5DailyHtml = vip5Sections[1] ? vip5Sections[1].split('专属终身晋升大礼包')[0] : '';
   assert.match(vip5DailyHtml, /行军令/);
   assert.match(vip5DailyHtml, /通讯干扰令/);
-  assert.match(vip5DailyHtml, /佯动诱敌令/);
+  assert.match(vip5DailyHtml, /撤退拖延令/);
   assert.match(vip5DailyHtml, /紧急动员令/);
   assert.doesNotMatch(vip5DailyHtml, /星耀符/);
   assert.doesNotMatch(vip5DailyHtml, /军官改名卡/);
@@ -402,4 +402,20 @@ test('VIP 每日军饷道具丰富度：VIP 0 包含技能书/人口动员/加�
   // 4. 切换至专属晋升礼包 Tab，验证晋级大礼包中高额赠送星耀符（一次性晋升重奖）
   vip.switchTab('packs');
   assert.match(elements.vipModalBody.innerHTML, /星耀符/);
+});
+
+test('VIP默认预览按最终资源表且每日不叠加资源包', async () => {
+  const { vip } = setup({ vipStatus: async () => ({ vipLevel: 0, totalRechargeCents: 0 }) });
+  vip.openModal();
+  await new Promise(resolve => setImmediate(resolve));
+  const levels = vip.cachedStatus.levels;
+  const gold = [10000, 20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000, 100000, 110000];
+  const material = [10000, 20000, 50000, 100000, 200000, 300000, 400000, 500000, 600000, 700000, 800000];
+  levels.forEach((level, index) => {
+    assert.equal(level.dailyRewards.gold, gold[index]);
+    for (const key of ['food', 'steel', 'oil', 'rare']) assert.equal(level.dailyRewards[key], material[index]);
+    assert.equal(level.dailyRewards.supplyPack, undefined);
+    assert.ok(level.dailyRewards.skillBook > 0);
+    assert.ok(level.dailyRewards.populationOrder > 0);
+  });
 });

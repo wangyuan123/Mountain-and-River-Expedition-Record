@@ -40,6 +40,7 @@ public class ArmyService {
     @org.springframework.beans.factory.annotation.Autowired
     private PrerequisiteService prerequisiteService;
     @org.springframework.beans.factory.annotation.Autowired private UnitUnlockService unitUnlocks;
+    @org.springframework.beans.factory.annotation.Autowired private ArmyPopulationService populationCosts;
 
     private static final int MAX_QUEUE_CAPACITY = 500;
 
@@ -91,6 +92,7 @@ public class ArmyService {
 
         // 与建造/拆除共用玩家锁，防止校验之后军港或造船厂被并发拆除。
         Player player = playerRepository.lockById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
+        populationCosts.balance(playerId, unitType);
         completeProduction(playerId, GameClock.now());
 
         // 在扣款与人口扣减前统一校验；海军同时需要本城造船厂和军港。
@@ -229,6 +231,7 @@ public class ArmyService {
         queue.setCostSteel(cost.getOrDefault("steel", 0));
         queue.setCostOil(cost.getOrDefault("oil", 0));
         queue.setCostRare(cost.getOrDefault("rare", 0));
+        queue.setCostPopulation(popNeeded);
         armyProductionQueueRepository.save(queue);
 
         result.put("success", true);
@@ -252,6 +255,7 @@ public class ArmyService {
 
     @Transactional
     public Map<String, Object> dismiss(Long playerId, String unitType, int count) {
+        playerRepository.lockById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
         if (garrisonFood != null) garrisonFood.beforeChange(playerId);
         Map<String, Object> result = new LinkedHashMap<>();
 
@@ -259,6 +263,12 @@ public class ArmyService {
         if (u == null) {
             result.put("success", false);
             result.put("message", "无效的兵种: " + unitType);
+            return result;
+        }
+
+        if (count <= 0) {
+            result.put("success", false);
+            result.put("message", "解散数量无效");
             return result;
         }
 
@@ -278,6 +288,8 @@ public class ArmyService {
 
         // JS: n = Math.min(n, have)
         int n = Math.min(count, have);
+        // 在扣减库存前首次登记历史兵力；返还按实付成本，不能用新单价给旧部队补差价。
+        long populationRefund = populationCosts.dismiss(playerId, unitType, n);
 
         // JS: s.army[id] = have - n
         unit.setCount(have - n);
@@ -286,7 +298,7 @@ public class ArmyService {
         Player player = playerRepository.findById(playerId).orElse(null);
         if (player != null) {
             int civilians = cityScope.economy(playerId).getCivilianPopulation() != null ? cityScope.economy(playerId).getCivilianPopulation() : 0;
-            cityScope.economy(playerId).setCivilianPopulation(Math.min(popMax(playerId), civilians + u.pop() * n));
+            cityScope.economy(playerId).setCivilianPopulation((int) Math.min(popMax(playerId), civilians + populationRefund));
             playerRepository.save(player);
         cityScope.saveEconomy(playerId);
         }
@@ -330,6 +342,7 @@ public class ArmyService {
 
     @Transactional
     public boolean cancelProduction(Long playerId, Long queueId) {
+        playerRepository.lockById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
         ArmyProductionQueue q = armyProductionQueueRepository.findById(queueId).orElse(null);
         if (q == null || !playerId.equals(q.getPlayerId()) || q.getCitySlot() != cityScope.slot(playerId)) return false;
         armyProductionQueueRepository.delete(q);
@@ -338,7 +351,8 @@ public class ArmyService {
         Player player = playerRepository.findById(playerId).orElse(null);
         if (unit != null && player != null) {
             int civilians = cityScope.economy(playerId).getCivilianPopulation() != null ? cityScope.economy(playerId).getCivilianPopulation() : 0;
-            cityScope.economy(playerId).setCivilianPopulation(Math.min(popMax(playerId), civilians + unit.pop() * q.getUnitCount()));
+            cityScope.economy(playerId).setCivilianPopulation((int) Math.min(popMax(playerId),
+                    (long) civilians + ArmyPopulationService.paidPopulation(q)));
             playerRepository.save(player);
         cityScope.saveEconomy(playerId);
         }
@@ -349,6 +363,7 @@ public class ArmyService {
     public void completeProduction(Long playerId, long now) {
         if (garrisonFood != null) garrisonFood.beforeChange(playerId);
         for (ArmyProductionQueue q : armyProductionQueueRepository.findByPlayerIdAndCitySlotAndFinishesAtLessThanEqualOrderByFinishesAtAscIdAsc(playerId, cityScope.slot(playerId), now)) {
+            populationCosts.complete(playerId, q);
             List<ArmyUnit> existing = armyUnitRepository.findByPlayerIdAndCitySlotAndType(playerId, cityScope.slot(playerId), q.getUnitType());
             ArmyUnit unit = existing.isEmpty() ? new ArmyUnit(null, playerId, q.getUnitType(), 0) : existing.get(0);
             unit.setCitySlot(q.getCitySlot());
@@ -567,7 +582,19 @@ public class ArmyService {
     //  三军统帅技能只放大军衔基础；城防建筑与其他建筑、指挥官等级均不增加带兵上限。
     // ================================================================
 
+    /** 账号动员同时作用于所有城市的新行军和本城迎战。 */
     public int armyCap(Long playerId) {
+        return armyCapAt(playerId, com.wargame.util.GameClock.now());
+    }
+
+    /** 一次选兵共用同一个时间样本，避免到期瞬间出现临时编队配默认容量的混合状态。 */
+    public int armyCapAt(Long playerId, long now) {
+        Player player = playerRepository.findById(playerId).orElse(null);
+        return com.wargame.model.constants.MobilizationRules.apply(ordinaryArmyCap(playerId),
+                com.wargame.model.constants.MobilizationRules.bonus(player, now));
+    }
+
+    public int ordinaryArmyCap(Long playerId) {
         Player player = playerRepository.findById(playerId).orElse(null);
         int rankTier = (player != null && player.getMilitaryRank() != null) ? player.getMilitaryRank() : 1;
         int rankBase = MilitaryRankDef.getRankBase(rankTier);
@@ -590,11 +617,9 @@ public class ArmyService {
         return (int) Math.floor(cap);
     }
 
-    /** 出城迎战只额外增加半份军衔基础，统帅加成保持与攻击相同的数额。 */
+    /** 出城迎战与普通出征共用带兵上限，不再额外增加守方兵力。 */
     public int sortieCap(Long playerId) {
-        Player player = playerRepository.findById(playerId).orElse(null);
-        int rankBase = MilitaryRankDef.getRankBase(player != null ? player.getMilitaryRank() : 1);
-        return armyCap(playerId) + rankBase / 2;
+        return armyCap(playerId);
     }
 
     private int getOfficerSkillLevel(Officer officer, String skillId) {
