@@ -157,7 +157,7 @@ mvn -f backend/pom.xml -Dtest=MySqlMigrationTest test
 
 ## 代码提交校验 (Git Hooks)
 
-V1.0 软著版本代码固定在 `v1.0-softcopyright` 标签，专用分支为 `release/v1.0-softcopyright`，归档材料位于 `docs/archive/software-copyright-v1.0-20261030/`。后续开发应从 `master` 开展，保留固定标签和归档原样。
+V1.0 软著材料在 2026-10-30 完成名称一致性修订：当前源码固定在 `v1.0-softcopyright-r2` 标签，专用分支为 `release/v1.0-softcopyright`，材料位于 `docs/archive/software-copyright-v1.0-20261030-r2/`。修订范围见 [名称核查记录](docs/SOFTWARE_COPYRIGHT_V1_0_NAME_REVIEW_20261030.md)。原标签 `v1.0-softcopyright` 与原归档 `docs/archive/software-copyright-v1.0-20261030/` 保留用于追溯，准备本次软著材料请使用 r2 归档。后续开发应从 `master` 开展，保留所有固定标签和归档原样。
 
 归档源码包使用 Git LFS 保存。克隆后需安装 Git LFS（macOS 可执行 `brew install git-lfs`），再在项目根目录执行：
 

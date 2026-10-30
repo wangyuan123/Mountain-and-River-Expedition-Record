@@ -1,6 +1,6 @@
 # 内容审查索引
 
-共 461 条；点击编号查看原文、数值、来源位置和证据。全部待用户评估，索引顺序不代表法律风险等级。
+共 461 条；点击编号查看原文、数值、来源位置和证据。全部待用户评估，索引顺序不代表法律风险等级。2026-10-30 仅同步 T026 的当前名称，其他条目仍为历史审查记录，不代表 V1.0 当前完整功能清单。
 
 ## 任务
 
@@ -31,7 +31,7 @@
 | [T023](</Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/docs/content-audit-20260913/CATALOG.md:455>) | 雄狮之师 | 来源不明 | 补来源记录 |
 | [T024](</Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/docs/content-audit-20260913/CATALOG.md:477>) | 正式宣战 | 来源不明 | 补来源记录 |
 | [T025](</Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/docs/content-audit-20260913/CATALOG.md:499>) | 首战告捷 | 来源不明 | 补来源记录 |
-| [T026](</Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/docs/content-audit-20260913/CATALOG.md:521>) | 欢迎来到烽原战策 | 来源不明 | 补来源记录 |
+| [T026](</Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/docs/content-audit-20260913/CATALOG.md:521>) | 欢迎来到山河远征录 | 来源不明 | 补来源记录 |
 | [T027](</Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/docs/content-audit-20260913/CATALOG.md:542>) | 第一步 · 升级市政厅 | 来源不明 | 补来源记录 |
 | [T028](</Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/docs/content-audit-20260913/CATALOG.md:563>) | 第二步 · 建造民居 | 来源不明 | 补来源记录 |
 | [T029](</Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/docs/content-audit-20260913/CATALOG.md:584>) | 第三步 · 建造农田 | 来源不明 | 补来源记录 |
