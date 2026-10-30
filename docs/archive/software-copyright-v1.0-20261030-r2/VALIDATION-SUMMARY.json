@@ -1,0 +1,35 @@
+{
+  "software": "山河远征录游戏软件",
+  "version": "V1.0",
+  "archive_revision": "r2",
+  "source_tag": "v1.0-softcopyright-r2",
+  "source_commit": "84ec73a947d43d92834a4d350c6239a0e8724da4",
+  "date": "2026-10-30T09:08:32+08:00",
+  "frontend": {
+    "tests": 1267,
+    "pass": 1267,
+    "fail": 0,
+    "skipped": 0
+  },
+  "backend": {
+    "tests": 2097,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 3,
+    "passed": 2094
+  },
+  "source_package": "shanhe-yuanzhenglu-v1.0-source.tar.gz",
+  "source_sha256": "70745da1e19bd7bb6bd1caf8fbd69572ea6ac6d1ce48253f6e50355ed6ce78f4",
+  "source_file_count": 1696,
+  "text_files_scanned": 1465,
+  "old_name_hits": 0,
+  "source_counts": {
+    "backend_main_java": 439,
+    "backend_test_java": 267,
+    "frontend_javascript": 60,
+    "frontend_test_files": 137,
+    "database_migrations": 134
+  },
+  "database": "H2; production MySQL not exercised",
+  "historical_archive_excluded": true
+}
